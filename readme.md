@@ -2,7 +2,7 @@
 <br><img src="readme/1.png" width="600" />
 
 ## Features
-TavernAI helps the AI model is in the chat format and makes the answers a little bit longer. In most cases, the shell fixes the problem when the model tries to answer for the user. Through the interface, you can easily create/edit characters and change the background on the fly.
+TavernAI helps the AI model is in the chat format and makes the answers a little longer than they usually are for this format. In most cases, the shell fixes the problem when the model tries to answer for the user. Through the interface, you can easily create/edit characters and change the background on the fly.
 ## Setup
 1. Download and Install [Node.js v19.1.0](https://nodejs.org/download/release/v19.1.0/)
 2. Run Start.bat or use command: *node server.js*
