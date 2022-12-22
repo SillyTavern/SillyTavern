@@ -7,8 +7,12 @@ TavernAI helps the AI model is in the chat format and makes the answers longer. 
 1. Download and Install [Node.js v19.1.0](https://nodejs.org/download/release/v19.1.0/)
 2. Run Start.bat or use command: *node server.js*
 ## Connecting to API
-### <u>KoboldAI</u>
+### KoboldAI
 To use KoboldAI install it locally, or run it through Google Colab. Details: [KoboldAI](https://github.com/KoboldAI/KoboldAI-Client)
+### KoboldAI Settings
+In most cases, you can use available presets in TavernAI for any models, making minimal changes. Later they will be calibrated more accurately for each model.
+<br><br>It is recommended either not to use Repetition Penalty at all, or to set the minimum value in the region of 1.01 - 1.05 for small models. Also, highly strict sample settings force the AI to answer less long and more monosyllabic messages. Accordingly, settings with minimal sampling will produce longer, but less logical messages.
+<br><br>It's a little harder for Nerys to understand the chat format than Erebus models.
 ## Compatibility
 Tested on Windows 7/10 x64 (FireFox 108.0, Google Chrome 108.0, Microsoft Edge 108.0)
 
@@ -16,10 +20,6 @@ Tested on Windows 7/10 x64 (FireFox 108.0, Google Chrome 108.0, Microsoft Edge 1
 If the message is not finished, you can simply send the request again, TavernAI will understand that this is a continuation.<br>
 <br><img src="readme/2.png" width="600" />
 <br>Later, it is planned to make TavernAI combine such messages into one.
-## KoboldAI Settings
-In most cases, you can use available presets in TavernAI for any models, making minimal changes. Later they will be calibrated more accurately for each model.
-<br><br>It is recommended either not to use Repetition Penalty at all, or to set the minimum value in the region of 1.01 - 1.05 for small models. Also, highly strict sample settings force the AI to answer less long and more monosyllabic messages. Accordingly, settings with minimal sampling will produce longer, but less logical messages.
-<br><br>It's a little harder for Nerys to understand the chat format than Erebus models.
 ## What's next?
 * Ability to create an examples of a character's messages
 * Wildcards for characters
