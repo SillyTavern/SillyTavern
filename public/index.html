@@ -1,0 +1,1660 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="scripts/jquery-3.5.1.min.js"></script>
+    <script src="scripts/jquery.transit.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/right-nav-style.css">
+    <link rel="stylesheet" href="css/bg_load.css">
+    <script type=module>
+        //To DO:: 
+        //1) Messages example 
+        //2) Count tokens print fix 
+        //3) Make wildcards for characters 
+        //4) Fix same callback in server.js create/edit 
+        //5) Edit messages 
+        //6) Reload setting files when they was rewrite 
+        //7) Show an indicator that shows the message in context or not
+        //8) Сombine multiple messages into one if the text continues
+        //9) Access for many chats
+        //10) Design presets
+        //import {encode, decode} from "../scripts/gpt-2-3-tokenizer/mod.js";
+        //let text = "hello world";
+        //console.log(encode("dsfs").length); // [258, 18798, 995]
+    </script>
+    <script type=module>
+        import {encode, decode} from "../scripts/gpt-2-3-tokenizer/mod.js";
+        $(document).ready(function(){
+            var bg_menu_toggle = false;
+            var name1 = "You";
+            var name2 = "Chloe";
+            var chat = ['\nChloe: *You went inside. The air smelled of fried meat, tobacco and a hint of wine. A dim light was cast by candles, and a fire crackled in the fireplace. It seems to be a very pleasant place. Behind the wooden bar is an elf waitress, she is smiling. Her ears are very pointy, and there is a twinkle in her eye. She wears glasses and a white aporn. As soon as she noticed you, she immediately came right up close to you.*\n\n Hello there! How is your evening going?\n<img src="img/star_dust_city.png" width=80% style="opacity:0.3; disolay:block;border-radius:5px;margin-top:25px;margin-bottom:23px; margin-left: 45px;margin-right: auto;">\n@@@TavernAI v1.0.0@@@<div id="donation" style="margin-right:10px;margin-top:0px;float:right; height:25px;cursor: pointer;opacity: 0.99;display:inline-block;"><img src="img/coins.png" style="width: 25px;height: 25px;display:inline-block;"><div style="vertical-align: top;display:inline-block;">Give a Tip</div></div><br><br><br><br>'];
+            var default_ch_mes = "Hello";
+            var count_view_mes = 0;
+            var mesStr = '';
+            var characters = [];
+            var this_chid;
+            var backgrounds = [];
+            var default_avatar = 'img/fluffy.png';
+            
+            var menu_type = '';//what is selected in the menu
+            var selected_button = '';//which button pressed
+            //create pole save
+            var create_save_name = '';
+            var create_save_description = '';
+            var create_save_personality = '';
+            var create_save_first_message = '';
+            var create_save_avatar = '';
+            
+            var timerSaveEdit;
+            var durationSaveEdit = 200;
+            //animation right menu
+            var animation_rm_duration = 200;
+            var animation_rm_easing = "";
+            
+            var popup_type = "";
+            var bg_file_for_del = '';
+            var online_status = 'no_connection';
+            
+            var api_server = "";
+            var interval_timer = setInterval(getStatus, 2000);
+            var is_get_status = false;
+            var is_api_button_press = false;
+            
+            var is_send_press = false;//Send generation
+            var add_mes_without_animation = false;
+            
+            var this_del_mes = 0;
+            
+            const delay = ms => new Promise(res => setTimeout(res, ms));
+            //settings
+            var settings;
+            var koboldai_settings;
+            var koboldai_setting_names;
+            var preset_settings = 'gui';
+            var user_avatar = 'you.png';
+            var temp = 0.5;
+            var amount_gen = 80;
+            var max_context = 2048;//2048;
+
+            var postAnchor = '';
+            //css
+            var bg1_toggle = true;
+            var css_mes_bg = $('<div class="mes"></div>').css('background');
+            var css_send_form_display = $('<div id=send_form></div>').css('display');
+            /////////////
+            getSettings();
+            getCharacters();
+
+            printMessages();
+            getBackgrounds();
+            getUserAvatars();
+            
+            function checkOnlineStatus(){
+                //console.log(online_status);
+                if(online_status == 'no_connection'){
+                    $("#online_status_indicator").css("background-color", "red");
+                    $("#online_status").css("opacity", 0.3);
+                    $("#online_status_text").html("No connection...");
+                    $("#online_status_indicator2").css("background-color", "red");
+                    $("#online_status_text2").html("No connection...");
+                    is_get_status = false;
+                }else{
+                    $("#online_status_indicator").css("background-color", "black");
+                    $("#online_status").css("opacity", 0.0);
+                    $("#online_status_text").html("");
+                    $("#online_status_indicator2").css("background-color", "green");
+                    $("#online_status_text2").html(online_status);
+                }
+                
+            }
+            async function getStatus(){
+                if(is_get_status){
+                    jQuery.ajax({    
+                        type: 'POST', // 
+                        url: '/getstatus', // 
+                        data: JSON.stringify({
+                                api_server: api_server
+                            }),
+                        beforeSend: function(){
+                            if(is_api_button_press){
+                                //$("#api_loading").css("display", 'inline-block');
+                                //$("#api_button").css("display", 'none');
+                            }
+                            //$('#create_button').attr('value','Creating...'); // 
+
+                        },
+                        cache: false,
+                        dataType: "json",
+                        contentType: "application/json",
+                        //processData: false, 
+                        success: function(data){
+                            online_status = data.result;
+                            
+                            resultCheckStatus();
+                            
+                        },
+                        error: function (jqXHR, exception) {
+                            console.log(exception);
+                            console.log(jqXHR);
+                            online_status = 'no_connection';
+                            
+                            resultCheckStatus();
+                        }
+                    });
+                }
+            }
+            function resultCheckStatus(){
+                is_api_button_press = false;  
+                checkOnlineStatus();
+                $("#api_loading").css("display", 'none');
+                $("#api_button").css("display", 'inline-block');
+            }
+            function printCharaters(){
+                $("#rm_print_charaters_block").html('');
+                characters.forEach(function(item, i, arr) {
+                    var this_avatar = default_avatar;
+                    if(item.avatar != 'none'){
+                        this_avatar = "characters/"+item.name+"/avatars/"+item.avatar;
+                    }
+                    $("#rm_print_charaters_block").prepend("<div class=character_select chid="+i+"><div class=avatar><img src='"+this_avatar+"'></div><div class=ch_name>"+item.name+"</div></div>");
+                    //console.log(item.name);
+                });
+                
+                
+            }
+            async function getCharacters() {
+                
+                const response = await fetch("/getcharacters", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                            "": ""
+                        })
+
+                });
+                if (response.ok === true) {
+                    const getData = await response.json();
+                    //console.log(getData[0]);
+                    //var aa = JSON.parse(getData[0]);
+                    const load_ch_coint = Object.getOwnPropertyNames(getData);
+                    
+                    for(var i = 0; i < load_ch_coint.length;i++){
+                        
+                        characters[i] = [];
+                        characters[i] = JSON.parse(getData[i]);
+                        //console.log(characters[i]);
+                    }
+                    
+                    characters.reverse();
+                    if(this_chid != undefined) $("#avatar_url_pole").val(characters[this_chid].avatar);
+                    printCharaters();
+                    //console.log(propOwn.length);
+                    //return JSON.parse(getData[0]);
+                    //const getData = await response.json();
+                    //var getMessage = getData.results[0].text;
+                }
+            }
+            async function getBackgrounds() {
+                const response = await fetch("/getbackgrounds", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                            "": ""
+                        })
+
+                });
+                if (response.ok === true) {
+                    const getData = await response.json();
+                    //background = getData;
+                    //console.log(getData.length);
+                    for(var i = 0; i < getData.length; i++) {
+                        //console.log(1);
+                        $("#bg_menu_content").append("<div class=bg_example><img bgfile='"+getData[i]+"' class=bg_example_img src='backgrounds/"+getData[i]+"'><img bgfile='"+getData[i]+"' class=bg_example_cross src=img/cross.png></div>");
+                    }
+                    //var aa = JSON.parse(getData[0]);
+                    //const load_ch_coint = Object.getOwnPropertyNames(getData);
+                    
+
+                }
+            }
+            async function setBackground(bg) {
+                /*
+                const response = await fetch("/setbackground", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                            "bg": bg
+                        })
+
+                });
+                if (response.ok === true) {
+                    //const getData = await response.json();
+                    //background = getData;
+
+                    //var aa = JSON.parse(getData[0]);
+                    //const load_ch_coint = Object.getOwnPropertyNames(getData);
+                }*/
+                //console.log(bg);
+                jQuery.ajax({    
+                    type: 'POST', // 
+                    url: '/setbackground', // 
+                    data: JSON.stringify({
+                            bg: bg
+                        }),
+                    beforeSend: function(){
+                        //$('#create_button').attr('value','Creating...'); // 
+                    },
+                    cache: false,
+                    dataType: "json",
+                    contentType: "application/json",
+                    //processData: false, 
+                    success: function(html){
+                        //setBackground(html);
+                        //$('body').css('background-image', 'linear-gradient(rgba(19,21,44,0.75), rgba(19,21,44,0.75)), url('+e.target.result+')');
+                        //$("#form_bg_download").after("<div class=bg_example><img bgfile='"+html+"' class=bg_example_img src='backgrounds/"+html+"'><img bgfile='"+html+"' class=bg_example_cross src=img/cross.png></div>");
+                    },
+                    error: function (jqXHR, exception) {
+                        console.log(exception);
+                        console.log(jqXHR);
+                    }
+                });
+            }
+            async function delBackground(bg) {
+                const response = await fetch("/delbackground", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                            "bg": bg
+                        })
+
+                });
+                if (response.ok === true) {
+                    //const getData = await response.json();
+                    //background = getData;
+
+                    //var aa = JSON.parse(getData[0]);
+                    //const load_ch_coint = Object.getOwnPropertyNames(getData);
+                    
+
+                }
+            }
+            function printMessages(){
+                chat.forEach(function(item, i, arr) {
+                    addOneMessage(item);
+                });
+            }
+            function clearChat(){
+                count_view_mes = 0;
+                $('#chat').html('');
+            }
+            function addOneMessage(message){
+                message = message.replace(/^\s+/g, '');
+                //console.log(message.indexOf(name1+":"));
+                var messageText = "";
+                var characterName = name1;
+                var avatarImg = "User Avatars/"+user_avatar;
+                //thisText = thisText.split("\n").join("<br>");
+                var avatarImg = "User Avatars/"+user_avatar;
+                if(message.indexOf(name1+":") == 0){
+                    messageText = message.substr((name1+":").length);
+                }else{
+                    if(message.indexOf(name2+":") == 0){
+                        messageText = message.substr((name2+":").length);
+                    }else{
+                        messageText = message;
+                    }
+                    if(this_chid == undefined){
+                        avatarImg = "img/chloe.png";
+                    }else{
+                        if(characters[this_chid].avatar != 'none'){
+                            avatarImg = "characters/"+characters[this_chid].name+"/avatars/"+characters[this_chid].avatar;
+                        }else{
+                            avatarImg = "img/fluffy.png";
+                        }
+                    }
+                    characterName = name2;
+                }
+                
+                //Formating
+                messageText = messageText.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\*(.+?)\*/g, '<i>$1</i>').replace(/\n/g, '<br/>');
+                if(characterName != name1){
+                    messageText = messageText.replaceAll(name2+":", "");
+                }
+                $("#chat").append( "<div class='mes' mesid="+count_view_mes+" ch_name="+characterName+"><div class='for_checkbox'></div><input type='checkbox' class='del_checkbox'><div class=avatar><img src='"+avatarImg+"' width=60px height=120px></div><div class=mes_block><div class=ch_name>"+characterName+"</div><div class=mes_text>"+messageText+"</div></div></div>" );
+                count_view_mes++;
+                if(!add_mes_without_animation){
+                    $('#chat').children().last().css("opacity",1.0);
+                    $('#chat').children().last().transition({  
+                            opacity: 1.0,
+                            duration: 700,
+                            easing: "",
+                            complete: function() {  }
+                    });
+                }else{
+                    add_mes_without_animation = false;
+                }
+                var $textchat = $('#chat');
+                $textchat.scrollTop($textchat[0].scrollHeight);
+            }
+            
+            function newMesPattern(name){ //Patern which denotes a new message
+                name = name+':';
+                return name;
+            }
+
+            $( "#send_but" ).click(function() {
+                //$( "#send_but" ).css({"background": "url('img/load.gif')","background-size": "100%, 100%", "background-position": "center center"});
+                if(is_send_press == false){
+                    is_send_press = true;
+                
+                    Generate();
+                }
+            });
+            async function Generate(type) {//encode("dsfs").length
+
+                if(online_status != 'no_connection' && this_chid != undefined){
+                    if(type != 'regenerate'){
+                        var textareaText = $("#send_textarea").val();
+                        $("#send_textarea").val('');
+                        
+                    }else{
+                        var textareaText = "";
+                        let is_you = $.trim(chat[chat.length-1]);
+                        if(is_you.substr(0,(name1+":").length) == name1+":"){//If last message from You
+                            
+                        }else{
+                            chat.length = chat.length-1;
+                            count_view_mes-=1;
+                            $('#chat').children().last().remove();
+                        }
+                    }
+                    //$("#send_textarea").attr("disabled","disabled");
+                    
+                    //$("#send_textarea").blur();
+                    $( "#send_but" ).css("display", "none");
+                    $( "#loading_mes" ).css("display", "block");
+
+
+                    var storyString = "";
+                    var userSendString = "";
+
+
+                    postAnchor = "talks a lot with descriptions";//'Talk a lot with description what is going on around';// in asterisks
+                    //*********************************
+                    //KoboldAI PRE FORMATING STRING
+                    //*********************************
+                    userSendString = name1+": "+textareaText+"\n";
+
+                    if(textareaText != ""){               
+                        addOneMessage(userSendString);
+                        chat[chat.length] = userSendString;
+                    }
+                    var chatString = '';
+                    var arrMes = [];
+                    
+                    var charPersonality = characters[this_chid].personality;
+                    if($.trim(charPersonality.length) > 0){
+                        charPersonality = "["+name2+" is "+charPersonality+"]";//"["+name2+"'s personality: "+charPersonality+"]";
+                    }
+                    
+                    if($.trim(postAnchor.length) > 0){
+                        postAnchor = "["+name2+" "+postAnchor+"]";
+                    }
+                    var anchorAndPersonality = charPersonality+postAnchor;
+                    storyString = $.trim(characters[this_chid].description);
+                    if($.trim(storyString.length) > 0){
+                        if(storyString.slice(-1) !== ']' || storyString.substr(0,1) !== '['){
+                            storyString = '['+storyString+']';
+                        }
+                    }
+                    if(count_view_mes < 5){
+                        storyString+=anchorAndPersonality;
+                    }
+                    if(count_view_mes < 10){
+                        storyString+='\nThen the dialogue between '+name1+' and '+name2+' begins.\n';
+                    }
+                    var chat2 = [];
+                    var j = 0;
+                    for(var i = chat.length-1; i >= 0; i--){
+                        chat2[i] = chat[j];
+                        j++;
+                    }
+                    //chat2 = chat2.reverse();
+                    var i = 0;
+                    for (const item of chat2) {//console.log(encode("dsfs").length);
+                        if(encode(JSON.stringify(characters[this_chid].description+chatString+postAnchor+characters[this_chid].personality)).length+120 < max_context){ //(The number of tokens in the entire promt) need fix, it must count correctly (added +120, so that the description of the character does not hide)
+                            
+                            chatString = item+chatString;
+                            arrMes[arrMes.length] = item;
+                        }
+                        await delay(1); //For disable slow down (encode gpt-2 need fix)
+                        //console.log(i+' '+chat.length);
+                        if(i == chat.length-1){
+                            
+                            runGenerate();
+                        }
+                        i++;
+                    }
+
+                    function runGenerate(){
+
+                        chatString = "";
+                        arrMes = arrMes.reverse();
+                        var is_add_personality = false;
+                        arrMes.forEach(function(item, i, arr) {//For added anchors and others
+                            chatString = chatString+item;
+                            if(i >= arrMes.length-1 && $.trim(item).substr(0, (name1+":").length) != name1+":"){
+                                if(textareaText == ""){
+                                    chatString = chatString.substr(0,chatString.length-1);
+                                }
+                            }
+                            if(i == arrMes.length-4 && count_view_mes>=5 && !is_add_personality){
+
+                                is_add_personality = true;
+                                //chatString = chatString.substr(0,chatString.length-1);
+                                //anchorAndPersonality = "[Genre: roleplay chat][Tone: very long messages with descriptions]";
+                                chatString+=anchorAndPersonality+'\n';
+                            }
+                            if(i >= arrMes.length-1 && count_view_mes>=4 && $.trim(item).substr(0, (name1+":").length) == name1+":"){//For add anchor in end
+                                chatString = chatString.substr(0,chatString.length-1);
+                                chatString+="[Writing style: very long messages]";
+                            }
+                        });
+
+                        storyString+=chatString;
+
+
+                        //console.log(encode(characters[this_chid].description+chatString).length);
+                        //console.log(encode(JSON.stringify(characters[this_chid].description+chatString)).length);
+                        if(type == 'force_name2'){
+                            storyString+= name2+':';
+                        }
+                        //console.log(JSON.stringify(storyString));
+                        //Send story string
+                        var generate_data = {prompt: storyString, gui_settings: true,max_length: amount_gen,temperature: temp, max_context_length: max_context};
+                        if(preset_settings != 'gui'){
+
+                            var this_settings = koboldai_settings[koboldai_setting_names[preset_settings]];
+
+                            generate_data = {prompt: storyString, 
+                                            gui_settings: false, 
+                                            sampler_order: this_settings.sampler_order,
+                                            max_context_length: max_context,//this_settings.max_length,
+                                            max_length: amount_gen,
+                                            rep_pen: this_settings.rep_pen,
+                                            rep_pen_range: this_settings.rep_pen_range,
+                                            rep_pen_slope: this_settings.rep_pen_slope,
+                                            temperature: temp,
+                                            tfs: this_settings.tfs,
+                                            top_a: this_settings.top_a,
+                                            top_k: this_settings.top_k,
+                                            top_p: this_settings.top_p,
+                                            typical: this_settings.typical,
+                                            s1:this_settings.sampler_order[0],
+                                            s2:this_settings.sampler_order[1],
+                                            s3:this_settings.sampler_order[2],
+                                            s4:this_settings.sampler_order[3],
+                                            s5:this_settings.sampler_order[4],
+                                            s6:this_settings.sampler_order[5],
+                                            s7:this_settings.sampler_order[6]
+                                            };
+                        }
+
+                        jQuery.ajax({    
+                            type: 'POST', // 
+                            url: '/generate', // 
+                            data: JSON.stringify(generate_data),
+                            beforeSend: function(){
+                                //$('#create_button').attr('value','Creating...'); 
+                            },
+                            cache: false,
+                            dataType: "json",
+                            contentType: "application/json",
+                            success: function(data){
+
+                                //$("#send_textarea").focus();
+                                //$("#send_textarea").removeAttr('disabled');
+                                is_send_press = false;
+                                if(data.error != true){
+                                    //const getData = await response.json();
+                                    var getMessage = data.results[0].text;
+
+                                    //Formating
+                                    getMessage = $.trim(getMessage);
+                                    if(getMessage.indexOf(name1+":") != -1){ 
+                                        getMessage = getMessage.substr(0,getMessage.indexOf(name1+":"));
+
+                                    }
+                                    if(getMessage.indexOf((name1+":").toLowerCase()) != -1 && false){ 
+                                        getMessage = getMessage.substr(0,getMessage.indexOf((name1+":").toLowerCase()));
+                                    }
+                                    //getMessage = getMessage.replace(/^\s+/g, '');
+                                    if(getMessage.length > 0){
+                                        if(getMessage.substr(getMessage.length-1, 2) != "\n"){
+                                            getMessage+="\n";
+                                        }
+
+                                        chat[chat.length] = getMessage;
+                                        addOneMessage(getMessage);
+                                        $( "#send_but" ).css("display", "block");
+                                        $( "#loading_mes" ).css("display", "none");
+                                        saveChat();
+                                    }else{
+                                        //console.log('run force_name2 protocol');
+                                        Generate('force_name2');
+                                    }
+                                }else{
+                                    $( "#send_but" ).css("display", "block");
+                                    $( "#loading_mes" ).css("display", "none");
+                                }
+                            },
+                            error: function (jqXHR, exception) {
+
+                                $("#send_textarea").removeAttr('disabled');
+                                is_send_press = false;
+                                $( "#send_but" ).css("display", "block");
+                                $( "#loading_mes" ).css("display", "none");
+                                console.log(exception);
+                                console.log(jqXHR);
+                            }
+                        });
+                    }
+                }else{
+                    is_send_press = false;
+                }
+            }
+            
+            async function saveChat() {
+                jQuery.ajax({    
+                    type: 'POST', 
+                    url: '/savechat', 
+                    data: JSON.stringify({ch_name: characters[this_chid].name, file_name: characters[this_chid].chat, chat: chat}),
+                    beforeSend: function(){
+                        //$('#create_button').attr('value','Creating...'); 
+                    },
+                    cache: false,
+                    dataType: "json",
+                    contentType: "application/json",
+                    success: function(data){
+                        
+                    },
+                    error: function (jqXHR, exception) {
+                        
+                        console.log(exception);
+                        console.log(jqXHR);
+                    }
+                });
+            }
+            async function getChat() {
+                //console.log(characters[this_chid].chat);
+                jQuery.ajax({    
+                    type: 'POST', 
+                    url: '/getchat', 
+                    data: JSON.stringify({ch_name: characters[this_chid].name, file_name: characters[this_chid].chat}),
+                    beforeSend: function(){
+                        //$('#create_button').attr('value','Creating...'); 
+                    },
+                    cache: false,
+                    dataType: "json",
+                    contentType: "application/json",
+                    success: function(data){
+                        //console.log(data);
+                        //chat.length = 0;
+                        
+                        chat =  data;
+                        getChatResult();
+                        saveChat();
+                    },
+                    error: function (jqXHR, exception) {
+                        getChatResult();
+                        console.log(exception);
+                        console.log(jqXHR);
+                    }
+                });
+            }
+            
+            function getChatResult(){
+                name2 = characters[this_chid].name;
+                if(chat.length > 1){
+                    
+                }else{
+                    
+                    //console.log(characters[this_chid].first_mes);
+                    if(characters[this_chid].first_mes != ""){
+                        chat = [characters[this_chid].name+": "+characters[this_chid].first_mes+"\n"];
+                    }else{
+                        chat = [characters[this_chid].name+": "+default_ch_mes+"\n"];
+                    }
+                }
+                printMessages();
+                select_selected_character(this_chid);
+            }
+            $("#send_textarea").keypress(function (e) {
+                if(e.which === 13 && !e.shiftKey && is_send_press == false) {
+                    is_send_press = true;
+                    e.preventDefault();
+                    Generate();
+                    //$(this).closest("form").submit();
+                }
+            });
+            
+            //menu buttons
+            var seleced_button_style = { color: "#bcc1c8" };
+            var deselected_button_style = { color: "#565d66" };
+            $( "#rm_button_create" ).children("h2").css(seleced_button_style);
+            $( "#rm_button_characters" ).children("h2").css(seleced_button_style);
+            $( "#rm_button_settings" ).click(function() {
+                selected_button = 'settings';
+                menu_type = 'settings';
+                $( "#rm_charaters_block" ).css("display", "none");
+                $( "#rm_api_block" ).css("display", "block");
+                
+                $('#rm_api_block').css('opacity',0.0);
+                $('#rm_api_block').transition({  
+                        opacity: 1.0,
+                        duration: animation_rm_duration,
+                        easing: animation_rm_easing,
+                        complete: function() {  }
+                });
+                
+                $( "#rm_ch_create_block" ).css("display", "none");
+                $( "#rm_info_block" ).css("display", "none");
+                
+                $( "#rm_button_characters" ).children("h2").css(deselected_button_style);
+                $( "#rm_button_settings" ).children("h2").css(seleced_button_style);
+                $( "#rm_button_selected_ch" ).children("h2").css(deselected_button_style);
+            });
+            $( "#rm_button_characters" ).click(function() {
+                selected_button = 'characters';
+                select_rm_characters();
+            });
+            $( "#rm_button_back" ).click(function() {
+                selected_button = 'characters';
+                select_rm_characters();
+            });
+            $( "#rm_button_create" ).click(function() {
+                selected_button = 'create';
+                select_rm_create();
+            });
+            $( "#rm_button_selected_ch" ).click(function() {
+                selected_button = 'character_edit';
+                select_selected_character(this_chid);
+            });
+            function select_rm_create(){
+                menu_type = 'create';
+                if(selected_button == 'create'){
+                    if(create_save_avatar != ''){
+                        $("#add_avatar_button").get(0).files = create_save_avatar;
+                        read_avatar_load($("#add_avatar_button").get(0));
+                    }
+                    
+                }
+                $( "#rm_charaters_block" ).css("display", "none");
+                $( "#rm_api_block" ).css("display", "none");
+                $( "#rm_ch_create_block" ).css("display", "block");
+                
+                $('#rm_ch_create_block').css('opacity',0.0);
+                $('#rm_ch_create_block').transition({  
+                        opacity: 1.0,
+                        duration: animation_rm_duration,
+                        easing: animation_rm_easing,
+                        complete: function() {  }
+                });
+                $( "#rm_info_block" ).css("display", "none");
+                
+                $( "#delete_button_div" ).css("display", "none");
+                $("#create_button").css("display", "block");
+                $("#create_button").attr("value", "Create");
+                $('#result_info').html('&nbsp;');
+                $( "#rm_button_characters" ).children("h2").css(deselected_button_style);
+                $( "#rm_button_settings" ).children("h2").css(deselected_button_style);
+                $( "#rm_button_selected_ch" ).children("h2").css(deselected_button_style);
+                
+                //create text poles
+                $("#rm_button_back").css("display", "inline-block");
+
+                
+                $("#character_name_pole").val(create_save_name);
+                $("#description_textarea").val(create_save_description);
+                $("#personality_textarea").val(create_save_personality);
+                $("#firstmessage_textarea").val(create_save_first_message);
+                $("#avatar_div").css("display", "block");
+                $("#avatar_load_preview").attr('src',default_avatar);
+                $("#name_div").css("display", "block");
+                
+                $("#form_create").attr("actiontype", "createcharacter");
+            }
+            function select_rm_characters(){
+                
+                menu_type = 'characters';
+                $( "#rm_charaters_block" ).css("display", "block");
+                $('#rm_charaters_block').css('opacity',0.0);
+                $('#rm_charaters_block').transition({  
+                        opacity: 1.0,
+                        duration: animation_rm_duration,
+                        easing: animation_rm_easing,
+                        complete: function() {  }
+                });
+
+                $( "#rm_api_block" ).css("display", "none");
+                $( "#rm_ch_create_block" ).css("display", "none");
+                $( "#rm_info_block" ).css("display", "none");
+                
+                $( "#rm_button_characters" ).children("h2").css(seleced_button_style);
+                $( "#rm_button_settings" ).children("h2").css(deselected_button_style);
+                $( "#rm_button_selected_ch" ).children("h2").css(deselected_button_style);
+            }
+            function select_rm_info(text){
+                $( "#rm_charaters_block" ).css("display", "none");
+                $( "#rm_api_block" ).css("display", "none");
+                $( "#rm_ch_create_block" ).css("display", "none");
+                $( "#rm_info_block" ).css("display", "flex");
+                
+                $("#rm_info_text").html('<h3>'+text+'</h3>');
+                
+                $( "#rm_button_characters" ).children("h2").css(deselected_button_style);
+                $( "#rm_button_settings" ).children("h2").css(deselected_button_style);
+                $( "#rm_button_selected_ch" ).children("h2").css(deselected_button_style);
+            }
+            
+            function select_selected_character(chid){ //character select
+                
+                select_rm_create();
+                menu_type = 'character_edit';
+                $( "#delete_button_div" ).css("display", "block");
+                $( "#rm_button_selected_ch" ).children("h2").css(seleced_button_style);
+                var display_name = characters[chid].name;
+
+                $( "#rm_button_selected_ch" ).children("h2").text(display_name);
+                
+                //create text poles
+                $("#rm_button_back").css("display", "none");
+                $("#create_button").attr("value", "Save");
+                $("#create_button").css("display", "none");
+                var i = 0;
+                while($( "#rm_button_selected_ch" ).width() > 170 && i < 100){
+                    display_name = display_name.slice(0,display_name.length-2);
+                    //console.log(display_name);
+                    $( "#rm_button_selected_ch" ).children("h2").text($.trim(display_name)+'...');
+                    i++;
+                }
+                $("#add_avatar_button").val('');
+                $("#character_name_pole").val(characters[chid].name);
+                $("#description_textarea").val(characters[chid].description);
+                $("#personality_textarea").val(characters[chid].personality);
+                $("#firstmessage_textarea").val(characters[chid].first_mes);
+                $("#selected_chat_pole").val(characters[chid].chat);
+                $("#last_mes_pole").val(characters[chid].last_mes);
+                $("#avatar_url_pole").val(characters[chid].avatar);
+                //$("#avatar_div").css("display", "none");
+                var this_avatar = default_avatar;
+                if(characters[chid].avatar != 'none'){
+                        this_avatar = "characters/"+characters[chid].name+"/avatars/"+characters[chid].avatar;
+                }
+                $("#avatar_load_preview").attr('src',this_avatar);
+                $("#name_div").css("display", "none");
+                
+                $("#form_create").attr("actiontype", "editcharacter");
+            }
+            $(document).on('click', '.character_select', function(){
+                if(this_chid !== $(this).attr("chid")){
+                    if(!is_send_press){
+                        selected_button = 'character_edit';
+                        this_chid = $(this).attr("chid");
+                        clearChat();
+                        chat.length = 0;
+                        getChat();
+                        
+                    }
+                }else{
+                    selected_button = 'character_edit';
+                    select_selected_character(this_chid);
+                }
+                
+            });
+            $(document).on('click', '.del_checkbox', function(){
+                $('.del_checkbox').each(function(){
+                    $(this).prop( "checked", false );
+                    $(this).parent().css('background', css_mes_bg);
+                });
+                $(this).parent().css('background', "#791b31");
+                var i = $(this).parent().attr('mesid');
+                this_del_mes = i;
+                while(i < chat.length){
+                    $(".mes[mesid='"+i+"']").css('background', "#791b31");
+                    $(".mes[mesid='"+i+"']").children('.del_checkbox').prop( "checked", true );
+                    i++;
+                    //console.log(i);
+                }
+                
+            });
+            $(document).on('click', '#user_avatar_block .avatar', function(){
+                user_avatar = $(this).attr("imgfile");
+                $('.mes').each(function(){
+                    if($(this).attr('ch_name') == name1){
+                        $(this).children('.avatar').children('img').attr('src', 'User Avatars/'+user_avatar);
+                    }
+                });
+                saveSettings();
+                
+            });
+            $('#logo_block').click(function(event) {  
+                if(!bg_menu_toggle){
+                    $('#bg_menu_button').transition({ perspective: '100px',rotate3d: '1,1,0,180deg'});
+                    //$('#bg_menu_content1').css('display', 'block');
+                    //$('#bg_menu_content1').css('opticary', 0);marginTop: '10px'
+                    $('#bg_menu_content').transition({
+                        opacity: 1.0, height: '90vh',
+                        duration: 340,
+                        easing: 'in',
+                        complete: function() { bg_menu_toggle = true; $('#bg_menu_content').css("overflow-y", "auto");}
+                      });
+                }else{
+                    $('#bg_menu_button').transition({ perspective: '100px',rotate3d: '1,1,0,360deg'});
+                    $('#bg_menu_content').css("overflow-y", "hidden");
+                    $('#bg_menu_content').transition({
+                      
+                        opacity: 0.0, height: '0px',
+                        duration: 340,
+                        easing: 'in',
+                        complete: function() { bg_menu_toggle = false; }
+                      });
+                }
+            });
+            $(document).on('click', '.bg_example_img', function(){
+                var this_bgfile = $(this).attr("bgfile");
+                
+                if(bg1_toggle == true){
+                    bg1_toggle = false;
+                    var number_bg = 2;
+                    var target_opacity = 1.0;
+                }else{
+                    bg1_toggle = true;
+                    var number_bg = 1;
+                    var target_opacity = 0.0;
+                }
+                $('#bg2').stop();
+                $('#bg2').transition({  
+                        opacity: target_opacity,
+                        duration: 1300,//animation_rm_duration,
+                        easing: "linear",
+                        complete: function() {
+                            $("#options").css('display', 'none');
+                        }
+                });
+                $('#bg'+number_bg).css('background-image', 'linear-gradient(rgba(19,21,44,0.75), rgba(19,21,44,0.75)), url("backgrounds/'+this_bgfile+'")');
+                setBackground(this_bgfile);
+
+            });
+            $(document).on('click', '.bg_example_cross', function(){
+                bg_file_for_del = $(this);
+                //$(this).parent().remove();
+                //delBackground(this_bgfile);
+                popup_type = 'del_bg';
+                callPopup('<h3>Delete the background?</h3>');
+
+            });
+            $("#dialogue_popup_ok").click(function(){
+                $("#shadow_popup").css('display', 'none');
+                $("#shadow_popup").css('opacity:', 0.0);
+                if(popup_type == 'del_bg'){
+                    delBackground(bg_file_for_del.attr("bgfile"));
+                    bg_file_for_del.parent().remove();
+                }
+                if(popup_type == 'del_ch'){
+                    var msg   = jQuery('#form_create').serialize(); // ID form
+                    jQuery.ajax({    
+                        method: 'POST', 
+                        url: '/deletecharacter',
+                        beforeSend: function(){
+                            select_rm_info("Character deleted");
+
+                            //$('#create_button').attr('value','Deleting...'); 
+                        },
+                        data: msg,
+                        cache: false,  
+                        success: function(html){
+                            location.reload();
+                            //getCharacters();
+                            //$('#create_button_div').html(html);  
+                        }  
+                    });  
+                }
+                if(popup_type == 'new_chat' && this_chid != undefined && menu_type != "create"){//Fix it; New chat doesn't create while open create character menu
+                    clearChat();
+                    characters[this_chid].chat = Date.now();
+                    $("#selected_chat_pole").val(characters[this_chid].chat);
+                    timerSaveEdit = setTimeout(() => {$("#create_button").click();},durationSaveEdit);
+                    getChat();
+
+                }
+            });
+            $("#dialogue_popup_cancel").click(function(){
+                $("#shadow_popup").css('display', 'none');
+                $("#shadow_popup").css('opacity:', 0.0);
+                popup_type = '';
+            });
+            function callPopup(text){
+                if(popup_type == 'new_chat'){
+
+                    $("#dialogue_popup_ok").css("background-color", "#191b31CC");
+                    $("#dialogue_popup_ok").text("Yes");
+                }else{
+                    $("#dialogue_popup_ok").css("background-color", "#791b31");
+                    $("#dialogue_popup_ok").text("Delete");
+                }
+                $("#dialogue_popup_text").html(text);
+                $("#shadow_popup").css('display', 'block');
+                $('#shadow_popup').transition({ opacity: 1.0 ,duration: animation_rm_duration, easing:animation_rm_easing});
+            }
+
+            function read_bg_load(input) {
+                if (input.files && input.files[0]) {
+                    var reader = new FileReader();
+                    
+                    reader.onload = function (e) {
+                        $('#bg_load_preview')
+                            .attr('src', e.target.result)
+                            .width(103)
+                            .height(83);  
+                        
+                        var formData = new FormData($("#form_bg_download").get(0));
+                        
+                        //console.log(formData);
+                        jQuery.ajax({    
+                            type: 'POST', 
+                            url: '/downloadbackground', 
+                            data: formData,
+                            beforeSend: function(){
+                                //$('#create_button').attr('value','Creating...'); 
+                            },
+                            cache: false,
+                            contentType: false,
+                            processData: false, 
+                            success: function(html){
+                                setBackground(html);
+                                if(bg1_toggle == true){
+                                    bg1_toggle = false;
+                                    var number_bg = 2;
+                                    var target_opacity = 1.0;
+                                }else{
+                                    bg1_toggle = true;
+                                    var number_bg = 1;
+                                    var target_opacity = 0.0;
+                                }
+                                $('#bg2').transition({  
+                                        opacity: target_opacity,
+                                        duration: 1300,//animation_rm_duration,
+                                        easing: "linear",
+                                        complete: function() {
+                                            $("#options").css('display', 'none');
+                                        }
+                                });
+                                $('#bg'+number_bg).css('background-image', 'linear-gradient(rgba(19,21,44,0.75), rgba(19,21,44,0.75)), url('+e.target.result+')');
+                                $("#form_bg_download").after("<div class=bg_example><img bgfile='"+html+"' class=bg_example_img src='backgrounds/"+html+"'><img bgfile='"+html+"' class=bg_example_cross src=img/cross.png></div>");
+                            },
+                            error: function (jqXHR, exception) {
+                                console.log(exception);
+                                console.log(jqXHR);
+                            }
+                        });
+                        
+                    };
+
+                    reader.readAsDataURL(input.files[0]);
+                }
+            }
+            $("#add_bg_button").change(function(){
+                read_bg_load(this);
+                
+            });
+            function read_avatar_load(input) {
+                if (input.files && input.files[0]) {
+                    var reader = new FileReader();
+                    if(selected_button == 'create'){
+                        create_save_avatar = input.files;
+                    }
+                    reader.onload = function (e) {
+
+                        if(selected_button == 'character_edit'){
+                            
+                            timerSaveEdit = setTimeout(() => {$("#create_button").click();},durationSaveEdit);
+                        }
+                        $('#avatar_load_preview')
+                            .attr('src', e.target.result);
+                            //.width(103)
+                            //.height(83);
+                    //console.log(e.target.result.name);   
+
+                    };
+
+                    reader.readAsDataURL(input.files[0]);
+                }
+            }
+            $("#add_avatar_button").change(function(){
+                read_avatar_load(this);
+            });
+            $( "#form_create" ).submit(function(e) {
+                $('#rm_info_avatar').html('');
+                var formData = new FormData($("#form_create").get(0));
+                if($("#form_create").attr("actiontype") == "createcharacter"){
+                    
+                    if($("#character_name_pole").val().length > 0){
+                        jQuery.ajax({    
+                            type: 'POST', 
+                            url: '/createcharacter', 
+                            data: formData,
+                            beforeSend: function(){
+                                $('#create_button').attr('disabled',true);
+                                $('#create_button').attr('value','Creating...'); 
+                            },
+                            cache: false,
+                            contentType: false,
+                            processData: false, 
+                            success: function(html){
+                                $("#character_name_pole").val('');
+                                create_save_name = '';
+                                $("#description_textarea").val('');
+                                create_save_description = '';
+                                $("#personality_textarea").val('');
+                                create_save_personality = '';
+                                $("#firstmessage_textarea").val('');
+                                create_save_first_message = '';
+                                
+                                create_save_avatar = '';
+                                
+                                $('#create_button').removeAttr("disabled");
+                                $("#add_avatar_button").replaceWith($("#add_avatar_button").val('').clone(true));
+                                $('#create_button').attr('value','Create');
+                                if(true){
+                                    $('#rm_info_block').transition({ opacity: 0 ,duration: 0});
+                                    var $prev_img = $('#avatar_div_div').clone();
+                                    $('#rm_info_avatar').append($prev_img);
+                                    select_rm_info("Character created");
+
+                                    $('#rm_info_block').transition({ opacity: 1.0 ,duration: 2000});
+                                    getCharacters();
+                                }else{
+                                    $('#result_info').html(html);
+                                }
+                            },
+                            error: function (jqXHR, exception) {
+                                $('#create_button').removeAttr("disabled");
+                            }
+                        });  
+                    }else{
+                        $('#result_info').html("Name not entered");
+                    }
+                }else{
+                    //console.log($("#add_avatar_button").val());
+                    jQuery.ajax({    
+                        type: 'POST', 
+                        url: '/editcharacter', 
+                        data: formData,
+                        beforeSend: function(){
+                            $('#create_button').attr('disabled',true);
+                            $('#create_button').attr('value','Save'); 
+                        },
+                        cache: false,
+                        contentType: false,
+                        processData: false, 
+                        success: function(html){
+                            $('.mes').each(function(){
+                                if($(this).attr('ch_name') != name1){
+                                    $(this).children('.avatar').children('img').attr('src', $('#avatar_load_preview').attr('src'));
+                                }
+                            });
+                            if(chat.length == 1 ){
+                                
+                                var this_ch_mes = default_ch_mes;
+                                if($('#firstmessage_textarea').val() != ""){
+                                    this_ch_mes = $('#firstmessage_textarea').val();
+                                }
+
+                                if(this_ch_mes != $.trim($("#chat").children('.mes').children('.mes_block').children('.mes_text').text())){
+                                    clearChat();
+                                    chat.length = 0;
+                                    chat[0] = name2+": "+this_ch_mes+"\n";
+                                    add_mes_without_animation = true;
+                                    addOneMessage(this_ch_mes);
+                                }
+                            }
+                            $('#create_button').removeAttr("disabled");
+                            getCharacters();
+
+                            
+                            $("#add_avatar_button").replaceWith($("#add_avatar_button").val('').clone(true));
+                            $('#create_button').attr('value','Save');
+
+                            var count_tokens = encode(JSON.stringify(characters[this_chid].description+characters[this_chid].personality)).length;
+                            if(count_tokens < 1024){
+                                $('#result_info').html(count_tokens+" Tokens");
+                            }else{
+                                $('#result_info').html("<font color=red>"+count_tokens+" Tokens(TOO MANY TOKENS)</font>");
+                            }
+                            
+                            //$('#result_info').transition({ opacity: 0.0 ,delay: 500,duration: 1000,easing: 'in-out',complete: function() { 
+                                    //$('#result_info').transition({ opacity: 1.0,duration: 0}); 
+                                    //$('#result_info').html('&nbsp;');
+                            //}});
+                        },
+                        error: function (jqXHR, exception) {
+                            $('#create_button').removeAttr("disabled");
+                            $('#result_info').html("<font color=red>Error: no connection</font>");
+                        }
+                    }); 
+                }
+                
+            });
+            $( "#delete_button" ).click(function() {
+                popup_type = 'del_ch';
+                callPopup('<h3>Delete the character?</h3>');
+            });
+            $( "#rm_info_button" ).click(function() {
+                select_rm_characters();
+            });
+            //@@@@@@@@@@@@@@@@@@@@@@@@
+            //character text poles creating and editing save
+            $('#character_name_pole').on('change keyup paste', function(){
+                if(menu_type == 'create'){
+                    create_save_name = $('#character_name_pole').val();
+                }
+
+            });
+            $('#description_textarea').on('change keyup paste cut', function(){
+                if(menu_type == 'create'){
+                    create_save_description = $('#description_textarea').val();
+                }else{
+                    timerSaveEdit = setTimeout(() => {$("#create_button").click();},durationSaveEdit);
+                }
+                
+            });
+            $('#personality_textarea').on('change keyup paste cut', function(){
+                if(menu_type == 'create'){
+
+                    create_save_personality = $('#personality_textarea').val();
+                }else{
+                    timerSaveEdit = setTimeout(() => {$("#create_button").click();},durationSaveEdit);
+                }
+            });
+            $('#firstmessage_textarea').on('change keyup paste cut', function(){
+                
+                if(menu_type == 'create'){
+                    create_save_first_message = $('#firstmessage_textarea').val();
+                }else{
+                    timerSaveEdit = setTimeout(() => {$("#create_button").click();},durationSaveEdit);
+                }
+            });
+            $( "#api_button" ).click(function() {
+                if($('#api_url_text').val() != ''){
+                    $("#api_loading").css("display", 'inline-block');
+                    $("#api_button").css("display", 'none');
+                    api_server = $('#api_url_text').val();
+                    api_server = $.trim(api_server);
+                    saveSettings();
+                    is_get_status = true;
+                    is_api_button_press = true;
+                    //getStatus();
+                }
+            });
+            $( "body" ).click(function() {
+                if($("#options").css('opacity') == 1.0){
+                    $('#options').transition({  
+                        opacity: 0.0,
+                        duration: 100,//animation_rm_duration,
+                        easing: animation_rm_easing,
+                        complete: function() {
+                            $("#options").css('display', 'none');
+                        }
+                    });
+                }
+            });
+            $( "#options_button" ).click(function() {
+                if($("#options").css('display') === 'none' && $("#options").css('opacity') == 0.0){
+                    $("#options").css('display', 'block');
+                    $('#options').transition({  
+                        opacity: 1.0,
+                        duration: 100,
+                        easing: animation_rm_easing,
+                        complete: function() {
+                        
+                        }
+                    });
+                }
+            });
+            $( "#option_start_new_chat" ).click(function() {
+                if(this_chid != undefined && !is_send_press){
+                    popup_type = 'new_chat';
+                    callPopup('<h3>Start new chat?</h3>');
+                }
+            });
+            $( "#option_regenerate" ).click(function() {
+                if(is_send_press == false){
+                    is_send_press = true;
+                    Generate('regenerate');
+                }
+            });
+            $( "#option_delete_mes" ).click(function() {
+                if(this_chid != undefined && !is_send_press){
+                    $('#dialogue_del_mes').css('display','block');
+                    $('#send_form').css('display','none');
+                    $('.del_checkbox').each(function(){
+                        if($(this).parent().attr('mesid') != 0){
+                            $(this).css("display", "block");
+                            $(this).parent().children('.for_checkbox').css('display', 'none');
+                        }
+                    });
+                }
+            });
+            $( "#dialogue_del_mes_cancel" ).click(function() {
+                $('#dialogue_del_mes').css('display','none');
+                $('#send_form').css('display',css_send_form_display);
+                $('.del_checkbox').each(function(){
+                    $(this).css("display", "none");
+                    $(this).parent().children('.for_checkbox').css('display', 'block');
+                    $(this).parent().css('background', css_mes_bg);
+                    $(this).prop( "checked", false );
+                    
+                });
+                this_del_mes = 0;
+
+            });
+            $( "#dialogue_del_mes_ok" ).click(function() {
+                $('#dialogue_del_mes').css('display','none');
+                $('#send_form').css('display',css_send_form_display);
+                $('.del_checkbox').each(function(){
+                    $(this).css("display", "none");
+                    $(this).parent().children('.for_checkbox').css('display', 'block');
+                    $(this).parent().css('background', css_mes_bg);
+                    $(this).prop( "checked", false );
+                    
+                    
+                });
+                if(this_del_mes != 0){
+                    $(".mes[mesid='"+this_del_mes+"']").nextAll('div').remove();
+                    $(".mes[mesid='"+this_del_mes+"']").remove();
+                    chat.length = this_del_mes;
+                    count_view_mes = this_del_mes;
+                    saveChat();
+                    var $textchat = $('#chat');
+                    $textchat.scrollTop($textchat[0].scrollHeight);
+                }
+                this_del_mes = 0;
+                
+
+            });
+            
+            $( "#settings_perset" ).change(function() {
+                
+                if($('#settings_perset').find(":selected").val() != 'gui'){
+                    preset_settings = $('#settings_perset').find(":selected").text();
+                    temp = koboldai_settings[koboldai_setting_names[preset_settings]].temp;
+                    amount_gen = koboldai_settings[koboldai_setting_names[preset_settings]].genamt;
+                    $('#temp').val(temp);
+                    $('#amount_gen').val(amount_gen);
+                    $('#temp_counter').html(temp);
+                    $('#amount_gen_counter').html(amount_gen);
+                    
+                    $("#range_block").children().prop("disabled", false);
+                    $("#range_block").css('opacity',1.0);
+                    
+                }else{
+                    //$('.button').disableSelection();
+                    preset_settings = 'gui';
+                    $("#range_block").children().prop("disabled", true);
+                    $("#range_block").css('opacity',0.5);
+                }
+                saveSettings();
+            });
+            
+            async function getUserAvatars(){
+                const response = await fetch("/getuseravatars", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                            "": ""
+                        })
+
+                });
+                if (response.ok === true) {
+                    const getData = await response.json();
+                    //background = getData;
+                    //console.log(getData.length);
+                    for(var i = 0; i < getData.length; i++) {
+                        //console.log(1);
+                        $("#user_avatar_block").append('<div imgfile="'+getData[i]+'" class=avatar><img src="User Avatars/'+getData[i]+'" width=60px height=120px></div>');
+                    }
+                    //var aa = JSON.parse(getData[0]);
+                    //const load_ch_coint = Object.getOwnPropertyNames(getData);
+                    
+
+                }
+            }
+            $(document).on('input', '#temp', function() {
+                temp = $(this).val();
+                $('#temp_counter').html( $(this).val() );
+                var tempTimer = setTimeout(saveSettings, 500);
+            });
+            $(document).on('input', '#amount_gen', function() {
+                amount_gen = $(this).val();
+                $('#amount_gen_counter').html( $(this).val() );
+                var amountTimer = setTimeout(saveSettings, 500);
+            });
+
+            //***************SETTINGS****************//
+            ///////////////////////////////////////////
+            async function getSettings(){
+ 
+                
+                jQuery.ajax({    
+                    type: 'POST', 
+                    url: '/getsettings', 
+                    data: JSON.stringify({}),
+                    beforeSend: function(){
+
+
+                    },
+                    cache: false,
+                    dataType: "json",
+                    contentType: "application/json",
+                    //processData: false, 
+                    success: function(data){
+                        if(data.result != 'file not find'){
+                            settings = JSON.parse(data.settings);
+                            koboldai_setting_names = data.koboldai_setting_names;
+                            koboldai_settings = data.koboldai_settings;
+                            koboldai_settings.forEach(function(item, i, arr) {
+                                koboldai_settings[i] = JSON.parse(item);
+                            });
+                            var arr_holder = {};
+                            koboldai_setting_names.forEach(function(item, i, arr) {
+                                arr_holder[item] = i;
+                                $('#settings_perset').append('<option value='+i+'>'+item+'</option>');
+
+                            });
+                            koboldai_setting_names = {};
+                            koboldai_setting_names = arr_holder;
+
+                            preset_settings = settings.preset_settings;
+
+                            temp = settings.temp;
+                            amount_gen = settings.amount_gen;
+                            $('#temp').val(temp);
+                            $('#amount_gen').val(amount_gen);
+                            $('#temp_counter').html(temp);
+                            $('#amount_gen_counter').html(amount_gen);
+                            if(preset_settings == 'gui'){
+                                $("#settings_perset option[value=gui]").attr('selected', 'true');
+                                $("#range_block").children().prop("disabled", true);
+                                $("#range_block").css('opacity',0.5);
+
+                            }else{
+                                if(typeof koboldai_setting_names[preset_settings] !== 'undefined') {
+
+                                    $("#settings_perset option[value="+koboldai_setting_names[preset_settings]+"]").attr('selected', 'true');
+                                }else{
+                                    $("#range_block").children().prop("disabled", true);
+                                    $("#range_block").css('opacity',0.5);
+                                    preset_settings = 'gui';
+                                    $("#settings_perset option[value=gui]").attr('selected', 'true');
+                                }
+
+                            }
+                            user_avatar = settings.user_avatar;
+                            $('.mes').each(function(){
+                                if($(this).attr('ch_name') == name1){
+                                    $(this).children('.avatar').children('img').attr('src', 'User Avatars/'+user_avatar);
+                                }
+                            });
+
+                            api_server = settings.api_server;
+                            $('#api_url_text').val(api_server);
+                        }
+                        
+                    },
+                    error: function (jqXHR, exception) {
+                        console.log(exception);
+                        console.log(jqXHR);
+
+                    }
+                });
+
+            }
+
+            async function saveSettings(){
+
+                jQuery.ajax({    
+                    type: 'POST', 
+                    url: '/savesettings', 
+                    data: JSON.stringify({
+                            api_server: api_server,
+                            preset_settings: preset_settings,
+                            user_avatar: user_avatar,
+                            temp: temp,
+                            amount_gen: amount_gen
+                        }),
+                    beforeSend: function(){
+
+
+                    },
+                    cache: false,
+                    dataType: "json",
+                    contentType: "application/json",
+                    //processData: false, 
+                    success: function(data){
+                        //online_status = data.result;
+
+
+                    },
+                    error: function (jqXHR, exception) {
+                        console.log(exception);
+                        console.log(jqXHR);
+
+                    }
+                });
+
+            }
+            $('#donation').click(function(){
+                $('#shadow_tips_popup').css('display', 'block');
+                $('#shadow_tips_popup').transition({  
+                    opacity: 1.0,
+                    duration: 100,
+                    easing: animation_rm_easing,
+                    complete: function() {
+
+                    }
+                });
+            });
+            $('#tips_cross').click(function(){
+
+                $('#shadow_tips_popup').transition({  
+                    opacity: 0.0,
+                    duration: 100,
+                    easing: animation_rm_easing,
+                    complete: function() {
+                        $('#shadow_tips_popup').css('display', 'none');
+                    }
+                });
+            });
+
+        });
+    </script>
+<title>Tavern.AI</title>
+</head>
+<body>
+    <!--<p class="customfont">Hello world!</p>-->
+    
+    
+    <!--<div style="cursor: pointer;opacity: 0.1;"><img src="img/donut.png" style="width: 25px;height: 25px;bottom: 2px;left: 2px;position: absolute; "><div style="position: absolute; bottom: 6px;left: 28px;"><h4 style="margin-bottom: 0px"><i>Donuts</i></h4></div></div>-->
+    <div id="bg1"></div>
+    <div id="bg2"></div>
+    
+    <div id="shadow_popup">
+        <div id="dialogue_popup">
+            <div id="dialogue_popup_text"><h3>text</h3></div>
+            <div id="dialogue_popup_ok" class="menu_button">Delete</div>
+            <div id="dialogue_popup_cancel" class="menu_button">Cancel</div>
+        </div>
+    </div>
+    <div id="shadow_tips_popup">
+        <div id="tips_popup" style="padding-top: 30px;">
+            <img id="tips_cross" src="img/cross.png" style="position: absolute; margin-left: 230px; width: 20px; height: 20px; cursor: pointer; opacity: 0.6">
+            <img src="img/eth_icon.png" style="width: 35px;height: 35px; margin-bottom: 0px; opacity: 0.6;">
+            <img src="img/usdt.png" style="width: 35px;height: 35px; margin-bottom: 0px; opacity: 0.6;">
+            <div id="tips_text"><h3 style="margin-top: 0px; opacity: 0.8">Ethereum, USDT</h3></div>
+            <img src="img/eth.png" style="opacity: 0.4; margin-bottom: 10px;">
+            0x975E5C91042ce8168B3d37b17F99949c5eFB3Dfe
+        </div>
+    </div>
+    <div id="bg_menu">
+        <div id="logo_block"><div id="bg_menu_button"><img src="img/tri.png"></div><img src="img/logo.png" id="site_logo"></div>
+        <div id="bg_menu_content">
+            <form id="form_bg_download"  action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                <label class="input-file">
+                <input type="file" id="add_bg_button" name="avatar" accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp">
+                <span class="bg_example_but_load" ><img src='img/addbg3.png'></span>           
+   
+                </label>
+            </form>
+            
+        </div>  
+    </div>
+    <input type="checkbox" id="nav-toggle" hidden>
+
+    <nav class="nav">
+
+        <label for="nav-toggle" class="nav-toggle" onclick></label>
+
+        
+        <div class="right_menu_button" id="rm_button_characters"><h2>Characters</h2></div>
+        <div class="right_menu_button" id="rm_button_settings"><h2>Settings</h2></div>
+        <div class="right_menu_button" id="rm_button_selected_ch"><h2></h2></div>
+
+        <div id="rm_ch_create_block" class="right_menu">
+            <div id="rm_button_back" class="right_menu_button"><h2 style="color: rgb(188, 193, 200, 0.5);">&#8656;</h2></div>
+            <form id="form_create"  action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                
+                <div id="name_div">
+                    <h4>Name</h4><h5>Character name</h5>
+                <input id="character_name_pole" name="ch_name" class="text_pole" maxlength="120" size="35" value="" autocomplete="off">
+                </div>
+                <div id="avatar_div" class="avatar_div">
+                    <div id="avatar_div_div" class="avatar"><img id="avatar_load_preview" src="img/fluffy.png" alt="avatar"></div><input type="file" id="add_avatar_button" name="avatar" accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp">
+                    
+                </div>
+                
+                <div id="description_div">
+                    <h4>Description</h4><h5>Description of the character and the rest (<a href="/notes/1" target="_blank">?</a>)</h5>
+                <textarea id="description_textarea" name="description" placeholder=""></textarea>
+                </div>
+                <div id="personality_div">
+                <h4>Personality</h4><h5>The main personality traits (<a href="/notes/2" target="_blank">?</a>)</h5>
+                <textarea id="personality_textarea" name="personality" placeholder=""></textarea>
+                </div>
+                <div id="first_message_div">
+                <h4>First message</h4><h5>First message by character (<a href="/notes/3" target="_blank">?</a>)</h5>
+                <textarea id="firstmessage_textarea" name="first_mes" placeholder=""></textarea>
+                </div>
+                
+                <div id="avatar_url_div">
+                <input id="avatar_url_pole" name="avatar_url" class="text_pole" maxlength="999" size="2" value="" autocomplete="off">
+                </div>
+                <div id="selected_chat_div">
+                <input id="selected_chat_pole" name="chat" class="text_pole" maxlength="999" size="2" value="" autocomplete="off">
+                </div>
+                <div id="last_mes_div">
+                <input id="last_mes_pole" name="last_mes" class="text_pole" maxlength="999" size="2" value="" autocomplete="off">
+                </div>
+                <div id="mes_example_div">
+                <input id="mes_example_pole" name="last_mes" class="text_pole" maxlength="999" size="2" value="" autocomplete="off">
+                </div>
+                <div id="result_info">&nbsp;</div>
+                <div id="create_button_div">
+                <input id="create_button" type="submit" value="Create">
+                </div>
+            </form>
+            <div id="delete_button_div">
+                <input id="delete_button" type="submit" value="Delete">
+            </div>
+        </div>
+        <div id="rm_api_block" class="right_menu" >
+            <h3 id="title_api">API</h3>
+            <select >
+                <option value="">KoboldAI api v1</option>
+
+            </select>
+            <form  action="javascript:void(null);" method="post" enctype="multipart/form-data">
+            
+            <h4>API url</h4><h5>Example: http://127.0.0.1:5000/api </h5>
+            <input id="api_url_text" name="api_url" class="text_pole" maxlength="500" size="35" value="">
+            <input id="api_button" type="submit" value="Connect">
+            <img id="api_loading" src="img/load.svg" >
+            </form>
+            <div id="online_status2">
+                <div id="online_status_indicator2"></div><div id="online_status_text2">No connection...</div>
+            </div>
+            <h4>Preset settings</h4><h5>Selecting settings (<a href="/notes/4" target="_blank">?</a>)</h5>
+            <select id="settings_perset">
+                <option value="gui">GUI KoboldAI Settings</option>
+            </select>
+            <div id="range_block">
+                <h4>Temperature </h4><h5 id="temp_counter">select</h5>
+            <input type="range" id="temp" name="volume" min="0.1" max="2.0" step="0.01">
+            <h4>Amount generation </h4><h5 id="amount_gen_counter">select</h5>
+            <input type="range" id="amount_gen" name="volume" min="16" max="512" step="1">
+            </div>
+            <hr>
+            <h4>Your Avatar</h4><h5></h5>
+            <div id="user_avatar_block"></div>
+        </div>
+        
+        <div id="rm_charaters_block" class="right_menu">
+            <div id="rm_button_create" class="right_menu_button"><h2>+</h2></div>
+            <div id="rm_print_charaters_block"></div>
+        </div>
+        
+        <div id="rm_info_block" class="right_menu">
+            <div id="rm_info_panel">
+            <div id="rm_info_avatar"></div>
+            <div id="rm_info_text"></div>
+            <div id="rm_info_button">Back</div>
+            </div>
+        </div>
+    </nav>
+    <div id="sheld">
+        <div id="chat"></div>
+        <div id="form_sheld">
+            
+            <div id="dialogue_del_mes">
+                <div id="dialogue_del_mes_text"><h3></h3></div>
+                <div id="dialogue_del_mes_ok" class="menu_button">Delete</div>
+                <div id="dialogue_del_mes_cancel" class="menu_button">Cancel</div>
+            </div>
+            <form id="send_form">
+                
+                <div id="options_button">
+                    <div id="options">
+                        <div class="options-content">
+                        <a id="option_start_new_chat"><img src="img/save_and_start_new_chat.png" width="20" height="20">Save and start new chat</a>
+                        <hr>
+                        <a id="option_delete_mes"><img src="img/del_mes.png" width="20" height="20">Delete message</a>
+                        <a id="option_regenerate"><img src="img/regenerate.png" width="20" height="20">Regenerate</a>
+                        </div>
+                    </div>
+                </div>
+                <textarea id="send_textarea" placeholder="Type a message..." name="text"></textarea>
+                <div id="send_but_sheld"><div id="loading_mes"></div><input id="send_but" type="button"></div>
+            </form>
+            <div id="online_status">
+                <div id="online_status_indicator"></div><div id="online_status_text">No connection...</div>
+            </div>
+        </div>
+    </div>
+   
+    
+
+    
+</body>
+</html>

@@ -1,0 +1,140 @@
+@charset "UTF-8";
+@import url(https://fonts.googleapis.com/css?family=Open+Sans:400,300&subset=latin,cyrillic);
+
+* {
+    box-sizing: border-box;
+}
+
+
+html {
+    font-size: 100%;
+}
+html,
+body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+}
+
+body {
+    color: rgb(229, 224, 216);
+    font-family: "Source Sans Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+    //font: 1em 'Open Sans', sans-serif;
+    background-color: #f1f1f1;
+}
+
+
+
+
+
+
+main {
+    max-width: 1024px;
+    margin: 0 auto
+}
+
+article {
+    margin: 0 1em;
+    padding: 0 22px;
+    -webkit-transition: -webkit-transform .3s;
+    -moz-transition: : -moz-transform .3s;
+    transition: transform .3s;
+}
+
+header {
+    margin: 0;
+    padding: 0;
+    text-align: center;
+}
+
+footer {
+    font-size: 14px;
+    text-align: center
+}
+
+p {
+    margin-bottom: 16px;
+}
+
+hr {
+    margin: 22px 0;
+    height: 1px;
+    border: 0;
+    background-image: -webkit-linear-gradient(left, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0));
+    background-image: -moz-linear-gradient(left, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0));
+    background-image: -ms-linear-gradient(left, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0));
+    background-image: linear-gradient(left, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0));
+}
+
+h1,
+h2 {
+    margin-bottom: 22px;
+    color: #191919;
+    font-weight: 300;
+}
+
+h1 {
+    font-size: 32px;
+    line-height: 32px;
+}
+
+h2 {
+    color: #565d66;
+    font-size: 26px;
+    line-height: 26px;
+}
+
+a {
+    color: #006b05;
+    text-decoration: none;
+}
+.btn {
+    -webkit-border-radius: 10em;
+    -moz-border-radius: 10em;
+    -ms-border-radius: 10em;
+    -o-border-radius: 10em;
+    border-radius: 10em;
+    border: 0;
+    color: #fff!important;
+    margin: 6px;
+    white-space: normal!important;
+    word-wrap: break-word;
+		display: inline-block;
+    line-height: 1.25;
+    text-align: center;
+    vertical-align: middle;
+    cursor: pointer;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    padding: .5rem 1rem;
+    font-size: 1rem;
+    font-weight: 400;
+    -webkit-box-shadow: 0 2px 5px 0 rgba(0,0,0,.16),0 2px 10px 0 rgba(0,0,0,.12);
+    -moz-box-shadow: 0 2px 5px 0 rgba(0,0,0,.16),0 2px 10px 0 rgba(0,0,0,.12);
+    box-shadow: 0 2px 5px 0 rgba(0,0,0,.16),0 2px 10px 0 rgba(0,0,0,.12);
+}
+.btn {
+	  -webkit-transition: box-shadow .2s ease-out;
+	  -moz-transition: box-shadow .2s ease-out;
+		-ms-transition: box-shadow .2s ease-out;
+    transition: box-shadow .2s ease-out;
+}
+.btn:hover {
+	  -webkit-box-shadow: 0 5px 11px 0 rgba(0,0,0,.18),0 4px 15px 0 rgba(0,0,0,.15);
+	  -moz-box-shadow: 0 5px 11px 0 rgba(0,0,0,.18),0 4px 15px 0 rgba(0,0,0,.15);
+	  box-shadow: 0 5px 11px 0 rgba(0,0,0,.18),0 4px 15px 0 rgba(0,0,0,.15);
+}
+.btn-primary {
+	  border: 2px solid #2BBBAD;
+    color: #00695c!important;
+    background-color: transparent;
+}
+
+.btn-secondary {
+    border: 2px solid #00C851;
+    color: #007E33!important;
+    background-color: transparent;
+}
