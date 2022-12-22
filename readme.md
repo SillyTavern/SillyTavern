@@ -7,7 +7,7 @@ TavernAI helps the AI model is in the chat format and makes the answers longer. 
 1. Download and Install [Node.js v19.1.0](https://nodejs.org/download/release/v19.1.0/)
 2. Run Start.bat or use command: *node server.js*
 ## Connecting to API
-##### <u>KoboldAI</u>
+### <u>KoboldAI</u>
 To use KoboldAI install it locally, or run it through Google Colab. Details: [KoboldAI](https://github.com/KoboldAI/KoboldAI-Client)
 ## Compatibility
 Tested on Windows 7/10 x64 (FireFox 108.0, Google Chrome 108.0, Microsoft Edge 108.0)
