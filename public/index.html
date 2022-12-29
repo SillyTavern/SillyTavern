@@ -19,6 +19,8 @@
         //8) Сombine multiple messages into one if the text continues
         //9) Access for many chats
         //10) Design presets
+        //11) Fix sended propt with json markup
+        //
         //import {encode, decode} from "../scripts/gpt-2-3-tokenizer/mod.js";
         //let text = "hello world";
         //console.log(encode("dsfs").length); // [258, 18798, 995]
@@ -1193,6 +1195,14 @@
                     $("#api_button").css("display", 'none');
                     api_server = $('#api_url_text').val();
                     api_server = $.trim(api_server);
+                    //console.log("1: "+api_server);
+                    if(api_server.substr(api_server.length-1,1) == "/"){
+                        api_server = api_server.substr(0,api_server.length-1);
+                    }
+                    if(!(api_server.substr(api_server.length-3,3) == "api" || api_server.substr(api_server.length-4,4) == "api/")){
+                        api_server = api_server+"/api";
+                    }
+                    //console.log("2: "+api_server);
                     saveSettings();
                     is_get_status = true;
                     is_api_button_press = true;

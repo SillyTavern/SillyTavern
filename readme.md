@@ -1,11 +1,13 @@
 ### TavernAI is a adventure chat shell for AI language models
 <br><img src="readme/1.png" width="600" />
 
-## Features
 TavernAI helps the AI model is in the chat format and makes the answers a longer than they usually are for this format. In most cases, the shell fixes the problem when the model tries to answer for the user. 
 
 Through the interface, you can easily create/edit characters, switch presets and change the background on the fly.
-## Setup
+## How to install
+### In Detail:
+* [Detail guide how to install and connect to Colab AI model step by step](https://github.com/TavernAI/TavernAI/wiki/How-to-install)<br>
+### Briefly:
 1. Download and Install [Node.js v19.1.0](https://nodejs.org/download/release/v19.1.0/)
 2. Run Start.bat or use command: *node server.js*
 ## Connecting to API
