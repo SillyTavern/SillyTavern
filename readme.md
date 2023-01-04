@@ -6,7 +6,7 @@ TavernAI helps the AI model is in the chat format and makes the answers a longer
 Through the interface, you can easily create/edit characters, switch presets and change the background on the fly.
 ## How to install
 ### In Detail:
-* [Detailed installation and connection guide to Colab AI model step by step](https://github.com/TavernAI/TavernAI/wiki/How-to-install)<br>
+* [Detailed installation and connection guide to KoboldAI Colab model step by step](https://github.com/TavernAI/TavernAI/wiki/How-to-install)<br>
 ### Briefly:
 1. Download and Install [Node.js v19.1.0](https://nodejs.org/download/release/v19.1.0/)
 2. Run Start.bat or use command: *node server.js*
