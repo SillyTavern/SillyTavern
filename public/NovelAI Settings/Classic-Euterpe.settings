@@ -1,0 +1,14 @@
+{
+   "order": [
+      3,
+      0
+   ],
+   "temperature": 1.11,
+   "max_length": 90,
+   "min_length": 1,
+   "tail_free_sampling": 0.68,
+   "repetition_penalty": 1.11,
+   "repetition_penalty_range": 320,
+   "repetition_penalty_frequency": 0,
+   "repetition_penalty_presence": 0
+}

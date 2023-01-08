@@ -13,13 +13,13 @@
         //2) Count tokens print fix 
         //3) Make wildcards for characters 
         //4) Fix same callback in server.js create/edit 
-        //5) Edit messages 
+
         //6) Reload setting files when they was rewrite 
         //7) Show an indicator that shows the message in context or not
         //8) Сombine multiple messages into one if the text continues
         //9) Access for many chats
         //10) Design presets
-        //11) Fix sended propt with json markup
+        //11) Fix sending propt with json additional symbols (kinda \\ and etc)
         //
         //import {encode, decode} from "../scripts/gpt-2-3-tokenizer/mod.js";
         //let text = "hello world";
@@ -29,9 +29,10 @@
         import {encode, decode} from "../scripts/gpt-2-3-tokenizer/mod.js";
         $(document).ready(function(){
             var bg_menu_toggle = false;
-            var name1 = "You";
+            var default_user_name = "You";
+            var name1 = default_user_name;
             var name2 = "Chloe";
-            var chat = ['\nChloe: *You went inside. The air smelled of fried meat, tobacco and a hint of wine. A dim light was cast by candles, and a fire crackled in the fireplace. It seems to be a very pleasant place. Behind the wooden bar is an elf waitress, she is smiling. Her ears are very pointy, and there is a twinkle in her eye. She wears glasses and a white aporn. As soon as she noticed you, she immediately came right up close to you.*\n\n Hello there! How is your evening going?\n<img src="img/star_dust_city.png" width=80% style="opacity:0.3; disolay:block;border-radius:5px;margin-top:25px;margin-bottom:23px; margin-left: 45px;margin-right: auto;">\n@@@TavernAI v1.0.0@@@<div id="donation" style="margin-right:10px;margin-top:0px;float:right; height:25px;cursor: pointer;opacity: 0.99;display:inline-block;"><img src="img/coins.png" style="width: 25px;height: 25px;display:inline-block;"><div style="vertical-align: top;display:inline-block;">Give a Tip</div></div><br><br><br><br>'];
+            var chat = ['\nChloe: *You went inside. The air smelled of fried meat, tobacco and a hint of wine. A dim light was cast by candles, and a fire crackled in the fireplace. It seems to be a very pleasant place. Behind the wooden bar is an elf waitress, she is smiling. Her ears are very pointy, and there is a twinkle in her eye. She wears glasses and a white aporn. As soon as she noticed you, she immediately came right up close to you.*\n\n Hello there! How is your evening going?\n<img src="img/star_dust_city.png" width=80% style="opacity:0.3; disolay:block;border-radius:5px;margin-top:25px;margin-bottom:23px; margin-left: 45px;margin-right: auto;">\n<a style="color:rgb(229, 224, 216,0.8);" href="https://github.com/TavernAI/TavernAI" target="_blank">@@@TavernAI v1.1.0@@@</a><div id="donation" style="margin-right:10px;margin-top:0px;float:right; height:25px;cursor: pointer;opacity: 0.99;display:inline-block;"><img src="img/coins.png" style="width: 25px;height: 25px;display:inline-block;"><div style="vertical-align: top;display:inline-block;">Give a Tip</div></div><br><br><br><br>'];
             var default_ch_mes = "Hello";
             var count_view_mes = 0;
             var mesStr = '';
@@ -61,13 +62,20 @@
             
             var api_server = "";
             var interval_timer = setInterval(getStatus, 2000);
+            var interval_timer_novel = setInterval(getStatusNovel, 3000);
             var is_get_status = false;
+            var is_get_status_novel = false;
             var is_api_button_press = false;
+            var is_api_button_press_novel = false;
             
             var is_send_press = false;//Send generation
             var add_mes_without_animation = false;
             
             var this_del_mes = 0;
+            
+            var this_edit_mes_text = '';
+            var this_edit_mes_chname = '';
+            var this_edit_mes_id;
             
             const delay = ms => new Promise(res => setTimeout(res, ms));
             //settings
@@ -79,14 +87,33 @@
             var temp = 0.5;
             var amount_gen = 80;
             var max_context = 2048;//2048;
-
-            var postAnchor = '';
+            var rep_pen = 1;
+            var rep_pen_size = 100;
+            
+            var anchor_order = 0;
+            var style_anchor = true;
+            var character_anchor = true;
+            
+            var main_api = 'kobold';
+            //novel settings
+            var temp_novel = 0.5;
+            var rep_pen_novel = 1;
+            var rep_pen_size_novel = 100;
+            
+            var api_key_novel = "";
+            var novel_tier;
+            var model_novel = "euterpe-v2";
+            var novelai_settings;
+            var novelai_setting_names;
+            var preset_settings_novel = 'Classic-Krake';
+            
             //css
             var bg1_toggle = true;
             var css_mes_bg = $('<div class="mes"></div>').css('background');
             var css_send_form_display = $('<div id=send_form></div>').css('display');
             /////////////
-            getSettings();
+            getSettings("def");
+            //var interval_getSettings = setInterval(getSettings, 1000);
             getCharacters();
 
             printMessages();
@@ -101,13 +128,18 @@
                     $("#online_status_text").html("No connection...");
                     $("#online_status_indicator2").css("background-color", "red");
                     $("#online_status_text2").html("No connection...");
+                    $("#online_status_indicator3").css("background-color", "red");
+                    $("#online_status_text3").html("No connection...");
                     is_get_status = false;
+                    is_get_status_novel = false;
                 }else{
                     $("#online_status_indicator").css("background-color", "black");
                     $("#online_status").css("opacity", 0.0);
                     $("#online_status_text").html("");
                     $("#online_status_indicator2").css("background-color", "green");
                     $("#online_status_text2").html(online_status);
+                    $("#online_status_indicator3").css("background-color", "green");
+                    $("#online_status_text3").html(online_status);
                 }
                 
             }
@@ -133,7 +165,10 @@
                         //processData: false, 
                         success: function(data){
                             online_status = data.result;
-                            
+                            if(online_status == undefined){
+                                online_status = 'no_connection';
+                            }
+                            //console.log(online_status);
                             resultCheckStatus();
                             
                         },
@@ -145,8 +180,13 @@
                             resultCheckStatus();
                         }
                     });
+                }else{
+                    if(is_get_status_novel != true){
+                        online_status = 'no_connection';
+                    }
                 }
             }
+            
             function resultCheckStatus(){
                 is_api_button_press = false;  
                 checkOnlineStatus();
@@ -199,6 +239,7 @@
                 }
             }
             async function getBackgrounds() {
+                
                 const response = await fetch("/getbackgrounds", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -291,6 +332,13 @@
                 count_view_mes = 0;
                 $('#chat').html('');
             }
+            function messageFormating(mes, ch_name){
+                mes = mes.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\*(.+?)\*/g, '<i>$1</i>').replace(/\n/g, '<br/>');
+                if(ch_name !== name1){
+                    mes = mes.replaceAll(name2+":", "");
+                }
+                return mes;
+            }
             function addOneMessage(message){
                 message = message.replace(/^\s+/g, '');
                 //console.log(message.indexOf(name1+":"));
@@ -320,11 +368,13 @@
                 }
                 
                 //Formating
-                messageText = messageText.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\*(.+?)\*/g, '<i>$1</i>').replace(/\n/g, '<br/>');
-                if(characterName != name1){
-                    messageText = messageText.replaceAll(name2+":", "");
-                }
-                $("#chat").append( "<div class='mes' mesid="+count_view_mes+" ch_name="+characterName+"><div class='for_checkbox'></div><input type='checkbox' class='del_checkbox'><div class=avatar><img src='"+avatarImg+"' width=60px height=120px></div><div class=mes_block><div class=ch_name>"+characterName+"</div><div class=mes_text>"+messageText+"</div></div></div>" );
+                //messageText = messageText.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\*(.+?)\*/g, '<i>$1</i>').replace(/\n/g, '<br/>');
+                //if(characterName != name1){
+                    //messageText = messageText.replaceAll(name2+":", "");
+                //}
+                messageText = messageFormating(messageText, characterName);
+                
+                $("#chat").append( "<div class='mes' mesid="+count_view_mes+" ch_name="+characterName+"><div class='for_checkbox'></div><input type='checkbox' class='del_checkbox'><div class=avatar><img src='"+avatarImg+"' width=60px height=120px></div><div class=mes_block><div class=ch_name>"+characterName+"<div title=Edit class=mes_edit><img src=img/scroll.png style='width:20px;height:20px;'></div><div class=mes_edit_cancel><img src=img/cancel.png></div><div class=mes_edit_done><img src=img/done.png></div></div><div class=mes_text>"+messageText+"</div></div></div>" );
                 count_view_mes++;
                 if(!add_mes_without_animation){
                     $('#chat').children().last().css("opacity",1.0);
@@ -383,9 +433,30 @@
                     var userSendString = "";
 
 
-                    postAnchor = "talks a lot with descriptions";//'Talk a lot with description what is going on around';// in asterisks
+                    var postAnchorChar = "talks a lot with descriptions";//'Talk a lot with description what is going on around';// in asterisks
+                    var postAnchorStyle = "[Writing style: very long messages]";//"[Genre: roleplay chat][Tone: very long messages with descriptions]";
+                    var anchorTop = '';
+                    var anchorBottom = '';
+                    var topAnchorDepth = 8;
+                    
+                    if(character_anchor){
+                        if(anchor_order === 0){
+                            anchorTop = "["+name2+" "+postAnchorChar+"]";
+                        }else{
+                            anchorBottom = "["+name2+" "+postAnchorChar+"]";
+                        }
+                    }
+                    if(style_anchor){
+                        if(anchor_order === 1){
+                            anchorTop = postAnchorStyle;
+                        }else{
+                            anchorBottom = postAnchorStyle;
+                        }
+                    }
+                    
+                    
                     //*********************************
-                    //KoboldAI PRE FORMATING STRING
+                    //PRE FORMATING STRING
                     //*********************************
                     userSendString = name1+": "+textareaText+"\n";
 
@@ -401,18 +472,14 @@
                         charPersonality = "["+name2+" is "+charPersonality+"]";//"["+name2+"'s personality: "+charPersonality+"]";
                     }
                     
-                    if($.trim(postAnchor.length) > 0){
-                        postAnchor = "["+name2+" "+postAnchor+"]";
-                    }
-                    var anchorAndPersonality = charPersonality+postAnchor;
                     storyString = $.trim(characters[this_chid].description);
                     if($.trim(storyString.length) > 0){
                         if(storyString.slice(-1) !== ']' || storyString.substr(0,1) !== '['){
                             storyString = '['+storyString+']';
                         }
                     }
-                    if(count_view_mes < 5){
-                        storyString+=anchorAndPersonality;
+                    if(count_view_mes < topAnchorDepth){
+                        storyString+=charPersonality;
                     }
                     if(count_view_mes < 10){
                         storyString+='\nThen the dialogue between '+name1+' and '+name2+' begins.\n';
@@ -424,9 +491,19 @@
                         j++;
                     }
                     //chat2 = chat2.reverse();
+                    var this_max_context = 1487;
+                    if(main_api == 'kobold') this_max_context = max_context;
+                    if(main_api == 'novel'){
+                        if(novel_tier === 1){
+                            this_max_context = 1024;
+                        }else{
+                            this_max_context = 2048;
+                        }
+                    }
+                     
                     var i = 0;
                     for (const item of chat2) {//console.log(encode("dsfs").length);
-                        if(encode(JSON.stringify(characters[this_chid].description+chatString+postAnchor+characters[this_chid].personality)).length+120 < max_context){ //(The number of tokens in the entire promt) need fix, it must count correctly (added +120, so that the description of the character does not hide)
+                        if(encode(JSON.stringify(characters[this_chid].description+chatString+anchorTop+anchorBottom+characters[this_chid].personality)).length+120 < this_max_context){ //(The number of tokens in the entire promt) need fix, it must count correctly (added +120, so that the description of the character does not hide)
                             
                             chatString = item+chatString;
                             arrMes[arrMes.length] = item;
@@ -452,16 +529,17 @@
                                     chatString = chatString.substr(0,chatString.length-1);
                                 }
                             }
-                            if(i == arrMes.length-4 && count_view_mes>=5 && !is_add_personality){
+                            if(i === arrMes.length-topAnchorDepth && count_view_mes>=topAnchorDepth && !is_add_personality){
 
                                 is_add_personality = true;
                                 //chatString = chatString.substr(0,chatString.length-1);
                                 //anchorAndPersonality = "[Genre: roleplay chat][Tone: very long messages with descriptions]";
-                                chatString+=anchorAndPersonality+'\n';
+                                chatString+=charPersonality+anchorTop+'\n';
                             }
                             if(i >= arrMes.length-1 && count_view_mes>=4 && $.trim(item).substr(0, (name1+":").length) == name1+":"){//For add anchor in end
                                 chatString = chatString.substr(0,chatString.length-1);
-                                chatString+="[Writing style: very long messages]";
+                                //chatString+=postAnchor+"\n";//"[Writing style: very long messages]\n";
+                                chatString+=anchorBottom+"\n";
                             }
                         });
 
@@ -475,38 +553,70 @@
                         }
                         //console.log(JSON.stringify(storyString));
                         //Send story string
-                        var generate_data = {prompt: storyString, gui_settings: true,max_length: amount_gen,temperature: temp, max_context_length: max_context};
-                        if(preset_settings != 'gui'){
+                        var generate_data;
+                        if(main_api == 'kobold'){
+                            var generate_data = {prompt: storyString, gui_settings: true,max_length: amount_gen,temperature: temp, max_context_length: max_context};
+                            if(preset_settings != 'gui'){
 
-                            var this_settings = koboldai_settings[koboldai_setting_names[preset_settings]];
+                                var this_settings = koboldai_settings[koboldai_setting_names[preset_settings]];
 
-                            generate_data = {prompt: storyString, 
-                                            gui_settings: false, 
-                                            sampler_order: this_settings.sampler_order,
-                                            max_context_length: max_context,//this_settings.max_length,
-                                            max_length: amount_gen,
-                                            rep_pen: this_settings.rep_pen,
-                                            rep_pen_range: this_settings.rep_pen_range,
-                                            rep_pen_slope: this_settings.rep_pen_slope,
-                                            temperature: temp,
-                                            tfs: this_settings.tfs,
-                                            top_a: this_settings.top_a,
-                                            top_k: this_settings.top_k,
-                                            top_p: this_settings.top_p,
-                                            typical: this_settings.typical,
-                                            s1:this_settings.sampler_order[0],
-                                            s2:this_settings.sampler_order[1],
-                                            s3:this_settings.sampler_order[2],
-                                            s4:this_settings.sampler_order[3],
-                                            s5:this_settings.sampler_order[4],
-                                            s6:this_settings.sampler_order[5],
-                                            s7:this_settings.sampler_order[6]
-                                            };
+                                generate_data = {prompt: storyString, 
+                                                gui_settings: false, 
+                                                sampler_order: this_settings.sampler_order,
+                                                max_context_length: parseInt(max_context),//this_settings.max_length,
+                                                max_length: parseInt(amount_gen),
+                                                rep_pen: parseFloat(rep_pen),
+                                                rep_pen_range: parseInt(rep_pen_size),
+                                                rep_pen_slope: this_settings.rep_pen_slope,
+                                                temperature: parseFloat(temp),
+                                                tfs: this_settings.tfs,
+                                                top_a: this_settings.top_a,
+                                                top_k: this_settings.top_k,
+                                                top_p: this_settings.top_p,
+                                                typical: this_settings.typical,
+                                                s1:this_settings.sampler_order[0],
+                                                s2:this_settings.sampler_order[1],
+                                                s3:this_settings.sampler_order[2],
+                                                s4:this_settings.sampler_order[3],
+                                                s5:this_settings.sampler_order[4],
+                                                s6:this_settings.sampler_order[5],
+                                                s7:this_settings.sampler_order[6]
+                                                };
+                            }
                         }
-
+                        if(main_api == 'novel'){
+                            var this_settings = novelai_settings[novelai_setting_names[preset_settings_novel]];
+                            generate_data = {"input": storyString,
+                                            "model": model_novel,
+                                            "use_string": true,
+                                            "temperature": parseFloat(temp_novel),
+                                            "max_length": this_settings.max_length,
+                                            "min_length": this_settings.min_length,
+                                            "tail_free_sampling": this_settings.tail_free_sampling,
+                                            "repetition_penalty": parseFloat(rep_pen_novel),
+                                            "repetition_penalty_range": parseInt(rep_pen_size_novel),
+                                            "repetition_penalty_frequency": this_settings.repetition_penalty_frequency,
+                                            "repetition_penalty_presence": this_settings.repetition_penalty_presence,
+                                            //"stop_sequences": {{187}},
+                                            //bad_words_ids = {{50256}, {0}, {1}};
+                                            //generate_until_sentence = true;
+                                            "use_cache": false,
+                                            //use_string = true;
+                                            "return_full_text": false,
+                                            "prefix": "vanilla",
+                                            "order": this_settings.order
+                                                };
+                        }
+                        var generate_url = '';
+                        if(main_api == 'kobold'){
+                            generate_url = '/generate';
+                        }
+                        if(main_api == 'novel'){
+                            generate_url = '/generate_novelai';
+                        }
                         jQuery.ajax({    
                             type: 'POST', // 
-                            url: '/generate', // 
+                            url: generate_url, // 
                             data: JSON.stringify(generate_data),
                             beforeSend: function(){
                                 //$('#create_button').attr('value','Creating...'); 
@@ -521,8 +631,12 @@
                                 is_send_press = false;
                                 if(data.error != true){
                                     //const getData = await response.json();
-                                    var getMessage = data.results[0].text;
-
+                                    if(main_api == 'kobold'){
+                                        var getMessage = data.results[0].text;
+                                    }
+                                    if(main_api == 'novel'){
+                                        var getMessage = data.output;
+                                    }
                                     //Formating
                                     getMessage = $.trim(getMessage);
                                     if(getMessage.indexOf(name1+":") != -1){ 
@@ -569,10 +683,15 @@
             }
             
             async function saveChat() {
+                    if(chat[0].indexOf('<username-holder>') === -1){
+                        var save_chat = ['<username-holder>'+name1, ...chat];
+                    }else{
+                        var save_chat = chat;
+                    }
                 jQuery.ajax({    
                     type: 'POST', 
                     url: '/savechat', 
-                    data: JSON.stringify({ch_name: characters[this_chid].name, file_name: characters[this_chid].chat, chat: chat}),
+                    data: JSON.stringify({ch_name: characters[this_chid].name, file_name: characters[this_chid].chat, chat: save_chat}),
                     beforeSend: function(){
                         //$('#create_button').attr('value','Creating...'); 
                     },
@@ -620,6 +739,33 @@
             function getChatResult(){
                 name2 = characters[this_chid].name;
                 if(chat.length > 1){
+                    if(chat[0].indexOf('<username-holder>') !== -1){
+                        var this_chat_user_name = chat[0].substr('<username-holder>'.length, chat[0].length);
+                        if(this_chat_user_name !== name1){
+                            var arr_char = [];
+                            chat.forEach(function(item, i) {
+                                if(i !== 0){
+                                    //var str = item.replace(new RegExp(this_chat_user_name+':', "g"), name1+':');
+                                    if(chat[i].indexOf(name2+":") !== 0){
+                                        var str = item.replace(this_chat_user_name+':', name1+':');
+                                        arr_char.push(str);
+                                    }else{
+                                        arr_char.push(item);
+                                    }
+                                }
+                            });
+                            chat = [];
+                            chat = arr_char;
+                        }else{
+                            chat.shift();
+                        }
+                        //chat.shift();
+                    }else{ //if(default_user_name !== name1){
+                        chat.forEach(function(item, i) {
+                                var str = item.replace(new RegExp(default_user_name+':', "g"), name1+':');
+                                chat[i] = str;
+                            });
+                    }
                     
                 }else{
                     
@@ -803,6 +949,7 @@
             $(document).on('click', '.character_select', function(){
                 if(this_chid !== $(this).attr("chid")){
                     if(!is_send_press){
+                        this_edit_mes_id = undefined;
                         selected_button = 'character_edit';
                         this_chid = $(this).attr("chid");
                         clearChat();
@@ -815,6 +962,9 @@
                     select_selected_character(this_chid);
                 }
                 
+            });
+            $(document).on('input', '.edit_textarea', function(){
+                $(this).height(0).height(this.scrollHeight);
             });
             $(document).on('click', '.del_checkbox', function(){
                 $('.del_checkbox').each(function(){
@@ -1209,6 +1359,7 @@
                     //getStatus();
                 }
             });
+            
             $( "body" ).click(function() {
                 if($("#options").css('opacity') == 1.0){
                     $('#options').transition({  
@@ -1302,23 +1453,82 @@
                     preset_settings = $('#settings_perset').find(":selected").text();
                     temp = koboldai_settings[koboldai_setting_names[preset_settings]].temp;
                     amount_gen = koboldai_settings[koboldai_setting_names[preset_settings]].genamt;
+                    rep_pen = koboldai_settings[koboldai_setting_names[preset_settings]].rep_pen;
+                    rep_pen_size = koboldai_settings[koboldai_setting_names[preset_settings]].rep_pen_range;
                     $('#temp').val(temp);
-                    $('#amount_gen').val(amount_gen);
                     $('#temp_counter').html(temp);
+                    
+                    $('#amount_gen').val(amount_gen);
                     $('#amount_gen_counter').html(amount_gen);
+                    
+                    $('#rep_pen').val(rep_pen);
+                    $('#rep_pen_counter').html(rep_pen);
+                    
+                    $('#rep_pen_size').val(rep_pen_size);
+                    $('#rep_pen_size_counter').html(rep_pen_size+" Tokens");
                     
                     $("#range_block").children().prop("disabled", false);
                     $("#range_block").css('opacity',1.0);
+                    $("#amount_gen_block").children().prop("disabled", false);
+                    $("#amount_gen_block").css('opacity',1.0);
                     
                 }else{
                     //$('.button').disableSelection();
                     preset_settings = 'gui';
                     $("#range_block").children().prop("disabled", true);
                     $("#range_block").css('opacity',0.5);
+                    $("#amount_gen_block").children().prop("disabled", true);
+                    $("#amount_gen_block").css('opacity',0.45);
                 }
                 saveSettings();
             });
-            
+            $( "#settings_perset_novel" ).change(function() {
+                
+                preset_settings_novel = $('#settings_perset_novel').find(":selected").text();
+                temp_novel = novelai_settings[novelai_setting_names[preset_settings_novel]].temperature;
+                //amount_gen = koboldai_settings[koboldai_setting_names[preset_settings]].genamt;
+                rep_pen_novel = novelai_settings[novelai_setting_names[preset_settings_novel]].repetition_penalty;
+                rep_pen_size_novel = novelai_settings[novelai_setting_names[preset_settings_novel]].repetition_penalty_range;
+                $('#temp_novel').val(temp_novel);
+                $('#temp_counter_novel').html(temp_novel);
+
+                //$('#amount_gen').val(amount_gen);
+                //$('#amount_gen_counter').html(amount_gen);
+
+                $('#rep_pen_novel').val(rep_pen_novel);
+                $('#rep_pen_counter_novel').html(rep_pen_novel);
+
+                $('#rep_pen_size_novel').val(rep_pen_size_novel);
+                $('#rep_pen_size_counter_novel').html(rep_pen_size_novel+" Tokens");
+
+                //$("#range_block").children().prop("disabled", false);
+                //$("#range_block").css('opacity',1.0);
+                saveSettings();
+            });
+            $( "#main_api" ).change(function() {
+                is_get_status = false;
+                is_get_status_novel = false;
+                online_status = 'no_connection';
+                checkOnlineStatus();
+                changeMainAPI();
+                saveSettings();
+            });
+            function changeMainAPI(){
+                if($('#main_api').find(":selected").val() == 'kobold'){
+                    $('#kobold_api').css("display", "block");
+                    $('#novel_api').css("display", "none");
+                    main_api = 'kobold';
+                    $('#max_context_block').css('display', 'block');
+                    $('#amount_gen_block').css('display', 'block');
+                }
+                if($('#main_api').find(":selected").val() == 'novel'){
+                    $('#kobold_api').css("display", "none");
+                    $('#novel_api').css("display", "block");
+                    main_api = 'novel';
+                    $('#max_context_block').css('display', 'none');
+                    $('#amount_gen_block').css('display', 'none');
+                }
+            }
             async function getUserAvatars(){
                 const response = await fetch("/getuseravatars", {
                     method: "POST",
@@ -1342,9 +1552,15 @@
 
                 }
             }
+            
+            
             $(document).on('input', '#temp', function() {
                 temp = $(this).val();
-                $('#temp_counter').html( $(this).val() );
+                if(isInt(temp)){
+                    $('#temp_counter').html( $(this).val()+".00" );
+                }else{
+                    $('#temp_counter').html( $(this).val() );
+                }
                 var tempTimer = setTimeout(saveSettings, 500);
             });
             $(document).on('input', '#amount_gen', function() {
@@ -1352,10 +1568,62 @@
                 $('#amount_gen_counter').html( $(this).val() );
                 var amountTimer = setTimeout(saveSettings, 500);
             });
+            $(document).on('input', '#max_context', function() {
+                max_context = parseInt($(this).val());
+                $('#max_context_counter').html( $(this).val() +' Tokens');
+                var max_contextTimer = setTimeout(saveSettings, 500);
+            });
+            $('#style_anchor').change(function() {
+                style_anchor = !!$('#style_anchor').prop('checked');
+                saveSettings();
+            });
+            $('#character_anchor').change(function() {
+                character_anchor = !!$('#character_anchor').prop('checked');
+                saveSettings();
+            });
+            $(document).on('input', '#rep_pen', function() {
+                rep_pen = $(this).val();
+                if(isInt(rep_pen)){
+                    $('#rep_pen_counter').html( $(this).val()+".00" );
+                }else{
+                    $('#rep_pen_counter').html( $(this).val() );
+                }
+                var repPenTimer = setTimeout(saveSettings, 500);
+            });
+            $(document).on('input', '#rep_pen_size', function() {
+                rep_pen_size = $(this).val();
+                $('#rep_pen_size_counter').html( $(this).val()+" Tokens");
+                var repPenSizeTimer = setTimeout(saveSettings, 500);
+            });
+            
+            //Novel
+            $(document).on('input', '#temp_novel', function() {
+                temp_novel = $(this).val();
 
+                if(isInt(temp_novel)){
+                    $('#temp_counter_novel').html( $(this).val()+".00" );
+                }else{
+                    $('#temp_counter_novel').html( $(this).val() );
+                }
+                var tempTimer_novel = setTimeout(saveSettings, 500);
+            });
+            $(document).on('input', '#rep_pen_novel', function() {
+                rep_pen_novel = $(this).val();
+                if(isInt(rep_pen_novel)){
+                    $('#rep_pen_counter_novel').html( $(this).val()+".00" );
+                }else{
+                    $('#rep_pen_counter_novel').html( $(this).val() );
+                }
+                var repPenTimer_novel = setTimeout(saveSettings, 500);
+            });
+            $(document).on('input', '#rep_pen_size_novel', function() {
+                rep_pen_size_novel = $(this).val();
+                $('#rep_pen_size_counter_novel').html( $(this).val()+" Tokens");
+                var repPenSizeTimer_novel = setTimeout(saveSettings, 500);
+            });
             //***************SETTINGS****************//
             ///////////////////////////////////////////
-            async function getSettings(){
+            async function getSettings(type){//timer
  
                 
                 jQuery.ajax({    
@@ -1373,12 +1641,53 @@
                     success: function(data){
                         if(data.result != 'file not find'){
                             settings = JSON.parse(data.settings);
+                            if(settings.myname !== undefined){
+                                if(settings.myname !== ''){
+                                    name1 = settings.myname;
+                                    $('#your_name').val(name1);
+                                }
+                            }
+                            
+                            
+                            //Novel
+                            if(settings.main_api != undefined){
+                                main_api = settings.main_api;
+                                $("#main_api option[value="+main_api+"]").attr('selected', 'true');
+                                changeMainAPI();
+                            }
+                            if(settings.api_key_novel != undefined){
+                                api_key_novel = settings.api_key_novel;
+                                $("#api_key_novel").val(api_key_novel);
+                            }
+                            model_novel = settings.model_novel;
+                            $("#model_novel_select option[value="+model_novel+"]").attr('selected', 'true');
+                            
+                            novelai_setting_names = data.novelai_setting_names;
+                            novelai_settings = data.novelai_settings;
+                            novelai_settings.forEach(function(item, i, arr) {
+
+                                novelai_settings[i] = JSON.parse(item);
+                            });
+                            var arr_holder = {};
+                            $("#settings_perset_novel").empty();
+                            novelai_setting_names.forEach(function(item, i, arr) {
+                                arr_holder[item] = i;
+                                $('#settings_perset_novel').append('<option value='+i+'>'+item+'</option>');
+
+                            });
+                            novelai_setting_names = {};
+                            novelai_setting_names = arr_holder;
+
+                            preset_settings_novel = settings.preset_settings_novel;
+                            $("#settings_perset_novel option[value="+novelai_setting_names[preset_settings_novel]+"]").attr('selected', 'true');
+                            //Kobold
                             koboldai_setting_names = data.koboldai_setting_names;
                             koboldai_settings = data.koboldai_settings;
                             koboldai_settings.forEach(function(item, i, arr) {
                                 koboldai_settings[i] = JSON.parse(item);
                             });
                             var arr_holder = {};
+                            //$("#settings_perset").empty();
                             koboldai_setting_names.forEach(function(item, i, arr) {
                                 arr_holder[item] = i;
                                 $('#settings_perset').append('<option value='+i+'>'+item+'</option>');
@@ -1391,15 +1700,64 @@
 
                             temp = settings.temp;
                             amount_gen = settings.amount_gen;
+                            if(settings.max_context !== undefined) max_context = parseInt(settings.max_context);
+                            if(settings.anchor_order !== undefined) anchor_order = parseInt(settings.anchor_order);
+                            if(settings.style_anchor !== undefined) style_anchor = !!settings.style_anchor;
+                            if(settings.character_anchor !== undefined) character_anchor = !!settings.character_anchor;
+                            rep_pen = settings.rep_pen;
+                            rep_pen_size = settings.rep_pen_size;
+                            
+                            
+                            var addZeros = "";
+                            if(isInt(temp)) addZeros = ".00";
                             $('#temp').val(temp);
+                            $('#temp_counter').html(temp+addZeros);
+                            
+                            $('#style_anchor').prop('checked', style_anchor);
+                            $('#character_anchor').prop('checked', character_anchor);
+                            $("#anchor_order option[value="+anchor_order+"]").attr('selected', 'true');
+                            
+                            $('#max_context').val(max_context);
+                            $('#max_context_counter').html(max_context+' Tokens');
+                            
                             $('#amount_gen').val(amount_gen);
-                            $('#temp_counter').html(temp);
-                            $('#amount_gen_counter').html(amount_gen);
+                            $('#amount_gen_counter').html(amount_gen+' Tokens');
+                            
+                            addZeros = "";
+                            if(isInt(rep_pen)) addZeros = ".00";
+                            $('#rep_pen').val(rep_pen);
+                            $('#rep_pen_counter').html(rep_pen+addZeros);
+                            
+                            $('#rep_pen_size').val(rep_pen_size);
+                            $('#rep_pen_size_counter').html(rep_pen_size+" Tokens");
+                            
+                            //Novel
+                            
+                            temp_novel = settings.temp_novel;
+                            rep_pen_novel = settings.rep_pen_novel;
+                            rep_pen_size_novel = settings.rep_pen_size_novel;
+                            
+                            addZeros = "";
+                            if(isInt(temp_novel)) addZeros = ".00";
+                            $('#temp_novel').val(temp_novel);
+                            $('#temp_counter_novel').html(temp_novel+addZeros);
+                                             
+                            addZeros = "";
+                            if(isInt(rep_pen_novel)) addZeros = ".00";
+                            $('#rep_pen_novel').val(rep_pen_novel);
+                            $('#rep_pen_counter_novel').html(rep_pen_novel+addZeros);
+                            
+                            $('#rep_pen_size_novel').val(rep_pen_size_novel);
+                            $('#rep_pen_size_counter_novel').html(rep_pen_size_novel+" Tokens");
+                            
+                            //////////////////////
                             if(preset_settings == 'gui'){
                                 $("#settings_perset option[value=gui]").attr('selected', 'true');
                                 $("#range_block").children().prop("disabled", true);
                                 $("#range_block").css('opacity',0.5);
-
+                                
+                                $("#amount_gen_block").children().prop("disabled", true);
+                                $("#amount_gen_block").css('opacity',0.45);
                             }else{
                                 if(typeof koboldai_setting_names[preset_settings] !== 'undefined') {
 
@@ -1407,11 +1765,16 @@
                                 }else{
                                     $("#range_block").children().prop("disabled", true);
                                     $("#range_block").css('opacity',0.5);
+                                    $("#amount_gen_block").children().prop("disabled", true);
+                                    $("#amount_gen_block").css('opacity',0.45);
+
                                     preset_settings = 'gui';
                                     $("#settings_perset option[value=gui]").attr('selected', 'true');
                                 }
 
                             }
+                            
+                            //User
                             user_avatar = settings.user_avatar;
                             $('.mes').each(function(){
                                 if($(this).attr('ch_name') == name1){
@@ -1433,17 +1796,31 @@
 
             }
 
-            async function saveSettings(){
+            async function saveSettings(type){
 
                 jQuery.ajax({    
                     type: 'POST', 
                     url: '/savesettings', 
                     data: JSON.stringify({
+                            myname: name1,
                             api_server: api_server,
                             preset_settings: preset_settings,
+                            preset_settings_novel: preset_settings_novel,
                             user_avatar: user_avatar,
                             temp: temp,
-                            amount_gen: amount_gen
+                            amount_gen: amount_gen,
+                            max_context: max_context,
+                            anchor_order: anchor_order,
+                            style_anchor: style_anchor,
+                            character_anchor: character_anchor,
+                            main_api: main_api,
+                            api_key_novel: api_key_novel,
+                            rep_pen: rep_pen,
+                            rep_pen_size: rep_pen_size,
+                            model_novel: model_novel,
+                            temp_novel: temp_novel,
+                            rep_pen_novel: rep_pen_novel,
+                            rep_pen_size_novel: rep_pen_size_novel
                         }),
                     beforeSend: function(){
 
@@ -1455,7 +1832,9 @@
                     //processData: false, 
                     success: function(data){
                         //online_status = data.result;
-
+                        if(type === 'change_name'){
+                            location.reload();
+                        }
 
                     },
                     error: function (jqXHR, exception) {
@@ -1488,8 +1867,195 @@
                     }
                 });
             });
+            function isInt(value) {
+                return !isNaN(value) && 
+                    parseInt(Number(value)) == value && 
+                    !isNaN(parseInt(value, 10));
+            }
+            //********************
+            //***Message Editor***
+            $(document).on('click', '.mes_edit', function(){
+                if(this_chid !== undefined){
+                    if(this_edit_mes_id !== undefined){
+                        let mes_edited = $('#chat').children().filter('[mesid="'+this_edit_mes_id+'"]').children('.mes_block').children('.ch_name').children('.mes_edit_done');
+                        messageEditDone(mes_edited);
+                    }
+                    $(this).parent().parent().children('.mes_text').empty();
+                    $(this).css('display','none');
+                    $(this).parent().children('.mes_edit_done').css('display','inline-block');
+                    $(this).parent().children('.mes_edit_done').css('opacity',0.0);
+                    $(this).parent().children('.mes_edit_cancel').css('display','inline-block');
+                    $(this).parent().children('.mes_edit_cancel').css('opacity',0.0);
+                    $(this).parent().children('.mes_edit_done').transition({  
+                            opacity: 1.0,
+                            duration: 600,
+                            easing: "",
+                            complete: function() {  }
+                    });
+                    $(this).parent().children('.mes_edit_cancel').transition({  
+                            opacity: 1.0,
+                            duration: 600,
+                            easing: "",
+                            complete: function() {  }
+                    });
+                    var edit_mes_id = $(this).parent().parent().parent().attr('mesid');
+                    this_edit_mes_id = edit_mes_id;
+                    
+                    var text = chat[edit_mes_id];
+                    if(text.indexOf(name1+":") == 0){
+                        text = text.substr((name1+":").length);
+                        this_edit_mes_chname = name1;
+                    }else{
+                        this_edit_mes_chname = name2;
+                        if(text.indexOf(name2+":") == 0){
+                            text = text.substr((name2+":").length);
+                        }
+                    }
+                    text = text.trim();
+                    $(this).parent().parent().children('.mes_text').append('<textarea class=edit_textarea style="max-width:auto; ">'+text+'</textarea>');
+                    let edit_textarea = $(this).parent().parent().children('.mes_text').children('.edit_textarea');
+                    edit_textarea.css('opacity',0.0);
+                    edit_textarea.transition({  
+                            opacity: 1.0,
+                            duration: 0,
+                            easing: "",
+                            complete: function() {  }
+                    });
+                    edit_textarea.height(0);
+                    edit_textarea.height(edit_textarea[0].scrollHeight);
+                    edit_textarea.focus();
+                    edit_textarea[0].setSelectionRange(edit_textarea.val().length, edit_textarea.val().length);
+                }
+            });
+            $(document).on('click', '.mes_edit_cancel', function(){
+                //var text = $(this).parent().parent().children('.mes_text').children('.edit_textarea').val();
+                var text = chat[this_edit_mes_id];
+                if(text.indexOf(name1+":") == 0){
+                    text = text.substr((name1+":").length);
+                }else{
+                    if(text.indexOf(name2+":") == 0){
+                        text = text.substr((name2+":").length);
+                    }
+                }
+                $(this).parent().parent().children('.mes_text').empty();
+                $(this).css('display','none');
+                $(this).parent().children('.mes_edit_done').css('display','none');
+                $(this).parent().children('.mes_edit').css('display','inline-block');
+                $(this).parent().parent().children('.mes_text').append(messageFormating(text,this_edit_mes_chname));
+                this_edit_mes_id = undefined;
+            });
+            $(document).on('click', '.mes_edit_done', function(){
+                messageEditDone($(this));
+            });
+            function messageEditDone(div){
+                
+                var text = div.parent().parent().children('.mes_text').children('.edit_textarea').val();
+                //var text = chat[this_edit_mes_id];
+                text = text.trim();
+                chat[this_edit_mes_id] = this_edit_mes_chname+": "+text+"\n";
+                div.parent().parent().children('.mes_text').empty();
+                div.css('display','none');
+                div.parent().children('.mes_edit_cancel').css('display','none');
+                div.parent().children('.mes_edit').css('display','inline-block');
+                div.parent().parent().children('.mes_text').append(messageFormating(text,this_edit_mes_chname));
+                this_edit_mes_id = undefined;
+                saveChat();
+            }
+            
+            $("#your_name_button").click(function() {
+                if(!is_send_press){
+                    name1 = $("#your_name").val();
+                    if(name1 === undefined || name1 == '') name1 = default_user_name;
+                    console.log(name1);
+                    saveSettings('change_name');
+                    
+                }
+            });
+            //************************************************************
+            //************************Novel.AI****************************
+            //************************************************************
+            async function getStatusNovel(){
+                if(is_get_status_novel){
+                    
+                    var data = {key:api_key_novel};
 
+
+                    jQuery.ajax({    
+                        type: 'POST', // 
+                        url: '/getstatus_novelai', // 
+                        data: JSON.stringify(data),
+                        beforeSend: function(){
+                            //$('#create_button').attr('value','Creating...'); 
+                        },
+                        cache: false,
+                        dataType: "json",
+                        contentType: "application/json",
+                        success: function(data){
+
+
+                            if(data.error != true){
+                                //var settings2 = JSON.parse(data);
+                                //const getData = await response.json();
+                                novel_tier = data.tier;
+                                if(novel_tier == undefined){
+                                    online_status = 'no_connection';
+                                }
+                                if(novel_tier === 0){
+                                    online_status = "Paper";
+                                }
+                                if(novel_tier === 1){
+                                    online_status = "Tablet";
+                                }
+                                if(novel_tier === 2){
+                                    online_status = "Scroll";
+                                }
+                                if(novel_tier === 3){
+                                    online_status = "Opus";
+                                }
+                            }
+                            resultCheckStatusNovel();
+                        },
+                        error: function (jqXHR, exception) {
+                            online_status = 'no_connection';
+                            console.log(exception);
+                            console.log(jqXHR);
+                            resultCheckStatusNovel();
+                        }
+                    });
+                }else{
+                    if(is_get_status != true){
+                        online_status = 'no_connection';
+                    }
+                }
+            }
+            $( "#api_button_novel" ).click(function() {
+                if($('#api_key_novel').val() != ''){
+                    $("#api_loading_novel").css("display", 'inline-block');
+                    $("#api_button_novel").css("display", 'none');
+                    api_key_novel = $('#api_key_novel').val();
+                    api_key_novel = $.trim(api_key_novel);
+                    //console.log("1: "+api_server);
+                    saveSettings();
+                    is_get_status_novel = true;
+                    is_api_button_press_novel = true;
+                }
+            });
+            function resultCheckStatusNovel(){
+                is_api_button_press_novel = false;  
+                checkOnlineStatus();
+                $("#api_loading_novel").css("display", 'none');
+                $("#api_button_novel").css("display", 'inline-block');
+            }
+            $( "#model_novel_select" ).change(function() {
+                model_novel = $('#model_novel_select').find(":selected").val();
+                saveSettings();
+            });
+            $( "#anchor_order" ).change(function() {
+                anchor_order = parseInt($('#anchor_order').find(":selected").val());
+                saveSettings();
+            });
         });
+        
     </script>
 <title>Tavern.AI</title>
 </head>
@@ -1511,11 +2077,16 @@
     <div id="shadow_tips_popup">
         <div id="tips_popup" style="padding-top: 30px;">
             <img id="tips_cross" src="img/cross.png" style="position: absolute; margin-left: 230px; width: 20px; height: 20px; cursor: pointer; opacity: 0.6">
+            
+            <img src="img/love.png" style="width: 45px;height: 45px; margin-bottom: 0px; opacity: 0.6;">
+            <div style="margin-top:20px; margin-left: 20px; margin-right: 20px; margin-bottom: 15px;"><u>TavernAI</u> is being developed with love and care on a voluntary basis. If you like the project and want to support it, your donation would make a huge impact! <u>Thank you!</u></div>
             <img src="img/eth_icon.png" style="width: 35px;height: 35px; margin-bottom: 0px; opacity: 0.6;">
             <img src="img/usdt.png" style="width: 35px;height: 35px; margin-bottom: 0px; opacity: 0.6;">
-            <div id="tips_text"><h3 style="margin-top: 0px; opacity: 0.8">Ethereum, USDT</h3></div>
-            <img src="img/eth.png" style="opacity: 0.4; margin-bottom: 10px;">
-            0x975E5C91042ce8168B3d37b17F99949c5eFB3Dfe
+            <div id="tips_text"><h3 style="margin-top: 0px; opacity: 0.8">Ethereum or USDT</h3></div>
+            
+            <img src="img/eth.png" style="opacity: 0.4; margin-bottom: 4px;">
+            <div>0x975E5C91042ce8168B3d37b17F99949c5eFB3Dfe</div>
+            <!--<div style="margin-bottom:5px;">***</div><div>TRX: TCiBKCt6xEGrsjpgQA2jDXWJLyUh1KN2Sn</div><div>BTC: 1LASziomyYNkZ2zk8Sa4ZLTkvczBMrjyjP</div>-->
         </div>
     </div>
     <div id="bg_menu">
@@ -1534,7 +2105,6 @@
     <input type="checkbox" id="nav-toggle" hidden>
 
     <nav class="nav">
-
         <label for="nav-toggle" class="nav-toggle" onclick></label>
 
         
@@ -1590,34 +2160,106 @@
             </div>
         </div>
         <div id="rm_api_block" class="right_menu" >
-            <h3 id="title_api">API</h3>
-            <select >
-                <option value="">KoboldAI api v1</option>
-
-            </select>
-            <form  action="javascript:void(null);" method="post" enctype="multipart/form-data">
             
-            <h4>API url</h4><h5>Example: http://127.0.0.1:5000/api </h5>
-            <input id="api_url_text" name="api_url" class="text_pole" maxlength="500" size="35" value="">
-            <input id="api_button" type="submit" value="Connect">
-            <img id="api_loading" src="img/load.svg" >
-            </form>
-            <div id="online_status2">
-                <div id="online_status_indicator2"></div><div id="online_status_text2">No connection...</div>
-            </div>
-            <h4>Preset settings</h4><h5>Selecting settings (<a href="/notes/4" target="_blank">?</a>)</h5>
-            <select id="settings_perset">
-                <option value="gui">GUI KoboldAI Settings</option>
+            <h3 id="title_api">API</h3>
+            <select id="main_api" style="color:#fff;background-color:#13152c;" >
+                <option value="kobold">KoboldAI</option>
+                <option value="novel">NovelAI</option>
             </select>
-            <div id="range_block">
-                <h4>Temperature </h4><h5 id="temp_counter">select</h5>
-            <input type="range" id="temp" name="volume" min="0.1" max="2.0" step="0.01">
-            <h4>Amount generation </h4><h5 id="amount_gen_counter">select</h5>
-            <input type="range" id="amount_gen" name="volume" min="16" max="512" step="1">
+            <div id="kobold_api" style="position: relative;">
+                <div style="display:none; position: absolute; right:188px; top:-34px; opacity:0.20;"><a href="https://github.com/KoboldAI/KoboldAI-Client" target="_blank"><img src="img/kobold.png" style="width:40px;height:40px;"></a></div>
+                <form  action="javascript:void(null);" method="post" enctype="multipart/form-data">
+
+                <h4>API url</h4><h5>Example: http://127.0.0.1:5000/api </h5>
+                <input id="api_url_text" name="api_url" class="text_pole" maxlength="500" size="35" value="" autocomplete="off">
+                <input id="api_button" type="submit" value="Connect">
+                <img id="api_loading" src="img/load.svg" >
+                </form>
+                <div id="online_status2">
+                    <div id="online_status_indicator2"></div><div id="online_status_text2">No connection...</div>
+                </div>
+                <h4>Preset settings</h4><h5>Selecting settings (<a href="/notes/4" target="_blank">?</a>)</h5>
+                <select id="settings_perset">
+                    <option value="gui">GUI KoboldAI Settings</option>
+                </select>
+                <div id="range_block">
+                    <h4>Temperature </h4><h5 id="temp_counter">select</h5>
+                    <input type="range" id="temp" name="volume" min="0.1" max="2.0" step="0.01">
+                    <!--<h4>Amount generation </h4><h5 id="amount_gen_counter">select</h5>
+                    <input type="range" id="amount_gen" name="volume" min="16" max="512" step="1">-->
+                    <h4>Repetition Penalty </h4><h5 id="rep_pen_counter">select</h5>
+                    <input type="range" id="rep_pen" name="volume" min="1" max="1.5" step="0.01">
+                    <h4>Repetition Penalty Range</h4><h5 id="rep_pen_size_counter">select</h5>
+                    <input type="range" id="rep_pen_size" name="volume" min="0" max="2048" step="1">
+                </div>
             </div>
-            <hr>
+            <div id="novel_api" style="display: none;position: relative;">
+                <div style="position: absolute; right:152px; top:-25px; opacity:0.25;"><a href="https://novelai.net/" target="_blank"><img src="img/novelai.png" style="width:auto;height:22px;"></a></div>
+                <form  action="javascript:void(null);" method="post" enctype="multipart/form-data">
+
+                    <h4>API key</h4><h5>Where to get (<a href="/notes/6" target="_blank">?</a>)</h5>
+                    <input id="api_key_novel" name="api_key_novel" class="text_pole" maxlength="500" size="35" value="" autocomplete="off">
+                    <input id="api_button_novel" type="submit" value="Connect">
+                    <img id="api_loading_novel" src="img/load.svg" >
+                </form>
+                <div id="online_status3">
+                    <div id="online_status_indicator3"></div><div id="online_status_text3">No connection...</div>
+                </div>
+                <h4>Model</h4><h5>Selecting NovelAI model (<a href="/notes/8" target="_blank">?</a>)</h5>
+                <select id="model_novel_select" class="option_select_right_menu" style='margin-bottom: 16px;'>
+                    <option value="euterpe-v2">Euterpe</option>
+                    <option value="krake-v2">Krake</option>
+                </select>
+                <h4>Preset settings</h4><h5>Selecting settings (<a href="/notes/7" target="_blank">?</a>)</h5>
+                <select id="settings_perset_novel" class="option_select_right_menu">
+                    <option value="gui">Default</option>
+                </select>
+                <div id="range_block_novel">
+                    <h4>Temperature </h4><h5 id="temp_counter_novel">select</h5>
+                    <input type="range" id="temp_novel" name="volume" min="0.1" max="2.0" step="0.01">
+                    <!--<h4>Amount generation </h4><h5 id="amount_gen_counter">select</h5>
+                    <input type="range" id="amount_gen" name="volume" min="16" max="512" step="1">-->
+                    <h4>Repetition Penalty </h4><h5 id="rep_pen_counter_novel">select</h5>
+                    <input type="range" id="rep_pen_novel" name="volume" min="1" max="1.5" step="0.01">
+                    <h4>Repetition Penalty Range</h4><h5 id="rep_pen_size_counter_novel">select</h5>
+                    <input type="range" id="rep_pen_size_novel" name="volume" min="0" max="2048" step="1">
+                </div>
+            </div>
+            <hr style="margin-bottom: 5px;">
+            
             <h4>Your Avatar</h4><h5></h5>
             <div id="user_avatar_block"></div>
+            <form id='form_change_name' action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                <h4>Name</h4>
+                <input id="your_name" name="your_name" class="text_pole" maxlength="35" size="16" value="" autocomplete="off">
+                <input id="your_name_button" type="submit" value="Change">
+            </form>
+            <hr>
+            <div style="opacity:0.7">
+                <h3 style='margin-bottom: 10px;'>Pro Settings</h3>
+                <div id="amount_gen_block">
+                <h4>Amount generation </h4><h5 id="amount_gen_counter">select</h5>
+                <input type="range" id="amount_gen" name="volume" min="16" max="512" step="1">
+                </div>
+                <div id="max_context_block">
+                    <h4>Context Size</h4><h5 id="max_context_counter">select</h5>
+                    <input type="range" id="max_context" name="volume" min="512" max="2048" step="1">
+                </div>
+                <h4>Anchors Order</h4><h5>Selecting Anchors Order (<a href="/notes/9" target="_blank">?</a>)</h5>
+                <select id="anchor_order">
+                    <option value="0">Character Anchor - Style Anchor</option>
+                    <option value="1">Style Anchor - Character Anchor</option>
+                </select>
+                <div id="anchor_checkbox">
+                    <label class="checkbox">
+                        <input id="character_anchor" type="checkbox"/><span></span>
+                    </label><h4>Character Anchor</h4>
+                    <label class="checkbox" >
+                        <input id="style_anchor" type="checkbox"/><span></span>
+                    </label><h4>Style Anchor</h4>
+                    
+                </div>
+            </div>
         </div>
         
         <div id="rm_charaters_block" class="right_menu">

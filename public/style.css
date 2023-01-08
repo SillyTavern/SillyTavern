@@ -308,7 +308,7 @@ textarea{
 }
 #personality_textarea{
     width: 92%;
-    height: 100px;
+    height: 65px;
     margin-top: 0px;
 }
 #character_name_pole{
@@ -424,7 +424,17 @@ input[type=submit] {
     cursor: pointer;
     color:#ffffffaa;
 }
+#api_button_novel{
+    cursor: pointer;
+    color:#ffffffaa;
+}
 #api_loading{
+    width: 25px;
+    height: 25px;
+    display: none;
+    
+}
+#api_loading_novel{
     width: 25px;
     height: 25px;
     display: none;
@@ -821,6 +831,23 @@ input[type=submit] {
     margin-left: 4px;
     display: inline-block;
 }
+#online_status3{
+    opacity: 0.5;
+    margin-top: 2px;
+    margin-left: 10px;
+    margin-bottom: 30px;
+}
+#online_status_indicator3{
+    border-radius: 7px;
+    width: 14px;
+    height: 14px;
+    background-color: red;
+    display: inline-block;
+}
+#online_status_text3{
+    margin-left: 4px;
+    display: inline-block;
+}
 .del_checkbox{
     display: none;
     opacity: 0.5;
@@ -862,6 +889,15 @@ select {
     box-shadow: 0 0 2px rgba(200,200,200,0.5);
     background-color:#13152c;
 }
+
+.option_select_right_menu{
+    width:284px;
+    margin-left: 10px;
+    margin-bottom: 35px;
+    color: #ffffff9d;
+    box-shadow: 0 0 2px rgba(200,200,200,0.5);
+    background-color:#13152c;
+}
 #user_avatar_block{
     margin-left: 6px;
     display: grid;
@@ -890,6 +926,21 @@ select {
 }
 #amount_gen_counter{
     margin-bottom: 0px;
+}
+#max_context{
+    margin-left: 10px;
+    margin-bottom: 20px;
+}
+#max_context_counter{
+    margin-bottom: 0px;
+}
+#range_block input{
+    margin-left: 10px;
+    margin-bottom: 20px;
+}
+#range_block_novel input{
+    margin-left: 10px;
+    margin-bottom: 20px;
 }
 input[type="range"] {
   -webkit-appearance: none;
@@ -922,7 +973,7 @@ input[type="range"] {
 #tips_popup{
     
     width:500px;
-    height: 430px;
+    height: 600px;
     position: absolute;
     z-index: 2060;
     background-color: blue;
@@ -931,7 +982,7 @@ input[type="range"] {
     left: 0;
     right: 0;
     text-align: center;
-    margin-top: 20vh;
+    margin-top: 15vh;
     box-shadow: 5px 5px -5px -5px rgba(200,200,200,0.1);
     padding: 4px;
     background: #191b31EE;
@@ -946,4 +997,108 @@ input[type="range"] {
     z-index: 2055;
     background-color: #00000066;
 }
+.mes_edit{
+    display: inline-block;
+    float:right;
+    //right:8px;
+    cursor:pointer;
+    margin-right: 4px;
+    opacity:0.07;
+}
+.mes_edit_done{
+    display: none;
+    float:right;
+    right:8px;
+    cursor:pointer;
+    margin-right: 15px;
+    opacity:0.5;
+}
+.mes_edit_done img{
+    width: 23px;
+    height: 23px;
+}
+.mes_edit_cancel{
+    display: none;
+    float:right;
+    //right:8px;
+    margin-right: 4px;
+    cursor:pointer;
+    opacity:0.5;
+}
+.mes_edit_cancel img{
+    width: 23px;
+    height: 23px;
+}
+.edit_textarea{
+    padding: 0px;
+    margin: 0px;
+    border: none;
+    border-color: transparent;
+    outline: none;
+    box-shadow: none;
+    background-color: transparent;
+}
+#your_name{
+    outline: none;
+    //box-shadow: 0 2px 0px rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0px 0px rgba(255, 255, 255, 0.0);
+    border: none;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.12);
+}
+#your_name_button {
+    opacity: 0.5;
+    margin-left: 10px;
+    cursor: pointer;
+}
+#form_change_name{
+    margin-bottom: 15px;
+}
+.checkbox{
+    display: block;
+}
+label.checkbox input[type="checkbox"] {display:none;}
+label.checkbox span {
+  display:inline-block;
+  border:1px solid #BBBBBB33;
+  border-radius:3px;
+  width:20px;
+  height:20px;
+  background:rgba(19,21,44,0.75);
+  vertical-align:middle;
+  margin:0px;
+  position: relative;
+  transition:width 0.1s, height 0.1s, margin 0.1s;
+  
+}
+label.checkbox :checked + span {
+  background:rgba(19,21,44,0.75);
+  width:20px;
+  height:20px;
+  margin: 0px;
+}
+label.checkbox :checked + span:after {
+  content: '\2714';
+  font-size: 18px;
+  position: absolute;
+  top: -3px;
+  left: 2px;
+  color: #99a1a7;
 
+}
+#anchor_order{
+    width:284px;
+    margin-left: 10px;
+    margin-bottom: 15px;
+    color: #ffffff9d;
+    box-shadow: 0 0 2px rgba(200,200,200,0.5);
+    background-color:#13152c;
+}
+#anchor_checkbox{
+    margin-left: 10px;
+    float: left;
+    display: grid;
+    grid-template-rows: 30px auto;
+    grid-template-columns: auto auto;
+}

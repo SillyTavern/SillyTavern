@@ -10,8 +10,11 @@ var client = new Client();
 var api_server = "";//"http://127.0.0.1:5000";
 var server_port = 8000;
 
+var api_novelai = "https://api.novelai.net";
+
 var response_get_story;
 var response_generate;
+var response_generate_novel;
 var request_promt;
 var response_promt;
 var characters = {};
@@ -20,6 +23,8 @@ var response_create;
 var response_edit;
 var response_dw_bg;
 var response_getstatus;
+var response_getstatus_novel;
+var api_key_novel;
 
 const jsonParser = express.json();
 const urlencodedParser = express.urlencoded({extended: false});
@@ -86,16 +91,16 @@ app.post("/generate", jsonParser, function(request, response_generate = response
         }
         if(response.statusCode == 422){
             console.log('Validation error');
-            response_getstatus.send({error: true});
+            response_generate.send({error: true});
         }
         if(response.statusCode == 501 || response.statusCode == 503 || response.statusCode == 507){
             console.log(data);
-            response_getstatus.send({error: true});
+            response_generate.send({error: true});
         }
     }).on('error', function (err) {
         //console.log('');
 	//console.log('something went wrong on the request', err.request.options);
-        response_getstatus.send({error: true});
+        response_generate.send({error: true});
     });
 });
 app.post("/savechat", jsonParser, function(request, response){
@@ -396,7 +401,73 @@ app.post("/savesettings", jsonParser, function(request, response){
     });
     
 });
-app.post("/getsettings", jsonParser, function(request, response){
+app.post('/getsettings', jsonParser, (request, response) => { //Wintermute's code
+    const koboldai_settings = [];
+    const koboldai_setting_names = [];
+    const novelai_settings = [];
+    const novelai_setting_names = [];
+    const settings = fs.readFileSync('public/settings.json', 'utf8',  (err, data) => {
+    if (err) return response.sendStatus(500);
+
+        return data;
+    });
+  //Kobold
+    const files = fs
+    .readdirSync('public/KoboldAI Settings')
+    .sort(
+      (a, b) =>
+        new Date(fs.statSync(`public/KoboldAI Settings/${b}`).mtime) -
+        new Date(fs.statSync(`public/KoboldAI Settings/${a}`).mtime)
+    );
+
+    files.forEach(item => {
+        const file = fs.readFileSync(
+        `public/KoboldAI Settings/${item}`,
+        'utf8',
+            (err, data) => {
+                if (err) return response.sendStatus(500)
+
+                return data;
+            }
+        );
+        koboldai_settings.push(file);
+        koboldai_setting_names.push(item.replace(/\.[^/.]+$/, ''));
+    });
+    
+  //Novel
+    const files2 = fs
+    .readdirSync('public/NovelAI Settings')
+    .sort(
+      (a, b) =>
+        new Date(fs.statSync(`public/NovelAI Settings/${b}`).mtime) -
+        new Date(fs.statSync(`public/NovelAI Settings/${a}`).mtime)
+    );
+    
+    files2.forEach(item => {
+    const file2 = fs.readFileSync(
+        `public/NovelAI Settings/${item}`,
+        'utf8',
+        (err, data) => {
+            if (err) return response.sendStatus(500);
+
+            return data;
+        }
+    );
+
+        novelai_settings.push(file2);
+        novelai_setting_names.push(item.replace(/\.[^/.]+$/, ''));
+    });
+    
+    response.send({
+        settings,
+        koboldai_settings,
+        koboldai_setting_names,
+        novelai_settings,
+        novelai_setting_names
+    });
+});
+
+app.post("/getsettings2", jsonParser, function(request, response){//Elder
     var koboldai_settings = [];
     var koboldai_setting_names = [];
     fs.stat('public/settings.json', function(err, stat) {
@@ -487,6 +558,109 @@ function getDirectories(path) {
 return new Date(fs.statSync(path + '/' + a).mtime) - new Date(fs.statSync(path + '/' + b).mtime);
 }).reverse();
 }
+
+//***********Novel.ai API 
+
+app.post("/getstatus_novelai", jsonParser, function(request, response_getstatus_novel =response){
+    if(!request.body) return response_generate.sendStatus(400);
+    api_key_novel = request.body.key;
+    var data = {};
+    var args = {
+        data: data,
+        
+        headers: { "Content-Type": "application/json",  "Authorization": "Bearer "+api_key_novel}
+    };
+    client.get(api_novelai+"/user/subscription",args, function (data, response) {
+        if(response.statusCode == 200){
+            //console.log(data);
+            response_getstatus_novel.send(data);//data);
+        }
+        if(response.statusCode == 401){
+            console.log('Access Token is incorrect.');
+            response_getstatus_novel.send({error: true});
+        }
+        if(response.statusCode == 500 || response.statusCode == 501 || response.statusCode == 501 || response.statusCode == 503 || response.statusCode == 507){
+            console.log(data);
+            response_getstatus_novel.send({error: true});
+        }
+    }).on('error', function (err) {
+        //console.log('');
+	//console.log('something went wrong on the request', err.request.options);
+        response_getstatus_novel.send({error: true});
+    });
+});
+
+
+
+app.post("/generate_novelai", jsonParser, function(request, response_generate_novel = response){
+    if(!request.body) return response_generate_novel.sendStatus(400);
+
+    console.log(request.body);
+    var data = {
+    "input": request.body.input,
+    "model": request.body.model,
+    "parameters": {
+                "use_string": request.body.use_string,
+		"temperature": request.body.temperature,
+		"max_length": request.body.max_length,
+		"min_length": request.body.min_length,
+		"tail_free_sampling": request.body.tail_free_sampling,
+		"repetition_penalty": request.body.repetition_penalty,
+		"repetition_penalty_range": request.body.repetition_penalty_range,
+		"repetition_penalty_frequency": request.body.repetition_penalty_frequency,
+		"repetition_penalty_presence": request.body.repetition_penalty_presence,
+		//"stop_sequences": {{187}},
+		//bad_words_ids = {{50256}, {0}, {1}};
+		//generate_until_sentence = true;
+		"use_cache": request.body.use_cache,
+		//use_string = true;
+		"return_full_text": request.body.return_full_text,
+		"prefix": request.body.prefix,
+		"order": request.body.order
+  }
+};
+                        
+    var args = {
+        data: data,
+        
+        headers: { "Content-Type": "application/json",  "Authorization": "Bearer "+api_key_novel}
+    };
+    client.post(api_novelai+"/ai/generate",args, function (data, response) {
+        if(response.statusCode == 201){
+            console.log(data);
+            response_generate_novel.send(data);
+        }
+        if(response.statusCode == 400){
+            console.log('Validation error');
+            response_generate_novel.send({error: true});
+        }
+        if(response.statusCode == 401){
+            console.log('Access Token is incorrect');
+            response_generate_novel.send({error: true});
+        }
+        if(response.statusCode == 402){
+            console.log('An active subscription is required to access this endpoint');
+            response_generate_novel.send({error: true});
+        }
+        if(response.statusCode == 500 || response.statusCode == 409){
+            console.log(data);
+            response_generate_novel.send({error: true});
+        }
+    }).on('error', function (err) {
+        //console.log('');
+	//console.log('something went wrong on the request', err.request.options);
+        response_getstatus.send({error: true});
+    });
+});
+
+
+
+
+
+
+
+
+
 app.listen(server_port, function() {
   console.log('Server started: http://127.0.0.1:'+server_port);
   

@@ -1,1 +1,1 @@
-{"api_server":"http://localhost:5000/api","preset_settings":"Lancer-OPT-2.7B-Erebus","user_avatar":"you1.png","temp":0.8,"amount_gen":90}
+{"myname":"You","api_server":"","preset_settings":"gui","preset_settings_novel":"Classic-Euterpe","user_avatar":"legat.png","temp":0.8,"amount_gen":90,"max_context":2048,"anchor_order":0,"style_anchor":true,"character_anchor":true,"main_api":"kobold","api_key_novel":"","rep_pen":1.02,"rep_pen_size":256,"model_novel":"euterpe-v2","temp_novel":1.11,"rep_pen_novel":1.11,"rep_pen_size_novel":320}
