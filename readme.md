@@ -1,5 +1,5 @@
 ### TavernAI is a adventure atmospheric chat (KoboldAI, NovelAI)
-Examples interface and output:
+Examples of interface and output:
 <br><img src="readme/1.png" height="200" /><img src="readme/4.png" height="200" /><img src="readme/5.png" height="200" />
 
 [@@@Download TavernAI@@@](https://github.com/TavernAI/TavernAI/archive/refs/heads/main.zip)
