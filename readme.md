@@ -10,7 +10,7 @@ Examples of interface and output:
 * Editing any messages
 * More longer messages from characters
 * Choosing atmospheric backgrounds
-* Creating and easy chosing preset settings
+* Creating and easy choosing preset settings
 
 ## How to install
 ### In Detail:
