@@ -588,6 +588,9 @@
                                 item =item+" "+ anchorBottom+"\n";
                             }
                             if(is_pygmalion){
+                                if(i >= arrMes.length-1 && $.trim(item).substr(0, (name1+":").length) == name1+":"){
+                                    item =item+name2+":";
+                                }
                                 if($.trim(item).indexOf(name1) === 0){
                                     item = item.replace(name1+':', 'You:');
                                 }
