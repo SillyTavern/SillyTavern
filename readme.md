@@ -28,7 +28,7 @@ Examples of interface and output:
 ## Tips
 Use this button to edit the message<br><br>
 <img src="readme/3.png" width="600" /><br><br>
-If the message is not finished, you can simply send the request again, TavernAI will understand that this is a continuation.<br>
+If the message is not finished, you can simply send the request again, TavernAI will understand that this is a continuation. (Doesn't always work in Pygmalion models)<br>
 <br><img src="readme/2.png" width="600" />
 ## Additional materials
 https://www.reddit.com/user/Crataco/comments/zuowi9/opensource_chatbot_companions/
