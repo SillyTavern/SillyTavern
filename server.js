@@ -3,6 +3,7 @@ var app = express();
 var fs = require('fs');
 var rimraf = require("rimraf");
 const multer  = require("multer");
+const https = require('https');
 
 var Client = require('node-rest-client').Client;
 var client = new Client();
@@ -24,11 +25,38 @@ var response_edit;
 var response_dw_bg;
 var response_getstatus;
 var response_getstatus_novel;
+var response_getlastversion;
 var api_key_novel;
 
 const jsonParser = express.json();
 const urlencodedParser = express.urlencoded({extended: false});
 
+
+
+
+app.post("/getlastversion", jsonParser, function(request, response_getlastversion = response){
+    if(!request.body) return response_getlastversion.sendStatus(400);
+    
+    const repo = 'TavernAI/TavernAI';
+
+    https.request({
+        hostname: 'github.com',
+        path: `/${repo}/releases/latest`,
+        method: 'HEAD'
+    }, (res) => {
+        if(res.statusCode === 302) {
+            const glocation = res.headers.location;
+            const versionStartIndex = glocation.lastIndexOf('@')+1;
+            const version = glocation.substring(versionStartIndex);
+            //console.log(version);
+            response_getlastversion.send({version: version});
+        }else{
+            response_getlastversion.send({version: 'error'});
+        }
+    }).end();
+        
+
+});
 app.use(express.static(__dirname + "/public"));
 app.use(multer({dest:"uploads"}).single("avatar"));
 app.get("/", function(request, response){
@@ -152,7 +180,7 @@ app.post("/getchat", jsonParser, function(request, response){
     
 });
 app.post("/getstatus", jsonParser, function(request, response_getstatus = response){
-    if(!request.body) return response.sendStatus(400);
+    if(!request.body) return response_getstatus.sendStatus(400);
     
     api_server = request.body.api_server;
     if(api_server.indexOf('localhost') != -1){
@@ -562,7 +590,7 @@ return new Date(fs.statSync(path + '/' + a).mtime) - new Date(fs.statSync(path +
 //***********Novel.ai API 
 
 app.post("/getstatus_novelai", jsonParser, function(request, response_getstatus_novel =response){
-    if(!request.body) return response_generate.sendStatus(400);
+    if(!request.body) return response_getstatus_novel.sendStatus(400);
     api_key_novel = request.body.key;
     var data = {};
     var args = {
@@ -662,7 +690,7 @@ app.post("/generate_novelai", jsonParser, function(request, response_generate_no
 
 
 app.listen(server_port, function() {
-  console.log('Server started: http://127.0.0.1:'+server_port);
+  console.log('TavernAI started: http://127.0.0.1:'+server_port);
   
   
 });

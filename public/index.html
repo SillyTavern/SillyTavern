@@ -28,11 +28,12 @@
     <script type=module>
         import {encode, decode} from "../scripts/gpt-2-3-tokenizer/mod.js";
         $(document).ready(function(){
+            const VERSION = '1.1.1';
             var bg_menu_toggle = false;
             var default_user_name = "You";
             var name1 = default_user_name;
             var name2 = "Chloe";
-            var chat = ['\nChloe: *You went inside. The air smelled of fried meat, tobacco and a hint of wine. A dim light was cast by candles, and a fire crackled in the fireplace. It seems to be a very pleasant place. Behind the wooden bar is an elf waitress, she is smiling. Her ears are very pointy, and there is a twinkle in her eye. She wears glasses and a white aporn. As soon as she noticed you, she immediately came right up close to you.*\n\n Hello there! How is your evening going?\n<img src="img/star_dust_city.png" width=80% style="opacity:0.3; disolay:block;border-radius:5px;margin-top:25px;margin-bottom:23px; margin-left: 45px;margin-right: auto;">\n<a style="color:rgb(229, 224, 216,0.8);" href="https://github.com/TavernAI/TavernAI" target="_blank">@@@TavernAI v1.1.0@@@</a><div id="donation" style="margin-right:10px;margin-top:0px;float:right; height:25px;cursor: pointer;opacity: 0.99;display:inline-block;"><img src="img/coins.png" style="width: 25px;height: 25px;display:inline-block;"><div style="vertical-align: top;display:inline-block;">Give a Tip</div></div><br><br><br><br>'];
+            var chat = ['\nChloe: *You went inside. The air smelled of fried meat, tobacco and a hint of wine. A dim light was cast by candles, and a fire crackled in the fireplace. It seems to be a very pleasant place. Behind the wooden bar is an elf waitress, she is smiling. Her ears are very pointy, and there is a twinkle in her eye. She wears glasses and a white aporn. As soon as she noticed you, she immediately came right up close to you.*\n\n Hello there! How is your evening going?\n<img src="img/star_dust_city.png" width=80% style="opacity:0.3; disolay:block;border-radius:5px;margin-top:25px;margin-bottom:23px; margin-left: 45px;margin-right: auto;">\n<a id="verson" style="color:rgb(229, 224, 216,0.8);" href="https://github.com/TavernAI/TavernAI" target="_blank">@@@TavernAI v'+VERSION+'@@@</a><div id="donation" style="margin-right:10px;margin-top:0px;float:right; height:25px;cursor: pointer;opacity: 0.99;display:inline-block;"><img src="img/coins.png" style="width: 25px;height: 25px;display:inline-block;"><div style="vertical-align: top;display:inline-block;">Give a Tip</div></div><br><br><br><br>'];
             var default_ch_mes = "Hello";
             var count_view_mes = 0;
             var mesStr = '';
@@ -90,6 +91,8 @@
             var rep_pen = 1;
             var rep_pen_size = 100;
             
+            var is_pygmalion = false;
+            
             var anchor_order = 0;
             var style_anchor = true;
             var character_anchor = true;
@@ -113,13 +116,14 @@
             var css_send_form_display = $('<div id=send_form></div>').css('display');
             /////////////
             getSettings("def");
+            getLastVersion();
             //var interval_getSettings = setInterval(getSettings, 1000);
             getCharacters();
 
             printMessages();
             getBackgrounds();
             getUserAvatars();
-            
+            //
             function checkOnlineStatus(){
                 //console.log(online_status);
                 if(online_status == 'no_connection'){
@@ -142,6 +146,39 @@
                     $("#online_status_text3").html(online_status);
                 }
                 
+            }
+            async function getLastVersion(){
+
+                jQuery.ajax({    
+                    type: 'POST', // 
+                    url: '/getlastversion', // 
+                    data: JSON.stringify({
+                            '': ''
+                        }),
+                    beforeSend: function(){
+
+
+                    },
+                    cache: false,
+                    dataType: "json",
+                    contentType: "application/json",
+                    //processData: false, 
+                    success: function(data){
+                        var getVersion = data.version;
+                        if(getVersion !== 'error' && getVersion != undefined){
+                            if(compareVersions(getVersion, VERSION) === 1){
+                                $('#verson').append(' <span style="color: #326d78; font-size: 15px;">(New update @'+getVersion+')</span>');
+                            }
+                        }
+
+                    },
+                    error: function (jqXHR, exception) {
+                        console.log(exception);
+                        console.log(jqXHR);
+
+                    }
+                });
+
             }
             async function getStatus(){
                 if(is_get_status){
@@ -167,6 +204,11 @@
                             online_status = data.result;
                             if(online_status == undefined){
                                 online_status = 'no_connection';
+                            }
+                            if(online_status.toLowerCase().indexOf('pygmalion') != -1){
+                                is_pygmalion = true;
+                            }else{
+                                is_pygmalion = false;
                             }
                             //console.log(online_status);
                             resultCheckStatus();
@@ -431,22 +473,23 @@
 
                     var storyString = "";
                     var userSendString = "";
-
-
+                    
+                    
                     var postAnchorChar = "talks a lot with descriptions";//'Talk a lot with description what is going on around';// in asterisks
                     var postAnchorStyle = "[Writing style: very long messages]";//"[Genre: roleplay chat][Tone: very long messages with descriptions]";
+                    
                     var anchorTop = '';
                     var anchorBottom = '';
                     var topAnchorDepth = 8;
                     
-                    if(character_anchor){
+                    if(character_anchor && !is_pygmalion){
                         if(anchor_order === 0){
                             anchorTop = "["+name2+" "+postAnchorChar+"]";
                         }else{
                             anchorBottom = "["+name2+" "+postAnchorChar+"]";
                         }
                     }
-                    if(style_anchor){
+                    if(style_anchor && !is_pygmalion){
                         if(anchor_order === 1){
                             anchorTop = postAnchorStyle;
                         }else{
@@ -468,21 +511,25 @@
                     var arrMes = [];
                     
                     var charPersonality = characters[this_chid].personality;
-                    if($.trim(charPersonality.length) > 0){
-                        charPersonality = "["+name2+" is "+charPersonality+"]";//"["+name2+"'s personality: "+charPersonality+"]";
-                    }
-                    
-                    storyString = $.trim(characters[this_chid].description);
-                    if($.trim(storyString.length) > 0){
-                        if(storyString.slice(-1) !== ']' || storyString.substr(0,1) !== '['){
-                            storyString = '['+storyString+']';
+                    if(is_pygmalion){
+                        storyString = name2+"'s Persona: "+$.trim(characters[this_chid].description)+"\n<START>\n";
+                    }else{
+                        if($.trim(charPersonality.length) > 0){
+                            charPersonality = "["+name2+" is "+charPersonality+"]";//"["+name2+"'s personality: "+charPersonality+"]";
                         }
-                    }
-                    if(count_view_mes < topAnchorDepth){
-                        storyString+=charPersonality;
-                    }
-                    if(count_view_mes < 10){
-                        storyString+='\nThen the dialogue between '+name1+' and '+name2+' begins.\n';
+
+                        storyString = $.trim(characters[this_chid].description);
+                        if($.trim(storyString.length) > 0){
+                            if(storyString.slice(-1) !== ']' || storyString.substr(0,1) !== '['){
+                                storyString = '['+storyString+']';
+                            }
+                        }
+                        if(count_view_mes < topAnchorDepth){
+                            storyString+=charPersonality;
+                        }
+                        if(count_view_mes < 10){
+                            storyString+='\nThen the roleplay chat between '+name1+' and '+name2+' begins.\n';
+                        }
                     }
                     var chat2 = [];
                     var j = 0;
@@ -511,22 +558,21 @@
                         await delay(1); //For disable slow down (encode gpt-2 need fix)
                         //console.log(i+' '+chat.length);
                         if(i == chat.length-1){
-                            
                             runGenerate();
                         }
                         i++;
                     }
-
+                    
                     function runGenerate(){
 
                         chatString = "";
                         arrMes = arrMes.reverse();
                         var is_add_personality = false;
                         arrMes.forEach(function(item, i, arr) {//For added anchors and others
-                            chatString = chatString+item;
+                            
                             if(i >= arrMes.length-1 && $.trim(item).substr(0, (name1+":").length) != name1+":"){
                                 if(textareaText == ""){
-                                    chatString = chatString.substr(0,chatString.length-1);
+                                    item = item.substr(0,item.length-1);
                                 }
                             }
                             if(i === arrMes.length-topAnchorDepth && count_view_mes>=topAnchorDepth && !is_add_personality){
@@ -534,17 +580,23 @@
                                 is_add_personality = true;
                                 //chatString = chatString.substr(0,chatString.length-1);
                                 //anchorAndPersonality = "[Genre: roleplay chat][Tone: very long messages with descriptions]";
-                                chatString+=charPersonality+anchorTop+'\n';
+                                item+=charPersonality+anchorTop+'\n';
                             }
-                            if(i >= arrMes.length-1 && count_view_mes>=4 && $.trim(item).substr(0, (name1+":").length) == name1+":"){//For add anchor in end
-                                chatString = chatString.substr(0,chatString.length-1);
+                            if(i >= arrMes.length-1 && count_view_mes>=4 && $.trim(item).substr(0, (name1+":").length) == name1+":" && !is_pygmalion){//For add anchor in end
+                                item = item.substr(0,item.length-1);
                                 //chatString+=postAnchor+"\n";//"[Writing style: very long messages]\n";
-                                chatString+=anchorBottom+"\n";
+                                item =item+" "+ anchorBottom+"\n";
                             }
+                            if(is_pygmalion){
+                                if($.trim(item).indexOf(name1) === 0){
+                                    item = item.replace(name1+':', 'You:');
+                                }
+                            }
+                            chatString = chatString+item;
                         });
 
                         storyString+=chatString;
-
+                        
 
                         //console.log(encode(characters[this_chid].description+chatString).length);
                         //console.log(encode(JSON.stringify(characters[this_chid].description+chatString)).length);
@@ -639,6 +691,11 @@
                                     }
                                     //Formating
                                     getMessage = $.trim(getMessage);
+                                    if(is_pygmalion){
+                                        getMessage = getMessage.replace(new RegExp('<USER>', "g"), name1);
+                                        getMessage = getMessage.replace(new RegExp('<BOT>', "g"), name2);
+                                        getMessage = getMessage.replace(new RegExp('You:', "g"), name1+':');
+                                    }
                                     if(getMessage.indexOf(name1+":") != -1){ 
                                         getMessage = getMessage.substr(0,getMessage.indexOf(name1+":"));
 
@@ -1506,6 +1563,7 @@
                 saveSettings();
             });
             $( "#main_api" ).change(function() {
+                is_pygmalion = false;
                 is_get_status = false;
                 is_get_status_novel = false;
                 online_status = 'no_connection';
@@ -2054,6 +2112,34 @@
                 anchor_order = parseInt($('#anchor_order').find(":selected").val());
                 saveSettings();
             });
+            
+            
+            function compareVersions(v1, v2) {
+                const v1parts = v1.split('.');
+                const v2parts = v2.split('.');
+
+                for (let i = 0; i < v1parts.length; ++i) {
+                    if (v2parts.length === i) {
+                        return 1;
+                    }
+
+                    if (v1parts[i] === v2parts[i]) {
+                        continue;
+                    }
+                    if (v1parts[i] > v2parts[i]) {
+                        return 1;
+                    }
+                    else {
+                        return -1;
+                    }
+                }
+
+                if (v1parts.length != v2parts.length) {
+                    return -1;
+                }
+
+                return 0;
+            }
         });
         
     </script>
