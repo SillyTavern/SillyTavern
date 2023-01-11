@@ -23,6 +23,7 @@ Examples of interface and output:
 ## AI Models
 * [KoboldAI](https://github.com/KoboldAI/KoboldAI-Client)
 * [NovelAI](https://novelai.net/)
+* [Pygmalion](https://rentry.org/pygmalion-ai)
 
 ## Tips
 Use this button to edit the message<br><br>
