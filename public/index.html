@@ -28,7 +28,7 @@
     <script type=module>
         import {encode, decode} from "../scripts/gpt-2-3-tokenizer/mod.js";
         $(document).ready(function(){
-            const VERSION = '1.1.1';
+            const VERSION = '1.1.2';
             var bg_menu_toggle = false;
             var default_user_name = "You";
             var name1 = default_user_name;
@@ -588,8 +588,13 @@
                                 item =item+" "+ anchorBottom+"\n";
                             }
                             if(is_pygmalion){
-                                if(i >= arrMes.length-1 && $.trim(item).substr(0, (name1+":").length) == name1+":"){
+                                if(i >= arrMes.length-1 && $.trim(item).substr(0, (name1+":").length) == name1+":"){//for add name2 when user sent
                                     item =item+name2+":";
+                                }
+                                if(i >= arrMes.length-1 && $.trim(item).substr(0, (name1+":").length) != name1+":"){//for add name2 when continue
+                                    if(textareaText == ""){
+                                        item =item+'\n'+name2+":";
+                                    }
                                 }
                                 if($.trim(item).indexOf(name1) === 0){
                                     item = item.replace(name1+':', 'You:');

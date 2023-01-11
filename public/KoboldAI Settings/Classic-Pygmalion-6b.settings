@@ -4,7 +4,7 @@
 	"ikmax": 3000,
 	"genamt": 80,
 	"ikgen": 200,
-	"rep_pen": 1.1,
+	"rep_pen": 1.05,
 	"rep_pen_slope": 0.7,
 	"rep_pen_range": 1024,
 	"temp": 0.5,
