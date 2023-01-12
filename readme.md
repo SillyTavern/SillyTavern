@@ -8,6 +8,7 @@ Examples of interface and output:
 * Choosing name and avatar for your character
 * Deleting and regenerating messages
 * Editing any messages
+* Works with various ai models
 * More longer messages from characters
 * Choosing atmospheric backgrounds
 * Creating and easy choosing preset settings
@@ -28,7 +29,7 @@ Examples of interface and output:
 ## Tips
 Use this button to edit the message<br><br>
 <img src="readme/3.png" width="600" /><br><br>
-If the message is not finished, you can simply send the request again, TavernAI will understand that this is a continuation. (Doesn't always work in Pygmalion models)<br>
+If the message is not finished, you can simply send the request again, TavernAI will understand that this is a continuation.<br>
 <br><img src="readme/2.png" width="600" />
 ## Additional materials
 https://www.reddit.com/user/Crataco/comments/zuowi9/opensource_chatbot_companions/
