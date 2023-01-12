@@ -274,6 +274,23 @@ body {
     padding-right: 40px;
     max-width: 720px;
     word-wrap: break-word;
+    animation: typing 3.5s steps(40, end), blink-caret .75s step-end infinite;
+}
+
+.mes_text::after {
+    content: "▋";
+    animation: blink 1s steps(1) infinite;
+    opacity: 0.7;
+    display: none;
+}
+
+@keyframes blink {
+    60% {
+        visibility: hidden;
+    }
+}
+.mes_text i{
+    //color: rgb(229, 224, 216, 0.5);
 }
 br {
    display: block;
