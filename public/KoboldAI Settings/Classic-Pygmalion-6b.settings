@@ -2,7 +2,7 @@
 	"file_version": 2,
 	"max_length": 2048,
 	"ikmax": 3000,
-	"genamt": 180,
+	"genamt": 80,
 	"ikgen": 200,
 	"rep_pen": 1.08,
 	"rep_pen_slope": 0.9,
