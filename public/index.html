@@ -28,7 +28,7 @@
     <script type=module>
         import {encode, decode} from "../scripts/gpt-2-3-tokenizer/mod.js";
         $(document).ready(function(){
-            const VERSION = '1.1.2';
+            const VERSION = '1.1.3';
             var bg_menu_toggle = false;
             var default_user_name = "You";
             var name1 = default_user_name;
@@ -1992,6 +1992,7 @@
             //***Message Editor***
             $(document).on('click', '.mes_edit', function(){
                 if(this_chid !== undefined){
+                    let chatScrollPosition = $("#chat").scrollTop();
                     if(this_edit_mes_id !== undefined){
                         let mes_edited = $('#chat').children().filter('[mesid="'+this_edit_mes_id+'"]').children('.mes_block').children('.ch_name').children('.mes_edit_done');
                         messageEditDone(mes_edited);
@@ -2041,6 +2042,9 @@
                     edit_textarea.height(edit_textarea[0].scrollHeight);
                     edit_textarea.focus();
                     edit_textarea[0].setSelectionRange(edit_textarea.val().length, edit_textarea.val().length);
+                    if(this_edit_mes_id == count_view_mes-1){   
+                        $("#chat").scrollTop(chatScrollPosition);
+                    }
                 }
             });
             $(document).on('click', '.mes_edit_cancel', function(){
@@ -2278,7 +2282,7 @@
                 <textarea id="personality_textarea" name="personality" placeholder=""></textarea>
                 </div>
                 <div id="first_message_div">
-                <h4>First message</h4><h5>First message by character (<a href="/notes/3" target="_blank">?</a>)</h5>
+                <h4>First message</h4><h5>First message from character (<a href="/notes/3" target="_blank">?</a>)</h5>
                 <textarea id="firstmessage_textarea" name="first_mes" placeholder=""></textarea>
                 </div>
                 
