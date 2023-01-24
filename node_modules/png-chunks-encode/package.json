@@ -1,0 +1,42 @@
+{
+  "name": "png-chunks-encode",
+  "version": "1.0.0",
+  "description": "Return a fresh PNG buffer given a set of PNG chunks",
+  "main": "index.js",
+  "license": "MIT",
+  "author": {
+    "name": "Hugh Kennedy",
+    "email": "hughskennedy@gmail.com",
+    "url": "https://github.com/hughsk"
+  },
+  "dependencies": {
+    "crc-32": "^0.3.0",
+    "sliced": "^1.0.1"
+  },
+  "devDependencies": {
+    "png-chunks-extract": "^1.0.0",
+    "tap-spec": "^4.1.0",
+    "tape": "^4.2.0"
+  },
+  "scripts": {
+    "test": "node test | tap-spec"
+  },
+  "keywords": [
+    "png,",
+    "buffer,",
+    "encode,",
+    "recode,",
+    "modify,",
+    "crc,",
+    "buffer,",
+    "uint8array"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/hughsk/png-chunks-encode.git"
+  },
+  "homepage": "https://github.com/hughsk/png-chunks-encode",
+  "bugs": {
+    "url": "https://github.com/hughsk/png-chunks-encode/issues"
+  }
+}

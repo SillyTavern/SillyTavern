@@ -1,0 +1,42 @@
+{
+  "name": "png-chunk-text",
+  "version": "1.0.0",
+  "description": "Create or parse a PNG tEXt chunk for storing uncompressed text data in PNG images",
+  "main": "index.js",
+  "license": "MIT",
+  "author": {
+    "name": "Hugh Kennedy",
+    "email": "hughskennedy@gmail.com",
+    "url": "https://github.com/hughsk"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "png-chunks-encode": "^1.0.0",
+    "png-chunks-extract": "^1.0.0",
+    "standard": "^5.3.1",
+    "tap-spec": "^4.1.0",
+    "tape": "^4.2.0"
+  },
+  "scripts": {
+    "test": "standard && node test.js | tap-spec"
+  },
+  "keywords": [
+    "encode,",
+    "decode,",
+    "tEXt,",
+    "chunk,",
+    "png,",
+    "image,",
+    "metadata,",
+    "hiding,",
+    "format"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/hughsk/png-chunk-text.git"
+  },
+  "homepage": "https://github.com/hughsk/png-chunk-text",
+  "bugs": {
+    "url": "https://github.com/hughsk/png-chunk-text/issues"
+  }
+}

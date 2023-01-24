@@ -1,0 +1,17 @@
+[ignore]
+.*/node_modules/.*
+.*/dist/.*
+.*/test.js
+.*/crc32.js
+
+.*/bits/.*
+.*/ctest/.*
+.*/misc/.*
+.*/perf/.*
+
+[include]
+crc32.flow.js
+
+[libs]
+
+[options]

@@ -1,0 +1,10 @@
+node_modules
+misc/
+perf/
+bits/
+ctest/
+test.js
+.travis.yml
+.jscs.json
+perf.txt
+Makefile
