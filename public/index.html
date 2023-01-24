@@ -7,20 +7,15 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/right-nav-style.css">
     <link rel="stylesheet" href="css/bg_load.css">
+    
     <script type=module>
         //To DO:: 
-        //1) Messages example 
         //2) Count tokens print fix 
-        //3) Make wildcards for characters 
-        //4) Fix same callback in server.js create/edit 
-
         //6) Reload setting files when they was rewrite 
         //7) Show an indicator that shows the message in context or not
         //8) Сombine multiple messages into one if the text continues
-        //9) Access for many chats
         //10) Design presets
         //11) Fix sending propt with json additional symbols (kinda \\ and etc)
-        //
         //import {encode, decode} from "../scripts/gpt-2-3-tokenizer/mod.js";
         //let text = "hello world";
         //console.log(encode("dsfs").length); // [258, 18798, 995]
@@ -28,12 +23,13 @@
     <script type=module>
         import {encode, decode} from "../scripts/gpt-2-3-tokenizer/mod.js";
         $(document).ready(function(){
-            const VERSION = '1.1.3';
+            const VERSION = '1.2.0';
             var bg_menu_toggle = false;
             var default_user_name = "You";
             var name1 = default_user_name;
             var name2 = "Chloe";
-            var chat = ['\nChloe: *You went inside. The air smelled of fried meat, tobacco and a hint of wine. A dim light was cast by candles, and a fire crackled in the fireplace. It seems to be a very pleasant place. Behind the wooden bar is an elf waitress, she is smiling. Her ears are very pointy, and there is a twinkle in her eye. She wears glasses and a white aporn. As soon as she noticed you, she immediately came right up close to you.*\n\n Hello there! How is your evening going?\n<img src="img/star_dust_city.png" width=80% style="opacity:0.3; disolay:block;border-radius:5px;margin-top:25px;margin-bottom:23px; margin-left: 45px;margin-right: auto;">\n<a id="verson" style="color:rgb(229, 224, 216,0.8);" href="https://github.com/TavernAI/TavernAI" target="_blank">@@@TavernAI v'+VERSION+'@@@</a><div id="donation" style="margin-right:10px;margin-top:0px;float:right; height:25px;cursor: pointer;opacity: 0.99;display:inline-block;"><img src="img/coins.png" style="width: 25px;height: 25px;display:inline-block;"><div style="vertical-align: top;display:inline-block;">Give a Tip</div></div><br><br><br><br>'];
+            var chat = [{name: 'Chloe', is_user:false,is_name:true, create_date:0, mes:'\n*You went inside. The air smelled of fried meat, tobacco and a hint of wine. A dim light was cast by candles, and a fire crackled in the fireplace. It seems to be a very pleasant place. Behind the wooden bar is an elf waitress, she is smiling. Her ears are very pointy, and there is a twinkle in her eye. She wears glasses and a white apron. As soon as she noticed you, she immediately came right up close to you.*\n\n Hello there! How is your evening going?\n<img src="img/star_dust_city.png" width=80% style="opacity:0.3; disolay:block;border-radius:5px;margin-top:25px;margin-bottom:23px; margin-left: 45px;margin-right: auto;">\n<a id="verson" style="color:rgb(229, 224, 216,0.8);" href="https://github.com/TavernAI/TavernAI" target="_blank">@@@TavernAI v'+VERSION+'@@@</a><div id="characloud_url" style="margin-right:10px;margin-top:0px;float:right; height:25px;cursor: pointer;opacity: 0.99;display:inline-block;"><img src="img/cloud_logo.png" style="width: 25px;height: auto;display:inline-block; opacity:0.7;"><div style="vertical-align: top;display:inline-block;">Cloud</div></div><br><br><br><br>'}];//<div id="donation" style="margin-right:10px;margin-top:0px;float:right; height:25px;cursor: pointer;opacity: 0.99;display:inline-block;"><img src="img/coins.png" style="width: 25px;height: 25px;display:inline-block;"><div style="vertical-align: top;display:inline-block;">Give a Tip</div></div><br><br><br><br>'}];
+            var chat_create_date = 0;
             var default_ch_mes = "Hello";
             var count_view_mes = 0;
             var mesStr = '';
@@ -41,6 +37,11 @@
             var this_chid;
             var backgrounds = [];
             var default_avatar = 'img/fluffy.png';
+            var is_colab = false;
+            
+            var is_mes_reload_avatar = false;
+            
+            var is_advanced_char_open = false;
             
             var menu_type = '';//what is selected in the menu
             var selected_button = '';//which button pressed
@@ -50,6 +51,8 @@
             var create_save_personality = '';
             var create_save_first_message = '';
             var create_save_avatar = '';
+            var create_save_scenario = '';
+            var create_save_mes_example = '';
             
             var timerSaveEdit;
             var durationSaveEdit = 200;
@@ -120,6 +123,7 @@
             var css_mes_bg = $('<div class="mes"></div>').css('background');
             var css_send_form_display = $('<div id=send_form></div>').css('display');
             /////////////
+            isColab();
             getSettings("def");
             getLastVersion();
             //var interval_getSettings = setInterval(getSettings, 1000);
@@ -129,6 +133,9 @@
             getBackgrounds();
             getUserAvatars();
             //
+            $('#characloud_url').click(function(){
+                window.open('https://boosty.to/tavernai', '_blank');
+            });
             function checkOnlineStatus(){
                 //console.log(online_status);
                 if(online_status == 'no_connection'){
@@ -212,6 +219,7 @@
                             }
                             if(online_status.toLowerCase().indexOf('pygmalion') != -1){
                                 is_pygmalion = true;
+                                online_status+=" (Pyg. formatting on)";
                             }else{
                                 is_pygmalion = false;
                             }
@@ -240,14 +248,17 @@
                 $("#api_loading").css("display", 'none');
                 $("#api_button").css("display", 'inline-block');
             }
+            
             function printCharaters(){
-                $("#rm_print_charaters_block").html('');
+                //console.log(1);
+                $("#rm_print_charaters_block").empty();
                 characters.forEach(function(item, i, arr) {
                     var this_avatar = default_avatar;
                     if(item.avatar != 'none'){
-                        this_avatar = "characters/"+item.name+"/avatars/"+item.avatar;
+                        this_avatar = "characters/"+item.avatar+"#"+Date.now();
+
                     }
-                    $("#rm_print_charaters_block").prepend("<div class=character_select chid="+i+"><div class=avatar><img src='"+this_avatar+"'></div><div class=ch_name>"+item.name+"</div></div>");
+                    $("#rm_print_charaters_block").prepend('<div class=character_select chid='+i+'><div class=avatar><img src="'+this_avatar+'"></div><div class=ch_name>'+item.name+'</div></div>');
                     //console.log(item.name);
                 });
                 
@@ -265,18 +276,20 @@
                 });
                 if (response.ok === true) {
                     const getData = await response.json();
-                    //console.log(getData[0]);
+                    //console.log(getData);
                     //var aa = JSON.parse(getData[0]);
-                    const load_ch_coint = Object.getOwnPropertyNames(getData);
+                    const load_ch_count = Object.getOwnPropertyNames(getData);
                     
-                    for(var i = 0; i < load_ch_coint.length;i++){
+                    for(var i = 0; i < load_ch_count.length;i++){
                         
                         characters[i] = [];
-                        characters[i] = JSON.parse(getData[i]);
+                        characters[i] = getData[i];
+                        
                         //console.log(characters[i]);
                     }
-                    
-                    characters.reverse();
+                    characters.sort((a,b) =>  a.create_date - b.create_date );
+                    //characters.reverse();
+
                     if(this_chid != undefined) $("#avatar_url_pole").val(characters[this_chid].avatar);
                     printCharaters();
                     //console.log(propOwn.length);
@@ -305,6 +318,32 @@
                     }
                     //var aa = JSON.parse(getData[0]);
                     //const load_ch_coint = Object.getOwnPropertyNames(getData);
+                    
+
+                }
+            }
+             async function isColab() {
+                
+                const response = await fetch("/iscolab", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                            "": ""
+                        })
+
+                });
+                if (response.ok === true) {
+                    const getData = await response.json();
+                    is_colab = getData.is_colab;
+                    if(is_colab){
+                        var currentUrl = window.location.href;
+                        if (currentUrl.charAt(currentUrl.length - 1) === '/') {
+                            currentUrl = currentUrl.substring(0, currentUrl.length - 1);
+                            currentUrl+=':80808';
+                         }
+                        $('#api_url_text').val(currentUrl);
+                        $('#api_button').click();
+                    }
                     
 
                 }
@@ -386,27 +425,25 @@
                 }
                 return mes;
             }
-            function addOneMessage(message){
-                message = message.replace(/^\s+/g, '');
+            function addOneMessage(mes){
+                //var message = mes['mes'];
+                //message = mes['mes'].replace(/^\s+/g, '');
                 //console.log(message.indexOf(name1+":"));
-                var messageText = "";
+                var messageText = mes['mes'];
                 var characterName = name1;
                 var avatarImg = "User Avatars/"+user_avatar;
                 //thisText = thisText.split("\n").join("<br>");
                 var avatarImg = "User Avatars/"+user_avatar;
-                if(message.indexOf(name1+":") == 0){
-                    messageText = message.substr((name1+":").length);
-                }else{
-                    if(message.indexOf(name2+":") == 0){
-                        messageText = message.substr((name2+":").length);
-                    }else{
-                        messageText = message;
-                    }
+                if(!mes['is_user']){
                     if(this_chid == undefined){
                         avatarImg = "img/chloe.png";
                     }else{
                         if(characters[this_chid].avatar != 'none'){
-                            avatarImg = "characters/"+characters[this_chid].name+"/avatars/"+characters[this_chid].avatar;
+                            avatarImg = "characters/"+characters[this_chid].avatar;
+                            if(is_mes_reload_avatar !== false){
+                                avatarImg+="#"+is_mes_reload_avatar;
+                                //console.log(avatarImg);
+                            }
                         }else{
                             avatarImg = "img/fluffy.png";
                         }
@@ -419,9 +456,10 @@
                 //if(characterName != name1){
                     //messageText = messageText.replaceAll(name2+":", "");
                 //}
+                //console.log(messageText);
                 messageText = messageFormating(messageText, characterName);
                 
-                $("#chat").append( "<div class='mes' mesid="+count_view_mes+" ch_name="+characterName+"><div class='for_checkbox'></div><input type='checkbox' class='del_checkbox'><div class=avatar><img src='"+avatarImg+"' width=60px height=120px></div><div class=mes_block><div class=ch_name>"+characterName+"<div title=Edit class=mes_edit><img src=img/scroll.png style='width:20px;height:20px;'></div><div class=mes_edit_cancel><img src=img/cancel.png></div><div class=mes_edit_done><img src=img/done.png></div></div><div class=mes_text>"+"</div></div></div>" );
+                $("#chat").append( "<div class='mes' mesid="+count_view_mes+" ch_name="+characterName+"><div class='for_checkbox'></div><input type='checkbox' class='del_checkbox'><div class=avatar><img src='"+avatarImg+"'></div><div class=mes_block><div class=ch_name>"+characterName+"<div title=Edit class=mes_edit><img src=img/scroll.png style='width:20px;height:20px;'></div><div class=mes_edit_cancel><img src=img/cancel.png></div><div class=mes_edit_done><img src=img/done.png></div></div><div class=mes_text>"+"</div></div></div>" );
                 
                 if(!if_typing_text){
                     $("#chat").children().filter('[mesid="'+count_view_mes+'"]').children('.mes_block').children('.mes_text').append(messageText);
@@ -465,6 +503,7 @@
                 }
             });
             async function Generate(type) {//encode("dsfs").length
+                
                 tokens_already_generated = 0;
                 message_already_generated = name2+': ';
                 if(online_status != 'no_connection' && this_chid != undefined){
@@ -474,8 +513,7 @@
                         
                     }else{
                         var textareaText = "";
-                        let is_you = $.trim(chat[chat.length-1]);
-                        if(is_you.substr(0,(name1+":").length) == name1+":"){//If last message from You
+                        if(chat[chat.length-1]['is_user']){//If last message from You
                             
                         }else{
                             chat.length = chat.length-1;
@@ -496,6 +534,7 @@
                     
                     var postAnchorChar = "talks a lot with descriptions";//'Talk a lot with description what is going on around';// in asterisks
                     var postAnchorStyle = "[Writing style: very long messages]";//"[Genre: roleplay chat][Tone: very long messages with descriptions]";
+                    
                     
                     var anchorTop = '';
                     var anchorBottom = '';
@@ -520,40 +559,81 @@
                     //*********************************
                     //PRE FORMATING STRING
                     //*********************************
-                    userSendString = name1+": "+textareaText+"\n";
-
-                    if(textareaText != ""){               
-                        addOneMessage(userSendString);
-                        chat[chat.length] = userSendString;
+                    if(textareaText != ""){
+                        
+                        chat[chat.length] = {};
+                        chat[chat.length-1]['name'] = name1;
+                        chat[chat.length-1]['is_user'] = true;
+                        chat[chat.length-1]['is_name'] = true;
+                        chat[chat.length-1]['send_date'] = Date.now();
+                        chat[chat.length-1]['mes'] = textareaText;
+                        addOneMessage(chat[chat.length-1]);
                     }
                     var chatString = '';
                     var arrMes = [];
                     
-                    var charPersonality = characters[this_chid].personality;
-                    if(is_pygmalion){
-                        storyString = name2+"'s Persona: "+$.trim(characters[this_chid].description)+" "+name2+" is "+charPersonality+".\n<START>\n";
-                    }else{
-                        if($.trim(charPersonality.length) > 0){
-                            charPersonality = "["+name2+" is "+charPersonality+"]";//"["+name2+"'s personality: "+charPersonality+"]";
+                    var charDescription = $.trim(characters[this_chid].description);
+                    var charPersonality = $.trim(characters[this_chid].personality);
+                    var Scenario = $.trim(characters[this_chid].scenario);
+                    var mesExamples = $.trim(characters[this_chid].mes_example);
+                    var checkMesExample = $.trim(mesExamples.replace(/<START>/gi, ''));
+                    if(checkMesExample.length == 0) mesExamples = '';
+                    var mesExamplesArray = [];
+                    if(mesExamples !== undefined){
+                        if(mesExamples.length > 0){
+                            mesExamples = mesExamples.replace(/{{user}}/gi, name1);
+                            mesExamples = mesExamples.replace(/{{char}}/gi, name2);
+                            //mesExamples = mesExamples.replaceAll('<START>', '[An example of how '+name2+' responds]');
+                            let blocks = mesExamples.split(/<START>/gi);
+                            mesExamplesArray = blocks.slice(1).map(block => `<START>\n${block.trim()}\n`);
                         }
-
-                        storyString = $.trim(characters[this_chid].description);
-                        if($.trim(storyString.length) > 0){
-                            if(storyString.slice(-1) !== ']' || storyString.substr(0,1) !== '['){
-                                storyString = '['+storyString+']';
+                    }
+                    
+                    if(is_pygmalion){
+                        if(charDescription.length > 0){
+                            storyString = name2+"'s Persona: "+charDescription+"\n";
+                        }
+                        if(charPersonality.length > 0){
+                            storyString+= 'Personality: '+charPersonality+'\n';
+                        }
+                        if(Scenario.length > 0){
+                            storyString+= 'Scenario: '+Scenario+'\n';
+                        }
+                    }else{
+                        if(charDescription !== undefined){
+                            if(charPersonality.length > 0){
+                                charPersonality = "["+name2+"'s personality: "+charPersonality+"]";//"["+name2+"'s personality: "+charPersonality+"]";
                             }
                         }
+                        if(charDescription !== undefined){
+                            if($.trim(charDescription).length > 0){
+                                if(charDescription.slice(-1) !== ']' || charDescription.substr(0,1) !== '['){
+                                    charDescription = '['+charDescription+']';
+                                }
+                                storyString+=charDescription+'\n';
+                            }
+                        }
+
                         if(count_view_mes < topAnchorDepth){
-                            storyString+=charPersonality;
+                            storyString+=charPersonality+'\n';
                         }
-                        if(count_view_mes < 10){
-                            storyString+='\nThen the roleplay chat between '+name1+' and '+name2+' begins.\n';
-                        }
+                        
+                        
                     }
                     var chat2 = [];
                     var j = 0;
                     for(var i = chat.length-1; i >= 0; i--){
-                        chat2[i] = chat[j];
+                        let this_mes_ch_name = '';
+                        if(chat[j]['is_user']){
+                            this_mes_ch_name = name1;
+                        }else{
+                            this_mes_ch_name = name2;
+                        }
+                        if(chat[j]['is_name']){
+                            chat2[i] = this_mes_ch_name+': '+chat[j]['mes']+'\n';
+                        }else{
+                            chat2[i] = chat[j]['mes']+'\n';
+                        }
                         j++;
                     }
                     //chat2 = chat2.reverse();
@@ -564,26 +644,61 @@
                             this_max_context = 1024;
                         }else{
                             this_max_context = 2048-60;//fix for fat tokens 
+                            if(model_novel == 'krake-v2'){
+                                this_max_context-=110;
+                            }
                         }
                     }
                      
                     var i = 0;
+                    
                     for (const item of chat2) {//console.log(encode("dsfs").length);
-                        if(encode(JSON.stringify(characters[this_chid].description+chatString+anchorTop+anchorBottom+characters[this_chid].personality)).length+120 < this_max_context){ //(The number of tokens in the entire promt) need fix, it must count correctly (added +120, so that the description of the character does not hide)
+                        if(encode(JSON.stringify(storyString+chatString+anchorTop+anchorBottom+charPersonality)).length+120 < this_max_context){ //(The number of tokens in the entire promt) need fix, it must count correctly (added +120, so that the description of the character does not hide)
                             
                             chatString = item+chatString;
+                            if (is_pygmalion && i == 0) item=+'<START>'+item;
                             arrMes[arrMes.length] = item;
+                        }else{
+                            i = chat.length-1;
                         }
                         await delay(1); //For disable slow down (encode gpt-2 need fix)
                         //console.log(i+' '+chat.length);
                         if(i == chat.length-1){
+                            if(mesExamplesArray.length > 0){
+                                
+                            }
+                            for(let iii = 0; iii < mesExamplesArray.length; iii++){//mesExamplesArray
+                                if(encode(JSON.stringify(storyString+chatString+anchorTop+anchorBottom+charPersonality)).length+120 < this_max_context){ //example of dialogs
+                                    if(!is_pygmalion){
+                                        mesExamplesArray[iii] = mesExamplesArray[iii].replace(/<START>/i, 'This is how '+name2+' should talk');//An example of how '+name2+' responds
+                                    }
+                                    storyString = storyString+mesExamplesArray[iii];
+                                    await delay(1);
+
+                                    //arrMes[arrMes.length] = item;
+                                }else{
+                                    return;
+                                }
+                                
+                            }
+                            if(!is_pygmalion){
+                                if(Scenario !== undefined){
+                                    if(Scenario.length > 0){
+                                        storyString+= 'Circumstances and context of the dialogue: '+Scenario+'\n';
+                                    }
+                                }
+                                storyString+='\nThen the roleplay chat between '+name1+' and '+name2+' begins.\n';
+                            }
                             runGenerate();
+                            return;
                         }
                         i++;
+                        
                     }
                     
                     function runGenerate(cycleGenerationPromt = ''){
                         if(cycleGenerationPromt === ''){
+                            
                             chatString = "";
                             arrMes = arrMes.reverse();
                             var is_add_personality = false;
@@ -601,7 +716,7 @@
                                     //anchorAndPersonality = "[Genre: roleplay chat][Tone: very long messages with descriptions]";
                                     item+=charPersonality+anchorTop+'\n';
                                 }
-                                if(i >= arrMes.length-1 && count_view_mes>=4 && $.trim(item).substr(0, (name1+":").length) == name1+":" && !is_pygmalion){//For add anchor in end
+                                if(i >= arrMes.length-1 && count_view_mes>8 && $.trim(item).substr(0, (name1+":").length) == name1+":" && !is_pygmalion){//For add anchor in end
                                     item = item.substr(0,item.length-1);
                                     //chatString+=postAnchor+"\n";//"[Writing style: very long messages]\n";
                                     item =item+" "+ anchorBottom+"\n";
@@ -623,7 +738,7 @@
                             });
 
                             storyString+=chatString;
-
+                            //console.log(storyString);
 
                             //console.log(encode(characters[this_chid].description+chatString).length);
                             //console.log(encode(JSON.stringify(characters[this_chid].description+chatString)).length);
@@ -733,6 +848,7 @@
                                     }
                                     
                                     //Pygmalion run again
+                                    
                                     if(is_pygmalion){
                                         if_typing_text = false;
                                         message_already_generated +=getMessage;
@@ -758,17 +874,22 @@
                                         getMessage = getMessage.substr(0,getMessage.indexOf(name1+":"));
 
                                     }
-                                    if(getMessage.indexOf((name1+":").toLowerCase()) != -1 && false){ 
-                                        getMessage = getMessage.substr(0,getMessage.indexOf((name1+":").toLowerCase()));
+                                    let this_mes_is_name = true;
+                                    if(getMessage.indexOf(name2+":") === 0){
+                                        getMessage = getMessage.replace(name2+':', '');
+                                    }else{
+                                        this_mes_is_name = false;
                                     }
+                                    if(type === 'force_name2') this_mes_is_name = true;
                                     //getMessage = getMessage.replace(/^\s+/g, '');
                                     if(getMessage.length > 0){
-                                        if(getMessage.substr(getMessage.length-1, 2) != "\n"){
-                                            getMessage+="\n";
-                                        }
-
-                                        chat[chat.length] = getMessage;
-                                        addOneMessage(getMessage);
+                                        chat[chat.length] = {};
+                                        chat[chat.length-1]['name'] = name2;
+                                        chat[chat.length-1]['is_user'] = false;
+                                        chat[chat.length-1]['is_name'] = this_mes_is_name;
+                                        chat[chat.length-1]['send_date'] = Date.now();
+                                        chat[chat.length-1]['mes'] = getMessage;
+                                        addOneMessage(chat[chat.length-1]);
                                         $( "#send_but" ).css("display", "block");
                                         $( "#loading_mes" ).css("display", "none");
                                         saveChat();
@@ -798,15 +919,19 @@
             }
             
             async function saveChat() {
-                    if(chat[0].indexOf('<username-holder>') === -1){
-                        var save_chat = ['<username-holder>'+name1, ...chat];
-                    }else{
-                        var save_chat = chat;
+                chat.forEach(function(item, i) {
+                    if(item['is_user']){
+                        var str = item['mes'].replace(name1+':', default_user_name+':');
+                        chat[i]['mes'] = str;
+                        chat[i]['name'] = default_user_name;
                     }
+                });
+                var save_chat = [{user_name:default_user_name, character_name:name2,create_date: chat_create_date}, ...chat];
+
                 jQuery.ajax({    
                     type: 'POST', 
                     url: '/savechat', 
-                    data: JSON.stringify({ch_name: characters[this_chid].name, file_name: characters[this_chid].chat, chat: save_chat}),
+                    data: JSON.stringify({ch_name: characters[this_chid].name, file_name: characters[this_chid].chat, chat: save_chat, avatar_url: characters[this_chid].avatar}),
                     beforeSend: function(){
                         //$('#create_button').attr('value','Creating...'); 
                     },
@@ -828,7 +953,7 @@
                 jQuery.ajax({    
                     type: 'POST', 
                     url: '/getchat', 
-                    data: JSON.stringify({ch_name: characters[this_chid].name, file_name: characters[this_chid].chat}),
+                    data: JSON.stringify({ch_name: characters[this_chid].name, file_name: characters[this_chid].chat, avatar_url: characters[this_chid].avatar}),
                     beforeSend: function(){
                         //$('#create_button').attr('value','Creating...'); 
                     },
@@ -838,8 +963,18 @@
                     success: function(data){
                         //console.log(data);
                         //chat.length = 0;
-                        
-                        chat =  data;
+                        if(data[0] !== undefined){
+                            for (let key in data) {
+                                chat.push(data[key]);
+                            }
+                            //chat =  data;
+                            chat_create_date = chat[0]['create_date'];
+                            chat.shift();
+
+                        }else{
+                            chat_create_date = Date.now();
+                        }
+                        //console.log(chat);
                         getChatResult();
                         saveChat();
                     },
@@ -854,41 +989,27 @@
             function getChatResult(){
                 name2 = characters[this_chid].name;
                 if(chat.length > 1){
-                    if(chat[0].indexOf('<username-holder>') !== -1){
-                        var this_chat_user_name = chat[0].substr('<username-holder>'.length, chat[0].length);
-                        if(this_chat_user_name !== name1){
-                            var arr_char = [];
-                            chat.forEach(function(item, i) {
-                                if(i !== 0){
-                                    //var str = item.replace(new RegExp(this_chat_user_name+':', "g"), name1+':');
-                                    if(chat[i].indexOf(name2+":") !== 0){
-                                        var str = item.replace(this_chat_user_name+':', name1+':');
-                                        arr_char.push(str);
-                                    }else{
-                                        arr_char.push(item);
-                                    }
-                                }
-                            });
-                            chat = [];
-                            chat = arr_char;
-                        }else{
-                            chat.shift();
+                    
+                    chat.forEach(function(item, i) {
+                        if(item['is_user']){
+                            var str = item['mes'].replace(default_user_name+':', name1+':');
+                            chat[i]['mes'] = str;
+                            chat[i]['name'] = name1;
                         }
-                        //chat.shift();
-                    }else{ //if(default_user_name !== name1){
-                        chat.forEach(function(item, i) {
-                                var str = item.replace(new RegExp(default_user_name+':', "g"), name1+':');
-                                chat[i] = str;
-                            });
-                    }
+                    });
+
                     
                 }else{
-                    
                     //console.log(characters[this_chid].first_mes);
+                    chat[0] = {};
+                    chat[0]['name'] = name2;
+                    chat[0]['is_user'] = false;
+                    chat[0]['is_name'] = true;
+                    chat[0]['send_date'] = Date.now();
                     if(characters[this_chid].first_mes != ""){
-                        chat = [characters[this_chid].name+": "+characters[this_chid].first_mes+"\n"];
+                        chat[0]['mes'] = characters[this_chid].first_mes;
                     }else{
-                        chat = [characters[this_chid].name+": "+default_ch_mes+"\n"];
+                        chat[0]['mes'] = default_ch_mes;
                     }
                 }
                 printMessages();
@@ -977,12 +1098,18 @@
                 
                 //create text poles
                 $("#rm_button_back").css("display", "inline-block");
-
-                
+                $("#character_import_button").css("display", "inline-block");
+                $("#character_popup_text_h3").text('Create character');
                 $("#character_name_pole").val(create_save_name);
                 $("#description_textarea").val(create_save_description);
                 $("#personality_textarea").val(create_save_personality);
                 $("#firstmessage_textarea").val(create_save_first_message);
+                $("#scenario_pole").val(create_save_scenario);
+                if($.trim(create_save_mes_example).length == 0){
+                    $("#mes_example_textarea").val('<START>');
+                }else{
+                    $("#mes_example_textarea").val(create_save_mes_example);
+                }
                 $("#avatar_div").css("display", "block");
                 $("#avatar_load_preview").attr('src',default_avatar);
                 $("#name_div").css("display", "block");
@@ -1034,6 +1161,7 @@
                 
                 //create text poles
                 $("#rm_button_back").css("display", "none");
+                //$("#character_import_button").css("display", "none");
                 $("#create_button").attr("value", "Save");
                 $("#create_button").css("display", "none");
                 var i = 0;
@@ -1044,19 +1172,25 @@
                     i++;
                 }
                 $("#add_avatar_button").val('');
+
+                $('#character_popup_text_h3').text(characters[chid].name);
                 $("#character_name_pole").val(characters[chid].name);
                 $("#description_textarea").val(characters[chid].description);
                 $("#personality_textarea").val(characters[chid].personality);
                 $("#firstmessage_textarea").val(characters[chid].first_mes);
+                $("#scenario_pole").val(characters[chid].scenario);
+                $("#mes_example_textarea").val(characters[chid].mes_example);
                 $("#selected_chat_pole").val(characters[chid].chat);
-                $("#last_mes_pole").val(characters[chid].last_mes);
+                $("#create_date_pole").val(characters[chid].create_date);
                 $("#avatar_url_pole").val(characters[chid].avatar);
+                $("#chat_import_avatar_url").val(characters[chid].avatar);
+                $("#chat_import_character_name").val(characters[chid].name);
                 //$("#avatar_div").css("display", "none");
                 var this_avatar = default_avatar;
                 if(characters[chid].avatar != 'none'){
-                        this_avatar = "characters/"+characters[chid].name+"/avatars/"+characters[chid].avatar;
+                        this_avatar = "characters/"+characters[chid].avatar;
                 }
-                $("#avatar_load_preview").attr('src',this_avatar);
+                $("#avatar_load_preview").attr('src',this_avatar+"#"+Date.now());
                 $("#name_div").css("display", "none");
                 
                 $("#form_create").attr("actiontype", "editcharacter");
@@ -1163,6 +1297,26 @@
                 callPopup('<h3>Delete the background?</h3>');
 
             });
+            $( "#advanced_div" ).click(function() {
+                if(!is_advanced_char_open){
+                    is_advanced_char_open = true;
+                    $('#character_popup').css('display', 'grid');
+                    $('#character_popup').css('opacity', 0.0);
+                    $('#character_popup').transition({ opacity: 1.0 ,duration: animation_rm_duration, easing:animation_rm_easing});
+                }else{
+                    is_advanced_char_open = false;
+                    $('#character_popup').css('display', 'none');
+                }
+            });
+            $( "#character_cross" ).click(function() {
+                is_advanced_char_open = false;
+                $('#character_popup').css('display', 'none');
+            });
+            $( "#character_popup_ok" ).click(function() {
+                is_advanced_char_open = false;
+                $('#character_popup').css('display', 'none');
+            });
+            
             $("#dialogue_popup_ok").click(function(){
                 $("#shadow_popup").css('display', 'none');
                 $("#shadow_popup").css('opacity:', 0.0);
@@ -1191,6 +1345,7 @@
                 }
                 if(popup_type == 'new_chat' && this_chid != undefined && menu_type != "create"){//Fix it; New chat doesn't create while open create character menu
                     clearChat();
+                    chat.length = 0;
                     characters[this_chid].chat = Date.now();
                     $("#selected_chat_pole").val(characters[this_chid].chat);
                     timerSaveEdit = setTimeout(() => {$("#create_button").click();},durationSaveEdit);
@@ -1301,6 +1456,7 @@
                 }
             }
             $("#add_avatar_button").change(function(){
+                is_mes_reload_avatar = Date.now();
                 read_avatar_load(this);
             });
             $( "#form_create" ).submit(function(e) {
@@ -1321,6 +1477,7 @@
                             contentType: false,
                             processData: false, 
                             success: function(html){
+                                $('#character_cross').click();
                                 $("#character_name_pole").val('');
                                 create_save_name = '';
                                 $("#description_textarea").val('');
@@ -1329,6 +1486,13 @@
                                 create_save_personality = '';
                                 $("#firstmessage_textarea").val('');
                                 create_save_first_message = '';
+                                
+                                $("#character_popup_text_h3").text('Create character');
+                                
+                                $("#scenario_pole").val('');
+                                create_save_scenario = '';
+                                $("#mes_example_textarea").val('');
+                                create_save_mes_example = '';
                                 
                                 create_save_avatar = '';
                                 
@@ -1368,24 +1532,28 @@
                         contentType: false,
                         processData: false, 
                         success: function(html){
+
                             $('.mes').each(function(){
                                 if($(this).attr('ch_name') != name1){
                                     $(this).children('.avatar').children('img').attr('src', $('#avatar_load_preview').attr('src'));
                                 }
                             });
-                            if(chat.length == 1 ){
+                            if(chat.length === 1 ){
                                 
                                 var this_ch_mes = default_ch_mes;
                                 if($('#firstmessage_textarea').val() != ""){
                                     this_ch_mes = $('#firstmessage_textarea').val();
                                 }
-
                                 if(this_ch_mes != $.trim($("#chat").children('.mes').children('.mes_block').children('.mes_text').text())){
                                     clearChat();
                                     chat.length = 0;
-                                    chat[0] = name2+": "+this_ch_mes+"\n";
+                                    chat[0] = {};
+                                    chat[0]['name'] = name2;
+                                    chat[0]['is_user'] = false;
+                                    chat[0]['is_name'] = true;
+                                    chat[0]['mes'] = this_ch_mes;
                                     add_mes_without_animation = true;
-                                    addOneMessage(this_ch_mes);
+                                    addOneMessage(chat[0]);
                                 }
                             }
                             $('#create_button').removeAttr("disabled");
@@ -1395,7 +1563,7 @@
                             $("#add_avatar_button").replaceWith($("#add_avatar_button").val('').clone(true));
                             $('#create_button').attr('value','Save');
 
-                            var count_tokens = encode(JSON.stringify(characters[this_chid].description+characters[this_chid].personality)).length;
+                            var count_tokens = encode(JSON.stringify(characters[this_chid].description+characters[this_chid].personality+characters[this_chid].scenario+characters[this_chid].mes_example)).length;
                             if(count_tokens < 1024){
                                 $('#result_info').html(count_tokens+" Tokens");
                             }else{
@@ -1420,6 +1588,7 @@
                 callPopup('<h3>Delete the character?</h3>');
             });
             $( "#rm_info_button" ).click(function() {
+                $('#rm_info_avatar').html('');
                 select_rm_characters();
             });
             //@@@@@@@@@@@@@@@@@@@@@@@@
@@ -1430,7 +1599,7 @@
                 }
 
             });
-            $('#description_textarea').on('change keyup paste cut', function(){
+            $('#description_textarea').on('keyup paste cut', function(){//change keyup paste cut
                 if(menu_type == 'create'){
                     create_save_description = $('#description_textarea').val();
                 }else{
@@ -1438,7 +1607,7 @@
                 }
                 
             });
-            $('#personality_textarea').on('change keyup paste cut', function(){
+            $('#personality_textarea').on('keyup paste cut', function(){
                 if(menu_type == 'create'){
 
                     create_save_personality = $('#personality_textarea').val();
@@ -1446,7 +1615,23 @@
                     timerSaveEdit = setTimeout(() => {$("#create_button").click();},durationSaveEdit);
                 }
             });
-            $('#firstmessage_textarea').on('change keyup paste cut', function(){
+            $('#scenario_pole').on('keyup paste cut', function(){
+                if(menu_type == 'create'){
+
+                    create_save_scenario = $('#scenario_pole').val();
+                }else{
+                    timerSaveEdit = setTimeout(() => {$("#create_button").click();},durationSaveEdit);
+                }
+            });
+            $('#mes_example_textarea').on('keyup paste cut', function(){
+                if(menu_type == 'create'){
+
+                    create_save_mes_example = $('#mes_example_textarea').val();
+                }else{
+                    timerSaveEdit = setTimeout(() => {$("#create_button").click();},durationSaveEdit);
+                }
+            });
+            $('#firstmessage_textarea').on('keyup paste cut', function(){
                 
                 if(menu_type == 'create'){
                     create_save_first_message = $('#firstmessage_textarea').val();
@@ -1498,6 +1683,14 @@
                         
                         }
                     });
+                }
+            });
+            $( "#option_select_chat" ).click(function() {
+                if(this_chid != undefined && !is_send_press){
+                    getAllCharaChats();
+                    $('#shadow_select_chat_popup').css('display', 'block');
+                    $('#shadow_select_chat_popup').css('opacity', 0.0);
+                    $('#shadow_select_chat_popup').transition({ opacity: 1.0 ,duration: animation_rm_duration, easing:animation_rm_easing});
                 }
             });
             $( "#option_start_new_chat" ).click(function() {
@@ -1757,9 +1950,9 @@
                     success: function(data){
                         if(data.result != 'file not find'){
                             settings = JSON.parse(data.settings);
-                            if(settings.myname !== undefined){
-                                if(settings.myname !== ''){
-                                    name1 = settings.myname;
+                            if(settings.username !== undefined){
+                                if(settings.username !== ''){
+                                    name1 = settings.username;
                                     $('#your_name').val(name1);
                                 }
                             }
@@ -1918,7 +2111,7 @@
                     type: 'POST', 
                     url: '/savesettings', 
                     data: JSON.stringify({
-                            myname: name1,
+                            username: name1,
                             api_server: api_server,
                             preset_settings: preset_settings,
                             preset_settings_novel: preset_settings_novel,
@@ -1983,6 +2176,13 @@
                     }
                 });
             });
+            $('#select_chat_cross').click(function(){
+
+
+                $('#shadow_select_chat_popup').css('display', 'none');
+                $('#load_select_chat_div').css('display', 'block');
+            });
+            
             function isInt(value) {
                 return !isNaN(value) && 
                     parseInt(Number(value)) == value && 
@@ -2018,15 +2218,11 @@
                     var edit_mes_id = $(this).parent().parent().parent().attr('mesid');
                     this_edit_mes_id = edit_mes_id;
                     
-                    var text = chat[edit_mes_id];
-                    if(text.indexOf(name1+":") == 0){
-                        text = text.substr((name1+":").length);
+                    var text = chat[edit_mes_id]['mes'];
+                    if(chat[edit_mes_id]['is_user']){
                         this_edit_mes_chname = name1;
                     }else{
                         this_edit_mes_chname = name2;
-                        if(text.indexOf(name2+":") == 0){
-                            text = text.substr((name2+":").length);
-                        }
                     }
                     text = text.trim();
                     $(this).parent().parent().children('.mes_text').append('<textarea class=edit_textarea style="max-width:auto; ">'+text+'</textarea>');
@@ -2049,14 +2245,8 @@
             });
             $(document).on('click', '.mes_edit_cancel', function(){
                 //var text = $(this).parent().parent().children('.mes_text').children('.edit_textarea').val();
-                var text = chat[this_edit_mes_id];
-                if(text.indexOf(name1+":") == 0){
-                    text = text.substr((name1+":").length);
-                }else{
-                    if(text.indexOf(name2+":") == 0){
-                        text = text.substr((name2+":").length);
-                    }
-                }
+                var text = chat[this_edit_mes_id]['mes'];
+                
                 $(this).parent().parent().children('.mes_text').empty();
                 $(this).css('display','none');
                 $(this).parent().children('.mes_edit_done').css('display','none');
@@ -2072,7 +2262,7 @@
                 var text = div.parent().parent().children('.mes_text').children('.edit_textarea').val();
                 //var text = chat[this_edit_mes_id];
                 text = text.trim();
-                chat[this_edit_mes_id] = this_edit_mes_chname+": "+text+"\n";
+                chat[this_edit_mes_id]['mes'] = text;
                 div.parent().parent().children('.mes_text').empty();
                 div.css('display','none');
                 div.parent().children('.mes_edit_cancel').css('display','none');
@@ -2091,6 +2281,54 @@
                     
                 }
             });
+            //Select chat
+            async function getAllCharaChats() {
+                $('#select_chat_div').html('');
+                //console.log(characters[this_chid].chat);
+                jQuery.ajax({    
+                    type: 'POST', 
+                    url: '/getallchatsofchatacter', 
+                    data: JSON.stringify({avatar_url: characters[this_chid].avatar}),
+                    beforeSend: function(){
+                        //$('#create_button').attr('value','Creating...'); 
+                    },
+                    cache: false,
+                    dataType: "json",
+                    contentType: "application/json",
+                    success: function(data){
+                        $('#load_select_chat_div').css('display', 'none');
+                        let dataArr = Object.values(data);
+                        data = dataArr.sort((a, b) => a['file_name'].localeCompare(b['file_name']));
+                        data = data.reverse();
+                        for (const key in data) {
+                            let strlen = 40;
+                            let mes = data[key]['mes'];
+                            if(mes.length > strlen){
+                                mes = '...'+mes.substring(mes.length - strlen);
+                            }
+                            $('#select_chat_div').append('<div class="select_chat_block" file_name="'+data[key]['file_name']+'"><div class=avatar><img src="characters/'+characters[this_chid]['avatar']+'" style="width: 33px; height: 51px;"></div><div class="select_chat_block_filename">'+data[key]['file_name']+'</div><div class="select_chat_block_mes">'+mes+'</div></div>');
+                            if(characters[this_chid]['chat'] == data[key]['file_name'].replace('.jsonl', '')){
+                                //children().last()
+                                $('#select_chat_div').children(':nth-last-child(1)').attr('highlight', true);
+                            }
+                        }
+                        //<div id="select_chat_div">
+
+                        //<div id="load_select_chat_div">
+                        //console.log(data);
+                        //chat.length = 0;
+                        
+                        //chat =  data;
+                        //getChatResult();
+                        //saveChat();
+                    },
+                    error: function (jqXHR, exception) {
+                        //getChatResult();
+                        console.log(exception);
+                        console.log(jqXHR);
+                    }
+                });
+            }
             //************************************************************
             //************************Novel.AI****************************
             //************************************************************
@@ -2202,8 +2440,127 @@
 
                 return 0;
             }
-        });
+            
+            
+            
+            //**************************CHARACTER IMPORT EXPORT*************************//
+            $( "#character_import_button" ).click(function() {
+                $("#character_import_file").click();
+            });
+            $("#character_import_file").on("change", function(e){
+                $('#rm_info_avatar').html('');
+                var file = e.target.files[0];
+                //console.log(1);
+                if (!file) {
+                  return;
+                }
+                var ext = file.name.match(/\.(\w+)$/);
+                if(!ext || (ext[1].toLowerCase() != "json" && ext[1].toLowerCase() != "png")){
+                    return;
+                }
+                
+                var format = ext[1].toLowerCase();
+                $("#character_import_file_type").val(format);
+                //console.log(format);
+                var formData = new FormData($("#form_import").get(0));
+                
+                jQuery.ajax({    
+                    type: 'POST', 
+                    url: '/importcharacter', 
+                    data: formData,
+                    beforeSend: function(){
+                        //$('#create_button').attr('disabled',true);
+                        //$('#create_button').attr('value','Creating...'); 
+                    },
+                    cache: false,
+                    contentType: false,
+                    processData: false, 
+                    success: function(data){
+                        if(data.file_name !== undefined){
+
+                            $('#rm_info_block').transition({ opacity: 0 ,duration: 0});
+                            var $prev_img = $('#avatar_div_div').clone();
+                            $prev_img.children('img').attr('src', 'characters/'+data.file_name+'.png');
+                            $('#rm_info_avatar').append($prev_img);
+                            select_rm_info("Character created");
+
+                            $('#rm_info_block').transition({ opacity: 1.0 ,duration: 2000});
+                            getCharacters();
+
+                        }
+                    },
+                    error: function (jqXHR, exception) {
+                        $('#create_button').removeAttr("disabled");
+                    }
+                });  
+            });
+            $('#export_button').click(function(){
+                var link = document.createElement('a');
+                link.href = 'characters/'+characters[this_chid].avatar;  
+                link.download = characters[this_chid].avatar;
+                document.body.appendChild(link);
+                link.click();
+           });
         
+        
+        
+        //**************************CHAT IMPORT EXPORT*************************//
+            $( "#chat_import_button" ).click(function() {
+                $("#chat_import_file").click();
+            });
+            $("#chat_import_file").on("change", function(e){
+                var file = e.target.files[0];
+                //console.log(1);
+                if (!file) {
+                  return;
+                }
+                var ext = file.name.match(/\.(\w+)$/);
+                if(!ext || (ext[1].toLowerCase() != "json" && ext[1].toLowerCase() != "jsonl")){
+                    return;
+                }
+
+                var format = ext[1].toLowerCase();
+                $("#chat_import_file_type").val(format);
+                //console.log(format);
+                var formData = new FormData($("#form_import_chat").get(0));
+
+                jQuery.ajax({    
+                    type: 'POST', 
+                    url: '/importchat', 
+                    data: formData,
+                    beforeSend: function(){
+                        $('#select_chat_div').html('');
+                        $('#load_select_chat_div').css('display', 'block');
+                        //$('#create_button').attr('value','Creating...'); 
+                    },
+                    cache: false,
+                    contentType: false,
+                    processData: false, 
+                    success: function(data){
+                        //console.log(data);
+                        if(data.res){
+                            getAllCharaChats();
+
+
+                        }
+                    },
+                    error: function (jqXHR, exception) {
+                        $('#create_button').removeAttr("disabled");
+                    }
+                });  
+            });
+            $(document).on('click', '.select_chat_block', function(){
+                let file_name = $(this).attr("file_name").replace('.jsonl', '');
+                //console.log(characters[this_chid]['chat']);
+                characters[this_chid]['chat'] = file_name;
+                clearChat();
+                chat.length = 0;
+                getChat();
+                $('#shadow_select_chat_popup').css('display', 'none');
+                $('#load_select_chat_div').css('display', 'block');
+
+            });
+        });
     </script>
 <title>Tavern.AI</title>
 </head>
@@ -2220,6 +2577,68 @@
             <div id="dialogue_popup_text"><h3>text</h3></div>
             <div id="dialogue_popup_ok" class="menu_button">Delete</div>
             <div id="dialogue_popup_cancel" class="menu_button">Cancel</div>
+        </div>
+    </div>
+    <!--<div id="shadow_character_popup">
+        </div>-->
+        <div id="character_popup">
+            
+            <div id="character_popup_text">
+                <img id="character_cross" src="img/cross.png" style="position: absolute; right: 15px; top: 15px; width: 20px; height: 20px; cursor: pointer; opacity: 0.6">
+                
+                <div><img src="img/book2.png" id="advanced_book_logo"><h3 id="character_popup_text_h3" style="margin-left: 38px;">Create character</h3></div>
+            
+            </div>
+            
+            <div id="personality_div">
+                <h4>Personality summary</h4><h5>A brief description of the personality (<a href="/notes/2" target="_blank">?</a>)</h5>
+                <input id="personality_textarea" name="personality" placeholder="" form="form_create" class="text_pole" autocomplete="off">
+            </div>
+            
+            <div id="scenario_div">
+                <h4>Scenario</h4>
+                <h5>Circumstances and context of the dialogue</h5>
+                <input id="scenario_pole" name="scenario" class="text_pole" maxlength="999" size="40" value="" autocomplete="off" form="form_create">
+            </div>
+            
+            <div id="mes_example_div">
+                <h4>Examples of dialogue</h4>
+                <h5>Forms a personality more clearly (<a href="/notes/11" target="_blank">?</a>)</h5>
+            </div>
+            <textarea id="mes_example_textarea" name="mes_example" placeholder="" form="form_create"></textarea>
+            
+            
+            <div id="character_popup_ok" class="menu_button">Save</div>
+            <div></div>
+            
+    </div>
+    <div id="shadow_select_chat_popup">
+        <div id="select_chat_popup">
+            <div id="select_chat_popup_text">
+                <img id="select_chat_cross" src="img/cross.png" style="position: absolute; right: 15px; top:14px; width: 20px; height: 20px; cursor: pointer; opacity: 0.6">
+
+                <!--<h3 style="margin: 0px;margin-left: 5px;margin-top: 5px;">Select chat</h3>-->
+
+            </div>
+            <div id="select_chat_import">
+                
+                <div style="display: inline-block;" id="chat_import_button"><a>+import</a>&nbsp;</div><div style="display: inline-block; color:#757575;">(<a href="/notes/10" target="_blank">?</a>)</div>
+                <form id="form_import_chat"  action="javascript:void(null);" method="post" enctype="multipart/form-data" style="display: none;">
+                    <input type="file" id="chat_import_file" accept=".json, .jsonl" name="avatar">
+                    <input id="chat_import_file_type" name="file_type" class="text_pole" maxlength="999" size="2" value="" autocomplete="off" style="display: none;">
+                    <input id="chat_import_avatar_url" name="avatar_url" class="text_pole" maxlength="999" size="2" value="" autocomplete="off" style="display: none;">
+                    <input id="chat_import_character_name" name="character_name" class="text_pole" maxlength="999" size="2" value="" autocomplete="off" style="display: none;">
+                </form>
+            </div>
+            
+            <div id="select_chat_div">
+                
+            </div>
+            <div id="load_select_chat_div">
+                <img src="img/load.svg">
+            </div>
+
+
         </div>
     </div>
     <div id="shadow_tips_popup">
@@ -2262,6 +2681,7 @@
 
         <div id="rm_ch_create_block" class="right_menu">
             <div id="rm_button_back" class="right_menu_button"><h2 style="color: rgb(188, 193, 200, 0.5);">&#8656;</h2></div>
+            
             <form id="form_create"  action="javascript:void(null);" method="post" enctype="multipart/form-data">
                 
                 <div id="name_div">
@@ -2274,15 +2694,11 @@
                 </div>
                 
                 <div id="description_div">
-                    <h4>Description</h4><h5>Description of the character and the rest (<a href="/notes/1" target="_blank">?</a>)</h5>
+                    <h4>Description</h4><h5>Description of personality and other characteristics (<a href="/notes/1" target="_blank">?</a>)</h5>
                 <textarea id="description_textarea" name="description" placeholder=""></textarea>
                 </div>
-                <div id="personality_div">
-                <h4>Personality</h4><h5>The main personality traits (<a href="/notes/2" target="_blank">?</a>)</h5>
-                <textarea id="personality_textarea" name="personality" placeholder=""></textarea>
-                </div>
                 <div id="first_message_div">
-                <h4>First message</h4><h5>First message from character (<a href="/notes/3" target="_blank">?</a>)</h5>
+                <h4>First message</h4><h5>First message from the character (<a href="/notes/3" target="_blank">?</a>)</h5>
                 <textarea id="firstmessage_textarea" name="first_mes" placeholder=""></textarea>
                 </div>
                 
@@ -2292,19 +2708,25 @@
                 <div id="selected_chat_div">
                 <input id="selected_chat_pole" name="chat" class="text_pole" maxlength="999" size="2" value="" autocomplete="off">
                 </div>
+                <div id="create_date_div">
+                <input id="create_date_pole" name="create_date" class="text_pole" maxlength="999" size="2" value="" autocomplete="off">
+                </div>
                 <div id="last_mes_div">
                 <input id="last_mes_pole" name="last_mes" class="text_pole" maxlength="999" size="2" value="" autocomplete="off">
                 </div>
-                <div id="mes_example_div">
-                <input id="mes_example_pole" name="last_mes" class="text_pole" maxlength="999" size="2" value="" autocomplete="off">
-                </div>
-                <div id="result_info">&nbsp;</div>
+                <input id="advanced_div" type="button" value="Advanced Edit">
+                <div id="export_character_div">
+                    <div id="result_info" style="width: 100px;">&nbsp;</div>
+                
+                    </div>
                 <div id="create_button_div">
                 <input id="create_button" type="submit" value="Create">
                 </div>
             </form>
             <div id="delete_button_div">
                 <input id="delete_button" type="submit" value="Delete">
+                <input id="export_button" type="submit" value="Export">
+                
             </div>
         </div>
         <div id="rm_api_block" class="right_menu" >
@@ -2393,7 +2815,7 @@
                     <h4>Context Size</h4><h5 id="max_context_counter">select</h5>
                     <input type="range" id="max_context" name="volume" min="512" max="2048" step="1">
                 </div>
-                <h4>Anchors Order</h4><h5>Selecting Anchors Order (<a href="/notes/9" target="_blank">?</a>)</h5>
+                <h4>Anchors Order</h4><h5>Helps to increase the length of messages (<a href="/notes/9" target="_blank">?</a>)</h5>
                 <select id="anchor_order">
                     <option value="0">Character Anchor - Style Anchor</option>
                     <option value="1">Style Anchor - Character Anchor</option>
@@ -2409,12 +2831,17 @@
                 </div>
             </div>
         </div>
-        
+        <div id="rm_charater_import" class="right_menu" style="display: none;">
+            <form id="form_import"  action="javascript:void(null);" method="post" enctype="multipart/form-data">
+            <input type="file" id="character_import_file" accept=".json, image/png" name="avatar">
+            <input id="character_import_file_type" name="file_type" class="text_pole" maxlength="999" size="2" value="" autocomplete="off">
+            </form>
+        </div>
         <div id="rm_charaters_block" class="right_menu">
             <div id="rm_button_create" class="right_menu_button"><h2>+</h2></div>
+            <div id="character_import_button" class="right_menu_button"><h2>+Import</h2></div>
             <div id="rm_print_charaters_block"></div>
         </div>
-        
         <div id="rm_info_block" class="right_menu">
             <div id="rm_info_panel">
             <div id="rm_info_avatar"></div>
@@ -2437,7 +2864,9 @@
                 <div id="options_button">
                     <div id="options">
                         <div class="options-content">
-                        <a id="option_start_new_chat"><img src="img/save_and_start_new_chat.png" width="20" height="20">Save and start new chat</a>
+                        <a id="option_start_new_chat"><img src="img/save_and_start_new_chat.png" width="20" height="20">Start new chat</a>
+                        <a id="option_select_chat"><img src="img/book6.png" width="20" height="20" style="opacity: 0.0;"><img src="img/book6.png" style="width: 21px;height: 21px;position: absolute;top: 59px;left: 15px; opacity: 0.5;">Select chat</a><!--<img src="img/book6.png" style="width: 21px;height: 21px;position: absolute;top: 14px;left: 16px; opacity: 0.5;">Select chat</a>-->
+                        
                         <hr>
                         <a id="option_delete_mes"><img src="img/del_mes.png" width="20" height="20">Delete message</a>
                         <a id="option_regenerate"><img src="img/regenerate.png" width="20" height="20">Regenerate</a>

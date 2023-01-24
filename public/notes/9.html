@@ -12,8 +12,10 @@
                 <h4>Anchors are used to increase the length of messages. There are two types of anchors: Character Anchor and Style Anchor</h4>
                 <p><u>Character Anchor</u> - affects the character played by the AI by motivating him to write longer messages. Looks like [Alexa talks a lot with descriptions]</p>
                 <p><u>Style Anchor</u> - affects all AI model, motivating AI to write longer messages. Looks like [Writing style: very long messages]</p>
-                <hr style="opacity: 0.6;"><p>The order of anchors sets the location of anchors in the promt, the first anchor in the order is much higher and has less influence than the one that follows it.</p>
-                <p>To disable anchors, you just need to remove the checkboxes.</p>
+                <hr style="opacity: 0.6;"><p>Anchors Order sets the location of anchors in the promt, the first anchor in the order is much higher and has less influence than second.</p>
+                <p>The second in order anchor is turned on after 8-12 messages, because the first anchor is enough when there are few messages.</p>
+                <p>Sometimes some AI models may not perceive anchors correctly or the AI model already generates sufficiently long messages, so for these cases, to disable anchors, you just need to uncheck the boxes.</p>
+                <br><p>*It is automatically disabled in Pygmalion, since Pygmalion already generates long enough messages</p>
             </div>
         </div>
     </body>
