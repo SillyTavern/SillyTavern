@@ -1,4 +1,0 @@
---require should
---reporter spec test/specs/*.js
---ui bdd
---recursive
