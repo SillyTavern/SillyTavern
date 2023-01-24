@@ -23,7 +23,7 @@
     <script type=module>
         import {encode, decode} from "../scripts/gpt-2-3-tokenizer/mod.js";
         $(document).ready(function(){
-            const VERSION = '1.2.1';
+            const VERSION = '1.2.2';
             var bg_menu_toggle = false;
             var default_user_name = "You";
             var name1 = default_user_name;
@@ -608,7 +608,7 @@
                         if(charDescription !== undefined){
                             if($.trim(charDescription).length > 0){
                                 if(charDescription.slice(-1) !== ']' || charDescription.substr(0,1) !== '['){
-                                    charDescription = '['+charDescription+']';
+                                    //charDescription = '['+charDescription+']';
                                 }
                                 storyString+=charDescription+'\n';
                             }
@@ -759,14 +759,18 @@
                                 var this_amount_gen = parseInt(amount_gen);
                                 if(is_pygmalion){
                                     if(tokens_already_generated === 0){
-                                        if(parseInt(amount_gen) >= 90){
-                                            this_amount_gen = 90;
+                                        if(parseInt(amount_gen) >= 50){
+                                            this_amount_gen = 50;
                                         }else{
                                             this_amount_gen = parseInt(amount_gen);
                                         }
                                         
                                     }else{
-                                        this_amount_gen = tokens_cycle_count;
+                                        if(parseInt(amount_gen) - tokens_already_generated < tokens_cycle_count){
+                                            this_amount_gen = parseInt(amount_gen) - tokens_already_generated;
+                                        }else{
+                                            this_amount_gen = tokens_cycle_count;
+                                        }
                                     }
                                 }
                                 generate_data = {prompt: storyString, 
@@ -834,7 +838,7 @@
                             dataType: "json",
                             contentType: "application/json",
                             success: function(data){
-
+                                tokens_already_generated += this_amount_gen;
                                 //$("#send_textarea").focus();
                                 //$("#send_textarea").removeAttr('disabled');
                                 is_send_press = false;
@@ -846,20 +850,22 @@
                                     if(main_api == 'novel'){
                                         var getMessage = data.output;
                                     }
-                                    
+
                                     //Pygmalion run again
                                     if(is_pygmalion){
                                         if_typing_text = false;
                                         message_already_generated +=getMessage;
                                         if(message_already_generated.indexOf('You:') === -1 && tokens_already_generated < parseInt(amount_gen)){
+                                            
                                             if(tokens_already_generated === 0){
                                                 getMessage = getMessage.trimStart();
                                                 getMessage = ' '+getMessage;
                                             }
-                                            tokens_already_generated += tokens_cycle_count;
+                                            
                                             runGenerate(storyString+getMessage);
                                             return;
                                         }
+                                        
                                         getMessage = message_already_generated;
                                     }
                                     //Formating
@@ -876,6 +882,7 @@
                                     let this_mes_is_name = true;
                                     if(getMessage.indexOf(name2+":") === 0){
                                         getMessage = getMessage.replace(name2+':', '');
+                                        getMessage = getMessage.trimStart();
                                     }else{
                                         this_mes_is_name = false;
                                     }
@@ -887,6 +894,7 @@
                                         chat[chat.length-1]['is_user'] = false;
                                         chat[chat.length-1]['is_name'] = this_mes_is_name;
                                         chat[chat.length-1]['send_date'] = Date.now();
+                                        getMessage = $.trim(getMessage);
                                         chat[chat.length-1]['mes'] = getMessage;
                                         addOneMessage(chat[chat.length-1]);
                                         $( "#send_but" ).css("display", "block");
