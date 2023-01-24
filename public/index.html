@@ -652,11 +652,11 @@
                      
                     var i = 0;
                     
-                    for (const item of chat2) {//console.log(encode("dsfs").length);
+                    for (var item of chat2) {//console.log(encode("dsfs").length);
                         if(encode(JSON.stringify(storyString+chatString+anchorTop+anchorBottom+charPersonality)).length+120 < this_max_context){ //(The number of tokens in the entire promt) need fix, it must count correctly (added +120, so that the description of the character does not hide)
                             
                             chatString = item+chatString;
-                            //if (is_pygmalion && i == 0) item=+'<START>'+item;
+                            if (is_pygmalion && i == chat2.length-1) item='<START>\n'+item;
                             arrMes[arrMes.length] = item;
                         }else{
                             i = chat.length-1;
