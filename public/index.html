@@ -571,7 +571,7 @@
                     }
                     var chatString = '';
                     var arrMes = [];
-                    
+
                     var charDescription = $.trim(characters[this_chid].description);
                     var charPersonality = $.trim(characters[this_chid].personality);
                     var Scenario = $.trim(characters[this_chid].scenario);
@@ -656,7 +656,7 @@
                         if(encode(JSON.stringify(storyString+chatString+anchorTop+anchorBottom+charPersonality)).length+120 < this_max_context){ //(The number of tokens in the entire promt) need fix, it must count correctly (added +120, so that the description of the character does not hide)
                             
                             chatString = item+chatString;
-                            if (is_pygmalion && i == 0) item=+'<START>'+item;
+                            //if (is_pygmalion && i == 0) item=+'<START>'+item;
                             arrMes[arrMes.length] = item;
                         }else{
                             i = chat.length-1;
