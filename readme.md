@@ -23,7 +23,7 @@ Examples of interface and output:
 ### Briefly:
 1. Download [TavernAI](https://github.com/TavernAI/TavernAI/archive/refs/heads/main.zip)
 2. Install [Node.js v19.1.0](https://nodejs.org/download/release/v19.1.0/)
-3. Run Start.bat (or use command: *node server.js*)
+3. Run Start.bat (or use command: *npm install*, *node server.js*)
 ## AI Models
 * [KoboldAI](https://github.com/KoboldAI/KoboldAI-Client)
 * [NovelAI](https://novelai.net/)
