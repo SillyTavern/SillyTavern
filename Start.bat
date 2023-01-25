@@ -1,1 +1,2 @@
-npm install && node server.js
+call npm install
+node server.js
