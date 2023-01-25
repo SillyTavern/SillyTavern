@@ -19,8 +19,8 @@ COPY . .
 # Copy default chats, characters and user avatars to <folder>.default folder
 RUN \
   echo "*** Copy default chats, characters and user avatars to <folder>.default folder ***" && \
-  mv "./public/chats"         "./public/chats.default" && \
   mv "./public/characters"    "./public/characters.default" && \
+  mv "./public/chats"         "./public/chats.default" && \
   mv "./public/User Avatars"  "./public/User Avatars.default"
 
 # Cleanup unnecessary files
@@ -28,7 +28,9 @@ RUN \
   echo "*** Cleanup ***" && \
   mv "./docker/docker-entrypoint.sh" "./" && \
   rm -rf "./docker" && \
-  rm -rf "./.git"
+  rm -rf "./.git" && \
+  echo "*** Make docker-entrypoint.sh executable ***" && \
+  chmod +x "./docker-entrypoint.sh"
 
 EXPOSE 8000
 
