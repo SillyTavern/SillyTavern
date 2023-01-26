@@ -666,22 +666,23 @@
                             //if (is_pygmalion && i == chat2.length-1) item='<START>\n'+item;
                             arrMes[arrMes.length] = item;
                         }else{
-                            arrMes[arrMes.length-1] = '<START>\n'+arrMes[arrMes.length-1];
                             i = chat.length-1;
                         }
-                        
                         await delay(1); //For disable slow down (encode gpt-2 need fix)
                         //console.log(i+' '+chat.length);
                         
                         if(i == chat.length-1){
+                            arrMes[arrMes.length-1] = '<START>\n'+arrMes[arrMes.length-1];
                             let mesExmString = '';
-                            for(let iii = 0; iii < mesExamplesArray.length; iii++){//mesExamplesArray
+                            let count_exm_add = 0;
+                            for(let iii = 0; iii < mesExamplesArray.length; iii++){//mesExamplesArray It need to make from end to start
+                                
                                 mesExmString = mesExmString+mesExamplesArray[iii];
                                 if(encode(JSON.stringify(storyString+mesExmString+chatString+anchorTop+anchorBottom+charPersonality)).length+120 < this_max_context){ //example of dialogs
                                     if(!is_pygmalion){
                                         mesExamplesArray[iii] = mesExamplesArray[iii].replace(/<START>/i, 'This is how '+name2+' should talk');//An example of how '+name2+' responds
                                     }
-                                    
+                                    count_exm_add++;
                                     await delay(1);
 
                                     //arrMes[arrMes.length] = item;
@@ -691,7 +692,9 @@
                                 }
                                 
                             }
-                            
+                            for(let j = 0; j < count_exm_add; j++){
+                                storyString+=mesExamplesArray[j];
+                            }
                             if(!is_pygmalion){
                                 if(Scenario !== undefined){
                                     if(Scenario.length > 0){
