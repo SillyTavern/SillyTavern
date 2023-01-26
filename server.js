@@ -2,6 +2,7 @@ var express = require('express');
 var app = express();
 var fs = require('fs');
 const readline = require('readline');
+const open = require('open');
 
 var rimraf = require("rimraf");
 const multer  = require("multer");
@@ -1009,6 +1010,7 @@ app.listen(server_port, function() {
         }
     }
     console.log('TavernAI started: http://127.0.0.1:'+server_port);
+    open('http:127.0.0.1:'+server_port)
     if (fs.existsSync('public/characters/update.txt')) { //&& !is_colab <- this need to put again
         convertStage1();
     }
