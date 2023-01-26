@@ -139,7 +139,7 @@ app.post("/generate", jsonParser, function(request, response_generate = response
             response_generate.send({error: true});
         }
     }).on('error', function (err) {
-        //console.log('');
+        console.log(err);
 	//console.log('something went wrong on the request', err.request.options);
         response_generate.send({error: true});
     });

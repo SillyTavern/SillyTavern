@@ -65,7 +65,7 @@
             var online_status = 'no_connection';
             
             var api_server = "";
-            var interval_timer = setInterval(getStatus, 2000);
+            //var interval_timer = setInterval(getStatus, 2000);
             var interval_timer_novel = setInterval(getStatusNovel, 3000);
             var is_get_status = false;
             var is_get_status_novel = false;
@@ -210,6 +210,7 @@
                         },
                         cache: false,
                         dataType: "json",
+                        crossDomain: true,
                         contentType: "application/json",
                         //processData: false, 
                         success: function(data){
@@ -223,9 +224,12 @@
                             }else{
                                 is_pygmalion = false;
                             }
+                            
                             //console.log(online_status);
                             resultCheckStatus();
-                            
+                            if(online_status !== 'no_connection'){
+                                var checkStatusNow = setTimeout(getStatus, 3000);//getStatus();
+                            }
                         },
                         error: function (jqXHR, exception) {
                             console.log(exception);
@@ -621,6 +625,7 @@
                         
                     }
                     
+                    async function preGenerate(){
                     var chat2 = [];
                     var j = 0;
                     for(var i = chat.length-1; i >= 0; i--){
@@ -654,26 +659,29 @@
                     var i = 0;
                     
                     for (var item of chat2) {//console.log(encode("dsfs").length);
+                        chatString = item+chatString;
                         if(encode(JSON.stringify(storyString+chatString+anchorTop+anchorBottom+charPersonality)).length+120 < this_max_context){ //(The number of tokens in the entire promt) need fix, it must count correctly (added +120, so that the description of the character does not hide)
                             
-                            chatString = item+chatString;
-                            if (is_pygmalion && i == chat2.length-1) item='<START>\n'+item;
+                            
+                            //if (is_pygmalion && i == chat2.length-1) item='<START>\n'+item;
                             arrMes[arrMes.length] = item;
                         }else{
+                            arrMes[arrMes.length-1] = '<START>\n'+arrMes[arrMes.length-1];
                             i = chat.length-1;
                         }
+                        
                         await delay(1); //For disable slow down (encode gpt-2 need fix)
                         //console.log(i+' '+chat.length);
                         
                         if(i == chat.length-1){
 
                             for(let iii = 0; iii < mesExamplesArray.length; iii++){//mesExamplesArray
-                                
+                                storyString = storyString+mesExamplesArray[iii];
                                 if(encode(JSON.stringify(storyString+chatString+anchorTop+anchorBottom+charPersonality)).length+120 < this_max_context){ //example of dialogs
                                     if(!is_pygmalion){
                                         mesExamplesArray[iii] = mesExamplesArray[iii].replace(/<START>/i, 'This is how '+name2+' should talk');//An example of how '+name2+' responds
                                     }
-                                    storyString = storyString+mesExamplesArray[iii];
+                                    
                                     await delay(1);
 
                                     //arrMes[arrMes.length] = item;
@@ -698,7 +706,7 @@
                         i++;
                         
                     }
-                    
+                    }
                     function runGenerate(cycleGenerationPromt = ''){
                         
                         if(cycleGenerationPromt === ''){
@@ -1662,7 +1670,7 @@
                     saveSettings();
                     is_get_status = true;
                     is_api_button_press = true;
-                    //getStatus();
+                    getStatus();
                 }
             });
             
