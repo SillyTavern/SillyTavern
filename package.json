@@ -3,6 +3,7 @@
     "express": "^4.18.2",
     "multer": "^1.4.5-lts.1",
     "node-rest-client": "^3.1.1",
+    "open": "^8.4.0",
     "png-chunk-text": "^1.0.0",
     "png-chunks-encode": "^1.0.0",
     "png-chunks-extract": "^1.0.0",
