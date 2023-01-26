@@ -674,10 +674,10 @@
                         //console.log(i+' '+chat.length);
                         
                         if(i == chat.length-1){
-
+                            let mesExmString = '';
                             for(let iii = 0; iii < mesExamplesArray.length; iii++){//mesExamplesArray
-                                storyString = storyString+mesExamplesArray[iii];
-                                if(encode(JSON.stringify(storyString+chatString+anchorTop+anchorBottom+charPersonality)).length+120 < this_max_context){ //example of dialogs
+                                mesExmString = mesExmString+mesExamplesArray[iii];
+                                if(encode(JSON.stringify(storyString+mesExmString+chatString+anchorTop+anchorBottom+charPersonality)).length+120 < this_max_context){ //example of dialogs
                                     if(!is_pygmalion){
                                         mesExamplesArray[iii] = mesExamplesArray[iii].replace(/<START>/i, 'This is how '+name2+' should talk');//An example of how '+name2+' responds
                                     }

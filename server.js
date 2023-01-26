@@ -385,7 +385,7 @@ async function charaWrite(img_url, data, name, response = undefined, mes = 'ok')
     try {
         // Load the image in any format
         sharp.cache(false);
-        var image = await sharp(img_url).resize(170, 234).toFormat('png').toBuffer();
+        var image = await sharp(img_url).resize(400, 600).toFormat('png').toBuffer();// old 170 234
         // Convert the image to PNG format
         //const pngImage = image.toFormat('png');
 
