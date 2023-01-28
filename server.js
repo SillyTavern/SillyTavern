@@ -41,8 +41,8 @@ var api_key_novel;
 
 var is_colab = false;
 
-const jsonParser = express.json();
-const urlencodedParser = express.urlencoded({extended: false});
+const jsonParser = express.json({limit: '100mb'});
+const urlencodedParser = express.urlencoded({extended: true, limit: '100mb'});
 
 
 
