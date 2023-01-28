@@ -6,7 +6,6 @@ ARG APP_HOME=/home/node/app
 # Create app directory
 WORKDIR ${APP_HOME}
 
-
 # Install app dependencies
 COPY package*.json ./
 RUN \
@@ -14,7 +13,7 @@ RUN \
   npm install
 
 # Bundle app source
-COPY . .
+COPY . ./
 
 # Copy default chats, characters and user avatars to <folder>.default folder
 RUN \
@@ -30,7 +29,9 @@ RUN \
   rm -rf "./docker" && \
   rm -rf "./.git" && \
   echo "*** Make docker-entrypoint.sh executable ***" && \
-  chmod +x "./docker-entrypoint.sh"
+  chmod +x "./docker-entrypoint.sh" && \
+  echo "*** Convert line endings to Unix format ***" && \
+  dos2unix "./docker-entrypoint.sh"
 
 EXPOSE 8000
 
