@@ -942,6 +942,7 @@ app.post("/importchat", urlencodedParser, function(request, response){
                                 new_chat[i]['name'] = ch_name;
                             }
                             new_chat[i]['is_user'] = item.src.is_human;
+                            new_chat[i]['is_name'] = true;
                             new_chat[i]['send_date'] = Date.now();
                             new_chat[i]['mes'] = item.text;
                             i++;
