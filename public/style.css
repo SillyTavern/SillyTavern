@@ -17,6 +17,9 @@ body {
     scrollbar-color: gray #191b31;
 
 }
+i {
+    color: grey !important;
+}
 #bg1{
     background-image: linear-gradient(rgba(19,21,44,0.75), rgba(19,21,44,0.75)), url(backgrounds/tavern.png);
     background-size: auto 100%;
