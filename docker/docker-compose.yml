@@ -1,0 +1,14 @@
+version: "3"
+services:
+  tavernai:
+    build: ..
+    container_name: tavernai
+    hostname: tavernai
+    image: tavernai/tavernai:latest
+    ports:
+      - "8000:8000"
+    volumes:
+      - "./config/characters:/home/node/app/public/characters"
+      - "./config/chats:/home/node/app/public/chats"
+      - "./config/User Avatars:/home/node/app/public/User Avatars"
+    restart: unless-stopped
