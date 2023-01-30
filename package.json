@@ -11,7 +11,7 @@
     "sharp": "^0.31.3"
   },
   "name": "TavernAI",
-  "version": "1.2.5",
+  "version": "1.2.6",
   "bin": {
     "TavernAI": "server.js"
   }

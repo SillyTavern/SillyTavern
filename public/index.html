@@ -23,7 +23,7 @@
     <script type=module>
         import {encode, decode} from "../scripts/gpt-2-3-tokenizer/mod.js";
         $(document).ready(function(){
-            const VERSION = '1.2.5';
+            const VERSION = '1.2.6';
             var bg_menu_toggle = false;
             var default_user_name = "You";
             var name1 = default_user_name;
@@ -423,6 +423,8 @@
                 $('#chat').html('');
             }
             function messageFormating(mes, ch_name){
+                if(this_chid != undefined)
+                mes = mes.replaceAll("<", "&lt;").replaceAll(">", "&gt;");
                 mes = mes.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\*(.+?)\*/g, '<i>$1</i>').replace(/\n/g, '<br/>');
                 if(ch_name !== name1){
                     mes = mes.replaceAll(name2+":", "");
@@ -466,6 +468,7 @@
                 $("#chat").append( "<div class='mes' mesid="+count_view_mes+" ch_name="+characterName+"><div class='for_checkbox'></div><input type='checkbox' class='del_checkbox'><div class=avatar><img src='"+avatarImg+"'></div><div class=mes_block><div class=ch_name>"+characterName+"<div title=Edit class=mes_edit><img src=img/scroll.png style='width:20px;height:20px;'></div><div class=mes_edit_cancel><img src=img/cancel.png></div><div class=mes_edit_done><img src=img/done.png></div></div><div class=mes_text>"+"</div></div></div>" );
                 
                 if(!if_typing_text){
+                    //console.log(messageText);
                     $("#chat").children().filter('[mesid="'+count_view_mes+'"]').children('.mes_block').children('.mes_text').append(messageText);
                 }else{
                     typeWriter($("#chat").children().filter('[mesid="'+count_view_mes+'"]').children('.mes_block').children('.mes_text'), messageText, 50, 0);
@@ -507,7 +510,6 @@
                 }
             });
             async function Generate(type) {//encode("dsfs").length
-                
                 tokens_already_generated = 0;
                 message_already_generated = name2+': ';
                 if(online_status != 'no_connection' && this_chid != undefined){
@@ -534,10 +536,10 @@
 
                     var storyString = "";
                     var userSendString = "";
-                    
+                    var finalPromt = "";
                     
                     var postAnchorChar = "talks a lot with descriptions";//'Talk a lot with description what is going on around';// in asterisks
-                    var postAnchorStyle = "[Writing style: very long messages]";//"[Genre: roleplay chat][Tone: very long messages with descriptions]";
+                    var postAnchorStyle = "Writing style: very long messages";//"[Genre: roleplay chat][Tone: very long messages with descriptions]";
                     
                     
                     var anchorTop = '';
@@ -546,7 +548,7 @@
                     
                     if(character_anchor && !is_pygmalion){
                         if(anchor_order === 0){
-                            anchorTop = "["+name2+" "+postAnchorChar+"]";
+                            anchorTop = name2+" "+postAnchorChar;
                         }else{
                             anchorBottom = "["+name2+" "+postAnchorChar+"]";
                         }
@@ -555,7 +557,7 @@
                         if(anchor_order === 1){
                             anchorTop = postAnchorStyle;
                         }else{
-                            anchorBottom = postAnchorStyle;
+                            anchorBottom = "["+postAnchorStyle+"]";
                         }
                     }
                     
@@ -575,12 +577,12 @@
                     }
                     var chatString = '';
                     var arrMes = [];
-
+                    var mesSend = [];
                     var charDescription = $.trim(characters[this_chid].description);
                     var charPersonality = $.trim(characters[this_chid].personality);
                     var Scenario = $.trim(characters[this_chid].scenario);
                     var mesExamples = $.trim(characters[this_chid].mes_example);
-                    var checkMesExample = $.trim(mesExamples.replace(/<START>/gi, ''));
+                    var checkMesExample = $.trim(mesExamples.replace(/<START>/gi, ''));//for check length without tag
                     if(checkMesExample.length == 0) mesExamples = '';
                     var mesExamplesArray = [];
                     if(mesExamples !== undefined){
@@ -606,7 +608,7 @@
                     }else{
                         if(charDescription !== undefined){
                             if(charPersonality.length > 0){
-                                charPersonality = "["+name2+"'s personality: "+charPersonality+"]";//"["+name2+"'s personality: "+charPersonality+"]";
+                                charPersonality = name2+"'s personality: "+charPersonality;//"["+name2+"'s personality: "+charPersonality+"]";
                             }
                         }
                         if(charDescription !== undefined){
@@ -625,7 +627,7 @@
                         
                     }
                     
-                    
+                    var count_exm_add = 0;
                     var chat2 = [];
                     var j = 0;
                     for(var i = chat.length-1; i >= 0; i--){
@@ -670,11 +672,10 @@
                         }
                         await delay(1); //For disable slow down (encode gpt-2 need fix)
                         //console.log(i+' '+chat.length);
-                        
+                        count_exm_add = 0;
                         if(i == chat.length-1){
-                            arrMes[arrMes.length-1] = '<START>\n'+arrMes[arrMes.length-1];
+                            //arrMes[arrMes.length-1] = '<START>\n'+arrMes[arrMes.length-1];
                             let mesExmString = '';
-                            let count_exm_add = 0;
                             for(let iii = 0; iii < mesExamplesArray.length; iii++){//mesExamplesArray It need to make from end to start
                                 
                                 mesExmString = mesExmString+mesExamplesArray[iii];
@@ -692,16 +693,14 @@
                                 }
                                 
                             }
-                            for(let j = 0; j < count_exm_add; j++){
-                                storyString+=mesExamplesArray[j];
-                            }
+                            
                             if(!is_pygmalion){
                                 if(Scenario !== undefined){
                                     if(Scenario.length > 0){
                                         storyString+= 'Circumstances and context of the dialogue: '+Scenario+'\n';
                                     }
                                 }
-                                storyString+='\nThen the roleplay chat between '+name1+' and '+name2+' begins.\n';
+                                //storyString+='\nThen the roleplay chat between '+name1+' and '+name2+' begins.\n';
                             }
                             runGenerate();
                             return;
@@ -712,8 +711,7 @@
                     }
                     function runGenerate(cycleGenerationPromt = ''){
                         
-                        if(cycleGenerationPromt === ''){
-                            
+                        if(cycleGenerationPromt.length == 0){
                             chatString = "";
                             arrMes = arrMes.reverse();
                             var is_add_personality = false;
@@ -729,12 +727,15 @@
                                     is_add_personality = true;
                                     //chatString = chatString.substr(0,chatString.length-1);
                                     //anchorAndPersonality = "[Genre: roleplay chat][Tone: very long messages with descriptions]";
-                                    item+=charPersonality+anchorTop+'\n';
+                                    if(anchorTop != "" || charPersonality != ""){
+                                        if(anchorTop != "") charPersonality+=' ';
+                                        item+="["+charPersonality+anchorTop+']\n';
+                                    }
                                 }
                                 if(i >= arrMes.length-1 && count_view_mes>8 && $.trim(item).substr(0, (name1+":").length) == name1+":" && !is_pygmalion){//For add anchor in end
                                     item = item.substr(0,item.length-1);
                                     //chatString+=postAnchor+"\n";//"[Writing style: very long messages]\n";
-                                    item =item+" "+ anchorBottom+"\n";
+                                    item =item+ anchorBottom+"\n";
                                 }
                                 if(is_pygmalion){
                                     if(i >= arrMes.length-1 && $.trim(item).substr(0, (name1+":").length) == name1+":"){//for add name2 when user sent
@@ -749,25 +750,67 @@
                                         item = item.replace(name1+':', 'You:');
                                     }
                                 }
-                                chatString = chatString+item;
+                                mesSend[mesSend.length] = item;
+                                //chatString = chatString+item;
                             });
-
-                            storyString+=chatString;
-                            //console.log(storyString);
-
-                            //console.log(encode(characters[this_chid].description+chatString).length);
-                            //console.log(encode(JSON.stringify(characters[this_chid].description+chatString)).length);
-                            if(type == 'force_name2'){
-                                storyString+= name2+':';
-                            }
-                            //console.log(JSON.stringify(storyString));
-                            //Send story string
-                        }else{
-                            storyString = cycleGenerationPromt;
                         }
+                        //finalPromt +=chatString;
+                        //console.log(storyString);
+
+                        //console.log(encode(characters[this_chid].description+chatString).length);
+                        //console.log(encode(JSON.stringify(characters[this_chid].description+chatString)).length);
+                        if(type == 'force_name2'){
+                            finalPromt+= name2+':';
+                        }
+                        //console.log(JSON.stringify(storyString));
+                        //Send story string
+                        var mesSendString = '';
+                        var mesExmString = '';
+                        function setPromtString(){
+                            mesSendString = '';
+                            mesExmString = '';
+                            for(let j = 0; j < count_exm_add; j++){
+                                mesExmString+=mesExamplesArray[j];
+                            }
+                            for(let j = 0; j < mesSend.length; j++){
+                                mesSendString+=mesSend[j];
+                            }
+                        }
+                        function checkProptSize(){
+                            setPromtString();
+                            let thisPromtContextSize = encode(JSON.stringify(storyString+mesExmString+mesSendString+anchorTop+anchorBottom+charPersonality+cycleGenerationPromt)).length+120;
+                            if(thisPromtContextSize > this_max_context){
+                                if(count_exm_add > 0){
+                                    //mesExamplesArray.length = mesExamplesArray.length-1;
+                                    count_exm_add--;
+                                    checkProptSize();
+                                }else if(mesSend.length > 0){
+                                    mesSend.shift();
+                                    checkProptSize();
+                                }else{
+                                    //end
+                                }
+                            }
+                        }
+
+                        
+                        
+                        if(cycleGenerationPromt.length > 0){
+                            checkProptSize();
+                        }else{
+                            setPromtString();
+                        }
+                        
+                        if(!is_pygmalion){
+                            mesSendString = '\nThen the roleplay chat between '+name1+' and '+name2+' begins.\n'+mesSendString;
+                        }else{
+                            mesSendString = '<START>\n'+mesSendString;
+                        }
+                        finalPromt = storyString+mesExmString+mesSendString+cycleGenerationPromt;
+                        
                         var generate_data;
                         if(main_api == 'kobold'){
-                            var generate_data = {prompt: storyString, gui_settings: true,max_length: amount_gen,temperature: temp, max_context_length: max_context};
+                            var generate_data = {prompt: finalPromt, gui_settings: true,max_length: amount_gen,temperature: temp, max_context_length: max_context};
                             if(preset_settings != 'gui'){
 
                                 var this_settings = koboldai_settings[koboldai_setting_names[preset_settings]];
@@ -788,7 +831,7 @@
                                         }
                                     }
                                 }
-                                generate_data = {prompt: storyString, 
+                                generate_data = {prompt: finalPromt, 
                                                 gui_settings: false, 
                                                 sampler_order: this_settings.sampler_order,
                                                 max_context_length: parseInt(max_context),//this_settings.max_length,
@@ -814,7 +857,7 @@
                         }
                         if(main_api == 'novel'){
                             var this_settings = novelai_settings[novelai_setting_names[preset_settings_novel]];
-                            generate_data = {"input": storyString,
+                            generate_data = {"input": finalPromt,
                                             "model": model_novel,
                                             "use_string": true,
                                             "temperature": parseFloat(temp_novel),
@@ -871,8 +914,7 @@
                                         if_typing_text = false;
                                         message_already_generated +=getMessage;
                                         if(message_already_generated.indexOf('You:') === -1 && tokens_already_generated < parseInt(amount_gen)){
-                                            
-                                            runGenerate(storyString+getMessage);
+                                            runGenerate(getMessage);
                                             return;
                                         }
                                         
@@ -931,6 +973,11 @@
                         });
                     }
                 }else{
+                    if(this_chid == undefined){
+                        //send ch sel
+                        popup_type = 'char_not_selected';
+                        callPopup('<h3>Сharacter is not selected</h3>');
+                    }
                     is_send_press = false;
                 }
             }
@@ -1376,13 +1423,24 @@
                 popup_type = '';
             });
             function callPopup(text){
-                if(popup_type == 'new_chat'){
+                $("#dialogue_popup_cancel").css("display", "inline-block");
+                switch(popup_type){
+
+                case 'char_not_selected':
+                    $("#dialogue_popup_ok").css("background-color", "#191b31CC");
+                    $("#dialogue_popup_ok").text("Ok");
+                    $("#dialogue_popup_cancel").css("display", "none");
+                    break;
+
+                case 'new_chat':
 
                     $("#dialogue_popup_ok").css("background-color", "#191b31CC");
                     $("#dialogue_popup_ok").text("Yes");
-                }else{
+                    break;
+                default:
                     $("#dialogue_popup_ok").css("background-color", "#791b31");
                     $("#dialogue_popup_ok").text("Delete");
+               
                 }
                 $("#dialogue_popup_text").html(text);
                 $("#shadow_popup").css('display', 'block');
@@ -2573,6 +2631,8 @@
                 clearChat();
                 chat.length = 0;
                 getChat();
+                $('#selected_chat_pole').val(file_name);
+                $("#create_button").click();
                 $('#shadow_select_chat_popup').css('display', 'none');
                 $('#load_select_chat_div').css('display', 'block');
 
