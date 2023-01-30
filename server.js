@@ -70,8 +70,29 @@ app.post("/getlastversion", jsonParser, function(request, response_getlastversio
         
 
 });
-app.use(express.static(__dirname + "/public"));
-
+app.use(express.static(__dirname + "/public", { refresh: true }));
+app.use('/backgrounds', (req, res) => {
+  const filePath = path.join(process.cwd(), 'public/backgrounds', req.url);
+  fs.readFile(filePath, (err, data) => {
+    if (err) {
+      res.status(404).send('File not found');
+      return;
+    }
+    //res.contentType('image/jpeg');
+    res.send(data);
+  });
+});
+app.use('/characters', (req, res) => {
+  const filePath = path.join(process.cwd(), 'public/characters', req.url);
+  fs.readFile(filePath, (err, data) => {
+    if (err) {
+      res.status(404).send('File not found');
+      return;
+    }
+    //res.contentType('image/jpeg');
+    res.send(data);
+  });
+});
 app.use(multer({dest:"uploads"}).single("avatar"));
 app.get("/", function(request, response){
     response.sendFile(__dirname + "/public/index.html"); 
