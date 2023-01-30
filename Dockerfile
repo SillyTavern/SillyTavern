@@ -22,15 +22,12 @@ RUN \
   mv "./public/chats"         "./public/chats.default" && \
   mv "./public/User Avatars"  "./public/User Avatars.default" && \
   mv "./public/settings.json"   "./public/settings.json.default" && \
-  echo "*** Create empty folders ***" && \
-  mkdir "./public/characters" && \
-  mkdir "./public/chats" && \
-  mkdir "./public/User Avatars" && \
+
   echo "*** Create symbolic links to config directory ***" && \
-  ln -s "./config/characters" "./public/characters" && \
-  ln -s "./config/chats"      "./public/chats" && \
-  ln -s "./config/User Avatars" "./public/User Avatars" && \
-  ln -s "./config/settings.json" "./public/settings.json"
+  ln -s "${APP_HOME}/config/characters"     "${APP_HOME}/public/characters" && \
+  ln -s "${APP_HOME}/config/chats"          "${APP_HOME}/public/chats" && \
+  ln -s "${APP_HOME}/config/User Avatars"   "${APP_HOME}/public/User Avatars" && \
+  ln -s "${APP_HOME}/config/settings.json"  "${APP_HOME}/public/settings.json"
 
 # Cleanup unnecessary files
 RUN \
