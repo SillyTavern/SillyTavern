@@ -20,7 +20,17 @@ RUN \
   echo "*** Copy default chats, characters and user avatars to <folder>.default folder ***" && \
   mv "./public/characters"    "./public/characters.default" && \
   mv "./public/chats"         "./public/chats.default" && \
-  mv "./public/User Avatars"  "./public/User Avatars.default"
+  mv "./public/User Avatars"  "./public/User Avatars.default" && \
+  mv "./public/settings.json"   "./public/settings.json.default" && \
+  echo "*** Create empty folders ***" && \
+  mkdir "./public/characters" && \
+  mkdir "./public/chats" && \
+  mkdir "./public/User Avatars" && \
+  echo "*** Create symbolic links to config directory ***" && \
+  ln -s "./config/characters" "./public/characters" && \
+  ln -s "./config/chats"      "./public/chats" && \
+  ln -s "./config/User Avatars" "./public/User Avatars" && \
+  ln -s "./config/settings.json" "./public/settings.json"
 
 # Cleanup unnecessary files
 RUN \
