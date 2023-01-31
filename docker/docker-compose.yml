@@ -8,7 +8,5 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - "./config/characters:/home/node/app/public/characters"
-      - "./config/chats:/home/node/app/public/chats"
-      - "./config/User Avatars:/home/node/app/public/User Avatars"
+      - "./config:/home/node/app/config"
     restart: unless-stopped
