@@ -249,8 +249,8 @@ app.post("/getchat", jsonParser, function(request, response){
 });
 app.post("/getstatus", jsonParser, function(request, response_getstatus = response){
     if(!request.body) return response_getstatus.sendStatus(400);
-    if(is_colab === true){
-        api_server = '127.0.0.1:5000';
+    if(is_colab == true){
+        api_server = String(process.env.colaburl).trim();
     }else{
         api_server = request.body.api_server;
     }

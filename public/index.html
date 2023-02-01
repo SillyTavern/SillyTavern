@@ -589,6 +589,8 @@
                         if(mesExamples.length > 0){
                             mesExamples = mesExamples.replace(/{{user}}/gi, name1);
                             mesExamples = mesExamples.replace(/{{char}}/gi, name2);
+                            mesExamples = mesExamples.replace(/<USER>/gi, name1);
+                            mesExamples = mesExamples.replace(/<BOT>/gi, name2);
                             //mesExamples = mesExamples.replaceAll('<START>', '[An example of how '+name2+' responds]');
                             let blocks = mesExamples.split(/<START>/gi);
                             mesExamplesArray = blocks.slice(1).map(block => `<START>\n${block.trim()}\n`);
@@ -2675,7 +2677,7 @@
             <div id="scenario_div">
                 <h4>Scenario</h4>
                 <h5>Circumstances and context of the dialogue</h5>
-                <input id="scenario_pole" name="scenario" class="text_pole" maxlength="999" size="40" value="" autocomplete="off" form="form_create">
+                <input id="scenario_pole" name="scenario" class="text_pole" maxlength="9999" size="40" value="" autocomplete="off" form="form_create">
             </div>
             
             <div id="mes_example_div">
