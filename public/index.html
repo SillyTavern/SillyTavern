@@ -38,7 +38,7 @@
             var backgrounds = [];
             var default_avatar = 'img/fluffy.png';
             var is_colab = false;
-            
+            var is_checked_colab = false;
             var is_mes_reload_avatar = false;
             
             var is_advanced_char_open = false;
@@ -123,7 +123,7 @@
             var css_mes_bg = $('<div class="mes"></div>').css('background');
             var css_send_form_display = $('<div id=send_form></div>').css('display');
             /////////////
-            isColab();
+            
             getSettings("def");
             getLastVersion();
             //var interval_getSettings = setInterval(getSettings, 1000);
@@ -327,7 +327,7 @@
                 }
             }
              async function isColab() {
-                
+                is_checked_colab = true;
                 const response = await fetch("/iscolab", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -2169,6 +2169,7 @@
                             api_server = settings.api_server;
                             $('#api_url_text').val(api_server);
                         }
+                        if(!is_checked_colab) isColab();
                         
                     },
                     error: function (jqXHR, exception) {
