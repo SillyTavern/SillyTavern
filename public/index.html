@@ -338,15 +338,13 @@
                 });
                 if (response.ok === true) {
                     const getData = await response.json();
-                    is_colab = getData.is_colab;
-                    if(is_colab != false){
-                        var currentUrl = window.location.href;
-                        if (currentUrl.charAt(currentUrl.length - 1) === '/') {
-                            currentUrl = currentUrl.substring(0, currentUrl.length - 1);
-                            currentUrl+=':80808';
-                         }
-                        $('#api_url_text').val(currentUrl);
-                        $('#api_button').click();
+                    if(getData.colaburl != false){
+                        is_colab = true;
+
+                        $('#api_url_text').val(String(getData.colaburl).trim());
+                        setTimeout(function() {
+                            $('#api_button').click();
+                        }, 3000);
                     }
                     
 

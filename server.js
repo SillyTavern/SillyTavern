@@ -503,10 +503,10 @@ app.post("/getbackgrounds", jsonParser, function(request, response){
 });
 app.post("/iscolab", jsonParser, function(request, response){
     let send_data = false;
-    if(String(process.env.colaburl).trim() !== undefined){
+    if(process.env.colaburl !== undefined){
         send_data = String(process.env.colaburl).trim();
     }
-    response.send({is_colab:send_data});
+    response.send({colaburl:send_data});
     
 });
 app.post("/getuseravatars", jsonParser, function(request, response){
