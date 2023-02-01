@@ -249,11 +249,7 @@ app.post("/getchat", jsonParser, function(request, response){
 });
 app.post("/getstatus", jsonParser, function(request, response_getstatus = response){
     if(!request.body) return response_getstatus.sendStatus(400);
-    if(is_colab == true){
-        api_server = String(process.env.colaburl).trim();
-    }else{
-        api_server = request.body.api_server;
-    }
+    api_server = request.body.api_server;
     if(api_server.indexOf('localhost') != -1){
         api_server = api_server.replace('localhost','127.0.0.1');
     }
@@ -506,8 +502,11 @@ app.post("/getbackgrounds", jsonParser, function(request, response){
     
 });
 app.post("/iscolab", jsonParser, function(request, response){
-
-    response.send({is_colab:is_colab});
+    let send_data = false;
+    if(String(process.env.colaburl).trim() !== undefined){
+        send_data = String(process.env.colaburl).trim();
+    }
+    response.send({is_colab:send_data});
     
 });
 app.post("/getuseravatars", jsonParser, function(request, response){

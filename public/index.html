@@ -339,7 +339,7 @@
                 if (response.ok === true) {
                     const getData = await response.json();
                     is_colab = getData.is_colab;
-                    if(is_colab){
+                    if(is_colab != false){
                         var currentUrl = window.location.href;
                         if (currentUrl.charAt(currentUrl.length - 1) === '/') {
                             currentUrl = currentUrl.substring(0, currentUrl.length - 1);
