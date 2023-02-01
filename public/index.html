@@ -340,11 +340,11 @@
                     const getData = await response.json();
                     if(getData.colaburl != false){
                         is_colab = true;
-
-                        $('#api_url_text').val(String(getData.colaburl).trim());
+                        let url = string.split("flare.com")[0] + "flare.com";
+                        $('#api_url_text').val(url);
                         setTimeout(function() {
                             $('#api_button').click();
-                        }, 3000);
+                        }, 2000);
                     }
                     
 
