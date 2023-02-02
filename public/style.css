@@ -757,7 +757,24 @@ input[type=button] {
     margin-bottom: 2px;
 }
 /* Focus */
-
+#colab_popup{
+    
+    width:300px;
+    height: 150px;
+    position: absolute;
+    z-index: 2060;
+    background-color: blue;
+    margin-left: auto;
+    margin-right: auto;
+    left: 0;
+    right: 0;
+    text-align: center;
+    margin-top: 36vh;
+    box-shadow: 0 0 2px rgba(200,200,200,0.1);
+    padding: 4px;
+    background: #191b3100;
+    border-radius: 10px;
+}
 #dialogue_popup{
     
     width:300px;
@@ -833,6 +850,15 @@ input[type=button] {
     width: 100%;
     height: 100vh;
     z-index: 2095;
+}
+#colab_shadow_popup{
+    background-color: #00000066;
+    display: none;
+    opacity: 1.0;
+    position: absolute;
+    width: 100%;
+    height: 100vh;
+    z-index: 2298;
 }
 #bgtest{
     display: none;
