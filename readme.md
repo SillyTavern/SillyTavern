@@ -3,8 +3,10 @@ Examples of interface and output:
 <br><img src="readme/1.png" height="200" /><img src="readme/4.png" height="200" /><img src="readme/5.png" height="200" />
 
 [@@@Download TavernAI@@@](https://github.com/TavernAI/TavernAI/archive/refs/heads/main.zip) (Last version)<br><br>
+[TavernAI Run Online](https://colab.research.google.com/github/TavernAI/TavernAI/blob/main/colab/GPU.ipynb)<br><br>
+[TavetnAI Boosty](https://boosty.to/tavernai)<br>
 [TavernAI Discord](https://discord.gg/zmK2gmr45t)<br>
-[TavetnAI Boosty](https://boosty.to/tavernai) (A common online database with characters is currently being developed)<br>
+
 ## Features
 * Creating characters with personality setup
 * Choosing name and avatar for your character
