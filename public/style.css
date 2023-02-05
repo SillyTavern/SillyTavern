@@ -20,7 +20,7 @@ body {
 .mes_text i {
     color: grey !important;
 }
-.mes_textem {
+.mes_text em {
     color: grey !important;
 }
 .mes_text p {
