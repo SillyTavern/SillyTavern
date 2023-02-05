@@ -52,7 +52,7 @@ app.post("/getlastversion", jsonParser, function(request, response_getlastversio
     
     const repo = 'TavernAI/TavernAI';
 
-    https.request({
+    const req = https.request({
         hostname: 'github.com',
         path: `/${repo}/releases/latest`,
         method: 'HEAD'
@@ -66,10 +66,17 @@ app.post("/getlastversion", jsonParser, function(request, response_getlastversio
         }else{
             response_getlastversion.send({version: 'error'});
         }
-    }).end();
-        
+    });
+    
+    req.on('error', (error) => {
+        console.error(error);
+        response_getlastversion.send({version: 'error'});
+    });
 
+    req.end();
+        
 });
+
 app.use(express.static(__dirname + "/public", { refresh: true }));
 app.use('/backgrounds', (req, res) => {
   const filePath = path.join(process.cwd(), 'public/backgrounds', req.url);

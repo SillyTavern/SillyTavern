@@ -17,8 +17,35 @@ body {
     scrollbar-color: gray #191b31;
 
 }
-i {
+.mes_text i {
     color: grey !important;
+}
+.mes_textem {
+    color: grey !important;
+}
+.mes_text p {
+    margin-top: 0px;
+    margin-bottom: 16px;
+}
+.mes_text strong {
+    font-weight: bold;
+    color: grey !important;
+}
+.mes_text h2 {
+    font-weight: bold;
+    color: rgb(229, 224, 216);
+}
+.mes_text h1 {
+    font-weight: bold;
+    color: rgb(229, 224, 216);
+}
+code {
+  background-color: #a8a8a8;
+  padding: 5px;
+  font-family: Consolas, monospace;
+  color: #333;
+  white-space: pre-wrap;
+  word-wrap: break-word;
 }
 #bg1{
     background-image: linear-gradient(rgba(19,21,44,0.75), rgba(19,21,44,0.75)), url(backgrounds/tavern.png);

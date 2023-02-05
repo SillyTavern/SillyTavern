@@ -3,7 +3,7 @@
 <head>
     <script src="scripts/jquery-3.5.1.min.js"></script>
     <script src="scripts/jquery.transit.min.js"></script>
-
+    <script src="scripts/showdown.min.js"></script>
     <link rel="stylesheet" type="text/css" href="style.css">
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/right-nav-style.css">
@@ -26,8 +26,8 @@
     <script type=module>
         import {encode, decode} from "../scripts/gpt-2-3-tokenizer/mod.js";
         $(document).ready(function(){
-            const VERSION = '1.2.6';
-            //var converter = new showdown.Converter();
+            const VERSION = '1.2.7';
+            var converter = new showdown.Converter();
             var bg_menu_toggle = false;
             var default_user_name = "You";
             var name1 = default_user_name;
@@ -450,9 +450,10 @@
             }
             function messageFormating(mes, ch_name){
                 if(this_chid != undefined) mes = mes.replaceAll("<", "&lt;").replaceAll(">", "&gt;");
-                mes = mes.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\*(.+?)\*/g, '<i>$1</i>').replace(/\n/g, '<br/>');
+                //mes = mes.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\*(.+?)\*/g, '<i>$1</i>').replace(/\n/g, '<br/>');
+                
+                mes = converter.makeHtml(mes);
                 mes = mes.replace(/\n/g, '<br/>');
-                //mes = converter.makeHtml(mes);
                 if(ch_name !== name1){
                     mes = mes.replaceAll(name2+":", "");
                 }
@@ -1349,8 +1350,19 @@
                 }
                 
             });
-            $(document).on('input', '.edit_textarea', function(){
+            var scroll_holder = 0;
+            var is_use_scroll_holder = false;
+            $(document).on('input', '.edit_textarea', function(){ 
+                scroll_holder = $("#chat").scrollTop();
                 $(this).height(0).height(this.scrollHeight);
+                is_use_scroll_holder = true;
+            });
+            $("#chat").on("scroll", function() {
+                if(is_use_scroll_holder){
+                    $("#chat").scrollTop(scroll_holder);
+                    is_use_scroll_holder = false;
+                }
+                
             });
             $(document).on('click', '.del_checkbox', function(){
                 $('.del_checkbox').each(function(){
@@ -1902,7 +1914,7 @@
                 
 
             });
-            
+
             $( "#settings_perset" ).change(function() {
                 
                 if($('#settings_perset').find(":selected").val() != 'gui'){
@@ -1911,11 +1923,15 @@
                     amount_gen = koboldai_settings[koboldai_setting_names[preset_settings]].genamt;
                     rep_pen = koboldai_settings[koboldai_setting_names[preset_settings]].rep_pen;
                     rep_pen_size = koboldai_settings[koboldai_setting_names[preset_settings]].rep_pen_range;
+                    max_context = koboldai_settings[koboldai_setting_names[preset_settings]].max_length;
                     $('#temp').val(temp);
                     $('#temp_counter').html(temp);
                     
                     $('#amount_gen').val(amount_gen);
                     $('#amount_gen_counter').html(amount_gen);
+                    
+                    $('#max_context').val(max_context);
+                    $('#max_context_counter').html(max_context+" Tokens");
                     
                     $('#rep_pen').val(rep_pen);
                     $('#rep_pen_counter').html(rep_pen);
