@@ -58,27 +58,27 @@ i {
     max-width:800px;
     margin-left: auto;
     margin-right: auto;
-    //border-right: 0.1px solid gray;
-    //border-left: 0.1px solid gray;
-    //box-shadow: 0 0 2px rgba(200,200,200,0.1);
+    /* border-right: 0.1px solid gray; */
+    /* border-left: 0.1px solid gray; */
+    /* box-shadow: 0 0 2px rgba(200,200,200,0.1); */
 }
 
 #chat {
     scrollbar-width: thin;
-    //width: 900px;
-    //height: 80%;
+    /* width: 900px; */
+    /* height: 80%; */
     overflow: hidden;
     overflow-y: scroll;
     background: #191b3100;
-    //white-space:nowrap;
-    //margin-left: 30%; /* Отступ слева */
-    //width: 40%; /* Ширина слоя */
-    //padding: 10px; /* Поля вокруг текста */
+    /* white-space:nowrap; */
+    /* margin-left: 30%; /* Отступ слева */ */
+    /* width: 40%; /* Ширина слоя */ */
+    /* padding: 10px; /* Поля вокруг текста */ */
 }
 
 ::-webkit-scrollbar {
     width: .60em;
-    //background-color: blue;
+    /* background-color: blue; */
 }
 
 ::-webkit-scrollbar-track {
@@ -91,28 +91,28 @@ i {
     box-shadow: inset 0.05em 0.05em 0 rgba(0, 0, 0, 0.1), inset 0 -0.05em 0 rgba(0, 0, 0, 0.07);
 }
 #form_sheld {
-    //box-shadow: 0 0 2px rgba(200,200,200,0.5);
+    /* box-shadow: 0 0 2px rgba(200,200,200,0.5); */
     box-shadow: 0 0 2px rgba(200,200,200,0.1);
     white-space:nowrap;
     background: #191b31A0;
-    //height: 10%;
-    //margin-left: 30%; /* Отступ слева */
-    //width: 95%; /* Ширина слоя */
-    //padding: 10px; /* Поля вокруг текста */
-    //background: red;
-    //margin-left: auto;
-    //margin-right: auto;
+    /* height: 10%; */
+    /* margin-left: 30%; /* Отступ слева */ */
+    /* width: 95%; /* Ширина слоя */ */
+    /* padding: 10px; /* Поля вокруг текста */ */
+    /* background: red; */
+    /* margin-left: auto; */
+    /* margin-right: auto; */
 }
 #send_form {
     display: grid;
     grid-template-columns: 35px auto 60px;
-    //background: green;
+    /* background: green; */
     width: 100%;
     margin-left: auto;
     margin-right: auto;
 }
 #send_textarea{
-    //width:100%; 
+    /* width:100%;  */
     font-size: 11pt; 
     height: 89px;
     resize: none;
@@ -129,14 +129,14 @@ i {
     margin-top: 10px;
 }
 #send_but_sheld{
-    //display:inline-block;
-    //height: 100%;
-    //margin-left: 17px;
-    //background: blue;
+    /* display:inline-block; */
+    /* height: 100%; */
+    /* margin-left: 17px; */
+    /* background: blue; */
     
 }
 #send_but{
-    //visibility: visible;
+    /* visibility: visible; */
     width: 100%;
     margin: 0 auto;
     margin-left: 4px;
@@ -155,7 +155,7 @@ i {
     height: 100%;
     margin: 0 auto;
     margin-left: 2px;
-    //visibility: collapse;
+    /* visibility: collapse; */
     background: url('img/load.svg') no-repeat top left;
     background-size: 45px 45px;
     background-position: center center;
@@ -163,7 +163,7 @@ i {
 #options_button{
     margin-top: 0px;
     cursor: pointer;
-    //opacity: 0.5;
+    /* opacity: 0.5; */
     position: block;
     width:40px;
     height: 40px;
@@ -171,7 +171,7 @@ i {
     background-size: contain;
     background-repeat: no-repeat;
     
-    //background-size: 20px;
+    /* background-size: 20px; */
 }
 #options{
     
@@ -182,7 +182,7 @@ i {
     height: 100px;
     bottom: 196px;
     position: relative;
-    //background-color: blue;
+    /* background-color: blue; */
     z-index:1990;
    
 }
@@ -193,7 +193,7 @@ i {
   background-color: #191b31F3;
   min-width: 205px;
   z-index: 1;
-  //bottom: 1px;
+  /* bottom: 1px; */
 }
 
 /* Ссылки внутри выпадающего блока */
@@ -227,24 +227,24 @@ i {
     box-shadow: 0 0 2px rgba(200,200,200,0.1);
     padding: 4px;
     background: #191b31CC;
-    //box-shadow: 0 0 2px rgba(200,200,200,0.5);
+    /* box-shadow: 0 0 2px rgba(200,200,200,0.5); */
     
     
-    //display: inline-block;
+    /* display: inline-block; */
     vertical-align: top;
     width: 100%;
-    //height:60px;
-    //background: red;
-    //font-family: -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif;
+    /* height:60px; */
+    /* background: red; */
+    /* font-family: -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif; */
     font-family: "Source Sans Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
     color: rgb(229, 224, 216);
     font-size: 18px;
-    //background: blue;
+    /* background: blue; */
     margin-bottom: 26px;
 }
 .avatar {
-  //box-shadow: 0 0 2px rgba(200,200,200,0.5);
-  //background: #13152c;
+  /* box-shadow: 0 0 2px rgba(200,200,200,0.5); */
+  /* background: #13152c; */
   width: 67px;
   height: 103px;
   border-style: none;
@@ -265,11 +265,11 @@ i {
     padding-left: 35px;
 }
 .ch_name{
-    //background: green;
+    /* background: green; */
     font-weight:bolder;
 }
 .mes_text{
-    //background: olive;
+    /* background: olive; */
     
     font-weight:lighter;
     padding-top: 3px;
@@ -294,7 +294,7 @@ i {
     }
 }
 .mes_text i{
-    //color: rgb(229, 224, 216, 0.5);
+    /* color: rgb(229, 224, 216, 0.5); */
 }
 br {
    display: block;
@@ -343,7 +343,7 @@ textarea{
     border:0px solid grey;
     box-shadow: 0 0 2px rgba(200,200,200,0.5);
     background-color: #13152c;
-    //padding: 10px;
+    /* padding: 10px; */
 
     margin-left: 10px;
 
@@ -358,7 +358,7 @@ textarea{
 
 
 .right_menu{
-    //padding: 15px 20px;
+    /* padding: 15px 20px; */
     max-height: 86%;
     overflow: hidden;
     overflow-y: auto;
@@ -416,7 +416,7 @@ input[type=button] {
 }
 .right_menu_button{
     display:inline-block;
-    //box-shadow: 0 0 5px -1px rgba(0,0,0,0.2);
+    /* box-shadow: 0 0 5px -1px rgba(0,0,0,0.2); */
     cursor:pointer;
     vertical-align:middle;
     text-align: center;
@@ -429,8 +429,8 @@ input[type=button] {
 #character_import_button{
     cursor: pointer;
     display: inline-block;
-    margin-left: 15px;//274px;
-    margin-top: 6px;//10px;
+    margin-left: 15px;/* 274px; */
+    margin-top: 6px;/* 10px; */
     
 }
 #character_import_button h2{
@@ -451,7 +451,7 @@ input[type=button] {
 #rm_api_block{
     display: none;
     padding-bottom: 5px;
-    //visibility: hidden;
+    /* visibility: hidden; */
 }
 #api_url_text{
     margin-right: 4px;
@@ -478,7 +478,7 @@ input[type=button] {
 }
 #rm_characters_block{
     display: block;
-    //visibility: hidden;
+    /* visibility: hidden; */
 }
 .character_select{
     padding: 0px;
@@ -538,10 +538,10 @@ input[type=button] {
 #bg_menu_button{
     display: inline-block;
     opacity: 0.4;
-     //transition: 0.5s
+     /* transition: 0.5s */
      cursor: pointer;
      width: 20px;
-     //background: #191b3188;
+     /* background: #191b3188; */
      text-align: center;
      height: 20px;
      color: #ffffff88;
@@ -556,10 +556,10 @@ input[type=button] {
     margin-top: 0px;
     margin-left: 6px;
     opacity: 0.0;
-    //padding-top: 10px;
+    /* padding-top: 10px; */
     cursor:auto;
     display: block;
-    width: 122px;//114px;
+    width: 122px;/* 114px; */
     height: 0px;
     background: #191b3100;
     overflow: hidden;
@@ -578,8 +578,8 @@ input[type=button] {
     box-shadow: inset 0.05em 0.05em 0 rgba(0, 0, 0, 0.1), inset 0 -0.05em 0 rgba(0, 0, 0, 0.07);
 }
 .bg_example {
-  //box-shadow: 0 0 2px rgba(200,200,200,0.5);
-  //background: #13152c;
+  /* box-shadow: 0 0 2px rgba(200,200,200,0.5); */
+  /* background: #13152c; */
   width: 103px;
   height: 83px;
   border-style: none;
@@ -609,8 +609,8 @@ input[type=button] {
 }
 .bg_example_but_load {
     margin-left: 3px;
-  //box-shadow: 0 0 2px rgba(200,200,200,0.5);
-  //background: #13152c;
+  /* box-shadow: 0 0 2px rgba(200,200,200,0.5); */
+  /* background: #13152c; */
   width: 103px;
   height: 83px;
   border-style: none;
@@ -696,13 +696,13 @@ input[type=button] {
     margin-right: auto;
 }
 #delete_button{
-    opacity: 0.51;//0.5
+    opacity: 0.51;/* 0.5 */
     cursor: pointer;
     display: block;
     float:right;
     margin-top: 25px;
     margin-right: 10px; 
-    color: #ffffff68;//66
+    color: #ffffff68;/* 66 */
 }
 #export_button{
     opacity: 0.51;
@@ -746,7 +746,7 @@ input[type=button] {
 }
 
 .input-file input[type=file] {
-	//position: absolute;
+	/* position: absolute; */
 	z-index: -1;
 	opacity: 0;
 	display: block;
@@ -873,7 +873,7 @@ input[type=button] {
 #online_status{
     opacity: 0.3;
     position: absolute;
-    //left: 4px;
+    /* left: 4px; */
     bottom: 0px;
     margin-left: 9px;
     margin-bottom: 15px;
@@ -927,7 +927,7 @@ input[type=button] {
     display: none;
     opacity: 0.5;
     accent-color: #ffffff;
-    //background-color: green;
+    /* background-color: green; */
     width: 20px;
     height: 20px;
 }
@@ -938,8 +938,8 @@ input[type=button] {
     display: block;
 }
 select {
-    //font-size: .9rem;
-    //border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1);
+    /* font-size: .9rem; */
+    /* border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1); */
     color: #ffffff66;
     padding: 5px 10px;
     width:95%;
@@ -1024,7 +1024,7 @@ input[type="range"] {
   height: 7px;
   background: rgba(255, 255, 255, 0.6);
   border-radius: 15px;
-  //background-image: linear-gradient(#ff4500, #ff4500);
+  /* background-image: linear-gradient(#ff4500, #ff4500); */
   background-size: 70% 100%;
   background-repeat: no-repeat;
 }
@@ -1075,7 +1075,7 @@ input[type="range"] {
 .mes_edit{
     display: inline-block;
     float:right;
-    //right:8px;
+    /* right:8px; */
     cursor:pointer;
     margin-right: 4px;
     opacity:0.07;
@@ -1095,7 +1095,7 @@ input[type="range"] {
 .mes_edit_cancel{
     display: none;
     float:right;
-    //right:8px;
+    /* right:8px; */
     margin-right: 4px;
     cursor:pointer;
     opacity:0.5;
@@ -1115,7 +1115,7 @@ input[type="range"] {
 }
 #your_name{
     outline: none;
-    //box-shadow: 0 2px 0px rgba(255, 255, 255, 0.1);
+    /* box-shadow: 0 2px 0px rgba(255, 255, 255, 0.1); */
     box-shadow: 0 0px 0px rgba(255, 255, 255, 0.0);
     border: none;
     background: transparent;
@@ -1199,7 +1199,7 @@ label.checkbox :checked + span:after {
     margin-right: auto;
     left: 0;
     right: 0;
-    //text-align: center;
+    /* text-align: center; */
     margin-top: 0px;
     box-shadow: 0 0 2px rgba(200,200,200,0.1);
     padding: 4px;
@@ -1220,7 +1220,7 @@ label.checkbox :checked + span:after {
 }
 
 #character_popup h3{
-    //margin-top: 0px;
+    /* margin-top: 0px; */
     margin-bottom: 0px;
     margin-left: 0px;
 }
@@ -1247,7 +1247,7 @@ label.checkbox :checked + span:after {
 }
 #personality_textarea{
     width: 92%;
-    //height: 65px;
+    /* height: 65px; */
     margin-top: 0px;
     margin-left: 0px;
 }
@@ -1271,22 +1271,15 @@ label.checkbox :checked + span:after {
 }
 #character_popup_ok{
     cursor: pointer;
-    display: none;//grid;
+    display: none;/* grid; */
     place-items: center;
     height: 40px;
     margin-top: 15px;
-    margin-left: 36px;//36px;329px;/
-    //margin-right: auto;
-    width: 110px;//80px
+    margin-left: 36px;/* 36px;329px;/ */
+    /* margin-right: auto; */
+    width: 110px;/* 80px */
     text-align: center;
 }
-
-
-
-
-
-
-
 
 #shadow_select_chat_popup{
     display: none;
@@ -1309,7 +1302,7 @@ label.checkbox :checked + span:after {
     margin-right: auto;
     left: 0;
     right: 0;
-    //text-align: center;
+    /* text-align: center; */
     margin-top: 21vh;
     box-shadow: 0 0 2px rgba(200,200,200,0.1);
     padding: 4px;
@@ -1345,8 +1338,8 @@ label.checkbox :checked + span:after {
     margin-left: 5px;
     margin-top: 30px;
     scrollbar-width: thin;
-    //width: 900px;
-    //height: 80%;
+    /* width: 900px; */
+    /* height: 80%; */
     overflow: hidden;
     overflow-y: scroll;
     max-width:430px;
@@ -1373,7 +1366,7 @@ label.checkbox :checked + span:after {
     background-color: #ffffff07;
 }
 .select_chat_block[highlight]{
-    background-color: #ffffff09;//#c2b07a12;
+    background-color: #ffffff09;/* #c2b07a12; */
 }
 
 .select_chat_block .avatar{
@@ -1392,7 +1385,7 @@ label.checkbox :checked + span:after {
     background-repeat: no-repeat;
     background-size: 28px;
     background-position: 92px 5px;
-    //background-image: url('img/book5.png');
+    /* background-image: url('img/book5.png'); */
     width: 92%;
     height: 40px;
     margin-left: 10px;
