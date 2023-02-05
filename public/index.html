@@ -449,11 +449,16 @@
                 $('#chat').html('');
             }
             function messageFormating(mes, ch_name){
-                if(this_chid != undefined) mes = mes.replaceAll("<", "&lt;").replaceAll(">", "&gt;");
-                //mes = mes.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\*(.+?)\*/g, '<i>$1</i>').replace(/\n/g, '<br/>');
+                if(this_chid != undefined) mes = mes.replaceAll("<", "&lt;").replaceAll(">", "&gt;");//for Chloe
+                if(this_chid === undefined){
+                    mes = mes.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\*(.+?)\*/g, '<i>$1</i>').replace(/\n/g, '<br/>');
+                    
+                }else{
+                    mes = converter.makeHtml(mes);
+                    mes = mes.replace(/\n/g, '<br/>');
+                }
                 
-                mes = converter.makeHtml(mes);
-                mes = mes.replace(/\n/g, '<br/>');
+                
                 if(ch_name !== name1){
                     mes = mes.replaceAll(name2+":", "");
                 }
