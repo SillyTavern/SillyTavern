@@ -20,7 +20,7 @@ body {
 body {
     color: rgb(229, 224, 216);
     font-family: "Source Sans Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
-    //font: 1em 'Open Sans', sans-serif;
+    /* font: 1em 'Open Sans', sans-serif; */
     background-color: #f1f1f1;
 }
 
