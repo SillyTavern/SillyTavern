@@ -115,7 +115,7 @@ app.post("/generate", jsonParser, function(request, response_generate = response
     //console.log(request.body.prompt);
     //const dataJson = JSON.parse(request.body);
     request_promt = request.body.prompt;
-    
+
     //console.log(request.body);
     var this_settings = { prompt: request_promt,
                         use_story:false,
@@ -133,7 +133,7 @@ app.post("/generate", jsonParser, function(request, response_generate = response
                         use_story:false,
                         use_memory:false,
                         use_authors_note:false,
-                        use_world_info:false,
+                        use_world_info:!!request.body.use_world_info,
                         max_context_length: request.body.max_context_length,
                         max_length: request.body.max_length,
                         rep_pen: request.body.rep_pen,
@@ -1026,8 +1026,90 @@ app.post("/importchat", urlencodedParser, function(request, response){
 });
 
 
+async function generateKoboldWorldInfo(worldInfoName) {
+    let worldInfoUid = null;
 
+    try {
+        const filename = `${worldInfoName}.json`;
+        const pathToWorldInfo = path.join('public/worldinfos/', filename);
+        const koboldFolderName = getKoboldWorldInfoName(worldInfoName);
+        if (!fs.existsSync(pathToWorldInfo)) {
+            console.log(`World info file ${filename} doesn't exist. Skipping...`);
+            return null;
+        }
 
+        const worldInfoText = fs.readFileSync(pathToWorldInfo, 'utf8');
+
+        const baseArgs = {
+            headers: { "Content-Type": "application/json" }
+        };
+
+        // Check is folder exists
+        const foldersData = await getToPromise(api_server + "/v1/world_info/folders", baseArgs);
+        if (foldersData?.folders?.length) {
+            const existingFolder = foldersData.folders.find(x => x.name === koboldFolderName);
+            if (existingFolder) {
+                console.log(`World info folder found: ${existingFolder.uid}`);
+                worldInfoUid = existingFolder.uid;
+            }
+        }
+
+        // Create folder if not already exists
+        if (!worldInfoUid) {
+            const createArgs = Object.assign(baseArgs, { data: {} });
+            const createdFolder = await postToPromise(api_server + "/v1/world_info/folders", createArgs);
+            console.log(`World info folder created: ${createdFolder.uid}`);
+            worldInfoUid = createdFolder.uid;
+
+            // Set a name so we could find the folder later
+            const setNameArgs = Object.assign(baseArgs, { data: { value: koboldFolderName } });
+            await putToPromise(api_server + `/v1/world_info/folders/${worldInfoUid}/name`, setNameArgs);
+            console.log(`World info folder name set: ${koboldFolderName}`);
+        }
+    } catch (err) {
+        console.error(err);
+        return null;
+    }
+
+    return worldInfoUid;
+}
+
+function putToPromise(url, args) {
+    return new Promise((resolve, reject) => {
+        client.put(url, args, (data, response) => {
+            if (response.statusCode >= 400) {
+                reject(data);
+            }
+            resolve(data);
+        }).on('error', e => reject(e));
+    })
+}
+
+function postToPromise(url, args) {
+    return new Promise((resolve, reject) => {
+        client.post(url, args, (data, response) => {
+            if (response.statusCode >= 400) {
+                reject(data);
+            }
+            resolve(data);
+        }).on('error', e => reject(e));
+    })
+}
+
+function getToPromise(url, args) {
+    return new Promise((resolve, reject) => {
+        client.get(url, args, (data, response) => {
+            if (response.statusCode >= 400) {
+                reject(data);
+            }
+            resolve(data);
+        }).on('error', e => reject(e));
+    })
+}
+
+function getKoboldWorldInfoName(worldInfoName) {
+    return `TavernAI_${worldInfoName}_WI`;
+}
 
 
 
