@@ -170,7 +170,6 @@
             printMessages();
             getBackgrounds();
             getUserAvatars();
-
             //
             $('#characloud_url').click(function(){
                 window.open('https://boosty.to/tavernai', '_blank');
@@ -196,6 +195,7 @@
                     $("#online_status_indicator3").css("background-color", "green");
                     $("#online_status_text3").html(online_status);
                 }
+
             }
             async function getLastVersion(){
 
@@ -276,9 +276,9 @@
                         error: function (jqXHR, exception) {
                             console.log(exception);
                             console.log(jqXHR);
+                            online_status = 'no_connection';
                             
                             // invalidate world info when losing connection to kobold
-                            online_status = 'no_connection';
                             kobold_world_synced = false;
                             updateWorldStatus();
 
@@ -910,7 +910,7 @@
                         
                         var generate_data;
                         if(main_api == 'kobold'){
-                            const use_world_info = kobold_world && kobold_world_synced;
+                            const use_world_info = Boolean(kobold_world && kobold_world_synced);
                             var generate_data = {prompt: finalPromt, gui_settings: true,max_length: amount_gen,temperature: temp, max_context_length: max_context, use_world_info};
                             if(preset_settings != 'gui'){
 
@@ -2381,6 +2381,7 @@
                                     preset_settings = 'gui';
                                     $("#settings_perset option[value=gui]").attr('selected', 'true');
                                 }
+                                
                             }
                             
                             //User
