@@ -1089,7 +1089,7 @@ async function synchronizeKoboldWorldInfo(worldInfoName) {
     const koboldFolderName = getKoboldWorldInfoName(worldInfoName);
     const filename = `${worldInfoName}.json`;
     const pathToWorldInfo = path.join('public/KoboldAI Worlds/', filename);
-    
+
     if (!fs.existsSync(pathToWorldInfo)) {
         throw new Error(`World info file ${filename} doesn't exist.`);
     }
@@ -1174,8 +1174,6 @@ async function deleteKoboldFolders(koboldFoldersToDelete) {
 }
 
 async function setKoboldEntryData(tavernEntry, koboldEntry) {
-    const setDataRequests = [];
-
     // 1. Set primary key
     if (tavernEntry.key.length) {
         const keyArgs = { data: { value: tavernEntry.key.join(',') }, ...baseRequestArgs };
@@ -1213,8 +1211,6 @@ async function setKoboldEntryData(tavernEntry, koboldEntry) {
         await putToPromise(`${api_server}/v1/world_info/${koboldEntry.uid}/selective`, selectiveArgs);
     }
     */
-
-    return setDataRequests;
 }
 
 async function validateKoboldWorldInfo(koboldFolderName, koboldWorldInfo, tavernWorldInfo) {
