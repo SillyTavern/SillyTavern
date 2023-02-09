@@ -1,0 +1,65 @@
+{
+	"folders": {
+		"New Folder": [
+			0,
+			1
+		]
+	},
+	"entries": {
+		"0": {
+			"uid": 0,
+			"title": "New World Info Entry",
+			"key": [
+				"Test",
+				"test"
+			],
+			"keysecondary": [
+				"ttest    "
+			],
+			"folder": "New Folder",
+			"constant": false,
+			"manual_text": "tststststs",
+			"content": "tststststs",
+			"comment": "",
+			"type": "wi",
+			"token_length": 0,
+			"selective": true,
+			"used_in_game": false,
+			"wpp": {
+				"name": "",
+				"type": "",
+				"format": "W++",
+				"attributes": {}
+			},
+			"use_wpp": false,
+			"object_type": null
+		},
+		"1": {
+			"uid": 1,
+			"title": "New World Info Entry",
+			"key": [
+				"kkkk"
+			],
+			"keysecondary": [
+				"kkkkk"
+			],
+			"folder": "New Folder",
+			"constant": false,
+			"manual_text": "gsfgsafgasgsf",
+			"content": "gsfgsafgasgsf",
+			"comment": "",
+			"type": "wi",
+			"token_length": 0,
+			"selective": true,
+			"used_in_game": false,
+			"wpp": {
+				"name": "",
+				"type": "",
+				"format": "W++",
+				"attributes": {}
+			},
+			"use_wpp": false,
+			"object_type": null
+		}
+	}
+}

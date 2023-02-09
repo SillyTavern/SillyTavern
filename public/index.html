@@ -102,6 +102,9 @@
             var user_avatar = 'you.png';
             var temp = 0.5;
             var amount_gen = 80;
+            var kobold_world = null;
+            var koboldai_world_names;
+            var kobold_world_synced = false;
             var max_context = 2048;//2048;
             var rep_pen = 1;
             var rep_pen_size = 100;
@@ -263,6 +266,7 @@
                             resultCheckStatus();
                             if(online_status !== 'no_connection'){
                                 var checkStatusNow = setTimeout(getStatus, 3000);//getStatus();
+                                syncKoboldWorldInfo(false);
                             }
                         },
                         error: function (jqXHR, exception) {
@@ -1927,6 +1931,19 @@
 
             });
 
+            $("#world_info").change(function() {
+                const selectedWorld = $('#world_info').find(":selected").val();
+                kobold_world_synced = false;
+                kobold_world = null;
+
+                if (selectedWorld !== 'None') {
+                    const worldIndex = Number(selectedWorld);
+                    kobold_world = !isNaN(worldIndex) ? koboldai_world_names[worldIndex] : null;
+                }
+
+                syncKoboldWorldInfo(true);
+            });
+
             $( "#settings_perset" ).change(function() {
                 
                 if($('#settings_perset').find(":selected").val() != 'gui'){
@@ -2005,6 +2022,7 @@
                     main_api = 'kobold';
                     $('#max_context_block').css('display', 'block');
                     $('#amount_gen_block').css('display', 'block');
+                    $('#world_info').css('display', 'block');
                 }
                 if($('#main_api').find(":selected").val() == 'novel'){
                     $('#kobold_api').css("display", "none");
@@ -2012,6 +2030,7 @@
                     main_api = 'novel';
                     $('#max_context_block').css('display', 'none');
                     $('#amount_gen_block').css('display', 'none');
+                    $('#world_info').css('display', 'none');
                 }
             }
             async function getUserAvatars(){
@@ -2037,7 +2056,35 @@
 
                 }
             }
-            
+            async function syncKoboldWorldInfo(force) {
+                // Don't sync if no world selected
+                if (!kobold_world || online_status == 'no_connection') {
+                    return;
+                }
+
+                // Don't sync if synced and not forcing
+                if (kobold_world_synced && !force) {
+                    return;
+                }
+
+                const response = await fetch("/synckoboldworld", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ "name": kobold_world })
+                });
+
+                if (response.ok === true) {
+                    const syncData = await response.json();
+
+                    if (syncData.ok) {
+                        kobold_world_synced = true;
+                    }
+
+                    if (syncData.busy) {
+                        console.log('Sync API is busy');
+                    }
+                }
+            }
             
             $(document).on('input', '#temp', function() {
                 temp = $(this).val();
@@ -2181,6 +2228,11 @@
                             koboldai_setting_names = {};
                             koboldai_setting_names = arr_holder;
 
+                            koboldai_world_names = data.koboldai_world_names;
+                            koboldai_world_names.forEach((item, i) => {
+                                $('#world_info').append(`<option value='${i}'>${item}</option>`);
+                            });
+
                             preset_settings = settings.preset_settings;
 
                             temp = settings.temp;
@@ -2321,7 +2373,8 @@
                         if(type === 'change_name'){
                             location.reload();
                         }
-
+                        
+                        syncKoboldWorldInfo(false);
                     },
                     error: function (jqXHR, exception) {
                         console.log(exception);
@@ -2946,6 +2999,10 @@
                     <h4>Repetition Penalty Range</h4><h5 id="rep_pen_size_counter">select</h5>
                     <input type="range" id="rep_pen_size" name="volume" min="0" max="2048" step="1">
                 </div>
+                <h4>World Info</h4><!-- <h5>More info (<a href="http://example.com" target="_blank">?</a>)</h5> -->
+                <select id="world_info" class="option_select_right_menu">
+                    <option value="None">None</option>
+                </select>
             </div>
             <div id="novel_api" style="display: none;position: relative;">
                 <div style="position: absolute; right:152px; top:-25px; opacity:0.25;"><a href="https://novelai.net/" target="_blank"><img src="img/novelai.png" style="width:auto;height:22px;"></a></div>
