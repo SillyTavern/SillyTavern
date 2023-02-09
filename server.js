@@ -16,11 +16,16 @@ const sharp = require('sharp');
 sharp.cache(false);
 const path = require('path');
 
+const config = require('./config.json');
+const server_port = config.port;
+const whitelist = config.whitelist;
+const whitelistMode = config.whitelistMode;
+
 var Client = require('node-rest-client').Client;
 var client = new Client();
 
 var api_server = "";//"http://127.0.0.1:5000";
-var server_port = 8000;
+//var server_port = 8000;
 
 var api_novelai = "https://api.novelai.net";
 
@@ -45,37 +50,16 @@ const jsonParser = express.json({limit: '100mb'});
 const urlencodedParser = express.urlencoded({extended: true, limit: '100mb'});
 
 
-
-
-app.post("/getlastversion", jsonParser, function(request, response_getlastversion = response){
-    if(!request.body) return response_getlastversion.sendStatus(400);
-    
-    const repo = 'TavernAI/TavernAI';
-
-    const req = https.request({
-        hostname: 'github.com',
-        path: `/${repo}/releases/latest`,
-        method: 'HEAD'
-    }, (res) => {
-        if(res.statusCode === 302) {
-            const glocation = res.headers.location;
-            const versionStartIndex = glocation.lastIndexOf('@')+1;
-            const version = glocation.substring(versionStartIndex);
-            //console.log(version);
-            response_getlastversion.send({version: version});
-        }else{
-            response_getlastversion.send({version: 'error'});
-        }
-    });
-    
-    req.on('error', (error) => {
-        console.error(error);
-        response_getlastversion.send({version: 'error'});
-    });
-
-    req.end();
-        
+app.use(function (req, res, next) { //Security
+    const clientIp = req.connection.remoteAddress.split(':').pop();
+    if (whitelistMode === true && !whitelist.includes(clientIp)) {
+        console.log('Forbidden: Connection attempt from '+ clientIp+'. If you are attempting to connect, please add your IP address in whitelist or disable whitelist mode in config.json in root of TavernAI folder.\nExample for add several IP in whitelist: "whitelist": ["127.0.0.1", "'+ clientIp+'"]\nExample for disable whitelist mode: "whitelistMode": false');
+        return res.status(403).send('<b>Forbidden</b>: Connection attempt from <b>'+ clientIp+'</b>. If you are attempting to connect, please add your IP address in whitelist or disable whitelist mode in config.json in root of TavernAI folder.<br>Example for add several IP in whitelist: "whitelist": ["127.0.0.1", "'+ clientIp+'"]<br>Example for disable whitelist mode: "whitelistMode": false');
+    }
+    next();
 });
+
+
 
 app.use(express.static(__dirname + "/public", { refresh: true }));
 app.use('/backgrounds', (req, res) => {
@@ -108,6 +92,35 @@ app.get("/", function(request, response){
 app.get("/notes/*", function(request, response){
     response.sendFile(__dirname + "/public"+request.url+".html"); 
     //response.send("<h1>Главная страница</h1>");
+});
+app.post("/getlastversion", jsonParser, function(request, response_getlastversion = response){
+    if(!request.body) return response_getlastversion.sendStatus(400);
+    
+    const repo = 'TavernAI/TavernAI';
+    let req;
+    req = https.request({
+        hostname: 'github.com',
+        path: `/${repo}/releases/latest`,
+        method: 'HEAD'
+    }, (res) => {
+        if(res.statusCode === 302) {
+            const glocation = res.headers.location;
+            const versionStartIndex = glocation.lastIndexOf('@')+1;
+            const version = glocation.substring(versionStartIndex);
+            //console.log(version);
+            response_getlastversion.send({version: version});
+        }else{
+            response_getlastversion.send({version: 'error'});
+        }
+    });
+    
+    req.on('error', (error) => {
+        console.error(error);
+        response_getlastversion.send({version: 'error'});
+    });
+
+    req.end();
+        
 });
 //**************Kobold api
 app.post("/generate", jsonParser, function(request, response_generate = response){
