@@ -105,6 +105,7 @@
             var kobold_world = null;
             var koboldai_world_names;
             var kobold_world_synced = false;
+            var kobold_sync_failed = false;
             var max_context = 2048;//2048;
             var rep_pen = 1;
             var rep_pen_size = 100;
@@ -169,6 +170,8 @@
             printMessages();
             getBackgrounds();
             getUserAvatars();
+            updateWorldStatus();
+
             //
             $('#characloud_url').click(function(){
                 window.open('https://boosty.to/tavernai', '_blank');
@@ -194,6 +197,8 @@
                     $("#online_status_indicator3").css("background-color", "green");
                     $("#online_status_text3").html(online_status);
                 }
+
+                check
                 
             }
             async function getLastVersion(){
@@ -254,6 +259,9 @@
                             online_status = data.result;
                             if(online_status == undefined){
                                 online_status = 'no_connection';
+
+                                kobold_world_synced = false;
+                                updateWorldStatus();
                             }
                             if(online_status.toLowerCase().indexOf('pygmalion') != -1){
                                 is_pygmalion = true;
@@ -272,14 +280,20 @@
                         error: function (jqXHR, exception) {
                             console.log(exception);
                             console.log(jqXHR);
-                            online_status = 'no_connection';
                             
+                            // invalidate world info when losing connection to kobold
+                            online_status = 'no_connection';
+                            kobold_world_synced = false;
+                            updateWorldStatus();
+
                             resultCheckStatus();
                         }
                     });
                 }else{
                     if(is_get_status_novel != true){
                         online_status = 'no_connection';
+                        kobold_world_synced = false;
+                        updateWorldStatus();
                     }
                 }
             }
@@ -900,7 +914,8 @@
                         
                         var generate_data;
                         if(main_api == 'kobold'){
-                            var generate_data = {prompt: finalPromt, gui_settings: true,max_length: amount_gen,temperature: temp, max_context_length: max_context};
+                            const use_world_info = kobold_world && kobold_world_synced;
+                            var generate_data = {prompt: finalPromt, gui_settings: true,max_length: amount_gen,temperature: temp, max_context_length: max_context, use_world_info};
                             if(preset_settings != 'gui'){
 
                                 var this_settings = koboldai_settings[koboldai_setting_names[preset_settings]];
@@ -941,7 +956,8 @@
                                                 s4:this_settings.sampler_order[3],
                                                 s5:this_settings.sampler_order[4],
                                                 s6:this_settings.sampler_order[5],
-                                                s7:this_settings.sampler_order[6]
+                                                s7:this_settings.sampler_order[6],
+                                                use_world_info: use_world_info,
                                                 };
                             }
                         }
@@ -1934,6 +1950,7 @@
             $("#world_info").change(function() {
                 const selectedWorld = $('#world_info').find(":selected").val();
                 kobold_world_synced = false;
+                kobold_sync_failed = false;
                 kobold_world = null;
 
                 if (selectedWorld !== 'None') {
@@ -1942,6 +1959,8 @@
                 }
 
                 syncKoboldWorldInfo(true);
+                saveSettings();
+                updateWorldStatus();
             });
 
             $( "#settings_perset" ).change(function() {
@@ -2056,14 +2075,36 @@
 
                 }
             }
-            async function syncKoboldWorldInfo(force) {
-                // Don't sync if no world selected
-                if (!kobold_world || online_status == 'no_connection') {
-                    return;
-                }
 
-                // Don't sync if synced and not forcing
-                if (kobold_world_synced && !force) {
+            function updateWorldStatus() {
+                if($('#world_info').is(':visible') && kobold_world) {
+                    $('#world_status').show();
+
+                    if (kobold_world_synced) {
+                        $("#world_status_indicator").css("background-color", "green");
+                        $("#world_status_text").html("Synchronized with KoboldAI")
+                    }
+                    else {
+                        let statusText = online_status === 'no_connection'
+                                    ? "Waiting for connection"
+                                    : "Synchronizing...";
+
+                        if (kobold_sync_failed) {
+                            statusText = "Synchronization failed (see console)";
+                        }
+                        
+                        $("#world_status_text").html(statusText);
+                        $("#world_status_indicator").css("background-color", "red");
+                    }
+                } else {
+                    $('#world_status').hide();
+                }
+            }
+
+            async function syncKoboldWorldInfo(force) {
+                // Don't sync if no world selected or if synced and not forcing
+                if (!kobold_world || online_status === 'no_connection' || (kobold_world_synced && !force)) {
+                    updateWorldStatus();
                     return;
                 }
 
@@ -2078,12 +2119,28 @@
 
                     if (syncData.ok) {
                         kobold_world_synced = true;
+                        kobold_sync_failed = false;
                     }
 
                     if (syncData.busy) {
-                        console.log('Sync API is busy');
+                        console.log('Sync API is busy. Retrying in 0.5sec');
+                        setTimeout(() => syncKoboldWorldInfo(force), 500);
+                        return;
                     }
+                } else {
+                    kobold_sync_failed = true;
+                    let responseLog = response.statusText;
+                    
+                    try {
+                        var responseBody = await response.text();
+                        responseLog += ('\n' + responseBody); 
+                    } catch {
+                        // empty catch
+                    }
+                    console.error(`Sync API response: ${responseLog}`);
                 }
+
+                updateWorldStatus();
             }
             
             $(document).on('input', '#temp', function() {
@@ -2228,9 +2285,23 @@
                             koboldai_setting_names = {};
                             koboldai_setting_names = arr_holder;
 
-                            koboldai_world_names = data.koboldai_world_names;
+                            // world info settings
+                            koboldai_world_names = data.koboldai_world_names?.length ? data.koboldai_world_names : [];
+
+                            if(settings.kobold_world != undefined) {
+                                if (koboldai_world_names.includes(settings.kobold_world)) {
+                                    kobold_world = settings.kobold_world;
+                                    kobold_world_synced = false;
+                                    kobold_sync_failed = false;
+                                }
+                            }
+
                             koboldai_world_names.forEach((item, i) => {
                                 $('#world_info').append(`<option value='${i}'>${item}</option>`);
+                                // preselect world if saved
+                                if (item == kobold_world){
+                                    $(`#world_info option[value=${i}]`).attr('selected', 'true');
+                                }
                             });
 
                             preset_settings = settings.preset_settings;
@@ -2358,7 +2429,8 @@
                             model_novel: model_novel,
                             temp_novel: temp_novel,
                             rep_pen_novel: rep_pen_novel,
-                            rep_pen_size_novel: rep_pen_size_novel
+                            rep_pen_size_novel: rep_pen_size_novel,
+                            kobold_world: kobold_world,
                         }),
                     beforeSend: function(){
 
@@ -3003,6 +3075,9 @@
                 <select id="world_info" class="option_select_right_menu">
                     <option value="None">None</option>
                 </select>
+                <div id="world_status">
+                    <div id="world_status_indicator"></div><div id="world_status_text"></div>
+                </div>
             </div>
             <div id="novel_api" style="display: none;position: relative;">
                 <div style="position: absolute; right:152px; top:-25px; opacity:0.25;"><a href="https://novelai.net/" target="_blank"><img src="img/novelai.png" style="width:auto;height:22px;"></a></div>
