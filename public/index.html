@@ -170,7 +170,6 @@
             printMessages();
             getBackgrounds();
             getUserAvatars();
-            updateWorldStatus();
 
             //
             $('#characloud_url').click(function(){
@@ -1216,6 +1215,9 @@
                 $( "#rm_button_characters" ).children("h2").css(deselected_button_style);
                 $( "#rm_button_settings" ).children("h2").css(seleced_button_style);
                 $( "#rm_button_selected_ch" ).children("h2").css(deselected_button_style);
+
+                // Dumb call, but won't need an interval
+                updateWorldStatus();
             });
             $( "#rm_button_characters" ).click(function() {
                 selected_button = 'characters';
@@ -2048,6 +2050,8 @@
                     $('#amount_gen_block').css('display', 'none');
                     $('#world_info').css('display', 'none');
                 }
+
+                updateWorldStatus();
             }
             async function getUserAvatars(){
                 const response = await fetch("/getuseravatars", {
@@ -2300,6 +2304,7 @@
                                     $(`#world_info option[value=${i}]`).attr('selected', 'true');
                                 }
                             });
+                            // end world info settings
 
                             preset_settings = settings.preset_settings;
 
@@ -2376,7 +2381,6 @@
                                     preset_settings = 'gui';
                                     $("#settings_perset option[value=gui]").attr('selected', 'true');
                                 }
-
                             }
                             
                             //User
