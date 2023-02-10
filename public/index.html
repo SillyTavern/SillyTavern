@@ -67,6 +67,7 @@
             var create_save_mes_example = '';
             
             var timerSaveEdit;
+            var timerKoboldSync;
             var durationSaveEdit = 200;
             //animation right menu
             var animation_rm_duration = 200;
@@ -106,6 +107,7 @@
             var koboldai_world_names;
             var kobold_world_synced = false;
             var kobold_sync_failed = false;
+            var kobold_is_united = false;
             var max_context = 2048;//2048;
             var rep_pen = 1;
             var rep_pen_size = 100;
@@ -1847,6 +1849,7 @@
                     is_get_status = true;
                     is_api_button_press = true;
                     getStatus();
+                    detectUnitedKobold();
                 }
             });
             
@@ -2096,14 +2099,33 @@
                         $("#world_status_text").html(statusText);
                         $("#world_status_indicator").css("background-color", "red");
                     }
+
+                    if (kobold_is_united) {
+                        $("#world_status_text").html('<span style="font-size:90%">KoboldAI United detected. WI may not work as intended.<br>If experiencing issues, please select "None".</span>');
+                    }
                 } else {
                     $('#world_status').hide();
                 }
             }
 
+            async function detectUnitedKobold() {
+                if (!api_server || main_api !== 'kobold') {
+                    return;
+                }
+
+                // If we can reach Kobold's new ui, then it should be United branch
+                kobold_is_united = false;
+                const kobold_united_ui2 = api_server.replace('/api', '/new_ui');
+                const response = await fetch(kobold_united_ui2, { method: 'HEAD'});
+
+                if (response.ok && response.status == 200) {
+                    kobold_is_united = true;
+                }
+            }
+
             async function syncKoboldWorldInfo(force) {
                 // Don't sync if no world selected or if synced and not forcing
-                if (!kobold_world || online_status === 'no_connection' || (kobold_world_synced && !force)) {
+                if (online_status === 'no_connection' || (!kobold_world && !force) || (kobold_world_synced && !force)) {
                     updateWorldStatus();
                     return;
                 }
@@ -2123,8 +2145,9 @@
                     }
 
                     if (syncData.busy) {
-                        console.log('Sync API is busy. Retrying in 0.5sec');
-                        setTimeout(() => syncKoboldWorldInfo(force), 500);
+                        // console.log('Sync API is busy. Retrying in 3sec');
+                        clearTimeout(timerKoboldSync);
+                        timerKoboldSync = setTimeout(() => syncKoboldWorldInfo(force), 3000);
                         return;
                     }
                 } else {
