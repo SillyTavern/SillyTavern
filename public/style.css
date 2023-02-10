@@ -800,7 +800,7 @@ input[type=button] {
     right: 0;
     text-align: center;
     margin-top: 36vh;
-    box-shadow: 0 0 2px rgba(200,200,200,0.1);
+    /*box-shadow: 0 0 2px rgba(200,200,200,0.1);*/
     padding: 4px;
     background: #191b3100;
     border-radius: 10px;
