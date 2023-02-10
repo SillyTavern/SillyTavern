@@ -956,12 +956,15 @@ input[type=button] {
 
 #world_info {
     margin-bottom: 12px;
+    margin-right: 4px;
 }
+
 #world_status{
     opacity: 0.5;
     margin-top: 2px;
     margin-left: 10px;
 }
+
 #world_status_indicator{
     border-radius: 7px;
     width: 14px;
@@ -969,19 +972,97 @@ input[type=button] {
     background-color: red;
     display: inline-block;
 }
-#world_status_text{
+
+#world_status_text {
     margin-left: 4px;
     display: inline-block;
 }
-#world_import_button{
+
+#world_import_button {
     cursor: pointer;
     display: inline-block;
 }
-#world_import_button h2{
+
+#world_import_button h2 {
     margin-top: auto;
     margin-bottom: auto;
-    font-size: 17px;
+    margin-left: 1rem;
+    font-size: 16px;
     color: rgb(188, 193, 200, 0.5);
+}
+
+#world_info_edit_button {
+    cursor: pointer;
+    color: #ffffffaa;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+}
+
+#world_popup {
+    display: none;
+    flex-direction: column;
+    max-width: 800px;
+    height: 83vh;
+    position: absolute;
+    z-index: 2060;
+    background-color: blue;
+    margin-left: auto;
+    margin-right: auto;
+    left: 0;
+    right: 0;
+    margin-top: 0px;
+    box-shadow: 0 0 2px rgba(200, 200, 200, 0.1);
+    padding: 4px 36px;
+    background: #191b31F5;
+    border-radius: 1px;
+}
+
+#world_text_content {
+    margin: 0;
+    flex-grow: 1;
+}
+
+#world_popup_bottom_holder {
+    padding: 1rem 0;
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+}
+
+#world_popup_bottom_holder div {
+    margin-left: 1rem;
+    cursor: pointer;
+    user-select: none; 
+}
+
+#world_cross {
+    position: absolute;
+    right: 15px;
+    top: 15px;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    opacity: 0.6;
+}
+
+#world_popup h5 a {
+    color: #936f4a;
+}
+
+#world_popup h5 a:hover {
+    color: #998e6b;
+}
+
+#world_popup h4 a {
+    color: #936f4a;
+}
+
+#world_popup h4 a:hover {
+    color: #998e6b;
+}
+
+#world_popup h5 {
+    color: #757575;
 }
 
 .del_checkbox{

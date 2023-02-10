@@ -54,6 +54,7 @@
             var is_mes_reload_avatar = false;
             
             var is_advanced_char_open = false;
+            var is_world_edit_open = false;
             
             var menu_type = '';//what is selected in the menu
             var selected_button = '';//which button pressed
@@ -108,6 +109,7 @@
             var kobold_world_synced = false;
             var kobold_sync_failed = false;
             var kobold_is_united = false;
+            var imported_world_name = '';
             var max_context = 2048;//2048;
             var rep_pen = 1;
             var rep_pen_size = 100;
@@ -1524,8 +1526,16 @@
                         }  
                     });  
                 }
-                if (popup_type === 'world_imported') {
-                    // switch to a new world
+                if (popup_type === 'world_imported' && imported_world_name) {
+                    koboldai_world_names.forEach((item, i) => {
+                        if (item === imported_world_name) {
+                            $('#world_info').val(i).change();
+                        }          
+                    })
+                    imported_world_name = '';         
+                }
+                if (popup_type === 'del_world' && kobold_world) {
+                    deleteWorldInfo(kobold_world);
                 }
                 if(popup_type == 'new_chat' && this_chid != undefined && menu_type != "create"){//Fix it; New chat doesn't create while open create character menu
                     clearChat();
@@ -1558,6 +1568,7 @@
                     $("#dialogue_popup_ok").css("background-color", "#191b31CC");
                     $("#dialogue_popup_ok").text("Yes");
                     break;
+                case 'del_world':
                 default:
                     $("#dialogue_popup_ok").css("background-color", "#791b31");
                     $("#dialogue_popup_ok").text("Delete");
@@ -1963,6 +1974,7 @@
                     kobold_world = !isNaN(worldIndex) ? koboldai_world_names[worldIndex] : null;
                 }
 
+                hideWorldEditor();
                 syncKoboldWorldInfo(true);
                 saveSettings();
                 updateWorldStatus();
@@ -2085,6 +2097,7 @@
 
             function updateWorldStatus() {
                 if($('#world_info_block').is(':visible') && kobold_world) {
+                    $('#world_info_edit_button').show();
                     $('#world_status').show();
 
                     if (kobold_world_synced) {
@@ -2109,6 +2122,7 @@
                     }
                 } else {
                     $('#world_status').hide();
+                    $('#world_info_edit_button').hide();
                 }
             }
 
@@ -2140,7 +2154,7 @@
                     body: JSON.stringify({ "name": kobold_world })
                 });
 
-                if (response.ok === true) {
+                if (response.ok) {
                     const syncData = await response.json();
 
                     if (syncData.ok) {
@@ -2327,7 +2341,7 @@
                                 $('#world_info').append(`<option value='${i}'>${item}</option>`);
                                 // preselect world if saved
                                 if (item == kobold_world){
-                                    $(`#world_info option[value=${i}]`).attr('selected', 'true');
+                                    $('#world_info').val(i).change();
                                 }
                             });
                             // end world info settings
@@ -2921,9 +2935,8 @@
                     processData: false, 
                     success: function(data){
                         if (data.name) {
-                            // TODO reload list of custom worlds to allow selection then offer a popup
-                            // popup_type = 'world_imported';
-                            // callPopup('<h3>World imported successfully! Select it now?</h3>');
+                            imported_world_name = data.name;
+                            updateWorldInfoList(imported_world_name);
                         }
                     },
                     error: (jqXHR, exception) => {},
@@ -2933,6 +2946,104 @@
                 $('#form_world_import').trigger("reset");
             });
 
+            async function updateWorldInfoList(importedWorldName) {
+                var result = await fetch('/getsettings', { 
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+
+                if (result.ok) {
+                    var data = await result.json();
+                    koboldai_world_names = data.koboldai_world_names?.length ? data.koboldai_world_names : [];
+                    $('#world_info').find('option[value!="None"]').remove();
+
+                    koboldai_world_names.forEach((item, i) => {
+                        $('#world_info').append(`<option value='${i}'>${item}</option>`);
+                    });
+                    
+                    if (importedWorldName) {
+                        const indexOf = koboldai_world_names.indexOf(kobold_world);
+                        $(`#world_info`).val(indexOf);
+
+                        popup_type = 'world_imported';
+                        callPopup('<h3>World imported successfully! Select it now?</h3>');
+                    }
+                }
+            }
+
+            function download(content, fileName, contentType) {
+                var a = document.createElement("a");
+                var file = new Blob([content], {type: contentType});
+                a.href = URL.createObjectURL(file);
+                a.download = fileName;
+                a.click();
+            }
+
+            // World Info Editor
+            async function showWorldEditor() {
+                is_world_edit_open = true;
+                $('#world_text_content').val('');
+                $('#world_popup').css('display', 'flex');
+
+                if (kobold_world) {
+                    const response = await fetch("/getworldinfo", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ name: kobold_world })
+                    });
+
+                    if (response.ok) {
+                        const worldInfoData = await response.text();
+                        $('#world_text_content').val(worldInfoData);
+                    }
+                }
+            }
+
+            function hideWorldEditor() {
+                is_world_edit_open = false;
+                $('#world_popup').css('display', 'none');
+                $('#world_text_content').val('');
+            }
+
+            async function deleteWorldInfo(worldInfoName) {
+                if (!koboldai_world_names.includes(worldInfoName)) {
+                    return;
+                }
+
+                const response = await fetch("/deleteworldinfo", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ name: worldInfoName })
+                });
+
+                if (response.ok) {
+                    await updateWorldInfoList();
+                    $('#world_info').val('None').change();
+                    hideWorldEditor();
+                }
+            }
+
+            $('#world_info_edit_button').click(() => {
+                is_world_edit_open ? hideWorldEditor() : showWorldEditor();
+            });
+
+            $('#world_popup_export').click(() => {
+                const jsonValue = $('#world_text_content').val();
+                if (kobold_world && jsonValue) {
+                    const fileName = `${kobold_world}.json`;
+                    download(jsonValue, fileName, 'application/json');
+                }
+            });
+
+            $('#world_popup_delete').click(() => {
+                popup_type = 'del_world';
+                callPopup('<h3>Delete the World Info?</h3>');
+            });
+
+            $('#world_cross').click(() => {
+                hideWorldEditor();
+            });
         });
     </script>
 <title>Tavern.AI</title>
@@ -2990,6 +3101,27 @@
             <div></div>
             
     </div>
+
+    <div id="world_popup">
+        <div id="world_popup_text">
+            <img id="world_cross" src="img/cross.png">
+            <div>
+                <!-- Probably needs a logo (probably) -->
+                <!-- <img src="img/book2.png" id="world_logo"> -->
+                <h3>World Info creation</h3>
+            </div>
+        </div>
+    
+        <!-- Placeholder until actual editor is implemented -->
+        <h4>File content (read-only)</h4>
+        <textarea id="world_text_content" placeholder="Loading..." form="form_create" disabled></textarea>
+    
+        <div id="world_popup_bottom_holder">
+            <div id="world_popup_export" class="menu_button">Export</div>
+            <div id="world_popup_delete" class="menu_button">Delete</div>
+        </div>
+    </div>
+
     <div id="shadow_select_chat_popup">
         <div id="select_chat_popup">
             <div id="select_chat_popup_text">
@@ -3141,7 +3273,11 @@
                     <input type="range" id="rep_pen_size" name="volume" min="0" max="2048" step="1">
                 </div>
                 <div>
-                <h4 id="world_info_block">World Info</h4><h5>How to use (<a href="/notes/13" target="_blank">?</a>)</h5>
+                <h4 id="world_info_block">
+                    World Info 
+                    <div id="world_import_button" class="right_menu_button"><h2>+Import</h2></div>
+                    <h5>How to use (<a href="/notes/13" target="_blank">?</a>)</h5>
+                </h4>
                     <div id="rm_world_import" class="right_menu" style="display: none;">
                         <form id="form_world_import" action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <input type="file" id="world_import_file" accept=".json" name="avatar">
@@ -3150,7 +3286,7 @@
                     <select id="world_info" class="option_select_right_menu">
                         <option value="None">None</option>
                     </select>
-                    <div id="world_import_button" class="right_menu_button"><h2>+Import</h2></div>
+                    <input id="world_info_edit_button" type="button" value="Details">
                     <div id="world_status">
                         <div id="world_status_indicator"></div><div id="world_status_text"></div>
                     </div>

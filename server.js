@@ -709,6 +709,33 @@ app.post('/synckoboldworld', jsonParser, async (request, response) => {
     }
 });
 
+app.post('/getworldinfo', jsonParser, async (request, response) => {
+    if (!request.body?.name) {
+        return response.sendStatus(400);
+    }
+
+    const file = readWorldInfoFile(request.body.name);
+
+    return response.send(file.tavernWorldInfo);
+});
+
+app.post('/deleteworldinfo', jsonParser, async (request, response) => {
+    if (!request.body?.name) {
+        return response.sendStatus(400);
+    }
+
+    const worldInfoName = request.body.name;
+    const filename = `${worldInfoName}.json`;
+    const pathToWorldInfo = path.join(directories.worlds, filename);
+
+    if (!fs.existsSync(pathToWorldInfo)) {
+        throw new Error(`World info file ${filename} doesn't exist.`);
+    }
+
+    fs.rmSync(pathToWorldInfo);
+
+    return response.sendStatus(200);
+});
 
 function getCharaterFile(directories,response,i){ //old need del
     if(directories.length > i){
