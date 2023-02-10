@@ -631,9 +631,7 @@ app.post('/getsettings', jsonParser, (request, response) => { //Wintermute's cod
 
     const worldFiles = fs
         .readdirSync('public/KoboldAI Worlds')
-        .filter(file => {
-            return path.extname(file).toLowerCase() === '.json';
-        })
+        .filter(file => path.extname(file).toLowerCase() === '.json')
         .sort((a, b) => a < b);
     const koboldai_world_names = worldFiles.map(item => path.parse(item).name);
 
@@ -1099,7 +1097,7 @@ async function synchronizeKoboldWorldInfo(worldInfoName) {
     const baseRequestArgs = { headers: { "Content-Type": "application/json" } };
 
     // Get existing world info
-    const koboldWorldInfo = await getAsync(api_server + "/v1/world_info", baseRequestArgs);
+    const koboldWorldInfo = await getAsync(`${api_server}/v1/world_info`, baseRequestArgs);
 
     // Validate kobold world info
     let {
@@ -1145,13 +1143,13 @@ async function setKoboldEntryData(tavernEntry, koboldEntry) {
     const setDataRequests = [];
 
     // 1. Set primary key
-    if (tavernEntry.key.length) {
+    if (tavernEntry.key?.length) {
         const keyArgs = { data: { value: tavernEntry.key.join(',') }, ...baseRequestArgs };
         await putAsync(`${api_server}/v1/world_info/${koboldEntry.uid}/key`, keyArgs);
     }
 
     // 2. Set secondary key
-    if (tavernEntry.keysecondary) {
+    if (tavernEntry.keysecondary?.length) {
         const keySecondaryArgs = { data: { value: tavernEntry.keysecondary.join(',') }, ...baseRequestArgs };
         await putAsync(`${api_server}/v1/world_info/${koboldEntry.uid}/keysecondary`, keySecondaryArgs);
     }
