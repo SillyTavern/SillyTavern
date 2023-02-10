@@ -49,6 +49,7 @@ var is_colab = false;
 const jsonParser = express.json({limit: '100mb'});
 const urlencodedParser = express.urlencoded({extended: true, limit: '100mb'});
 const baseRequestArgs = { headers: { "Content-Type": "application/json" } };
+const directories = { worlds: 'public/KoboldAI Worlds/' };
 
 app.use(function (req, res, next) { //Security
     const clientIp = req.connection.remoteAddress.split(':').pop();
@@ -630,7 +631,7 @@ app.post('/getsettings', jsonParser, (request, response) => { //Wintermute's cod
     );
 
     const worldFiles = fs
-        .readdirSync('public/KoboldAI Worlds')
+        .readdirSync(directories.worlds)
         .filter(file => path.extname(file).toLowerCase() === '.json')
         .sort((a, b) => a < b);
     const koboldai_world_names = worldFiles.map(item => path.parse(item).name);
@@ -1070,6 +1071,38 @@ app.post("/importchat", urlencodedParser, function(request, response){
 
 });
 
+app.post('/importworld', urlencodedParser, (request, response) => {
+    if(!request.file) return response.sendStatus(400);
+
+    const filename = request.file.originalname;
+
+    if (path.parse(filename).ext.toLowerCase() !== '.json') {
+        return response.status(400).send('Only JSON files are supported.')
+    }
+
+    const pathToUpload = path.join('./uploads/' + request.file.filename);
+    const fileContents = fs.readFileSync(pathToUpload, 'utf8');
+
+    try {
+        const worldContent = JSON.parse(fileContents);
+        if (!('entries' in worldContent)) {
+            throw new Error('File must contain a world info entries list');
+        }
+    } catch (err) {
+        return response.status(400).send('Is not a valid world info file');
+    }
+
+    const pathToNewFile = path.join(directories.worlds, filename);
+    const worldName = path.parse(pathToNewFile).name;
+
+    if (!worldName) {
+        return response.status(400).send('World file must have a name');
+    }
+
+    fs.writeFileSync(pathToNewFile, fileContents);
+    return response.send({ name: worldName });
+});
+
 function findTavernWorldEntry(info, key) {
     for (const entryId in info.entries) {
         const entry = info.entries[entryId];
@@ -1115,7 +1148,7 @@ function readWorldInfoFile(worldInfoName) {
 
     const koboldFolderName = getKoboldWorldInfoName(worldInfoName);
     const filename = `${worldInfoName}.json`;
-    const pathToWorldInfo = path.join('public/KoboldAI Worlds/', filename);
+    const pathToWorldInfo = path.join(directories.worlds, filename);
 
     if (!fs.existsSync(pathToWorldInfo)) {
         throw new Error(`World info file ${filename} doesn't exist.`);

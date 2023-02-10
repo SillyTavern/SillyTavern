@@ -1524,6 +1524,9 @@
                         }  
                     });  
                 }
+                if (popup_type === 'world_imported') {
+                    // switch to a new world
+                }
                 if(popup_type == 'new_chat' && this_chid != undefined && menu_type != "create"){//Fix it; New chat doesn't create while open create character menu
                     clearChat();
                     chat.length = 0;
@@ -1549,6 +1552,7 @@
                     $("#dialogue_popup_cancel").css("display", "none");
                     break;
 
+                case 'world_imported':
                 case 'new_chat':
 
                     $("#dialogue_popup_ok").css("background-color", "#191b31CC");
@@ -2042,7 +2046,7 @@
                     main_api = 'kobold';
                     $('#max_context_block').css('display', 'block');
                     $('#amount_gen_block').css('display', 'block');
-                    $('#world_info').css('display', 'block');
+                    $('#world_info_block').css('display', 'block');
                 }
                 if($('#main_api').find(":selected").val() == 'novel'){
                     $('#kobold_api').css("display", "none");
@@ -2050,7 +2054,7 @@
                     main_api = 'novel';
                     $('#max_context_block').css('display', 'none');
                     $('#amount_gen_block').css('display', 'none');
-                    $('#world_info').css('display', 'none');
+                    $('#world_info_block').css('display', 'none');
                 }
 
                 updateWorldStatus();
@@ -2080,7 +2084,7 @@
             }
 
             function updateWorldStatus() {
-                if($('#world_info').is(':visible') && kobold_world) {
+                if($('#world_info_block').is(':visible') && kobold_world) {
                     $('#world_status').show();
 
                     if (kobold_world_synced) {
@@ -2887,6 +2891,48 @@
                 $('#load_select_chat_div').css('display', 'block');
 
             });
+
+        //**************************WORLD INFO IMPORT EXPORT*************************//
+        $("#world_import_button" ).click(function() {
+            $("#world_import_file").click();
+        });
+        
+        $("#world_import_file").on("change", function(e) {
+                var file = e.target.files[0];
+
+                if (!file) {
+                  return;
+                }
+
+                const ext = file.name.match(/\.(\w+)$/);
+                if (!ext || (ext[1].toLowerCase() !== "json")){
+                    return;
+                }
+
+                var formData = new FormData($("#form_world_import").get(0));
+
+                jQuery.ajax({
+                    type: 'POST', 
+                    url: '/importworld', 
+                    data: formData,
+                    beforeSend: () => {},
+                    cache: false,
+                    contentType: false,
+                    processData: false, 
+                    success: function(data){
+                        if (data.name) {
+                            // TODO reload list of custom worlds to allow selection then offer a popup
+                            // popup_type = 'world_imported';
+                            // callPopup('<h3>World imported successfully! Select it now?</h3>');
+                        }
+                    },
+                    error: (jqXHR, exception) => {},
+                });
+
+                // Will allow to select the same file twice in a row
+                $('#form_world_import').trigger("reset");
+            });
+
         });
     </script>
 <title>Tavern.AI</title>
@@ -3094,12 +3140,20 @@
                     <h4>Repetition Penalty Range</h4><h5 id="rep_pen_size_counter">select</h5>
                     <input type="range" id="rep_pen_size" name="volume" min="0" max="2048" step="1">
                 </div>
-                <h4>World Info</h4><!-- <h5>More info (<a href="http://example.com" target="_blank">?</a>)</h5> -->
-                <select id="world_info" class="option_select_right_menu">
-                    <option value="None">None</option>
-                </select>
-                <div id="world_status">
-                    <div id="world_status_indicator"></div><div id="world_status_text"></div>
+                <div>
+                <h4 id="world_info_block">World Info</h4><h5>How to use (<a href="/notes/13" target="_blank">?</a>)</h5>
+                    <div id="rm_world_import" class="right_menu" style="display: none;">
+                        <form id="form_world_import" action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                            <input type="file" id="world_import_file" accept=".json" name="avatar">
+                        </form>
+                    </div>
+                    <select id="world_info" class="option_select_right_menu">
+                        <option value="None">None</option>
+                    </select>
+                    <div id="world_import_button" class="right_menu_button"><h2>+Import</h2></div>
+                    <div id="world_status">
+                        <div id="world_status_indicator"></div><div id="world_status_text"></div>
+                    </div>
                 </div>
             </div>
             <div id="novel_api" style="display: none;position: relative;">

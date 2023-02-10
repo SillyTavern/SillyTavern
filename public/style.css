@@ -973,6 +973,16 @@ input[type=button] {
     margin-left: 4px;
     display: inline-block;
 }
+#world_import_button{
+    cursor: pointer;
+    display: inline-block;
+}
+#world_import_button h2{
+    margin-top: auto;
+    margin-bottom: auto;
+    font-size: 17px;
+    color: rgb(188, 193, 200, 0.5);
+}
 
 .del_checkbox{
     display: none;
