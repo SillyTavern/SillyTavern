@@ -1084,16 +1084,7 @@ function findTavernWorldEntry(info, key) {
 }
 
 async function synchronizeKoboldWorldInfo(worldInfoName) {
-    const koboldFolderName = getKoboldWorldInfoName(worldInfoName);
-    const filename = `${worldInfoName}.json`;
-    const pathToWorldInfo = path.join('public/KoboldAI Worlds/', filename);
-
-    if (!fs.existsSync(pathToWorldInfo)) {
-        throw new Error(`World info file ${filename} doesn't exist.`);
-    }
-
-    const tavernWorldInfoText = fs.readFileSync(pathToWorldInfo, 'utf8');
-    const tavernWorldInfo = JSON.parse(tavernWorldInfoText);
+    const { koboldFolderName, tavernWorldInfo } = readWorldInfoFile(worldInfoName);
 
     // Get existing world info
     const koboldWorldInfo = await getAsync(`${api_server}/v1/world_info`, baseRequestArgs);
@@ -1108,13 +1099,31 @@ async function synchronizeKoboldWorldInfo(worldInfoName) {
     } = await validateKoboldWorldInfo(koboldFolderName, koboldWorldInfo, tavernWorldInfo);
 
     // Create folder if not already exists
-    if (shouldCreateWorld) {
+    if (koboldFolderName && shouldCreateWorld) {
         koboldWorldUid = await createKoboldFolder(koboldFolderName, tavernEntriesToCreate, tavernWorldInfo);
     }
 
     await deleteKoboldFolders(koboldFoldersToDelete);
     await deleteKoboldEntries(koboldEntriesToDelete);
     await createTavernEntries(tavernEntriesToCreate, koboldWorldUid, tavernWorldInfo);
+}
+
+function readWorldInfoFile(worldInfoName) {
+    if (!worldInfoName) {
+        return { koboldFolderName: null, tavernWorldInfo: { entries: {}, folders: {} }};
+    }
+
+    const koboldFolderName = getKoboldWorldInfoName(worldInfoName);
+    const filename = `${worldInfoName}.json`;
+    const pathToWorldInfo = path.join('public/KoboldAI Worlds/', filename);
+
+    if (!fs.existsSync(pathToWorldInfo)) {
+        throw new Error(`World info file ${filename} doesn't exist.`);
+    }
+
+    const tavernWorldInfoText = fs.readFileSync(pathToWorldInfo, 'utf8');
+    const tavernWorldInfo = JSON.parse(tavernWorldInfoText);
+    return { koboldFolderName, tavernWorldInfo };
 }
 
 async function createKoboldFolder(koboldFolderName, tavernEntriesToCreate, tavernWorldInfo) {
