@@ -953,6 +953,27 @@ input[type=button] {
     margin-left: 4px;
     display: inline-block;
 }
+
+#world_info {
+    margin-bottom: 12px;
+}
+#world_status{
+    opacity: 0.5;
+    margin-top: 2px;
+    margin-left: 10px;
+}
+#world_status_indicator{
+    border-radius: 7px;
+    width: 14px;
+    height: 14px;
+    background-color: red;
+    display: inline-block;
+}
+#world_status_text{
+    margin-left: 4px;
+    display: inline-block;
+}
+
 .del_checkbox{
     display: none;
     opacity: 0.5;

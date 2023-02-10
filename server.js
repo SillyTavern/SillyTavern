@@ -48,7 +48,7 @@ var is_colab = false;
 
 const jsonParser = express.json({limit: '100mb'});
 const urlencodedParser = express.urlencoded({extended: true, limit: '100mb'});
-
+const baseRequestArgs = { headers: { "Content-Type": "application/json" } };
 
 app.use(function (req, res, next) { //Security
     const clientIp = req.connection.remoteAddress.split(':').pop();
@@ -699,10 +699,10 @@ app.post('/synckoboldworld', jsonParser, async (request, response) => {
         const worldName = request.body.name;
         await synchronizeKoboldWorldInfo(worldName);
         response.send({ ok: true });
-        console.log('World info synchronized with Kobold');
     } catch (err) {
-        console.error(`Error during world synchronization: ${JSON.stringify(err)}`);
-        response.sendStatus(500);
+        var message = JSON.stringify(err);
+        console.error(`Error during world synchronization: ${message}`);
+        response.status(500).send(message);
     } finally {
         kobold_world_sync_busy = false;
     }
@@ -1072,10 +1072,11 @@ app.post("/importchat", urlencodedParser, function(request, response){
 
 function findTavernWorldEntry(info, key) {
     for (const entryId in info.entries) {
-        const keyString = info.entries[entryId].key.join(',');
+        const entry = info.entries[entryId];
+        const keyString = entry.key.join(',');
 
         if (keyString === key) {
-            return info.entries[entryId];
+            return entry;
         }
     }
 
@@ -1094,8 +1095,6 @@ async function synchronizeKoboldWorldInfo(worldInfoName) {
     const tavernWorldInfoText = fs.readFileSync(pathToWorldInfo, 'utf8');
     const tavernWorldInfo = JSON.parse(tavernWorldInfoText);
 
-    const baseRequestArgs = { headers: { "Content-Type": "application/json" } };
-
     // Get existing world info
     const koboldWorldInfo = await getAsync(`${api_server}/v1/world_info`, baseRequestArgs);
 
@@ -1110,38 +1109,69 @@ async function synchronizeKoboldWorldInfo(worldInfoName) {
 
     // Create folder if not already exists
     if (shouldCreateWorld) {
-        const createdFolder = await postAsync(`${api_server}/v1/world_info/folders`, { data: {}, ...baseRequestArgs });
-        koboldWorldUid = createdFolder.uid;
-
-        // Set a name so we could find the folder later
-        const setNameArgs = { data: { value: koboldFolderName }, ...baseRequestArgs };
-        await putAsync(`${api_server}/v1/world_info/folders/${koboldWorldUid}/name`, setNameArgs);
-
-        // Create all world info entries
-        tavernEntriesToCreate.push(...Object.keys(tavernWorldInfo.entries));
+        koboldWorldUid = await createKoboldFolder(koboldFolderName, tavernEntriesToCreate, tavernWorldInfo);
     }
 
-    if (koboldFoldersToDelete.length) {
-        await Promise.all(koboldFoldersToDelete.map((uid) => deleteAsync(api_server + `/v1/world_info/folders/${uid}`, baseRequestArgs)));
-    }
+    await deleteKoboldFolders(koboldFoldersToDelete);
+    await deleteKoboldEntries(koboldEntriesToDelete);
+    await createTavernEntries(tavernEntriesToCreate, koboldWorldUid, tavernWorldInfo);
+}
 
-    if (koboldEntriesToDelete.length) {
-        await Promise.all(koboldEntriesToDelete.map((uid) => deleteAsync(`${api_server}/v1/world_info/${uid}`)));
-    }
+async function createKoboldFolder(koboldFolderName, tavernEntriesToCreate, tavernWorldInfo) {
+    const createdFolder = await postAsync(`${api_server}/v1/world_info/folders`, { data: {}, ...baseRequestArgs });
+    const koboldWorldUid = createdFolder.uid;
 
+    // Set a name so we could find the folder later
+    const setNameArgs = { data: { value: koboldFolderName }, ...baseRequestArgs };
+    await putAsync(`${api_server}/v1/world_info/folders/${koboldWorldUid}/name`, setNameArgs);
+
+    // Create all world info entries
+    tavernEntriesToCreate.push(...Object.keys(tavernWorldInfo.entries));
+    return koboldWorldUid;
+}
+
+async function createTavernEntries(tavernEntriesToCreate, koboldWorldUid, tavernWorldInfo) {
     if (tavernEntriesToCreate.length && koboldWorldUid) {
-        for (const tavernUid in tavernEntriesToCreate) {
-            const tavernEntry = tavernWorldInfo.entries[tavernUid];
-            const koboldEntry = await postAsync(`${api_server}/v1/world_info/folders/${koboldWorldUid}`, { data: {}, ...baseRequestArgs });
-            await setKoboldEntryData(tavernEntry, koboldEntry);
+        for (const tavernUid of tavernEntriesToCreate) {
+            try {
+                const tavernEntry = tavernWorldInfo.entries[tavernUid];
+                const koboldEntry = await postAsync(`${api_server}/v1/world_info/folders/${koboldWorldUid}`, { data: {}, ...baseRequestArgs });
+                await setKoboldEntryData(tavernEntry, koboldEntry);
+            } catch (err) {
+                console.error(`Couldn't create Kobold world info entry, tavernUid=${tavernUid}. Skipping...`);
+                console.error(err);
+            }
+        }
+    }
+}
+
+async function deleteKoboldEntries(koboldEntriesToDelete) {
+    if (koboldEntriesToDelete.length) {
+        for (const uid of koboldEntriesToDelete) {
+            try {
+                await deleteAsync(`${api_server}/v1/world_info/${uid}`);
+            } catch (err) {
+                console.error(`Couldn't delete Kobold world info entry, uid=${uid}. Skipping...`);
+                console.error(err);
+            }
+        }
+    }
+}
+
+async function deleteKoboldFolders(koboldFoldersToDelete) {
+    if (koboldFoldersToDelete.length) {
+        for (const uid of koboldFoldersToDelete) {
+            try {
+                await deleteAsync(api_server + `/v1/world_info/folders/${uid}`, baseRequestArgs);
+            } catch (err) {
+                console.error(`Couldn't delete Kobold world info folder, uid=${uid}. Skipping...`);
+                console.error(err);
+            }
         }
     }
 }
 
 async function setKoboldEntryData(tavernEntry, koboldEntry) {
-    const baseRequestArgs = { headers: { "Content-Type": "application/json" } };
-    const setDataRequests = [];
-
     // 1. Set primary key
     if (tavernEntry.key?.length) {
         const keyArgs = { data: { value: tavernEntry.key.join(',') }, ...baseRequestArgs };
@@ -1179,8 +1209,6 @@ async function setKoboldEntryData(tavernEntry, koboldEntry) {
         await putToPromise(`${api_server}/v1/world_info/${koboldEntry.uid}/selective`, selectiveArgs);
     }
     */
-
-    return setDataRequests;
 }
 
 async function validateKoboldWorldInfo(koboldFolderName, koboldWorldInfo, tavernWorldInfo) {
@@ -1194,8 +1222,7 @@ async function validateKoboldWorldInfo(koboldFolderName, koboldWorldInfo, tavern
     if (koboldWorldInfo?.folders?.length) {
         let existingFolderAlreadyFound = false;
 
-        for (const folderUid in koboldWorldInfo.folders) {
-            const folder = koboldWorldInfo.folders[folderUid];
+        for (const folder of koboldWorldInfo.folders) {
             // Don't care about non-Tavern folders
             if (!isTavernKoboldWorldInfo(folder.name)) {
                 continue;
@@ -1213,8 +1240,7 @@ async function validateKoboldWorldInfo(koboldFolderName, koboldWorldInfo, tavern
                 koboldWorldUid = folder.uid;
                 if (folder.entries?.length) {
                     const foundTavernEntries = [];
-                    for (const koboldEntryUid in folder.entries) {
-                        const koboldEntry = folder.entries[koboldEntryUid];
+                    for (const koboldEntry of folder.entries) {
                         const tavernEntry = findTavernWorldEntry(tavernWorldInfo, koboldEntry.key);
 
                         if (tavernEntry) {
@@ -1232,9 +1258,11 @@ async function validateKoboldWorldInfo(koboldFolderName, koboldWorldInfo, tavern
                     }
 
                     // Check if every tavern entry was found in kobold world
+                    // BTW. Entries is an object, not an array!
                     for (const tavernEntryUid in tavernWorldInfo.entries) {
-                        if (!foundTavernEntries.includes(tavernWorldInfo.entries[tavernEntryUid].uid)) {
-                            tavernEntriesToCreate.push(tavernWorldInfo.entries[tavernEntryUid].uid);
+                        const tavernEntry = tavernWorldInfo.entries[tavernEntryUid];
+                        if (!foundTavernEntries.includes(tavernEntry.uid)) {
+                            tavernEntriesToCreate.push(tavernEntry.uid);
                         }
                     }
                 }
