@@ -2058,7 +2058,7 @@
                     main_api = 'kobold';
                     $('#max_context_block').css('display', 'block');
                     $('#amount_gen_block').css('display', 'block');
-                    $('#world_info_block').css('display', 'block');
+                    $('#world_info_block').css('display', 'flex');
                 }
                 if($('#main_api').find(":selected").val() == 'novel'){
                     $('#kobold_api').css("display", "none");
@@ -3274,10 +3274,10 @@
                 </div>
                 <div>
                 <h4 id="world_info_block">
-                    World Info 
+                    <span>World Info</span>
                     <div id="world_import_button" class="right_menu_button"><h2>+Import</h2></div>
-                    <h5>How to use (<a href="/notes/13" target="_blank">?</a>)</h5>
                 </h4>
+                    <h5>How to use (<a href="/notes/13" target="_blank">?</a>)</h5>
                     <div id="rm_world_import" class="right_menu" style="display: none;">
                         <form id="form_world_import" action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <input type="file" id="world_import_file" accept=".json" name="avatar">

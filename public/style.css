@@ -959,6 +959,11 @@ input[type=button] {
     margin-right: 4px;
 }
 
+#world_info_block {
+    display: flex;
+    align-items: center;
+}
+
 #world_status{
     opacity: 0.5;
     margin-top: 2px;
