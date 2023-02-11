@@ -1098,7 +1098,7 @@ app.post("/importchat", urlencodedParser, function(request, response){
 
 });
 
-app.post('/importworld', urlencodedParser, (request, response) => {
+app.post('/importworldinfo', urlencodedParser, (request, response) => {
     if(!request.file) return response.sendStatus(400);
 
     const filename = request.file.originalname;
@@ -1130,12 +1130,37 @@ app.post('/importworld', urlencodedParser, (request, response) => {
     return response.send({ name: worldName });
 });
 
-function findTavernWorldEntry(info, key) {
+app.post('/editworldinfo', jsonParser, (request, response) => {
+    if (!request.body) {
+        return response.sendStatus(400);
+    }
+
+    if (!request.body.name) {
+        return response.status(400).send('World file must have a name');
+    }
+
+    try {
+        if (!('entries' in request.body.data)) {
+            throw new Error('World info must contain an entries list');
+        }
+    } catch (err) {
+        return response.status(400).send('Is not a valid world info file');
+    }
+
+    const filename = `${request.body.name}.json`;
+    const pathToFile = path.join(directories.worlds, filename);
+
+    fs.writeFileSync(pathToFile, JSON.stringify(request.body.data));
+
+    return response.send({ ok: true });
+});
+
+function findTavernWorldEntry(info, key, content) {
     for (const entryId in info.entries) {
         const entry = info.entries[entryId];
         const keyString = entry.key.join(',');
 
-        if (keyString === key) {
+        if (keyString === key && entry.content === content) {
             return entry;
         }
     }
@@ -1300,6 +1325,10 @@ async function validateKoboldWorldInfo(koboldFolderName, koboldWorldInfo, tavern
             // Other Tavern folders should be deleted (including dupes). If folder name selected is null, then delete anyway to clean-up
             if (!koboldFolderName || folder.name !== koboldFolderName || existingFolderAlreadyFound) {
                 koboldFoldersToDelete.push(folder.uid);
+                // Should also delete all entries in folder otherwise they will be detached
+                if (Array.isArray(folder.entries)) {
+                    koboldEntriesToDelete.push(...folder.entries.map(entry => entry.uid));
+                }
             }
 
             // Validate existing entries in Kobold world
@@ -1310,7 +1339,7 @@ async function validateKoboldWorldInfo(koboldFolderName, koboldWorldInfo, tavern
                 if (folder.entries?.length) {
                     const foundTavernEntries = [];
                     for (const koboldEntry of folder.entries) {
-                        const tavernEntry = findTavernWorldEntry(tavernWorldInfo, koboldEntry.key);
+                        const tavernEntry = findTavernWorldEntry(tavernWorldInfo, koboldEntry.key, koboldEntry.content);
 
                         if (tavernEntry) {
                             foundTavernEntries.push(tavernEntry.uid);
@@ -1348,7 +1377,7 @@ function isEntryOutOfSync(tavernEntry, koboldEntry) {
         tavernEntry.selective !== koboldEntry.selective ||
         tavernEntry.constant !== koboldEntry.constant ||
         tavernEntry.key.join(',') !== koboldEntry.key ||
-        tavernEntry.keysecondary(',') !== koboldEntry.keysecondary;
+        tavernEntry.keysecondary.join(',') !== koboldEntry.keysecondary;
 }
 
 // ** REST CLIENT ASYNC WRAPPERS **

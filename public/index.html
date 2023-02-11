@@ -69,6 +69,7 @@
             
             var timerSaveEdit;
             var timerKoboldSync;
+            var timerWorldSave;
             var durationSaveEdit = 200;
             //animation right menu
             var animation_rm_duration = 200;
@@ -109,6 +110,7 @@
             var kobold_world_synced = false;
             var kobold_sync_failed = false;
             var kobold_is_united = false;
+            var kobold_world_data = null;
             var imported_world_name = '';
             var max_context = 2048;//2048;
             var rep_pen = 1;
@@ -2133,11 +2135,16 @@
 
                 // If we can reach Kobold's new ui, then it should be United branch
                 kobold_is_united = false;
-                const kobold_united_ui2 = api_server.replace('/api', '/new_ui');
-                const response = await fetch(kobold_united_ui2, { method: 'HEAD'});
+                try {
+                    const kobold_united_ui2 = api_server.replace('/api', '/new_ui');
+                    const response = await fetch(kobold_united_ui2, { method: 'HEAD'});
 
-                if (response.ok && response.status == 200) {
-                    kobold_is_united = true;
+                    if (response.ok && response.status == 200) {
+                        kobold_is_united = true;
+                    }
+                }
+                catch {
+                    // empty catch
                 }
             }
 
@@ -2927,7 +2934,7 @@
 
                 jQuery.ajax({
                     type: 'POST', 
-                    url: '/importworld', 
+                    url: '/importworldinfo', 
                     data: formData,
                     beforeSend: () => {},
                     cache: false,
@@ -2964,7 +2971,7 @@
                     
                     if (importedWorldName) {
                         const indexOf = koboldai_world_names.indexOf(kobold_world);
-                        $(`#world_info`).val(indexOf);
+                        $('#world_info').val(indexOf);
 
                         popup_type = 'world_imported';
                         callPopup('<h3>World imported successfully! Select it now?</h3>');
@@ -2983,7 +2990,7 @@
             // World Info Editor
             async function showWorldEditor() {
                 is_world_edit_open = true;
-                $('#world_text_content').val('');
+                $('#world_popup_name').val(kobold_world);
                 $('#world_popup').css('display', 'flex');
 
                 if (kobold_world) {
@@ -2994,8 +3001,8 @@
                     });
 
                     if (response.ok) {
-                        const worldInfoData = await response.text();
-                        $('#world_text_content').val(worldInfoData);
+                        kobold_world_data = await response.json();
+                        displayWorldEntries(kobold_world_data);
                     }
                 }
             }
@@ -3003,10 +3010,209 @@
             function hideWorldEditor() {
                 is_world_edit_open = false;
                 $('#world_popup').css('display', 'none');
-                $('#world_text_content').val('');
+                syncKoboldWorldInfo(true);
             }
 
-            async function deleteWorldInfo(worldInfoName) {
+            function displayWorldEntries(data) {
+                $('#world_popup_entries_list').empty();
+
+                if (!data || !('entries' in data)) {
+                    return;
+                }
+
+                for (const entryUid in data.entries) {
+                    const entry = data.entries[entryUid];
+                    appendWorldEntry(entry);
+                }
+            }
+
+            function appendWorldEntry(entry) {
+                const template = $('#entry_edit_template .world_entry').clone();
+                template.data('uid', entry.uid);
+
+                // key
+                const keyInput = template.find('input[name="key"]');
+                keyInput.data('uid', entry.uid);
+                keyInput.on('input', function () {
+                    const uid = $(this).data('uid');
+                    const value = $(this).val();
+                    kobold_world_data.entries[uid].key = value.split(',').map(x => x.trim()).filter(x => x);
+                    saveWorldInfo();
+                });
+                keyInput.val(entry.key.join(',')).trigger('input');
+
+                // keysecondary
+                const keySecondaryInput = template.find('input[name="keysecondary"]');
+                keySecondaryInput.data('uid', entry.uid);
+                keySecondaryInput.on('input', function() {
+                    const uid = $(this).data('uid');
+                    const value = $(this).val();
+                    kobold_world_data.entries[uid].keysecondary = value.split(',').map(x => x.trim()).filter(x => x);
+                    saveWorldInfo();
+                });
+                keySecondaryInput.val(entry.keysecondary.join(',')).trigger('input');
+
+                // comment
+                const commentInput = template.find('input[name="comment"]');
+                commentInput.data('uid', entry.uid);
+                commentInput.on('input', function() {
+                    const uid = $(this).data('uid');
+                    const value = $(this).val();
+                    kobold_world_data.entries[uid].comment = value;
+                    saveWorldInfo();
+                });
+                commentInput.val(entry.comment).trigger('input');
+
+                // content
+                const contentInput = template.find('textarea[name="content"]');
+                contentInput.data('uid', entry.uid);
+                contentInput.on('input', function() {
+                    const uid = $(this).data('uid');
+                    const value = $(this).val();
+                    kobold_world_data.entries[uid].content = value;
+                    saveWorldInfo();
+
+                    // count tokens
+                    const numberOfTokens = encode(value).length;
+                    $(this).closest('.world_entry').find('.world_entry_form_token_counter').html(numberOfTokens);
+                });
+                contentInput.val(entry.content).trigger('input');
+
+                // selective
+                const selectiveInput = template.find('input[name="selective"]')
+                selectiveInput.data('uid', entry.uid);
+                selectiveInput.on('input', function() {
+                    const uid = $(this).data('uid');
+                    const value = $(this).prop('checked');
+                    kobold_world_data.entries[uid].selective = value;
+                    saveWorldInfo();
+                });
+                selectiveInput.prop('checked', entry.selective).trigger('input');
+                selectiveInput.siblings('.checkbox_fancy').click(function() {
+                    $(this).siblings('input').click();
+                });
+
+
+                // constant
+                const constantInput = template.find('input[name="constant"]')
+                constantInput.data('uid', entry.uid);
+                constantInput.on('input', function() {
+                    const uid = $(this).data('uid');
+                    const value = $(this).prop('checked');
+                    kobold_world_data.entries[uid].constant = value;
+                    saveWorldInfo();
+                });
+                constantInput.prop('checked', entry.constant).trigger('input');
+                constantInput.siblings('.checkbox_fancy').click(function() {
+                    $(this).siblings('input').click();
+                });
+
+                // display uid
+                template.find('.world_entry_form_uid_value').html(entry.uid);
+
+                // delete button
+                const deleteButton = template.find('input.delete_entry_button');
+                deleteButton.data('uid', entry.uid);
+                deleteButton.on('click', function() {
+                    const uid = $(this).data('uid');
+                    deleteWorldInfoEntry(uid);
+                    $(this).closest('.world_entry').remove();
+                    saveWorldInfo();
+                });
+
+                template.appendTo('#world_popup_entries_list');
+                return template;
+            }
+
+            async function deleteWorldInfoEntry(uid) {
+                if (!kobold_world_data || !('entries' in kobold_world_data)) {
+                    return;
+                }
+
+                delete kobold_world_data.entries[uid];
+
+                if ('folders' in kobold_world_data) {
+                    for (const folderName in kobold_world_data.folders) {
+                        const folder = kobold_world_data.folders[folderName]
+                        const index = folder.indexOf(Number(uid));
+                        
+                        if (index !== -1) {
+                            folder.splice(index, 1);
+                        }
+                    }
+                }
+            }
+
+            function createWorldInfoEntry() {
+                const newEntryTemplate = {
+                    key: [],
+                    keysecondary: [],
+                    comment: '',
+                    content: '',
+                    constant: false,
+                    selective: false,
+                };
+                const newUid = getFreeWorldEntryUid();
+
+                if (!Number.isInteger(newUid)) {
+                    console.error("Couldn't assign UID to a new entry");
+                    return;
+                }
+
+                const newEntry = { uid: newUid, ...newEntryTemplate };
+                kobold_world_data.entries[newUid] = newEntry;
+
+                if ('folders' in kobold_world_data) {
+                    if (kobold_world in kobold_world_data.folders && Array.isArray(kobold_world_data.folders)) {
+                        kobold_world_data.folders[kobold_world].push(newUid);
+                    } else {
+                        kobold_world_data.folders[kobold_world] = [newUid];
+                    }
+                }
+
+                const entryTemplate = appendWorldEntry(newEntry);
+                entryTemplate.get(0).scrollIntoView({behavior: 'smooth'});
+            }
+
+            async function saveWorldInfo(immediately) {
+                if (!kobold_world || !kobold_world_data) {
+                    return;
+                }
+
+                async function _save() {
+                    const response = await fetch("/editworldinfo", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ name: kobold_world, data: kobold_world_data })
+                    });
+
+                    if (response.ok) {
+                        kobold_world_synced = false;
+                    }
+                }
+
+                if (immediately) {
+                    return await _save();
+                }
+
+                clearTimeout(timerWorldSave);
+                timerWorldSave = setTimeout(async () => await _save(), durationSaveEdit);
+            }
+
+            async function renameWorldInfo() {
+                const oldName = kobold_world;
+                const newName = $('#world_popup_name').val();
+
+                if (oldName === newName) {
+                    return;
+                }
+
+                kobold_world = newName;
+                await saveWorldInfo(true);
+                await deleteWorldInfo(oldName, newName);
+            }
+
+            async function deleteWorldInfo(worldInfoName, selectWorldName) {
                 if (!koboldai_world_names.includes(worldInfoName)) {
                     return;
                 }
@@ -3019,9 +3225,33 @@
 
                 if (response.ok) {
                     await updateWorldInfoList();
-                    $('#world_info').val('None').change();
+
+                    const selectedIndex = koboldai_world_names.indexOf(selectWorldName);
+                    if (selectedIndex !== -1) {
+                        $('#world_info').val(selectedIndex).change();
+                    }
+                    else {
+                        $('#world_info').val('None').change();
+                    }
+
                     hideWorldEditor();
                 }
+            }
+
+            function getFreeWorldEntryUid() {
+                if (!kobold_world_data || !('entries' in kobold_world_data)) {
+                    return null;
+                }
+
+                const MAX_UID = 1_000_000; // <- should be safe enough :)
+                for (let uid = 0; uid < MAX_UID; uid++) {
+                    if (uid in kobold_world_data.entries) {
+                        continue;
+                    }
+                    return uid;
+                }
+                
+                return null;
             }
 
             $('#world_info_edit_button').click(() => {
@@ -3029,8 +3259,8 @@
             });
 
             $('#world_popup_export').click(() => {
-                const jsonValue = $('#world_text_content').val();
-                if (kobold_world && jsonValue) {
+                if (kobold_world && kobold_world_data) {
+                    const jsonValue = JSON.stringify(kobold_world_data);
                     const fileName = `${kobold_world}.json`;
                     download(jsonValue, fileName, 'application/json');
                 }
@@ -3041,8 +3271,16 @@
                 callPopup('<h3>Delete the World Info?</h3>');
             });
 
+            $('#world_popup_new').click(() => {
+                createWorldInfoEntry();
+            });
+
             $('#world_cross').click(() => {
                 hideWorldEditor();
+            });
+
+            $('#world_popup_name_button').click(() => {
+                renameWorldInfo();
             });
         });
     </script>
@@ -3105,20 +3343,88 @@
     <div id="world_popup">
         <div id="world_popup_text">
             <img id="world_cross" src="img/cross.png">
-            <div>
-                <!-- Probably needs a logo (probably) -->
-                <!-- <img src="img/book2.png" id="world_logo"> -->
-                <h3>World Info creation</h3>
+            <div id="world_popup_header">
+                <!-- Consider changing logo to something else -->
+                <img src="img/book2.png" id="world_logo">
+                <h3>
+                    World Info Editor
+                    <span>(<a href="/notes/13" target="_blank">?</a>)</span>
+                </h3>
+                <div class="world_popup_expander">&nbsp;</div>
+                <form id="form_rename_world" action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                    <input id="world_popup_name" name="world_popup_name" class="text_pole" maxlength="99" size="32" value="" autocomplete="off">
+                    <input id="world_popup_name_button" type="submit" value="Rename">
+                </form>
             </div>
         </div>
-    
-        <!-- Placeholder until actual editor is implemented -->
-        <h4>File content (read-only)</h4>
-        <textarea id="world_text_content" placeholder="Loading..." form="form_create" disabled></textarea>
-    
+
+        <div id="world_popup_entries_list">
+        </div>
+
         <div id="world_popup_bottom_holder">
+            <div id="world_popup_new" class="menu_button">New Entry</div>
+            <div class="world_popup_expander">&nbsp;</div>
             <div id="world_popup_export" class="menu_button">Export</div>
-            <div id="world_popup_delete" class="menu_button">Delete</div>
+            <div id="world_popup_delete" class="menu_button">Delete World</div>
+        </div>
+
+        <div id="entry_edit_template">
+            <div class="world_entry">
+                <form class="world_entry_form">
+                    <div class="world_entry_form_control">
+                        <label for="key">
+                            <h4>Key</h4>
+                            <h5>Comma-separated list of keywords (e.g: foo,bar).</h5>
+                        </label>
+                        <input class="text_pole" type="text" name="key" placeholder=""/>
+                    </div>
+                    <div class="world_entry_form_control">
+                        <label for="keysecondary">
+                            <h4>Secondary Key</h4>
+                            <h5>Comma-separated list of additional keywords (e.g: foo,bar).</h5>
+                        </label>
+                        <input class="text_pole" type="text" name="keysecondary" placeholder=""/>
+                    </div>
+                    <div class="world_entry_form_control">
+                        <label for="comment">
+                            <h4>Comment</h4>
+                            <h5>Optional comment (doesn't affect the AI).</h5>
+                        </label>
+                        <input class="text_pole" type="text" name="comment" placeholder=""/>
+                    </div>
+                    <div class="world_entry_form_control">
+                        <label for="content">
+                            <h4>Content</h4>
+                            <h5>Text that will be inserted to the prompt upon activation.</h5>
+                        </label>
+                        <textarea class="text_pole" name="content" rows="4" placeholder=""></textarea>
+                    </div>
+                    <div class="world_entry_form_control world_entry_form_horizontal">
+                        <label class="checkbox" for="constant">
+                            <input type="checkbox" name="constant" />
+                            <span class="checkbox_fancy"></span>
+                            <h4>Constant</h4>
+                        </label>
+                        <label class="checkbox" for="selective">
+                            <input type="checkbox" name="selective" />
+                            <span class="checkbox_fancy"></span>
+                            <h4>Selective</h4>
+                        </label>
+                        <span class="world_popup_expander">&nbsp;</span>
+                        <h5 class="world_entry_form_uid">
+                            UID:
+                            &nbsp;
+                            <span class="world_entry_form_uid_value"></span>
+                        </h5>
+                        <h5 class="world_entry_form_tokens">
+                            Tokens used:
+                            &nbsp;
+                            <span class="world_entry_form_token_counter">0</span>
+                        </h5>
+                        <input class="delete_entry_button" type="button" value="Delete Entry" />
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
