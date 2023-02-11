@@ -895,14 +895,14 @@ app.post("/importcharacter", urlencodedParser, function(request, response){
                     }
                     const jsonData = JSON.parse(data);
                     
-                    if(jsonData.char_name !== undefined){//json Pygmalion notepad
-                        png_name = getPngName(jsonData.char_name);
-                        var char = {"name": jsonData.char_name, "description": jsonData.char_persona, "personality": '', "first_mes": jsonData.char_greeting, "avatar": 'none', "chat": Date.now(), "mes_example": jsonData.example_dialogue, "scenario": jsonData.world_scenario, "create_date": Date.now()};
+                    if(jsonData.name !== undefined){
+                        png_name = getPngName(jsonData.name);
+                        var char = {"name": jsonData.name, "description": jsonData.description ?? '', "personality": jsonData.personality ?? '', "first_mes": jsonData.first_mes ?? '', "avatar": 'none', "chat": Date.now(), "mes_example": jsonData.mes_example ?? '', "scenario": jsonData.scenario ?? '', "create_date": Date.now()};
                         char = JSON.stringify(char);
                         charaWrite('./public/img/fluffy.png', char, png_name, response, {file_name: png_name});
-                    }else if(jsonData.name !== undefined){
-                        png_name = getPngName(jsonData.name);
-                        var char = {"name": jsonData.name, "description": jsonData.description, "personality": jsonData.personality, "first_mes": jsonData.first_mes, "avatar": 'none', "chat": Date.now(), "mes_example": '', "scenario": '', "create_date": Date.now()};
+                    }else if(jsonData.char_name !== undefined){//json Pygmalion notepad
+                        png_name = getPngName(jsonData.char_name);
+                        var char = {"name": jsonData.char_name, "description": jsonData.char_persona ?? '', "personality": '', "first_mes": jsonData.char_greeting ?? '', "avatar": 'none', "chat": Date.now(), "mes_example": jsonData.example_dialogue ?? '', "scenario": jsonData.world_scenario ?? '', "create_date": Date.now()};
                         char = JSON.stringify(char);
                         charaWrite('./public/img/fluffy.png', char, png_name, response, {file_name: png_name});
                     }else{
