@@ -1,0 +1,30 @@
+{
+	"folders": {
+		"Sample Folder": [
+			0,
+			1
+		]
+	},
+	"entries": {
+		"0": {
+			"uid": 0,
+			"title": "AAA",
+			"key": [ "AAA" ],
+			"keysecondary": [ ],
+			"constant": false,
+			"content": "AAA is a city where BBB lives.",
+			"comment": "AAA definition",
+			"selective": true
+		},
+		"1": {
+			"uid": 1,
+			"title": "BBB",
+			"key": [ "BBB" ],
+			"keysecondary": [ ],
+			"constant": false,
+			"content": "BBB is a 21-year old female student of CCC academy.",
+			"comment": "BBB definition",
+			"selective": true
+		}
+	}
+}
