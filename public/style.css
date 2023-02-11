@@ -986,6 +986,8 @@ input[type=button] {
 #world_import_button {
     cursor: pointer;
     display: inline-block;
+    padding: 0;
+    margin: 0;
 }
 
 #world_import_button h2 {
