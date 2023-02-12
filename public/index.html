@@ -3257,6 +3257,41 @@
                 return null;
             }
 
+            function getFreeWorldName() {
+                const MAX_FREE_NAME = 100_000;
+                for (let index = 1; index < MAX_FREE_NAME; index++) {
+                    const newName = `New World (${index})`;
+                    if (koboldai_world_names.includes(newName)) {
+                        continue;
+                    }
+                    return newName;
+                }
+
+                return undefined;
+            }
+
+            async function createNewWorldInfo() {
+                const worldInfoTemplate = { folders: {}, entries: {} };
+                const worldInfoName = getFreeWorldName();
+
+                if (!worldInfoName) {
+                    return;
+                }
+
+                kobold_world = worldInfoName;
+                kobold_world_data = { ...worldInfoTemplate };
+                await saveWorldInfo(true);
+                await updateWorldInfoList();
+
+                const selectedIndex = koboldai_world_names.indexOf(worldInfoName);
+                if (selectedIndex !== -1) {
+                    $('#world_info').val(selectedIndex).change();
+                }
+                else {
+                    $('#world_info').val('None').change();
+                }
+            }
+
             $('#world_info_edit_button').click(() => {
                 is_world_edit_open ? hideWorldEditor() : showWorldEditor();
             });
@@ -3284,6 +3319,10 @@
 
             $('#world_popup_name_button').click(() => {
                 renameWorldInfo();
+            });
+
+            $('#world_create_button').click(() => {
+                createNewWorldInfo();
             });
         });
     </script>
@@ -3584,6 +3623,7 @@
                 <div>
                 <h4 id="world_info_block">
                     <span>World Info</span>
+                    <div id="world_create_button" class="right_menu_button"><h2>+Create</h2></div>
                     <div id="world_import_button" class="right_menu_button"><h2>+Import</h2></div>
                 </h4>
                     <h5>How to use (<a href="/notes/13" target="_blank">?</a>)</h5>

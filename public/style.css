@@ -983,14 +983,14 @@ input[type=button] {
     display: inline-block;
 }
 
-#world_import_button {
+#world_import_button, #world_create_button {
     cursor: pointer;
     display: inline-block;
     padding: 0;
     margin: 0;
 }
 
-#world_import_button h2 {
+#world_import_button h2, #world_create_button h2 {
     margin-top: auto;
     margin-bottom: auto;
     margin-left: 1rem;
