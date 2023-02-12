@@ -995,6 +995,15 @@ select {
     background-color:#13152c;
 }
 
+#softprompt {
+    width: 284px;
+    margin-left: 10px;
+    margin-bottom: 35px;
+    color: #ffffff9d;
+    box-shadow: 0 0 2px rgba(200, 200, 200, 0.5);
+    background-color: #13152c;
+}
+
 .option_select_right_menu{
     width:284px;
     margin-left: 10px;
