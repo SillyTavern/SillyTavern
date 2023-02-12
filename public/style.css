@@ -510,6 +510,45 @@ input[type=button] {
     display: block;
     /* visibility: hidden; */
 }
+
+#rm_characters_topbar {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+#rm_characters_topbar_expander {
+    flex-grow: 1;
+}
+
+#character_search_bar {
+    outline: none;
+    box-shadow: 0 0px 0px rgba(255, 255, 255, 0.0);
+    border: none;
+    background: transparent;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.12);
+    color: rgb(188, 193, 200, 0.5);
+    font-weight: 300;
+}
+
+#character_search_bar::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+    height: 1em;
+    width: 1em;
+    border-radius: 50em;
+    background: url('/img/times-circle.svg') no-repeat 50% 50%;
+    background-size: contain;
+    opacity: 0;
+    pointer-events: none;
+    filter: invert(1);
+    cursor: pointer;
+}
+
+#character_search_bar:focus::-webkit-search-cancel-button {
+    opacity: .3;
+    pointer-events: all;
+}
+
 .character_select{
     padding: 0px;
     border-radius: 10px;
