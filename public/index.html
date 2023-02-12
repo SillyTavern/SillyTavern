@@ -2333,26 +2333,6 @@
                             koboldai_setting_names = {};
                             koboldai_setting_names = arr_holder;
 
-                            // world info settings
-                            koboldai_world_names = data.koboldai_world_names?.length ? data.koboldai_world_names : [];
-
-                            if(settings.kobold_world != undefined) {
-                                if (koboldai_world_names.includes(settings.kobold_world)) {
-                                    kobold_world = settings.kobold_world;
-                                    kobold_world_synced = false;
-                                    kobold_sync_failed = false;
-                                }
-                            }
-
-                            koboldai_world_names.forEach((item, i) => {
-                                $('#world_info').append(`<option value='${i}'>${item}</option>`);
-                                // preselect world if saved
-                                if (item == kobold_world){
-                                    $('#world_info').val(i).change();
-                                }
-                            });
-                            // end world info settings
-
                             preset_settings = settings.preset_settings;
 
                             temp = settings.temp;
@@ -2440,6 +2420,26 @@
 
                             api_server = settings.api_server;
                             $('#api_url_text').val(api_server);
+
+                            // world info settings
+                            koboldai_world_names = data.koboldai_world_names?.length ? data.koboldai_world_names : [];
+
+                            if(settings.kobold_world != undefined) {
+                                if (koboldai_world_names.includes(settings.kobold_world)) {
+                                    kobold_world = settings.kobold_world;
+                                    kobold_world_synced = false;
+                                    kobold_sync_failed = false;
+                                }
+                            }
+
+                            koboldai_world_names.forEach((item, i) => {
+                                $('#world_info').append(`<option value='${i}'>${item}</option>`);
+                                // preselect world if saved
+                                if (item == kobold_world) {
+                                    $('#world_info').val(i).change();
+                                }
+                            });
+                            // end world info settings
                         }
                         if(!is_checked_colab) isColab();
                         
@@ -3086,6 +3086,9 @@
                     const value = $(this).prop('checked');
                     kobold_world_data.entries[uid].selective = value;
                     saveWorldInfo();
+
+                    const keysecondary = $(this).closest('.world_entry').find('.keysecondary');
+                    value ? keysecondary.show() : keysecondary.hide();
                 });
                 selectiveInput.prop('checked', entry.selective).trigger('input');
                 selectiveInput.siblings('.checkbox_fancy').click(function() {
@@ -3254,6 +3257,41 @@
                 return null;
             }
 
+            function getFreeWorldName() {
+                const MAX_FREE_NAME = 100_000;
+                for (let index = 1; index < MAX_FREE_NAME; index++) {
+                    const newName = `New World (${index})`;
+                    if (koboldai_world_names.includes(newName)) {
+                        continue;
+                    }
+                    return newName;
+                }
+
+                return undefined;
+            }
+
+            async function createNewWorldInfo() {
+                const worldInfoTemplate = { folders: {}, entries: {} };
+                const worldInfoName = getFreeWorldName();
+
+                if (!worldInfoName) {
+                    return;
+                }
+
+                kobold_world = worldInfoName;
+                kobold_world_data = { ...worldInfoTemplate };
+                await saveWorldInfo(true);
+                await updateWorldInfoList();
+
+                const selectedIndex = koboldai_world_names.indexOf(worldInfoName);
+                if (selectedIndex !== -1) {
+                    $('#world_info').val(selectedIndex).change();
+                }
+                else {
+                    $('#world_info').val('None').change();
+                }
+            }
+
             $('#world_info_edit_button').click(() => {
                 is_world_edit_open ? hideWorldEditor() : showWorldEditor();
             });
@@ -3281,6 +3319,10 @@
 
             $('#world_popup_name_button').click(() => {
                 renameWorldInfo();
+            });
+
+            $('#world_create_button').click(() => {
+                createNewWorldInfo();
             });
         });
     </script>
@@ -3378,7 +3420,7 @@
                         </label>
                         <input class="text_pole" type="text" name="key" placeholder=""/>
                     </div>
-                    <div class="world_entry_form_control">
+                    <div class="world_entry_form_control keysecondary">
                         <label for="keysecondary">
                             <h4>Secondary Key</h4>
                             <h5>Comma-separated list of additional keywords (e.g: foo,bar).</h5>
@@ -3581,6 +3623,7 @@
                 <div>
                 <h4 id="world_info_block">
                     <span>World Info</span>
+                    <div id="world_create_button" class="right_menu_button"><h2>+Create</h2></div>
                     <div id="world_import_button" class="right_menu_button"><h2>+Import</h2></div>
                 </h4>
                     <h5>How to use (<a href="/notes/13" target="_blank">?</a>)</h5>
