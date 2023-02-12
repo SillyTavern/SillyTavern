@@ -1,0 +1,5 @@
+{
+    "port": 8000,
+    "whitelist": ["127.0.0.1"],
+    "whitelistMode": true
+}
