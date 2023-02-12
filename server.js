@@ -1377,7 +1377,7 @@ function isEntryOutOfSync(tavernEntry, koboldEntry) {
         tavernEntry.selective !== koboldEntry.selective ||
         tavernEntry.constant !== koboldEntry.constant ||
         tavernEntry.key.join(',') !== koboldEntry.key ||
-        tavernEntry.keysecondary.join(',') !== koboldEntry.keysecondary;
+        (koboldEntry.selective ? tavernEntry.keysecondary.join(',') !== koboldEntry.keysecondary : false);
 }
 
 // ** REST CLIENT ASYNC WRAPPERS **
