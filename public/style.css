@@ -506,6 +506,19 @@ input[type=button] {
     display: none;
     
 }
+
+#rm_charaters_block {
+    display: flex;
+    height: 100%;
+    flex-direction: column;
+}
+
+#rm_print_charaters_block {
+    flex-grow: 1;
+    height: 100%;
+    overflow-y: scroll;
+}
+
 #rm_characters_block{
     display: block;
     /* visibility: hidden; */
@@ -513,8 +526,7 @@ input[type=button] {
 
 #rm_characters_topbar {
     display: flex;
-    flex-direction: row;
-    align-items: center;
+    flex-direction: column;
 }
 
 #rm_characters_topbar_expander {
@@ -532,7 +544,7 @@ input[type=button] {
     background: transparent;
     border-bottom: 1px dashed rgba(255, 255, 255, 0.12);
     color: rgb(188, 193, 200, 0.5);
-    font-weight: 300;
+    font-weight: 400;
 }
 
 #character_search_bar::-webkit-search-cancel-button {
@@ -1657,6 +1669,7 @@ a {
     white-space:nowrap;
     background: #191b31A0;
 
+    backdrop-filter: blur(10px);
 }
 
 
