@@ -3,7 +3,7 @@ Examples of interface and output:
 <br><img src="readme/1.png" height="200" /><img src="readme/4.png" height="200" /><img src="readme/5.png" height="200" />
 
 [TavernAI Download](https://github.com/TavernAI/TavernAI/archive/refs/heads/main.zip)<br>
-[TavernAI Run Online](https://colab.research.google.com/github/TavernAI/TavernAIColab/blob/main/colab/GPU.ipynb)<br><br>
+[TavernAI Run Online](https://colab.research.google.com/github/TavernAI/TavernAI/blob/main/colab/GPU.ipynb)<br><br>
 [TavetnAI Boosty](https://boosty.to/tavernai)<br>
 [TavernAI Discord](https://discord.gg/zmK2gmr45t)<br>
 
