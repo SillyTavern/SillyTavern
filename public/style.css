@@ -529,15 +529,23 @@ input[type=button] {
     flex-direction: column;
 }
 
+#rm_characters_topbar_buttons {
+    margin-top: 0;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
 #rm_characters_topbar_expander {
     flex-grow: 1;
 }
 
 #form_character_search_form {
-    margin-right: 1rem;
+    margin-bottom: 1rem;
 }
 
 #character_search_bar {
+    width: 90%;
     outline: none;
     box-shadow: 0 0px 0px rgba(255, 255, 255, 0.0);
     border: none;
