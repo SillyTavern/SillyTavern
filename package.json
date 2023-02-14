@@ -10,7 +10,8 @@
       "rimraf": "^3.0.2",
       "sharp": "^0.31.3",
       "csrf-csrf": "^2.2.3",
-      "cookie-parser": "^1.4.6"
+      "cookie-parser": "^1.4.6",
+      "cors": "^2.8.5"
     },
     "name": "TavernAI",
     "version": "1.2.7",

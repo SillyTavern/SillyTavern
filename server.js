@@ -17,9 +17,8 @@ sharp.cache(false);
 const path = require('path');
 
 const cookieParser = require('cookie-parser');
-
 const crypto = require('crypto');
-const doubleCsrf = require('csrf-csrf').doubleCsrf;
+
 
 const config = require('./config.json');
 const server_port = config.port;
@@ -54,6 +53,9 @@ var is_colab = false;
 const jsonParser = express.json({limit: '100mb'});
 const urlencodedParser = express.urlencoded({extended: true, limit: '100mb'});
 
+// CSRF Protection //
+const doubleCsrf = require('csrf-csrf').doubleCsrf;
+
 const CSRF_SECRET = crypto.randomBytes(8).toString('hex');
 const COOKIES_SECRET = crypto.randomBytes(8).toString('hex');
 
@@ -76,6 +78,15 @@ app.get("/csrf-token", (req, res) => {
 
 app.use(cookieParser(COOKIES_SECRET));
 app.use(doubleCsrfProtection);
+
+// CORS Settings //
+const cors = require('cors');
+const CORS = cors({
+	origin: 'null',
+	methods: ['OPTIONS']
+})
+
+app.use(CORS);
 
 app.use(function (req, res, next) { //Security
     const clientIp = req.connection.remoteAddress.split(':').pop();
