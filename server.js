@@ -45,7 +45,12 @@ var response_getlastversion;
 var api_key_novel;
 
 var is_colab = false;
-
+var charactersPath = 'public/characters/';
+var chatsPath = 'public/chats/';
+if (is_colab && process.env.googledrive == 2){
+    charactersPath = '/content/drive/MyDrive/TavernAI/characters/';
+    chatsPath = '/content/drive/MyDrive/TavernAI/chats/';
+}
 const jsonParser = express.json({limit: '100mb'});
 const urlencodedParser = express.urlencoded({extended: true, limit: '100mb'});
 
@@ -59,9 +64,27 @@ app.use(function (req, res, next) { //Security
     next();
 });
 
-
-
+app.use((req, res, next) => {
+  if (req.url.startsWith('/characters/') && is_colab && process.env.googledrive == 2) {
+      
+    const filePath = path.join(charactersPath, req.url.substr('/characters'.length));
+    fs.access(filePath, fs.constants.R_OK, (err) => {
+      if (!err) {
+        res.sendFile(filePath);
+      } else {
+        res.send('Character not found: '+filePath);
+        //next();
+      }
+    });
+  } else {
+    next();
+  }
+});
 app.use(express.static(__dirname + "/public", { refresh: true }));
+
+
+
+
 app.use('/backgrounds', (req, res) => {
   const filePath = path.join(process.cwd(), 'public/backgrounds', req.url);
   fs.readFile(filePath, (err, data) => {
@@ -74,7 +97,7 @@ app.use('/backgrounds', (req, res) => {
   });
 });
 app.use('/characters', (req, res) => {
-  const filePath = path.join(process.cwd(), 'public/characters', req.url);
+  const filePath = path.join(process.cwd(), charactersPath, req.url);
   fs.readFile(filePath, (err, data) => {
     if (err) {
       res.status(404).send('File not found');
@@ -196,7 +219,7 @@ app.post("/savechat", jsonParser, function(request, response){
     var dir_name = String(request.body.avatar_url).replace('.png','');
     let chat_data = request.body.chat;
     let jsonlData = chat_data.map(JSON.stringify).join('\n');
-    fs.writeFile('public/chats/'+dir_name+"/"+request.body.file_name+'.jsonl', jsonlData, 'utf8', function(err) {
+    fs.writeFile(chatsPath+dir_name+"/"+request.body.file_name+'.jsonl', jsonlData, 'utf8', function(err) {
         if(err) {
             response.send(err);
             return console.log(err);
@@ -217,23 +240,23 @@ app.post("/getchat", jsonParser, function(request, response){
     //var bg = "body {background-image: linear-gradient(rgba(19,21,44,0.75), rgba(19,21,44,0.75)), url(../backgrounds/"+request.body.bg+");}";
     var dir_name = String(request.body.avatar_url).replace('.png','');
 
-    fs.stat('public/chats/'+dir_name, function(err, stat) {
+    fs.stat(chatsPath+dir_name, function(err, stat) {
             
         if(stat === undefined){
 
-            fs.mkdirSync('public/chats/'+dir_name);
+            fs.mkdirSync(chatsPath+dir_name);
             response.send({});
             return;
         }else{
             
             if(err === null){
                 
-                fs.stat('public/chats/'+dir_name+"/"+request.body.file_name+".jsonl", function(err, stat) {
+                fs.stat(chatsPath+dir_name+"/"+request.body.file_name+".jsonl", function(err, stat) {
                     
                     if (err === null) {
                         
                         if(stat !== undefined){
-                            fs.readFile('public/chats/'+dir_name+"/"+request.body.file_name+".jsonl", 'utf8', (err, data) => {
+                            fs.readFile(chatsPath+dir_name+"/"+request.body.file_name+".jsonl", 'utf8', (err, data) => {
                                 if (err) {
                                   console.error(err);
                                   response.send(err);
@@ -322,12 +345,11 @@ function charaFormatData(data){
     return char;
 }
 app.post("/createcharacter", urlencodedParser, function(request, response){
+    
     if(!request.body) return response.sendStatus(400);
-    if (!fs.existsSync('public/characters/'+request.body.ch_name+'.png')){
-        if(!fs.existsSync('public/chats/'+request.body.ch_name) )fs.mkdirSync('public/chats/'+request.body.ch_name);
-        //if(!fs.existsSync('public/characters/'+request.body.ch_name+'/chats')) fs.mkdirSync('public/characters/'+request.body.ch_name+'/chats');
-        //if(!fs.existsSync('public/characters/'+request.body.ch_name+'/avatars')) fs.mkdirSync('public/characters/'+request.body.ch_name+'/avatars');
-        
+    if (!fs.existsSync(charactersPath+request.body.ch_name+'.png')){
+        if(!fs.existsSync(chatsPath+request.body.ch_name) )fs.mkdirSync(chatsPath+request.body.ch_name);
+
         let filedata = request.file;
         //console.log(filedata.mimetype);
         var fileType = ".png";
@@ -340,14 +362,6 @@ app.post("/createcharacter", urlencodedParser, function(request, response){
             
             charaWrite('./public/img/fluffy.png', char, request.body.ch_name, response);
             
-            //fs.writeFile('public/characters/'+request.body.ch_name+"/"+request.body.ch_name+".json", char, 'utf8', function(err) {
-                //if(err) {
-                    //response.send(err);
-                    //return console.log(err);
-                //}else{
-                    
-                //}
-            //});
         }else{
             
             img_path = "./uploads/";
@@ -376,7 +390,7 @@ app.post("/editcharacter", urlencodedParser, function(request, response){
     //console.log(filedata.mimetype);
     var fileType = ".png";
     var img_file = "ai";
-    var img_path = "./public/characters/";
+    var img_path = charactersPath;
     
     var char = charaFormatData(request.body);//{"name": request.body.ch_name, "description": request.body.description, "personality": request.body.personality, "first_mes": request.body.first_mes, "avatar": request.body.avatar_url, "chat": request.body.chat, "last_mes": request.body.last_mes, "mes_example": ''};
     char.chat = request.body.chat;
@@ -397,14 +411,14 @@ app.post("/editcharacter", urlencodedParser, function(request, response){
 });
 app.post("/deletecharacter", urlencodedParser, function(request, response){
     if(!request.body) return response.sendStatus(400);
-    rimraf('public/characters/'+request.body.avatar_url, (err) => { 
+    rimraf(charactersPath+request.body.avatar_url, (err) => { 
         if(err) {
             response.send(err);
             return console.log(err);
         }else{
             //response.redirect("/");
             let dir_name = request.body.avatar_url;
-            rimraf('public/chats/'+dir_name.replace('.png',''), (err) => { 
+            rimraf(chatsPath+dir_name.replace('.png',''), (err) => { 
                 if(err) {
                     response.send(err);
                     return console.log(err);
@@ -442,7 +456,7 @@ async function charaWrite(img_url, data, name, response = undefined, mes = 'ok')
         chunks.splice(-1, 0, PNGtext.encode('chara', base64EncodedData));
         //chunks.splice(-1, 0, text.encode('lorem', 'ipsum'));
 
-        fs.writeFileSync('public/characters/'+name+'.png', new Buffer.from(encode(chunks)));
+        fs.writeFileSync(charactersPath+name+'.png', new Buffer.from(encode(chunks)));
         if(response !== undefined) response.send(mes);
             
 
@@ -474,7 +488,7 @@ function charaRead(img_url){
 }
 
 app.post("/getcharacters", jsonParser, function(request, response){
-    fs.readdir("public/characters", (err, files) => {
+    fs.readdir(charactersPath, (err, files) => {
         if (err) {
           console.error(err);
           return;
@@ -487,7 +501,7 @@ app.post("/getcharacters", jsonParser, function(request, response){
         var i = 0;
         pngFiles.forEach(item => {
             //console.log(item);
-            var img_data = charaRead('./public/characters/'+item);
+            var img_data = charaRead(charactersPath+item);
             try {
                 let jsonObject = JSON.parse(img_data);
                 jsonObject.avatar = item;
@@ -680,9 +694,9 @@ app.post('/getsettings', jsonParser, (request, response) => { //Wintermute's cod
 function getCharaterFile(directories,response,i){ //old need del
     if(directories.length > i){
         
-        fs.stat('public/characters/'+directories[i]+'/'+directories[i]+".json", function(err, stat) {
+        fs.stat(charactersPath+directories[i]+'/'+directories[i]+".json", function(err, stat) {
             if (err == null) {
-                fs.readFile('public/characters/'+directories[i]+'/'+directories[i]+".json", 'utf8', (err, data) => {
+                fs.readFile(charactersPath+directories[i]+'/'+directories[i]+".json", 'utf8', (err, data) => {
                     if (err) {
                       console.error(err);
                       return;
@@ -820,7 +834,7 @@ app.post("/getallchatsofchatacter", jsonParser, function(request, response){
     if(!request.body) return response.sendStatus(400);
 
     var char_dir = (request.body.avatar_url).replace('.png','')
-    fs.readdir('public/chats/'+char_dir, (err, files) => {
+    fs.readdir(chatsPath+char_dir, (err, files) => {
         if (err) {
           console.error(err);
           response.send({error: true});
@@ -839,7 +853,7 @@ app.post("/getallchatsofchatacter", jsonParser, function(request, response){
         for(let i = jsonFiles.length-1; i >= 0; i--){
             const file = jsonFiles[i];
 
-            const fileStream = fs.createReadStream('public/chats/'+char_dir+'/'+file);
+            const fileStream = fs.createReadStream(chatsPath+char_dir+'/'+file);
             const rl = readline.createInterface({
                 input: fileStream,
                 crlfDelay: Infinity
@@ -873,7 +887,7 @@ app.post("/getallchatsofchatacter", jsonParser, function(request, response){
     
 });
 function getPngName(file){
-    if (fs.existsSync('./public/characters/'+file+'.png')) {
+    if (fs.existsSync(charactersPath+file+'.png')) {
         file = file+'1';
     }
     return file;
@@ -917,7 +931,7 @@ app.post("/importcharacter", urlencodedParser, function(request, response){
                     let jsonObject = JSON.parse(img_data);
                     png_name = getPngName(jsonObject.name);
                     if(jsonObject.name !== undefined){
-                        fs.copyFile('./uploads/'+filedata.filename, 'public/characters/'+png_name+'.png', (err) => {
+                        fs.copyFile('./uploads/'+filedata.filename, charactersPath+png_name+'.png', (err) => {
                             if(err) {
                                 response.send({error:true});
                                 return console.log(err);
@@ -988,7 +1002,7 @@ app.post("/importchat", urlencodedParser, function(request, response){
                             i++;
                         });
                         const chatJsonlData = new_chat.map(JSON.stringify).join('\n');
-                        fs.writeFile('public/chats/'+avatar_url+'/'+Date.now()+'.jsonl', chatJsonlData, 'utf8', function(err) {
+                        fs.writeFile(chatsPath+avatar_url+'/'+Date.now()+'.jsonl', chatJsonlData, 'utf8', function(err) {
                             if(err) {
                                 response.send(err);
                                 return console.log(err);
@@ -1017,7 +1031,7 @@ app.post("/importchat", urlencodedParser, function(request, response){
                     let jsonData = JSON.parse(line);
                     
                     if(jsonData.user_name !== undefined){
-                        fs.copyFile('./uploads/'+filedata.filename, 'public/chats/'+avatar_url+'/'+Date.now()+'.jsonl', (err) => {
+                        fs.copyFile('./uploads/'+filedata.filename, chatsPath+avatar_url+'/'+Date.now()+'.jsonl', (err) => {
                             if(err) {
                                 response.send({error:true});
                                 return console.log(err);
@@ -1053,7 +1067,7 @@ app.listen(server_port, function() {
     console.log('Launching...');
     open('http:127.0.0.1:'+server_port);
     console.log('TavernAI started: http://127.0.0.1:'+server_port);
-    if (fs.existsSync('public/characters/update.txt')) { //&& !is_colab <- this need to put again
+    if (fs.existsSync('public/characters/update.txt') && !is_colab) {
         convertStage1();
     }
 
@@ -1106,8 +1120,8 @@ function convertStage2(){
         charaWrite(avatar, charactersB[key], directoriesB[key]);
         
         const files = fs.readdirSync('public/characters/'+directoriesB[key]+'/chats');
-        if (!fs.existsSync('public/chats/'+char.name)) {
-            fs.mkdirSync('public/chats/'+char.name);
+        if (!fs.existsSync(chatsPath+char.name)) {
+            fs.mkdirSync(chatsPath+char.name);
         }
         files.forEach(function(file) {
             // Read the contents of the file
@@ -1161,7 +1175,7 @@ function convertStage2(){
             });
             const jsonlData = new_chat_data.map(JSON.stringify).join('\n');
             // Write the contents to the destination folder
-            fs.writeFileSync('public/chats/'+char.name+'/' + file+'l', jsonlData);
+            fs.writeFileSync(chatsPath+char.name+'/' + file+'l', jsonlData);
         });
         //fs.rmSync('public/characters/'+directoriesB[key],{ recursive: true });
         console.log(char.name+' update!');
@@ -1243,93 +1257,3 @@ function getCharaterFile2(directories,i){
         convertStage2();
     }
 }
-/*
-* async function aaa2(){
-try {
-    // Load the image in any format
-
-    const image = await sharp('./original.jpg').resize(100, 100).toFormat('png');
-
-  image.metadata((err, metadata) => {
-    if (err) throw err;
-    if (!metadata.chunks) {
-        metadata.chunks = [];
-    }
-const textData = text.encode('hello', 'world');
-const textBuffer = Buffer.from(`${textData.keyword}\0${textData.text}`);
-metadata.chunks.push({
-  type: 'tEXt',
-  data: textBuffer
-});
-    return metadata;
-  })
-  .toFile('test-out.png')
-  .then(() => {
-    console.log('PNG image with tEXt chunks has been saved.');
-  })
-  .catch((err) => {
-    console.log(err);
-  });
-} catch (err) {
-    console.log(err);
-}
-}
-* function writePNG(){
-
-const buffer = fs.readFileSync('test-out.png');
-const chunks = extract(buffer);
- const tEXtChunks = chunks.filter(chunk => chunk.name === 'tEXt');
-
-// Remove all existing tEXt chunks
-for (const tEXtChunk of tEXtChunks) {
-    chunks.splice(chunks.indexOf(tEXtChunk), 1);
-}
-// Add new chunks before the IEND chunk
-chunks.splice(-1, 0, text.encode('hello', 'world'));
-chunks.splice(-1, 0, text.encode('lorem', 'ipsum'));
- 
-fs.writeFileSync(
-  'test-out.png',
-  new Buffer.from(encode(chunks))
-);
-}
- *     function readPNG2(){
-    sharp('./test-out.png')
-  .metadata()
-  .then((metadata) => {
-      console.log(metadata);
-    if (!metadata.chunks) {
-        console.log("No tEXt chunks found in the image file");
-    }
-    const textChunks = metadata.chunks.filter((chunk) => chunk.type === 'tEXt');
-    textChunks.forEach((textChunk) => {
-        const textData = JSON.parse(textChunk.data.toString());
-        console.log(textData);
-    });
-  })
-  .catch((err) => {
-    console.log(err);
-  });
-  }
-const requestListener = function (req, res) {
-    fs.readFile(__dirname + "/index.html")
-        .then(contents => {
-            res.setHeader("Content-Type", "text/html");
-            res.writeHead(200);
-            res.end(contents);
-        })
-        .catch(err => {
-            res.writeHead(500);
-            res.end(err);
-            return;
-        });
-};
-
-
-
-const server = http.createServer(requestListener);
-server.listen(port, host, () => {
-    console.log(`Server is running on http://${host}:${port}`);
-});
-*/
-
