@@ -48,6 +48,12 @@ body {
     font-weight: bold;
     color: rgb(229, 224, 216);
 }
+.mes_bias {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: darkgoldenrod;
+}
 code {
   background-color: #a8a8a8;
   padding: 5px;
