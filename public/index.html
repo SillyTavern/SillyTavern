@@ -1,6 +1,17 @@
 <!DOCTYPE html>
 <html>
 <head>
+
+
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<!--<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">-->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN" crossorigin="anonymous"></script>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+	<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&amp;display=swap" rel="stylesheet">
+	
+
     <script src="scripts/jquery-3.5.1.min.js"></script>
     <script src="scripts/jquery.transit.min.js"></script>
     <script src="scripts/showdown.min.js"></script>
@@ -37,7 +48,7 @@
                 create_date: 0,
                 mes: '\n*You went inside. The air smelled of fried meat, tobacco and a hint of wine. A dim light was cast by candles, and a fire crackled in the fireplace. It seems to be a very pleasant place. Behind the wooden bar is an elf waitress, she is smiling. Her ears are very pointy, and there is a twinkle in her eye. She wears glasses and a white apron. As soon as she noticed you, she immediately came right up close to you.*\n\n' +
                     ' Hello there! How is your evening going?\n' +
-                    '<img src="img/star_dust_city.png" width=80% style="opacity:0.3; display:block;border-radius:5px;margin-top:25px;margin-bottom:23px; margin-left: 45px;margin-right: auto;">\n<a id="verson" style="color:rgb(229, 224, 216,0.8);" href="https://github.com/TavernAI/TavernAI" target="_blank">@@@TavernAI v'+VERSION+'@@@</a><div id="characloud_url" style="margin-right:10px;margin-top:0px;float:right; height:25px;cursor: pointer;opacity: 0.99;display:inline-block;"><img src="img/cloud_logo.png" style="width: 25px;height: auto;display:inline-block; opacity:0.7;"><div style="vertical-align: top;display:inline-block;">Cloud</div></div><br><br><br><br>'
+                    '<img src="img/star_dust_city.png" width=80% style="opacity:0.3; disolay:block;border-radius:5px;margin-top:25px;margin-bottom:23px; margin-left: 45px;margin-right: auto;">\n<a id="verson" style="color:rgb(229, 224, 216,0.8);" href="https://github.com/TavernAI/TavernAI" target="_blank">@@@TavernAI v'+VERSION+'@@@</a><div id="characloud_url" style="margin-right:10px;margin-top:0px;float:right; height:25px;cursor: pointer;opacity: 0.99;display:inline-block;"><img src="img/cloud_logo.png" style="width: 25px;height: auto;display:inline-block; opacity:0.7;"><div style="vertical-align: top;display:inline-block;">Cloud</div></div><br><br><br><br>'
             }];
             
             var chat_create_date = 0;
@@ -146,6 +157,29 @@
             var css_send_form_display = $('<div id=send_form></div>').css('display');
             
             var colab_ini_step = 1;
+			
+			// VARIABLES DONE NOW THE REAL CODE 
+			//
+			//
+			//
+			
+			// Dealing with Textarea Height
+			
+			//function textAreaAdjust(element) {
+			//	element.style.height = "1px";
+			//	element.style.height = (25+element.scrollHeight)+"px";
+			//}	
+			//function calcHeight(value) {
+			//	let numberOfLineBreaks = (value.match(/\n/g) || []).length;
+			//	// min-height + lines x line-height + padding + border
+			//	let newHeight = 25 + numberOfLineBreaks * 25 + 6 + 1;
+			//	return newHeight;
+			//}
+			//let textarea = document.querySelector(".resize-ta");
+			//textarea.addEventListener("keyup", () => {
+			//textarea.style.height = calcHeight(textarea.value) + "px";
+			//});
+			
             setInterval(function() {
                 switch(colab_ini_step){
                     case 0:
@@ -167,6 +201,9 @@
                 }
             }, 500);
             /////////////
+			
+			
+			
             
             getSettings("def");
             getLastVersion();
@@ -194,7 +231,7 @@
                     is_get_status_novel = false;
                 }else{
                     $("#online_status_indicator").css("background-color", "black");
-                    $("#online_status").css("opacity", 0.0);
+                    $("#online_status").css("display", "none");
                     $("#online_status_text").html("");
                     $("#online_status_indicator2").css("background-color", "green");
                     $("#online_status_text2").html(online_status);
@@ -597,7 +634,7 @@
                     
                     //$("#send_textarea").blur();
                     $( "#send_but" ).css("display", "none");
-                    $( "#loading_mes" ).css("display", "block");
+                    $( "#loading_mes" ).css("display", "inline-block");
 
 
                     var storyString = "";
@@ -1056,7 +1093,7 @@
                                         getMessage = $.trim(getMessage);
                                         chat[chat.length-1]['mes'] = getMessage;
                                         addOneMessage(chat[chat.length-1]);
-                                        $( "#send_but" ).css("display", "block");
+                                        $( "#send_but" ).css("display", "inline");
                                         $( "#loading_mes" ).css("display", "none");
                                         saveChat();
                                     }else{
@@ -1064,7 +1101,7 @@
                                         Generate('force_name2');
                                     }
                                 }else{
-                                    $( "#send_but" ).css("display", "block");
+                                    $( "#send_but" ).css("display", "inline");
                                     $( "#loading_mes" ).css("display", "none");
                                 }
                             },
@@ -1072,7 +1109,7 @@
 
                                 $("#send_textarea").removeAttr('disabled');
                                 is_send_press = false;
-                                $( "#send_but" ).css("display", "block");
+                                $( "#send_but" ).css("display", "inline");
                                 $( "#loading_mes" ).css("display", "none");
                                 console.log(exception);
                                 console.log(jqXHR);
@@ -3326,6 +3363,7 @@
             });
         });
     </script>
+
 <title>Tavern.AI</title>
 </head>
 <body>
@@ -3730,38 +3768,53 @@
     </nav>
     <div id="sheld">
         <div id="chat"></div>
-        <div id="form_sheld">
-            
+        <div id="form_sheld">            
             <div id="dialogue_del_mes">
                 <div id="dialogue_del_mes_text"><h3></h3></div>
                 <div id="dialogue_del_mes_ok" class="menu_button">Delete</div>
                 <div id="dialogue_del_mes_cancel" class="menu_button">Cancel</div>
             </div>
             <form id="send_form">
-                
                 <div id="options_button">
                     <div id="options">
                         <div class="options-content">
                         <a id="option_start_new_chat"><img src="img/save_and_start_new_chat.png" width="20" height="20">Start new chat</a>
-                        <a id="option_select_chat"><img src="img/book6.png" width="20" height="20" style="opacity: 0.0;"><img src="img/book6.png" style="width: 21px;height: 21px;position: absolute;top: 59px;left: 15px; opacity: 0.5;">Select chats</a><!--<img src="img/book6.png" style="width: 21px;height: 21px;position: absolute;top: 14px;left: 16px; opacity: 0.5;">Select chat</a>-->
-                        
+                        <a id="option_select_chat"><img src="img/book6.png" width="20" height="20" style="opacity: 0.0;"><img src="img/book6.png" style="width: 21px;height: 21px;position: absolute;top: 59px;left: 15px; opacity: 0.5;">Select chats</a><!--<img src="img/book6.png" style="width: 21px;height: 21px;position: absolute;top: 14px;left: 16px; opacity: 0.5;">Select chat</a>-->       
                         <hr>
                         <a id="option_delete_mes"><img src="img/del_mes.png" width="20" height="20">Delete message</a>
                         <a id="option_regenerate"><img src="img/regenerate.png" width="20" height="20">Regenerate</a>
                         </div>
                     </div>
                 </div>
+				<!-- <div contenteditable="true" id="send_textarea">Type a message...</div> -->
                 <textarea id="send_textarea" placeholder="Type a message..." name="text"></textarea>
-                <div id="send_but_sheld"><div id="loading_mes"></div><input id="send_but" type="button"></div>
+				
+<script type="text/javascript">
+    $('#send_textarea').on('input', function () {
+        this.style.height = '1rem';
+        this.style.height =
+            (this.scrollHeight) + 'px';
+    });
+</script>
+
+                <div id="send_but_sheld">
+					
+					<div id="loading_mes"></div>
+					
+					<div id="online_status">
+						<div id="online_status_indicator"></div>
+						<div id="online_status_text">No connection...</div>
+					</div>
+					
+					<input id="send_but" type="button">
+
+				</div>
+
             </form>
-            <div id="online_status">
+           <!--  <div id="online_status">
                 <div id="online_status_indicator"></div><div id="online_status_text">No connection...</div>
-            </div>
+            </div> -->
         </div>
     </div>
-   
-    
-
-    
 </body>
 </html>
