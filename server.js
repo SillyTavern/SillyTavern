@@ -48,7 +48,8 @@ var is_colab = false;
 
 const jsonParser = express.json({limit: '100mb'});
 const urlencodedParser = express.urlencoded({extended: true, limit: '100mb'});
-
+const baseRequestArgs = { headers: { "Content-Type": "application/json" } };
+const directories = { worlds: 'public/KoboldAI Worlds/' };
 
 app.use(function (req, res, next) { //Security
     const clientIp = req.connection.remoteAddress.split(':').pop();
@@ -128,7 +129,7 @@ app.post("/generate", jsonParser, function(request, response_generate = response
     //console.log(request.body.prompt);
     //const dataJson = JSON.parse(request.body);
     request_promt = request.body.prompt;
-    
+
     //console.log(request.body);
     var this_settings = { prompt: request_promt,
                         use_story:false,
@@ -146,7 +147,7 @@ app.post("/generate", jsonParser, function(request, response_generate = response
                         use_story:false,
                         use_memory:false,
                         use_authors_note:false,
-                        use_world_info:false,
+                        use_world_info:!!request.body.use_world_info,
                         max_context_length: request.body.max_context_length,
                         max_length: request.body.max_length,
                         rep_pen: request.body.rep_pen,
@@ -629,6 +630,12 @@ app.post('/getsettings', jsonParser, (request, response) => { //Wintermute's cod
         new Date(fs.statSync(`public/KoboldAI Settings/${a}`).mtime)
     );
 
+    const worldFiles = fs
+        .readdirSync(directories.worlds)
+        .filter(file => path.extname(file).toLowerCase() === '.json')
+        .sort((a, b) => a < b);
+    const koboldai_world_names = worldFiles.map(item => path.parse(item).name);
+
     files.forEach(item => {
         const file = fs.readFileSync(
         `public/KoboldAI Settings/${item}`,
@@ -671,11 +678,64 @@ app.post('/getsettings', jsonParser, (request, response) => { //Wintermute's cod
         settings,
         koboldai_settings,
         koboldai_setting_names,
+        koboldai_world_names,
         novelai_settings,
         novelai_setting_names
     });
 });
 
+// Work around to disable parallel requests to endpoint
+let kobold_world_sync_busy = false;
+
+app.post('/synckoboldworld', jsonParser, async (request, response) => {
+    if(!request.body) return response.sendStatus(400);
+
+    if (!api_server || kobold_world_sync_busy) {
+        response.send({ busy: true });
+        return;
+    }
+
+    try {
+        kobold_world_sync_busy = true;
+        const worldName = request.body.name;
+        await synchronizeKoboldWorldInfo(worldName);
+        response.send({ ok: true });
+    } catch (err) {
+        var message = JSON.stringify(err);
+        console.error(`Error during world synchronization: ${message}`);
+        response.status(500).send(message);
+    } finally {
+        kobold_world_sync_busy = false;
+    }
+});
+
+app.post('/getworldinfo', jsonParser, async (request, response) => {
+    if (!request.body?.name) {
+        return response.sendStatus(400);
+    }
+
+    const file = readWorldInfoFile(request.body.name);
+
+    return response.send(file.tavernWorldInfo);
+});
+
+app.post('/deleteworldinfo', jsonParser, async (request, response) => {
+    if (!request.body?.name) {
+        return response.sendStatus(400);
+    }
+
+    const worldInfoName = request.body.name;
+    const filename = `${worldInfoName}.json`;
+    const pathToWorldInfo = path.join(directories.worlds, filename);
+
+    if (!fs.existsSync(pathToWorldInfo)) {
+        throw new Error(`World info file ${filename} doesn't exist.`);
+    }
+
+    fs.rmSync(pathToWorldInfo);
+
+    return response.sendStatus(200);
+});
 
 function getCharaterFile(directories,response,i){ //old need del
     if(directories.length > i){
@@ -1038,10 +1098,341 @@ app.post("/importchat", urlencodedParser, function(request, response){
 
 });
 
+app.post('/importworldinfo', urlencodedParser, (request, response) => {
+    if(!request.file) return response.sendStatus(400);
 
+    const filename = request.file.originalname;
 
+    if (path.parse(filename).ext.toLowerCase() !== '.json') {
+        return response.status(400).send('Only JSON files are supported.')
+    }
 
+    const pathToUpload = path.join('./uploads/' + request.file.filename);
+    const fileContents = fs.readFileSync(pathToUpload, 'utf8');
 
+    try {
+        const worldContent = JSON.parse(fileContents);
+        if (!('entries' in worldContent)) {
+            throw new Error('File must contain a world info entries list');
+        }
+    } catch (err) {
+        return response.status(400).send('Is not a valid world info file');
+    }
+
+    const pathToNewFile = path.join(directories.worlds, filename);
+    const worldName = path.parse(pathToNewFile).name;
+
+    if (!worldName) {
+        return response.status(400).send('World file must have a name');
+    }
+
+    fs.writeFileSync(pathToNewFile, fileContents);
+    return response.send({ name: worldName });
+});
+
+app.post('/editworldinfo', jsonParser, (request, response) => {
+    if (!request.body) {
+        return response.sendStatus(400);
+    }
+
+    if (!request.body.name) {
+        return response.status(400).send('World file must have a name');
+    }
+
+    try {
+        if (!('entries' in request.body.data)) {
+            throw new Error('World info must contain an entries list');
+        }
+    } catch (err) {
+        return response.status(400).send('Is not a valid world info file');
+    }
+
+    const filename = `${request.body.name}.json`;
+    const pathToFile = path.join(directories.worlds, filename);
+
+    fs.writeFileSync(pathToFile, JSON.stringify(request.body.data));
+
+    return response.send({ ok: true });
+});
+
+function findTavernWorldEntry(info, key, content) {
+    for (const entryId in info.entries) {
+        const entry = info.entries[entryId];
+        const keyString = entry.key.join(',');
+
+        if (keyString === key && entry.content === content) {
+            return entry;
+        }
+    }
+
+    return null;
+}
+
+async function synchronizeKoboldWorldInfo(worldInfoName) {
+    const { koboldFolderName, tavernWorldInfo } = readWorldInfoFile(worldInfoName);
+
+    // Get existing world info
+    const koboldWorldInfo = await getAsync(`${api_server}/v1/world_info`, baseRequestArgs);
+
+    // Validate kobold world info
+    let {
+        shouldCreateWorld,
+        koboldWorldUid,
+        tavernEntriesToCreate,
+        koboldEntriesToDelete,
+        koboldFoldersToDelete,
+    } = await validateKoboldWorldInfo(koboldFolderName, koboldWorldInfo, tavernWorldInfo);
+
+    // Create folder if not already exists
+    if (koboldFolderName && shouldCreateWorld) {
+        koboldWorldUid = await createKoboldFolder(koboldFolderName, tavernEntriesToCreate, tavernWorldInfo);
+    }
+
+    await deleteKoboldFolders(koboldFoldersToDelete);
+    await deleteKoboldEntries(koboldEntriesToDelete);
+    await createTavernEntries(tavernEntriesToCreate, koboldWorldUid, tavernWorldInfo);
+}
+
+function readWorldInfoFile(worldInfoName) {
+    if (!worldInfoName) {
+        return { koboldFolderName: null, tavernWorldInfo: { entries: {}, folders: {} }};
+    }
+
+    const koboldFolderName = getKoboldWorldInfoName(worldInfoName);
+    const filename = `${worldInfoName}.json`;
+    const pathToWorldInfo = path.join(directories.worlds, filename);
+
+    if (!fs.existsSync(pathToWorldInfo)) {
+        throw new Error(`World info file ${filename} doesn't exist.`);
+    }
+
+    const tavernWorldInfoText = fs.readFileSync(pathToWorldInfo, 'utf8');
+    const tavernWorldInfo = JSON.parse(tavernWorldInfoText);
+    return { koboldFolderName, tavernWorldInfo };
+}
+
+async function createKoboldFolder(koboldFolderName, tavernEntriesToCreate, tavernWorldInfo) {
+    const createdFolder = await postAsync(`${api_server}/v1/world_info/folders`, { data: {}, ...baseRequestArgs });
+    const koboldWorldUid = createdFolder.uid;
+
+    // Set a name so we could find the folder later
+    const setNameArgs = { data: { value: koboldFolderName }, ...baseRequestArgs };
+    await putAsync(`${api_server}/v1/world_info/folders/${koboldWorldUid}/name`, setNameArgs);
+
+    // Create all world info entries
+    tavernEntriesToCreate.push(...Object.keys(tavernWorldInfo.entries));
+    return koboldWorldUid;
+}
+
+async function createTavernEntries(tavernEntriesToCreate, koboldWorldUid, tavernWorldInfo) {
+    if (tavernEntriesToCreate.length && koboldWorldUid) {
+        for (const tavernUid of tavernEntriesToCreate) {
+            try {
+                const tavernEntry = tavernWorldInfo.entries[tavernUid];
+                const koboldEntry = await postAsync(`${api_server}/v1/world_info/folders/${koboldWorldUid}`, { data: {}, ...baseRequestArgs });
+                await setKoboldEntryData(tavernEntry, koboldEntry);
+            } catch (err) {
+                console.error(`Couldn't create Kobold world info entry, tavernUid=${tavernUid}. Skipping...`);
+                console.error(err);
+            }
+        }
+    }
+}
+
+async function deleteKoboldEntries(koboldEntriesToDelete) {
+    if (koboldEntriesToDelete.length) {
+        for (const uid of koboldEntriesToDelete) {
+            try {
+                await deleteAsync(`${api_server}/v1/world_info/${uid}`);
+            } catch (err) {
+                console.error(`Couldn't delete Kobold world info entry, uid=${uid}. Skipping...`);
+                console.error(err);
+            }
+        }
+    }
+}
+
+async function deleteKoboldFolders(koboldFoldersToDelete) {
+    if (koboldFoldersToDelete.length) {
+        for (const uid of koboldFoldersToDelete) {
+            try {
+                await deleteAsync(api_server + `/v1/world_info/folders/${uid}`, baseRequestArgs);
+            } catch (err) {
+                console.error(`Couldn't delete Kobold world info folder, uid=${uid}. Skipping...`);
+                console.error(err);
+            }
+        }
+    }
+}
+
+async function setKoboldEntryData(tavernEntry, koboldEntry) {
+    // 1. Set primary key
+    if (tavernEntry.key?.length) {
+        const keyArgs = { data: { value: tavernEntry.key.join(',') }, ...baseRequestArgs };
+        await putAsync(`${api_server}/v1/world_info/${koboldEntry.uid}/key`, keyArgs);
+    }
+
+    // 2. Set secondary key
+    if (tavernEntry.keysecondary?.length) {
+        const keySecondaryArgs = { data: { value: tavernEntry.keysecondary.join(',') }, ...baseRequestArgs };
+        await putAsync(`${api_server}/v1/world_info/${koboldEntry.uid}/keysecondary`, keySecondaryArgs);
+    }
+
+    // 3. Set content
+    if (tavernEntry.content) {
+        const contentArgs = { data: { value: tavernEntry.content }, ...baseRequestArgs };
+        await putAsync(`${api_server}/v1/world_info/${koboldEntry.uid}/content`, contentArgs);
+    }
+
+    // 4. Set comment
+    if (tavernEntry.comment) {
+        const commentArgs = { data: { value: tavernEntry.comment }, ...baseRequestArgs };
+        await putAsync(`${api_server}/v1/world_info/${koboldEntry.uid}/comment`, commentArgs);
+    };
+
+    /* Can't set these via API due to bug in Kobold)
+    // 5. Set constant flag
+    if (tavernEntry.constant) {
+        const constantArgs = { data: { value: tavernEntry.constant.toString() }, ...baseRequestArgs };
+        await putToPromise(`${api_server}/v1/world_info/${koboldEntry.uid}/constant`, constantArgs);
+
+    }
+    // 6. Set selective flag
+    if (tavernEntry.selective) {
+        const selectiveArgs = { data: { value: tavernEntry.selective.toString() }, ...baseRequestArgs };
+        await putToPromise(`${api_server}/v1/world_info/${koboldEntry.uid}/selective`, selectiveArgs);
+    }
+    */
+}
+
+async function validateKoboldWorldInfo(koboldFolderName, koboldWorldInfo, tavernWorldInfo) {
+    let shouldCreateWorld = true;
+    let koboldWorldUid = null;
+
+    const koboldEntriesToDelete = []; // KoboldUIDs
+    const koboldFoldersToDelete = []; // KoboldUIDs
+    const tavernEntriesToCreate = []; // TavernUIDs
+
+    if (koboldWorldInfo?.folders?.length) {
+        let existingFolderAlreadyFound = false;
+
+        for (const folder of koboldWorldInfo.folders) {
+            // Don't care about non-Tavern folders
+            if (!isTavernKoboldWorldInfo(folder.name)) {
+                continue;
+            }
+
+            // Other Tavern folders should be deleted (including dupes). If folder name selected is null, then delete anyway to clean-up
+            if (!koboldFolderName || folder.name !== koboldFolderName || existingFolderAlreadyFound) {
+                koboldFoldersToDelete.push(folder.uid);
+                // Should also delete all entries in folder otherwise they will be detached
+                if (Array.isArray(folder.entries)) {
+                    koboldEntriesToDelete.push(...folder.entries.map(entry => entry.uid));
+                }
+            }
+
+            // Validate existing entries in Kobold world
+            if (folder.name === koboldFolderName) {
+                existingFolderAlreadyFound = true;
+                shouldCreateWorld = false;
+                koboldWorldUid = folder.uid;
+                if (folder.entries?.length) {
+                    const foundTavernEntries = [];
+                    for (const koboldEntry of folder.entries) {
+                        const tavernEntry = findTavernWorldEntry(tavernWorldInfo, koboldEntry.key, koboldEntry.content);
+
+                        if (tavernEntry) {
+                            foundTavernEntries.push(tavernEntry.uid);
+                            if (isEntryOutOfSync(tavernEntry, koboldEntry)) {
+                                // Entry is out of sync. Should be recreated
+                                koboldEntriesToDelete.push(koboldEntry.uid);
+                                tavernEntriesToCreate.push(tavernEntry.uid);
+                            }
+                        }
+                        else {
+                            // We don't have that entry in our world. It should be deleted
+                            koboldEntriesToDelete.push(koboldEntry.uid);
+                        }
+                    }
+
+                    // Check if every tavern entry was found in kobold world
+                    // BTW. Entries is an object, not an array!
+                    for (const tavernEntryUid in tavernWorldInfo.entries) {
+                        const tavernEntry = tavernWorldInfo.entries[tavernEntryUid];
+                        if (!foundTavernEntries.includes(tavernEntry.uid)) {
+                            tavernEntriesToCreate.push(tavernEntry.uid);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return { shouldCreateWorld, koboldWorldUid, tavernEntriesToCreate, koboldEntriesToDelete, koboldFoldersToDelete };
+}
+
+function isEntryOutOfSync(tavernEntry, koboldEntry) {
+    return tavernEntry.content !== koboldEntry.content ||
+        tavernEntry.comment !== koboldEntry.comment ||
+        tavernEntry.selective !== koboldEntry.selective ||
+        tavernEntry.constant !== koboldEntry.constant ||
+        tavernEntry.key.join(',') !== koboldEntry.key ||
+        (koboldEntry.selective ? tavernEntry.keysecondary.join(',') !== koboldEntry.keysecondary : false);
+}
+
+// ** REST CLIENT ASYNC WRAPPERS **
+function deleteAsync(url, args) {
+    return new Promise((resolve, reject) => {
+        client.delete(url, args, (data, response) => {
+            if (response.statusCode >= 400) {
+                reject(data);
+            }
+            resolve(data);
+        }).on('error', e => reject(e));
+    })
+}
+
+function putAsync(url, args) {
+    return new Promise((resolve, reject) => {
+        client.put(url, args, (data, response) => {
+            if (response.statusCode >= 400) {
+                reject(data);
+            }
+            resolve(data);
+        }).on('error', e => reject(e));
+    })
+}
+
+function postAsync(url, args) {
+    return new Promise((resolve, reject) => {
+        client.post(url, args, (data, response) => {
+            if (response.statusCode >= 400) {
+                reject(data);
+            }
+            resolve(data);
+        }).on('error', e => reject(e));
+    })
+}
+
+function getAsync(url, args) {
+    return new Promise((resolve, reject) => {
+        client.get(url, args, (data, response) => {
+            if (response.statusCode >= 400) {
+                reject(data);
+            }
+            resolve(data);
+        }).on('error', e => reject(e));
+    })
+}
+// ** END **
+
+function getKoboldWorldInfoName(worldInfoName) {
+    return worldInfoName ? `TavernAI_${worldInfoName}_WI` : null;
+}
+
+function isTavernKoboldWorldInfo(folderName) {
+    return /^TavernAI_(.*)_WI$/.test(folderName);
+}
 
 
 app.listen(server_port, function() {
