@@ -16,6 +16,10 @@ const sharp = require('sharp');
 sharp.cache(false);
 const path = require('path');
 
+const cookieParser = require('cookie-parser');
+const crypto = require('crypto');
+
+
 const config = require('./config.json');
 const server_port = config.port;
 const whitelist = config.whitelist;
@@ -54,6 +58,40 @@ if (is_colab && process.env.googledrive == 2){
 const jsonParser = express.json({limit: '100mb'});
 const urlencodedParser = express.urlencoded({extended: true, limit: '100mb'});
 
+// CSRF Protection //
+const doubleCsrf = require('csrf-csrf').doubleCsrf;
+
+const CSRF_SECRET = crypto.randomBytes(8).toString('hex');
+const COOKIES_SECRET = crypto.randomBytes(8).toString('hex');
+
+const { invalidCsrfTokenError, generateToken, doubleCsrfProtection } = doubleCsrf({
+	getSecret: () => CSRF_SECRET,
+	cookieName: "X-CSRF-Token",
+	cookieOptions: {
+		httpOnly: true,
+		sameSite: "strict",
+	},
+	size: 64,
+	getTokenFromRequest: (req) => req.headers["x-csrf-token"]
+});
+
+app.get("/csrf-token", (req, res) => {
+	res.json({
+		"token": generateToken(res)
+	});
+});
+
+app.use(cookieParser(COOKIES_SECRET));
+app.use(doubleCsrfProtection);
+
+// CORS Settings //
+const cors = require('cors');
+const CORS = cors({
+	origin: 'null',
+	methods: ['OPTIONS']
+})
+
+app.use(CORS);
 
 app.use(function (req, res, next) { //Security
     const clientIp = req.connection.remoteAddress.split(':').pop();
@@ -909,14 +947,14 @@ app.post("/importcharacter", urlencodedParser, function(request, response){
                     }
                     const jsonData = JSON.parse(data);
                     
-                    if(jsonData.char_name !== undefined){//json Pygmalion notepad
-                        png_name = getPngName(jsonData.char_name);
-                        var char = {"name": jsonData.char_name, "description": jsonData.char_persona, "personality": '', "first_mes": jsonData.char_greeting, "avatar": 'none', "chat": Date.now(), "mes_example": jsonData.example_dialogue, "scenario": jsonData.world_scenario, "create_date": Date.now()};
+                    if(jsonData.name !== undefined){
+                        png_name = getPngName(jsonData.name);
+                        var char = {"name": jsonData.name, "description": jsonData.description ?? '', "personality": jsonData.personality ?? '', "first_mes": jsonData.first_mes ?? '', "avatar": 'none', "chat": Date.now(), "mes_example": jsonData.mes_example ?? '', "scenario": jsonData.scenario ?? '', "create_date": Date.now()};
                         char = JSON.stringify(char);
                         charaWrite('./public/img/fluffy.png', char, png_name, response, {file_name: png_name});
-                    }else if(jsonData.name !== undefined){
-                        png_name = getPngName(jsonData.name);
-                        var char = {"name": jsonData.name, "description": jsonData.description, "personality": jsonData.personality, "first_mes": jsonData.first_mes, "avatar": 'none', "chat": Date.now(), "mes_example": '', "scenario": '', "create_date": Date.now()};
+                    }else if(jsonData.char_name !== undefined){//json Pygmalion notepad
+                        png_name = getPngName(jsonData.char_name);
+                        var char = {"name": jsonData.char_name, "description": jsonData.char_persona ?? '', "personality": '', "first_mes": jsonData.char_greeting ?? '', "avatar": 'none', "chat": Date.now(), "mes_example": jsonData.example_dialogue ?? '', "scenario": jsonData.world_scenario ?? '', "create_date": Date.now()};
                         char = JSON.stringify(char);
                         charaWrite('./public/img/fluffy.png', char, png_name, response, {file_name: png_name});
                     }else{
