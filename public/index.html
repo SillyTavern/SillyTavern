@@ -217,6 +217,19 @@
             $('#characloud_url').click(function(){
                 window.open('https://boosty.to/tavernai', '_blank');
             });
+            $('#character_search_bar').on('input', function() {
+                const searchValue = $(this).val().trim().toLowerCase();
+                
+                if (!searchValue) {
+                    $("#rm_print_charaters_block .character_select").show();
+                } else {
+                    $("#rm_print_charaters_block .character_select").each(function () {
+                        $(this).children('.ch_name').text().toLowerCase().includes(searchValue)
+                            ? $(this).show()
+                            : $(this).hide();
+                    });
+                }
+            });
             function checkOnlineStatus(){
                 //console.log(online_status);
                 if(online_status == 'no_connection'){
@@ -1330,7 +1343,7 @@
             function select_rm_characters(){
                 
                 menu_type = 'characters';
-                $( "#rm_charaters_block" ).css("display", "block");
+                $( "#rm_charaters_block" ).css("display", "flex");
                 $('#rm_charaters_block').css('opacity',0.0);
                 $('#rm_charaters_block').transition({  
                         opacity: 1.0,
@@ -3754,8 +3767,15 @@
             </form>
         </div>
         <div id="rm_charaters_block" class="right_menu">
-            <div id="rm_button_create" class="right_menu_button"><h2>+</h2></div>
-            <div id="character_import_button" class="right_menu_button"><h2>+Import</h2></div>
+            <div id="rm_characters_topbar">
+                <div id="rm_characters_topbar_buttons">
+                    <div id="rm_button_create" class="right_menu_button"><h2>+Create</h2></div>
+                    <div id="character_import_button" class="right_menu_button"><h2>+Import</h2></div>
+                </div>
+                <form id="form_character_search_form" action="javascript:void(null);">
+                    <input id="character_search_bar" class="text_pole" type="search" placeholder="Search here..." />
+                </form>
+            </div>
             <div id="rm_print_charaters_block"></div>
         </div>
         <div id="rm_info_block" class="right_menu">

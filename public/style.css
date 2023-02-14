@@ -510,6 +510,18 @@ input[type=button] {
     
 }
 
+#rm_charaters_block {
+    display: flex;
+    height: 100%;
+    flex-direction: column;
+}
+
+#rm_print_charaters_block {
+    flex-grow: 1;
+    height: 100%;
+    overflow-y: scroll;
+}
+
 /* RossAscends: doubling the API status/form CSS to place it on bottom below SHELD form*/
 
 #api_loading-bottom{
@@ -578,6 +590,56 @@ input[type=button] {
     display: block;
     /* visibility: hidden; */
 }
+
+#rm_characters_topbar {
+    display: flex;
+    flex-direction: column;
+}
+
+#rm_characters_topbar_buttons {
+    margin-top: 0;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+#rm_characters_topbar_expander {
+    flex-grow: 1;
+}
+
+#form_character_search_form {
+    margin-bottom: 1rem;
+}
+
+#character_search_bar {
+    width: 90%;
+    outline: none;
+    box-shadow: 0 0px 0px rgba(255, 255, 255, 0.0);
+    border: none;
+    background: transparent;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.12);
+    color: rgb(188, 193, 200, 0.5);
+    font-weight: 400;
+}
+
+#character_search_bar::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+    height: 1em;
+    width: 1em;
+    border-radius: 50em;
+    background: url('/img/times-circle.svg') no-repeat 50% 50%;
+    background-size: contain;
+    opacity: 0;
+    pointer-events: none;
+    filter: invert(1);
+    cursor: pointer;
+}
+
+#character_search_bar:focus::-webkit-search-cancel-button {
+    opacity: .3;
+    pointer-events: all;
+}
+
 .character_select{
     padding: 5px;
     border-radius: 10px;
@@ -1991,6 +2053,7 @@ a {
     background: #222;
 	border-left: 1px solid #333;
 
+    backdrop-filter: blur(10px);
 }
 
 
