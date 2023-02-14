@@ -70,6 +70,7 @@ const { invalidCsrfTokenError, generateToken, doubleCsrfProtection } = doubleCsr
 	cookieOptions: {
 		httpOnly: true,
 		sameSite: "strict",
+		secure: false
 	},
 	size: 64,
 	getTokenFromRequest: (req) => req.headers["x-csrf-token"]
