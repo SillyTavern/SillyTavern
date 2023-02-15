@@ -390,7 +390,10 @@
 
                 const response = await fetch('/getsoftprompts', { 
                     method: 'POST',
-                    headers: { "Content-Type": "application/json" },
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-Token": token,
+                    },
                     body: JSON.stringify({ api_server: api_server }),
                 });
 
@@ -1506,7 +1509,7 @@
                 }else{
                     $("#mes_example_textarea").val(create_save_mes_example);
                 }
-                $("#avatar_div").css("display", "block");
+                $("#avatar_div").css("display", "flex");
                 $("#avatar_load_preview").attr('src',default_avatar);
                 $("#name_div").css("display", "block");
                 
@@ -2286,7 +2289,10 @@
                 const selected = $('#softprompt').find(':selected').val();
                 const response = await fetch('/setsoftprompt', { 
                     method: 'POST',
-                    headers: { "Content-Type": "application/json" },
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-Token": token,
+                    },
                     body: JSON.stringify({ name: selected, api_server: api_server }),
                 });
 
@@ -2403,7 +2409,10 @@
 
                 const response = await fetch("/synckoboldworld", {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-Token": token,
+                    },
                     body: JSON.stringify({ "name": kobold_world })
                 });
 
@@ -3219,7 +3228,10 @@
             async function updateWorldInfoList(importedWorldName) {
                 var result = await fetch('/getsettings', { 
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        "X-CSRF-Token": token,
+                    },
                     body: JSON.stringify({})
                 });
 
@@ -3259,7 +3271,10 @@
                 if (kobold_world) {
                     const response = await fetch("/getworldinfo", {
                         method: "POST",
-                        headers: { "Content-Type": "application/json" },
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRF-Token": token,
+                        },
                         body: JSON.stringify({ name: kobold_world })
                     });
 
@@ -3448,7 +3463,10 @@
                 async function _save() {
                     const response = await fetch("/editworldinfo", {
                         method: "POST",
-                        headers: { "Content-Type": "application/json" },
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRF-Token": token,
+                        },
                         body: JSON.stringify({ name: kobold_world, data: kobold_world_data })
                     });
 
@@ -3485,7 +3503,10 @@
 
                 const response = await fetch("/deleteworldinfo", {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-Token": token,
+                    },
                     body: JSON.stringify({ name: worldInfoName })
                 });
 
@@ -3854,7 +3875,7 @@
         <div id="rm_api_block" class="right_menu" >
             
             <h3 id="title_api">API</h3>
-            <select id="main_api" style="color:#fff;background-color:#13152c;" >
+            <select id="main_api" style="color:#fff;" >
                 <option value="kobold">KoboldAI</option>
                 <option value="novel">NovelAI</option>
             </select>
@@ -3903,9 +3924,10 @@
                     <div id="world_status">
                         <div id="world_status_indicator"></div><div id="world_status_text"></div>
                     </div>
-                <h4>Soft Prompt</h4><h5>About soft prompts (<a href="/notes/14" target="_blank">?</a>)</h5>
                 <div id="softprompt_block">
-                    <select id="softprompt">
+                    <h4>Soft Prompt</h4>
+                    <h5>About soft prompts (<a href="/notes/14" target="_blank">?</a>)</h5>
+                    <select id="softprompt" class="option_select_right_menu">
                         <option value="">None</option>
                     </select>
                 </div>

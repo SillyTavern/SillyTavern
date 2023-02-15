@@ -115,6 +115,7 @@ code {
     overflow-y: scroll;
 	border-bottom: 1px solid #333;
 	margin-top:40px;
+    padding-top: 12px;
    
    /*optional dark mode with blur and borders*/
     /*
@@ -490,7 +491,7 @@ input[type=button] {
 }
 #api_url_text{
     /*margin-right: 4px;*/
-	display:block;
+	/*display:block;*/
 }
 #api_button{
     cursor: pointer;
@@ -606,7 +607,7 @@ input[type=button] {
     margin-top: 0;
     display: flex;
     flex-direction: row;
-    align-items: center;
+    align-items: baseline;
 }
 
 #rm_characters_topbar_expander {
@@ -826,16 +827,17 @@ input[type=button] {
 
 .avatar_div{
     margin-top: 16px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
 }
 .avatar_div .avatar{
     margin-left: 4px;
+    margin-right: 10px;
     display: inline-block;
 }
 
 #add_avatar_button{
-    vertical-align: top;
-    display: inline-block;
-    margin-top: 52px;
 	background-color: rgb(36, 37, 37);
 	border: 1px solid #444;
 }
@@ -1113,7 +1115,7 @@ input[type=button] {
 }
 #online_status2{
     opacity: 0.5;
-    margin-top: 2px;
+    margin-top: 10px;
     margin-left: 10px;
     margin-bottom: 30px;
 }
@@ -1146,9 +1148,12 @@ input[type=button] {
     display: inline-block;
 }
 
+#softprompt {
+    margin-bottom: 10px;
+}
+
 #world_info {
     margin-bottom: 12px;
-    margin-right: 4px;
 }
 
 #world_info_block {
@@ -1160,6 +1165,7 @@ input[type=button] {
     opacity: 0.5;
     margin-top: 2px;
     margin-left: 10px;
+    margin-bottom: 20px;
 }
 
 #world_status_indicator{
@@ -1193,25 +1199,25 @@ input[type=button] {
 #world_info_edit_button {
     cursor: pointer;
     color: #ffffffaa;
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
+    margin-left: 10px;
 }
 
 #world_popup {
     display: none;
+    backdrop-filter: blur(50px);
     flex-direction: column;
     max-width: 800px;
     height: 83vh;
     position: absolute;
-    z-index: 2060;
+    z-index: 2064;
     margin-left: auto;
     margin-right: auto;
     left: 0;
     right: 0;
     margin-top: 0px;
-    box-shadow: 0 0 2px rgba(200, 200, 200, 0.1);
-    padding: 4px 36px;
-    background: #191b31F5;
+    box-shadow: 0 0 2px rgb(200 200 200 / 10%);
+    padding: 4px;
+    background-color: rgb(36, 37, 37);
     border-radius: 1px;
 }
 
@@ -1226,7 +1232,7 @@ input[type=button] {
     margin-left: 1rem;
     cursor: pointer;
     user-select: none; 
-    opacity: 0.7;
+    opacity: 0.8;
 }
 
 #entry_edit_template {
@@ -1239,21 +1245,21 @@ input[type=button] {
     display: block;
     width: 100%;
     content: '';
-    background-image: linear-gradient(270deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0));
+    background-image: linear-gradient(270deg, rgba(0, 0, 0, 0), rgba(100, 100, 100, 0.75), rgba(0, 0, 0, 0));
 }
 
 #world_popup_header {
     display: flex;
     flex-direction: row;
     align-items: center;
-    margin-left: 1rem;
+    margin-left: 36px;
 }
 
 #form_rename_world {
     display: flex;
     align-items: center;
-    margin-right: 20px;
-    opacity: 0.7;
+    margin-right: 50px;
+    opacity: 0.8;
 }
 
 #form_rename_world input[type="submit"] {
@@ -1291,7 +1297,7 @@ input[type=button] {
     display: flex; 
     justify-content: center;
     align-items: center;
-    opacity: 0.7;
+    opacity: 0.8;
 }
 
 .world_entry_form_control {
@@ -1413,15 +1419,6 @@ select {
     color: #ffffff9d;
     box-shadow: 0 0 2px rgba(200,200,200,0.5);
 	background-color: rgb(36, 37, 37);
-}
-
-#softprompt {
-    width: 284px;
-    margin-left: 10px;
-    margin-bottom: 35px;
-    color: #ffffff9d;
-    box-shadow: 0 0 2px rgba(200, 200, 200, 0.5);
-    background-color: #13152c;
 }
 
 .option_select_right_menu{
@@ -1602,7 +1599,7 @@ label.checkbox span {
   border-radius:3px;
   width:20px;
   height:20px;
-  background:rgba(19,21,44,0.75);
+  /*background:rgba(19,21,44,0.75);*/
   vertical-align:middle;
   margin:0px;
   position: relative;
@@ -1610,7 +1607,7 @@ label.checkbox span {
   
 }
 label.checkbox :checked + span {
-  background:rgba(19,21,44,0.75);
+  /*background:rgba(19,21,44,0.75);*/
   width:20px;
   height:20px;
   margin: 0px;
