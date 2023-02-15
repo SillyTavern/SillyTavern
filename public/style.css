@@ -611,6 +611,7 @@ input[type=button] {
 
 #rm_characters_topbar_buttons {
     margin-top: 0;
+    margin-bottom: 10px;
     display: flex;
     flex-direction: row;
     align-items: baseline;
