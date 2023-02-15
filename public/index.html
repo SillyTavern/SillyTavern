@@ -14,6 +14,7 @@
 
     <script src="scripts/jquery-3.5.1.min.js"></script>
     <script src="scripts/jquery.transit.min.js"></script>
+    <script src="scripts/jquery-cookie-1.4.1.min.js"></script>
     <script src="scripts/showdown.min.js"></script>
     <link rel="stylesheet" type="text/css" href="style.css">
     <link rel="stylesheet" href="css/bg_load.css">
@@ -223,15 +224,23 @@
 			
 			
             
-            getSettings("def");
-            getLastVersion();
-            //var interval_getSettings = setInterval(getSettings, 1000);
-            getCharacters();
+			var token;
+			 $.ajaxPrefilter((options, originalOptions, xhr) => {
+				xhr.setRequestHeader("X-CSRF-Token", token);
+			});
+			
+			$.get("/csrf-token")
+				.then(data => {
+					token = data.token;
+					getSettings("def");
+					getLastVersion();
+					getCharacters();
 
-            printMessages();
-            getBackgrounds();
-            getUserAvatars();
-            //
+					printMessages();
+					getBackgrounds();
+					getUserAvatars();
+				});
+			
             $('#characloud_url').click(function(){
                 window.open('https://boosty.to/tavernai', '_blank');
             });
@@ -393,7 +402,10 @@
                 
                 const response = await fetch("/getcharacters", {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: {
+						"Content-Type": "application/json",
+						"X-CSRF-Token": token,
+					},
                     body: JSON.stringify({
                             "": ""
                         })
@@ -427,7 +439,10 @@
                 
                 const response = await fetch("/getbackgrounds", {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: {
+						"Content-Type": "application/json",
+						"X-CSRF-Token": token
+					},
                     body: JSON.stringify({
                             "": ""
                         })
@@ -451,7 +466,10 @@
                 is_checked_colab = true;
                 const response = await fetch("/iscolab", {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: {
+						"Content-Type": "application/json",
+						"X-CSRF-Token": token
+					},
                     body: JSON.stringify({
                             "": ""
                         })
@@ -517,7 +535,10 @@
             async function delBackground(bg) {
                 const response = await fetch("/delbackground", {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: {
+						"Content-Type": "application/json",
+						"X-CSRF-Token": token
+					},
                     body: JSON.stringify({
                             "bg": bg
                         })
@@ -2222,7 +2243,10 @@
             async function getUserAvatars(){
                 const response = await fetch("/getuseravatars", {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: {
+						"Content-Type": "application/json",
+						"X-CSRF-Token": token
+					},
                     body: JSON.stringify({
                             "": ""
                         })
