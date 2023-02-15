@@ -758,10 +758,14 @@
                 let curMatch;
 
                 while( curMatch = rxp.exec(message) ) {
-                    found.push(curMatch[1]);
+                    found.push(curMatch[1].trim());
                 }
 
-                return found.join(' ');
+                if (!found.length) {
+                    return '';
+                }
+
+                return ` ${found.join(' ')} `;
             }
 
             $( "#send_but" ).click(function() {

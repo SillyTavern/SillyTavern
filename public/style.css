@@ -48,6 +48,12 @@ body {
     font-weight: bold;
     color: rgb(229, 224, 216);
 }
+.mes_text li tt {
+    min-width: 80px;
+    display: inline-block;
+    color: grey !important;
+    text-align: right;
+}
 .mes_bias {
     display: block;
     font-size: 0.9rem;
