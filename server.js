@@ -20,10 +20,11 @@ const cookieParser = require('cookie-parser');
 const crypto = require('crypto');
 
 
-const config = require('./config.json');
+const config = require('./config.conf');
 const server_port = config.port;
 const whitelist = config.whitelist;
 const whitelistMode = config.whitelistMode;
+const autorun = config.autorun;
 
 var Client = require('node-rest-client').Client;
 var client = new Client();
@@ -92,15 +93,15 @@ const cors = require('cors');
 const CORS = cors({
 	origin: 'null',
 	methods: ['OPTIONS']
-})
+});
 
 app.use(CORS);
 
 app.use(function (req, res, next) { //Security
     const clientIp = req.connection.remoteAddress.split(':').pop();
     if (whitelistMode === true && !whitelist.includes(clientIp)) {
-        console.log('Forbidden: Connection attempt from '+ clientIp+'. If you are attempting to connect, please add your IP address in whitelist or disable whitelist mode in config.json in root of TavernAI folder.\nExample for add several IP in whitelist: "whitelist": ["127.0.0.1", "'+ clientIp+'"]\nExample for disable whitelist mode: "whitelistMode": false');
-        return res.status(403).send('<b>Forbidden</b>: Connection attempt from <b>'+ clientIp+'</b>. If you are attempting to connect, please add your IP address in whitelist or disable whitelist mode in config.json in root of TavernAI folder.<br>Example for add several IP in whitelist: "whitelist": ["127.0.0.1", "'+ clientIp+'"]<br>Example for disable whitelist mode: "whitelistMode": false');
+        console.log('Forbidden: Connection attempt from '+ clientIp+'. If you are attempting to connect, please add your IP address in whitelist or disable whitelist mode in config.conf in root of TavernAI folder.\n');
+        return res.status(403).send('<b>Forbidden</b>: Connection attempt from <b>'+ clientIp+'</b>. If you are attempting to connect, please add your IP address in whitelist or disable whitelist mode in config.conf in root of TavernAI folder.');
     }
     next();
 });
@@ -476,17 +477,18 @@ app.post("/editcharacter", urlencodedParser, function(request, response){
     var char = charaFormatData(request.body);//{"name": request.body.ch_name, "description": request.body.description, "personality": request.body.personality, "first_mes": request.body.first_mes, "avatar": request.body.avatar_url, "chat": request.body.chat, "last_mes": request.body.last_mes, "mes_example": ''};
     char.chat = request.body.chat;
     char.create_date = request.body.create_date;
-    
+
     char = JSON.stringify(char);
+    let target_img = (request.body.avatar_url).replace('.png', '');
     if(!filedata){
 
-        charaWrite(img_path+request.body.avatar_url, char, request.body.ch_name, response, 'Character saved');
+        charaWrite(img_path+request.body.avatar_url, char, target_img, response, 'Character saved');
     }else{
         //console.log(filedata.filename);
         img_path = "uploads/";
         img_file = filedata.filename;
 
-        charaWrite(img_path+img_file, char, request.body.ch_name, response, 'Character saved');
+        charaWrite(img_path+img_file, char, target_img, response, 'Character saved');
         //response.send('Character saved');
     }
 });
@@ -513,7 +515,7 @@ app.post("/deletecharacter", urlencodedParser, function(request, response){
     });
 });
 
-async function charaWrite(img_url, data, name, response = undefined, mes = 'ok'){
+async function charaWrite(img_url, data, target_img, response = undefined, mes = 'ok'){
     try {
         // Load the image in any format
         sharp.cache(false);
@@ -526,7 +528,7 @@ async function charaWrite(img_url, data, name, response = undefined, mes = 'ok')
 
         // Get the chunks
         var chunks = extract(image);
-         var tEXtChunks = chunks.filter(chunk => chunk.name === 'tEXt');
+         var tEXtChunks = chunks.filter(chunk => chunk.create_date === 'tEXt');
 
         // Remove all existing tEXt chunks
         for (var tEXtChunk of tEXtChunks) {
@@ -537,7 +539,7 @@ async function charaWrite(img_url, data, name, response = undefined, mes = 'ok')
         chunks.splice(-1, 0, PNGtext.encode('chara', base64EncodedData));
         //chunks.splice(-1, 0, text.encode('lorem', 'ipsum'));
 
-        fs.writeFileSync(charactersPath+name+'.png', new Buffer.from(encode(chunks)));
+        fs.writeFileSync(charactersPath+target_img+'.png', new Buffer.from(encode(chunks)));
         if(response !== undefined) response.send(mes);
             
 
@@ -1027,8 +1029,11 @@ app.post("/getallchatsofchatacter", jsonParser, function(request, response){
     
 });
 function getPngName(file){
-    if (fs.existsSync(charactersPath+file+'.png')) {
-        file = file+'1';
+    let i = 1;
+    let base_name = file;
+    while (fs.existsSync(charactersPath+file+'.png')) {
+        file = base_name+i;
+        i++;
     }
     return file;
 }
@@ -1051,12 +1056,12 @@ app.post("/importcharacter", urlencodedParser, function(request, response){
                     
                     if(jsonData.name !== undefined){
                         png_name = getPngName(jsonData.name);
-                        var char = {"name": jsonData.name, "description": jsonData.description ?? '', "personality": jsonData.personality ?? '', "first_mes": jsonData.first_mes ?? '', "avatar": 'none', "chat": Date.now(), "mes_example": jsonData.mes_example ?? '', "scenario": jsonData.scenario ?? '', "create_date": Date.now()};
+                        let char = {"name": jsonData.name, "description": jsonData.description ?? '', "personality": jsonData.personality ?? '', "first_mes": jsonData.first_mes ?? '', "avatar": 'none', "chat": Date.now(), "mes_example": jsonData.mes_example ?? '', "scenario": jsonData.scenario ?? '', "create_date": Date.now()};
                         char = JSON.stringify(char);
                         charaWrite('./public/img/fluffy.png', char, png_name, response, {file_name: png_name});
                     }else if(jsonData.char_name !== undefined){//json Pygmalion notepad
                         png_name = getPngName(jsonData.char_name);
-                        var char = {"name": jsonData.char_name, "description": jsonData.char_persona ?? '', "personality": '', "first_mes": jsonData.char_greeting ?? '', "avatar": 'none', "chat": Date.now(), "mes_example": jsonData.example_dialogue ?? '', "scenario": jsonData.world_scenario ?? '', "create_date": Date.now()};
+                        let char = {"name": jsonData.char_name, "description": jsonData.char_persona ?? '', "personality": '', "first_mes": jsonData.char_greeting ?? '', "avatar": 'none', "chat": Date.now(), "mes_example": jsonData.example_dialogue ?? '', "scenario": jsonData.world_scenario ?? '', "create_date": Date.now()};
                         char = JSON.stringify(char);
                         charaWrite('./public/img/fluffy.png', char, png_name, response, {file_name: png_name});
                     }else{
@@ -1068,9 +1073,14 @@ app.post("/importcharacter", urlencodedParser, function(request, response){
                 try{
                     
                     var img_data = charaRead('./uploads/'+filedata.filename);
-                    let jsonObject = JSON.parse(img_data);
-                    png_name = getPngName(jsonObject.name);
-                    if(jsonObject.name !== undefined){
+                    let jsonData = JSON.parse(img_data);
+                    png_name = getPngName(jsonData.name);
+                    
+                    if(jsonData.name !== undefined){
+                        let char = {"name": jsonData.name, "description": jsonData.description ?? '', "personality": jsonData.personality ?? '', "first_mes": jsonData.first_mes ?? '', "avatar": 'none', "chat": Date.now(), "mes_example": jsonData.mes_example ?? '', "scenario": jsonData.scenario ?? '', "create_date": Date.now()};
+                        char = JSON.stringify(char);
+                        charaWrite('./uploads/'+filedata.filename, char, png_name, response, {file_name: png_name});
+                        /*
                         fs.copyFile('./uploads/'+filedata.filename, charactersPath+png_name+'.png', (err) => {
                             if(err) {
                                 response.send({error:true});
@@ -1080,7 +1090,7 @@ app.post("/importcharacter", urlencodedParser, function(request, response){
                                 response.send({file_name: png_name});
                             }
                             //console.log('The image was copied from temp directory.');
-                        });
+                        });*/
                     }
                 }catch(err){
                     console.log(err);
@@ -1539,7 +1549,7 @@ app.listen(server_port, function() {
         }
     }
     console.log('Launching...');
-    open('http:127.0.0.1:'+server_port);
+    if(autorun) open('http:127.0.0.1:'+server_port);
     console.log('TavernAI started: http://127.0.0.1:'+server_port);
     if (fs.existsSync('public/characters/update.txt') && !is_colab) {
         convertStage1();
