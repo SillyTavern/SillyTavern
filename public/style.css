@@ -1228,12 +1228,13 @@ input[type=button] {
 
 #world_popup_bottom_holder {
     padding: 1rem 0;
+    margin: 0 18px;
     display: flex;
     flex-direction: row;
     justify-content: flex-end;
 }
 
-#world_popup_bottom_holder div {
+#world_popup_bottom_holder div:not(:first-of-type) {
     margin-left: 1rem;
     cursor: pointer;
     user-select: none; 
