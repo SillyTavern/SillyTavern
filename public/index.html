@@ -382,6 +382,61 @@
                 $("#api_loading").css("display", 'none');
                 $("#api_button").css("display", 'inline-block');
             }
+
+            async function getSoftPromptsList() {
+                if (!api_server) {
+                    return;
+                }
+
+                const response = await fetch('/getsoftprompts', { 
+                    method: 'POST',
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ api_server: api_server }),
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    updateSoftPromptsList(data.soft_prompts);
+                }
+            }
+
+            function clearSoftPromptsList() {
+                $('#softprompt option[value!=""]').each(function() {
+                    $(this).remove();
+                }); 
+            }
+
+            function updateSoftPromptsList(soft_prompts) {
+                // Delete SPs removed from Kobold
+                $('#softprompt option').each(function () {
+                    const value = $(this).attr('value');
+
+                    if (value == '') {
+                        return;
+                    }
+
+                    const prompt = soft_prompts.find(x => x.name === value);
+                    if (!prompt) {
+                        $(this).remove();
+                    }
+                });
+
+                // Add SPs added to Kobold
+                soft_prompts.forEach((prompt) => {
+                    if ($(`#softprompt option[value="${prompt.name}"]`).length === 0) {
+                        $('#softprompt').append(`<option value="${prompt.name}">${prompt.name}</option>`);
+
+                        if (prompt.selected) {
+                            $('#softprompt').val(prompt.name);
+                        }
+                    }
+                });
+
+                // No SP selected or no SPs
+                if (soft_prompts.length === 0 || !(soft_prompts.some(x => x.selected))) {
+                    $('#softprompt').val('');
+                }
+            }
             
             function printCharaters(){
                 //console.log(1);
@@ -2034,6 +2089,8 @@
                     is_api_button_press = true;
                     getStatus();
                     detectUnitedKobold();
+                    clearSoftPromptsList();
+                    getSoftPromptsList();
                 }
             });
             
@@ -2216,9 +2273,26 @@
                 is_get_status = false;
                 is_get_status_novel = false;
                 online_status = 'no_connection';
+                clearSoftPromptsList();
                 checkOnlineStatus();
                 changeMainAPI();
                 saveSettings();
+            });
+            $('#softprompt').change(async function() {
+                if (!api_server) {
+                    return;
+                }
+
+                const selected = $('#softprompt').find(':selected').val();
+                const response = await fetch('/setsoftprompt', { 
+                    method: 'POST',
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ name: selected, api_server: api_server }),
+                });
+
+                if (!response.ok) {
+                    console.error("Couldn't change soft prompt");
+                }
             });
             function changeMainAPI(){
                 if($('#main_api').find(":selected").val() == 'kobold'){
@@ -2228,6 +2302,7 @@
                     $('#max_context_block').css('display', 'block');
                     $('#amount_gen_block').css('display', 'block');
                     $('#world_info_block').css('display', 'flex');
+                    $('#softprompt_block').css('display', 'block');
                 }
                 if($('#main_api').find(":selected").val() == 'novel'){
                     $('#kobold_api').css("display", "none");
@@ -2236,6 +2311,7 @@
                     $('#max_context_block').css('display', 'none');
                     $('#amount_gen_block').css('display', 'none');
                     $('#world_info_block').css('display', 'none');
+                    $('#softprompt_block').css('display', 'none');
                 }
 
                 updateWorldStatus();
@@ -3827,6 +3903,11 @@
                     <div id="world_status">
                         <div id="world_status_indicator"></div><div id="world_status_text"></div>
                     </div>
+                <h4>Soft Prompt</h4><h5>About soft prompts (<a href="/notes/14" target="_blank">?</a>)</h5>
+                <div id="softprompt_block">
+                    <select id="softprompt">
+                        <option value="">None</option>
+                    </select>
                 </div>
             </div>
             <div id="novel_api" style="display: none;position: relative;">
