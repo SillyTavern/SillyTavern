@@ -1384,19 +1384,22 @@ async function setKoboldEntryData(tavernEntry, koboldEntry) {
         await putAsync(`${api_server}/v1/world_info/${koboldEntry.uid}/comment`, commentArgs);
     };
 
-    /* Can't set these via API due to bug in Kobold)
-    // 5. Set constant flag
-    if (tavernEntry.constant) {
-        const constantArgs = { data: { value: tavernEntry.constant.toString() }, ...baseRequestArgs };
-        await putToPromise(`${api_server}/v1/world_info/${koboldEntry.uid}/constant`, constantArgs);
+    /* Fixed in Kobold United only: https://github.com/henk717/KoboldAI/pull/280 */
+    try {
+        // 5. Set constant flag
+        if (tavernEntry.constant) {
+            const constantArgs = { data: { value: tavernEntry.constant.toString() }, ...baseRequestArgs };
+            await putToPromise(`${api_server}/v1/world_info/${koboldEntry.uid}/constant`, constantArgs);
+        }
 
+        // 6. Set selective flag
+        if (tavernEntry.selective) {
+            const selectiveArgs = { data: { value: tavernEntry.selective.toString() }, ...baseRequestArgs };
+            await putToPromise(`${api_server}/v1/world_info/${koboldEntry.uid}/selective`, selectiveArgs);
+        }
+    } catch {
+        // couldn't set fields = ignore
     }
-    // 6. Set selective flag
-    if (tavernEntry.selective) {
-        const selectiveArgs = { data: { value: tavernEntry.selective.toString() }, ...baseRequestArgs };
-        await putToPromise(`${api_server}/v1/world_info/${koboldEntry.uid}/selective`, selectiveArgs);
-    }
-    */
 }
 
 async function validateKoboldWorldInfo(koboldFolderName, koboldWorldInfo, tavernWorldInfo) {
