@@ -393,6 +393,7 @@
                         $('#colab_shadow_popup').css('display', 'none');
                         is_colab = true;
                         let url = String(getData.colaburl).split("flare.com")[0] + "flare.com";
+                        url = String(url).split("loca.lt")[0] + "loca.lt";
                         $('#api_url_text').val(url);
                         setTimeout(function() {
                             $('#api_button').click();
