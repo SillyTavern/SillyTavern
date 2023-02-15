@@ -367,7 +367,6 @@ const formatApiUrl = (url) => (url.indexOf('localhost') !== -1)
     ? url.replace('localhost', '127.0.0.1')
     : url;
 
-// TODO Rewrite using async wrapper from worldinfo branch
 app.post('/getsoftprompts', jsonParser, async function (request, response) {
     if (!request.body || !request.body.api_server) {
         return response.sendStatus(400);
@@ -377,34 +376,8 @@ app.post('/getsoftprompts', jsonParser, async function (request, response) {
     let soft_prompts = [];
 
     try {
-        var args = { headers: { "Content-Type": "application/json" } };
-        const softPromptsList = await new Promise((resolve, reject) => {
-            client.get(`${baseUrl}/v1/config/soft_prompts_list`, args, function (data, response) {
-                if (response.statusCode == 200) {
-                    const nameList = data.values.map(x => x.value);
-                    resolve(nameList);
-                }
-                else {
-                    reject(response.status);
-                }
-            }).on('error', function (err) {
-                reject(err);
-            });
-        });
-
-        const softPromptSelected = await new Promise((resolve, reject) => {
-            client.get(`${baseUrl}/v1/config/soft_prompt`, args, function (data, response) {
-                if (response.statusCode == 200) {
-                    resolve(data.value);
-                }
-                else {
-                    reject(response.status);
-                }
-            }).on('error', function (err) {
-                reject(err);
-            });
-        });
-
+        const softPromptsList = (await getAsync(`${baseUrl}/v1/config/soft_prompts_list`, baseRequestArgs)).values.map(x => x.value);
+        const softPromptSelected = (await getAsync(`${baseUrl}/v1/config/soft_prompt`, baseRequestArgs)).value;
         soft_prompts = softPromptsList.map(x => ({ name: x, selected: x === softPromptSelected }));
     } catch (err) {
         soft_prompts = [];
@@ -413,7 +386,6 @@ app.post('/getsoftprompts', jsonParser, async function (request, response) {
     return response.send({ soft_prompts });
 });
 
-// TODO Rewrite using async wrapper from worldinfo branch
 app.post("/setsoftprompt", jsonParser, async function(request, response) {
     if (!request.body || !request.body.api_server) {
         return response.sendStatus(400);
@@ -424,15 +396,10 @@ app.post("/setsoftprompt", jsonParser, async function(request, response) {
         headers: { "Content-Type": "application/json" },
         data: { value: request.body.name ?? '' },
     };
-    client.put(`${baseUrl}/v1/config/soft_prompt`, args, function (_, res) {
-        if (res.statusCode == 200) {
-            return response.sendStatus(200);
-        } else {
-            return response.sendStatus(500);
-        }
-    }).on('error', () => {
-        return response.sendStatus(500);
-    });
+
+    await putAsync(`${baseUrl}/v1/config/soft_prompt`, args);
+
+    return response.sendStatus(200);
 });
 
 function checkServer(){
