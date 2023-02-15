@@ -38,11 +38,13 @@
             const VERSION = '1.2.7';
             var converter = new showdown.Converter();
             var bg_menu_toggle = false;
+            const systemUserName = 'Chloe';
             var default_user_name = "You";
             var name1 = default_user_name;
-            var name2 = "Chloe";
+            var name2 = systemUserName;
+            // might want to migrate this to 'system message' code
             var chat = [{
-                name: 'Chloe',
+                name: systemUserName,
                 is_user: false,
                 is_name: true,
                 create_date: 0,
@@ -64,6 +66,22 @@
             var is_checked_colab = false;
             var is_mes_reload_avatar = false;
             
+            const system_message_types = {
+                HELP: 'help',
+                WELCOME: 'welcome',
+            };
+
+            const system_messages = {
+                'help': { 
+                    "name": systemUserName,
+                    "force_avatar": "img/chloe.png",
+                    "is_user":false,
+                    "is_system": true,
+                    "is_name":true,
+                    "mes": "Hi there! The following chat formatting commands are supported in TavernAI:<br><ul><li><tt>*text*</tt> – format the actions that your character does</li><li><tt>{text}</tt> – set the behavioral bias for your character</li></ul><p>Need more help? Visit our wiki – <a href=\"https://github.com/TavernAI/TavernAI/wiki\">TavernAI Wiki</a>!</p>"
+                },
+            };
+
             var is_advanced_char_open = false;
             var is_world_edit_open = false;
             
@@ -524,14 +542,16 @@
                 count_view_mes = 0;
                 $('#chat').html('');
             }
-            function messageFormating(mes, ch_name){
-                if(this_chid != undefined) mes = mes.replaceAll("<", "&lt;").replaceAll(">", "&gt;");//for Chloe
+            function messageFormating(mes, ch_name, isSystem){
+                if(this_chid != undefined && !isSystem) mes = mes.replaceAll("<", "&lt;").replaceAll(">", "&gt;");//for Chloe
                 if(this_chid === undefined){
                     mes = mes.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\*(.+?)\*/g, '<i>$1</i>').replace(/\n/g, '<br/>');
                     
-                }else{
+                }else if (!isSystem) {
                     mes = converter.makeHtml(mes);
+                    mes = mes.replace(/{([^}]+)}/g, '');
                     mes = mes.replace(/\n/g, '<br/>');
+                    mes = mes.trim();
                 }
                 
                 
@@ -547,13 +567,18 @@
                 var messageText = mes['mes'];
                 var characterName = name1;
                 var avatarImg = "User Avatars/"+user_avatar;
+                const isSystem = mes.is_system;
                 generatedPromtCache = '';
                 //thisText = thisText.split("\n").join("<br>");
                 var avatarImg = "User Avatars/"+user_avatar;
                 if(!mes['is_user']){
-                    if(this_chid == undefined){
+                    if (mes.force_avatar) {
+                        avatarImg = mes.force_avatar;
+                    } 
+                    else if(this_chid == undefined){
                         avatarImg = "img/chloe.png";
-                    }else{
+                    }
+                    else{
                         if(characters[this_chid].avatar != 'none'){
                             avatarImg = "characters/"+characters[this_chid].avatar;
                             if(is_mes_reload_avatar !== false){
@@ -564,7 +589,8 @@
                             avatarImg = "img/fluffy.png";
                         }
                     }
-                    characterName = name2;
+
+                    characterName = mes.is_system || mes.force_avatar ? mes.name : name2;
                 }
                 
                 //Formating
@@ -579,10 +605,18 @@
                     messageText = messageText.replace(/<USER>/gi, name1);
                     messageText = messageText.replace(/<BOT>/gi, name2);
                 }
-                messageText = messageFormating(messageText, characterName);
+                messageText = messageFormating(messageText, characterName, isSystem);
+                const bias = messageFormating(mes.extra?.bias ?? '');
                 
-                $("#chat").append( "<div class='mes' mesid="+count_view_mes+" ch_name="+characterName+"><div class='for_checkbox'></div><input type='checkbox' class='del_checkbox'><div class=avatar><img src='"+avatarImg+"'></div><div class=mes_block><div class=ch_name>"+characterName+"<div title=Edit class=mes_edit><img src=img/scroll.png style='width:20px;height:20px;'></div><div class=mes_edit_cancel><img src=img/cancel.png></div><div class=mes_edit_done><img src=img/done.png></div></div><div class=mes_text>"+"</div></div></div>" );
-                
+                $("#chat").append( "<div class='mes' mesid="+count_view_mes+" ch_name="+characterName+"><div class='for_checkbox'></div><input type='checkbox' class='del_checkbox'><div class=avatar><img src='"+avatarImg+"'></div><div class=mes_block><div class=ch_name>"+characterName+"<div title=Edit class=mes_edit><img src=img/scroll.png style='width:20px;height:20px;'></div><div class=mes_edit_cancel><img src=img/cancel.png></div><div class=mes_edit_done><img src=img/done.png></div></div><div class=mes_text>"+`</div><div class='mes_bias'>${bias}</div></div></div>` );
+
+                const newMessage = $(`#chat [mesid="${count_view_mes}"]`);
+                newMessage.data('isSystem', isSystem);
+
+                if (isSystem) {
+                    newMessage.find('.mes_edit').hide();
+                }
+
                 if(!if_typing_text){
                     //console.log(messageText);
                     $("#chat").children().filter('[mesid="'+count_view_mes+'"]').children('.mes_block').children('.mes_text').append(messageText);
@@ -617,6 +651,40 @@
                 return name;
             }
 
+            function isHelpRequest(message) {
+                const helpTokens = ['/?', '/help'];
+                return helpTokens.includes(message.trim().toLowerCase());
+            }
+
+            function sendSystemMessage(type) {
+                const systemMessage = system_messages[type];
+
+                if (!systemMessage) {
+                    return;
+                }
+
+                const newMessage = { ... systemMessage, 'send_date': Date.now() };
+                chat.push(newMessage);
+                addOneMessage(newMessage);
+                is_send_press = false;
+            }
+
+            function extractMessageBias(message) {
+                if (!message) {
+                    return null;
+                }
+
+                const found = [];
+                const rxp = /{([^}]+)}/g;
+                let curMatch;
+
+                while( curMatch = rxp.exec(message) ) {
+                    found.push(curMatch[1]);
+                }
+
+                return found.join(' ');
+            }
+
             $( "#send_but" ).click(function() {
                 //$( "#send_but" ).css({"background": "url('img/load.gif')","background-size": "100%, 100%", "background-position": "center center"});
                 if(is_send_press == false){
@@ -645,10 +713,27 @@
                     }
                     //$("#send_textarea").attr("disabled","disabled");
                     
+                    if (isHelpRequest(textareaText)) {
+                        sendSystemMessage(system_message_types.HELP);
+                        return;
+                    }
+
                     //$("#send_textarea").blur();
                     $( "#send_but" ).css("display", "none");
                     $( "#loading_mes" ).css("display", "inline-block");
 
+                    let promptBias = null;
+                    let messageBias = extractMessageBias(textareaText);
+
+                    // gets bias of the latest message where it was applied
+                    for (let mes of chat) {
+                        if (mes && mes.is_user && mes.extra && mes.extra.bias) {
+                            promptBias = mes.extra.bias;
+                        }
+                    }
+
+                    // bias from the latest message is top priority
+                    promptBias = messageBias ?? promptBias ?? '';
 
                     var storyString = "";
                     var userSendString = "";
@@ -682,13 +767,18 @@
                     //PRE FORMATING STRING
                     //*********************************
                     if(textareaText != ""){
-                        
                         chat[chat.length] = {};
                         chat[chat.length-1]['name'] = name1;
                         chat[chat.length-1]['is_user'] = true;
                         chat[chat.length-1]['is_name'] = true;
                         chat[chat.length-1]['send_date'] = Date.now();
                         chat[chat.length-1]['mes'] = textareaText;
+                        chat[chat.length-1]['extra'] = {};
+
+                        if (messageBias) {
+                            chat[chat.length-1]['extra']['bias'] = messageBias;
+                        }
+
                         addOneMessage(chat[chat.length-1]);
                     }
                     var chatString = '';
@@ -796,6 +886,12 @@
                         }else{
                             chat2[i] = chat[j]['mes']+'\n';
                         }
+                        // system messages produce no text
+                        if (chat[j]['is_system']) {
+                            chat2[i] = '';
+                        }
+                        // replace bias markup
+                        chat2[i] = (chat2[i] ?? '').replace(/{([^}]+)}/g, '');
                         j++;
                     }
                     //chat2 = chat2.reverse();
@@ -816,7 +912,7 @@
                     
                     for (var item of chat2) {//console.log(encode("dsfs").length);
                         chatString = item+chatString;
-                        if(encode(JSON.stringify(storyString+chatString+anchorTop+anchorBottom+charPersonality)).length+120 < this_max_context){ //(The number of tokens in the entire promt) need fix, it must count correctly (added +120, so that the description of the character does not hide)
+                        if(encode(JSON.stringify(storyString+chatString+anchorTop+anchorBottom+charPersonality+promptBias)).length+120 < this_max_context){ //(The number of tokens in the entire promt) need fix, it must count correctly (added +120, so that the description of the character does not hide)
                             
                             
                             //if (is_pygmalion && i == chat2.length-1) item='<START>\n'+item;
@@ -833,7 +929,7 @@
                             for(let iii = 0; iii < mesExamplesArray.length; iii++){//mesExamplesArray It need to make from end to start
                                 
                                 mesExmString = mesExmString+mesExamplesArray[iii];
-                                if(encode(JSON.stringify(storyString+mesExmString+chatString+anchorTop+anchorBottom+charPersonality)).length+120 < this_max_context){ //example of dialogs
+                                if(encode(JSON.stringify(storyString+mesExmString+chatString+anchorTop+anchorBottom+charPersonality+promptBias)).length+120 < this_max_context){ //example of dialogs
                                     if(!is_pygmalion){
                                         mesExamplesArray[iii] = mesExamplesArray[iii].replace(/<START>/i, 'This is how '+name2+' should talk');//An example of how '+name2+' responds
                                     }
@@ -933,7 +1029,7 @@
                         }
                         function checkPromtSize(){
                             setPromtString();
-                            let thisPromtContextSize = encode(JSON.stringify(storyString+mesExmString+mesSendString+anchorTop+anchorBottom+charPersonality+generatedPromtCache)).length+120;
+                            let thisPromtContextSize = encode(JSON.stringify(storyString+mesExmString+mesSendString+anchorTop+anchorBottom+charPersonality+generatedPromtCache+promptBias)).length+120;
                             if(thisPromtContextSize > this_max_context){
                                 if(count_exm_add > 0){
                                     //mesExamplesArray.length = mesExamplesArray.length-1;
@@ -961,7 +1057,7 @@
                         }else{
                             mesSendString = '<START>\n'+mesSendString;
                         }
-                        finalPromt = storyString+mesExmString+mesSendString+generatedPromtCache;
+                        finalPromt = storyString+mesExmString+mesSendString+generatedPromtCache+promptBias;
                         
                         var generate_data;
                         if(main_api == 'kobold'){
@@ -2592,6 +2688,12 @@
             //***Message Editor***
             $(document).on('click', '.mes_edit', function(){
                 if(this_chid !== undefined){
+                    const message = $(this).closest('.mes');
+
+                    if (message.data('isSystem')) {
+                        return;
+                    }
+
                     let chatScrollPosition = $("#chat").scrollTop();
                     if(this_edit_mes_id !== undefined){
                         let mes_edited = $('#chat').children().filter('[mesid="'+this_edit_mes_id+'"]').children('.mes_block').children('.ch_name').children('.mes_edit_done');
@@ -2662,12 +2764,23 @@
                 var text = div.parent().parent().children('.mes_text').children('.edit_textarea').val();
                 //var text = chat[this_edit_mes_id];
                 text = text.trim();
+                const bias = extractMessageBias(text);
                 chat[this_edit_mes_id]['mes'] = text;
+
+                // editing old messages
+                if (!chat[this_edit_mes_id]['extra']) {
+                    chat[this_edit_mes_id]['extra'] = {};
+                }
+
+                chat[this_edit_mes_id]['extra']['bias'] = bias ?? null;
+
                 div.parent().parent().children('.mes_text').empty();
                 div.css('display','none');
                 div.parent().children('.mes_edit_cancel').css('display','none');
                 div.parent().children('.mes_edit').css('display','inline-block');
                 div.parent().parent().children('.mes_text').append(messageFormating(text,this_edit_mes_chname));
+                div.parent().parent().children('.mes_bias').empty();
+                div.parent().parent().children('.mes_bias').append(messageFormating(bias));
                 this_edit_mes_id = undefined;
                 saveChat();
             }
@@ -3807,7 +3920,7 @@
                     </div>
                 </div>
 				<!-- <div contenteditable="true" id="send_textarea">Type a message...</div> -->
-                <textarea id="send_textarea" placeholder="Type a message..." name="text"></textarea>
+                <textarea id="send_textarea" placeholder="Type a message. Send /? or /help to get help..." name="text"></textarea>
 				
 <script type="text/javascript">
     $('#send_textarea').on('input', function () {
