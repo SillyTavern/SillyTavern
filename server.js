@@ -398,7 +398,11 @@ app.post("/setsoftprompt", jsonParser, async function(request, response) {
         data: { value: request.body.name ?? '' },
     };
 
-    await putAsync(`${baseUrl}/v1/config/soft_prompt`, args);
+    try {
+        await putAsync(`${baseUrl}/v1/config/soft_prompt`, args);
+    } catch {
+        return response.sendStatus(500);
+    }
 
     return response.sendStatus(200);
 });
@@ -466,7 +470,7 @@ app.post("/createcharacter", urlencodedParser, function(request, response){
 });
 
 
-app.post("/editcharacter", urlencodedParser, function(request, response){
+app.post("/editcharacter", urlencodedParser, async function(request, response){
     if(!request.body) return response.sendStatus(400);
     let filedata = request.file;
     //console.log(filedata.mimetype);
@@ -480,16 +484,22 @@ app.post("/editcharacter", urlencodedParser, function(request, response){
 
     char = JSON.stringify(char);
     let target_img = (request.body.avatar_url).replace('.png', '');
-    if(!filedata){
 
-        charaWrite(img_path+request.body.avatar_url, char, target_img, response, 'Character saved');
-    }else{
-        //console.log(filedata.filename);
-        img_path = "uploads/";
-        img_file = filedata.filename;
+    try {
+        if (!filedata) {
 
-        charaWrite(img_path+img_file, char, target_img, response, 'Character saved');
-        //response.send('Character saved');
+            await charaWrite(img_path + request.body.avatar_url, char, target_img, response, 'Character saved');
+        } else {
+            //console.log(filedata.filename);
+            img_path = "uploads/";
+            img_file = filedata.filename;
+
+            await charaWrite(img_path + img_file, char, target_img, response, 'Character saved');
+            //response.send('Character saved');
+        }
+    }
+    catch {
+        return response.send(400);
     }
 });
 app.post("/deletecharacter", urlencodedParser, function(request, response){
@@ -805,7 +815,7 @@ app.post('/synckoboldworld', jsonParser, async (request, response) => {
     }
 });
 
-app.post('/getworldinfo', jsonParser, async (request, response) => {
+app.post('/getworldinfo', jsonParser, (request, response) => {
     if (!request.body?.name) {
         return response.sendStatus(400);
     }
@@ -815,7 +825,7 @@ app.post('/getworldinfo', jsonParser, async (request, response) => {
     return response.send(file.tavernWorldInfo);
 });
 
-app.post('/deleteworldinfo', jsonParser, async (request, response) => {
+app.post('/deleteworldinfo', jsonParser, (request, response) => {
     if (!request.body?.name) {
         return response.sendStatus(400);
     }
@@ -1037,7 +1047,7 @@ function getPngName(file){
     }
     return file;
 }
-app.post("/importcharacter", urlencodedParser, function(request, response){
+app.post("/importcharacter", urlencodedParser, async function(request, response){
     if(!request.body) return response.sendStatus(400);
 
         let png_name = '';
@@ -1047,26 +1057,30 @@ app.post("/importcharacter", urlencodedParser, function(request, response){
         //console.log(format);
         if(filedata){
             if(format == 'json'){
-                fs.readFile('./uploads/'+filedata.filename, 'utf8', (err, data) => {
+                fs.readFile('./uploads/'+filedata.filename, 'utf8', async (err, data) => {
                     if (err){
                         console.log(err);
                         response.send({error:true});
                     }
                     const jsonData = JSON.parse(data);
                     
-                    if(jsonData.name !== undefined){
-                        png_name = getPngName(jsonData.name);
-                        let char = {"name": jsonData.name, "description": jsonData.description ?? '', "personality": jsonData.personality ?? '', "first_mes": jsonData.first_mes ?? '', "avatar": 'none', "chat": Date.now(), "mes_example": jsonData.mes_example ?? '', "scenario": jsonData.scenario ?? '', "create_date": Date.now()};
-                        char = JSON.stringify(char);
-                        charaWrite('./public/img/fluffy.png', char, png_name, response, {file_name: png_name});
-                    }else if(jsonData.char_name !== undefined){//json Pygmalion notepad
-                        png_name = getPngName(jsonData.char_name);
-                        let char = {"name": jsonData.char_name, "description": jsonData.char_persona ?? '', "personality": '', "first_mes": jsonData.char_greeting ?? '', "avatar": 'none', "chat": Date.now(), "mes_example": jsonData.example_dialogue ?? '', "scenario": jsonData.world_scenario ?? '', "create_date": Date.now()};
-                        char = JSON.stringify(char);
-                        charaWrite('./public/img/fluffy.png', char, png_name, response, {file_name: png_name});
-                    }else{
-                        console.log('Incorrect character format .json');
-                        response.send({error:true});
+                    try {
+                        if(jsonData.name !== undefined){
+                            png_name = getPngName(jsonData.name);
+                            let char = {"name": jsonData.name, "description": jsonData.description ?? '', "personality": jsonData.personality ?? '', "first_mes": jsonData.first_mes ?? '', "avatar": 'none', "chat": Date.now(), "mes_example": jsonData.mes_example ?? '', "scenario": jsonData.scenario ?? '', "create_date": Date.now()};
+                            char = JSON.stringify(char);
+                            await charaWrite('./public/img/fluffy.png', char, png_name, response, {file_name: png_name});
+                        }else if(jsonData.char_name !== undefined){//json Pygmalion notepad
+                            png_name = getPngName(jsonData.char_name);
+                            let char = {"name": jsonData.char_name, "description": jsonData.char_persona ?? '', "personality": '', "first_mes": jsonData.char_greeting ?? '', "avatar": 'none', "chat": Date.now(), "mes_example": jsonData.example_dialogue ?? '', "scenario": jsonData.world_scenario ?? '', "create_date": Date.now()};
+                            char = JSON.stringify(char);
+                            await charaWrite('./public/img/fluffy.png', char, png_name, response, {file_name: png_name});
+                        }else{
+                            console.log('Incorrect character format .json');
+                            response.send({error:true});
+                        }
+                    } catch {
+                        response.send({ error: true });
                     }
                 });
             }else{
@@ -1079,7 +1093,7 @@ app.post("/importcharacter", urlencodedParser, function(request, response){
                     if(jsonData.name !== undefined){
                         let char = {"name": jsonData.name, "description": jsonData.description ?? '', "personality": jsonData.personality ?? '', "first_mes": jsonData.first_mes ?? '', "avatar": 'none', "chat": Date.now(), "mes_example": jsonData.mes_example ?? '', "scenario": jsonData.scenario ?? '', "create_date": Date.now()};
                         char = JSON.stringify(char);
-                        charaWrite('./uploads/'+filedata.filename, char, png_name, response, {file_name: png_name});
+                        await charaWrite('./uploads/'+filedata.filename, char, png_name, response, {file_name: png_name});
                         /*
                         fs.copyFile('./uploads/'+filedata.filename, charactersPath+png_name+'.png', (err) => {
                             if(err) {
