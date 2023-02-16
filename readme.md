@@ -43,10 +43,4 @@ If the message is not finished, you can simply send the request again, TavernAI 
 https://www.reddit.com/user/Crataco/comments/zuowi9/opensource_chatbot_companions/
 ## For contacts
 * Discord: Humi#5044
-## For thanks and support
-TavernAI is being developed with love and care on a voluntary basis. If you like the project and want to support it, your donation would make a huge impact!
-
-BTC 1LASziomyYNkZ2zk8Sa4ZLTkvczBMrjyjP<br>
-ETH 0x975E5C91042ce8168B3d37b17F99949c5eFB3Dfe<br>
-TRX TCiBKCt6xEGrsjpgQA2jDXWJLyUh1KN2Sn
 <br><br><br>
