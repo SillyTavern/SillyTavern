@@ -18,13 +18,15 @@ const path = require('path');
 
 const cookieParser = require('cookie-parser');
 const crypto = require('crypto');
-
+const ipaddr = require('ipaddr.js');
 
 const config = require(path.join(process.cwd(), './config.conf'));
 const server_port = config.port;
 const whitelist = config.whitelist;
 const whitelistMode = config.whitelistMode;
 const autorun = config.autorun;
+
+
 
 var Client = require('node-rest-client').Client;
 var client = new Client();
@@ -96,7 +98,17 @@ const CORS = cors({
 app.use(CORS);
 
 app.use(function (req, res, next) { //Security
-    const clientIp = req.connection.remoteAddress.split(':').pop();
+    let clientIp = req.connection.remoteAddress;
+    const ip = ipaddr.parse(clientIp);
+
+    // Check if the IP address is IPv4-mapped IPv6 address
+    if (ip.kind() === 'ipv6' && ip.isIPv4MappedAddress()) {
+      const ipv4 = ip.toIPv4Address().toString();
+      clientIp = ipv4;
+    } else {
+      clientIp = ip;
+    }
+     //clientIp = req.connection.remoteAddress.split(':').pop();
     if (whitelistMode === true && !whitelist.includes(clientIp)) {
         console.log('Forbidden: Connection attempt from '+ clientIp+'. If you are attempting to connect, please add your IP address in whitelist or disable whitelist mode in config.conf in root of TavernAI folder.\n');
         return res.status(403).send('<b>Forbidden</b>: Connection attempt from <b>'+ clientIp+'</b>. If you are attempting to connect, please add your IP address in whitelist or disable whitelist mode in config.conf in root of TavernAI folder.');
