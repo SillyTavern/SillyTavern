@@ -2,10 +2,13 @@
 Examples of interface and output:
 <br><img src="readme/1.png" height="200" /><img src="readme/4.png" height="200" /><img src="readme/5.png" height="200" />
 
-[TavernAI Download](https://github.com/TavernAI/TavernAI/archive/refs/heads/main.zip)<br>
-[TavernAI Run Online](https://colab.research.google.com/github/TavernAI/TavernAI/blob/main/colab/GPU.ipynb)<br><br>
-[TavetnAI Boosty](https://boosty.to/tavernai)<br>
-[TavernAI Discord](https://discord.gg/zmK2gmr45t)<br>
+###### Download: 
+* [Win x64 exe](https://sourceforge.net/projects/tavernaimain/files/TavernAI.rar/download)&nbsp;&nbsp;|&nbsp;&nbsp;[Node.js version](https://github.com/TavernAI/TavernAI/archive/refs/heads/main.zip)<br>
+###### Run online: 
+* [TavernAI Colab](https://colab.research.google.com/github/TavernAI/TavernAI/blob/main/colab/GPU.ipynb)<br>
+###### Links: 
+* [TavetnAI Boosty](https://boosty.to/tavernai)
+* [TavernAI Discord](https://discord.gg/zmK2gmr45t)
 
 ## Features
 * Creating characters with personality setup
