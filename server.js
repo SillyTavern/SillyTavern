@@ -20,7 +20,7 @@ const cookieParser = require('cookie-parser');
 const crypto = require('crypto');
 
 
-const config = require('./config.conf');
+const config = require(path.join(process.cwd(), './config.conf'));
 const server_port = config.port;
 const whitelist = config.whitelist;
 const whitelistMode = config.whitelistMode;
@@ -107,7 +107,7 @@ app.use(function (req, res, next) { //Security
 app.use((req, res, next) => {
   if (req.url.startsWith('/characters/') && is_colab && process.env.googledrive == 2) {
       
-    const filePath = path.join(charactersPath, req.url.substr('/characters'.length));
+    const filePath = path.join(charactersPath, decodeURIComponent(req.url.substr('/characters'.length)));
     fs.access(filePath, fs.constants.R_OK, (err) => {
       if (!err) {
         res.sendFile(filePath);
@@ -126,7 +126,7 @@ app.use(express.static(__dirname + "/public", { refresh: true }));
 
 
 app.use('/backgrounds', (req, res) => {
-  const filePath = path.join(process.cwd(), 'public/backgrounds', req.url);
+  const filePath = decodeURIComponent(path.join(process.cwd(), 'public/backgrounds', req.url.replace(/%20/g, ' ')));
   fs.readFile(filePath, (err, data) => {
     if (err) {
       res.status(404).send('File not found');
@@ -137,7 +137,7 @@ app.use('/backgrounds', (req, res) => {
   });
 });
 app.use('/characters', (req, res) => {
-  const filePath = path.join(process.cwd(), charactersPath, req.url);
+  const filePath = decodeURIComponent(path.join(process.cwd(), charactersPath, req.url.replace(/%20/g, ' ')));
   fs.readFile(filePath, (err, data) => {
     if (err) {
       res.status(404).send('File not found');
