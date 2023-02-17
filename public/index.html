@@ -1021,7 +1021,7 @@
                                     if(is_pygmalion){
                                         if_typing_text = false;
                                         message_already_generated +=getMessage;
-                                        if(message_already_generated.indexOf('You:') === -1 && tokens_already_generated < parseInt(amount_gen) && getMessage.length > 0){
+                                        if(message_already_generated.indexOf('You:') === -1 && message_already_generated.indexOf('<|endoftext|>') === -1 && tokens_already_generated < parseInt(amount_gen) && getMessage.length > 0){
                                             runGenerate(getMessage);
                                             return;
                                         }
@@ -1037,6 +1037,10 @@
                                     }
                                     if(getMessage.indexOf(name1+":") != -1){ 
                                         getMessage = getMessage.substr(0,getMessage.indexOf(name1+":"));
+
+                                    }
+                                    if(getMessage.indexOf('<|endoftext|>') != -1){ 
+                                        getMessage = getMessage.substr(0,getMessage.indexOf('<|endoftext|>'));
 
                                     }
                                     let this_mes_is_name = true;
