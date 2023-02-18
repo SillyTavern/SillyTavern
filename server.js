@@ -106,8 +106,9 @@ app.use(function (req, res, next) { //Security
       clientIp = ipv4;
     } else {
       clientIp = ip;
-      clientIp = clientIp.octets.join('.');
+      clientIp = clientIp.toString();
     }
+    
      //clientIp = req.connection.remoteAddress.split(':').pop();
     if (whitelistMode === true && !whitelist.includes(clientIp)) {
         console.log('Forbidden: Connection attempt from '+ clientIp+'. If you are attempting to connect, please add your IP address in whitelist or disable whitelist mode in config.conf in root of TavernAI folder.\n');
