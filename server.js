@@ -99,14 +99,14 @@ app.use(CORS);
 
 app.use(function (req, res, next) { //Security
     let clientIp = req.connection.remoteAddress;
-    const ip = ipaddr.parse(clientIp);
-
+    let ip = ipaddr.parse(clientIp);
     // Check if the IP address is IPv4-mapped IPv6 address
     if (ip.kind() === 'ipv6' && ip.isIPv4MappedAddress()) {
       const ipv4 = ip.toIPv4Address().toString();
       clientIp = ipv4;
     } else {
       clientIp = ip;
+      clientIp = clientIp.octets.join('.');
     }
      //clientIp = req.connection.remoteAddress.split(':').pop();
     if (whitelistMode === true && !whitelist.includes(clientIp)) {
