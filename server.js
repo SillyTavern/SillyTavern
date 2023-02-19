@@ -18,13 +18,15 @@ const path = require('path');
 
 const cookieParser = require('cookie-parser');
 const crypto = require('crypto');
+const ipaddr = require('ipaddr.js');
 
-
-const config = require('./config.conf');
+const config = require(path.join(process.cwd(), './config.conf'));
 const server_port = config.port;
 const whitelist = config.whitelist;
 const whitelistMode = config.whitelistMode;
 const autorun = config.autorun;
+
+
 
 var Client = require('node-rest-client').Client;
 var client = new Client();
@@ -98,7 +100,18 @@ const CORS = cors({
 app.use(CORS);
 
 app.use(function (req, res, next) { //Security
-    const clientIp = req.connection.remoteAddress.split(':').pop();
+    let clientIp = req.connection.remoteAddress;
+    let ip = ipaddr.parse(clientIp);
+    // Check if the IP address is IPv4-mapped IPv6 address
+    if (ip.kind() === 'ipv6' && ip.isIPv4MappedAddress()) {
+      const ipv4 = ip.toIPv4Address().toString();
+      clientIp = ipv4;
+    } else {
+      clientIp = ip;
+      clientIp = clientIp.toString();
+    }
+    
+     //clientIp = req.connection.remoteAddress.split(':').pop();
     if (whitelistMode === true && !whitelist.includes(clientIp)) {
         console.log('Forbidden: Connection attempt from '+ clientIp+'. If you are attempting to connect, please add your IP address in whitelist or disable whitelist mode in config.conf in root of TavernAI folder.\n');
         return res.status(403).send('<b>Forbidden</b>: Connection attempt from <b>'+ clientIp+'</b>. If you are attempting to connect, please add your IP address in whitelist or disable whitelist mode in config.conf in root of TavernAI folder.');
@@ -109,7 +122,7 @@ app.use(function (req, res, next) { //Security
 app.use((req, res, next) => {
   if (req.url.startsWith('/characters/') && is_colab && process.env.googledrive == 2) {
       
-    const filePath = path.join(charactersPath, req.url.substr('/characters'.length));
+    const filePath = path.join(charactersPath, decodeURIComponent(req.url.substr('/characters'.length)));
     fs.access(filePath, fs.constants.R_OK, (err) => {
       if (!err) {
         res.sendFile(filePath);
@@ -128,7 +141,7 @@ app.use(express.static(__dirname + "/public", { refresh: true }));
 
 
 app.use('/backgrounds', (req, res) => {
-  const filePath = path.join(process.cwd(), 'public/backgrounds', req.url);
+  const filePath = decodeURIComponent(path.join(process.cwd(), 'public/backgrounds', req.url.replace(/%20/g, ' ')));
   fs.readFile(filePath, (err, data) => {
     if (err) {
       res.status(404).send('File not found');
@@ -139,7 +152,7 @@ app.use('/backgrounds', (req, res) => {
   });
 });
 app.use('/characters', (req, res) => {
-  const filePath = path.join(process.cwd(), charactersPath, req.url);
+  const filePath = decodeURIComponent(path.join(process.cwd(), charactersPath, req.url.replace(/%20/g, ' ')));
   fs.readFile(filePath, (err, data) => {
     if (err) {
       res.status(404).send('File not found');
