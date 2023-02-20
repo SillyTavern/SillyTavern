@@ -99,7 +99,6 @@
             var create_save_mes_example = '';
             
             var timerSaveEdit;
-            var timerKoboldSync;
             var timerWorldSave;
             var durationSaveEdit = 200;
             //animation right menu
@@ -136,12 +135,10 @@
             var user_avatar = 'you.png';
             var temp = 0.5;
             var amount_gen = 80;
-            var kobold_world = null;
-            var koboldai_world_names;
-            var kobold_world_synced = false;
-            var kobold_sync_failed = false;
-            var kobold_is_united = false;
-            var kobold_world_data = null;
+            var world_info = null;
+            var world_names;
+            var world_info_data = null;
+            var world_info_depth = 3;
             var imported_world_name = '';
             var max_context = 2048;//2048;
             var rep_pen = 1;
@@ -338,9 +335,6 @@
                             online_status = data.result;
                             if(online_status == undefined){
                                 online_status = 'no_connection';
-
-                                kobold_world_synced = false;
-                                updateWorldStatus();
                             }
                             if(online_status.toLowerCase().indexOf('pygmalion') != -1){
                                 is_pygmalion = true;
@@ -353,7 +347,6 @@
                             resultCheckStatus();
                             if(online_status !== 'no_connection'){
                                 var checkStatusNow = setTimeout(getStatus, 3000);//getStatus();
-                                syncKoboldWorldInfo(false);
                             }
                         },
                         error: function (jqXHR, exception) {
@@ -361,18 +354,12 @@
                             console.log(jqXHR);
                             online_status = 'no_connection';
                             
-                            // invalidate world info when losing connection to kobold
-                            kobold_world_synced = false;
-                            updateWorldStatus();
-
                             resultCheckStatus();
                         }
                     });
                 }else{
                     if(is_get_status_novel != true){
                         online_status = 'no_connection';
-                        kobold_world_synced = false;
-                        updateWorldStatus();
                     }
                 }
             }
@@ -731,6 +718,63 @@
                 return name;
             }
 
+            function checkWorldInfo(chat) {
+                if (world_info_data.entries.length == 0) {
+                    return '';
+                }
+                
+                const messagesToLookBack = world_info_depth * 2;
+                let textToScan = chat.slice(0, messagesToLookBack).join('').toLowerCase();
+                let worldInfo = '';
+                let needsToScan = true;
+                let allActivatedEntries = new Set();
+
+                while (needsToScan) {
+                    let activatedNow = new Set();
+
+                    for (let entryUid in world_info_data.entries) {
+                        const entry = world_info_data.entries[entryUid];
+                        if (allActivatedEntries.has(entry.uid)) {
+                            continue;
+                        }
+
+                        if (entry.constant) {
+                            activatedNow.add(entry.uid);
+                        }
+
+                        if (Array.isArray(entry.key) && entry.key.length) {
+                            primary: for (let key of entry.key) {
+                                if (key && textToScan.includes(key.trim().toLowerCase())) {
+                                    if (entry.selective && Array.isArray(entry.keysecondary) && entry.keysecondary.length) {
+                                        secondary: for (let keysecondary of entry.keysecondary) {
+                                            if (keysecondary && textToScan.includes(keysecondary.trim().toLowerCase())) {
+                                                activatedNow.add(entry.uid);
+                                                break secondary;
+                                            }
+                                        }
+                                    } else {
+                                        activatedNow.add(entry.uid);
+                                        break primary;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    needsToScan = activatedNow.size > 0;
+                    const newContents = [...activatedNow].map(x => world_info_data.entries[x]).map(x => x.content).join('\n');
+                    worldInfo = worldInfo + newContents;
+
+                    if (needsToScan) {
+                        textToScan = newContents.toLowerCase();
+                    }
+
+                    allActivatedEntries = new Set([...allActivatedEntries, ...activatedNow]);
+                }
+
+                return worldInfo;
+            }
+
             function isHelpRequest(message) {
                 const helpTokens = ['/?', '/help'];
                 return helpTokens.includes(message.trim().toLowerCase());
@@ -845,7 +889,6 @@
                             anchorBottom = "["+postAnchorStyle+"]";
                         }
                     }
-                    
                     
                     //*********************************
                     //PRE FORMATING STRING
@@ -992,6 +1035,12 @@
                         }
                     }
                      
+                    let worldInfoString = '';
+
+                    if (world_info && world_info_data) {
+                        worldInfoString = checkWorldInfo(chat2);
+                    }
+
                     var i = 0;
                     
                     for (var item of chat2) {//console.log(encode("dsfs").length);
@@ -1145,8 +1194,7 @@
                         
                         var generate_data;
                         if(main_api == 'kobold'){
-                            const use_world_info = Boolean(kobold_world && kobold_world_synced);
-                            var generate_data = {prompt: finalPromt, gui_settings: true,max_length: amount_gen,temperature: temp, max_context_length: max_context, use_world_info};
+                            var generate_data = {prompt: finalPromt, gui_settings: true,max_length: amount_gen,temperature: temp, max_context_length: max_context};
                             if(preset_settings != 'gui'){
 
                                 var this_settings = koboldai_settings[koboldai_setting_names[preset_settings]];
@@ -1188,7 +1236,7 @@
                                                 s5:this_settings.sampler_order[4],
                                                 s6:this_settings.sampler_order[5],
                                                 s7:this_settings.sampler_order[6],
-                                                use_world_info: use_world_info,
+                                                use_world_info: false,
                                                 };
                             }
                         }
@@ -1454,9 +1502,6 @@
                 $( "#rm_button_characters" ).children("h2").css(deselected_button_style);
                 $( "#rm_button_settings" ).children("h2").css(seleced_button_style);
                 $( "#rm_button_selected_ch" ).children("h2").css(deselected_button_style);
-
-                // Dumb call, but won't need an interval
-                updateWorldStatus();
             });
             $( "#rm_button_characters" ).click(function() {
                 selected_button = 'characters';
@@ -1763,15 +1808,15 @@
                     });  
                 }
                 if (popup_type === 'world_imported' && imported_world_name) {
-                    koboldai_world_names.forEach((item, i) => {
+                    world_names.forEach((item, i) => {
                         if (item === imported_world_name) {
                             $('#world_info').val(i).change();
                         }          
                     })
                     imported_world_name = '';         
                 }
-                if (popup_type === 'del_world' && kobold_world) {
-                    deleteWorldInfo(kobold_world);
+                if (popup_type === 'del_world' && world_info) {
+                    deleteWorldInfo(world_info);
                 }
                 if(popup_type == 'new_chat' && this_chid != undefined && menu_type != "create"){//Fix it; New chat doesn't create while open create character menu
                     clearChat();
@@ -2100,7 +2145,6 @@
                     is_get_status = true;
                     is_api_button_press = true;
                     getStatus();
-                    detectUnitedKobold();
                     clearSoftPromptsList();
                     getSoftPromptsList();
                 }
@@ -2201,21 +2245,19 @@
 
             });
 
-            $("#world_info").change(function() {
+            $("#world_info").change(async function() {
                 const selectedWorld = $('#world_info').find(":selected").val();
-                kobold_world_synced = false;
-                kobold_sync_failed = false;
-                kobold_world = null;
+                world_info = null;
+                world_info_data = null;
 
                 if (selectedWorld !== 'None') {
                     const worldIndex = Number(selectedWorld);
-                    kobold_world = !isNaN(worldIndex) ? koboldai_world_names[worldIndex] : null;
+                    world_info = !isNaN(worldIndex) ? world_names[worldIndex] : null;
+                    await loadWorldInfoData();
                 }
 
                 hideWorldEditor();
-                syncKoboldWorldInfo(true);
                 saveSettings();
-                updateWorldStatus();
             });
 
             $( "#settings_perset" ).change(function() {
@@ -2316,7 +2358,6 @@
                     main_api = 'kobold';
                     $('#max_context_block').css('display', 'block');
                     $('#amount_gen_block').css('display', 'block');
-                    $('#world_info_block').css('display', 'flex');
                     $('#softprompt_block').css('display', 'block');
                 }
                 if($('#main_api').find(":selected").val() == 'novel'){
@@ -2325,11 +2366,8 @@
                     main_api = 'novel';
                     $('#max_context_block').css('display', 'none');
                     $('#amount_gen_block').css('display', 'none');
-                    $('#world_info_block').css('display', 'none');
                     $('#softprompt_block').css('display', 'none');
                 }
-
-                updateWorldStatus();
             }
             async function getUserAvatars(){
                 const response = await fetch("/getuseravatars", {
@@ -2358,103 +2396,6 @@
                 }
             }
 
-            function updateWorldStatus() {
-                if($('#world_info_block').is(':visible') && kobold_world) {
-                    $('#world_info_edit_button').show();
-                    $('#world_status').show();
-
-                    if (kobold_world_synced) {
-                        $("#world_status_indicator").css("background-color", "green");
-                        $("#world_status_text").html("Synchronized with KoboldAI")
-                    }
-                    else {
-                        let statusText = online_status === 'no_connection'
-                                    ? "Waiting for connection"
-                                    : "Synchronizing...";
-
-                        if (kobold_sync_failed) {
-                            statusText = "Synchronization failed (see console)";
-                        }
-                        
-                        $("#world_status_text").html(statusText);
-                        $("#world_status_indicator").css("background-color", "red");
-                    }
-
-                    if (kobold_is_united) {
-                        $("#world_status_text").html('<span style="font-size:90%">KoboldAI United detected. WI may not work as intended.<br>If experiencing issues, please select "None".</span>');
-                    }
-                } else {
-                    $('#world_status').hide();
-                    $('#world_info_edit_button').hide();
-                }
-            }
-
-            async function detectUnitedKobold() {
-                if (!api_server || main_api !== 'kobold') {
-                    return;
-                }
-
-                // If we can reach Kobold's new ui, then it should be United branch
-                kobold_is_united = false;
-                try {
-                    const kobold_united_ui2 = api_server.replace('/api', '/new_ui');
-                    const response = await fetch(kobold_united_ui2, { method: 'HEAD'});
-
-                    if (response.ok && response.status == 200) {
-                        kobold_is_united = true;
-                    }
-                }
-                catch {
-                    // empty catch
-                }
-            }
-
-            async function syncKoboldWorldInfo(force) {
-                // Don't sync if no world selected or if synced and not forcing
-                if (online_status === 'no_connection' || (!kobold_world && !force) || (kobold_world_synced && !force)) {
-                    updateWorldStatus();
-                    return;
-                }
-
-                const response = await fetch("/synckoboldworld", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "X-CSRF-Token": token,
-                    },
-                    body: JSON.stringify({ "name": kobold_world })
-                });
-
-                if (response.ok) {
-                    const syncData = await response.json();
-
-                    if (syncData.ok) {
-                        kobold_world_synced = true;
-                        kobold_sync_failed = false;
-                    }
-
-                    if (syncData.busy) {
-                        // console.log('Sync API is busy. Retrying in 3sec');
-                        clearTimeout(timerKoboldSync);
-                        timerKoboldSync = setTimeout(() => syncKoboldWorldInfo(force), 3000);
-                        return;
-                    }
-                } else {
-                    kobold_sync_failed = true;
-                    let responseLog = response.statusText;
-                    
-                    try {
-                        var responseBody = await response.text();
-                        responseLog += ('\n' + responseBody); 
-                    } catch {
-                        // empty catch
-                    }
-                    console.error(`Sync API response: ${responseLog}`);
-                }
-
-                updateWorldStatus();
-            }
-            
             $(document).on('input', '#temp', function() {
                 temp = $(this).val();
                 if(isInt(temp)){
@@ -2473,6 +2414,11 @@
                 max_context = parseInt($(this).val());
                 $('#max_context_counter').html( $(this).val() +' Tokens');
                 var max_contextTimer = setTimeout(saveSettings, 500);
+            });
+            $(document).on('input', '#world_info_depth', function() {
+                world_info_depth = parseInt($(this).val());
+                $('#world_info_depth_counter').html(`${$(this).val()} Messages`);
+                setTimeout(saveSettings, 500);
             });
             $('#style_anchor').change(function() {
                 style_anchor = !!$('#style_anchor').prop('checked');
@@ -2605,6 +2551,7 @@
                             if(settings.anchor_order !== undefined) anchor_order = parseInt(settings.anchor_order);
                             if(settings.style_anchor !== undefined) style_anchor = !!settings.style_anchor;
                             if(settings.character_anchor !== undefined) character_anchor = !!settings.character_anchor;
+                            if(settings.world_info_depth !== undefined) world_info_depth = parseInt(settings.world_info_depth);
                             rep_pen = settings.rep_pen;
                             rep_pen_size = settings.rep_pen_size;
                             
@@ -2623,6 +2570,9 @@
                             
                             $('#amount_gen').val(amount_gen);
                             $('#amount_gen_counter').html(amount_gen+' Tokens');
+
+                            $('#world_info_depth_counter').html(`${world_info_depth} Messages`);
+                            $('#world_info_depth').val(world_info_depth);
                             
                             addZeros = "";
                             if(isInt(rep_pen)) addZeros = ".00";
@@ -2686,20 +2636,18 @@
                             $('#api_url_text').val(api_server);
 
                             // world info settings
-                            koboldai_world_names = data.koboldai_world_names?.length ? data.koboldai_world_names : [];
+                            world_names = data.world_names?.length ? data.world_names : [];
 
-                            if(settings.kobold_world != undefined) {
-                                if (koboldai_world_names.includes(settings.kobold_world)) {
-                                    kobold_world = settings.kobold_world;
-                                    kobold_world_synced = false;
-                                    kobold_sync_failed = false;
+                            if(settings.world_info != undefined) {
+                                if (world_names.includes(settings.world_info)) {
+                                    world_info = settings.world_info;
                                 }
                             }
 
-                            koboldai_world_names.forEach((item, i) => {
+                            world_names.forEach((item, i) => {
                                 $('#world_info').append(`<option value='${i}'>${item}</option>`);
                                 // preselect world if saved
-                                if (item == kobold_world) {
+                                if (item == world_info) {
                                     $('#world_info').val(i).change();
                                 }
                             });
@@ -2742,7 +2690,8 @@
                             temp_novel: temp_novel,
                             rep_pen_novel: rep_pen_novel,
                             rep_pen_size_novel: rep_pen_size_novel,
-                            kobold_world: kobold_world,
+                            world_info: world_info,
+                            world_info_depth: world_info_depth,
                         }),
                     beforeSend: function(){
 
@@ -2756,9 +2705,7 @@
                         //online_status = data.result;
                         if(type === 'change_name'){
                             location.reload();
-                        }
-                        
-                        syncKoboldWorldInfo(false);
+                        }                        
                     },
                     error: function (jqXHR, exception) {
                         console.log(exception);
@@ -3246,15 +3193,15 @@
 
                 if (result.ok) {
                     var data = await result.json();
-                    koboldai_world_names = data.koboldai_world_names?.length ? data.koboldai_world_names : [];
+                    world_names = data.world_names?.length ? data.world_names : [];
                     $('#world_info').find('option[value!="None"]').remove();
 
-                    koboldai_world_names.forEach((item, i) => {
+                    world_names.forEach((item, i) => {
                         $('#world_info').append(`<option value='${i}'>${item}</option>`);
                     });
                     
                     if (importedWorldName) {
-                        const indexOf = koboldai_world_names.indexOf(kobold_world);
+                        const indexOf = world_names.indexOf(world_info);
                         $('#world_info').val(indexOf);
 
                         popup_type = 'world_imported';
@@ -3274,30 +3221,34 @@
             // World Info Editor
             async function showWorldEditor() {
                 is_world_edit_open = true;
-                $('#world_popup_name').val(kobold_world);
+                $('#world_popup_name').val(world_info);
                 $('#world_popup').css('display', 'flex');
+                await loadWorldInfoData();
+                displayWorldEntries(world_info_data);
+            }
 
-                if (kobold_world) {
-                    const response = await fetch("/getworldinfo", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "X-CSRF-Token": token,
-                        },
-                        body: JSON.stringify({ name: kobold_world })
-                    });
+            async function loadWorldInfoData() {
+                if (!world_info) {
+                    return;
+                }
 
-                    if (response.ok) {
-                        kobold_world_data = await response.json();
-                        displayWorldEntries(kobold_world_data);
-                    }
+                const response = await fetch("/getworldinfo", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-Token": token,
+                    },
+                    body: JSON.stringify({ name: world_info })
+                });
+
+                if (response.ok) {
+                    world_info_data = await response.json();
                 }
             }
 
             function hideWorldEditor() {
                 is_world_edit_open = false;
                 $('#world_popup').css('display', 'none');
-                syncKoboldWorldInfo(true);
             }
 
             function displayWorldEntries(data) {
@@ -3323,7 +3274,7 @@
                 keyInput.on('input', function () {
                     const uid = $(this).data('uid');
                     const value = $(this).val();
-                    kobold_world_data.entries[uid].key = value.split(',').map(x => x.trim()).filter(x => x);
+                    world_info_data.entries[uid].key = value.split(',').map(x => x.trim()).filter(x => x);
                     saveWorldInfo();
                 });
                 keyInput.val(entry.key.join(',')).trigger('input');
@@ -3334,7 +3285,7 @@
                 keySecondaryInput.on('input', function() {
                     const uid = $(this).data('uid');
                     const value = $(this).val();
-                    kobold_world_data.entries[uid].keysecondary = value.split(',').map(x => x.trim()).filter(x => x);
+                    world_info_data.entries[uid].keysecondary = value.split(',').map(x => x.trim()).filter(x => x);
                     saveWorldInfo();
                 });
                 keySecondaryInput.val(entry.keysecondary.join(',')).trigger('input');
@@ -3345,7 +3296,7 @@
                 commentInput.on('input', function() {
                     const uid = $(this).data('uid');
                     const value = $(this).val();
-                    kobold_world_data.entries[uid].comment = value;
+                    world_info_data.entries[uid].comment = value;
                     saveWorldInfo();
                 });
                 commentInput.val(entry.comment).trigger('input');
@@ -3356,7 +3307,7 @@
                 contentInput.on('input', function() {
                     const uid = $(this).data('uid');
                     const value = $(this).val();
-                    kobold_world_data.entries[uid].content = value;
+                    world_info_data.entries[uid].content = value;
                     saveWorldInfo();
 
                     // count tokens
@@ -3371,7 +3322,7 @@
                 selectiveInput.on('input', function() {
                     const uid = $(this).data('uid');
                     const value = $(this).prop('checked');
-                    kobold_world_data.entries[uid].selective = value;
+                    world_info_data.entries[uid].selective = value;
                     saveWorldInfo();
 
                     const keysecondary = $(this).closest('.world_entry').find('.keysecondary');
@@ -3389,7 +3340,7 @@
                 constantInput.on('input', function() {
                     const uid = $(this).data('uid');
                     const value = $(this).prop('checked');
-                    kobold_world_data.entries[uid].constant = value;
+                    world_info_data.entries[uid].constant = value;
                     saveWorldInfo();
                 });
                 constantInput.prop('checked', entry.constant).trigger('input');
@@ -3415,22 +3366,11 @@
             }
 
             async function deleteWorldInfoEntry(uid) {
-                if (!kobold_world_data || !('entries' in kobold_world_data)) {
+                if (!world_info_data || !('entries' in world_info_data)) {
                     return;
                 }
 
-                delete kobold_world_data.entries[uid];
-
-                if ('folders' in kobold_world_data) {
-                    for (const folderName in kobold_world_data.folders) {
-                        const folder = kobold_world_data.folders[folderName]
-                        const index = folder.indexOf(Number(uid));
-                        
-                        if (index !== -1) {
-                            folder.splice(index, 1);
-                        }
-                    }
-                }
+                delete world_info_data.entries[uid];
             }
 
             function createWorldInfoEntry() {
@@ -3450,22 +3390,14 @@
                 }
 
                 const newEntry = { uid: newUid, ...newEntryTemplate };
-                kobold_world_data.entries[newUid] = newEntry;
-
-                if ('folders' in kobold_world_data) {
-                    if (kobold_world in kobold_world_data.folders && Array.isArray(kobold_world_data.folders)) {
-                        kobold_world_data.folders[kobold_world].push(newUid);
-                    } else {
-                        kobold_world_data.folders[kobold_world] = [newUid];
-                    }
-                }
+                world_info_data.entries[newUid] = newEntry;
 
                 const entryTemplate = appendWorldEntry(newEntry);
                 entryTemplate.get(0).scrollIntoView({behavior: 'smooth'});
             }
 
             async function saveWorldInfo(immediately) {
-                if (!kobold_world || !kobold_world_data) {
+                if (!world_info || !world_info_data) {
                     return;
                 }
 
@@ -3476,12 +3408,8 @@
                             "Content-Type": "application/json",
                             "X-CSRF-Token": token,
                         },
-                        body: JSON.stringify({ name: kobold_world, data: kobold_world_data })
+                        body: JSON.stringify({ name: world_info, data: world_info_data })
                     });
-
-                    if (response.ok) {
-                        kobold_world_synced = false;
-                    }
                 }
 
                 if (immediately) {
@@ -3493,20 +3421,20 @@
             }
 
             async function renameWorldInfo() {
-                const oldName = kobold_world;
+                const oldName = world_info;
                 const newName = $('#world_popup_name').val();
 
                 if (oldName === newName) {
                     return;
                 }
 
-                kobold_world = newName;
+                world_info = newName;
                 await saveWorldInfo(true);
                 await deleteWorldInfo(oldName, newName);
             }
 
             async function deleteWorldInfo(worldInfoName, selectWorldName) {
-                if (!koboldai_world_names.includes(worldInfoName)) {
+                if (!world_names.includes(worldInfoName)) {
                     return;
                 }
 
@@ -3522,7 +3450,7 @@
                 if (response.ok) {
                     await updateWorldInfoList();
 
-                    const selectedIndex = koboldai_world_names.indexOf(selectWorldName);
+                    const selectedIndex = world_names.indexOf(selectWorldName);
                     if (selectedIndex !== -1) {
                         $('#world_info').val(selectedIndex).change();
                     }
@@ -3535,13 +3463,13 @@
             }
 
             function getFreeWorldEntryUid() {
-                if (!kobold_world_data || !('entries' in kobold_world_data)) {
+                if (!world_info_data || !('entries' in world_info_data)) {
                     return null;
                 }
 
                 const MAX_UID = 1_000_000; // <- should be safe enough :)
                 for (let uid = 0; uid < MAX_UID; uid++) {
-                    if (uid in kobold_world_data.entries) {
+                    if (uid in world_info_data.entries) {
                         continue;
                     }
                     return uid;
@@ -3554,7 +3482,7 @@
                 const MAX_FREE_NAME = 100_000;
                 for (let index = 1; index < MAX_FREE_NAME; index++) {
                     const newName = `New World (${index})`;
-                    if (koboldai_world_names.includes(newName)) {
+                    if (world_names.includes(newName)) {
                         continue;
                     }
                     return newName;
@@ -3564,19 +3492,19 @@
             }
 
             async function createNewWorldInfo() {
-                const worldInfoTemplate = { folders: {}, entries: {} };
+                const worldInfoTemplate = { entries: {} };
                 const worldInfoName = getFreeWorldName();
 
                 if (!worldInfoName) {
                     return;
                 }
 
-                kobold_world = worldInfoName;
-                kobold_world_data = { ...worldInfoTemplate };
+                world_info = worldInfoName;
+                world_info_data = { ...worldInfoTemplate };
                 await saveWorldInfo(true);
                 await updateWorldInfoList();
 
-                const selectedIndex = koboldai_world_names.indexOf(worldInfoName);
+                const selectedIndex = world_names.indexOf(worldInfoName);
                 if (selectedIndex !== -1) {
                     $('#world_info').val(selectedIndex).change();
                 }
@@ -3590,9 +3518,9 @@
             });
 
             $('#world_popup_export').click(() => {
-                if (kobold_world && kobold_world_data) {
-                    const jsonValue = JSON.stringify(kobold_world_data);
-                    const fileName = `${kobold_world}.json`;
+                if (world_info && world_info_data) {
+                    const jsonValue = JSON.stringify(world_info_data);
+                    const fileName = `${world_info}.json`;
                     download(jsonValue, fileName, 'application/json');
                 }
             });
@@ -3733,7 +3661,7 @@
                             <h4>Content</h4>
                             <h5>Text that will be inserted to the prompt upon activation.</h5>
                         </label>
-                        <textarea class="text_pole" name="content" rows="2" placeholder=""></textarea>
+                        <textarea class="text_pole" name="content" rows="4" placeholder=""></textarea>
                     </div>
                     <div class="world_entry_form_control world_entry_form_horizontal">
                         <label class="checkbox" for="constant">
@@ -3914,25 +3842,6 @@
                     <h4>Repetition Penalty Range</h4><h5 id="rep_pen_size_counter">select</h5>
                     <input type="range" id="rep_pen_size" name="volume" min="0" max="2048" step="1">
                 </div>
-                <div>
-                <h4 id="world_info_block">
-                    <span>World Info</span>
-                    <div id="world_create_button" class="right_menu_button"><h2>+Create</h2></div>
-                    <div id="world_import_button" class="right_menu_button"><h2>+Import</h2></div>
-                </h4>
-                    <h5>How to use (<a href="/notes/13" target="_blank">?</a>)</h5>
-                    <div id="rm_world_import" class="right_menu" style="display: none;">
-                        <form id="form_world_import" action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                            <input type="file" id="world_import_file" accept=".json" name="avatar">
-                        </form>
-                    </div>
-                    <select id="world_info" class="option_select_right_menu">
-                        <option value="None">None</option>
-                    </select>
-                    <input id="world_info_edit_button" type="button" value="Details">
-                    <div id="world_status">
-                        <div id="world_status_indicator"></div><div id="world_status_text"></div>
-                    </div>
                 <div id="softprompt_block">
                     <h4>Soft Prompt</h4>
                     <h5>About soft prompts (<a href="/notes/14" target="_blank">?</a>)</h5>
@@ -3982,6 +3891,29 @@
                 <input id="your_name" name="your_name" class="text_pole" maxlength="35" size="16" value="" autocomplete="off">
                 <input id="your_name_button" type="submit" value="Change">
             </form>
+            <hr>
+
+            <div id="world_info_block">
+                <h3>World Info</h3>
+                <div id="world_info_buttons">
+                    <div id="world_create_button" class="right_menu_button"><h4>+Create</h4></div>
+                    <div id="world_import_button" class="right_menu_button"><h4>+Import</h4></div>
+                </div>
+            </div>
+            <h5>How to use (<a href="/notes/13" target="_blank">?</a>)</h5>
+            <div id="rm_world_import" class="right_menu" style="display: none;">
+                <form id="form_world_import" action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                    <input type="file" id="world_import_file" accept=".json" name="avatar">
+                </form>
+            </div>
+            <select id="world_info" class="option_select_right_menu">
+                <option value="None">None</option>
+            </select>
+            <input id="world_info_edit_button" type="button" value="Details">
+            <div id="world_info_depth_block">
+                <h4>Scan Depth </h4><h5 id="world_info_depth_counter">select</h5>
+                <input type="range" id="world_info_depth" name="volume" min="1" max="5" step="1">
+                </div>
             <hr>
             <div style="opacity:0.80">
                 <h3 style='margin-bottom: 10px;'>Pro Settings</h3>

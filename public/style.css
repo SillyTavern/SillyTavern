@@ -1165,32 +1165,12 @@ input[type=button] {
 }
 
 #world_info {
-    margin-bottom: 12px;
+    margin-bottom: 0;
 }
 
 #world_info_block {
     display: flex;
     align-items: center;
-}
-
-#world_status{
-    opacity: 0.5;
-    margin-top: 2px;
-    margin-left: 10px;
-    margin-bottom: 20px;
-}
-
-#world_status_indicator{
-    border-radius: 7px;
-    width: 14px;
-    height: 14px;
-    background-color: red;
-    display: inline-block;
-}
-
-#world_status_text {
-    margin-left: 4px;
-    display: inline-block;
 }
 
 #world_import_button, #world_create_button {
@@ -1219,7 +1199,7 @@ input[type=button] {
     backdrop-filter: blur(50px);
     flex-direction: column;
     max-width: 800px;
-    height: 83vh;
+    height: 100vh;
     position: absolute;
     z-index: 2064;
     margin-left: auto;
@@ -1246,6 +1226,19 @@ input[type=button] {
     cursor: pointer;
     user-select: none; 
     opacity: 0.8;
+}
+
+#world_info_buttons {
+    margin-left: 1rem;
+}
+
+#world_info_depth_block {
+    opacity: 0.8;
+    margin-top: 20px;
+}
+
+#world_info_depth_block input[type="range"] {
+    margin-left: 10px;
 }
 
 #entry_edit_template {
