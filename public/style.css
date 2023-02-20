@@ -1232,12 +1232,12 @@ input[type=button] {
     margin-left: 1rem;
 }
 
-#world_info_depth_block {
+#world_info_depth_block, #world_info_budget_block {
     opacity: 0.8;
     margin-top: 20px;
 }
 
-#world_info_depth_block input[type="range"] {
+#world_info_depth_block input[type="range"], #world_info_budget_block input[type="range"] {
     margin-left: 10px;
 }
 

@@ -139,6 +139,7 @@
             var world_names;
             var world_info_data = null;
             var world_info_depth = 3;
+            var world_info_budget = 200;
             var imported_world_name = '';
             var max_context = 2048;//2048;
             var rep_pen = 1;
@@ -730,7 +731,7 @@
                 let allActivatedEntries = new Set();
 
                 while (needsToScan) {
-                    let activatedNow = new Set();
+                    let activatedNow = [];
 
                     for (let entryUid in world_info_data.entries) {
                         const entry = world_info_data.entries[entryUid];
@@ -739,7 +740,7 @@
                         }
 
                         if (entry.constant) {
-                            activatedNow.add(entry.uid);
+                            activatedNow.push(entry.uid);
                         }
 
                         if (Array.isArray(entry.key) && entry.key.length) {
@@ -748,12 +749,12 @@
                                     if (entry.selective && Array.isArray(entry.keysecondary) && entry.keysecondary.length) {
                                         secondary: for (let keysecondary of entry.keysecondary) {
                                             if (keysecondary && textToScan.includes(keysecondary.trim().toLowerCase())) {
-                                                activatedNow.add(entry.uid);
+                                                activatedNow.push(entry.uid);
                                                 break secondary;
                                             }
                                         }
                                     } else {
-                                        activatedNow.add(entry.uid);
+                                        activatedNow.push(entry.uid);
                                         break primary;
                                     }
                                 }
@@ -761,12 +762,20 @@
                         }
                     }
 
-                    needsToScan = activatedNow.size > 0;
-                    const newContents = [...activatedNow].map(x => world_info_data.entries[x]).map(x => x.content).join('\n');
-                    worldInfo = worldInfo + newContents;
+                    needsToScan = activatedNow.length > 0;
+                    const newContents = activatedNow.map(x => world_info_data.entries[x]).map(x => x.content);
+
+                    for (const content of newContents) {
+                        worldInfo = `${worldInfo}${content}\n`;
+                        
+                        if (encode(worldInfo).length >= world_info_budget) {
+                            needsToScan = false;
+                            break;
+                        }
+                    }
 
                     if (needsToScan) {
-                        textToScan = newContents.toLowerCase();
+                        textToScan = newContents.join('\n').toLowerCase() + textToScan;
                     }
 
                     allActivatedEntries = new Set([...allActivatedEntries, ...activatedNow]);
@@ -1045,7 +1054,7 @@
                     
                     for (var item of chat2) {//console.log(encode("dsfs").length);
                         chatString = item+chatString;
-                        if(encode(JSON.stringify(storyString+chatString+anchorTop+anchorBottom+charPersonality+promptBias)).length+120 < this_max_context){ //(The number of tokens in the entire promt) need fix, it must count correctly (added +120, so that the description of the character does not hide)
+                        if(encode(JSON.stringify(worldInfoString+storyString+chatString+anchorTop+anchorBottom+charPersonality+promptBias)).length+120 < this_max_context){ //(The number of tokens in the entire promt) need fix, it must count correctly (added +120, so that the description of the character does not hide)
                             
                             
                             //if (is_pygmalion && i == chat2.length-1) item='<START>\n'+item;
@@ -1062,7 +1071,7 @@
                             for(let iii = 0; iii < mesExamplesArray.length; iii++){//mesExamplesArray It need to make from end to start
                                 
                                 mesExmString = mesExmString+mesExamplesArray[iii];
-                                if(encode(JSON.stringify(storyString+mesExmString+chatString+anchorTop+anchorBottom+charPersonality+promptBias)).length+120 < this_max_context){ //example of dialogs
+                                if(encode(JSON.stringify(worldInfoString+storyString+mesExmString+chatString+anchorTop+anchorBottom+charPersonality+promptBias)).length+120 < this_max_context){ //example of dialogs
                                     if(!is_pygmalion){
                                         mesExamplesArray[iii] = mesExamplesArray[iii].replace(/<START>/i, 'This is how '+name2+' should talk');//An example of how '+name2+' responds
                                     }
@@ -1162,7 +1171,7 @@
                         }
                         function checkPromtSize(){
                             setPromtString();
-                            let thisPromtContextSize = encode(JSON.stringify(storyString+mesExmString+mesSendString+anchorTop+anchorBottom+charPersonality+generatedPromtCache+promptBias)).length+120;
+                            let thisPromtContextSize = encode(JSON.stringify(worldInfoString+storyString+mesExmString+mesSendString+anchorTop+anchorBottom+charPersonality+generatedPromtCache+promptBias)).length+120;
                             if(thisPromtContextSize > this_max_context){
                                 if(count_exm_add > 0){
                                     //mesExamplesArray.length = mesExamplesArray.length-1;
@@ -1190,7 +1199,7 @@
                         }else{
                             mesSendString = '<START>\n'+mesSendString;
                         }
-                        finalPromt = storyString+mesExmString+mesSendString+generatedPromtCache+promptBias;
+                        finalPromt = worldInfoString+storyString+mesExmString+mesSendString+generatedPromtCache+promptBias;
                         
                         var generate_data;
                         if(main_api == 'kobold'){
@@ -2416,10 +2425,15 @@
                 var max_contextTimer = setTimeout(saveSettings, 500);
             });
             $(document).on('input', '#world_info_depth', function() {
-                world_info_depth = parseInt($(this).val());
+                world_info_depth = Number($(this).val());
                 $('#world_info_depth_counter').html(`${$(this).val()} Messages`);
                 setTimeout(saveSettings, 500);
             });
+            $(document).on('input', '#world_info_budget', function() {
+                world_info_budget = Number($(this).val());
+                $('#world_info_budget_counter').html(`${$(this).val()} Tokens`);
+                setTimeout(saveSettings, 500);
+            })
             $('#style_anchor').change(function() {
                 style_anchor = !!$('#style_anchor').prop('checked');
                 saveSettings();
@@ -2551,7 +2565,8 @@
                             if(settings.anchor_order !== undefined) anchor_order = parseInt(settings.anchor_order);
                             if(settings.style_anchor !== undefined) style_anchor = !!settings.style_anchor;
                             if(settings.character_anchor !== undefined) character_anchor = !!settings.character_anchor;
-                            if(settings.world_info_depth !== undefined) world_info_depth = parseInt(settings.world_info_depth);
+                            if(settings.world_info_depth !== undefined) world_info_depth = Number(settings.world_info_depth);
+                            if(settings.world_info_budget !== undefined) world_info_budget = Number(settings.world_info_budget);
                             rep_pen = settings.rep_pen;
                             rep_pen_size = settings.rep_pen_size;
                             
@@ -2573,7 +2588,10 @@
 
                             $('#world_info_depth_counter').html(`${world_info_depth} Messages`);
                             $('#world_info_depth').val(world_info_depth);
-                            
+
+                            $('#world_info_budget_counter').html(`${world_info_budget} Tokens`);
+                            $('#world_info_budget').val(world_info_budget);
+
                             addZeros = "";
                             if(isInt(rep_pen)) addZeros = ".00";
                             $('#rep_pen').val(rep_pen);
@@ -2692,6 +2710,7 @@
                             rep_pen_size_novel: rep_pen_size_novel,
                             world_info: world_info,
                             world_info_depth: world_info_depth,
+                            world_info_budget: world_info_budget,
                         }),
                     beforeSend: function(){
 
@@ -3911,9 +3930,19 @@
             </select>
             <input id="world_info_edit_button" type="button" value="Details">
             <div id="world_info_depth_block">
-                <h4>Scan Depth </h4><h5 id="world_info_depth_counter">select</h5>
+                <h4>
+                    Scan Depth (<a href="/notes/13_1.html" target="_blank">?</a>)
+                </h4>
+                <h5 id="world_info_depth_counter">depth</h5>
                 <input type="range" id="world_info_depth" name="volume" min="1" max="5" step="1">
-                </div>
+            </div>
+            <div id="world_info_budget_block">
+                <h4>
+                    Budget (<a href="/notes/13_2.html" target="_blank">?</a>)
+                </h4>
+                <h5 id="world_info_budget_counter">budget</h5>
+                <input type="range" id="world_info_budget" name="volume" min="100" max="500" step="1">
+            </div>
             <hr>
             <div style="opacity:0.80">
                 <h3 style='margin-bottom: 10px;'>Pro Settings</h3>
