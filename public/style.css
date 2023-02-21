@@ -173,7 +173,7 @@ code {
     line-height: 1.5rem;
     min-height: calc(1.5em + 0.75rem + 2px);
     max-height: 50vh;
-    word-wrap: breakword;
+    word-wrap: break-word;
     height: 40px;
     resize: vertical;
     display: block;
