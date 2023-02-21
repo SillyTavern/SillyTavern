@@ -1221,11 +1221,14 @@ input[type=button] {
     justify-content: flex-end;
 }
 
-#world_popup_bottom_holder div:not(:first-of-type) {
-    margin-left: 1rem;
+#world_popup_bottom_holder div {
     cursor: pointer;
     user-select: none; 
     opacity: 0.8;
+}
+
+#world_popup_bottom_holder div:not(:first-of-type) {
+    margin-left: 1rem;
 }
 
 #world_info_buttons {
