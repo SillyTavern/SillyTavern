@@ -224,7 +224,7 @@ app.post("/generate", jsonParser, function(request, response_generate = response
                         use_story:false,
                         use_memory:false,
                         use_authors_note:false,
-                        use_world_info:!!request.body.use_world_info,
+                        use_world_info:false,
                         max_context_length: request.body.max_context_length,
                         max_length: request.body.max_length,
                         rep_pen: request.body.rep_pen,
