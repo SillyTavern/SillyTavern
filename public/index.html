@@ -730,17 +730,17 @@
                 let needsToScan = true;
                 let allActivatedEntries = new Set();
 
+                const sortedEntries = Object.keys(world_info_data.entries).map(x => world_info_data.entries[x]).sort((a, b) => (b.constant - a.constant) || (b.order - a.order));
                 while (needsToScan) {
-                    let activatedNow = [];
+                    let activatedNow = new Set();
 
-                    for (let entryUid in world_info_data.entries) {
-                        const entry = world_info_data.entries[entryUid];
+                    for (let entry of sortedEntries) {
                         if (allActivatedEntries.has(entry.uid)) {
                             continue;
                         }
 
                         if (entry.constant) {
-                            activatedNow.push(entry.uid);
+                            activatedNow.add(entry.uid);
                         }
 
                         if (Array.isArray(entry.key) && entry.key.length) {
@@ -749,12 +749,12 @@
                                     if (entry.selective && Array.isArray(entry.keysecondary) && entry.keysecondary.length) {
                                         secondary: for (let keysecondary of entry.keysecondary) {
                                             if (keysecondary && textToScan.includes(keysecondary.trim().toLowerCase())) {
-                                                activatedNow.push(entry.uid);
+                                                activatedNow.add(entry.uid);
                                                 break secondary;
                                             }
                                         }
                                     } else {
-                                        activatedNow.push(entry.uid);
+                                        activatedNow.add(entry.uid);
                                         break primary;
                                     }
                                 }
@@ -762,8 +762,11 @@
                         }
                     }
 
-                    needsToScan = activatedNow.length > 0;
-                    const newContents = activatedNow.map(x => world_info_data.entries[x]).map(x => x.content);
+                    needsToScan = activatedNow.size > 0;
+                    const newContents = [...activatedNow]
+                        .map(x => world_info_data.entries[x])
+                        .sort((a, b) => sortedEntries.indexOf(a) - sortedEntries.indexOf(b))
+                        .map(x => x.content);
 
                     for (const content of newContents) {
                         worldInfo = `${worldInfo}${content}\n`;
@@ -3336,7 +3339,7 @@
                 contentInput.val(entry.content).trigger('input');
 
                 // selective
-                const selectiveInput = template.find('input[name="selective"]')
+                const selectiveInput = template.find('input[name="selective"]');
                 selectiveInput.data('uid', entry.uid);
                 selectiveInput.on('input', function() {
                     const uid = $(this).data('uid');
@@ -3354,7 +3357,7 @@
 
 
                 // constant
-                const constantInput = template.find('input[name="constant"]')
+                const constantInput = template.find('input[name="constant"]');
                 constantInput.data('uid', entry.uid);
                 constantInput.on('input', function() {
                     const uid = $(this).data('uid');
@@ -3366,6 +3369,17 @@
                 constantInput.siblings('.checkbox_fancy').click(function() {
                     $(this).siblings('input').click();
                 });
+
+                // order
+                const orderInput = template.find('input[name="order"]');
+                orderInput.data('uid', entry.uid);
+                orderInput.on('input', function() {
+                    const uid = $(this).data('uid');
+                    const value = Number($(this).val());
+                    world_info_data.entries[uid].order = !isNaN(value) ? value : 0;
+                    saveWorldInfo();
+                });
+                orderInput.val(entry.order).trigger('input');
 
                 // display uid
                 template.find('.world_entry_form_uid_value').html(entry.uid);
@@ -3400,6 +3414,7 @@
                     content: '',
                     constant: false,
                     selective: false,
+                    order: 0,
                 };
                 const newUid = getFreeWorldEntryUid();
 
@@ -3654,26 +3669,37 @@
         <div id="entry_edit_template">
             <div class="world_entry">
                 <form class="world_entry_form">
-                    <div class="world_entry_form_control">
-                        <label for="key">
-                            <h4>Key</h4>
-                            <h5>Comma-separated list of keywords (e.g: foo,bar).</h5>
-                        </label>
-                        <input class="text_pole" type="text" name="key" placeholder=""/>
+                    <div class="world_entry_thin_controls">
+                        <div class="world_entry_form_control">
+                            <label for="key">
+                                <h4>Key</h4>
+                                <h5>Comma-separated list of keywords (e.g: foo,bar).</h5>
+                            </label>
+                            <input class="text_pole" type="text" name="key" placeholder=""/>
+                        </div>
+                        <div class="world_entry_form_control keysecondary">
+                            <label for="keysecondary">
+                                <h4>Secondary Key</h4>
+                                <h5>Comma-separated list of additional keywords.</h5>
+                            </label>
+                            <input class="text_pole" type="text" name="keysecondary" placeholder=""/>
+                        </div>
                     </div>
-                    <div class="world_entry_form_control keysecondary">
-                        <label for="keysecondary">
-                            <h4>Secondary Key</h4>
-                            <h5>Comma-separated list of additional keywords (e.g: foo,bar).</h5>
-                        </label>
-                        <input class="text_pole" type="text" name="keysecondary" placeholder=""/>
-                    </div>
-                    <div class="world_entry_form_control">
-                        <label for="comment">
-                            <h4>Comment</h4>
-                            <h5>Optional comment (doesn't affect the AI).</h5>
-                        </label>
-                        <input class="text_pole" type="text" name="comment" placeholder=""/>
+                    <div class="world_entry_thin_controls">
+                        <div class="world_entry_form_control">
+                            <label for="order">
+                                <h4>Insertion Order</h4>
+                                <h5>Higher order number entries will be inserted first.</h5>
+                            </label>
+                            <input class="text_pole" type="number" name="order" placeholder=""/>
+                        </div>
+                        <div class="world_entry_form_control">
+                            <label for="comment">
+                                <h4>Comment</h4>
+                                <h5>Optional comment (doesn't affect the AI).</h5>
+                            </label>
+                            <input class="text_pole" type="text" name="comment" placeholder=""/>
+                        </div>
                     </div>
                     <div class="world_entry_form_control">
                         <label for="content">
@@ -3934,11 +3960,11 @@
                     Scan Depth (<a href="/notes/13_1.html" target="_blank">?</a>)
                 </h4>
                 <h5 id="world_info_depth_counter">depth</h5>
-                <input type="range" id="world_info_depth" name="volume" min="1" max="5" step="1">
+                <input type="range" id="world_info_depth" name="volume" min="1" max="10" step="1">
             </div>
             <div id="world_info_budget_block">
                 <h4>
-                    Budget (<a href="/notes/13_2.html" target="_blank">?</a>)
+                    Token Budget (<a href="/notes/13_2.html" target="_blank">?</a>)
                 </h4>
                 <h5 id="world_info_budget_counter">budget</h5>
                 <input type="range" id="world_info_budget" name="volume" min="100" max="500" step="1">
