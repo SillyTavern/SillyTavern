@@ -3291,37 +3291,49 @@
                 template.data('uid', entry.uid);
 
                 // key
-                const keyInput = template.find('input[name="key"]');
+                const keyInput = template.find('textarea[name="key"]');
                 keyInput.data('uid', entry.uid);
                 keyInput.on('input', function () {
                     const uid = $(this).data('uid');
                     const value = $(this).val();
+                    $(this).css("height", ""); //reset the height
+                    $(this).css("height", $(this).prop('scrollHeight') + "px");
                     world_info_data.entries[uid].key = value.split(',').map(x => x.trim()).filter(x => x);
                     saveWorldInfo();
                 });
                 keyInput.val(entry.key.join(',')).trigger('input');
+                keyInput.css("height", ""); //reset the height
+                keyInput.css("height", $(this).prop('scrollHeight') + "px");
 
                 // keysecondary
-                const keySecondaryInput = template.find('input[name="keysecondary"]');
+                const keySecondaryInput = template.find('textarea[name="keysecondary"]');
                 keySecondaryInput.data('uid', entry.uid);
                 keySecondaryInput.on('input', function() {
                     const uid = $(this).data('uid');
                     const value = $(this).val();
+                    $(this).css("height", ""); //reset the height
+                    $(this).css("height", $(this).prop('scrollHeight') + "px");
                     world_info_data.entries[uid].keysecondary = value.split(',').map(x => x.trim()).filter(x => x);
                     saveWorldInfo();
                 });
                 keySecondaryInput.val(entry.keysecondary.join(',')).trigger('input');
+                keySecondaryInput.css("height", ""); //reset the height
+                keySecondaryInput.css("height", $(this).prop('scrollHeight') + "px");
 
                 // comment
-                const commentInput = template.find('input[name="comment"]');
+                const commentInput = template.find('textarea[name="comment"]');
                 commentInput.data('uid', entry.uid);
                 commentInput.on('input', function() {
                     const uid = $(this).data('uid');
                     const value = $(this).val();
+                    $(this).css("height", ""); //reset the height
+                    $(this).css("height", $(this).prop('scrollHeight') + "px");
                     world_info_data.entries[uid].comment = value;
                     saveWorldInfo();
                 });
                 commentInput.val(entry.comment).trigger('input');
+                commentInput.css("height", ""); //reset the height
+                commentInput.css("height", $(this).prop('scrollHeight') + "px");
 
                 // content
                 const contentInput = template.find('textarea[name="content"]');
@@ -3330,6 +3342,8 @@
                     const uid = $(this).data('uid');
                     const value = $(this).val();
                     world_info_data.entries[uid].content = value;
+                    $(this).css("height", ""); //reset the height
+                    $(this).css("height", $(this).prop('scrollHeight') + "px");
                     saveWorldInfo();
 
                     // count tokens
@@ -3337,6 +3351,8 @@
                     $(this).closest('.world_entry').find('.world_entry_form_token_counter').html(numberOfTokens);
                 });
                 contentInput.val(entry.content).trigger('input');
+                contentInput.css("height", ""); //reset the height
+                contentInput.css("height", $(this).prop('scrollHeight') + "px");
 
                 // selective
                 const selectiveInput = template.find('input[name="selective"]');
@@ -3376,6 +3392,7 @@
                 orderInput.on('input', function() {
                     const uid = $(this).data('uid');
                     const value = Number($(this).val());
+
                     world_info_data.entries[uid].order = !isNaN(value) ? value : 0;
                     saveWorldInfo();
                 });
@@ -3675,14 +3692,14 @@
                                 <h4>Key</h4>
                                 <h5>Comma-separated list of keywords (e.g: foo,bar).</h5>
                             </label>
-                            <input class="text_pole" type="text" name="key" placeholder=""/>
+                            <textarea class="text_pole" name="key" rows="1" placeholder=""></textarea>
                         </div>
                         <div class="world_entry_form_control keysecondary">
                             <label for="keysecondary">
                                 <h4>Secondary Key</h4>
                                 <h5>Comma-separated list of additional keywords.</h5>
                             </label>
-                            <input class="text_pole" type="text" name="keysecondary" placeholder=""/>
+                            <textarea class="text_pole" name="keysecondary" rows="1" placeholder=""></textarea>
                         </div>
                     </div>
                     <div class="world_entry_thin_controls">
@@ -3698,7 +3715,7 @@
                                 <h4>Comment</h4>
                                 <h5>Optional comment (doesn't affect the AI).</h5>
                             </label>
-                            <input class="text_pole" type="text" name="comment" placeholder=""/>
+                            <textarea class="text_pole" rows="1" name="comment"></textarea>
                         </div>
                     </div>
                     <div class="world_entry_form_control">
