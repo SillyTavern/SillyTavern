@@ -84,6 +84,11 @@
                 },
             };
 
+            const world_info_position = {
+                'before': 0,
+                'after': 1,
+            }
+
             var is_advanced_char_open = false;
             var is_world_edit_open = false;
             
@@ -726,7 +731,8 @@
                 
                 const messagesToLookBack = world_info_depth * 2;
                 let textToScan = chat.slice(0, messagesToLookBack).join('').toLowerCase();
-                let worldInfo = '';
+                let worldInfoBefore = '';
+                let worldInfoAfter = '';
                 let needsToScan = true;
                 let allActivatedEntries = new Set();
 
@@ -763,28 +769,32 @@
                     }
 
                     needsToScan = activatedNow.size > 0;
-                    const newContents = [...activatedNow]
+                    const newEntries = [...activatedNow]
                         .map(x => world_info_data.entries[x])
-                        .sort((a, b) => sortedEntries.indexOf(a) - sortedEntries.indexOf(b))
-                        .map(x => x.content);
+                        .sort((a, b) => sortedEntries.indexOf(a) - sortedEntries.indexOf(b));
 
-                    for (const content of newContents) {
-                        worldInfo = `${worldInfo}${content}\n`;
+                    for (const entry of newEntries) {
+                        if (entry.position === world_info_position.after) {
+                            worldInfoAfter = `${worldInfoAfter}${entry.content}\n`;
+                        }
+                        else {
+                            worldInfoBefore = `${worldInfoBefore}${entry.content}\n`;
+                        }
                         
-                        if (encode(worldInfo).length >= world_info_budget) {
+                        if (encode(worldInfoBefore + worldInfoAfter).length >= world_info_budget) {
                             needsToScan = false;
                             break;
                         }
                     }
 
                     if (needsToScan) {
-                        textToScan = newContents.join('\n').toLowerCase() + textToScan;
+                        textToScan = newEntries.map(x => x.content).join('\n').toLowerCase() + textToScan;
                     }
 
                     allActivatedEntries = new Set([...allActivatedEntries, ...activatedNow]);
                 }
 
-                return worldInfo;
+                return { worldInfoBefore, worldInfoAfter };
             }
 
             function isHelpRequest(message) {
@@ -1047,10 +1057,13 @@
                         }
                     }
                      
-                    let worldInfoString = '';
+                    let worldInfoString = '', worldInfoBefore = '', worldInfoAfter = '';
 
                     if (world_info && world_info_data) {
-                        worldInfoString = checkWorldInfo(chat2);
+                        const activatedWorldInfo = checkWorldInfo(chat2);
+                        worldInfoBefore = activatedWorldInfo.worldInfoBefore;
+                        worldInfoAfter = activatedWorldInfo.worldInfoAfter;
+                        worldInfoString = worldInfoBefore + worldInfoAfter;
                     }
 
                     var i = 0;
@@ -1202,7 +1215,7 @@
                         }else{
                             mesSendString = '<START>\n'+mesSendString;
                         }
-                        finalPromt = worldInfoString+storyString+mesExmString+mesSendString+generatedPromtCache+promptBias;
+                        finalPromt = worldInfoBefore+storyString+worldInfoAfter+mesExmString+mesSendString+generatedPromtCache+promptBias;
                         
                         var generate_data;
                         if(main_api == 'kobold'){
@@ -3398,6 +3411,21 @@
                 });
                 orderInput.val(entry.order).trigger('input');
 
+                // position
+                if (entry.position === undefined) {
+                    entry.position = 0;
+                }
+
+                const positionInput = template.find('input[name="position"]');
+                positionInput.data('uid', entry.uid);
+                positionInput.on('input', function() {
+                    const uid = $(this).data('uid');
+                    const value = Number($(this).val());
+                    world_info_data.entries[uid].position = !isNaN(value) ? value : 0;
+                    saveWorldInfo();
+                })
+                template.find(`input[name="position"][value=${entry.position}]`).prop('checked', true).trigger('input');
+
                 // display uid
                 template.find('.world_entry_form_uid_value').html(entry.uid);
 
@@ -3432,6 +3460,7 @@
                     constant: false,
                     selective: false,
                     order: 0,
+                    position: 0,
                 };
                 const newUid = getFreeWorldEntryUid();
 
@@ -3736,6 +3765,14 @@
                             <span class="checkbox_fancy"></span>
                             <h4>Selective</h4>
                         </label>
+                        <div class="world_entry_form_control world_entry_form_radios">
+                            <div>
+                                <label><input type="radio" name="position" value="0"><h4>Before chara</h4></label>
+                            </div>
+                            <div>
+                                <label><input type="radio" name="position" value="1"><h4>After chara</h4></label>
+                            </div>
+                        </div>
                         <span class="world_popup_expander">&nbsp;</span>
                         <h5 class="world_entry_form_uid">
                             UID:

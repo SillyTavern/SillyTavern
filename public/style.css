@@ -1373,6 +1373,14 @@ input[type=button] {
     margin-left: 2rem;
 }
 
+.world_entry_form_radios {
+    margin-left: 1rem;
+}
+
+.world_entry_form_radios h4 {
+    display: inline;
+}
+
 #world_cross {
     position: absolute;
     right: 15px;
