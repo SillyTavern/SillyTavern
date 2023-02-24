@@ -6,6 +6,7 @@
     src: url(fonts/Comic_CAT.otf) format("truetype");
 	font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
 }
+
 .customfont {
 	font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
 }
@@ -820,21 +821,6 @@ display: none;
 	-webkit-backdrop-filter: brightness(0.3) blur(20px);*/
 }
 
-/*TOPPER margin*/
-
-#bg2:after{
-	content: "BLANK SPACE";
-	width:100vw;
-	display: inline-block;
-	height:40px;
-	position:fixed;
-	background-color: #242525;
-	color:#242525;
-	border-bottom:1px solid #444;
-	box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
-	z-index:2000;	
-}
-
 #site_logo{
     opacity: 0.4;
     display: inline-block;
@@ -1237,7 +1223,7 @@ width: 103px;
 }
 #online_status2{
     opacity: 0.5;
-    margin-top: 10px;
+    margin-top: 2px;
     margin-left: 10px;
     margin-bottom: 30px;
 }
