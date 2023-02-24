@@ -1,7 +1,7 @@
-node_modules
-/public/chats
-/public/characters
-/public/User Avatars
-/public/backgrounds
-/uploads
+node_modules/
+/public/chats/
+/public/characters/
+/public/User Avatars/
+/public/backgrounds/
+/uploads/
 /config.conf
