@@ -59,7 +59,7 @@ code {
 }
 
 #bg1{
-    background: url(backgrounds/taverna.png);
+    background: url(backgrounds/tavern.png);
 	background-size: auto 100%;
     background-repeat: no-repeat;
     background-attachment: fixed;
@@ -71,7 +71,7 @@ code {
     z-index: -2;
 }
 #bg2{  
-	background: url(backgrounds/taverna.png);
+	background: url(backgrounds/tavern.png);
     background-size: auto 100%;
     background-repeat: no-repeat;
     background-attachment: fixed;
