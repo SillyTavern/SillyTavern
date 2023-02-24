@@ -660,7 +660,7 @@ app.post("/setbackground", jsonParser, function(request, response){
      //const data = request.body;
     //console.log(request);
     //console.log(1);
-    var bg = "#bg1 {background-image: linear-gradient(rgba(19,21,44,0.75), rgba(19,21,44,0.75)), url(../backgrounds/"+request.body.bg+");}";
+    var bg = "#bg1 {background-image: url(../backgrounds/"+request.body.bg+");}";
     fs.writeFile('public/css/bg_load.css', bg, 'utf8', function(err) {
         if(err) {
             response.send(err);

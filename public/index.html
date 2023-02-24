@@ -6,7 +6,7 @@
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<!--<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">-->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN" crossorigin="anonymous"></script>
+        <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN" crossorigin="anonymous"></script>-->
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 	<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&amp;display=swap" rel="stylesheet">
@@ -35,6 +35,7 @@
 
 
     <script type=module>
+			
         import {encode, decode} from "../scripts/gpt-2-3-tokenizer/mod.js";
         $(document).ready(function(){
             const VERSION = '1.2.8';
@@ -51,8 +52,8 @@
                 is_name: true,
                 create_date: 0,
                 mes: '\n*You went inside. The air smelled of fried meat, tobacco and a hint of wine. A dim light was cast by candles, and a fire crackled in the fireplace. It seems to be a very pleasant place. Behind the wooden bar is an elf waitress, she is smiling. Her ears are very pointy, and there is a twinkle in her eye. She wears glasses and a white apron. As soon as she noticed you, she immediately came right up close to you.*\n\n' +
-                    ' Hello there! How is your evening going?\n' +
-                    '<img src="img/star_dust_city.png" width=80% style="opacity:0.3; disolay:block;border-radius:5px;margin-top:25px;margin-bottom:23px; margin-left: 45px;margin-right: auto;">\n<a id="verson" style="color:rgb(229, 224, 216,0.8);" href="https://github.com/TavernAI/TavernAI" target="_blank">@@@TavernAI v'+VERSION+'@@@</a><div id="characloud_url" style="margin-right:10px;margin-top:0px;float:right; height:25px;cursor: pointer;opacity: 0.99;display:inline-block;"><img src="img/cloud_logo.png" style="width: 25px;height: auto;display:inline-block; opacity:0.7;"><div style="vertical-align: top;display:inline-block;">Cloud</div></div><br><br><br><br>'
+                    ' "Hello there! How is your evening going?"<br><br>\n' +
+                    '<img src="img/star_dust_city.png" width=80%; display:block;">\n'
             }];
             
             var chat_create_date = 0;
@@ -175,35 +176,13 @@
             var preset_settings_novel = 'Classic-Krake';
             
             //css
-            var bg1_toggle = true;
+            var bg1_toggle = true;					// inits the BG as BG1
             var css_mes_bg = $('<div class="mes"></div>').css('background');
             var css_send_form_display = $('<div id=send_form></div>').css('display');
             
             var colab_ini_step = 1;
 			
-			// VARIABLES DONE NOW THE REAL CODE 
-			//
-			//
-			//
-			
-			// Dealing with Textarea Height
-			
-			//function textAreaAdjust(element) {
-			//	element.style.height = "1px";
-			//	element.style.height = (25+element.scrollHeight)+"px";
-			//}	
-			//function calcHeight(value) {
-			//	let numberOfLineBreaks = (value.match(/\n/g) || []).length;
-			//	// min-height + lines x line-height + padding + border
-			//	let newHeight = 25 + numberOfLineBreaks * 25 + 6 + 1;
-			//	return newHeight;
-			//}
-			//let textarea = document.querySelector(".resize-ta");
-			//textarea.addEventListener("keyup", () => {
-			//textarea.style.height = calcHeight(textarea.value) + "px";
-			//});
-			
-            setInterval(function() {
+           setInterval(function() {
                 switch(colab_ini_step){
                     case 0:
                         $('#colab_popup_text').html('<h3>Initialization</h3>');
@@ -244,10 +223,10 @@
 					getBackgrounds();
 					getUserAvatars();
 				});
-			
-            $('#characloud_url').click(function(){
+				
+			            $('#characloud_url').click(function(){
                 window.open('https://boosty.to/tavernai', '_blank');
-            });
+            });	
             $('#character_search_bar').on('input', function() {
                 const searchValue = $(this).val().trim().toLowerCase();
                 
@@ -261,7 +240,7 @@
                     });
                 }
             });
-            function checkOnlineStatus(){
+			function checkOnlineStatus(){
                 //console.log(online_status);
                 if(online_status == 'no_connection'){
                     $("#online_status_indicator").css("background-color", "red");
@@ -303,7 +282,7 @@
                         var getVersion = data.version;
                         if(getVersion !== 'error' && getVersion != undefined){
                             if(compareVersions(getVersion, VERSION) === 1){
-                                $('#verson').append(' <span style="color: #326d78; font-size: 15px;">(New update @'+getVersion+')</span>');
+                                $('#verson').append(' <span>(v.'+getVersion+')</span>');
                             }
                         }
 
@@ -435,16 +414,16 @@
                 }
             }
             
-            function printCharaters(){
+            function printCharacters(){
                 //console.log(1);
-                $("#rm_print_charaters_block").empty();
+                $("#rm_print_characters_block").empty();
                 characters.forEach(function(item, i, arr) {
                     var this_avatar = default_avatar;
                     if(item.avatar != 'none'){
                         this_avatar = "characters/"+item.avatar+"#"+Date.now();
 
                     }
-                    $("#rm_print_charaters_block").prepend('<div class=character_select chid='+i+'><div class=avatar><img src="'+this_avatar+'"></div><div class=ch_name>'+item.name+'</div></div>');
+                    $("#rm_print_characters_block").prepend('<div class=character_select chid='+i+'><div class=avatar><img src="'+this_avatar+'"></div><div class=ch_name>'+item.name+'</div></div>');
                     //console.log(item.name);
                 });
                 
@@ -479,13 +458,13 @@
                     characters.sort((a,b) =>  a.create_date - b.create_date );
                     //characters.reverse();
                     if(this_chid != undefined) $("#avatar_url_pole").val(characters[this_chid].avatar);
-                    printCharaters();
+                    printCharacters();
                     //console.log(propOwn.length);
                     //return JSON.parse(getData[0]);
                     //const getData = await response.json();
                     //var getMessage = getData.results[0].text;
                 }
-            }
+            }		
             async function getBackgrounds() {
                 
                 const response = await fetch("/getbackgrounds", {
@@ -513,7 +492,7 @@
 
                 }
             }
-             async function isColab() {
+       async function isColab() {
                 is_checked_colab = true;
                 const response = await fetch("/iscolab", {
                     method: "POST",
@@ -542,7 +521,7 @@
 
                 }
             }
-            async function setBackground(bg) {
+             async function setBackground(bg) {
                 /*
                 const response = await fetch("/setbackground", {
                     method: "POST",
@@ -681,7 +660,7 @@
                 messageText = messageFormating(messageText, characterName, isSystem);
                 const bias = messageFormating(mes.extra?.bias ?? '');
                 
-                $("#chat").append( "<div class='mes' mesid="+count_view_mes+" ch_name="+characterName+"><div class='for_checkbox'></div><input type='checkbox' class='del_checkbox'><div class=avatar><img src='"+avatarImg+"'></div><div class=mes_block><div class=ch_name>"+characterName+"<div title=Edit class=mes_edit><img src=img/scroll.png style='width:20px;height:20px;'></div><div class=mes_edit_cancel><img src=img/cancel.png></div><div class=mes_edit_done><img src=img/done.png></div></div><div class=mes_text>"+`</div><div class='mes_bias'>${bias}</div></div></div>` );
+				$("#chat").append( "<div class='mes' mesid="+count_view_mes+" ch_name="+characterName+"><div class='for_checkbox'></div><input type='checkbox' class='del_checkbox'><div class=avatar><img src='"+avatarImg+"'></div><div class=mes_block><div class=ch_name>"+characterName+"<div title=Edit class=mes_edit></div><div class=mes_edit_cancel><img src=img/cancel.png></div><div class=mes_edit_done><img src=img/done.png></div></div><div class=mes_text>"+`</div><div class='mes_bias'>${bias}</div></div></div>` );
 
                 const newMessage = $(`#chat [mesid="${count_view_mes}"]`);
                 newMessage.data('isSystem', isSystem);
@@ -1503,14 +1482,14 @@
             });
             
             //menu buttons
-            var seleced_button_style = { color: "#bcc1c8" };
+            var selected_button_style = { color: "#bcc1c8" };
             var deselected_button_style = { color: "#565d66" };
-            $( "#rm_button_create" ).children("h2").css(seleced_button_style);
-            $( "#rm_button_characters" ).children("h2").css(seleced_button_style);
+            $( "#rm_button_create" ).children("h2").css(selected_button_style);
+            $( "#rm_button_characters" ).children("h2").css(selected_button_style);
             $( "#rm_button_settings" ).click(function() {
                 selected_button = 'settings';
                 menu_type = 'settings';
-                $( "#rm_charaters_block" ).css("display", "none");
+                $( "#rm_characters_block" ).css("display", "none");
                 $( "#rm_api_block" ).css("display", "block");
                 
                 $('#rm_api_block').css('opacity',0.0);
@@ -1525,7 +1504,7 @@
                 $( "#rm_info_block" ).css("display", "none");
                 
                 $( "#rm_button_characters" ).children("h2").css(deselected_button_style);
-                $( "#rm_button_settings" ).children("h2").css(seleced_button_style);
+                $( "#rm_button_settings" ).children("h2").css(selected_button_style);
                 $( "#rm_button_selected_ch" ).children("h2").css(deselected_button_style);
             });
             $( "#rm_button_characters" ).click(function() {
@@ -1553,7 +1532,7 @@
                     }
                     
                 }
-                $( "#rm_charaters_block" ).css("display", "none");
+                $( "#rm_characters_block" ).css("display", "none");
                 $( "#rm_api_block" ).css("display", "none");
                 $( "#rm_ch_create_block" ).css("display", "block");
                 
@@ -1597,9 +1576,9 @@
             function select_rm_characters(){
                 
                 menu_type = 'characters';
-                $( "#rm_charaters_block" ).css("display", "flex");
-                $('#rm_charaters_block').css('opacity',0.0);
-                $('#rm_charaters_block').transition({  
+                $( "#rm_characters_block" ).css("display", "block");
+                $('#rm_characters_block').css('opacity',0.0);
+                $('#rm_characters_block').transition({  
                         opacity: 1.0,
                         duration: animation_rm_duration,
                         easing: animation_rm_easing,
@@ -1610,12 +1589,12 @@
                 $( "#rm_ch_create_block" ).css("display", "none");
                 $( "#rm_info_block" ).css("display", "none");
                 
-                $( "#rm_button_characters" ).children("h2").css(seleced_button_style);
+                $( "#rm_button_characters" ).children("h2").css(selected_button_style);
                 $( "#rm_button_settings" ).children("h2").css(deselected_button_style);
                 $( "#rm_button_selected_ch" ).children("h2").css(deselected_button_style);
             }
             function select_rm_info(text){
-                $( "#rm_charaters_block" ).css("display", "none");
+                $( "#rm_characters_block" ).css("display", "none");
                 $( "#rm_api_block" ).css("display", "none");
                 $( "#rm_ch_create_block" ).css("display", "none");
                 $( "#rm_info_block" ).css("display", "flex");
@@ -1632,7 +1611,7 @@
                 select_rm_create();
                 menu_type = 'character_edit';
                 $( "#delete_button_div" ).css("display", "block");
-                $( "#rm_button_selected_ch" ).children("h2").css(seleced_button_style);
+                $( "#rm_button_selected_ch" ).children("h2").css(selected_button_style);
                 var display_name = characters[chid].name;
 
                 $( "#rm_button_selected_ch" ).children("h2").text(display_name);
@@ -1704,16 +1683,16 @@
                 }
                 
             });
-            $(document).on('click', '.del_checkbox', function(){
+            $(document).on('click', '.del_checkbox', function(){		//when a checkbox is clicked
                 $('.del_checkbox').each(function(){
                     $(this).prop( "checked", false );
                     $(this).parent().css('background', css_mes_bg);
                 });
-                $(this).parent().css('background', "#791b31");
-                var i = $(this).parent().attr('mesid');
+                $(this).parent().css('background', "#791b31");			//sets the bg of the selected msg to a muted red
+                var i = $(this).parent().attr('mesid');					//checks the message ID in the chat
                 this_del_mes = i;
-                while(i < chat.length){
-                    $(".mes[mesid='"+i+"']").css('background', "#791b31");
+                while(i < chat.length){									//as long as the current message ID is less than the total chat length
+                    $(".mes[mesid='"+i+"']").css('background', "#791b31");	//sets the bg of the all msgs BELOW the selected msg to a muted red as well
                     $(".mes[mesid='"+i+"']").children('.del_checkbox').prop( "checked", true );
                     i++;
                     //console.log(i);
@@ -1733,8 +1712,6 @@
             $('#logo_block').click(function(event) {  
                 if(!bg_menu_toggle){
                     $('#bg_menu_button').transition({ perspective: '100px',rotate3d: '1,1,0,180deg'});
-                    //$('#bg_menu_content1').css('display', 'block');
-                    //$('#bg_menu_content1').css('opticary', 0);marginTop: '10px'
                     $('#bg_menu_content').transition({
                         opacity: 1.0, height: '90vh',
                         duration: 340,
@@ -1753,28 +1730,28 @@
                       });
                 }
             });
-            $(document).on('click', '.bg_example_img', function(){
-                var this_bgfile = $(this).attr("bgfile");
+            $(document).on('click', '.bg_example_img', function(){	//when user clicks on a BG thumbnail...
+                var this_bgfile = $(this).attr("bgfile");			// this_bgfile = whatever they clicked
                 
-                if(bg1_toggle == true){
-                    bg1_toggle = false;
-                    var number_bg = 2;
-                    var target_opacity = 1.0;
-                }else{
-                    bg1_toggle = true;
-                    var number_bg = 1;
-                    var target_opacity = 0.0;
+                if(bg1_toggle == true){								//if bg1 is toggled true (initially set as true in first JS vars)
+                    bg1_toggle = false;									// then toggle it false
+                    var number_bg = 2;									// sets a variable for bg2
+                    var target_opacity = 1.0;							// target opacity is 100%
+                }else{												//if bg1 is FALSE
+                    bg1_toggle = true;									// make it true
+                    var number_bg = 1;									// set variable to bg1..
+                    var target_opacity = 0.0;							// set target opacity to 0
                 }
-                $('#bg2').stop();
-                $('#bg2').transition({  
-                        opacity: target_opacity,
-                        duration: 1300,//animation_rm_duration,
+                $('#bg2').stop();									// first, stop whatever BG transition was happening before
+                $('#bg2').transition({  							// start a new BG transition routine
+                        opacity: target_opacity,					// set opacity to previously set variable
+                        duration: 1300,								//animation_rm_duration,
                         easing: "linear",
-                        complete: function() {
+                        complete: function() {						// why does the BG transition completion make the #options (right nav) invisible?
                             $("#options").css('display', 'none');
                         }
                 });
-                $('#bg'+number_bg).css('background-image', 'linear-gradient(rgba(19,21,44,0.75), rgba(19,21,44,0.75)), url("backgrounds/'+this_bgfile+'")');
+                $('#bg'+number_bg).css('background-image', 'url("backgrounds/'+this_bgfile+'")');
                 setBackground(this_bgfile);
 
             });
@@ -1910,8 +1887,8 @@
                             processData: false, 
                             success: function(html){
                                 setBackground(html);
-                                if(bg1_toggle == true){
-                                    bg1_toggle = false;
+                                if(bg1_toggle == true){				// this is a repeat of the background setting function for when  user uploads a new BG image
+                                    bg1_toggle = false;				// should make the Bg setting a modular function to be called in both cases
                                     var number_bg = 2;
                                     var target_opacity = 1.0;
                                 }else{
@@ -1927,7 +1904,7 @@
                                             $("#options").css('display', 'none');
                                         }
                                 });
-                                $('#bg'+number_bg).css('background-image', 'linear-gradient(rgba(19,21,44,0.75), rgba(19,21,44,0.75)), url('+e.target.result+')');
+                                $('#bg'+number_bg).css('background-image', 'url('+e.target.result+')');
                                 $("#form_bg_download").after("<div class=bg_example><img bgfile='"+html+"' class=bg_example_img src='backgrounds/"+html+"'><img bgfile='"+html+"' class=bg_example_cross src=img/cross.png></div>");
                             },
                             error: function (jqXHR, exception) {
@@ -2175,7 +2152,7 @@
                 }
             });
             
-            $( "body" ).click(function() {
+            $( "body" ).click(function() {								// this makes the input bar's option menu disappear when clicked away from
                 if($("#options").css('opacity') == 1.0){
                     $('#options').transition({  
                         opacity: 0.0,
@@ -2214,13 +2191,56 @@
                     callPopup('<h3>Start new chat?</h3>');
                 }
             });
+			//RossAscends: Lets add some hotkeys
+			document.addEventListener('keydown', (event) => {
+				if(event.ctrlKey && event.key == "Enter") {				// Ctrl+Enter for Regeneration Last Response
+					if(is_send_press == false){
+						is_send_press = true;
+						Generate('regenerate');
+					}
+				}else if(event.ctrlKey && event.key == "ArrowUp") {		//Ctrl+UpArrow for Connect to last server
+					document.getElementById('api_button').click();
+
+				}
+			});	
+			
+			//-----------------------------------------------
+			
+			// Now let's add functionality that will close the BG menu and/or RightNav panels when User clicks outside them
+			
+			// COULDN'T GET THIS TO WORK BUT CODE LEFT FOR FUTURE REFERENCE
+			
+			// general function to deetct which elements are being clicked on. 
+ 			//$('body').on('click', function(e){
+			//	alert( 'Class is '+ $(e.target).attr('class') + '. ID is '+ $(e.target).attr('id'));
+			//});
+			
+			//general function to watch the status of the nav-toggle checkbox
+			//var checkb = document.getElementById("nav-toggle");
+			//checkb.addEventListener('change', function(e) {
+			//	alert(checkb.checked, checkb.value);
+			
+			//});
+			
+			//$('document').ready(function(){
+			//	$("body").click(function(e){
+			//		if (e.target.parentNode.classList.contains('.nav') == false){
+			//		alert('triggered!');
+			//		document.getElementById('nav-toggle').click();
+			//	};	
+			//});
+			//});
+			 
+			//---------------------------------------------------
+						
             $( "#option_regenerate" ).click(function() {
                 if(is_send_press == false){
                     is_send_press = true;
                     Generate('regenerate');
                 }
             });
-            $( "#option_delete_mes" ).click(function() {
+            // this function hides the input form, and shows the delete/cancel buttons fro deleting messages from chat
+			$( "#option_delete_mes" ).click(function() {
                 if(this_chid != undefined && !is_send_press){
                     $('#dialogue_del_mes').css('display','block');
                     $('#send_form').css('display','none');
@@ -2232,6 +2252,7 @@
                     });
                 }
             });
+			//functionality for the cancel delete messages button, reverts to normal display of input form
             $( "#dialogue_del_mes_cancel" ).click(function() {
                 $('#dialogue_del_mes').css('display','none');
                 $('#send_form').css('display',css_send_form_display);
@@ -2245,6 +2266,7 @@
                 this_del_mes = 0;
 
             });
+			//confirms message delation with the "ok" button
             $( "#dialogue_del_mes_ok" ).click(function() {
                 $('#dialogue_del_mes').css('display','none');
                 $('#send_form').css('display',css_send_form_display);
@@ -2394,7 +2416,7 @@
                     $('#softprompt_block').css('display', 'none');
                 }
             }
-            async function getUserAvatars(){
+             async function getUserAvatars(){
                 const response = await fetch("/getuseravatars", {
                     method: "POST",
                     headers: {
@@ -2919,7 +2941,7 @@
                             if(mes.length > strlen){
                                 mes = '...'+mes.substring(mes.length - strlen);
                             }
-                            $('#select_chat_div').append('<div class="select_chat_block" file_name="'+data[key]['file_name']+'"><div class=avatar><img src="characters/'+characters[this_chid]['avatar']+'" style="width: 33px; height: 51px;"></div><div class="select_chat_block_filename">'+data[key]['file_name']+'</div><div class="select_chat_block_mes">'+mes+'</div></div>');
+                            $('#select_chat_div').append('<div class="select_chat_block" file_name="'+data[key]['file_name']+'"><div class=avatar><img src="characters/'+characters[this_chid]['avatar']+'" style="width: 33px;"></div><div class="select_chat_block_filename">'+data[key]['file_name']+'</div><div class="select_chat_block_mes">'+mes+'</div></div>');
                             if(characters[this_chid]['chat'] == data[key]['file_name'].replace('.jsonl', '')){
                                 //children().last()
                                 $('#select_chat_div').children(':nth-last-child(1)').attr('highlight', true);
@@ -3631,12 +3653,9 @@
 <title>Tavern.AI</title>
 </head>
 <body>
-    <!--<p class="customfont">Hello world!</p>-->
-    
-    
-    <!--<div style="cursor: pointer;opacity: 0.1;"><img src="img/donut.png" style="width: 25px;height: 25px;bottom: 2px;left: 2px;position: absolute; "><div style="position: absolute; bottom: 6px;left: 28px;"><h4 style="margin-bottom: 0px"><i>Donuts</i></h4></div></div>-->
     <div id="bg1"></div>
     <div id="bg2"></div>
+	<div id="top-bar"></div>
     
     <div id="shadow_popup">
         <div id="dialogue_popup">
@@ -3825,7 +3844,8 @@
             <img id="tips_cross" src="img/cross.png" style="position: absolute; margin-left: 230px; width: 20px; height: 20px; cursor: pointer; opacity: 0.6">
             
             <img src="img/love.png" style="width: 45px;height: 45px; margin-bottom: 0px; opacity: 0.6;">
-            <div style="margin-top:20px; margin-left: 20px; margin-right: 20px; margin-bottom: 15px;"><u>TavernAI</u> is being developed with love and care on a voluntary basis. If you like the project and want to support it, your donation would make a huge impact! <u>Thank you!</u></div>
+            <div style="margin-top:20px; margin-left: 20px; margin-right: 20px; margin-bottom: 15px;">
+			<u>TavernAI</u> is being developed with love and care on a voluntary basis. If you like the project and want to support it, your donation would make a huge impact! <u>Thank you!</u></div>
             <img src="img/eth_icon.png" style="width: 35px;height: 35px; margin-bottom: 0px; opacity: 0.6;">
             <img src="img/usdt.png" style="width: 35px;height: 35px; margin-bottom: 0px; opacity: 0.6;">
             <div id="tips_text"><h3 style="margin-top: 0px; opacity: 0.8">Ethereum or USDT</h3></div>
@@ -3836,7 +3856,17 @@
         </div>
     </div>
     <div id="bg_menu">
-        <div id="logo_block"><div id="bg_menu_button"><img src="img/tri.png"></div><img src="img/logo.png" id="site_logo"></div>
+        <div id="logo_block"><div id="bg_menu_button"><img src="img/tri.png"></div><img src="img/logo.png" id="site_logo">
+		
+		<!-- derp derp derp -->
+		<div id="update-notification">
+		<a id="verson" href="https://github.com/TavernAI/TavernAI" target="_blank"></a>
+		</div>
+		<!-- derp derp derp derp -->
+		
+		</div>
+		
+				
         <div id="bg_menu_content">
             <form id="form_bg_download"  action="javascript:void(null);" method="post" enctype="multipart/form-data">
                 <label class="input-file">
@@ -3868,7 +3898,16 @@
                 <input id="character_name_pole" name="ch_name" class="text_pole" maxlength="120" size="35" value="" autocomplete="off">
                 </div>
                 <div id="avatar_div" class="avatar_div">
-                    <div id="avatar_div_div" class="avatar"><img id="avatar_load_preview" src="img/fluffy.png" alt="avatar"></div><input type="file" id="add_avatar_button" name="avatar" accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp">
+                    <div id="avatar_div_div" class="avatar">
+						<img id="avatar_load_preview" src="img/fluffy.png" alt="avatar">
+					</div>
+					
+					<label id="add_avatar_button">
+						<input type="file" name="avatar" accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp">
+						Change Avatar
+					</label>
+					
+					
                     
                 </div>
                 
@@ -3911,7 +3950,7 @@
         <div id="rm_api_block" class="right_menu" >
             
             <h3 id="title_api">API</h3>
-            <select id="main_api" style="color:#fff;" >
+            <select id="main_api" >
                 <option value="kobold">KoboldAI</option>
                 <option value="novel">NovelAI</option>
             </select>
@@ -3925,7 +3964,7 @@
                 <img id="api_loading" src="img/load.svg" >
                 </form>
                 <div id="online_status2">
-                    <div id="online_status_indicator2"></div><div id="online_status_text2">No connection...</div>
+                    <div id="online_status_indicator2"></div><div id="online_status_text2">Not connected</div>
                 </div>
                 <h4>Preset settings</h4><h5>Selecting settings (<a href="/notes/4" target="_blank">?</a>)</h5>
                 <select id="settings_perset">
@@ -4049,24 +4088,22 @@
                 </div>
             </div>
         </div>
-        </div>
-        <div id="rm_charater_import" class="right_menu" style="display: none;">
+        <div id="rm_character_import" class="right_menu" style="display: none;">
             <form id="form_import"  action="javascript:void(null);" method="post" enctype="multipart/form-data">
             <input type="file" id="character_import_file" accept=".json, image/png" name="avatar">
             <input id="character_import_file_type" name="file_type" class="text_pole" maxlength="999" size="2" value="" autocomplete="off">
             </form>
         </div>
-        <div id="rm_charaters_block" class="right_menu">
-            <div id="rm_characters_topbar">
-                <div id="rm_characters_topbar_buttons">
-                    <div id="rm_button_create" class="right_menu_button"><h4>+Create</h4></div>
-                    <div id="character_import_button" class="right_menu_button"><h4>+Import</h4></div>
-                </div>
-                <form id="form_character_search_form" action="javascript:void(null);">
-                    <input id="character_search_bar" class="text_pole" type="search" placeholder="Search here..." />
-                </form>
-            </div>
-            <div id="rm_print_charaters_block"></div>
+        <div id="rm_characters_block" class="right_menu">
+            <div id="rm_button_create" class="right_menu_button"><h2>+New Character</h2></div>
+            <div id="character_import_button" class="right_menu_button"><h2>+Import</h2></div>
+			
+			<div id="characloud_url" title="Find more characters on CharaCloud (coming soon)">
+				<img src="img/cloud_logo.png">
+			</div>
+			
+            <div id="rm_print_characters_block"></div>
+			
         </div>
         <div id="rm_info_block" class="right_menu">
             <div id="rm_info_panel">
@@ -4101,7 +4138,7 @@
 				
 <script type="text/javascript">
     $('#send_textarea').on('input', function () {
-        this.style.height = '1rem';
+        this.style.height = '40px';
         this.style.height =
             (this.scrollHeight) + 'px';
     });
@@ -4113,7 +4150,7 @@
 					
 					<div id="online_status">
 						<div id="online_status_indicator"></div>
-						<div id="online_status_text">No connection...</div>
+						<div id="online_status_text">Not connected</div>
 					</div>
 					
 					<input id="send_but" type="button">

@@ -1,3 +1,8 @@
 node_modules
-/uploads
 .DS_Store
+/public/chats
+/public/characters
+/public/User Avatars
+/public/backgrounds
+/uploads
+/config.conf
