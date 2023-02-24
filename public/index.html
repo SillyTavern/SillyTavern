@@ -231,9 +231,9 @@
                 const searchValue = $(this).val().trim().toLowerCase();
                 
                 if (!searchValue) {
-                    $("#rm_print_charaters_block .character_select").show();
+                    $("#rm_print_characters_block .character_select").show();
                 } else {
-                    $("#rm_print_charaters_block .character_select").each(function () {
+                    $("#rm_print_characters_block .character_select").each(function () {
                         $(this).children('.ch_name').text().toLowerCase().includes(searchValue)
                             ? $(this).show()
                             : $(this).hide();
@@ -1667,7 +1667,7 @@
                     selected_button = 'character_edit';
                     select_selected_character(this_chid);
                 }
-                
+                $('#character_search_bar').val('').trigger('input');
             });
             var scroll_holder = 0;
             var is_use_scroll_holder = false;
@@ -4102,6 +4102,10 @@
 				<img src="img/cloud_logo.png">
 			</div>
 			
+            <form id="form_character_search_form" action="javascript:void(null);">
+                <input id="character_search_bar" class="text_pole" type="search" placeholder="Search here..." />
+            </form>
+
             <div id="rm_print_characters_block"></div>
 			
         </div>
