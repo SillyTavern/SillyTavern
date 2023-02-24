@@ -846,7 +846,7 @@
                                     is_add_personality = true;
                                     //chatString = chatString.substr(0,chatString.length-1);
                                     //anchorAndPersonality = "[Genre: roleplay chat][Tone: very long messages with descriptions]";
-                                    if(anchorTop != "" || charPersonality != ""){
+                                    if((anchorTop != "" || charPersonality != "") && !is_pygmalion){
                                         if(anchorTop != "") charPersonality+=' ';
                                         item+="["+charPersonality+anchorTop+']\n';
                                     }
@@ -1032,7 +1032,7 @@
                                     if(is_pygmalion){
                                         if_typing_text = false;
                                         message_already_generated +=getMessage;
-                                        if(message_already_generated.indexOf('You:') === -1 && tokens_already_generated < parseInt(amount_gen)){
+                                        if(message_already_generated.indexOf('You:') === -1 && message_already_generated.indexOf('<|endoftext|>') === -1 && tokens_already_generated < parseInt(amount_gen) && getMessage.length > 0){
                                             runGenerate(getMessage);
                                             return;
                                         }
