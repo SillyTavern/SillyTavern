@@ -1,12 +1,9 @@
 node_modules/
-/public/chats/
-/public/characters/
-/public/User Avatars/
-/public/backgrounds/
+public/chats/
+public/characters/
+public/User Avatars/
+public/backgrounds/
 /uploads/
 /config.conf
 *.jsonl
-public/characters/update.txt
 public/settings.json
-public/chats/Aqua/1673181146000.jsonl
-*.jsonl
