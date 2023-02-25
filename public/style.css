@@ -951,6 +951,7 @@ width: 103px;
 .avatar_div{
     margin-top: 16px;
 	vertical-align: middle;
+    align-items: center;
 }
 .avatar_div .avatar{
     margin-left: 4px;
