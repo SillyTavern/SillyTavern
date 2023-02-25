@@ -5,3 +5,6 @@ node_modules/
 /public/backgrounds/
 /uploads/
 /config.conf
+*.jsonl
+public/characters/update.txt
+public/settings.json
