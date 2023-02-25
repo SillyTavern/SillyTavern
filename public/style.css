@@ -351,6 +351,11 @@ code {
 	
 }
 
+.avatar.selected img {
+    outline-style: solid;
+    outline-color: rgb(255 255 255 / 70%);
+    outline-width: 2px;
+}
 
 .mes_block{
     
@@ -1301,7 +1306,7 @@ width: 103px;
 	backdrop-filter: blur(50px);
 	-webkit-backdrop-filter: blur(50px);
     max-width:800px;
-    height: 83vh;
+    height: calc(100% - 40px);
     position: absolute;
     margin-left: auto;
     margin-right: auto;
@@ -1622,6 +1627,21 @@ select {
 #user_avatar_block .avatar img{
 	width: 60px;
     height: 60px;
+}
+#user_avatar_block .avatar_upload {
+    cursor: pointer;
+    width: 60px;
+    height: 60px;
+    background:rgba(100, 100, 100, 0.5);
+    backdrop-filter: blur(10px) brightness(0.3);
+    border-radius: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 3rem;
+}
+#form_upload_avatar {
+    display: none !important;
 }
 #temp{
     margin-left: 10px;

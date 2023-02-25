@@ -61,7 +61,7 @@ if (is_colab && process.env.googledrive == 2){
 const jsonParser = express.json({limit: '100mb'});
 const urlencodedParser = express.urlencoded({extended: true, limit: '100mb'});
 const baseRequestArgs = { headers: { "Content-Type": "application/json" } };
-const directories = { worlds: 'public/worlds/' };
+const directories = { worlds: 'public/worlds/', avatars: 'public/User Avatars' };
 
 // CSRF Protection //
 const doubleCsrf = require('csrf-csrf').doubleCsrf;
@@ -1276,6 +1276,22 @@ app.post('/editworldinfo', jsonParser, (request, response) => {
     fs.writeFileSync(pathToFile, JSON.stringify(request.body.data));
 
     return response.send({ ok: true });
+});
+
+app.post('/uploaduseravatar', urlencodedParser, async (request, response) => {
+    if(!request.file) return response.sendStatus(400);
+
+    try {
+        const pathToUpload = path.join('./uploads/' + request.file.filename);
+        const image = await sharp(pathToUpload).resize(400, 400).toFormat('png').toBuffer();
+        const filename = `${Date.now()}.png`;
+        const pathToNewFile = path.join(directories.avatars, filename);
+        fs.writeFileSync(pathToNewFile, image);
+        fs.rmSync(pathToUpload);
+        return response.send({ path: filename });
+    } catch (err) {
+        return response.status(400).send('Is not a valid image');
+    }
 });
 
 // ** REST CLIENT ASYNC WRAPPERS **

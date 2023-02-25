@@ -825,7 +825,7 @@
                 if(online_status != 'no_connection' && this_chid != undefined){
                     if(type != 'regenerate'){
                         var textareaText = $("#send_textarea").val();
-                        $("#send_textarea").val('');
+                        $("#send_textarea").val('').trigger('input');
                         
                     }else{
                         var textareaText = "";
@@ -1704,7 +1704,38 @@
                     }
                 });
                 saveSettings();
-                
+                highlightSelectedAvatar();
+            });
+            $(document).on('click', '#user_avatar_block .avatar_upload', function() {
+                $('#avatar_upload_file').click();
+            });
+            $('#avatar_upload_file').on('change', function(e) {
+                const file = e.target.files[0];
+
+                if (!file) {
+                  return;
+                }
+
+                const formData = new FormData($("#form_upload_avatar").get(0));
+
+                jQuery.ajax({
+                    type: 'POST', 
+                    url: '/uploaduseravatar', 
+                    data: formData,
+                    beforeSend: () => {},
+                    cache: false,
+                    contentType: false,
+                    processData: false, 
+                    success: function(data){
+                        if (data.path) {
+                            appendUserAvatar(data.path);
+                        }
+                    },
+                    error: (jqXHR, exception) => {},
+                });
+
+                // Will allow to select the same file twice in a row
+                $('#form_upload_avatar').trigger("reset");
             });
             $('#logo_block').click(function(event) {  
                 if(!bg_menu_toggle){
@@ -2431,13 +2462,23 @@
                     //console.log(getData.length);
                     for(var i = 0; i < getData.length; i++) {
                         //console.log(1);
-                        $("#user_avatar_block").append('<div imgfile="'+getData[i]+'" class=avatar><img src="User Avatars/'+getData[i]+'" width=60px height=120px></div>');
+                        appendUserAvatar(getData[i]);
                     }
                     //var aa = JSON.parse(getData[0]);
                     //const load_ch_coint = Object.getOwnPropertyNames(getData);
                     
 
                 }
+            }
+
+            function highlightSelectedAvatar() {
+                $("#user_avatar_block").find('.avatar').removeClass('selected');
+                $("#user_avatar_block").find(`.avatar[imgfile='${user_avatar}']`).addClass('selected');
+            }
+
+            function appendUserAvatar(name) {
+                const block = $("#user_avatar_block").append('<div imgfile="'+name+'" class=avatar><img src="User Avatars/'+name+'" width=60px height=120px></div>');
+                highlightSelectedAvatar();
             }
 
             $(document).on('input', '#temp', function() {
@@ -4019,7 +4060,13 @@
             <hr style="margin-bottom: 5px;">
             
             <h4>Your Avatar</h4><h5></h5>
-            <div id="user_avatar_block"></div>
+            <div id="user_avatar_block">
+                <div class="avatar_upload">+</div>
+            </div>
+
+            <form id="form_upload_avatar"  action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                <input type="file" id="avatar_upload_file" accept="image/png" name="avatar">
+            </form>
             <form id='form_change_name' action="javascript:void(null);" method="post" enctype="multipart/form-data">
                 <h4>Name</h4>
                 <input id="your_name" name="your_name" class="text_pole" maxlength="35" size="16" value="" autocomplete="off">
