@@ -1475,7 +1475,6 @@ label.checkbox span {
   
 }
 label.checkbox :checked + span {
-  background:red;
   width:20px;
   height:20px;
   margin: 0px;
