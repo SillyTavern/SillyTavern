@@ -597,7 +597,7 @@
                 if(online_status != 'no_connection' && this_chid != undefined){
                     if(type != 'regenerate'){
                         var textareaText = $("#send_textarea").val();
-                        $("#send_textarea").val('');
+                        $("#send_textarea").val('').trigger('input');
                         
                     }else{
                         var textareaText = "";
