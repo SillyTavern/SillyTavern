@@ -4,8 +4,6 @@ public/characters/
 public/User Avatars/
 public/backgrounds/
 /uploads/
-/config.conf
 *.jsonl
 public/settings.json
-
 config.conf
