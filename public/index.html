@@ -751,10 +751,10 @@
 
                     for (const entry of newEntries) {
                         if (entry.position === world_info_position.after) {
-                            worldInfoAfter = `${worldInfoAfter}${entry.content}\n`;
+                            worldInfoAfter = `${entry.content}${worldInfoAfter}\n`;
                         }
                         else {
-                            worldInfoBefore = `${worldInfoBefore}${entry.content}\n`;
+                            worldInfoBefore = `${entry.content}${worldInfoBefore}\n`;
                         }
                         
                         if (encode(worldInfoBefore + worldInfoAfter).length >= world_info_budget) {
