@@ -584,6 +584,7 @@ input[type=button] {
 
 #rm_ch_create_block{
     display: none;
+	overflow-y: auto;
 }
 
 /* ################################################################*/
