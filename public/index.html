@@ -1226,7 +1226,7 @@
 			//maybe a way to simulate this would be to disable the eventListener for people iOS.
 			
             $("#send_textarea").keydown(function (e) {							
-                if(e.which === 13 && e.shiftKey && is_send_press == false) {	
+                if(e.which === 13 && !e.shiftKey && is_send_press == false) {	
                     is_send_press = true;										
                     e.preventDefault();											
                     Generate();

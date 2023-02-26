@@ -633,6 +633,7 @@ display: none;
     margin-top: 10px;
     margin: 10px;
     font-size: 1rem;
+	height: 2.5rem;
 	transition: 0.3s;
 }
 /*#api_button_novel{
