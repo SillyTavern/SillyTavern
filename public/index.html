@@ -197,7 +197,7 @@
                 //console.log(online_status);
                 if(online_status == 'no_connection'){
 					$("#send_textarea").attr('placeholder', "Not connected to API!");				//Input bar placeholder tells users they are not connected
-					$("#send_form").css("background-color", "rgba(255,0,0,0.3)");			//entire input form area is red when not connected
+					$("#send_form").css("background-color", "rgba(100,0,0,0.7)");			//entire input form area is red when not connected
 					$("#send_but").css("display", "none");									//send button is hidden when not connected
 					
 					
@@ -212,7 +212,7 @@
                     is_get_status_novel = false;
                 }else{
 					$("#send_textarea").attr('placeholder', 'Type a message...');				//on connect, placeholder tells user to type message
-					$("#send_form").css("background-color", "rgba(0,0,0,0.3)");					//on connect, form BG changes to transprent black
+					$("#send_form").css("background-color", "rgba(0,0,0,0.7)");					//on connect, form BG changes to transprent black
 					$("#send_but").css("display", "inline");									//on connect, send button shows up
 					
 					
@@ -3076,6 +3076,7 @@
 
                     <h4>API key</h4><h5>Where to get (<a href="/notes/6" target="_blank">?</a>)</h5>
                     <input id="api_key_novel" name="api_key_novel" class="text_pole" maxlength="500" size="35" value="" autocomplete="off">
+					<Br>
                     <input id="api_button_novel" type="submit" value="Connect">
                     <img id="api_loading_novel" src="img/load.svg" >
                 </form>
@@ -3175,11 +3176,11 @@
                 <div id="options_button">
                     <div id="options">
                         <div class="options-content">
-                        <a id="option_start_new_chat"><img src="img/save_and_start_new_chat.png" width="20" height="20">Start new chat</a>
-                        <a id="option_select_chat"><img src="img/book6.png" width="20" height="20" style="opacity: 0.0;"><img src="img/book6.png" style="width: 21px;height: 21px;position: absolute;top: 59px;left: 15px; opacity: 0.5;">Select chats</a><!--<img src="img/book6.png" style="width: 21px;height: 21px;position: absolute;top: 14px;left: 16px; opacity: 0.5;">Select chat</a>-->       
+                        <a id="option_start_new_chat"><img src="img/save_and_start_new_chat.png"><span>Start new chat</span></a>
+                        <a id="option_select_chat"><img src="img/book6.png"><span>View Past Chats</span></a>       
                         <hr>
-                        <a id="option_delete_mes"><img src="img/del_mes.png" width="20" height="20">Delete message</a>
-                        <a id="option_regenerate"><img src="img/regenerate.png" width="20" height="20">Regenerate</a>
+                        <a id="option_delete_mes"><img src="img/del_mes.png"><span>Delete messages</span></a>
+                        <a id="option_regenerate"><img src="img/regenerate.png"><span>Regenerate</span></a>
                         </div>
                     </div>
                 </div>

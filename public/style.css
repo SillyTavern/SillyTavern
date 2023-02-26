@@ -18,8 +18,8 @@ body {
     background-repeat: no-repeat;
     background-attachment: fixed;
     background-size: cover;
-    backdrop-filter: blur(2px);
-	-webkit-backdrop-filter: blur(2px);
+    /*backdrop-filter: blur(2px);*/
+	/*-webkit-backdrop-filter: blur(2px);*/
     scrollbar-width: thin;
     scrollbar-color: gray #191b31;
 	font-family: "Noto Sans", "Noto Color Emoji", sans-serif; /*add in custom font universally */
@@ -77,8 +77,6 @@ code {
     background-attachment: fixed;
     filter: blur(2px);
     background-size: cover;
-    backdrop-filter: blur(2px);
-	-webkit-backdrop-filter: blur(2px);
     opacity: 0.0;
     position: absolute;
     width: 100%;
@@ -166,11 +164,11 @@ code {
     grid-template-columns: 40px auto 40px;
     width: 100%;
     margin: 0 auto 0 auto;
-    border: 1px solid rgba(0,0,0,.3);
-    backdrop-filter: blur(10px) brightness(0.3);
-	-webkit-backdrop-filter: blur(10px) brightness(0.3);
+    border: 1px solid rgba(0,0,0,.5);
+    /*backdrop-filter: blur(10px) brightness(0.3);
+	-webkit-backdrop-filter: blur(10px) brightness(0.3);*/
     border-radius: 0 0px 20px 20px;
-	background-color:rgba(255,0,0,0.3);
+	background-color:rgba(100,0,0,0.7);
 }
 
 #send_but_sheld {
@@ -200,10 +198,12 @@ code {
     border:           none;
     cursor:           pointer;
 	transition: 0.3s;
-	filter:brightness(0.7);
+	filter:brightness(0.5);
 }
 
-#send_but:hover {filter:brightness(150%)}
+#send_but:hover {
+	filter:brightness(150%);
+	}
 
 #loading_mes{
     display: none;
@@ -242,15 +242,14 @@ code {
 }
 
 #options_button:hover {
-    color: #f4f4f4;
+    color: #fff;
 }
 
 
 #options{
-    border-radius: 5px;
     opacity: 0.0;
     display: none;
-    bottom: 196px;
+    bottom: 200px;		/*sets vertical position of the options menu to the left of input bar */
     position: relative;
     z-index:1990;  
 	
@@ -261,13 +260,13 @@ code {
   overflow: hidden;
   display: block;
   position: absolute;
-  background-color: rgba(0,0,0,1);
   backdrop-filter: brightness(0.3) blur(10px);
   -webkit-backdrop-filter: brightness(0.3) blur(10px);
-  border: 1px solid rgba(0,0,0,0.3);
+  border: 1px solid #666;
   border-radius: 15px;
   box-shadow: 0px 0px 5px #000;
-  min-width: 205px;
+  text-shadow: #000 0 0 3px;
+  min-width: 200px;
   z-index: 2000;
 }
 
@@ -281,19 +280,24 @@ code {
     background-image: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
 }
 .options-content a {
-  color: #ffffff55;
+  color: color: rgb(229, 224, 216);
   padding: 12px 16px;
   text-decoration: none;
   display: block;
 }
 
 .options-content img {
-  opacity: 0.5;
-  margin-right: 5px;
+    /* opacity: 0.5; */
+    margin-right: 10px;
+    height: 1.25rem;
+	vertical-align: middle;
 }
+.options-content span {vertical-align:middle;}
 
 /* Изменяем цвет ссылки при наведении */
-.options-content a:hover {background-color: #ffffff11}
+.options-content a:hover {
+	background-color: #333; 
+}
 
 
 .mes {
@@ -401,6 +405,8 @@ width: 100%;
     margin: 0;
 	text-shadow: #000 0 0 3px;
 }
+
+#send_textarea::placeholder{color:#ccc}
 
 #rm_ch_create_block textarea {
     font-size: 15px;
@@ -618,17 +624,24 @@ display: none;
     /*margin-right: 4px;*/
 	display:block;
 }
-#api_button{
+#api_button, #api_button_novel {
     cursor: pointer;
-    color:#ffffffaa;
-	padding-left: 7px;
+    color: #fff;
+	opacity:0.7;
+    padding: 10px;
     margin-left: 10px;
-    margin-top: 5px;
+    margin-top: 10px;
+    margin: 10px;
+    font-size: 1rem;
+	transition: 0.3s;
 }
-#api_button_novel{
+/*#api_button_novel{
     cursor: pointer;
     color:#ffffffaa;
-}
+}*/
+
+#api_button:hover, #api_button_novel:hover{background-color:green;}
+
 #api_loading{
     width: 25px;
     height: 25px;
@@ -959,22 +972,23 @@ width: 103px;
     margin-right: auto;
 }
 #delete_button{
-    opacity: 0.51;/* 0.5 */
+    opacity: 0.7;
     cursor: pointer;
     display: block;
-    float:right;
+    float: right;
     margin-top: 25px;
-    margin-right: 10px; 
+    margin-right: 25px;
     color: red;
+    font-size: 1rem;
 }
 #export_button{
-    opacity: 0.51;
+    opacity: 0.7;
     cursor: pointer;
-    display: block;
-    float:right;
+    display: inline;
     margin-top: 25px;
-    margin-right: 16px; 
+    margin-left: 10px;
     color: #fff;
+    font-size: 1rem;
 }
 #result_info{
     margin-left: 10px;
@@ -1733,21 +1747,20 @@ label.checkbox :checked + span:after {
 
 
 #advanced_div{
-    font-size: 14px;
+    font-size: 1rem;
     background-repeat: no-repeat;
     background-size: 28px;
     background-position: 92px 5px;
-    /* background-image: url('img/book5.png'); */
     width: 92%;
     height: 40px;
     margin-left: 10px;
     font-weight: bold;
-    color: #ffffffbb;
+    color: #fff;
     padding: 0.5em;
     border: thin solid rgba(200,200,200,0.2);
     border-radius: 3px;
 	background-color: rgba(0,0,0,0.3);
-    opacity: 1.0;
+    opacity: 0.7;
     /*font-family: "Source Sans Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;*/
 }
 #advanced_book_logo{
