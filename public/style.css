@@ -127,7 +127,7 @@ code {
 	border-right:1px solid rgba(0,0,0,.3);
 	backdrop-filter: blur(10px) brightness(0.3);
 	-webkit-backdrop-filter: blur(10px) brightness(0.3);
-	border-radius: 0 0 40px 40px;
+	/*border-radius: 0 0 40px 40px;*/
 	text-shadow: #000 0 0 3px;
 	
 }
@@ -156,20 +156,20 @@ code {
 }
 #form_sheld {
     white-space:nowrap;
-	width:90%;
-	margin: 10px auto 10px auto;
+	width:100%;
+	margin: 1px auto 10px auto;
 }
 
 #send_form {
     display: grid;
     align-items: center;
-    grid-template-columns: 40px auto 40px;
+    grid-template-columns: 50px auto 50px;
     width: 100%;
     margin: 0 auto 0 auto;
     border: 1px solid rgba(0,0,0,.3);
     backdrop-filter: blur(10px) brightness(0.3);
-		-webkit-backdrop-filter: blur(10px) brightness(0.3);
-    border-radius: 40px;
+	-webkit-backdrop-filter: blur(10px) brightness(0.3);
+    border-radius: 0 0px 40px 40px;
 	background-color:rgba(255,0,0,0.3);
 }
 
@@ -229,7 +229,8 @@ code {
     -webkit-transition: color .25s ease-in-out;
     -moz-transition: color .25s ease-in-out;
     transition: color .25s ease-in-out;
-    padding: 11px;
+	padding-left: 20px;
+    padding-top: 10px;
 	
 }
 
