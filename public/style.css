@@ -1530,8 +1530,8 @@ label.checkbox :checked + span:after {
     backdrop-filter: blur(50px);
     -webkit-backdrop-filter: blur(50px);
     grid-template-rows: 50px 100px 100px 40px auto 45px 45px;
-    max-width: 802px;	/* 802 instead of 800 to cover #chat's scrollbars entirely */
-    height: 90vh;		/* imperfect calculation designed to match the chat height, which is auto-set to (100% - form_sheld height) */
+    max-width: 800px;
+    height: calc(100vh - 50px);
     position: absolute;
     z-index: 2065;
     margin-left: auto;
@@ -1542,7 +1542,7 @@ label.checkbox :checked + span:after {
     box-shadow: 0 0 2px rgb(0 0 0 / 50%);
     padding: 4px;
     border: 1px solid rgba(0,0,0,0.3);
-    /*border-radius: 0 0 40px 40px;*/
+    border-radius: 0 0 40px 40px;
 }
 #character_popup h5 a{
     color: #936f4a;
