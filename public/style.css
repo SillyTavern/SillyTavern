@@ -144,7 +144,7 @@ code {
 }
 
 #chat::-webkit-scrollbar-track {
-    margin-bottom: 30px;
+    /*margin-bottom: 30px;*/
 }
 
 ::-webkit-scrollbar-thumb {
@@ -299,13 +299,13 @@ code {
 .mes {
     display: grid;
     grid-template-columns: fit-content(60px) 60px auto;
-    border-radius: 5px;
-    padding: 5px;
-	padding-left: 15px;
+    /* border-radius: 5px; */
+    padding: 10px;
+    padding-left: 15px;
     vertical-align: top;
     width: 100%;
     color: rgb(229, 224, 216);
-    margin-bottom: 26px;
+    /* margin-bottom: 26px;*/
 }
 .avatar {
     width: 60px;
@@ -1060,7 +1060,7 @@ width: 103px;
 #dialogue_popup_ok{
     display: inline-block;
     margin-right: 20px;
-    background-color: #791b31;
+    background-color: #c00;
     cursor: pointer;
 }
 #dialogue_popup_cancel{
@@ -1069,15 +1069,17 @@ width: 103px;
     cursor: pointer;
 }
 #dialogue_del_mes{
-    width:100%;
+    width: 100%;
     margin-left: auto;
     margin-right: auto;
+    margin-top: 4px;
     text-align: center;
-    padding: 4px;
+    padding: 0px;
+    height: min-content;
 }
-#dialogue_del_mes_ok{
+#dialogue_del_mes_ok{			/*changes background of OK button in the deletion menu*/
     display: inline-block;
-    background-color: #791b31;
+    background-color: #c00;
     cursor: pointer;
 }
 #dialogue_del_mes_cancel{
@@ -1087,14 +1089,14 @@ width: 103px;
 .menu_button{
     font-weight: bold;
     color: #fff;
-    padding: 0.5em;
-    border: thin solid rgba(200,200,200,0.2);
+    padding: 5px;
+    border: 1px solid rgba(0,0,0,0.5);
     border-radius: 3px;
-    background-color: rgba(0,0,0,0.3);
+    background-color: rgba(0,0,0,0.5);
 }
 #dialogue_del_mes .menu_button{
-    font-weight: bold;
-    font-size: 20px;
+	font-weight: bold;
+    font-size: 1.25rem;
 
 }
 #shadow_popup{
@@ -1217,19 +1219,20 @@ width: 103px;
 
 
 input[type='checkbox'] {
-  -webkit-appearance: none;
-     -moz-appearance: none;
-          appearance: none;
-  outline: none;
-   position: relative;
-  width: 1.5rem;
-  height: 1.5rem;
-  border: 2px solid #rgba(0,0,0,0.5);
-  overflow: hidden;
-  border-radius: 3px;
-  background-color:white;
-  box-shadow: inset 0 0 3px 0 rgba(0, 0, 0, 0.8);
-  cursor: pointer;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    outline: none;
+    position: relative;
+    width: 1.5rem;
+    height: 1.5rem;
+    overflow: hidden;
+    border-radius: 3px;
+    background-color: white;
+    box-shadow: inset 0 0 3px 0 rgb(0 0 0 / 80%);
+    cursor: pointer;
+    margin-top: 18px; /*odd but this is what aligns it with the character avatar*/
+    right: 5px; /*and centers it in the checkbox column*/
 }
 
 input[type='checkbox']::before {

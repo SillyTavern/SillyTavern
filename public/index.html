@@ -1436,16 +1436,16 @@
                 }
                 
             });
-            $(document).on('click', '.del_checkbox', function(){		//when a checkbox is clicked
+            $(document).on('click', '.del_checkbox', function(){		//when a 'delete message' checkbox is clicked
                 $('.del_checkbox').each(function(){
                     $(this).prop( "checked", false );
                     $(this).parent().css('background', css_mes_bg);
                 });
-                $(this).parent().css('background', "#791b31");			//sets the bg of the selected msg to a muted red
+                $(this).parent().css('background', "#600");			//sets the bg of the mes selected for deletion
                 var i = $(this).parent().attr('mesid');					//checks the message ID in the chat
                 this_del_mes = i;
                 while(i < chat.length){									//as long as the current message ID is less than the total chat length
-                    $(".mes[mesid='"+i+"']").css('background', "#791b31");	//sets the bg of the all msgs BELOW the selected msg to a muted red as well
+                    $(".mes[mesid='"+i+"']").css('background', "#600");	//sets the bg of the all msgs BELOW the selected .mes
                     $(".mes[mesid='"+i+"']").children('.del_checkbox').prop( "checked", true );
                     i++;
                     //console.log(i);
@@ -3167,7 +3167,7 @@
         <div id="chat"></div>
         <div id="form_sheld">            
             <div id="dialogue_del_mes">
-                <div id="dialogue_del_mes_text"><h3></h3></div>
+                <!-- <div id="dialogue_del_mes_text"><h3></h3></div> -->
                 <div id="dialogue_del_mes_ok" class="menu_button">Delete</div>
                 <div id="dialogue_del_mes_cancel" class="menu_button">Cancel</div>
             </div>
