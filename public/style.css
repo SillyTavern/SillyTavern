@@ -245,7 +245,6 @@ code {
     color: #fff;
 }
 
-
 #options{
     opacity: 0.0;
     display: none;
@@ -254,7 +253,6 @@ code {
     z-index:1990;  
 	
 }
-
 
 .options-content {
   overflow: hidden;
@@ -979,6 +977,7 @@ width: 103px;
     float: right;
     margin-top: 25px;
     margin-right: 25px;
+	margin-bottom: 30px;
     color: red;
     font-size: 1rem;
 }
@@ -988,6 +987,7 @@ width: 103px;
     display: inline;
     margin-top: 25px;
     margin-left: 10px;
+	margin-bottom:30px;
     color: #fff;
     font-size: 1rem;
 }
@@ -1557,7 +1557,7 @@ label.checkbox :checked + span:after {
     box-shadow: 0 0 2px rgb(0 0 0 / 50%);
     padding: 4px;
     border: 1px solid rgba(0,0,0,0.3);
-    border-radius: 0 0 40px 40px;
+    border-radius: 0 0 20px 20px;
 }
 #character_popup h5 a{
     color: #936f4a;
