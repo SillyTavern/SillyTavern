@@ -1,8 +1,10 @@
-node_modules
+node_modules/
+public/chats/
+public/characters/
+public/User Avatars/
+public/backgrounds/
+/uploads/
+*.jsonl
+public/settings.json
+config.conf
 .DS_Store
-/public/chats
-/public/characters
-/public/User Avatars
-/public/backgrounds
-/uploads
-/config.conf

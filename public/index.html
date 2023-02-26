@@ -240,6 +240,11 @@
 			function checkOnlineStatus(){
                 //console.log(online_status);
                 if(online_status == 'no_connection'){
+					$("#send_textarea").attr('placeholder', "Not connected to API!");				//Input bar placeholder tells users they are not connected
+					$("#send_form").css("background-color", "rgba(255,0,0,0.3)");			//entire input form area is red when not connected
+					$("#send_but").css("display", "none");									//send button is hidden when not connected
+					
+					
                     $("#online_status_indicator").css("background-color", "red");
                     $("#online_status").css("opacity", 0.3);
                     $("#online_status_text").html("No connection...");
@@ -250,6 +255,11 @@
                     is_get_status = false;
                     is_get_status_novel = false;
                 }else{
+					$("#send_textarea").attr('placeholder', 'Type a message...');				//on connect, placeholder tells user to type message
+					$("#send_form").css("background-color", "rgba(0,0,0,0.3)");					//on connect, form BG changes to transprent black
+					$("#send_but").css("display", "inline");									//on connect, send button shows up
+					
+					
                     $("#online_status_indicator").css("background-color", "black");
                     $("#online_status").css("display", "none");
                     $("#online_status_text").html("");
@@ -1469,10 +1479,21 @@
                 printMessages();
                 select_selected_character(this_chid);
             }
-            $("#send_textarea").keypress(function (e) {
-                if(e.which === 13 && !e.shiftKey && is_send_press == false) {
-                    is_send_press = true;
-                    e.preventDefault();
+			
+			//hotkey to send input with shift+enter (normal enter keypress generates a new line in the chat input box)
+			//problem for mobile: default iOS keyboard function is to make AutoCapitalization happen on new lines.
+			//AutoCapitization effectively presses the virtual Shift key when it thinks a new line/sentence is happening. 
+			//iOS result: First Enter press will make a new line, but the second will act like shift+enter, sending the prompt to AI.
+			//ideally we would detect if the user is using a virtual keyboard, and disable this shortcut for them.
+			//because mobile users' hands are always near the screen, tapping the send button is better for them.
+			//caveat: people on an iPad using a Bluetooth keyboard will need to be treated as PC users for this purpose.
+			//note: CAI seems to have this handled. PC: shift+enter = new line, enter = send. iOS: shift+enter AND enter both make new lines, and only the send button sends. 
+			//maybe a way to simulate this would be to disable the eventListener for people iOS.
+			
+            $("#send_textarea").keydown(function (e) {							
+                if(e.which === 13 && e.shiftKey && is_send_press == false) {	
+                    is_send_press = true;										
+                    e.preventDefault();											
                     Generate();
                     //$(this).closest("form").submit();
                 }
@@ -1680,16 +1701,16 @@
                 }
                 
             });
-            $(document).on('click', '.del_checkbox', function(){		//when a checkbox is clicked
+            $(document).on('click', '.del_checkbox', function(){		//when a 'delete message' checkbox is clicked
                 $('.del_checkbox').each(function(){
                     $(this).prop( "checked", false );
                     $(this).parent().css('background', css_mes_bg);
                 });
-                $(this).parent().css('background', "#791b31");			//sets the bg of the selected msg to a muted red
+                $(this).parent().css('background', "#600");			//sets the bg of the mes selected for deletion
                 var i = $(this).parent().attr('mesid');					//checks the message ID in the chat
                 this_del_mes = i;
                 while(i < chat.length){									//as long as the current message ID is less than the total chat length
-                    $(".mes[mesid='"+i+"']").css('background', "#791b31");	//sets the bg of the all msgs BELOW the selected msg to a muted red as well
+                    $(".mes[mesid='"+i+"']").css('background', "#600");	//sets the bg of the all msgs BELOW the selected .mes
                     $(".mes[mesid='"+i+"']").children('.del_checkbox').prop( "checked", true );
                     i++;
                     //console.log(i);
@@ -4165,7 +4186,7 @@
         <div id="chat"></div>
         <div id="form_sheld">            
             <div id="dialogue_del_mes">
-                <div id="dialogue_del_mes_text"><h3></h3></div>
+                <!-- <div id="dialogue_del_mes_text"><h3></h3></div> -->
                 <div id="dialogue_del_mes_ok" class="menu_button">Delete</div>
                 <div id="dialogue_del_mes_cancel" class="menu_button">Cancel</div>
             </div>
@@ -4182,7 +4203,7 @@
                     </div>
                 </div>
 				<!-- <div contenteditable="true" id="send_textarea">Type a message...</div> -->
-                <textarea id="send_textarea" placeholder="Type a message..." name="text"></textarea>
+                <textarea id="send_textarea" placeholder="Not connected to API!" name="text"></textarea>
 				
 <script type="text/javascript">
     $('#send_textarea').on('input', function () {
@@ -4195,12 +4216,12 @@
                 <div id="send_but_sheld">
 					
 					<div id="loading_mes"></div>
-					
+				<!--	
 					<div id="online_status">
 						<div id="online_status_indicator"></div>
 						<div id="online_status_text">Not connected</div>
 					</div>
-					
+				-->	
 					<input id="send_but" type="button">
 
 				</div>

@@ -139,7 +139,7 @@ code {
 	border-right:1px solid rgba(0,0,0,.3);
 	backdrop-filter: blur(10px) brightness(0.3);
 	-webkit-backdrop-filter: blur(10px) brightness(0.3);
-	border-radius: 0 0 40px 40px;
+	/*border-radius: 0 0 40px 40px;*/
 	text-shadow: #000 0 0 3px;
 	
 }
@@ -156,7 +156,7 @@ code {
 }
 
 #chat::-webkit-scrollbar-track {
-    margin-bottom: 30px;
+    /*margin-bottom: 30px;*/
 }
 
 ::-webkit-scrollbar-thumb {
@@ -168,38 +168,23 @@ code {
 }
 #form_sheld {
     white-space:nowrap;
-	width:90%;
-	margin: 10px auto 10px auto;
+	width:100%;
+	margin: 1px auto 10px auto;
 }
 
 #send_form {
     display: grid;
     align-items: center;
-    grid-template-columns: 40px auto 40px;
+    grid-template-columns: 50px auto 50px;
     width: 100%;
     margin: 0 auto 0 auto;
     border: 1px solid rgba(0,0,0,.3);
     backdrop-filter: blur(10px) brightness(0.3);
-		-webkit-backdrop-filter: blur(10px) brightness(0.3);
-    border-radius: 40px;
+	-webkit-backdrop-filter: blur(10px) brightness(0.3);
+    border-radius: 0 0px 40px 40px;
+	background-color:rgba(255,0,0,0.3);
 }
-#send_textarea{
-    font-size: 1rem;
-    line-height: 1.5rem;
-    min-height: calc(1.5em + 0.75rem + 2px);
-    max-height: 50vh;
-    word-wrap: breakword;
-    height: 40px;
-    resize: vertical;
-    display: block;
-    background-color: rgba(0,0,0,0);
-    border: 0px;
-    box-shadow: none !important; /*0 0 0px rgb(200 200 200 / 50%);*/
-    padding:6px 0 6px 0;
-	font-family: "Noto Sans", sans-serif;
-    margin: 0;
-	text-shadow: #000 0 0 3px;
-}
+
 #send_but_sheld {
     padding: 0;
     border: 0;
@@ -217,7 +202,7 @@ code {
     width: 40px;
     height: 40px;
 	margin: 0;
-    display: inline;
+    display: none;
 	padding:1px;
     background: url('img/send3.png') no-repeat top left;
     background-size: 26px auto;
@@ -256,7 +241,8 @@ code {
     -webkit-transition: color .25s ease-in-out;
     -moz-transition: color .25s ease-in-out;
     transition: color .25s ease-in-out;
-    padding: 11px;
+	padding-left: 20px;
+    padding-top: 10px;
 	
 }
 
@@ -325,13 +311,13 @@ code {
 .mes {
     display: grid;
     grid-template-columns: fit-content(60px) 60px auto;
-    border-radius: 5px;
-    padding: 5px;
-	padding-left: 15px;
+    /* border-radius: 5px; */
+    padding: 10px;
+    padding-left: 15px;
     vertical-align: top;
     width: 100%;
     color: rgb(229, 224, 216);
-    margin-bottom: 26px;
+    /* margin-bottom: 26px;*/
 }
 .avatar {
     width: 60px;
@@ -414,6 +400,25 @@ width: 100%;
     margin-left: 10px;
     margin-top: 10px;
 }
+
+#send_textarea{
+    font-size: 1rem;
+    line-height: 1.5rem;
+    min-height: calc(1.5em + 0.75rem + 2px);
+    max-height: 50vh;
+    word-wrap: breakword;
+    height: 40px;
+    resize: vertical;
+    display: block;
+    background-color: rgba(255,0,0,0);
+	border:0;
+    box-shadow: none !important; /*0 0 0px rgb(200 200 200 / 50%);*/
+    padding:6px 0 6px 0;
+	font-family: "Noto Sans", sans-serif;
+    margin: 0;
+	text-shadow: #000 0 0 3px;
+}
+
 #rm_ch_create_block textarea {
     font-size: 15px;
 }
@@ -601,6 +606,7 @@ input[type=button] {
 
 #rm_ch_create_block{
     display: none;
+	overflow-y: auto;
 }
 
 /* ################################################################*/
@@ -1120,7 +1126,7 @@ width: 103px;
 #dialogue_popup_ok{
     display: inline-block;
     margin-right: 20px;
-    background-color: #791b31;
+    background-color: #c00;
     cursor: pointer;
 }
 #dialogue_popup_cancel{
@@ -1129,15 +1135,17 @@ width: 103px;
     cursor: pointer;
 }
 #dialogue_del_mes{
-    width:100%;
+    width: 100%;
     margin-left: auto;
     margin-right: auto;
+    margin-top: 4px;
     text-align: center;
-    padding: 4px;
+    padding: 0px;
+    height: min-content;
 }
-#dialogue_del_mes_ok{
+#dialogue_del_mes_ok{			/*changes background of OK button in the deletion menu*/
     display: inline-block;
-    background-color: #791b31;
+    background-color: #c00;
     cursor: pointer;
 }
 #dialogue_del_mes_cancel{
@@ -1147,14 +1155,14 @@ width: 103px;
 .menu_button{
     font-weight: bold;
     color: #fff;
-    padding: 0.5em;
-    border: thin solid rgba(200,200,200,0.2);
+    padding: 5px;
+    border: 1px solid rgba(0,0,0,0.5);
     border-radius: 3px;
-    background-color: rgba(0,0,0,0.3);
+    background-color: rgba(0,0,0,0.5);
 }
 #dialogue_del_mes .menu_button{
-    font-weight: bold;
-    font-size: 20px;
+	font-weight: bold;
+    font-size: 1.25rem;
 
 }
 #shadow_popup{
@@ -1531,19 +1539,20 @@ width: 103px;
 
 
 input[type='checkbox'] {
-  -webkit-appearance: none;
-     -moz-appearance: none;
-          appearance: none;
-  outline: none;
-   position: relative;
-  width: 1.5rem;
-  height: 1.5rem;
-  border: 2px solid #rgba(0,0,0,0.5);
-  overflow: hidden;
-  border-radius: 3px;
-  background-color:white;
-  box-shadow: inset 0 0 3px 0 rgba(0, 0, 0, 0.8);
-  cursor: pointer;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    outline: none;
+    position: relative;
+    width: 1.5rem;
+    height: 1.5rem;
+    overflow: hidden;
+    border-radius: 3px;
+    background-color: white;
+    box-shadow: inset 0 0 3px 0 rgb(0 0 0 / 80%);
+    cursor: pointer;
+    margin-top: 18px; /*odd but this is what aligns it with the character avatar*/
+    right: 5px; /*and centers it in the checkbox column*/
 }
 
 input[type='checkbox']::before {
@@ -1810,7 +1819,6 @@ label.checkbox span {
   
 }
 label.checkbox :checked + span {
-  background:red;
   width:20px;
   height:20px;
   margin: 0px;
@@ -1852,13 +1860,13 @@ label.checkbox :checked + span:after {
     z-index: 2058;
 }
 #character_popup{
-    display: none;
-	background-color: rgba(0,0,0,0.3);
-	backdrop-filter: blur(50px);
-	-webkit-backdrop-filter: blur(50px);
+	display: none;
+    background-color: rgba(0,0,0,0.3);
+    backdrop-filter: blur(50px);
+    -webkit-backdrop-filter: blur(50px);
     grid-template-rows: 50px 100px 100px 40px auto 45px 45px;
-    max-width:800px;
-    height: 83vh;
+    max-width: 802px;	/* 802 instead of 800 to cover #chat's scrollbars entirely */
+    height: 90vh;		/* imperfect calculation designed to match the chat height, which is auto-set to (100% - form_sheld height) */
     position: absolute;
     z-index: 2065;
     margin-left: auto;
@@ -1866,9 +1874,10 @@ label.checkbox :checked + span:after {
     left: 0;
     right: 0;
     margin-top: 40px;
-    box-shadow: 0 0 2px rgba(0,0,0,0.5);
+    box-shadow: 0 0 2px rgb(0 0 0 / 50%);
     padding: 4px;
-	border: 1px solid #33;
+    border: 1px solid rgba(0,0,0,0.3);
+    /*border-radius: 0 0 40px 40px;*/
 }
 #character_popup h5 a{
     color: #936f4a;
