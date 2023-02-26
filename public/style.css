@@ -163,13 +163,13 @@ code {
 #send_form {
     display: grid;
     align-items: center;
-    grid-template-columns: 50px auto 50px;
+    grid-template-columns: 40px auto 40px;
     width: 100%;
     margin: 0 auto 0 auto;
     border: 1px solid rgba(0,0,0,.3);
     backdrop-filter: blur(10px) brightness(0.3);
 	-webkit-backdrop-filter: blur(10px) brightness(0.3);
-    border-radius: 0 0px 40px 40px;
+    border-radius: 0 0px 20px 20px;
 	background-color:rgba(255,0,0,0.3);
 }
 
@@ -229,7 +229,7 @@ code {
     -webkit-transition: color .25s ease-in-out;
     -moz-transition: color .25s ease-in-out;
     transition: color .25s ease-in-out;
-	padding-left: 20px;
+	padding-left: 10px;
     padding-top: 10px;
 	
 }
