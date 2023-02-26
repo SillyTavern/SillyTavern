@@ -62,6 +62,8 @@
             var mesStr = '';
             var generatedPromtCache = '';
             var characters = [];
+            let groups = [];
+            let selected_group = null;
             var this_chid;
             var backgrounds = [];
             var default_avatar = 'img/fluffy.png';
@@ -72,6 +74,7 @@
             const system_message_types = {
                 HELP: 'help',
                 WELCOME: 'welcome',
+                GROUP: 'group',
             };
 
             const system_messages = {
@@ -83,6 +86,14 @@
                     "is_name":true,
                     "mes": "Hi there! The following chat formatting commands are supported in TavernAI:<br><ul><li><tt>*text*</tt> – format the actions that your character does</li><li><tt>{*text*}</tt> – set the behavioral bias for your character</li></ul><p>Need more help? Visit our wiki – <a href=\"https://github.com/TavernAI/TavernAI/wiki\">TavernAI Wiki</a>!</p>"
                 },
+                'group': {
+                    "name": systemUserName,
+                    "force_avatar": "img/chloe.png",
+                    "is_user":false,
+                    "is_system": true,
+                    "is_name": true,
+                    "mes": "Group chat created. Say 'Hi' to lovely people!"
+                }
             };
 
             const world_info_position = {
@@ -106,6 +117,7 @@
             
             var timerSaveEdit;
             var timerWorldSave;
+            var timerGroupSave;
             var durationSaveEdit = 200;
             //animation right menu
             var animation_rm_duration = 200;
@@ -433,11 +445,16 @@
                     $("#rm_print_characters_block").prepend('<div class=character_select chid='+i+'><div class=avatar><img src="'+this_avatar+'"></div><div class=ch_name>'+item.name+'</div></div>');
                     //console.log(item.name);
                 });
-                
-                
+                for (let group of groups) {
+                    const template = $('#group_list_template .group_select').clone();
+                    template.data('id', group.id);
+                    template.find('.avatar img').attr('src', group.avatar_url);
+                    template.find('.ch_name').html(group.name);
+                    $('#rm_print_characters_block').prepend(template);
+                }
             }
             async function getCharacters() {
-                
+                await getGroups();
                 const response = await fetch("/getcharacters", {
                     method: "POST",
                     headers: {
@@ -1491,7 +1508,7 @@
 			//maybe a way to simulate this would be to disable the eventListener for people iOS.
 			
             $("#send_textarea").keydown(function (e) {							
-                if(e.which === 13 && e.shiftKey && is_send_press == false) {	
+                if(e.which === 13 && !e.shiftKey && is_send_press == false) {	
                     is_send_press = true;										
                     e.preventDefault();											
                     Generate();
@@ -1520,6 +1537,7 @@
                 
                 $( "#rm_ch_create_block" ).css("display", "none");
                 $( "#rm_info_block" ).css("display", "none");
+                $("#rm_group_chats_block").css("display", "none");
                 
                 $( "#rm_button_characters" ).children("h2").css(deselected_button_style);
                 $( "#rm_button_settings" ).children("h2").css(selected_button_style);
@@ -1541,6 +1559,280 @@
                 selected_button = 'character_edit';
                 select_selected_character(this_chid);
             });
+            $(document).on('click', '.group_select', async function() {
+                const id = $(this).data('id');
+                selected_button = 'group_chats';
+
+                if (selected_group !== id){
+                    if(!is_send_press){
+                        selected_group = id;
+                        this_edit_mes_id = undefined;
+                        clearChat();
+                        chat.length = 0;
+                        await getGroupChat(id);
+                    }
+                }
+
+                select_group_chats(id);
+            });
+            $("#rm_button_group_chats").click(function() {
+                selected_button = 'group_chats';
+                select_group_chats();
+            });
+            $( "#rm_button_back_from_group" ).click(function() {
+                selected_button = 'characters';
+                select_rm_characters();
+            });
+            $('#rm_group_filter').on('input', function() {
+                const searchValue = $(this).val().trim().toLowerCase();
+                
+                if (!searchValue) {
+                    $("#rm_group_add_members .group_member").show();
+                } else {
+                    $("#rm_group_add_members .group_member").each(function () {
+                        $(this).children('.ch_name').text().toLowerCase().includes(searchValue)
+                            ? $(this).show()
+                            : $(this).hide();
+                    });
+                }
+            });
+            $('#rm_group_submit').click(async function() {
+                let name = $('#rm_group_chat_name').val();
+                const members = $('#rm_group_members .group_member').map((_, x) => $(x).data('id')).toArray();
+
+                if (!name) {
+                    name = `Chat with ${members.join(', ')}`;
+                }
+
+                // placeholder
+                const avatar_url = '/img/five.png';
+
+                const createGroupResponse = await fetch('/creategroup', { 
+                    method: 'POST',
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-Token": token,
+                    },
+                    body: JSON.stringify({ name: name, members: members, avatar_url: avatar_url }),
+                });
+
+                if (createGroupResponse.ok) {
+                    const createGroupData = await createGroupResponse.json();
+                    const id = createGroupData.id;
+
+                    await getCharacters();
+                    $('#rm_info_avatar').html('');
+                    var avatar = $('#avatar_div_div').clone();
+                    avatar.find('img').attr('src', avatar_url);
+                    $('#rm_info_avatar').append(avatar);
+                    $('#rm_info_block').transition({ opacity: 0 ,duration: 0});
+                    select_rm_info("Group chat created");
+                    $('#rm_info_block').transition({ opacity: 1.0 ,duration: 2000});
+                }
+            });
+            async function getGroupChat(id) {
+                const response = await fetch('/getgroupchat', {
+                    method: 'POST',
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-Token": token,
+                    },
+                    body: JSON.stringify({ id: id }),
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if(Array.isArray(data) && data.length) {
+                        for (let key of data) {
+                            chat.push(key);
+                        }
+                        printMessages();
+                    }
+                    else {
+                        sendSystemMessage(system_message_types.GROUP);
+                    }
+
+                    await saveGroupChat(id);
+                }
+            }
+            async function saveGroupChat(id) {
+                const response = await fetch('/savegroupchat', { 
+                    method: 'POST',
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-Token": token,
+                    },
+                    body: JSON.stringify({id: id, chat: [...chat]})
+                });
+            }
+            async function getGroups() {
+                const response = await fetch('/getgroups', { 
+                    method: 'POST',
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-Token": token,
+                    },
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    groups = data.sort((a,b) => a.id - b.id);
+                }
+            }
+            async function deleteGroup(id) {
+                const response = await fetch('/deletegroup', { 
+                    method: 'POST',
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-Token": token,
+                    },
+                    body: JSON.stringify({id : id}),
+                });
+
+                if (response.ok) {
+                    await getCharacters();
+                    $('#rm_info_avatar').html('');
+                    $('#rm_info_block').transition({ opacity: 0 ,duration: 0});
+                    select_rm_info("Group deleted!");
+                    $('#rm_info_block').transition({ opacity: 1.0 ,duration: 2000});
+                }
+                
+            }
+            async function editGroup(id, immediately) {
+                const group = groups.find(x => x.id == id);
+
+                if (!group) {
+                    return;
+                }
+
+                async function _save() {
+                    const response = await fetch('/editgroup', {
+                        method: 'POST',
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRF-Token": token,
+                        },
+                        body: JSON.stringify(group),
+                    });
+                }
+
+                if (immediately) {
+                    return await _save();
+                }
+
+                clearTimeout(timerGroupSave);
+                timerGroupSave = setTimeout(async () => await _save(), durationSaveEdit);
+            }
+
+            function select_group_chats(chat_id) {
+                menu_type = 'group_chats';
+                const group = chat_id && groups.find(x => x.id == chat_id);
+                const groupName = group?.name ?? '';
+                
+                $('#rm_group_chat_name').val(groupName);
+                $('#rm_group_chat_name').off();
+                $('#rm_group_chat_name').on('input', async function() {
+                    if (chat_id) {
+                        group.name = $(this).val();
+                        await editGroup(chat_id);
+                    }
+                });
+                $('#rm_group_filter').val('').trigger('input');
+                $("#rm_group_chats_block").css("display", "flex");
+                $('#rm_group_chats_block').css('opacity', 0.0);
+                $('#rm_group_chats_block').transition({
+                    opacity: 1.0,
+                    duration: animation_rm_duration,
+                    easing: animation_rm_easing,
+                    complete: function() {  }
+                });
+
+                $("#rm_ch_create_block").css("display", "none");
+                $("#rm_characters_block" ).css("display", "none");
+
+                async function memberClickHandler() {
+                    const id = $(this).data('id');
+                    const isDelete = !!($(this).closest('#rm_group_members').length);
+                    const template = $(this).clone();
+                    template.data('id', id);
+                    template.click(memberClickHandler);
+
+                    if (isDelete) {
+                        template.find('.plus').show();
+                        template.find('.minus').hide();
+                        $('#rm_group_add_members').prepend(template);
+                    } else {
+                        template.find('.plus').hide();
+                        template.find('.minus').show();
+                        $('#rm_group_members').prepend(template);
+                    }
+
+                    if (group) {
+                        if (isDelete) {
+                            const index = group.members.findIndex(x => x === id);
+                            if (index !== -1) {
+                                group.members.splice(index, 1);
+                            }
+                        } else {
+                            group.members.push(id);
+                        }
+                        await editGroup(chat_id);
+                    }
+
+                    $(this).remove();
+                    const groupHasMembers = !!$('#rm_group_members').children().length;
+                    $("#rm_group_submit").prop('disabled', !groupHasMembers);
+                }
+
+                // render characters list
+                $('#rm_group_add_members').empty();
+                $('#rm_group_members').empty();
+                for (let character of characters) {
+                    const avatar = character.avatar != 'none' ? `characters/${character.avatar}#${Date.now()}` : default_avatar;
+                    const template = $('#group_member_template .group_member').clone();
+                    template.data('id', character.name);
+                    template.find('.avatar img').attr('src', avatar);
+                    template.find('.ch_name').html(character.name);
+                    template.click(memberClickHandler);
+                    
+                    if (group && Array.isArray(group.members) && group.members.includes(character.name)) {
+                        template.find('.plus').hide();
+                        template.find('.minus').show();
+                        $('#rm_group_members').append(template);
+                    } else {
+                        template.find('.plus').show();
+                        template.find('.minus').hide();
+                        $('#rm_group_add_members').append(template);
+                    }
+                }
+
+                const groupHasMembers = !!$('#rm_group_members').children().length;
+                $("#rm_group_submit").prop('disabled', !groupHasMembers);
+
+                // bottom buttons
+                if (chat_id) {
+                    $('#rm_group_submit').hide();
+                    $('#rm_group_delete').show();
+                } else {
+                    $('#rm_group_submit').show();
+                    $('#rm_group_delete').hide();
+                }
+
+                $('#rm_group_delete').off();
+                $('#rm_group_delete').on('click', function() {
+                    popup_type = 'del_group';
+                    $('#dialogue_popup').data('group_id', chat_id);
+                    callPopup('<h3>Delete the group?</h3>');
+                });
+
+                // top bar
+                if (group) {
+                    var display_name = groupName;
+                    $("#rm_button_selected_ch").children("h2").css(deselected_button_style);
+                    $("#rm_button_selected_ch").children("h2").text('');
+                }
+            }
+
             function select_rm_create(){
                 menu_type = 'create';
                 if(selected_button == 'create'){
@@ -1553,6 +1845,7 @@
                 $( "#rm_characters_block" ).css("display", "none");
                 $( "#rm_api_block" ).css("display", "none");
                 $( "#rm_ch_create_block" ).css("display", "block");
+                $("#rm_group_chats_block").css("display", "none");
                 
                 $('#rm_ch_create_block').css('opacity',0.0);
                 $('#rm_ch_create_block').transition({  
@@ -1606,6 +1899,7 @@
                 $( "#rm_api_block" ).css("display", "none");
                 $( "#rm_ch_create_block" ).css("display", "none");
                 $( "#rm_info_block" ).css("display", "none");
+                $("#rm_group_chats_block").css("display", "none");
                 
                 $( "#rm_button_characters" ).children("h2").css(selected_button_style);
                 $( "#rm_button_settings" ).children("h2").css(deselected_button_style);
@@ -1615,6 +1909,7 @@
                 $( "#rm_characters_block" ).css("display", "none");
                 $( "#rm_api_block" ).css("display", "none");
                 $( "#rm_ch_create_block" ).css("display", "none");
+                $("#rm_group_chats_block").css("display", "none");
                 $( "#rm_info_block" ).css("display", "flex");
                 
                 $("#rm_info_text").html('<h3>'+text+'</h3>');
@@ -1671,6 +1966,7 @@
                 $("#form_create").attr("actiontype", "editcharacter");
             }
             $(document).on('click', '.character_select', function(){
+                selected_group = null;
                 if(this_chid !== $(this).attr("chid")){
                     if(!is_send_press){
                         this_edit_mes_id = undefined;
@@ -1869,6 +2165,13 @@
                 if (popup_type === 'del_world' && world_info) {
                     deleteWorldInfo(world_info);
                 }
+                if (popup_type === 'del_group') {
+                    const groupId = $('#dialogue_popup').data('group_id');
+                    
+                    if (groupId) {
+                        deleteGroup(groupId);
+                    }
+                }
                 if(popup_type == 'new_chat' && this_chid != undefined && menu_type != "create"){//Fix it; New chat doesn't create while open create character menu
                     clearChat();
                     chat.length = 0;
@@ -1901,6 +2204,7 @@
                     $("#dialogue_popup_ok").text("Yes");
                     break;
                 case 'del_world':
+                case 'del_group':
                 default:
                     $("#dialogue_popup_ok").css("background-color", "#791b31");
                     $("#dialogue_popup_ok").text("Delete");
@@ -4005,6 +4309,54 @@
                 
             </div>
         </div>
+        <div id="rm_group_chats_block" class="right_menu">
+            <div id="rm_group_top_bar">
+                <div id="rm_button_back_from_group" class="right_menu_button">
+                    <h2 style="color: rgb(188, 193, 200, 0.5);">&#8656;</h2>
+                </div>
+                <input id="rm_group_chat_name" class="text_pole" type="text" name="chat_name" placeholder="Chat Name (Optional)"/>
+            </div>
+            <div id="rm_group_add_members_header">
+                <h3>Add Members</h3>
+                <input id="rm_group_filter" class="text_pole" type="search" placeholder="Filter..."/>
+            </div>
+            <!-- !!!Don't break line after div!!! -->
+            <div id="rm_group_add_members"></div>
+            <h3>Members</h3>
+            <!-- !!!Don't break line after div!!! -->
+            <div id="rm_group_members"></div>
+
+            <div id="group_member_template">
+                <div class="group_member">
+                    <div class="avatar">
+                        <img src="" />
+                    </div>
+                    <div class="ch_name"></div>
+                    <div class="group_member_icon">
+                        <img class="minus" src="img/minus-solid.svg" >
+                        <img class="plus" src="img/plus-solid.svg" >
+                    </div>
+                </div>
+            </div>
+
+            <div id="group_list_template">
+                <div class="group_select">
+                    <div class="avatar">
+                        <img src="">
+                    </div>
+                    <div class="group_icon">
+                        <img src="img/user-group-solid.svg">
+                    </div>
+                    <div class="ch_name"></div>
+                </div>
+            </div>
+
+            <div id="rm_group_buttons">
+                <input id="rm_group_submit" type="button" value="Create">
+                <div id="rm_group_buttons_expander">&nbsp;</div>
+                <input id="rm_group_delete" type="button" value="Delete">
+            </div>
+        </div>
         <div id="rm_api_block" class="right_menu" >
             
             <h3 id="title_api">API</h3>
@@ -4162,6 +4514,7 @@
         <div id="rm_characters_block" class="right_menu">
             <div id="rm_button_create" class="right_menu_button"><h2>+New Character</h2></div>
             <div id="character_import_button" class="right_menu_button"><h2>+Import</h2></div>
+            <div id="rm_button_group_chats" class="right_menu_button"><h2>+New Group</h2></div>
 			
 			<div id="characloud_url" title="Find more characters on CharaCloud (coming soon)">
 				<img src="img/cloud_logo.png">

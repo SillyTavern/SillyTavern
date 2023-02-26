@@ -61,7 +61,12 @@ if (is_colab && process.env.googledrive == 2){
 const jsonParser = express.json({limit: '100mb'});
 const urlencodedParser = express.urlencoded({extended: true, limit: '100mb'});
 const baseRequestArgs = { headers: { "Content-Type": "application/json" } };
-const directories = { worlds: 'public/worlds/', avatars: 'public/User Avatars' };
+const directories = {
+    worlds: 'public/worlds/',
+    avatars: 'public/User Avatars',
+    groups: 'public/groups/',
+    groupChats: 'public/group chats',
+};
 
 // CSRF Protection //
 const doubleCsrf = require('csrf-csrf').doubleCsrf;
@@ -1292,6 +1297,112 @@ app.post('/uploaduseravatar', urlencodedParser, async (request, response) => {
     } catch (err) {
         return response.status(400).send('Is not a valid image');
     }
+});
+
+app.post('/getgroups', jsonParser, (_, response) => {
+    const groups = [];
+
+    if (!fs.existsSync(directories.groups)) {
+        fs.mkdirSync(directories.groups);
+    }
+
+    const files = fs.readdirSync(directories.groups);
+    files.forEach(function(file) {
+        const fileContents = fs.readFileSync(path.join(directories.groups, file), 'utf8');
+        const group = JSON.parse(fileContents);
+        groups.push(group);
+    });
+
+    return response.send(groups);
+});
+
+app.post('/creategroup', jsonParser, (request, response) => {
+    if (!request.body) {
+        return response.sendStatus(400);
+    }
+
+    const id = Date.now();
+    const chatMetadata = { id: id, name: request.body.name ?? 'New Group', members: request.body.members ?? [], avatar_url: request.body.avatar_url };
+    const pathToFile = path.join(directories.groups, `${id}.json`);
+    const fileData = JSON.stringify(chatMetadata);
+
+    if (!fs.existsSync(directories.groups)) {
+        fs.mkdirSync(directories.groups);
+    }
+
+    fs.writeFileSync(pathToFile, fileData);
+    return response.send(chatMetadata);
+});
+
+app.post('/editgroup', jsonParser, (request, response) => {
+    if (!request.body || !request.body.id) {
+        return response.sendStatus(400);
+    }
+
+    const id = request.body.id;
+    const pathToFile = path.join(directories.groups, `${id}.json`);
+    const fileData = JSON.stringify(request.body);
+
+    fs.writeFileSync(pathToFile, fileData);
+    return response.send({ok: true});
+});
+
+app.post('/getgroupchat', jsonParser, (request, response) => {
+    if (!request.body || !request.body.id) {
+        return response.sendStatus(400);
+    }
+
+    const id = request.body.id;
+    const pathToFile = path.join(directories.groupChats, `${id}.jsonl`);
+
+    if (fs.existsSync(pathToFile)) {
+        const data = fs.readFileSync(pathToFile, 'utf8');
+        const lines = data.split('\n');
+    
+        // Iterate through the array of strings and parse each line as JSON
+        const jsonData = lines.map(JSON.parse);
+        return response.send(jsonData);
+    } else {
+        return response.send([]);
+    }
+});
+
+app.post('/savegroupchat', jsonParser, (request, response) => {
+    if (!request.body || !request.body.id) {
+        return response.sendStatus(400);
+    }
+
+    const id = request.body.id;
+    const pathToFile = path.join(directories.groupChats, `${id}.jsonl`);
+
+    if (!fs.existsSync(directories.groupChats)) {
+        fs.mkdirSync(directories.groupChats);
+    }
+
+    let chat_data = request.body.chat;
+    let jsonlData = chat_data.map(JSON.stringify).join('\n');
+    fs.writeFileSync(pathToFile, jsonlData, 'utf8');
+    return response.send({ok: true});
+});
+
+app.post('/deletegroup', jsonParser, async (request, response) => {
+    if (!request.body || !request.body.id) {
+        return response.sendStatus(400);
+    }
+
+    const id = request.body.id;
+    const pathToGroup = path.join(directories.groups, `${id}.json`);
+    const pathToChat = path.join(directories.groupChats, `${id}.jsonl`);
+
+    if (fs.existsSync(pathToGroup)) {
+        fs.rmSync(pathToGroup);
+    }
+
+    if (fs.existsSync(pathToChat)) {
+        fs.rmSync(pathToChat);
+    }
+
+    return response.send({ok: true});
 });
 
 // ** REST CLIENT ASYNC WRAPPERS **
