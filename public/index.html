@@ -196,6 +196,11 @@
 			function checkOnlineStatus(){
                 //console.log(online_status);
                 if(online_status == 'no_connection'){
+					$("#send_textarea").attr('placeholder', "Not connected to API!");				//Input bar placeholder tells users they are not connected
+					$("#send_form").css("background-color", "rgba(255,0,0,0.3)");			//entire input form area is red when not connected
+					$("#send_but").css("display", "none");									//send button is hidden when not connected
+					
+					
                     $("#online_status_indicator").css("background-color", "red");
                     $("#online_status").css("opacity", 0.3);
                     $("#online_status_text").html("No connection...");
@@ -206,6 +211,11 @@
                     is_get_status = false;
                     is_get_status_novel = false;
                 }else{
+					$("#send_textarea").attr('placeholder', 'Type a message...');				//on connect, placeholder tells user to type message
+					$("#send_form").css("background-color", "rgba(0,0,0,0.3)");					//on connect, form BG changes to transprent black
+					$("#send_but").css("display", "inline");									//on connect, send button shows up
+					
+					
                     $("#online_status_indicator").css("background-color", "black");
                     $("#online_status").css("display", "none");
                     $("#online_status_text").html("");
@@ -3174,7 +3184,7 @@
                     </div>
                 </div>
 				<!-- <div contenteditable="true" id="send_textarea">Type a message...</div> -->
-                <textarea id="send_textarea" placeholder="Type a message..." name="text"></textarea>
+                <textarea id="send_textarea" placeholder="Not connected to API!" name="text"></textarea>
 				
 <script type="text/javascript">
     $('#send_textarea').on('input', function () {
@@ -3187,12 +3197,12 @@
                 <div id="send_but_sheld">
 					
 					<div id="loading_mes"></div>
-					
+				<!--	
 					<div id="online_status">
 						<div id="online_status_indicator"></div>
 						<div id="online_status_text">Not connected</div>
 					</div>
-					
+				-->	
 					<input id="send_but" type="button">
 
 				</div>

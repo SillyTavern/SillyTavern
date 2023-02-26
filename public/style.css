@@ -170,24 +170,9 @@ code {
     backdrop-filter: blur(10px) brightness(0.3);
 		-webkit-backdrop-filter: blur(10px) brightness(0.3);
     border-radius: 40px;
+	background-color:rgba(255,0,0,0.3);
 }
-#send_textarea{
-    font-size: 1rem;
-    line-height: 1.5rem;
-    min-height: calc(1.5em + 0.75rem + 2px);
-    max-height: 50vh;
-    word-wrap: breakword;
-    height: 40px;
-    resize: vertical;
-    display: block;
-    background-color: rgba(0,0,0,0);
-    border: 0px;
-    box-shadow: none !important; /*0 0 0px rgb(200 200 200 / 50%);*/
-    padding:6px 0 6px 0;
-	font-family: "Noto Sans", sans-serif;
-    margin: 0;
-	text-shadow: #000 0 0 3px;
-}
+
 #send_but_sheld {
     padding: 0;
     border: 0;
@@ -205,7 +190,7 @@ code {
     width: 40px;
     height: 40px;
 	margin: 0;
-    display: inline;
+    display: none;
 	padding:1px;
     background: url('img/send3.png') no-repeat top left;
     background-size: 26px auto;
@@ -397,6 +382,25 @@ width: 100%;
     margin-left: 10px;
     margin-top: 10px;
 }
+
+#send_textarea{
+    font-size: 1rem;
+    line-height: 1.5rem;
+    min-height: calc(1.5em + 0.75rem + 2px);
+    max-height: 50vh;
+    word-wrap: breakword;
+    height: 40px;
+    resize: vertical;
+    display: block;
+    background-color: rgba(255,0,0,0);
+	border:0;
+    box-shadow: none !important; /*0 0 0px rgb(200 200 200 / 50%);*/
+    padding:6px 0 6px 0;
+	font-family: "Noto Sans", sans-serif;
+    margin: 0;
+	text-shadow: #000 0 0 3px;
+}
+
 #rm_ch_create_block textarea {
     font-size: 15px;
 }
