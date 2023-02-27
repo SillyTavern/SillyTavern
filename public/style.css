@@ -2522,6 +2522,13 @@ body {
     display: flex;
     flex-direction: row;
     width: 100%;
+    align-items: flex-end;
+}
+#rm_group_buttons .checkbox {
+    display: flex;
+}
+#rm_group_buttons .checkbox h4 {
+    display: inline-block;
 }
 #rm_group_buttons > input {
     font-size: 16px;

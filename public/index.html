@@ -65,6 +65,7 @@
             var characters = [];
             let groups = [];
             let selected_group = null;
+            let is_group_automode_enabled = false;
             var this_chid;
             var backgrounds = [];
             var default_avatar = 'img/fluffy.png';
@@ -142,6 +143,7 @@
             var api_server = "";
             //var interval_timer = setInterval(getStatus, 2000);
             var interval_timer_novel = setInterval(getStatusNovel, 3000);
+            const groupAutoModeInterval = setInterval(groupChatAutoModeWorker, 5000);
             var is_get_status = false;
             var is_get_status_novel = false;
             var is_api_button_press = false;
@@ -930,7 +932,7 @@
                     Generate();
                 }
             });
-            async function Generate(type) {//encode("dsfs").length
+            async function Generate(type, automatic_trigger) {//encode("dsfs").length
                 tokens_already_generated = 0;
                 message_already_generated = name2+': ';
                 
@@ -941,7 +943,7 @@
                 }
 
                 if (selected_group && !is_group_generating) {
-                    generateGroupWrapper();
+                    generateGroupWrapper(false);
                     return;
                 }
 
@@ -1009,7 +1011,7 @@
                     //*********************************
                     //PRE FORMATING STRING
                     //*********************************
-                    if(textareaText != ""){
+                    if(textareaText != "" && !automatic_trigger){
                         chat[chat.length] = {};
                         chat[chat.length-1]['name'] = name1;
                         chat[chat.length-1]['is_user'] = true;
@@ -1755,7 +1757,7 @@
                     $('#rm_info_block').transition({ opacity: 1.0 ,duration: 2000});
                 }
             });
-            async function generateGroupWrapper() {
+            async function generateGroupWrapper(by_auto_mode) {
                 if (online_status === 'no_connection') {
                     is_group_generating = false;
                     is_send_press = false;
@@ -1774,12 +1776,6 @@
                     this_chid = undefined;
                     name2 = '';
                     const userInput = $("#send_textarea").val();
-                    const activatedMembers = activateMembers(group.members, userInput);
-                    let messagesBefore = chat.length;
-
-                    if (userInput && userInput.length) {
-                        messagesBefore++;
-                    }
 
                     let typingIndicator = $('#chat .typing_indicator');
 
@@ -1789,12 +1785,25 @@
                         $('#chat').append(typingIndicator);
                     }
 
+                    let messagesBefore = chat.length;
+                    let activationText = '';
+                    if (userInput && userInput.length && !by_auto_mode) {
+                        activationText = userInput;
+                        messagesBefore++;
+                    } else {
+                        const lastMessage = chat[chat.length - 1];
+                        if (lastMessage && !lastMessage.is_system) {
+                            activationText = lastMessage.mes;
+                        }
+                    }
+    
+                    const activatedMembers = activateMembers(group.members, activationText);
                     // now the real generation begins: cycle through every character
                     for (const chId of activatedMembers) {
                         this_chid = chId;
                         name2 = characters[chId].name;
 
-                        await Generate('group_chat');
+                        await Generate('group_chat', by_auto_mode);
 
                         // update indicator and scroll down
                         typingIndicator.find('.typing_indicator_name').text(characters[chId].name);
@@ -1821,6 +1830,7 @@
                 } finally {
                     is_group_generating = false;
                     is_send_press = false;
+                    this_chid = undefined;
                 }
             }
             function activateMembers(members, input) {
@@ -1974,6 +1984,23 @@
                 clearTimeout(timerGroupSave);
                 timerGroupSave = setTimeout(async () => await _save(), durationSaveEdit);
             }
+            async function groupChatAutoModeWorker() {
+                if (!is_group_automode_enabled || online_status === 'no_connection') {
+                    return;
+                }
+
+                if (!selected_group || is_send_press || is_group_generating) {
+                    return;
+                }
+
+                const group = groups.find(x => x.id === selected_group);
+
+                if (!group || !Array.isArray(group.members) || !group.members.length)  {
+                    return;
+                }
+
+                await generateGroupWrapper(true);
+            }
 
             function select_group_chats(chat_id) {
                 menu_type = 'group_chats';
@@ -2084,7 +2111,10 @@
                     $("#rm_button_selected_ch").children("h2").text('');
                 }
             }
-
+            $('#rm_group_automode').on('input', function() {
+                const value = $(this).prop('checked');
+                is_group_automode_enabled = value;
+            });
             function select_rm_create(){
                 menu_type = 'create';
                 if(selected_button == 'create'){
@@ -4665,6 +4695,10 @@
             </div>
 
             <div id="rm_group_buttons">
+                <label class="checkbox" style="display:none">
+                    <input id="rm_group_automode" type="checkbox" /><span></span>
+                    <h4>Auto Mode</h4>
+                </label>
                 <input id="rm_group_submit" type="button" value="Create">
                 <div id="rm_group_buttons_expander">&nbsp;</div>
                 <input id="rm_group_delete" type="button" value="Delete">
