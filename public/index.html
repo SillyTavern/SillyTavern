@@ -1829,8 +1829,9 @@
                     }
                 }
 
-                // activation by talkativeness
-                for (let member of members) {
+                // activation by talkativeness (in shuffled order)
+                const shuffledMembers = shuffle([...members]);
+                for (let member of shuffledMembers) {
                     const character = characters.find(x => x.name === member);
 
                     if (!character) {
@@ -1840,7 +1841,7 @@
                     const rollValue = Math.random();
                     let talkativeness = Number(character.talkativeness);
                     talkativeness = Number.isNaN(talkativeness) ? talkativeness_default : talkativeness;
-                    if (talkativeness > rollValue) {
+                    if (talkativeness >= rollValue) {
                         activatedNames.push(member);
                     }
                 }
@@ -1852,12 +1853,8 @@
                 }
 
                 // de-duplicate array of names
-                function onlyUnique(value, index, array) {
-                    return array.indexOf(value) === index;
-                }
                 activatedNames = activatedNames.filter(onlyUnique);
 
-                console.log(activatedNames);
                 // map to character ids
                 const memberIds = activatedNames.map(x => characters.findIndex(y => y.name === x)).filter(x => x !== -1);
                 return memberIds;
@@ -4286,6 +4283,22 @@
             $('#world_create_button').click(() => {
                 createNewWorldInfo();
             });
+
+            /// UTILS
+            function onlyUnique(value, index, array) {
+                return array.indexOf(value) === index;
+            }
+
+            function shuffle(array) {
+                let currentIndex = array.length,  randomIndex;
+
+                while (currentIndex != 0) {
+                    randomIndex = Math.floor(Math.random() * currentIndex);
+                    currentIndex--;
+                    [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+                }
+                return array;
+            }
         });
     </script>
 <title>Tavern.AI</title>
