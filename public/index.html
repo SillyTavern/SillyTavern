@@ -1756,8 +1756,6 @@
                 }
             });
             async function generateGroupWrapper() {
-                $('#chat .typing_indicator').remove();
-
                 if (online_status === 'no_connection') {
                     is_group_generating = false;
                     is_send_press = false;
@@ -1783,17 +1781,27 @@
                         messagesBefore++;
                     }
 
+                    let typingIndicator = $('#chat .typing_indicator');
+
+                    if (typingIndicator.length === 0){
+                        typingIndicator = $('#typing_indicator_template .typing_indicator').clone();
+                        typingIndicator.hide();
+                        $('#chat').append(typingIndicator);
+                    }
+
                     // now the real generation begins: cycle through every character
                     for (const chId of activatedMembers) {
                         this_chid = chId;
                         name2 = characters[chId].name;
 
-                        const typingIndicator = $('#typing_indicator_template .typing_indicator').clone();
-                        typingIndicator.find('.typing_indicator_name').text(characters[chId].name);
-
                         await Generate('group_chat');
 
+                        // update indicator and scroll down
+                        typingIndicator.find('.typing_indicator_name').text(characters[chId].name);
                         $('#chat').append(typingIndicator);
+                        typingIndicator.fadeTo(250, 1, function() {
+                            typingIndicator.get(0).scrollIntoView({behavior: 'smooth'});
+                        });
 
                         while (true) {
                             // check if message generated already
@@ -1805,13 +1813,14 @@
                             }
                         }
                         
-                        $('#chat .typing_indicator').remove();
+                        // hide and reapply the indicator to the bottom of the list
+                        typingIndicator.fadeTo(250, 0);
+                        $('#chat').append(typingIndicator);
                     }
 
                 } finally {
                     is_group_generating = false;
                     is_send_press = false;
-                    $('#chat .typing_indicator').remove();
                 }
             }
             function activateMembers(members, input) {
@@ -2867,7 +2876,7 @@
             });
             // this function hides the input form, and shows the delete/cancel buttons fro deleting messages from chat
 			$( "#option_delete_mes" ).click(function() {
-                if(this_chid != undefined && !is_send_press){
+                if(this_chid != undefined && !is_send_press || (selected_group && !is_group_generating)){
                     $('#dialogue_del_mes').css('display','block');
                     $('#send_form').css('display','none');
                     $('.del_checkbox').each(function(){
@@ -2909,7 +2918,11 @@
                     $(".mes[mesid='"+this_del_mes+"']").remove();
                     chat.length = this_del_mes;
                     count_view_mes = this_del_mes;
-                    saveChat();
+                    if (selected_group) {
+                        saveGroupChat(selected_group);
+                    } else {
+                        saveChat();
+                    }
                     var $textchat = $('#chat');
                     $textchat.scrollTop($textchat[0].scrollHeight);
                 }
