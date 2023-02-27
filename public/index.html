@@ -1799,7 +1799,7 @@
                         // update indicator and scroll down
                         typingIndicator.find('.typing_indicator_name').text(characters[chId].name);
                         $('#chat').append(typingIndicator);
-                        typingIndicator.fadeTo(250, 1, function() {
+                        typingIndicator.show(250, function() {
                             typingIndicator.get(0).scrollIntoView({behavior: 'smooth'});
                         });
 
@@ -1814,7 +1814,7 @@
                         }
                         
                         // hide and reapply the indicator to the bottom of the list
-                        typingIndicator.fadeTo(250, 0);
+                        typingIndicator.hide(250);
                         $('#chat').append(typingIndicator);
                     }
 
