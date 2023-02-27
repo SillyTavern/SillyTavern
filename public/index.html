@@ -41,13 +41,14 @@
             const VERSION = '1.2.8';
             var converter = new showdown.Converter();
             var bg_menu_toggle = false;
-            const systemUserName = 'Chloe';
+            const systemUserName = 'TavernAI';
+            const systemCharName = 'Chloe';
             var default_user_name = "You";
             var name1 = default_user_name;
-            var name2 = systemUserName;
+            var name2 = systemCharName;
             // might want to migrate this to 'system message' code
             var chat = [{
-                name: systemUserName,
+                name: systemCharName,
                 is_user: false,
                 is_name: true,
                 create_date: 0,
@@ -75,12 +76,13 @@
                 HELP: 'help',
                 WELCOME: 'welcome',
                 GROUP: 'group',
+                EMPTY: 'empty',
             };
 
             const system_messages = {
                 'help': { 
                     "name": systemUserName,
-                    "force_avatar": "img/chloe.png",
+                    "force_avatar": "img/five.png",
                     "is_user":false,
                     "is_system": true,
                     "is_name":true,
@@ -88,11 +90,19 @@
                 },
                 'group': {
                     "name": systemUserName,
-                    "force_avatar": "img/chloe.png",
+                    "force_avatar": "img/five.png",
                     "is_user":false,
                     "is_system": true,
                     "is_name": true,
                     "mes": "Group chat created. Say 'Hi' to lovely people!"
+                },
+                'empty': {
+                    "name": systemUserName,
+                    "force_avatar": "img/five.png",
+                    "is_user": false,
+                    "is_system": true,
+                    "is_name": true,
+                    "mes": 'No one hears you. **Hint:** add more members to the group!'
                 }
             };
 
@@ -100,6 +110,7 @@
                 'before': 0,
                 'after': 1,
             }
+            const talkativeness_default = 0.5;
 
             var is_advanced_char_open = false;
             var is_world_edit_open = false;
@@ -114,6 +125,7 @@
             var create_save_avatar = '';
             var create_save_scenario = '';
             var create_save_mes_example = '';
+            var create_save_talkativeness = talkativeness_default;
             
             var timerSaveEdit;
             var timerWorldSave;
@@ -136,6 +148,7 @@
             var is_api_button_press_novel = false;
             
             var is_send_press = false;//Send generation
+            let is_group_generating = false; // Group generation flag
             var add_mes_without_animation = false;
             
             var this_del_mes = 0;
@@ -162,7 +175,7 @@
             var max_context = 2048;//2048;
             var rep_pen = 1;
             var rep_pen_size = 100;
-            
+
             var is_pygmalion = false;
             var tokens_already_generated = 0;
             var message_already_generated = '';
@@ -445,14 +458,82 @@
                     $("#rm_print_characters_block").prepend('<div class=character_select chid='+i+'><div class=avatar><img src="'+this_avatar+'"></div><div class=ch_name>'+item.name+'</div></div>');
                     //console.log(item.name);
                 });
+                printGroups();
+            }
+
+            function printGroups() {
                 for (let group of groups) {
                     const template = $('#group_list_template .group_select').clone();
                     template.data('id', group.id);
-                    template.find('.avatar img').attr('src', group.avatar_url);
                     template.find('.ch_name').html(group.name);
                     $('#rm_print_characters_block').prepend(template);
+                    updateGroupAvatar(group);
                 }
             }
+
+            function updateGroupAvatar(group) {
+                $('#rm_print_characters_block .group_select').each(function() {
+                    if ($(this).data('id') == group.id) {
+                        const avatar = getGroupAvatar(group);
+                        if (avatar) {
+                            $(this).find('.avatar').replaceWith(avatar);
+                        }
+                    }
+                })
+            }
+
+            function getGroupAvatar(group) {
+                const memberAvatars = [];
+                if (group && Array.isArray(group.members) && group.members.length) {
+                    for (const member of group.members) {
+                        const charIndex = characters.findIndex(x => x.name === member);
+                        if (charIndex !== -1 && characters[charIndex].avatar !== 'none') {
+                            const this_avatar = `characters/${characters[charIndex].avatar}#${Date.now()}`;
+                            memberAvatars.push(this_avatar);
+                        }
+                        if (memberAvatars.length === 4) {
+                            break;
+                        }
+                    }
+                }
+
+                // Cohee: there's probably a smarter way to do this..
+                if (memberAvatars.length === 1) {
+                    const groupAvatar = $('#group_avatars_template .collage_1').clone();
+                    groupAvatar.find('.img_1').attr('src', memberAvatars[0]);
+                    return groupAvatar;
+                }
+
+                if (memberAvatars.length === 2) {
+                    const groupAvatar = $('#group_avatars_template .collage_2').clone();
+                    groupAvatar.find('.img_1').attr('src', memberAvatars[0]);
+                    groupAvatar.find('.img_2').attr('src', memberAvatars[1]);
+                    return groupAvatar;
+                }
+
+                if (memberAvatars.length === 3) {
+                    const groupAvatar = $('#group_avatars_template .collage_3').clone();
+                    groupAvatar.find('.img_1').attr('src', memberAvatars[0]);
+                    groupAvatar.find('.img_2').attr('src', memberAvatars[1]);
+                    groupAvatar.find('.img_3').attr('src', memberAvatars[2]);
+                    return groupAvatar;
+                }
+
+                if (memberAvatars.length === 4) {
+                    const groupAvatar = $('#group_avatars_template .collage_4').clone();
+                    groupAvatar.find('.img_1').attr('src', memberAvatars[0]);
+                    groupAvatar.find('.img_2').attr('src', memberAvatars[1]);
+                    groupAvatar.find('.img_3').attr('src', memberAvatars[2]);
+                    groupAvatar.find('.img_4').attr('src', memberAvatars[3]);
+                    return groupAvatar;
+                }
+
+                // default avatar
+                const groupAvatar = $('#group_avatars_template .collage_1').clone();
+                groupAvatar.find('.img_1').attr('src', group.avatar_url);
+                return groupAvatar;
+            }
+
             async function getCharacters() {
                 await getGroups();
                 const response = await fetch("/getcharacters", {
@@ -618,7 +699,7 @@
                 count_view_mes = 0;
                 $('#chat').html('');
             }
-            function messageFormating(mes, ch_name, isSystem){
+            function messageFormating(mes, ch_name, isSystem, forceAvatar){
                 if(this_chid != undefined && !isSystem) mes = mes.replaceAll("<", "&lt;").replaceAll(">", "&gt;");//for Chloe
                 if(this_chid === undefined){
                     mes = mes.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\*(.+?)\*/g, '<i>$1</i>').replace(/\n/g, '<br/>');
@@ -630,6 +711,9 @@
                     mes = mes.trim();
                 }
                 
+                if (forceAvatar) {
+                    mes = mes.replaceAll(ch_name+":", "");
+                }
                 
                 if(ch_name !== name1){
                     mes = mes.replaceAll(name2+":", "");
@@ -681,7 +765,7 @@
                     messageText = messageText.replace(/<USER>/gi, name1);
                     messageText = messageText.replace(/<BOT>/gi, name2);
                 }
-                messageText = messageFormating(messageText, characterName, isSystem);
+                messageText = messageFormating(messageText, characterName, isSystem, mes.force_avatar);
                 const bias = messageFormating(mes.extra?.bias ?? '');
                 
 				$("#chat").append( "<div class='mes' mesid="+count_view_mes+" ch_name="+characterName+"><div class='for_checkbox'></div><input type='checkbox' class='del_checkbox'><div class=avatar><img src='"+avatarImg+"'></div><div class=mes_block><div class=ch_name>"+characterName+"<div title=Edit class=mes_edit></div><div class=mes_edit_cancel><img src=img/cancel.png></div><div class=mes_edit_done><img src=img/done.png></div></div><div class=mes_text>"+`</div><div class='mes_bias'>${bias}</div></div></div>` );
@@ -849,6 +933,18 @@
             async function Generate(type) {//encode("dsfs").length
                 tokens_already_generated = 0;
                 message_already_generated = name2+': ';
+                
+                if (isHelpRequest($("#send_textarea").val())) {
+                    sendSystemMessage(system_message_types.HELP);
+                    $("#send_textarea").val('').trigger('input');
+                    return;
+                }
+
+                if (selected_group && !is_group_generating) {
+                    generateGroupWrapper();
+                    return;
+                }
+
                 if(online_status != 'no_connection' && this_chid != undefined){
                     if(type != 'regenerate'){
                         var textareaText = $("#send_textarea").val();
@@ -865,11 +961,6 @@
                         }
                     }
                     //$("#send_textarea").attr("disabled","disabled");
-                    
-                    if (isHelpRequest(textareaText)) {
-                        sendSystemMessage(system_message_types.HELP);
-                        return;
-                    }
 
                     //$("#send_textarea").blur();
                     $( "#send_but" ).css("display", "none");
@@ -1348,6 +1439,24 @@
                                         getMessage = getMessage.substr(0,getMessage.indexOf('<|endoftext|>'));
 
                                     }
+                                    // clean-up group message from excessive generations
+                                    if (type == 'group_chat' && selected_group) {
+                                        const group = groups.find(x => x.id == selected_group);
+
+                                        if (group && Array.isArray(group.members) && group.members) {
+                                            for (let member of group.members) {
+                                                // Skip current speaker.
+                                                if (member === name2) {
+                                                    continue;
+                                                }
+
+                                                const indexOfMember = getMessage.indexOf(member+":");
+                                                if (indexOfMember != -1) {
+                                                    getMessage = getMessage.substr(0, indexOfMember);
+                                                }
+                                            }
+                                        }
+                                    }
                                     let this_mes_is_name = true;
                                     if(getMessage.indexOf(name2+":") === 0){
                                         getMessage = getMessage.replace(name2+':', '');
@@ -1365,10 +1474,25 @@
                                         chat[chat.length-1]['send_date'] = Date.now();
                                         getMessage = $.trim(getMessage);
                                         chat[chat.length-1]['mes'] = getMessage;
+
+                                        if (type === 'group_chat') {
+                                            let avatarImg = 'img/fluffy.png';
+                                            if (characters[this_chid].avatar != 'none'){
+                                                avatarImg = `characters/${characters[this_chid].avatar}`;
+                                            }
+                                            chat[chat.length-1]['is_name'] = true;
+                                            chat[chat.length-1]['force_avatar'] = avatarImg;
+                                        }
+
                                         addOneMessage(chat[chat.length-1]);
                                         $( "#send_but" ).css("display", "inline");
                                         $( "#loading_mes" ).css("display", "none");
-                                        saveChat();
+
+                                        if (type == 'group_chat' && selected_group) {
+                                            saveGroupChat(selected_group);
+                                        } else {
+                                            saveChat();
+                                        }
                                     }else{
                                         //console.log('run force_name2 protocol');
                                         Generate('force_name2');
@@ -1563,17 +1687,18 @@
                 const id = $(this).data('id');
                 selected_button = 'group_chats';
 
-                if (selected_group !== id){
-                    if(!is_send_press){
-                        selected_group = id;
-                        this_edit_mes_id = undefined;
-                        clearChat();
-                        chat.length = 0;
-                        await getGroupChat(id);
-                    }
-                }
+                if(!is_send_press && !is_group_generating){
+                    if (selected_group !== id) {
+                            selected_group = id;
+                            this_chid = undefined;
+                            this_edit_mes_id = undefined;
+                            clearChat();
+                            chat.length = 0;
+                            await getGroupChat(id);
+                        }
 
-                select_group_chats(id);
+                    select_group_chats(id);
+                }
             });
             $("#rm_button_group_chats").click(function() {
                 selected_button = 'group_chats';
@@ -1630,6 +1755,126 @@
                     $('#rm_info_block').transition({ opacity: 1.0 ,duration: 2000});
                 }
             });
+            async function generateGroupWrapper() {
+                $('#chat .typing_indicator').remove();
+
+                if (online_status === 'no_connection') {
+                    is_group_generating = false;
+                    is_send_press = false;
+                    return;
+                }
+
+                const group = groups.find(x => x.id === selected_group);
+
+                if (!group || !Array.isArray(group.members) || !group.members.length) {
+                    sendSystemMessage(system_message_types.EMPTY);
+                    return;
+                }
+
+                try {
+                    is_group_generating = true;
+                    this_chid = undefined;
+                    name2 = '';
+                    const userInput = $("#send_textarea").val();
+                    const activatedMembers = activateMembers(group.members, userInput);
+                    let messagesBefore = chat.length;
+
+                    if (userInput && userInput.length) {
+                        messagesBefore++;
+                    }
+
+                    // now the real generation begins: cycle through every character
+                    for (const chId of activatedMembers) {
+                        this_chid = chId;
+                        name2 = characters[chId].name;
+
+                        const typingIndicator = $('#typing_indicator_template .typing_indicator').clone();
+                        typingIndicator.find('.typing_indicator_name').text(characters[chId].name);
+
+                        await Generate('group_chat');
+
+                        $('#chat').append(typingIndicator);
+
+                        while (true) {
+                            // check if message generated already
+                            if (chat.length == messagesBefore) {
+                                await delay(10); 
+                            } else {
+                                messagesBefore++;
+                                break;
+                            }
+                        }
+                        
+                        $('#chat .typing_indicator').remove();
+                    }
+
+                } finally {
+                    is_group_generating = false;
+                    is_send_press = false;
+                    $('#chat .typing_indicator').remove();
+                }
+            }
+            function activateMembers(members, input) {
+                let activatedNames = [];
+
+                // find mentions
+                if (input && input.length) {
+                    for (let inputWord of extractAllWords(input)) {
+                        for (let member of members) {
+                            if (extractAllWords(member).includes(inputWord)) {
+                                activatedNames.push(member);
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // activation by talkativeness
+                for (let member of members) {
+                    const character = characters.find(x => x.name === member);
+
+                    if (!character) {
+                        continue;
+                    }
+
+                    const rollValue = Math.random();
+                    let talkativeness = Number(character.talkativeness);
+                    talkativeness = Number.isNaN(talkativeness) ? talkativeness_default : talkativeness;
+                    if (talkativeness > rollValue) {
+                        activatedNames.push(member);
+                    }
+                }
+
+                // pick 1 at random if no one was activated
+                if (activatedNames.length === 0) {
+                    const randomIndex = Math.floor(Math.random() * members.length);
+                    activatedNames.push(members[randomIndex]);
+                }
+
+                // de-duplicate array of names
+                function onlyUnique(value, index, array) {
+                    return array.indexOf(value) === index;
+                }
+                activatedNames = activatedNames.filter(onlyUnique);
+
+                console.log(activatedNames);
+                // map to character ids
+                const memberIds = activatedNames.map(x => characters.findIndex(y => y.name === x)).filter(x => x !== -1);
+                return memberIds;
+            }
+            function extractAllWords(value) {
+                const words = [];
+
+                if (!value) {
+                    return words;
+                }
+
+                const matches = value.matchAll(/\b\w+\b/gmi);
+                for (let match of matches) {
+                    words.push(match[0].toLowerCase());
+                }
+                return words;
+            }
             async function getGroupChat(id) {
                 const response = await fetch('/getgroupchat', {
                     method: 'POST',
@@ -1777,6 +2022,7 @@
                             group.members.push(id);
                         }
                         await editGroup(chat_id);
+                        updateGroupAvatar(group);
                     }
 
                     $(this).remove();
@@ -1872,6 +2118,7 @@
                 $("#description_textarea").val(create_save_description);
                 $("#personality_textarea").val(create_save_personality);
                 $("#firstmessage_textarea").val(create_save_first_message);
+                $("#talkativeness_slider").val(create_save_talkativeness);
                 $("#scenario_pole").val(create_save_scenario);
                 if($.trim(create_save_mes_example).length == 0){
                     $("#mes_example_textarea").val('<START>');
@@ -1949,6 +2196,7 @@
                 $("#personality_textarea").val(characters[chid].personality);
                 $("#firstmessage_textarea").val(characters[chid].first_mes);
                 $("#scenario_pole").val(characters[chid].scenario);
+                $("#talkativeness_slider").val(characters[chid].talkativeness ?? talkativeness_default);
                 $("#mes_example_textarea").val(characters[chid].mes_example);
                 $("#selected_chat_pole").val(characters[chid].chat);
                 $("#create_date_pole").val(characters[chid].create_date);
@@ -1966,9 +2214,10 @@
                 $("#form_create").attr("actiontype", "editcharacter");
             }
             $(document).on('click', '.character_select', function(){
-                selected_group = null;
                 if(this_chid !== $(this).attr("chid")){
                     if(!is_send_press){
+                        selected_group = null;
+                        is_group_generating = false;
                         this_edit_mes_id = undefined;
                         selected_button = 'character_edit';
                         this_chid = $(this).attr("chid");
@@ -2329,6 +2578,8 @@
                                 create_save_personality = '';
                                 $("#firstmessage_textarea").val('');
                                 create_save_first_message = '';
+                                $("#talkativeness_slider").val(talkativeness_default);
+                                create_save_talkativeness = talkativeness_default;
                                 
                                 $("#character_popup_text_h3").text('Create character');
                                 
@@ -2460,7 +2711,6 @@
             });
             $('#scenario_pole').on('keyup paste cut', function(){
                 if(menu_type == 'create'){
-
                     create_save_scenario = $('#scenario_pole').val();
                 }else{
                     timerSaveEdit = setTimeout(() => {$("#create_button").click();},durationSaveEdit);
@@ -2480,6 +2730,15 @@
                     create_save_first_message = $('#firstmessage_textarea').val();
                 }else{
                     timerSaveEdit = setTimeout(() => {$("#create_button").click();},durationSaveEdit);
+                }
+            });
+            $('#talkativeness_slider').on('input', function() {
+                if (menu_type == 'create') {
+                    create_save_talkativeness = $('#talkativeness_slider').val();
+                } else {
+                    timerSaveEdit = setTimeout(() => {
+                        $('#create_button').click();
+                    }, durationSaveEdit);
                 }
             });
             $( "#api_button" ).click(function() {
@@ -2530,7 +2789,18 @@
                     });
                 }
             });
+            function openNavToggle() {
+                if (!$('#nav-toggle').prop('checked')) {
+                    $('#nav-toggle').trigger('click');
+                }
+            }
             $( "#option_select_chat" ).click(function() {
+                if (selected_group) {
+                    // will open a chat selection screen
+                    openNavToggle();
+                    $("#rm_button_characters").trigger('click');
+                    return;
+                }
                 if(this_chid != undefined && !is_send_press){
                     getAllCharaChats();
                     $('#shadow_select_chat_popup').css('display', 'block');
@@ -2539,6 +2809,12 @@
                 }
             });
             $( "#option_start_new_chat" ).click(function() {
+                if (selected_group) {
+                    // will open a group creation screen
+                    openNavToggle();
+                    $("#rm_button_group_chats").trigger('click');
+                    return;
+                }
                 if(this_chid != undefined && !is_send_press){
                     popup_type = 'new_chat';
                     callPopup('<h3>Start new chat?</h3>');
@@ -4052,6 +4328,17 @@
                 <h5>Circumstances and context of the dialogue (<a href="/notes/12" target="_blank">?</a>)</h5>
                 <input id="scenario_pole" name="scenario" class="text_pole" maxlength="9999" size="40" value="" autocomplete="off" form="form_create">
             </div>
+
+            <div id="talkativeness_div">
+                <h4>Talkativeness</h4>
+                <h5>How often does the character speak randomly.&nbsp;<span class="warning">Affects group chats only!</span></h5>
+                <input id="talkativeness_slider" name="talkativeness" type="range" min="0" max="1" step="0.05" value="0.5" form="form_create">
+                <div id="talkativeness_hint">
+                    <span>Shy</span>
+                    <span>Normal</span>
+                    <span>Chatty</span>
+                </div>
+            </div>
             
             <div id="mes_example_div">
                 <h4>Examples of dialogue</h4>
@@ -4535,8 +4822,35 @@
             </div>
         </div>
     </nav>
+
+    <div id="typing_indicator_template">
+        <div class="typing_indicator"><span class="typing_indicator_name">CHAR</span> is typing</div>
+    </div>
+
+    <div id="group_avatars_template">
+        <div class="avatar avatar_collage collage_1">
+            <img alt="img1" class="img_1" src="">
+        </div>
+        <div class="avatar avatar_collage collage_2">
+            <img alt="img1" class="img_1" src="">
+            <img alt="img2" class="img_2" src="">
+        </div>
+        <div class="avatar avatar_collage collage_3">
+            <img alt="img1" class="img_1" src="">
+            <img alt="img2" class="img_2" src="">
+            <img alt="img3" class="img_3" src="">
+        </div>
+        <div class="avatar avatar_collage collage_4">
+            <img alt="img1" class="img_1" src="">
+            <img alt="img2" class="img_2" src="">
+            <img alt="img3" class="img_3" src="">
+            <img alt="img4" class="img_4" src="">
+        </div>
+    </div>
+
     <div id="sheld">
-        <div id="chat"></div>
+        <div id="chat">
+        </div>
         <div id="form_sheld">            
             <div id="dialogue_del_mes">
                 <!-- <div id="dialogue_del_mes_text"><h3></h3></div> -->
