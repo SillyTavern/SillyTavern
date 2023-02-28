@@ -1921,8 +1921,8 @@ a {
     padding: 0px;
     margin: 0px;
     cursor: pointer;
-    height: 15px;
-    width: 15px;
+    height: 0;
+    width: 0;
     z-index: 3001;
 }
 	
@@ -1941,10 +1941,10 @@ a {
     width: 30px;
     height: 30px;
     margin-top: -8px;
-    margin-left: -9px;
+    margin-left: -24px;
     border: 1px solid #666;
     border-radius: 5px;
-    background: rgba(0, 0, 0, 1);
+    background: rgba(0, 0, 0, 0.3);
     color: #666;
     -webkit-transition: all 0.275s;
     transition: all 0.275s;
