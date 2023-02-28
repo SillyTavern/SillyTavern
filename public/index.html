@@ -1215,13 +1215,10 @@
                 select_selected_character(this_chid);
             }
 			
-			//hotkey to send input with shift+enter (normal enter keypress generates a new line in the chat input box)
-			//problem for mobile: default iOS keyboard function is to make AutoCapitalization happen on new lines.
-			//AutoCapitization effectively presses the virtual Shift key when it thinks a new line/sentence is happening. 
-			//iOS result: First Enter press will make a new line, but the second will act like shift+enter, sending the prompt to AI.
+			//hotkey to send input with enter (shift+enter generates a new line in the chat input box)
+			//this is not ideal for touch device users with virtual keyboards.
 			//ideally we would detect if the user is using a virtual keyboard, and disable this shortcut for them.
-			//because mobile users' hands are always near the screen, tapping the send button is better for them.
-			//caveat: people on an iPad using a Bluetooth keyboard will need to be treated as PC users for this purpose.
+			//because mobile users' hands are always near the screen, tapping the send button is better for them, and enter should always make a new line.
 			//note: CAI seems to have this handled. PC: shift+enter = new line, enter = send. iOS: shift+enter AND enter both make new lines, and only the send button sends. 
 			//maybe a way to simulate this would be to disable the eventListener for people iOS.
 			
