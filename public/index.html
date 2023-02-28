@@ -1886,24 +1886,44 @@
                     getStatus();
                 }
             });
-            
-            $( "body" ).click(function() {								// this makes the input bar's option menu disappear when clicked away from
+
+			
+            $(document).on('click', function(event) {								// this makes the input bar's option menu disappear when clicked away from
                 if($("#options").css('opacity') == 1.0){
-                    $('#options').transition({  
-                        opacity: 0.0,
-                        duration: 100,//animation_rm_duration,
-                        easing: animation_rm_easing,
-                        complete: function() {
-                            $("#options").css('display', 'none');
-                        }
-                    });
-                }
-            });
-            $( "#options_button" ).click(function() {
+					$('#options').transition({  
+						opacity: 0.0,
+						duration: 100,//animation_rm_duration,
+						easing: animation_rm_easing,
+						complete: function() {
+							$("#options").css('display', 'none');
+						}
+					})
+					
+	            }
+			}); 
+
+		// RossAscends: Added functionality that will close the RightNav panels when User clicks outside them			
+			
+			var NavToggle = document.getElementById("nav-toggle");
+			$('document').ready(function(){
+				$("html").click(function(e){
+				if (NavToggle.checked === true){
+					if ($(e.target).attr('id') !== "nav-toggle") {
+						if (document.querySelector('#right-nav-panel').contains(e.target) === false){
+							document.getElementById('nav-toggle').click();
+						}
+					}
+				};
+			});
+			});
+			 
+		//-------------------------------------------------------------------------------------------------------------
+            
+            $( "#options_button" ).click(function() {					// this is the options button click function, shows the options menu if closed
                 if($("#options").css('display') === 'none' && $("#options").css('opacity') == 0.0){
                     $("#options").css('display', 'block');
                     $('#options').transition({  
-                        opacity: 1.0,
+                        opacity: 1.0,									// the manual setting of CSS via JS is what allows the click-away feature to work
                         duration: 100,
                         easing: animation_rm_easing,
                         complete: function() {
@@ -1938,35 +1958,6 @@
 
 				}
 			});	
-			
-			//-----------------------------------------------
-			
-			// Now let's add functionality that will close the BG menu and/or RightNav panels when User clicks outside them
-			
-			// COULDN'T GET THIS TO WORK BUT CODE LEFT FOR FUTURE REFERENCE
-			
-			// general function to deetct which elements are being clicked on. 
- 			//$('body').on('click', function(e){
-			//	alert( 'Class is '+ $(e.target).attr('class') + '. ID is '+ $(e.target).attr('id'));
-			//});
-			
-			//general function to watch the status of the nav-toggle checkbox
-			//var checkb = document.getElementById("nav-toggle");
-			//checkb.addEventListener('change', function(e) {
-			//	alert(checkb.checked, checkb.value);
-			
-			//});
-			
-			//$('document').ready(function(){
-			//	$("body").click(function(e){
-			//		if (e.target.parentNode.classList.contains('.nav') == false){
-			//		alert('triggered!');
-			//		document.getElementById('nav-toggle').click();
-			//	};	
-			//});
-			//});
-			 
-			//---------------------------------------------------
 						
             $( "#option_regenerate" ).click(function() {
                 if(is_send_press == false){
@@ -2964,12 +2955,10 @@
             
         </div>  
     </div>
-    <input type="checkbox" id="nav-toggle" hidden>
+    <input type="checkbox" id="nav-toggle">
 
-    <nav class="nav">
-        <label for="nav-toggle" class="nav-toggle" onclick></label>
-
-        
+    <nav id="right-nav-panel">
+                
         <div class="right_menu_button" id="rm_button_characters"><h2>Characters</h2></div>
         <div class="right_menu_button" id="rm_button_settings"><h2>Settings</h2></div>
         <div class="right_menu_button" id="rm_button_selected_ch"><h2></h2></div>

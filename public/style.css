@@ -23,7 +23,7 @@ body {
     scrollbar-width: thin;
     scrollbar-color: gray #191b31;
 	font-family: "Noto Sans", "Noto Color Emoji", sans-serif; /*add in custom font universally */
-	font-size:1rem;
+	font-size:15px; /*1rem*/
 	color: rgb(229, 224, 216);
 	-webkit-font-smoothing: antialiased;
 }
@@ -274,7 +274,7 @@ code {
   padding: 0px;
   border-top: 1px solid #ffffff11;
 }
-.nav hr{
+#right-nav-panel hr{
     background-image: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
 }
 .options-content a {
@@ -1220,11 +1220,16 @@ width: 103px;
 }
 
 
+/* STLYES FOR THE CHAT MESSAGE DELETION CHECKBOXES */
+/* --------------------------------------------------------------------------------------*/
+
+/* checkboxes default to being hidden unless called by the delete mesasges option menu button, which uses JS to force them to be display:block*/
 .del_checkbox{
     display: none;
     opacity: 0.7;
 }
 
+/*this hides the replacement for input form until Delete Messages mode is called*/
 #dialogue_del_mes{
     display: none;
 }
@@ -1232,8 +1237,7 @@ width: 103px;
     display: block;
 }
 
-
-input[type='checkbox'] {
+input[type='checkbox'] :not(#nav-toggle){
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
@@ -1250,7 +1254,8 @@ input[type='checkbox'] {
     right: 5px; /*and centers it in the checkbox column*/
 }
 
-input[type='checkbox']::before {
+/* the checkbox starts with a size 0 background of a checkmark */
+input[type='checkbox']::before :not(#nav-toggle) {
   content: '';
   color: #fff;
   position: absolute;
@@ -1272,10 +1277,12 @@ input[type='checkbox']::before {
     background-image: url("data:image/svg+xml;base64,PCEtLSBHZW5lcmF0ZWQgYnkgSWNvTW9vbi5pbyAtLT4KPHN2ZyB2ZXJzaW9uPSIxLjEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgd2lkdGg9IjQ0OCIgaGVpZ2h0PSI0NDgiIHZpZXdCb3g9IjAgMCA0NDggNDQ4Ij4KPHRpdGxlPjwvdGl0bGU+CjxnIGlkPSJpY29tb29uLWlnbm9yZSI+CjwvZz4KPHBhdGggZD0iTTQxNy43NSAxNDEuNWMwIDYuMjUtMi41IDEyLjUtNyAxN2wtMjE1IDIxNWMtNC41IDQuNS0xMC43NSA3LTE3IDdzLTEyLjUtMi41LTE3LTdsLTEyNC41LTEyNC41Yy00LjUtNC41LTctMTAuNzUtNy0xN3MyLjUtMTIuNSA3LTE3bDM0LTM0YzQuNS00LjUgMTAuNzUtNyAxNy03czEyLjUgMi41IDE3IDdsNzMuNSA3My43NSAxNjQtMTY0LjI1YzQuNS00LjUgMTAuNzUtNyAxNy03czEyLjUgMi41IDE3IDdsMzQgMzRjNC41IDQuNSA3IDEwLjc1IDcgMTd6Ij48L3BhdGg+Cjwvc3ZnPgo=");
 }
 
-input[type='checkbox']:checked::before {
+/* when the checkbox is checked, the background image is grown to normal size to fill the background of the 'checkbox'*/
+input[type='checkbox']:checked::before :not(#nav-toggle) {
   -webkit-transform: scale(1);
           transform: scale(1);
 }
+/*---------------------------------------------------------------------------------------------------------*/
 
 select {
     color: rgba(255,255,255,0.7);
@@ -1287,8 +1294,6 @@ select {
     font-size: 15px;
     border: 1px solid rgba(255,255,255,0.5);
 	border-radius:10px;
-    
-    
     margin-top: 5px;
     margin-bottom: 45px;
 }
@@ -1303,9 +1308,7 @@ select {
 	border-radius:10px;
 	background-color: rgba(0,0,0,0.3);
 	box-shadow:none;
-	
 }
-
 
 .option_select_right_menu{
     width:284px;
@@ -1369,7 +1372,6 @@ input[type="range"] {
   height: 7px;
   background: rgba(255, 255, 255, 0.6);
   border-radius: 15px;
-  /* background-image: linear-gradient(#ff4500, #ff4500); */
   background-size: 70% 100%;
   background-repeat: no-repeat;
 }
@@ -1377,16 +1379,16 @@ input[type="range"] {
     opacity: 0.85;
 }
 
-.nav h5 a{
+#right-nav-panel h5 a{
     color: #936f4a;
 }
-.nav h5 a:hover{
+#right-nav-panel h5 a:hover{
     color: #998e6b;
 }
-.nav h4 a{
+#right-nav-panel h4 a{
     color: #936f4a;
 }
-.nav h4 a:hover{
+#right-nav-panel h4 a:hover{
     color: #998e6b;
 }
 
@@ -1424,13 +1426,12 @@ input[type="range"] {
 	color: rgba(255,255,255,0.3);
     cursor:pointer;
     margin-right: 4px;
-    /*opacity:0.07;*/
 	transition: 0.3s ease-in-out;
 	height:20px;
 	width:20px;	
 }
 
-.mes_edit:after {content: "\270e";}
+.mes_edit:after {content: "\270e";} /*unicode pencil*/
 
 .mes_edit:hover{color:white;}
 
@@ -1450,7 +1451,6 @@ input[type="range"] {
 .mes_edit_cancel{
     display: none;
     float:right;
-    /* right:8px; */
     margin-right: 4px;
     cursor:pointer;
     opacity:0.5;
@@ -1464,7 +1464,6 @@ input[type="range"] {
     padding: 0px;
     margin: 0px;
     border: none;
-/*	border-radius: 15px;*/
     border-color: transparent;
     outline: none;
     box-shadow: 0 0 3px rgba(255,255,255,0.5);
@@ -1504,7 +1503,7 @@ label.checkbox :checked + span {
   margin: 0px;
 }
 label.checkbox :checked + span:after {
-  content: '\2714';
+  content: '\2714'; /*unicode 'heavy checkmark'*/
   font-size: 18px;
   position: absolute;
   top: -3px;
@@ -1526,8 +1525,6 @@ label.checkbox :checked + span:after {
     grid-template-rows: 30px auto;
     grid-template-columns: auto auto;
 }
-
-
 
 #shadow_character_popup{
 	backdrop-filter: blur(10px) brightness(0.3);
@@ -1693,8 +1690,6 @@ label.checkbox :checked + span:after {
     margin-left: 5px;
     margin-top: 30px;
     scrollbar-width: thin;
-    /* width: 900px; */
-    /* height: 80%; */
     overflow: hidden;
     overflow-y: scroll;
     max-width:430px;
@@ -1742,11 +1737,6 @@ label.checkbox :checked + span:after {
 	width:30px;
 	}
 
-
-
-
-
-
 #advanced_div{
     font-size: 1rem;
     background-repeat: no-repeat;
@@ -1762,7 +1752,6 @@ label.checkbox :checked + span:after {
     border-radius: 3px;
 	background-color: rgba(0,0,0,0.3);
     opacity: 0.7;
-    /*font-family: "Source Sans Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;*/
 }
 #advanced_book_logo{
     width: 35px;
@@ -1803,42 +1792,6 @@ body {
     height: 100%;
 }
 
-/*body {
-    color: rgb(229, 224, 216);
-    font-family: "Source Sans Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
-    
-    background-color: #f1f1f1;
-}*/
-
-
-
-
-
-
-main {
-    max-width: 1024px;
-    margin: 0 auto
-}
-
-article {
-    margin: 0 1em;
-    padding: 0 22px;
-    -webkit-transition: -webkit-transform .3s;
-    -moz-transition: : -moz-transform .3s;
-    transition: transform .3s;
-}
-
-header {
-    margin: 0;
-    padding: 0;
-    text-align: center;
-}
-
-footer {
-    font-size: 14px;
-    text-align: center
-}
-
 p {
     margin-bottom: 16px;
 	margin-top:0;
@@ -1866,7 +1819,6 @@ h1 {
 }
 
 h2 {
-    
     font-size: 1.5rem;
     line-height: 1.75rem;
 	margin-top: 5px;
@@ -1889,7 +1841,7 @@ a {
     margin: 6px;
     white-space: normal!important;
     word-wrap: break-word;
-		display: inline-block;
+	display: inline-block;
     line-height: 1.25;
     text-align: center;
     vertical-align: middle;
@@ -1901,7 +1853,6 @@ a {
     padding: .5rem 1rem;
     font-size: 1rem;
     font-weight: 400;
-    
     box-shadow: 0 2px 5px 0 rgba(0,0,0,.16),0 2px 10px 0 rgba(0,0,0,.12);
 }
 .btn {
@@ -1924,19 +1875,18 @@ a {
     background-color: transparent;
 }
 
+/* Right nav panel */
+/* default position is 450px to the right, off screen*/
+/* it is position:fixed, so it's never affected by the location/size of any other element */
 
-
-/* Right nav */
-
-.nav {
+#right-nav-panel{													
     width: 450px;
-    /*min-width: 450px;*/
     height: 100%;
     position: fixed;
     top: 0;
     bottom: 0;
     margin: 0;
-    right: -450px;
+    right: -450px;										
     padding: 0px 20px;
     -webkit-transition: right 0.14s ease-in-out  0.02s;
     -moz-transition: right 0.14s ease-in-out  0.02s;
@@ -1949,62 +1899,60 @@ a {
 	border-left: 1px solid rgba(0,0,0,0.3);
 }
 
-.nav-toggle {
-    border-radius: 5px;
+/* this is the class of the visible LABEL for the hidden #nav-toggle div checkbox*/
+/* it is displaced 455px to the left of the #right-nav-paneldiv, this keeps it on screen while the #right-nav-panel is held off screen to the right */
+
+#nav-toggle {	
     position: absolute;
-    right: 455px;
-    top: 5px;
-    padding: 5px;
-    backdrop-filter: blur(10px) brightness(0.3);
-	-webkit-backdrop-filter: blur(10px) brightness(0.3);
-	border: 1px solid rgba(255,255,255,0.5);
-    color: rgba(255,255,255,0.5);
+    right: 13px;
+    top: 12px;
+    padding: 0px;
+    margin: 0px;
     cursor: pointer;
-    font-size: 1.25rem;
-    line-height: 1rem;
-	height:30px;
-    z-index: 2001;
-    -webkit-transition: color .25s ease-in-out;
-    -moz-transition: color .25s ease-in-out;
-    transition: color .25s ease-in-out;
+    height: 15px;
+    width: 15px;
+    z-index: 3001;
 }
-
-.nav-toggle:after {
-    content: '\2630';
-    text-decoration: none;
 	
-}
-
-.nav-toggle:hover {
+#nav-toggle:hover::after {										
     color: #f4f4f4;
 }
 
-[id='nav-toggle'] {
-    position: absolute;
-    display: none;
-}
-
-[id='nav-toggle']:checked ~ .nav > .nav-toggle {
-    left: auto;
-    right: 5px;
-    top: 5px;
-}
-
-[id='nav-toggle']:checked ~ .nav {
-    right: 0;
-    box-shadow: -5px 0px 10px 0px rgba(0, 0, 0, 0.50);
+#nav-toggle::after {
+    content: '\2630';
+    line-height: 30px;
+    font-size: 2em;
+    padding: 0;
+    text-align: center;
+    vertical-align: middle;
+    display: inline-block;
+    width: 30px;
+    height: 30px;
+    margin-top: -8px;
+    margin-left: -9px;
+    border: 1px solid #666;
+    border-radius: 5px;
+    background: rgba(0, 0, 0, 1);
+    color: #666;
+    -webkit-transition: all 0.275s;
+    transition: all 0.275s;
     
-    overflow-y: auto;
 }
 
-[id='nav-toggle']:checked ~ main > article {
-    -webkit-transform: translateX(-450px);
-    -moz-transform: translateX(-450px);
-    transform: translateX(-450px);
-}
-
-[id='nav-toggle']:checked ~ .nav > .nav-toggle:after {
+#nav-toggle:checked::after {
     content: '\2715';
+    line-height: 30px;
+    font-size: 2em;
+}
+
+/* this affects the #right-nav-panel div ONLY WHEN the nav-toggle checkbox is checked*/
+/* the #right-nav-panel is moved to the right edge of the screen*/
+/* this is what causes the panel movement */
+
+#nav-toggle:checked ~ #right-nav-panel{						
+    right: 0px;											
+    box-shadow: -5px 0px 10px 0px rgba(0, 0, 0, 0.50);
+    overflow-y: auto;
 }
 
 body {
@@ -2038,130 +1986,8 @@ body {
 	 
     }
 	
-	#sheld {}
-	
-    .nav {
+#right-nav-panel{
      width: 100%;
      box-shadow: none
     }
-}
-
-
-.nav > ul {
-    display: block;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-}
-
-.nav > ul > li {
-    line-height: 2.5;
-    opacity: 0;
-    -webkit-transform: translateX(50%);
-    -moz-transform: translateX(50%);
-    -ms-transform: translateX(50%);
-    transform: translateX(50%);
-    -webkit-transition: opacity .5s .1s, -webkit-transform .5s .1s;
-    -moz-transition: opacity .5s .1s, -moz-transform .5s .1s;
-    -ms-transition: opacity .5s .1s, -ms-transform .5s .1s;
-    transition: opacity .5s .1s, transform .5s .1s;
-}
-
-[id='nav-toggle']:checked ~ .nav > ul > li {
-    opacity: 1;
-    -webkit-transform: translateX(0);
-    -moz-transform: translateX(0);
-    -ms-transform: translateX(0);
-    transform: translateX(0);
-}
-
-.nav > ul > li:nth-child(2) {
-    -webkit-transition: opacity .5s .2s, -webkit-transform .5s .2s;
-    transition: opacity .5s .2s, transform .5s .2s;
-}
-
-.nav > ul > li:nth-child(3) {
-    -webkit-transition: opacity .5s .3s, -webkit-transform .5s .3s;
-    transition: opacity .5s .3s, transform .5s .3s;
-}
-
-.nav > ul > li:nth-child(4) {
-    -webkit-transition: opacity .5s .4s, -webkit-transform .5s .4s;
-    transition: opacity .5s .4s, transform .5s .4s;
-}
-
-.nav > ul > li:nth-child(5) {
-    -webkit-transition: opacity .5s .5s, -webkit-transform .5s .5s;
-    transition: opacity .5s .5s, transform .5s .5s;
-}
-
-.nav > ul > li:nth-child(6) {
-    -webkit-transition: opacity .5s .6s, -webkit-transform .5s .6s;
-    transition: opacity .5s .6s, transform .5s .6s;
-}
-
-.nav > ul > li:nth-child(7) {
-    -webkit-transition: opacity .5s .7s, -webkit-transform .5s .7s;
-    transition: opacity .5s .7s, transform .5s .7s;
-}
-
-.nav > ul > li > a {
-    display: inline-block;
-    position: relative;
-    padding: 0;
-    font-family: 'Open Sans', sans-serif;
-    font-weight: 300;
-    font-size: 1.2em;
-    color: #dadada;
-    width: 100%;
-    text-decoration: none;
-
-    -webkit-transition: color .5s ease, padding .5s ease;
-    -moz-transition: color .5s ease, padding .5s ease;
-    transition: color .5s ease, padding .5s ease;
-}
-
-.nav > ul > li > a:hover,
-.nav > ul > li > a:focus {
-    color: white;
-    padding-left: 15px;
-}
-
-.nav > ul > li > a:before {
-    content: '';
-    display: block;
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    height: 1px;
-    width: 100%;
-    -webkit-transition: width 0s ease;
-    transition: width 0s ease;
-}
-
-.nav > ul > li > a:after {
-    content: '';
-    display: block;
-    position: absolute;
-    left: 0;
-    bottom: 0;
-    height: 1px;
-    width: 100%;
-    background: #3bc1a0;
-    -webkit-transition: width .5s ease;
-    transition: width .5s ease;
-}
-
-.nav > ul > li > a:hover:before {
-    width: 0%;
-    background: #3bc1a0;
-    -webkit-transition: width .5s ease;
-    transition: width .5s ease;
-}
-
-.nav > ul > li > a:hover:after {
-    width: 0%;
-    background: transparent;
-    -webkit-transition: width 0s ease;
-    transition: width 0s ease;
 }
