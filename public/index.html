@@ -1905,9 +1905,10 @@
 		// RossAscends: Added functionality that will close the RightNav panels when User clicks outside them			
 			
 			var NavToggle = document.getElementById("nav-toggle");
+			var PanelPin = document.getElementById("rm_button_panel_pin");
 			$('document').ready(function(){
 				$("html").click(function(e){
-				if (NavToggle.checked === true){
+				if (NavToggle.checked === true && PanelPin.checked === false) {
 					if ($(e.target).attr('id') !== "nav-toggle") {
 						if (document.querySelector('#right-nav-panel').contains(e.target) === false){
 							document.getElementById('nav-toggle').click();
@@ -2962,8 +2963,9 @@
         <div class="right_menu_button" id="rm_button_characters"><h2>Characters</h2></div>
         <div class="right_menu_button" id="rm_button_settings"><h2>Settings</h2></div>
         <div class="right_menu_button" id="rm_button_selected_ch"><h2></h2></div>
+		<div class="right_menu_button" id="rm_button_panel_pin_div"><input type="checkbox" id="rm_button_panel_pin"></div>
 
-        <div id="rm_ch_create_block" class="right_menu">
+        <div id="rm_ch_create_block" class="right_menu" style="display: none;">
             <div id="rm_button_back" class="right_menu_button"><h2 style="color: rgb(188, 193, 200, 0.5);">&#8656;</h2></div>
             
             <form id="form_create"  action="javascript:void(null);" method="post" enctype="multipart/form-data">
