@@ -550,7 +550,7 @@ input[type=button] {
 }
 	
 #rm_button_panel_pin:hover::after {										
-    color: #f4f4f4;
+    filter: grayscale(1) brightness(150%);
 }
 
 #rm_button_panel_pin::after {

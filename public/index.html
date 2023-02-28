@@ -2893,8 +2893,6 @@
             <div id="select_chat_popup_text">
                 <img id="select_chat_cross" src="img/cross.png" style="position: absolute; right: 15px; top:14px; width: 20px; height: 20px; cursor: pointer; opacity: 0.6">
 
-                <!--<h3 style="margin: 0px;margin-left: 5px;margin-top: 5px;">Select chat</h3>-->
-
             </div>
             <div id="select_chat_import">
                 
@@ -2935,16 +2933,11 @@
     </div>
     <div id="bg_menu">
         <div id="logo_block"><div id="bg_menu_button"><img src="img/tri.png"></div><img src="img/logo.png" id="site_logo">
-		
-		<!-- derp derp derp -->
 		<div id="update-notification">
 		<a id="verson" href="https://github.com/TavernAI/TavernAI" target="_blank"></a>
 		</div>
-		<!-- derp derp derp derp -->
-		
 		</div>
-		
-				
+
         <div id="bg_menu_content">
             <form id="form_bg_download"  action="javascript:void(null);" method="post" enctype="multipart/form-data">
                 <label class="input-file">
@@ -3157,7 +3150,6 @@
         <div id="chat"></div>
         <div id="form_sheld">            
             <div id="dialogue_del_mes">
-                <!-- <div id="dialogue_del_mes_text"><h3></h3></div> -->
                 <div id="dialogue_del_mes_ok" class="menu_button">Delete</div>
                 <div id="dialogue_del_mes_cancel" class="menu_button">Cancel</div>
             </div>
@@ -3173,10 +3165,10 @@
                         </div>
                     </div>
                 </div>
-				<!-- <div contenteditable="true" id="send_textarea">Type a message...</div> -->
                 <textarea id="send_textarea" placeholder="Not connected to API!" name="text"></textarea>
 				
 <script type="text/javascript">
+	//this script makes the chat input text area resize vertically to match the text size (limited by CSS at 50% window height)
     $('#send_textarea').on('input', function () {
         this.style.height = '40px';
         this.style.height =
@@ -3185,22 +3177,11 @@
 </script>
 
                 <div id="send_but_sheld">
-					
 					<div id="loading_mes"></div>
-				<!--	
-					<div id="online_status">
-						<div id="online_status_indicator"></div>
-						<div id="online_status_text">Not connected</div>
-					</div>
-				-->	
 					<input id="send_but" type="button">
-
 				</div>
 
             </form>
-           <!--  <div id="online_status">
-                <div id="online_status_indicator"></div><div id="online_status_text">No connection...</div>
-            </div> -->
         </div>
     </div>
 </body>
