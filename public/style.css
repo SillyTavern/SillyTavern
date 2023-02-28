@@ -438,6 +438,8 @@ width: 100%;
     size: 10;
     font-size: 11pt;
     padding: 7px;
+	width:90%;
+	margin-bottom:5px;
 }
 
 
@@ -1473,10 +1475,20 @@ input[type="range"] {
 }
 
 #your_name_button {
-    opacity: 0.5;
+	cursor: pointer;
+    color: #fff;
+    opacity: 0.7;
+    padding: 10px;
     margin-left: 10px;
-    cursor: pointer;
+    margin-top: 10px;
+    margin: 10px;
+    font-size: 1rem;
+    height: 2.5rem;
+    transition: 0.3s;
 }
+
+#your_name_button:hover{background-color:green;}
+
 #form_change_name{
     margin-bottom: 15px;
 }
