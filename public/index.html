@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html>
 <head>
-
-
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<!--<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">-->
@@ -39,7 +37,7 @@
         import {encode, decode} from "../scripts/gpt-2-3-tokenizer/mod.js";
         $(document).ready(function(){
             const VERSION = '1.2.8';
-            var converter = new showdown.Converter();
+            var converter = new showdown.Converter({emoji: 'true'});
             var bg_menu_toggle = false;
             const systemUserName = 'TavernAI';
             const systemCharName = 'Chloe';
@@ -267,14 +265,10 @@
 			function checkOnlineStatus(){
                 //console.log(online_status);
                 if(online_status == 'no_connection'){
-					$("#send_textarea").attr('placeholder', "Not connected to API!");				//Input bar placeholder tells users they are not connected
+					$("#send_textarea").attr('placeholder', "Not connected to API!");		//Input bar placeholder tells users they are not connected
 					$("#send_form").css("background-color", "rgba(100,0,0,0.7)");			//entire input form area is red when not connected
 					$("#send_but").css("display", "none");									//send button is hidden when not connected
 					
-					
-                    $("#online_status_indicator").css("background-color", "red");
-                    $("#online_status").css("opacity", 0.3);
-                    $("#online_status_text").html("No connection...");
                     $("#online_status_indicator2").css("background-color", "red");
                     $("#online_status_text2").html("No connection...");
                     $("#online_status_indicator3").css("background-color", "red");
@@ -285,11 +279,7 @@
 					$("#send_textarea").attr('placeholder', 'Type a message...');				//on connect, placeholder tells user to type message
 					$("#send_form").css("background-color", "rgba(0,0,0,0.7)");					//on connect, form BG changes to transprent black
 					$("#send_but").css("display", "inline");									//on connect, send button shows up
-					
-					
-                    $("#online_status_indicator").css("background-color", "black");
-                    $("#online_status").css("display", "none");
-                    $("#online_status_text").html("");
+
                     $("#online_status_indicator2").css("background-color", "green");
                     $("#online_status_text2").html(online_status);
                     $("#online_status_indicator3").css("background-color", "green");
@@ -1311,7 +1301,7 @@
                             mesSendString = '\nThen the roleplay chat between '+name1+' and '+name2+' begins.\n'+mesSendString;
                         }else{
                             mesSendString = '<START>\n'+mesSendString;
-							//mesSendString = mesSendString;
+							//mesSendString = mesSendString; //This edit simply removes the first "<START>" that is prepended to all context prompts
                         }
                         finalPromt = worldInfoBefore+storyString+worldInfoAfter+mesExmString+mesSendString+generatedPromtCache+promptBias;
                         
@@ -1633,41 +1623,40 @@
 			//maybe a way to simulate this would be to disable the eventListener for people iOS.
 			
             $("#send_textarea").keydown(function (e) {							
-                if(e.which === 13 && !e.shiftKey && !e.ctrlKey && is_send_press == false) {	
+                if(!e.shiftKey && !e.ctrlKey && e.key == "Enter" && is_send_press == false) {	
                     is_send_press = true;										
                     e.preventDefault();											
                     Generate();
-                    //$(this).closest("form").submit();
                 }
             });
 			
 			//RossAscends: Lets add some hotkeys
 			document.addEventListener('keydown', (event) => {
-				//console.log(event.key);
+			
 				if(event.ctrlKey && event.key == "Enter") {				// Ctrl+Enter for Regeneration Last Response
-					//console.log('both CTRL and Enter were pressed');
+			
 					if(is_send_press == false){
 						is_send_press = true;
 						Generate('regenerate');
-						//console.log('confirmed keypress was caught '+ event.key);
 					}
 				}else if(event.ctrlKey && event.key == "ArrowUp") {		//Ctrl+UpArrow for Connect to last server
+			
 					document.getElementById('api_button').click();
 
 				}
 			});	
             
-            //menu buttons
-            var selected_button_style = { color: "#bcc1c8" };
-            var deselected_button_style = { color: "#565d66" };
-            $( "#rm_button_create" ).children("h2").css(selected_button_style);
-            $( "#rm_button_characters" ).children("h2").css(selected_button_style);
+            //menu buttons setup
+            var selected_button_style = { };
+            var deselected_button_style = { };
+			
+            $( "#rm_button_create" ).css("class","deselected-right-tab");
+            $( "#rm_button_characters" ).css("class","deselected-right-tab");
             $( "#rm_button_settings" ).click(function() {
                 selected_button = 'settings';
                 menu_type = 'settings';
                 $( "#rm_characters_block" ).css("display", "none");
                 $( "#rm_api_block" ).css("display", "block");
-                
                 $('#rm_api_block').css('opacity',0.0);
                 $('#rm_api_block').transition({  
                         opacity: 1.0,
@@ -1679,10 +1668,9 @@
                 $( "#rm_ch_create_block" ).css("display", "none");
                 $( "#rm_info_block" ).css("display", "none");
                 $("#rm_group_chats_block").css("display", "none");
-                
-                $( "#rm_button_characters" ).children("h2").css(deselected_button_style);
-                $( "#rm_button_settings" ).children("h2").css(selected_button_style);
-                $( "#rm_button_selected_ch" ).children("h2").css(deselected_button_style);
+                $( "#rm_button_characters" ).css("class","deselected-right-tab");
+                $( "#rm_button_settings" ).css("class","selected-right-tab");
+                $( "#rm_button_selected_ch" ).css("class","deselected-right-tab");
             });
             $( "#rm_button_characters" ).click(function() {
                 selected_button = 'characters';
@@ -2157,9 +2145,9 @@
                 $("#create_button").css("display", "block");
                 $("#create_button").attr("value", "Create");
                 $('#result_info').html('&nbsp;');
-                $( "#rm_button_characters" ).children("h2").css(deselected_button_style);
-                $( "#rm_button_settings" ).children("h2").css(deselected_button_style);
-                $( "#rm_button_selected_ch" ).children("h2").css(deselected_button_style);
+                $( "#rm_button_characters" ).css("class","deselected-right-tab");
+                $( "#rm_button_settings" ).css("class","deselected-right-tab");
+                $( "#rm_button_selected_ch" ).css("class","deselected-right-tab");
                 
                 //create text poles
                 $("#rm_button_back").css("display", "inline-block");
@@ -2199,9 +2187,9 @@
                 $( "#rm_info_block" ).css("display", "none");
                 $("#rm_group_chats_block").css("display", "none");
                 
-                $( "#rm_button_characters" ).children("h2").css(selected_button_style);
-                $( "#rm_button_settings" ).children("h2").css(deselected_button_style);
-                $( "#rm_button_selected_ch" ).children("h2").css(deselected_button_style);
+                $( "#rm_button_characters" ).css("class","selected-right-tab");
+                $( "#rm_button_settings" ).css("class","deselected-right-tab");
+                $( "#rm_button_selected_ch" ).css("class","deselected-right-tab");
             }
             function select_rm_info(text){
                 $( "#rm_characters_block" ).css("display", "none");
@@ -2212,9 +2200,9 @@
                 
                 $("#rm_info_text").html('<h3>'+text+'</h3>');
                 
-                $( "#rm_button_characters" ).children("h2").css(deselected_button_style);
-                $( "#rm_button_settings" ).children("h2").css(deselected_button_style);
-                $( "#rm_button_selected_ch" ).children("h2").css(deselected_button_style);
+                $( "#rm_button_characters" ).css("class","deselected-right-tab");
+                $( "#rm_button_settings" ).css("class","deselected-right-tab");
+                $( "#rm_button_selected_ch" ).css("class","deselected-right-tab");
             }
             
             function select_selected_character(chid){ //character select
@@ -2222,7 +2210,7 @@
                 select_rm_create();
                 menu_type = 'character_edit';
                 $( "#delete_button_div" ).css("display", "block");
-                $( "#rm_button_selected_ch" ).children("h2").css(selected_button_style);
+                $( "#rm_button_selected_ch" ).css("class","selected-right-tab");
                 var display_name = characters[chid].name;
 
                 $( "#rm_button_selected_ch" ).children("h2").text(display_name);
@@ -4574,12 +4562,13 @@
     <input type="checkbox" id="nav-toggle">
 
     <nav id="right-nav-panel">
-                
-        <div class="right_menu_button" id="rm_button_characters"><h2>Characters</h2></div>
-        <div class="right_menu_button" id="rm_button_settings"><h2>Settings</h2></div>
-        <div class="right_menu_button" id="rm_button_selected_ch"><h2></h2></div>
-		<div class="right_menu_button" id="rm_button_panel_pin_div"><input type="checkbox" id="rm_button_panel_pin"></div>
-
+        <div id="right-nav-panel-tabs">
+			<div class="right_menu_button" id="rm_button_characters">&#x1F464;</div>
+			<div class="right_menu_button" id="rm_button_settings">⚙️</div>
+			<div class="right_menu_button" id="rm_button_selected_ch"><h2></h2></div>
+			<div class="right_menu_button" id="rm_button_panel_pin_div"><input type="checkbox" id="rm_button_panel_pin"></div>
+		</div>
+		
         <div id="rm_ch_create_block" class="right_menu" style="display: none;">
             <div id="rm_button_back" class="right_menu_button"><h2 style="color: rgb(188, 193, 200, 0.5);">&#8656;</h2></div>
             
@@ -4831,13 +4820,8 @@
                     <option value="1">Style Anchor - Character Anchor</option>
                 </select>
                 <div id="anchor_checkbox">
-                    <label class="checkbox">
-                        <input id="character_anchor" type="checkbox"/><span></span>
-                    </label><h4>Character Anchor</h4>
-                    <label class="checkbox" >
-                        <input id="style_anchor" type="checkbox"/><span></span>
-                    </label><h4>Style Anchor</h4>
-
+                    <input id="character_anchor" type="checkbox"/><h4>Character Anchor</h4>
+                    <input id="style_anchor" type="checkbox"/><h4>Style Anchor</h4>
                 </div>
             </div>
         </div>
