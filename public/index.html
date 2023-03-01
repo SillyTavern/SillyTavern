@@ -241,7 +241,7 @@
                 //console.log(online_status);
                 if(online_status == 'no_connection'){
 					$("#send_textarea").attr('placeholder', "Not connected to API!");				//Input bar placeholder tells users they are not connected
-					$("#send_form").css("background-color", "rgba(255,0,0,0.3)");			//entire input form area is red when not connected
+					$("#send_form").css("background-color", "rgba(100,0,0,0.7)");			//entire input form area is red when not connected
 					$("#send_but").css("display", "none");									//send button is hidden when not connected
 					
 					
@@ -256,7 +256,7 @@
                     is_get_status_novel = false;
                 }else{
 					$("#send_textarea").attr('placeholder', 'Type a message...');				//on connect, placeholder tells user to type message
-					$("#send_form").css("background-color", "rgba(0,0,0,0.3)");					//on connect, form BG changes to transprent black
+					$("#send_form").css("background-color", "rgba(0,0,0,0.7)");					//on connect, form BG changes to transprent black
 					$("#send_but").css("display", "inline");									//on connect, send button shows up
 					
 					
@@ -833,28 +833,30 @@
                 tokens_already_generated = 0;
                 message_already_generated = name2+': ';
                 if(online_status != 'no_connection' && this_chid != undefined){
-                    if(type != 'regenerate'){
+                    if(type !== 'regenerate'){
                         var textareaText = $("#send_textarea").val();
+						//console.log('Not a Regenerate call, so posting normall with input of: ' +textareaText);
                         $("#send_textarea").val('').trigger('input');
                         
                     }else{
+						//console.log('Regenerate call detected')
                         var textareaText = "";
                         if(chat[chat.length-1]['is_user']){//If last message from You
                             
                         }else{
+							//console.log('about to remove last msg')
                             chat.length = chat.length-1;
                             count_view_mes-=1;
+							//console.log('removing last msg')
                             $('#chat').children().last().remove();
                         }
                     }
-                    //$("#send_textarea").attr("disabled","disabled");
-                    
+
                     if (isHelpRequest(textareaText)) {
                         sendSystemMessage(system_message_types.HELP);
                         return;
                     }
 
-                    //$("#send_textarea").blur();
                     $( "#send_but" ).css("display", "none");
                     $( "#loading_mes" ).css("display", "inline-block");
 
@@ -1071,7 +1073,6 @@
                             //arrMes[arrMes.length-1] = '<START>\n'+arrMes[arrMes.length-1];
                             let mesExmString = '';
                             for(let iii = 0; iii < mesExamplesArray.length; iii++){//mesExamplesArray It need to make from end to start
-                                
                                 mesExmString = mesExmString+mesExamplesArray[iii];
                                 if(encode(JSON.stringify(worldInfoString+storyString+mesExmString+chatString+anchorTop+anchorBottom+charPersonality+promptBias)).length+120 < this_max_context){ //example of dialogs
                                     if(!is_pygmalion){
@@ -1200,6 +1201,7 @@
                             mesSendString = '\nThen the roleplay chat between '+name1+' and '+name2+' begins.\n'+mesSendString;
                         }else{
                             mesSendString = '<START>\n'+mesSendString;
+							//mesSendString = mesSendString;
                         }
                         finalPromt = worldInfoBefore+storyString+worldInfoAfter+mesExmString+mesSendString+generatedPromtCache+promptBias;
                         
@@ -1480,24 +1482,37 @@
                 select_selected_character(this_chid);
             }
 			
-			//hotkey to send input with shift+enter (normal enter keypress generates a new line in the chat input box)
-			//problem for mobile: default iOS keyboard function is to make AutoCapitalization happen on new lines.
-			//AutoCapitization effectively presses the virtual Shift key when it thinks a new line/sentence is happening. 
-			//iOS result: First Enter press will make a new line, but the second will act like shift+enter, sending the prompt to AI.
+			//hotkey to send input with enter (shift+enter generates a new line in the chat input box)
+			//this is not ideal for touch device users with virtual keyboards.
 			//ideally we would detect if the user is using a virtual keyboard, and disable this shortcut for them.
-			//because mobile users' hands are always near the screen, tapping the send button is better for them.
-			//caveat: people on an iPad using a Bluetooth keyboard will need to be treated as PC users for this purpose.
+			//because mobile users' hands are always near the screen, tapping the send button is better for them, and enter should always make a new line.
 			//note: CAI seems to have this handled. PC: shift+enter = new line, enter = send. iOS: shift+enter AND enter both make new lines, and only the send button sends. 
 			//maybe a way to simulate this would be to disable the eventListener for people iOS.
 			
             $("#send_textarea").keydown(function (e) {							
-                if(e.which === 13 && e.shiftKey && is_send_press == false) {	
+                if(e.which === 13 && !e.shiftKey && !e.ctrlKey && is_send_press == false) {	
                     is_send_press = true;										
                     e.preventDefault();											
                     Generate();
                     //$(this).closest("form").submit();
                 }
             });
+			
+			//RossAscends: Lets add some hotkeys
+			document.addEventListener('keydown', (event) => {
+				//console.log(event.key);
+				if(event.ctrlKey && event.key == "Enter") {				// Ctrl+Enter for Regeneration Last Response
+					//console.log('both CTRL and Enter were pressed');
+					if(is_send_press == false){
+						is_send_press = true;
+						Generate('regenerate');
+						//console.log('confirmed keypress was caught '+ event.key);
+					}
+				}else if(event.ctrlKey && event.key == "ArrowUp") {		//Ctrl+UpArrow for Connect to last server
+					document.getElementById('api_button').click();
+
+				}
+			});	
             
             //menu buttons
             var selected_button_style = { color: "#bcc1c8" };
@@ -1889,7 +1904,7 @@
                 switch(popup_type){
 
                 case 'char_not_selected':
-                    $("#dialogue_popup_ok").css("background-color", "#191b31CC");
+                    
                     $("#dialogue_popup_ok").text("Ok");
                     $("#dialogue_popup_cancel").css("display", "none");
                     break;
@@ -1897,12 +1912,12 @@
                 case 'world_imported':
                 case 'new_chat':
 
-                    $("#dialogue_popup_ok").css("background-color", "#191b31CC");
+                    
                     $("#dialogue_popup_ok").text("Yes");
                     break;
                 case 'del_world':
                 default:
-                    $("#dialogue_popup_ok").css("background-color", "#791b31");
+                    
                     $("#dialogue_popup_ok").text("Delete");
                
                 }
@@ -2200,24 +2215,45 @@
                     getSoftPromptsList();
                 }
             });
-            
-            $( "body" ).click(function() {								// this makes the input bar's option menu disappear when clicked away from
+
+			
+            $(document).on('click', function(event) {								// this makes the input bar's option menu disappear when clicked away from
                 if($("#options").css('opacity') == 1.0){
-                    $('#options').transition({  
-                        opacity: 0.0,
-                        duration: 100,//animation_rm_duration,
-                        easing: animation_rm_easing,
-                        complete: function() {
-                            $("#options").css('display', 'none');
-                        }
-                    });
-                }
-            });
-            $( "#options_button" ).click(function() {
+					$('#options').transition({  
+						opacity: 0.0,
+						duration: 100,//animation_rm_duration,
+						easing: animation_rm_easing,
+						complete: function() {
+							$("#options").css('display', 'none');
+						}
+					})
+					
+	            }
+			}); 
+
+		// RossAscends: Added functionality that will close the RightNav panels when User clicks outside them			
+			
+			var NavToggle = document.getElementById("nav-toggle");
+			var PanelPin = document.getElementById("rm_button_panel_pin");
+			$('document').ready(function(){
+				$("html").click(function(e){
+				if (NavToggle.checked === true && PanelPin.checked === false) {
+					if ($(e.target).attr('id') !== "nav-toggle") {
+						if (document.querySelector('#right-nav-panel').contains(e.target) === false){
+							document.getElementById('nav-toggle').click();
+						}
+					}
+				};
+			});
+			});
+			 
+		//-------------------------------------------------------------------------------------------------------------
+            
+            $( "#options_button" ).click(function() {					// this is the options button click function, shows the options menu if closed
                 if($("#options").css('display') === 'none' && $("#options").css('opacity') == 0.0){
                     $("#options").css('display', 'block');
                     $('#options').transition({  
-                        opacity: 1.0,
+                        opacity: 1.0,									// the manual setting of CSS via JS is what allows the click-away feature to work
                         duration: 100,
                         easing: animation_rm_easing,
                         complete: function() {
@@ -2240,55 +2276,14 @@
                     callPopup('<h3>Start new chat?</h3>');
                 }
             });
-			//RossAscends: Lets add some hotkeys
-			document.addEventListener('keydown', (event) => {
-				if(event.ctrlKey && event.key == "Enter") {				// Ctrl+Enter for Regeneration Last Response
-					if(is_send_press == false){
-						is_send_press = true;
-						Generate('regenerate');
-					}
-				}else if(event.ctrlKey && event.key == "ArrowUp") {		//Ctrl+UpArrow for Connect to last server
-					document.getElementById('api_button').click();
-
-				}
-			});	
-			
-			//-----------------------------------------------
-			
-			// Now let's add functionality that will close the BG menu and/or RightNav panels when User clicks outside them
-			
-			// COULDN'T GET THIS TO WORK BUT CODE LEFT FOR FUTURE REFERENCE
-			
-			// general function to deetct which elements are being clicked on. 
- 			//$('body').on('click', function(e){
-			//	alert( 'Class is '+ $(e.target).attr('class') + '. ID is '+ $(e.target).attr('id'));
-			//});
-			
-			//general function to watch the status of the nav-toggle checkbox
-			//var checkb = document.getElementById("nav-toggle");
-			//checkb.addEventListener('change', function(e) {
-			//	alert(checkb.checked, checkb.value);
-			
-			//});
-			
-			//$('document').ready(function(){
-			//	$("body").click(function(e){
-			//		if (e.target.parentNode.classList.contains('.nav') == false){
-			//		alert('triggered!');
-			//		document.getElementById('nav-toggle').click();
-			//	};	
-			//});
-			//});
-			 
-			//---------------------------------------------------
-						
+									
             $( "#option_regenerate" ).click(function() {
                 if(is_send_press == false){
                     is_send_press = true;
                     Generate('regenerate');
                 }
             });
-            // this function hides the input form, and shows the delete/cancel buttons fro deleting messages from chat
+            // this function hides the input form, and shows the delete/cancel buttons for deleting messages from chat
 			$( "#option_delete_mes" ).click(function() {
                 if(this_chid != undefined && !is_send_press){
                     $('#dialogue_del_mes').css('display','block');
@@ -3746,7 +3741,7 @@
             <div id="scenario_div">
                 <h4>Scenario</h4>
                 <h5>Circumstances and context of the dialogue (<a href="/notes/12" target="_blank">?</a>)</h5>
-                <input id="scenario_pole" name="scenario" class="text_pole" maxlength="9999" size="40" value="" autocomplete="off" form="form_create">
+                <input id="scenario_pole" name="scenario" class="text_pole" maxlength="9999" value="" autocomplete="off" form="form_create">
             </div>
             
             <div id="mes_example_div">
@@ -3873,8 +3868,6 @@
             <div id="select_chat_popup_text">
                 <img id="select_chat_cross" src="img/cross.png" style="position: absolute; right: 15px; top:14px; width: 20px; height: 20px; cursor: pointer; opacity: 0.6">
 
-                <!--<h3 style="margin: 0px;margin-left: 5px;margin-top: 5px;">Select chat</h3>-->
-
             </div>
             <div id="select_chat_import">
                 
@@ -3915,16 +3908,11 @@
     </div>
     <div id="bg_menu">
         <div id="logo_block"><div id="bg_menu_button"><img src="img/tri.png"></div><img src="img/logo.png" id="site_logo">
-		
-		<!-- derp derp derp -->
 		<div id="update-notification">
 		<a id="verson" href="https://github.com/TavernAI/TavernAI" target="_blank"></a>
 		</div>
-		<!-- derp derp derp derp -->
-		
 		</div>
-		
-				
+
         <div id="bg_menu_content">
             <form id="form_bg_download"  action="javascript:void(null);" method="post" enctype="multipart/form-data">
                 <label class="input-file">
@@ -3936,24 +3924,23 @@
             
         </div>  
     </div>
-    <input type="checkbox" id="nav-toggle" hidden>
+    <input type="checkbox" id="nav-toggle">
 
-    <nav class="nav">
-        <label for="nav-toggle" class="nav-toggle" onclick></label>
-
-        
+    <nav id="right-nav-panel">
+                
         <div class="right_menu_button" id="rm_button_characters"><h2>Characters</h2></div>
         <div class="right_menu_button" id="rm_button_settings"><h2>Settings</h2></div>
         <div class="right_menu_button" id="rm_button_selected_ch"><h2></h2></div>
+		<div class="right_menu_button" id="rm_button_panel_pin_div"><input type="checkbox" id="rm_button_panel_pin"></div>
 
-        <div id="rm_ch_create_block" class="right_menu">
+        <div id="rm_ch_create_block" class="right_menu" style="display: none;">
             <div id="rm_button_back" class="right_menu_button"><h2 style="color: rgb(188, 193, 200, 0.5);">&#8656;</h2></div>
             
             <form id="form_create"  action="javascript:void(null);" method="post" enctype="multipart/form-data">
                 
                 <div id="name_div">
                     <h4>Name</h4><h5>Character name</h5>
-                <input id="character_name_pole" name="ch_name" class="text_pole" maxlength="120" size="35" value="" autocomplete="off">
+                <input id="character_name_pole" name="ch_name" class="text_pole" maxlength="120" value="" autocomplete="off">
                 </div>
                 <div id="avatar_div" class="avatar_div">
                     <div id="avatar_div_div" class="avatar">
@@ -4017,7 +4004,7 @@
                 <form  action="javascript:void(null);" method="post" enctype="multipart/form-data">
 
                 <h4>API url</h4><h5>Example: http://127.0.0.1:5000/api </h5>
-                <input id="api_url_text" name="api_url" class="text_pole" maxlength="500" size="35" value="" autocomplete="off">
+                <input id="api_url_text" name="api_url" class="text_pole" maxlength="500" value="" autocomplete="off">
                 <input id="api_button" type="submit" value="Connect">
                 <img id="api_loading" src="img/load.svg" >
                 </form>
@@ -4051,7 +4038,8 @@
                 <form  action="javascript:void(null);" method="post" enctype="multipart/form-data">
 
                     <h4>API key</h4><h5>Where to get (<a href="/notes/6" target="_blank">?</a>)</h5>
-                    <input id="api_key_novel" name="api_key_novel" class="text_pole" maxlength="500" size="35" value="" autocomplete="off">
+                    <input id="api_key_novel" name="api_key_novel" class="text_pole" maxlength="500" value="" autocomplete="off">
+					<Br>
                     <input id="api_button_novel" type="submit" value="Connect">
                     <img id="api_loading_novel" src="img/load.svg" >
                 </form>
@@ -4090,7 +4078,8 @@
             </form>
             <form id='form_change_name' action="javascript:void(null);" method="post" enctype="multipart/form-data">
                 <h4>Name</h4>
-                <input id="your_name" name="your_name" class="text_pole" maxlength="35" size="16" value="" autocomplete="off">
+                <input id="your_name" name="your_name" class="text_pole" maxlength="35" value="" autocomplete="off">
+				<br>
                 <input id="your_name_button" type="submit" value="Change">
             </form>
             <hr>
@@ -4186,7 +4175,6 @@
         <div id="chat"></div>
         <div id="form_sheld">            
             <div id="dialogue_del_mes">
-                <!-- <div id="dialogue_del_mes_text"><h3></h3></div> -->
                 <div id="dialogue_del_mes_ok" class="menu_button">Delete</div>
                 <div id="dialogue_del_mes_cancel" class="menu_button">Cancel</div>
             </div>
@@ -4194,18 +4182,18 @@
                 <div id="options_button">
                     <div id="options">
                         <div class="options-content">
-                        <a id="option_start_new_chat"><img src="img/save_and_start_new_chat.png" width="20" height="20">Start new chat</a>
-                        <a id="option_select_chat"><img src="img/book6.png" width="20" height="20" style="opacity: 0.0;"><img src="img/book6.png" style="width: 21px;height: 21px;position: absolute;top: 59px;left: 15px; opacity: 0.5;">Select chats</a><!--<img src="img/book6.png" style="width: 21px;height: 21px;position: absolute;top: 14px;left: 16px; opacity: 0.5;">Select chat</a>-->       
+                        <a id="option_start_new_chat"><img src="img/save_and_start_new_chat.png"><span>Start new chat</span></a>
+                        <a id="option_select_chat"><img src="img/book6.png"><span>View Past Chats</span></a>       
                         <hr>
-                        <a id="option_delete_mes"><img src="img/del_mes.png" width="20" height="20">Delete message</a>
-                        <a id="option_regenerate"><img src="img/regenerate.png" width="20" height="20">Regenerate</a>
+                        <a id="option_delete_mes"><img src="img/del_mes.png"><span>Delete messages</span></a>
+                        <a id="option_regenerate"><img src="img/regenerate.png"><span>Regenerate</span></a>
                         </div>
                     </div>
                 </div>
-				<!-- <div contenteditable="true" id="send_textarea">Type a message...</div> -->
                 <textarea id="send_textarea" placeholder="Not connected to API!" name="text"></textarea>
 				
 <script type="text/javascript">
+	//this script makes the chat input text area resize vertically to match the text size (limited by CSS at 50% window height)
     $('#send_textarea').on('input', function () {
         this.style.height = '40px';
         this.style.height =
@@ -4214,22 +4202,11 @@
 </script>
 
                 <div id="send_but_sheld">
-					
 					<div id="loading_mes"></div>
-				<!--	
-					<div id="online_status">
-						<div id="online_status_indicator"></div>
-						<div id="online_status_text">Not connected</div>
-					</div>
-				-->	
 					<input id="send_but" type="button">
-
 				</div>
 
             </form>
-           <!--  <div id="online_status">
-                <div id="online_status_indicator"></div><div id="online_status_text">No connection...</div>
-            </div> -->
         </div>
     </div>
 </body>
