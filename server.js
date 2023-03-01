@@ -835,7 +835,6 @@ app.post('/getsettings', jsonParser, (request, response) => { //Wintermute's cod
         openai_settings,
         openai_setting_names
    });
-});
 
 app.post('/getworldinfo', jsonParser, (request, response) => {
     if (!request.body?.name) {
