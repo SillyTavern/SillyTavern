@@ -33,7 +33,6 @@
         //console.log(encode("dsfs").length); // [258, 18798, 995]
     </script>
 
-
     <script type=module>
 			
         import {encode, decode} from "../scripts/gpt-2-3-tokenizer/mod.js";
@@ -118,10 +117,13 @@
             var api_server = "";
             //var interval_timer = setInterval(getStatus, 2000);
             var interval_timer_novel = setInterval(getStatusNovel, 3000);
+            //var interval_timer_openai = setInterval(getStatusOpen, 3000);
             var is_get_status = false;
             var is_get_status_novel = false;
+            var is_get_status_openai = false;
             var is_api_button_press = false;
             var is_api_button_press_novel = false;
+            var is_api_button_press_openai = false;
             
             var is_send_press = false;//Send generation
             var add_mes_without_animation = false;
@@ -148,6 +150,7 @@
             var world_info_budget = 200;
             var imported_world_name = '';
             var max_context = 2048;//2048;
+			var openai_max_context = 2048;
             var rep_pen = 1;
             var rep_pen_size = 100;
             
@@ -175,6 +178,19 @@
             var novelai_setting_names;
             var preset_settings_novel = 'Classic-Krake';
             
+            //openai settings
+			var model_openai = "text-davinci-003";
+            var temp_openai = 0.9;
+            var pres_pen_openai = 0.7;
+            var freq_pen_openai = 0.7;
+            var stream_openai = true;
+            var api_key_openai = "";
+            var openai_settings; 
+            var openai_setting_names; 
+            var preset_settings_openai = 'Default';
+			var nsfw_toggle = true;
+			var keep_example_dialogue = false;
+
             //css
             var bg1_toggle = true;					// inits the BG as BG1
             var css_mes_bg = $('<div class="mes"></div>').css('background');
@@ -252,8 +268,11 @@
                     $("#online_status_text2").html("No connection...");
                     $("#online_status_indicator3").css("background-color", "red");
                     $("#online_status_text3").html("No connection...");
+                    $("#online_status_indicator4").css("background-color", "red");
+                    $("#online_status_text4").html("No connection...");
                     is_get_status = false;
                     is_get_status_novel = false;
+					is_get_status_openai = false;
                 }else{
 					$("#send_textarea").attr('placeholder', 'Type a message...');				//on connect, placeholder tells user to type message
 					$("#send_form").css("background-color", "rgba(0,0,0,0.7)");					//on connect, form BG changes to transprent black
@@ -267,6 +286,8 @@
                     $("#online_status_text2").html(online_status);
                     $("#online_status_indicator3").css("background-color", "green");
                     $("#online_status_text3").html(online_status);
+					$("#online_status_indicator4").css("background-color", "green");
+					$("#online_status_text4").html(online_status);
                 }
             }
             async function getLastVersion(){
@@ -350,7 +371,7 @@
                         }
                     });
                 }else{
-                    if(is_get_status_novel != true){
+                    if(is_get_status_novel != true && is_get_status_openai != true){
                         online_status = 'no_connection';
                     }
                 }
@@ -980,6 +1001,16 @@
                         if(Scenario.length > 0){
                             storyString+= 'Scenario: '+Scenario+'\n';
                         }
+					}else if(main_api == "openai") {
+                        if(charDescription.length > 0){
+                            storyString = '{Description:}\n'+charDescription.replace('\r\n','\n')+'\n';
+                        }
+						if(charPersonality.length > 0){
+                            storyString+= '{Personality:}\n'+charPersonality.replace('\r\n','\n')+'\n';
+                        }
+                        if(Scenario.length > 0){
+                            storyString+= '{Scenario:}\n'+Scenario.replace('\r\n','\n')+'\n';
+                        }
                     }else{
                         if(charDescription !== undefined){
                             if(charPersonality.length > 0){
@@ -1034,6 +1065,7 @@
                     //chat2 = chat2.reverse();
                     var this_max_context = 1487;
                     if(main_api == 'kobold') this_max_context = max_context;
+					if(main_api == 'openai') this_max_context = openai_max_context;
                     if(main_api == 'novel'){
                         if(novel_tier === 1){
                             this_max_context = 1024;
@@ -1053,7 +1085,7 @@
                         worldInfoAfter = activatedWorldInfo.worldInfoAfter;
                         worldInfoString = worldInfoBefore + worldInfoAfter;
                     }
-
+                    if(main_api == 'openai') this_max_context = 2048;
                     var i = 0;
                     
                     for (var item of chat2) {//console.log(encode("dsfs").length);
@@ -1196,14 +1228,29 @@
                         }else{
                             setPromtString();
                         }
-                        
-                        if(!is_pygmalion){
-                            mesSendString = '\nThen the roleplay chat between '+name1+' and '+name2+' begins.\n'+mesSendString;
-                        }else{
-                            mesSendString = '<START>\n'+mesSendString;
-							//mesSendString = mesSendString;
-                        }
-                        finalPromt = worldInfoBefore+storyString+worldInfoAfter+mesExmString+mesSendString+generatedPromtCache+promptBias;
+                        if(main_api == "openai") {
+							var nsfw_toggle_prompt = "";
+							
+							// Bad code :)
+							if (nsfw_toggle) {
+								nsfw_toggle_prompt = "Nsfw/smut is allowed. Consent has been given beforehand, but some characters lie about it and resist or fight back, because they like it that way.";
+							} else {
+								nsfw_toggle_prompt = "Nsfw/smut is not allowed. Character does not want to have sex or engage in lewd acts. Creatively write around sexual scenarios in character.";
+							}
+						
+                            storyString = "Write " + name2 +"'s next reply in this fictional chat between " + name2 + " and " + name1 + ". Write only one reply and do not decide" + 
+                            " what " + name1 +" says or does. Use Internet roleplay style, e.g. no quotation marks, and write user actions in italic in third person like:" + 
+                            " *he jumps in excitement*. You are allowed to use markdown. Be proactive, creative, drive the plot and conversation forward. Write at least" +
+                            " one paragraph, up to four. Always stay in character. Always keep the conversation going. (Repetition is highly discouraged) " + nsfw_toggle_prompt + "\n\n" + storyString;
+                            mesSendString = "\n{Current dialogue:}\n" + mesSendString + name2 + ":";
+                        } else {
+                            if(!is_pygmalion){
+                                mesSendString = '\nThen the roleplay chat between '+name1+' and '+name2+' begins.\n'+mesSendString;
+                            }else{
+                                mesSendString = '<START>\n'+mesSendString;
+                            }
+                       }
+                       finalPromt = worldInfoBefore+storyString+worldInfoAfter+mesExmString+mesSendString+generatedPromtCache+promptBias;
                         
                         var generate_data;
                         if(main_api == 'kobold'){
@@ -1276,13 +1323,32 @@
                                             "order": this_settings.order
                                                 };
                         }
+                        if(main_api == 'openai'){
+                            var this_settings = openai_settings[openai_setting_names[preset_settings_openai]];
+                            generate_data = {
+                                "prompt": finalPromt,
+                                "model": model_openai,
+                                "temperature": parseFloat(temp_openai),
+                                "frequency_penalty": parseFloat(freq_pen_openai),
+                                "presence_penalty": parseFloat(pres_pen_openai),
+                                "stop": [ name1+':', name2+":"],
+                                "max_tokens": 300,
+                                "stream": stream_openai
+                            };
+                        }
                         var generate_url = '';
+                        var streaming = false;
                         if(main_api == 'kobold'){
                             generate_url = '/generate';
                         }
                         if(main_api == 'novel'){
                             generate_url = '/generate_novelai';
                         }
+                        if(main_api == 'openai'){
+                            generate_url = '/generate_openai';
+                            streaming = stream_openai;
+                        }
+                        var last_view_mes = count_view_mes;
                         jQuery.ajax({    
                             type: 'POST', // 
                             url: generate_url, // 
@@ -1291,10 +1357,64 @@
                                 //$('#create_button').attr('value','Creating...'); 
                             },
                             cache: false,
-                            dataType: "json",
+                            dataType: streaming ? "text" : "json",
                             contentType: "application/json",
+                            xhrFields: {
+                                onprogress: function(e)
+                                {
+                                    if (!streaming)
+                                        return;
+                                    var response = e.currentTarget.response;
+                                    if (response == "{\"error\":true}") {
+                                        is_send_press = false;
+                                        $( "#send_but" ).css("display", "block");
+                                        $( "#loading_mes" ).css("display", "none");
+                                        return;
+                                    }
+
+                                    var eventList = response.split("\n");
+                                    var getMessage = "";
+                                    for (var event of eventList) {
+                                        if (!event.startsWith("data"))
+                                            continue;
+                                        if (event == "data: [DONE]")
+                                        {
+                                            tokens_already_generated += this_amount_gen;
+                                            is_send_press = false;
+                                            chat[chat.length-1]['mes'] = getMessage;
+                                            $( "#send_but" ).css("display", "block");
+                                            $( "#loading_mes" ).css("display", "none");
+                                            saveChat();
+                                            break;
+                                        }
+                                        var data = JSON.parse(event.substring(6));
+                                        getMessage += data.choices[0].text;
+                                    }
+
+                                    if ($("#chat").children().filter('[mesid="'+last_view_mes+'"]').length == 0) {
+                                        chat[chat.length] = {};
+                                        chat[chat.length-1]['name'] = name2;
+                                        chat[chat.length-1]['is_user'] = false;
+                                        chat[chat.length-1]['is_name'] = false;
+                                        chat[chat.length-1]['send_date'] = Date.now();
+                                        chat[chat.length-1]['mes'] = "";
+                                        addOneMessage(chat[chat.length-1]);
+                                    }
+
+                                    getMessage = $.trim(getMessage);
+                                    var messageText = messageFormating(getMessage, name1);
+                                    $("#chat").children().filter('[mesid="'+last_view_mes+'"]').children('.mes_block').children('.mes_text').html(messageText);
+                                    
+                                    var $textchat = $('#chat');
+                                    $textchat.scrollTop($textchat[0].scrollHeight);
+                                }
+                            },
                             success: function(data){
+                                if (streaming)
+                                    return;
+                                console.log(data);
                                 tokens_already_generated += this_amount_gen;
+                                is_send_press = false;
                                 //$("#send_textarea").focus();
                                 //$("#send_textarea").removeAttr('disabled');
                                 is_send_press = false;
@@ -1305,6 +1425,9 @@
                                     }
                                     if(main_api == 'novel'){
                                         var getMessage = data.output;
+                                    }
+                                    if(main_api == 'openai'){
+                                        var getMessage = data.choices[0].text;
                                     }
 
                                     //Pygmalion run again
@@ -1364,7 +1487,11 @@
                                 }
                             },
                             error: function (jqXHR, exception) {
-
+                                if (streaming) {
+                                    chat.length = chat.length-1;
+                                    count_view_mes-=1;
+                                    $('#chat').children().last().remove();
+                                }
                                 $("#send_textarea").removeAttr('disabled');
                                 is_send_press = false;
                                 $( "#send_but" ).css("display", "inline");
@@ -2360,6 +2487,7 @@
                     rep_pen = koboldai_settings[koboldai_setting_names[preset_settings]].rep_pen;
                     rep_pen_size = koboldai_settings[koboldai_setting_names[preset_settings]].rep_pen_range;
                     max_context = koboldai_settings[koboldai_setting_names[preset_settings]].max_length;
+					openai_max_context = koboldai_settings[koboldai_setting_names[preset_settings]].max_length;
                     $('#temp').val(temp);
                     $('#temp_counter').html(temp);
                     
@@ -2368,6 +2496,9 @@
                     
                     $('#max_context').val(max_context);
                     $('#max_context_counter').html(max_context+" Tokens");
+					
+					$('#openai_max_context').val(openai_max_context);
+                    $('#openai_max_context_counter').html(openai_max_context+" Tokens");
                     
                     $('#rep_pen').val(rep_pen);
                     $('#rep_pen_counter').html(rep_pen);
@@ -2413,10 +2544,27 @@
                 //$("#range_block").css('opacity',1.0);
                 saveSettings();
             });
+            $( "#settings_perset_openai" ).change(function() {
+                preset_settings_openai = $('#settings_perset_openai').find(":selected").text();
+
+                temp_openai = openai_settings[openai_setting_names[preset_settings_openai]].temperature;
+                freq_pen_openai = openai_settings[openai_setting_names[preset_settings_openai]].frequency_penalty;
+                pres_pen_openai = openai_settings[openai_setting_names[preset_settings_openai]].presence_penalty;
+
+                $('#temp_openai').val(temp_openai);
+                $('#temp_counter_openai').html(temp_openai);
+                $('#freq_pen_openai').val(freq_pen_openai);
+                $('#freq_pen_counter_openai').html(freq_pen_openai);
+                $('#pres_pen_openai').val(pres_pen_openai);
+                $('#pres_pen_counter_openai').html(pres_pen_openai);
+
+                saveSettings();
+            });
             $( "#main_api" ).change(function() {
                 is_pygmalion = false;
                 is_get_status = false;
                 is_get_status_novel = false;
+                is_get_status_openai = false;
                 online_status = 'no_connection';
                 clearSoftPromptsList();
                 checkOnlineStatus();
@@ -2446,6 +2594,8 @@
                 if($('#main_api').find(":selected").val() == 'kobold'){
                     $('#kobold_api').css("display", "block");
                     $('#novel_api').css("display", "none");
+                    $('#openai_api').css("display","none");
+					$('#openai_max_context_block').css("display","none");
                     main_api = 'kobold';
                     $('#max_context_block').css('display', 'block');
                     $('#amount_gen_block').css('display', 'block');
@@ -2454,10 +2604,21 @@
                 if($('#main_api').find(":selected").val() == 'novel'){
                     $('#kobold_api').css("display", "none");
                     $('#novel_api').css("display", "block");
+                    $('#openai_api').css("display","none");
+					$('#openai_max_context_block').css("display","none");
                     main_api = 'novel';
                     $('#max_context_block').css('display', 'none');
                     $('#amount_gen_block').css('display', 'none');
                     $('#softprompt_block').css('display', 'none');
+					}
+                if($('#main_api').find(":selected").val() == 'openai'){
+                    $('#kobold_api').css("display", "none");
+                    $('#novel_api').css("display", "none");
+                    $('#openai_api').css("display","block");
+					$('#openai_max_context_block').css("display","block");
+                    main_api = 'openai';
+                    $('#max_context_block').css('display', 'none');
+                    $('#amount_gen_block').css('display', 'none');
                 }
             }
              async function getUserAvatars(){
@@ -2574,6 +2735,54 @@
                 $('#rep_pen_size_counter_novel').html( $(this).val()+" Tokens");
                 var repPenSizeTimer_novel = setTimeout(saveSettings, 500);
             });
+
+            //OpenAi
+            $(document).on('input', '#temp_openai', function() {
+                temp_openai = $(this).val();
+
+                if(isInt(temp_openai)){
+                    $('#temp_counter_openai').html( $(this).val()+".00" );
+                }else{
+                    $('#temp_counter_openai').html( $(this).val() );
+                }
+                var tempTimer_openai = setTimeout(saveSettings, 500);
+            });
+            $(document).on('input', '#freq_pen_openai', function() {
+                freq_pen_openai = $(this).val();
+                if(isInt(freq_pen_openai)){
+                    $('#freq_pen_counter_openai').html( $(this).val()+".00" );
+                }else{
+                    $('#freq_pen_counter_openai').html( $(this).val() );
+                }
+                var freqPenTimer_openai = setTimeout(saveSettings, 500);
+            });
+            $(document).on('input', '#pres_pen_openai', function() {
+                pres_pen_openai = $(this).val();
+                if(isInt(pres_pen_openai)){
+                    $('#pres_pen_counter_openai').html( $(this).val()+".00" );
+                }else{
+                    $('#pres_pen_counter_openai').html( $(this).val() );
+                }
+                var presPenTimer_openai = setTimeout(saveSettings, 500);
+            });
+			$(document).on('input', '#openai_max_context', function() {
+                openai_max_context = parseInt($(this).val());
+                $('#openai_max_context_counter').html( $(this).val() +' Tokens');
+				var max_contextTimer = setTimeout(saveSettings, 500);
+            });
+			$('#stream_toggle').change(function() {
+                stream_openai = !!$('#stream_toggle').prop('checked');
+                saveSettings();
+            });
+			$('#nsfw_toggle').change(function() {
+                nsfw_toggle = !!$('#nsfw_toggle').prop('checked');
+                saveSettings();
+            });
+			$('#keep_example_dialogue').change(function() {
+                keep_example_dialogue = !!$('#keep_example_dialogue').prop('checked');
+                saveSettings();
+            });
+
             //***************SETTINGS****************//
             ///////////////////////////////////////////
             async function getSettings(type){//timer
@@ -2633,6 +2842,33 @@
 
                             preset_settings_novel = settings.preset_settings_novel;
                             $("#settings_perset_novel option[value="+novelai_setting_names[preset_settings_novel]+"]").attr('selected', 'true');
+                            
+                            //OpenAI
+                            if(settings.api_key_openai != undefined){
+                                api_key_openai = settings.api_key_openai;
+                                $("#api_key_openai").val(api_key_openai);
+                            }
+							model_openai = settings.model_openai;
+                            $("#model_openai_select option[value="+model_openai+"]").attr('selected', 'true');
+							
+                            openai_setting_names = data.openai_setting_names;
+                            openai_settings = data.openai_settings;
+                            openai_settings.forEach(function(item, i, arr) {
+                                openai_settings[i] = JSON.parse(item);
+                            });
+                            var arr_holder = {};
+                            $("#settings_perset_openai").empty();
+                            openai_setting_names.forEach(function(item, i, arr) {
+                                arr_holder[item] = i;
+                                $('#settings_perset_openai').append('<option value='+i+'>'+item+'</option>');
+
+                            });
+                            openai_setting_names = {};
+                            openai_setting_names = arr_holder;
+
+                            preset_settings_openai = settings.preset_settings_openai;
+                            $("#settings_perset_openai option[value="+openai_setting_names[preset_settings_openai]+"]").attr('selected', 'true');
+
                             //Kobold
                             koboldai_setting_names = data.koboldai_setting_names;
                             koboldai_settings = data.koboldai_settings;
@@ -2710,6 +2946,38 @@
                             
                             $('#rep_pen_size_novel').val(rep_pen_size_novel);
                             $('#rep_pen_size_counter_novel').html(rep_pen_size_novel+" Tokens");
+
+                            //OpenAI
+                            temp_openai = settings.temp_openai;
+                            freq_pen_openai = settings.freq_pen_openai;
+                            pres_pen_openai = settings.pres_pen_openai;
+                            stream_openai = settings.stream_openai;
+							openai_max_context = settings.openai_max_context;
+							if(settings.nsfw_toggle !== undefined) nsfw_toggle = !!settings.nsfw_toggle;
+							if(settings.keep_example_dialogue !== undefined) keep_example_dialogue = !!settings.keep_example_dialogue;
+							
+                            $('#stream_toggle').prop('checked', stream_openai);
+
+							$('#openai_max_context').val(openai_max_context);
+                            $('#openai_max_context_counter').html(openai_max_context+' Tokens');
+							
+							$('#nsfw_toggle').prop('checked', nsfw_toggle);
+                            $('#keep_example_dialogue').prop('checked', keep_example_dialogue);
+                            
+                            addZeros = "";
+                            if(isInt(temp_openai)) addZeros = ".00";
+                            $('#temp_openai').val(temp_openai);
+                            $('#temp_counter_openai').html(temp_openai+addZeros);
+                                             
+                            addZeros = "";
+                            if(isInt(freq_pen_openai)) addZeros = ".00";
+                            $('#freq_pen_openai').val(freq_pen_openai);
+                            $('#freq_pen_counter_openai').html(freq_pen_openai+addZeros);
+
+                            addZeros = "";
+                            if(isInt(pres_pen_openai)) addZeros = ".00";
+                            $('#pres_pen_openai').val(pres_pen_openai);
+                            $('#pres_pen_counter_openai').html(pres_pen_openai+addZeros);
                             
                             //////////////////////
                             if(preset_settings == 'gui'){
@@ -2785,6 +3053,7 @@
                             api_server: api_server,
                             preset_settings: preset_settings,
                             preset_settings_novel: preset_settings_novel,
+                            preset_settings_openai: preset_settings_openai,
                             user_avatar: user_avatar,
                             temp: temp,
                             amount_gen: amount_gen,
@@ -2794,15 +3063,24 @@
                             character_anchor: character_anchor,
                             main_api: main_api,
                             api_key_novel: api_key_novel,
+                            api_key_openai: api_key_openai,
                             rep_pen: rep_pen,
                             rep_pen_size: rep_pen_size,
                             model_novel: model_novel,
+							model_openai: model_openai,
                             temp_novel: temp_novel,
                             rep_pen_novel: rep_pen_novel,
                             rep_pen_size_novel: rep_pen_size_novel,
                             world_info: world_info,
                             world_info_depth: world_info_depth,
                             world_info_budget: world_info_budget,
+							temp_openai: temp_openai,
+                            freq_pen_openai: freq_pen_openai,
+                            pres_pen_openai: pres_pen_openai,
+                            stream_openai: stream_openai,
+							openai_max_context: openai_max_context,
+							nsfw_toggle: nsfw_toggle,
+							keep_example_dialogue: keep_example_dialogue,					
                         }),
                     beforeSend: function(){
 
@@ -3070,7 +3348,7 @@
                         }
                     });
                 }else{
-                    if(is_get_status != true){
+                    if(!is_get_status && !is_get_status_openai){
                         online_status = 'no_connection';
                     }
                 }
@@ -3129,6 +3407,68 @@
 
                 return 0;
             }
+
+            //************************************************************
+            //************************OPENAI****************************
+            //************************************************************
+            async function getStatusOpen(){
+                if(is_get_status_openai){
+                    var data = {key:api_key_openai};
+
+                    jQuery.ajax({    
+                        type: 'POST', // 
+                        url: '/getstatus_openai', // 
+                        data: JSON.stringify(data),
+                        beforeSend: function(){
+                            //$('#create_button').attr('value','Creating...'); 
+                        },
+                        cache: false,
+                        dataType: "json",
+                        contentType: "application/json",
+                        success: function(data){
+                            if (!('error' in data)) online_status = 'Valid';
+                            resultCheckStatusOpen();
+                        },
+                        error: function (jqXHR, exception) {
+                            online_status = 'no_connection';
+                            console.log(exception);
+                            console.log(jqXHR);
+                            resultCheckStatusOpen();
+                        }
+                    });
+                }else{
+                    if(!is_get_status && !is_get_status_novel){
+                        online_status = 'no_connection';
+                    }
+                }
+            }
+            $( "#api_button_openai" ).click(function() {
+                if($('#api_key_openai').val() != ''){
+                    $("#api_loading_openai").css("display", 'inline-block');
+                    $("#api_button_openai").css("display", 'none');
+                    api_key_openai = $('#api_key_openai').val();
+                    api_key_openai = $.trim(api_key_openai);
+                    //console.log("1: "+api_server);
+                    saveSettings();
+                    is_get_status_openai = true;
+                    is_api_button_press_openai = true;
+                    getStatusOpen();
+                }
+            });
+            function resultCheckStatusOpen(){
+                is_api_button_press_openai = false;  
+                checkOnlineStatus();
+                $("#api_loading_openai").css("display", 'none');
+                $("#api_button_openai").css("display", 'inline-block');
+            }
+            $( "#anchor_order" ).change(function() {
+                anchor_order = parseInt($('#anchor_order').find(":selected").val());
+                saveSettings();
+            });
+			$( "#model_openai_select" ).change(function() {
+                  model_openai = $('#model_openai_select').find(":selected").val();
+                  saveSettings();
+            });
             
             
             
@@ -3998,6 +4338,7 @@
             <select id="main_api" >
                 <option value="kobold">KoboldAI</option>
                 <option value="novel">NovelAI</option>
+                <option value="openai">OpenAI</option>
             </select>
             <div id="kobold_api" style="position: relative;">
                 <div style="display:none; position: absolute; right:188px; top:-34px; opacity:0.20;"><a href="https://github.com/KoboldAI/KoboldAI-Client" target="_blank"><img src="img/kobold.png" style="width:40px;height:40px;"></a></div>
@@ -4066,6 +4407,39 @@
                     <input type="range" id="rep_pen_size_novel" name="volume" min="0" max="2048" step="1">
                 </div>
             </div>
+            <div id="openai_api" style="display: none;position: relative;">
+                <div style="position: absolute; right:152px; top:-25px; opacity:0.25;"><a href="https://openai.com/" target="_blank"><img src="img/openai.png" style="width:auto;height:22px;"></a></div>
+                <form  action="javascript:void(null);" method="post" enctype="multipart/form-data">
+
+                    <h4>API key</h4><h5>Where to get (<a href="/notes/16" target="_blank">?</a>)</h5>
+                    <input id="api_key_openai" name="api_key_openai" class="text_pole" maxlength="500" size="35" value="" autocomplete="off">
+					<Br>
+                    <input id="api_button_openai" type="submit" value="Connect">
+                    <img id="api_loading_openai" src="img/load.svg" >
+                </form>
+                <div id="online_status4">
+                    <div id="online_status_indicator4"></div><div id="online_status_text4">No connection...</div>
+                </div>
+                <h4>Model</h4><h5>Selecting OpenAI model (<a href="/notes/15" target="_blank">?</a>)</h5>
+                <select id="model_openai_select" class="option_select_right_menu" style='margin-bottom: 16px;'>
+                    <option value="text-davinci-003">Davinci</option>
+                    <option value="text-curie-001">Curie</option>
+					<option value="text-babbage-001">Babbage</option>
+					<option value="text-ada-001">Ada</option>
+                </select>
+                <h4>Preset settings</h4><h5>Selecting settings (<a href="/notes/7" target="_blank">?</a>)</h5>
+                <select id="settings_perset_openai" class="option_select_right_menu">
+                    <option value="gui">Default</option>
+                </select>
+                <div id="range_block_openai">
+                    <h4>Temperature </h4><h5 id="temp_counter_openai">select</h5>
+                    <input type="range" id="temp_openai" name="volume" min="0" max="2.0" step="0.01">
+                    <h4>Frequency Penalty</h4><h5 id="freq_pen_counter_openai">select</h5>
+                    <input type="range" id="freq_pen_openai" name="volume" min="-2" max="2" step="0.01">
+                    <h4>Presence Penalty</h4><h5 id="pres_pen_counter_openai">select</h5>
+                    <input type="range" id="pres_pen_openai" name="volume" min="-2" max="2" step="0.01">
+                </div>
+            </div>
             <hr style="margin-bottom: 5px;">
             
             <h4>Your Avatar</h4><h5></h5>
@@ -4126,6 +4500,23 @@
                     <h4>Context Size</h4><h5 id="max_context_counter">select</h5>
                     <input type="range" id="max_context" name="volume" min="512" max="2048" step="1">
                 </div>
+				<div id="openai_max_context_block">
+				    <div id="boxes">
+                      <label class="checkbox">
+                        <input id="stream_toggle" type="checkbox"/><span style="margin-left: 10px"></span><h4 style="display: inline-block;">Streaming</h4><h5>Enables OpenAI completion streaming</h5>
+					  </label>
+					  <label class="checkbox">
+						<input id="keep_example_dialogue" type="checkbox"/><span style="margin-left: 10px"></span><h4 style="display: inline-block;">Keep Example Dialogue</h4><h5>Keeps example dialogues from being removed</h5>
+					  </label>
+					  <label class="checkbox">
+						<input id="nsfw_toggle" type="checkbox"/><span style="margin-left: 10px"></span><h4 style="display: inline-block;">Allow NSFW</h4><h5>Allows generation of NSFW content</h5>
+                      </label>
+                    </div>
+					  <br>
+                      <h4>OpenAI Context Size</h4><h5 id="openai_max_context_counter">select</h5>
+                         <input type="range" id="openai_max_context" name="volume" min="512" max="4000" step="1">
+                </div>
+
                 <h4>Anchors Order</h4><h5>Helps to increase the length of messages (<a href="/notes/9" target="_blank">?</a>)</h5>
                 <select id="anchor_order">
                     <option value="0">Character Anchor - Style Anchor</option>
@@ -4141,7 +4532,8 @@
 
                 </div>
             </div>
-        </div>
+			<div style='clear: both'></div>
+            </div>
         <div id="rm_character_import" class="right_menu" style="display: none;">
             <form id="form_import"  action="javascript:void(null);" method="post" enctype="multipart/form-data">
             <input type="file" id="character_import_file" accept=".json, image/png" name="avatar">

@@ -694,7 +694,7 @@ display: none;
     /*margin-right: 4px;*/
 	display:block;
 }
-#api_button, #api_button_novel {
+#api_button, #api_button_novel, #api_button_openai {
     cursor: pointer;
     color: #fff;
 	opacity:0.7;
@@ -711,7 +711,7 @@ display: none;
     color:#ffffffaa;
 }*/
 
-#api_button:hover, #api_button_novel:hover{background-color:green;}
+#api_button:hover, #api_button_novel:hover, #api_button_openai:hover{background-color:green;}
 
 #api_loading{
     width: 25px;
@@ -720,6 +720,12 @@ display: none;
     
 }
 #api_loading_novel{
+    width: 25px;
+    height: 25px;
+    display: none;
+    
+}
+#api_loading_openai{
     width: 25px;
     height: 25px;
     display: none;
@@ -734,6 +740,11 @@ display: none;
     display: none;   
 }
 #api_loading_novel-bottom{
+    width: 25px;
+    height: 25px;
+    display: none;
+}
+#api_loading_openai-bottom{
     width: 25px;
     height: 25px;
     display: none;
@@ -784,6 +795,11 @@ display: none;
 	
 }
 #api_button_novel-bottom{
+    cursor: pointer;
+    color:#ffffffaa;
+}
+
+#api_button_openai-bottom{
     cursor: pointer;
     color:#ffffffaa;
 }
@@ -1328,7 +1344,20 @@ width: 103px;
     margin-left: 10px;
     margin-bottom: 30px;
 }
+#online_status4{
+    opacity: 0.5;
+    margin-top: 2px;
+    margin-left: 10px;
+    margin-bottom: 30px;
+}
 #online_status_indicator3{
+    border-radius: 7px;
+    width: 14px;
+    height: 14px;
+    background-color: red;
+    display: inline-block;
+}
+#online_status_indicator4{
     border-radius: 7px;
     width: 14px;
     height: 14px;
@@ -1339,6 +1368,11 @@ width: 103px;
     margin-left: 4px;
     display: inline-block;
 }
+#online_status_text4{
+    margin-left: 4px;
+    display: inline-block;
+}
+
 
 #softprompt {
     margin-bottom: 10px;
@@ -1747,11 +1781,22 @@ select {
 #max_context_counter{
     margin-bottom: 0px;
 }
+#openai_max_context{
+	margin-left: 10px;
+	margin-bottom: 20px;
+}
+#openai_max_context_counter{
+	margin-bottom: 0px;
+}
 #range_block input{
     margin-left: 10px;
     margin-bottom: 20px;
 }
 #range_block_novel input{
+    margin-left: 10px;
+    margin-bottom: 20px;
+}
+#range_block_openai input{
     margin-left: 10px;
     margin-bottom: 20px;
 }
