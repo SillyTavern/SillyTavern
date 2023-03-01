@@ -196,14 +196,10 @@
 			function checkOnlineStatus(){
                 //console.log(online_status);
                 if(online_status == 'no_connection'){
-					$("#send_textarea").attr('placeholder', "Not connected to API!");				//Input bar placeholder tells users they are not connected
+					$("#send_textarea").attr('placeholder', "Not connected to API!");		//Input bar placeholder tells users they are not connected
 					$("#send_form").css("background-color", "rgba(100,0,0,0.7)");			//entire input form area is red when not connected
 					$("#send_but").css("display", "none");									//send button is hidden when not connected
 					
-					
-                    $("#online_status_indicator").css("background-color", "red");
-                    $("#online_status").css("opacity", 0.3);
-                    $("#online_status_text").html("No connection...");
                     $("#online_status_indicator2").css("background-color", "red");
                     $("#online_status_text2").html("No connection...");
                     $("#online_status_indicator3").css("background-color", "red");
@@ -214,11 +210,7 @@
 					$("#send_textarea").attr('placeholder', 'Type a message...');				//on connect, placeholder tells user to type message
 					$("#send_form").css("background-color", "rgba(0,0,0,0.7)");					//on connect, form BG changes to transprent black
 					$("#send_but").css("display", "inline");									//on connect, send button shows up
-					
-					
-                    $("#online_status_indicator").css("background-color", "black");
-                    $("#online_status").css("display", "none");
-                    $("#online_status_text").html("");
+
                     $("#online_status_indicator2").css("background-color", "green");
                     $("#online_status_text2").html(online_status);
                     $("#online_status_indicator3").css("background-color", "green");
@@ -1224,7 +1216,7 @@
 			//maybe a way to simulate this would be to disable the eventListener for people iOS.
 			
             $("#send_textarea").keydown(function (e) {							
-                if(e.which === 13 && !e.shiftKey && !e.ctrlKey && is_send_press == false) {	
+                if(!e.shiftKey && !e.ctrlKey && e.key == "Enter" && is_send_press == false) {	
                     is_send_press = true;										
                     e.preventDefault();											
                     Generate();
@@ -1233,21 +1225,24 @@
 			
 			//RossAscends: Lets add some hotkeys
 			document.addEventListener('keydown', (event) => {
+			
 				if(event.ctrlKey && event.key == "Enter") {				// Ctrl+Enter for Regeneration Last Response
+			
 					if(is_send_press == false){
 						is_send_press = true;
 						Generate('regenerate');
 					}
 				}else if(event.ctrlKey && event.key == "ArrowUp") {		//Ctrl+UpArrow for Connect to last server
+			
 					document.getElementById('api_button').click();
 
 				}
 			});	
             
-            //menu buttons
+            //menu buttons setup
             var selected_button_style = { };
             var deselected_button_style = { };
-			console.log('hi there');
+			
             $( "#rm_button_create" ).css("class","deselected-right-tab");
             $( "#rm_button_characters" ).css("class","deselected-right-tab");
             $( "#rm_button_settings" ).click(function() {

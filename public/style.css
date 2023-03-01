@@ -1,43 +1,69 @@
 @charset "UTF-8";
 @import url(https://fonts.googleapis.com/css?family=Open+Sans:400,300&subset=latin,cyrillic);
 
-@font-face {
-    font-family: "My Custom Font";
-    src: url(fonts/Comic_CAT.otf) format("truetype");
-	font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
-}
-
-.customfont {
-	font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
+* {
+	box-sizing: border-box;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
 
 body {
-    margin: 0;  
+    margin: 0;
+	padding:0;
+	width: 100%;
+    height: 100%;
     background-color: rgb(36, 37, 37);
-    background-size: auto 100%;
     background-repeat: no-repeat;
     background-attachment: fixed;
     background-size: cover;
-    /*backdrop-filter: blur(2px);*/
-	/*-webkit-backdrop-filter: blur(2px);*/
-    scrollbar-width: thin;
-    scrollbar-color: gray #191b31;
-	font-family: "Noto Sans", "Noto Color Emoji", sans-serif; /*add in custom font universally */
+	font-family: "Noto Sans", "Noto Color Emoji", sans-serif; 
 	font-size:15px; /*1rem*/
 	color: rgb(229, 224, 216);
-	-webkit-font-smoothing: antialiased;
-	-webkit-transition: all 0.3s ease-in-out;
-	transition: all 0.3s ease-in-out;
 }
+
+@media screen and (max-width: 450px) {	
+    body {
+     margin-left: auto;
+	 margin-right: auto;
+	 overflow-x: hidden; 
+    }
+}
+
+::-webkit-scrollbar {
+    width: 0.6em;   
+}
+
+::-webkit-scrollbar-track {
+    /*background-color: rgba(0,0,0,0.5);
+    -webkit-box-shadow: inset 0 0 6px rgb(0 0 0 / 30%);*/
+    -webkit-border-radius: 10px;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.7);
+    -webkit-box-shadow: inset 0 0 2px rgba(0, 0, 0, 0.1);
+	        box-shadow: inset 0 0 2px rgba(0, 0, 0, 0.1);
+    border-radius: 5px;
+}
+
+@supports (height: 100dvh) {
+	body {
+		height: 100dvh;
+	}
+}
+
+
+
 .mes_text i {
-    color: #999 !important;
+    color: #999;
 }
 .mes_text em {
-    color: #999 !important;
+    color: #999;
 }
 .mes_text p {
-    margin-top: 0px;
-    margin-bottom: 8px;
+    margin-top:0;
+    margin-bottom: 10px;
 }
 .mes_text strong {
     font-weight: bold;
@@ -51,18 +77,23 @@ body {
     font-weight: bold;
    
 }
+
+/*.mes_text br {display:none;}*/
+
 code {
-  background-color: #a8a8a8;
-  padding: 5px;
-  font-family: Consolas, monospace;
-  color: #333;
-  white-space: pre-wrap;
-  word-wrap: break-word;
+	padding: 5px;
+    font-family: Consolas, monospace;
+    color: #ccc;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    border: 1px solid #666;
+    border-radius: 5px;
+    background-color: rgba(0,0,0,0.5);
+    display: inline-block;
 }
 
 #bg1{
     background: url(backgrounds/tavern.png);
-	background-size: auto 100%;
     background-repeat: no-repeat;
     background-attachment: fixed;
     background-size: cover;
@@ -74,7 +105,6 @@ code {
 }
 #bg2{  
 	background: url(backgrounds/tavern.png);
-    background-size: auto 100%;
     background-repeat: no-repeat;
     background-attachment: fixed;
     filter: blur(2px);
@@ -89,7 +119,6 @@ code {
 /*TOPPER margin*/
 
 #top-bar{
-	content: "BLANK SPACE";
 	width:100vw;
 	display: inline-block;
 	height:40px;
@@ -104,7 +133,7 @@ code {
 
 #sheld {
     display: grid;
-    grid-template-rows: [chat] auto [inputform] min-content;
+    grid-template-rows: auto min-content;
     height: calc(100svh);
 	
     /*overflow: auto;*/
@@ -117,10 +146,8 @@ code {
 }
 
 #chat {
-    scrollbar-width: thin;
-    overflow: hidden;
+    overflow-x: hidden;
     overflow-y: scroll;
-	border-bottom: 1px solid #333;
 	margin-top:40px;
 	border-bottom:1px solid rgba(0,0,0,.3);
 	border-left:1px solid rgba(0,0,0,.3);
@@ -132,28 +159,6 @@ code {
 	
 }
 
-::-webkit-scrollbar {
-    width: 0.6em;   
-}
-
-::-webkit-scrollbar-track {
-    /*background-color: rgba(0,0,0,0.5);
-    -webkit-box-shadow: inset 0 0 6px rgb(0 0 0 / 30%);*/
-    -webkit-border-radius: 10px;
-    border-radius: 10px;
-}
-
-#chat::-webkit-scrollbar-track {
-    /*margin-bottom: 30px;*/
-}
-
-::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.7);
-    border-radius: 1px;
-    box-shadow: inset 2px 2px 2px rgb(0 0 0 / 10%);
-    -webkit-box-shadow: inset 0 0 6px rgb(0 0 0 / 50%);
-    border-radius: 5px;
-}
 #form_sheld {
     white-space:nowrap;
 	width:100%;
@@ -169,7 +174,7 @@ code {
     border: 1px solid rgba(0,0,0,.5);
     /*backdrop-filter: blur(10px) brightness(0.3);
 	-webkit-backdrop-filter: blur(10px) brightness(0.3);*/
-    border-radius: 0 0px 20px 20px;
+    border-radius: 0 0 20px 20px;
 	background-color:rgba(100,0,0,0.7);
 }
 
@@ -192,11 +197,11 @@ code {
 	margin: 0;
     display: none;
 	padding:1px;
-    background: url('img/send3.png') no-repeat top left;
+    background: url('img/send3.png') no-repeat;
     background-size: 26px auto;
     background-position: center center;
     outline:          none;
-    outline:          none;
+    
     border:           none;
     cursor:           pointer;
 	transition: 0.3s;
@@ -213,7 +218,7 @@ code {
     height: 40px;
     margin: 0 auto;
     /*margin-left: 2px;*/
-    background: url('img/load.svg') no-repeat top left;
+    background: url('img/load.svg') no-repeat;
     background-size: 26px 26px;
     background-position: center center;
 }
@@ -225,14 +230,14 @@ code {
     cursor: pointer;
     font-size: 1rem;
     line-height: 1rem;
-    height: 40px;
-    width: 40px;
+    /*height: 40px;*/
+    /*width: 40px;*/
     z-index: 2001;
     -webkit-transition: color .25s ease-in-out;
     -moz-transition: color .25s ease-in-out;
     transition: color .25s ease-in-out;
 	padding-left: 10px;
-    padding-top: 10px;
+    padding-top: 0;
 	
 }
 
@@ -264,7 +269,7 @@ code {
   -webkit-backdrop-filter: brightness(0.3) blur(10px);
   border: 1px solid #666;
   border-radius: 15px;
-  box-shadow: 0px 0px 5px #000;
+  box-shadow:00 5px #000;
   text-shadow: #000 0 0 3px;
   min-width: 200px;
   z-index: 2000;
@@ -272,15 +277,15 @@ code {
 
 /* Ссылки внутри выпадающего блока */
 .options-content hr {
-  margin: 0px;
-  padding: 0px;
+  margin:0;
+  padding:0;
   border-top: 1px solid #ffffff11;
 }
 #right-nav-panel hr{
     background-image: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
 }
 .options-content a {
-  color: color: rgb(229, 224, 216);
+  color: rgb(229, 224, 216);
   padding: 12px 16px;
   text-decoration: none;
   display: block;
@@ -304,8 +309,7 @@ code {
     display: grid;
     grid-template-columns: fit-content(60px) 60px auto;
     /* border-radius: 5px; */
-    padding: 10px;
-    padding-left: 15px;
+    padding: 10px 10px 0 10px;
     vertical-align: top;
     width: 100%;
     color: rgb(229, 224, 216);
@@ -332,7 +336,7 @@ code {
 
 .mes_block{
     
-    padding-top: 0px;
+    padding-top:0;
     padding-left: 20px;
 }
 .ch_name{
@@ -372,14 +376,14 @@ br {
 
 textarea{
 width: 100%;
-    font-size: 11pt;
+    
     resize: vertical;
     display: block;
     background-color: rgba(0,0,0,0.3);
-    outline: none !important;
+    outline: none;
     border: 1px solid rgba(255,255,255,0.5);
     border-radius: 10px;
-    box-shadow: 0 0 2px rgb(0 0 0 / 50%);
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
     padding: 10px;
     color: #cacaca;
     font-size: 15px;
@@ -393,15 +397,15 @@ width: 100%;
     line-height: 1.5rem;
     min-height: calc(1.5em + 0.75rem + 2px);
     max-height: 50vh;
-    word-wrap: breakword;
+    word-wrap: break-word;
     height: 40px;
     resize: vertical;
     display: block;
     background-color: rgba(255,0,0,0);
 	border:0;
-    box-shadow: none !important; /*0 0 0px rgb(200 200 200 / 50%);*/
+    box-shadow: none;
     padding:6px 0 6px 0;
-	font-family: "Noto Sans", sans-serif;
+	font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
     margin: 0;
 	text-shadow: #000 0 0 3px;
 }
@@ -415,7 +419,7 @@ width: 100%;
 #description_textarea{
     width: 92%;
     height: 200px;
-    margin-top: 0px;
+    margin-top:0;
 }
 
 #character_name_pole{
@@ -425,7 +429,7 @@ width: 100%;
 #firstmessage_textarea{
     width: 92%;
     height: 140px;
-    margin-top: 0px;
+    margin-top:0;
 }
 
 .text_pole{
@@ -433,11 +437,9 @@ width: 100%;
 	border-radius:15px;
 	background-color: rgba(0,0,0,0.3);
     margin-left: 10px;
-    padding: 10px;
+    
     color: #ffffffaa;
-    font-family: "Source Sans Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
-    font-size: 18px;
-    size: 10;
+    font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
     font-size: 11pt;
     padding: 7px;
 	width:90%;
@@ -446,35 +448,24 @@ width: 100%;
 
 
 .right_menu{
-/*
-    max-height: 86%;
-    overflow: hidden;
-    overflow-y: auto;
-    scrollbar-width: thin;
-	*/
 	max-height: 90vh;
-    overflow: hidden;
-    overflow-y: hidden;
-    scrollbar-width: thin;
-	
+	padding: 0 20px;
 }
 .right_menu h3 {
-    margin: 0px;
-    padding: 0px;
+    margin:0;
+    padding:0;
     margin-left: 10px;
-    
-    
 }
 .right_menu h4 {
-    margin: 0px;
-    padding: 0px;
+    margin:0;
+    padding:0;
     margin-left: 10px;
     margin-bottom: 1px;
 }
 .right_menu h5 {
     color: #757575;
-    margin: 0px;
-    padding: 0px;
+    margin:0;
+    padding:0;
     margin-left: 10px;
     margin-bottom: 5px;
 	font-size:0.75rem;
@@ -519,7 +510,9 @@ input[type=button] {
 #right-nav-panel-tabs{
 	margin-top:10px;
 	margin-bottom:10px;
-	width: calc(100% - 25px);
+	width: calc(100% - 70px);
+	margin-left:20px;
+	margin-right:30px;
 }
 
 .right_menu_button{
@@ -529,7 +522,7 @@ input[type=button] {
     text-align: center;
     padding-right: 20px;
     font-size:1.5rem;
-    margin-top:0px;
+    margin-top: 0;
 	filter: grayscale(1) brightness(75%);
 	-webkit-transition: all 0.5s ease-in-out;
             transition: all 0.5s ease-in-out;
@@ -551,8 +544,8 @@ input[type=button] {
     /*position: absolute;
     right: 13px;
     top: 12px;*/
-    padding: 0px;
-    margin: 0px;
+    padding:0;
+    margin:0;
     cursor: pointer;
     height: 0;
     width: 0;
@@ -602,7 +595,7 @@ input[type=button] {
     margin-top: auto;
     margin-bottom: auto;
     font-size: 17px;
-    color: rgb(188, 193, 200, 1);
+    color: rgba(188, 193, 200, 1);
 	border: 1px solid #333;
 	background-color: rgba(0,0,0,0.3);
 	padding:6px;
@@ -613,7 +606,7 @@ input[type=button] {
     margin-top: auto;
     margin-bottom: auto;
     font-size: 17px;
-    color: rgb(188, 193, 200, 1);
+    color: rgba(188, 193, 200, 1);
 	border: 1px solid #333;
 	background-color: rgba(0,0,0,0.3);
 	padding:6px;
@@ -622,15 +615,14 @@ input[type=button] {
 
 #characloud_url{
     margin-right: 10px;
-    margin-top: 0px;
+    margin-top:0;
     float: right;
     cursor: pointer;
-    display: inline-block;
     border: 1px solid rgba(255,255,255,0.3);
     background-color: rgba(0,0,0,0.3);
     border-radius: 10px;
     padding: 6px;
-    opacity: 50%;
+    opacity: 0.5;
 }
 
 #characloud_url img {
@@ -647,11 +639,10 @@ input[type=button] {
 
 #rm_print_characters_block {
     margin-top: 15px;
-    height: 90vh;
-    padding-bottom: 10vh !important;
+    padding-bottom: 10vh;
     overflow-y: auto;
 }
-}
+
 
 
 
@@ -718,70 +709,6 @@ display: none;
     
 }
 
-/* RossAscends: doubling the API status/form CSS to place it on bottom below SHELD form*/
-
-#api_loading-bottom{
-    width: 25px;
-    height: 25px;
-    display: none;   
-}
-#api_loading_novel-bottom{
-    width: 25px;
-    height: 25px;
-    display: none;
-}
-
-#online_status-bottom{
-    opacity: 0.3;
-    /*width:100%;*/
-    bottom: 0px;
-    left:45px;
-	display:block;
-}
-
-#bottom-status-and-indicator-group{
-	display:inline-block;
-	margin-left:45px;
-}
-
-#online_status_indicator-bottom{
-    border-radius: 7px;
-    width: 14px;
-    height: 14px;
-    background-color: red;
-    display: inline-block;
-}
-#online_status_text-bottom{
-    margin-left: 4px;
-	font-size: 0.75rem;
-   display: inline-block;
-}
-
-#connection-form-bottom{	/*the form*/
-	float:right;
-	margin-right:45px;
-	display:inline-block;
-}
-
-#api_url_text-bottom{
-	font-size: 0.75rem;
-	padding:1px;
-	
-}
-#api_button-bottom{
-    cursor: pointer;
-    color:#ffffffaa;
-	font-size:0.75rem;
-	padding:1px;
-	
-}
-#api_button_novel-bottom{
-    cursor: pointer;
-    color:#ffffffaa;
-}
-
-/*RossAscends: done doubling API css*/
-
 #rm_characters_block{
     display: block;
     /* visibility: hidden; */
@@ -793,9 +720,7 @@ display: none;
     display: grid;
     grid-template-columns: 67px auto;
 }
-.character_select .avatar{
-    /*height: 100px;*/
-}
+
 .character_select .ch_name{
     margin-left: 10px;
     margin-top: 5px;
@@ -817,10 +742,6 @@ display: none;
     display: none;
 }
 
-#rm_button_selected_ch{
-    
-}
-
 /*LEFT SIDE BG MENU*/
 
 #logo_block{
@@ -830,7 +751,7 @@ display: none;
 }
 
 #bg_menu{
-    margin-top: 0px;
+    margin-top:0;
     margin-left: 2px;
     cursor:pointer;
     position: absolute;
@@ -840,8 +761,6 @@ display: none;
       -moz-user-select: none; 
       -ms-user-select: none; 
       user-select: none;  
-	/*backdrop-filter: brightness(0.3) blur(20px);
-	-webkit-backdrop-filter: brightness(0.3) blur(20px);*/
 }
 
 #site_logo{
@@ -871,9 +790,9 @@ display: none;
 #bg_menu_button{
     display: inline-block;
     opacity: 0.4;
-      transition: 0.5s 
-     cursor: pointer;
-     width: 20px;
+    transition: 0.5s; 
+    cursor: pointer;
+    width: 20px;
     /*  background: #191b3188; */
      text-align: center;
      height: 20px;
@@ -887,26 +806,16 @@ display: none;
 }
 #bg_menu_content{
     margin-top: 5px;
-    margin-left: 0px;
+    margin-left:0;
     opacity: 0.0;
     cursor:auto;
     display: block;
     width: 122px;
-    height: 0px;
+    height:0;
     backdrop-filter: brightness(30%) blur(10px);
 	-webkit-backdrop-filter: blur(10px) brightness(30%);
     overflow: hidden;
-    overflow-y: hidden;
-    
-    scrollbar-width: thin;
-    scrollbar-color: #ffffff11 #191b3111;
 }
-
-/*#bg_menu_content::-webkit-scrollbar-thumb {
-    background: #ffffff11;
-    border-radius: 1px;
-    box-shadow: inset 0.05em 0.05em 0 rgba(0, 0, 0, 0.1), inset 0 -0.05em 0 rgba(0, 0, 0, 0.07);
-}*/
 
 .bg_example {
 width: 103px;
@@ -1048,7 +957,6 @@ width: 103px;
 #export_button{
     opacity: 0.7;
     cursor: pointer;
-    display: inline;
     margin-top: 25px;
     margin-left: 10px;
 	margin-bottom:30px;
@@ -1057,7 +965,6 @@ width: 103px;
 }
 #result_info{
     margin-left: 10px;
-    size: 10px;
     color: #ffffff33;
 }
 
@@ -1065,6 +972,9 @@ width: 103px;
 
 	display: block;
 }
+
+/* SUSPECTED DISUSED STYLE*/
+/*
 .input-file-btn {
 	position: relative;
 	display: inline-block;
@@ -1073,7 +983,7 @@ width: 103px;
 	text-decoration: none;
 	font-size: 14px;
 	vertical-align: middle;
-	color: rgb(255 255 255);
+	color: rgb(255, 255, 255);
 	text-align: center;
 	border-radius: 4px;
 	background-color: rgba(0,0,0,0.3);
@@ -1088,13 +998,13 @@ width: 103px;
 }
 
 .input-file input[type=file] {
-	/* position: absolute; */
 	z-index: -1;
 	opacity: 0;
 	display: block;
 	width: 0;
 	height: 0;
-}
+}*/
+
 #form_bg_download{
     margin-bottom: 2px;
 	backdrop-filter: brightness(30%) blur(20px);
@@ -1153,7 +1063,7 @@ width: 103px;
     margin-right: auto;
     margin-top: 4px;
     text-align: center;
-    padding: 0px;
+    padding:0;
     height: min-content;
 }
 #dialogue_del_mes_ok{			/*changes background of OK button in the deletion menu*/
@@ -1208,34 +1118,6 @@ width: 103px;
     background-color: red;
 }
 
-
-#online_status {
-    bottom: 48px;
-    margin-bottom: 0px;
-    float: right;
-    right: 3px;
-}
-
-#online_status_indicator {
-    opacity: 0.3;
-    bottom: 0px;
-    height: 40px;
-    width: 40px;
-    background: red;
-    border-radius: 50%;
-    float: right;
-    display: inline;
-}
-
-#online_status_text {
-    display: inline;
-    font-size: 0.75rem;
-    margin-right: 60px;
-    position: relative;
-    top: 10px;
-    text-shadow: 1px 1px 5px black;
-    color: rgba(255,255,255,0.5);
-}
 #online_status2{
     opacity: 0.5;
     margin-top: 2px;
@@ -1368,12 +1250,11 @@ select {
     margin-bottom: 35px;
     color: rgba(255,255,255,0.7);
     box-shadow: 0 0 2px rgba(0,0,0,0.5);
-	background-color: rgb(0,0,0,0.3);
+	background-color: rgba(0,0,0,0.3);
 }
 #user_avatar_block{
     margin-left: 6px;
     display: grid;
-    grid-template-columns: repeat(auto-fill);
     grid-gap: 10px;
     margin-top: 10px;
     grid-template-columns: repeat( auto-fit, minmax(60px, 1fr) );
@@ -1393,21 +1274,21 @@ select {
     margin-bottom: 20px;
 }
 #temp_counter{
-    margin-bottom: 0px;
+    margin-bottom:0;
 }
 #amount_gen{
     margin-left: 10px;
     margin-bottom: 20px;
 }
 #amount_gen_counter{
-    margin-bottom: 0px;
+    margin-bottom:0;
 }
 #max_context{
     margin-left: 10px;
     margin-bottom: 20px;
 }
 #max_context_counter{
-    margin-bottom: 0px;
+    margin-bottom:0;
 }
 #range_block input{
     margin-left: 10px;
@@ -1457,7 +1338,7 @@ input[type="range"] {
     right: 0;
     text-align: center;
     margin-top: 15vh;
-    box-shadow: 5px 5px -5px -5px rgba(200,200,200,0.1);
+    box-shadow: 5px 5px rgba(200,200,200,0.1);
     padding: 4px;
     backdrop-filter: blur(10px) brightness(0.3);
 			-webkit-backdrop-filter: blur(10px) brightness(0.3);
@@ -1473,7 +1354,6 @@ input[type="range"] {
     background-color: #00000066;
 }
 .mes_edit{
-    display: inline-block;
     float:right;
 	color: rgba(255,255,255,0.3);
     cursor:pointer;
@@ -1513,8 +1393,8 @@ input[type="range"] {
     height: 23px;
 }
 .edit_textarea{
-    padding: 0px;
-    margin: 0px;
+    padding:0;
+    margin:0;
     border: none;
     border-color: transparent;
     outline: none;
@@ -1529,8 +1409,6 @@ input[type="range"] {
     color: #fff;
     opacity: 0.7;
     padding: 10px;
-    margin-left: 10px;
-    margin-top: 10px;
     margin: 10px;
     font-size: 1rem;
     height: 2.5rem;
@@ -1551,10 +1429,9 @@ label.checkbox span {
   border:1px solid #BBBBBB33;
   border-radius:3px;
   width:20px;
-  width:20px;
   height:20px;
     vertical-align:middle;
-  margin:0px;
+  margin: 0;
   position: relative;
   transition:width 0.1s, height 0.1s, margin 0.1s;
   
@@ -1562,7 +1439,7 @@ label.checkbox span {
 label.checkbox :checked + span {
   width:20px;
   height:20px;
-  margin: 0px;
+  margin:0;
 }
 label.checkbox :checked + span:after {
   content: '\2714'; /*unicode 'heavy checkmark'*/
@@ -1613,9 +1490,9 @@ label.checkbox :checked + span:after {
     left: 0;
     right: 0;
     margin-top: 40px;
-    box-shadow: 0 0 2px rgb(0 0 0 / 50%);
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
     padding: 4px;
-    border: 1px solid rgba(0,0,0,0.3);
+    border: 1px solid rgba(0, 0, 0, 0.3);
     border-radius: 0 0 20px 20px;
 }
 #character_popup h5 a{
@@ -1632,20 +1509,20 @@ label.checkbox :checked + span:after {
 }
 
 #character_popup h3{
-    /* margin-top: 0px; */
-    margin-bottom: 0px;
-    margin-left: 0px;
+    /* margin-top:0; */
+    margin-bottom:0;
+    margin-left:0;
 }
 
 #character_popup h4{
-    margin-top: 0px;
-    margin-bottom: 0px;
-    margin-left: 0px;
+    margin-top:0;
+    margin-bottom:0;
+    margin-left:0;
 }
 #character_popup h5{
-    margin-top: 0px;
+    margin-top:0;
     margin-bottom: 3px;
-    margin-left: 0px;
+    margin-left:0;
     color: #757575;
 
 }
@@ -1660,8 +1537,8 @@ label.checkbox :checked + span:after {
 #personality_textarea{
     width: 92%;
     /* height: 65px; */
-    margin-top: 0px;
-    margin-left: 0px;
+    margin-top:0;
+    margin-left:0;
 }
 #scenario_div{
     padding-top: 10px;
@@ -1673,19 +1550,18 @@ label.checkbox :checked + span:after {
 }
 #scenario_pole{
     width: 92%;
-    margin-left: 0px;
+    margin-left:0;
 }
 #mes_example_textarea{
     margin-left: 36px;
     width: 88%;
     height: 100%;
-    margin-top: 0px;
+    margin-top:0;
 }
 
 #character_popup_ok{
     cursor: pointer;
     display: none;
-    place-items: center;
     height: 40px;
     margin-top: 15px;
     margin-left: 36px;
@@ -1748,17 +1624,15 @@ label.checkbox :checked + span:after {
     height: 80px;
 }
 #select_chat_div{
-    
     margin-left: 5px;
     margin-top: 30px;
-    scrollbar-width: thin;
-    overflow: hidden;
+    overflow-x: hidden;
     overflow-y: scroll;
     max-width:430px;
     height: 350px;
 }
 #select_chat_div hr{
-    margin: 0px;
+    margin:0;
 }
 #chat_import_button{
     margin-top: 15px;
@@ -1835,25 +1709,6 @@ label.checkbox :checked + span:after {
 
 /* css/style.css */
 
-
-
-
-* {
-    box-sizing: border-box;
-}
-
-
-html {
-    font-size: 100%;
-}
-html,
-body {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    height: 100%;
-}
-
 p {
     margin-bottom: 16px;
 	margin-top:0;
@@ -1863,27 +1718,25 @@ hr {
     margin: 22px 0;
     height: 1px;
     border: 0;
-    background-image: -webkit-linear-gradient(left, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0));
-    background-image: -moz-linear-gradient(left, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0));
-    background-image: -ms-linear-gradient(left, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0));
-    background-image: linear-gradient(left, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0));
-}
-
-h1,
-h2 {
-    margin-bottom: 22px;
-    font-weight: 300;
+    background-image: -webkit-linear-gradient(to left, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0));
+    background-image: -moz-linear-gradient(to left, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0));
+    background-image: -ms-linear-gradient(to left, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0));
+    background-image: linear-gradient(to left, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0));
 }
 
 h1 {
     font-size: 2rem;
     line-height: 32px;
+	margin-bottom: 22px;
+    font-weight: 300;
 }
 
 h2 {
     font-size: 1.5rem;
     line-height: 1.5rem;
 	margin-top: 5px;
+	margin-bottom: 22px;
+    font-weight: 300;
 }
 
 .right_menu_button h2 {
@@ -1893,7 +1746,7 @@ h2 {
 	}
 
 a {
-    color: #orange;
+    color: orange;
     text-decoration: none;
 }
 .btn {
@@ -1903,9 +1756,9 @@ a {
     -o-border-radius: 10em;
     border-radius: 10em;
     border: 0;
-    color: #fff!important;
+    color: #fff;
     margin: 6px;
-    white-space: normal!important;
+    white-space: normal;
     word-wrap: break-word;
 	display: inline-block;
     line-height: 1.25;
@@ -1931,19 +1784,19 @@ a {
 }
 .btn-primary {
 	  border: 2px solid #2BBBAD;
-    color: #00695c!important;
+    color: #00695c;
     background-color: transparent;
 }
 
 .btn-secondary {
     border: 2px solid #00C851;
-    color: #007E33!important;
+    color: #007E33;
     background-color: transparent;
 }
 
-/* Right nav panel */
-/* default position is 450px to the right, off screen*/
-/* it is position:fixed, so it's never affected by the location/size of any other element */
+/* ############################################################# */
+/*           Right nav panel and nav-toggle */
+/* ############################################################# */
 
 #right-nav-panel{													
     width: 450px;
@@ -1953,27 +1806,30 @@ a {
     bottom: 0;
     margin: 0;
     right: -450px;										
-    padding: 0px 20px;
+    padding:0;
     -webkit-transition: right 0.14s ease-in-out  0.02s;
     -moz-transition: right 0.14s ease-in-out  0.02s;
     transition: right 0.14s ease-in-out  0.02s;
 	backdrop-filter: blur(10px) brightness(0.3);
 	-webkit-backdrop-filter: blur(10px) brightness(0.3);
     z-index: 2050;
-    box-shadow: 0 0 5px rgba(0,0,0,0.5);
     white-space:nowrap;
 	border-left: 1px solid rgba(0,0,0,0.3);
 }
 
-/* this is the class of the visible LABEL for the hidden #nav-toggle div checkbox*/
-/* it is displaced 455px to the left of the #right-nav-paneldiv, this keeps it on screen while the #right-nav-panel is held off screen to the right */
+@media screen and (max-width: 450px) {	
+	#right-nav-panel{
+     width: 100%;
+     box-shadow: none;
+    }
+}
 
 #nav-toggle {	
     position: absolute;
     right: 13px;
     top: 12px;
-    padding: 0px;
-    margin: 0px;
+    padding:0;
+    margin:0;
     cursor: pointer;
     height: 0;
     width: 0;
@@ -2016,44 +1872,7 @@ a {
 /* this is what causes the panel movement */
 
 #nav-toggle:checked ~ #right-nav-panel{						
-    right: 0px;											
-    box-shadow: -5px 0px 10px 0px rgba(0, 0, 0, 0.50);
+    right:0;											
+    box-shadow: -5px 0 10px 0 rgba(0, 0, 0, 0.50);
     overflow-y: auto;
-}
-
-body {
-    -webkit-animation: bugfix infinite 1s;
-}
-
-@-webkit-keyframes bugfix {
-    to {
-      padding: 0;
-    }
-}
-
-@supports (height: 100dvh) {
-	body {height:100dvh;}
-
-@media screen and (min-width: 450px) {
-    html,
-    body {
-      margin: 0;
-	  padding: 0;
-      overflow-x: hidden;
-    }
-}
-
-@media screen and (max-width: 450px) {
-    html,
-    body {
-     margin-left: auto;
-	 margin-right: auto;
-	 overflow-x: hidden; 
-	 
-    }
-	
-#right-nav-panel{
-     width: 100%;
-     box-shadow: none
-    }
 }
