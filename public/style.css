@@ -1406,11 +1406,15 @@ width: 103px;
     font-size: 16px;
     color: rgb(188, 193, 200, 0.5);
 }
-
+#world_info_container {
+    display: flex;
+    align-items: center;
+}
 #world_info_edit_button {
     cursor: pointer;
     color: #ffffffaa;
     margin-left: 10px;
+	margin-top: 5px
 }
 
 #world_popup {
