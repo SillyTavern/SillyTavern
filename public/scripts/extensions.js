@@ -23,7 +23,7 @@ const settings_style = `
     display: block;
 }
 
-#extensions_active {
+#extensions_loaded {
     display: none;
 }
 
@@ -104,21 +104,27 @@ function autoConnectInputHandler() {
 async function connectToApi(baseUrl) {
     const url = new URL(baseUrl);
     url.pathname = '/api/extensions';
-    const getExtensionsResult = await fetch(url, { method: 'GET' });
 
-    if (getExtensionsResult.ok) {
-        const data = await getExtensionsResult.json();
-        extensions = data.extensions;
-        applyExtensions(baseUrl);
+    try {
+        const getExtensionsResult = await fetch(url, { method: 'GET' });
+
+        if (getExtensionsResult.ok) {
+            const data = await getExtensionsResult.json();
+            extensions = data.extensions;
+            applyExtensions(baseUrl);
+        }
+
+        updateStatus(getExtensionsResult.ok);
     }
-    
-    updateStatus(getExtensionsResult.ok);
+    catch {
+        updateStatus(false);
+    }
 }
 
 function updateStatus(success) {
     connectedToApi = success;
     const _text = success ? 'Connected to API' : 'Could not connect to API';
-    const _class = success ? 'success' : 'failed';
+    const _class = success ? 'success' : 'failure';
     $('#extensions_status').text(_text);
     $('#extensions_status').attr('class', _class);
 
@@ -129,6 +135,10 @@ function updateStatus(success) {
         for (let extension of extensions) {
             $('#extensions_list').append(`<li id="${extension.name}">${extension.metadata.display_name}</li>`);
         }
+    }
+    else {
+        $('#extensions_loaded').hide(200);
+        $('#extensions_list').empty();
     }
 }
 
