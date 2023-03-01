@@ -1241,12 +1241,11 @@ width: 103px;
     margin: 0;
 }
 
-#world_import_button h2, #world_create_button h2 {
+#world_import_button h4, #world_create_button h4 {
     margin-top: auto;
     margin-bottom: auto;
     margin-left: 1rem;
     font-size: 16px;
-    color: rgb(188, 193, 200, 0.5);
 }
 
 #world_info_edit_button {
@@ -1423,6 +1422,11 @@ width: 103px;
 
 .world_entry_form_horizontal h5 {
     margin: 0 1rem;
+}
+
+.world_entry_form_control .checkbox {
+    align-items: center;
+    display: flex;
 }
 
 .world_entry_form_control .checkbox h4 {
