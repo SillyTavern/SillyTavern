@@ -39,7 +39,7 @@
         import {encode, decode} from "../scripts/gpt-2-3-tokenizer/mod.js";
         $(document).ready(function(){
             const VERSION = '1.2.8';
-            var converter = new showdown.Converter();
+            var converter = new showdown.Converter({emoji: 'true'});
             var bg_menu_toggle = false;
             var default_user_name = "You";
             var name1 = default_user_name;
@@ -3107,13 +3107,8 @@
                     <option value="1">Style Anchor - Character Anchor</option>
                 </select>
                 <div id="anchor_checkbox">
-                    <label class="checkbox">
-                        <input id="character_anchor" type="checkbox"/><span></span>
-                    </label><h4>Character Anchor</h4>
-                    <label class="checkbox" >
-                        <input id="style_anchor" type="checkbox"/><span></span>
-                    </label><h4>Style Anchor</h4>
-                    
+                    <input id="character_anchor" type="checkbox"/><h4>Character Anchor</h4>
+                    <input id="style_anchor" type="checkbox"/><h4>Style Anchor</h4>
                 </div>
             </div>
         </div>

@@ -43,7 +43,7 @@ body {
 ::-webkit-scrollbar-thumb {
     background: rgba(255,255,255,0.7);
     -webkit-box-shadow: inset 0 0 2px rgba(0, 0, 0, 0.1);
-	        box-shadow: inset 0 0 2px rgba(0, 0, 0, 0.1);
+	        box-shadow: inset 0 0 5px rgb(0 0 0);
     border-radius: 5px;
 }
 
@@ -316,8 +316,8 @@ code {
     /* margin-bottom: 26px;*/
 }
 .avatar {
-    width: 60px;
-    height: 60px;
+    width: 50px;
+    height: 50px;
     border-style:none;
 }
 
@@ -1161,17 +1161,21 @@ width: 103px;
 .del_checkbox{
     display: none;
     opacity: 0.7;
+	margin-top:18px;
+	margin-right:5px;
 }
 
 /*this hides the replacement for input form until Delete Messages mode is called*/
 #dialogue_del_mes{
     display: none;
 }
-.for_checkbox{
+
+/*this is the default-shown div that is shown when message-deletion mode is NOT on, and hidden when JS calls message deletion mode*/
+.for_checkbox{ 
     display: block;
 }
 
-input[type='checkbox'] :not(#nav-toggle){
+input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin) {
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
@@ -1184,12 +1188,12 @@ input[type='checkbox'] :not(#nav-toggle){
     background-color: white;
     box-shadow: inset 0 0 3px 0 rgb(0 0 0 / 80%);
     cursor: pointer;
-    margin-top: 18px; /*odd but this is what aligns it with the character avatar*/
-    right: 5px; /*and centers it in the checkbox column*/
+    /*margin-top: 18px; /*odd but this is what aligns it with the character avatar*/
+    /*right: 5px; /*and centers it in the checkbox column*/
 }
 
 /* the checkbox starts with a size 0 background of a checkmark */
-input[type='checkbox']::before :not(#nav-toggle) {
+input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin)::after {
   content: '';
   color: #fff;
   position: absolute;
@@ -1204,15 +1208,13 @@ input[type='checkbox']::before :not(#nav-toggle) {
   border-radius: 2px;
   -webkit-transform: scale(0);
           transform: scale(0);
-  -webkit-transition: -webkit-transform 0.25s ease-in-out;
-  transition: -webkit-transform 0.25s ease-in-out;
-  transition: transform 0.25s ease-in-out;
-  transition: transform 0.25s ease-in-out, -webkit-transform 0.25s ease-in-out;
-    background-image: url("data:image/svg+xml;base64,PCEtLSBHZW5lcmF0ZWQgYnkgSWNvTW9vbi5pbyAtLT4KPHN2ZyB2ZXJzaW9uPSIxLjEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgd2lkdGg9IjQ0OCIgaGVpZ2h0PSI0NDgiIHZpZXdCb3g9IjAgMCA0NDggNDQ4Ij4KPHRpdGxlPjwvdGl0bGU+CjxnIGlkPSJpY29tb29uLWlnbm9yZSI+CjwvZz4KPHBhdGggZD0iTTQxNy43NSAxNDEuNWMwIDYuMjUtMi41IDEyLjUtNyAxN2wtMjE1IDIxNWMtNC41IDQuNS0xMC43NSA3LTE3IDdzLTEyLjUtMi41LTE3LTdsLTEyNC41LTEyNC41Yy00LjUtNC41LTctMTAuNzUtNy0xN3MyLjUtMTIuNSA3LTE3bDM0LTM0YzQuNS00LjUgMTAuNzUtNyAxNy03czEyLjUgMi41IDE3IDdsNzMuNSA3My43NSAxNjQtMTY0LjI1YzQuNS00LjUgMTAuNzUtNyAxNy03czEyLjUgMi41IDE3IDdsMzQgMzRjNC41IDQuNSA3IDEwLjc1IDcgMTd6Ij48L3BhdGg+Cjwvc3ZnPgo=");
+  -webkit-transition: 0.25s ease-in-out;
+  transition: 0.25s ease-in-out;
+  background-image: url("data:image/svg+xml;base64,PCEtLSBHZW5lcmF0ZWQgYnkgSWNvTW9vbi5pbyAtLT4KPHN2ZyB2ZXJzaW9uPSIxLjEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgd2lkdGg9IjQ0OCIgaGVpZ2h0PSI0NDgiIHZpZXdCb3g9IjAgMCA0NDggNDQ4Ij4KPHRpdGxlPjwvdGl0bGU+CjxnIGlkPSJpY29tb29uLWlnbm9yZSI+CjwvZz4KPHBhdGggZD0iTTQxNy43NSAxNDEuNWMwIDYuMjUtMi41IDEyLjUtNyAxN2wtMjE1IDIxNWMtNC41IDQuNS0xMC43NSA3LTE3IDdzLTEyLjUtMi41LTE3LTdsLTEyNC41LTEyNC41Yy00LjUtNC41LTctMTAuNzUtNy0xN3MyLjUtMTIuNSA3LTE3bDM0LTM0YzQuNS00LjUgMTAuNzUtNyAxNy03czEyLjUgMi41IDE3IDdsNzMuNSA3My43NSAxNjQtMTY0LjI1YzQuNS00LjUgMTAuNzUtNyAxNy03czEyLjUgMi41IDE3IDdsMzQgMzRjNC41IDQuNSA3IDEwLjc1IDcgMTd6Ij48L3BhdGg+Cjwvc3ZnPgo=");
 }
 
 /* when the checkbox is checked, the background image is grown to normal size to fill the background of the 'checkbox'*/
-input[type='checkbox']:checked::before :not(#nav-toggle) {
+input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):checked::after {
   -webkit-transform: scale(1);
           transform: scale(1);
 }
@@ -1420,7 +1422,7 @@ input[type="range"] {
 #form_change_name{
     margin-bottom: 15px;
 }
-.checkbox{
+/*.checkbox{
     display: block;
 }
 label.checkbox input[type="checkbox"] {display:none;}
@@ -1442,14 +1444,14 @@ label.checkbox :checked + span {
   margin:0;
 }
 label.checkbox :checked + span:after {
-  content: '\2714'; /*unicode 'heavy checkmark'*/
+  content: '\2714'; 
   font-size: 18px;
   position: absolute;
   top: -3px;
   left: 2px;
   color: #99a1a7;
-
 }
+*/
 #anchor_order{
     width:284px;
     margin-left: 10px;
