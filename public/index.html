@@ -936,7 +936,7 @@
                             mesSendString = '\nThen the roleplay chat between '+name1+' and '+name2+' begins.\n'+mesSendString;
                         }else{
                             mesSendString = '<START>\n'+mesSendString;
-							//mesSendString = mesSendString;
+							//mesSendString = mesSendString; //This edit simply removes the first "<START>" that is prepended to all context prompts
                         }
                         finalPromt = storyString+mesExmString+mesSendString+generatedPromtCache;
                         
@@ -1228,19 +1228,15 @@
                     is_send_press = true;										
                     e.preventDefault();											
                     Generate();
-                    //$(this).closest("form").submit();
                 }
             });
 			
 			//RossAscends: Lets add some hotkeys
 			document.addEventListener('keydown', (event) => {
-				//console.log(event.key);
 				if(event.ctrlKey && event.key == "Enter") {				// Ctrl+Enter for Regeneration Last Response
-					//console.log('both CTRL and Enter were pressed');
 					if(is_send_press == false){
 						is_send_press = true;
 						Generate('regenerate');
-						//console.log('confirmed keypress was caught '+ event.key);
 					}
 				}else if(event.ctrlKey && event.key == "ArrowUp") {		//Ctrl+UpArrow for Connect to last server
 					document.getElementById('api_button').click();
@@ -1249,16 +1245,16 @@
 			});	
             
             //menu buttons
-            var selected_button_style = { color: "#bcc1c8" };
-            var deselected_button_style = { color: "#565d66" };
-            $( "#rm_button_create" ).children("h2").css(selected_button_style);
-            $( "#rm_button_characters" ).children("h2").css(selected_button_style);
+            var selected_button_style = { };
+            var deselected_button_style = { };
+			console.log('hi there');
+            $( "#rm_button_create" ).css("class","deselected-right-tab");
+            $( "#rm_button_characters" ).css("class","deselected-right-tab");
             $( "#rm_button_settings" ).click(function() {
                 selected_button = 'settings';
                 menu_type = 'settings';
                 $( "#rm_characters_block" ).css("display", "none");
                 $( "#rm_api_block" ).css("display", "block");
-                
                 $('#rm_api_block').css('opacity',0.0);
                 $('#rm_api_block').transition({  
                         opacity: 1.0,
@@ -1269,10 +1265,9 @@
                 
                 $( "#rm_ch_create_block" ).css("display", "none");
                 $( "#rm_info_block" ).css("display", "none");
-                
-                $( "#rm_button_characters" ).children("h2").css(deselected_button_style);
-                $( "#rm_button_settings" ).children("h2").css(selected_button_style);
-                $( "#rm_button_selected_ch" ).children("h2").css(deselected_button_style);
+                $( "#rm_button_characters" ).css("class","deselected-right-tab");
+                $( "#rm_button_settings" ).css("class","selected-right-tab");
+                $( "#rm_button_selected_ch" ).css("class","deselected-right-tab");
             });
             $( "#rm_button_characters" ).click(function() {
                 selected_button = 'characters';
@@ -1316,9 +1311,9 @@
                 $("#create_button").css("display", "block");
                 $("#create_button").attr("value", "Create");
                 $('#result_info').html('&nbsp;');
-                $( "#rm_button_characters" ).children("h2").css(deselected_button_style);
-                $( "#rm_button_settings" ).children("h2").css(deselected_button_style);
-                $( "#rm_button_selected_ch" ).children("h2").css(deselected_button_style);
+                $( "#rm_button_characters" ).css("class","deselected-right-tab");
+                $( "#rm_button_settings" ).css("class","deselected-right-tab");
+                $( "#rm_button_selected_ch" ).css("class","deselected-right-tab");
                 
                 //create text poles
                 $("#rm_button_back").css("display", "inline-block");
@@ -1356,9 +1351,9 @@
                 $( "#rm_ch_create_block" ).css("display", "none");
                 $( "#rm_info_block" ).css("display", "none");
                 
-                $( "#rm_button_characters" ).children("h2").css(selected_button_style);
-                $( "#rm_button_settings" ).children("h2").css(deselected_button_style);
-                $( "#rm_button_selected_ch" ).children("h2").css(deselected_button_style);
+                $( "#rm_button_characters" ).css("class","selected-right-tab");
+                $( "#rm_button_settings" ).css("class","deselected-right-tab");
+                $( "#rm_button_selected_ch" ).css("class","deselected-right-tab");
             }
             function select_rm_info(text){
                 $( "#rm_characters_block" ).css("display", "none");
@@ -1368,9 +1363,9 @@
                 
                 $("#rm_info_text").html('<h3>'+text+'</h3>');
                 
-                $( "#rm_button_characters" ).children("h2").css(deselected_button_style);
-                $( "#rm_button_settings" ).children("h2").css(deselected_button_style);
-                $( "#rm_button_selected_ch" ).children("h2").css(deselected_button_style);
+                $( "#rm_button_characters" ).css("class","deselected-right-tab");
+                $( "#rm_button_settings" ).css("class","deselected-right-tab");
+                $( "#rm_button_selected_ch" ).css("class","deselected-right-tab");
             }
             
             function select_selected_character(chid){ //character select
@@ -1378,7 +1373,7 @@
                 select_rm_create();
                 menu_type = 'character_edit';
                 $( "#delete_button_div" ).css("display", "block");
-                $( "#rm_button_selected_ch" ).children("h2").css(selected_button_style);
+                $( "#rm_button_selected_ch" ).css("class","selected-right-tab");
                 var display_name = characters[chid].name;
 
                 $( "#rm_button_selected_ch" ).children("h2").text(display_name);
@@ -2957,12 +2952,13 @@
     <input type="checkbox" id="nav-toggle">
 
     <nav id="right-nav-panel">
-                
-        <div class="right_menu_button" id="rm_button_characters"><h2>Characters</h2></div>
-        <div class="right_menu_button" id="rm_button_settings"><h2>Settings</h2></div>
-        <div class="right_menu_button" id="rm_button_selected_ch"><h2></h2></div>
-		<div class="right_menu_button" id="rm_button_panel_pin_div"><input type="checkbox" id="rm_button_panel_pin"></div>
-
+        <div id="right-nav-panel-tabs">
+			<div class="right_menu_button" id="rm_button_characters">&#x1F464;</div>
+			<div class="right_menu_button" id="rm_button_settings">⚙️</div>
+			<div class="right_menu_button" id="rm_button_selected_ch"><h2></h2></div>
+			<div class="right_menu_button" id="rm_button_panel_pin_div"><input type="checkbox" id="rm_button_panel_pin"></div>
+		</div>
+		
         <div id="rm_ch_create_block" class="right_menu" style="display: none;">
             <div id="rm_button_back" class="right_menu_button"><h2 style="color: rgb(188, 193, 200, 0.5);">&#8656;</h2></div>
             

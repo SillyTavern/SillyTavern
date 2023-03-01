@@ -26,6 +26,8 @@ body {
 	font-size:15px; /*1rem*/
 	color: rgb(229, 224, 216);
 	-webkit-font-smoothing: antialiased;
+	-webkit-transition: all 0.3s ease-in-out;
+	transition: all 0.3s ease-in-out;
 }
 .mes_text i {
     color: #999 !important;
@@ -513,27 +515,35 @@ input[type=button] {
     border-radius: 3px;
 	background-color: rgba(0,0,0,0.3);
 }
+
+#right-nav-panel-tabs{
+	margin-top:10px;
+	margin-bottom:10px;
+	width: calc(100% - 25px);
+}
+
 .right_menu_button{
     display:inline-block;
     cursor:pointer;
     vertical-align:middle;
     text-align: center;
-    padding-left: 4px;
-    padding-right: 4px;
-    margin-top:0px;   
+    padding-right: 20px;
+    font-size:1.5rem;
+    margin-top:0px;
+	filter: grayscale(1) brightness(75%);
+	-webkit-transition: all 0.5s ease-in-out;
+            transition: all 0.5s ease-in-out;
 }
 
-.right_menu_button:active {
-    color:red;
-    box-shadow: 0 0 5px -1px rgba(0,0,0,0.05);
-    background-color: rgba(0,0,0,0.05);
+.right_menu_button:hover {
+	filter: brightness(150%) grayscale(1); 	
 }
 
 #rm_button_panel_pin_div {
-    height: 1.65rem;
-    width: 24px;
-    margin-top: -10px;
-    margin-right: 30px;
+    height: 20px;
+    width: 20px;
+    margin-top: 0;
+    margin-right: 0;
     float: right;
 }
 
@@ -554,8 +564,9 @@ input[type=button] {
 }
 
 #rm_button_panel_pin::after {
-	content: '\01F513'; /*open lock emoji*/
-	filter:grayscale(1);
+    content: '\01F513';
+    position: absolute;
+    filter: grayscale(1);
     line-height: 20px;
     font-size: 15px;
     padding: 0;
@@ -564,14 +575,12 @@ input[type=button] {
     display: inline-block;
     width: 20px;
     height: 20px;
-    margin-top: 0;
+    margin-top: -25px;
     margin-left: 0;
-    border-radius: 5px;
     background: rgba(0, 0, 0, 0.3);
     color: #666;
     -webkit-transition: all 0.275s;
     transition: all 0.275s;
-    
 }
 
 #rm_button_panel_pin:checked::after {
@@ -1218,18 +1227,6 @@ width: 103px;
     display: inline;
 }
 
-#send_form:hover #online_status_text {
-	color:red;
-	transition:0.3s
-	}
-
-#send_form:hover #online_status_indicator {
-	border: 1px solid yellow;
-	opacity:0.5;
-	transition:0.3s
-	}
-	
-
 #online_status_text {
     display: inline;
     font-size: 0.75rem;
@@ -1523,7 +1520,7 @@ input[type="range"] {
     outline: none;
     box-shadow: 0 0 3px rgba(255,255,255,0.5);
 	background-color: rgba(0,0,0,0.3);
-	font-size: 1rem;
+	font-size: 15px;
 	line-height:1.25rem;
 }
 
@@ -1885,11 +1882,15 @@ h1 {
 
 h2 {
     font-size: 1.5rem;
-    line-height: 1.75rem;
+    line-height: 1.5rem;
 	margin-top: 5px;
 }
 
-.right_menu_button h2 {color: rgb(86, 93, 102);}
+.right_menu_button h2 {
+    margin-top: 0;
+    margin-bottom: 0;
+    font-size: 1.5rem;
+	}
 
 a {
     color: #orange;
