@@ -306,13 +306,11 @@ code {
 
 .mes {
     display: grid;
-    grid-template-columns: fit-content(60px) 60px auto;
-    /* border-radius: 5px; */
+    grid-template-columns: min-content min-content auto;
     padding: 10px 10px 0 10px;
     vertical-align: top;
     width: 100%;
     color: rgb(229, 224, 216);
-    /* margin-bottom: 26px;*/
 }
 .avatar {
     width: 50px;
@@ -336,7 +334,7 @@ code {
 .mes_block{
     
     padding-top:0;
-    padding-left: 20px;
+    padding-left: 10px;
 }
 .ch_name{
     
