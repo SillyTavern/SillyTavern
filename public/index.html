@@ -605,23 +605,24 @@
                 tokens_already_generated = 0;
                 message_already_generated = name2+': ';
                 if(online_status != 'no_connection' && this_chid != undefined){
-                    if(type != 'regenerate'){
+                    if(type !== 'regenerate'){
                         var textareaText = $("#send_textarea").val();
+						//console.log('Not a Regenerate call, so posting normall with input of: ' +textareaText);
                         $("#send_textarea").val('').trigger('input');
                         
                     }else{
+						//console.log('Regenerate call detected')
                         var textareaText = "";
                         if(chat[chat.length-1]['is_user']){//If last message from You
                             
                         }else{
+							//console.log('about to remove last msg')
                             chat.length = chat.length-1;
                             count_view_mes-=1;
+							//console.log('removing last msg')
                             $('#chat').children().last().remove();
                         }
                     }
-                    //$("#send_textarea").attr("disabled","disabled");
-                    
-                    //$("#send_textarea").blur();
                     $( "#send_but" ).css("display", "none");
                     $( "#loading_mes" ).css("display", "inline-block");
 
@@ -807,7 +808,6 @@
                             //arrMes[arrMes.length-1] = '<START>\n'+arrMes[arrMes.length-1];
                             let mesExmString = '';
                             for(let iii = 0; iii < mesExamplesArray.length; iii++){//mesExamplesArray It need to make from end to start
-                                
                                 mesExmString = mesExmString+mesExamplesArray[iii];
                                 if(encode(JSON.stringify(storyString+mesExmString+chatString+anchorTop+anchorBottom+charPersonality)).length+120 < this_max_context){ //example of dialogs
                                     if(!is_pygmalion){
@@ -936,6 +936,7 @@
                             mesSendString = '\nThen the roleplay chat between '+name1+' and '+name2+' begins.\n'+mesSendString;
                         }else{
                             mesSendString = '<START>\n'+mesSendString;
+							//mesSendString = mesSendString;
                         }
                         finalPromt = storyString+mesExmString+mesSendString+generatedPromtCache;
                         
@@ -1223,13 +1224,29 @@
 			//maybe a way to simulate this would be to disable the eventListener for people iOS.
 			
             $("#send_textarea").keydown(function (e) {							
-                if(e.which === 13 && !e.shiftKey && is_send_press == false) {	
+                if(e.which === 13 && !e.shiftKey && !e.ctrlKey && is_send_press == false) {	
                     is_send_press = true;										
                     e.preventDefault();											
                     Generate();
                     //$(this).closest("form").submit();
                 }
             });
+			
+			//RossAscends: Lets add some hotkeys
+			document.addEventListener('keydown', (event) => {
+				//console.log(event.key);
+				if(event.ctrlKey && event.key == "Enter") {				// Ctrl+Enter for Regeneration Last Response
+					//console.log('both CTRL and Enter were pressed');
+					if(is_send_press == false){
+						is_send_press = true;
+						Generate('regenerate');
+						//console.log('confirmed keypress was caught '+ event.key);
+					}
+				}else if(event.ctrlKey && event.key == "ArrowUp") {		//Ctrl+UpArrow for Connect to last server
+					document.getElementById('api_button').click();
+
+				}
+			});	
             
             //menu buttons
             var selected_button_style = { color: "#bcc1c8" };
@@ -1947,26 +1964,14 @@
                     callPopup('<h3>Start new chat?</h3>');
                 }
             });
-			//RossAscends: Lets add some hotkeys
-			document.addEventListener('keydown', (event) => {
-				if(event.ctrlKey && event.key == "Enter") {				// Ctrl+Enter for Regeneration Last Response
-					if(is_send_press == false){
-						is_send_press = true;
-						Generate('regenerate');
-					}
-				}else if(event.ctrlKey && event.key == "ArrowUp") {		//Ctrl+UpArrow for Connect to last server
-					document.getElementById('api_button').click();
-
-				}
-			});	
-						
+									
             $( "#option_regenerate" ).click(function() {
                 if(is_send_press == false){
                     is_send_press = true;
                     Generate('regenerate');
                 }
             });
-            // this function hides the input form, and shows the delete/cancel buttons fro deleting messages from chat
+            // this function hides the input form, and shows the delete/cancel buttons for deleting messages from chat
 			$( "#option_delete_mes" ).click(function() {
                 if(this_chid != undefined && !is_send_press){
                     $('#dialogue_del_mes').css('display','block');
