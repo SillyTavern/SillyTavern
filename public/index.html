@@ -2031,7 +2031,8 @@
                 $("#rm_ch_create_block").css("display", "none");
                 $("#rm_characters_block" ).css("display", "none");
 
-                async function memberClickHandler() {
+                async function memberClickHandler(event) {
+                    event.stopPropagation();
                     const id = $(this).data('id');
                     const isDelete = !!($(this).closest('#rm_group_members').length);
                     const template = $(this).clone();
