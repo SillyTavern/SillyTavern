@@ -58,6 +58,25 @@
             }];
             
             var chat_create_date = 0;
+			
+			//RossAscends: Added function to format dates used in files and chat timestamps to a humanized format.
+			//Mostly I wanted this to be for file names, but couldn't figure out exactly where the filename save code was as everything seemed to be connected. 
+			//During testing, this performs the same as previous date.now() structure.
+			//It also does not break old characters/chats, as the code just uses whatever timestamp exists in the chat.
+			//New chats made with characters will use this new formatting.
+			//Useable variable is (( humanizedISO8601Datetime ))
+			
+			var baseDate = new Date(Date.now());
+			var humanYear = baseDate.getFullYear();
+			var humanMonth = (baseDate.getMonth()+1);
+			var humanDate = baseDate.getDate();
+			var humanHour = (baseDate.getHours() < 10? '0' : '') + baseDate.getHours();
+			var humanMinute = (baseDate.getMinutes() < 10? '0' : '') + baseDate.getMinutes();
+			var humanSecond = (baseDate.getSeconds() < 10? '0' : '') + baseDate.getSeconds();
+			var humanMillisecond = (baseDate.getMilliseconds() < 10? '0' : '') + baseDate.getMilliseconds();
+			var humanizedISO8601DateTime = (humanYear+"-"+humanMonth+"-"+humanDate+" @"+humanHour+"h "+humanMinute+"m "+humanSecond+"s "+humanMillisecond+"ms");
+			
+			
             var default_ch_mes = "Hello";
             var count_view_mes = 0;
             var mesStr = '';
@@ -1538,7 +1557,6 @@
                     }
                 });
                 var save_chat = [{user_name:default_user_name, character_name:name2,create_date: chat_create_date}, ...chat];
-
                 jQuery.ajax({    
                     type: 'POST', 
                     url: '/savechat', 
@@ -2177,7 +2195,7 @@
                 }else{
                     $("#mes_example_textarea").val(create_save_mes_example);
                 }
-                $("#avatar_div").css("display", "flex");
+                $("#avatar_div").css("display", "grid");
                 $("#avatar_load_preview").attr('src',default_avatar);
                 $("#name_div").css("display", "block");
                 
@@ -2476,7 +2494,8 @@
                 if(popup_type == 'new_chat' && this_chid != undefined && menu_type != "create"){//Fix it; New chat doesn't create while open create character menu
                     clearChat();
                     chat.length = 0;
-                    characters[this_chid].chat = Date.now();
+					characters[this_chid].chat = Date.now(); //RossAscends: added character name to new chat filenames and replaced Date.now() with humanizedISO8601DateTime;
+                    //characters[this_chid].chat = (name2 +' - '+ humanizedISO8601DateTime); //RossAscends: added character name to new chat filenames and replaced Date.now() with humanizedISO8601DateTime;
                     $("#selected_chat_pole").val(characters[this_chid].chat);
                     timerSaveEdit = setTimeout(() => {$("#create_button").click();},durationSaveEdit);
                     getChat();
@@ -2577,15 +2596,17 @@
                 
             });
             function read_avatar_load(input) {
+
                 if (input.files && input.files[0]) {
                     var reader = new FileReader();
                     if(selected_button == 'create'){
+					
                         create_save_avatar = input.files;
                     }
                     reader.onload = function (e) {
 
                         if(selected_button == 'character_edit'){
-                            
+      
                             timerSaveEdit = setTimeout(() => {$("#create_button").click();},durationSaveEdit);
                         }
                         $('#avatar_load_preview')
@@ -2600,15 +2621,18 @@
                 }
             }
             $("#add_avatar_button").change(function(){
+			
                 is_mes_reload_avatar = Date.now();
                 read_avatar_load(this);
             });
             $( "#form_create" ).submit(function(e) {
+
                 $('#rm_info_avatar').html('');
                 var formData = new FormData($("#form_create").get(0));
                 if($("#form_create").attr("actiontype") == "createcharacter"){
                     
                     if($("#character_name_pole").val().length > 0){
+						
                         jQuery.ajax({    
                             type: 'POST', 
                             url: '/createcharacter', 
@@ -2644,6 +2668,7 @@
                                 
                                 $('#create_button').removeAttr("disabled");
                                 $("#add_avatar_button").replaceWith($("#add_avatar_button").val('').clone(true));
+
                                 $('#create_button').attr('value','Create');
                                 if(true){
                                     $('#rm_info_block').transition({ opacity: 0 ,duration: 0});
@@ -2652,6 +2677,7 @@
                                     select_rm_info("Character created");
 
                                     $('#rm_info_block').transition({ opacity: 1.0 ,duration: 2000});
+
                                     getCharacters();
                                 }else{
                                     $('#result_info').html(html);
@@ -2665,7 +2691,8 @@
                         $('#result_info').html("Name not entered");
                     }
                 }else{
-                    //console.log($("#add_avatar_button").val());
+                    console.log($("#add_avatar_button").val());
+
                     jQuery.ajax({    
                         type: 'POST', 
                         url: '/editcharacter', 
@@ -2703,12 +2730,13 @@
                                 }
                             }
                             $('#create_button').removeAttr("disabled");
+						
                             getCharacters();
 
-                            
+
                             $("#add_avatar_button").replaceWith($("#add_avatar_button").val('').clone(true));
                             $('#create_button').attr('value','Save');
-
+							
                             var count_tokens = encode(JSON.stringify(characters[this_chid].description+characters[this_chid].personality+characters[this_chid].scenario+characters[this_chid].mes_example)).length;
                             if(count_tokens < 1024){
                                 $('#result_info').html(count_tokens+" Tokens");
@@ -3609,7 +3637,7 @@
                 //console.log(characters[this_chid].chat);
                 jQuery.ajax({    
                     type: 'POST', 
-                    url: '/getallchatsofchatacter', 
+                    url: '/getallchatsofcharacter', 
                     data: JSON.stringify({avatar_url: characters[this_chid].avatar}),
                     beforeSend: function(){
                         //$('#create_button').attr('value','Creating...'); 
@@ -3628,7 +3656,7 @@
                             if(mes.length > strlen){
                                 mes = '...'+mes.substring(mes.length - strlen);
                             }
-                            $('#select_chat_div').append('<div class="select_chat_block" file_name="'+data[key]['file_name']+'"><div class=avatar><img src="characters/'+characters[this_chid]['avatar']+'" style="width: 33px;"></div><div class="select_chat_block_filename">'+data[key]['file_name']+'</div><div class="select_chat_block_mes">'+mes+'</div></div>');
+                            $('#select_chat_div').append('<div class="select_chat_block" file_name="'+data[key]['file_name']+'"><div class=avatar><img src="characters/'+characters[this_chid]['avatar']+'""></div><div class="select_chat_block_filename">'+data[key]['file_name']+'</div><div class="select_chat_block_mes">'+mes+'</div></div>');
                             if(characters[this_chid]['chat'] == data[key]['file_name'].replace('.jsonl', '')){
                                 //children().last()
                                 $('#select_chat_div').children(':nth-last-child(1)').attr('highlight', true);
@@ -3785,7 +3813,7 @@
                 $("#character_import_file_type").val(format);
                 //console.log(format);
                 var formData = new FormData($("#form_import").get(0));
-                
+
                 jQuery.ajax({    
                     type: 'POST', 
                     url: '/importcharacter', 
@@ -4386,7 +4414,7 @@
     </div>
     <!--<div id="shadow_character_popup">
         </div>-->
-        <div id="character_popup">
+    <div id="character_popup">
             
             <div id="character_popup_text">
                 <img id="character_cross" src="img/cross.png" style="position: absolute; right: 15px; top: 15px; width: 20px; height: 20px; cursor: pointer; opacity: 0.6">
@@ -4601,10 +4629,10 @@
 
     <nav id="right-nav-panel">
         <div id="right-nav-panel-tabs">
-			<div class="right_menu_button" id="rm_button_characters">&#x1F464;</div>
-			<div class="right_menu_button" id="rm_button_settings">⚙️</div>
+			<div class="right_menu_button" id="rm_button_characters" title="Select/Create Characters">&#x1F464;</div>
+			<div class="right_menu_button" id="rm_button_settings" title="API and AI Settings">⚙️</div>
 			<div class="right_menu_button" id="rm_button_selected_ch"><h2></h2></div>
-			<div class="right_menu_button" id="rm_button_panel_pin_div"><input type="checkbox" id="rm_button_panel_pin"></div>
+			<div class="right_menu_button" id="rm_button_panel_pin_div"><input type="checkbox" id="rm_button_panel_pin" title="Locked = Settings panel stays open"></div>
 		</div>
 		
         <div id="rm_ch_create_block" class="right_menu" style="display: none;">
@@ -4616,18 +4644,23 @@
                     <h4>Name</h4><h5>Character name</h5>
                 <input id="character_name_pole" name="ch_name" class="text_pole" maxlength="120" value="" autocomplete="off">
                 </div>
+				
+				<!--<div id="avatar_div" class="avatar_div" style="display: block;">
+                    <div id="avatar_div_div" class="avatar">
+						<img id="avatar_load_preview" src="img/fluffy.png" alt="avatar">
+					</div>
+					<input type="file" id="add_avatar_button" name="avatar" accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp">                    
+                </div>-->
+				
                 <div id="avatar_div" class="avatar_div">
                     <div id="avatar_div_div" class="avatar">
 						<img id="avatar_load_preview" src="img/fluffy.png" alt="avatar">
 					</div>
 					
-					<label id="add_avatar_button">
-						<input type="file" name="avatar" accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp">
+					<label for="add_avatar_button" class="add_avatar_button_label" title="Click to select a new avatar for this character">
+						<input type="file" id="add_avatar_button" name="avatar" accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp">
 						Change Avatar
 					</label>
-					
-					
-                    
                 </div>
                 
                 <div id="description_div">
@@ -4726,7 +4759,11 @@
                 <option value="novel">NovelAI</option>
             </select>
             <div id="kobold_api" style="position: relative;">
-                <div style="display:none; position: absolute; right:188px; top:-34px; opacity:0.20;"><a href="https://github.com/KoboldAI/KoboldAI-Client" target="_blank"><img src="img/kobold.png" style="width:40px;height:40px;"></a></div>
+                <div style="position: absolute; right:188px; top:-34px; opacity:0.20;">
+					<a href="https://github.com/KoboldAI/KoboldAI-Client" target="_blank">
+						<img src="img/kobold.png" style="width:40px;height:40px;">
+					</a>
+				</div>
                 <form  action="javascript:void(null);" method="post" enctype="multipart/form-data">
 
                 <h4>API url</h4><h5>Example: http://127.0.0.1:5000/api </h5>
@@ -4806,7 +4843,7 @@
                 <h4>Name</h4>
                 <input id="your_name" name="your_name" class="text_pole" maxlength="35" value="" autocomplete="off">
 				<br>
-                <input id="your_name_button" type="submit" value="Change">
+                <input id="your_name_button" type="submit" title="Click to set a new User Name (reloads page)" value="Change Name">
             </form>
             <hr>
 
@@ -4871,15 +4908,15 @@
         </div>
         <div id="rm_characters_block" class="right_menu">
             <div id="rm_button_create" class="right_menu_button"><h2>+New Character</h2></div>
-            <div id="character_import_button" class="right_menu_button"><h2>+Import</h2></div>
+            <div id="character_import_button" class="right_menu_button"><h2>+Import Character</h2></div>
             <div id="rm_button_group_chats" class="right_menu_button"><h2>+New Group</h2></div>
 			
-			<div id="characloud_url" title="Find more characters on CharaCloud (coming soon)">
-				<img src="img/cloud_logo.png">
-			</div>
 			
             <form id="form_character_search_form" action="javascript:void(null);">
                 <input id="character_search_bar" class="text_pole" type="search" placeholder="Search here..." />
+			    <div id="characloud_url" title="Find more characters on CharaCloud (coming soon)">
+				    <img src="img/cloud_logo.png">
+			    </div>
             </form>
 
             <div id="rm_print_characters_block"></div>
