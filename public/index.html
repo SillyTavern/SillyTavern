@@ -714,6 +714,14 @@
                 }
                 return mes;
             }
+            function appendImageToMessage(mes, messageElement) {
+                if (mes.extra?.image) {
+                    const image = document.createElement('img');
+                    image.src = mes.extra?.image;
+                    image.classList.add('img_extra');
+                    messageElement.find('.mes_text').prepend(image);
+                }
+            }
             function addOneMessage(mes){
                 //var message = mes['mes'];
                 //message = mes['mes'].replace(/^\s+/g, '');
@@ -767,13 +775,7 @@
                 const newMessage = $(`#chat [mesid="${count_view_mes}"]`);
                 newMessage.data('isSystem', isSystem);
 
-                if (mes.extra?.image) {
-                    const image = document.createElement('img');
-                    image.src = mes.extra?.image;
-                    image.classList.add('img_extra');
-                    newMessage.find('.mes_text').css('font-size', '0px');
-                    newMessage.find('.mes_text').append(image);
-                }
+                appendImageToMessage(mes, newMessage);
 
                 if (isSystem) {
                     newMessage.find('.mes_edit').hide();
@@ -3559,6 +3561,7 @@
                 $(this).parent().children('.mes_edit_done').css('display','none');
                 $(this).parent().children('.mes_edit').css('display','inline-block');
                 $(this).parent().parent().children('.mes_text').append(messageFormating(text,this_edit_mes_chname));
+                appendImageToMessage(chat[this_edit_mes_id], $(this).closest('.mes'));
                 this_edit_mes_id = undefined;
             });
             $(document).on('click', '.mes_edit_done', function(){
@@ -3586,6 +3589,7 @@
                 div.parent().parent().children('.mes_text').append(messageFormating(text,this_edit_mes_chname));
                 div.parent().parent().children('.mes_bias').empty();
                 div.parent().parent().children('.mes_bias').append(messageFormating(bias));
+                appendImageToMessage(chat[this_edit_mes_id], div.closest('.mes'));
                 this_edit_mes_id = undefined;
                 saveChat();
             }
