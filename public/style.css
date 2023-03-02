@@ -1585,7 +1585,7 @@ label.checkbox :checked + span:after {
 #select_chat_popup{
     display: block;
     grid-template-rows: 50px 100px 100px auto 45px;
-    max-width:450px;
+    max-width:800px;
     height: 440px;
     position: absolute;
     z-index: 2066;
@@ -1628,7 +1628,7 @@ label.checkbox :checked + span:after {
     margin-top: 30px;
     overflow-x: hidden;
     overflow-y: scroll;
-    max-width:430px;
+    
     height: 350px;
 }
 #select_chat_div hr{
@@ -1641,18 +1641,21 @@ label.checkbox :checked + span:after {
 }
 
 .select_chat_block{
-    border-radius: 5px;
+border-radius: 5px;
     margin-right: 10px;
-    cursor:pointer;
+    margin-bottom: 10px;
+    border: 1px solid rgba(255,255,255,0.2);
+    padding: 5px;
     display: grid;
-    grid-template-columns: 60px auto;
-    grid-template-rows: 26px auto;
+	grid-template-columns: min-content auto;
+    grid-template-rows: auto auto;
+    grid-gap: 10px;
 }
 .select_chat_block:hover {
-    background-color: #ffffff07;
+    background-color: rgba(255,255,255,0.2);
 }
 .select_chat_block[highlight]{
-    background-color: #ffffff09;/* #c2b07a12; */
+    background-color: rgba(100,100,255,0.3);
 }
 
 .select_chat_block .avatar{
@@ -1669,8 +1672,8 @@ label.checkbox :checked + span:after {
 }
 
 .select_chat_block .avatar {
-	height:30px;
-	width:30px;
+	/*height:30px;
+	width:30px;*/
 	}
 
 #advanced_div{

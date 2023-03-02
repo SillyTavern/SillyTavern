@@ -53,6 +53,25 @@
             }];
             
             var chat_create_date = 0;
+			
+			//RossAscends: Added function to format dates used in files and chat timestamps to a humanized format.
+			//Mostly I wanted this to be for file names, but couldn't figure out exactly where the filename save code was as everything seemed to be connected. 
+			//During testing, this performs the same as previous date.now() structure.
+			//It also does not break old characters/chats, as the code just uses whatever timestamp exists in the chat.
+			//New chats made with characters will use this new formatting.
+			//Useable variable is (( humanizedISO8601Datetime ))
+			
+			var baseDate = new Date(Date.now());
+			var humanYear = baseDate.getFullYear();
+			var humanMonth = (baseDate.getMonth()+1);
+			var humanDate = baseDate.getDate();
+			var humanHour = (baseDate.getHours() < 10? '0' : '') + baseDate.getHours();
+			var humanMinute = (baseDate.getMinutes() < 10? '0' : '') + baseDate.getMinutes();
+			var humanSecond = (baseDate.getSeconds() < 10? '0' : '') + baseDate.getSeconds();
+			var humanMillisecond = (baseDate.getMilliseconds() < 10? '0' : '') + baseDate.getMilliseconds();
+			var humanizedISO8601DateTime = (humanYear+"-"+humanMonth+"-"+humanDate+" @"+humanHour+"h "+humanMinute+"m "+humanSecond+"s "+humanMillisecond+"ms");
+			
+			
             var default_ch_mes = "Hello";
             var count_view_mes = 0;
             var mesStr = '';
@@ -316,7 +335,7 @@
                 characters.forEach(function(item, i, arr) {
                     var this_avatar = default_avatar;
                     if(item.avatar != 'none'){
-                        this_avatar = "characters/"+item.avatar+"#"+Date.now();
+                        this_avatar = "characters/"+item.avatar+"#"+humanizedISO8601DateTime; //Date.now();
 
                     }
                     $("#rm_print_characters_block").prepend('<div class=character_select chid='+i+'><div class=avatar><img src="'+this_avatar+'"></div><div class=ch_name>'+item.name+'</div></div>');
@@ -654,7 +673,7 @@
                         chat[chat.length-1]['name'] = name1;
                         chat[chat.length-1]['is_user'] = true;
                         chat[chat.length-1]['is_name'] = true;
-                        chat[chat.length-1]['send_date'] = Date.now();
+                        chat[chat.length-1]['send_date'] = humanizedISO8601DateTime; //Date.now();
                         chat[chat.length-1]['mes'] = textareaText;
                         addOneMessage(chat[chat.length-1]);
                     }
@@ -1071,7 +1090,7 @@
                                         chat[chat.length-1]['name'] = name2;
                                         chat[chat.length-1]['is_user'] = false;
                                         chat[chat.length-1]['is_name'] = this_mes_is_name;
-                                        chat[chat.length-1]['send_date'] = Date.now();
+                                        chat[chat.length-1]['send_date'] = humanizedISO8601DateTime; //Date.now();
                                         getMessage = $.trim(getMessage);
                                         chat[chat.length-1]['mes'] = getMessage;
                                         addOneMessage(chat[chat.length-1]);
@@ -1117,7 +1136,6 @@
                     }
                 });
                 var save_chat = [{user_name:default_user_name, character_name:name2,create_date: chat_create_date}, ...chat];
-
                 jQuery.ajax({    
                     type: 'POST', 
                     url: '/savechat', 
@@ -1162,7 +1180,7 @@
                             chat.shift();
 
                         }else{
-                            chat_create_date = Date.now();
+                            chat_create_date = humanizedISO8601DateTime; //Date.now();
                         }
                         //console.log(chat);
                         getChatResult();
@@ -1195,7 +1213,7 @@
                     chat[0]['name'] = name2;
                     chat[0]['is_user'] = false;
                     chat[0]['is_name'] = true;
-                    chat[0]['send_date'] = Date.now();
+                    chat[0]['send_date'] = humanizedISO8601DateTime; //Date.now();
                     if(characters[this_chid].first_mes != ""){
                         chat[0]['mes'] = characters[this_chid].first_mes;
                     }else{
@@ -1402,7 +1420,7 @@
                 if(characters[chid].avatar != 'none'){
                         this_avatar = "characters/"+characters[chid].avatar;
                 }
-                $("#avatar_load_preview").attr('src',this_avatar+"#"+Date.now());
+                $("#avatar_load_preview").attr('src',this_avatar+"#"+humanizedISO8601DateTime); //Date.now());
                 $("#name_div").css("display", "none");
                 
                 $("#form_create").attr("actiontype", "editcharacter");
@@ -1567,7 +1585,7 @@
                 if(popup_type == 'new_chat' && this_chid != undefined && menu_type != "create"){//Fix it; New chat doesn't create while open create character menu
                     clearChat();
                     chat.length = 0;
-                    characters[this_chid].chat = Date.now();
+                    characters[this_chid].chat = (name2 +' - '+ humanizedISO8601DateTime); //RossAscends: added character name to new chat filenames and replaced Date.now() with humanizedISO8601DateTime;
                     $("#selected_chat_pole").val(characters[this_chid].chat);
                     timerSaveEdit = setTimeout(() => {$("#create_button").click();},durationSaveEdit);
                     getChat();
@@ -1688,7 +1706,7 @@
                 }
             }
             $("#add_avatar_button").change(function(){
-                is_mes_reload_avatar = Date.now();
+                is_mes_reload_avatar = humanizedISO8601DateTime; //Date.now();
                 read_avatar_load(this);
             });
             $( "#form_create" ).submit(function(e) {
@@ -2552,7 +2570,7 @@
                 //console.log(characters[this_chid].chat);
                 jQuery.ajax({    
                     type: 'POST', 
-                    url: '/getallchatsofchatacter', 
+                    url: '/getallchatsofcharacter', 
                     data: JSON.stringify({avatar_url: characters[this_chid].avatar}),
                     beforeSend: function(){
                         //$('#create_button').attr('value','Creating...'); 
@@ -2571,7 +2589,7 @@
                             if(mes.length > strlen){
                                 mes = '...'+mes.substring(mes.length - strlen);
                             }
-                            $('#select_chat_div').append('<div class="select_chat_block" file_name="'+data[key]['file_name']+'"><div class=avatar><img src="characters/'+characters[this_chid]['avatar']+'" style="width: 33px;"></div><div class="select_chat_block_filename">'+data[key]['file_name']+'</div><div class="select_chat_block_mes">'+mes+'</div></div>');
+                            $('#select_chat_div').append('<div class="select_chat_block" file_name="'+data[key]['file_name']+'"><div class=avatar><img src="characters/'+characters[this_chid]['avatar']+'""></div><div class="select_chat_block_filename">'+data[key]['file_name']+'</div><div class="select_chat_block_mes">'+mes+'</div></div>');
                             if(characters[this_chid]['chat'] == data[key]['file_name'].replace('.jsonl', '')){
                                 //children().last()
                                 $('#select_chat_div').children(':nth-last-child(1)').attr('highlight', true);
