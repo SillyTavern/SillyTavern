@@ -2546,3 +2546,20 @@ a {
     box-shadow: -5px 0 10px 0 rgba(0, 0, 0, 0.50);
     overflow-y: auto;
 }
+
+/* Message images */
+.mes img.img_extra {
+    max-width: 600px;
+    max-height: 300px;
+    border-radius: 10px;
+}
+
+.mes img.img_extra ~ * {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .mes img.img_extra {
+        max-width: 100%;
+    }
+}
