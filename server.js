@@ -415,7 +415,7 @@ function checkServer(){
 
 //***************** Main functions
 function charaFormatData(data){
-    var char = {"name": data.ch_name, "description": data.description, "personality": data.personality, "first_mes": data.first_mes, "avatar": 'none', "chat": humanizedISO8601DateTime, "mes_example": data.mes_example, "scenario": data.scenario, "create_date": humanizedISO8601DateTime};
+    var char = {"name": data.ch_name, "description": data.description, "personality": data.personality, "first_mes": data.first_mes, "avatar": 'none', "chat": Date.now(), "mes_example": data.mes_example, "scenario": data.scenario, "create_date": Date.now()};
     return char;
 }
 app.post("/createcharacter", urlencodedParser, function(request, response){
@@ -599,7 +599,7 @@ app.post("/getcharacters", jsonParser, function(request, response){
     //console.log(directories[0]);
     //characters = {};
     //character_i = 0;
-    //getCharaterFile(directories, response,0);
+    //getCharacterFile(directories, response,0);
     
 });
 app.post("/getbackgrounds", jsonParser, function(request, response){
@@ -766,7 +766,7 @@ app.post('/getsettings', jsonParser, (request, response) => { //Wintermute's cod
 });
 
 
-function getCharaterFile(directories,response,i){ //old need del
+function getCharacterFile(directories,response,i){ //old need del
     if(directories.length > i){
         
         fs.stat(charactersPath+directories[i]+'/'+directories[i]+".json", function(err, stat) {
@@ -782,11 +782,11 @@ function getCharaterFile(directories,response,i){ //old need del
                     characters[character_i] = data;
                     i++;
                     character_i++;
-                    getCharaterFile(directories,response,i);
+                    getCharacterFile(directories,response,i);
                 });
             }else{
                 i++;
-                getCharaterFile(directories,response,i);
+                getCharacterFile(directories,response,i);
             }
         });
         
@@ -987,12 +987,12 @@ app.post("/importcharacter", urlencodedParser, function(request, response){
                     
                     if(jsonData.name !== undefined){
                         png_name = getPngName(jsonData.name);
-                        let char = {"name": jsonData.name, "description": jsonData.description ?? '', "personality": jsonData.personality ?? '', "first_mes": jsonData.first_mes ?? '', "avatar": 'none', "chat": humanizedISO8601DateTime, "mes_example": jsonData.mes_example ?? '', "scenario": jsonData.scenario ?? '', "create_date": humanizedISO8601DateTime};
+                        let char = {"name": jsonData.name, "description": jsonData.description ?? '', "personality": jsonData.personality ?? '', "first_mes": jsonData.first_mes ?? '', "avatar": 'none', "chat": Date.now(), "mes_example": jsonData.mes_example ?? '', "scenario": jsonData.scenario ?? '', "create_date": Date.now()};
                         char = JSON.stringify(char);
                         charaWrite('./public/img/fluffy.png', char, png_name, response, {file_name: png_name});
                     }else if(jsonData.char_name !== undefined){//json Pygmalion notepad
                         png_name = getPngName(jsonData.char_name);
-                        let char = {"name": jsonData.char_name, "description": jsonData.char_persona ?? '', "personality": '', "first_mes": jsonData.char_greeting ?? '', "avatar": 'none', "chat": humanizedISO8601DateTime, "mes_example": jsonData.example_dialogue ?? '', "scenario": jsonData.world_scenario ?? '', "create_date": humanizedISO8601DateTime};
+                        let char = {"name": jsonData.char_name, "description": jsonData.char_persona ?? '', "personality": '', "first_mes": jsonData.char_greeting ?? '', "avatar": 'none', "chat": Date.now(), "mes_example": jsonData.example_dialogue ?? '', "scenario": jsonData.world_scenario ?? '', "create_date": Date.now()};
                         char = JSON.stringify(char);
                         charaWrite('./public/img/fluffy.png', char, png_name, response, {file_name: png_name});
                     }else{
@@ -1008,7 +1008,7 @@ app.post("/importcharacter", urlencodedParser, function(request, response){
                     png_name = getPngName(jsonData.name);
                     
                     if(jsonData.name !== undefined){
-                        let char = {"name": jsonData.name, "description": jsonData.description ?? '', "personality": jsonData.personality ?? '', "first_mes": jsonData.first_mes ?? '', "avatar": 'none', "chat": humanizedISO8601DateTime, "mes_example": jsonData.mes_example ?? '', "scenario": jsonData.scenario ?? '', "create_date": humanizedISO8601DateTime};
+                        let char = {"name": jsonData.name, "description": jsonData.description ?? '', "personality": jsonData.personality ?? '', "first_mes": jsonData.first_mes ?? '', "avatar": 'none', "chat": Date.now(), "mes_example": jsonData.mes_example ?? '', "scenario": jsonData.scenario ?? '', "create_date": Date.now()};
                         char = JSON.stringify(char);
                         charaWrite('./uploads/'+filedata.filename, char, png_name, response, {file_name: png_name});
                         /*
@@ -1067,7 +1067,7 @@ app.post("/importchat", urlencodedParser, function(request, response){
                         new_chat[i] = {};
                         new_chat[0]['user_name'] = 'You';
                         new_chat[0]['character_name'] = ch_name;
-                        new_chat[0]['create_date'] = humanizedISO8601DateTime //Date.now();
+                        new_chat[0]['create_date'] = Date.now() //Date.now();
                         i++;
                         jsonData.histories.histories[0].msgs.forEach(function(item) {
                             new_chat[i] = {};
@@ -1078,7 +1078,7 @@ app.post("/importchat", urlencodedParser, function(request, response){
                             }
                             new_chat[i]['is_user'] = item.src.is_human;
                             new_chat[i]['is_name'] = true;
-                            new_chat[i]['send_date'] = humanizedISO8601DateTime //Date.now();
+                            new_chat[i]['send_date'] = Date.now() //Date.now();
                             new_chat[i]['mes'] = item.text;
                             i++;
                         });
@@ -1113,7 +1113,7 @@ app.post("/importchat", urlencodedParser, function(request, response){
                     let jsonData = JSON.parse(line);
                     
                     if(jsonData.user_name !== undefined){
-                        fs.copyFile('./uploads/'+filedata.filename, chatsPath+avatar_url+'/'+ch_name+' - '+humanizedISO8601DateTime+'.jsonl', (err) => { //Date.now() replaced for humanizedISO8601DateTime
+                        fs.copyFile('./uploads/'+filedata.filename, chatsPath+avatar_url+'/'+ch_name+' - '+humanizedISO8601DateTime+'.jsonl', (err) => { //added character name and replaced Date.now() with humanizedISO8601DateTime
                             if(err) {
                                 response.send({error:true});
                                 return console.log(err);
@@ -1174,7 +1174,7 @@ function convertStage1(){
     charactersB = {};
     character_ib = 0;
     var folderForDel = {};
-    getCharaterFile2(directories, 0);
+    getCharacterFile2(directories, 0);
 }
 function convertStage2(){
     //directoriesB = JSON.parse(directoriesB);
@@ -1192,7 +1192,7 @@ function convertStage2(){
         //console.log(directoriesB[key]);
         
         var char = JSON.parse(charactersB[key]);
-        char.create_date = humanizedISO8601DateTime;
+        char.create_date = Date.now();
         charactersB[key] = JSON.stringify(char);
         var avatar = 'public/img/fluffy.png';
         if(char.avatar !== 'none'){
@@ -1222,7 +1222,7 @@ function convertStage2(){
             }
             let i = 0;
             let ii = 0;
-            new_chat_data[i] = {user_name:'You', character_name:char.name, create_date: humanizedISO8601DateTime};
+            new_chat_data[i] = {user_name:'You', character_name:char.name, create_date: Date.now()};
             i++;
             ii++;
             chat_data.forEach(function(mes) {
@@ -1238,14 +1238,14 @@ function convertStage2(){
                             new_chat_data[ii]['name'] = char.name;
                             new_chat_data[ii]['is_user'] = false;
                             new_chat_data[ii]['is_name'] = is_name;
-                            new_chat_data[ii]['send_date'] = humanizedISO8601DateTime; //Date.now();
+                            new_chat_data[ii]['send_date'] = Date.now(); //Date.now();
 
                         }else{
                             mes = mes.replace(this_chat_user_name+':','');
                             new_chat_data[ii]['name'] = 'You';
                             new_chat_data[ii]['is_user'] = true;
                             new_chat_data[ii]['is_name'] = true;
-                            new_chat_data[ii]['send_date'] = humanizedISO8601DateTime //Date.now();
+                            new_chat_data[ii]['send_date'] = Date.now() //Date.now();
 
                         }
                         new_chat_data[ii]['mes'] = mes.trim();
@@ -1311,7 +1311,7 @@ function getDirectories2(path) {
     })
     .reverse();
 }
-function getCharaterFile2(directories,i){
+function getCharacterFile2(directories,i){
     if(directories.length > i){
             fs.stat('public/characters/'+directories[i]+'/'+directories[i]+".json", function(err, stat) {
                 if (err == null) {
@@ -1328,11 +1328,11 @@ function getCharaterFile2(directories,i){
                             character_ib++;
                         }
                         i++;
-                        getCharaterFile2(directories,i);
+                        getCharacterFile2(directories,i);
                     });
                 }else{
                     i++;
-                    getCharaterFile2(directories,i);
+                    getCharacterFile2(directories,i);
                 }
             });
     }else{
