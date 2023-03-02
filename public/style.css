@@ -493,9 +493,9 @@ input::file-selector-button {
     font-weight: bold;
     color: #fff;
     padding: 0.5em;
-    border: 1px solid yellow; /*#666;*/
+    border: 1px solid #666;
     border-radius: 3px;
-    background-color: red; /*rgba(0,0,0,0.3);*/
+    background-color: rgba(0,0,0,0.3);
     cursor: pointer;
 	
 }
@@ -608,34 +608,34 @@ input[type=button] {
 #character_import_button h2{
     margin-top: auto;
     margin-bottom: auto;
-    font-size: 17px;
+    font-size: 15px;
     color: rgba(188, 193, 200, 1);
 	border: 1px solid #333;
 	background-color: rgba(0,0,0,0.3);
-	padding:6px;
+	padding:5px;
 	border-radius: 10px;
 }
 
 #rm_button_create h2{
     margin-top: auto;
     margin-bottom: auto;
-    font-size: 17px;
+    font-size: 15px;
     color: rgba(188, 193, 200, 1);
 	border: 1px solid #333;
 	background-color: rgba(0,0,0,0.3);
-	padding:6px;
+	padding:5px;
 	border-radius: 10px;
 }
 
 #characloud_url{
-    margin-right: 10px;
-    margin-top:0;
+margin-right: 0px;
+    margin-top: 0;
     float: right;
     cursor: pointer;
     border: 1px solid rgba(255,255,255,0.3);
     background-color: rgba(0,0,0,0.3);
     border-radius: 10px;
-    padding: 6px;
+    padding: 5px;
     opacity: 0.5;
 }
 
@@ -937,9 +937,11 @@ width: 103px;
 }
 
 .avatar_div{
-    margin-top: 16px;
-	vertical-align: middle;
-    align-items: center;
+	margin-top: 16px;
+    vertical-align: middle;
+    display: grid;
+    grid-template-columns: min-content min-content;
+	align-items:center;
 }
 .avatar_div .avatar{
     margin-left: 4px;
@@ -947,15 +949,16 @@ width: 103px;
     display: inline-block;
 }
 
-#add_avatar_button{
+.add_avatar_button_label{
     display: inline-block;
-	margin-left: 15px;
-	font-size: 0.75rem;
-	color: #666;
-	background-color: rgba(0,0,0,0.3);
-	border: 1px solid rgba(0,0,0,0.7);
-	border-radius: 5px;
-	cursor:pointer;
+    margin-left: 15px;
+    color: #666;
+    background-color: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.5);
+    padding: 5px;
+    border-radius: 5px;
+    cursor: pointer;
+    height: min-content;
 }
 #description_div{
     margin-top: 6px;
@@ -1924,7 +1927,7 @@ label.checkbox :checked + span:after {
 #select_chat_popup{
     display: block;
     grid-template-rows: 50px 100px 100px auto 45px;
-    max-width:450px;
+    max-width:800px;
     height: 440px;
     position: absolute;
     z-index: 2066;
@@ -1967,7 +1970,7 @@ label.checkbox :checked + span:after {
     margin-top: 30px;
     overflow-x: hidden;
     overflow-y: scroll;
-    max-width:430px;
+    
     height: 350px;
 }
 #select_chat_div hr{
@@ -1980,18 +1983,21 @@ label.checkbox :checked + span:after {
 }
 
 .select_chat_block{
-    border-radius: 5px;
+border-radius: 5px;
     margin-right: 10px;
-    cursor:pointer;
+    margin-bottom: 10px;
+    border: 1px solid rgba(255,255,255,0.2);
+    padding: 5px;
     display: grid;
-    grid-template-columns: 60px auto;
-    grid-template-rows: 26px auto;
+	grid-template-columns: min-content auto;
+    grid-template-rows: auto auto;
+    grid-gap: 10px;
 }
 .select_chat_block:hover {
-    background-color: #ffffff07;
+    background-color: rgba(255,255,255,0.2);
 }
 .select_chat_block[highlight]{
-    background-color: #ffffff09;/* #c2b07a12; */
+    background-color: rgba(100,100,255,0.3);
 }
 
 .select_chat_block .avatar{
@@ -2008,8 +2014,8 @@ label.checkbox :checked + span:after {
 }
 
 .select_chat_block .avatar {
-	height:30px;
-	width:30px;
+	/*height:30px;
+	width:30px;*/
 	}
 
 #advanced_div{
@@ -2081,7 +2087,7 @@ h2 {
 .right_menu_button h2 {
     margin-top: 0;
     margin-bottom: 0;
-    font-size: 1.5rem;
+    font-size: 1.25rem;
 	}
 
 a {

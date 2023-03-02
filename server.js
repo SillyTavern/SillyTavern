@@ -51,6 +51,24 @@ var response_getstatus_novel;
 var response_getlastversion;
 var api_key_novel;
 
+			//RossAscends: Added function to format dates used in files and chat timestamps to a humanized format.
+			//Mostly I wanted this to be for file names, but couldn't figure out exactly where the filename save code was as everything seemed to be connected. 
+			//During testing, this performs the same as previous date.now() structure.
+			//It also does not break old characters/chats, as the code just uses whatever timestamp exists in the chat.
+			//New chats made with characters will use this new formatting.
+			//Useable variable is (( humanizedISO8601Datetime ))
+			
+			var baseDate = new Date(Date.now());
+			var humanYear = baseDate.getFullYear();
+			var humanMonth = (baseDate.getMonth()+1);
+			var humanDate = baseDate.getDate();
+			var humanHour = (baseDate.getHours() < 10? '0' : '') + baseDate.getHours();
+			var humanMinute = (baseDate.getMinutes() < 10? '0' : '') + baseDate.getMinutes();
+			var humanSecond = (baseDate.getSeconds() < 10? '0' : '') + baseDate.getSeconds();
+			var humanMillisecond = (baseDate.getMilliseconds() < 10? '0' : '') + baseDate.getMilliseconds();
+			
+			var humanizedISO8601DateTime = (humanYear+"-"+humanMonth+"-"+humanDate+" @"+humanHour+"h "+humanMinute+"m "+humanSecond+"s "+humanMillisecond+"ms");
+
 var is_colab = false;
 var charactersPath = 'public/characters/';
 var chatsPath = 'public/chats/';
@@ -265,6 +283,7 @@ app.post("/generate", jsonParser, function(request, response_generate = response
     });
 });
 app.post("/savechat", jsonParser, function(request, response){
+	//console.log('/savechat/ entered');
     //console.log(request.data);
     //console.log(request.body.bg);
      //const data = request.body;
@@ -293,22 +312,23 @@ app.post("/getchat", jsonParser, function(request, response){
     //console.log(request);
     //console.log(request.body.chat);
     //var bg = "body {background-image: linear-gradient(rgba(19,21,44,0.75), rgba(19,21,44,0.75)), url(../backgrounds/"+request.body.bg+");}";
+	//console.log('/getchat entered');
     var dir_name = String(request.body.avatar_url).replace('.png','');
 
     fs.stat(chatsPath+dir_name, function(err, stat) {
             
-        if(stat === undefined){
+        if(stat === undefined){		//if no chat dir for the character is found, make one with the character name
 
             fs.mkdirSync(chatsPath+dir_name);
             response.send({});
             return;
         }else{
             
-            if(err === null){
+            if(err === null){ //if there is a dir, then read the requested file from the JSON call
                 
                 fs.stat(chatsPath+dir_name+"/"+request.body.file_name+".jsonl", function(err, stat) {
                     
-                    if (err === null) {
+                    if (err === null) { //if no error (the file exists), read the file
                         
                         if(stat !== undefined){
                             fs.readFile(chatsPath+dir_name+"/"+request.body.file_name+".jsonl", 'utf8', (err, data) => {
@@ -323,7 +343,7 @@ app.post("/getchat", jsonParser, function(request, response){
                                 // Iterate through the array of strings and parse each line as JSON
                                 const jsonData = lines.map(JSON.parse);
                                 response.send(jsonData);
-
+								//console.log('read the requested file')
 
                             });
                         }
@@ -337,6 +357,7 @@ app.post("/getchat", jsonParser, function(request, response){
                 console.error(err);
                 response.send({});
                 return;
+				
             }
         }
         
@@ -630,7 +651,7 @@ app.post("/getcharacters", jsonParser, function(request, response){
     //console.log(directories[0]);
     //characters = {};
     //character_i = 0;
-    //getCharaterFile(directories, response,0);
+    //getCharacterFile(directories, response,0);
     
 });
 app.post("/getbackgrounds", jsonParser, function(request, response){
@@ -848,7 +869,7 @@ function readWorldInfoFile(worldInfoName) {
     return worldInfo;
 }
 
-function getCharaterFile(directories,response,i){ //old need del
+function getCharacterFile(directories,response,i){ //old need del
     if(directories.length > i){
         
         fs.stat(charactersPath+directories[i]+'/'+directories[i]+".json", function(err, stat) {
@@ -864,11 +885,11 @@ function getCharaterFile(directories,response,i){ //old need del
                     characters[character_i] = data;
                     i++;
                     character_i++;
-                    getCharaterFile(directories,response,i);
+                    getCharacterFile(directories,response,i);
                 });
             }else{
                 i++;
-                getCharaterFile(directories,response,i);
+                getCharacterFile(directories,response,i);
             }
         });
         
@@ -987,7 +1008,7 @@ app.post("/generate_novelai", jsonParser, function(request, response_generate_no
     });
 });
 
-app.post("/getallchatsofchatacter", jsonParser, function(request, response){
+app.post("/getallchatsofcharacter", jsonParser, function(request, response){
     if(!request.body) return response.sendStatus(400);
 
     var char_dir = (request.body.avatar_url).replace('.png','')
@@ -1003,10 +1024,10 @@ app.post("/getallchatsofchatacter", jsonParser, function(request, response){
 
         // sort the files by name
         //jsonFiles.sort().reverse();
-
         // print the sorted file names
         var chatData = {};
-        let ii = jsonFiles.length;
+        let ii = jsonFiles.length;	//this is the number of files belonging to the character
+		
         for(let i = jsonFiles.length-1; i >= 0; i--){
             const file = jsonFiles[i];
 
@@ -1017,11 +1038,9 @@ app.post("/getallchatsofchatacter", jsonParser, function(request, response){
             });
 
             let lastLine;
-
             rl.on('line', (line) => {
-                lastLine = line;
+				lastLine = line;
             });
-
             rl.on('close', () => {
                 if(lastLine){
                     let jsonData = JSON.parse(lastLine);
@@ -1155,7 +1174,7 @@ app.post("/importchat", urlencodedParser, function(request, response){
                         new_chat[i] = {};
                         new_chat[0]['user_name'] = 'You';
                         new_chat[0]['character_name'] = ch_name;
-                        new_chat[0]['create_date'] = Date.now();
+                        new_chat[0]['create_date'] = Date.now() //Date.now();
                         i++;
                         jsonData.histories.histories[0].msgs.forEach(function(item) {
                             new_chat[i] = {};
@@ -1166,12 +1185,13 @@ app.post("/importchat", urlencodedParser, function(request, response){
                             }
                             new_chat[i]['is_user'] = item.src.is_human;
                             new_chat[i]['is_name'] = true;
-                            new_chat[i]['send_date'] = Date.now();
+                            new_chat[i]['send_date'] = Date.now() //Date.now();
                             new_chat[i]['mes'] = item.text;
                             i++;
                         });
                         const chatJsonlData = new_chat.map(JSON.stringify).join('\n');
-                        fs.writeFile(chatsPath+avatar_url+'/'+Date.now()+'.jsonl', chatJsonlData, 'utf8', function(err) {
+                        fs.writeFile(chatsPath+avatar_url+'/'+ch_name+' - '+humanizedISO8601DateTime+' imported.jsonl', chatJsonlData, 'utf8', function(err) { //added ch_name and replaced Date.now() with humanizedISO8601DateTime
+						
                             if(err) {
                                 response.send(err);
                                 return console.log(err);
@@ -1200,7 +1220,7 @@ app.post("/importchat", urlencodedParser, function(request, response){
                     let jsonData = JSON.parse(line);
                     
                     if(jsonData.user_name !== undefined){
-                        fs.copyFile('./uploads/'+filedata.filename, chatsPath+avatar_url+'/'+Date.now()+'.jsonl', (err) => {
+                        fs.copyFile('./uploads/'+filedata.filename, chatsPath+avatar_url+'/'+ch_name+' - '+humanizedISO8601DateTime+'.jsonl', (err) => { //added character name and replaced Date.now() with humanizedISO8601DateTime
                             if(err) {
                                 response.send({error:true});
                                 return console.log(err);
@@ -1374,7 +1394,7 @@ function convertStage1(){
     charactersB = {};
     character_ib = 0;
     var folderForDel = {};
-    getCharaterFile2(directories, 0);
+    getCharacterFile2(directories, 0);
 }
 function convertStage2(){
     //directoriesB = JSON.parse(directoriesB);
@@ -1438,14 +1458,14 @@ function convertStage2(){
                             new_chat_data[ii]['name'] = char.name;
                             new_chat_data[ii]['is_user'] = false;
                             new_chat_data[ii]['is_name'] = is_name;
-                            new_chat_data[ii]['send_date'] = Date.now();
+                            new_chat_data[ii]['send_date'] = Date.now(); //Date.now();
 
                         }else{
                             mes = mes.replace(this_chat_user_name+':','');
                             new_chat_data[ii]['name'] = 'You';
                             new_chat_data[ii]['is_user'] = true;
                             new_chat_data[ii]['is_name'] = true;
-                            new_chat_data[ii]['send_date'] = Date.now();
+                            new_chat_data[ii]['send_date'] = Date.now() //Date.now();
 
                         }
                         new_chat_data[ii]['mes'] = mes.trim();
@@ -1511,7 +1531,7 @@ function getDirectories2(path) {
     })
     .reverse();
 }
-function getCharaterFile2(directories,i){
+function getCharacterFile2(directories,i){
     if(directories.length > i){
             fs.stat('public/characters/'+directories[i]+'/'+directories[i]+".json", function(err, stat) {
                 if (err == null) {
@@ -1528,11 +1548,11 @@ function getCharaterFile2(directories,i){
                             character_ib++;
                         }
                         i++;
-                        getCharaterFile2(directories,i);
+                        getCharacterFile2(directories,i);
                     });
                 }else{
                     i++;
-                    getCharaterFile2(directories,i);
+                    getCharacterFile2(directories,i);
                 }
             });
     }else{
