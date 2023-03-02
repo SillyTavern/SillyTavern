@@ -728,6 +728,10 @@ display: none;
     /* visibility: hidden; */
 }
 
+#rm_characters_block .right_menu_button {
+    padding-right: 15px;
+}
+
 #rm_characters_topbar {
     display: flex;
     flex-direction: column;
@@ -749,13 +753,14 @@ display: none;
     display: flex;
     flex-direction: row;
     align-items: center;
-    margin-bottom: 1rem;
-    margin-top: 1rem;
+    margin: 1rem auto;
+    width: 98%;
 }
 
 #character_search_bar {
     flex: 1;
     padding-left: 0.75em;
+    margin-left: 0;
     margin-right: 0.5rem;
     margin-bottom: 0;
 }
