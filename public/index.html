@@ -33,7 +33,9 @@
 
 
     <script type=module>
-			
+        // API OBJECT FOR EXTERNAL WIRING
+        window['TavernAI'] = {};
+
         import {encode, decode} from "../scripts/gpt-2-3-tokenizer/mod.js";
         $(document).ready(function(){
             const VERSION = '1.2.8';
@@ -764,6 +766,14 @@
 
                 const newMessage = $(`#chat [mesid="${count_view_mes}"]`);
                 newMessage.data('isSystem', isSystem);
+
+                if (mes.extra?.image) {
+                    const image = document.createElement('img');
+                    image.src = mes.extra?.image;
+                    image.classList.add('img_extra');
+                    newMessage.find('.mes_text').css('font-size', '0px');
+                    newMessage.find('.mes_text').append(image);
+                }
 
                 if (isSystem) {
                     newMessage.find('.mes_edit').hide();
@@ -3371,6 +3381,16 @@
                                 }
                             });
                             // end world info settings
+
+                            if (data.enable_extensions) {
+                                const src = 'scripts/extensions.js';
+                                if ($(`script[src="${src}"]`).length === 0) {
+                                    const script = document.createElement('script');
+                                    script.type = 'text/javascript';
+                                    script.src = src;
+                                    $('body').append(script);
+                                }
+                            }
                         }
                         if(!is_checked_colab) isColab();
                         
@@ -4326,6 +4346,19 @@
                 }
                 return array;
             }
+
+            window['TavernAI'].getContext = function() {
+                return {
+                    chat: chat,
+                    characters: characters,
+                    name1: name1,
+                    name2: name2,
+                    characterId: this_chid,
+                    onlineStatus: online_status,
+                    addOneMessage: addOneMessage,
+                    generate: Generate,
+                };
+            };
         });
     </script>
 <title>Tavern.AI</title>
@@ -4921,6 +4954,5 @@
             </form>
         </div>
     </div>
-<script src="scripts/extensions.js" type="module"></script>
 </body>
 </html>

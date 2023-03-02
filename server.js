@@ -25,7 +25,7 @@ const server_port = config.port;
 const whitelist = config.whitelist;
 const whitelistMode = config.whitelistMode;
 const autorun = config.autorun;
-
+const enableExtensions = config.enableExtensions;
 
 
 var Client = require('node-rest-client').Client;
@@ -804,7 +804,8 @@ app.post('/getsettings', jsonParser, (request, response) => { //Wintermute's cod
         koboldai_setting_names,
         world_names,
         novelai_settings,
-        novelai_setting_names
+        novelai_setting_names,
+        enable_extensions: enableExtensions,
     });
 });
 
