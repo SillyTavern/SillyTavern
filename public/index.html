@@ -42,15 +42,7 @@
             var default_user_name = "You";
             var name1 = default_user_name;
             var name2 = "Chloe";
-            var chat = [{
-                name: 'Chloe',
-                is_user: false,
-                is_name: true,
-                create_date: 0,
-                mes: '\n*You went inside. The air smelled of fried meat, tobacco and a hint of wine. A dim light was cast by candles, and a fire crackled in the fireplace. It seems to be a very pleasant place. Behind the wooden bar is an elf waitress, she is smiling. Her ears are very pointy, and there is a twinkle in her eye. She wears glasses and a white apron. As soon as she noticed you, she immediately came right up close to you.*\n\n' +
-                    ' "Hello there! How is your evening going?"<br><br>\n' +
-                    '<img src="img/star_dust_city.png" width=80%; display:block;">\n'
-            }];
+            var chat = [{name: 'Chloe',is_user: false,is_name: true,create_date: 0,mes: '\n*You went inside. The air smelled of fried meat, tobacco and a hint of wine. A dim light was cast by candles, and a fire crackled in the fireplace. It seems to be a very pleasant place. Behind the wooden bar is an elf waitress, she is smiling. Her ears are very pointy, and there is a twinkle in her eye. She wears glasses and a white apron. As soon as she noticed you, she immediately came right up close to you.*\n\n' +' "Hello there! How is your evening going?"<br><br>\n'+'<img src="img/star_dust_city.png" width=80%; display:block;">\n'}];
             
             var chat_create_date = 0;
 			
@@ -211,11 +203,11 @@
 					printMessages();
 					getBackgrounds();
 					getUserAvatars();
-					
+					autoloadchat();
+					autoconnect();
 				});
-
 				
-			    $('#characloud_url').click(function(){
+		    $('#characloud_url').click(function(){
 					window.open('https://boosty.to/tavernai', '_blank');
 				});	
 			function checkOnlineStatus(){
@@ -329,14 +321,12 @@
                     }
                 }
             }
-            
             function resultCheckStatus(){
                 is_api_button_press = false;  
                 checkOnlineStatus();
                 $("#api_loading").css("display", 'none');
                 $("#api_button").css("display", 'inline-block');
             }
-            
             function printCharacters(){
                 //console.log(1);
                 $("#rm_print_characters_block").empty();
@@ -415,7 +405,7 @@
 
                 }
             }
-       async function isColab() {
+			async function isColab() {
                 is_checked_colab = true;
                 const response = await fetch("/iscolab", {
                     method: "POST",
@@ -609,7 +599,6 @@
                 name = name+':';
                 return name;
             }
-
             $( "#send_but" ).click(function() {
                 //$( "#send_but" ).css({"background": "url('img/load.gif')","background-size": "100%, 100%", "background-position": "center center"});
                 if(is_send_press == false){
@@ -1135,7 +1124,6 @@
                     is_send_press = false;
                 }
             }
-            
             async function saveChat() {
                 chat.forEach(function(item, i) {
                     if(item['is_user']){
@@ -1206,7 +1194,6 @@
                     }
                 });
             }
-            
             function getChatResult(){
                 name2 = characters[this_chid].name;
                 if(chat.length > 1){
@@ -1274,6 +1261,7 @@
 			
             $( "#rm_button_create" ).css("class","deselected-right-tab");
             $( "#rm_button_characters" ).css("class","deselected-right-tab");
+			
             $( "#rm_button_settings" ).click(function() {
                 selected_button = 'settings';
                 menu_type = 'settings';
@@ -1391,7 +1379,6 @@
                 $( "#rm_button_settings" ).css("class","deselected-right-tab");
                 $( "#rm_button_selected_ch" ).css("class","deselected-right-tab");
             }
-            
             function select_selected_character(chid){ //character select
                 //console.log('select_selected_character() -- starting with input of -- '+chid+' (name:'+characters[chid].name+')');
                 select_rm_create();
@@ -1572,7 +1559,6 @@
                 is_advanced_char_open = false;
                 $('#character_popup').css('display', 'none');
             });
-            
             $("#dialogue_popup_ok").click(function(){
                 $("#shadow_popup").css('display', 'none');
                 $("#shadow_popup").css('opacity:', 0.0);
@@ -1639,7 +1625,6 @@
                 $("#shadow_popup").css('display', 'block');
                 $('#shadow_popup').transition({ opacity: 1.0 ,duration: animation_rm_duration, easing:animation_rm_easing});
             }
-
             function read_bg_load(input) {
                 if (input.files && input.files[0]) {
                     var reader = new FileReader();
@@ -1997,7 +1982,6 @@
                     callPopup('<h3>Start new chat?</h3>');
                 }
             });
-									
             $( "#option_regenerate" ).click(function() {
                 if(is_send_press == false){
                     is_send_press = true;
@@ -2170,8 +2154,6 @@
 
                 }
             }
-            
-            
             $(document).on('input', '#temp', function() {
                 temp = $(this).val();
                 if(isInt(temp)){
@@ -2199,7 +2181,6 @@
                 character_anchor = !!$('#character_anchor').prop('checked');
                 saveSettings();
             });
-			
 			$('#auto-connect-checkbox').change(function() {
                 auto_connect = !!$('#auto-connect-checkbox').prop('checked');
                 saveSettings();
@@ -2208,7 +2189,6 @@
                 auto_load_chat = !!$('#auto-load-chat-checkbox').prop('checked');
                 saveSettings();
             });
-			
             $(document).on('input', '#rep_pen', function() {
                 rep_pen = $(this).val();
                 if(isInt(rep_pen)){
@@ -2223,7 +2203,6 @@
                 $('#rep_pen_size_counter').html( $(this).val()+" Tokens");
                 var repPenSizeTimer = setTimeout(saveSettings, 500);
             });
-            
             //Novel
             $(document).on('input', '#temp_novel', function() {
                 temp_novel = $(this).val();
@@ -2422,25 +2401,15 @@
 					//Load the API server URL from settings
                             api_server = settings.api_server;
                             $('#api_url_text').val(api_server);
-
-                        }
-						
-			//RossAscends: auto-load last character function (fires when active_character is defined and auto_load_chat is true)
-
-						if(settings.active_character !== undefined){
+							
+					//get the character to auto-load
+							if(settings.active_character !== undefined){
                                 if(settings.active_character !== ''){
-                                    active_character = settings.active_character;
-									if (auto_load_chat == true){
-										$('#CharID'+active_character).click(); //will auto-select and load chat of last selected character is auto_load_chat is true
-									}
+									active_character = settings.active_character;				
                                 }
                            }
-			//RossAscends: auto-connect to last API function (fires when API URL exists in settings and auto_connect is true)		
-
-							if(api_server !== ''&& auto_connect == true){
-								$('#api_button').click();	
-							}
-
+                        }
+						
                         if(!is_checked_colab) isColab();
                     },
                     error: function (jqXHR, exception) {
@@ -2451,7 +2420,6 @@
                 });
 
             }
-
             async function saveSettings(type){
 //console.log('saveSettings() -- pinging server to save settings.');
                 jQuery.ajax({    
@@ -2532,7 +2500,6 @@
                 $('#shadow_select_chat_popup').css('display', 'none');
                 $('#load_select_chat_div').css('display', 'block');
             });
-            
             function isInt(value) {
                 return !isNaN(value) && 
                     parseInt(Number(value)) == value && 
@@ -2621,7 +2588,6 @@
                 this_edit_mes_id = undefined;
                 saveChat();
             }
-            
             $("#your_name_button").click(function() {
                 if(!is_send_press){
                     name1 = $("#your_name").val();
@@ -2769,8 +2735,6 @@
                 anchor_order = parseInt($('#anchor_order').find(":selected").val());
                 saveSettings();
             });
-            
-            
             function compareVersions(v1, v2) {
                 const v1parts = v1.split('.');
                 const v2parts = v2.split('.');
@@ -2797,9 +2761,6 @@
 
                 return 0;
             }
-            
-            
-            
             //**************************CHARACTER IMPORT EXPORT*************************//
             $( "#character_import_button" ).click(function() {
                 $("#character_import_file").click();
@@ -2858,9 +2819,6 @@
                 document.body.appendChild(link);
                 link.click();
            });
-        
-        
-        
         //**************************CHAT IMPORT EXPORT*************************//
             $( "#chat_import_button" ).click(function() {
                 $("#chat_import_file").click();
@@ -2919,8 +2877,84 @@
                 $('#load_select_chat_div').css('display', 'block');
 
             });
-        });
+        //RossAscends: auto-load last character function (fires when active_character is defined and auto_load_chat is true)					
+		//RossAscends: auto-connect to last API function (fires when API URL exists in settings and auto_connect is true)		
+			function autoloadchat(){
+				console.log('starting autoloadchat routine');
+				jQuery.ajax({    
+                    type: 'POST', 
+                    url: '/getsettings', 
+                    data: JSON.stringify({}),
+                    beforeSend: function(){
+                    },
+                    cache: false,
+                    dataType: "json",
+                    contentType: "application/json",
+                    success: function(data){
+                        if(data.result != 'file not find'){
+                            settings = JSON.parse(data.settings);
+							//get the character to auto-load
+							if(settings.active_character !== undefined){
+                                if(settings.active_character !== ''){
+									active_character = settings.active_character;				
+                                }
+                           }
+                        }
+						console.log('active_character = '+active_character);
+						console.log('auto_load_chat = '+auto_load_chat);
+						
+						if (active_character !== undefined && auto_load_chat == true){
+							$('#CharID'+active_character).click(); //will auto-select and load chat of last selected character is auto_load_chat is true
+						}
+					},
+					error: function (jqXHR, exception) {
+                        console.log(exception);
+                        console.log(jqXHR);
+
+                    }
+                });
+							
+			}	
+			//RossAscends: auto-connect to last API function (fires when API URL exists in settings and auto_connect is true)		
+			function autoconnect(){
+				console.log('starting autoconnect routine');
+				jQuery.ajax({    
+                    type: 'POST', 
+                    url: '/getsettings', 
+                    data: JSON.stringify({}),
+                    beforeSend: function(){
+                    },
+                    cache: false,
+                    dataType: "json",
+                    contentType: "application/json",
+                    //processData: false, 
+                    success: function(data){
+                        if(data.result != 'file not find'){
+                            settings = JSON.parse(data.settings);
+							
+					//Load the API server URL from settings
+                            api_server = settings.api_server;
+                            $('#api_url_text').val(api_server);
+                        }
+						console.log('api_server = '+ api_server );
+						console.log('auto_connect = '+ auto_connect);
+						if(api_server !== ''&& auto_connect == true){
+							$('#api_button').click();	
+						}
+					},
+					error: function (jqXHR, exception) {
+                        console.log(exception);
+                        console.log(jqXHR);
+
+                    }
+                });
+							
+			}	
+			
+		});
+		
     </script>
+
 <title>Tavern.AI</title>
 </head>
 <body>
@@ -3274,14 +3308,15 @@
                 </div>
                 <textarea id="send_textarea" placeholder="Not connected to API!" name="text"></textarea>
 				
-<script type="text/javascript">
-	//this script makes the chat input text area resize vertically to match the text size (limited by CSS at 50% window height)
-    $('#send_textarea').on('input', function () {
-        this.style.height = '40px';
-        this.style.height =
-            (this.scrollHeight) + 'px';
-    });
-</script>
+			
+				<script type="text/javascript">
+		//RossAscends: this script makes the chat input text area resize vertically to match the text size (limited by CSS at 50% window height)	
+					$('#send_textarea').on('input', function () {
+						this.style.height = '40px';
+						this.style.height =
+						(this.scrollHeight) + 'px';
+					});
+				</script>
 
                 <div id="send_but_sheld">
 					<div id="loading_mes"></div>
@@ -3291,5 +3326,8 @@
             </form>
         </div>
     </div>
+	
+	
+	
 </body>
 </html>

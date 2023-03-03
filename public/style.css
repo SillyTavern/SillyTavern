@@ -4,7 +4,7 @@
 	box-sizing: border-box;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
-	-moz-appearance:initial
+	-moz-appearance:initial;
 }
 
 body {
