@@ -4,6 +4,7 @@
 	box-sizing: border-box;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
+	-moz-appearance:initial
 }
 
 body {
@@ -18,6 +19,7 @@ body {
 	font-family: "Noto Sans", "Noto Color Emoji", sans-serif; 
 	font-size:15px; /*1rem*/
 	color: rgb(229, 224, 216);
+	
 }
 
 @media screen and (max-width: 450px) {	
@@ -1876,8 +1878,7 @@ a {
     background: rgba(0, 0, 0, 0.3);
     color: #666;
     -webkit-transition: all 0.275s;
-    transition: all 0.275s;
-    
+    transition: all 0.275s;   
 }
 
 #nav-toggle:checked::after {
