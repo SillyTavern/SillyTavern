@@ -81,6 +81,7 @@
             var generatedPromtCache = '';
             var characters = [];
             var this_chid;
+			var active_character;
             var backgrounds = [];
             var default_avatar = 'img/fluffy.png';
             var is_colab = false;
@@ -150,6 +151,8 @@
             var anchor_order = 0;
             var style_anchor = true;
             var character_anchor = true;
+			var auto_connect = false;
+			var auto_load_chat = false;
             
             var main_api = 'kobold';
             //novel settings
@@ -201,18 +204,20 @@
 			$.get("/csrf-token")
 				.then(data => {
 					token = data.token;
+					getCharacters();
 					getSettings("def");
 					getLastVersion();
-					getCharacters();
-
+					//getCharacters();
 					printMessages();
 					getBackgrounds();
 					getUserAvatars();
+					
 				});
+
 				
-			            $('#characloud_url').click(function(){
-                window.open('https://boosty.to/tavernai', '_blank');
-            });	
+			    $('#characloud_url').click(function(){
+					window.open('https://boosty.to/tavernai', '_blank');
+				});	
 			function checkOnlineStatus(){
                 //console.log(online_status);
                 if(online_status == 'no_connection'){
@@ -341,7 +346,7 @@
                         this_avatar = "characters/"+item.avatar+"#"+Date.now();
 
                     }
-                    $("#rm_print_characters_block").prepend('<div class=character_select chid='+i+'><div class=avatar><img src="'+this_avatar+'"></div><div class=ch_name>'+item.name+'</div></div>');
+                    $("#rm_print_characters_block").prepend('<div class=character_select chid='+i+' id="CharID'+i+'"><div class=avatar><img src="'+this_avatar+'"></div><div class=ch_name>'+item.name+'</div></div>');
                     //console.log(item.name);
                 });
                 
@@ -1099,7 +1104,7 @@
                                         addOneMessage(chat[chat.length-1]);
                                         $( "#send_but" ).css("display", "inline");
                                         $( "#loading_mes" ).css("display", "none");
-console.log('/savechat called by /Generate');
+//console.log('/savechat called by /Generate');
                                         saveChat();
                                     }else{
                                         //console.log('run force_name2 protocol');
@@ -1161,7 +1166,7 @@ console.log('/savechat called by /Generate');
                 });
             }
             async function getChat() {
-console.log('/getChat entered');
+//console.log('/getChat entered');
                 //console.log(characters[this_chid].chat);
                 jQuery.ajax({    
                     type: 'POST', 
@@ -1182,16 +1187,16 @@ console.log('/getChat entered');
                             }
                             //chat =  data;
                             chat_create_date = chat[0]['create_date'];
-console.log('/getchat saw chat_create_date: '+chat_create_date);
+//console.log('/getchat saw chat_create_date: '+chat_create_date);
                             chat.shift();
 
                         }else{
                             chat_create_date = humanizedISO8601DateTime();
                         }
                         //console.log(chat);
-console.log('getChatResults called by /getchat');
+//console.log('getChatResults called by /getchat');
                         getChatResult();
-console.log('savechat called by /getchat');
+//console.log('savechat called by /getchat');
                         saveChat();
                     },
                     error: function (jqXHR, exception) {
@@ -1388,12 +1393,13 @@ console.log('savechat called by /getchat');
             }
             
             function select_selected_character(chid){ //character select
-                
+                //console.log('select_selected_character() -- starting with input of -- '+chid+' (name:'+characters[chid].name+')');
                 select_rm_create();
                 menu_type = 'character_edit';
                 $( "#delete_button_div" ).css("display", "block");
                 $( "#rm_button_selected_ch" ).css("class","selected-right-tab");
                 var display_name = characters[chid].name;
+				
 
                 $( "#rm_button_selected_ch" ).children("h2").text(display_name);
                 
@@ -1432,6 +1438,10 @@ console.log('savechat called by /getchat');
                 $("#name_div").css("display", "none");
                 
                 $("#form_create").attr("actiontype", "editcharacter");
+				active_character = chid;
+				//console.log('select_selected_character() -- active_character -- '+chid+'(ChID of '+display_name+')');
+				saveSettings();
+				//console.log('select_selected_character() -- called saveSettings() to save -- active_character -- '+active_character+'(ChID of '+display_name+')');
             }
             $(document).on('click', '.character_select', function(){
                 if(this_chid !== $(this).attr("chid")){
@@ -1441,8 +1451,7 @@ console.log('savechat called by /getchat');
                         this_chid = $(this).attr("chid");
                         clearChat();
                         chat.length = 0;
-                        getChat();
-                        
+                        getChat();                       
                     }
                 }else{
                     selected_button = 'character_edit';
@@ -1728,8 +1737,7 @@ console.log('savechat called by /getchat');
                 if($("#form_create").attr("actiontype") == "createcharacter"){
                     
                     if($("#character_name_pole").val().length > 0){
-console.log('/createcharacter entered');
-console.log('CharCreate formData: '+formData);
+//console.log('/createcharacter entered');
                         jQuery.ajax({    
                             type: 'POST', 
                             url: '/createcharacter', 
@@ -1772,7 +1780,7 @@ console.log('CharCreate formData: '+formData);
                                     select_rm_info("Character created");
 
                                     $('#rm_info_block').transition({ opacity: 1.0 ,duration: 2000});
-console.log('/getcharacters called after /createchracter');
+//console.log('/getcharacters called after /createchracter');
                                     getCharacters();
                                 }else{
                                     $('#result_info').html(html);
@@ -1786,7 +1794,7 @@ console.log('/getcharacters called after /createchracter');
                         $('#result_info').html("Name not entered");
                     }
                 }else{
-console.log('Avatar Button Value:'+$("#add_avatar_button").val());
+//console.log('Avatar Button Value:'+$("#add_avatar_button").val());
 
                     jQuery.ajax({    
                         type: 'POST', 
@@ -2191,6 +2199,16 @@ console.log('Avatar Button Value:'+$("#add_avatar_button").val());
                 character_anchor = !!$('#character_anchor').prop('checked');
                 saveSettings();
             });
+			
+			$('#auto-connect-checkbox').change(function() {
+                auto_connect = !!$('#auto-connect-checkbox').prop('checked');
+                saveSettings();
+            });
+			$('#auto-load-chat-checkbox').change(function() {
+                auto_load_chat = !!$('#auto-load-chat-checkbox').prop('checked');
+                saveSettings();
+            });
+			
             $(document).on('input', '#rep_pen', function() {
                 rep_pen = $(this).val();
                 if(isInt(rep_pen)){
@@ -2235,7 +2253,7 @@ console.log('Avatar Button Value:'+$("#add_avatar_button").val());
             ///////////////////////////////////////////
             async function getSettings(type){//timer
  
-                
+                //console.log('getSettings() pinging server for settings request');
                 jQuery.ajax({    
                     type: 'POST', 
                     url: '/getsettings', 
@@ -2249,33 +2267,36 @@ console.log('Avatar Button Value:'+$("#add_avatar_button").val());
                     contentType: "application/json",
                     //processData: false, 
                     success: function(data){
+//					console.log('processing loaded settings');
                         if(data.result != 'file not find'){
+//						console.log('getSettings() -- settings file found');
                             settings = JSON.parse(data.settings);
                             if(settings.username !== undefined){
+//							console.log('getSettings() -- Username -- '+settings.username);
                                 if(settings.username !== ''){
                                     name1 = settings.username;
                                     $('#your_name').val(name1);
                                 }
                             }
-                            
-                            
-                            //Novel
+							                            
+                            //Load which API we are using
                             if(settings.main_api != undefined){
                                 main_api = settings.main_api;
                                 $("#main_api option[value="+main_api+"]").attr('selected', 'true');
                                 changeMainAPI();
                             }
+							//load Novel API KEY is exists
                             if(settings.api_key_novel != undefined){
                                 api_key_novel = settings.api_key_novel;
                                 $("#api_key_novel").val(api_key_novel);
                             }
+							//load the rest of the Novel settings without any checks
                             model_novel = settings.model_novel;
                             $("#model_novel_select option[value="+model_novel+"]").attr('selected', 'true');
                             
                             novelai_setting_names = data.novelai_setting_names;
                             novelai_settings = data.novelai_settings;
                             novelai_settings.forEach(function(item, i, arr) {
-
                                 novelai_settings[i] = JSON.parse(item);
                             });
                             var arr_holder = {};
@@ -2290,7 +2311,8 @@ console.log('Avatar Button Value:'+$("#add_avatar_button").val());
 
                             preset_settings_novel = settings.preset_settings_novel;
                             $("#settings_perset_novel option[value="+novelai_setting_names[preset_settings_novel]+"]").attr('selected', 'true');
-                            //Kobold
+
+                            //Load KoboldAI settings 
                             koboldai_setting_names = data.koboldai_setting_names;
                             koboldai_settings = data.koboldai_settings;
                             koboldai_settings.forEach(function(item, i, arr) {
@@ -2307,13 +2329,19 @@ console.log('Avatar Button Value:'+$("#add_avatar_button").val());
                             koboldai_setting_names = arr_holder;
 
                             preset_settings = settings.preset_settings;
-
+							
+						//Load AI model config settings (temp, context length, anchors, and anchor order)
                             temp = settings.temp;
                             amount_gen = settings.amount_gen;
                             if(settings.max_context !== undefined) max_context = parseInt(settings.max_context);
                             if(settings.anchor_order !== undefined) anchor_order = parseInt(settings.anchor_order);
                             if(settings.style_anchor !== undefined) style_anchor = !!settings.style_anchor;
                             if(settings.character_anchor !== undefined) character_anchor = !!settings.character_anchor;
+							
+						//load poweruser options	
+							if(settings.auto_connect !== undefined) auto_connect = !!settings.auto_connect;
+                            if(settings.auto_load_chat !== undefined) auto_load_chat = !!settings.auto_load_chat;
+							
                             rep_pen = settings.rep_pen;
                             rep_pen_size = settings.rep_pen_size;
                             
@@ -2327,6 +2355,9 @@ console.log('Avatar Button Value:'+$("#add_avatar_button").val());
                             $('#character_anchor').prop('checked', character_anchor);
                             $("#anchor_order option[value="+anchor_order+"]").attr('selected', 'true');
                             
+							$('#auto-connect-checkbox').prop('checked', auto_connect);
+                            $('#auto-load-chat-checkbox').prop('checked', auto_load_chat);
+							
                             $('#max_context').val(max_context);
                             $('#max_context_counter').html(max_context+' Tokens');
                             
@@ -2360,7 +2391,7 @@ console.log('Avatar Button Value:'+$("#add_avatar_button").val());
                             $('#rep_pen_size_novel').val(rep_pen_size_novel);
                             $('#rep_pen_size_counter_novel').html(rep_pen_size_novel+" Tokens");
                             
-                            //////////////////////
+                        //Enable GUI deference settings if GUI is selected for Kobold
                             if(preset_settings == 'gui'){
                                 $("#settings_perset option[value=gui]").attr('selected', 'true');
                                 $("#range_block").children().prop("disabled", true);
@@ -2384,17 +2415,36 @@ console.log('Avatar Button Value:'+$("#add_avatar_button").val());
 
                             }
                             
-                            //User
+                           //Load User's Name and Avatar
                             user_avatar = settings.user_avatar;
                             $('.mes').each(function(){
                                 if($(this).attr('ch_name') == name1){
                                     $(this).children('.avatar').children('img').attr('src', 'User Avatars/'+user_avatar);
                                 }
                             });
-
+							
+					//Load the API server URL from settings
                             api_server = settings.api_server;
                             $('#api_url_text').val(api_server);
+							
+			//RossAscends: auto-connect to last API function (fires when API URL exists in settings and auto_connect is true)		
+							if(api_server !== ''&& auto_connect == true){
+								$('#api_button').click();			
+							}
                         }
+						
+			//RossAscends: auto-load last character function (fires when active_character is defined and auto_load_chat is true)
+						if(settings.active_character !== undefined){
+							//console.log('getSettings() -- active_character -- '+settings.active_character);
+                                if(settings.active_character !== ''){
+                                    active_character = settings.active_character;
+									//console.log('getSettings() -- auto_load_chat -- '+auto_load_chat);
+									if (auto_load_chat == true){
+										//console.log('getSettings() - trying to click .character_select div with ID #CharID'+active_character);
+										$('#CharID'+active_character).click(); //will auto-select and load chat of last selected character is auto_load_chat is true
+									}
+                                }
+                           }
                         if(!is_checked_colab) isColab();
                         
                     },
@@ -2408,7 +2458,7 @@ console.log('Avatar Button Value:'+$("#add_avatar_button").val());
             }
 
             async function saveSettings(type){
-
+//console.log('saveSettings() -- pinging server to save settings.');
                 jQuery.ajax({    
                     type: 'POST', 
                     url: '/savesettings', 
@@ -2424,6 +2474,8 @@ console.log('Avatar Button Value:'+$("#add_avatar_button").val());
                             anchor_order: anchor_order,
                             style_anchor: style_anchor,
                             character_anchor: character_anchor,
+							auto_connect: auto_connect,
+							auto_load_chat: auto_load_chat,
                             main_api: main_api,
                             api_key_novel: api_key_novel,
                             rep_pen: rep_pen,
@@ -2431,10 +2483,11 @@ console.log('Avatar Button Value:'+$("#add_avatar_button").val());
                             model_novel: model_novel,
                             temp_novel: temp_novel,
                             rep_pen_novel: rep_pen_novel,
-                            rep_pen_size_novel: rep_pen_size_novel
+                            rep_pen_size_novel: rep_pen_size_novel,
+							active_character: active_character
                         }),
                     beforeSend: function(){
-
+//console.log('saveSettings() -- active_character -- '+active_character);
 
                     },
                     cache: false,
@@ -2578,14 +2631,14 @@ console.log('Avatar Button Value:'+$("#add_avatar_button").val());
                 if(!is_send_press){
                     name1 = $("#your_name").val();
                     if(name1 === undefined || name1 == '') name1 = default_user_name;
-                    console.log(name1);
+                    //console.log(name1);
                     saveSettings('change_name');
                     
                 }
             });
             //Select chat
             async function getAllCharaChats() {
-			console.log('entered getAllCharaChats');
+			//console.log('getAllCharaChats() pinging server for character chat history.');
                 $('#select_chat_div').html('');
                 //console.log(characters[this_chid].chat);
                 jQuery.ajax({    
@@ -2601,12 +2654,11 @@ console.log('Avatar Button Value:'+$("#add_avatar_button").val());
                     success: function(data){
                         $('#load_select_chat_div').css('display', 'none');
                         let dataArr = Object.values(data);
-						console.log('dataArr = '+ Object.values(data));
                         data = dataArr.sort((a, b) => a['file_name'].localeCompare(b['file_name']));
                         data = data.reverse();
 						
                         for (const key in data) {
-                            let strlen = 40;
+                            let strlen = 300;
                             let mes = data[key]['mes'];
 							if(mes !== undefined){
 								if(mes.length > strlen){
@@ -2628,11 +2680,11 @@ console.log('Avatar Button Value:'+$("#add_avatar_button").val());
                         //chat =  data;
                         //getChatResult();
                         //saveChat();
-						console.log('Finished getAllCharaChats successfully');
+						//console.log('getAllCharaChats() -- Finished successfully');
 					},
                     error: function (jqXHR, exception) {
                         //getChatResult();
-                        console.log('Failed to Finished getAllCharaChats');
+                        //console.log('getAllCharaChats() -- Failed');
 						console.log(exception);
                         console.log(jqXHR);
 						
@@ -2833,7 +2885,7 @@ console.log('Avatar Button Value:'+$("#add_avatar_button").val());
                 $("#chat_import_file_type").val(format);
                 //console.log(format);
                 var formData = new FormData($("#form_import_chat").get(0));
-console.log('/importchat entered with: '+formData);
+//console.log('/importchat entered with: '+formData);
                 jQuery.ajax({    
                     type: 'POST', 
                     url: '/importchat', 
@@ -3132,7 +3184,7 @@ console.log('/importchat entered with: '+formData);
                     <input type="range" id="rep_pen_size_novel" name="volume" min="0" max="2048" step="1">
                 </div>
             </div>
-            <hr style="margin-bottom: 5px;">
+            <hr>
             
             <h4>Your Avatar</h4><h5></h5>
             <div id="user_avatar_block"></div>
@@ -3143,17 +3195,23 @@ console.log('/importchat entered with: '+formData);
                 <input id="your_name_button" type="submit" title="Click to set a new User Name (reloads page)" value="Change Name">
             </form>
             <hr>
-            <div style="opacity:0.80">
-                <h3 style='margin-bottom: 10px;'>Pro Settings</h3>
+            
+			<div id="pro-settings-block">
+                <h3>Pro Settings</h3>
+				
                 <div id="amount_gen_block">
-                <h4>Amount generation </h4><h5 id="amount_gen_counter">select</h5>
-                <input type="range" id="amount_gen" name="volume" min="16" max="512" step="1">
+					<h4>Amount generation </h4>
+					<h5 id="amount_gen_counter">select</h5>
+					<input type="range" id="amount_gen" name="volume" min="16" max="512" step="1">
                 </div>
                 <div id="max_context_block">
-                    <h4>Context Size</h4><h5 id="max_context_counter">select</h5>
+                    <h4>Context Size</h4>
+					<h5 id="max_context_counter">select</h5>
                     <input type="range" id="max_context" name="volume" min="512" max="2048" step="1">
                 </div>
-                <h4>Anchors Order</h4><h5>Helps to increase the length of messages (<a href="/notes/9" target="_blank">?</a>)</h5>
+				
+                <h4>Anchors Order</h4>
+				<h5>Helps to increase the length of messages (<a href="/notes/9" target="_blank">?</a>)</h5>
                 <select id="anchor_order">
                     <option value="0">Character Anchor - Style Anchor</option>
                     <option value="1">Style Anchor - Character Anchor</option>
@@ -3162,8 +3220,19 @@ console.log('/importchat entered with: '+formData);
                     <input id="character_anchor" type="checkbox"/><h4>Character Anchor</h4>
                     <input id="style_anchor" type="checkbox"/><h4>Style Anchor</h4>
                 </div>
+			</div>
+			<hr>
+			
+			<div ="power-user-options-block">
+			<h3>Power User Options</h3>
+			<div id="power-user-option-checkboxes">
+					<input id="auto-connect-checkbox" type="checkbox"/><h4>Auto-connects Last Server</h4>
+                    <input id="auto-load-chat-checkbox" type="checkbox"/><h4>Auto-load Last Chat</h4>
+				</div>
             </div>
+			
         </div>
+		
         <div id="rm_character_import" class="right_menu" style="display: none;">
             <form id="form_import"  action="javascript:void(null);" method="post" enctype="multipart/form-data">
             <input type="file" id="character_import_file" accept=".json, image/png" name="avatar">

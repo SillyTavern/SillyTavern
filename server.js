@@ -285,7 +285,7 @@ app.post("/generate", jsonParser, function(request, response_generate = response
     });
 });
 app.post("/savechat", jsonParser, function(request, response){
-console.log(humanizedISO8601DateTime()+':/savechat/ entered');
+//console.log(humanizedISO8601DateTime()+':/savechat/ entered');
     //console.log(request.data);
     //console.log(request.body.bg);
      //const data = request.body;
@@ -293,10 +293,10 @@ console.log(humanizedISO8601DateTime()+':/savechat/ entered');
     //console.log(request.body.chat);
     //var bg = "body {background-image: linear-gradient(rgba(19,21,44,0.75), rgba(19,21,44,0.75)), url(../backgrounds/"+request.body.bg+");}";
     var dir_name = String(request.body.avatar_url).replace('.png','');
-console.log(humanizedISO8601DateTime()+':/savechat sees '+dir_name+' as the character name (derived from avatar PNG filename)');
+//console.log(humanizedISO8601DateTime()+':/savechat sees '+dir_name+' as the character name (derived from avatar PNG filename)');
     let chat_data = request.body.chat;
     let jsonlData = chat_data.map(JSON.stringify).join('\n');
-console.log(humanizedISO8601DateTime()+':/savechat saving a chat named '+request.body.file_name+'.jsonl');
+//console.log(humanizedISO8601DateTime()+':/savechat saving a chat named '+request.body.file_name+'.jsonl');
     fs.writeFile(chatsPath+dir_name+"/"+request.body.file_name+'.jsonl', jsonlData, 'utf8', function(err) {
         if(err) {
             response.send(err);
@@ -316,7 +316,7 @@ app.post("/getchat", jsonParser, function(request, response){
     //console.log(request);
     //console.log(request.body.chat);
     //var bg = "body {background-image: linear-gradient(rgba(19,21,44,0.75), rgba(19,21,44,0.75)), url(../backgrounds/"+request.body.bg+");}";
-console.log(humanizedISO8601DateTime()+':/getchat entered');
+//console.log(humanizedISO8601DateTime()+':/getchat entered');
     var dir_name = String(request.body.avatar_url).replace('.png','');
 
     fs.stat(chatsPath+dir_name, function(err, stat) {
@@ -333,7 +333,7 @@ console.log(humanizedISO8601DateTime()+':/getchat entered');
                 fs.stat(chatsPath+dir_name+"/"+request.body.file_name+".jsonl", function(err, stat) {
                     
                     if (err === null) { //if no error (the file exists), read the file
-console.log(humanizedISO8601DateTime()+':/getchat tries to access: '+chatsPath+dir_name+'/'+request.body.file_name+'.jsonl');                        
+//console.log(humanizedISO8601DateTime()+':/getchat tries to access: '+chatsPath+dir_name+'/'+request.body.file_name+'.jsonl');                        
                         if(stat !== undefined){
                             fs.readFile(chatsPath+dir_name+"/"+request.body.file_name+".jsonl", 'utf8', (err, data) => {
                                 if (err) {
@@ -930,7 +930,7 @@ app.post("/getallchatsofcharacter", jsonParser, function(request, response){
         var chatData = {};
         let ii = jsonFiles.length;	//this is the number of files belonging to the character
 		if (ii !== 0) {
-			console.log('found '+ii+' chat logs to load');
+			//console.log('found '+ii+' chat logs to load');
 			for(let i = jsonFiles.length-1; i >= 0; i--){
 				const file = jsonFiles[i];
 				const fileStream = fs.createReadStream(chatsPath+char_dir+'/'+file);
@@ -965,7 +965,7 @@ app.post("/getallchatsofcharacter", jsonParser, function(request, response){
 				});
 			};	
 		}else{
-			console.log('Found No Chats. Exiting Load Routine.');
+			//console.log('Found No Chats. Exiting Load Routine.');
 			response.send({error: true});
 		};
 	})});
@@ -1051,7 +1051,7 @@ app.post("/importcharacter", urlencodedParser, function(request, response){
 });
 
 app.post("/importchat", urlencodedParser, function(request, response){
-console.log(humanizedISO8601DateTime()+':/importchat begun');
+//console.log(humanizedISO8601DateTime()+':/importchat begun');
     if(!request.body) return response.sendStatus(400);
 
         var format = request.body.file_type;
@@ -1075,7 +1075,7 @@ console.log(humanizedISO8601DateTime()+':/importchat begun');
                     const jsonData = JSON.parse(data);
                     var new_chat = [];
                     if(jsonData.histories !== undefined){
-console.log('/importchat confirms JSON histories are defined');
+//console.log('/importchat confirms JSON histories are defined');
                         let i = 0;
                         new_chat[i] = {};
                         new_chat[0]['user_name'] = 'You';
@@ -1096,7 +1096,7 @@ console.log('/importchat confirms JSON histories are defined');
                             i++;
                         });
                         const chatJsonlData = new_chat.map(JSON.stringify).join('\n');
-console.log('/importchat saving a file: '+ch_name+' - '+humanizedISO8601DateTime()+' imported.jsonl');
+//console.log('/importchat saving a file: '+ch_name+' - '+humanizedISO8601DateTime()+' imported.jsonl');
                         fs.writeFile(chatsPath+avatar_url+'/'+ch_name+' - '+humanizedISO8601DateTime()+' imported.jsonl', chatJsonlData, 'utf8', function(err) { //added ch_name and replaced Date.now() with humanizedISO8601DateTime
 						
                             if(err) {
@@ -1117,7 +1117,7 @@ console.log('/importchat saving a file: '+ch_name+' - '+humanizedISO8601DateTime
                 });
             }
             if(format === 'jsonl'){
-console.log(humanizedISO8601DateTime()+':imported chat format is JSONL');
+//console.log(humanizedISO8601DateTime()+':imported chat format is JSONL');
                 const fileStream = fs.createReadStream('./uploads/'+filedata.filename);
                 const rl = readline.createInterface({
                   input: fileStream,
@@ -1128,7 +1128,7 @@ console.log(humanizedISO8601DateTime()+':imported chat format is JSONL');
                     let jsonData = JSON.parse(line);
                     
                     if(jsonData.user_name !== undefined){
-console.log(humanizedISO8601DateTime()+':/importchat copying chat as '+ch_name+' - '+humanizedISO8601DateTime()+'.jsonl');
+//console.log(humanizedISO8601DateTime()+':/importchat copying chat as '+ch_name+' - '+humanizedISO8601DateTime()+'.jsonl');
                         fs.copyFile('./uploads/'+filedata.filename, chatsPath+avatar_url+'/'+ch_name+' - '+humanizedISO8601DateTime()+'.jsonl', (err) => { //added character name and replaced Date.now() with humanizedISO8601DateTime
                             if(err) {
                                 response.send({error:true});
@@ -1273,7 +1273,7 @@ function convertStage2(){
             });
             const jsonlData = new_chat_data.map(JSON.stringify).join('\n');
             // Write the contents to the destination folder
-console.log('convertstage2 writing a file: '+chatsPath+char.name+'/' + file+'l');		
+//console.log('convertstage2 writing a file: '+chatsPath+char.name+'/' + file+'l');		
             fs.writeFileSync(chatsPath+char.name+'/' + file+'l', jsonlData);
         });
         //fs.rmSync('public/characters/'+directoriesB[key],{ recursive: true });
