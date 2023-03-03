@@ -1589,19 +1589,22 @@ label.checkbox :checked + span:after {
 #select_chat_popup{
     display: block;
     grid-template-rows: 50px 100px 100px auto 45px;
-    max-width:800px;
-    height: 440px;
+    max-width: 800px;
+    max-height: 80vh;
+    height: min-content;
     position: absolute;
     z-index: 2066;
     margin-left: auto;
     margin-right: auto;
     left: 0;
     right: 0;
-    margin-top: 21vh;
-    box-shadow: 0 0 10px rgba(0,0,0,0.5);
-    padding: 4px;
-	background-color: rgba(0,0,0,0.7);
+    margin-top: 6vh;
+    box-shadow: 0 0 10px rgb(0 0 0 / 50%);
+    padding: 10px;
+    /* padding-top: 50px; */
+    background-color: rgba(0,0,0,0.7);
     border-radius: 20px;
+    overflow-y: auto;
 }
 #select_chat_popup a{
     color: #936f4a;
@@ -1633,7 +1636,8 @@ label.checkbox :checked + span:after {
     overflow-x: hidden;
     overflow-y: scroll;
     
-    height: 350px;
+    height: min-content;
+	max-height:100%;
 }
 #select_chat_div hr{
     margin:0;

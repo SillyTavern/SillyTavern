@@ -58,16 +58,20 @@ var api_key_novel;
 			//New chats made with characters will use this new formatting.
 			//Useable variable is (( humanizedISO8601Datetime ))
 			
-			var baseDate = new Date(Date.now());
-			var humanYear = baseDate.getFullYear();
-			var humanMonth = (baseDate.getMonth()+1);
-			var humanDate = baseDate.getDate();
-			var humanHour = (baseDate.getHours() < 10? '0' : '') + baseDate.getHours();
-			var humanMinute = (baseDate.getMinutes() < 10? '0' : '') + baseDate.getMinutes();
-			var humanSecond = (baseDate.getSeconds() < 10? '0' : '') + baseDate.getSeconds();
-			var humanMillisecond = (baseDate.getMilliseconds() < 10? '0' : '') + baseDate.getMilliseconds();
 			
-			var humanizedISO8601DateTime = (humanYear+"-"+humanMonth+"-"+humanDate+" @"+humanHour+"h "+humanMinute+"m "+humanSecond+"s "+humanMillisecond+"ms");
+			
+			function humanizedISO8601DateTime() {
+				let baseDate = new Date(Date.now());
+				let humanYear = baseDate.getFullYear();
+				let humanMonth = (baseDate.getMonth()+1);
+				let humanDate = baseDate.getDate();
+				let humanHour = (baseDate.getHours() < 10? '0' : '') + baseDate.getHours();
+				let	humanMinute = (baseDate.getMinutes() < 10? '0' : '') + baseDate.getMinutes();
+				let humanSecond = (baseDate.getSeconds() < 10? '0' : '') + baseDate.getSeconds();
+				let humanMillisecond = (baseDate.getMilliseconds() < 10? '0' : '') + baseDate.getMilliseconds();
+				let HumanizedDateTime = (humanYear+"-"+humanMonth+"-"+humanDate+" @"+humanHour+"h "+humanMinute+"m "+humanSecond+"s "+humanMillisecond+"ms");
+				return HumanizedDateTime;
+			};
 
 var is_colab = false;
 var charactersPath = 'public/characters/';
@@ -281,7 +285,7 @@ app.post("/generate", jsonParser, function(request, response_generate = response
     });
 });
 app.post("/savechat", jsonParser, function(request, response){
-	//console.log('/savechat/ entered');
+console.log(humanizedISO8601DateTime()+':/savechat/ entered');
     //console.log(request.data);
     //console.log(request.body.bg);
      //const data = request.body;
@@ -289,8 +293,10 @@ app.post("/savechat", jsonParser, function(request, response){
     //console.log(request.body.chat);
     //var bg = "body {background-image: linear-gradient(rgba(19,21,44,0.75), rgba(19,21,44,0.75)), url(../backgrounds/"+request.body.bg+");}";
     var dir_name = String(request.body.avatar_url).replace('.png','');
+console.log(humanizedISO8601DateTime()+':/savechat sees '+dir_name+' as the character name (derived from avatar PNG filename)');
     let chat_data = request.body.chat;
     let jsonlData = chat_data.map(JSON.stringify).join('\n');
+console.log(humanizedISO8601DateTime()+':/savechat saving a chat named '+request.body.file_name+'.jsonl');
     fs.writeFile(chatsPath+dir_name+"/"+request.body.file_name+'.jsonl', jsonlData, 'utf8', function(err) {
         if(err) {
             response.send(err);
@@ -310,7 +316,7 @@ app.post("/getchat", jsonParser, function(request, response){
     //console.log(request);
     //console.log(request.body.chat);
     //var bg = "body {background-image: linear-gradient(rgba(19,21,44,0.75), rgba(19,21,44,0.75)), url(../backgrounds/"+request.body.bg+");}";
-	//console.log('/getchat entered');
+console.log(humanizedISO8601DateTime()+':/getchat entered');
     var dir_name = String(request.body.avatar_url).replace('.png','');
 
     fs.stat(chatsPath+dir_name, function(err, stat) {
@@ -327,7 +333,7 @@ app.post("/getchat", jsonParser, function(request, response){
                 fs.stat(chatsPath+dir_name+"/"+request.body.file_name+".jsonl", function(err, stat) {
                     
                     if (err === null) { //if no error (the file exists), read the file
-                        
+console.log(humanizedISO8601DateTime()+':/getchat tries to access: '+chatsPath+dir_name+'/'+request.body.file_name+'.jsonl');                        
                         if(stat !== undefined){
                             fs.readFile(chatsPath+dir_name+"/"+request.body.file_name+".jsonl", 'utf8', (err, data) => {
                                 if (err) {
@@ -355,11 +361,8 @@ app.post("/getchat", jsonParser, function(request, response){
                 console.error(err);
                 response.send({});
                 return;
-				
             }
         }
-        
-
     });
 
     
@@ -415,7 +418,7 @@ function checkServer(){
 
 //***************** Main functions
 function charaFormatData(data){
-    var char = {"name": data.ch_name, "description": data.description, "personality": data.personality, "first_mes": data.first_mes, "avatar": 'none', "chat": Date.now(), "mes_example": data.mes_example, "scenario": data.scenario, "create_date": Date.now()};
+    var char = {"name": data.ch_name, "description": data.description, "personality": data.personality, "first_mes": data.first_mes, "avatar": 'none', "chat": data.ch_name+' - '+humanizedISO8601DateTime(), "mes_example": data.mes_example, "scenario": data.scenario, "create_date": humanizedISO8601DateTime};
     return char;
 }
 app.post("/createcharacter", urlencodedParser, function(request, response){
@@ -911,12 +914,14 @@ app.post("/getallchatsofcharacter", jsonParser, function(request, response){
     var char_dir = (request.body.avatar_url).replace('.png','')
     fs.readdir(chatsPath+char_dir, (err, files) => {
         if (err) {
+		console.log('found error in history loading');
           console.error(err);
           response.send({error: true});
           return;
         }
 
         // filter for JSON files
+		console.log('looking for JSONL files');
         const jsonFiles = files.filter(file => path.extname(file) === '.jsonl');
 
         // sort the files by name
@@ -924,41 +929,46 @@ app.post("/getallchatsofcharacter", jsonParser, function(request, response){
         // print the sorted file names
         var chatData = {};
         let ii = jsonFiles.length;	//this is the number of files belonging to the character
-		
-        for(let i = jsonFiles.length-1; i >= 0; i--){
-            const file = jsonFiles[i];
+		if (ii !== 0) {
+			console.log('found '+ii+' chat logs to load');
+			for(let i = jsonFiles.length-1; i >= 0; i--){
+				const file = jsonFiles[i];
+				const fileStream = fs.createReadStream(chatsPath+char_dir+'/'+file);
+				const rl = readline.createInterface({
+					input: fileStream,
+					crlfDelay: Infinity
+				});
 
-            const fileStream = fs.createReadStream(chatsPath+char_dir+'/'+file);
-            const rl = readline.createInterface({
-                input: fileStream,
-                crlfDelay: Infinity
-            });
-
-            let lastLine;
-            rl.on('line', (line) => {
-				lastLine = line;
-            });
-            rl.on('close', () => {
-                if(lastLine){
-                    let jsonData = JSON.parse(lastLine);
-                    if(jsonData.name !== undefined){
-                        chatData[i] = {};
-                        chatData[i]['file_name'] = file;
-                        chatData[i]['mes'] = jsonData['mes'];
-                        ii--;
-                        if(ii === 0){ 
-                            response.send(chatData);
-                        }
-                    }else{
-                        return;
-                    }
-                  }
-                rl.close();
-            });
-        }
-    });
-    
-});
+				let lastLine;
+				rl.on('line', (line) => {
+					lastLine = line;
+				});
+				rl.on('close', () => {
+					if(lastLine){
+						let jsonData = JSON.parse(lastLine);
+						if(jsonData.name !== undefined){
+							chatData[i] = {};
+							chatData[i]['file_name'] = file;
+							chatData[i]['mes'] = jsonData['mes'];
+							ii--;
+							if(ii === 0){ 
+							console.log('ii count went to zero, responding with chatData');
+								response.send(chatData);
+							}
+						}else{
+							console.log('just returning from getallchatsofcharacter');
+							return;
+						}
+					}
+					console.log('successfully closing getallchatsofcharacter');  
+					rl.close();
+				});
+			};	
+		}else{
+			console.log('Found No Chats. Exiting Load Routine.');
+			response.send({error: true});
+		};
+	})});
 function getPngName(file){
     let i = 1;
     let base_name = file;
@@ -969,6 +979,7 @@ function getPngName(file){
     return file;
 }
 app.post("/importcharacter", urlencodedParser, function(request, response){
+
     if(!request.body) return response.sendStatus(400);
 
         let png_name = '';
@@ -987,12 +998,12 @@ app.post("/importcharacter", urlencodedParser, function(request, response){
                     
                     if(jsonData.name !== undefined){
                         png_name = getPngName(jsonData.name);
-                        let char = {"name": jsonData.name, "description": jsonData.description ?? '', "personality": jsonData.personality ?? '', "first_mes": jsonData.first_mes ?? '', "avatar": 'none', "chat": Date.now(), "mes_example": jsonData.mes_example ?? '', "scenario": jsonData.scenario ?? '', "create_date": Date.now()};
+                        let char = {"name": jsonData.name, "description": jsonData.description ?? '', "personality": jsonData.personality ?? '', "first_mes": jsonData.first_mes ?? '', "avatar": 'none', "chat": humanizedISO8601DateTime(), "mes_example": jsonData.mes_example ?? '', "scenario": jsonData.scenario ?? '', "create_date": humanizedISO8601DateTime};
                         char = JSON.stringify(char);
                         charaWrite('./public/img/fluffy.png', char, png_name, response, {file_name: png_name});
                     }else if(jsonData.char_name !== undefined){//json Pygmalion notepad
                         png_name = getPngName(jsonData.char_name);
-                        let char = {"name": jsonData.char_name, "description": jsonData.char_persona ?? '', "personality": '', "first_mes": jsonData.char_greeting ?? '', "avatar": 'none', "chat": Date.now(), "mes_example": jsonData.example_dialogue ?? '', "scenario": jsonData.world_scenario ?? '', "create_date": Date.now()};
+                        let char = {"name": jsonData.char_name, "description": jsonData.char_persona ?? '', "personality": '', "first_mes": jsonData.char_greeting ?? '', "avatar": 'none', "chat": humanizedISO8601DateTime(), "mes_example": jsonData.example_dialogue ?? '', "scenario": jsonData.world_scenario ?? '', "create_date": humanizedISO8601DateTime};
                         char = JSON.stringify(char);
                         charaWrite('./public/img/fluffy.png', char, png_name, response, {file_name: png_name});
                     }else{
@@ -1008,7 +1019,7 @@ app.post("/importcharacter", urlencodedParser, function(request, response){
                     png_name = getPngName(jsonData.name);
                     
                     if(jsonData.name !== undefined){
-                        let char = {"name": jsonData.name, "description": jsonData.description ?? '', "personality": jsonData.personality ?? '', "first_mes": jsonData.first_mes ?? '', "avatar": 'none', "chat": Date.now(), "mes_example": jsonData.mes_example ?? '', "scenario": jsonData.scenario ?? '', "create_date": Date.now()};
+                        let char = {"name": jsonData.name, "description": jsonData.description ?? '', "personality": jsonData.personality ?? '', "first_mes": jsonData.first_mes ?? '', "avatar": 'none', "chat": humanizedISO8601DateTime(), "mes_example": jsonData.mes_example ?? '', "scenario": jsonData.scenario ?? '', "create_date": humanizedISO8601DateTime};
                         char = JSON.stringify(char);
                         charaWrite('./uploads/'+filedata.filename, char, png_name, response, {file_name: png_name});
                         /*
@@ -1040,6 +1051,7 @@ app.post("/importcharacter", urlencodedParser, function(request, response){
 });
 
 app.post("/importchat", urlencodedParser, function(request, response){
+console.log(humanizedISO8601DateTime()+':/importchat begun');
     if(!request.body) return response.sendStatus(400);
 
         var format = request.body.file_type;
@@ -1063,11 +1075,12 @@ app.post("/importchat", urlencodedParser, function(request, response){
                     const jsonData = JSON.parse(data);
                     var new_chat = [];
                     if(jsonData.histories !== undefined){
+console.log('/importchat confirms JSON histories are defined');
                         let i = 0;
                         new_chat[i] = {};
                         new_chat[0]['user_name'] = 'You';
                         new_chat[0]['character_name'] = ch_name;
-                        new_chat[0]['create_date'] = Date.now() //Date.now();
+                        new_chat[0]['create_date'] = humanizedISO8601DateTime() //Date.now();
                         i++;
                         jsonData.histories.histories[0].msgs.forEach(function(item) {
                             new_chat[i] = {};
@@ -1078,12 +1091,13 @@ app.post("/importchat", urlencodedParser, function(request, response){
                             }
                             new_chat[i]['is_user'] = item.src.is_human;
                             new_chat[i]['is_name'] = true;
-                            new_chat[i]['send_date'] = Date.now() //Date.now();
+                            new_chat[i]['send_date'] = humanizedISO8601DateTime() //Date.now();
                             new_chat[i]['mes'] = item.text;
                             i++;
                         });
                         const chatJsonlData = new_chat.map(JSON.stringify).join('\n');
-                        fs.writeFile(chatsPath+avatar_url+'/'+ch_name+' - '+humanizedISO8601DateTime+' imported.jsonl', chatJsonlData, 'utf8', function(err) { //added ch_name and replaced Date.now() with humanizedISO8601DateTime
+console.log('/importchat saving a file: '+ch_name+' - '+humanizedISO8601DateTime()+' imported.jsonl');
+                        fs.writeFile(chatsPath+avatar_url+'/'+ch_name+' - '+humanizedISO8601DateTime()+' imported.jsonl', chatJsonlData, 'utf8', function(err) { //added ch_name and replaced Date.now() with humanizedISO8601DateTime
 						
                             if(err) {
                                 response.send(err);
@@ -1103,6 +1117,7 @@ app.post("/importchat", urlencodedParser, function(request, response){
                 });
             }
             if(format === 'jsonl'){
+console.log(humanizedISO8601DateTime()+':imported chat format is JSONL');
                 const fileStream = fs.createReadStream('./uploads/'+filedata.filename);
                 const rl = readline.createInterface({
                   input: fileStream,
@@ -1113,7 +1128,8 @@ app.post("/importchat", urlencodedParser, function(request, response){
                     let jsonData = JSON.parse(line);
                     
                     if(jsonData.user_name !== undefined){
-                        fs.copyFile('./uploads/'+filedata.filename, chatsPath+avatar_url+'/'+ch_name+' - '+humanizedISO8601DateTime+'.jsonl', (err) => { //added character name and replaced Date.now() with humanizedISO8601DateTime
+console.log(humanizedISO8601DateTime()+':/importchat copying chat as '+ch_name+' - '+humanizedISO8601DateTime()+'.jsonl');
+                        fs.copyFile('./uploads/'+filedata.filename, chatsPath+avatar_url+'/'+ch_name+' - '+humanizedISO8601DateTime()+'.jsonl', (err) => { //added character name and replaced Date.now() with humanizedISO8601DateTime
                             if(err) {
                                 response.send({error:true});
                                 return console.log(err);
@@ -1192,7 +1208,7 @@ function convertStage2(){
         //console.log(directoriesB[key]);
         
         var char = JSON.parse(charactersB[key]);
-        char.create_date = Date.now();
+        char.create_date = humanizedISO8601DateTime();
         charactersB[key] = JSON.stringify(char);
         var avatar = 'public/img/fluffy.png';
         if(char.avatar !== 'none'){
@@ -1222,7 +1238,7 @@ function convertStage2(){
             }
             let i = 0;
             let ii = 0;
-            new_chat_data[i] = {user_name:'You', character_name:char.name, create_date: Date.now()};
+            new_chat_data[i] = {user_name:'You', character_name:char.name, create_date: humanizedISO8601DateTime()};
             i++;
             ii++;
             chat_data.forEach(function(mes) {
@@ -1238,14 +1254,14 @@ function convertStage2(){
                             new_chat_data[ii]['name'] = char.name;
                             new_chat_data[ii]['is_user'] = false;
                             new_chat_data[ii]['is_name'] = is_name;
-                            new_chat_data[ii]['send_date'] = Date.now(); //Date.now();
+                            new_chat_data[ii]['send_date'] = humanizedISO8601DateTime(); //Date.now();
 
                         }else{
                             mes = mes.replace(this_chat_user_name+':','');
                             new_chat_data[ii]['name'] = 'You';
                             new_chat_data[ii]['is_user'] = true;
                             new_chat_data[ii]['is_name'] = true;
-                            new_chat_data[ii]['send_date'] = Date.now() //Date.now();
+                            new_chat_data[ii]['send_date'] = humanizedISO8601DateTime(); //Date.now();
 
                         }
                         new_chat_data[ii]['mes'] = mes.trim();
@@ -1257,6 +1273,7 @@ function convertStage2(){
             });
             const jsonlData = new_chat_data.map(JSON.stringify).join('\n');
             // Write the contents to the destination folder
+console.log('convertstage2 writing a file: '+chatsPath+char.name+'/' + file+'l');		
             fs.writeFileSync(chatsPath+char.name+'/' + file+'l', jsonlData);
         });
         //fs.rmSync('public/characters/'+directoriesB[key],{ recursive: true });

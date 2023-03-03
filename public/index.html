@@ -61,15 +61,18 @@
 			//New chats made with characters will use this new formatting.
 			//Useable variable is (( humanizedISO8601Datetime ))
 			
-			var baseDate = new Date(Date.now());
-			var humanYear = baseDate.getFullYear();
-			var humanMonth = (baseDate.getMonth()+1);
-			var humanDate = baseDate.getDate();
-			var humanHour = (baseDate.getHours() < 10? '0' : '') + baseDate.getHours();
-			var humanMinute = (baseDate.getMinutes() < 10? '0' : '') + baseDate.getMinutes();
-			var humanSecond = (baseDate.getSeconds() < 10? '0' : '') + baseDate.getSeconds();
-			var humanMillisecond = (baseDate.getMilliseconds() < 10? '0' : '') + baseDate.getMilliseconds();
-			var humanizedISO8601DateTime = (humanYear+"-"+humanMonth+"-"+humanDate+" @"+humanHour+"h "+humanMinute+"m "+humanSecond+"s "+humanMillisecond+"ms");
+			function humanizedISO8601DateTime() {
+				let baseDate = new Date(Date.now());
+				let humanYear = baseDate.getFullYear();
+				let humanMonth = (baseDate.getMonth()+1);
+				let humanDate = baseDate.getDate();
+				let humanHour = (baseDate.getHours() < 10? '0' : '') + baseDate.getHours();
+				let	humanMinute = (baseDate.getMinutes() < 10? '0' : '') + baseDate.getMinutes();
+				let humanSecond = (baseDate.getSeconds() < 10? '0' : '') + baseDate.getSeconds();
+				let humanMillisecond = (baseDate.getMilliseconds() < 10? '0' : '') + baseDate.getMilliseconds();
+				let HumanizedDateTime = (humanYear+"-"+humanMonth+"-"+humanDate+" @"+humanHour+"h "+humanMinute+"m "+humanSecond+"s "+humanMillisecond+"ms");
+				return HumanizedDateTime;
+			};
 			
 			
             var default_ch_mes = "Hello";
@@ -673,7 +676,7 @@
                         chat[chat.length-1]['name'] = name1;
                         chat[chat.length-1]['is_user'] = true;
                         chat[chat.length-1]['is_name'] = true;
-                        chat[chat.length-1]['send_date'] = Date.now();
+                        chat[chat.length-1]['send_date'] = humanizedISO8601DateTime();
                         chat[chat.length-1]['mes'] = textareaText;
                         addOneMessage(chat[chat.length-1]);
                     }
@@ -1090,12 +1093,13 @@
                                         chat[chat.length-1]['name'] = name2;
                                         chat[chat.length-1]['is_user'] = false;
                                         chat[chat.length-1]['is_name'] = this_mes_is_name;
-                                        chat[chat.length-1]['send_date'] = Date.now();
+                                        chat[chat.length-1]['send_date'] = humanizedISO8601DateTime();
                                         getMessage = $.trim(getMessage);
                                         chat[chat.length-1]['mes'] = getMessage;
                                         addOneMessage(chat[chat.length-1]);
                                         $( "#send_but" ).css("display", "inline");
                                         $( "#loading_mes" ).css("display", "none");
+console.log('/savechat called by /Generate');
                                         saveChat();
                                     }else{
                                         //console.log('run force_name2 protocol');
@@ -1157,6 +1161,7 @@
                 });
             }
             async function getChat() {
+console.log('/getChat entered');
                 //console.log(characters[this_chid].chat);
                 jQuery.ajax({    
                     type: 'POST', 
@@ -1177,13 +1182,16 @@
                             }
                             //chat =  data;
                             chat_create_date = chat[0]['create_date'];
+console.log('/getchat saw chat_create_date: '+chat_create_date);
                             chat.shift();
 
                         }else{
-                            chat_create_date = Date.now();
+                            chat_create_date = humanizedISO8601DateTime();
                         }
                         //console.log(chat);
+console.log('getChatResults called by /getchat');
                         getChatResult();
+console.log('savechat called by /getchat');
                         saveChat();
                     },
                     error: function (jqXHR, exception) {
@@ -1213,7 +1221,7 @@
                     chat[0]['name'] = name2;
                     chat[0]['is_user'] = false;
                     chat[0]['is_name'] = true;
-                    chat[0]['send_date'] = Date.now();
+                    chat[0]['send_date'] = humanizedISO8601DateTime();
                     if(characters[this_chid].first_mes != ""){
                         chat[0]['mes'] = characters[this_chid].first_mes;
                     }else{
@@ -1582,11 +1590,11 @@
                         }  
                     });  
                 }
+				//Make a new chat for selected character
                 if(popup_type == 'new_chat' && this_chid != undefined && menu_type != "create"){//Fix it; New chat doesn't create while open create character menu
                     clearChat();
                     chat.length = 0;
-					characters[this_chid].chat = Date.now(); //RossAscends: added character name to new chat filenames and replaced Date.now() with humanizedISO8601DateTime;
-                    //characters[this_chid].chat = (name2 +' - '+ humanizedISO8601DateTime); //RossAscends: added character name to new chat filenames and replaced Date.now() with humanizedISO8601DateTime;
+                    characters[this_chid].chat = (name2 +' - '+ humanizedISO8601DateTime()); //RossAscends: added character name to new chat filenames and replaced Date.now() with humanizedISO8601DateTime;
                     $("#selected_chat_pole").val(characters[this_chid].chat);
                     timerSaveEdit = setTimeout(() => {$("#create_button").click();},durationSaveEdit);
                     getChat();
@@ -1720,7 +1728,8 @@
                 if($("#form_create").attr("actiontype") == "createcharacter"){
                     
                     if($("#character_name_pole").val().length > 0){
-						
+console.log('/createcharacter entered');
+console.log('CharCreate formData: '+formData);
                         jQuery.ajax({    
                             type: 'POST', 
                             url: '/createcharacter', 
@@ -1763,7 +1772,7 @@
                                     select_rm_info("Character created");
 
                                     $('#rm_info_block').transition({ opacity: 1.0 ,duration: 2000});
-
+console.log('/getcharacters called after /createchracter');
                                     getCharacters();
                                 }else{
                                     $('#result_info').html(html);
@@ -1777,7 +1786,7 @@
                         $('#result_info').html("Name not entered");
                     }
                 }else{
-                    console.log($("#add_avatar_button").val());
+console.log('Avatar Button Value:'+$("#add_avatar_button").val());
 
                     jQuery.ajax({    
                         type: 'POST', 
@@ -2576,6 +2585,7 @@
             });
             //Select chat
             async function getAllCharaChats() {
+			console.log('entered getAllCharaChats');
                 $('#select_chat_div').html('');
                 //console.log(characters[this_chid].chat);
                 jQuery.ajax({    
@@ -2591,20 +2601,24 @@
                     success: function(data){
                         $('#load_select_chat_div').css('display', 'none');
                         let dataArr = Object.values(data);
+						console.log('dataArr = '+ Object.values(data));
                         data = dataArr.sort((a, b) => a['file_name'].localeCompare(b['file_name']));
                         data = data.reverse();
+						
                         for (const key in data) {
                             let strlen = 40;
                             let mes = data[key]['mes'];
-                            if(mes.length > strlen){
-                                mes = '...'+mes.substring(mes.length - strlen);
-                            }
-                            $('#select_chat_div').append('<div class="select_chat_block" file_name="'+data[key]['file_name']+'"><div class=avatar><img src="characters/'+characters[this_chid]['avatar']+'""></div><div class="select_chat_block_filename">'+data[key]['file_name']+'</div><div class="select_chat_block_mes">'+mes+'</div></div>');
-                            if(characters[this_chid]['chat'] == data[key]['file_name'].replace('.jsonl', '')){
-                                //children().last()
-                                $('#select_chat_div').children(':nth-last-child(1)').attr('highlight', true);
-                            }
-                        }
+							if(mes !== undefined){
+								if(mes.length > strlen){
+									mes = '...'+mes.substring(mes.length - strlen);
+								}
+								$('#select_chat_div').append('<div class="select_chat_block" file_name="'+data[key]['file_name']+'"><div class=avatar><img src="characters/'+characters[this_chid]['avatar']+'""></div><div class="select_chat_block_filename">'+data[key]['file_name']+'</div><div class="select_chat_block_mes">'+mes+'</div></div>');
+								if(characters[this_chid]['chat'] == data[key]['file_name'].replace('.jsonl', '')){
+									//children().last()
+									$('#select_chat_div').children(':nth-last-child(1)').attr('highlight', true);
+								}
+							}
+						}
                         //<div id="select_chat_div">
 
                         //<div id="load_select_chat_div">
@@ -2614,11 +2628,14 @@
                         //chat =  data;
                         //getChatResult();
                         //saveChat();
-                    },
+						console.log('Finished getAllCharaChats successfully');
+					},
                     error: function (jqXHR, exception) {
                         //getChatResult();
-                        console.log(exception);
+                        console.log('Failed to Finished getAllCharaChats');
+						console.log(exception);
                         console.log(jqXHR);
+						
                     }
                 });
             }
@@ -2816,7 +2833,7 @@
                 $("#chat_import_file_type").val(format);
                 //console.log(format);
                 var formData = new FormData($("#form_import_chat").get(0));
-
+console.log('/importchat entered with: '+formData);
                 jQuery.ajax({    
                     type: 'POST', 
                     url: '/importchat', 
