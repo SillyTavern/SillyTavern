@@ -1590,8 +1590,8 @@ label.checkbox :checked + span:after {
     display: block;
     grid-template-rows: 50px 100px 100px auto 45px;
     max-width: 800px;
-    max-height: 80vh;
-    height: min-content;
+    max-height: 70vh;
+    min-height: 100px;
     position: absolute;
     z-index: 2066;
     margin-left: auto;
@@ -1604,7 +1604,7 @@ label.checkbox :checked + span:after {
     /* padding-top: 50px; */
     background-color: rgba(0,0,0,0.7);
     border-radius: 20px;
-    overflow-y: auto;
+    overflow-y: scroll;
 }
 #select_chat_popup a{
     color: #936f4a;
