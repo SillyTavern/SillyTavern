@@ -207,6 +207,7 @@
             var anchor_order = 0;
             var style_anchor = true;
             var character_anchor = true;
+            let extension_prompt = '';
             
             var main_api = 'kobold';
             //novel settings
@@ -710,6 +711,7 @@
             }
             function clearChat(){
                 count_view_mes = 0;
+                extension_prompt = '';
                 $('#chat').html('');
             }
             function messageFormating(mes, ch_name, isSystem, forceAvatar){
@@ -1189,7 +1191,7 @@
                     
                     for (var item of chat2) {//console.log(encode("dsfs").length);
                         chatString = item+chatString;
-                        if(encode(JSON.stringify(worldInfoString+storyString+chatString+anchorTop+anchorBottom+charPersonality+promptBias)).length+120 < this_max_context){ //(The number of tokens in the entire promt) need fix, it must count correctly (added +120, so that the description of the character does not hide)
+                        if(encode(JSON.stringify(worldInfoString+storyString+chatString+anchorTop+anchorBottom+charPersonality+promptBias+extension_prompt)).length+120 < this_max_context){ //(The number of tokens in the entire promt) need fix, it must count correctly (added +120, so that the description of the character does not hide)
                             
                             
                             //if (is_pygmalion && i == chat2.length-1) item='<START>\n'+item;
@@ -1205,7 +1207,7 @@
                             let mesExmString = '';
                             for(let iii = 0; iii < mesExamplesArray.length; iii++){//mesExamplesArray It need to make from end to start
                                 mesExmString = mesExmString+mesExamplesArray[iii];
-                                if(encode(JSON.stringify(worldInfoString+storyString+mesExmString+chatString+anchorTop+anchorBottom+charPersonality+promptBias)).length+120 < this_max_context){ //example of dialogs
+                                if(encode(JSON.stringify(worldInfoString+storyString+mesExmString+chatString+anchorTop+anchorBottom+charPersonality+promptBias+extension_prompt)).length+120 < this_max_context){ //example of dialogs
                                     if(!is_pygmalion){
                                         mesExamplesArray[iii] = mesExamplesArray[iii].replace(/<START>/i, 'This is how '+name2+' should talk');//An example of how '+name2+' responds
                                     }
@@ -1305,7 +1307,7 @@
                         }
                         function checkPromtSize(){
                             setPromtString();
-                            let thisPromtContextSize = encode(JSON.stringify(worldInfoString+storyString+mesExmString+mesSendString+anchorTop+anchorBottom+charPersonality+generatedPromtCache+promptBias)).length+120;
+                            let thisPromtContextSize = encode(JSON.stringify(worldInfoString+storyString+mesExmString+mesSendString+anchorTop+anchorBottom+charPersonality+generatedPromtCache+promptBias+extension_prompt)).length+120;
                             if(thisPromtContextSize > this_max_context){
                                 if(count_exm_add > 0){
                                     //mesExamplesArray.length = mesExamplesArray.length-1;
@@ -1334,7 +1336,7 @@
                             mesSendString = '<START>\n'+mesSendString;
 							//mesSendString = mesSendString; //This edit simply removes the first "<START>" that is prepended to all context prompts
                         }
-                        finalPromt = worldInfoBefore+storyString+worldInfoAfter+mesExmString+mesSendString+generatedPromtCache+promptBias;
+                        finalPromt = worldInfoBefore+storyString+worldInfoAfter+extension_prompt+mesExmString+mesSendString+generatedPromtCache+promptBias;
                         
                         var generate_data;
                         if(main_api == 'kobold'){
@@ -4379,6 +4381,10 @@
                 return array;
             }
 
+            function setExtensionPrompt(value) {
+                extension_prompt = value;
+            }
+
             window['TavernAI'].getContext = function() {
                 return {
                     chat: chat,
@@ -4393,6 +4399,8 @@
                     addOneMessage: addOneMessage,
                     generate: Generate,
                     encode: encode,
+                    extensionPrompt: extension_prompt,
+                    setExtensionPrompt: setExtensionPrompt,
                 };
             };
         });

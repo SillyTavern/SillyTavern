@@ -15,6 +15,9 @@ let extensions = [];
             <input id="extensions_autoconnect" type="checkbox"/><h4>Auto-connect</h4>
         </div>
         <div id="extensions_status">Not connected</div>
+        <div id="extensions_settings">
+            <h4>Extension settings</h4>
+        </div>
         <div id="extensions_loaded">
             <h4>Active extensions</h4>
             <ul id="extensions_list">
@@ -138,6 +141,7 @@ let extensions = [];
 
         if (success && extensions.length) {
             $('#extensions_loaded').show(200);
+            $('#extensions_settings').show(200);
             $('#extensions_list').empty();
 
             for (let extension of extensions) {
@@ -146,6 +150,7 @@ let extensions = [];
         }
         else {
             $('#extensions_loaded').hide(200);
+            $('#extensions_settings').hide(200);
             $('#extensions_list').empty();
         }
     }
