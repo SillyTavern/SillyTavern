@@ -2253,7 +2253,7 @@
             ///////////////////////////////////////////
             async function getSettings(type){//timer
  
-                //console.log('getSettings() pinging server for settings request');
+//console.log('getSettings() pinging server for settings request');
                 jQuery.ajax({    
                     type: 'POST', 
                     url: '/getsettings', 
@@ -2267,12 +2267,9 @@
                     contentType: "application/json",
                     //processData: false, 
                     success: function(data){
-//					console.log('processing loaded settings');
                         if(data.result != 'file not find'){
-//						console.log('getSettings() -- settings file found');
                             settings = JSON.parse(data.settings);
                             if(settings.username !== undefined){
-//							console.log('getSettings() -- Username -- '+settings.username);
                                 if(settings.username !== ''){
                                     name1 = settings.username;
                                     $('#your_name').val(name1);
@@ -2337,15 +2334,14 @@
                             if(settings.anchor_order !== undefined) anchor_order = parseInt(settings.anchor_order);
                             if(settings.style_anchor !== undefined) style_anchor = !!settings.style_anchor;
                             if(settings.character_anchor !== undefined) character_anchor = !!settings.character_anchor;
-							
+
 						//load poweruser options	
 							if(settings.auto_connect !== undefined) auto_connect = !!settings.auto_connect;
                             if(settings.auto_load_chat !== undefined) auto_load_chat = !!settings.auto_load_chat;
-							
+						
                             rep_pen = settings.rep_pen;
                             rep_pen_size = settings.rep_pen_size;
-                            
-                            
+   
                             var addZeros = "";
                             if(isInt(temp)) addZeros = ".00";
                             $('#temp').val(temp);
@@ -2373,7 +2369,6 @@
                             $('#rep_pen_size_counter').html(rep_pen_size+" Tokens");
                             
                             //Novel
-                            
                             temp_novel = settings.temp_novel;
                             rep_pen_novel = settings.rep_pen_novel;
                             rep_pen_size_novel = settings.rep_pen_size_novel;
@@ -2416,6 +2411,7 @@
                             }
                             
                            //Load User's Name and Avatar
+
                             user_avatar = settings.user_avatar;
                             $('.mes').each(function(){
                                 if($(this).attr('ch_name') == name1){
@@ -2426,27 +2422,26 @@
 					//Load the API server URL from settings
                             api_server = settings.api_server;
                             $('#api_url_text').val(api_server);
-							
-			//RossAscends: auto-connect to last API function (fires when API URL exists in settings and auto_connect is true)		
-							if(api_server !== ''&& auto_connect == true){
-								$('#api_button').click();			
-							}
+
                         }
 						
 			//RossAscends: auto-load last character function (fires when active_character is defined and auto_load_chat is true)
+
 						if(settings.active_character !== undefined){
-							//console.log('getSettings() -- active_character -- '+settings.active_character);
                                 if(settings.active_character !== ''){
                                     active_character = settings.active_character;
-									//console.log('getSettings() -- auto_load_chat -- '+auto_load_chat);
 									if (auto_load_chat == true){
-										//console.log('getSettings() - trying to click .character_select div with ID #CharID'+active_character);
 										$('#CharID'+active_character).click(); //will auto-select and load chat of last selected character is auto_load_chat is true
 									}
                                 }
                            }
+			//RossAscends: auto-connect to last API function (fires when API URL exists in settings and auto_connect is true)		
+
+							if(api_server !== ''&& auto_connect == true){
+								$('#api_button').click();	
+							}
+
                         if(!is_checked_colab) isColab();
-                        
                     },
                     error: function (jqXHR, exception) {
                         console.log(exception);
