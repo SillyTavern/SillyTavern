@@ -117,7 +117,7 @@ let extensions = [];
         url.pathname = '/api/extensions';
 
         try {
-            const getExtensionsResult = await fetch(url, { method: 'GET' });
+            const getExtensionsResult = await fetch(url, { method: 'GET', headers: { 'Bypass-Tunnel-Reminder': '' } });
 
             if (getExtensionsResult.ok) {
                 const data = await getExtensionsResult.json();
