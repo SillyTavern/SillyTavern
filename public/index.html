@@ -2979,32 +2979,34 @@
     <div id="character_popup">
             
             <div id="character_popup_text">
-                <img id="character_cross" src="img/cross.png" style="position: absolute; right: 15px; top: 15px; width: 20px; height: 20px; cursor: pointer; opacity: 0.6">
-                
-                <div><img src="img/book2.png" id="advanced_book_logo"><h3 id="character_popup_text_h3" style="margin-left: 38px;">Create character</h3></div>
-            
+                <div>
+					<img src="img/book2.png" id="advanced_book_logo">
+				</div>
+					
+				<div>
+					<h3 id="character_popup_text_h3">Create character</h3>
+				</div>
             </div>
-            
+            <img id="character_cross" src="img/cross.png" style="position: absolute; right: 15px; top: 15px; width: 20px; height: 20px; cursor: pointer; opacity: 0.6">
             <div id="personality_div">
-                <h4>Personality summary</h4><h5>A brief description of the personality (<a href="/notes/2" target="_blank">?</a>)</h5>
+                <h4>Personality summary</h4><h5>A brief description of the personality <a href="/notes/2" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
                 <input id="personality_textarea" name="personality" placeholder="" form="form_create" class="text_pole" autocomplete="off">
             </div>
             
             <div id="scenario_div">
                 <h4>Scenario</h4>
-                <h5>Circumstances and context of the dialogue (<a href="/notes/12" target="_blank">?</a>)</h5>
+                <h5>Circumstances and context of the dialogue <a href="/notes/12" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
                 <input id="scenario_pole" name="scenario" class="text_pole" maxlength="9999" value="" autocomplete="off" form="form_create">
             </div>
             
             <div id="mes_example_div">
-                <h4>Examples of dialogue</h4>
-                <h5>Forms a personality more clearly (<a href="/notes/11" target="_blank">?</a>)</h5>
-            </div>
-            <textarea id="mes_example_textarea" name="mes_example" placeholder="" form="form_create"></textarea>
-            
-            
+				<div>
+					<h4>Examples of dialogue</h4>
+					<h5>Forms a personality more clearly <a href="/notes/11" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
+				</div>
+				<textarea id="mes_example_textarea" name="mes_example" placeholder="" form="form_create"></textarea>
+			</div>
             <div id="character_popup_ok" class="menu_button">Save</div>
-            <div></div>
             
     </div>
     <div id="shadow_select_chat_popup">
@@ -3013,15 +3015,18 @@
                 <img id="select_chat_cross" src="img/cross.png" style="position: absolute; right: 15px; top:14px; width: 20px; height: 20px; cursor: pointer; opacity: 0.6">
 
             </div>
-            <div id="select_chat_import">
+            <div id="select_chat_import"> <!-- import chat popup header -->
                 
-                <div style="display: inline-block;" id="chat_import_button"><a>+import</a>&nbsp;</div><div style="display: inline-block; color:#757575;">(<a href="/notes/10" target="_blank">?</a>)</div>
-                <form id="form_import_chat"  action="javascript:void(null);" method="post" enctype="multipart/form-data" style="display: none;">
-                    <input type="file" id="chat_import_file" accept=".json, .jsonl" name="avatar">
-                    <input id="chat_import_file_type" name="file_type" class="text_pole" maxlength="999" size="2" value="" autocomplete="off" style="display: none;">
-                    <input id="chat_import_avatar_url" name="avatar_url" class="text_pole" maxlength="999" size="2" value="" autocomplete="off" style="display: none;">
-                    <input id="chat_import_character_name" name="character_name" class="text_pole" maxlength="999" size="2" value="" autocomplete="off" style="display: none;">
-                </form>
+						<input id="chat_import_button" type="submit" value="+Import">
+					<div>
+						<a href="/notes/10" class="notes-link" target="_blank"><span class="note-link-span">?</span></a>
+					</div>
+					<form id="form_import_chat"  action="javascript:void(null);" method="post" enctype="multipart/form-data" style="display: none;">
+						<input type="file" id="chat_import_file" accept=".json, .jsonl" name="avatar">
+						<input id="chat_import_file_type" name="file_type" class="text_pole" maxlength="999" size="2" value="" autocomplete="off" style="display: none;">
+						<input id="chat_import_avatar_url" name="avatar_url" class="text_pole" maxlength="999" size="2" value="" autocomplete="off" style="display: none;">
+						<input id="chat_import_character_name" name="character_name" class="text_pole" maxlength="999" size="2" value="" autocomplete="off" style="display: none;">
+					</form>
             </div>
             
             <div id="select_chat_div">
@@ -3107,11 +3112,11 @@
                 </div>
                 
                 <div id="description_div">
-                    <h4>Description</h4><h5>Description of personality and other characteristics (<a href="/notes/1" target="_blank">?</a>)</h5>
+                    <h4>Description</h4><h5>Description of personality and other characteristics <a href="/notes/1" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
                 <textarea id="description_textarea" name="description" placeholder=""></textarea>
                 </div>
                 <div id="first_message_div">
-                <h4>First message</h4><h5>First message from the character (<a href="/notes/3" target="_blank">?</a>)</h5>
+                <h4>First message</h4><h5>First message from the character <a href="/notes/3" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
                 <textarea id="firstmessage_textarea" name="first_mes" placeholder=""></textarea>
                 </div>
                 
@@ -3165,7 +3170,7 @@
                 <div id="online_status2">
                     <div id="online_status_indicator2"></div><div id="online_status_text2">Not connected</div>
                 </div>
-                <h4>Preset settings</h4><h5>Selecting settings (<a href="/notes/4" target="_blank">?</a>)</h5>
+                <h4>Preset settings</h4><h5>Selecting settings <a href="/notes/4" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
                 <select id="settings_perset">
                     <option value="gui">GUI KoboldAI Settings</option>
                 </select>
@@ -3184,7 +3189,7 @@
                 <div style="position: absolute; right:152px; top:-25px; opacity:0.25;"><a href="https://novelai.net/" target="_blank"><img src="img/novelai.png" style="width:auto;height:22px;"></a></div>
                 <form  action="javascript:void(null);" method="post" enctype="multipart/form-data">
 
-                    <h4>API key</h4><h5>Where to get (<a href="/notes/6" target="_blank">?</a>)</h5>
+                    <h4>API key</h4><h5>Where to get <a href="/notes/6" class="notes-link" target="_blank"><span class="note-link-span"><span class="note-link-span">?</span></span></a></h5>
                     <input id="api_key_novel" name="api_key_novel" class="text_pole" maxlength="500" value="" autocomplete="off">
 					<Br>
                     <input id="api_button_novel" type="submit" value="Connect">
@@ -3193,12 +3198,12 @@
                 <div id="online_status3">
                     <div id="online_status_indicator3"></div><div id="online_status_text3">No connection...</div>
                 </div>
-                <h4>Model</h4><h5>Selecting NovelAI model (<a href="/notes/8" target="_blank">?</a>)</h5>
+                <h4>Model</h4><h5>Selecting NovelAI model <a href="/notes/8" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
                 <select id="model_novel_select" class="option_select_right_menu" style='margin-bottom: 16px;'>
                     <option value="euterpe-v2">Euterpe</option>
                     <option value="krake-v2">Krake</option>
                 </select>
-                <h4>Preset settings</h4><h5>Selecting settings (<a href="/notes/7" target="_blank">?</a>)</h5>
+                <h4>Preset settings</h4><h5>Selecting settings <a href="/notes/7" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
                 <select id="settings_perset_novel" class="option_select_right_menu">
                     <option value="gui">Default</option>
                 </select>
@@ -3240,7 +3245,7 @@
                 </div>
 				
                 <h4>Anchors Order</h4>
-				<h5>Helps to increase the length of messages (<a href="/notes/9" target="_blank">?</a>)</h5>
+				<h5>Helps to increase the length of messages <a href="/notes/9" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
                 <select id="anchor_order">
                     <option value="0">Character Anchor - Style Anchor</option>
                     <option value="1">Style Anchor - Character Anchor</option>
