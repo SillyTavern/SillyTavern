@@ -466,7 +466,7 @@
                 characters.forEach(function(item, i, arr) {
                     var this_avatar = default_avatar;
                     if(item.avatar != 'none'){
-                        this_avatar = "characters/"+item.avatar+"#"+Date.now();
+                        this_avatar = "characters/"+item.avatar+"?"+Date.now();
 
                     }
                     $("#rm_print_characters_block").prepend('<div class=character_select chid='+i+'><div class=avatar><img src="'+this_avatar+'"></div><div class=ch_name>'+item.name+'</div></div>');
@@ -569,7 +569,7 @@
                     
                     for(var i = 0; i < load_ch_count.length;i++){
                         
-                        characters[i] = [];
+                        //characters[i] = [];
                         characters[i] = getData[i];
                         
                         //console.log(characters[i]);
@@ -765,7 +765,7 @@
                         if(characters[this_chid].avatar != 'none'){
                             avatarImg = "characters/"+characters[this_chid].avatar;
                             if(is_mes_reload_avatar !== false){
-                                avatarImg+="#"+is_mes_reload_avatar;
+                                avatarImg+="?"+is_mes_reload_avatar;
                                 //console.log(avatarImg);
                             }
                         }else{
