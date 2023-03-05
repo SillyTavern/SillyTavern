@@ -167,31 +167,47 @@ let extensions = [];
             addExtensionScript(extension);
         }
 
-        function addExtensionStyle(extension) {
+        async function addExtensionStyle(extension) {
             if (extension.metadata.css) {
-                url.pathname = `/api/style/${extension.name}`;
-                const href = url.toString();
+                try {
+                    url.pathname = `/api/style/${extension.name}`;
+                    const link = url.toString();
 
-                if ($(`link[href="${href}"]`).length === 0) {
-                    const link = document.createElement('link');
-                    link.rel = 'stylesheet';
-                    link.type = 'text/css';
-                    link.href = href;
-                    $('head').append(link);
+                    const result = await fetch(link, { method: 'GET', headers: { 'Bypass-Tunnel-Reminder': 'bypass' } });
+                    const text = await result.text();
+
+                    if ($(`style[id="${link}"]`).length === 0) {
+                        const style = document.createElement('style');
+                        style.id = link;
+                        style.innerHTML = text;
+                        $('head').append(style);
+                    }
+                }
+                catch (error) {
+                    console.log(error);
                 }
             }
         }
 
-        function addExtensionScript(extension) {
+        async function addExtensionScript(extension) {
             if (extension.metadata.js) {
-                url.pathname = `/api/script/${extension.name}`;
-                const src = url.toString();
+                try {
+                    url.pathname = `/api/script/${extension.name}`;
+                    const link = url.toString();
 
-                if ($(`script[src="${src}"]`).length === 0) {
-                    const script = document.createElement('script');
-                    script.type = 'module';
-                    script.src = src;
-                    $('body').append(script);
+                    const result = await fetch(link, { method: 'GET', headers: { 'Bypass-Tunnel-Reminder': 'bypass' } });
+                    const text = await result.text();
+    
+                    if ($(`script[id="${link}"]`).length === 0) {
+                        const script = document.createElement('script');
+                        script.id = link;
+                        script.type = 'module';
+                        script.innerHTML = text;
+                        $('body').append(script);
+                    }
+                }
+                catch (error) {
+                    console.log(error);
                 }
             }
         }
