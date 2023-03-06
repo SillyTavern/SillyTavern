@@ -1639,7 +1639,7 @@ input[type="range"] {
     background-color: var(--black30a);
     backdrop-filter: blur(50px);
     -webkit-backdrop-filter: blur(50px);
-    grid-template-rows: 50px 100px 100px 110px auto;
+    grid-template-rows: 50px 100px 100px 100px auto;
 	grid-gap: 10px;
     max-width: 800px;
     height: calc(100vh - 50px);
@@ -2137,20 +2137,16 @@ span.warning {
     flex-direction: row;
     align-items: baseline;
     justify-content: space-between;
-    width: 92%;
+    width: 100%;
 }
 
 #talkativeness_expander {
     flex: 1;
 }
 
-#talkativeness_div {
-    margin-left: 36px;
-    padding-top: 10px;
-}
 
 #talkativeness_div input[type="range"] {
-    width: 92%;
+    width: 100%;
 }
 
 #talkativeness_hint span {
