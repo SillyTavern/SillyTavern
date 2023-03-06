@@ -12,16 +12,16 @@ let extensions = [];
         <div class="extensions_url_block">
             <input id="extensions_connect" class="menu_button" type="submit" value="Connect" />
             <span class="expander"></span>
-            <input id="extensions_autoconnect" type="checkbox"/><h4>Auto-connect</h4>
+            <label for="extensions_autoconnect"><input id="extensions_autoconnect" type="checkbox"/>Auto-connect</label>
         </div>
         <div id="extensions_status">Not connected</div>
-        <div id="extensions_settings">
-            <h4>Extension settings</h4>
-        </div>
         <div id="extensions_loaded">
             <h4>Active extensions</h4>
             <ul id="extensions_list">
             </ul>
+        </div>
+        <div id="extensions_settings">
+            <h3>Extension settings</h3>
         </div>
     </div>
     `;
@@ -41,8 +41,7 @@ let extensions = [];
     }
     
     #extensions_status {
-        margin: 10px;
-        opacity: 0.85;
+        margin-bottom: 10px;
         font-weight: 700;
     }
     
@@ -50,28 +49,24 @@ let extensions = [];
         background-color: green;
     }
     
-    .extensions_block input[type="submit"] {
-        cursor: pointer;
-        color: #fff;
-        opacity: 0.7;
-        padding: 10px;
-        font-size: 1rem;
-        height: 2.5rem;
-        transition: 0.3s;
-    }
-    
     .extensions_block input[type="checkbox"] {
         margin-left: 10px;
+        margin-right: 10px;
     }
     
+    label[for="extensions_autoconnect"] {
+        display: flex;
+        align-items: center;
+        margin: 0 !important;
+    }
+
     .extensions_url_block {
         display: flex;
         align-items: center;
-        margin: 10px;
-        width: 90%
+        justify-content: space-between;
     }
     
-    .extensions_url_block- h4 {
+    .extensions_url_block h4 {
         display: inline;
     }
     
