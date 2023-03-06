@@ -43,17 +43,10 @@
             var default_user_name = "You";
             var name1 = default_user_name;
             var name2 = systemUserName;
+            var name2 = "Chloe";
             // might want to migrate this to 'system message' code
-            var chat = [{
-                name: systemUserName,
-                is_user: false,
-                is_name: true,
-                create_date: 0,
-                mes: '\n*You went inside. The air smelled of fried meat, tobacco and a hint of wine. A dim light was cast by candles, and a fire crackled in the fireplace. It seems to be a very pleasant place. Behind the wooden bar is an elf waitress, she is smiling. Her ears are very pointy, and there is a twinkle in her eye. She wears glasses and a white apron. As soon as she noticed you, she immediately came right up close to you.*\n\n' +
-                    ' "Hello there! How is your evening going?"<br><br>\n' +
-                    '<img src="img/star_dust_city.png" width=80%; display:block;">\n'
-            }];
-            
+            var chat = [{name: 'Chloe',is_user: false,is_name: true,create_date: 0,mes: '\n*You went inside. The air smelled of fried meat, tobacco and a hint of wine. A dim light was cast by candles, and a fire crackled in the fireplace. It seems to be a very pleasant place. Behind the wooden bar is an elf waitress, she is smiling. Her ears are very pointy, and there is a twinkle in her eye. She wears glasses and a white apron. As soon as she noticed you, she immediately came right up close to you.*\n\n' +' "Hello there! How is your evening going?"<br><br>\n'+'<img src="img/star_dust_city.png" width=80%; display:block;">\n'}];
+            var safetychat = [{name: 'Chloe',is_user: false,is_name: true,create_date: 0,mes: '\n*You deleted a charcter and arrived back here for safety reasons! Pick another character!*\n\n'}];
             var chat_create_date = 0;
 			
 			//RossAscends: Added function to format dates used in files and chat timestamps to a humanized format.
@@ -63,15 +56,18 @@
 			//New chats made with characters will use this new formatting.
 			//Useable variable is (( humanizedISO8601Datetime ))
 			
-			var baseDate = new Date(Date.now());
-			var humanYear = baseDate.getFullYear();
-			var humanMonth = (baseDate.getMonth()+1);
-			var humanDate = baseDate.getDate();
-			var humanHour = (baseDate.getHours() < 10? '0' : '') + baseDate.getHours();
-			var humanMinute = (baseDate.getMinutes() < 10? '0' : '') + baseDate.getMinutes();
-			var humanSecond = (baseDate.getSeconds() < 10? '0' : '') + baseDate.getSeconds();
-			var humanMillisecond = (baseDate.getMilliseconds() < 10? '0' : '') + baseDate.getMilliseconds();
-			var humanizedISO8601DateTime = (humanYear+"-"+humanMonth+"-"+humanDate+" @"+humanHour+"h "+humanMinute+"m "+humanSecond+"s "+humanMillisecond+"ms");
+			function humanizedISO8601DateTime() {
+				let baseDate = new Date(Date.now());
+				let humanYear = baseDate.getFullYear();
+				let humanMonth = (baseDate.getMonth()+1);
+				let humanDate = baseDate.getDate();
+				let humanHour = (baseDate.getHours() < 10? '0' : '') + baseDate.getHours();
+				let	humanMinute = (baseDate.getMinutes() < 10? '0' : '') + baseDate.getMinutes();
+				let humanSecond = (baseDate.getSeconds() < 10? '0' : '') + baseDate.getSeconds();
+				let humanMillisecond = (baseDate.getMilliseconds() < 10? '0' : '') + baseDate.getMilliseconds();
+				let HumanizedDateTime = (humanYear+"-"+humanMonth+"-"+humanDate+" @"+humanHour+"h "+humanMinute+"m "+humanSecond+"s "+humanMillisecond+"ms");
+				return HumanizedDateTime;
+			};
 			
 			
             var default_ch_mes = "Hello";
@@ -80,6 +76,7 @@
             var generatedPromtCache = '';
             var characters = [];
             var this_chid;
+			var active_character;
             var backgrounds = [];
             var default_avatar = 'img/fluffy.png';
             var is_colab = false;
@@ -178,6 +175,8 @@
             var anchor_order = 0;
             var style_anchor = true;
             var character_anchor = true;
+			var auto_connect = false;
+			var auto_load_chat = false;
             
             var main_api = 'kobold';
             //novel settings
@@ -226,21 +225,39 @@
 				xhr.setRequestHeader("X-CSRF-Token", token);
 			});
 			
+
 			$.get("/csrf-token")
 				.then(data => {
 					token = data.token;
+					getCharacters();
 					getSettings("def");
 					getLastVersion();
-					getCharacters();
-
+					//getCharacters();
 					printMessages();
 					getBackgrounds();
 					getUserAvatars();
+					autoloadchat();
+					autoconnect();
 				});
 				
-			            $('#characloud_url').click(function(){
-                window.open('https://boosty.to/tavernai', '_blank');
-            });	
+			//RossAscends: a smaller load-up function to be used instead of refreshing the page in cases like deleting a character and changing username	
+			function QuickRefresh(){  
+					clearChat();
+					//characters.length = 0		//if this could be enabled it would allow the GetCharacters function to detect files added or removed from the char dir on each panel load
+					console.log('quickRefresh() -- active_character -- '+active_character);
+					console.log('quickRefresh() -- this_chid -- '+this_chid);
+					getSettings("def");
+					getCharacters();
+					getUserAvatars();
+					//console.log(chat);
+					printMessages();
+					$( "#rm_button_selected_ch" ).css("class","deselected-right-tab");
+					$( "#rm_button_selected_ch" ).children("h2").text('');
+					if (NavToggle.checked === false) {
+						document.getElementById('nav-toggle').click();
+					};
+			}
+				
             $('#character_search_bar').on('input', function() {
                 const searchValue = $(this).val().trim().toLowerCase();
                 
@@ -254,6 +271,10 @@
                     });
                 }
             });
+            
+		    $('#characloud_url').click(function(){
+					window.open('https://boosty.to/tavernai', '_blank');
+				});	
 			function checkOnlineStatus(){
                 //console.log(online_status);
                 if(online_status == 'no_connection'){
@@ -364,7 +385,6 @@
                     }
                 }
             }
-            
             function resultCheckStatus(){
                 is_api_button_press = false;  
                 checkOnlineStatus();
@@ -431,23 +451,26 @@
             }
             
             function printCharacters(){
-                //console.log(1);
+				//console.log('printCharacters() entered');
+
                 $("#rm_print_characters_block").empty();
+				console.log('printCharacters() -- sees '+characters.length+' characters.');
                 characters.forEach(function(item, i, arr) {
+
                     var this_avatar = default_avatar;
                     if(item.avatar != 'none'){
                         this_avatar = "characters/"+item.avatar+"#"+Date.now();
 
-                    }
-                    $("#rm_print_characters_block").prepend('<div class=character_select chid='+i+'><div class=avatar><img src="'+this_avatar+'"></div><div class=ch_name>'+item.name+'</div></div>');
-                    //console.log(item.name);
+                    }		//RossAscends: changed 'prepend' to 'append' to make alphabetical sorting display correctly.
+                    $("#rm_print_characters_block").append('<div class=character_select chid='+i+' id="CharID'+i+'"><div class=avatar><img src="'+this_avatar+'"></div><div class=ch_name>'+item.name+'</div></div>');
+					console.log('printcharacters() -- printing -- ChID '+i+' ('+item.name+')');
                 });
-                
-                
+  
             }
             async function getCharacters() {
-                
-                const response = await fetch("/getcharacters", {
+				//console.log('getCharacters() -- entered');
+				//console.log(characters);
+                var response = await fetch("/getcharacters", {						//RossAscends: changed from const
                     method: "POST",
                     headers: {
 						"Content-Type": "application/json",
@@ -456,26 +479,44 @@
                     body: JSON.stringify({
                             "": ""
                         })
-
                 });
                 if (response.ok === true) {
-                    const getData = await response.json();
-                    //console.log(getData);
+					
+					var getData = '';												//RossAscends: reset to force array to update to account for deleted character.
+                    var getData = await response.json();							//RossAscends: changed from const
+					//console.log(getData);					
+
                     //var aa = JSON.parse(getData[0]);
-                    const load_ch_count = Object.getOwnPropertyNames(getData);
                     
+					var load_ch_count = Object.getOwnPropertyNames(getData);		//RossAscends: change from const to create dynamic character load amounts.
+					var charCount = load_ch_count.length;
+					//console.log('/getcharacters -- expecting to load '+charCount+' characters.')
                     for(var i = 0; i < load_ch_count.length;i++){
-                        
                         characters[i] = [];
                         characters[i] = getData[i];
-                        
-                        //console.log(characters[i]);
+						//console.log('/getcharacters -- loaded character #'+(i+1)+' ('+characters[i].name+')');
                     }
-                    characters.sort((a,b) =>  a.create_date - b.create_date );
+					//RossAscends: updated character sorting to be alphabetical
+                    characters.sort(function (a,b) { 
+					//console.log('sorting characters: '+a.name+' vs '+b.name);
+						if(a.name < b.name){	
+							return -1
+						}
+						if (a.name > b.name) {
+							return 1;
+						}
+						return 0;
+
+					});
+						//console.log(characters);
+					
                     //characters.reverse();
-                    if(this_chid != undefined) $("#avatar_url_pole").val(characters[this_chid].avatar);
+					//console.log('/getcharacters -- this_chid -- '+this_chid);
+                    if(this_chid != undefined && this_chid != 'invalid-safety-id') $("#avatar_url_pole").val(characters[this_chid].avatar);
+					//console.log('/getcharacters -- sending '+i+' characters to /printcharacters');
                     printCharacters();
-                    //console.log(propOwn.length);
+                    
+					//console.log(propOwn.length);
                     //return JSON.parse(getData[0]);
                     //const getData = await response.json();
                     //var getMessage = getData.results[0].text;
@@ -508,7 +549,7 @@
 
                 }
             }
-       async function isColab() {
+			async function isColab() {
                 is_checked_colab = true;
                 const response = await fetch("/iscolab", {
                     method: "POST",
@@ -602,7 +643,9 @@
                 }
             }
             function printMessages(){
-                chat.forEach(function(item, i, arr) {
+				//console.log(chat);
+				//console.log('printMessages() -- printing messages for -- '+this_chid+' '+active_character+' '+characters[this_chid]);
+				chat.forEach(function(item, i, arr) {
                     addOneMessage(item);
                 });
             }
@@ -643,7 +686,7 @@
                     if (mes.force_avatar) {
                         avatarImg = mes.force_avatar;
                     } 
-                    else if(this_chid == undefined){
+                    else if(this_chid == undefined || this_chid == "invalid-safety-id"){
                         avatarImg = "img/chloe.png";
                     }
                     else{
@@ -917,7 +960,7 @@
                         chat[chat.length-1]['name'] = name1;
                         chat[chat.length-1]['is_user'] = true;
                         chat[chat.length-1]['is_name'] = true;
-                        chat[chat.length-1]['send_date'] = Date.now();
+                        chat[chat.length-1]['send_date'] = humanizedISO8601DateTime();
                         chat[chat.length-1]['mes'] = textareaText;
                         chat[chat.length-1]['extra'] = {};
 
@@ -1356,12 +1399,13 @@
                                         chat[chat.length-1]['name'] = name2;
                                         chat[chat.length-1]['is_user'] = false;
                                         chat[chat.length-1]['is_name'] = this_mes_is_name;
-                                        chat[chat.length-1]['send_date'] = Date.now();
+                                        chat[chat.length-1]['send_date'] = humanizedISO8601DateTime();
                                         getMessage = $.trim(getMessage);
                                         chat[chat.length-1]['mes'] = getMessage;
                                         addOneMessage(chat[chat.length-1]);
                                         $( "#send_but" ).css("display", "inline");
                                         $( "#loading_mes" ).css("display", "none");
+										//console.log('/savechat called by /Generate');
                                         saveChat();
                                     }else{
                                         //console.log('run force_name2 protocol');
@@ -1392,7 +1436,6 @@
                     is_send_press = false;
                 }
             }
-            
             async function saveChat() {
                 chat.forEach(function(item, i) {
                     if(item['is_user']){
@@ -1423,7 +1466,7 @@
                 });
             }
             async function getChat() {
-                //console.log(characters[this_chid].chat);
+                console.log('/getchat -- entered for -- '+characters[this_chid].name);
                 jQuery.ajax({    
                     type: 'POST', 
                     url: '/getchat', 
@@ -1443,13 +1486,16 @@
                             }
                             //chat =  data;
                             chat_create_date = chat[0]['create_date'];
+							//console.log('/getchat saw chat_create_date: '+chat_create_date);
                             chat.shift();
 
                         }else{
-                            chat_create_date = Date.now();
+                            chat_create_date = humanizedISO8601DateTime();
                         }
                         //console.log(chat);
+						//console.log('getChatResults called by /getchat');
                         getChatResult();
+						//console.log('savechat called by /getchat');
                         saveChat();
                     },
                     error: function (jqXHR, exception) {
@@ -1459,7 +1505,6 @@
                     }
                 });
             }
-            
             function getChatResult(){
                 name2 = characters[this_chid].name;
                 if(chat.length > 1){
@@ -1479,7 +1524,7 @@
                     chat[0]['name'] = name2;
                     chat[0]['is_user'] = false;
                     chat[0]['is_name'] = true;
-                    chat[0]['send_date'] = Date.now();
+                    chat[0]['send_date'] = humanizedISO8601DateTime();
                     if(characters[this_chid].first_mes != ""){
                         chat[0]['mes'] = characters[this_chid].first_mes;
                     }else{
@@ -1505,7 +1550,7 @@
                 }
             });
 			
-			//RossAscends: Lets add some hotkeys
+			//RossAscends: Additional hotkeys
 			document.addEventListener('keydown', (event) => {
 			
 				if(event.ctrlKey && event.key == "Enter") {				// Ctrl+Enter for Regeneration Last Response
@@ -1527,11 +1572,12 @@
 			
             $( "#rm_button_create" ).css("class","deselected-right-tab");
             $( "#rm_button_characters" ).css("class","deselected-right-tab");
+			
             $( "#rm_button_settings" ).click(function() {
                 selected_button = 'settings';
                 menu_type = 'settings';
                 $( "#rm_characters_block" ).css("display", "none");
-                $( "#rm_api_block" ).css("display", "block");
+                $( "#rm_api_block" ).css("display", "grid");
                 $('#rm_api_block').css('opacity',0.0);
                 $('#rm_api_block').transition({  
                         opacity: 1.0,
@@ -1564,12 +1610,12 @@
             });
             function select_rm_create(){
                 menu_type = 'create';
+//console.log('select_rm_Create() -- selected button: '+selected_button);
                 if(selected_button == 'create'){
                     if(create_save_avatar != ''){
                         $("#add_avatar_button").get(0).files = create_save_avatar;
                         read_avatar_load($("#add_avatar_button").get(0));
                     }
-                    
                 }
                 $( "#rm_characters_block" ).css("display", "none");
                 $( "#rm_api_block" ).css("display", "none");
@@ -1583,11 +1629,13 @@
                         complete: function() {  }
                 });
                 $( "#rm_info_block" ).css("display", "none");
-                
                 $( "#delete_button_div" ).css("display", "none");
+                $( "#delete_button" ).css("display", "none");
+				$( "#export_button" ).css("display", "none");
                 $("#create_button").css("display", "block");
                 $("#create_button").attr("value", "Create");
-                $('#result_info').html('&nbsp;');
+				//RossAscends: commented this out as part of the auto-loading token counter
+                //$('#result_info').html('&nbsp;');
                 $( "#rm_button_characters" ).css("class","deselected-right-tab");
                 $( "#rm_button_settings" ).css("class","deselected-right-tab");
                 $( "#rm_button_selected_ch" ).css("class","deselected-right-tab");
@@ -1613,7 +1661,7 @@
                 $("#form_create").attr("actiontype", "createcharacter");
             }
             function select_rm_characters(){
-                
+                QuickRefresh();
                 menu_type = 'characters';
                 $( "#rm_characters_block" ).css("display", "block");
                 $('#rm_characters_block').css('opacity',0.0);
@@ -1644,14 +1692,15 @@
                 $( "#rm_button_settings" ).css("class","deselected-right-tab");
                 $( "#rm_button_selected_ch" ).css("class","deselected-right-tab");
             }
-            
             function select_selected_character(chid){ //character select
-                
+                //console.log('select_selected_character() -- starting with input of -- '+chid+' (name:'+characters[chid].name+')');
                 select_rm_create();
                 menu_type = 'character_edit';
-                $( "#delete_button_div" ).css("display", "block");
+                $( "#delete_button" ).css("display", "block");
+				$( "#export_button" ).css("display", "block");
                 $( "#rm_button_selected_ch" ).css("class","selected-right-tab");
                 var display_name = characters[chid].name;
+				
 
                 $( "#rm_button_selected_ch" ).children("h2").text(display_name);
                 
@@ -1690,19 +1739,32 @@
                 $("#name_div").css("display", "none");
                 
                 $("#form_create").attr("actiontype", "editcharacter");
+				active_character = chid;
+				//console.log('select_selected_character() -- active_character -- '+chid+'(ChID of '+display_name+')');
+				saveSettings();
+				//console.log('select_selected_character() -- called saveSettings() to save -- active_character -- '+active_character+'(ChID of '+display_name+')');
+				
             }
             $(document).on('click', '.character_select', function(){
-                if(this_chid !== $(this).attr("chid")){
+                if(this_chid !== $(this).attr("chid")){					//if clicked on a different character from what was currently selected
                     if(!is_send_press){
-                        this_edit_mes_id = undefined;
+						this_edit_mes_id = undefined;
                         selected_button = 'character_edit';
                         this_chid = $(this).attr("chid");
+						active_character = this_chid;
                         clearChat();
                         chat.length = 0;
-                        getChat();
-                        
+                        getChat();  
+						var count_tokens = encode(JSON.stringify(characters[this_chid].description+characters[this_chid].personality+characters[this_chid].scenario+characters[this_chid].mes_example)).length;
+			//RossAscends: added token counter to load when a character is selected, instead of waiting for an edit.
+                            if(count_tokens < 1024){
+                                $('#result_info').html(count_tokens+" Tokens");
+                            }else{
+                                $('#result_info').html("<font color=red>"+count_tokens+" Tokens(TOO MANY TOKENS)</font>");
+                            }
+						console.log('Clicked on '+characters[this_chid].name+' Active_Character set to: '+active_character+' (ChID:'+this_chid+')');
                     }
-                }else{
+                }else{	//if clicked on character that was already selected
                     selected_button = 'character_edit';
                     select_selected_character(this_chid);
                 }
@@ -1852,7 +1914,6 @@
                 is_advanced_char_open = false;
                 $('#character_popup').css('display', 'none');
             });
-            
             $("#dialogue_popup_ok").click(function(){
                 $("#shadow_popup").css('display', 'none');
                 $("#shadow_popup").css('opacity:', 0.0);
@@ -1861,19 +1922,29 @@
                     bg_file_for_del.parent().remove();
                 }
                 if(popup_type == 'del_ch'){
+					console.log('Deleting character -- ChID: '+this_chid+ ' -- Name: '+characters[this_chid].name);
                     var msg   = jQuery('#form_create').serialize(); // ID form
                     jQuery.ajax({    
                         method: 'POST', 
                         url: '/deletecharacter',
                         beforeSend: function(){
                             select_rm_info("Character deleted");
-
                             //$('#create_button').attr('value','Deleting...'); 
                         },
                         data: msg,
                         cache: false,  
                         success: function(html){
-                            location.reload();
+					//RossAscends: setting active character to null in order to avoid array errors. 
+					//this allows for dynamic refresh of character list after deleting a character.
+							$('#character_cross').click();
+							active_character = 'invalid-safety-id';		//unsets the chid in settings (this prevents AutoLoadChat from trying to load the wrong ChID
+							this_chid = 'invalid-safety-id';			//unsets expected chid before reloading (related to getCharacters/printCharacters from using old arrays)
+							characters.length = 0;						// resets the characters array, forcing getcharacters to reset
+							name2="Chloe";								// replaces deleted charcter name with Chloe, since she wil be displayed next.
+							chat = safetychat;							// sets up chloe to tell user about having deleted a character
+							saveSettings();								// saving settings to keep changes to variables
+							QuickRefresh();								// call quick refresh of Char list, clears chat, and loads Chloe 'post-char-delete' message.
+                            //location.reload();						// this is Humi's original code
                             //getCharacters();
                             //$('#create_button_div').html(html);  
                         }  
@@ -1890,11 +1961,11 @@
                 if (popup_type === 'del_world' && world_info) {
                     deleteWorldInfo(world_info);
                 }
+				//Make a new chat for selected character
                 if(popup_type == 'new_chat' && this_chid != undefined && menu_type != "create"){//Fix it; New chat doesn't create while open create character menu
                     clearChat();
                     chat.length = 0;
-					characters[this_chid].chat = Date.now(); //RossAscends: added character name to new chat filenames and replaced Date.now() with humanizedISO8601DateTime;
-                    //characters[this_chid].chat = (name2 +' - '+ humanizedISO8601DateTime); //RossAscends: added character name to new chat filenames and replaced Date.now() with humanizedISO8601DateTime;
+                    characters[this_chid].chat = (name2 +' - '+ humanizedISO8601DateTime()); //RossAscends: added character name to new chat filenames and replaced Date.now() with humanizedISO8601DateTime;
                     $("#selected_chat_pole").val(characters[this_chid].chat);
                     timerSaveEdit = setTimeout(() => {$("#create_button").click();},durationSaveEdit);
                     getChat();
@@ -1932,7 +2003,6 @@
                 $("#shadow_popup").css('display', 'block');
                 $('#shadow_popup').transition({ opacity: 1.0 ,duration: animation_rm_duration, easing:animation_rm_easing});
             }
-
             function read_bg_load(input) {
                 if (input.files && input.files[0]) {
                     var reader = new FileReader();
@@ -2029,8 +2099,8 @@
                 var formData = new FormData($("#form_create").get(0));
                 if($("#form_create").attr("actiontype") == "createcharacter"){
                     
-                    if($("#character_name_pole").val().length > 0){
-						
+                    if($("#character_name_pole").val().length > 0){		//if the character name text area isn't empty (only posible when creating a new character)
+						//console.log('/createcharacter entered');
                         jQuery.ajax({    
                             type: 'POST', 
                             url: '/createcharacter', 
@@ -2043,7 +2113,7 @@
                             contentType: false,
                             processData: false, 
                             success: function(html){
-                                $('#character_cross').click();
+                                $('#character_cross').click();		//closes the advanced character editing popup
                                 $("#character_name_pole").val('');
                                 create_save_name = '';
                                 $("#description_textarea").val('');
@@ -2073,13 +2143,15 @@
                                     select_rm_info("Character created");
 
                                     $('#rm_info_block').transition({ opacity: 1.0 ,duration: 2000});
-
+									
+								
                                     getCharacters();
                                 }else{
                                     $('#result_info').html(html);
                                 }
                             },
                             error: function (jqXHR, exception) {
+							//alert('ERROR: '+xhr.status+ ' Status Text: '+xhr.statusText+' '+xhr.responseText);
                                 $('#create_button').removeAttr("disabled");
                             }
                         });  
@@ -2087,8 +2159,8 @@
                         $('#result_info').html("Name not entered");
                     }
                 }else{
-                    console.log($("#add_avatar_button").val());
-
+				//console.log('/editcharacter -- entered.');
+				//console.log('Avatar Button Value:'+$("#add_avatar_button").val());
                     jQuery.ajax({    
                         type: 'POST', 
                         url: '/editcharacter', 
@@ -2101,14 +2173,12 @@
                         contentType: false,
                         processData: false, 
                         success: function(html){
-
                             $('.mes').each(function(){
                                 if($(this).attr('ch_name') != name1){
                                     $(this).children('.avatar').children('img').attr('src', $('#avatar_load_preview').attr('src'));
                                 }
                             });
                             if(chat.length === 1 ){
-                                
                                 var this_ch_mes = default_ch_mes;
                                 if($('#firstmessage_textarea').val() != ""){
                                     this_ch_mes = $('#firstmessage_textarea').val();
@@ -2126,24 +2196,19 @@
                                 }
                             }
                             $('#create_button').removeAttr("disabled");
-						
                             getCharacters();
-
 
                             $("#add_avatar_button").replaceWith($("#add_avatar_button").val('').clone(true));
                             $('#create_button').attr('value','Save');
-							
-                            var count_tokens = encode(JSON.stringify(characters[this_chid].description+characters[this_chid].personality+characters[this_chid].scenario+characters[this_chid].mes_example)).length;
+							//console.log('/editcharacters -- this_chid -- '+this_chid);
+							if(this_chid != undefined && this_chid != 'invalid-safety-id'){   //added check to avoid trying to load tokens in case of character deletion
+								var count_tokens = encode(JSON.stringify(characters[this_chid].description+characters[this_chid].personality+characters[this_chid].scenario+characters[this_chid].mes_example)).length;
+							}
                             if(count_tokens < 1024){
                                 $('#result_info').html(count_tokens+" Tokens");
                             }else{
                                 $('#result_info').html("<font color=red>"+count_tokens+" Tokens(TOO MANY TOKENS)</font>");
                             }
-                            
-                            //$('#result_info').transition({ opacity: 0.0 ,delay: 500,duration: 1000,easing: 'in-out',complete: function() { 
-                                    //$('#result_info').transition({ opacity: 1.0,duration: 0}); 
-                                    //$('#result_info').html('&nbsp;');
-                            //}});
                         },
                         error: function (jqXHR, exception) {
                             $('#create_button').removeAttr("disabled");
@@ -2155,7 +2220,7 @@
             });
             $( "#delete_button" ).click(function() {
                 popup_type = 'del_ch';
-                callPopup('<h3>Delete the character?</h3>');
+                callPopup('<h3>Delete the character?</h3>Page will reload and you will be returned to Chloe.');
             });
             $( "#rm_info_button" ).click(function() {
                 $('#rm_info_avatar').html('');
@@ -2247,23 +2312,25 @@
 	            }
 			}); 
 
-		// RossAscends: Added functionality that will close the RightNav panels when User clicks outside them			
+		// RossAscends: Added functionality that will close the RightNav panel click outside of it or related panels (adv editing popup, or dialog popups)		
 			
 			var NavToggle = document.getElementById("nav-toggle");
 			var PanelPin = document.getElementById("rm_button_panel_pin");
 			$('document').ready(function(){
 				$("html").click(function(e){
-				if (NavToggle.checked === true && PanelPin.checked === false) {
-					if ($(e.target).attr('id') !== "nav-toggle") {
-						if (document.querySelector('#right-nav-panel').contains(e.target) === false){
-							document.getElementById('nav-toggle').click();
+					if (NavToggle.checked === true && PanelPin.checked === false) {
+						if ($(e.target).attr('id') !== "nav-toggle") {
+							if (document.querySelector('#right-nav-panel').contains(e.target) === false){
+								if (document.querySelector('#character_popup').contains(e.target) === false){
+									if (document.querySelector('#dialogue_popup').contains(e.target) === false){
+										document.getElementById('nav-toggle').click();
+									}	
+								}
+							}
 						}
-					}
-				};
+					};
+				});
 			});
-			});
-			 
-		//-------------------------------------------------------------------------------------------------------------
             
             $( "#options_button" ).click(function() {					// this is the options button click function, shows the options menu if closed
                 if($("#options").css('display') === 'none' && $("#options").css('opacity') == 0.0){
@@ -2292,7 +2359,6 @@
                     callPopup('<h3>Start new chat?</h3>');
                 }
             });
-									
             $( "#option_regenerate" ).click(function() {
                 if(is_send_press == false){
                     is_send_press = true;
@@ -2477,6 +2543,7 @@
                 }
             }
              async function getUserAvatars(){
+				$("#user_avatar_block").html("");		//RossAscends: necessary to avoid doubling avatars each QuickRefresh.
                 const response = await fetch("/getuseravatars", {
                     method: "POST",
                     headers: {
@@ -2492,6 +2559,7 @@
                     const getData = await response.json();
                     //background = getData;
                     //console.log(getData.length);
+					
                     for(var i = 0; i < getData.length; i++) {
                         //console.log(1);
                         appendUserAvatar(getData[i]);
@@ -2509,7 +2577,7 @@
             }
 
             function appendUserAvatar(name) {
-                const block = $("#user_avatar_block").append('<div imgfile="'+name+'" class=avatar><img src="User Avatars/'+name+'" width=60px height=120px></div>');
+                const block = $("#user_avatar_block").append('<div imgfile="'+name+'" class="avatar"><img src="User Avatars/'+name+'"</div>');
                 highlightSelectedAvatar();
             }
 
@@ -2550,6 +2618,14 @@
                 character_anchor = !!$('#character_anchor').prop('checked');
                 saveSettings();
             });
+			$('#auto-connect-checkbox').change(function() {
+                auto_connect = !!$('#auto-connect-checkbox').prop('checked');
+                saveSettings();
+            });
+			$('#auto-load-chat-checkbox').change(function() {
+                auto_load_chat = !!$('#auto-load-chat-checkbox').prop('checked');
+                saveSettings();
+            });
             $(document).on('input', '#rep_pen', function() {
                 rep_pen = $(this).val();
                 if(isInt(rep_pen)){
@@ -2564,7 +2640,6 @@
                 $('#rep_pen_size_counter').html( $(this).val()+" Tokens");
                 var repPenSizeTimer = setTimeout(saveSettings, 500);
             });
-            
             //Novel
             $(document).on('input', '#temp_novel', function() {
                 temp_novel = $(this).val();
@@ -2594,7 +2669,7 @@
             ///////////////////////////////////////////
             async function getSettings(type){//timer
  
-                
+//console.log('getSettings() pinging server for settings request');
                 jQuery.ajax({    
                     type: 'POST', 
                     url: '/getsettings', 
@@ -2616,25 +2691,25 @@
                                     $('#your_name').val(name1);
                                 }
                             }
-                            
-                            
-                            //Novel
+							                            
+                            //Load which API we are using
                             if(settings.main_api != undefined){
                                 main_api = settings.main_api;
                                 $("#main_api option[value="+main_api+"]").attr('selected', 'true');
                                 changeMainAPI();
                             }
+							//load Novel API KEY is exists
                             if(settings.api_key_novel != undefined){
                                 api_key_novel = settings.api_key_novel;
                                 $("#api_key_novel").val(api_key_novel);
                             }
+							//load the rest of the Novel settings without any checks
                             model_novel = settings.model_novel;
                             $("#model_novel_select option[value="+model_novel+"]").attr('selected', 'true');
                             
                             novelai_setting_names = data.novelai_setting_names;
                             novelai_settings = data.novelai_settings;
                             novelai_settings.forEach(function(item, i, arr) {
-
                                 novelai_settings[i] = JSON.parse(item);
                             });
                             var arr_holder = {};
@@ -2649,7 +2724,8 @@
 
                             preset_settings_novel = settings.preset_settings_novel;
                             $("#settings_perset_novel option[value="+novelai_setting_names[preset_settings_novel]+"]").attr('selected', 'true');
-                            //Kobold
+
+                            //Load KoboldAI settings 
                             koboldai_setting_names = data.koboldai_setting_names;
                             koboldai_settings = data.koboldai_settings;
                             koboldai_settings.forEach(function(item, i, arr) {
@@ -2666,7 +2742,8 @@
                             koboldai_setting_names = arr_holder;
 
                             preset_settings = settings.preset_settings;
-
+							
+						//Load AI model config settings (temp, context length, anchors, and anchor order)
                             temp = settings.temp;
                             amount_gen = settings.amount_gen;
                             if(settings.max_context !== undefined) max_context = parseInt(settings.max_context);
@@ -2675,10 +2752,14 @@
                             if(settings.character_anchor !== undefined) character_anchor = !!settings.character_anchor;
                             if(settings.world_info_depth !== undefined) world_info_depth = Number(settings.world_info_depth);
                             if(settings.world_info_budget !== undefined) world_info_budget = Number(settings.world_info_budget);
+
+						//load poweruser options	
+							if(settings.auto_connect !== undefined) auto_connect = !!settings.auto_connect;
+                            if(settings.auto_load_chat !== undefined) auto_load_chat = !!settings.auto_load_chat;
+						
                             rep_pen = settings.rep_pen;
                             rep_pen_size = settings.rep_pen_size;
-                            
-                            
+   
                             var addZeros = "";
                             if(isInt(temp)) addZeros = ".00";
                             $('#temp').val(temp);
@@ -2688,6 +2769,9 @@
                             $('#character_anchor').prop('checked', character_anchor);
                             $("#anchor_order option[value="+anchor_order+"]").attr('selected', 'true');
                             
+							$('#auto-connect-checkbox').prop('checked', auto_connect);
+                            $('#auto-load-chat-checkbox').prop('checked', auto_load_chat);
+							
                             $('#max_context').val(max_context);
                             $('#max_context_counter').html(max_context+' Tokens');
                             
@@ -2709,7 +2793,6 @@
                             $('#rep_pen_size_counter').html(rep_pen_size+" Tokens");
                             
                             //Novel
-                            
                             temp_novel = settings.temp_novel;
                             rep_pen_novel = settings.rep_pen_novel;
                             rep_pen_size_novel = settings.rep_pen_size_novel;
@@ -2727,7 +2810,7 @@
                             $('#rep_pen_size_novel').val(rep_pen_size_novel);
                             $('#rep_pen_size_counter_novel').html(rep_pen_size_novel+" Tokens");
                             
-                            //////////////////////
+                        //Enable GUI deference settings if GUI is selected for Kobold
                             if(preset_settings == 'gui'){
                                 $("#settings_perset option[value=gui]").attr('selected', 'true');
                                 $("#range_block").children().prop("disabled", true);
@@ -2750,14 +2833,16 @@
                                 }
                             }
                             
-                            //User
+                           //Load User's Name and Avatar
+
                             user_avatar = settings.user_avatar;
                             $('.mes').each(function(){
                                 if($(this).attr('ch_name') == name1){
                                     $(this).children('.avatar').children('img').attr('src', 'User Avatars/'+user_avatar);
                                 }
                             });
-
+							
+					//Load the API server URL from settings
                             api_server = settings.api_server;
                             $('#api_url_text').val(api_server);
 
@@ -2778,9 +2863,16 @@
                                 }
                             });
                             // end world info settings
+							
+					//get the character to auto-load
+							if(settings.active_character !== undefined){
+                                if(settings.active_character !== ''){
+									active_character = settings.active_character;				
+                                }
+                           }
                         }
+						
                         if(!is_checked_colab) isColab();
-                        
                     },
                     error: function (jqXHR, exception) {
                         console.log(exception);
@@ -2790,9 +2882,8 @@
                 });
 
             }
-
             async function saveSettings(type){
-
+//console.log('saveSettings() -- pinging server to save settings.');
                 jQuery.ajax({    
                     type: 'POST', 
                     url: '/savesettings', 
@@ -2808,6 +2899,8 @@
                             anchor_order: anchor_order,
                             style_anchor: style_anchor,
                             character_anchor: character_anchor,
+							auto_connect: auto_connect,
+							auto_load_chat: auto_load_chat,
                             main_api: main_api,
                             api_key_novel: api_key_novel,
                             rep_pen: rep_pen,
@@ -2819,9 +2912,10 @@
                             world_info: world_info,
                             world_info_depth: world_info_depth,
                             world_info_budget: world_info_budget,
+							active_character: active_character
                         }),
                     beforeSend: function(){
-
+//console.log('saveSettings() -- active_character -- '+active_character);
 
                     },
                     cache: false,
@@ -2831,8 +2925,10 @@
                     success: function(data){
                         //online_status = data.result;
                         if(type === 'change_name'){
-                            location.reload();
-                        }                        
+                            QuickRefresh();				//RossAscends: No more page reload on username change
+							//location.reload();
+                        }
+
                     },
                     error: function (jqXHR, exception) {
                         console.log(exception);
@@ -2870,7 +2966,6 @@
                 $('#shadow_select_chat_popup').css('display', 'none');
                 $('#load_select_chat_div').css('display', 'block');
             });
-            
             function isInt(value) {
                 return !isNaN(value) && 
                     parseInt(Number(value)) == value && 
@@ -2976,18 +3071,18 @@
                 this_edit_mes_id = undefined;
                 saveChat();
             }
-            
             $("#your_name_button").click(function() {
                 if(!is_send_press){
                     name1 = $("#your_name").val();
                     if(name1 === undefined || name1 == '') name1 = default_user_name;
-                    console.log(name1);
+                    //console.log(name1);
                     saveSettings('change_name');
                     
                 }
             });
             //Select chat
             async function getAllCharaChats() {
+			//console.log('getAllCharaChats() pinging server for character chat history.');
                 $('#select_chat_div').html('');
                 //console.log(characters[this_chid].chat);
                 jQuery.ajax({    
@@ -3005,18 +3100,21 @@
                         let dataArr = Object.values(data);
                         data = dataArr.sort((a, b) => a['file_name'].localeCompare(b['file_name']));
                         data = data.reverse();
+						
                         for (const key in data) {
-                            let strlen = 40;
+                            let strlen = 300;
                             let mes = data[key]['mes'];
-                            if(mes.length > strlen){
-                                mes = '...'+mes.substring(mes.length - strlen);
-                            }
-                            $('#select_chat_div').append('<div class="select_chat_block" file_name="'+data[key]['file_name']+'"><div class=avatar><img src="characters/'+characters[this_chid]['avatar']+'""></div><div class="select_chat_block_filename">'+data[key]['file_name']+'</div><div class="select_chat_block_mes">'+mes+'</div></div>');
-                            if(characters[this_chid]['chat'] == data[key]['file_name'].replace('.jsonl', '')){
-                                //children().last()
-                                $('#select_chat_div').children(':nth-last-child(1)').attr('highlight', true);
-                            }
-                        }
+							if(mes !== undefined){
+								if(mes.length > strlen){
+									mes = '...'+mes.substring(mes.length - strlen);
+								}
+								$('#select_chat_div').append('<div class="select_chat_block" file_name="'+data[key]['file_name']+'"><div class=avatar><img src="characters/'+characters[this_chid]['avatar']+'""></div><div class="select_chat_block_filename">'+data[key]['file_name']+'</div><div class="select_chat_block_mes">'+mes+'</div></div>');
+								if(characters[this_chid]['chat'] == data[key]['file_name'].replace('.jsonl', '')){
+									//children().last()
+									$('#select_chat_div').children(':nth-last-child(1)').attr('highlight', true);
+								}
+							}
+						}
                         //<div id="select_chat_div">
 
                         //<div id="load_select_chat_div">
@@ -3026,11 +3124,14 @@
                         //chat =  data;
                         //getChatResult();
                         //saveChat();
-                    },
+						//console.log('getAllCharaChats() -- Finished successfully');
+					},
                     error: function (jqXHR, exception) {
                         //getChatResult();
-                        console.log(exception);
+                        //console.log('getAllCharaChats() -- Failed');
+						console.log(exception);
                         console.log(jqXHR);
+						
                     }
                 });
             }
@@ -3117,8 +3218,6 @@
                 anchor_order = parseInt($('#anchor_order').find(":selected").val());
                 saveSettings();
             });
-            
-            
             function compareVersions(v1, v2) {
                 const v1parts = v1.split('.');
                 const v2parts = v2.split('.');
@@ -3145,9 +3244,6 @@
 
                 return 0;
             }
-            
-            
-            
             //**************************CHARACTER IMPORT EXPORT*************************//
             $( "#character_import_button" ).click(function() {
                 $("#character_import_file").click();
@@ -3206,9 +3302,6 @@
                 document.body.appendChild(link);
                 link.click();
            });
-        
-        
-        
         //**************************CHAT IMPORT EXPORT*************************//
             $( "#chat_import_button" ).click(function() {
                 $("#chat_import_file").click();
@@ -3228,7 +3321,7 @@
                 $("#chat_import_file_type").val(format);
                 //console.log(format);
                 var formData = new FormData($("#form_import_chat").get(0));
-
+//console.log('/importchat entered with: '+formData);
                 jQuery.ajax({    
                     type: 'POST', 
                     url: '/importchat', 
@@ -3718,7 +3811,83 @@
                 createNewWorldInfo();
             });
         });
+			//RossAscends: auto-load last character function (fires when active_character is defined and auto_load_chat is true)					
+			function autoloadchat(){
+				console.log('starting autoloadchat routine');
+				jQuery.ajax({    
+                    type: 'POST', 
+                    url: '/getsettings', 
+                    data: JSON.stringify({}),
+                    beforeSend: function(){
+                    },
+                    cache: false,
+                    dataType: "json",
+                    contentType: "application/json",
+                    success: function(data){
+                        if(data.result != 'file not find'){
+                            settings = JSON.parse(data.settings);
+							//get the character to auto-load
+							if(settings.active_character !== undefined){
+                                if(settings.active_character !== ''){
+									active_character = settings.active_character;				
+                                }
+                           }
+                        }
+						console.log('active_character = '+active_character);
+						console.log('auto_load_chat = '+auto_load_chat);
+						
+						if (active_character !== undefined && auto_load_chat == true){
+							$('#CharID'+active_character).click(); //will auto-select and load chat of last selected character is auto_load_chat is true
+						}
+					},
+					error: function (jqXHR, exception) {
+                        console.log(exception);
+                        console.log(jqXHR);
+
+                    }
+                });
+							
+			}	
+			//RossAscends: auto-connect to last API function (fires when API URL exists in settings and auto_connect is true)		
+			function autoconnect(){
+				console.log('starting autoconnect routine');
+				jQuery.ajax({    
+                    type: 'POST', 
+                    url: '/getsettings', 
+                    data: JSON.stringify({}),
+                    beforeSend: function(){
+                    },
+                    cache: false,
+                    dataType: "json",
+                    contentType: "application/json",
+                    //processData: false, 
+                    success: function(data){
+                        if(data.result != 'file not find'){
+                            settings = JSON.parse(data.settings);
+							
+					//Load the API server URL from settings
+                            api_server = settings.api_server;
+                            $('#api_url_text').val(api_server);
+                        }
+						console.log('api_server = '+ api_server );
+						console.log('auto_connect = '+ auto_connect);
+						if(api_server !== ''&& auto_connect == true){
+							$('#api_button').click();	
+						}
+					},
+					error: function (jqXHR, exception) {
+                        console.log(exception);
+                        console.log(jqXHR);
+
+                    }
+                });
+							
+			}	
+			
+		});
+		
     </script>
+
 <title>Tavern.AI</title>
 </head>
 <body>
@@ -3743,32 +3912,34 @@
     <div id="character_popup">
             
             <div id="character_popup_text">
-                <img id="character_cross" src="img/cross.png" style="position: absolute; right: 15px; top: 15px; width: 20px; height: 20px; cursor: pointer; opacity: 0.6">
-                
-                <div><img src="img/book2.png" id="advanced_book_logo"><h3 id="character_popup_text_h3" style="margin-left: 38px;">Create character</h3></div>
-            
+                <div>
+					<img src="img/book2.png" id="advanced_book_logo">
+				</div>
+					
+				<div>
+					<h3 id="character_popup_text_h3">Create character</h3>
+				</div>
             </div>
-            
+            <img id="character_cross" src="img/cross.png" style="position: absolute; right: 15px; top: 15px; width: 20px; height: 20px; cursor: pointer; opacity: 0.6">
             <div id="personality_div">
-                <h4>Personality summary</h4><h5>A brief description of the personality (<a href="/notes/2" target="_blank">?</a>)</h5>
+                <h4>Personality summary</h4><h5>A brief description of the personality <a href="/notes/2" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
                 <input id="personality_textarea" name="personality" placeholder="" form="form_create" class="text_pole" autocomplete="off">
             </div>
             
             <div id="scenario_div">
                 <h4>Scenario</h4>
-                <h5>Circumstances and context of the dialogue (<a href="/notes/12" target="_blank">?</a>)</h5>
+                <h5>Circumstances and context of the dialogue <a href="/notes/12" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
                 <input id="scenario_pole" name="scenario" class="text_pole" maxlength="9999" value="" autocomplete="off" form="form_create">
             </div>
             
             <div id="mes_example_div">
-                <h4>Examples of dialogue</h4>
-                <h5>Forms a personality more clearly (<a href="/notes/11" target="_blank">?</a>)</h5>
-            </div>
-            <textarea id="mes_example_textarea" name="mes_example" placeholder="" form="form_create"></textarea>
-            
-            
+				<div>
+					<h4>Examples of dialogue</h4>
+					<h5>Forms a personality more clearly <a href="/notes/11" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
+				</div>
+				<textarea id="mes_example_textarea" name="mes_example" placeholder="" form="form_create"></textarea>
+			</div>
             <div id="character_popup_ok" class="menu_button">Save</div>
-            <div></div>
             
     </div>
 
@@ -3885,15 +4056,18 @@
                 <img id="select_chat_cross" src="img/cross.png" style="position: absolute; right: 15px; top:14px; width: 20px; height: 20px; cursor: pointer; opacity: 0.6">
 
             </div>
-            <div id="select_chat_import">
+            <div id="select_chat_import"> <!-- import chat popup header -->
                 
-                <div style="display: inline-block;" id="chat_import_button"><a>+import</a>&nbsp;</div><div style="display: inline-block; color:#757575;">(<a href="/notes/10" target="_blank">?</a>)</div>
-                <form id="form_import_chat"  action="javascript:void(null);" method="post" enctype="multipart/form-data" style="display: none;">
-                    <input type="file" id="chat_import_file" accept=".json, .jsonl" name="avatar">
-                    <input id="chat_import_file_type" name="file_type" class="text_pole" maxlength="999" size="2" value="" autocomplete="off" style="display: none;">
-                    <input id="chat_import_avatar_url" name="avatar_url" class="text_pole" maxlength="999" size="2" value="" autocomplete="off" style="display: none;">
-                    <input id="chat_import_character_name" name="character_name" class="text_pole" maxlength="999" size="2" value="" autocomplete="off" style="display: none;">
-                </form>
+						<input id="chat_import_button" class="menu_button" type="submit" value="+Import">
+					<div>
+						<a href="/notes/10" class="notes-link" target="_blank"><span class="note-link-span">?</span></a>
+					</div>
+					<form id="form_import_chat"  action="javascript:void(null);" method="post" enctype="multipart/form-data" style="display: none;">
+						<input type="file" id="chat_import_file" accept=".json, .jsonl" name="avatar">
+						<input id="chat_import_file_type" name="file_type" class="text_pole" maxlength="999" size="2" value="" autocomplete="off" style="display: none;">
+						<input id="chat_import_avatar_url" name="avatar_url" class="text_pole" maxlength="999" size="2" value="" autocomplete="off" style="display: none;">
+						<input id="chat_import_character_name" name="character_name" class="text_pole" maxlength="999" size="2" value="" autocomplete="off" style="display: none;">
+					</form>
             </div>
             
             <div id="select_chat_div">
@@ -3907,7 +4081,7 @@
         </div>
     </div>
     <div id="shadow_tips_popup">
-        <div id="tips_popup" style="padding-top: 30px;">
+        <div id="tips_popup">
             <img id="tips_cross" src="img/cross.png" style="position: absolute; margin-left: 230px; width: 20px; height: 20px; cursor: pointer; opacity: 0.6">
             
             <img src="img/love.png" style="width: 45px;height: 45px; margin-bottom: 0px; opacity: 0.6;">
@@ -3951,43 +4125,33 @@
 		</div>
 		
         <div id="rm_ch_create_block" class="right_menu" style="display: none;">
-            <div id="rm_button_back" class="right_menu_button"><h2 style="color: rgb(188, 193, 200, 0.5);">&#8656;</h2></div>
-            
             <form id="form_create"  action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                
                 <div id="name_div">
                     <h4>Name</h4><h5>Character name</h5>
                 <input id="character_name_pole" name="ch_name" class="text_pole" maxlength="120" value="" autocomplete="off">
                 </div>
-				
-				<!--<div id="avatar_div" class="avatar_div" style="display: block;">
-                    <div id="avatar_div_div" class="avatar">
-						<img id="avatar_load_preview" src="img/fluffy.png" alt="avatar">
-					</div>
-					<input type="file" id="add_avatar_button" name="avatar" accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp">                    
-                </div>-->
-				
                 <div id="avatar_div" class="avatar_div">
                     <div id="avatar_div_div" class="avatar">
 						<img id="avatar_load_preview" src="img/fluffy.png" alt="avatar">
 					</div>
 					
-					<label for="add_avatar_button" class="add_avatar_button_label" title="Click to select a new avatar for this character">
+					<label for="add_avatar_button" class="menu_button" title="Click to select a new avatar for this character">
 						<input type="file" id="add_avatar_button" name="avatar" accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp">
 						Change Avatar
 					</label>
                 </div>
-                
+                <hr>
                 <div id="description_div">
-                    <h4>Description</h4><h5>Description of personality and other characteristics (<a href="/notes/1" target="_blank">?</a>)</h5>
+                    <h4>Description</h4><h5>Description of personality and other characteristics <a href="/notes/1" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
                 <textarea id="description_textarea" name="description" placeholder=""></textarea>
                 </div>
                 <div id="first_message_div">
-                <h4>First message</h4><h5>First message from the character (<a href="/notes/3" target="_blank">?</a>)</h5>
-                <textarea id="firstmessage_textarea" name="first_mes" placeholder=""></textarea>
+					<h4>First message</h4><h5>First message from the character <a href="/notes/3" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
+					<textarea id="firstmessage_textarea" name="first_mes" placeholder=""></textarea>
                 </div>
-                
-                <div id="avatar_url_div">
+				
+				<!-- these divs are invisible and used for server communication purposes -->
+				<div id="avatar_url_div">
                 <input id="avatar_url_pole" name="avatar_url" class="text_pole" maxlength="999" size="2" value="" autocomplete="off">
                 </div>
                 <div id="selected_chat_div">
@@ -3999,58 +4163,74 @@
                 <div id="last_mes_div">
                 <input id="last_mes_pole" name="last_mes" class="text_pole" maxlength="999" size="2" value="" autocomplete="off">
                 </div>
-                <input id="advanced_div" type="button" value="Advanced Edit">
-                <div id="export_character_div">
-                    <div id="result_info" style="width: 100px;">&nbsp;</div>
-                
-                    </div>
-                <div id="create_button_div">
-                <input id="create_button" type="submit" value="Create">
-                </div>
+				<!-- now back to normal divs for display purposes-->
+				
+				<input id="advanced_div" class="menu_button" type="button" value="Advanced Edit">
+                <div id="result_info" style="width: 100px;">&nbsp;</div>
+				<hr>	
+				<div class="form_create_bottom_buttons_block">
+						<div id="rm_button_back" class="menu_button">Go Back</div>
+						<input id="delete_button" class="menu_button" type="button" value="Delete">
+						<input id="export_button" class="menu_button" type="button" value="Export">
+						<input id="create_button" class="menu_button" type="submit" value="Create">
+					
+				</div>
+				
             </form>
-            <div id="delete_button_div">
-                <input id="delete_button" type="submit" value="Delete">
-                <input id="export_button" type="submit" value="Export">
-                
-            </div>
         </div>
         <div id="rm_api_block" class="right_menu" >
             
-            <h3 id="title_api">API</h3>
-            <select id="main_api" >
-                <option value="kobold">KoboldAI</option>
-                <option value="novel">NovelAI</option>
-            </select>
-            <div id="kobold_api" style="position: relative;">
-                <div style="position: absolute; right:188px; top:-34px; opacity:0.20;">
-					<a href="https://github.com/KoboldAI/KoboldAI-Client" target="_blank">
-						<img src="img/kobold.png" style="width:40px;height:40px;">
-					</a>
-				</div>
-                <form  action="javascript:void(null);" method="post" enctype="multipart/form-data">
+            <div id="main-API-selector-block">
+				<h3 id="title_api">API</h3>
+				<select id="main_api" >
+					<option value="kobold">KoboldAI</option>
+					<option value="novel">NovelAI</option>
+				</select>
+			</div>
+			
+			<div id="respective-settings-block">
+				<div id="kobold_api" style="position: relative;">	<!-- shows the kobold settings -->
+					<div class="API-logo">
+						<a href="https://github.com/KoboldAI/KoboldAI-Client" target="_blank">
+							<img src="img/kobold.png" style="width:40px;height:40px;">
+						</a>
+					</div>
+					<form  action="javascript:void(null);" method="post" enctype="multipart/form-data">
+						<h4>API url</h4><h5>Example: http://127.0.0.1:5000/api </h5>
+						<input id="api_url_text" name="api_url" class="text_pole" maxlength="500" value="" autocomplete="off">
+						<input id="api_button" class="menu_button" type="submit" value="Connect">
+						<img id="api_loading" src="img/load.svg" >
+						<div id="online_status2">
+							<div id="online_status_indicator2"></div>
+							<div id="online_status_text2">Not connected</div>
+						</div>
+					</form>
 
-                <h4>API url</h4><h5>Example: http://127.0.0.1:5000/api </h5>
-                <input id="api_url_text" name="api_url" class="text_pole" maxlength="500" value="" autocomplete="off">
-                <input id="api_button" type="submit" value="Connect">
-                <img id="api_loading" src="img/load.svg" >
-                </form>
-                <div id="online_status2">
-                    <div id="online_status_indicator2"></div><div id="online_status_text2">Not connected</div>
-                </div>
-                <h4>Preset settings</h4><h5>Selecting settings (<a href="/notes/4" target="_blank">?</a>)</h5>
-                <select id="settings_perset">
-                    <option value="gui">GUI KoboldAI Settings</option>
-                </select>
-                <div id="range_block">
-                    <h4>Temperature </h4><h5 id="temp_counter">select</h5>
-                    <input type="range" id="temp" name="volume" min="0.1" max="2.0" step="0.01">
-                    <!--<h4>Amount generation </h4><h5 id="amount_gen_counter">select</h5>
-                    <input type="range" id="amount_gen" name="volume" min="16" max="512" step="1">-->
-                    <h4>Repetition Penalty </h4><h5 id="rep_pen_counter">select</h5>
-                    <input type="range" id="rep_pen" name="volume" min="1" max="1.5" step="0.01">
-                    <h4>Repetition Penalty Range</h4><h5 id="rep_pen_size_counter">select</h5>
-                    <input type="range" id="rep_pen_size" name="volume" min="0" max="2048" step="1">
-                </div>
+					<hr>
+					
+					<div id="ai-presets-and-config-block">
+						<h4>Preset settings</h4><h5>Selecting settings <a href="/notes/4" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
+						<select id="settings_perset">
+							<option value="gui">GUI KoboldAI Settings</option>
+						</select>
+						<div id="range_block">
+							<div class="range-block">
+								<div class="range-block-title"><h4>Temperature </h4></div>
+								<div class="range-block-counter"><h5 id="temp_counter">select</h5></div>
+								<div class="range-block-range" ><input type="range" id="temp" name="volume" min="0.1" max="2.0" step="0.01"></div>
+							</div>
+							<div class="range-block">
+								<div class="range-block-title"><h4>Repetition Penalty </h4></div>
+								<div class="range-block-counter"><h5 id="rep_pen_counter">select</h5></div>
+								<div class="range-block-range" ><input type="range" id="rep_pen" name="volume" min="1" max="1.5" step="0.01"></div>
+							</div>
+							<div class="range-block">
+								<div class="range-block-title"><h4>Repetition Penalty Range</h4></div>
+								<div class="range-block-counter"><h5 id="rep_pen_size_counter">select</h5></div>
+								<div class="range-block-range" ><input type="range" id="rep_pen_size" name="volume" min="0" max="2048" step="1"></div>
+							</div>
+						</div>
+                        
                 <div id="softprompt_block">
                     <h4>Soft Prompt</h4>
                     <h5>About soft prompts (<a href="/notes/14" target="_blank">?</a>)</h5>
@@ -4058,58 +4238,63 @@
                         <option value="">None</option>
                     </select>
                 </div>
-            </div>
-            <div id="novel_api" style="display: none;position: relative;">
-                <div style="position: absolute; right:152px; top:-25px; opacity:0.25;"><a href="https://novelai.net/" target="_blank"><img src="img/novelai.png" style="width:auto;height:22px;"></a></div>
-                <form  action="javascript:void(null);" method="post" enctype="multipart/form-data">
-
-                    <h4>API key</h4><h5>Where to get (<a href="/notes/6" target="_blank">?</a>)</h5>
-                    <input id="api_key_novel" name="api_key_novel" class="text_pole" maxlength="500" value="" autocomplete="off">
-					<Br>
-                    <input id="api_button_novel" type="submit" value="Connect">
-                    <img id="api_loading_novel" src="img/load.svg" >
-                </form>
+					</div>
+				</div>
+			
+				<div id="novel_api" style="display: none;position: relative;">   <!-- shows the novel settings -->
+					<div class="API-logo">
+						<a href="https://novelai.net/" target="_blank">
+							<img src="img/novelai.png" style="width:auto;height:22px;">
+						</a>
+					</div>
+					<form  action="javascript:void(null);" method="post" enctype="multipart/form-data">
+						<h4>API key</h4>
+						<h5>Where to get <a href="/notes/6" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
+						<input id="api_key_novel" name="api_key_novel" class="text_pole" maxlength="500" value="" autocomplete="off">
+						<Br>
+						<input id="api_button_novel" class="menu_button" type="submit" value="Connect">
+						<img id="api_loading_novel" src="img/load.svg" >
+					</form>
                 <div id="online_status3">
-                    <div id="online_status_indicator3"></div><div id="online_status_text3">No connection...</div>
+                    <div id="online_status_indicator3"></div>
+					<div id="online_status_text3">No connection...</div>
                 </div>
-                <h4>Model</h4><h5>Selecting NovelAI model (<a href="/notes/8" target="_blank">?</a>)</h5>
+                <h4>Model</h4>
+				<h5>Selecting NovelAI model <a href="/notes/8" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
                 <select id="model_novel_select" class="option_select_right_menu" style='margin-bottom: 16px;'>
                     <option value="euterpe-v2">Euterpe</option>
                     <option value="krake-v2">Krake</option>
                 </select>
-                <h4>Preset settings</h4><h5>Selecting settings (<a href="/notes/7" target="_blank">?</a>)</h5>
+                <h4>Preset settings</h4><h5>Selecting settings <a href="/notes/7" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
                 <select id="settings_perset_novel" class="option_select_right_menu">
                     <option value="gui">Default</option>
                 </select>
                 <div id="range_block_novel">
                     <h4>Temperature </h4><h5 id="temp_counter_novel">select</h5>
                     <input type="range" id="temp_novel" name="volume" min="0.1" max="2.0" step="0.01">
-                    <!--<h4>Amount generation </h4><h5 id="amount_gen_counter">select</h5>
-                    <input type="range" id="amount_gen" name="volume" min="16" max="512" step="1">-->
                     <h4>Repetition Penalty </h4><h5 id="rep_pen_counter_novel">select</h5>
                     <input type="range" id="rep_pen_novel" name="volume" min="1" max="1.5" step="0.01">
                     <h4>Repetition Penalty Range</h4><h5 id="rep_pen_size_counter_novel">select</h5>
                     <input type="range" id="rep_pen_size_novel" name="volume" min="0" max="2048" step="1">
                 </div>
             </div>
-            <hr style="margin-bottom: 5px;">
+			</div>
+		
+			<hr>
             
-            <h4>Your Avatar</h4><h5></h5>
-            <div id="user_avatar_block">
-                <div class="avatar_upload">+</div>
-            </div>
-
-            <form id="form_upload_avatar"  action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                <input type="file" id="avatar_upload_file" accept="image/png" name="avatar">
-            </form>
-            <form id='form_change_name' action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                <h4>Name</h4>
-                <input id="your_name" name="your_name" class="text_pole" maxlength="35" value="" autocomplete="off">
-				<br>
-                <input id="your_name_button" type="submit" title="Click to set a new User Name (reloads page)" value="Change Name">
-            </form>
-            <hr>
-
+			<div id="user-settings-block">
+				<h3>User Settings</h3>
+				<h4>Your Avatar</h4>
+                <div id="user_avatar_block">
+                    <div class="avatar_upload">+</div>
+                </div>
+				<form id='form_change_name' action="javascript:void(null);" method="post" enctype="multipart/form-data">
+					<h4>Name</h4>
+					<input id="your_name" name="your_name" class="text_pole" maxlength="35" value="" autocomplete="off">
+					<br>
+					<input id="your_name_button" class="menu_button" type="submit" title="Click to set a new User Name (reloads page)" value="Change Name">
+				</form>
+			</div>
             <div id="world_info_block">
                 <h3>World Info</h3>
                 <div id="world_info_buttons">
@@ -4142,39 +4327,30 @@
                 <input type="range" id="world_info_budget" name="volume" min="100" max="500" step="1">
             </div>
             <hr>
-            <div style="opacity:0.80">
-                <h3 style='margin-bottom: 10px;'>Pro Settings</h3>
+
+			<div id="pro-settings-block">
+                <h3>Pro Settings</h3>
                 <div id="amount_gen_block">
-                <h4>Amount generation </h4><h5 id="amount_gen_counter">select</h5>
-                <input type="range" id="amount_gen" name="volume" min="16" max="512" step="1">
+					<h4>Amount generation </h4>
+					<h5 id="amount_gen_counter">select</h5>
+					<input type="range" id="amount_gen" name="volume" min="16" max="512" step="1">
                 </div>
                 <div id="max_context_block">
-                    <h4>Context Size</h4><h5 id="max_context_counter">select</h5>
+                    <h4>Context Size</h4>
+					<h5 id="max_context_counter">select</h5>
                     <input type="range" id="max_context" name="volume" min="512" max="2048" step="1">
                 </div>
-                <h4>Anchors Order</h4><h5>Helps to increase the length of messages (<a href="/notes/9" target="_blank">?</a>)</h5>
-                <select id="anchor_order">
-                    <option value="0">Character Anchor - Style Anchor</option>
-                    <option value="1">Style Anchor - Character Anchor</option>
-                </select>
-                <div id="anchor_checkbox">
-                    <input id="character_anchor" type="checkbox"/><h4>Character Anchor</h4>
-                    <input id="style_anchor" type="checkbox"/><h4>Style Anchor</h4>
-                </div>
-            </div>
-        </div>
-        <div id="rm_character_import" class="right_menu" style="display: none;">
-            <form id="form_import"  action="javascript:void(null);" method="post" enctype="multipart/form-data">
-            <input type="file" id="character_import_file" accept=".json, image/png" name="avatar">
-            <input id="character_import_file_type" name="file_type" class="text_pole" maxlength="999" size="2" value="" autocomplete="off">
-            </form>
-        </div>
-        <div id="rm_characters_block" class="right_menu">
-            <div id="rm_button_create" class="right_menu_button"><h2>+New Character</h2></div>
-            <div id="character_import_button" class="right_menu_button"><h2>+Import Character</h2></div>
-			
-			<div id="characloud_url" title="Find more characters on CharaCloud (coming soon)">
-				<img src="img/cloud_logo.png">
+				<div id="anchors-block"><h4>Anchors Order</h4>
+					<h5>Helps to increase the length of messages <a href="/notes/9" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
+					<select id="anchor_order">
+						<option value="0">Character Anchor - Style Anchor</option>
+						<option value="1">Style Anchor - Character Anchor</option>
+					</select>
+					<div id="anchor_checkbox">
+						<input id="character_anchor" type="checkbox"/><h4>Character Anchor</h4>
+						<input id="style_anchor" type="checkbox"/><h4>Style Anchor</h4>
+					</div>
+				</div>
 			</div>
 			
             <form id="form_character_search_form" action="javascript:void(null);">
@@ -4182,13 +4358,42 @@
             </form>
 
             <div id="rm_print_characters_block"></div>
+			<hr>
+			
+			<div ="power-user-options-block">
+				<h3>Power User Options</h3>
+				<div id="power-user-option-checkboxes">
+						<input id="auto-connect-checkbox" type="checkbox"/><h4>Auto-connects Last Server</h4>
+						<input id="auto-load-chat-checkbox" type="checkbox"/><h4>Auto-load Last Chat</h4>
+				</div>
+            </div>
 			
         </div>
-        <div id="rm_info_block" class="right_menu">
-            <div id="rm_info_panel">
-            <div id="rm_info_avatar"></div>
-            <div id="rm_info_text"></div>
-            <div id="rm_info_button">Back</div>
+		
+		<div id="rm_character_import" class="right_menu" style="display: none;">
+			<form id="form_import"  action="javascript:void(null);" method="post" enctype="multipart/form-data">
+				<input type="file" id="character_import_file" accept=".json, image/png" name="avatar">
+				<input id="character_import_file_type" name="file_type" class="text_pole" maxlength="999" size="2" value="" autocomplete="off">
+			</form>
+		</div>
+		
+		
+		<div id="rm_characters_block" class="right_menu">
+			<div class="form_create_bottom_buttons_block">
+				<div id="rm_button_create" class="menu_button">+New Character</div>
+				<div id="character_import_button" class="menu_button">+Import Character</div>
+				<div id="characloud_url" class="menu_button" title="Find more characters on CharaCloud (coming soon)">
+					<img src="img/cloud_logo.png">
+				</div>
+			</div>
+			<div id="rm_print_characters_block"></div>
+			
+        </div>
+			<div id="rm_info_block" class="right_menu">
+				<div id="rm_info_panel">
+				<div id="rm_info_avatar"></div>
+				<div id="rm_info_text"></div>
+				<div id="rm_info_button" class="menu_button">Back</div>
             </div>
         </div>
     </nav>
@@ -4213,14 +4418,15 @@
                 </div>
                 <textarea id="send_textarea" placeholder="Not connected to API!" name="text"></textarea>
 				
-<script type="text/javascript">
-	//this script makes the chat input text area resize vertically to match the text size (limited by CSS at 50% window height)
-    $('#send_textarea').on('input', function () {
-        this.style.height = '40px';
-        this.style.height =
-            (this.scrollHeight) + 'px';
-    });
-</script>
+			
+				<script type="text/javascript">
+		//RossAscends: this script makes the chat input text area resize vertically to match the text size (limited by CSS at 50% window height)	
+					$('#send_textarea').on('input', function () {
+						this.style.height = '40px';
+						this.style.height =
+						(this.scrollHeight) + 'px';
+					});
+				</script>
 
                 <div id="send_but_sheld">
 					<div id="loading_mes"></div>
@@ -4230,5 +4436,8 @@
             </form>
         </div>
     </div>
+	
+	
+	
 </body>
 </html>
