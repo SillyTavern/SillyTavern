@@ -1125,12 +1125,6 @@ width: 103px;
     font-size: 16px;
 }
 
-#world_info_edit_button {
-    cursor: pointer;
-    color: #ffffffaa;
-    margin-left: 10px;
-}
-
 #world_popup {
     display: none;
 	background-color: rgba(0,0,0,0.3);
@@ -1152,15 +1146,17 @@ width: 103px;
 }
 
 #world_popup_bottom_holder {
-    padding: 1rem 0;
+    padding: 0.5rem 0;
     margin: 0 18px;
     display: flex;
     flex-direction: row;
     justify-content: flex-end;
+    align-items: center;
 }
 
 #world_popup_bottom_holder div {
     cursor: pointer;
+    width: fit-content;
     user-select: none; 
     opacity: 0.8;
 }
@@ -1171,11 +1167,6 @@ width: 103px;
 
 #world_info_buttons {
     margin-left: 1rem;
-}
-
-#world_info_depth_block, #world_info_budget_block {
-    opacity: 0.8;
-    margin-top: 20px;
 }
 
 #world_info_depth_block input[type="range"], #world_info_budget_block input[type="range"] {

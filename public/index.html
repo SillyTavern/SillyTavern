@@ -239,9 +239,16 @@
 					autoloadchat();
 					autoconnect();
 				});
-				
+			
+            function flushSettings() {
+                $('#settings_perset').empty();
+                $('#world_info').empty();
+                $('#world_info').append('<option value="None">None</option>');
+            }
+
 			//RossAscends: a smaller load-up function to be used instead of refreshing the page in cases like deleting a character and changing username	
 			function QuickRefresh(){  
+                        flushSettings();
 					clearChat();
 					//characters.length = 0		//if this could be enabled it would allow the GetCharacters function to detect files added or removed from the char dir on each panel load
 					console.log('quickRefresh() -- active_character -- '+active_character);
@@ -2544,6 +2551,7 @@
             }
              async function getUserAvatars(){
 				$("#user_avatar_block").html("");		//RossAscends: necessary to avoid doubling avatars each QuickRefresh.
+                $('#user_avatar_block').append('<div class="avatar_upload">+</div>');
                 const response = await fetch("/getuseravatars", {
                     method: "POST",
                     headers: {
@@ -3810,7 +3818,7 @@
             $('#world_create_button').click(() => {
                 createNewWorldInfo();
             });
-        });
+        
 			//RossAscends: auto-load last character function (fires when active_character is defined and auto_load_chat is true)					
 			function autoloadchat(){
 				console.log('starting autoloadchat routine');
@@ -3956,7 +3964,7 @@
                 <div class="world_popup_expander">&nbsp;</div>
                 <form id="form_rename_world" action="javascript:void(null);" method="post" enctype="multipart/form-data">
                     <input id="world_popup_name" name="world_popup_name" class="text_pole" maxlength="99" size="32" value="" autocomplete="off">
-                    <input id="world_popup_name_button" type="submit" value="Rename">
+                    <input id="world_popup_name_button" class="menu_button" type="submit" value="Rename">
                 </form>
             </div>
         </div>
@@ -4043,7 +4051,7 @@
                             &nbsp;
                             <span class="world_entry_form_token_counter">0</span>
                         </h5>
-                        <input class="delete_entry_button" type="button" value="Delete Entry" />
+                        <input class="menu_button delete_entry_button" type="submit" value="Delete Entry" />
                     </div>
                 </form>
             </div>
@@ -4233,8 +4241,8 @@
                         
                 <div id="softprompt_block">
                     <h4>Soft Prompt</h4>
-                    <h5>About soft prompts (<a href="/notes/14" target="_blank">?</a>)</h5>
-                    <select id="softprompt" class="option_select_right_menu">
+                    <h5>About soft prompts <a href="/notes/14" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
+                    <select id="softprompt">
                         <option value="">None</option>
                     </select>
                 </div>
@@ -4288,6 +4296,9 @@
                 <div id="user_avatar_block">
                     <div class="avatar_upload">+</div>
                 </div>
+                <form id="form_upload_avatar"  action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                    <input type="file" id="avatar_upload_file" accept="image/png" name="avatar">
+                </form>
 				<form id='form_change_name' action="javascript:void(null);" method="post" enctype="multipart/form-data">
 					<h4>Name</h4>
 					<input id="your_name" name="your_name" class="text_pole" maxlength="35" value="" autocomplete="off">
@@ -4295,6 +4306,9 @@
 					<input id="your_name_button" class="menu_button" type="submit" title="Click to set a new User Name (reloads page)" value="Change Name">
 				</form>
 			</div>
+
+			<hr>
+
             <div id="world_info_block">
                 <h3>World Info</h3>
                 <div id="world_info_buttons">
@@ -4302,26 +4316,26 @@
                     <div id="world_import_button" class="right_menu_button"><h4>+Import</h4></div>
                 </div>
             </div>
-            <h5>How to use (<a href="/notes/13" target="_blank">?</a>)</h5>
+            <h4>How to use <a href="/notes/13" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h4>
             <div id="rm_world_import" class="right_menu" style="display: none;">
                 <form id="form_world_import" action="javascript:void(null);" method="post" enctype="multipart/form-data">
                     <input type="file" id="world_import_file" accept=".json" name="avatar">
                 </form>
             </div>
-            <select id="world_info" class="option_select_right_menu">
+            <select id="world_info">
                 <option value="None">None</option>
             </select>
-            <input id="world_info_edit_button" type="button" value="Details">
+            <input id="world_info_edit_button" class="menu_button" type="submit" value="Details">
             <div id="world_info_depth_block">
                 <h4>
-                    Scan Depth (<a href="/notes/13_1.html" target="_blank">?</a>)
+                    Scan Depth <a href="/notes/13_1" class="notes-link" target="_blank"><span class="note-link-span">?</span></a>
                 </h4>
                 <h5 id="world_info_depth_counter">depth</h5>
                 <input type="range" id="world_info_depth" name="volume" min="1" max="10" step="1">
             </div>
             <div id="world_info_budget_block">
                 <h4>
-                    Token Budget (<a href="/notes/13_2.html" target="_blank">?</a>)
+                    Token Budget <a href="/notes/13_2" class="notes-link" target="_blank"><span class="note-link-span">?</span></a>
                 </h4>
                 <h5 id="world_info_budget_counter">budget</h5>
                 <input type="range" id="world_info_budget" name="volume" min="100" max="500" step="1">
@@ -4352,15 +4366,10 @@
 					</div>
 				</div>
 			</div>
-			
-            <form id="form_character_search_form" action="javascript:void(null);">
-                <input id="character_search_bar" class="text_pole" type="search" placeholder="Search here..." />
-            </form>
 
-            <div id="rm_print_characters_block"></div>
 			<hr>
 			
-			<div ="power-user-options-block">
+			<div id="power-user-options-block">
 				<h3>Power User Options</h3>
 				<div id="power-user-option-checkboxes">
 						<input id="auto-connect-checkbox" type="checkbox"/><h4>Auto-connects Last Server</h4>
@@ -4375,6 +4384,9 @@
 				<input type="file" id="character_import_file" accept=".json, image/png" name="avatar">
 				<input id="character_import_file_type" name="file_type" class="text_pole" maxlength="999" size="2" value="" autocomplete="off">
 			</form>
+            <form id="form_character_search_form" action="javascript:void(null);">
+                <input id="character_search_bar" class="text_pole" type="search" placeholder="Search here..." />
+            </form>
 		</div>
 		
 		
