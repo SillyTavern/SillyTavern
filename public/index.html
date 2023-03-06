@@ -474,7 +474,7 @@
 
                 }
             }
-             async function setBackground(bg) {
+            async function setBackground(bg) {
                 /*
                 const response = await fetch("/setbackground", {
                     method: "POST",
@@ -2357,15 +2357,15 @@
                                 koboldai_settings[i] = JSON.parse(item);
                             });
                             var arr_holder = {};
-                            //$("#settings_perset").empty();
+				             $("#settings_perset").empty();			//RossAscends: uncommented this to prevent settings selector from doubling preset list on QuickRefresh
                             koboldai_setting_names.forEach(function(item, i, arr) {
                                 arr_holder[item] = i;
                                 $('#settings_perset').append('<option value='+i+'>'+item+'</option>');
+								//console.log('loading preset #'+i+' -- '+item);
 
                             });
                             koboldai_setting_names = {};
                             koboldai_setting_names = arr_holder;
-
                             preset_settings = settings.preset_settings;
 							
 						//Load AI model config settings (temp, context length, anchors, and anchor order)
