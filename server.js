@@ -423,22 +423,24 @@ function charaFormatData(data){
 }
 app.post("/createcharacter", urlencodedParser, function(request, response){
     
-    if(!request.body) return response.sendStatus(400);
-    if (!fs.existsSync(charactersPath+request.body.ch_name+'.png')){
-        if(!fs.existsSync(chatsPath+request.body.ch_name) )fs.mkdirSync(chatsPath+request.body.ch_name);
-
+    
+	
+	//var sameNameChar = fs.existsSync(charactersPath+request.body.ch_name+'.png');
+	//if (sameNameChar == true) return response.sendStatus(500);
+	if(!request.body) return response.sendStatus(400);
+	console.log('/createcharacter -- looking for -- '+(charactersPath+request.body.ch_name+'.png'));
+	console.log('Does this file already exists? '+fs.existsSync(charactersPath+request.body.ch_name+'.png'));
+    if (!fs.existsSync(charactersPath+request.body.ch_name+'.png')){ 		
+		if(!fs.existsSync(chatsPath+request.body.ch_name) )fs.mkdirSync(chatsPath+request.body.ch_name);
         let filedata = request.file;
         //console.log(filedata.mimetype);
         var fileType = ".png";
         var img_file = "ai";
         var img_path = "public/img/";
-        
         var char = charaFormatData(request.body);//{"name": request.body.ch_name, "description": request.body.description, "personality": request.body.personality, "first_mes": request.body.first_mes, "avatar": 'none', "chat": Date.now(), "last_mes": '', "mes_example": ''};
         char = JSON.stringify(char);
         if(!filedata){
-            
             charaWrite('./public/img/fluffy.png', char, request.body.ch_name, response);
-            
         }else{
             
             img_path = "./uploads/";
@@ -452,7 +454,9 @@ app.post("/createcharacter", urlencodedParser, function(request, response){
         //console.log("The file was saved.");
 
     }else{
+		console.error("Error: Cannot save file. A character with that name already exists.");
         response.send("Error: A character with that name already exists.");
+		//response.send({error: true});
     }
     //console.log(request.body);
     //response.send(request.body.ch_name);

@@ -43,7 +43,7 @@
             var name1 = default_user_name;
             var name2 = "Chloe";
             var chat = [{name: 'Chloe',is_user: false,is_name: true,create_date: 0,mes: '\n*You went inside. The air smelled of fried meat, tobacco and a hint of wine. A dim light was cast by candles, and a fire crackled in the fireplace. It seems to be a very pleasant place. Behind the wooden bar is an elf waitress, she is smiling. Her ears are very pointy, and there is a twinkle in her eye. She wears glasses and a white apron. As soon as she noticed you, she immediately came right up close to you.*\n\n' +' "Hello there! How is your evening going?"<br><br>\n'+'<img src="img/star_dust_city.png" width=80%; display:block;">\n'}];
-            
+            var safetychat = [{name: 'Chloe',is_user: false,is_name: true,create_date: 0,mes: '\n*You deleted a charcter and arrived back here for safety reasons! Pick another character!*\n\n'}];
             var chat_create_date = 0;
 			
 			//RossAscends: Added function to format dates used in files and chat timestamps to a humanized format.
@@ -193,6 +193,7 @@
 				xhr.setRequestHeader("X-CSRF-Token", token);
 			});
 			
+
 			$.get("/csrf-token")
 				.then(data => {
 					token = data.token;
@@ -206,6 +207,24 @@
 					autoloadchat();
 					autoconnect();
 				});
+				
+			//RossAscends: a smaller load-up function to be used instead of refreshing the page in cases like deleting a character and changing username	
+			function QuickRefresh(){  
+					clearChat();
+					//characters.length = 0		//if this could be enabled it would allow the GetCharacters function to detect files added or removed from the char dir on each panel load
+					console.log('quickRefresh() -- active_character -- '+active_character);
+					console.log('quickRefresh() -- this_chid -- '+this_chid);
+					getSettings("def");
+					getCharacters();
+					getUserAvatars();
+					//console.log(chat);
+					printMessages();
+					$( "#rm_button_selected_ch" ).css("class","deselected-right-tab");
+					$( "#rm_button_selected_ch" ).children("h2").text('');
+					if (NavToggle.checked === false) {
+						document.getElementById('nav-toggle').click();
+					};
+			}
 				
 		    $('#characloud_url').click(function(){
 					window.open('https://boosty.to/tavernai', '_blank');
@@ -328,23 +347,26 @@
                 $("#api_button").css("display", 'inline-block');
             }
             function printCharacters(){
-                //console.log(1);
+				//console.log('printCharacters() entered');
+
                 $("#rm_print_characters_block").empty();
+				console.log('printCharacters() -- sees '+characters.length+' characters.');
                 characters.forEach(function(item, i, arr) {
+
                     var this_avatar = default_avatar;
                     if(item.avatar != 'none'){
                         this_avatar = "characters/"+item.avatar+"#"+Date.now();
 
                     }
                     $("#rm_print_characters_block").prepend('<div class=character_select chid='+i+' id="CharID'+i+'"><div class=avatar><img src="'+this_avatar+'"></div><div class=ch_name>'+item.name+'</div></div>');
-                    //console.log(item.name);
+					console.log('printcharacters() -- printing -- ChID '+i+' ('+item.name+')');
                 });
-                
-                
+  
             }
             async function getCharacters() {
-                
-                const response = await fetch("/getcharacters", {
+				//console.log('getCharacters() -- entered');
+				//console.log(characters);
+                var response = await fetch("/getcharacters", {						//RossAscends: changed from const
                     method: "POST",
                     headers: {
 						"Content-Type": "application/json",
@@ -353,26 +375,31 @@
                     body: JSON.stringify({
                             "": ""
                         })
-
                 });
                 if (response.ok === true) {
-                    const getData = await response.json();
-                    //console.log(getData);
+					
+					var getData = '';												//RossAscends: reset to force array to update to account for deleted character.
+                    var getData = await response.json();							//RossAscends: changed from const
+					//console.log(getData);					
+
                     //var aa = JSON.parse(getData[0]);
-                    const load_ch_count = Object.getOwnPropertyNames(getData);
                     
+					var load_ch_count = Object.getOwnPropertyNames(getData);		//RossAscends: change from const to create dynamic character load amounts.
+					var charCount = load_ch_count.length;
+					//console.log('/getcharacters -- expecting to load '+charCount+' characters.')
                     for(var i = 0; i < load_ch_count.length;i++){
-                        
                         characters[i] = [];
                         characters[i] = getData[i];
-                        
-                        //console.log(characters[i]);
+						//console.log('/getcharacters -- loaded character #'+(i+1)+' ('+characters[i].name+')');
                     }
                     characters.sort((a,b) =>  a.create_date - b.create_date );
                     //characters.reverse();
-                    if(this_chid != undefined) $("#avatar_url_pole").val(characters[this_chid].avatar);
+					console.log('/getcharacters -- this_chid -- '+this_chid);
+                    if(this_chid != undefined && this_chid != 'invalid-safety-id') $("#avatar_url_pole").val(characters[this_chid].avatar);
+					//console.log('/getcharacters -- sending '+i+' characters to /printcharacters');
                     printCharacters();
-                    //console.log(propOwn.length);
+                    
+					//console.log(propOwn.length);
                     //return JSON.parse(getData[0]);
                     //const getData = await response.json();
                     //var getMessage = getData.results[0].text;
@@ -499,7 +526,9 @@
                 }
             }
             function printMessages(){
-                chat.forEach(function(item, i, arr) {
+				//console.log(chat);
+				//console.log('printMessages() -- printing messages for -- '+this_chid+' '+active_character+' '+characters[this_chid]);
+				chat.forEach(function(item, i, arr) {
                     addOneMessage(item);
                 });
             }
@@ -534,7 +563,7 @@
                 //thisText = thisText.split("\n").join("<br>");
                 var avatarImg = "User Avatars/"+user_avatar;
                 if(!mes['is_user']){
-                    if(this_chid == undefined){
+                    if(this_chid == undefined || this_chid == "invalid-safety-id"){
                         avatarImg = "img/chloe.png";
                     }else{
                         if(characters[this_chid].avatar != 'none'){
@@ -1093,7 +1122,7 @@
                                         addOneMessage(chat[chat.length-1]);
                                         $( "#send_but" ).css("display", "inline");
                                         $( "#loading_mes" ).css("display", "none");
-//console.log('/savechat called by /Generate');
+										//console.log('/savechat called by /Generate');
                                         saveChat();
                                     }else{
                                         //console.log('run force_name2 protocol');
@@ -1154,8 +1183,7 @@
                 });
             }
             async function getChat() {
-//console.log('/getChat entered');
-                //console.log(characters[this_chid].chat);
+                console.log('/getchat -- entered for -- '+characters[this_chid].name);
                 jQuery.ajax({    
                     type: 'POST', 
                     url: '/getchat', 
@@ -1175,16 +1203,16 @@
                             }
                             //chat =  data;
                             chat_create_date = chat[0]['create_date'];
-//console.log('/getchat saw chat_create_date: '+chat_create_date);
+							//console.log('/getchat saw chat_create_date: '+chat_create_date);
                             chat.shift();
 
                         }else{
                             chat_create_date = humanizedISO8601DateTime();
                         }
                         //console.log(chat);
-//console.log('getChatResults called by /getchat');
+						//console.log('getChatResults called by /getchat');
                         getChatResult();
-//console.log('savechat called by /getchat');
+						//console.log('savechat called by /getchat');
                         saveChat();
                     },
                     error: function (jqXHR, exception) {
@@ -1239,7 +1267,7 @@
                 }
             });
 			
-			//RossAscends: Lets add some hotkeys
+			//RossAscends: Additional hotkeys
 			document.addEventListener('keydown', (event) => {
 			
 				if(event.ctrlKey && event.key == "Enter") {				// Ctrl+Enter for Regeneration Last Response
@@ -1266,7 +1294,7 @@
                 selected_button = 'settings';
                 menu_type = 'settings';
                 $( "#rm_characters_block" ).css("display", "none");
-                $( "#rm_api_block" ).css("display", "block");
+                $( "#rm_api_block" ).css("display", "grid");
                 $('#rm_api_block').css('opacity',0.0);
                 $('#rm_api_block').transition({  
                         opacity: 1.0,
@@ -1299,12 +1327,12 @@
             });
             function select_rm_create(){
                 menu_type = 'create';
+//console.log('select_rm_Create() -- selected button: '+selected_button);
                 if(selected_button == 'create'){
                     if(create_save_avatar != ''){
                         $("#add_avatar_button").get(0).files = create_save_avatar;
                         read_avatar_load($("#add_avatar_button").get(0));
                     }
-                    
                 }
                 $( "#rm_characters_block" ).css("display", "none");
                 $( "#rm_api_block" ).css("display", "none");
@@ -1318,11 +1346,13 @@
                         complete: function() {  }
                 });
                 $( "#rm_info_block" ).css("display", "none");
-                
                 $( "#delete_button_div" ).css("display", "none");
+                $( "#delete_button" ).css("display", "none");
+				$( "#export_button" ).css("display", "none");
                 $("#create_button").css("display", "block");
                 $("#create_button").attr("value", "Create");
-                $('#result_info').html('&nbsp;');
+				//RossAscends: commented this out as part of the auto-loading token counter
+                //$('#result_info').html('&nbsp;');
                 $( "#rm_button_characters" ).css("class","deselected-right-tab");
                 $( "#rm_button_settings" ).css("class","deselected-right-tab");
                 $( "#rm_button_selected_ch" ).css("class","deselected-right-tab");
@@ -1348,7 +1378,7 @@
                 $("#form_create").attr("actiontype", "createcharacter");
             }
             function select_rm_characters(){
-                
+                QuickRefresh();
                 menu_type = 'characters';
                 $( "#rm_characters_block" ).css("display", "block");
                 $('#rm_characters_block').css('opacity',0.0);
@@ -1383,7 +1413,8 @@
                 //console.log('select_selected_character() -- starting with input of -- '+chid+' (name:'+characters[chid].name+')');
                 select_rm_create();
                 menu_type = 'character_edit';
-                $( "#delete_button_div" ).css("display", "block");
+                $( "#delete_button" ).css("display", "block");
+				$( "#export_button" ).css("display", "block");
                 $( "#rm_button_selected_ch" ).css("class","selected-right-tab");
                 var display_name = characters[chid].name;
 				
@@ -1429,18 +1460,28 @@
 				//console.log('select_selected_character() -- active_character -- '+chid+'(ChID of '+display_name+')');
 				saveSettings();
 				//console.log('select_selected_character() -- called saveSettings() to save -- active_character -- '+active_character+'(ChID of '+display_name+')');
+				
             }
             $(document).on('click', '.character_select', function(){
-                if(this_chid !== $(this).attr("chid")){
+                if(this_chid !== $(this).attr("chid")){					//if clicked on a different character from what was currently selected
                     if(!is_send_press){
-                        this_edit_mes_id = undefined;
+						this_edit_mes_id = undefined;
                         selected_button = 'character_edit';
                         this_chid = $(this).attr("chid");
+						active_character = this_chid;
                         clearChat();
                         chat.length = 0;
-                        getChat();                       
+                        getChat();  
+						var count_tokens = encode(JSON.stringify(characters[this_chid].description+characters[this_chid].personality+characters[this_chid].scenario+characters[this_chid].mes_example)).length;
+			//RossAscends: added token counter to load when a character is selected, instead of waiting for an edit.
+                            if(count_tokens < 1024){
+                                $('#result_info').html(count_tokens+" Tokens");
+                            }else{
+                                $('#result_info').html("<font color=red>"+count_tokens+" Tokens(TOO MANY TOKENS)</font>");
+                            }
+						console.log('Clicked on '+characters[this_chid].name+' Active_Character set to: '+active_character+' (ChID:'+this_chid+')');
                     }
-                }else{
+                }else{	//if clicked on character that was already selected
                     selected_button = 'character_edit';
                     select_selected_character(this_chid);
                 }
@@ -1567,19 +1608,29 @@
                     bg_file_for_del.parent().remove();
                 }
                 if(popup_type == 'del_ch'){
+					console.log('Deleting character -- ChID: '+this_chid+ ' -- Name: '+characters[this_chid].name);
                     var msg   = jQuery('#form_create').serialize(); // ID form
                     jQuery.ajax({    
                         method: 'POST', 
                         url: '/deletecharacter',
                         beforeSend: function(){
                             select_rm_info("Character deleted");
-
                             //$('#create_button').attr('value','Deleting...'); 
                         },
                         data: msg,
                         cache: false,  
                         success: function(html){
-                            location.reload();
+					//RossAscends: setting active character to null in order to avoid array errors. 
+					//this allows for dynamic refresh of character list after deleting a character.
+							$('#character_cross').click();
+							active_character = 'invalid-safety-id';		//unsets the chid in settings (this prevents AutoLoadChat from trying to load the wrong ChID
+							this_chid = 'invalid-safety-id';			//unsets expected chid before reloading (related to getCharacters/printCharacters from using old arrays)
+							characters.length = 0;						// resets the characters array, forcing getcharacters to reset
+							name2="Chloe";								// replaces deleted charcter name with Chloe, since she wil be displayed next.
+							chat = safetychat;							// sets up chloe to tell user about having deleted a character
+							saveSettings();								// saving settings to keep changes to variables
+							QuickRefresh();								// call quick refresh of Char list, clears chat, and loads Chloe 'post-char-delete' message.
+                            //location.reload();						// this is Humi's original code
                             //getCharacters();
                             //$('#create_button_div').html(html);  
                         }  
@@ -1721,8 +1772,8 @@
                 var formData = new FormData($("#form_create").get(0));
                 if($("#form_create").attr("actiontype") == "createcharacter"){
                     
-                    if($("#character_name_pole").val().length > 0){
-//console.log('/createcharacter entered');
+                    if($("#character_name_pole").val().length > 0){		//if the character name text area isn't empty (only posible when creating a new character)
+						//console.log('/createcharacter entered');
                         jQuery.ajax({    
                             type: 'POST', 
                             url: '/createcharacter', 
@@ -1735,7 +1786,7 @@
                             contentType: false,
                             processData: false, 
                             success: function(html){
-                                $('#character_cross').click();
+                                $('#character_cross').click();		//closes the advanced character editing popup
                                 $("#character_name_pole").val('');
                                 create_save_name = '';
                                 $("#description_textarea").val('');
@@ -1765,13 +1816,15 @@
                                     select_rm_info("Character created");
 
                                     $('#rm_info_block').transition({ opacity: 1.0 ,duration: 2000});
-//console.log('/getcharacters called after /createchracter');
+									
+								
                                     getCharacters();
                                 }else{
                                     $('#result_info').html(html);
                                 }
                             },
                             error: function (jqXHR, exception) {
+							//alert('ERROR: '+xhr.status+ ' Status Text: '+xhr.statusText+' '+xhr.responseText);
                                 $('#create_button').removeAttr("disabled");
                             }
                         });  
@@ -1779,8 +1832,8 @@
                         $('#result_info').html("Name not entered");
                     }
                 }else{
-//console.log('Avatar Button Value:'+$("#add_avatar_button").val());
-
+				//console.log('/editcharacter -- entered.');
+				//console.log('Avatar Button Value:'+$("#add_avatar_button").val());
                     jQuery.ajax({    
                         type: 'POST', 
                         url: '/editcharacter', 
@@ -1793,14 +1846,12 @@
                         contentType: false,
                         processData: false, 
                         success: function(html){
-
                             $('.mes').each(function(){
                                 if($(this).attr('ch_name') != name1){
                                     $(this).children('.avatar').children('img').attr('src', $('#avatar_load_preview').attr('src'));
                                 }
                             });
                             if(chat.length === 1 ){
-                                
                                 var this_ch_mes = default_ch_mes;
                                 if($('#firstmessage_textarea').val() != ""){
                                     this_ch_mes = $('#firstmessage_textarea').val();
@@ -1818,24 +1869,19 @@
                                 }
                             }
                             $('#create_button').removeAttr("disabled");
-						
                             getCharacters();
-
 
                             $("#add_avatar_button").replaceWith($("#add_avatar_button").val('').clone(true));
                             $('#create_button').attr('value','Save');
-							
-                            var count_tokens = encode(JSON.stringify(characters[this_chid].description+characters[this_chid].personality+characters[this_chid].scenario+characters[this_chid].mes_example)).length;
+							//console.log('/editcharacters -- this_chid -- '+this_chid);
+							if(this_chid != undefined && this_chid != 'invalid-safety-id'){   //added check to avoid trying to load tokens in case of character deletion
+								var count_tokens = encode(JSON.stringify(characters[this_chid].description+characters[this_chid].personality+characters[this_chid].scenario+characters[this_chid].mes_example)).length;
+							}
                             if(count_tokens < 1024){
                                 $('#result_info').html(count_tokens+" Tokens");
                             }else{
                                 $('#result_info').html("<font color=red>"+count_tokens+" Tokens(TOO MANY TOKENS)</font>");
                             }
-                            
-                            //$('#result_info').transition({ opacity: 0.0 ,delay: 500,duration: 1000,easing: 'in-out',complete: function() { 
-                                    //$('#result_info').transition({ opacity: 1.0,duration: 0}); 
-                                    //$('#result_info').html('&nbsp;');
-                            //}});
                         },
                         error: function (jqXHR, exception) {
                             $('#create_button').removeAttr("disabled");
@@ -1847,7 +1893,7 @@
             });
             $( "#delete_button" ).click(function() {
                 popup_type = 'del_ch';
-                callPopup('<h3>Delete the character?</h3>');
+                callPopup('<h3>Delete the character?</h3>Page will reload and you will be returned to Chloe.');
             });
             $( "#rm_info_button" ).click(function() {
                 $('#rm_info_avatar').html('');
@@ -1937,23 +1983,25 @@
 	            }
 			}); 
 
-		// RossAscends: Added functionality that will close the RightNav panels when User clicks outside them			
+		// RossAscends: Added functionality that will close the RightNav panel click outside of it or related panels (adv editing popup, or dialog popups)		
 			
 			var NavToggle = document.getElementById("nav-toggle");
 			var PanelPin = document.getElementById("rm_button_panel_pin");
 			$('document').ready(function(){
 				$("html").click(function(e){
-				if (NavToggle.checked === true && PanelPin.checked === false) {
-					if ($(e.target).attr('id') !== "nav-toggle") {
-						if (document.querySelector('#right-nav-panel').contains(e.target) === false){
-							document.getElementById('nav-toggle').click();
+					if (NavToggle.checked === true && PanelPin.checked === false) {
+						if ($(e.target).attr('id') !== "nav-toggle") {
+							if (document.querySelector('#right-nav-panel').contains(e.target) === false){
+								if (document.querySelector('#character_popup').contains(e.target) === false){
+									if (document.querySelector('#dialogue_popup').contains(e.target) === false){
+										document.getElementById('nav-toggle').click();
+									}	
+								}
+							}
 						}
-					}
-				};
+					};
+				});
 			});
-			});
-			 
-		//-------------------------------------------------------------------------------------------------------------
             
             $( "#options_button" ).click(function() {					// this is the options button click function, shows the options menu if closed
                 if($("#options").css('display') === 'none' && $("#options").css('opacity') == 0.0){
@@ -2040,7 +2088,6 @@
                 
 
             });
-
             $( "#settings_perset" ).change(function() {
                 
                 if($('#settings_perset').find(":selected").val() != 'gui'){
@@ -2877,8 +2924,7 @@
                 $('#load_select_chat_div').css('display', 'block');
 
             });
-        //RossAscends: auto-load last character function (fires when active_character is defined and auto_load_chat is true)					
-		//RossAscends: auto-connect to last API function (fires when API URL exists in settings and auto_connect is true)		
+			//RossAscends: auto-load last character function (fires when active_character is defined and auto_load_chat is true)					
 			function autoloadchat(){
 				console.log('starting autoloadchat routine');
 				jQuery.ajax({    
@@ -3017,7 +3063,7 @@
             </div>
             <div id="select_chat_import"> <!-- import chat popup header -->
                 
-						<input id="chat_import_button" type="submit" value="+Import">
+						<input id="chat_import_button" class="menu_button" type="submit" value="+Import">
 					<div>
 						<a href="/notes/10" class="notes-link" target="_blank"><span class="note-link-span">?</span></a>
 					</div>
@@ -3040,7 +3086,7 @@
         </div>
     </div>
     <div id="shadow_tips_popup">
-        <div id="tips_popup" style="padding-top: 30px;">
+        <div id="tips_popup">
             <img id="tips_cross" src="img/cross.png" style="position: absolute; margin-left: 230px; width: 20px; height: 20px; cursor: pointer; opacity: 0.6">
             
             <img src="img/love.png" style="width: 45px;height: 45px; margin-bottom: 0px; opacity: 0.6;">
@@ -3084,43 +3130,33 @@
 		</div>
 		
         <div id="rm_ch_create_block" class="right_menu" style="display: none;">
-            <div id="rm_button_back" class="right_menu_button"><h2 style="color: rgb(188, 193, 200, 0.5);">&#8656;</h2></div>
-            
             <form id="form_create"  action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                
                 <div id="name_div">
                     <h4>Name</h4><h5>Character name</h5>
                 <input id="character_name_pole" name="ch_name" class="text_pole" maxlength="120" value="" autocomplete="off">
                 </div>
-				
-				<!--<div id="avatar_div" class="avatar_div" style="display: block;">
-                    <div id="avatar_div_div" class="avatar">
-						<img id="avatar_load_preview" src="img/fluffy.png" alt="avatar">
-					</div>
-					<input type="file" id="add_avatar_button" name="avatar" accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp">                    
-                </div>-->
-				
                 <div id="avatar_div" class="avatar_div">
                     <div id="avatar_div_div" class="avatar">
 						<img id="avatar_load_preview" src="img/fluffy.png" alt="avatar">
 					</div>
 					
-					<label for="add_avatar_button" class="add_avatar_button_label" title="Click to select a new avatar for this character">
+					<label for="add_avatar_button" class="menu_button" title="Click to select a new avatar for this character">
 						<input type="file" id="add_avatar_button" name="avatar" accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp">
 						Change Avatar
 					</label>
                 </div>
-                
+                <hr>
                 <div id="description_div">
                     <h4>Description</h4><h5>Description of personality and other characteristics <a href="/notes/1" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
                 <textarea id="description_textarea" name="description" placeholder=""></textarea>
                 </div>
                 <div id="first_message_div">
-                <h4>First message</h4><h5>First message from the character <a href="/notes/3" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
-                <textarea id="firstmessage_textarea" name="first_mes" placeholder=""></textarea>
+					<h4>First message</h4><h5>First message from the character <a href="/notes/3" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
+					<textarea id="firstmessage_textarea" name="first_mes" placeholder=""></textarea>
                 </div>
-                
-                <div id="avatar_url_div">
+				
+				<!-- these divs are invisible and used for server communication purposes -->
+				<div id="avatar_url_div">
                 <input id="avatar_url_pole" name="avatar_url" class="text_pole" maxlength="999" size="2" value="" autocomplete="off">
                 </div>
                 <div id="selected_chat_div">
@@ -3132,73 +3168,96 @@
                 <div id="last_mes_div">
                 <input id="last_mes_pole" name="last_mes" class="text_pole" maxlength="999" size="2" value="" autocomplete="off">
                 </div>
-                <input id="advanced_div" type="button" value="Advanced Edit">
-                <div id="export_character_div">
-                    <div id="result_info" style="width: 100px;">&nbsp;</div>
-                
-                    </div>
-                <div id="create_button_div">
-                <input id="create_button" type="submit" value="Create">
-                </div>
+				<!-- now back to normal divs for display purposes-->
+				
+				<input id="advanced_div" class="menu_button" type="button" value="Advanced Edit">
+                <div id="result_info" style="width: 100px;">&nbsp;</div>
+				<hr>	
+				<div class="form_create_bottom_buttons_block">
+						<div id="rm_button_back" class="menu_button">Go Back</div>
+						<input id="delete_button" class="menu_button" type="button" value="Delete">
+						<input id="export_button" class="menu_button" type="button" value="Export">
+						<input id="create_button" class="menu_button" type="submit" value="Create">
+					
+				</div>
+				
             </form>
-            <div id="delete_button_div">
-                <input id="delete_button" type="submit" value="Delete">
-                <input id="export_button" type="submit" value="Export">
-                
-            </div>
         </div>
         <div id="rm_api_block" class="right_menu" >
             
-            <h3 id="title_api">API</h3>
-            <select id="main_api" >
-                <option value="kobold">KoboldAI</option>
-                <option value="novel">NovelAI</option>
-            </select>
-            <div id="kobold_api" style="position: relative;">
-                <div style="position: absolute; right:188px; top:-34px; opacity:0.20;">
-					<a href="https://github.com/KoboldAI/KoboldAI-Client" target="_blank">
-						<img src="img/kobold.png" style="width:40px;height:40px;">
-					</a>
+            <div id="main-API-selector-block">
+				<h3 id="title_api">API</h3>
+				<select id="main_api" >
+					<option value="kobold">KoboldAI</option>
+					<option value="novel">NovelAI</option>
+				</select>
+			</div>
+			
+			<div id="respective-settings-block">
+				<div id="kobold_api" style="position: relative;">	<!-- shows the kobold settings -->
+					<div class="API-logo">
+						<a href="https://github.com/KoboldAI/KoboldAI-Client" target="_blank">
+							<img src="img/kobold.png" style="width:40px;height:40px;">
+						</a>
+					</div>
+					<form  action="javascript:void(null);" method="post" enctype="multipart/form-data">
+						<h4>API url</h4><h5>Example: http://127.0.0.1:5000/api </h5>
+						<input id="api_url_text" name="api_url" class="text_pole" maxlength="500" value="" autocomplete="off">
+						<input id="api_button" class="menu_button" type="submit" value="Connect">
+						<img id="api_loading" src="img/load.svg" >
+						<div id="online_status2">
+							<div id="online_status_indicator2"></div>
+							<div id="online_status_text2">Not connected</div>
+						</div>
+					</form>
+
+					<hr>
+					
+					<div id="ai-presets-and-config-block">
+						<h4>Preset settings</h4><h5>Selecting settings <a href="/notes/4" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
+						<select id="settings_perset">
+							<option value="gui">GUI KoboldAI Settings</option>
+						</select>
+						<div id="range_block">
+							<div class="range-block">
+								<div class="range-block-title"><h4>Temperature </h4></div>
+								<div class="range-block-counter"><h5 id="temp_counter">select</h5></div>
+								<div class="range-block-range" ><input type="range" id="temp" name="volume" min="0.1" max="2.0" step="0.01"></div>
+							</div>
+							<div class="range-block">
+								<div class="range-block-title"><h4>Repetition Penalty </h4></div>
+								<div class="range-block-counter"><h5 id="rep_pen_counter">select</h5></div>
+								<div class="range-block-range" ><input type="range" id="rep_pen" name="volume" min="1" max="1.5" step="0.01"></div>
+							</div>
+							<div class="range-block">
+								<div class="range-block-title"><h4>Repetition Penalty Range</h4></div>
+								<div class="range-block-counter"><h5 id="rep_pen_size_counter">select</h5></div>
+								<div class="range-block-range" ><input type="range" id="rep_pen_size" name="volume" min="0" max="2048" step="1"></div>
+							</div>
+						</div>
+					</div>
 				</div>
-                <form  action="javascript:void(null);" method="post" enctype="multipart/form-data">
-
-                <h4>API url</h4><h5>Example: http://127.0.0.1:5000/api </h5>
-                <input id="api_url_text" name="api_url" class="text_pole" maxlength="500" value="" autocomplete="off">
-                <input id="api_button" type="submit" value="Connect">
-                <img id="api_loading" src="img/load.svg" >
-                </form>
-                <div id="online_status2">
-                    <div id="online_status_indicator2"></div><div id="online_status_text2">Not connected</div>
-                </div>
-                <h4>Preset settings</h4><h5>Selecting settings <a href="/notes/4" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
-                <select id="settings_perset">
-                    <option value="gui">GUI KoboldAI Settings</option>
-                </select>
-                <div id="range_block">
-                    <h4>Temperature </h4><h5 id="temp_counter">select</h5>
-                    <input type="range" id="temp" name="volume" min="0.1" max="2.0" step="0.01">
-                    <!--<h4>Amount generation </h4><h5 id="amount_gen_counter">select</h5>
-                    <input type="range" id="amount_gen" name="volume" min="16" max="512" step="1">-->
-                    <h4>Repetition Penalty </h4><h5 id="rep_pen_counter">select</h5>
-                    <input type="range" id="rep_pen" name="volume" min="1" max="1.5" step="0.01">
-                    <h4>Repetition Penalty Range</h4><h5 id="rep_pen_size_counter">select</h5>
-                    <input type="range" id="rep_pen_size" name="volume" min="0" max="2048" step="1">
-                </div>
-            </div>
-            <div id="novel_api" style="display: none;position: relative;">
-                <div style="position: absolute; right:152px; top:-25px; opacity:0.25;"><a href="https://novelai.net/" target="_blank"><img src="img/novelai.png" style="width:auto;height:22px;"></a></div>
-                <form  action="javascript:void(null);" method="post" enctype="multipart/form-data">
-
-                    <h4>API key</h4><h5>Where to get <a href="/notes/6" class="notes-link" target="_blank"><span class="note-link-span"><span class="note-link-span">?</span></span></a></h5>
-                    <input id="api_key_novel" name="api_key_novel" class="text_pole" maxlength="500" value="" autocomplete="off">
-					<Br>
-                    <input id="api_button_novel" type="submit" value="Connect">
-                    <img id="api_loading_novel" src="img/load.svg" >
-                </form>
+			
+				<div id="novel_api" style="display: none;position: relative;">   <!-- shows the novel settings -->
+					<div class="API-logo">
+						<a href="https://novelai.net/" target="_blank">
+							<img src="img/novelai.png" style="width:auto;height:22px;">
+						</a>
+					</div>
+					<form  action="javascript:void(null);" method="post" enctype="multipart/form-data">
+						<h4>API key</h4>
+						<h5>Where to get <a href="/notes/6" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
+						<input id="api_key_novel" name="api_key_novel" class="text_pole" maxlength="500" value="" autocomplete="off">
+						<Br>
+						<input id="api_button_novel" class="menu_button" type="submit" value="Connect">
+						<img id="api_loading_novel" src="img/load.svg" >
+					</form>
                 <div id="online_status3">
-                    <div id="online_status_indicator3"></div><div id="online_status_text3">No connection...</div>
+                    <div id="online_status_indicator3"></div>
+					<div id="online_status_text3">No connection...</div>
                 </div>
-                <h4>Model</h4><h5>Selecting NovelAI model <a href="/notes/8" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
+                <h4>Model</h4>
+				<h5>Selecting NovelAI model <a href="/notes/8" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
                 <select id="model_novel_select" class="option_select_right_menu" style='margin-bottom: 16px;'>
                     <option value="euterpe-v2">Euterpe</option>
                     <option value="krake-v2">Krake</option>
@@ -3210,29 +3269,32 @@
                 <div id="range_block_novel">
                     <h4>Temperature </h4><h5 id="temp_counter_novel">select</h5>
                     <input type="range" id="temp_novel" name="volume" min="0.1" max="2.0" step="0.01">
-                    <!--<h4>Amount generation </h4><h5 id="amount_gen_counter">select</h5>
-                    <input type="range" id="amount_gen" name="volume" min="16" max="512" step="1">-->
                     <h4>Repetition Penalty </h4><h5 id="rep_pen_counter_novel">select</h5>
                     <input type="range" id="rep_pen_novel" name="volume" min="1" max="1.5" step="0.01">
                     <h4>Repetition Penalty Range</h4><h5 id="rep_pen_size_counter_novel">select</h5>
                     <input type="range" id="rep_pen_size_novel" name="volume" min="0" max="2048" step="1">
                 </div>
             </div>
-            <hr>
+			</div>
+		
+			<hr>
             
-            <h4>Your Avatar</h4><h5></h5>
-            <div id="user_avatar_block"></div>
-            <form id='form_change_name' action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                <h4>Name</h4>
-                <input id="your_name" name="your_name" class="text_pole" maxlength="35" value="" autocomplete="off">
-				<br>
-                <input id="your_name_button" type="submit" title="Click to set a new User Name (reloads page)" value="Change Name">
-            </form>
-            <hr>
+			<div id="user-settings-block">
+				<h3>User Settings</h3>
+				<h4>Your Avatar</h4>
+				<div id="user_avatar_block"></div>
+				<form id='form_change_name' action="javascript:void(null);" method="post" enctype="multipart/form-data">
+					<h4>Name</h4>
+					<input id="your_name" name="your_name" class="text_pole" maxlength="35" value="" autocomplete="off">
+					<br>
+					<input id="your_name_button" class="menu_button" type="submit" title="Click to set a new User Name (reloads page)" value="Change Name">
+				</form>
+			</div>
+            
+			<hr>
             
 			<div id="pro-settings-block">
                 <h3>Pro Settings</h3>
-				
                 <div id="amount_gen_block">
 					<h4>Amount generation </h4>
 					<h5 id="amount_gen_counter">select</h5>
@@ -3243,52 +3305,55 @@
 					<h5 id="max_context_counter">select</h5>
                     <input type="range" id="max_context" name="volume" min="512" max="2048" step="1">
                 </div>
-				
-                <h4>Anchors Order</h4>
-				<h5>Helps to increase the length of messages <a href="/notes/9" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
-                <select id="anchor_order">
-                    <option value="0">Character Anchor - Style Anchor</option>
-                    <option value="1">Style Anchor - Character Anchor</option>
-                </select>
-                <div id="anchor_checkbox">
-                    <input id="character_anchor" type="checkbox"/><h4>Character Anchor</h4>
-                    <input id="style_anchor" type="checkbox"/><h4>Style Anchor</h4>
-                </div>
+				<div id="anchors-block"><h4>Anchors Order</h4>
+					<h5>Helps to increase the length of messages <a href="/notes/9" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
+					<select id="anchor_order">
+						<option value="0">Character Anchor - Style Anchor</option>
+						<option value="1">Style Anchor - Character Anchor</option>
+					</select>
+					<div id="anchor_checkbox">
+						<input id="character_anchor" type="checkbox"/><h4>Character Anchor</h4>
+						<input id="style_anchor" type="checkbox"/><h4>Style Anchor</h4>
+					</div>
+				</div>
 			</div>
+			
 			<hr>
 			
 			<div ="power-user-options-block">
-			<h3>Power User Options</h3>
-			<div id="power-user-option-checkboxes">
-					<input id="auto-connect-checkbox" type="checkbox"/><h4>Auto-connects Last Server</h4>
-                    <input id="auto-load-chat-checkbox" type="checkbox"/><h4>Auto-load Last Chat</h4>
+				<h3>Power User Options</h3>
+				<div id="power-user-option-checkboxes">
+						<input id="auto-connect-checkbox" type="checkbox"/><h4>Auto-connects Last Server</h4>
+						<input id="auto-load-chat-checkbox" type="checkbox"/><h4>Auto-load Last Chat</h4>
 				</div>
             </div>
 			
         </div>
 		
-        <div id="rm_character_import" class="right_menu" style="display: none;">
-            <form id="form_import"  action="javascript:void(null);" method="post" enctype="multipart/form-data">
-            <input type="file" id="character_import_file" accept=".json, image/png" name="avatar">
-            <input id="character_import_file_type" name="file_type" class="text_pole" maxlength="999" size="2" value="" autocomplete="off">
-            </form>
-        </div>
-        <div id="rm_characters_block" class="right_menu">
-            <div id="rm_button_create" class="right_menu_button"><h2>+New Character</h2></div>
-            <div id="character_import_button" class="right_menu_button"><h2>+Import Character</h2></div>
-			
-			<div id="characloud_url" title="Find more characters on CharaCloud (coming soon)">
-				<img src="img/cloud_logo.png">
+		<div id="rm_character_import" class="right_menu" style="display: none;">
+			<form id="form_import"  action="javascript:void(null);" method="post" enctype="multipart/form-data">
+				<input type="file" id="character_import_file" accept=".json, image/png" name="avatar">
+				<input id="character_import_file_type" name="file_type" class="text_pole" maxlength="999" size="2" value="" autocomplete="off">
+			</form>
+		</div>
+		
+		
+		<div id="rm_characters_block" class="right_menu">
+			<div class="form_create_bottom_buttons_block">
+				<div id="rm_button_create" class="menu_button">+New Character</div>
+				<div id="character_import_button" class="menu_button">+Import Character</div>
+				<div id="characloud_url" class="menu_button" title="Find more characters on CharaCloud (coming soon)">
+					<img src="img/cloud_logo.png">
+				</div>
 			</div>
-			
-            <div id="rm_print_characters_block"></div>
+			<div id="rm_print_characters_block"></div>
 			
         </div>
-        <div id="rm_info_block" class="right_menu">
-            <div id="rm_info_panel">
-            <div id="rm_info_avatar"></div>
-            <div id="rm_info_text"></div>
-            <div id="rm_info_button">Back</div>
+			<div id="rm_info_block" class="right_menu">
+				<div id="rm_info_panel">
+				<div id="rm_info_avatar"></div>
+				<div id="rm_info_text"></div>
+				<div id="rm_info_button" class="menu_button">Back</div>
             </div>
         </div>
     </nav>
