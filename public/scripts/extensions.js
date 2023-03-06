@@ -10,7 +10,7 @@ let extensions = [];
         <h3>Extensions</h3>
         <input id="extensions_url" type="text" class="text_pole" />
         <div class="extensions_url_block">
-            <input id="extensions_connect" type="submit" value="Connect" />
+            <input id="extensions_connect" class="menu_button" type="submit" value="Connect" />
             <span class="expander"></span>
             <input id="extensions_autoconnect" type="checkbox"/><h4>Auto-connect</h4>
         </div>
@@ -197,7 +197,7 @@ let extensions = [];
 
                     const result = await fetch(link, { method: 'GET', headers: { 'Bypass-Tunnel-Reminder': 'bypass' } });
                     const text = await result.text();
-    
+
                     if ($(`script[id="${link}"]`).length === 0) {
                         const script = document.createElement('script');
                         script.id = link;
@@ -214,8 +214,9 @@ let extensions = [];
     }
 
     $(document).ready(async function () {
+        debugger;
         const url = localStorage.getItem(extensions_urlKey) ?? defaultUrl;
-        const autoConnect = Boolean(localStorage.getItem(extensions_autoConnectKey)) ?? false;
+        const autoConnect = localStorage.getItem(extensions_autoConnectKey) == 'true';
         $('#rm_api_block').append(settings_html);
         $('head').append(settings_style);
         $("#extensions_url").val(url);
