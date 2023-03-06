@@ -214,7 +214,6 @@ let extensions = [];
     }
 
     $(document).ready(async function () {
-        debugger;
         const url = localStorage.getItem(extensions_urlKey) ?? defaultUrl;
         const autoConnect = localStorage.getItem(extensions_autoConnectKey) == 'true';
         $('#rm_api_block').append(settings_html);
