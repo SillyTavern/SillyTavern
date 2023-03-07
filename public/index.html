@@ -3202,7 +3202,7 @@
             <form id="form_create"  action="javascript:void(null);" method="post" enctype="multipart/form-data">
 				<div id="avatar-and-name-block">
 					<div id="name_div">
-						<h4>Character Name</h4>
+						<h4>Character Name</h4><br>
 						<input id="character_name_pole" name="ch_name" class="text_pole" maxlength="120" value="" autocomplete="off">
 					</div>
 					<div id="avatar_div" class="avatar_div">
@@ -3217,15 +3217,15 @@
 					<div id="result_info" style="width: 100px;">&nbsp;</div>
 				</div>
 				<hr>
-				<div id="description_div">
-                    <h4>Description</h4><h5>Description of personality and other characteristics <a href="/notes/1" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
+				<div id="description_div" class="margin-bot-10px">
+                    <h4>Description <a href="/notes/1" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h4>
                 </div>
-				<textarea id="description_textarea" name="description" placeholder=""></textarea>
+				<textarea id="description_textarea" class="margin-bot-10px" name="description" placeholder=""></textarea>
 				
-                <div id="first_message_div">
-					<h4>First message</h4><h5>First message from the character <a href="/notes/3" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>				
+                <div id="first_message_div" class="margin-bot-10px">
+					<h4>First message<a href="/notes/3" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h4>			
                 </div>
-				<textarea id="firstmessage_textarea" name="first_mes" placeholder=""></textarea>
+				<textarea id="firstmessage_textarea" class="margin-bot-10px" name="first_mes" placeholder=""></textarea>
 				
 				<!-- these divs are invisible and used for server communication purposes -->
 				<div id="hidden-divs">
@@ -3287,7 +3287,7 @@
 					<hr>
 					
 					<div id="ai-presets-and-config-block">
-						<h4>Preset settings</h4><h5>Selecting settings <a href="/notes/4" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
+						<h4>Preset settings <a href="/notes/4" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h4>
 						<select id="settings_perset">
 							<option value="gui">GUI KoboldAI Settings</option>
 						</select>
@@ -3318,8 +3318,7 @@
 						</a>
 					</div>
 					<form  action="javascript:void(null);" method="post" enctype="multipart/form-data">
-						<h4>API key</h4>
-						<h5>Where to get <a href="/notes/6" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
+						<h4>Novel API key<a href="/notes/6" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h4>
 						<input id="api_key_novel" name="api_key_novel" class="text_pole" maxlength="500" value="" autocomplete="off">
 						<Br>
 						<input id="api_button_novel" class="menu_button" type="submit" value="Connect">
@@ -3329,13 +3328,12 @@
                     <div id="online_status_indicator3"></div>
 					<div id="online_status_text3">No connection...</div>
                 </div>
-                <h4>Model</h4>
-				<h5>Selecting NovelAI model <a href="/notes/8" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
+                <h4>Novel AI Model<a href="/notes/8" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h4>
                 <select id="model_novel_select" class="option_select_right_menu" style='margin-bottom: 16px;'>
                     <option value="euterpe-v2">Euterpe</option>
                     <option value="krake-v2">Krake</option>
                 </select>
-                <h4>Preset settings</h4><h5>Selecting settings <a href="/notes/7" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
+                <h4>Preset settings<a href="/notes/7" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h4>
                 <select id="settings_perset_novel" class="option_select_right_menu">
                     <option value="gui">Default</option>
                 </select>
@@ -3357,9 +3355,8 @@
 				<h4>Your Avatar</h4>
 				<div id="user_avatar_block"></div>
 				<form id='form_change_name' action="javascript:void(null);" method="post" enctype="multipart/form-data">
-					<h4>Name</h4>
-					<input id="your_name" name="your_name" class="text_pole" maxlength="35" value="" autocomplete="off">
-					<br>
+					<h4>Name</h4><br>
+					<input id="your_name" name="your_name" class="text_pole" maxlength="35" value="" autocomplete="off"><br>
 					<input id="your_name_button" class="menu_button" type="submit" title="Click to set a new User Name (reloads page)" value="Change Name">
 				</form>
 			</div>

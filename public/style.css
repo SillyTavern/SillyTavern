@@ -408,7 +408,10 @@ textarea{
 
 #rm_ch_create_block textarea {
     font-size: 15px;
+	min-height:200px;
 }
+
+.margin-bot-10px {margin-bottom:10px;}
 
 #description_textarea{
     
@@ -1003,7 +1006,7 @@ width: 103px;
     opacity: 0.5;
     margin-top: 2px;
     
-    margin-bottom: 30px;
+    margin-bottom: 15px;
 }
 #online_status_indicator2{
     border-radius: 7px;
@@ -1158,6 +1161,7 @@ input[type="range"] {
     padding-top: 1px;
     display: inline-block;
 	opacity: 0.7;
+	margin: 0 5px;
 }
 
 
