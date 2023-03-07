@@ -889,6 +889,14 @@
             }
 
             function checkWorldInfo(chat) {
+                function substituteParams(content) {
+                    content = content.replace(/{{user}}/gi, name1);
+                    content = content.replace(/{{char}}/gi, name2);
+                    content = content.replace(/<USER>/gi, name1);
+                    content = content.replace(/<BOT>/gi, name2);
+                    return content;
+                }
+
                 if (world_info_data.entries.length == 0) {
                     return '';
                 }
@@ -939,10 +947,10 @@
 
                     for (const entry of newEntries) {
                         if (entry.position === world_info_position.after) {
-                            worldInfoAfter = `${entry.content}\n${worldInfoAfter}`;
+                            worldInfoAfter = `${substituteParams(entry.content)}\n${worldInfoAfter}`;
                         }
                         else {
-                            worldInfoBefore = `${entry.content}\n${worldInfoBefore}`;
+                            worldInfoBefore = `${substituteParams(entry.content)}\n${worldInfoBefore}`;
                         }
                         
                         if (encode(worldInfoBefore + worldInfoAfter).length >= world_info_budget) {
