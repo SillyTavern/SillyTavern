@@ -203,7 +203,7 @@
             var anchor_order = 0;
             var style_anchor = true;
             var character_anchor = true;
-            let extension_prompt = '';
+            let extension_prompts = {};
 			var auto_connect = false;
 			var auto_load_chat = false;
             
@@ -763,7 +763,7 @@
             }
             function clearChat(){
                 count_view_mes = 0;
-                extension_prompt = '';
+                extension_prompts = {};
                 $('#chat').html('');
             }
             function messageFormating(mes, ch_name, isSystem, forceAvatar){
@@ -1246,6 +1246,8 @@
                         worldInfoAfter = activatedWorldInfo.worldInfoAfter;
                         worldInfoString = worldInfoBefore + worldInfoAfter;
                     }
+
+                    let extension_prompt = Object.values(extension_prompts).filter(x => x).join('\n');
 
                     var i = 0;
                     
@@ -4494,8 +4496,8 @@
                 return array;
             }
 
-            function setExtensionPrompt(value) {
-                extension_prompt = value;
+            function setExtensionPrompt(key, value) {
+                extension_prompts[key] = value;
             }
 
             window['TavernAI'].getContext = function() {
@@ -4513,8 +4515,9 @@
                     addOneMessage: addOneMessage,
                     generate: Generate,
                     encode: encode,
-                    extensionPrompt: extension_prompt,
+                    extensionPrompts: extension_prompts,
                     setExtensionPrompt: setExtensionPrompt,
+                    saveChat: saveChat,
                 };
             };
         
