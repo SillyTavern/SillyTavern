@@ -1397,6 +1397,7 @@
 							//mesSendString = mesSendString; //This edit simply removes the first "<START>" that is prepended to all context prompts
                         }
                         finalPromt = worldInfoBefore+storyString+worldInfoAfter+extension_prompt+mesExmString+mesSendString+generatedPromtCache+promptBias;
+                        finalPromt = finalPromt.replace(/\r/gm, '');
                         
                         var generate_data;
                         if(main_api == 'kobold'){
