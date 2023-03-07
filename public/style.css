@@ -1107,7 +1107,7 @@ width: 103px;
 
 /* hidden until we find out a way to handle it better */
 #softprompt_block {
-    display: none !important;
+    display: none;
 }
 
 #world_info {
