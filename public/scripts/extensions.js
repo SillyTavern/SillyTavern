@@ -36,10 +36,6 @@ let extensions = [];
         display: none;
     }
     
-    .extensions_block h3 {
-        margin-bottom: 10px;
-    }
-    
     #extensions_status {
         margin-bottom: 10px;
         font-weight: 700;
