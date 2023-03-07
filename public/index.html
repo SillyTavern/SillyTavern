@@ -1248,7 +1248,10 @@
                         worldInfoString = worldInfoBefore + worldInfoAfter;
                     }
 
-                    let extension_prompt = Object.values(extension_prompts).filter(x => x).join('\n');
+                    let extension_prompt = Object.keys(extension_prompts).sort().map(x => extension_prompts[x]).filter(x => x).join('\n');
+                    if (extension_prompt.length && !extension_prompt.endsWith('\n')) {
+                        extension_prompt += '\n';
+                    }
 
                     var i = 0;
                     
