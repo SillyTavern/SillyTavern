@@ -690,8 +690,7 @@ select option:not(:checked) {		/* works to color unselected items */
 }
 
 #character_search_bar {
-    width: 90%;
-    font-size: 1.2em;
+    font-size: 1em;
     padding-left: 0.75em;
 }
 
