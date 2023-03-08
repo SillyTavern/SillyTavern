@@ -31,10 +31,9 @@ const enableExtensions = config.enableExtensions;
 var Client = require('node-rest-client').Client;
 var client = new Client();
 
-var api_server = "";//"http://127.0.0.1:5000";
-//var server_port = 8000;
-
+var api_server = "http://0.0.0.0:5000";
 var api_novelai = "https://api.novelai.net";
+var main_api = "kobold";
 
 var response_get_story;
 var response_generate;
@@ -291,6 +290,38 @@ app.post("/generate", jsonParser, function(request, response_generate = response
         response_generate.send({error: true});
     });
 });
+
+//************** Text generation web UI
+app.post("/generate_textgenerationwebui", jsonParser, function(request, response_generate = response){
+    if(!request.body) return response_generate.sendStatus(400);
+
+    console.log(request.body);
+    var args = {
+        data: request.body,
+        headers: { "Content-Type": "application/json" }
+    };
+    client.post(api_server+"/run/textgen",args, function (data, response) {
+        console.log("####", data);
+        if(response.statusCode == 200){
+            console.log(data);
+            response_generate.send(data);
+        }
+        if(response.statusCode == 422){
+            console.log('Validation error');
+            response_generate.send({error: true});
+        }
+        if(response.statusCode == 501 || response.statusCode == 503 || response.statusCode == 507){
+            console.log(data);
+            response_generate.send({error: true});
+        }
+    }).on('error', function (err) {
+        console.log(err);
+	//console.log('something went wrong on the request', err.request.options);
+        response_generate.send({error: true});
+    });
+});
+
+
 app.post("/savechat", jsonParser, function(request, response){
 //console.log(humanizedISO8601DateTime()+':/savechat/ entered');
     //console.log(request.data);
@@ -377,19 +408,39 @@ app.post("/getchat", jsonParser, function(request, response){
 app.post("/getstatus", jsonParser, function(request, response_getstatus = response){
     if(!request.body) return response_getstatus.sendStatus(400);
     api_server = request.body.api_server;
+    main_api = request.body.main_api;
     if(api_server.indexOf('localhost') != -1){
         api_server = api_server.replace('localhost','127.0.0.1');
     }
     var args = {
         headers: { "Content-Type": "application/json" }
     };
-    client.get(api_server+"/v1/model",args, function (data, response) {
+    var url = api_server+"/v1/model";
+    if (main_api == "textgenerationwebui") {
+        url = api_server;
+        args = {}
+    }
+    client.get(url,args, function (data, response) {
         if(response.statusCode == 200){
-            if(data.result != "ReadOnly"){
-                
-                //response_getstatus.send(data.result);
-            }else{
-                data.result = "no_connection";
+            if (main_api == "textgenerationwebui") {
+                // console.log(body);
+                try {
+                    var body = data.toString();
+                    var response = body.match(/gradio_config[ =]*(\{.*\});/)[1]; 
+                    if (!response)
+                        throw "no_connection"; 
+                    data = {result: JSON.parse(response).components.filter( (x) => x.props.label == "Model" )[0].props.value};
+                    if (!data)
+                        throw "no_connection"; 
+                } catch {
+                    data = {result: "no_connection"};
+                }
+            } else {
+                if(data.result != "ReadOnly"){
+                    //response_getstatus.send(data.result);
+                }else{
+                    data.result = "no_connection";
+                }
             }
         }else{
             data.result = "no_connection";
@@ -400,8 +451,8 @@ app.post("/getstatus", jsonParser, function(request, response_getstatus = respon
         //response_getstatus.send(data);
         //data.results[0].text
     }).on('error', function (err) {
-        //console.log('');
-	//console.log('something went wrong on the request', err.request.options);
+        //console.log(url);
+        //console.log('something went wrong on the request', err.request.options);
         response_getstatus.send({result: "no_connection"});
     });
 });

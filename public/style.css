@@ -631,17 +631,22 @@ select option:not(:checked) {		/* works to color unselected items */
 	opacity: 0.5;
 }
 
-#api_url_text{
+.oobabooga_logo {
+    margin: 5px auto;
+    text-align: center;
+}
+
+#api_url_text, #textgenerationwebui_api_url_text{
     /*margin-right: 4px;*/
 	display:block;
 }
-#api_button, #api_button_novel {
+#api_button, #api_button_novel, #api_button_textgenerationwebui {
 
 }
 
 #api_button:hover, #api_button_novel:hover{background-color:green;}
 
-#api_loading{
+#api_loading, #api_loading_textgenerationwebui{
     width: 25px;
     height: 25px;
     display: none;
@@ -1078,20 +1083,20 @@ width: 103px;
     background-color: red;
 }
 
-#online_status2{
+#online_status2, #online_status4{
     opacity: 0.5;
     margin-top: 2px;
     
     margin-bottom: 15px;
 }
-#online_status_indicator2{
+#online_status_indicator2, #online_status_indicator4{
     border-radius: 7px;
     width: 14px;
     height: 14px;
     background-color: red;
     display: inline-block;
 }
-#online_status_text2{
+#online_status_text2, #online_status_text4{
     margin-left: 4px;
     display: inline-block;
 }
