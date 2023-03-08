@@ -48,7 +48,7 @@
             var name2 = "Chloe";
             // might want to migrate this to 'system message' code
             var chat = [{name: 'Chloe',is_user: false,is_name: true,create_date: 0,mes: '\n*You went inside. The air smelled of fried meat, tobacco and a hint of wine. A dim light was cast by candles, and a fire crackled in the fireplace. It seems to be a very pleasant place. Behind the wooden bar is an elf waitress, she is smiling. Her ears are very pointy, and there is a twinkle in her eye. She wears glasses and a white apron. As soon as she noticed you, she immediately came right up close to you.*\n\n' +' "Hello there! How is your evening going?"<br><br>\n'+'<img src="img/star_dust_city.png" width=80%; display:block;">\n'}];
-            var safetychat = [{name: 'Chloe',is_user: false,is_name: true,create_date: 0,mes: '\n*You deleted a charcter and arrived back here for safety reasons! Pick another character!*\n\n'}];
+            var safetychat = [{name: 'Chloe',is_user: false,is_name: true,create_date: 0,mes: '\n*You deleted a character/chat and arrived back here for safety reasons! Pick another character!*\n\n'}];
             var chat_create_date = 0;
 			
 			//RossAscends: Added function to format dates used in files and chat timestamps to a humanized format.
@@ -2173,7 +2173,14 @@
                 });
 
                 if (response.ok) {
-                    await getCharacters();
+                    active_character = 'invalid-safety-id';	    //unsets the chid in settings (this prevents AutoLoadChat from trying to load the wrong ChID
+                    this_chid = 'invalid-safety-id';            //unsets expected chid before reloading (related to getCharacters/printCharacters from using old arrays)
+                    selected_group = null;
+                    characters.length = 0;                      // resets the characters array, forcing getcharacters to reset
+                    name2 = "Chloe";                            // replaces deleted charcter name with Chloe, since she wil be displayed next.
+                    chat = [...safetychat];                          // sets up chloe to tell user about having deleted a character
+
+                    QuickRefresh();
                     $('#rm_info_avatar').html('');
                     $('#rm_info_block').transition({ opacity: 0 ,duration: 0});
                     select_rm_info("Group deleted!");
@@ -2676,7 +2683,7 @@
 							this_chid = 'invalid-safety-id';			//unsets expected chid before reloading (related to getCharacters/printCharacters from using old arrays)
 							characters.length = 0;						// resets the characters array, forcing getcharacters to reset
 							name2="Chloe";								// replaces deleted charcter name with Chloe, since she wil be displayed next.
-							chat = safetychat;							// sets up chloe to tell user about having deleted a character
+							chat = [...safetychat];						// sets up chloe to tell user about having deleted a character
 							saveSettings();								// saving settings to keep changes to variables
 							QuickRefresh();								// call quick refresh of Char list, clears chat, and loads Chloe 'post-char-delete' message.
                             //location.reload();						// this is Humi's original code
@@ -3928,7 +3935,12 @@
                 div.parent().parent().children('.mes_bias').append(messageFormating(bias));
                 appendImageToMessage(chat[this_edit_mes_id], div.closest('.mes'));
                 this_edit_mes_id = undefined;
-                saveChat();
+                if (selected_group) {
+                    saveGroupChat(selected_group);
+                }
+                else {
+                    saveChat();
+                }
             }
             $("#your_name_button").click(function() {
                 if(!is_send_press){
