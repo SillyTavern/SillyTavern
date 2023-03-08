@@ -1861,7 +1861,7 @@ border-radius: 5px;
 #rm_group_top_bar {
     display: flex;
     flex-direction: row;
-    align-items: flex-start;
+    align-items: center;
     width: 100%;
 }
 #rm_button_group_chats{

@@ -924,15 +924,15 @@
                 return name;
             }
 
-            function checkWorldInfo(chat) {
-                function substituteParams(content) {
-                    content = content.replace(/{{user}}/gi, name1);
-                    content = content.replace(/{{char}}/gi, name2);
-                    content = content.replace(/<USER>/gi, name1);
-                    content = content.replace(/<BOT>/gi, name2);
-                    return content;
-                }
+            function substituteParams(content) {
+                content = content.replace(/{{user}}/gi, name1);
+                content = content.replace(/{{char}}/gi, name2);
+                content = content.replace(/<USER>/gi, name1);
+                content = content.replace(/<BOT>/gi, name2);
+                return content;
+            }
 
+            function checkWorldInfo(chat) {
                 if (world_info_data.entries.length == 0) {
                     return '';
                 }
@@ -1017,7 +1017,7 @@
                     return;
                 }
 
-                const newMessage = { ... systemMessage, 'send_date': Date.now() };
+                const newMessage = { ... systemMessage, 'send_date': humanizedISO8601DateTime() };
                 chat.push(newMessage);
                 addOneMessage(newMessage);
                 is_send_press = false;
@@ -1669,7 +1669,7 @@
                                         if (type === 'group_chat') {
                                             let avatarImg = 'img/fluffy.png';
                                             if (characters[this_chid].avatar != 'none'){
-                                                avatarImg = `characters/${characters[this_chid].avatar}`;
+                                                avatarImg = `characters/${characters[this_chid].avatar}?${Date.now()}`;
                                             }
                                             chat[chat.length-1]['is_name'] = true;
                                             chat[chat.length-1]['force_avatar'] = avatarImg;
@@ -2112,6 +2112,27 @@
                     }
                     else {
                         sendSystemMessage(system_message_types.GROUP);
+                        const group = groups.find(x => x.id === id);
+                        if (group && Array.isArray(group.members)) {
+                            for (let name of group.members) {
+                                const character = characters.find(x => x.name === name);
+
+                                if (!character) {
+                                    continue;
+                                }
+
+                                const mes = {};
+                                mes['is_user'] = false;
+                                mes['is_system'] = false;
+                                mes['name'] = character.name;
+                                mes['is_name'] = true;
+                                mes['send_date'] = humanizedISO8601DateTime();
+                                mes['mes'] = character.first_mes ?  substituteParams(character.first_mes.trim()) : mes['mes'] = default_ch_mes;
+                                mes['force_avatar'] = character.avatar != 'none' ? `characters/${character.avatar}?${Date.now()}` : 'img/fluffy.png';
+                                chat.push(mes);
+                                addOneMessage(mes);
+                            }
+                        }
                     }
 
                     await saveGroupChat(id);
@@ -2453,7 +2474,7 @@
                 if(characters[chid].avatar != 'none'){
                         this_avatar = "characters/"+characters[chid].avatar;
                 }
-                $("#avatar_load_preview").attr('src',this_avatar+"#"+Date.now());
+                $("#avatar_load_preview").attr('src',this_avatar+"?"+Date.now());
                 $("#name_div").css("display", "none");
                 
                 $("#form_create").attr("actiontype", "editcharacter");
@@ -3806,7 +3827,7 @@
             //********************
             //***Message Editor***
             $(document).on('click', '.mes_edit', function(){
-                if(this_chid !== undefined){
+                if(this_chid !== undefined || selected_group){
                     const message = $(this).closest('.mes');
 
                     if (message.data('isSystem')) {
@@ -3842,7 +3863,11 @@
                     var text = chat[edit_mes_id]['mes'];
                     if(chat[edit_mes_id]['is_user']){
                         this_edit_mes_chname = name1;
-                    }else{
+                    }
+                    else if (chat[edit_mes_id]['forced_avatar']) {
+                        this_edit_mes_chname = chat[edit_mes_id]['name'];
+                    }
+                    else{
                         this_edit_mes_chname = name2;
                     }
                     text = text.trim();
@@ -5121,9 +5146,9 @@
                     <input id="rm_group_automode" type="checkbox" /><span></span>
                     <h4>Auto Mode</h4>
                 </label>
-                <input id="rm_group_submit" type="button" value="Create">
+                <input id="rm_group_submit" class="menu_button" type="submit" value="Create">
                 <div id="rm_group_buttons_expander">&nbsp;</div>
-                <input id="rm_group_delete" type="button" value="Delete">
+                <input id="rm_group_delete" class="menu_button" type="submit" value="Delete">
             </div>
         </div>
         <div id="rm_api_block" class="right_menu" >
