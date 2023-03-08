@@ -1527,7 +1527,7 @@
                                     name2, // name2
                                     "",  // Context
                                     true, // stop at newline
-                                    1300, // Maximum prompt size in tokens
+                                    max_context, // Maximum prompt size in tokens
                                     1, // num attempts
                                 ]
                             };
@@ -5219,7 +5219,7 @@
                         <h4>Typical P</h4><h5 id="typical_p_counter_textgenerationwebui">select</h5>
                         <input type="range" id="typical_p_textgenerationwebui" name="volume" min="0" max="1" step="0.1">
                         <h4>Penalty Alpha</h4><h5 id="penalty_alpha_counter_textgenerationwebui">select</h5>
-                        <input type="range" id="penalty_alpha_textgenerationwebui" name="volume" min="0" max="1" step="0.1" />
+                        <input type="range" id="penalty_alpha_textgenerationwebui" name="volume" min="0" max="5" step="0.1" />
                     </div>
                 </div>
                 
