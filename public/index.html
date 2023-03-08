@@ -182,14 +182,14 @@
             var preset_settings = 'gui';
             var user_avatar = 'you.png';
             var temp = 0.5;
-            var amount_gen = 80;
             var world_info = null;
             var world_names;
             var world_info_data = null;
             var world_info_depth = 2;
             var world_info_budget = 200;
             var imported_world_name = '';
-            var max_context = 2048;//2048;
+            var amount_gen = 80;				//default max length of AI generated responses
+            var max_context = 2048;
             var rep_pen = 1;
             var rep_pen_size = 100;
 
@@ -281,8 +281,8 @@
                         flushSettings();
 					clearChat();
 					//characters.length = 0		//if this could be enabled it would allow the GetCharacters function to detect files added or removed from the char dir on each panel load
-					console.log('quickRefresh() -- active_character -- '+active_character);
-					console.log('quickRefresh() -- this_chid -- '+this_chid);
+					//console.log('quickRefresh() -- active_character -- '+active_character);
+					//console.log('quickRefresh() -- this_chid -- '+this_chid);
 					getSettings("def");
 					getCharacters();
 					getUserAvatars();
@@ -309,6 +309,25 @@
                 }
             });
             
+
+			//RossAscends: a utility function for counting characters, even works for unsaved characters. 
+			function CountCharTokens(){
+				$('#result_info').html('');
+				if (selected_button == 'create'){
+					var count_tokens = encode(JSON.stringify(create_save_description+create_save_personality+create_save_scenario+create_save_mes_example)).length;
+					console.log('This unsaved character has '+count_tokens+' tokens in the defs.');
+				}else{
+					var count_tokens = encode(JSON.stringify(characters[this_chid].description+characters[this_chid].personality+characters[this_chid].scenario+characters[this_chid].mes_example)).length;
+					console.log(characters[this_chid].name+' has '+count_tokens+' tokens in the defs.');
+				}
+
+				if(count_tokens < 1024){
+					$('#result_info').html(count_tokens+" Tokens");
+                }else{
+                    $('#result_info').html("<font color=red>"+count_tokens+" Tokens(TOO MANY TOKENS)</font>");
+                }
+			}
+
 		    $('#characloud_url').click(function(){
 					window.open('https://boosty.to/tavernai', '_blank');
 				});	
@@ -491,7 +510,7 @@
 				//console.log('printCharacters() entered');
 
                 $("#rm_print_characters_block").empty();
-				console.log('printCharacters() -- sees '+characters.length+' characters.');
+				//console.log('printCharacters() -- sees '+characters.length+' characters.');
                 characters.forEach(function(item, i, arr) {
 
                     var this_avatar = default_avatar;
@@ -500,7 +519,7 @@
 
                     }		//RossAscends: changed 'prepend' to 'append' to make alphabetical sorting display correctly.
                     $("#rm_print_characters_block").append('<div class=character_select chid='+i+' id="CharID'+i+'"><div class=avatar><img src="'+this_avatar+'"></div><div class=ch_name>'+item.name+'</div></div>');
-					console.log('printcharacters() -- printing -- ChID '+i+' ('+item.name+')');
+					//console.log('printcharacters() -- printing -- ChID '+i+' ('+item.name+')');
                 });
                 printGroups();
   
@@ -691,7 +710,7 @@
 
                 }
             }
-             async function setBackground(bg) {
+            async function setBackground(bg) {
                 /*
                 const response = await fetch("/setbackground", {
                     method: "POST",
@@ -1305,6 +1324,8 @@
                     }
                     
                     function runGenerate(cycleGenerationPromt = ''){
+
+
                         generatedPromtCache+=cycleGenerationPromt;
                         if(generatedPromtCache.length == 0){
                             chatString = "";
@@ -1361,7 +1382,8 @@
                         //Send story string
                         var mesSendString = '';
                         var mesExmString = '';
-                        function setPromtString(){
+                        
+						function setPromtString(){
                             mesSendString = '';
                             mesExmString = '';
                             for(let j = 0; j < count_exm_add; j++){
@@ -1371,17 +1393,22 @@
                                 mesSendString+=mesSend[j];
                             }
                         }
+						
                         function checkPromtSize(){
                             setPromtString();
                             let thisPromtContextSize = encode(JSON.stringify(worldInfoString+storyString+mesExmString+mesSendString+anchorTop+anchorBottom+charPersonality+generatedPromtCache+promptBias+extension_prompt)).length+120;
-                            if(thisPromtContextSize > this_max_context){
-                                if(count_exm_add > 0){
+
+                            if(thisPromtContextSize > this_max_context){		//if the prepared prompt is larger than the max context size...
+
+                                if(count_exm_add > 0){							// ..and we have example mesages..
+									//console.log('Context size: '+thisPromtContextSize+' -- too big, removing example message');
                                     //mesExamplesArray.length = mesExamplesArray.length-1;
-                                    count_exm_add--;
-                                    checkPromtSize();
-                                }else if(mesSend.length > 0){
-                                    mesSend.shift();
-                                    checkPromtSize();
+                                    count_exm_add--;							// remove the example messages...
+                                    checkPromtSize();							// and try agin...
+                                }else if(mesSend.length > 0){					// if the chat history is longer than 0
+									//console.log('Context size: '+thisPromtContextSize+' -- too big, removing oldest chat message');
+                                    mesSend.shift();							// remove the first (oldest) chat entry..
+                                    checkPromtSize();							// and check size again..
                                 }else{
                                     //end
                                 }
@@ -1391,6 +1418,7 @@
                         
                         
                         if(generatedPromtCache.length > 0){
+							//console.log('Generated Prompt Cache length: '+generatedPromtCache.length);
                             checkPromtSize();
                         }else{
                             setPromtString();
@@ -1408,26 +1436,35 @@
                         var generate_data;
                         if(main_api == 'kobold'){
                             var generate_data = {prompt: finalPromt, gui_settings: true,max_length: amount_gen,temperature: temp, max_context_length: max_context};
-                            if(preset_settings != 'gui'){
+                            if(preset_settings != 'gui'){							//if we aren't using the kobold GUI settings...
 
                                 var this_settings = koboldai_settings[koboldai_setting_names[preset_settings]];
-                                var this_amount_gen = parseInt(amount_gen);
-                                if(is_pygmalion){
-                                    if(tokens_already_generated === 0){
-                                        if(parseInt(amount_gen) >= 50){
-                                            this_amount_gen = 50;
+                                var this_amount_gen = parseInt(amount_gen);			// how many tokens the AI will be requested to generate
+								
+                                if(is_pygmalion){									// if we are using a pygmalion model...
+                                    if(tokens_already_generated === 0){				// if nothing has been generated yet..
+                                        if(parseInt(amount_gen) >= 50){				// if the max gen setting is > 50...(
+                                           this_amount_gen = 50;					// then only try to make 50 this cycle..
                                         }else{
-                                            this_amount_gen = parseInt(amount_gen);
-                                        }
-                                        
-                                    }else{
-                                        if(parseInt(amount_gen) - tokens_already_generated < tokens_cycle_count){
-                                            this_amount_gen = parseInt(amount_gen) - tokens_already_generated;
+                                            this_amount_gen = parseInt(amount_gen);	// otherwise, make as much as the max amount request.
+										}
+									 
+										//console.log('Max Gen Amount: '+parseInt(amount_gen));    
+
+                                    }else{																				// if we already recieved some generated text...
+                                        if(parseInt(amount_gen) - tokens_already_generated < tokens_cycle_count){		// if the remaining tokens to be made is less than next potential cycle count
+                                            this_amount_gen = parseInt(amount_gen) - tokens_already_generated;			// subtract already generated amount from the desired max gen amount
+											//console.log('Remaining tokens to be requested: '+this_amount_gen);
                                         }else{
-                                            this_amount_gen = tokens_cycle_count;
+                                            this_amount_gen = tokens_cycle_count;										// otherwise make the standard cycle amont (frist 50, and 30 after that)
                                         }
                                     }
-                                }
+									//console.log('Upcoming token request amt: '+this_amount_gen);
+
+                                }else{
+									//console.log('non-pyg model or GUI Settings are being used -- skipping request split');
+								}
+								
                                 generate_data = {prompt: finalPromt, 
                                                 gui_settings: false, 
                                                 sampler_order: this_settings.sampler_order,
@@ -1494,10 +1531,13 @@
                             dataType: "json",
                             contentType: "application/json",
                             success: function(data){
-                                tokens_already_generated += this_amount_gen;
+                                tokens_already_generated += this_amount_gen;			// add new gen amt to any prev gen counter..
+
+
+								//console.log('Tokens requested in total: '+tokens_already_generated);
                                 //$("#send_textarea").focus();
                                 //$("#send_textarea").removeAttr('disabled');
-                                is_send_press = false;
+                                is_send_press = false; 
                                 if(data.error != true){
                                     //const getData = await response.json();
                                     if(main_api == 'kobold'){
@@ -1507,16 +1547,22 @@
                                         var getMessage = data.output;
                                     }
 
-                                    //Pygmalion run again
+                                    //Pygmalion run again													// to make it continue generating so long as it's under max_amount and hasn't signaled
+																											// an end to the character's response via typing "You:" or adding "<endoftext>"
                                     if(is_pygmalion){
                                         if_typing_text = false;
                                         message_already_generated +=getMessage;
-                                        if(message_already_generated.indexOf('You:') === -1 && message_already_generated.indexOf('<|endoftext|>') === -1 && tokens_already_generated < parseInt(amount_gen) && getMessage.length > 0){
-                                            runGenerate(getMessage);
+										//console.log('AI Response so far: '+message_already_generated);
+                                        if( message_already_generated.indexOf('You:') === -1 && 			//if there is no 'You:' in the response msg
+											message_already_generated.indexOf('<|endoftext|>') === -1 && 	//if there is no <endoftext> stamp in the response msg
+											tokens_already_generated < parseInt(amount_gen) && 				//if the gen'd msg is less than the max response length..
+											getMessage.length > 0){											//if we actually have gen'd text at all... 
+                                            runGenerate(getMessage);										//generate again with the 'GetMessage' argument..
                                             return;
                                         }
                                         
                                         getMessage = message_already_generated;
+										
                                     }
                                     //Formating
                                     getMessage = $.trim(getMessage);
@@ -1588,9 +1634,9 @@
                                             saveChat();
                                         }
 										//console.log('/savechat called by /Generate');
-                                        saveChat();
+										//let final_message_length = encode(JSON.stringify(getMessage)).length;
+										//console.log('AI Response: +'+getMessage+ '('+final_message_length+' tokens)');
                                     }else{
-                                        //console.log('run force_name2 protocol');
                                         Generate('force_name2');
                                     }
                                 }else{
@@ -1675,9 +1721,7 @@
                             chat_create_date = humanizedISO8601DateTime();
                         }
                         //console.log(chat);
-						//console.log('getChatResults called by /getchat');
                         getChatResult();
-						//console.log('savechat called by /getchat');
                         saveChat();
                     },
                     error: function (jqXHR, exception) {
@@ -2224,6 +2268,7 @@
             });
             function select_rm_create(){
                 menu_type = 'create';
+
 //console.log('select_rm_Create() -- selected button: '+selected_button);
                 if(selected_button == 'create'){
                     if(create_save_avatar != ''){
@@ -2231,6 +2276,7 @@
                         read_avatar_load($("#add_avatar_button").get(0));
                     }
                 }
+				
                 $( "#rm_characters_block" ).css("display", "none");
                 $( "#rm_api_block" ).css("display", "none");
                 $( "#rm_ch_create_block" ).css("display", "block");
@@ -2244,6 +2290,7 @@
                         complete: function() {  }
                 });
                 $( "#rm_info_block" ).css("display", "none");
+				
                 $( "#delete_button_div" ).css("display", "none");
                 $( "#delete_button" ).css("display", "none");
 				$( "#export_button" ).css("display", "none");
@@ -2275,6 +2322,7 @@
                 $("#name_div").css("display", "block");
                 
                 $("#form_create").attr("actiontype", "createcharacter");
+				CountCharTokens();
             }
             function select_rm_characters(){
                 QuickRefresh();
@@ -2375,15 +2423,9 @@
 						active_character = this_chid;
                         clearChat();
                         chat.length = 0;
-                        getChat();  
-						var count_tokens = encode(JSON.stringify(characters[this_chid].description+characters[this_chid].personality+characters[this_chid].scenario+characters[this_chid].mes_example)).length;
-			//RossAscends: added token counter to load when a character is selected, instead of waiting for an edit.
-                            if(count_tokens < 1024){
-                                $('#result_info').html(count_tokens+" Tokens");
-                            }else{
-                                $('#result_info').html("<font color=red>"+count_tokens+" Tokens(TOO MANY TOKENS)</font>");
-                            }
-						console.log('Clicked on '+characters[this_chid].name+' Active_Character set to: '+active_character+' (ChID:'+this_chid+')');
+                        getChat();
+
+						//console.log('Clicked on '+characters[this_chid].name+' Active_Character set to: '+active_character+' (ChID:'+this_chid+')');
                     }
                 }else{	//if clicked on character that was already selected
                     selected_button = 'character_edit';
@@ -2833,13 +2875,8 @@
                             $('#create_button').attr('value','Save');
 							//console.log('/editcharacters -- this_chid -- '+this_chid);
 							if(this_chid != undefined && this_chid != 'invalid-safety-id'){   //added check to avoid trying to load tokens in case of character deletion
-								var count_tokens = encode(JSON.stringify(characters[this_chid].description+characters[this_chid].personality+characters[this_chid].scenario+characters[this_chid].mes_example)).length;
+								CountCharTokens();
 							}
-                            if(count_tokens < 1024){
-                                $('#result_info').html(count_tokens+" Tokens");
-                            }else{
-                                $('#result_info').html("<font color=red>"+count_tokens+" Tokens(TOO MANY TOKENS)</font>");
-                            }
                         },
                         error: function (jqXHR, exception) {
                             $('#create_button').removeAttr("disabled");
@@ -2866,17 +2903,20 @@
 
             });
             $('#description_textarea').on('keyup paste cut', function(){//change keyup paste cut
+
                 if(menu_type == 'create'){
                     create_save_description = $('#description_textarea').val();
+					CountCharTokens();
                 }else{
                     timerSaveEdit = setTimeout(() => {$("#create_button").click();},durationSaveEdit);
                 }
-                
+           
             });
             $('#personality_textarea').on('keyup paste cut', function(){
                 if(menu_type == 'create'){
 
                     create_save_personality = $('#personality_textarea').val();
+					CountCharTokens();
                 }else{
                     timerSaveEdit = setTimeout(() => {$("#create_button").click();},durationSaveEdit);
                 }
@@ -2884,6 +2924,7 @@
             $('#scenario_pole').on('keyup paste cut', function(){
                 if(menu_type == 'create'){
                     create_save_scenario = $('#scenario_pole').val();
+					CountCharTokens();
                 }else{
                     timerSaveEdit = setTimeout(() => {$("#create_button").click();},durationSaveEdit);
                 }
@@ -2892,6 +2933,7 @@
                 if(menu_type == 'create'){
 
                     create_save_mes_example = $('#mes_example_textarea').val();
+					CountCharTokens();
                 }else{
                     timerSaveEdit = setTimeout(() => {$("#create_button").click();},durationSaveEdit);
                 }
@@ -2900,6 +2942,7 @@
                 
                 if(menu_type == 'create'){
                     create_save_first_message = $('#firstmessage_textarea').val();
+					CountCharTokens();
                 }else{
                     timerSaveEdit = setTimeout(() => {$("#create_button").click();},durationSaveEdit);
                 }
@@ -3374,7 +3417,9 @@
                                 novelai_settings[i] = JSON.parse(item);
                             });
                             var arr_holder = {};
-                            $("#settings_perset_novel").empty();
+							
+							$("#settings_perset_novel").empty;			
+		
                             novelai_setting_names.forEach(function(item, i, arr) {
                                 arr_holder[item] = i;
                                 $('#settings_perset_novel').append('<option value='+i+'>'+item+'</option>');
@@ -3393,15 +3438,18 @@
                                 koboldai_settings[i] = JSON.parse(item);
                             });
                             var arr_holder = {};
-                            //$("#settings_perset").empty();
+							 
+							$("#settings_perset").empty();			//RossAscends: uncommented this to prevent settings selector from doubling preset list on QuickRefresh
+							$("#settings_perset").append('<option value="gui">GUI KoboldAI Settings</option>');  //adding in the GUI settings, since it is not loaded dynamically
+
                             koboldai_setting_names.forEach(function(item, i, arr) {
                                 arr_holder[item] = i;
                                 $('#settings_perset').append('<option value='+i+'>'+item+'</option>');
+								//console.log('loading preset #'+i+' -- '+item);
 
                             });
                             koboldai_setting_names = {};
                             koboldai_setting_names = arr_holder;
-
                             preset_settings = settings.preset_settings;
 							
 						//Load AI model config settings (temp, context length, anchors, and anchor order)
@@ -4631,15 +4679,18 @@
 				</div>
 					
 				<div>
-					<h3 id="character_popup_text_h3">Create character</h3>
+					<h3 id="character_popup_text_h3"></h3> - Advanced Defininitions
 				</div>
+				
             </div>
             <img id="character_cross" src="img/cross.png" style="position: absolute; right: 15px; top: 15px; width: 20px; height: 20px; cursor: pointer; opacity: 0.6">
+			
             <div id="personality_div">
+			<hr>
                 <h4>Personality summary</h4><h5>A brief description of the personality <a href="/notes/2" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
                 <input id="personality_textarea" name="personality" placeholder="" form="form_create" class="text_pole" autocomplete="off">
             </div>
-            
+			            
             <div id="scenario_div">
                 <h4>Scenario</h4>
                 <h5>Circumstances and context of the dialogue <a href="/notes/12" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
@@ -4822,7 +4873,10 @@
         </div>
     </div>
     <div id="bg_menu">
-        <div id="logo_block"><div id="bg_menu_button"><img src="img/tri.png"></div><img src="img/logo.png" id="site_logo">
+        <div id="logo_block">
+			<div id="bg_menu_button"><img src="img/tri.png">
+		</div>
+		<img src="img/logo.png" id="site_logo">
 		<div id="update-notification">
 		<a id="verson" href="https://github.com/TavernAI/TavernAI" target="_blank"></a>
 		</div>
@@ -4851,48 +4905,52 @@
 		
         <div id="rm_ch_create_block" class="right_menu" style="display: none;">
             <form id="form_create"  action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                <div id="name_div">
-                    <h4>Name</h4><h5>Character name</h5>
-                <input id="character_name_pole" name="ch_name" class="text_pole" maxlength="120" value="" autocomplete="off">
-                </div>
-                <div id="avatar_div" class="avatar_div">
-                    <div id="avatar_div_div" class="avatar">
-						<img id="avatar_load_preview" src="img/fluffy.png" alt="avatar">
+				<div id="avatar-and-name-block">
+					<div id="name_div">
+						<h4>Character Name</h4><br>
+						<input id="character_name_pole" name="ch_name" class="text_pole" maxlength="120" value="" autocomplete="off">
 					</div>
-					
-					<label for="add_avatar_button" class="menu_button" title="Click to select a new avatar for this character">
-						<input type="file" id="add_avatar_button" name="avatar" accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp">
-						Change Avatar
-					</label>
+					<div id="avatar_div" class="avatar_div">
+						<div id="avatar_div_div" class="avatar">
+							<img id="avatar_load_preview" src="img/fluffy.png" alt="avatar">
+						</div>
+						<label for="add_avatar_button" class="menu_button" title="Click to select a new avatar for this character">
+							<input type="file" id="add_avatar_button" name="avatar" accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp">
+							Change Avatar
+						</label>
+					</div>
+					<div id="result_info" style="width: 100px;">&nbsp;</div>
+				</div>
+				<hr>
+				<div id="description_div" class="margin-bot-10px">
+                    <h4>Description <a href="/notes/1" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h4>
                 </div>
-                <hr>
-                <div id="description_div">
-                    <h4>Description</h4><h5>Description of personality and other characteristics <a href="/notes/1" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
-                <textarea id="description_textarea" name="description" placeholder=""></textarea>
+				<textarea id="description_textarea" class="margin-bot-10px" name="description" placeholder=""></textarea>
+				
+                <div id="first_message_div" class="margin-bot-10px">
+					<h4>First message<a href="/notes/3" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h4>			
                 </div>
-                <div id="first_message_div">
-					<h4>First message</h4><h5>First message from the character <a href="/notes/3" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
-					<textarea id="firstmessage_textarea" name="first_mes" placeholder=""></textarea>
-                </div>
+				<textarea id="firstmessage_textarea" class="margin-bot-10px" name="first_mes" placeholder=""></textarea>
 				
 				<!-- these divs are invisible and used for server communication purposes -->
-				<div id="avatar_url_div">
-                <input id="avatar_url_pole" name="avatar_url" class="text_pole" maxlength="999" size="2" value="" autocomplete="off">
-                </div>
-                <div id="selected_chat_div">
-                <input id="selected_chat_pole" name="chat" class="text_pole" maxlength="999" size="2" value="" autocomplete="off">
-                </div>
-                <div id="create_date_div">
-                <input id="create_date_pole" name="create_date" class="text_pole" maxlength="999" size="2" value="" autocomplete="off">
-                </div>
-                <div id="last_mes_div">
-                <input id="last_mes_pole" name="last_mes" class="text_pole" maxlength="999" size="2" value="" autocomplete="off">
-                </div>
+				<div id="hidden-divs">
+					<div id="avatar_url_div">
+						<input id="avatar_url_pole" name="avatar_url" class="text_pole" maxlength="999" size="2" value="" autocomplete="off">
+					</div>
+					<div id="selected_chat_div">
+						<input id="selected_chat_pole" name="chat" class="text_pole" maxlength="999" size="2" value="" autocomplete="off">
+					</div>
+					<div id="create_date_div">
+						<input id="create_date_pole" name="create_date" class="text_pole" maxlength="999" size="2" value="" autocomplete="off">
+					</div>
+					<div id="last_mes_div">
+						<input id="last_mes_pole" name="last_mes" class="text_pole" maxlength="999" size="2" value="" autocomplete="off">
+					</div>
+				</div>
 				<!-- now back to normal divs for display purposes-->
 				
 				<input id="advanced_div" class="menu_button" type="button" value="Advanced Edit">
-                <div id="result_info" style="width: 100px;">&nbsp;</div>
-				<hr>	
+                
 				<div class="form_create_bottom_buttons_block">
 						<div id="rm_button_back" class="menu_button">Go Back</div>
 						<input id="delete_button" class="menu_button" type="button" value="Delete">
@@ -4986,7 +5044,7 @@
 					<hr>
 					
 					<div id="ai-presets-and-config-block">
-						<h4>Preset settings</h4><h5>Selecting settings <a href="/notes/4" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
+						<h4>Preset settings <a href="/notes/4" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h4>
 						<select id="settings_perset">
 							<option value="gui">GUI KoboldAI Settings</option>
 						</select>
@@ -5025,8 +5083,7 @@
 						</a>
 					</div>
 					<form  action="javascript:void(null);" method="post" enctype="multipart/form-data">
-						<h4>API key</h4>
-						<h5>Where to get <a href="/notes/6" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
+						<h4>Novel API key<a href="/notes/6" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h4>
 						<input id="api_key_novel" name="api_key_novel" class="text_pole" maxlength="500" value="" autocomplete="off">
 						<Br>
 						<input id="api_button_novel" class="menu_button" type="submit" value="Connect">
@@ -5036,13 +5093,12 @@
                     <div id="online_status_indicator3"></div>
 					<div id="online_status_text3">No connection...</div>
                 </div>
-                <h4>Model</h4>
-				<h5>Selecting NovelAI model <a href="/notes/8" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
+                <h4>Novel AI Model<a href="/notes/8" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h4>
                 <select id="model_novel_select" class="option_select_right_menu" style='margin-bottom: 16px;'>
                     <option value="euterpe-v2">Euterpe</option>
                     <option value="krake-v2">Krake</option>
                 </select>
-                <h4>Preset settings</h4><h5>Selecting settings <a href="/notes/7" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
+                <h4>Preset settings<a href="/notes/7" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h4>
                 <select id="settings_perset_novel" class="option_select_right_menu">
                     <option value="gui">Default</option>
                 </select>
@@ -5069,9 +5125,8 @@
                     <input type="file" id="avatar_upload_file" accept="image/png" name="avatar">
                 </form>
 				<form id='form_change_name' action="javascript:void(null);" method="post" enctype="multipart/form-data">
-					<h4>Name</h4>
-					<input id="your_name" name="your_name" class="text_pole" maxlength="35" value="" autocomplete="off">
-					<br>
+					<h4>Name</h4><br>
+					<input id="your_name" name="your_name" class="text_pole" maxlength="35" value="" autocomplete="off"><br>
 					<input id="your_name_button" class="menu_button" type="submit" title="Click to set a new User Name (reloads page)" value="Change Name">
 				</form>
 			</div>
