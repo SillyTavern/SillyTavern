@@ -1412,6 +1412,7 @@
                                     if(is_pygmalion){
                                         if_typing_text = false;
                                         message_already_generated +=getMessage;
+                                        promptBias = '';
 										//console.log('AI Response so far: '+message_already_generated);
                                         if( message_already_generated.indexOf('You:') === -1 && 			//if there is no 'You:' in the response msg
 											message_already_generated.indexOf('<|endoftext|>') === -1 && 	//if there is no <endoftext> stamp in the response msg
