@@ -259,8 +259,12 @@
 					getUserAvatars();
 					//console.log(chat);
 					printMessages();
-					$( "#rm_button_selected_ch" ).css("class","deselected-right-tab");
-					$( "#rm_button_selected_ch" ).children("h2").text('');
+
+                    if (!this_chid || this_chid === 'invalid-safety-id') {
+                        $( "#rm_button_selected_ch" ).css("class","deselected-right-tab");
+                        $( "#rm_button_selected_ch" ).children("h2").text('');
+                    }
+
 					if (NavToggle.checked === false) {
 						document.getElementById('nav-toggle').click();
 					};
