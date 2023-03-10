@@ -299,8 +299,12 @@
 					getUserAvatars();
 					//console.log(chat);
 					printMessages();
-					$( "#rm_button_selected_ch" ).css("class","deselected-right-tab");
-					$( "#rm_button_selected_ch" ).children("h2").text('');
+
+                    if (!this_chid || this_chid === 'invalid-safety-id') {
+                        $( "#rm_button_selected_ch" ).css("class","deselected-right-tab");
+                        $( "#rm_button_selected_ch" ).children("h2").text('');
+                    }
+
 					if (NavToggle.checked === false) {
 						document.getElementById('nav-toggle').click();
 					};
@@ -2405,7 +2409,7 @@
 				CountCharTokens();
             }
             function select_rm_characters(){
-                QuickRefresh();
+                QuickRefresh(true);
                 menu_type = 'characters';
                 $( "#rm_characters_block" ).css("display", "block");
                 $('#rm_characters_block').css('opacity',0.0);
@@ -5235,6 +5239,7 @@
                     <div class="oobabooga_logo"><a href="https://github.com/oobabooga/text-generation-webui" target="_blank">
                        oobabooga/text-generation-webui
                     </a></div>
+                    <span>Make sure you run it with <pre>--no-stream</pre> option!</span>
                     <form  action="javascript:void(null);" method="post" enctype="multipart/form-data">
     
                     <h4>API url</h4><h5>Example: http://127.0.0.1:7860/ </h5>
