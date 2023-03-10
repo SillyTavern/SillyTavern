@@ -4784,18 +4784,35 @@
                     success: function(data){
                         if(data.result != 'file not find'){
                             settings = JSON.parse(data.settings);
-							
-					//Load the API server URL from settings
+
+                            //Load the API server URL from settings
                             api_server = settings.api_server;
+                            api_server_textgenerationwebui = settings.api_server_textgenerationwebui;
+                            api_key_novel = settings.api_key_novel;
                             $('#api_url_text').val(api_server);
+                            $('#textgenerationwebui_api_url_text').val(api_server_textgenerationwebui);
+                            $('#api_key_novel').val(api_key_novel);
                         }
-						console.log('api_server = '+ api_server );
-						console.log('auto_connect = '+ auto_connect);
-						if(api_server !== ''&& auto_connect == true){
-							$('#api_button').click();	
-						}
-					},
-					error: function (jqXHR, exception) {
+
+                        console.log('api_server = ' + api_server );
+                        console.log('api_server_textgenerationwebui = ' + api_server_textgenerationwebui );
+                        console.log('api_key_novel = ' + api_key_novel);
+                        console.log('auto_connect = '+ auto_connect);
+                        changeMainAPI();
+
+                        if(main_api === 'kobold' && api_server && auto_connect){
+                            $('#api_button').click();	
+                        }
+
+                        if (main_api === 'textgenerationwebui' && api_server_textgenerationwebui && auto_connect) {
+                            $('#api_button_textgenerationwebui').click();
+                        }
+
+                        if (main_api === 'novel' && api_key_novel && auto_connect) {
+                            $('#api_button_novel').click();
+                        }
+                    },
+                    error: function (jqXHR, exception) {
                         console.log(exception);
                         console.log(jqXHR);
 
