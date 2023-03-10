@@ -644,6 +644,10 @@ select option:not(:checked) {		/* works to color unselected items */
 
 }
 
+#textgenerationwebui_api pre {
+    display: inline;
+}
+
 #api_button:hover, #api_button_novel:hover{background-color:green;}
 
 #api_loading, #api_loading_textgenerationwebui{
