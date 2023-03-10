@@ -3336,6 +3336,7 @@
                     $('#max_context_block').css('display', 'block');
                     $('#amount_gen_block').css('display', 'block');
                     $('#softprompt_block').css('display', 'block');
+                    $('#settings_perset').trigger('change');
                 }
                 if($('#main_api').find(":selected").val() == 'textgenerationwebui'){
                     $('#kobold_api').css("display", "none");
@@ -3345,6 +3346,8 @@
                     $('#max_context_block').css('display', 'block');
                     $('#amount_gen_block').css('display', 'block');
                     $('#softprompt_block').css('display', 'block');
+                    $("#amount_gen_block").children().prop("disabled", false);
+                    $("#amount_gen_block").css('opacity',1.0);
                 }
 
                 if($('#main_api').find(":selected").val() == 'novel'){
