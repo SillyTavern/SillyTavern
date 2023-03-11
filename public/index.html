@@ -14,6 +14,7 @@
     <script src="scripts/jquery.transit.min.js"></script>
     <script src="scripts/jquery-cookie-1.4.1.min.js"></script>
     <script src="scripts/showdown.min.js"></script>
+    <script src="scripts/popper.js"></script>
     <link rel="stylesheet" type="text/css" href="style.css">
     <link rel="stylesheet" href="css/bg_load.css">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
@@ -93,6 +94,7 @@
                 WELCOME: 'welcome',
                 GROUP: 'group',
                 EMPTY: 'empty',
+                GENERIC: 'generic',
             };
 
             const system_messages = {
@@ -102,7 +104,7 @@
                     "is_user":false,
                     "is_system": true,
                     "is_name":true,
-                    "mes": "Hi there! The following chat formatting commands are supported in TavernAI:<br><ul><li><tt>*text*</tt> – format the actions that your character does</li><li><tt>{*text*}</tt> – set the behavioral bias for your character</li></ul><p>Need more help? Visit our wiki – <a href=\"https://github.com/TavernAI/TavernAI/wiki\">TavernAI Wiki</a>!</p>"
+                    "mes": "Hi there! The following chat formatting commands are supported:<br><ul><li><tt>*text*</tt> – format the actions that your character does</li><li><tt>{*text*}</tt> – set the behavioral bias for your character</li></ul><p>Need more help? Visit our wiki – <a href=\"https://github.com/TavernAI/TavernAI/wiki\">TavernAI Wiki</a>!</p>"
                 },
                 'group': {
                     "name": systemUserName,
@@ -119,7 +121,15 @@
                     "is_system": true,
                     "is_name": true,
                     "mes": 'No one hears you. **Hint:** add more members to the group!'
-                }
+                },
+                'generic': {
+                    "name": systemUserName,
+                    "force_avatar": "img/five.png",
+                    "is_user": false,
+                    "is_system": true,
+                    "is_name": true,
+                    "mes": "Generic system message. User `text` parameter to override the contents",
+                },
             };
 
             const world_info_position = {
@@ -1014,7 +1024,7 @@
                 return helpTokens.includes(message.trim().toLowerCase());
             }
 
-            function sendSystemMessage(type) {
+            function sendSystemMessage(type, text) {
                 const systemMessage = system_messages[type];
 
                 if (!systemMessage) {
@@ -1022,6 +1032,11 @@
                 }
 
                 const newMessage = { ... systemMessage, 'send_date': humanizedISO8601DateTime() };
+
+                if (text) {
+                    newMessage.mes = text;
+                }
+
                 chat.push(newMessage);
                 addOneMessage(newMessage);
                 is_send_press = false;
@@ -4734,6 +4749,7 @@
                     extensionPrompts: extension_prompts,
                     setExtensionPrompt: setExtensionPrompt,
                     saveChat: saveChat,
+                    sendSystemMessage: sendSystemMessage,
                 };
             };
         
