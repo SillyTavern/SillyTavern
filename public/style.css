@@ -1634,13 +1634,15 @@ input[type="range"] {
 	background-color: var(--black50a);
 }
 #anchor_checkbox, #power-user-option-checkboxes{
-	
+    display: flex;
+    flex-direction: column;
+    row-gap: 5px;
+}
+#anchor_checkbox label, #power-user-option-checkboxes label {
+    display: flex;
+    flex-direction: row;
+    column-gap: 10px;
     align-items: center;
-    text-align: left;
-    display: grid;
-    grid-template-rows: 30px auto;
-    grid-template-columns: 30px auto;
-	grid-gap:5px;
 }
 
 #shadow_character_popup{

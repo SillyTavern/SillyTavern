@@ -2734,7 +2734,7 @@
             function callPopup(text){
                 $("#dialogue_popup_cancel").css("display", "inline-block");
                 switch(popup_type){
-
+                case 'text':
                 case 'char_not_selected':
                     
                     $("#dialogue_popup_ok").text("Ok");
@@ -4319,6 +4319,12 @@
 
             // World Info Editor
             async function showWorldEditor() {
+                if (!world_info) {
+                    popup_type = 'default';
+                    callPopup('<h3>Select a world info first!</h3>');
+                    return;
+                }
+
                 is_world_edit_open = true;
                 $('#world_popup_name').val(world_info);
                 $('#world_popup').css('display', 'flex');
@@ -5394,10 +5400,10 @@
 						<option value="0">Character Anchor - Style Anchor</option>
 						<option value="1">Style Anchor - Character Anchor</option>
 					</select>
-					<div id="anchor_checkbox">
-						<input id="character_anchor" type="checkbox"/><h4>Character Anchor</h4>
-						<input id="style_anchor" type="checkbox"/><h4>Style Anchor</h4>
-					</div>
+                    <div id="anchor_checkbox">
+                        <label for="character_anchor"><input id="character_anchor" type="checkbox"/><h4>Character Anchor</h4></label>
+                        <label for="style_anchor"><input id="style_anchor" type="checkbox"/><h4>Style Anchor</h4></label>
+                    </div>
 				</div>
 			</div>
 
@@ -5406,8 +5412,8 @@
 			<div id="power-user-options-block">
 				<h3>Power User Options</h3>
 				<div id="power-user-option-checkboxes">
-						<input id="auto-connect-checkbox" type="checkbox"/><h4>Auto-connects Last Server</h4>
-						<input id="auto-load-chat-checkbox" type="checkbox"/><h4>Auto-load Last Chat</h4>
+                        <label for="auto-connect-checkbox"><input id="auto-connect-checkbox" type="checkbox"/><h4>Auto-connects Last Server</h4></label>
+                        <label for="auto-load-chat-checkbox"><input id="auto-load-chat-checkbox" type="checkbox"/><h4>Auto-load Last Chat</h4></label>
 				</div>
             </div>
 			

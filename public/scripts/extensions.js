@@ -7,7 +7,7 @@ let extensions = [];
     const settings_html = `
     <div class="extensions_block">
         <hr>
-        <h3>Extensions</h3>
+        <h3>Extensions: <a target="_blank" href="https://github.com/SillyLossy/TavernAI-extras">TavernAI-extras</a></h3>
         <input id="extensions_url" type="text" class="text_pole" />
         <div class="extensions_url_block">
             <input id="extensions_connect" class="menu_button" type="submit" value="Connect" />
