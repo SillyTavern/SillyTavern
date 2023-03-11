@@ -1313,7 +1313,6 @@ width: 103px;
 }
 
 .world_entry_form_control input[type=button] {
-    opacity: 0.7;
     cursor: pointer;
 }
 
@@ -1324,16 +1323,13 @@ width: 103px;
 .world_entry_form_control .checkbox {
     align-items: center;
     display: flex;
+    flex-direction: row;
+    column-gap: 10px;
 }
 
 .world_entry_form_control .checkbox h4 {
-    margin-left: 0.5rem;
-    margin-top: 0;
+    margin: 0;
     display: inline-block;
-}
-
-.world_entry_form_control .checkbox:not(:first-child) {
-    margin-left: 2rem;
 }
 
 .world_entry_form_radios {
