@@ -88,6 +88,7 @@
             var is_colab = false;
             var is_checked_colab = false;
             var is_mes_reload_avatar = false;
+            let collapse_newlines = false;
             
             const system_message_types = {
                 HELP: 'help',
@@ -137,6 +138,9 @@
                 'after': 1,
             }
             const talkativeness_default = 0.5;
+            const storage_keys = {
+                'collapse_newlines': 'TavernAI_collapse_newlines',
+            };
 
             var is_advanced_char_open = false;
             var is_world_edit_open = false;
@@ -1615,6 +1619,10 @@
                                         getMessage = getMessage.substring(finalPromt.length);
                                     } else if(main_api == 'novel'){
                                         getMessage = data.output;
+                                    }
+
+                                    if (collapse_newlines) {
+                                        getMessage = getMessage.replaceAll(/\n+/g, "\n");
                                     }
 
                                     //Pygmalion run again													// to make it continue generating so long as it's under max_amount and hasn't signaled
@@ -3479,6 +3487,10 @@
                 auto_load_chat = !!$('#auto-load-chat-checkbox').prop('checked');
                 saveSettings();
             });
+            $('#collapse-newlines-checkbox').change(function() {
+                collapse_newlines = !!$('#collapse-newlines-checkbox').prop('checked');
+                saveSettings();
+            });
             $(document).on('input', '#rep_pen', function() {
                 rep_pen = $(this).val();
                 if(isInt(rep_pen)){
@@ -3761,6 +3773,9 @@
 
                     }
                 });
+
+                collapse_newlines = localStorage.getItem(storage_keys.collapse_newlines) == 'true';
+                $('#collapse-newlines-checkbox').prop('checked', collapse_newlines);
             }
 
             async function saveSettings(type){
@@ -3820,6 +3835,7 @@
                     }
                 });
 
+                localStorage.setItem(storage_keys.collapse_newlines, collapse_newlines);
             }
             $('#donation').click(function(){
                 $('#shadow_tips_popup').css('display', 'block');
@@ -5428,6 +5444,7 @@
 				<div id="power-user-option-checkboxes">
                         <label for="auto-connect-checkbox"><input id="auto-connect-checkbox" type="checkbox"/><h4>Auto-connects Last Server</h4></label>
                         <label for="auto-load-chat-checkbox"><input id="auto-load-chat-checkbox" type="checkbox"/><h4>Auto-load Last Chat</h4></label>
+                        <label for="collapse-newlines-checkbox"><input id="collapse-newlines-checkbox" type="checkbox"/><h4>Collapse Newlines in Output</h4></label>
 				</div>
             </div>
 			
