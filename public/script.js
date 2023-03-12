@@ -260,7 +260,9 @@ $(document).ready(function () {
 
     function flushSettings() {
         $('#settings_perset').empty();
+        $('#settings_perset_novel').empty();
         $('#world_info').empty();
+        $('#settings_perset_novel').append('<option value="gui">Default</option>');
         $('#settings_perset').append('<option value="gui">GUI KoboldAI Settings</option>');
         $('#world_info').append('<option value="None">None</option>');
     }
