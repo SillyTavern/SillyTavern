@@ -4755,7 +4755,7 @@
                     name2: name2,
                     characterId: this_chid,
                     groupId: selected_group,
-                    chatId: (this_chid && characters[this_chid].chat),
+                    chatId: (this_chid && characters[this_chid] && characters[this_chid].chat),
                     onlineStatus: online_status,
                     addOneMessage: addOneMessage,
                     generate: Generate,
