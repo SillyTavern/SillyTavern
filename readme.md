@@ -19,5 +19,5 @@
 Contact me on Discord: Cohee#1207
 
 #### License
-TAI Base: Unknown
-My additions: Public domain (do whatever you want)
+* TAI Base: Unknown
+* My additions: Public domain (do whatever you want)
