@@ -7,7 +7,7 @@
 1. World Info support
 1. Character search bar
 1. New UI style (thanks @RossAscends)
-1. oobabooga's Text Generation WebUI support (thanks @im-not-tom)
+1. oobabooga's Text Generation WebUI support (thanks @im-not-tom).<br>**Make sure that --no-stream option is added and WebUI is running in notebook mode (not in --cai-chat or --chat)**
 1. Group Chats support
 1. Extensibility with various plugins (character expressions, memory simulation, etc.)<br>More details here: https://github.com/SillyLossy/TavernAI-extras
 1. Soft Prompt selector for KoboldAI
