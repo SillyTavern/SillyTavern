@@ -25,16 +25,15 @@ const server_port = config.port;
 const whitelist = config.whitelist;
 const whitelistMode = config.whitelistMode;
 const autorun = config.autorun;
-
+const enableExtensions = config.enableExtensions;
 
 
 var Client = require('node-rest-client').Client;
 var client = new Client();
 
-var api_server = "";//"http://127.0.0.1:5000";
-//var server_port = 8000;
-
+var api_server = "http://0.0.0.0:5000";
 var api_novelai = "https://api.novelai.net";
+var main_api = "kobold";
 
 var response_get_story;
 var response_generate;
@@ -83,7 +82,12 @@ if (is_colab && process.env.googledrive == 2){
 const jsonParser = express.json({limit: '100mb'});
 const urlencodedParser = express.urlencoded({extended: true, limit: '100mb'});
 const baseRequestArgs = { headers: { "Content-Type": "application/json" } };
-const directories = { worlds: 'public/worlds/', avatars: 'public/User Avatars' };
+const directories = {
+    worlds: 'public/worlds/',
+    avatars: 'public/User Avatars',
+    groups: 'public/groups/',
+    groupChats: 'public/group chats',
+};
 
 // CSRF Protection //
 const doubleCsrf = require('csrf-csrf').doubleCsrf;
@@ -286,6 +290,38 @@ app.post("/generate", jsonParser, function(request, response_generate = response
         response_generate.send({error: true});
     });
 });
+
+//************** Text generation web UI
+app.post("/generate_textgenerationwebui", jsonParser, function(request, response_generate = response){
+    if(!request.body) return response_generate.sendStatus(400);
+
+    console.log(request.body);
+    var args = {
+        data: request.body,
+        headers: { "Content-Type": "application/json" }
+    };
+    client.post(api_server+"/run/textgen",args, function (data, response) {
+        console.log("####", data);
+        if(response.statusCode == 200){
+            console.log(data);
+            response_generate.send(data);
+        }
+        if(response.statusCode == 422){
+            console.log('Validation error');
+            response_generate.send({error: true});
+        }
+        if(response.statusCode == 501 || response.statusCode == 503 || response.statusCode == 507){
+            console.log(data);
+            response_generate.send({error: true});
+        }
+    }).on('error', function (err) {
+        console.log(err);
+	//console.log('something went wrong on the request', err.request.options);
+        response_generate.send({error: true});
+    });
+});
+
+
 app.post("/savechat", jsonParser, function(request, response){
 //console.log(humanizedISO8601DateTime()+':/savechat/ entered');
     //console.log(request.data);
@@ -372,19 +408,39 @@ app.post("/getchat", jsonParser, function(request, response){
 app.post("/getstatus", jsonParser, function(request, response_getstatus = response){
     if(!request.body) return response_getstatus.sendStatus(400);
     api_server = request.body.api_server;
+    main_api = request.body.main_api;
     if(api_server.indexOf('localhost') != -1){
         api_server = api_server.replace('localhost','127.0.0.1');
     }
     var args = {
         headers: { "Content-Type": "application/json" }
     };
-    client.get(api_server+"/v1/model",args, function (data, response) {
+    var url = api_server+"/v1/model";
+    if (main_api == "textgenerationwebui") {
+        url = api_server;
+        args = {}
+    }
+    client.get(url,args, function (data, response) {
         if(response.statusCode == 200){
-            if(data.result != "ReadOnly"){
-                
-                //response_getstatus.send(data.result);
-            }else{
-                data.result = "no_connection";
+            if (main_api == "textgenerationwebui") {
+                // console.log(body);
+                try {
+                    var body = data.toString();
+                    var response = body.match(/gradio_config[ =]*(\{.*\});/)[1]; 
+                    if (!response)
+                        throw "no_connection"; 
+                    data = {result: JSON.parse(response).components.filter( (x) => x.props.label == "Model" )[0].props.value};
+                    if (!data)
+                        throw "no_connection"; 
+                } catch {
+                    data = {result: "no_connection"};
+                }
+            } else {
+                if(data.result != "ReadOnly"){
+                    //response_getstatus.send(data.result);
+                }else{
+                    data.result = "no_connection";
+                }
             }
         }else{
             data.result = "no_connection";
@@ -395,8 +451,8 @@ app.post("/getstatus", jsonParser, function(request, response_getstatus = respon
         //response_getstatus.send(data);
         //data.results[0].text
     }).on('error', function (err) {
-        //console.log('');
-	//console.log('something went wrong on the request', err.request.options);
+        //console.log(url);
+        //console.log('something went wrong on the request', err.request.options);
         response_getstatus.send({result: "no_connection"});
     });
 });
@@ -464,7 +520,7 @@ function checkServer(){
 
 //***************** Main functions
 function charaFormatData(data){
-    var char = {"name": data.ch_name, "description": data.description, "personality": data.personality, "first_mes": data.first_mes, "avatar": 'none', "chat": data.ch_name+' - '+humanizedISO8601DateTime(), "mes_example": data.mes_example, "scenario": data.scenario, "create_date": humanizedISO8601DateTime};
+    var char = {"name": data.ch_name, "description": data.description, "personality": data.personality, "first_mes": data.first_mes, "avatar": 'none', "chat": data.ch_name+' - '+humanizedISO8601DateTime(), "mes_example": data.mes_example, "scenario": data.scenario, "create_date": humanizedISO8601DateTime(), "talkativeness": data.talkativeness};
     return char;
 }
 app.post("/createcharacter", urlencodedParser, function(request, response){
@@ -827,7 +883,8 @@ app.post('/getsettings', jsonParser, (request, response) => { //Wintermute's cod
         koboldai_setting_names,
         world_names,
         novelai_settings,
-        novelai_setting_names
+        novelai_setting_names,
+        enable_extensions: enableExtensions,
     });
 });
 
@@ -1105,12 +1162,12 @@ app.post("/importcharacter", urlencodedParser, async function(request, response)
                     
                     if(jsonData.name !== undefined){
                         png_name = getPngName(jsonData.name);
-                        let char = {"name": jsonData.name, "description": jsonData.description ?? '', "personality": jsonData.personality ?? '', "first_mes": jsonData.first_mes ?? '', "avatar": 'none', "chat": humanizedISO8601DateTime(), "mes_example": jsonData.mes_example ?? '', "scenario": jsonData.scenario ?? '', "create_date": humanizedISO8601DateTime};
+                        let char = {"name": jsonData.name, "description": jsonData.description ?? '', "personality": jsonData.personality ?? '', "first_mes": jsonData.first_mes ?? '', "avatar": 'none', "chat": humanizedISO8601DateTime(), "mes_example": jsonData.mes_example ?? '', "scenario": jsonData.scenario ?? '', "create_date": humanizedISO8601DateTime(), "talkativeness": jsonData.talkativeness ?? 0.5};
                         char = JSON.stringify(char);
                         charaWrite('./public/img/fluffy.png', char, png_name, response, {file_name: png_name});
                     }else if(jsonData.char_name !== undefined){//json Pygmalion notepad
                         png_name = getPngName(jsonData.char_name);
-                        let char = {"name": jsonData.char_name, "description": jsonData.char_persona ?? '', "personality": '', "first_mes": jsonData.char_greeting ?? '', "avatar": 'none', "chat": humanizedISO8601DateTime(), "mes_example": jsonData.example_dialogue ?? '', "scenario": jsonData.world_scenario ?? '', "create_date": humanizedISO8601DateTime};
+                        let char = {"name": jsonData.char_name, "description": jsonData.char_persona ?? '', "personality": '', "first_mes": jsonData.char_greeting ?? '', "avatar": 'none', "chat": humanizedISO8601DateTime(), "mes_example": jsonData.example_dialogue ?? '', "scenario": jsonData.world_scenario ?? '', "create_date": humanizedISO8601DateTime(), "talkativeness": jsonData.talkativeness ?? 0.5};
                         char = JSON.stringify(char);
                         charaWrite('./public/img/fluffy.png', char, png_name, response, {file_name: png_name});
                     }else{
@@ -1126,7 +1183,7 @@ app.post("/importcharacter", urlencodedParser, async function(request, response)
                     png_name = getPngName(jsonData.name);
                     
                     if(jsonData.name !== undefined){
-                        let char = {"name": jsonData.name, "description": jsonData.description ?? '', "personality": jsonData.personality ?? '', "first_mes": jsonData.first_mes ?? '', "avatar": 'none', "chat": humanizedISO8601DateTime(), "mes_example": jsonData.mes_example ?? '', "scenario": jsonData.scenario ?? '', "create_date": humanizedISO8601DateTime};
+                        let char = {"name": jsonData.name, "description": jsonData.description ?? '', "personality": jsonData.personality ?? '', "first_mes": jsonData.first_mes ?? '', "avatar": 'none', "chat": humanizedISO8601DateTime(), "mes_example": jsonData.mes_example ?? '', "scenario": jsonData.scenario ?? '', "create_date": humanizedISO8601DateTime(), "talkativeness": jsonData.talkativeness ?? 0.5};
                         char = JSON.stringify(char);
                         await charaWrite('./uploads/'+filedata.filename, char, png_name, response, {file_name: png_name});
                         /*
@@ -1328,6 +1385,112 @@ app.post('/uploaduseravatar', urlencodedParser, async (request, response) => {
     } catch (err) {
         return response.status(400).send('Is not a valid image');
     }
+});
+
+app.post('/getgroups', jsonParser, (_, response) => {
+    const groups = [];
+
+    if (!fs.existsSync(directories.groups)) {
+        fs.mkdirSync(directories.groups);
+    }
+
+    const files = fs.readdirSync(directories.groups);
+    files.forEach(function(file) {
+        const fileContents = fs.readFileSync(path.join(directories.groups, file), 'utf8');
+        const group = JSON.parse(fileContents);
+        groups.push(group);
+    });
+
+    return response.send(groups);
+});
+
+app.post('/creategroup', jsonParser, (request, response) => {
+    if (!request.body) {
+        return response.sendStatus(400);
+    }
+
+    const id = Date.now();
+    const chatMetadata = { id: id, name: request.body.name ?? 'New Group', members: request.body.members ?? [], avatar_url: request.body.avatar_url };
+    const pathToFile = path.join(directories.groups, `${id}.json`);
+    const fileData = JSON.stringify(chatMetadata);
+
+    if (!fs.existsSync(directories.groups)) {
+        fs.mkdirSync(directories.groups);
+    }
+
+    fs.writeFileSync(pathToFile, fileData);
+    return response.send(chatMetadata);
+});
+
+app.post('/editgroup', jsonParser, (request, response) => {
+    if (!request.body || !request.body.id) {
+        return response.sendStatus(400);
+    }
+
+    const id = request.body.id;
+    const pathToFile = path.join(directories.groups, `${id}.json`);
+    const fileData = JSON.stringify(request.body);
+
+    fs.writeFileSync(pathToFile, fileData);
+    return response.send({ok: true});
+});
+
+app.post('/getgroupchat', jsonParser, (request, response) => {
+    if (!request.body || !request.body.id) {
+        return response.sendStatus(400);
+    }
+
+    const id = request.body.id;
+    const pathToFile = path.join(directories.groupChats, `${id}.jsonl`);
+
+    if (fs.existsSync(pathToFile)) {
+        const data = fs.readFileSync(pathToFile, 'utf8');
+        const lines = data.split('\n');
+    
+        // Iterate through the array of strings and parse each line as JSON
+        const jsonData = lines.map(JSON.parse);
+        return response.send(jsonData);
+    } else {
+        return response.send([]);
+    }
+});
+
+app.post('/savegroupchat', jsonParser, (request, response) => {
+    if (!request.body || !request.body.id) {
+        return response.sendStatus(400);
+    }
+
+    const id = request.body.id;
+    const pathToFile = path.join(directories.groupChats, `${id}.jsonl`);
+
+    if (!fs.existsSync(directories.groupChats)) {
+        fs.mkdirSync(directories.groupChats);
+    }
+
+    let chat_data = request.body.chat;
+    let jsonlData = chat_data.map(JSON.stringify).join('\n');
+    fs.writeFileSync(pathToFile, jsonlData, 'utf8');
+    return response.send({ok: true});
+});
+
+app.post('/deletegroup', jsonParser, async (request, response) => {
+    if (!request.body || !request.body.id) {
+        return response.sendStatus(400);
+    }
+
+    const id = request.body.id;
+    const pathToGroup = path.join(directories.groups, `${id}.json`);
+    const pathToChat = path.join(directories.groupChats, `${id}.jsonl`);
+
+    if (fs.existsSync(pathToGroup)) {
+        fs.rmSync(pathToGroup);
+    }
+
+    if (fs.existsSync(pathToChat)) {
+        fs.rmSync(pathToChat);
+    }
+
+    return response.send({ok: true});
 });
 
 // ** REST CLIENT ASYNC WRAPPERS **

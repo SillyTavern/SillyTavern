@@ -631,17 +631,26 @@ select option:not(:checked) {		/* works to color unselected items */
 	opacity: 0.5;
 }
 
-#api_url_text{
+.oobabooga_logo {
+    margin: 5px auto;
+    text-align: center;
+}
+
+#api_url_text, #textgenerationwebui_api_url_text{
     /*margin-right: 4px;*/
 	display:block;
 }
-#api_button, #api_button_novel {
+#api_button, #api_button_novel, #api_button_textgenerationwebui {
 
+}
+
+#textgenerationwebui_api pre {
+    display: inline;
 }
 
 #api_button:hover, #api_button_novel:hover{background-color:green;}
 
-#api_loading{
+#api_loading, #api_loading_textgenerationwebui{
     width: 25px;
     height: 25px;
     display: none;
@@ -657,6 +666,10 @@ select option:not(:checked) {		/* works to color unselected items */
 #rm_characters_block{
     display: block;
     /* visibility: hidden; */
+}
+
+#rm_characters_block .right_menu_button {
+    padding-right: 15px;
 }
 
 #rm_characters_topbar {
@@ -677,16 +690,22 @@ select option:not(:checked) {		/* works to color unselected items */
 }
 
 #form_character_search_form {
-    margin-bottom: 1rem;
-    margin-top: 1rem;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    width: 98%;
 }
 
 #character_search_bar {
+    flex: 1;
     font-size: 1em;
     padding-left: 0.75em;
+    margin-left: 0;
+    margin-right: 0.5rem;
+    margin-bottom: 0;
 }
 
-#character_search_bar::-webkit-search-cancel-button {
+input[type=search]::-webkit-search-cancel-button {
     -webkit-appearance: none;
     height: 1em;
     width: 1em;
@@ -699,7 +718,7 @@ select option:not(:checked) {		/* works to color unselected items */
     cursor: pointer;
 }
 
-#character_search_bar:focus::-webkit-search-cancel-button {
+input[type=search]:focus::-webkit-search-cancel-button {
     opacity: .3;
     pointer-events: all;
 }
@@ -1068,20 +1087,20 @@ width: 103px;
     background-color: red;
 }
 
-#online_status2{
+#online_status2, #online_status4{
     opacity: 0.5;
     margin-top: 2px;
     
     margin-bottom: 15px;
 }
-#online_status_indicator2{
+#online_status_indicator2, #online_status_indicator4{
     border-radius: 7px;
     width: 14px;
     height: 14px;
     background-color: red;
     display: inline-block;
 }
-#online_status_text2{
+#online_status_text2, #online_status_text4{
     margin-left: 4px;
     display: inline-block;
 }
@@ -1109,7 +1128,7 @@ width: 103px;
 
 /* hidden until we find out a way to handle it better */
 #softprompt_block {
-    display: none !important;
+    display: none;
 }
 
 #world_info {
@@ -1294,7 +1313,6 @@ width: 103px;
 }
 
 .world_entry_form_control input[type=button] {
-    opacity: 0.7;
     cursor: pointer;
 }
 
@@ -1305,16 +1323,13 @@ width: 103px;
 .world_entry_form_control .checkbox {
     align-items: center;
     display: flex;
+    flex-direction: row;
+    column-gap: 10px;
 }
 
 .world_entry_form_control .checkbox h4 {
-    margin-left: 0.5rem;
-    margin-top: 0;
+    margin: 0;
     display: inline-block;
-}
-
-.world_entry_form_control .checkbox:not(:first-child) {
-    margin-left: 2rem;
 }
 
 .world_entry_form_radios {
@@ -1615,13 +1630,15 @@ input[type="range"] {
 	background-color: var(--black50a);
 }
 #anchor_checkbox, #power-user-option-checkboxes{
-	
+    display: flex;
+    flex-direction: column;
+    row-gap: 5px;
+}
+#anchor_checkbox label, #power-user-option-checkboxes label {
+    display: flex;
+    flex-direction: row;
+    column-gap: 10px;
     align-items: center;
-    text-align: left;
-    display: grid;
-    grid-template-rows: 30px auto;
-    grid-template-columns: 30px auto;
-	grid-gap:5px;
 }
 
 #shadow_character_popup{
@@ -1640,7 +1657,7 @@ input[type="range"] {
     background-color: var(--black30a);
     backdrop-filter: blur(50px);
     -webkit-backdrop-filter: blur(30px);
-    grid-template-rows: 50px 100px 100px auto;
+    grid-template-rows: 50px 100px 100px 100px auto;
 	grid-gap: 10px;
     max-width: 800px;
     height: calc(100vh - 50px);
@@ -1840,6 +1857,333 @@ border-radius: 5px;
 }
 
 
+
+/* GROUP CHATS */
+
+#rm_group_top_bar {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
+}
+#rm_button_group_chats{
+    cursor: pointer;
+    display: inline-block;
+}
+#rm_button_group_chats h2{
+    margin-top: auto;
+    margin-bottom: auto;
+    font-size: 16px;
+    color: rgb(188, 193, 200, 1);
+    border: 1px solid #333;
+    background-color: rgba(0,0,0,0.3);
+    padding:6px;
+    border-radius: 10px;
+}
+#rm_group_chats_block {
+    display: none;
+    height: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+}
+#rm_group_chat_name {
+    width: 90%;
+}
+#rm_group_buttons {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    align-items: flex-end;
+}
+#rm_group_buttons .checkbox {
+    display: flex;
+}
+#rm_group_buttons .checkbox h4 {
+    display: inline-block;
+}
+#rm_group_buttons > input {
+    font-size: 16px;
+    cursor: pointer;
+    user-select: none;
+}
+#rm_group_buttons > input:disabled {
+    filter: brightness(0.3);
+    cursor: unset;
+}
+#rm_group_members, #rm_group_add_members {
+    margin-top: 0.25rem;
+    margin-bottom: 0.25rem;
+    width: 100%;
+    flex: 1;
+    overflow: auto;
+}
+#rm_group_buttons_expander {
+    flex-grow: 1;
+}
+#rm_group_delete {
+    color: rgb(190, 0, 0);
+}
+#rm_group_members:empty {
+    width: 100%;
+}
+#rm_group_members:empty::before {
+    content: 'Group is empty';
+    font-size: 1rem;
+    font-weight: bolder;
+    width: 100%;
+    height: 100%;
+    display: flex; 
+    justify-content: center;
+    align-items: center;
+    opacity: 0.8;
+}
+#rm_group_add_members:empty {
+    width: 100%;
+}
+#rm_group_add_members_header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
+}
+#rm_group_add_members_header input {
+    flex-grow: 1;
+    width: 100%;
+    margin-left: 1rem;
+}
+#rm_group_add_members:empty::before {
+    content: 'No characters available';
+    font-size: 1rem;
+    font-weight: bolder;
+    width: 100%;
+    height: 100%;
+    display: flex; 
+    justify-content: center;
+    align-items: center;
+    opacity: 0.8;
+}
+.group_member_icon {
+    width: 25px;
+    height: 25px;
+    margin: 0 10px;
+}
+.group_member_icon img {
+    filter: invert(1);
+}
+.group_member {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
+    padding: 5px;
+    border-radius: 10px;
+    cursor:pointer;
+}
+.group_member .ch_name {
+    flex-grow: 1;
+    margin-left: 10px;
+}
+.group_member:hover{
+    background-color: #ffffff11;
+}
+#group_member_template {
+    display: none !important;
+}
+#group_list_template {
+    display: none !important;
+}
+.group_select {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 5px;
+    border-radius: 10px;
+    cursor: pointer;
+}
+.group_select:hover {
+    background-color: #ffffff11;
+}
+.group_select .group_icon {
+    width: 20px;
+    height: 20px;
+    margin: 0 10px;
+}
+.group_select .ch_name {
+    flex-grow: 1;
+}
+.group_select .group_icon img {
+    filter: invert(1);
+}
+
+#typing_indicator_template {
+    display: none !important;
+}
+
+.typing_indicator {
+    position: sticky;
+    bottom: 10px;
+    margin: 10px;
+    opacity: 0.6;
+    text-shadow: 2px 2px 2px rgba(0,0,0,0.6);
+}
+
+.typing_indicator:after {
+    display: inline-block;
+    vertical-align: bottom;
+    animation: ellipsis steps(4,end) 1500ms infinite;
+    content: ""; /* ascii code for the ellipsis character */
+    width: 0px;
+}
+  
+@keyframes ellipsis {
+    0% {
+        content: ""
+    }
+    25% {
+        content: "."
+    }
+    50% {
+        content: ".."
+    }
+    75% {
+        content: "..."
+    }
+}
+
+#group_avatars_template {
+    display: none;
+}
+
+.avatar_collage {
+    border-radius: 50%;
+    position: relative;
+    overflow: hidden;
+}
+
+.avatar_collage img {
+    position: absolute;
+    overflow: hidden;
+    border-radius: 0% !important;
+}
+
+.collage_2 .img_1 {
+    left: 0;
+    top: 0;
+    max-width: 50%;
+    max-height: 100%;
+    width: 50%;
+    height: 100%;
+}
+
+.collage_2 .img_2 {
+    left: 50%;
+    top: 0;
+    max-width: 50%;
+    max-height: 100%;
+    width: 50%;
+    height: 100%;
+}
+
+.collage_3 .img_1 {
+    left: 0;
+    top: 0;
+    max-width: 50%;
+    max-height: 50%;
+    width: 50%;
+    height: 50%;
+}
+
+.collage_3 .img_2 {
+    left: 50%;
+    top: 0;
+    max-width: 50%;
+    max-height: 50%;
+    width: 50%;
+    height: 50%;
+}
+
+.collage_3 .img_3 {
+    left: 0;
+    top: 50%;
+    max-width: 100%;
+    max-height: 50%;
+    width: 100%;
+    height: 50%;
+}
+
+.collage_4 .img_1 {
+    left: 0;
+    top: 0;
+    max-width: 50%;
+    max-height: 50%;
+    width: 50%;
+    height: 50%;
+}
+
+.collage_4 .img_2 {
+    left: 50%;
+    top: 0;
+    max-width: 50%;
+    max-height: 50%;
+    width: 50%;
+    height: 50%;
+}
+
+.collage_4 .img_3 {
+    left: 0;
+    top: 50%;
+    max-width: 50%;
+    max-height: 50%;
+    width: 50%;
+    height: 50%;
+}
+
+.collage_4 .img_4 {
+    left: 50%;
+    top: 50%;
+    max-width: 50%;
+    max-height: 50%;
+    width: 50%;
+    height: 50%;
+}
+
+span.warning {
+    color:rgb(190, 0, 0);
+    font-weight: bolder;
+}
+
+#talkativeness_hint {
+    display: flex;
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: space-between;
+    width: 100%;
+}
+
+#talkativeness_expander {
+    flex: 1;
+}
+
+
+#talkativeness_div input[type="range"] {
+    width: 100%;
+}
+
+#talkativeness_hint span {
+    min-width: 10em;
+    font-size: small;
+}
+
+#talkativeness_hint span:nth-child(1) {
+    text-align: left;
+}
+#talkativeness_hint span:nth-child(2) {
+    text-align: center;
+}
+#talkativeness_hint span:nth-child(3) {
+    text-align: right;
+}
+
 /* css/style.css */
 
 p {
@@ -1958,4 +2302,22 @@ a {
     right:0;											
     box-shadow: -5px 0 20px 0 var(--black70a);
     overflow-y: auto;
+}
+
+
+/* Message images */
+.mes img.img_extra {
+    max-width: 600px;
+    max-height: 300px;
+    border-radius: 10px;
+}
+
+.mes img.img_extra ~ * {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .mes img.img_extra {
+        max-width: 100%;
+    }
 }
