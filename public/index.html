@@ -72,7 +72,7 @@
 				return HumanizedDateTime;
 			};
 			
-			
+            let prev_selected_char = null;
             var default_ch_mes = "Hello";
             var count_view_mes = 0;
             var mesStr = '';
@@ -634,6 +634,7 @@
 
             async function getCharacters() {
                 await getGroups();
+
 				//console.log('getCharacters() -- entered');
 				//console.log(characters);
                 var response = await fetch("/getcharacters", {						//RossAscends: changed from const
@@ -678,10 +679,13 @@
 					
                     //characters.reverse();
 					//console.log('/getcharacters -- this_chid -- '+this_chid);
-                    if(this_chid != undefined && this_chid != 'invalid-safety-id') $("#avatar_url_pole").val(characters[this_chid].avatar);
+                    if(this_chid != undefined && this_chid != 'invalid-safety-id') {
+                        $("#avatar_url_pole").val(characters[this_chid].avatar);
+                    }
+
+
 					//console.log('/getcharacters -- sending '+i+' characters to /printcharacters');
                     printCharacters();
-                    
 					//console.log(propOwn.length);
                     //return JSON.parse(getData[0]);
                     //const getData = await response.json();
@@ -962,7 +966,7 @@
                 let needsToScan = true;
                 let allActivatedEntries = new Set();
 
-                const sortedEntries = Object.keys(world_info_data.entries).map(x => world_info_data.entries[x]).sort((a, b) => (b.constant - a.constant) || (b.order - a.order));
+                const sortedEntries = Object.keys(world_info_data.entries).map(x => world_info_data.entries[x]).sort((a, b) => b.order - a.order);
                 while (needsToScan) {
                     let activatedNow = new Set();
 
@@ -1089,7 +1093,7 @@
                     return;
                 }
 
-                if(online_status != 'no_connection' && this_chid != undefined){
+                if(online_status != 'no_connection' && this_chid != undefined && this_chid !== 'invalid-safety-id'){
                     if(type !== 'regenerate'){
                         var textareaText = $("#send_textarea").val();
 						//console.log('Not a Regenerate call, so posting normall with input of: ' +textareaText);
@@ -1735,7 +1739,7 @@
                         });
                     }
                 }else{
-                    if(this_chid == undefined){
+                    if(this_chid == undefined || this_chid == 'invalid-safety-id'){
                         //send ch sel
                         popup_type = 'char_not_selected';
                         callPopup('<h3>Сharacter is not selected</h3>');
@@ -2433,6 +2437,13 @@
             }
             function select_rm_characters(){
                 QuickRefresh(true);
+
+                if (prev_selected_char) {
+                    let newChId = characters.findIndex(x => x.name == prev_selected_char);
+                    $(`.character_select[chid="${newChId}"]`).trigger('click');
+                    prev_selected_char = null;
+                }
+
                 menu_type = 'characters';
                 $( "#rm_characters_block" ).css("display", "block");
                 $('#rm_characters_block').css('opacity',0.0);
@@ -2452,7 +2463,7 @@
                 $( "#rm_button_settings" ).css("class","deselected-right-tab");
                 $( "#rm_button_selected_ch" ).css("class","deselected-right-tab");
             }
-            function select_rm_info(text){
+            function select_rm_info(text, charId = null){
                 $( "#rm_characters_block" ).css("display", "none");
                 $( "#rm_api_block" ).css("display", "none");
                 $( "#rm_ch_create_block" ).css("display", "none");
@@ -2464,6 +2475,8 @@
                 $( "#rm_button_characters" ).css("class","deselected-right-tab");
                 $( "#rm_button_settings" ).css("class","deselected-right-tab");
                 $( "#rm_button_selected_ch" ).css("class","deselected-right-tab");
+
+                prev_selected_char = charId;
             }
             function select_selected_character(chid){ //character select
                 //console.log('select_selected_character() -- starting with input of -- '+chid+' (name:'+characters[chid].name+')');
@@ -2890,7 +2903,7 @@
                             cache: false,
                             contentType: false,
                             processData: false, 
-                            success: function(html){
+                            success: async function(html){
                                 $('#character_cross').click();		//closes the advanced character editing popup
                                 $("#character_name_pole").val('');
                                 create_save_name = '';
@@ -2917,15 +2930,19 @@
 
                                 $('#create_button').attr('value','Create');
                                 if(true){
+                                    let oldSelectedChar = null;
+                                    if (this_chid != undefined && this_chid != 'invalid-safety-id') {
+                                        oldSelectedChar = characters[this_chid].name;
+                                    }
+
+                                    await getCharacters();
+
                                     $('#rm_info_block').transition({ opacity: 0 ,duration: 0});
                                     var $prev_img = $('#avatar_div_div').clone();
                                     $('#rm_info_avatar').append($prev_img);
-                                    select_rm_info("Character created");
+                                    select_rm_info("Character created", oldSelectedChar);
 
                                     $('#rm_info_block').transition({ opacity: 1.0 ,duration: 2000});
-									
-								
-                                    getCharacters();
                                 }else{
                                     $('#result_info').html(html);
                                 }
@@ -3548,7 +3565,7 @@
                     contentType: "application/json",
                     //processData: false, 
                     success: function(data){
-                        if(data.result != 'file not find'){
+                        if(data.result != 'file not find' && data.settings){
                             settings = JSON.parse(data.settings);
                             if(settings.username !== undefined){
                                 if(settings.username !== ''){
@@ -3685,7 +3702,7 @@
                             
                         //Enable GUI deference settings if GUI is selected for Kobold
                             if(preset_settings == 'gui'){
-                                $("#settings_perset option[value=gui]").attr('selected', 'true');
+                                $("#settings_perset option[value=gui]").attr('selected', 'true').trigger('change');
                                 $("#range_block").children().prop("disabled", true);
                                 $("#range_block").css('opacity',0.5);
                                 
@@ -3694,7 +3711,7 @@
                             }else{
                                 if(typeof koboldai_setting_names[preset_settings] !== 'undefined') {
 
-                                    $("#settings_perset option[value="+koboldai_setting_names[preset_settings]+"]").attr('selected', 'true');
+                                    $("#settings_perset option[value="+koboldai_setting_names[preset_settings]+"]").attr('selected', 'true').trigger('change');
                                 }else{
                                     $("#range_block").children().prop("disabled", true);
                                     $("#range_block").css('opacity',0.5);
@@ -3702,7 +3719,7 @@
                                     $("#amount_gen_block").css('opacity',0.45);
 
                                     preset_settings = 'gui';
-                                    $("#settings_perset option[value=gui]").attr('selected', 'true');
+                                    $("#settings_perset option[value=gui]").attr('selected', 'true').trigger('change');
                                 }
                             }
                             
@@ -4186,16 +4203,22 @@
                     cache: false,
                     contentType: false,
                     processData: false, 
-                    success: function(data){
+                    success: async function(data){
                         if(data.file_name !== undefined){
 
                             $('#rm_info_block').transition({ opacity: 0 ,duration: 0});
                             var $prev_img = $('#avatar_div_div').clone();
                             $prev_img.children('img').attr('src', 'characters/'+data.file_name+'.png');
                             $('#rm_info_avatar').append($prev_img);
-                            select_rm_info("Character created");
 
-                            $('#rm_info_block').transition({ opacity: 1.0 ,duration: 2000});
+                            let oldSelectedChar = null;
+                            if (this_chid != undefined && this_chid != 'invalid-safety-id') {
+                                oldSelectedChar = characters[this_chid].name;
+                            }
+
+                            await getCharacters();
+                            select_rm_info("Character created", oldSelectedChar);
+                            $('#rm_info_block').transition({ opacity: 1 ,duration: 1000});
                         }
                     },
                     error: function (jqXHR, exception) {
@@ -4558,7 +4581,7 @@
                     content: '',
                     constant: false,
                     selective: false,
-                    order: 0,
+                    order: 100,
                     position: 0,
                 };
                 const newUid = getFreeWorldEntryUid();
