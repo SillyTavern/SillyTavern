@@ -1,4 +1,5 @@
-### Silly TavernAI mod
+### Silly TavernAI 1.2.8 mod
+#### Update to 1.3.0 is likely not happenning, but I _may_ backport some features in future
 
 <img width="400" alt="image" src="https://user-images.githubusercontent.com/18619528/224549531-ab30db22-fe33-49c5-81a8-945c543a1e05.png">
 
