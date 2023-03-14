@@ -271,18 +271,14 @@ $("document").ready(function () {
 	$(AutoConnectCheckbox).prop("checked",LoadLocalBool("AutoConnectEnabled"));
 	$(AutoLoadChatCheckbox).prop("checked",LoadLocalBool("AutoLoadChatEnabled"));
 	
-	
 
-	//AutoLoadChat and AutoConnect must be loaded on a small delay after page load to allow getSettings to fill out what they need
 	if (LoadLocalBool('AutoLoadChatEnabled') == true) {
 			console.log('calling RA_ALC');
 			RA_autoloadchat();
 	}
-
+	//Autoconnect on page load if enabled, or when api type is changed
 	if (LoadLocalBool("AutoConnectEnabled") == true) {RA_autoconnect()}
-
 	$("#main_api").change(function () {RA_autoconnect();});
-
 	$("#api_button").click(function () {setTimeout(RA_checkOnlineStatus, 100);});
 
 	//close the RightNav panel when user clicks outside of it or related panels (adv editing popup, or dialog popups)
