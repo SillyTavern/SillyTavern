@@ -24,7 +24,7 @@
 * Mobile-friendly page design
 * HotKeys
   * Ctrl+Up = Connect to API 
-  * Ctrl+Left = view localled stored variables (in the browser console window)
+  * Ctrl+Left = view locally stored variables (in the browser console window)
   * Ctrl+Right = clear locally stored variables.
   * Ctrl+enter = Regenerate last AI response.
 
