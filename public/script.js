@@ -1583,8 +1583,9 @@ $(document).ready(function () {
                                 getMessage = data.results[0].text;
                             } else if (main_api == 'textgenerationwebui') {
                                 getMessage = data.data[0];
-                                if (getMessage == null) {
-                                    runGenerate("");
+                                if (getMessage == null || data.error) {
+                                    popup_type = 'default';
+                                    callPopup('<h3>Got empty response from Text generation web UI. Try restarting the API with recommended options.</h3>');
                                     return;
                                 }
                                 getMessage = getMessage.substring(finalPromt.length);
