@@ -103,6 +103,7 @@ body {
 .mes_text i,
 .mes_text em {
     color: var(--grey70);
+    font-weight: 500;
 }
 
 .mes_text strong,
@@ -185,11 +186,11 @@ code {
     border-bottom: 1px solid var(--black30a);
     border-left: 1px solid var(--black30a);
     border-right: 1px solid var(--black30a);
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(20px);
     background-color: var(--black70a);
-    -webkit-backdrop-filter: blur(10px);
-    /*border-radius: 0 0 40px 40px;*/
+    -webkit-backdrop-filter: blur(20px);
     text-shadow: #000 0 0 3px;
+    scrollbar-width: thin;
 
 }
 
@@ -209,6 +210,7 @@ code {
 
     border-radius: 0 0 20px 20px;
     background-color: var(--crimson70a);
+    backdrop-filter: blur(20px);
 }
 
 #send_but_sheld {
@@ -293,13 +295,13 @@ code {
     overflow: hidden;
     display: block;
     position: absolute;
-    backdrop-filter: blur(10px);
-    background-color: var(--black70a);
-    -webkit-backdrop-filter: blur(10px);
+/*     backdrop-filter: blur(10px); */          /* removed because we can't have both this and the input bar blurring*/
+    background-color: var(--black100);
+    /* -webkit-backdrop-filter: blur(10px); */ /* removed because we can't have both this and the input bar blurring*/
     border: 1px solid #666;
     border-radius: 15px;
-    box-shadow: 00 5px #000;
-    text-shadow: #000 0 0 3px;
+    box-shadow: 0 0 5px black;
+    text-shadow: 0 0 3px black;
     min-width: 200px;
     z-index: 2000;
 }
@@ -427,7 +429,9 @@ textarea {
     font-size: 15px;
     font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
     padding: 5px 10px;
+    scrollbar-width: thin;
 }
+
 
 #send_textarea {
     font-size: 1rem;
@@ -1146,7 +1150,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     z-index: -100;
     background-color: red;
 }
-
+/* ------ online status indicators and texts. 2 = kobold AI, 3 = Novel AI  ----------*/
 #online_status2,
 #online_status4 {
     opacity: 0.5;
@@ -2421,6 +2425,7 @@ a {
     z-index: 2050;
     white-space: nowrap;
     border-left: 1px solid var(--black30a);
+    scrollbar-width: thin;
 }
 
 @media screen and (max-width: 450px) {
