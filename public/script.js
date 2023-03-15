@@ -25,6 +25,11 @@ import {
     select_group_chats,
 } from "./scripts/group-chats.js";
 
+import {
+    force_pygmalion_formatting,
+    collapse_newlines,
+} from "./scripts/power-user.js";
+
 import { debounce, delay } from "./scripts/utils.js";
 
 //RossAscends: exporting functions and vars for RA mods.
@@ -97,11 +102,10 @@ const system_avatar = "img/five.png";
 let is_colab = false;
 let is_checked_colab = false;
 let is_mes_reload_avatar = false;
-let collapse_newlines = false;
 
 const durationSaveEdit = 500;
 const saveSettingsDebounced = debounce(() => saveSettings(), durationSaveEdit);
-const saveCharacterDebounced = debounce(() =>  $("#create_button").click(), durationSaveEdit);
+const saveCharacterDebounced = debounce(() => $("#create_button").click(), durationSaveEdit);
 
 const system_message_types = {
     HELP: "help",
@@ -157,9 +161,6 @@ const system_messages = {
 };
 
 const talkativeness_default = 0.5;
-const storage_keys = {
-    collapse_newlines: "TavernAI_collapse_newlines",
-};
 
 var is_advanced_char_open = false;
 
@@ -234,8 +235,6 @@ var anchor_order = 0;
 var style_anchor = true;
 var character_anchor = true;
 let extension_prompts = {};
-var auto_connect = false;
-var auto_load_chat = false;
 
 var main_api = "kobold";
 //novel settings
@@ -376,7 +375,7 @@ async function getStatus() {
                 if (online_status == undefined) {
                     online_status = "no_connection";
                 }
-                if (online_status.toLowerCase().indexOf("pygmalion") != -1) {
+                if (online_status.toLowerCase().indexOf("pygmalion") != -1 || force_pygmalion_formatting) {
                     is_pygmalion = true;
                     online_status += " (Pyg. formatting on)";
                 } else {
@@ -2059,12 +2058,6 @@ async function getSettings(type) {
                 if (settings.character_anchor !== undefined)
                     character_anchor = !!settings.character_anchor;
 
-                //load poweruser options
-                if (settings.auto_connect !== undefined)
-                    auto_connect = !!settings.auto_connect;
-                if (settings.auto_load_chat !== undefined)
-                    auto_load_chat = !!settings.auto_load_chat;
-
                 rep_pen = settings.rep_pen;
                 rep_pen_size = settings.rep_pen_size;
 
@@ -2079,9 +2072,6 @@ async function getSettings(type) {
                     "selected",
                     "true"
                 );
-
-                $("#auto-connect-checkbox").prop("checked", auto_connect);
-                $("#auto-load-chat-checkbox").prop("checked", auto_load_chat);
 
                 $("#max_context").val(max_context);
                 $("#max_context_counter").html(max_context + " Tokens");
@@ -2230,10 +2220,6 @@ async function getSettings(type) {
             console.log(jqXHR);
         },
     });
-
-    collapse_newlines =
-        localStorage.getItem(storage_keys.collapse_newlines) == "true";
-    $("#collapse-newlines-checkbox").prop("checked", collapse_newlines);
 }
 
 async function saveSettings(type) {
@@ -2254,8 +2240,6 @@ async function saveSettings(type) {
             anchor_order: anchor_order,
             style_anchor: style_anchor,
             character_anchor: character_anchor,
-            auto_connect: auto_connect,
-            auto_load_chat: auto_load_chat,
             main_api: main_api,
             api_key_novel: api_key_novel,
             rep_pen: rep_pen,
@@ -2297,8 +2281,6 @@ async function saveSettings(type) {
             console.log(jqXHR);
         },
     });
-
-    localStorage.setItem(storage_keys.collapse_newlines, collapse_newlines);
 }
 
 function isInt(value) {
@@ -3736,21 +3718,6 @@ $(document).ready(function () {
 
     $("#character_anchor").change(function () {
         character_anchor = !!$("#character_anchor").prop("checked");
-        saveSettingsDebounced();
-    });
-
-    $("#auto-connect-checkbox").change(function () {
-        auto_connect = !!$("#auto-connect-checkbox").prop("checked");
-        saveSettingsDebounced();
-    });
-
-    $("#auto-load-chat-checkbox").change(function () {
-        auto_load_chat = !!$("#auto-load-chat-checkbox").prop("checked");
-        saveSettingsDebounced();
-    });
-
-    $("#collapse-newlines-checkbox").change(function () {
-        collapse_newlines = !!$("#collapse-newlines-checkbox").prop("checked");
         saveSettingsDebounced();
     });
 
