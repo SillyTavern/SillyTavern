@@ -9,7 +9,7 @@
    * World Info
    * OobaBooga's TextGen WebUI API connection
    * Soft prompts
-   * installing SillyLossy's TAI-extras will give support for
+   * installing [SillyLossy's TAI-extras](https://github.com/SillyLossy/TavernAI-extras) will give support for
      * Character emotional expressions
      * Auto-Summary of the chat history
      * sending images to chat, and the AI interpreting the content.
@@ -70,6 +70,7 @@ Save the file.
 Restart your TAI server. 
 
 You will now be able to connect from other devices. 
+
 ***Disclaimer: Anyone else who knows your IP address and TAI port number will be able to as well***
 
 To connect over wifi you'll need your PC's local wifi IP address 

@@ -15,7 +15,8 @@ import {
   api_server,
   api_key_novel,
   getCharacters,
-  is_send_press
+  is_send_press,
+  chat
 } from "../script.js";
 
 var NavToggle = document.getElementById("nav-toggle");
@@ -337,6 +338,37 @@ $("document").ready(function () {
 		this.style.height = '40px';
 		this.style.height =
 			(this.scrollHeight) + 'px';
+	});
+
+	//Regenerate if user swipes on the last mesage in chat
+	//TODO: 
+	//1. Make it detect if the last message is from user, and ignore swipes then...
+	//2. find a way to make the chat slide down smoothly when the last mes div gets .remove()-d
+
+	document.addEventListener('swiped-left', function(e) {
+		var SwipeTargetMesClassParent = e.target.closest('.mes');
+		if (is_send_press == false){
+		if (SwipeTargetMesClassParent !== null && SwipeTargetMesClassParent.nextSibling == null ){
+				$('#chat').children().last().css({'transition':'all 0.5s ease-in-out'});
+				$('#chat').children().last().css({'transform':'translateX(-100vw) scale(0,0)','overflow':'hidden'});
+				$('#chat').children().last().css({'opacity':'0'});
+				
+				Generate('regenerate');
+			}
+		}
+	});
+	document.addEventListener('swiped-right', function(e) {
+		var SwipeTargetMesClassParent = e.target.closest('.mes');
+		console.log(is_send_press);
+		if (is_send_press === false){
+			if (SwipeTargetMesClassParent !== null && SwipeTargetMesClassParent.nextSibling == null){
+				$('#chat').children().last().css({'transition':'all 0.5s ease-in-out'});
+				$('#chat').children().last().css({'transform':'translateX(100vh) scale(0,0)','overflow':'hidden'});
+				$('#chat').children().last().css({'opacity':'0'});
+				Generate('regenerate');
+				console.log(is_send_press);
+			}
+		}	
 	});
 
 	//Additional hotkeys CTRL+ENTER and CTRL+UPARROW

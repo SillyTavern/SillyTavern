@@ -32,7 +32,10 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     -moz-appearance: initial;
+    scrolling-behaviour: smooth;
 }
+
+html { scroll-behaviour: smooth;}
 
 body {
     margin: 0;
@@ -45,18 +48,11 @@ body {
     background-size: cover;
     font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
     font-size: 15px;
-    /*1rem*/
     color: var(--ivory);
 
 }
 
-@media screen and (max-width: 450px) {
-    body {
-        margin-left: auto;
-        margin-right: auto;
-        overflow-x: hidden;
-    }
-}
+
 
 ::-webkit-scrollbar {
     width: 0.6em;
@@ -191,6 +187,7 @@ code {
     -webkit-backdrop-filter: blur(20px);
     text-shadow: #000 0 0 3px;
     scrollbar-width: thin;
+    transition: all 1s ease-in-out;
 
 }
 
@@ -811,7 +808,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     margin-top: 0;
     margin-left: 2px;
     cursor: pointer;
-    position: absolute;
+    position: fixed;
     z-index: 2050;
     -webkit-user-select: none;
     -webkit-touch-callout: none;
@@ -1055,7 +1052,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     margin-top: 36vh;
     box-shadow: 0 0 5px 5px var(--fullred);
     padding: 4px;
-    background-color: var(--black30a);
+    background-color: var(--black70a);
     border-radius: 10px;
 }
 
@@ -1788,6 +1785,7 @@ input[type="range"] {
 
 #character_popup {
     display: none;
+    position:fixed;
     background-color: var(--black30a);
     backdrop-filter: blur(50px);
     -webkit-backdrop-filter: blur(30px);
@@ -1796,7 +1794,7 @@ input[type="range"] {
     max-width: 800px;
     height: calc(100vh - 50px);
     position: absolute;
-    z-index: 2065;
+    z-index: 3002;
     margin-left: auto;
     margin-right: auto;
     left: 0;
@@ -2429,14 +2427,11 @@ a {
 }
 
 @media screen and (max-width: 450px) {
-    #right-nav-panel {
-        width: 100%;
-        box-shadow: none;
-    }
+
 }
 
 #nav-toggle {
-    position: absolute;
+    position: fixed;
     right: 13px;
     top: 12px;
     padding: 0;
@@ -2496,8 +2491,70 @@ a {
     display: none;
 }
 
+@media screen and (max-width: 450px) {      /*styles for mobile phones (tested on iPhone 13 Pro)*/
+    body {
+        font-size: 18px;
+    }
+
+    #bg1, #bg2 {position:fixed;}
+
+    #sheld {    /*margin around the sides, and a larger one on bottom to avoid iOS Home bar*/
+        height: calc(100svh - 15px);
+        margin-left: 5px;
+        margin-right: 5px;
+        position: fixed;
+    }
+    #send_textarea {    /*larger input bar for mobile screens, easier to tap*/
+        font-size: 1.25rem;
+        line-height: 1.5rem;
+        min-height: calc(2rem + 0.75rem + 2px);
+        max-height: 35vh;
+        word-wrap: break-word;
+        height: 40px;
+        resize: vertical;
+        display: block;
+        background-color: rgba(255, 0, 0, 0);
+        border: 0;
+        box-shadow: none;
+        padding: 6px 0 6px 0;
+        font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
+        margin: 0;
+        text-shadow: #000 0 0 3px;
+    }
+    #rm_ch_create_block textarea {  /*without this the text areas display far too large*/
+        max-height: 300px;
+    }
+
+    #right-nav-panel, #character_popup {        /* character_popup display needs work, "width:100%" items push outside the box */
+        width: 100%;
+        box-shadow: none;
+    }
+
+    #character_popup {
+        margin-top:0;
+        height:100dvh;
+        padding-left:15px;
+        padding-right: 15px;
+        width: 100vw;
+        position: fixed;
+    }
+
+    #talkativeness_hint span {
+        min-width: 33%;
+    }
+    /*for debug purposes*/
+    /** {border: 1px solid purple;}*/ 
+}
+
 @media (max-width: 768px) {
     .mes img.img_extra {
         max-width: 100%;
     }
+}
+
+@media all and (display-mode: browser) {        /*Even in iOS WebApp mode the window detects as this; unhelpful.*/
+    * { 
+
+    }
+
 }
