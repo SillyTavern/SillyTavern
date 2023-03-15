@@ -25,53 +25,41 @@ export {
 window["TavernAI"] = {};
 
 const VERSION = "1.2.8";
-var converter = new showdown.Converter({ emoji: "true" });
-var bg_menu_toggle = false;
+let converter = new showdown.Converter({ emoji: "true" });
+let bg_menu_toggle = false;
 const systemUserName = "TavernAI";
-const systemCharName = "Chloe";
-var default_user_name = "You";
-var name1 = default_user_name;
-var name2 = "Chloe";
-// might want to migrate this to 'system message' code
-var chat = [
+let default_user_name = "You";
+let name1 = default_user_name;
+let name2 = "TavernAI";
+let chat = [];
+let safetychat = [
     {
-        name: "Chloe",
-        is_user: false,
-        is_name: true,
-        create_date: 0,
-        mes:
-            "\n*You went inside. The air smelled of fried meat, tobacco and a hint of wine. A dim light was cast by candles, and a fire crackled in the fireplace. It seems to be a very pleasant place. Behind the wooden bar is an elf waitress, she is smiling. Her ears are very pointy, and there is a twinkle in her eye. She wears glasses and a white apron. As soon as she noticed you, she immediately came right up close to you.*\n\n" +
-            ' "Hello there! How is your evening going?"<br><br>\n' +
-            '<img src="img/star_dust_city.png" width=80%; display:block;">\n',
-    },
-];
-var safetychat = [
-    {
-        name: "Chloe",
+        name: systemUserName,
         is_user: false,
         is_name: true,
         create_date: 0,
         mes: "\n*You deleted a character/chat and arrived back here for safety reasons! Pick another character!*\n\n",
     },
 ];
-var chat_create_date = 0;
+let chat_create_date = 0;
 
 let prev_selected_char = null;
-var default_ch_mes = "Hello";
-var count_view_mes = 0;
-var mesStr = "";
-var generatedPromtCache = "";
-var characters = [];
+let default_ch_mes = "Hello";
+let count_view_mes = 0;
+let mesStr = "";
+let generatedPromtCache = "";
+let characters = [];
 let groups = [];
 let selected_group = null;
 let is_group_automode_enabled = false;
-var this_chid;
-var active_character;
-var backgrounds = [];
-var default_avatar = "img/fluffy.png";
-var is_colab = false;
-var is_checked_colab = false;
-var is_mes_reload_avatar = false;
+let this_chid;
+let active_character;
+let backgrounds = [];
+const default_avatar = "img/fluffy.png";
+const system_avatar = "img/five.png";
+let is_colab = false;
+let is_checked_colab = false;
+let is_mes_reload_avatar = false;
 let collapse_newlines = false;
 
 const system_message_types = {
@@ -85,15 +73,25 @@ const system_message_types = {
 const system_messages = {
     help: {
         name: systemUserName,
-        force_avatar: "img/five.png",
+        force_avatar: system_avatar,
         is_user: false,
         is_system: true,
         is_name: true,
-        mes: 'Hi there! The following chat formatting commands are supported:<br><ul><li><tt>*text*</tt> – format the actions that your character does</li><li><tt>{*text*}</tt> – set the behavioral bias for your character</li></ul><p>Need more help? Visit our wiki – <a href="https://github.com/TavernAI/TavernAI/wiki">TavernAI Wiki</a>!</p>',
+        mes: 'Hi there! The following chat formatting commands are supported:<br><ul><li><tt>*text*</tt> – format the actions that your character does</li><li><tt>{*text*}</tt> – set the behavioral bias for your character</li></ul><p>Need more help? Visit our wiki – <a target="_blank" href="https://github.com/TavernAI/TavernAI/wiki">TavernAI Wiki</a>!</p>',
+    },
+    welcome: 
+    {
+        name: systemUserName,
+        force_avatar: system_avatar,
+        is_user: false,
+        is_name: true,
+        mes:
+            'Hello there! In order to begin chatting:<ol><li>Connect to one of the supported generation APIs</li><li>Create or pick a character from the list</li></ol>' +
+            'Still have questions left? Check out built-in help or visit our <a target="_blank" href="https://github.com/TavernAI/TavernAI/wiki">TavernAI Wiki</a>!'
     },
     group: {
         name: systemUserName,
-        force_avatar: "img/five.png",
+        force_avatar: system_avatar,
         is_user: false,
         is_system: true,
         is_name: true,
@@ -101,7 +99,7 @@ const system_messages = {
     },
     empty: {
         name: systemUserName,
-        force_avatar: "img/five.png",
+        force_avatar: system_avatar,
         is_user: false,
         is_system: true,
         is_name: true,
@@ -109,7 +107,7 @@ const system_messages = {
     },
     generic: {
         name: systemUserName,
-        force_avatar: "img/five.png",
+        force_avatar: system_avatar,
         is_user: false,
         is_system: true,
         is_name: true,
@@ -269,21 +267,10 @@ $.get("/csrf-token").then((data) => {
     getCharacters();
     getSettings("def");
     getLastVersion();
-    //getCharacters();
-    printMessages();
+    sendSystemMessage(system_message_types.WELCOME);
     getBackgrounds();
     getUserAvatars();
 });
-
-function flushSettings() {
-    $("#settings_perset").empty();
-    $("#settings_perset_novel").empty();
-    $("#world_info").empty();
-    $("#settings_perset").append(
-        '<option value="gui">GUI KoboldAI Settings</option>'
-    );
-    $("#world_info").append('<option value="None">None</option>');
-}
 
 function checkOnlineStatus() {
     //console.log(online_status);
@@ -758,7 +745,7 @@ function clearChat() {
 
 function messageFormating(mes, ch_name, isSystem, forceAvatar) {
     if (this_chid != undefined && !isSystem)
-        mes = mes.replaceAll("<", "&lt;").replaceAll(">", "&gt;"); //for Chloe
+        mes = mes.replaceAll("<", "&lt;").replaceAll(">", "&gt;"); //for *****
     if (this_chid === undefined) {
         mes = mes
             .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
@@ -805,7 +792,7 @@ function addOneMessage(mes) {
         if (mes.force_avatar) {
             avatarImg = mes.force_avatar;
         } else if (this_chid == undefined || this_chid == "invalid-safety-id") {
-            avatarImg = "img/chloe.png";
+            avatarImg = "img/five.png";
         } else {
             if (characters[this_chid].avatar != "none") {
                 avatarImg = "characters/" + characters[this_chid].avatar;
@@ -814,7 +801,7 @@ function addOneMessage(mes) {
                     //console.log(avatarImg);
                 }
             } else {
-                avatarImg = "img/fluffy.png";
+                avatarImg = default_avatar;
             }
         }
 
@@ -1804,7 +1791,7 @@ async function Generate(type, automatic_trigger) {
                             chat[chat.length - 1]["mes"] = getMessage;
 
                             if (type === "group_chat") {
-                                let avatarImg = "img/fluffy.png";
+                                let avatarImg = default_avatars;
                                 if (characters[this_chid].avatar != "none") {
                                     avatarImg = `characters/${characters[this_chid].avatar
                                         }?${Date.now()}`;
@@ -2138,11 +2125,11 @@ async function getGroupChat(id) {
                     mes["send_date"] = humanizedDateTime();
                     mes["mes"] = character.first_mes
                         ? substituteParams(character.first_mes.trim())
-                        : (mes["mes"] = default_ch_mes);
+                        : default_ch_mes;
                     mes["force_avatar"] =
                         character.avatar != "none"
                             ? `characters/${character.avatar}?${Date.now()}`
-                            : "img/fluffy.png";
+                            : default_avatar;
                     chat.push(mes);
                     addOneMessage(mes);
                 }
@@ -2194,8 +2181,8 @@ async function deleteGroup(id) {
         this_chid = "invalid-safety-id"; //unsets expected chid before reloading (related to getCharacters/printCharacters from using old arrays)
         selected_group = null;
         characters.length = 0; // resets the characters array, forcing getcharacters to reset
-        name2 = "Chloe"; // replaces deleted charcter name with Chloe, since she wil be displayed next.
-        chat = [...safetychat]; // sets up chloe to tell user about having deleted a character
+        name2 = systemUserName; // replaces deleted charcter name with *****, since she wil be displayed next.
+        chat = [...safetychat]; // sets up ***** to tell user about having deleted a character
 
         /*   QuickRefresh(); */
         $("#rm_info_avatar").html("");
@@ -4041,10 +4028,10 @@ $(document).ready(function () {
                     //this allows for dynamic refresh of character list after deleting a character.
                     $("#character_cross").click(); // closes advanced editing popup
                     this_chid = "invalid-safety-id"; // unsets expected chid before reloading (related to getCharacters/printCharacters from using old arrays)
-                    //avatar = "..img/Chloe.jpg";
+                    //avatar = "..img/*****.jpg";
                     characters.length = 0; // resets the characters array, forcing getcharacters to reset
-                    name2 = "Chloe"; // replaces deleted charcter name with Chloe, since she will be displayed next.
-                    chat = [...safetychat]; // sets up chloe to tell user about having deleted a character
+                    name2 = systemUserName; // replaces deleted charcter name with *****, since she will be displayed next.
+                    chat = [...safetychat]; // sets up ***** to tell user about having deleted a character
                     $(document.getElementById("rm_button_selected_ch")).css(
                         "class",
                         "deselected-right-tab"
@@ -4055,7 +4042,7 @@ $(document).ready(function () {
                     clearChat(); // removes deleted char's chat
                     this_chid = undefined; // prevents getCharacters from trying to load an invalid char.
                     getCharacters(); // gets the new list of characters (that doesn't include the deleted one)
-                    printMessages(); // prints out Chloe's 'deleted character' message
+                    printMessages(); // prints out *****'s 'deleted character' message
                     //console.log("#dialogue_popup_ok(del-char) >>>> saving");
                     saveSettings(); // saving settings to keep changes to variables
                     //getCharacters();
@@ -4367,7 +4354,7 @@ $(document).ready(function () {
     $("#delete_button").click(function () {
         popup_type = "del_ch";
         callPopup(
-            "<h3>Delete the character?</h3>Page will reload and you will be returned to Chloe."
+            "<h3>Delete the character?</h3>Your chat will be closed."
         );
     });
     $("#rm_info_button").click(function () {
