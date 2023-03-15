@@ -1,10 +1,10 @@
-var express = require('express');
-var app = express();
-var fs = require('fs');
+const express = require('express');
+const app = express();
+const fs = require('fs');
 const readline = require('readline');
 const open = require('open');
 
-var rimraf = require("rimraf");
+const rimraf = require("rimraf");
 const multer = require("multer");
 const https = require('https');
 //const PNG = require('pngjs').PNG;
@@ -12,8 +12,7 @@ const extract = require('png-chunks-extract');
 const encode = require('png-chunks-encode');
 const PNGtext = require('png-chunk-text');
 
-const sharp = require('sharp');
-sharp.cache(false);
+const jimp = require('jimp');
 const path = require('path');
 
 const cookieParser = require('cookie-parser');
@@ -625,25 +624,20 @@ app.post("/deletecharacter", urlencodedParser, function (request, response) {
 
 async function charaWrite(img_url, data, target_img, response = undefined, mes = 'ok') {
     try {
-        // Load the image in any format
-        sharp.cache(false);
-        var image = await sharp(img_url).resize(400, 600).toFormat('png').toBuffer();// old 170 234
-        // Convert the image to PNG format
-        //const pngImage = image.toFormat('png');
-
-        // Resize the image to 100x100
-        //const resizedImage = pngImage.resize(100, 100);
+        // Read the image, resize, and save it as a PNG into the buffer
+        const rawImg = await jimp.read(img_url);
+        const image = await rawImg.resize(400, 600).getBufferAsync(jimp.MIME_PNG);
 
         // Get the chunks
-        var chunks = extract(image);
-        var tEXtChunks = chunks.filter(chunk => chunk.create_date === 'tEXt');
+        const chunks = extract(image);
+        const tEXtChunks = chunks.filter(chunk => chunk.create_date === 'tEXt');
 
         // Remove all existing tEXt chunks
-        for (var tEXtChunk of tEXtChunks) {
+        for (let tEXtChunk of tEXtChunks) {
             chunks.splice(chunks.indexOf(tEXtChunk), 1);
         }
         // Add new chunks before the IEND chunk
-        var base64EncodedData = Buffer.from(data, 'utf8').toString('base64');
+        const base64EncodedData = Buffer.from(data, 'utf8').toString('base64');
         chunks.splice(-1, 0, PNGtext.encode('chara', base64EncodedData));
         //chunks.splice(-1, 0, text.encode('lorem', 'ipsum'));
 
@@ -662,7 +656,6 @@ async function charaWrite(img_url, data, target_img, response = undefined, mes =
 
 
 function charaRead(img_url) {
-    sharp.cache(false);
     const buffer = fs.readFileSync(img_url);
     const chunks = extract(buffer);
 
@@ -1378,7 +1371,9 @@ app.post('/uploaduseravatar', urlencodedParser, async (request, response) => {
 
     try {
         const pathToUpload = path.join('./uploads/' + request.file.filename);
-        const image = await sharp(pathToUpload).resize(400, 400).toFormat('png').toBuffer();
+        const rawImg = await jimp.read(pathToUpload);
+        const image = await rawImg.resize(400, 400).getBufferAsync(jimp.MIME_PNG);
+
         const filename = `${Date.now()}.png`;
         const pathToNewFile = path.join(directories.avatars, filename);
         fs.writeFileSync(pathToNewFile, image);
