@@ -10,7 +10,7 @@ import {
     selectImportedWorldInfo,
     setWorldInfoSettings,
     deleteWorldInfo,
-} from "./scripts/worldinfo.js";
+} from "./scripts/world-info.js";
 
 import {
     groups,
@@ -23,7 +23,7 @@ import {
     printGroups,
     resetSelectedGroup,
     select_group_chats,
-} from "./scripts/groupchats.js";
+} from "./scripts/group-chats.js";
 
 import { debounce, delay } from "./scripts/utils.js";
 

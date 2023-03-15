@@ -1,6 +1,6 @@
 import { saveSettings, callPopup, token, substituteParams } from "../script.js";
 import { download, debounce } from "./utils.js";
-import { encode } from "../scripts/gpt-2-3-tokenizer/mod.js";
+import { encode } from "./gpt-2-3-tokenizer/mod.js";
 
 export {
     world_info,
