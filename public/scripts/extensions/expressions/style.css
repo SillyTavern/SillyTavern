@@ -1,0 +1,63 @@
+div.expression {
+    background-image: unset;
+    background-repeat: no-repeat;
+    background-size: contain;
+    background-position-y: bottom;
+    max-height: 90vh;
+    max-width: calc((100vw - 800px)/2);
+    width: 100%;
+    height: 100%;
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    margin-left: 10px;
+    filter: drop-shadow(2px 2px 2px #51515199);
+    transition: 500ms;
+}
+
+.debug-image {
+    display: none;
+    visibility: collapse;
+    opacity: 0;
+    width: 0px;
+    height: 0px;
+}
+
+#image_list {
+    margin-top: 0;
+    margin-bottom: 0;
+    font-weight: 600;
+}
+
+#image_list .success {
+    color: green;
+}
+
+#image_list .failure {
+    color: red;
+}
+
+.expression_settings {
+    white-space: pre-line;
+}
+
+.expression_settings p {
+    margin-bottom: 0px;
+}
+
+.expression_settings label {
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+    margin-left: 0px;
+}
+
+.expression_settings label input {
+    margin-left: 0px !important;
+}
+
+@media screen and (max-width:1200px) {
+    div.expression {
+        display: none;
+    }
+}

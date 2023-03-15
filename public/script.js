@@ -2163,7 +2163,7 @@ async function getSettings(type) {
                     const src = "scripts/extensions.js";
                     if ($(`script[src="${src}"]`).length === 0) {
                         const script = document.createElement("script");
-                        script.type = "text/javascript";
+                        script.type = "module";
                         script.src = src;
                         $("body").append(script);
                     }

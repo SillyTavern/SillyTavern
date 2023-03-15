@@ -216,6 +216,8 @@ code {
     height: 40px;
     position: relative;
     background-position: center;
+    display: flex;
+    flex-direction: row;
 }
 
 #send_but {
@@ -233,6 +235,7 @@ code {
     cursor: pointer;
     transition: 0.3s;
     filter: brightness(0.5);
+    order: 99999;
 }
 
 #send_but:hover {
@@ -2558,4 +2561,56 @@ a {
 
     }
 
+}
+
+/* Extensions */
+#extensions_url {
+    display: block;
+}
+
+#extensions_status {
+    margin-bottom: 10px;
+    font-weight: 700;
+}
+
+.extensions_block input[type="submit"]:hover{
+    background-color: green;
+}
+
+.extensions_block input[type="checkbox"] {
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+label[for="extensions_autoconnect"] {
+    display: flex;
+    align-items: center;
+    margin: 0 !important;
+}
+
+.extensions_url_block {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.extensions_url_block h4 {
+    display: inline;
+}
+
+.extensions_block {
+    clear: both;
+    padding: 0.05px; /* clear fix */
+}
+
+.success {
+    color: green;
+}
+
+.failure {
+    color: red;
+}
+
+.expander {
+    flex-grow: 1;
 }

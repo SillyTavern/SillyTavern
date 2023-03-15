@@ -1,0 +1,7 @@
+{
+    "display_name": "D&D Dice",
+    "loading_order": 5,
+    "requires": [],
+    "js": "index.js",
+    "css": "style.css"
+}

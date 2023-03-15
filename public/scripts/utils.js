@@ -7,6 +7,7 @@ export {
     getStringHash,
     debounce,
     delay,
+    isSubsetOf,
 };
 
 /// UTILS
@@ -84,3 +85,4 @@ function debounce(func, timeout = 300) {
 }
 
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+const isSubsetOf = (a, b) => (Array.isArray(a) && Array.isArray(b)) ? b.every(val => a.includes(val)) : false;

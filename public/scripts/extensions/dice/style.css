@@ -1,0 +1,40 @@
+#roll_dice {
+    order: 100;
+    width: 40px;
+    height: 40px;
+    margin: 0;
+    padding: 1px;
+    background: no-repeat;
+    background-size: 26px auto;
+    background-position: center center;
+    outline: none;
+    border: none;
+    cursor: pointer;
+    transition: 0.3s;
+    filter: invert(1);
+    opacity: 0.5;
+}
+
+#roll_dice:hover {
+    opacity: 1;
+}
+
+.list-group {
+    display: flex;
+    flex-direction: column;
+    padding-left: 0;
+    margin-top: 0;
+    margin-bottom: 3px;
+}
+
+.list-group-item {
+    position: relative;
+    display: block;
+    padding: 0.75rem 1.25rem;
+    margin-bottom: -1px;
+    background-color: rgba(0,0,0,0.3);
+    border: 1px solid rgba(0,0,0,0.7);
+    box-sizing: border-box;
+    user-select: none;
+    cursor: pointer;
+}

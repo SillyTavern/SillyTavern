@@ -1,0 +1,36 @@
+#send_picture {
+    order: 200;
+    width: 40px;
+    height: 40px;
+    margin: 0;
+    padding: 1px;
+    background: no-repeat;
+    background-size: 26px auto;
+    background-position: center center;
+    outline: none;
+    border: none;
+    cursor: pointer;
+    transition: 0.3s;
+    filter: invert(1);
+    opacity: 0.5;
+}
+
+#send_picture:hover {
+    opacity: 1;
+}
+
+#img_form {
+    display: none;
+}
+
+.spin {
+    animation-name: spin;
+    animation-duration: 2000ms;
+    animation-iteration-count: infinite;
+    animation-timing-function: linear;
+}
+
+@keyframes spin {
+    from {transform:rotate(0deg);}
+    to {transform:rotate(360deg);}
+}
