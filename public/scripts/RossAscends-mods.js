@@ -2,21 +2,24 @@ import { encode } from "../scripts/gpt-2-3-tokenizer/mod.js";
 
 import {
   Generate,
-  getSettings,
+/*   getSettings,
   saveSettings,
   printMessages,
   clearChat,
   getChat,
-  this_chid,
-  settings,
+  chat
+  settings, */
+  this_chid,  
   characters,
   online_status,
   main_api,
   api_server,
   api_key_novel,
-  getCharacters,
-  is_send_press
+  is_send_press,
+  
 } from "../script.js";
+
+import { LoadLocal, SaveLocal, ClearLocal, CheckLocal, LoadLocalBool } from "./f-localStorage.js";
 
 var NavToggle = document.getElementById("nav-toggle");
 var PanelPin = document.getElementById("rm_button_panel_pin");
@@ -38,30 +41,6 @@ var count_tokens;
 var perm_tokens;
 var ALC_Done;
 
-////////////////// LOCAL STORAGE HANDLING /////////////////////
-
-function SaveLocal(target, val) {
-	localStorage.setItem(target, val);
-	console.log('SaveLocal -- '+target+' : '+val);
-  }
-  function LoadLocal(target) {
-	return localStorage.getItem(target);
-  }
-  function LoadLocalBool(target){
-	  let result = localStorage.getItem(target) === 'true';
-	  return result;
-  }
-  function CheckLocal() {
-	console.log("----------local storage---------");
-	var i;
-	for (i = 0; i < localStorage.length; i++) {
-	  console.log(localStorage.key(i) +" : " +localStorage.getItem(localStorage.key(i)));
-	}
-	console.log("------------------------------");
-  }
-  function ClearLocal() {localStorage.clear();console.log('Removed All Local Storage');}
-
-/////////////////////////////////////////////////////////////////////////
 //RossAscends: Added function to format dates used in files and chat timestamps to a humanized format.
 //Mostly I wanted this to be for file names, but couldn't figure out exactly where the filename save code was as everything seemed to be connected.
 //Does not break old characters/chats, as the code just uses whatever timestamp exists in the chat.
@@ -271,18 +250,14 @@ $("document").ready(function () {
 	$(AutoConnectCheckbox).prop("checked",LoadLocalBool("AutoConnectEnabled"));
 	$(AutoLoadChatCheckbox).prop("checked",LoadLocalBool("AutoLoadChatEnabled"));
 	
-	
 
-	//AutoLoadChat and AutoConnect must be loaded on a small delay after page load to allow getSettings to fill out what they need
 	if (LoadLocalBool('AutoLoadChatEnabled') == true) {
 			console.log('calling RA_ALC');
 			RA_autoloadchat();
 	}
-
+	//Autoconnect on page load if enabled, or when api type is changed
 	if (LoadLocalBool("AutoConnectEnabled") == true) {RA_autoconnect()}
-
 	$("#main_api").change(function () {RA_autoconnect();});
-
 	$("#api_button").click(function () {setTimeout(RA_checkOnlineStatus, 100);});
 
 	//close the RightNav panel when user clicks outside of it or related panels (adv editing popup, or dialog popups)
@@ -341,6 +316,37 @@ $("document").ready(function () {
 		this.style.height = '40px';
 		this.style.height =
 			(this.scrollHeight) + 'px';
+	});
+
+	//Regenerate if user swipes on the last mesage in chat
+	//TODO: 
+	//1. Make it detect if the last message is from user, and ignore swipes then...
+	//2. find a way to make the chat slide down smoothly when the last mes div gets .remove()-d
+
+	document.addEventListener('swiped-left', function(e) {
+		var SwipeTargetMesClassParent = e.target.closest('.mes');
+		if (is_send_press == false){
+		if (SwipeTargetMesClassParent !== null && SwipeTargetMesClassParent.nextSibling == null ){
+				$('#chat').children().last().css({'transition':'all 0.5s ease-in-out'});
+				$('#chat').children().last().css({'transform':'translateX(-100vw) scale(0,0)','overflow':'hidden'});
+				$('#chat').children().last().css({'opacity':'0'});
+				
+				Generate('regenerate');
+			}
+		}
+	});
+	document.addEventListener('swiped-right', function(e) {
+		var SwipeTargetMesClassParent = e.target.closest('.mes');
+		console.log(is_send_press);
+		if (is_send_press === false){
+			if (SwipeTargetMesClassParent !== null && SwipeTargetMesClassParent.nextSibling == null){
+				$('#chat').children().last().css({'transition':'all 0.5s ease-in-out'});
+				$('#chat').children().last().css({'transform':'translateX(100vh) scale(0,0)','overflow':'hidden'});
+				$('#chat').children().last().css({'opacity':'0'});
+				Generate('regenerate');
+				console.log(is_send_press);
+			}
+		}	
 	});
 
 	//Additional hotkeys CTRL+ENTER and CTRL+UPARROW

@@ -64,7 +64,7 @@ export {
     default_avatar,
     system_message_types,
     talkativeness_default,
-};
+}
 
 // API OBJECT FOR EXTERNAL WIRING
 window["TavernAI"] = {};
@@ -817,22 +817,22 @@ function addOneMessage(mes) {
         );
     }
     count_view_mes++;
+    //console.log('add mes without animation = '+add_mes_without_animation);
+    //console.log(!add_mes_without_animation);
     if (!add_mes_without_animation) {
-        $("#chat").children().last().css("opacity", 1.0);
-        $("#chat")
-            .children()
-            .last()
-            .transition({
-                opacity: 1.0,
-                duration: 700,
-                easing: "",
-                complete: function () { },
-            });
-    } else {
+        console.log('adding mes with animation')
+        //$('#chat').children().last().css('transition','all 2s ease-in-out');
+        $('#chat').children().last().css("opacity", "1");
+        //$('#chat').children().last().css('transition','all 2s ease-in-out');
+
+
+    }else {
+        console.log('add mes with animation was false, and is set to false again')
         add_mes_without_animation = false;
     }
     var $textchat = $("#chat");
-    $textchat.scrollTop($textchat[0].scrollHeight);
+    //$('#chat').children().last().css("opacity", "1");
+    $textchat.scrollTop(($textchat[0].scrollHeight));
 }
 
 function typeWriter(target, text, speed, i) {
@@ -936,8 +936,12 @@ async function Generate(type, automatic_trigger) {
                 //console.log('about to remove last msg')
                 chat.length = chat.length - 1;
                 count_view_mes -= 1;
-                //console.log('removing last msg')
-                $("#chat").children().last().remove();
+                //$('#chat').children().last().css({'transition':'all 0.5s ease-in-out'});
+                //$('#chat').children().last().css({'transform':'translateX(100vh) scale(0.1,0.1)'});
+                //$('#chat').children().last().css({'opacity':'0'});
+                setTimeout(function(){
+                    $('#chat').children().last().remove();
+               },1000);
             }
         }
 
