@@ -745,7 +745,7 @@ function clearChat() {
 
 function messageFormating(mes, ch_name, isSystem, forceAvatar) {
     if (this_chid != undefined && !isSystem)
-        mes = mes.replaceAll("<", "&lt;").replaceAll(">", "&gt;"); //for *****
+        mes = mes.replaceAll("<", "&lt;").replaceAll(">", "&gt;"); //for welcome message
     if (this_chid === undefined) {
         mes = mes
             .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
@@ -786,13 +786,11 @@ function addOneMessage(mes) {
     var avatarImg = "User Avatars/" + user_avatar;
     const isSystem = mes.is_system;
     generatedPromtCache = "";
-    //thisText = thisText.split("\n").join("<br>");
-    var avatarImg = "User Avatars/" + user_avatar;
     if (!mes["is_user"]) {
         if (mes.force_avatar) {
             avatarImg = mes.force_avatar;
         } else if (this_chid == undefined || this_chid == "invalid-safety-id") {
-            avatarImg = "img/five.png";
+            avatarImg = system_avatar;
         } else {
             if (characters[this_chid].avatar != "none") {
                 avatarImg = "characters/" + characters[this_chid].avatar;
@@ -2181,8 +2179,8 @@ async function deleteGroup(id) {
         this_chid = "invalid-safety-id"; //unsets expected chid before reloading (related to getCharacters/printCharacters from using old arrays)
         selected_group = null;
         characters.length = 0; // resets the characters array, forcing getcharacters to reset
-        name2 = systemUserName; // replaces deleted charcter name with *****, since she wil be displayed next.
-        chat = [...safetychat]; // sets up ***** to tell user about having deleted a character
+        name2 = systemUserName; // replaces deleted charcter name with system user since it will be displayed next.
+        chat = [...safetychat]; // sets up system user to tell user about having deleted a character
 
         /*   QuickRefresh(); */
         $("#rm_info_avatar").html("");
@@ -4028,10 +4026,9 @@ $(document).ready(function () {
                     //this allows for dynamic refresh of character list after deleting a character.
                     $("#character_cross").click(); // closes advanced editing popup
                     this_chid = "invalid-safety-id"; // unsets expected chid before reloading (related to getCharacters/printCharacters from using old arrays)
-                    //avatar = "..img/*****.jpg";
                     characters.length = 0; // resets the characters array, forcing getcharacters to reset
-                    name2 = systemUserName; // replaces deleted charcter name with *****, since she will be displayed next.
-                    chat = [...safetychat]; // sets up ***** to tell user about having deleted a character
+                    name2 = systemUserName; // replaces deleted charcter name with system user since she will be displayed next.
+                    chat = [...safetychat]; // sets up system user to tell user about having deleted a character
                     $(document.getElementById("rm_button_selected_ch")).css(
                         "class",
                         "deselected-right-tab"
@@ -4042,7 +4039,7 @@ $(document).ready(function () {
                     clearChat(); // removes deleted char's chat
                     this_chid = undefined; // prevents getCharacters from trying to load an invalid char.
                     getCharacters(); // gets the new list of characters (that doesn't include the deleted one)
-                    printMessages(); // prints out *****'s 'deleted character' message
+                    printMessages(); // prints out system user's 'deleted character' message
                     //console.log("#dialogue_popup_ok(del-char) >>>> saving");
                     saveSettings(); // saving settings to keep changes to variables
                     //getCharacters();
