@@ -1,6 +1,32 @@
 import { humanizedDateTime } from "./scripts/RossAscends-mods.js";
 import { encode, decode } from "../scripts/gpt-2-3-tokenizer/mod.js";
 
+import {
+    world_info_budget,
+    world_info_data,
+    world_info_depth,
+    world_info,
+    checkWorldInfo,
+    selectImportedWorldInfo,
+    setWorldInfoSettings,
+    deleteWorldInfo,
+} from "./scripts/worldinfo.js";
+
+import {
+    groups,
+    selected_group,
+    saveGroupChat,
+    getGroups,
+    generateGroupWrapper,
+    deleteGroup,
+    is_group_generating,
+    printGroups,
+    resetSelectedGroup,
+    select_group_chats,
+} from "./scripts/groupchats.js";
+
+import { debounce, delay } from "./scripts/utils.js";
+
 //RossAscends: exporting functions and vars for RA mods.
 export {
     Generate,
@@ -9,6 +35,18 @@ export {
     printMessages,
     clearChat,
     getChat,
+    getCharacters,
+    callPopup,
+    substituteParams,
+    sendSystemMessage,
+    addOneMessage,
+    resetChatState,
+    select_rm_info,
+    setCharacterId,
+    setCharacterName,
+    setEditedMessageId,
+    setSendButtonState,
+    chat,
     this_chid,
     settings,
     characters,
@@ -16,9 +54,11 @@ export {
     main_api,
     api_server,
     api_key_novel,
-    getCharacters,
+    token,
     is_send_press,
-    world_info,
+    default_avatar,
+    system_message_types,
+    talkativeness_default,
 };
 
 // API OBJECT FOR EXTERNAL WIRING
@@ -49,9 +89,6 @@ let count_view_mes = 0;
 let mesStr = "";
 let generatedPromtCache = "";
 let characters = [];
-let groups = [];
-let selected_group = null;
-let is_group_automode_enabled = false;
 let this_chid;
 let active_character;
 let backgrounds = [];
@@ -61,6 +98,8 @@ let is_colab = false;
 let is_checked_colab = false;
 let is_mes_reload_avatar = false;
 let collapse_newlines = false;
+
+const saveSettingsDebounced = debounce(() => saveSettings(), 500);
 
 const system_message_types = {
     HELP: "help",
@@ -79,7 +118,7 @@ const system_messages = {
         is_name: true,
         mes: 'Hi there! The following chat formatting commands are supported:<br><ul><li><tt>*text*</tt> – format the actions that your character does</li><li><tt>{*text*}</tt> – set the behavioral bias for your character</li></ul><p>Need more help? Visit our wiki – <a target="_blank" href="https://github.com/TavernAI/TavernAI/wiki">TavernAI Wiki</a>!</p>',
     },
-    welcome: 
+    welcome:
     {
         name: systemUserName,
         force_avatar: system_avatar,
@@ -115,17 +154,12 @@ const system_messages = {
     },
 };
 
-const world_info_position = {
-    before: 0,
-    after: 1,
-};
 const talkativeness_default = 0.5;
 const storage_keys = {
     collapse_newlines: "TavernAI_collapse_newlines",
 };
 
 var is_advanced_char_open = false;
-var is_world_edit_open = false;
 
 var menu_type = ""; //what is selected in the menu
 var selected_button = ""; //which button pressed
@@ -139,9 +173,6 @@ var create_save_scenario = "";
 var create_save_mes_example = "";
 var create_save_talkativeness = talkativeness_default;
 
-var timerSaveEdit;
-var timerWorldSave;
-var timerGroupSave;
 var durationSaveEdit = 200;
 //animation right menu
 var animation_rm_duration = 200;
@@ -155,14 +186,12 @@ var api_server = "";
 var api_server_textgenerationwebui = "";
 //var interval_timer = setInterval(getStatus, 2000);
 var interval_timer_novel = setInterval(getStatusNovel, 3000);
-const groupAutoModeInterval = setInterval(groupChatAutoModeWorker, 5000);
 var is_get_status = false;
 var is_get_status_novel = false;
 var is_api_button_press = false;
 var is_api_button_press_novel = false;
 
 var is_send_press = false; //Send generation
-let is_group_generating = false; // Group generation flag
 var add_mes_without_animation = false;
 
 var this_del_mes = 0;
@@ -171,7 +200,6 @@ var this_edit_mes_text = "";
 var this_edit_mes_chname = "";
 var this_edit_mes_id;
 
-const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 //settings
 var settings;
 var koboldai_settings;
@@ -179,12 +207,6 @@ var koboldai_setting_names;
 var preset_settings = "gui";
 var user_avatar = "you.png";
 var temp = 0.5;
-var world_info = null;
-var world_names;
-var world_info_data = null;
-var world_info_depth = 2;
-var world_info_budget = 128;
-var imported_world_name = "";
 var amount_gen = 80; //default max length of AI generated responses
 var max_context = 2048;
 var rep_pen = 1;
@@ -474,80 +496,6 @@ function printCharacters() {
         //console.log('printcharacters() -- printing -- ChID '+i+' ('+item.name+')');
     });
     printGroups();
-}
-
-function printGroups() {
-    for (let group of groups) {
-        const template = $("#group_list_template .group_select").clone();
-        template.data("id", group.id);
-        template.find(".ch_name").html(group.name);
-        $("#rm_print_characters_block").prepend(template);
-        updateGroupAvatar(group);
-    }
-}
-
-function updateGroupAvatar(group) {
-    $("#rm_print_characters_block .group_select").each(function () {
-        if ($(this).data("id") == group.id) {
-            const avatar = getGroupAvatar(group);
-            if (avatar) {
-                $(this).find(".avatar").replaceWith(avatar);
-            }
-        }
-    });
-}
-
-function getGroupAvatar(group) {
-    const memberAvatars = [];
-    if (group && Array.isArray(group.members) && group.members.length) {
-        for (const member of group.members) {
-            const charIndex = characters.findIndex((x) => x.name === member);
-            if (charIndex !== -1 && characters[charIndex].avatar !== "none") {
-                const this_avatar = `characters/${characters[charIndex].avatar
-                    }#${Date.now()}`;
-                memberAvatars.push(this_avatar);
-            }
-            if (memberAvatars.length === 4) {
-                break;
-            }
-        }
-    }
-
-    // Cohee: there's probably a smarter way to do this..
-    if (memberAvatars.length === 1) {
-        const groupAvatar = $("#group_avatars_template .collage_1").clone();
-        groupAvatar.find(".img_1").attr("src", memberAvatars[0]);
-        return groupAvatar;
-    }
-
-    if (memberAvatars.length === 2) {
-        const groupAvatar = $("#group_avatars_template .collage_2").clone();
-        groupAvatar.find(".img_1").attr("src", memberAvatars[0]);
-        groupAvatar.find(".img_2").attr("src", memberAvatars[1]);
-        return groupAvatar;
-    }
-
-    if (memberAvatars.length === 3) {
-        const groupAvatar = $("#group_avatars_template .collage_3").clone();
-        groupAvatar.find(".img_1").attr("src", memberAvatars[0]);
-        groupAvatar.find(".img_2").attr("src", memberAvatars[1]);
-        groupAvatar.find(".img_3").attr("src", memberAvatars[2]);
-        return groupAvatar;
-    }
-
-    if (memberAvatars.length === 4) {
-        const groupAvatar = $("#group_avatars_template .collage_4").clone();
-        groupAvatar.find(".img_1").attr("src", memberAvatars[0]);
-        groupAvatar.find(".img_2").attr("src", memberAvatars[1]);
-        groupAvatar.find(".img_3").attr("src", memberAvatars[2]);
-        groupAvatar.find(".img_4").attr("src", memberAvatars[3]);
-        return groupAvatar;
-    }
-
-    // default avatar
-    const groupAvatar = $("#group_avatars_template .collage_1").clone();
-    groupAvatar.find(".img_1").attr("src", group.avatar_url);
-    return groupAvatar;
 }
 
 async function getCharacters() {
@@ -910,97 +858,6 @@ function substituteParams(content) {
     return content;
 }
 
-function checkWorldInfo(chat) {
-    if (world_info_data.entries.length == 0) {
-        return "";
-    }
-
-    const messagesToLookBack = world_info_depth * 2;
-    let textToScan = chat.slice(0, messagesToLookBack).join("").toLowerCase();
-    let worldInfoBefore = "";
-    let worldInfoAfter = "";
-    let needsToScan = true;
-    let allActivatedEntries = new Set();
-
-    const sortedEntries = Object.keys(world_info_data.entries)
-        .map((x) => world_info_data.entries[x])
-        .sort((a, b) => b.order - a.order);
-    while (needsToScan) {
-        let activatedNow = new Set();
-
-        for (let entry of sortedEntries) {
-            if (allActivatedEntries.has(entry.uid)) {
-                continue;
-            }
-
-            if (entry.constant) {
-                activatedNow.add(entry.uid);
-            }
-
-            if (Array.isArray(entry.key) && entry.key.length) {
-                primary: for (let key of entry.key) {
-                    if (key && textToScan.includes(key.trim().toLowerCase())) {
-                        if (
-                            entry.selective &&
-                            Array.isArray(entry.keysecondary) &&
-                            entry.keysecondary.length
-                        ) {
-                            secondary: for (let keysecondary of entry.keysecondary) {
-                                if (
-                                    keysecondary &&
-                                    textToScan.includes(keysecondary.trim().toLowerCase())
-                                ) {
-                                    activatedNow.add(entry.uid);
-                                    break secondary;
-                                }
-                            }
-                        } else {
-                            activatedNow.add(entry.uid);
-                            break primary;
-                        }
-                    }
-                }
-            }
-        }
-
-        needsToScan = activatedNow.size > 0;
-        const newEntries = [...activatedNow]
-            .map((x) => world_info_data.entries[x])
-            .sort((a, b) => sortedEntries.indexOf(a) - sortedEntries.indexOf(b));
-
-        for (const entry of newEntries) {
-            if (entry.position === world_info_position.after) {
-                worldInfoAfter = `${substituteParams(
-                    entry.content
-                )}\n${worldInfoAfter}`;
-            } else {
-                worldInfoBefore = `${substituteParams(
-                    entry.content
-                )}\n${worldInfoBefore}`;
-            }
-
-            if (
-                encode(worldInfoBefore + worldInfoAfter).length >= world_info_budget
-            ) {
-                needsToScan = false;
-                break;
-            }
-        }
-
-        if (needsToScan) {
-            textToScan =
-                newEntries
-                    .map((x) => x.content)
-                    .join("\n")
-                    .toLowerCase() + textToScan;
-        }
-
-        allActivatedEntries = new Set([...allActivatedEntries, ...activatedNow]);
-    }
-
-    return { worldInfoBefore, worldInfoAfter };
-}
-
 function isHelpRequest(message) {
     const helpTokens = ["/?", "/help"];
     return helpTokens.includes(message.trim().toLowerCase());
@@ -1273,25 +1130,9 @@ async function Generate(type, automatic_trigger) {
             }
         }
 
-        let worldInfoString = "",
-            worldInfoBefore = "",
-            worldInfoAfter = "";
+        let { worldInfoString, worldInfoBefore, worldInfoAfter } = getWorldInfoPrompt(chat2);
 
-        if (world_info && world_info_data) {
-            const activatedWorldInfo = checkWorldInfo(chat2);
-            worldInfoBefore = activatedWorldInfo.worldInfoBefore;
-            worldInfoAfter = activatedWorldInfo.worldInfoAfter;
-            worldInfoString = worldInfoBefore + worldInfoAfter;
-        }
-
-        let extension_prompt = Object.keys(extension_prompts)
-            .sort()
-            .map((x) => extension_prompts[x])
-            .filter((x) => x)
-            .join("\n");
-        if (extension_prompt.length && !extension_prompt.endsWith("\n")) {
-            extension_prompt += "\n";
-        }
+        let extension_prompt = getExtensionPrompt();
 
         var i = 0;
 
@@ -1754,21 +1595,7 @@ async function Generate(type, automatic_trigger) {
                         }
                         // clean-up group message from excessive generations
                         if (type == "group_chat" && selected_group) {
-                            const group = groups.find((x) => x.id == selected_group);
-
-                            if (group && Array.isArray(group.members) && group.members) {
-                                for (let member of group.members) {
-                                    // Skip current speaker.
-                                    if (member === name2) {
-                                        continue;
-                                    }
-
-                                    const indexOfMember = getMessage.indexOf(member + ":");
-                                    if (indexOfMember != -1) {
-                                        getMessage = getMessage.substr(0, indexOfMember);
-                                    }
-                                }
-                            }
+                            getMessage = cleanGroupMessage(getMessage);
                         }
                         let this_mes_is_name = true;
                         if (getMessage.indexOf(name2 + ":") === 0) {
@@ -1789,10 +1616,9 @@ async function Generate(type, automatic_trigger) {
                             chat[chat.length - 1]["mes"] = getMessage;
 
                             if (type === "group_chat") {
-                                let avatarImg = default_avatars;
+                                let avatarImg = default_avatar;
                                 if (characters[this_chid].avatar != "none") {
-                                    avatarImg = `characters/${characters[this_chid].avatar
-                                        }?${Date.now()}`;
+                                    avatarImg = `characters/${characters[this_chid].avatar}?${Date.now()}`;
                                 }
                                 chat[chat.length - 1]["is_name"] = true;
                                 chat[chat.length - 1]["force_avatar"] = avatarImg;
@@ -1838,6 +1664,80 @@ async function Generate(type, automatic_trigger) {
     }
 }
 
+function cleanGroupMessage(getMessage) {
+    const group = groups.find((x) => x.id == selected_group);
+
+    if (group && Array.isArray(group.members) && group.members) {
+        for (let member of group.members) {
+            // Skip current speaker.
+            if (member === name2) {
+                continue;
+            }
+
+            const indexOfMember = getMessage.indexOf(member + ":");
+            if (indexOfMember != -1) {
+                getMessage = getMessage.substr(0, indexOfMember);
+            }
+        }
+    }
+    return getMessage;
+}
+
+function getExtensionPrompt() {
+    let extension_prompt = Object.keys(extension_prompts)
+        .sort()
+        .map((x) => extension_prompts[x])
+        .filter(x => x)
+        .join("\n");
+    if (extension_prompt.length && !extension_prompt.endsWith("\n")) {
+        extension_prompt += "\n";
+    }
+    return extension_prompt;
+}
+
+function getWorldInfoPrompt(chat2) {
+    let worldInfoString = "", worldInfoBefore = "", worldInfoAfter = "";
+
+    if (world_info && world_info_data) {
+        const activatedWorldInfo = checkWorldInfo(chat2);
+        worldInfoBefore = activatedWorldInfo.worldInfoBefore;
+        worldInfoAfter = activatedWorldInfo.worldInfoAfter;
+        worldInfoString = worldInfoBefore + worldInfoAfter;
+    }
+    return { worldInfoString, worldInfoBefore, worldInfoAfter };
+}
+
+function resetChatState() {
+    active_character = "invalid-safety-id"; //unsets the chid in settings (this prevents AutoLoadChat from trying to load the wrong ChID
+    this_chid = "invalid-safety-id"; //unsets expected chid before reloading (related to getCharacters/printCharacters from using old arrays)
+    name2 = systemUserName; // replaces deleted charcter name with system user since it will be displayed next.
+    chat = [...safetychat]; // sets up system user to tell user about having deleted a character
+    characters.length = 0; // resets the characters array, forcing getcharacters to reset
+}
+
+function setCharacterId(value) {
+    this_chid = value;
+}
+
+function setCharacterName(value) {
+    name2 = value;
+}
+
+function setEditedMessageId(value) {
+    this_edit_mes_id = value;
+}
+
+function setSendButtonState(value) {
+    is_send_press = value;
+}
+
+function resultCheckStatusNovel() {
+    is_api_button_press_novel = false;
+    checkOnlineStatus();
+    $("#api_loading_novel").css("display", "none");
+    $("#api_button_novel").css("display", "inline-block");
+}
+
 async function saveChat() {
     chat.forEach(function (item, i) {
         if (item["is_user"]) {
@@ -1875,6 +1775,29 @@ async function saveChat() {
             console.log(jqXHR);
         },
     });
+}
+
+
+function read_avatar_load(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        if (selected_button == "create") {
+            create_save_avatar = input.files;
+        }
+        reader.onload = function (e) {
+            if (selected_button == "character_edit") {
+                setTimeout(() => {
+                    $("#create_button").click();
+                }, durationSaveEdit);
+            }
+            $("#avatar_load_preview").attr("src", e.target.result);
+            //.width(103)
+            //.height(83);
+            //console.log(e.target.result.name);
+        };
+
+        reader.readAsDataURL(input.files[0]);
+    }
 }
 
 async function getChat() {
@@ -1943,413 +1866,6 @@ function getChatResult() {
     }
     printMessages();
     select_selected_character(this_chid);
-}
-async function generateGroupWrapper(by_auto_mode) {
-    if (online_status === "no_connection") {
-        is_group_generating = false;
-        is_send_press = false;
-        return;
-    }
-
-    const group = groups.find((x) => x.id === selected_group);
-
-    if (!group || !Array.isArray(group.members) || !group.members.length) {
-        sendSystemMessage(system_message_types.EMPTY);
-        return;
-    }
-
-    try {
-        is_group_generating = true;
-        this_chid = undefined;
-        name2 = "";
-        const userInput = $("#send_textarea").val();
-
-        let typingIndicator = $("#chat .typing_indicator");
-
-        if (typingIndicator.length === 0) {
-            typingIndicator = $(
-                "#typing_indicator_template .typing_indicator"
-            ).clone();
-            typingIndicator.hide();
-            $("#chat").append(typingIndicator);
-        }
-
-        let messagesBefore = chat.length;
-        let activationText = "";
-        if (userInput && userInput.length && !by_auto_mode) {
-            activationText = userInput;
-            messagesBefore++;
-        } else {
-            const lastMessage = chat[chat.length - 1];
-            if (lastMessage && !lastMessage.is_system) {
-                activationText = lastMessage.mes;
-            }
-        }
-
-        const activatedMembers = activateMembers(group.members, activationText);
-        // now the real generation begins: cycle through every character
-        for (const chId of activatedMembers) {
-            this_chid = chId;
-            name2 = characters[chId].name;
-
-            await Generate("group_chat", by_auto_mode);
-
-            // update indicator and scroll down
-            typingIndicator
-                .find(".typing_indicator_name")
-                .text(characters[chId].name);
-            $("#chat").append(typingIndicator);
-            typingIndicator.show(250, function () {
-                typingIndicator.get(0).scrollIntoView({ behavior: "smooth" });
-            });
-
-            while (true) {
-                // check if message generated already
-                if (chat.length == messagesBefore) {
-                    await delay(10);
-                } else {
-                    messagesBefore++;
-                    break;
-                }
-            }
-
-            // hide and reapply the indicator to the bottom of the list
-            typingIndicator.hide(250);
-            $("#chat").append(typingIndicator);
-        }
-    } finally {
-        is_group_generating = false;
-        is_send_press = false;
-        this_chid = undefined;
-    }
-}
-function activateMembers(members, input) {
-    let activatedNames = [];
-
-    // find mentions
-    if (input && input.length) {
-        for (let inputWord of extractAllWords(input)) {
-            for (let member of members) {
-                if (extractAllWords(member).includes(inputWord)) {
-                    activatedNames.push(member);
-                    break;
-                }
-            }
-        }
-    }
-
-    // activation by talkativeness (in shuffled order)
-    const shuffledMembers = shuffle([...members]);
-    for (let member of shuffledMembers) {
-        const character = characters.find((x) => x.name === member);
-
-        if (!character) {
-            continue;
-        }
-
-        const rollValue = Math.random();
-        let talkativeness = Number(character.talkativeness);
-        talkativeness = Number.isNaN(talkativeness)
-            ? talkativeness_default
-            : talkativeness;
-        if (talkativeness >= rollValue) {
-            activatedNames.push(member);
-        }
-    }
-
-    // pick 1 at random if no one was activated
-    if (activatedNames.length === 0) {
-        const randomIndex = Math.floor(Math.random() * members.length);
-        activatedNames.push(members[randomIndex]);
-    }
-
-    // de-duplicate array of names
-    activatedNames = activatedNames.filter(onlyUnique);
-
-    // map to character ids
-    const memberIds = activatedNames
-        .map((x) => characters.findIndex((y) => y.name === x))
-        .filter((x) => x !== -1);
-    return memberIds;
-}
-function extractAllWords(value) {
-    const words = [];
-
-    if (!value) {
-        return words;
-    }
-
-    const matches = value.matchAll(/\b\w+\b/gim);
-    for (let match of matches) {
-        words.push(match[0].toLowerCase());
-    }
-    return words;
-}
-
-// Group chats
-async function getGroupChat(id) {
-    const response = await fetch("/getgroupchat", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-Token": token,
-        },
-        body: JSON.stringify({ id: id }),
-    });
-
-    if (response.ok) {
-        const data = await response.json();
-        if (Array.isArray(data) && data.length) {
-            for (let key of data) {
-                chat.push(key);
-            }
-            printMessages();
-        } else {
-            sendSystemMessage(system_message_types.GROUP);
-            const group = groups.find((x) => x.id === id);
-            if (group && Array.isArray(group.members)) {
-                for (let name of group.members) {
-                    const character = characters.find((x) => x.name === name);
-
-                    if (!character) {
-                        continue;
-                    }
-
-                    const mes = {};
-                    mes["is_user"] = false;
-                    mes["is_system"] = false;
-                    mes["name"] = character.name;
-                    mes["is_name"] = true;
-                    mes["send_date"] = humanizedDateTime();
-                    mes["mes"] = character.first_mes
-                        ? substituteParams(character.first_mes.trim())
-                        : default_ch_mes;
-                    mes["force_avatar"] =
-                        character.avatar != "none"
-                            ? `characters/${character.avatar}?${Date.now()}`
-                            : default_avatar;
-                    chat.push(mes);
-                    addOneMessage(mes);
-                }
-            }
-        }
-
-        await saveGroupChat(id);
-    }
-}
-
-async function saveGroupChat(id) {
-    const response = await fetch("/savegroupchat", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-Token": token,
-        },
-        body: JSON.stringify({ id: id, chat: [...chat] }),
-    });
-}
-
-async function getGroups() {
-    const response = await fetch("/getgroups", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-Token": token,
-        },
-    });
-
-    if (response.ok) {
-        const data = await response.json();
-        groups = data.sort((a, b) => a.id - b.id);
-    }
-}
-
-async function deleteGroup(id) {
-    const response = await fetch("/deletegroup", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-Token": token,
-        },
-        body: JSON.stringify({ id: id }),
-    });
-
-    if (response.ok) {
-        active_character = "invalid-safety-id"; //unsets the chid in settings (this prevents AutoLoadChat from trying to load the wrong ChID
-        this_chid = "invalid-safety-id"; //unsets expected chid before reloading (related to getCharacters/printCharacters from using old arrays)
-        selected_group = null;
-        characters.length = 0; // resets the characters array, forcing getcharacters to reset
-        name2 = systemUserName; // replaces deleted charcter name with system user since it will be displayed next.
-        chat = [...safetychat]; // sets up system user to tell user about having deleted a character
-
-        /*   QuickRefresh(); */
-        $("#rm_info_avatar").html("");
-        $("#rm_info_block").transition({ opacity: 0, duration: 0 });
-        select_rm_info("Group deleted!");
-        $("#rm_info_block").transition({ opacity: 1.0, duration: 2000 });
-    }
-}
-
-async function editGroup(id, immediately) {
-    const group = groups.find((x) => x.id == id);
-
-    if (!group) {
-        return;
-    }
-
-    async function _save() {
-        const response = await fetch("/editgroup", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRF-Token": token,
-            },
-            body: JSON.stringify(group),
-        });
-    }
-
-    if (immediately) {
-        return await _save();
-    }
-
-    clearTimeout(timerGroupSave);
-    timerGroupSave = setTimeout(async () => await _save(), durationSaveEdit);
-}
-
-async function groupChatAutoModeWorker() {
-    if (!is_group_automode_enabled || online_status === "no_connection") {
-        return;
-    }
-
-    if (!selected_group || is_send_press || is_group_generating) {
-        return;
-    }
-
-    const group = groups.find((x) => x.id === selected_group);
-
-    if (!group || !Array.isArray(group.members) || !group.members.length) {
-        return;
-    }
-
-    await generateGroupWrapper(true);
-}
-
-function select_group_chats(chat_id) {
-    menu_type = "group_chats";
-    const group = chat_id && groups.find((x) => x.id == chat_id);
-    const groupName = group?.name ?? "";
-
-    $("#rm_group_chat_name").val(groupName);
-    $("#rm_group_chat_name").off();
-    $("#rm_group_chat_name").on("input", async function () {
-        if (chat_id) {
-            group.name = $(this).val();
-            await editGroup(chat_id);
-        }
-    });
-    $("#rm_group_filter").val("").trigger("input");
-    $("#rm_group_chats_block").css("display", "flex");
-    $("#rm_group_chats_block").css("opacity", 0.0);
-    $("#rm_group_chats_block").transition({
-        opacity: 1.0,
-        duration: animation_rm_duration,
-        easing: animation_rm_easing,
-        complete: function () { },
-    });
-
-    $("#rm_ch_create_block").css("display", "none");
-    $("#rm_characters_block").css("display", "none");
-
-    async function memberClickHandler(event) {
-        event.stopPropagation();
-        const id = $(this).data("id");
-        const isDelete = !!$(this).closest("#rm_group_members").length;
-        const template = $(this).clone();
-        template.data("id", id);
-        template.click(memberClickHandler);
-
-        if (isDelete) {
-            template.find(".plus").show();
-            template.find(".minus").hide();
-            $("#rm_group_add_members").prepend(template);
-        } else {
-            template.find(".plus").hide();
-            template.find(".minus").show();
-            $("#rm_group_members").prepend(template);
-        }
-
-        if (group) {
-            if (isDelete) {
-                const index = group.members.findIndex((x) => x === id);
-                if (index !== -1) {
-                    group.members.splice(index, 1);
-                }
-            } else {
-                group.members.push(id);
-            }
-            await editGroup(chat_id);
-            updateGroupAvatar(group);
-        }
-
-        $(this).remove();
-        const groupHasMembers = !!$("#rm_group_members").children().length;
-        $("#rm_group_submit").prop("disabled", !groupHasMembers);
-    }
-
-    // render characters list
-    $("#rm_group_add_members").empty();
-    $("#rm_group_members").empty();
-    for (let character of characters) {
-        const avatar =
-            character.avatar != "none"
-                ? `characters/${character.avatar}#${Date.now()}`
-                : default_avatar;
-        const template = $("#group_member_template .group_member").clone();
-        template.data("id", character.name);
-        template.find(".avatar img").attr("src", avatar);
-        template.find(".ch_name").html(character.name);
-        template.click(memberClickHandler);
-
-        if (
-            group &&
-            Array.isArray(group.members) &&
-            group.members.includes(character.name)
-        ) {
-            template.find(".plus").hide();
-            template.find(".minus").show();
-            $("#rm_group_members").append(template);
-        } else {
-            template.find(".plus").show();
-            template.find(".minus").hide();
-            $("#rm_group_add_members").append(template);
-        }
-    }
-
-    const groupHasMembers = !!$("#rm_group_members").children().length;
-    $("#rm_group_submit").prop("disabled", !groupHasMembers);
-
-    // bottom buttons
-    if (chat_id) {
-        $("#rm_group_submit").hide();
-        $("#rm_group_delete").show();
-    } else {
-        $("#rm_group_submit").show();
-        $("#rm_group_delete").hide();
-    }
-
-    $("#rm_group_delete").off();
-    $("#rm_group_delete").on("click", function () {
-        popup_type = "del_group";
-        $("#dialogue_popup").data("group_id", chat_id);
-        callPopup("<h3>Delete the group?</h3>");
-    });
-
-    // top bar
-    if (group) {
-        var display_name = groupName;
-        $("#rm_button_selected_ch").children("h2").css(deselected_button_style);
-        $("#rm_button_selected_ch").children("h2").text("");
-    }
 }
 function openNavToggle() {
     if (!$("#nav-toggle").prop("checked")) {
@@ -2543,10 +2059,6 @@ async function getSettings(type) {
                     style_anchor = !!settings.style_anchor;
                 if (settings.character_anchor !== undefined)
                     character_anchor = !!settings.character_anchor;
-                if (settings.world_info_depth !== undefined)
-                    world_info_depth = Number(settings.world_info_depth);
-                if (settings.world_info_budget !== undefined)
-                    world_info_budget = Number(settings.world_info_budget);
 
                 //load poweruser options
                 if (settings.auto_connect !== undefined)
@@ -2577,12 +2089,6 @@ async function getSettings(type) {
 
                 $("#amount_gen").val(amount_gen);
                 $("#amount_gen_counter").html(amount_gen + " Tokens");
-
-                $("#world_info_depth_counter").html(`${world_info_depth} Messages`);
-                $("#world_info_depth").val(world_info_depth);
-
-                $("#world_info_budget_counter").html(`${world_info_budget} Tokens`);
-                $("#world_info_budget").val(world_info_budget);
 
                 addZeros = "";
                 if (isInt(rep_pen)) addZeros = ".00";
@@ -2658,23 +2164,7 @@ async function getSettings(type) {
                 api_server = settings.api_server;
                 $("#api_url_text").val(api_server);
 
-                // world info settings
-                world_names = data.world_names?.length ? data.world_names : [];
-
-                if (settings.world_info != undefined) {
-                    if (world_names.includes(settings.world_info)) {
-                        world_info = settings.world_info;
-                    }
-                }
-
-                world_names.forEach((item, i) => {
-                    $("#world_info").append(`<option value='${i}'>${item}</option>`);
-                    // preselect world if saved
-                    if (item == world_info) {
-                        $("#world_info").val(i).change();
-                    }
-                });
-                // end world info settings
+                setWorldInfoSettings(settings, data);
 
                 if (data.enable_extensions) {
                     const src = "scripts/extensions.js";
@@ -3080,7 +2570,7 @@ function select_selected_character(chid) {
     $("#form_create").attr("actiontype", "editcharacter");
     active_character = chid;
     //console.log('select_selected_character() -- active_character -- '+chid+'(ChID of '+display_name+')');
-    saveSettings();
+    saveSettingsDebounced();
     //console.log('select_selected_character() -- called saveSettings() to save -- active_character -- '+active_character+'(ChID of '+display_name+')');
 }
 
@@ -3171,421 +2661,106 @@ function select_rm_characters() {
     $("#rm_button_selected_ch").css("class", "deselected-right-tab");
 }
 
-/// UTILS
-function onlyUnique(value, index, array) {
-    return array.indexOf(value) === index;
-}
-
-function shuffle(array) {
-    let currentIndex = array.length,
-        randomIndex;
-
-    while (currentIndex != 0) {
-        randomIndex = Math.floor(Math.random() * currentIndex);
-        currentIndex--;
-        [array[currentIndex], array[randomIndex]] = [
-            array[randomIndex],
-            array[currentIndex],
-        ];
-    }
-    return array;
-}
-
 function setExtensionPrompt(key, value) {
     extension_prompts[key] = value;
 }
 
-async function updateWorldInfoList(importedWorldName) {
-    var result = await fetch("/getsettings", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-Token": token,
-        },
-        body: JSON.stringify({}),
-    });
-
-    if (result.ok) {
-        var data = await result.json();
-        world_names = data.world_names?.length ? data.world_names : [];
-        $("#world_info").find('option[value!="None"]').remove();
-
-        world_names.forEach((item, i) => {
-            $("#world_info").append(`<option value='${i}'>${item}</option>`);
-        });
-
-        if (importedWorldName) {
-            const indexOf = world_names.indexOf(world_info);
-            $("#world_info").val(indexOf);
-
-            popup_type = "world_imported";
-            callPopup("<h3>World imported successfully! Select it now?</h3>");
-        }
+function callPopup(text, type) {
+    if (type) {
+        popup_type = type;
     }
+
+    $("#dialogue_popup_cancel").css("display", "inline-block");
+    switch (popup_type) {
+        case "text":
+        case "char_not_selected":
+            $("#dialogue_popup_ok").text("Ok");
+            $("#dialogue_popup_cancel").css("display", "none");
+            break;
+
+        case "world_imported":
+        case "new_chat":
+            $("#dialogue_popup_ok").text("Yes");
+            break;
+        case "del_world":
+        case "del_group":
+        default:
+            $("#dialogue_popup_ok").text("Delete");
+    }
+    $("#dialogue_popup_text").html(text);
+    $("#shadow_popup").css("display", "block");
+    $("#shadow_popup").transition({
+        opacity: 1.0,
+        duration: animation_rm_duration,
+        easing: animation_rm_easing,
+    });
 }
 
-function download(content, fileName, contentType) {
-    var a = document.createElement("a");
-    var file = new Blob([content], { type: contentType });
-    a.href = URL.createObjectURL(file);
-    a.download = fileName;
-    a.click();
-}
+function read_bg_load(input) {
+    if (input.files && input.files[0]) {
+        var reader = new FileReader();
 
-// World Info Editor
-async function showWorldEditor() {
-    if (!world_info) {
-        popup_type = "default";
-        callPopup("<h3>Select a world info first!</h3>");
-        return;
-    }
+        reader.onload = function (e) {
+            $("#bg_load_preview")
+                .attr("src", e.target.result)
+                .width(103)
+                .height(83);
 
-    is_world_edit_open = true;
-    $("#world_popup_name").val(world_info);
-    $("#world_popup").css("display", "flex");
-    await loadWorldInfoData();
-    displayWorldEntries(world_info_data);
-}
+            var formData = new FormData($("#form_bg_download").get(0));
 
-async function loadWorldInfoData() {
-    if (!world_info) {
-        return;
-    }
+            //console.log(formData);
+            jQuery.ajax({
+                type: "POST",
+                url: "/downloadbackground",
+                data: formData,
+                beforeSend: function () {
+                    //$('#create_button').attr('value','Creating...');
+                },
+                cache: false,
+                contentType: false,
+                processData: false,
+                success: function (html) {
+                    setBackground(html);
+                    if (bg1_toggle == true) {
+                        // this is a repeat of the background setting function for when  user uploads a new BG image
+                        bg1_toggle = false; // should make the Bg setting a modular function to be called in both cases
+                        var number_bg = 2;
+                        var target_opacity = 1.0;
+                    } else {
+                        bg1_toggle = true;
+                        var number_bg = 1;
+                        var target_opacity = 0.0;
+                    }
+                    $("#bg2").transition({
+                        opacity: target_opacity,
+                        duration: 1300, //animation_rm_duration,
+                        easing: "linear",
+                        complete: function () {
+                            $("#options").css("display", "none");
+                        },
+                    });
+                    $("#bg" + number_bg).css(
+                        "background-image",
+                        "url(" + e.target.result + ")"
+                    );
+                    $("#form_bg_download").after(
+                        "<div class=bg_example><img bgfile='" +
+                        html +
+                        "' class=bg_example_img src='backgrounds/" +
+                        html +
+                        "'><img bgfile='" +
+                        html +
+                        "' class=bg_example_cross src=img/cross.png></div>"
+                    );
+                },
+                error: function (jqXHR, exception) {
+                    console.log(exception);
+                    console.log(jqXHR);
+                },
+            });
+        };
 
-    const response = await fetch("/getworldinfo", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-Token": token,
-        },
-        body: JSON.stringify({ name: world_info }),
-    });
-
-    if (response.ok) {
-        world_info_data = await response.json();
-    }
-}
-
-function hideWorldEditor() {
-    is_world_edit_open = false;
-    $("#world_popup").css("display", "none");
-}
-
-function displayWorldEntries(data) {
-    $("#world_popup_entries_list").empty();
-
-    if (!data || !("entries" in data)) {
-        return;
-    }
-
-    for (const entryUid in data.entries) {
-        const entry = data.entries[entryUid];
-        appendWorldEntry(entry);
-    }
-}
-
-function appendWorldEntry(entry) {
-    const template = $("#entry_edit_template .world_entry").clone();
-    template.data("uid", entry.uid);
-
-    // key
-    const keyInput = template.find('textarea[name="key"]');
-    keyInput.data("uid", entry.uid);
-    keyInput.on("input", function () {
-        const uid = $(this).data("uid");
-        const value = $(this).val();
-        $(this).css("height", ""); //reset the height
-        $(this).css("height", $(this).prop("scrollHeight") + "px");
-        world_info_data.entries[uid].key = value
-            .split(",")
-            .map((x) => x.trim())
-            .filter((x) => x);
-        saveWorldInfo();
-    });
-    keyInput.val(entry.key.join(",")).trigger("input");
-    keyInput.css("height", ""); //reset the height
-    keyInput.css("height", $(this).prop("scrollHeight") + "px");
-
-    // keysecondary
-    const keySecondaryInput = template.find('textarea[name="keysecondary"]');
-    keySecondaryInput.data("uid", entry.uid);
-    keySecondaryInput.on("input", function () {
-        const uid = $(this).data("uid");
-        const value = $(this).val();
-        $(this).css("height", ""); //reset the height
-        $(this).css("height", $(this).prop("scrollHeight") + "px");
-        world_info_data.entries[uid].keysecondary = value
-            .split(",")
-            .map((x) => x.trim())
-            .filter((x) => x);
-        saveWorldInfo();
-    });
-    keySecondaryInput.val(entry.keysecondary.join(",")).trigger("input");
-    keySecondaryInput.css("height", ""); //reset the height
-    keySecondaryInput.css("height", $(this).prop("scrollHeight") + "px");
-
-    // comment
-    const commentInput = template.find('textarea[name="comment"]');
-    commentInput.data("uid", entry.uid);
-    commentInput.on("input", function () {
-        const uid = $(this).data("uid");
-        const value = $(this).val();
-        $(this).css("height", ""); //reset the height
-        $(this).css("height", $(this).prop("scrollHeight") + "px");
-        world_info_data.entries[uid].comment = value;
-        saveWorldInfo();
-    });
-    commentInput.val(entry.comment).trigger("input");
-    commentInput.css("height", ""); //reset the height
-    commentInput.css("height", $(this).prop("scrollHeight") + "px");
-
-    // content
-    const contentInput = template.find('textarea[name="content"]');
-    contentInput.data("uid", entry.uid);
-    contentInput.on("input", function () {
-        const uid = $(this).data("uid");
-        const value = $(this).val();
-        world_info_data.entries[uid].content = value;
-        $(this).css("height", ""); //reset the height
-        $(this).css("height", $(this).prop("scrollHeight") + "px");
-        saveWorldInfo();
-
-        // count tokens
-        const numberOfTokens = encode(value).length;
-        $(this)
-            .closest(".world_entry")
-            .find(".world_entry_form_token_counter")
-            .html(numberOfTokens);
-    });
-    contentInput.val(entry.content).trigger("input");
-    contentInput.css("height", ""); //reset the height
-    contentInput.css("height", $(this).prop("scrollHeight") + "px");
-
-    // selective
-    const selectiveInput = template.find('input[name="selective"]');
-    selectiveInput.data("uid", entry.uid);
-    selectiveInput.on("input", function () {
-        const uid = $(this).data("uid");
-        const value = $(this).prop("checked");
-        world_info_data.entries[uid].selective = value;
-        saveWorldInfo();
-
-        const keysecondary = $(this)
-            .closest(".world_entry")
-            .find(".keysecondary");
-        value ? keysecondary.show() : keysecondary.hide();
-    });
-    selectiveInput.prop("checked", entry.selective).trigger("input");
-    selectiveInput.siblings(".checkbox_fancy").click(function () {
-        $(this).siblings("input").click();
-    });
-
-    // constant
-    const constantInput = template.find('input[name="constant"]');
-    constantInput.data("uid", entry.uid);
-    constantInput.on("input", function () {
-        const uid = $(this).data("uid");
-        const value = $(this).prop("checked");
-        world_info_data.entries[uid].constant = value;
-        saveWorldInfo();
-    });
-    constantInput.prop("checked", entry.constant).trigger("input");
-    constantInput.siblings(".checkbox_fancy").click(function () {
-        $(this).siblings("input").click();
-    });
-
-    // order
-    const orderInput = template.find('input[name="order"]');
-    orderInput.data("uid", entry.uid);
-    orderInput.on("input", function () {
-        const uid = $(this).data("uid");
-        const value = Number($(this).val());
-
-        world_info_data.entries[uid].order = !isNaN(value) ? value : 0;
-        saveWorldInfo();
-    });
-    orderInput.val(entry.order).trigger("input");
-
-    // position
-    if (entry.position === undefined) {
-        entry.position = 0;
-    }
-
-    const positionInput = template.find('input[name="position"]');
-    positionInput.data("uid", entry.uid);
-    positionInput.on("input", function () {
-        const uid = $(this).data("uid");
-        const value = Number($(this).val());
-        world_info_data.entries[uid].position = !isNaN(value) ? value : 0;
-        saveWorldInfo();
-    });
-    template
-        .find(`input[name="position"][value=${entry.position}]`)
-        .prop("checked", true)
-        .trigger("input");
-
-    // display uid
-    template.find(".world_entry_form_uid_value").html(entry.uid);
-
-    // delete button
-    const deleteButton = template.find("input.delete_entry_button");
-    deleteButton.data("uid", entry.uid);
-    deleteButton.on("click", function () {
-        const uid = $(this).data("uid");
-        deleteWorldInfoEntry(uid);
-        $(this).closest(".world_entry").remove();
-        saveWorldInfo();
-    });
-
-    template.appendTo("#world_popup_entries_list");
-    return template;
-}
-
-async function deleteWorldInfoEntry(uid) {
-    if (!world_info_data || !("entries" in world_info_data)) {
-        return;
-    }
-
-    delete world_info_data.entries[uid];
-}
-
-function createWorldInfoEntry() {
-    const newEntryTemplate = {
-        key: [],
-        keysecondary: [],
-        comment: "",
-        content: "",
-        constant: false,
-        selective: false,
-        order: 100,
-        position: 0,
-    };
-    const newUid = getFreeWorldEntryUid();
-
-    if (!Number.isInteger(newUid)) {
-        console.error("Couldn't assign UID to a new entry");
-        return;
-    }
-
-    const newEntry = { uid: newUid, ...newEntryTemplate };
-    world_info_data.entries[newUid] = newEntry;
-
-    const entryTemplate = appendWorldEntry(newEntry);
-    entryTemplate.get(0).scrollIntoView({ behavior: "smooth" });
-}
-
-async function saveWorldInfo(immediately) {
-    if (!world_info || !world_info_data) {
-        return;
-    }
-
-    async function _save() {
-        const response = await fetch("/editworldinfo", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRF-Token": token,
-            },
-            body: JSON.stringify({ name: world_info, data: world_info_data }),
-        });
-    }
-
-    if (immediately) {
-        return await _save();
-    }
-
-    clearTimeout(timerWorldSave);
-    timerWorldSave = setTimeout(async () => await _save(), durationSaveEdit);
-}
-
-async function renameWorldInfo() {
-    const oldName = world_info;
-    const newName = $("#world_popup_name").val();
-
-    if (oldName === newName) {
-        return;
-    }
-
-    world_info = newName;
-    await saveWorldInfo(true);
-    await deleteWorldInfo(oldName, newName);
-}
-
-async function deleteWorldInfo(worldInfoName, selectWorldName) {
-    if (!world_names.includes(worldInfoName)) {
-        return;
-    }
-
-    const response = await fetch("/deleteworldinfo", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-Token": token,
-        },
-        body: JSON.stringify({ name: worldInfoName }),
-    });
-
-    if (response.ok) {
-        await updateWorldInfoList();
-
-        const selectedIndex = world_names.indexOf(selectWorldName);
-        if (selectedIndex !== -1) {
-            $("#world_info").val(selectedIndex).change();
-        } else {
-            $("#world_info").val("None").change();
-        }
-
-        hideWorldEditor();
-    }
-}
-
-function getFreeWorldEntryUid() {
-    if (!world_info_data || !("entries" in world_info_data)) {
-        return null;
-    }
-
-    const MAX_UID = 1_000_000; // <- should be safe enough :)
-    for (let uid = 0; uid < MAX_UID; uid++) {
-        if (uid in world_info_data.entries) {
-            continue;
-        }
-        return uid;
-    }
-
-    return null;
-}
-
-function getFreeWorldName() {
-    const MAX_FREE_NAME = 100_000;
-    for (let index = 1; index < MAX_FREE_NAME; index++) {
-        const newName = `New World (${index})`;
-        if (world_names.includes(newName)) {
-            continue;
-        }
-        return newName;
-    }
-
-    return undefined;
-}
-
-async function createNewWorldInfo() {
-    const worldInfoTemplate = { entries: {} };
-    const worldInfoName = getFreeWorldName();
-
-    if (!worldInfoName) {
-        return;
-    }
-
-    world_info = worldInfoName;
-    world_info_data = { ...worldInfoTemplate };
-    await saveWorldInfo(true);
-    await updateWorldInfoList();
-
-    const selectedIndex = world_names.indexOf(worldInfoName);
-    if (selectedIndex !== -1) {
-        $("#world_info").val(selectedIndex).change();
-    } else {
-        $("#world_info").val("None").change();
+        reader.readAsDataURL(input.files[0]);
     }
 }
 
@@ -3718,96 +2893,12 @@ $(document).ready(function () {
         selected_button = "character_edit";
         select_selected_character(this_chid);
     });
-    $(document).on("click", ".group_select", async function () {
-        const id = $(this).data("id");
-        selected_button = "group_chats";
-
-        if (!is_send_press && !is_group_generating) {
-            if (selected_group !== id) {
-                selected_group = id;
-                this_chid = undefined;
-                this_edit_mes_id = undefined;
-                clearChat();
-                chat.length = 0;
-                await getGroupChat(id);
-            }
-
-            select_group_chats(id);
-        }
-    });
-    $("#rm_button_group_chats").click(function () {
-        selected_button = "group_chats";
-        select_group_chats();
-    });
-    $("#rm_button_back_from_group").click(function () {
-        selected_button = "characters";
-        select_rm_characters();
-    });
-    $("#rm_group_filter").on("input", function () {
-        const searchValue = $(this).val().trim().toLowerCase();
-
-        if (!searchValue) {
-            $("#rm_group_add_members .group_member").show();
-        } else {
-            $("#rm_group_add_members .group_member").each(function () {
-                $(this).children(".ch_name").text().toLowerCase().includes(searchValue)
-                    ? $(this).show()
-                    : $(this).hide();
-            });
-        }
-    });
-    $("#rm_group_submit").click(async function () {
-        let name = $("#rm_group_chat_name").val();
-        const members = $("#rm_group_members .group_member")
-            .map((_, x) => $(x).data("id"))
-            .toArray();
-
-        if (!name) {
-            name = `Chat with ${members.join(", ")}`;
-        }
-
-        // placeholder
-        const avatar_url = "/img/five.png";
-
-        const createGroupResponse = await fetch("/creategroup", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRF-Token": token,
-            },
-            body: JSON.stringify({
-                name: name,
-                members: members,
-                avatar_url: avatar_url,
-            }),
-        });
-
-        if (createGroupResponse.ok) {
-            const createGroupData = await createGroupResponse.json();
-            const id = createGroupData.id;
-
-            await getCharacters();
-            $("#rm_info_avatar").html("");
-            var avatar = $("#avatar_div_div").clone();
-            avatar.find("img").attr("src", avatar_url);
-            $("#rm_info_avatar").append(avatar);
-            $("#rm_info_block").transition({ opacity: 0, duration: 0 });
-            select_rm_info("Group chat created");
-            $("#rm_info_block").transition({ opacity: 1.0, duration: 2000 });
-        }
-    });
-
-    $("#rm_group_automode").on("input", function () {
-        const value = $(this).prop("checked");
-        is_group_automode_enabled = value;
-    });
 
     $(document).on("click", ".character_select", function () {
         if (this_chid !== $(this).attr("chid")) {
             //if clicked on a different character from what was currently selected
             if (!is_send_press) {
-                selected_group = null;
-                is_group_generating = false;
+                resetSelectedGroup();
                 this_edit_mes_id = undefined;
                 selected_button = "character_edit";
                 this_chid = $(this).attr("chid");
@@ -3867,7 +2958,7 @@ $(document).ready(function () {
                     .attr("src", "User Avatars/" + user_avatar);
             }
         });
-        saveSettings();
+        saveSettingsDebounced();
         highlightSelectedAvatar();
     });
     $(document).on("click", "#user_avatar_block .avatar_upload", function () {
@@ -4041,19 +3132,14 @@ $(document).ready(function () {
                     getCharacters(); // gets the new list of characters (that doesn't include the deleted one)
                     printMessages(); // prints out system user's 'deleted character' message
                     //console.log("#dialogue_popup_ok(del-char) >>>> saving");
-                    saveSettings(); // saving settings to keep changes to variables
+                    saveSettingsDebounced(); // saving settings to keep changes to variables
                     //getCharacters();
                     //$('#create_button_div').html(html);
                 },
             });
         }
-        if (popup_type === "world_imported" && imported_world_name) {
-            world_names.forEach((item, i) => {
-                if (item === imported_world_name) {
-                    $("#world_info").val(i).change();
-                }
-            });
-            imported_world_name = "";
+        if (popup_type === "world_imported") {
+            selectImportedWorldInfo();
         }
         if (popup_type === "del_world" && world_info) {
             deleteWorldInfo(world_info);
@@ -4076,7 +3162,7 @@ $(document).ready(function () {
             chat.length = 0;
             characters[this_chid].chat = name2 + " - " + humanizedDateTime(); //RossAscends: added character name to new chat filenames and replaced Date.now() with humanizedDateTime;
             $("#selected_chat_pole").val(characters[this_chid].chat);
-            timerSaveEdit = setTimeout(() => {
+            setTimeout(() => {
                 $("#create_button").click();
             }, durationSaveEdit);
             getChat();
@@ -4087,127 +3173,16 @@ $(document).ready(function () {
         $("#shadow_popup").css("opacity:", 0.0);
         popup_type = "";
     });
-    function callPopup(text) {
-        $("#dialogue_popup_cancel").css("display", "inline-block");
-        switch (popup_type) {
-            case "text":
-            case "char_not_selected":
-                $("#dialogue_popup_ok").text("Ok");
-                $("#dialogue_popup_cancel").css("display", "none");
-                break;
 
-            case "world_imported":
-            case "new_chat":
-                $("#dialogue_popup_ok").text("Yes");
-                break;
-            case "del_world":
-            case "del_group":
-            default:
-                $("#dialogue_popup_ok").text("Delete");
-        }
-        $("#dialogue_popup_text").html(text);
-        $("#shadow_popup").css("display", "block");
-        $("#shadow_popup").transition({
-            opacity: 1.0,
-            duration: animation_rm_duration,
-            easing: animation_rm_easing,
-        });
-    }
-    function read_bg_load(input) {
-        if (input.files && input.files[0]) {
-            var reader = new FileReader();
-
-            reader.onload = function (e) {
-                $("#bg_load_preview")
-                    .attr("src", e.target.result)
-                    .width(103)
-                    .height(83);
-
-                var formData = new FormData($("#form_bg_download").get(0));
-
-                //console.log(formData);
-                jQuery.ajax({
-                    type: "POST",
-                    url: "/downloadbackground",
-                    data: formData,
-                    beforeSend: function () {
-                        //$('#create_button').attr('value','Creating...');
-                    },
-                    cache: false,
-                    contentType: false,
-                    processData: false,
-                    success: function (html) {
-                        setBackground(html);
-                        if (bg1_toggle == true) {
-                            // this is a repeat of the background setting function for when  user uploads a new BG image
-                            bg1_toggle = false; // should make the Bg setting a modular function to be called in both cases
-                            var number_bg = 2;
-                            var target_opacity = 1.0;
-                        } else {
-                            bg1_toggle = true;
-                            var number_bg = 1;
-                            var target_opacity = 0.0;
-                        }
-                        $("#bg2").transition({
-                            opacity: target_opacity,
-                            duration: 1300, //animation_rm_duration,
-                            easing: "linear",
-                            complete: function () {
-                                $("#options").css("display", "none");
-                            },
-                        });
-                        $("#bg" + number_bg).css(
-                            "background-image",
-                            "url(" + e.target.result + ")"
-                        );
-                        $("#form_bg_download").after(
-                            "<div class=bg_example><img bgfile='" +
-                            html +
-                            "' class=bg_example_img src='backgrounds/" +
-                            html +
-                            "'><img bgfile='" +
-                            html +
-                            "' class=bg_example_cross src=img/cross.png></div>"
-                        );
-                    },
-                    error: function (jqXHR, exception) {
-                        console.log(exception);
-                        console.log(jqXHR);
-                    },
-                });
-            };
-
-            reader.readAsDataURL(input.files[0]);
-        }
-    }
     $("#add_bg_button").change(function () {
         read_bg_load(this);
     });
-    function read_avatar_load(input) {
-        if (input.files && input.files[0]) {
-            var reader = new FileReader();
-            if (selected_button == "create") {
-                create_save_avatar = input.files;
-            }
-            reader.onload = function (e) {
-                if (selected_button == "character_edit") {
-                    timerSaveEdit = setTimeout(() => {
-                        $("#create_button").click();
-                    }, durationSaveEdit);
-                }
-                $("#avatar_load_preview").attr("src", e.target.result);
-                //.width(103)
-                //.height(83);
-                //console.log(e.target.result.name);
-            };
 
-            reader.readAsDataURL(input.files[0]);
-        }
-    }
     $("#add_avatar_button").change(function () {
         is_mes_reload_avatar = Date.now();
         read_avatar_load(this);
     });
+
     $("#form_create").submit(function (e) {
         $("#rm_info_avatar").html("");
         var formData = new FormData($("#form_create").get(0));
@@ -4348,16 +3323,19 @@ $(document).ready(function () {
             });
         }
     });
+
     $("#delete_button").click(function () {
         popup_type = "del_ch";
         callPopup(
             "<h3>Delete the character?</h3>Your chat will be closed."
         );
     });
+
     $("#rm_info_button").click(function () {
         $("#rm_info_avatar").html("");
         select_rm_characters();
     });
+
     //@@@@@@@@@@@@@@@@@@@@@@@@
     //character text poles creating and editing save
     $("#character_name_pole").on("change keyup paste", function () {
@@ -4365,6 +3343,7 @@ $(document).ready(function () {
             create_save_name = $("#character_name_pole").val();
         }
     });
+
     $("#description_textarea").on("keyup paste cut", function () {
         //change keyup paste cut
 
@@ -4372,60 +3351,66 @@ $(document).ready(function () {
             create_save_description = $("#description_textarea").val();
             CountCharTokens();
         } else {
-            timerSaveEdit = setTimeout(() => {
+            setTimeout(() => {
                 $("#create_button").click();
             }, durationSaveEdit);
         }
     });
+
     $("#personality_textarea").on("keyup paste cut", function () {
         if (menu_type == "create") {
             create_save_personality = $("#personality_textarea").val();
             CountCharTokens();
         } else {
-            timerSaveEdit = setTimeout(() => {
+            setTimeout(() => {
                 $("#create_button").click();
             }, durationSaveEdit);
         }
     });
+
     $("#scenario_pole").on("keyup paste cut", function () {
         if (menu_type == "create") {
             create_save_scenario = $("#scenario_pole").val();
             CountCharTokens();
         } else {
-            timerSaveEdit = setTimeout(() => {
+            setTimeout(() => {
                 $("#create_button").click();
             }, durationSaveEdit);
         }
     });
+
     $("#mes_example_textarea").on("keyup paste cut", function () {
         if (menu_type == "create") {
             create_save_mes_example = $("#mes_example_textarea").val();
             CountCharTokens();
         } else {
-            timerSaveEdit = setTimeout(() => {
+            setTimeout(() => {
                 $("#create_button").click();
             }, durationSaveEdit);
         }
     });
+
     $("#firstmessage_textarea").on("keyup paste cut", function () {
         if (menu_type == "create") {
             create_save_first_message = $("#firstmessage_textarea").val();
             CountCharTokens();
         } else {
-            timerSaveEdit = setTimeout(() => {
+            setTimeout(() => {
                 $("#create_button").click();
             }, durationSaveEdit);
         }
     });
+
     $("#talkativeness_slider").on("input", function () {
         if (menu_type == "create") {
             create_save_talkativeness = $("#talkativeness_slider").val();
         } else {
-            timerSaveEdit = setTimeout(() => {
+            setTimeout(() => {
                 $("#create_button").click();
             }, durationSaveEdit);
         }
     });
+
     $("#api_button").click(function () {
         if ($("#api_url_text").val() != "") {
             $("#api_loading").css("display", "inline-block");
@@ -4446,7 +3431,7 @@ $(document).ready(function () {
             }
             //console.log("2: "+api_server);
             main_api = "kobold";
-            saveSettings();
+            saveSettingsDebounced();
             is_get_status = true;
             is_api_button_press = true;
             getStatus();
@@ -4476,7 +3461,7 @@ $(document).ready(function () {
             }
             //console.log("2: "+api_server_textgenerationwebui);
             main_api = "textgenerationwebui";
-            saveSettings();
+            saveSettingsDebounced();
             is_get_status = true;
             is_api_button_press = true;
             getStatus();
@@ -4530,6 +3515,7 @@ $(document).ready(function () {
             });
         }
     });
+
     $("#option_start_new_chat").click(function () {
         if (selected_group) {
             // will open a group creation screen
@@ -4542,12 +3528,14 @@ $(document).ready(function () {
             callPopup("<h3>Start new chat?</h3>");
         }
     });
+
     $("#option_regenerate").click(function () {
         if (is_send_press == false) {
             is_send_press = true;
             Generate("regenerate");
         }
     });
+
     // this function hides the input form, and shows the delete/cancel buttons for deleting messages from chat
     $("#option_delete_mes").click(function () {
         if (
@@ -4564,6 +3552,7 @@ $(document).ready(function () {
             });
         }
     });
+
     //functionality for the cancel delete messages button, reverts to normal display of input form
     $("#dialogue_del_mes_cancel").click(function () {
         $("#dialogue_del_mes").css("display", "none");
@@ -4576,6 +3565,7 @@ $(document).ready(function () {
         });
         this_del_mes = 0;
     });
+
     //confirms message delation with the "ok" button
     $("#dialogue_del_mes_ok").click(function () {
         $("#dialogue_del_mes").css("display", "none");
@@ -4602,21 +3592,6 @@ $(document).ready(function () {
             $textchat.scrollTop($textchat[0].scrollHeight);
         }
         this_del_mes = 0;
-    });
-
-    $("#world_info").change(async function () {
-        const selectedWorld = $("#world_info").find(":selected").val();
-        world_info = null;
-        world_info_data = null;
-
-        if (selectedWorld !== "None") {
-            const worldIndex = Number(selectedWorld);
-            world_info = !isNaN(worldIndex) ? world_names[worldIndex] : null;
-            await loadWorldInfoData();
-        }
-
-        hideWorldEditor();
-        saveSettings();
     });
 
     $("#settings_perset").change(function () {
@@ -4659,8 +3634,9 @@ $(document).ready(function () {
             $("#amount_gen_block").children().prop("disabled", true);
             $("#amount_gen_block").css("opacity", 0.45);
         }
-        saveSettings();
+        saveSettingsDebounced();
     });
+
     $("#settings_perset_novel").change(function () {
         preset_settings_novel = $("#settings_perset_novel")
             .find(":selected")
@@ -4689,8 +3665,9 @@ $(document).ready(function () {
 
         //$("#range_block").children().prop("disabled", false);
         //$("#range_block").css('opacity',1.0);
-        saveSettings();
+        saveSettingsDebounced();
     });
+
     $("#main_api").change(function () {
         is_pygmalion = false;
         is_get_status = false;
@@ -4699,8 +3676,9 @@ $(document).ready(function () {
         clearSoftPromptsList();
         checkOnlineStatus();
         changeMainAPI();
-        saveSettings();
+        saveSettingsDebounced();
     });
+
     $("#softprompt").change(async function () {
         if (!api_server) {
             return;
@@ -4740,7 +3718,7 @@ $(document).ready(function () {
                 $("#" + i + "_counter_textgenerationwebui").html($(this).val());
             }
             textgenerationwebui_settings[i] = parseFloat(val);
-            setTimeout(saveSettings, 500);
+            saveSettingsDebounced();
         });
     }
 
@@ -4751,56 +3729,44 @@ $(document).ready(function () {
         } else {
             $("#temp_counter").html($(this).val());
         }
-        var tempTimer = setTimeout(saveSettings, 500);
+        saveSettingsDebounced();
     });
 
     $(document).on("input", "#amount_gen", function () {
         amount_gen = $(this).val();
         $("#amount_gen_counter").html($(this).val());
-        var amountTimer = setTimeout(saveSettings, 500);
+        saveSettingsDebounced();
     });
 
     $(document).on("input", "#max_context", function () {
         max_context = parseInt($(this).val());
         $("#max_context_counter").html($(this).val() + " Tokens");
-        var max_contextTimer = setTimeout(saveSettings, 500);
-    });
-
-    $(document).on("input", "#world_info_depth", function () {
-        world_info_depth = Number($(this).val());
-        $("#world_info_depth_counter").html(`${$(this).val()} Messages`);
-        setTimeout(saveSettings, 500);
-    });
-
-    $(document).on("input", "#world_info_budget", function () {
-        world_info_budget = Number($(this).val());
-        $("#world_info_budget_counter").html(`${$(this).val()} Tokens`);
-        setTimeout(saveSettings, 500);
+        saveSettingsDebounced();
     });
 
     $("#style_anchor").change(function () {
         style_anchor = !!$("#style_anchor").prop("checked");
-        saveSettings();
+        saveSettingsDebounced();
     });
 
     $("#character_anchor").change(function () {
         character_anchor = !!$("#character_anchor").prop("checked");
-        saveSettings();
+        saveSettingsDebounced();
     });
 
     $("#auto-connect-checkbox").change(function () {
         auto_connect = !!$("#auto-connect-checkbox").prop("checked");
-        saveSettings();
+        saveSettingsDebounced();
     });
 
     $("#auto-load-chat-checkbox").change(function () {
         auto_load_chat = !!$("#auto-load-chat-checkbox").prop("checked");
-        saveSettings();
+        saveSettingsDebounced();
     });
 
     $("#collapse-newlines-checkbox").change(function () {
         collapse_newlines = !!$("#collapse-newlines-checkbox").prop("checked");
-        saveSettings();
+        saveSettingsDebounced();
     });
 
     $(document).on("input", "#rep_pen", function () {
@@ -4810,13 +3776,13 @@ $(document).ready(function () {
         } else {
             $("#rep_pen_counter").html($(this).val());
         }
-        var repPenTimer = setTimeout(saveSettings, 500);
+        saveSettingsDebounced();
     });
 
     $(document).on("input", "#rep_pen_size", function () {
         rep_pen_size = $(this).val();
         $("#rep_pen_size_counter").html($(this).val() + " Tokens");
-        var repPenSizeTimer = setTimeout(saveSettings, 500);
+        saveSettingsDebounced();
     });
 
     //Novel
@@ -4828,7 +3794,7 @@ $(document).ready(function () {
         } else {
             $("#temp_counter_novel").html($(this).val());
         }
-        var tempTimer_novel = setTimeout(saveSettings, 500);
+        saveSettingsDebounced();
     });
 
     $(document).on("input", "#rep_pen_novel", function () {
@@ -4838,13 +3804,13 @@ $(document).ready(function () {
         } else {
             $("#rep_pen_counter_novel").html($(this).val());
         }
-        var repPenTimer_novel = setTimeout(saveSettings, 500);
+        saveSettingsDebounced();
     });
 
     $(document).on("input", "#rep_pen_size_novel", function () {
         rep_pen_size_novel = $(this).val();
         $("#rep_pen_size_counter_novel").html($(this).val() + " Tokens");
-        var repPenSizeTimer_novel = setTimeout(saveSettings, 500);
+        saveSettingsDebounced();
     });
 
     $("#donation").click(function () {
@@ -5005,17 +3971,11 @@ $(document).ready(function () {
             api_key_novel = $("#api_key_novel").val();
             api_key_novel = $.trim(api_key_novel);
             //console.log("1: "+api_server);
-            saveSettings();
+            saveSettingsDebounced();
             is_get_status_novel = true;
             is_api_button_press_novel = true;
         }
     });
-    function resultCheckStatusNovel() {
-        is_api_button_press_novel = false;
-        checkOnlineStatus();
-        $("#api_loading_novel").css("display", "none");
-        $("#api_button_novel").css("display", "inline-block");
-    }
     $("#model_novel_select").change(function () {
         model_novel = $("#model_novel_select").find(":selected").val();
         saveSettings();
@@ -5095,6 +4055,7 @@ $(document).ready(function () {
     $("#chat_import_button").click(function () {
         $("#chat_import_file").click();
     });
+
     $("#chat_import_file").on("change", function (e) {
         var file = e.target.files[0];
         //console.log(1);
@@ -5138,6 +4099,16 @@ $(document).ready(function () {
         });
     });
 
+    $("#rm_button_group_chats").click(function () {
+        selected_button = "group_chats";
+        select_group_chats();
+    });
+
+    $("#rm_button_back_from_group").click(function () {
+        selected_button = "characters";
+        select_rm_characters();
+    });
+
     $(document).on("click", ".select_chat_block", function () {
         let file_name = $(this).attr("file_name").replace(".jsonl", "");
         //console.log(characters[this_chid]['chat']);
@@ -5149,78 +4120,5 @@ $(document).ready(function () {
         $("#create_button").click();
         $("#shadow_select_chat_popup").css("display", "none");
         $("#load_select_chat_div").css("display", "block");
-    });
-
-    //**************************WORLD INFO IMPORT EXPORT*************************//
-    $("#world_import_button").click(function () {
-        $("#world_import_file").click();
-    });
-
-    $("#world_import_file").on("change", function (e) {
-        var file = e.target.files[0];
-
-        if (!file) {
-            return;
-        }
-
-        const ext = file.name.match(/\.(\w+)$/);
-        if (!ext || ext[1].toLowerCase() !== "json") {
-            return;
-        }
-
-        var formData = new FormData($("#form_world_import").get(0));
-
-        jQuery.ajax({
-            type: "POST",
-            url: "/importworldinfo",
-            data: formData,
-            beforeSend: () => { },
-            cache: false,
-            contentType: false,
-            processData: false,
-            success: function (data) {
-                if (data.name) {
-                    imported_world_name = data.name;
-                    updateWorldInfoList(imported_world_name);
-                }
-            },
-            error: (jqXHR, exception) => { },
-        });
-
-        // Will allow to select the same file twice in a row
-        $("#form_world_import").trigger("reset");
-    });
-
-    $("#world_info_edit_button").click(() => {
-        is_world_edit_open ? hideWorldEditor() : showWorldEditor();
-    });
-
-    $("#world_popup_export").click(() => {
-        if (world_info && world_info_data) {
-            const jsonValue = JSON.stringify(world_info_data);
-            const fileName = `${world_info}.json`;
-            download(jsonValue, fileName, "application/json");
-        }
-    });
-
-    $("#world_popup_delete").click(() => {
-        popup_type = "del_world";
-        callPopup("<h3>Delete the World Info?</h3>");
-    });
-
-    $("#world_popup_new").click(() => {
-        createWorldInfoEntry();
-    });
-
-    $("#world_cross").click(() => {
-        hideWorldEditor();
-    });
-
-    $("#world_popup_name_button").click(() => {
-        renameWorldInfo();
-    });
-
-    $("#world_create_button").click(() => {
-        createNewWorldInfo();
     });
 });

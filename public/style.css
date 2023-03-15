@@ -2490,9 +2490,10 @@ a {
     max-width: 600px;
     max-height: 300px;
     border-radius: 10px;
+    display: block;
 }
 
-.mes img.img_extra~* {
+.mes img.img_extra ~ * {
     display: none;
 }
 
