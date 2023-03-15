@@ -99,7 +99,9 @@ let is_checked_colab = false;
 let is_mes_reload_avatar = false;
 let collapse_newlines = false;
 
-const saveSettingsDebounced = debounce(() => saveSettings(), 500);
+const durationSaveEdit = 500;
+const saveSettingsDebounced = debounce(() => saveSettings(), durationSaveEdit);
+const saveCharacterDebounced = debounce(() =>  $("#create_button").click(), durationSaveEdit);
 
 const system_message_types = {
     HELP: "help",
@@ -173,7 +175,6 @@ var create_save_scenario = "";
 var create_save_mes_example = "";
 var create_save_talkativeness = talkativeness_default;
 
-var durationSaveEdit = 200;
 //animation right menu
 var animation_rm_duration = 200;
 var animation_rm_easing = "";
@@ -1786,9 +1787,7 @@ function read_avatar_load(input) {
         }
         reader.onload = function (e) {
             if (selected_button == "character_edit") {
-                setTimeout(() => {
-                    $("#create_button").click();
-                }, durationSaveEdit);
+                saveCharacterDebounced();
             }
             $("#avatar_load_preview").attr("src", e.target.result);
             //.width(103)
@@ -3162,9 +3161,7 @@ $(document).ready(function () {
             chat.length = 0;
             characters[this_chid].chat = name2 + " - " + humanizedDateTime(); //RossAscends: added character name to new chat filenames and replaced Date.now() with humanizedDateTime;
             $("#selected_chat_pole").val(characters[this_chid].chat);
-            setTimeout(() => {
-                $("#create_button").click();
-            }, durationSaveEdit);
+            saveCharacterDebounced();
             getChat();
         }
     });
@@ -3351,9 +3348,7 @@ $(document).ready(function () {
             create_save_description = $("#description_textarea").val();
             CountCharTokens();
         } else {
-            setTimeout(() => {
-                $("#create_button").click();
-            }, durationSaveEdit);
+            saveCharacterDebounced();
         }
     });
 
@@ -3362,9 +3357,7 @@ $(document).ready(function () {
             create_save_personality = $("#personality_textarea").val();
             CountCharTokens();
         } else {
-            setTimeout(() => {
-                $("#create_button").click();
-            }, durationSaveEdit);
+            saveCharacterDebounced();
         }
     });
 
@@ -3373,9 +3366,7 @@ $(document).ready(function () {
             create_save_scenario = $("#scenario_pole").val();
             CountCharTokens();
         } else {
-            setTimeout(() => {
-                $("#create_button").click();
-            }, durationSaveEdit);
+            saveCharacterDebounced();
         }
     });
 
@@ -3384,9 +3375,7 @@ $(document).ready(function () {
             create_save_mes_example = $("#mes_example_textarea").val();
             CountCharTokens();
         } else {
-            setTimeout(() => {
-                $("#create_button").click();
-            }, durationSaveEdit);
+            saveCharacterDebounced();
         }
     });
 
@@ -3395,9 +3384,7 @@ $(document).ready(function () {
             create_save_first_message = $("#firstmessage_textarea").val();
             CountCharTokens();
         } else {
-            setTimeout(() => {
-                $("#create_button").click();
-            }, durationSaveEdit);
+            saveCharacterDebounced();
         }
     });
 
@@ -3405,9 +3392,7 @@ $(document).ready(function () {
         if (menu_type == "create") {
             create_save_talkativeness = $("#talkativeness_slider").val();
         } else {
-            setTimeout(() => {
-                $("#create_button").click();
-            }, durationSaveEdit);
+            saveCharacterDebounced();
         }
     });
 
