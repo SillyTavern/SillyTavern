@@ -26,13 +26,15 @@ function onExpressionsShowDefaultInput() {
     showDefault = value;
     saveSettings();
 
-    const existingImage = $('div.expression').css('background-image');
-    if (!value && existingImage.includes('data:image/png')) {
-        $('div.expression').css('background-image', 'unset');
-        lastMessage = null;
-    }
-    if (value) {
-        lastMessage = null;
+    const existingImageSrc = $('img.expression').prop('src');
+    if (existingImageSrc !== undefined) {                      //if we have an image in src
+        if (!value && existingImageSrc.includes('/img/default-expressions/')) {    //and that image is from /img/ (default)
+            $('img.expression').prop('src', '');               //remove it
+            lastMessage = null;
+        }
+        if (value) {
+            lastMessage = null;
+        }
     }
 }
 
@@ -136,10 +138,10 @@ async function validateImages() {
         image.classList.add('debug-image');
         image.width = '0px';
         image.height = '0px';
-        image.onload = function() {
+        image.onload = function () {
             $('#image_list').append(`<li id="${item}" class="success">${item} - OK</li>`);
         }
-        image.onerror = function() {
+        image.onerror = function () {
             $('#image_list').append(`<li id="${item}" class="failure">${item} - Missing</li>`);
         }
         $('#image_list').prepend(image);
@@ -160,7 +162,7 @@ async function getExpressionsList() {
             method: 'GET',
             headers: { 'Bypass-Tunnel-Reminder': 'bypass' },
         });
-    
+
         if (apiResult.ok) {
             const data = await apiResult.json();
             expressionsList = data.labels;
@@ -175,26 +177,25 @@ async function getExpressionsList() {
 
 async function setExpression(character, expression) {
     const filename = `${expression}.png`;
-    const imgUrl = `url('/characters/${character}/${filename}')`;
-    $('div.expression').css('background-image', imgUrl);
-
     const debugImageStatus = document.querySelector(`#image_list li[id="${filename}"]`);
-    if (showDefault && debugImageStatus && debugImageStatus.classList.contains('failure')) {
-        try {
-            const imgUrl = new URL(getApiUrl());
-            imgUrl.pathname = `/api/asset/${MODULE_NAME}/${filename}`;
-            const dataUri = await urlContentToDataUri(imgUrl.toString(), { method: 'GET', headers: { 'Bypass-Tunnel-Reminder': 'bypass' } });
-            $('div.expression').css('background-image', `url(${dataUri})`);
-        } 
-        catch {
-            $('div.expression').css('background-image', 'unset');
+
+    if (debugImageStatus && !debugImageStatus.classList.contains('failure')) {
+        console.log('setting expression from character images folder');
+        const imgUrl = `/characters/${character}/${filename}`;
+        $('img.expression').prop('src', imgUrl);
+    } else {
+        if (showDefault) {
+            console.log('no character images, trying default expressions');
+            const defImgUrl = `/img/default-expressions/${filename}`;
+            console.log(defImgUrl);
+            $('img.expression').prop('src', defImgUrl);
         }
     }
 }
 
 (function () {
     function addExpressionImage() {
-        const html = `<div class="expression"></div>`
+        const html = `<div class="expression-holder"><img class="expression"></div>`;
         $('body').append(html);
     }
     function addSettings() {
