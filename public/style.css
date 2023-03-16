@@ -703,8 +703,9 @@ select option:not(:checked) {
 }
 
 #rm_characters_block {
-    display: block;
+    display: flex;
     overflow-y: auto;
+    flex-direction: column;
     /* visibility: hidden; */
 }
 

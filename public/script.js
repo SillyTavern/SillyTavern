@@ -2493,6 +2493,7 @@ function selectRightMenuWithAnimation(selectedMenuId) {
         'rm_info_block': 'flex',
         'rm_group_chats_block': 'flex',
         'rm_api_block': 'grid',
+        'rm_characters_block': 'flex',
     };
     document.querySelectorAll('#right-nav-panel .right_menu').forEach((menu) => {
         $(menu).css('display', 'none');
