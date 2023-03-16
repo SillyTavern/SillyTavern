@@ -763,10 +763,7 @@ function addOneMessage(mes) {
     //}
     //console.log(messageText);
     if (count_view_mes == 0) {
-        messageText = messageText.replace(/{{user}}/gi, name1);
-        messageText = messageText.replace(/{{char}}/gi, name2);
-        messageText = messageText.replace(/<USER>/gi, name1);
-        messageText = messageText.replace(/<BOT>/gi, name2);
+        messageText = substituteParams(messageText);
     }
     messageText = messageFormating(
         messageText,
@@ -797,6 +794,11 @@ function addOneMessage(mes) {
     if (isSystem) {
         newMessage.find(".mes_edit").hide();
     }
+
+    newMessage.find('.avatar img').on('error', function() {
+        $(this).attr("src", "/img/user-slash-solid.svg");
+        $(this).css('filter', 'invert(1)');
+    });
 
     if (!if_typing_text) {
         //console.log(messageText);
