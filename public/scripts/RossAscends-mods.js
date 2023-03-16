@@ -324,29 +324,20 @@ $("document").ready(function () {
 	//2. find a way to make the chat slide down smoothly when the last mes div gets .remove()-d
 
 	document.addEventListener('swiped-left', function(e) {
-		var SwipeTargetMesClassParent = e.target.closest('.mes');
-		if (is_send_press == false){
-		if (SwipeTargetMesClassParent !== null && SwipeTargetMesClassParent.nextSibling == null ){
-				$('#chat').children().last().css({'transition':'all 0.5s ease-in-out'});
-				$('#chat').children().last().css({'transform':'translateX(-100vw) scale(0,0)','overflow':'hidden'});
-				$('#chat').children().last().css({'opacity':'0'});
-				
-				Generate('regenerate');
+		var SwipeTargetMesClassParent = e.target.closest('.last_mes');
+		if (SwipeTargetMesClassParent !== null){
+			if($('.swipe_right:last').attr('style')=='display: flex;' == true){
+				$('.swipe_right:last').click();
 			}
 		}
 	});
 	document.addEventListener('swiped-right', function(e) {
-		var SwipeTargetMesClassParent = e.target.closest('.mes');
-		console.log(is_send_press);
-		if (is_send_press === false){
-			if (SwipeTargetMesClassParent !== null && SwipeTargetMesClassParent.nextSibling == null){
-				$('#chat').children().last().css({'transition':'all 0.5s ease-in-out'});
-				$('#chat').children().last().css({'transform':'translateX(100vh) scale(0,0)','overflow':'hidden'});
-				$('#chat').children().last().css({'opacity':'0'});
-				Generate('regenerate');
-				console.log(is_send_press);
+		var SwipeTargetMesClassParent = e.target.closest('.last_mes');
+		if (SwipeTargetMesClassParent !== null){
+			if($('.swipe_left:last').attr('style')=='display: flex;' == true){
+				$('.swipe_left:last').click();
 			}
-		}	
+		}
 	});
 
 	//Additional hotkeys CTRL+ENTER and CTRL+UPARROW
@@ -369,6 +360,12 @@ $("document").ready(function () {
 		}
 		if (event.ctrlKey && event.key == "ArrowRight") {		//for debug, empty local storage state
 			ClearLocal();
+		}
+		if (event.key == "ArrowLeft") {		//swipes left
+			$('.swipe_left:last').click();;
+		}
+		if (event.key == "ArrowRight") {		//swipes right
+			$('.swipe_right:last').click();
 		}
 	});
 	

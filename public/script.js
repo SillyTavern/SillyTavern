@@ -23,1582 +23,1654 @@ export {
 // API OBJECT FOR EXTERNAL WIRING
 window['TavernAI'] = {};
 
-    const VERSION = '1.2.8';
-    var converter = new showdown.Converter({ emoji: 'true' });
-    var bg_menu_toggle = false;
-    const systemUserName = 'TavernAI';
-    const systemCharName = 'Chloe';
-    var default_user_name = "You";
-    var name1 = default_user_name;
-    var name2 = "Chloe";
-    // might want to migrate this to 'system message' code
-    var chat = [{ name: 'Chloe', is_user: false, is_name: true, create_date: 0, mes: '\n*You went inside. The air smelled of fried meat, tobacco and a hint of wine. A dim light was cast by candles, and a fire crackled in the fireplace. It seems to be a very pleasant place. Behind the wooden bar is an elf waitress, she is smiling. Her ears are very pointy, and there is a twinkle in her eye. She wears glasses and a white apron. As soon as she noticed you, she immediately came right up close to you.*\n\n' + ' "Hello there! How is your evening going?"<br><br>\n' + '<img src="img/star_dust_city.png" width=80%; display:block;">\n' }];
-    var safetychat = [{ name: 'Chloe', is_user: false, is_name: true, create_date: 0, mes: '\n*You deleted a character/chat and arrived back here for safety reasons! Pick another character!*\n\n' }];
-    var chat_create_date = 0;
+const VERSION = '1.2.8';
+var converter = new showdown.Converter({ emoji: 'true' });
+var bg_menu_toggle = false;
+const systemUserName = 'TavernAI';
+const systemCharName = 'Chloe';
+var default_user_name = "You";
+var name1 = default_user_name;
+var name2 = "Chloe";
+// might want to migrate this to 'system message' code
+var chat = [{ name: 'Chloe', is_user: false, is_name: true, create_date: 0, mes: '\n*You went inside. The air smelled of fried meat, tobacco and a hint of wine. A dim light was cast by candles, and a fire crackled in the fireplace. It seems to be a very pleasant place. Behind the wooden bar is an elf waitress, she is smiling. Her ears are very pointy, and there is a twinkle in her eye. She wears glasses and a white apron. As soon as she noticed you, she immediately came right up close to you.*\n\n' + ' "Hello there! How is your evening going?"<br><br>\n' + '<img src="img/star_dust_city.png" width=80%; display:block;">\n' }];
+var safetychat = [{ name: 'Chloe', is_user: false, is_name: true, create_date: 0, mes: '\n*You deleted a character/chat and arrived back here for safety reasons! Pick another character!*\n\n' }];
+var chat_create_date = 0;
 
-    let prev_selected_char = null;
-    var default_ch_mes = "Hello";
-    var count_view_mes = 0;
-    var mesStr = '';
-    var generatedPromtCache = '';
-    var characters = [];
-    let groups = [];
-    let selected_group = null;
-    let is_group_automode_enabled = false;
-    var this_chid;
-    var active_character;
-    var backgrounds = [];
-    var default_avatar = 'img/fluffy.png';
-    var is_colab = false;
-    var is_checked_colab = false;
-    var is_mes_reload_avatar = false;
-    let collapse_newlines = false;
+let prev_selected_char = null;
+var default_ch_mes = "Hello";
+var count_view_mes = 0;
+var mesStr = '';
+var generatedPromtCache = '';
+var characters = [];
+let groups = [];
+let selected_group = null;
+let is_group_automode_enabled = false;
+var this_chid;
+var active_character;
+var backgrounds = [];
+var default_avatar = 'img/fluffy.png';
+var is_colab = false;
+var is_checked_colab = false;
+var is_mes_reload_avatar = false;
+let collapse_newlines = false;
 
-    const system_message_types = {
-        HELP: 'help',
-        WELCOME: 'welcome',
-        GROUP: 'group',
-        EMPTY: 'empty',
-        GENERIC: 'generic',
-    };
+const system_message_types = {
+    HELP: 'help',
+    WELCOME: 'welcome',
+    GROUP: 'group',
+    EMPTY: 'empty',
+    GENERIC: 'generic',
+};
 
-    const system_messages = {
-        'help': {
-            "name": systemUserName,
-            "force_avatar": "img/five.png",
-            "is_user": false,
-            "is_system": true,
-            "is_name": true,
-            "mes": "Hi there! The following chat formatting commands are supported:<br><ul><li><tt>*text*</tt> – format the actions that your character does</li><li><tt>{*text*}</tt> – set the behavioral bias for your character</li></ul><p>Need more help? Visit our wiki – <a href=\"https://github.com/TavernAI/TavernAI/wiki\">TavernAI Wiki</a>!</p>"
-        },
-        'group': {
-            "name": systemUserName,
-            "force_avatar": "img/five.png",
-            "is_user": false,
-            "is_system": true,
-            "is_name": true,
-            "mes": "Group chat created. Say 'Hi' to lovely people!"
-        },
-        'empty': {
-            "name": systemUserName,
-            "force_avatar": "img/five.png",
-            "is_user": false,
-            "is_system": true,
-            "is_name": true,
-            "mes": 'No one hears you. **Hint:** add more members to the group!'
-        },
-        'generic': {
-            "name": systemUserName,
-            "force_avatar": "img/five.png",
-            "is_user": false,
-            "is_system": true,
-            "is_name": true,
-            "mes": "Generic system message. User `text` parameter to override the contents",
-        },
-    };
+const system_messages = {
+    'help': {
+        "name": systemUserName,
+        "force_avatar": "img/five.png",
+        "is_user": false,
+        "is_system": true,
+        "is_name": true,
+        "mes": "Hi there! The following chat formatting commands are supported:<br><ul><li><tt>*text*</tt> – format the actions that your character does</li><li><tt>{*text*}</tt> – set the behavioral bias for your character</li></ul><p>Need more help? Visit our wiki – <a href=\"https://github.com/TavernAI/TavernAI/wiki\">TavernAI Wiki</a>!</p>"
+    },
+    'group': {
+        "name": systemUserName,
+        "force_avatar": "img/five.png",
+        "is_user": false,
+        "is_system": true,
+        "is_name": true,
+        "mes": "Group chat created. Say 'Hi' to lovely people!"
+    },
+    'empty': {
+        "name": systemUserName,
+        "force_avatar": "img/five.png",
+        "is_user": false,
+        "is_system": true,
+        "is_name": true,
+        "mes": 'No one hears you. **Hint:** add more members to the group!'
+    },
+    'generic': {
+        "name": systemUserName,
+        "force_avatar": "img/five.png",
+        "is_user": false,
+        "is_system": true,
+        "is_name": true,
+        "mes": "Generic system message. User `text` parameter to override the contents",
+    },
+};
 
-    const world_info_position = {
-        'before': 0,
-        'after': 1,
-    }
-    const talkativeness_default = 0.5;
-    const storage_keys = {
-        'collapse_newlines': 'TavernAI_collapse_newlines',
-    };
+const world_info_position = {
+    'before': 0,
+    'after': 1,
+}
+const talkativeness_default = 0.5;
+const storage_keys = {
+    'collapse_newlines': 'TavernAI_collapse_newlines',
+};
 
-    var is_advanced_char_open = false;
-    var is_world_edit_open = false;
+var is_advanced_char_open = false;
+var is_world_edit_open = false;
 
-    var menu_type = '';//what is selected in the menu
-    var selected_button = '';//which button pressed
-    //create pole save
-    var create_save_name = '';
-    var create_save_description = '';
-    var create_save_personality = '';
-    var create_save_first_message = '';
-    var create_save_avatar = '';
-    var create_save_scenario = '';
-    var create_save_mes_example = '';
-    var create_save_talkativeness = talkativeness_default;
+var menu_type = '';//what is selected in the menu
+var selected_button = '';//which button pressed
+//create pole save
+var create_save_name = '';
+var create_save_description = '';
+var create_save_personality = '';
+var create_save_first_message = '';
+var create_save_avatar = '';
+var create_save_scenario = '';
+var create_save_mes_example = '';
+var create_save_talkativeness = talkativeness_default;
 
-    var timerSaveEdit;
-    var timerWorldSave;
-    var timerGroupSave;
-    var durationSaveEdit = 200;
-    //animation right menu
-    var animation_rm_duration = 200;
-    var animation_rm_easing = "";
+var timerSaveEdit;
+var timerWorldSave;
+var timerGroupSave;
+var durationSaveEdit = 200;
+//animation right menu
+var animation_rm_duration = 200;
+var animation_rm_easing = "";
 
-    var popup_type = "";
-    var bg_file_for_del = '';
-    var online_status = 'no_connection';
+var popup_type = "";
+var bg_file_for_del = '';
+var online_status = 'no_connection';
 
-    var api_server = "";
-    var api_server_textgenerationwebui = "";
-    //var interval_timer = setInterval(getStatus, 2000);
-    var interval_timer_novel = setInterval(getStatusNovel, 3000);
-    const groupAutoModeInterval = setInterval(groupChatAutoModeWorker, 5000);
-    var is_get_status = false;
-    var is_get_status_novel = false;
-    var is_api_button_press = false;
-    var is_api_button_press_novel = false;
+var api_server = "";
+var api_server_textgenerationwebui = "";
+//var interval_timer = setInterval(getStatus, 2000);
+var interval_timer_novel = setInterval(getStatusNovel, 3000);
+const groupAutoModeInterval = setInterval(groupChatAutoModeWorker, 5000);
+var is_get_status = false;
+var is_get_status_novel = false;
+var is_api_button_press = false;
+var is_api_button_press_novel = false;
 
-    var is_send_press = false;//Send generation
-    let is_group_generating = false; // Group generation flag
-    var add_mes_without_animation = false;
+var is_send_press = false;//Send generation
+let is_group_generating = false; // Group generation flag
 
-    var this_del_mes = 0;
+var this_del_mes = 0;
 
-    var this_edit_mes_text = '';
-    var this_edit_mes_chname = '';
-    var this_edit_mes_id;
+var this_edit_mes_text = '';
+var this_edit_mes_chname = '';
+var this_edit_mes_id;
 
-    const delay = ms => new Promise(res => setTimeout(res, ms));
-    //settings
-    var settings;
-    var koboldai_settings;
-    var koboldai_setting_names;
-    var preset_settings = 'gui';
-    var user_avatar = 'you.png';
-    var temp = 0.5;
-    var world_info = null;
-    var world_names;
-    var world_info_data = null;
-    var world_info_depth = 2;
-    var world_info_budget = 128;
-    var imported_world_name = '';
-    var amount_gen = 80;				//default max length of AI generated responses
-    var max_context = 2048;
-    var rep_pen = 1;
-    var rep_pen_size = 100;
+const delay = ms => new Promise(res => setTimeout(res, ms));
+//settings
+var settings;
+var koboldai_settings;
+var koboldai_setting_names;
+var preset_settings = 'gui';
+var user_avatar = 'you.png';
+var temp = 0.5;
+var world_info = null;
+var world_names;
+var world_info_data = null;
+var world_info_depth = 2;
+var world_info_budget = 128;
+var imported_world_name = '';
+var amount_gen = 80;				//default max length of AI generated responses
+var max_context = 2048;
+var rep_pen = 1;
+var rep_pen_size = 100;
 
-    var textgenerationwebui_settings = {
-        temp: 0.5,
-        top_p: 0.9,
-        top_k: 0,
-        typical_p: 1,
-        rep_pen: 1.1,
-        rep_pen_size: 0,
-        penalty_alpha: 0,
-    }
+var textgenerationwebui_settings = {
+    temp: 0.5,
+    top_p: 0.9,
+    top_k: 0,
+    typical_p: 1,
+    rep_pen: 1.1,
+    rep_pen_size: 0,
+    penalty_alpha: 0,
+}
 
-    var is_pygmalion = false;
-    var tokens_already_generated = 0;
-    var message_already_generated = '';
-    var if_typing_text = false;
-    const tokens_cycle_count = 30;
-    var cycle_count_generation = 0;
+var is_pygmalion = false;
+var tokens_already_generated = 0;
+var message_already_generated = '';
+var if_typing_text = false;
+const tokens_cycle_count = 30;
+var cycle_count_generation = 0;
 
-    var anchor_order = 0;
-    var style_anchor = true;
-    var character_anchor = true;
-    let extension_prompts = {};
-    var auto_connect = false;
-    var auto_load_chat = false;
+var swipes = false;
 
-    var main_api = 'kobold';
-    //novel settings
-    var temp_novel = 0.5;
-    var rep_pen_novel = 1;
-    var rep_pen_size_novel = 100;
+var anchor_order = 0;
+var style_anchor = true;
+var character_anchor = true;
+let extension_prompts = {};
+var auto_connect = false;
+var auto_load_chat = false;
 
-    var api_key_novel = "";
-    var novel_tier;
-    var model_novel = "euterpe-v2";
-    var novelai_settings;
-    var novelai_setting_names;
-    var preset_settings_novel = 'Classic-Krake';
+var main_api = 'kobold';
+//novel settings
+var temp_novel = 0.5;
+var rep_pen_novel = 1;
+var rep_pen_size_novel = 100;
 
-    //css
-    var bg1_toggle = true;					// inits the BG as BG1
-    var css_mes_bg = $('<div class="mes"></div>').css('background');
-    var css_send_form_display = $('<div id=send_form></div>').css('display');
+var api_key_novel = "";
+var novel_tier;
+var model_novel = "euterpe-v2";
+var novelai_settings;
+var novelai_setting_names;
+var preset_settings_novel = 'Classic-Krake';
 
-    var colab_ini_step = 1;
+//css
+var bg1_toggle = true;					// inits the BG as BG1
+var css_mes_bg = $('<div class="mes"></div>').css('background');
+var css_send_form_display = $('<div id=send_form></div>').css('display');
 
-
-
-    var token;
+var colab_ini_step = 1;
 
 
-        setInterval(function () {
-            switch (colab_ini_step) {
-                case 0:
-                    $('#colab_popup_text').html('<h3>Initialization</h3>');
-                    colab_ini_step = 1;
-                    break
-                case 1:
-                    $('#colab_popup_text').html('<h3>Initialization.</h3>');
-                    colab_ini_step = 2;
-                    break
-                case 2:
-                    $('#colab_popup_text').html('<h3>Initialization..</h3>');
-                    colab_ini_step = 3;
-                    break
-                case 3:
-                    $('#colab_popup_text').html('<h3>Initialization...</h3>');
-                    colab_ini_step = 0;
-                    break
-            }
-        }, 500);
-        /////////////
 
-        $.ajaxPrefilter((options, originalOptions, xhr) => {
-            xhr.setRequestHeader("X-CSRF-Token", token);
+var token;
+
+
+    setInterval(function () {
+        switch (colab_ini_step) {
+            case 0:
+                $('#colab_popup_text').html('<h3>Initialization</h3>');
+                colab_ini_step = 1;
+                break
+            case 1:
+                $('#colab_popup_text').html('<h3>Initialization.</h3>');
+                colab_ini_step = 2;
+                break
+            case 2:
+                $('#colab_popup_text').html('<h3>Initialization..</h3>');
+                colab_ini_step = 3;
+                break
+            case 3:
+                $('#colab_popup_text').html('<h3>Initialization...</h3>');
+                colab_ini_step = 0;
+                break
+        }
+    }, 500);
+    /////////////
+
+    $.ajaxPrefilter((options, originalOptions, xhr) => {
+        xhr.setRequestHeader("X-CSRF-Token", token);
+    });
+
+
+    $.get("/csrf-token")
+        .then(data => {
+            token = data.token;
+            getCharacters();
+            getSettings("def");
+            getLastVersion();
+            //getCharacters();
+            printMessages();
+            getBackgrounds();
+            getUserAvatars();
         });
-    
-    
-        $.get("/csrf-token")
-            .then(data => {
-                token = data.token;
-                getCharacters();
-                getSettings("def");
-                getLastVersion();
-                //getCharacters();
-                printMessages();
-                getBackgrounds();
-                getUserAvatars();
-            });
-    
-        function flushSettings() {
-            $('#settings_perset').empty();
-            $('#settings_perset_novel').empty();
-            $('#world_info').empty();
-            $('#settings_perset').append('<option value="gui">GUI KoboldAI Settings</option>');
-            $('#world_info').append('<option value="None">None</option>');
+    function flushSettings() {
+        $('#settings_perset').empty();
+        $('#settings_perset_novel').empty();
+        $('#world_info').empty();
+        $('#settings_perset').append('<option value="gui">GUI KoboldAI Settings</option>');
+        $('#world_info').append('<option value="None">None</option>');
+    }
+    function checkOnlineStatus() {
+        //console.log(online_status);
+        if (online_status == 'no_connection') {
+            $("#send_textarea").attr('placeholder', "Not connected to API!");		//Input bar placeholder tells users they are not connected
+            $("#send_form").css("background-color", "rgba(100,0,0,0.7)");			//entire input form area is red when not connected
+            $("#send_but").css("display", "none");									//send button is hidden when not connected
+
+            $("#online_status_indicator2").css("background-color", "red");
+            $("#online_status_text2").html("No connection...");
+            $("#online_status_indicator3").css("background-color", "red");
+            $("#online_status_text3").html("No connection...");
+            is_get_status = false;
+            is_get_status_novel = false;
+        } else {
+            $("#send_textarea").attr('placeholder', 'Type a message...');				//on connect, placeholder tells user to type message
+            $("#send_form").css("background-color", "rgba(0,0,0,0.7)");					//on connect, form BG changes to transprent black
+            $("#send_but").css("display", "inline");									//on connect, send button shows up
+
+            $("#online_status_indicator2").css("background-color", "green");
+            $("#online_status_text2").html(online_status);
+            $("#online_status_indicator3").css("background-color", "green");
+            $("#online_status_text3").html(online_status);
+            $("#online_status_indicator4").css("background-color", "green");
+            $("#online_status_text4").html(online_status);
         }
-        function checkOnlineStatus() {
-            //console.log(online_status);
-            if (online_status == 'no_connection') {
-                $("#send_textarea").attr('placeholder', "Not connected to API!");		//Input bar placeholder tells users they are not connected
-                $("#send_form").css("background-color", "rgba(100,0,0,0.7)");			//entire input form area is red when not connected
-                $("#send_but").css("display", "none");									//send button is hidden when not connected
-    
-                $("#online_status_indicator2").css("background-color", "red");
-                $("#online_status_text2").html("No connection...");
-                $("#online_status_indicator3").css("background-color", "red");
-                $("#online_status_text3").html("No connection...");
-                is_get_status = false;
-                is_get_status_novel = false;
-            } else {
-                $("#send_textarea").attr('placeholder', 'Type a message...');				//on connect, placeholder tells user to type message
-                $("#send_form").css("background-color", "rgba(0,0,0,0.7)");					//on connect, form BG changes to transprent black
-                $("#send_but").css("display", "inline");									//on connect, send button shows up
-    
-                $("#online_status_indicator2").css("background-color", "green");
-                $("#online_status_text2").html(online_status);
-                $("#online_status_indicator3").css("background-color", "green");
-                $("#online_status_text3").html(online_status);
-                $("#online_status_indicator4").css("background-color", "green");
-                $("#online_status_text4").html(online_status);
+    }
+    async function getLastVersion() {
+
+        jQuery.ajax({
+            type: 'POST', // 
+            url: '/getlastversion', // 
+            data: JSON.stringify({
+                '': ''
+            }),
+            beforeSend: function () {
+
+
+            },
+            cache: false,
+            dataType: "json",
+            contentType: "application/json",
+            //processData: false, 
+            success: function (data) {
+                var getVersion = data.version;
+                if (getVersion !== 'error' && getVersion != undefined) {
+                    if (compareVersions(getVersion, VERSION) === 1) {
+                        $('#verson').append(' <span>(v.' + getVersion + ')</span>');
+                    }
+                }
+
+            },
+            error: function (jqXHR, exception) {
+                console.log(exception);
+                console.log(jqXHR);
+
             }
-        }
-        async function getLastVersion() {
-    
+        });
+
+    }
+    async function getStatus() {
+        if (is_get_status) {
             jQuery.ajax({
                 type: 'POST', // 
-                url: '/getlastversion', // 
+                url: '/getstatus', // 
                 data: JSON.stringify({
-                    '': ''
+                    api_server: (main_api == "kobold" ? api_server : api_server_textgenerationwebui),
+                    main_api: main_api,
                 }),
                 beforeSend: function () {
-    
-    
+                    if (is_api_button_press) {
+                        //$("#api_loading").css("display", 'inline-block');
+                        //$("#api_button").css("display", 'none');
+                    }
+                    //$('#create_button').attr('value','Creating...'); // 
+
                 },
                 cache: false,
                 dataType: "json",
+                crossDomain: true,
                 contentType: "application/json",
                 //processData: false, 
                 success: function (data) {
-                    var getVersion = data.version;
-                    if (getVersion !== 'error' && getVersion != undefined) {
-                        if (compareVersions(getVersion, VERSION) === 1) {
-                            $('#verson').append(' <span>(v.' + getVersion + ')</span>');
-                        }
+                    online_status = data.result;
+                    if (online_status == undefined) {
+                        online_status = 'no_connection';
                     }
-    
+                    if (online_status.toLowerCase().indexOf('pygmalion') != -1) {
+                        is_pygmalion = true;
+                        online_status += " (Pyg. formatting on)";
+                    } else {
+                        is_pygmalion = false;
+                    }
+
+                    //console.log(online_status);
+                    resultCheckStatus();
+                    if (online_status !== 'no_connection') {
+                        var checkStatusNow = setTimeout(getStatus, 3000);//getStatus();
+                    }
                 },
                 error: function (jqXHR, exception) {
                     console.log(exception);
                     console.log(jqXHR);
-    
+                    online_status = 'no_connection';
+
+                    resultCheckStatus();
                 }
             });
-    
-        }
-        async function getStatus() {
-            if (is_get_status) {
-                jQuery.ajax({
-                    type: 'POST', // 
-                    url: '/getstatus', // 
-                    data: JSON.stringify({
-                        api_server: (main_api == "kobold" ? api_server : api_server_textgenerationwebui),
-                        main_api: main_api,
-                    }),
-                    beforeSend: function () {
-                        if (is_api_button_press) {
-                            //$("#api_loading").css("display", 'inline-block');
-                            //$("#api_button").css("display", 'none');
-                        }
-                        //$('#create_button').attr('value','Creating...'); // 
-    
-                    },
-                    cache: false,
-                    dataType: "json",
-                    crossDomain: true,
-                    contentType: "application/json",
-                    //processData: false, 
-                    success: function (data) {
-                        online_status = data.result;
-                        if (online_status == undefined) {
-                            online_status = 'no_connection';
-                        }
-                        if (online_status.toLowerCase().indexOf('pygmalion') != -1) {
-                            is_pygmalion = true;
-                            online_status += " (Pyg. formatting on)";
-                        } else {
-                            is_pygmalion = false;
-                        }
-    
-                        //console.log(online_status);
-                        resultCheckStatus();
-                        if (online_status !== 'no_connection') {
-                            var checkStatusNow = setTimeout(getStatus, 3000);//getStatus();
-                        }
-                    },
-                    error: function (jqXHR, exception) {
-                        console.log(exception);
-                        console.log(jqXHR);
-                        online_status = 'no_connection';
-    
-                        resultCheckStatus();
-                    }
-                });
-            } else {
-                if (is_get_status_novel != true) {
-                    online_status = 'no_connection';
-                }
+        } else {
+            if (is_get_status_novel != true) {
+                online_status = 'no_connection';
             }
         }
-        function resultCheckStatus() {
-            is_api_button_press = false;
-            checkOnlineStatus();
-            $("#api_loading").css("display", 'none');
-            $("#api_button").css("display", 'inline-block');
-            $("#api_loading_textgenerationwebui").css("display", 'none');
-            $("#api_button_textgenerationwebui").css("display", 'inline-block');
+    }
+    function resultCheckStatus() {
+        is_api_button_press = false;
+        checkOnlineStatus();
+        $("#api_loading").css("display", 'none');
+        $("#api_button").css("display", 'inline-block');
+        $("#api_loading_textgenerationwebui").css("display", 'none');
+        $("#api_button_textgenerationwebui").css("display", 'inline-block');
+    }
+    async function getSoftPromptsList() {
+        if (!api_server) {
+            return;
         }
-    
-        async function getSoftPromptsList() {
-            if (!api_server) {
+
+        const response = await fetch('/getsoftprompts', {
+            method: 'POST',
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRF-Token": token,
+            },
+            body: JSON.stringify({ api_server: api_server }),
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            updateSoftPromptsList(data.soft_prompts);
+        }
+    }
+    function clearSoftPromptsList() {
+        $('#softprompt option[value!=""]').each(function () {
+            $(this).remove();
+        });
+    }
+    function updateSoftPromptsList(soft_prompts) {
+        // Delete SPs removed from Kobold
+        $('#softprompt option').each(function () {
+            const value = $(this).attr('value');
+
+            if (value == '') {
                 return;
             }
-    
-            const response = await fetch('/getsoftprompts', {
-                method: 'POST',
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRF-Token": token,
-                },
-                body: JSON.stringify({ api_server: api_server }),
-            });
-    
-            if (response.ok) {
-                const data = await response.json();
-                updateSoftPromptsList(data.soft_prompts);
-            }
-        }
-    
-        function clearSoftPromptsList() {
-            $('#softprompt option[value!=""]').each(function () {
+
+            const prompt = soft_prompts.find(x => x.name === value);
+            if (!prompt) {
                 $(this).remove();
-            });
-        }
-    
-        function updateSoftPromptsList(soft_prompts) {
-            // Delete SPs removed from Kobold
-            $('#softprompt option').each(function () {
-                const value = $(this).attr('value');
-    
-                if (value == '') {
-                    return;
-                }
-    
-                const prompt = soft_prompts.find(x => x.name === value);
-                if (!prompt) {
-                    $(this).remove();
-                }
-            });
-    
-            // Add SPs added to Kobold
-            soft_prompts.forEach((prompt) => {
-                if ($(`#softprompt option[value="${prompt.name}"]`).length === 0) {
-                    $('#softprompt').append(`<option value="${prompt.name}">${prompt.name}</option>`);
-    
-                    if (prompt.selected) {
-                        $('#softprompt').val(prompt.name);
-                    }
-                }
-            });
-    
-            // No SP selected or no SPs
-            if (soft_prompts.length === 0 || !(soft_prompts.some(x => x.selected))) {
-                $('#softprompt').val('');
             }
-        }
-    
-        function printCharacters() {
-            //console.log('printCharacters() entered');
-    
-            $("#rm_print_characters_block").empty();
-            //console.log('printCharacters() -- sees '+characters.length+' characters.');
-            characters.forEach(function (item, i, arr) {
-    
-                var this_avatar = default_avatar;
-                if (item.avatar != 'none') {
-                    this_avatar = "characters/" + item.avatar + "?" + Date.now();
-    
-                }		//RossAscends: changed 'prepend' to 'append' to make alphabetical sorting display correctly.
-                $("#rm_print_characters_block").append('<div class=character_select chid=' + i + ' id="CharID' + i + '"><div class=avatar><img src="' + this_avatar + '"></div><div class=ch_name>' + item.name + '</div></div>');
-                //console.log('printcharacters() -- printing -- ChID '+i+' ('+item.name+')');
-            });
-            printGroups();
-    
-        }
-    
-        function printGroups() {
-            for (let group of groups) {
-                const template = $('#group_list_template .group_select').clone();
-                template.data('id', group.id);
-                template.find('.ch_name').html(group.name);
-                $('#rm_print_characters_block').prepend(template);
-                updateGroupAvatar(group);
-            }
-        }
-    
-        function updateGroupAvatar(group) {
-            $('#rm_print_characters_block .group_select').each(function () {
-                if ($(this).data('id') == group.id) {
-                    const avatar = getGroupAvatar(group);
-                    if (avatar) {
-                        $(this).find('.avatar').replaceWith(avatar);
-                    }
-                }
-            })
-        }
-    
-        function getGroupAvatar(group) {
-            const memberAvatars = [];
-            if (group && Array.isArray(group.members) && group.members.length) {
-                for (const member of group.members) {
-                    const charIndex = characters.findIndex(x => x.name === member);
-                    if (charIndex !== -1 && characters[charIndex].avatar !== 'none') {
-                        const this_avatar = `characters/${characters[charIndex].avatar}#${Date.now()}`;
-                        memberAvatars.push(this_avatar);
-                    }
-                    if (memberAvatars.length === 4) {
-                        break;
-                    }
+        });
+
+        // Add SPs added to Kobold
+        soft_prompts.forEach((prompt) => {
+            if ($(`#softprompt option[value="${prompt.name}"]`).length === 0) {
+                $('#softprompt').append(`<option value="${prompt.name}">${prompt.name}</option>`);
+
+                if (prompt.selected) {
+                    $('#softprompt').val(prompt.name);
                 }
             }
-    
-            // Cohee: there's probably a smarter way to do this..
-            if (memberAvatars.length === 1) {
-                const groupAvatar = $('#group_avatars_template .collage_1').clone();
-                groupAvatar.find('.img_1').attr('src', memberAvatars[0]);
-                return groupAvatar;
+        });
+
+        // No SP selected or no SPs
+        if (soft_prompts.length === 0 || !(soft_prompts.some(x => x.selected))) {
+            $('#softprompt').val('');
+        }
+    }
+    function printCharacters() {
+        //console.log('printCharacters() entered');
+
+        $("#rm_print_characters_block").empty();
+        //console.log('printCharacters() -- sees '+characters.length+' characters.');
+        characters.forEach(function (item, i, arr) {
+
+            var this_avatar = default_avatar;
+            if (item.avatar != 'none') {
+                this_avatar = "characters/" + item.avatar + "?" + Date.now();
+
+            }		//RossAscends: changed 'prepend' to 'append' to make alphabetical sorting display correctly.
+            $("#rm_print_characters_block").append('<div class=character_select chid=' + i + ' id="CharID' + i + '"><div class=avatar><img src="' + this_avatar + '"></div><div class=ch_name>' + item.name + '</div></div>');
+            //console.log('printcharacters() -- printing -- ChID '+i+' ('+item.name+')');
+        });
+        printGroups();
+
+    }
+    function printGroups() {
+        for (let group of groups) {
+            const template = $('#group_list_template .group_select').clone();
+            template.data('id', group.id);
+            template.find('.ch_name').html(group.name);
+            $('#rm_print_characters_block').prepend(template);
+            updateGroupAvatar(group);
+        }
+    }
+    function updateGroupAvatar(group) {
+        $('#rm_print_characters_block .group_select').each(function () {
+            if ($(this).data('id') == group.id) {
+                const avatar = getGroupAvatar(group);
+                if (avatar) {
+                    $(this).find('.avatar').replaceWith(avatar);
+                }
             }
-    
-            if (memberAvatars.length === 2) {
-                const groupAvatar = $('#group_avatars_template .collage_2').clone();
-                groupAvatar.find('.img_1').attr('src', memberAvatars[0]);
-                groupAvatar.find('.img_2').attr('src', memberAvatars[1]);
-                return groupAvatar;
+        })
+    }
+    function getGroupAvatar(group) {
+        const memberAvatars = [];
+        if (group && Array.isArray(group.members) && group.members.length) {
+            for (const member of group.members) {
+                const charIndex = characters.findIndex(x => x.name === member);
+                if (charIndex !== -1 && characters[charIndex].avatar !== 'none') {
+                    const this_avatar = `characters/${characters[charIndex].avatar}#${Date.now()}`;
+                    memberAvatars.push(this_avatar);
+                }
+                if (memberAvatars.length === 4) {
+                    break;
+                }
             }
-    
-            if (memberAvatars.length === 3) {
-                const groupAvatar = $('#group_avatars_template .collage_3').clone();
-                groupAvatar.find('.img_1').attr('src', memberAvatars[0]);
-                groupAvatar.find('.img_2').attr('src', memberAvatars[1]);
-                groupAvatar.find('.img_3').attr('src', memberAvatars[2]);
-                return groupAvatar;
-            }
-    
-            if (memberAvatars.length === 4) {
-                const groupAvatar = $('#group_avatars_template .collage_4').clone();
-                groupAvatar.find('.img_1').attr('src', memberAvatars[0]);
-                groupAvatar.find('.img_2').attr('src', memberAvatars[1]);
-                groupAvatar.find('.img_3').attr('src', memberAvatars[2]);
-                groupAvatar.find('.img_4').attr('src', memberAvatars[3]);
-                return groupAvatar;
-            }
-    
-            // default avatar
+        }
+
+        // Cohee: there's probably a smarter way to do this..
+        if (memberAvatars.length === 1) {
             const groupAvatar = $('#group_avatars_template .collage_1').clone();
-            groupAvatar.find('.img_1').attr('src', group.avatar_url);
+            groupAvatar.find('.img_1').attr('src', memberAvatars[0]);
             return groupAvatar;
         }
-    
-        async function getCharacters() {
-            await getGroups();
-    
-            //console.log('getCharacters() -- entered');
+
+        if (memberAvatars.length === 2) {
+            const groupAvatar = $('#group_avatars_template .collage_2').clone();
+            groupAvatar.find('.img_1').attr('src', memberAvatars[0]);
+            groupAvatar.find('.img_2').attr('src', memberAvatars[1]);
+            return groupAvatar;
+        }
+
+        if (memberAvatars.length === 3) {
+            const groupAvatar = $('#group_avatars_template .collage_3').clone();
+            groupAvatar.find('.img_1').attr('src', memberAvatars[0]);
+            groupAvatar.find('.img_2').attr('src', memberAvatars[1]);
+            groupAvatar.find('.img_3').attr('src', memberAvatars[2]);
+            return groupAvatar;
+        }
+
+        if (memberAvatars.length === 4) {
+            const groupAvatar = $('#group_avatars_template .collage_4').clone();
+            groupAvatar.find('.img_1').attr('src', memberAvatars[0]);
+            groupAvatar.find('.img_2').attr('src', memberAvatars[1]);
+            groupAvatar.find('.img_3').attr('src', memberAvatars[2]);
+            groupAvatar.find('.img_4').attr('src', memberAvatars[3]);
+            return groupAvatar;
+        }
+
+        // default avatar
+        const groupAvatar = $('#group_avatars_template .collage_1').clone();
+        groupAvatar.find('.img_1').attr('src', group.avatar_url);
+        return groupAvatar;
+    }
+    async function getCharacters() {
+        await getGroups();
+
+        //console.log('getCharacters() -- entered');
+        //console.log(characters);
+        var response = await fetch("/getcharacters", {						//RossAscends: changed from const
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRF-Token": token
+            },
+            body: JSON.stringify({
+                "": ""
+            })
+        });
+        if (response.ok === true) {
+
+            var getData = '';												//RossAscends: reset to force array to update to account for deleted character.
+            var getData = await response.json();							//RossAscends: changed from const
+            //console.log(getData);					
+
+            //var aa = JSON.parse(getData[0]);
+
+            var load_ch_count = Object.getOwnPropertyNames(getData);		//RossAscends: change from const to create dynamic character load amounts.
+            var charCount = load_ch_count.length;
+            //console.log('/getcharacters -- expecting to load '+charCount+' characters.')
+            for (var i = 0; i < load_ch_count.length; i++) {
+                characters[i] = [];
+                characters[i] = getData[i];
+                //console.log('/getcharacters -- loaded character #'+(i+1)+' ('+characters[i].name+')');
+            }
+            //RossAscends: updated character sorting to be alphabetical
+            characters.sort(function (a, b) {
+                //console.log('sorting characters: '+a.name+' vs '+b.name);
+                if (a.name < b.name) {
+                    return -1
+                }
+                if (a.name > b.name) {
+                    return 1;
+                }
+                return 0;
+
+            });
             //console.log(characters);
-            var response = await fetch("/getcharacters", {						//RossAscends: changed from const
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRF-Token": token
-                },
-                body: JSON.stringify({
-                    "": ""
-                })
-            });
-            if (response.ok === true) {
-    
-                var getData = '';												//RossAscends: reset to force array to update to account for deleted character.
-                var getData = await response.json();							//RossAscends: changed from const
-                //console.log(getData);					
-    
-                //var aa = JSON.parse(getData[0]);
-    
-                var load_ch_count = Object.getOwnPropertyNames(getData);		//RossAscends: change from const to create dynamic character load amounts.
-                var charCount = load_ch_count.length;
-                //console.log('/getcharacters -- expecting to load '+charCount+' characters.')
-                for (var i = 0; i < load_ch_count.length; i++) {
-                    characters[i] = [];
-                    characters[i] = getData[i];
-                    //console.log('/getcharacters -- loaded character #'+(i+1)+' ('+characters[i].name+')');
-                }
-                //RossAscends: updated character sorting to be alphabetical
-                characters.sort(function (a, b) {
-                    //console.log('sorting characters: '+a.name+' vs '+b.name);
-                    if (a.name < b.name) {
-                        return -1
-                    }
-                    if (a.name > b.name) {
-                        return 1;
-                    }
-                    return 0;
-    
-                });
-                //console.log(characters);
-    
-                //characters.reverse();
-                //console.log('/getcharacters -- this_chid -- '+this_chid);
-                if (this_chid != undefined && this_chid != 'invalid-safety-id') {
-                    $("#avatar_url_pole").val(characters[this_chid].avatar);
-                }
-    
-    
-                //console.log('/getcharacters -- sending '+i+' characters to /printcharacters');
-                printCharacters();
-                //console.log(propOwn.length);
-                //return JSON.parse(getData[0]);
-                //const getData = await response.json();
-                //var getMessage = getData.results[0].text;
+
+            //characters.reverse();
+            //console.log('/getcharacters -- this_chid -- '+this_chid);
+            if (this_chid != undefined && this_chid != 'invalid-safety-id') {
+                $("#avatar_url_pole").val(characters[this_chid].avatar);
             }
+
+
+            //console.log('/getcharacters -- sending '+i+' characters to /printcharacters');
+            printCharacters();
+            //console.log(propOwn.length);
+            //return JSON.parse(getData[0]);
+            //const getData = await response.json();
+            //var getMessage = getData.results[0].text;
         }
-        async function getBackgrounds() {
-    
-            const response = await fetch("/getbackgrounds", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRF-Token": token
-                },
-                body: JSON.stringify({
-                    "": ""
-                })
-    
-            });
-            if (response.ok === true) {
-                const getData = await response.json();
-                //background = getData;
-                //console.log(getData.length);
-                for (var i = 0; i < getData.length; i++) {
-                    //console.log(1);
-                    $("#bg_menu_content").append("<div class=bg_example><img bgfile='" + getData[i] + "' class=bg_example_img src='backgrounds/" + getData[i] + "'><img bgfile='" + getData[i] + "' class=bg_example_cross src=img/cross.png></div>");
-                }
-                //var aa = JSON.parse(getData[0]);
-                //const load_ch_coint = Object.getOwnPropertyNames(getData);
-    
-    
+    }
+    async function getBackgrounds() {
+
+        const response = await fetch("/getbackgrounds", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRF-Token": token
+            },
+            body: JSON.stringify({
+                "": ""
+            })
+
+        });
+        if (response.ok === true) {
+            const getData = await response.json();
+            //background = getData;
+            //console.log(getData.length);
+            for (var i = 0; i < getData.length; i++) {
+                //console.log(1);
+                $("#bg_menu_content").append("<div class=bg_example><img bgfile='" + getData[i] + "' class=bg_example_img src='backgrounds/" + getData[i] + "'><img bgfile='" + getData[i] + "' class=bg_example_cross src=img/cross.png></div>");
             }
-        }
-        async function isColab() {
-            is_checked_colab = true;
-            const response = await fetch("/iscolab", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRF-Token": token
-                },
-                body: JSON.stringify({
-                    "": ""
-                })
-    
-            });
-            if (response.ok === true) {
-                const getData = await response.json();
-                if (getData.colaburl != false) {
-                    $('#colab_shadow_popup').css('display', 'none');
-                    is_colab = true;
-                    let url = String(getData.colaburl).split("flare.com")[0] + "flare.com";
-                    url = String(url).split("loca.lt")[0] + "loca.lt";
-                    $('#api_url_text').val(url);
-                    setTimeout(function () {
-                        $('#api_button').click();
-                    }, 2000);
-                }
-    
-    
-            }
-        }
-        async function setBackground(bg) {
-            /*
-            const response = await fetch("/setbackground", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                        "bg": bg
-                    })
-    
-            });
-            if (response.ok === true) {
-                //const getData = await response.json();
-                //background = getData;
-    
-                //var aa = JSON.parse(getData[0]);
-                //const load_ch_coint = Object.getOwnPropertyNames(getData);
-            }*/
-            //console.log(bg);
-            jQuery.ajax({
-                type: 'POST', // 
-                url: '/setbackground', // 
-                data: JSON.stringify({
-                    bg: bg
-                }),
-                beforeSend: function () {
-                    //$('#create_button').attr('value','Creating...'); // 
-                },
-                cache: false,
-                dataType: "json",
-                contentType: "application/json",
-                //processData: false, 
-                success: function (html) {
-                    //setBackground(html);
-                    //$('body').css('background-image', 'linear-gradient(rgba(19,21,44,0.75), rgba(19,21,44,0.75)), url('+e.target.result+')');
-                    //$("#form_bg_download").after("<div class=bg_example><img bgfile='"+html+"' class=bg_example_img src='backgrounds/"+html+"'><img bgfile='"+html+"' class=bg_example_cross src=img/cross.png></div>");
-                },
-                error: function (jqXHR, exception) {
-                    console.log(exception);
-                    console.log(jqXHR);
-                }
-            });
-        }
-        async function delBackground(bg) {
-            const response = await fetch("/delbackground", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRF-Token": token
-                },
-                body: JSON.stringify({
-                    "bg": bg
-                })
-    
-            });
-            if (response.ok === true) {
-                //const getData = await response.json();
-                //background = getData;
-    
-                //var aa = JSON.parse(getData[0]);
-                //const load_ch_coint = Object.getOwnPropertyNames(getData);
-    
-    
-            }
-        }
-        function printMessages() {
-            //console.log(chat);
-            //console.log('printMessages() -- printing messages for -- '+this_chid+' '+active_character+' '+characters[this_chid]);
-            chat.forEach(function (item, i, arr) {
-                addOneMessage(item);
-            });
-        }
-        function clearChat() {
-            count_view_mes = 0;
-            extension_prompts = {};
-            $('#chat').html('');
-        }
-        function messageFormating(mes, ch_name, isSystem, forceAvatar) {
-            if (this_chid != undefined && !isSystem) mes = mes.replaceAll("<", "&lt;").replaceAll(">", "&gt;");//for Chloe
-            if (this_chid === undefined) {
-                mes = mes.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\*(.+?)\*/g, '<i>$1</i>').replace(/\n/g, '<br/>');
-    
-            } else if (!isSystem) {
-                mes = converter.makeHtml(mes);
-                mes = mes.replace(/{([^}]+)}/g, '');
-                mes = mes.replace(/\n/g, '<br/>');
-                mes = mes.trim();
-            }
-    
-            if (forceAvatar) {
-                mes = mes.replaceAll(ch_name + ":", "");
-            }
-    
-            if (ch_name !== name1) {
-                mes = mes.replaceAll(name2 + ":", "");
-            }
-            return mes;
-        }
-        function appendImageToMessage(mes, messageElement) {
-            if (mes.extra?.image) {
-                const image = document.createElement('img');
-                image.src = mes.extra?.image;
-                image.classList.add('img_extra');
-                messageElement.find('.mes_text').prepend(image);
-            }
-        }
-        function addOneMessage(mes) {
-            //var message = mes['mes'];
-            //message = mes['mes'].replace(/^\s+/g, '');
-            //console.log(message.indexOf(name1+":"));
-            var messageText = mes['mes'];
-            var characterName = name1;
-            var avatarImg = "User Avatars/" + user_avatar;
-            const isSystem = mes.is_system;
-            generatedPromtCache = '';
-            //thisText = thisText.split("\n").join("<br>");
-            var avatarImg = "User Avatars/" + user_avatar;
-            if (!mes['is_user']) {
-                if (mes.force_avatar) {
-                    avatarImg = mes.force_avatar;
-                }
-                else if (this_chid == undefined || this_chid == "invalid-safety-id") {
-                    avatarImg = "img/chloe.png";
-                }
-                else {
-                    if (characters[this_chid].avatar != 'none') {
-                        avatarImg = "characters/" + characters[this_chid].avatar;
-                        if (is_mes_reload_avatar !== false) {
-                            avatarImg += "?" + is_mes_reload_avatar;
-                            //console.log(avatarImg);
-                        }
-                    } else {
-                        avatarImg = "img/fluffy.png";
-                    }
-                }
-    
-                characterName = mes.is_system || mes.force_avatar ? mes.name : name2;
-            }
-    
-            //Formating
-            //messageText = messageText.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\*(.+?)\*/g, '<i>$1</i>').replace(/\n/g, '<br/>');
-            //if(characterName != name1){
-            //messageText = messageText.replaceAll(name2+":", "");
-            //}
-            //console.log(messageText);
-            if (count_view_mes == 0) {
-                messageText = messageText.replace(/{{user}}/gi, name1);
-                messageText = messageText.replace(/{{char}}/gi, name2);
-                messageText = messageText.replace(/<USER>/gi, name1);
-                messageText = messageText.replace(/<BOT>/gi, name2);
-            }
-            messageText = messageFormating(messageText, characterName, isSystem, mes.force_avatar);
-            const bias = messageFormating(mes.extra?.bias ?? '');
-    
-            $("#chat").append("<div class='mes' mesid=" + count_view_mes + " ch_name=" + characterName + "><div class='for_checkbox'></div><input type='checkbox' class='del_checkbox'><div class=avatar><img src='" + avatarImg + "'></div><div class=mes_block><div class=ch_name>" + characterName + "<div title=Edit class=mes_edit></div><div class=mes_edit_cancel><img src=img/cancel.png></div><div class=mes_edit_done><img src=img/done.png></div></div><div class=mes_text>" + `</div><div class='mes_bias'>${bias}</div></div></div>`);
-    
-            const newMessage = $(`#chat [mesid="${count_view_mes}"]`);
-            newMessage.data('isSystem', isSystem);
-    
-            appendImageToMessage(mes, newMessage);
-    
-            if (isSystem) {
-                newMessage.find('.mes_edit').hide();
-            }
-    
-            if (!if_typing_text) {
-                //console.log(messageText);
-                $("#chat").children().filter('[mesid="' + count_view_mes + '"]').children('.mes_block').children('.mes_text').append(messageText);
-            } else {
-                typeWriter($("#chat").children().filter('[mesid="' + count_view_mes + '"]').children('.mes_block').children('.mes_text'), messageText, 50, 0);
-            }
-            count_view_mes++;
-            //console.log('add mes without animation = '+add_mes_without_animation);
-            //console.log(!add_mes_without_animation);
-            if (!add_mes_without_animation) {
-                console.log('adding mes with animation')
-                //$('#chat').children().last().css('transition','all 2s ease-in-out');
-                $('#chat').children().last().css("opacity", "1");
-                //$('#chat').children().last().css('transition','all 2s ease-in-out');
-                
-                
-            }else {
-                console.log('add mes with animation was false, and is set to false again')
-                add_mes_without_animation = false;
-            }
-            var $textchat = $('#chat');
-            //$('#chat').children().last().css("opacity", "1");
-            $textchat.scrollTop(($textchat[0].scrollHeight));
+            //var aa = JSON.parse(getData[0]);
+            //const load_ch_coint = Object.getOwnPropertyNames(getData);
+
 
         }
-        function typeWriter(target, text, speed, i) {
-            if (i < text.length) {
-                //target.append(text.charAt(i));
-                target.html(target.html() + text.charAt(i));
-                i++;
-                setTimeout(() => typeWriter(target, text, speed, i), speed);
+    }
+    async function isColab() {
+        is_checked_colab = true;
+        const response = await fetch("/iscolab", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRF-Token": token
+            },
+            body: JSON.stringify({
+                "": ""
+            })
+
+        });
+        if (response.ok === true) {
+            const getData = await response.json();
+            if (getData.colaburl != false) {
+                $('#colab_shadow_popup').css('display', 'none');
+                is_colab = true;
+                let url = String(getData.colaburl).split("flare.com")[0] + "flare.com";
+                url = String(url).split("loca.lt")[0] + "loca.lt";
+                $('#api_url_text').val(url);
+                setTimeout(function () {
+                    $('#api_button').click();
+                }, 2000);
             }
+
+
         }
-        function newMesPattern(name) { //Patern which denotes a new message
-            name = name + ':';
-            return name;
-        }
-    
-        function substituteParams(content) {
-            content = content.replace(/{{user}}/gi, name1);
-            content = content.replace(/{{char}}/gi, name2);
-            content = content.replace(/<USER>/gi, name1);
-            content = content.replace(/<BOT>/gi, name2);
-            return content;
-        }
-    
-        function checkWorldInfo(chat) {
-            if (world_info_data.entries.length == 0) {
-                return '';
+    }
+    async function setBackground(bg) {
+        /*
+        const response = await fetch("/setbackground", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                    "bg": bg
+                })
+
+        });
+        if (response.ok === true) {
+            //const getData = await response.json();
+            //background = getData;
+
+            //var aa = JSON.parse(getData[0]);
+            //const load_ch_coint = Object.getOwnPropertyNames(getData);
+        }*/
+        //console.log(bg);
+        jQuery.ajax({
+            type: 'POST', // 
+            url: '/setbackground', // 
+            data: JSON.stringify({
+                bg: bg
+            }),
+            beforeSend: function () {
+                //$('#create_button').attr('value','Creating...'); // 
+            },
+            cache: false,
+            dataType: "json",
+            contentType: "application/json",
+            //processData: false, 
+            success: function (html) {
+                //setBackground(html);
+                //$('body').css('background-image', 'linear-gradient(rgba(19,21,44,0.75), rgba(19,21,44,0.75)), url('+e.target.result+')');
+                //$("#form_bg_download").after("<div class=bg_example><img bgfile='"+html+"' class=bg_example_img src='backgrounds/"+html+"'><img bgfile='"+html+"' class=bg_example_cross src=img/cross.png></div>");
+            },
+            error: function (jqXHR, exception) {
+                console.log(exception);
+                console.log(jqXHR);
             }
-    
-            const messagesToLookBack = world_info_depth * 2;
-            let textToScan = chat.slice(0, messagesToLookBack).join('').toLowerCase();
-            let worldInfoBefore = '';
-            let worldInfoAfter = '';
-            let needsToScan = true;
-            let allActivatedEntries = new Set();
-    
-            const sortedEntries = Object.keys(world_info_data.entries).map(x => world_info_data.entries[x]).sort((a, b) => b.order - a.order);
-            while (needsToScan) {
-                let activatedNow = new Set();
-    
-                for (let entry of sortedEntries) {
-                    if (allActivatedEntries.has(entry.uid)) {
-                        continue;
+        });
+    }
+    async function delBackground(bg) {
+        const response = await fetch("/delbackground", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRF-Token": token
+            },
+            body: JSON.stringify({
+                "bg": bg
+            })
+
+        });
+        if (response.ok === true) {
+            //const getData = await response.json();
+            //background = getData;
+
+            //var aa = JSON.parse(getData[0]);
+            //const load_ch_coint = Object.getOwnPropertyNames(getData);
+
+
+        }
+    }
+    function printMessages() {
+        //console.log(chat);
+        //console.log('printMessages() -- printing messages for -- '+this_chid+' '+active_character+' '+characters[this_chid]);
+        chat.forEach(function (item, i, arr) {
+            //console.log('printMessage calls addOneMessage');
+            addOneMessage(item);
+        });
+    }
+    function clearChat() {
+        count_view_mes = 0;
+        extension_prompts = {};
+        $('#chat').html('');
+    }
+    function messageFormating(mes, ch_name, isSystem, forceAvatar) {
+        if (this_chid != undefined && !isSystem) mes = mes.replaceAll("<", "&lt;").replaceAll(">", "&gt;");//for Chloe
+        if (this_chid === undefined) {
+            mes = mes.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\*(.+?)\*/g, '<i>$1</i>').replace(/\n/g, '<br/>');
+
+        } else if (!isSystem) {
+            mes = converter.makeHtml(mes);
+            mes = mes.replace(/{([^}]+)}/g, '');
+            mes = mes.replace(/\n/g, '<br/>');
+            mes = mes.trim();
+        }
+
+        if (forceAvatar) {
+            mes = mes.replaceAll(ch_name + ":", "");
+        }
+
+        if (ch_name !== name1) {
+            mes = mes.replaceAll(name2 + ":", "");
+        }
+        return mes;
+    }
+    function appendImageToMessage(mes, messageElement) {
+        if (mes.extra?.image) {
+            const image = document.createElement('img');
+            image.src = mes.extra?.image;
+            image.classList.add('img_extra');
+            messageElement.find('.mes_text').prepend(image);
+        }
+    }
+    function addOneMessage(mes,type='normal') {
+        //var message = mes['mes'];
+        //message = mes['mes'].replace(/^\s+/g, '');
+        //console.log(message.indexOf(name1+":"));
+        var messageText = mes['mes'];
+        var characterName = name1;
+        var avatarImg = "User Avatars/" + user_avatar;
+        const isSystem = mes.is_system;
+        generatedPromtCache = '';
+        //thisText = thisText.split("\n").join("<br>");
+        if (!mes['is_user']) {
+            if (mes.force_avatar) {
+                avatarImg = mes.force_avatar;
+            }
+            else if (this_chid == undefined || this_chid == "invalid-safety-id") {
+                avatarImg = "img/chloe.png";
+            }
+            else {
+                if (characters[this_chid].avatar != 'none') {
+                    avatarImg = "characters/" + characters[this_chid].avatar;
+                    if (is_mes_reload_avatar !== false) {
+                        avatarImg += "?" + is_mes_reload_avatar;
+                        //console.log(avatarImg);
                     }
-    
-                    if (entry.constant) {
-                        activatedNow.add(entry.uid);
-                    }
-    
-                    if (Array.isArray(entry.key) && entry.key.length) {
-                        primary: for (let key of entry.key) {
-                            if (key && textToScan.includes(key.trim().toLowerCase())) {
-                                if (entry.selective && Array.isArray(entry.keysecondary) && entry.keysecondary.length) {
-                                    secondary: for (let keysecondary of entry.keysecondary) {
-                                        if (keysecondary && textToScan.includes(keysecondary.trim().toLowerCase())) {
-                                            activatedNow.add(entry.uid);
-                                            break secondary;
-                                        }
-                                    }
-                                } else {
-                                    activatedNow.add(entry.uid);
-                                    break primary;
+                } else {
+                    avatarImg = "img/fluffy.png";
+                }
+            }
+            characterName = mes.is_system || mes.force_avatar ? mes.name : name2;
+        }
+        if (count_view_mes == 0) {
+            messageText = messageText.replace(/{{user}}/gi, name1);
+            messageText = messageText.replace(/{{char}}/gi, name2);
+            messageText = messageText.replace(/<USER>/gi, name1);
+            messageText = messageText.replace(/<BOT>/gi, name2);
+        }
+        messageText = messageFormating(messageText, characterName, isSystem, mes.force_avatar);
+        const bias = messageFormating(mes.extra?.bias ?? '');
+        var HTMLForEachMes = 
+        '<div class="mes" mesid="' + count_view_mes +'" ch_name="' +characterName + '" is_user="' +mes["is_user"]+'">'+
+            '<div class="for_checkbox"></div>'+
+            '<input type="checkbox" class="del_checkbox">'+
+            '<div class="avatar">'+
+                '<img src="' + avatarImg + '">'+
+            '</div>'+
+            '<div class="swipe_left">'+
+            '<img src="img/swipe_left.png">'+
+            '</div>'+
+            '<div class="mes_block">'+
+                '<div class="ch_name">' + 
+                    characterName + 
+                    '<div title=Edit class=mes_edit></div>'+
+                    '<div class=mes_edit_cancel><img src=img/cancel.png></div>'+
+                    '<div class=mes_edit_done><img src=img/done.png></div>'+
+                '</div>'+
+                '<div class=mes_text></div>'+
+            '</div>'+
+            '<div class="mes_bias">'+bias+'</div>'+
+            '<div class="swipe_right">'+
+            '   <img src="img/swipe_right.png">'+
+            '</div>'+
+        '</div>';
+        if(type !== 'swipe'){
+            $("#chat").append(HTMLForEachMes);
+        }
+
+        const newMessage = $(`#chat [mesid="${count_view_mes}"]`);
+        newMessage.data('isSystem', isSystem);
+
+        appendImageToMessage(mes, newMessage);
+        if (isSystem) {
+            newMessage.find('.mes_edit').hide();
+        }
+//////// swipecode inside addOneMessage - to keep swipes displayed while 
+// SWIPE BUTTON DISPLAY SHOULD BE HANDLED IN showSwipeButtons/hideSwipeButtons, not here. Commented out duplicate code.
+
+            console.log('addOneMessage -- type = '+type);                                   
+            if(type === 'swipe'){
+                console.log('addOneMessage -- detected adding one swipe message')
+                $("#chat").children().filter('[mesid="'+(count_view_mes-1)+'"]').children('.mes_block').children('.mes_text').html('');
+                $("#chat").children().filter('[mesid="'+(count_view_mes-1)+'"]').children('.mes_block').children('.mes_text').append(messageText);
+
+/*                 if(mes['swipe_id'] !== 0 && swipes){
+                    console.log('addOneMessage -- swipe_id is not 0, adding both buttons');
+                    $("#chat").children().filter('[mesid="'+(count_view_mes-1)+'"]').children('.swipe_right').css('display', 'flex');
+                    $("#chat").children().filter('[mesid="'+(count_view_mes-1)+'"]').children('.swipe_left').css('display', 'flex');
+                } */
+            }else{ //if this is not a display of a new swipe message..
+                console.log('addOneMessage -- adding message');
+                $("#chat").children().filter('[mesid="'+count_view_mes+'"]').children('.mes_block').children('.mes_text').append(messageText);
+                console.log('addOneMessage - hiding swipe buttons');
+                hideSwipeButtons();     //disabling this leaves buttons visibile on all messages, breaks swipes
+                //console.log('addOneMessage -- checking for swipes'); 
+                /* if(parseInt(chat.length-1) === parseInt(count_view_mes) && !mes['is_user'] && swipes){
+
+                    console.log('chat length - 1 = '+(chat[chat.length-1]['mesid']));
+                    if(chat[chat.length-1]['mesid'] !==undefined){ 
+                            if(mes['swipe_id'] === undefined && count_view_mes !== 0){
+                                console.log('addOneMessage -- no swipes here, showing right button for possible generation');
+                                $("#chat").children().filter('[mesid="'+(count_view_mes)+'"]').children('.swipe_right').css('display', 'flex');
+                            }else if(mes['swipe_id'] !== undefined){ // if swipes aren't undefined == swipes exist at this node
+                                console.log('addOneMessage -- found swipes')
+                                if(mes['swipe_id'] === 0){ //if we are viewing the first swipe message, display right
+                                    console.log('addOneMessage -- found lone swipe, displaying right button');
+                                    $("#chat").children().filter('[mesid="'+(count_view_mes)+'"]').children('.swipe_right').css('display', 'flex');
+                                }else { // if swipe_id is more than 0, than means we must have multiple swipes, so show both items
+                                    console.log('addOneMessage -- found multiple swipes, showing both buttons');
+                                    $("#chat").children().filter('[mesid="'+(count_view_mes)+'"]').children('.swipe_right').css('display', 'flex');
+                                    $("#chat").children().filter('[mesid="'+(count_view_mes)+'"]').children('.swipe_left').css('display', 'flex');
                                 }
+                            }
+                        }
+                }else{console.log('apparently no swipes found, and not a valid mesage to add hideSwipeButtons, so skipping');} */
+                count_view_mes++;
+            }
+        /* } */
+       // if(type !== 'swipe'){count_view_mes++;}
+
+        var $textchat = $('#chat');      
+        $('#chat .mes').last().addClass('last_mes');
+        $('#chat .mes').eq(-2).removeClass('last_mes');
+        $textchat.scrollTop($textchat[0].scrollHeight);
+
+        hideSwipeButtons(); //disabling this prevents left button from correctly removing on last message without swipe to the left...
+        showSwipeButtons();
+
+    }
+    function substituteParams(content) {
+        content = content.replace(/{{user}}/gi, name1);
+        content = content.replace(/{{char}}/gi, name2);
+        content = content.replace(/<USER>/gi, name1);
+        content = content.replace(/<BOT>/gi, name2);
+        return content;
+    }
+    function checkWorldInfo(chat) {
+        if (world_info_data.entries.length == 0) {
+            return '';
+        }
+
+        const messagesToLookBack = world_info_depth * 2;
+        let textToScan = chat.slice(0, messagesToLookBack).join('').toLowerCase();
+        let worldInfoBefore = '';
+        let worldInfoAfter = '';
+        let needsToScan = true;
+        let allActivatedEntries = new Set();
+
+        const sortedEntries = Object.keys(world_info_data.entries).map(x => world_info_data.entries[x]).sort((a, b) => b.order - a.order);
+        while (needsToScan) {
+            let activatedNow = new Set();
+
+            for (let entry of sortedEntries) {
+                if (allActivatedEntries.has(entry.uid)) {
+                    continue;
+                }
+
+                if (entry.constant) {
+                    activatedNow.add(entry.uid);
+                }
+
+                if (Array.isArray(entry.key) && entry.key.length) {
+                    primary: for (let key of entry.key) {
+                        if (key && textToScan.includes(key.trim().toLowerCase())) {
+                            if (entry.selective && Array.isArray(entry.keysecondary) && entry.keysecondary.length) {
+                                secondary: for (let keysecondary of entry.keysecondary) {
+                                    if (keysecondary && textToScan.includes(keysecondary.trim().toLowerCase())) {
+                                        activatedNow.add(entry.uid);
+                                        break secondary;
+                                    }
+                                }
+                            } else {
+                                activatedNow.add(entry.uid);
+                                break primary;
                             }
                         }
                     }
                 }
-    
-                needsToScan = activatedNow.size > 0;
-                const newEntries = [...activatedNow]
-                    .map(x => world_info_data.entries[x])
-                    .sort((a, b) => sortedEntries.indexOf(a) - sortedEntries.indexOf(b));
-    
-                for (const entry of newEntries) {
-                    if (entry.position === world_info_position.after) {
-                        worldInfoAfter = `${substituteParams(entry.content)}\n${worldInfoAfter}`;
-                    }
-                    else {
-                        worldInfoBefore = `${substituteParams(entry.content)}\n${worldInfoBefore}`;
-                    }
-    
-                    if (encode(worldInfoBefore + worldInfoAfter).length >= world_info_budget) {
-                        needsToScan = false;
-                        break;
-                    }
+            }
+
+            needsToScan = activatedNow.size > 0;
+            const newEntries = [...activatedNow]
+                .map(x => world_info_data.entries[x])
+                .sort((a, b) => sortedEntries.indexOf(a) - sortedEntries.indexOf(b));
+
+            for (const entry of newEntries) {
+                if (entry.position === world_info_position.after) {
+                    worldInfoAfter = `${substituteParams(entry.content)}\n${worldInfoAfter}`;
                 }
-    
-                if (needsToScan) {
-                    textToScan = newEntries.map(x => x.content).join('\n').toLowerCase() + textToScan;
+                else {
+                    worldInfoBefore = `${substituteParams(entry.content)}\n${worldInfoBefore}`;
                 }
-    
-                allActivatedEntries = new Set([...allActivatedEntries, ...activatedNow]);
+
+                if (encode(worldInfoBefore + worldInfoAfter).length >= world_info_budget) {
+                    needsToScan = false;
+                    break;
+                }
             }
-    
-            return { worldInfoBefore, worldInfoAfter };
+
+            if (needsToScan) {
+                textToScan = newEntries.map(x => x.content).join('\n').toLowerCase() + textToScan;
+            }
+
+            allActivatedEntries = new Set([...allActivatedEntries, ...activatedNow]);
         }
-    
-        function isHelpRequest(message) {
-            const helpTokens = ['/?', '/help'];
-            return helpTokens.includes(message.trim().toLowerCase());
+
+        return { worldInfoBefore, worldInfoAfter };
+    }
+    function isHelpRequest(message) {
+        const helpTokens = ['/?', '/help'];
+        return helpTokens.includes(message.trim().toLowerCase());
+    }
+    function sendSystemMessage(type, text) {
+        const systemMessage = system_messages[type];
+
+        if (!systemMessage) {
+            return;
         }
-    
-        function sendSystemMessage(type, text) {
-            const systemMessage = system_messages[type];
-    
-            if (!systemMessage) {
-                return;
-            }
-    
-            const newMessage = { ...systemMessage, 'send_date': humanizedDateTime() };
-    
-            if (text) {
-                newMessage.mes = text;
-            }
-    
-            chat.push(newMessage);
-            addOneMessage(newMessage);
-            is_send_press = false;
+
+        const newMessage = { ...systemMessage, 'send_date': humanizedDateTime() };
+
+        if (text) {
+            newMessage.mes = text;
         }
-    
-        function extractMessageBias(message) {
-            if (!message) {
-                return null;
-            }
-    
-            const found = [];
-            const rxp = /{([^}]+)}/g;
-            let curMatch;
-    
-            while (curMatch = rxp.exec(message)) {
-                found.push(curMatch[1].trim());
-            }
-    
-            if (!found.length) {
-                return '';
-            }
-    
-            return ` ${found.join(' ')} `;
+
+        chat.push(newMessage);
+console.log('sendSystemMessage calls addOneMessage');
+        addOneMessage(newMessage);
+        is_send_press = false;
+    }
+    function extractMessageBias(message) {
+        if (!message) {
+            return null;
         }
-        async function Generate(type, automatic_trigger) {//encode("dsfs").length
-            tokens_already_generated = 0;
-            message_already_generated = name2 + ': ';
-    
-            if (isHelpRequest($("#send_textarea").val())) {
-                sendSystemMessage(system_message_types.HELP);
+
+        const found = [];
+        const rxp = /{([^}]+)}/g;
+        let curMatch;
+
+        while (curMatch = rxp.exec(message)) {
+            found.push(curMatch[1].trim());
+        }
+
+        if (!found.length) {
+            return '';
+        }
+
+        return ` ${found.join(' ')} `;
+    }
+    async function Generate(type, automatic_trigger) {//encode("dsfs").length
+        console.log('Generate entered');
+        tokens_already_generated = 0;
+        message_already_generated = name2 + ': ';
+
+        if (isHelpRequest($("#send_textarea").val())) {
+            sendSystemMessage(system_message_types.HELP);
+            $("#send_textarea").val('').trigger('input');
+            return;
+        }
+
+        if (selected_group && !is_group_generating) {
+            generateGroupWrapper(false);
+            return;
+        }
+
+        if (online_status != 'no_connection' && this_chid != undefined && this_chid !== 'invalid-safety-id') {
+            if (type !== 'regenerate') {
+                is_send_press = true;
+                var textareaText = $("#send_textarea").val();
+                //console.log('Not a Regenerate call, so posting normall with input of: ' +textareaText);
                 $("#send_textarea").val('').trigger('input');
-                return;
-            }
-    
-            if (selected_group && !is_group_generating) {
-                generateGroupWrapper(false);
-                return;
-            }
-    
-            if (online_status != 'no_connection' && this_chid != undefined && this_chid !== 'invalid-safety-id') {
-                if (type !== 'regenerate') {
-                    is_send_press = true;
-                    var textareaText = $("#send_textarea").val();
-                    //console.log('Not a Regenerate call, so posting normall with input of: ' +textareaText);
-                    $("#send_textarea").val('').trigger('input');
-    
+
+            } else {
+                //console.log('Regenerate call detected')
+                var textareaText = "";
+                if (chat[chat.length - 1]['is_user']) {//If last message from You
+
                 } else {
-                    //console.log('Regenerate call detected')
-                    var textareaText = "";
-                    if (chat[chat.length - 1]['is_user']) {//If last message from You
-    
-                    } else {
-                        chat.length = chat.length - 1;
-                        count_view_mes -= 1;
-                        //$('#chat').children().last().css({'transition':'all 0.5s ease-in-out'});
-                        //$('#chat').children().last().css({'transform':'translateX(100vh) scale(0.1,0.1)'});
-                        //$('#chat').children().last().css({'opacity':'0'});
-                        setTimeout(function(){
-                            $('#chat').children().last().remove();
-                       },1000);
-                    }
+                    chat.length = chat.length - 1;
+                    count_view_mes -= 1;
+                    //$('#chat').children().last().css({'transition':'all 0.5s ease-in-out'});
+                    //$('#chat').children().last().css({'transform':'translateX(100vh) scale(0.1,0.1)'});
+                    //$('#chat').children().last().css({'opacity':'0'});
+                    setTimeout(function(){
+                        $('#chat').children().last().remove();
+                    },1000);
                 }
-    
-                $("#send_but").css("display", "none");
-                $("#loading_mes").css("display", "inline-block");
-    
-                let promptBias = null;
-                let messageBias = extractMessageBias(textareaText);
-    
-                // gets bias of the latest message where it was applied
-                for (let mes of chat) {
-                    if (mes && mes.is_user && mes.extra && mes.extra.bias) {
-                        promptBias = mes.extra.bias;
-                    }
+            }
+
+            $("#send_but").css("display", "none");
+            $("#loading_mes").css("display", "inline-block");
+
+            let promptBias = null;
+            let messageBias = extractMessageBias(textareaText);
+
+            // gets bias of the latest message where it was applied
+            for (let mes of chat) {
+                if (mes && mes.is_user && mes.extra && mes.extra.bias) {
+                    promptBias = mes.extra.bias;
                 }
-    
-                // bias from the latest message is top priority
-                promptBias = messageBias ?? promptBias ?? '';
-    
-                var storyString = "";
-                var userSendString = "";
-                var finalPromt = "";
-    
-                var postAnchorChar = "talks a lot with descriptions";//'Talk a lot with description what is going on around';// in asterisks
-                var postAnchorStyle = "Writing style: very long messages";//"[Genre: roleplay chat][Tone: very long messages with descriptions]";
-    
-    
-                var anchorTop = '';
-                var anchorBottom = '';
-                var topAnchorDepth = 8;
-    
-                if (character_anchor && !is_pygmalion) {
-                    if (anchor_order === 0) {
-                        anchorTop = name2 + " " + postAnchorChar;
-                    } else {
-                        anchorBottom = "[" + name2 + " " + postAnchorChar + "]";
-                    }
+            }
+
+            // bias from the latest message is top priority//
+
+            promptBias = messageBias ?? promptBias ?? '';
+
+            var storyString = "";
+            var userSendString = "";
+            var finalPromt = "";
+
+            var postAnchorChar = "talks a lot with descriptions";//'Talk a lot with description what is going on around';// in asterisks
+            var postAnchorStyle = "Writing style: very long messages";//"[Genre: roleplay chat][Tone: very long messages with descriptions]";
+
+
+            var anchorTop = '';
+            var anchorBottom = '';
+            var topAnchorDepth = 8;
+
+            if (character_anchor && !is_pygmalion) {
+                console.log('saw not pyg');
+                if (anchor_order === 0) {
+                    anchorTop = name2 + " " + postAnchorChar;
+                } else {
+                    console.log('saw pyg, adding anchors')
+                    anchorBottom = "[" + name2 + " " + postAnchorChar + "]";
                 }
-                if (style_anchor && !is_pygmalion) {
-                    if (anchor_order === 1) {
-                        anchorTop = postAnchorStyle;
-                    } else {
-                        anchorBottom = "[" + postAnchorStyle + "]";
-                    }
+            }
+            if (style_anchor && !is_pygmalion) {
+                if (anchor_order === 1) {
+                    anchorTop = postAnchorStyle;
+                } else {
+                    anchorBottom = "[" + postAnchorStyle + "]";
                 }
-    
-                //*********************************
-                //PRE FORMATING STRING
-                //*********************************
-                if (textareaText != "" && !automatic_trigger) {
-                    chat[chat.length] = {};
-                    chat[chat.length - 1]['name'] = name1;
-                    chat[chat.length - 1]['is_user'] = true;
-                    chat[chat.length - 1]['is_name'] = true;
-                    chat[chat.length - 1]['send_date'] = humanizedDateTime();
-                    chat[chat.length - 1]['mes'] = textareaText;
-                    chat[chat.length - 1]['extra'] = {};
-    
-                    if (messageBias) {
-                        chat[chat.length - 1]['extra']['bias'] = messageBias;
-                    }
-    
-                    addOneMessage(chat[chat.length - 1]);
+            }
+
+            //*********************************
+            //PRE FORMATING STRING
+            //*********************************
+            if (textareaText != "" && !automatic_trigger) {
+                chat[chat.length] = {};
+                chat[chat.length - 1]['name'] = name1;
+                chat[chat.length - 1]['is_user'] = true;
+                chat[chat.length - 1]['is_name'] = true;
+                chat[chat.length - 1]['send_date'] = humanizedDateTime();
+                chat[chat.length - 1]['mes'] = textareaText;
+                chat[chat.length - 1]['extra'] = {};
+
+                if (messageBias) {
+                    console.log('checking bias');
+                    chat[chat.length - 1]['extra']['bias'] = messageBias;
                 }
-                var chatString = '';
-                var arrMes = [];
-                var mesSend = [];
-                var charDescription = $.trim(characters[this_chid].description);
-                var charPersonality = $.trim(characters[this_chid].personality);
-                var Scenario = $.trim(characters[this_chid].scenario);
-                var mesExamples = $.trim(characters[this_chid].mes_example);
-                var checkMesExample = $.trim(mesExamples.replace(/<START>/gi, ''));//for check length without tag
-                if (checkMesExample.length == 0) mesExamples = '';
-                var mesExamplesArray = [];
-                //***Base replace***
-                if (mesExamples !== undefined) {
-                    if (mesExamples.length > 0) {
-                        if (is_pygmalion) {
-                            mesExamples = mesExamples.replace(/{{user}}:/gi, 'You:');
-                            mesExamples = mesExamples.replace(/<USER>:/gi, 'You:');
-                        }
-                        mesExamples = mesExamples.replace(/{{user}}/gi, name1);
-                        mesExamples = mesExamples.replace(/{{char}}/gi, name2);
-                        mesExamples = mesExamples.replace(/<USER>/gi, name1);
-                        mesExamples = mesExamples.replace(/<BOT>/gi, name2);
-                        //mesExamples = mesExamples.replaceAll('<START>', '[An example of how '+name2+' responds]');
-                        let blocks = mesExamples.split(/<START>/gi);
-                        mesExamplesArray = blocks.slice(1).map(block => `<START>\n${block.trim()}\n`);
+                console.log('Generate calls addOneMessage');
+                addOneMessage(chat[chat.length - 1]);
+            }
+            var chatString = '';
+            var arrMes = [];
+            var mesSend = [];
+            var charDescription = $.trim(characters[this_chid].description);
+            var charPersonality = $.trim(characters[this_chid].personality);
+            var Scenario = $.trim(characters[this_chid].scenario);
+            var mesExamples = $.trim(characters[this_chid].mes_example);
+            var checkMesExample = $.trim(mesExamples.replace(/<START>/gi, ''));//for check length without tag
+            if (checkMesExample.length == 0) mesExamples = '';
+            var mesExamplesArray = [];
+            //***Base replace***
+            if (mesExamples !== undefined) {
+                if (mesExamples.length > 0) {
+                    if (is_pygmalion) {
+                        mesExamples = mesExamples.replace(/{{user}}:/gi, 'You:');
+                        mesExamples = mesExamples.replace(/<USER>:/gi, 'You:');
+                    }
+                    mesExamples = mesExamples.replace(/{{user}}/gi, name1);
+                    mesExamples = mesExamples.replace(/{{char}}/gi, name2);
+                    mesExamples = mesExamples.replace(/<USER>/gi, name1);
+                    mesExamples = mesExamples.replace(/<BOT>/gi, name2);
+                    //mesExamples = mesExamples.replaceAll('<START>', '[An example of how '+name2+' responds]');
+                    let blocks = mesExamples.split(/<START>/gi);
+                    mesExamplesArray = blocks.slice(1).map(block => `<START>\n${block.trim()}\n`);
+                }
+            }
+            if (charDescription !== undefined) {
+                if (charDescription.length > 0) {
+                    charDescription = charDescription.replace(/{{user}}/gi, name1);
+                    charDescription = charDescription.replace(/{{char}}/gi, name2);
+                    charDescription = charDescription.replace(/<USER>/gi, name1);
+                    charDescription = charDescription.replace(/<BOT>/gi, name2);
+                }
+            }
+            if (charPersonality !== undefined) {
+                if (charPersonality.length > 0) {
+                    charPersonality = charPersonality.replace(/{{user}}/gi, name1);
+                    charPersonality = charPersonality.replace(/{{char}}/gi, name2);
+                    charPersonality = charPersonality.replace(/<USER>/gi, name1);
+                    charPersonality = charPersonality.replace(/<BOT>/gi, name2);
+                }
+            }
+            if (Scenario !== undefined) {
+                if (Scenario.length > 0) {
+                    Scenario = Scenario.replace(/{{user}}/gi, name1);
+                    Scenario = Scenario.replace(/{{char}}/gi, name2);
+                    Scenario = Scenario.replace(/<USER>/gi, name1);
+                    Scenario = Scenario.replace(/<BOT>/gi, name2);
+                }
+            }
+            if (is_pygmalion) {
+                if (charDescription.length > 0) {
+                    storyString = name2 + "'s Persona: " + charDescription + "\n";
+                }
+                if (charPersonality.length > 0) {
+                    storyString += 'Personality: ' + charPersonality + '\n';
+                }
+                if (Scenario.length > 0) {
+                    storyString += 'Scenario: ' + Scenario + '\n';
+                }
+            } else {
+                if (charDescription !== undefined) {
+                    if (charPersonality.length > 0) {
+                        charPersonality = name2 + "'s personality: " + charPersonality;//"["+name2+"'s personality: "+charPersonality+"]";
                     }
                 }
                 if (charDescription !== undefined) {
-                    if (charDescription.length > 0) {
-                        charDescription = charDescription.replace(/{{user}}/gi, name1);
-                        charDescription = charDescription.replace(/{{char}}/gi, name2);
-                        charDescription = charDescription.replace(/<USER>/gi, name1);
-                        charDescription = charDescription.replace(/<BOT>/gi, name2);
+                    if ($.trim(charDescription).length > 0) {
+                        if (charDescription.slice(-1) !== ']' || charDescription.substr(0, 1) !== '[') {
+                            //charDescription = '['+charDescription+']';
+                        }
+                        storyString += charDescription + '\n';
                     }
                 }
-                if (charPersonality !== undefined) {
-                    if (charPersonality.length > 0) {
-                        charPersonality = charPersonality.replace(/{{user}}/gi, name1);
-                        charPersonality = charPersonality.replace(/{{char}}/gi, name2);
-                        charPersonality = charPersonality.replace(/<USER>/gi, name1);
-                        charPersonality = charPersonality.replace(/<BOT>/gi, name2);
-                    }
+
+                if (count_view_mes < topAnchorDepth) {
+                    storyString += charPersonality + '\n';
                 }
-                if (Scenario !== undefined) {
-                    if (Scenario.length > 0) {
-                        Scenario = Scenario.replace(/{{user}}/gi, name1);
-                        Scenario = Scenario.replace(/{{char}}/gi, name2);
-                        Scenario = Scenario.replace(/<USER>/gi, name1);
-                        Scenario = Scenario.replace(/<BOT>/gi, name2);
-                    }
+
+
+            }
+
+            var count_exm_add = 0;  console.log('emptying chat2');
+            var chat2 = [];
+            var j = 0;
+            console.log('pre-replace chat.length = '+chat.length);
+            for (var i = chat.length - 1; i >= 0; i--) {
+                
+                if (j == 0) {
+                    chat[j]['mes'] = chat[j]['mes'].replace(/{{user}}/gi, name1);
+                    chat[j]['mes'] = chat[j]['mes'].replace(/{{char}}/gi, name2);
+                    chat[j]['mes'] = chat[j]['mes'].replace(/<USER>/gi, name1);
+                    chat[j]['mes'] = chat[j]['mes'].replace(/<BOT>/gi, name2);
                 }
-    
-    
-                if (is_pygmalion) {
-                    if (charDescription.length > 0) {
-                        storyString = name2 + "'s Persona: " + charDescription + "\n";
-                    }
-                    if (charPersonality.length > 0) {
-                        storyString += 'Personality: ' + charPersonality + '\n';
-                    }
-                    if (Scenario.length > 0) {
-                        storyString += 'Scenario: ' + Scenario + '\n';
-                    }
+                let this_mes_ch_name = '';
+                if (chat[j]['is_user']) {
+                    this_mes_ch_name = name1;
                 } else {
-                    if (charDescription !== undefined) {
-                        if (charPersonality.length > 0) {
-                            charPersonality = name2 + "'s personality: " + charPersonality;//"["+name2+"'s personality: "+charPersonality+"]";
-                        }
-                    }
-                    if (charDescription !== undefined) {
-                        if ($.trim(charDescription).length > 0) {
-                            if (charDescription.slice(-1) !== ']' || charDescription.substr(0, 1) !== '[') {
-                                //charDescription = '['+charDescription+']';
-                            }
-                            storyString += charDescription + '\n';
-                        }
-                    }
-    
-                    if (count_view_mes < topAnchorDepth) {
-                        storyString += charPersonality + '\n';
-                    }
-    
-    
+                    this_mes_ch_name = name2;
                 }
-    
-                var count_exm_add = 0;
-                var chat2 = [];
-                var j = 0;
-                for (var i = chat.length - 1; i >= 0; i--) {
-                    if (j == 0) {
-                        chat[j]['mes'] = chat[j]['mes'].replace(/{{user}}/gi, name1);
-                        chat[j]['mes'] = chat[j]['mes'].replace(/{{char}}/gi, name2);
-                        chat[j]['mes'] = chat[j]['mes'].replace(/<USER>/gi, name1);
-                        chat[j]['mes'] = chat[j]['mes'].replace(/<BOT>/gi, name2);
-                    }
-                    let this_mes_ch_name = '';
-                    if (chat[j]['is_user']) {
-                        this_mes_ch_name = name1;
-                    } else {
-                        this_mes_ch_name = name2;
-                    }
-                    if (chat[j]['is_name']) {
-                        chat2[i] = this_mes_ch_name + ': ' + chat[j]['mes'] + '\n';
-                    } else {
-                        chat2[i] = chat[j]['mes'] + '\n';
-                    }
-                    // system messages produce no text
-                    if (chat[j]['is_system']) {
-                        chat2[i] = '';
-                    }
-                    // replace bias markup
-                    chat2[i] = (chat2[i] ?? '').replace(/{([^}]+)}/g, '');
-                    j++;
+                if (chat[j]['is_name']) {
+                    chat2[i] = this_mes_ch_name + ': ' + chat[j]['mes'] + '\n';
+                } else {
+                    chat2[i] = chat[j]['mes'] + '\n';
                 }
-                //chat2 = chat2.reverse();
-                var this_max_context = 1487;
-                if (main_api == 'kobold') this_max_context = max_context;
-                if (main_api == 'novel') {
-                    if (novel_tier === 1) {
-                        this_max_context = 1024;
-                    } else {
-                        this_max_context = 2048 - 60;//fix for fat tokens 
-                        if (model_novel == 'krake-v2') {
-                            this_max_context -= 160;
-                        }
+                // system messages produce no text
+                if (chat[j]['is_system']) {
+                    chat2[i] = '';
+                }
+               
+                // replace bias markup
+                chat2[i] = (chat2[i] ?? '').replace(/{([^}]+)}/g, ''); 
+                //console.log('replacing chat2 {}s');
+                j++;
+            }
+            console.log('post replace chat.length = '+chat.length);
+            //chat2 = chat2.reverse();
+            var this_max_context = 1487;
+            if (main_api == 'kobold') this_max_context = max_context;
+            if (main_api == 'novel') {
+                if (novel_tier === 1) {
+                    this_max_context = 1024;
+                } else {
+                    this_max_context = 2048 - 60;//fix for fat tokens 
+                    if (model_novel == 'krake-v2') {
+                        this_max_context -= 160;
                     }
                 }
-    
-                let worldInfoString = '', worldInfoBefore = '', worldInfoAfter = '';
-    
-                if (world_info && world_info_data) {
-                    const activatedWorldInfo = checkWorldInfo(chat2);
-                    worldInfoBefore = activatedWorldInfo.worldInfoBefore;
-                    worldInfoAfter = activatedWorldInfo.worldInfoAfter;
-                    worldInfoString = worldInfoBefore + worldInfoAfter;
+            }
+
+            let worldInfoString = '', worldInfoBefore = '', worldInfoAfter = '';
+
+            if (world_info && world_info_data) {
+                const activatedWorldInfo = checkWorldInfo(chat2);
+                worldInfoBefore = activatedWorldInfo.worldInfoBefore;
+                worldInfoAfter = activatedWorldInfo.worldInfoAfter;
+                worldInfoString = worldInfoBefore + worldInfoAfter;
+            }
+
+            let extension_prompt = Object.keys(extension_prompts).sort().map(x => extension_prompts[x]).filter(x => x).join('\n');
+            if (extension_prompt.length && !extension_prompt.endsWith('\n')) {
+                extension_prompt += '\n';
+            }
+            /////////////////////// swipecode
+            if(type == 'swipe'){
+                
+                console.log('pre swipe shift: ' + chat2.length);
+                console.log('shifting swipe chat2');
+                chat2.shift();
+                
+            }
+            console.log('post swipe shift:'+chat2.length);
+            var i = 0;
+
+            for (var item of chat2) {//console.log(encode("dsfs").length);
+                chatString = item + chatString;
+                if (encode(JSON.stringify(
+                        worldInfoString + storyString + chatString + 
+                        anchorTop + anchorBottom + 
+                        charPersonality + promptBias + extension_prompt
+                        )).length + 120 < this_max_context) { //(The number of tokens in the entire promt) need fix, it must count correctly (added +120, so that the description of the character does not hide)
+                    //if (is_pygmalion && i == chat2.length-1) item='<START>\n'+item;
+                    arrMes[arrMes.length] = item;
+                } else {
+                    console.log('reducing chat.length by 1');
+                    i = chat.length - 1;
                 }
-    
-                let extension_prompt = Object.keys(extension_prompts).sort().map(x => extension_prompts[x]).filter(x => x).join('\n');
-                if (extension_prompt.length && !extension_prompt.endsWith('\n')) {
-                    extension_prompt += '\n';
-                }
-    
-                var i = 0;
-    
-                for (var item of chat2) {//console.log(encode("dsfs").length);
-                    chatString = item + chatString;
-                    if (encode(JSON.stringify(worldInfoString + storyString + chatString + anchorTop + anchorBottom + charPersonality + promptBias + extension_prompt)).length + 120 < this_max_context) { //(The number of tokens in the entire promt) need fix, it must count correctly (added +120, so that the description of the character does not hide)
-    
-    
-                        //if (is_pygmalion && i == chat2.length-1) item='<START>\n'+item;
-                        arrMes[arrMes.length] = item;
-                    } else {
-                        i = chat.length - 1;
-                    }
-                    await delay(1); //For disable slow down (encode gpt-2 need fix)
-                    //console.log(i+' '+chat.length);
-                    count_exm_add = 0;
-                    if (i == chat.length - 1) {
-                        //arrMes[arrMes.length-1] = '<START>\n'+arrMes[arrMes.length-1];
-                        let mesExmString = '';
-                        for (let iii = 0; iii < mesExamplesArray.length; iii++) {//mesExamplesArray It need to make from end to start
-                            mesExmString = mesExmString + mesExamplesArray[iii];
-                            if (encode(JSON.stringify(worldInfoString + storyString + mesExmString + chatString + anchorTop + anchorBottom + charPersonality + promptBias + extension_prompt)).length + 120 < this_max_context) { //example of dialogs
-                                if (!is_pygmalion) {
-                                    mesExamplesArray[iii] = mesExamplesArray[iii].replace(/<START>/i, 'This is how ' + name2 + ' should talk');//An example of how '+name2+' responds
-                                }
-                                count_exm_add++;
-                                await delay(1);
-    
-                                //arrMes[arrMes.length] = item;
-                            } else {
-    
-                                iii = mesExamplesArray.length;
+
+                await delay(1); //For disable slow down (encode gpt-2 need fix)
+               // console.log(i+' '+chat.length);
+               
+                count_exm_add = 0;
+                
+                if (i == chat.length - 1) {
+                    //console.log('checking chat length');
+                    //arrMes[arrMes.length-1] = '<START>\n'+arrMes[arrMes.length-1];
+                    let mesExmString = '';
+                    for (let iii = 0; iii < mesExamplesArray.length; iii++) {//mesExamplesArray It need to make from end to start
+                        mesExmString = mesExmString + mesExamplesArray[iii];
+                        console.log('checking prompt tokens');
+                        if (encode(JSON.stringify(worldInfoString + storyString + mesExmString + chatString + anchorTop + anchorBottom + charPersonality + promptBias + extension_prompt)).length + 120 < this_max_context) { //example of dialogs
+                            if (!is_pygmalion) {
+                                mesExamplesArray[iii] = mesExamplesArray[iii].replace(/<START>/i, 'This is how ' + name2 + ' should talk');//An example of how '+name2+' responds
                             }
-    
+                            count_exm_add++;
+                            await delay(1);
+
+                            //arrMes[arrMes.length] = item;
+                        } else {
+
+                            iii = mesExamplesArray.length;
                         }
-    
-                        if (!is_pygmalion) {
-                            if (Scenario !== undefined) {
-                                if (Scenario.length > 0) {
-                                    storyString += 'Circumstances and context of the dialogue: ' + Scenario + '\n';
-                                }
-                            }
-                            //storyString+='\nThen the roleplay chat between '+name1+' and '+name2+' begins.\n';
-                        }
-                        runGenerate();
-                        return;
+
                     }
-                    i++;
-    
-    
-                }
-    
-                function runGenerate(cycleGenerationPromt = '') {
-    
-    
-                    generatedPromtCache += cycleGenerationPromt;
-                    if (generatedPromtCache.length == 0) {
-                        chatString = "";
-                        arrMes = arrMes.reverse();
-                        var is_add_personality = false;
-                        arrMes.forEach(function (item, i, arr) {//For added anchors and others
-    
-                            if (i >= arrMes.length - 1 && $.trim(item).substr(0, (name1 + ":").length) != name1 + ":") {
-                                if (textareaText == "") {
-                                    item = item.substr(0, item.length - 1);
-                                }
-                            }
-                            if (i === arrMes.length - topAnchorDepth && count_view_mes >= topAnchorDepth && !is_add_personality) {
-    
-                                is_add_personality = true;
-                                //chatString = chatString.substr(0,chatString.length-1);
-                                //anchorAndPersonality = "[Genre: roleplay chat][Tone: very long messages with descriptions]";
-                                if ((anchorTop != "" || charPersonality != "") && !is_pygmalion) {
-                                    if (anchorTop != "") charPersonality += ' ';
-                                    item += "[" + charPersonality + anchorTop + ']\n';
-                                }
-                            }
-                            if (i >= arrMes.length - 1 && count_view_mes > 8 && $.trim(item).substr(0, (name1 + ":").length) == name1 + ":" && !is_pygmalion) {//For add anchor in end
-                                item = item.substr(0, item.length - 1);
-                                //chatString+=postAnchor+"\n";//"[Writing style: very long messages]\n";
-                                item = item + anchorBottom + "\n";
-                            }
-                            if (is_pygmalion) {
-                                if (i >= arrMes.length - 1 && $.trim(item).substr(0, (name1 + ":").length) == name1 + ":") {//for add name2 when user sent
-                                    item = item + name2 + ":";
-                                }
-                                if (i >= arrMes.length - 1 && $.trim(item).substr(0, (name1 + ":").length) != name1 + ":") {//for add name2 when continue
-                                    if (textareaText == "") {
-                                        item = item + '\n' + name2 + ":";
-                                    }
-                                }
-                                if ($.trim(item).indexOf(name1) === 0) {
-                                    item = item.replace(name1 + ':', 'You:');
-                                }
-                            }
-                            mesSend[mesSend.length] = item;
-                            //chatString = chatString+item;
-                        });
-                    }
-                    //finalPromt +=chatString;
-                    //console.log(storyString);
-    
-                    //console.log(encode(characters[this_chid].description+chatString).length);
-                    //console.log(encode(JSON.stringify(characters[this_chid].description+chatString)).length);
-                    if (type == 'force_name2') {
-                        finalPromt += name2 + ':';
-                    }
-                    //console.log(JSON.stringify(storyString));
-                    //Send story string
-                    var mesSendString = '';
-                    var mesExmString = '';
-    
-                    function setPromtString() {
-                        mesSendString = '';
-                        mesExmString = '';
-                        for (let j = 0; j < count_exm_add; j++) {
-                            mesExmString += mesExamplesArray[j];
-                        }
-                        for (let j = 0; j < mesSend.length; j++) {
-                            mesSendString += mesSend[j];
-                        }
-                    }
-    
-                    function checkPromtSize() {
-                        setPromtString();
-                        let thisPromtContextSize = encode(JSON.stringify(worldInfoString + storyString + mesExmString + mesSendString + anchorTop + anchorBottom + charPersonality + generatedPromtCache + promptBias + extension_prompt)).length + 120;
-    
-                        if (thisPromtContextSize > this_max_context) {		//if the prepared prompt is larger than the max context size...
-    
-                            if (count_exm_add > 0) {							// ..and we have example mesages..
-                                //console.log('Context size: '+thisPromtContextSize+' -- too big, removing example message');
-                                //mesExamplesArray.length = mesExamplesArray.length-1;
-                                count_exm_add--;							// remove the example messages...
-                                checkPromtSize();							// and try agin...
-                            } else if (mesSend.length > 0) {					// if the chat history is longer than 0
-                                //console.log('Context size: '+thisPromtContextSize+' -- too big, removing oldest chat message');
-                                mesSend.shift();							// remove the first (oldest) chat entry..
-                                checkPromtSize();							// and check size again..
-                            } else {
-                                //end
-                            }
-                        }
-                    }
-    
-    
-    
-                    if (generatedPromtCache.length > 0) {
-                        //console.log('Generated Prompt Cache length: '+generatedPromtCache.length);
-                        checkPromtSize();
-                    } else {
-                        setPromtString();
-                    }
-    
+
                     if (!is_pygmalion) {
-                        mesSendString = '\nThen the roleplay chat between ' + name1 + ' and ' + name2 + ' begins.\n' + mesSendString;
-                    } else {
-                        mesSendString = '<START>\n' + mesSendString;
-                        //mesSendString = mesSendString; //This edit simply removes the first "<START>" that is prepended to all context prompts
+                        if (Scenario !== undefined) {
+                            if (Scenario.length > 0) {
+                                storyString += 'Circumstances and context of the dialogue: ' + Scenario + '\n';
+                            }
+                        }
+                        //storyString+='\nThen the roleplay chat between '+name1+' and '+name2+' begins.\n';
                     }
-                    finalPromt = worldInfoBefore + storyString + worldInfoAfter + extension_prompt + mesExmString + mesSendString + generatedPromtCache + promptBias;
-                    finalPromt = finalPromt.replace(/\r/gm, '');
-    
-                    //if we aren't using the kobold GUI settings...
-                    if (main_api == 'textgenerationwebui' || main_api == 'kobold' && preset_settings != 'gui') {
-                        var this_settings = koboldai_settings[koboldai_setting_names[preset_settings]];
-    
-                        var this_amount_gen = parseInt(amount_gen); // how many tokens the AI will be requested to generate
-                        if (is_pygmalion) { // if we are using a pygmalion model...
-                            if (tokens_already_generated === 0) { // if nothing has been generated yet..
-                                if (parseInt(amount_gen) >= 50) { // if the max gen setting is > 50...(
-                                    this_amount_gen = 50; // then only try to make 50 this cycle..
-                                }
-                                else {
-                                    this_amount_gen = parseInt(amount_gen); // otherwise, make as much as the max amount request.
+
+                }
+                i++;
+                //console.log((i == chat.length - 1) + ', i: '+i+ ' chat length: '+chat.length);
+                
+                
+
+            }
+            console.log('calling runGenerate');
+            runGenerate();
+            return;
+
+            function runGenerate(cycleGenerationPromt = '') {
+            console.log('rungenerate entered');
+
+                generatedPromtCache += cycleGenerationPromt;
+                if (generatedPromtCache.length == 0) {
+                    console.log('generating prompt');
+                    chatString = "";
+                    arrMes = arrMes.reverse();
+                    var is_add_personality = false;
+                    arrMes.forEach(function (item, i, arr) {//For added anchors and others
+
+                        if (i >= arrMes.length - 1 && $.trim(item).substr(0, (name1 + ":").length) != name1 + ":") {
+                            if (textareaText == "") {
+                                item = item.substr(0, item.length - 1);
+                            }
+                        }
+                        if (i === arrMes.length - topAnchorDepth && count_view_mes >= topAnchorDepth && !is_add_personality) {
+
+                            is_add_personality = true;
+                            //chatString = chatString.substr(0,chatString.length-1);
+                            //anchorAndPersonality = "[Genre: roleplay chat][Tone: very long messages with descriptions]";
+                            if ((anchorTop != "" || charPersonality != "") && !is_pygmalion) {
+                                if (anchorTop != "") charPersonality += ' ';
+                                item += "[" + charPersonality + anchorTop + ']\n';
+                            }
+                        }
+                        if (i >= arrMes.length - 1 && count_view_mes > 8 && $.trim(item).substr(0, (name1 + ":").length) == name1 + ":" && !is_pygmalion) {//For add anchor in end
+                            item = item.substr(0, item.length - 1);
+                            //chatString+=postAnchor+"\n";//"[Writing style: very long messages]\n";
+                            item = item + anchorBottom + "\n";
+                        }
+                        if (is_pygmalion) {
+                            if (i >= arrMes.length - 1 && $.trim(item).substr(0, (name1 + ":").length) == name1 + ":") {//for add name2 when user sent
+                                item = item + name2 + ":";
+                            }
+                            if (i >= arrMes.length - 1 && $.trim(item).substr(0, (name1 + ":").length) != name1 + ":") {//for add name2 when continue
+                                if (textareaText == "") {
+                                    item = item + '\n' + name2 + ":";
                                 }
                             }
-                            else { // if we already recieved some generated text...
-                                if (parseInt(amount_gen) - tokens_already_generated < tokens_cycle_count) { // if the remaining tokens to be made is less than next potential cycle count
-                                    this_amount_gen = parseInt(amount_gen) - tokens_already_generated; // subtract already generated amount from the desired max gen amount
-                                }
-                                else {
-                                    this_amount_gen = tokens_cycle_count; // otherwise make the standard cycle amont (frist 50, and 30 after that)
-                                }
+                            if ($.trim(item).indexOf(name1) === 0) {
+                                item = item.replace(name1 + ':', 'You:');
+                            }
+                        }
+                        mesSend[mesSend.length] = item;
+                        //chatString = chatString+item;
+                    });
+                }
+                //finalPromt +=chatString;
+                //console.log(storyString);
+
+                //console.log(encode(characters[this_chid].description+chatString).length);
+                //console.log(encode(JSON.stringify(characters[this_chid].description+chatString)).length);
+                if (type == 'force_name2') {
+                    finalPromt += name2 + ':';
+                }
+                //console.log(JSON.stringify(storyString));
+                //Send story string
+                var mesSendString = '';
+                var mesExmString = '';
+
+                function setPromtString() {
+                    mesSendString = '';
+                    mesExmString = '';
+                    for (let j = 0; j < count_exm_add; j++) {
+                        mesExmString += mesExamplesArray[j];
+                    }
+                    for (let j = 0; j < mesSend.length; j++) {
+                        //console.log('compiling messages for prompt');
+                        mesSendString += mesSend[j];
+                    }
+                }
+
+                function checkPromtSize() {
+                    //console.log('checking prompt size');
+                    setPromtString();
+                    let thisPromtContextSize = encode(JSON.stringify(worldInfoString + storyString + mesExmString + mesSendString + anchorTop + anchorBottom + charPersonality + generatedPromtCache + promptBias + extension_prompt)).length + 120;
+
+                    if (thisPromtContextSize > this_max_context) {		//if the prepared prompt is larger than the max context size...
+
+                        if (count_exm_add > 0) {							// ..and we have example mesages..
+                            //console.log('Context size: '+thisPromtContextSize+' -- too big, removing example message');
+                            //mesExamplesArray.length = mesExamplesArray.length-1;
+                            count_exm_add--;							// remove the example messages...
+                            checkPromtSize();							// and try agin...
+                        } else if (mesSend.length > 0) {					// if the chat history is longer than 0
+                            //console.log('Context size: '+thisPromtContextSize+' -- too big, removing oldest chat message');
+                            mesSend.shift();							// remove the first (oldest) chat entry..
+                            checkPromtSize();							// and check size again..
+                        } else {
+                            //end
+                        }
+                    }
+                }
+
+
+
+                if (generatedPromtCache.length > 0) {
+                    //console.log('Generated Prompt Cache length: '+generatedPromtCache.length);
+                    checkPromtSize();
+                } else {
+                    console.log('calling setPromtString')
+                    setPromtString();
+                }
+
+                if (!is_pygmalion) {
+                    mesSendString = '\nThen the roleplay chat between ' + name1 + ' and ' + name2 + ' begins.\n' + mesSendString;
+                } else {
+                    mesSendString = '<START>\n' + mesSendString;
+                    //mesSendString = mesSendString; //This edit simply removes the first "<START>" that is prepended to all context prompts
+                }
+                finalPromt = worldInfoBefore + storyString + worldInfoAfter + extension_prompt + mesExmString + mesSendString + generatedPromtCache + promptBias;
+                finalPromt = finalPromt.replace(/\r/gm, '');
+                console.log('final prompt decided');
+
+                //if we aren't using the kobold GUI settings...
+                if (main_api == 'textgenerationwebui' || main_api == 'kobold' && preset_settings != 'gui') {
+                    var this_settings = koboldai_settings[koboldai_setting_names[preset_settings]];
+
+                    var this_amount_gen = parseInt(amount_gen); // how many tokens the AI will be requested to generate
+                    if (is_pygmalion) { // if we are using a pygmalion model...
+                        if (tokens_already_generated === 0) { // if nothing has been generated yet..
+                            if (parseInt(amount_gen) >= 50) { // if the max gen setting is > 50...(
+                                this_amount_gen = 50; // then only try to make 50 this cycle..
+                            }
+                            else {
+                                this_amount_gen = parseInt(amount_gen); // otherwise, make as much as the max amount request.
+                            }
+                        }
+                        else { // if we already recieved some generated text...
+                            if (parseInt(amount_gen) - tokens_already_generated < tokens_cycle_count) { // if the remaining tokens to be made is less than next potential cycle count
+                                this_amount_gen = parseInt(amount_gen) - tokens_already_generated; // subtract already generated amount from the desired max gen amount
+                            }
+                            else {
+                                this_amount_gen = tokens_cycle_count; // otherwise make the standard cycle amont (frist 50, and 30 after that)
                             }
                         }
                     }
-    
-                    var generate_data;
-                    if (main_api == 'kobold') {
-                        var generate_data = { prompt: finalPromt, gui_settings: true, max_length: amount_gen, temperature: temp, max_context_length: max_context };
-                        if (preset_settings != 'gui') {
-    
-                            generate_data = {
-                                prompt: finalPromt,
-                                gui_settings: false,
-                                sampler_order: this_settings.sampler_order,
-                                max_context_length: parseInt(max_context),//this_settings.max_length,
-                                max_length: this_amount_gen,//parseInt(amount_gen),
-                                rep_pen: parseFloat(rep_pen),
-                                rep_pen_range: parseInt(rep_pen_size),
-                                rep_pen_slope: this_settings.rep_pen_slope,
-                                temperature: parseFloat(temp),
-                                tfs: this_settings.tfs,
-                                top_a: this_settings.top_a,
-                                top_k: this_settings.top_k,
-                                top_p: this_settings.top_p,
-                                typical: this_settings.typical,
-                                s1: this_settings.sampler_order[0],
-                                s2: this_settings.sampler_order[1],
-                                s3: this_settings.sampler_order[2],
-                                s4: this_settings.sampler_order[3],
-                                s5: this_settings.sampler_order[4],
-                                s6: this_settings.sampler_order[5],
-                                s7: this_settings.sampler_order[6],
-                                use_world_info: false,
-                            };
-                        }
-                    }
-    
-                    if (main_api == 'textgenerationwebui') {
-                        const doSample = textgenerationwebui_settings.penalty_alpha == 0;
-                        var generate_data = {
-                            data: [
-                                finalPromt,
-                                this_amount_gen, // min_length
-                                doSample, // do_sample
-                                textgenerationwebui_settings.temp, // temperature
-                                textgenerationwebui_settings.top_p, // top_p
-                                textgenerationwebui_settings.typical_p, // typical_p
-                                textgenerationwebui_settings.rep_pen, // repetition_penalty
-                                textgenerationwebui_settings.top_k, // top_k
-                                0, // min_length
-                                textgenerationwebui_settings.rep_pen_size, // no_repeat_ngram_size
-                                1, // num_beams
-                                textgenerationwebui_settings.penalty_alpha, // penalty_alpha
-                                1, // length_penalty
-                                false, // early_stopping
-                                name1, // name1
-                                name2, // name2
-                                "",  // Context
-                                true, // stop at newline
-                                max_context, // Maximum prompt size in tokens
-                                1, // num attempts
-                            ]
-                        };
-                    }
-    
-                    if (main_api == 'novel') {
-                        var this_settings = novelai_settings[novelai_setting_names[preset_settings_novel]];
+                }
+
+                var generate_data;
+                if (main_api == 'kobold') {
+                    var generate_data = { prompt: finalPromt, gui_settings: true, max_length: amount_gen, temperature: temp, max_context_length: max_context };
+                    if (preset_settings != 'gui') {
+
                         generate_data = {
-                            "input": finalPromt,
-                            "model": model_novel,
-                            "use_string": true,
-                            "temperature": parseFloat(temp_novel),
-                            "max_length": this_settings.max_length,
-                            "min_length": this_settings.min_length,
-                            "tail_free_sampling": this_settings.tail_free_sampling,
-                            "repetition_penalty": parseFloat(rep_pen_novel),
-                            "repetition_penalty_range": parseInt(rep_pen_size_novel),
-                            "repetition_penalty_frequency": this_settings.repetition_penalty_frequency,
-                            "repetition_penalty_presence": this_settings.repetition_penalty_presence,
-                            //"stop_sequences": {{187}},
-                            //bad_words_ids = {{50256}, {0}, {1}};
-                            //generate_until_sentence = true;
-                            "use_cache": false,
-                            //use_string = true;
-                            "return_full_text": false,
-                            "prefix": "vanilla",
-                            "order": this_settings.order
+                            prompt: finalPromt,
+                            gui_settings: false,
+                            sampler_order: this_settings.sampler_order,
+                            max_context_length: parseInt(max_context),//this_settings.max_length,
+                            max_length: this_amount_gen,//parseInt(amount_gen),
+                            rep_pen: parseFloat(rep_pen),
+                            rep_pen_range: parseInt(rep_pen_size),
+                            rep_pen_slope: this_settings.rep_pen_slope,
+                            temperature: parseFloat(temp),
+                            tfs: this_settings.tfs,
+                            top_a: this_settings.top_a,
+                            top_k: this_settings.top_k,
+                            top_p: this_settings.top_p,
+                            typical: this_settings.typical,
+                            s1: this_settings.sampler_order[0],
+                            s2: this_settings.sampler_order[1],
+                            s3: this_settings.sampler_order[2],
+                            s4: this_settings.sampler_order[3],
+                            s5: this_settings.sampler_order[4],
+                            s6: this_settings.sampler_order[5],
+                            s7: this_settings.sampler_order[6],
+                            use_world_info: false,
                         };
                     }
-                    var generate_url = '';
-                    if (main_api == 'kobold') {
-                        generate_url = '/generate';
-                    } else if (main_api == 'textgenerationwebui') {
-                        generate_url = '/generate_textgenerationwebui';
-                    } else if (main_api == 'novel') {
-                        generate_url = '/generate_novelai';
-                    }
-                    jQuery.ajax({
-                        type: 'POST', // 
-                        url: generate_url, // 
-                        data: JSON.stringify(generate_data),
-                        beforeSend: function () {
-                            //$('#create_button').attr('value','Creating...'); 
-                        },
-                        cache: false,
-                        dataType: "json",
-                        contentType: "application/json",
-                        success: function (data) {
-                            tokens_already_generated += this_amount_gen;			// add new gen amt to any prev gen counter..
-    
-    
-                            //console.log('Tokens requested in total: '+tokens_already_generated);
-                            //$("#send_textarea").focus();
-                            //$("#send_textarea").removeAttr('disabled');
-                            is_send_press = false;
-                            if (!data.error) {
-                                //const getData = await response.json();
-                                var getMessage = "";
-                                if (main_api == 'kobold') {
-                                    getMessage = data.results[0].text;
-                                } else if (main_api == 'textgenerationwebui') {
-                                    getMessage = data.data[0];
-                                    if (getMessage == null || data.error) {
-                                        popup_type = 'default';
-                                        callPopup('<h3>Got empty response from Text generation web UI. Try restarting the API with recommended options.</h3>');
-                                        return;
-                                    }
-                                    getMessage = getMessage.substring(finalPromt.length);
-                                } else if (main_api == 'novel') {
-                                    getMessage = data.output;
+                }
+
+                if (main_api == 'textgenerationwebui') {
+                    const doSample = textgenerationwebui_settings.penalty_alpha == 0;
+                    var generate_data = {
+                        data: [
+                            finalPromt,
+                            this_amount_gen, // min_length
+                            doSample, // do_sample
+                            textgenerationwebui_settings.temp, // temperature
+                            textgenerationwebui_settings.top_p, // top_p
+                            textgenerationwebui_settings.typical_p, // typical_p
+                            textgenerationwebui_settings.rep_pen, // repetition_penalty
+                            textgenerationwebui_settings.top_k, // top_k
+                            0, // min_length
+                            textgenerationwebui_settings.rep_pen_size, // no_repeat_ngram_size
+                            1, // num_beams
+                            textgenerationwebui_settings.penalty_alpha, // penalty_alpha
+                            1, // length_penalty
+                            false, // early_stopping
+                            name1, // name1
+                            name2, // name2
+                            "",  // Context
+                            true, // stop at newline
+                            max_context, // Maximum prompt size in tokens
+                            1, // num attempts
+                        ]
+                    };
+                }
+
+                if (main_api == 'novel') {
+                    var this_settings = novelai_settings[novelai_setting_names[preset_settings_novel]];
+                    generate_data = {
+                        "input": finalPromt,
+                        "model": model_novel,
+                        "use_string": true,
+                        "temperature": parseFloat(temp_novel),
+                        "max_length": this_settings.max_length,
+                        "min_length": this_settings.min_length,
+                        "tail_free_sampling": this_settings.tail_free_sampling,
+                        "repetition_penalty": parseFloat(rep_pen_novel),
+                        "repetition_penalty_range": parseInt(rep_pen_size_novel),
+                        "repetition_penalty_frequency": this_settings.repetition_penalty_frequency,
+                        "repetition_penalty_presence": this_settings.repetition_penalty_presence,
+                        //"stop_sequences": {{187}},
+                        //bad_words_ids = {{50256}, {0}, {1}};
+                        //generate_until_sentence = true;
+                        "use_cache": false,
+                        //use_string = true;
+                        "return_full_text": false,
+                        "prefix": "vanilla",
+                        "order": this_settings.order
+                    };
+                }
+                var generate_url = '';
+                if (main_api == 'kobold') {
+                    generate_url = '/generate';
+                } else if (main_api == 'textgenerationwebui') {
+                    generate_url = '/generate_textgenerationwebui';
+                } else if (main_api == 'novel') {
+                    generate_url = '/generate_novelai';
+                }
+                console.log('rungenerate calling API');
+                jQuery.ajax({
+                    type: 'POST', // 
+                    url: generate_url, // 
+                    data: JSON.stringify(generate_data),
+                    beforeSend: function () {
+                        //$('#create_button').attr('value','Creating...'); 
+                    },
+                    cache: false,
+                    dataType: "json",
+                    contentType: "application/json",
+                    success: function (data) {
+                        console.log('generation success');
+                        tokens_already_generated += this_amount_gen;			// add new gen amt to any prev gen counter..
+
+
+                        //console.log('Tokens requested in total: '+tokens_already_generated);
+                        //$("#send_textarea").focus();
+                        //$("#send_textarea").removeAttr('disabled');
+                        is_send_press = false;
+                        if (!data.error) {
+                            //const getData = await response.json();
+                            var getMessage = "";
+                            if (main_api == 'kobold') {
+                                getMessage = data.results[0].text;
+                            } else if (main_api == 'textgenerationwebui') {
+                                getMessage = data.data[0];
+                                if (getMessage == null || data.error) {
+                                    popup_type = 'default';
+                                    callPopup('<h3>Got empty response from Text generation web UI. Try restarting the API with recommended options.</h3>');
+                                    return;
                                 }
-    
-                                if (collapse_newlines) {
-                                    getMessage = getMessage.replaceAll(/\n+/g, "\n");
+                                getMessage = getMessage.substring(finalPromt.length);
+                            } else if (main_api == 'novel') {
+                                getMessage = data.output;
+                            }
+
+                            if (collapse_newlines) {
+                                getMessage = getMessage.replaceAll(/\n+/g, "\n");
+                            }
+
+                            //Pygmalion run again													// to make it continue generating so long as it's under max_amount and hasn't signaled
+                            // an end to the character's response via typing "You:" or adding "<endoftext>"
+                            if (is_pygmalion) {
+                                if_typing_text = false;
+                                message_already_generated += getMessage;
+                                promptBias = '';
+                                //console.log('AI Response so far: '+message_already_generated);
+                                if (message_already_generated.indexOf('You:') === -1 && 			//if there is no 'You:' in the response msg
+                                    message_already_generated.indexOf('<|endoftext|>') === -1 && 	//if there is no <endoftext> stamp in the response msg
+                                    tokens_already_generated < parseInt(amount_gen) && 				//if the gen'd msg is less than the max response length..
+                                    getMessage.length > 0) {											//if we actually have gen'd text at all... 
+                                    runGenerate(getMessage);										//generate again with the 'GetMessage' argument..
+                                    return;
                                 }
-    
-                                //Pygmalion run again													// to make it continue generating so long as it's under max_amount and hasn't signaled
-                                // an end to the character's response via typing "You:" or adding "<endoftext>"
-                                if (is_pygmalion) {
-                                    if_typing_text = false;
-                                    message_already_generated += getMessage;
-                                    promptBias = '';
-                                    //console.log('AI Response so far: '+message_already_generated);
-                                    if (message_already_generated.indexOf('You:') === -1 && 			//if there is no 'You:' in the response msg
-                                        message_already_generated.indexOf('<|endoftext|>') === -1 && 	//if there is no <endoftext> stamp in the response msg
-                                        tokens_already_generated < parseInt(amount_gen) && 				//if the gen'd msg is less than the max response length..
-                                        getMessage.length > 0) {											//if we actually have gen'd text at all... 
-                                        runGenerate(getMessage);										//generate again with the 'GetMessage' argument..
-                                        return;
-                                    }
-    
-                                    getMessage = message_already_generated;
-    
-                                }
-                                //Formating
-                                getMessage = $.trim(getMessage);
-                                if (is_pygmalion) {
-                                    getMessage = getMessage.replace(new RegExp('<USER>', "g"), name1);
-                                    getMessage = getMessage.replace(new RegExp('<BOT>', "g"), name2);
-                                    getMessage = getMessage.replace(new RegExp('You:', "g"), name1 + ':');
-                                }
-                                if (getMessage.indexOf(name1 + ":") != -1) {
-                                    getMessage = getMessage.substr(0, getMessage.indexOf(name1 + ":"));
-    
-                                }
-                                if (getMessage.indexOf('<|endoftext|>') != -1) {
-                                    getMessage = getMessage.substr(0, getMessage.indexOf('<|endoftext|>'));
-    
-                                }
-                                // clean-up group message from excessive generations
-                                if (type == 'group_chat' && selected_group) {
-                                    const group = groups.find(x => x.id == selected_group);
-    
-                                    if (group && Array.isArray(group.members) && group.members) {
-                                        for (let member of group.members) {
-                                            // Skip current speaker.
-                                            if (member === name2) {
-                                                continue;
-                                            }
-    
-                                            const indexOfMember = getMessage.indexOf(member + ":");
-                                            if (indexOfMember != -1) {
-                                                getMessage = getMessage.substr(0, indexOfMember);
-                                            }
+
+                                getMessage = message_already_generated;
+
+                            }
+                            //Formating
+                            getMessage = $.trim(getMessage);
+                            if (is_pygmalion) {
+                                getMessage = getMessage.replace(new RegExp('<USER>', "g"), name1);
+                                getMessage = getMessage.replace(new RegExp('<BOT>', "g"), name2);
+                                getMessage = getMessage.replace(new RegExp('You:', "g"), name1 + ':');
+                            }
+                            if (getMessage.indexOf(name1 + ":") != -1) {
+                                getMessage = getMessage.substr(0, getMessage.indexOf(name1 + ":"));
+
+                            }
+                            if (getMessage.indexOf('<|endoftext|>') != -1) {
+                                getMessage = getMessage.substr(0, getMessage.indexOf('<|endoftext|>'));
+
+                            }
+                            // clean-up group message from excessive generations
+                            if (type == 'group_chat' && selected_group) {
+                                const group = groups.find(x => x.id == selected_group);
+
+                                if (group && Array.isArray(group.members) && group.members) {
+                                    for (let member of group.members) {
+                                        // Skip current speaker.
+                                        if (member === name2) {
+                                            continue;
+                                        }
+
+                                        const indexOfMember = getMessage.indexOf(member + ":");
+                                        if (indexOfMember != -1) {
+                                            getMessage = getMessage.substr(0, indexOfMember);
                                         }
                                     }
                                 }
-                                let this_mes_is_name = true;
-                                if (getMessage.indexOf(name2 + ":") === 0) {
-                                    getMessage = getMessage.replace(name2 + ':', '');
-                                    getMessage = getMessage.trimStart();
-                                } else {
-                                    this_mes_is_name = false;
-                                }
-                                if (type === 'force_name2') this_mes_is_name = true;
-                                //getMessage = getMessage.replace(/^\s+/g, '');
-                                if (getMessage.length > 0) {
+                            }
+                            let this_mes_is_name = true;
+                            if (getMessage.indexOf(name2 + ":") === 0) {
+                                getMessage = getMessage.replace(name2 + ':', '');
+                                getMessage = getMessage.trimStart();
+                            } else {
+                                this_mes_is_name = false;
+                            }
+                            if (type === 'force_name2') this_mes_is_name = true;
+                            //getMessage = getMessage.replace(/^\s+/g, '');
+                            if (getMessage.length > 0) {
+                                if(chat[chat.length-1]['swipe_id'] === undefined || 
+                                chat[chat.length-1]['is_user']){type = 'normal';}
+                                if(type === 'swipe'){
+                                
+                                    chat[chat.length-1]['swipes'][chat[chat.length-1]['swipes'].length] = getMessage;
+                                    if(chat[chat.length-1]['swipe_id'] === chat[chat.length-1]['swipes'].length-1){
+                                        //console.log(getMessage);
+                                        chat[chat.length-1]['mes'] = getMessage;
+                                        console.log('runGenerate calls addOneMessage for swipe');
+                                        addOneMessage(chat[chat.length-1], 'swipe');
+                                    }else{
+                                        chat[chat.length-1]['mes'] = getMessage;
+                                    }
+                                    is_send_press = false;
+                                }else{
+                                    console.log('entering chat update routine for non-swipe post');
+                                    is_send_press = false;
                                     chat[chat.length] = {};
                                     chat[chat.length - 1]['name'] = name2;
                                     chat[chat.length - 1]['is_user'] = false;
@@ -1608,6 +1680,7 @@ window['TavernAI'] = {};
                                     chat[chat.length - 1]['mes'] = getMessage;
     
                                     if (type === 'group_chat') {
+                                        console.log('entering chat update for groups');
                                         let avatarImg = 'img/fluffy.png';
                                         if (characters[this_chid].avatar != 'none') {
                                             avatarImg = `characters/${characters[this_chid].avatar}?${Date.now()}`;
@@ -1615,614 +1688,639 @@ window['TavernAI'] = {};
                                         chat[chat.length - 1]['is_name'] = true;
                                         chat[chat.length - 1]['force_avatar'] = avatarImg;
                                     }
-    
+                                    console.log('runGenerate calls addOneMessage');
                                     addOneMessage(chat[chat.length - 1]);
+                                    console.log('should hide loading mes and return with send button now');
                                     $("#send_but").css("display", "inline");
                                     $("#loading_mes").css("display", "none");
     
                                     if (type == 'group_chat' && selected_group) {
                                         saveGroupChat(selected_group);
-                                    } else {
+                                    } /* else {
+                                        console.log('saving message for non group chat');
                                         saveChat();
-                                    }
-                                    //console.log('/savechat called by /Generate');
-                                    //let final_message_length = encode(JSON.stringify(getMessage)).length;
-                                    //console.log('AI Response: +'+getMessage+ '('+final_message_length+' tokens)');
-                                } else {
-                                    Generate('force_name2');
+                                    } */
                                 }
+                                
+
                             } else {
-                                $("#send_but").css("display", "inline");
-                                $("#loading_mes").css("display", "none");
+                                Generate('force_name2');
                             }
-                        },
-                        error: function (jqXHR, exception) {
-    
-                            $("#send_textarea").removeAttr('disabled');
-                            is_send_press = false;
+                        } else {
+                            console.log('final re-setting of send button due to error');
                             $("#send_but").css("display", "inline");
                             $("#loading_mes").css("display", "none");
-                            console.log(exception);
-                            console.log(jqXHR);
+                            showSwipeButtons();
                         }
-                    });
-                }
-            } else {
-                if (this_chid == undefined || this_chid == 'invalid-safety-id') {
-                    //send ch sel
-                    popup_type = 'char_not_selected';
-                    callPopup('<h3>Сharacter is not selected</h3>');
-                }
-                is_send_press = false;
+                        console.log('/savechat called by /Generate');
+                        saveChat();
+                        //let final_message_length = encode(JSON.stringify(getMessage)).length;
+                        //console.log('AI Response: +'+getMessage+ '('+final_message_length+' tokens)');
+
+                        $("#send_but").css("display", "inline");
+                        console.log('attempting to show swipes');
+                        showSwipeButtons();
+
+                        $("#loading_mes").css("display", "none");
+
+                    },
+                    error: function (jqXHR, exception) {
+
+                        $("#send_textarea").removeAttr('disabled');
+                        is_send_press = false;
+                        $("#send_but").css("display", "inline");
+                        $("#loading_mes").css("display", "none");
+                        console.log(exception);
+                        console.log(jqXHR);
+                    }
+                }); //end of "if not data error"
+            } //rungenerate ends
+
+        } else {    //generate's primary loop ends, after this is error handling for no-connection or safety-id
+
+            if (this_chid == undefined || this_chid == 'invalid-safety-id') {
+                //send ch sel
+                popup_type = 'char_not_selected';
+                callPopup('<h3>Сharacter is not selected</h3>');
             }
+            is_send_press = false;
         }
-        async function saveChat() {
+        console.log('generate ending');
+    } //generate ends
+
+    async function saveChat() {
+        console.log('savechat entered');
+        chat.forEach(function (item, i) {
+            if (item['is_user']) {
+                var str = item['mes'].replace(name1 + ':', default_user_name + ':');
+                chat[i]['mes'] = str;
+                chat[i]['name'] = default_user_name;
+            }else if(i !== chat.length-1){
+                if(chat[i]['swipe_id'] !== undefined){
+                    delete chat[i]['swipes'];
+                    delete chat[i]['swipe_id'];
+                }
+            }
+        });
+        var save_chat = [{ user_name: default_user_name, character_name: name2, create_date: chat_create_date }, ...chat];
+        jQuery.ajax({
+            type: 'POST',
+            url: '/savechat',
+            data: JSON.stringify({ ch_name: characters[this_chid].name, file_name: characters[this_chid].chat, chat: save_chat, avatar_url: characters[this_chid].avatar }),
+            beforeSend: function () {
+                //$('#create_button').attr('value','Creating...'); 
+            },
+            cache: false,
+            dataType: "json",
+            contentType: "application/json",
+            success: function (data) {
+
+            },
+            error: function (jqXHR, exception) {
+
+                console.log(exception);
+                console.log(jqXHR);
+            }
+        });
+    }
+    async function getChat() {
+        console.log('/getchat -- entered for -- ' + characters[this_chid].name);
+        jQuery.ajax({
+            type: 'POST',
+            url: '/getchat',
+            data: JSON.stringify({ ch_name: characters[this_chid].name, file_name: characters[this_chid].chat, avatar_url: characters[this_chid].avatar }),
+            beforeSend: function () {
+                //$('#create_button').attr('value','Creating...'); 
+            },
+            cache: false,
+            dataType: "json",
+            contentType: "application/json",
+            success: function (data) {
+                //console.log(data);
+                //chat.length = 0;
+                if (data[0] !== undefined) {
+                    for (let key in data) {
+                        chat.push(data[key]);
+                    }
+                    //chat =  data;
+                    chat_create_date = chat[0]['create_date'];
+                    //console.log('/getchat saw chat_create_date: '+chat_create_date);
+                    chat.shift();
+
+                } else {
+                    chat_create_date = humanizedDateTime();
+                }
+                //console.log(chat);
+                getChatResult();
+                saveChat();
+            },
+            error: function (jqXHR, exception) {
+                getChatResult();
+                console.log(exception);
+                console.log(jqXHR);
+            }
+        });
+    }
+    function getChatResult() {
+        console.log('getchatresults entered');
+        name2 = characters[this_chid].name;
+        if (chat.length > 1) {
+
             chat.forEach(function (item, i) {
                 if (item['is_user']) {
-                    var str = item['mes'].replace(name1 + ':', default_user_name + ':');
+                    var str = item['mes'].replace(default_user_name + ':', name1 + ':');
                     chat[i]['mes'] = str;
-                    chat[i]['name'] = default_user_name;
+                    chat[i]['name'] = name1;
                 }
             });
-            var save_chat = [{ user_name: default_user_name, character_name: name2, create_date: chat_create_date }, ...chat];
-            jQuery.ajax({
-                type: 'POST',
-                url: '/savechat',
-                data: JSON.stringify({ ch_name: characters[this_chid].name, file_name: characters[this_chid].chat, chat: save_chat, avatar_url: characters[this_chid].avatar }),
-                beforeSend: function () {
-                    //$('#create_button').attr('value','Creating...'); 
-                },
-                cache: false,
-                dataType: "json",
-                contentType: "application/json",
-                success: function (data) {
-    
-                },
-                error: function (jqXHR, exception) {
-    
-                    console.log(exception);
-                    console.log(jqXHR);
-                }
-            });
-        }
-        async function getChat() {
-            console.log('/getchat -- entered for -- ' + characters[this_chid].name);
-            jQuery.ajax({
-                type: 'POST',
-                url: '/getchat',
-                data: JSON.stringify({ ch_name: characters[this_chid].name, file_name: characters[this_chid].chat, avatar_url: characters[this_chid].avatar }),
-                beforeSend: function () {
-                    //$('#create_button').attr('value','Creating...'); 
-                },
-                cache: false,
-                dataType: "json",
-                contentType: "application/json",
-                success: function (data) {
-                    //console.log(data);
-                    //chat.length = 0;
-                    if (data[0] !== undefined) {
-                        for (let key in data) {
-                            chat.push(data[key]);
-                        }
-                        //chat =  data;
-                        chat_create_date = chat[0]['create_date'];
-                        //console.log('/getchat saw chat_create_date: '+chat_create_date);
-                        chat.shift();
-    
-                    } else {
-                        chat_create_date = humanizedDateTime();
-                    }
-                    //console.log(chat);
-                    getChatResult();
-                    saveChat();
-                },
-                error: function (jqXHR, exception) {
-                    getChatResult();
-                    console.log(exception);
-                    console.log(jqXHR);
-                }
-            });
-        }
-        function getChatResult() {
-            name2 = characters[this_chid].name;
-            if (chat.length > 1) {
-    
-                chat.forEach(function (item, i) {
-                    if (item['is_user']) {
-                        var str = item['mes'].replace(default_user_name + ':', name1 + ':');
-                        chat[i]['mes'] = str;
-                        chat[i]['name'] = name1;
-                    }
-                });
-    
-    
+
+
+        } else {
+            //console.log(characters[this_chid].first_mes);
+            chat[0] = {};
+            chat[0]['name'] = name2;
+            chat[0]['is_user'] = false;
+            chat[0]['is_name'] = true;
+            chat[0]['send_date'] = humanizedDateTime();
+            if (characters[this_chid].first_mes != "") {
+                chat[0]['mes'] = characters[this_chid].first_mes;
             } else {
-                //console.log(characters[this_chid].first_mes);
-                chat[0] = {};
-                chat[0]['name'] = name2;
-                chat[0]['is_user'] = false;
-                chat[0]['is_name'] = true;
-                chat[0]['send_date'] = humanizedDateTime();
-                if (characters[this_chid].first_mes != "") {
-                    chat[0]['mes'] = characters[this_chid].first_mes;
-                } else {
-                    chat[0]['mes'] = default_ch_mes;
-                }
-            }
-            printMessages();
-            select_selected_character(this_chid);
-        }
-        async function generateGroupWrapper(by_auto_mode) {
-            if (online_status === 'no_connection') {
-                is_group_generating = false;
-                is_send_press = false;
-                return;
-            }
-    
-            const group = groups.find(x => x.id === selected_group);
-    
-            if (!group || !Array.isArray(group.members) || !group.members.length) {
-                sendSystemMessage(system_message_types.EMPTY);
-                return;
-            }
-    
-            try {
-                is_group_generating = true;
-                this_chid = undefined;
-                name2 = '';
-                const userInput = $("#send_textarea").val();
-    
-                let typingIndicator = $('#chat .typing_indicator');
-    
-                if (typingIndicator.length === 0) {
-                    typingIndicator = $('#typing_indicator_template .typing_indicator').clone();
-                    typingIndicator.hide();
-                    $('#chat').append(typingIndicator);
-                }
-    
-                let messagesBefore = chat.length;
-                let activationText = '';
-                if (userInput && userInput.length && !by_auto_mode) {
-                    activationText = userInput;
-                    messagesBefore++;
-                } else {
-                    const lastMessage = chat[chat.length - 1];
-                    if (lastMessage && !lastMessage.is_system) {
-                        activationText = lastMessage.mes;
-                    }
-                }
-    
-                const activatedMembers = activateMembers(group.members, activationText);
-                // now the real generation begins: cycle through every character
-                for (const chId of activatedMembers) {
-                    this_chid = chId;
-                    name2 = characters[chId].name;
-    
-                    await Generate('group_chat', by_auto_mode);
-    
-                    // update indicator and scroll down
-                    typingIndicator.find('.typing_indicator_name').text(characters[chId].name);
-                    $('#chat').append(typingIndicator);
-                    typingIndicator.show(250, function () {
-                        typingIndicator.get(0).scrollIntoView({ behavior: 'smooth' });
-                    });
-    
-                    while (true) {
-                        // check if message generated already
-                        if (chat.length == messagesBefore) {
-                            await delay(10);
-                        } else {
-                            messagesBefore++;
-                            break;
-                        }
-                    }
-    
-                    // hide and reapply the indicator to the bottom of the list
-                    typingIndicator.hide(250);
-                    $('#chat').append(typingIndicator);
-                }
-    
-            } finally {
-                is_group_generating = false;
-                is_send_press = false;
-                this_chid = undefined;
+                chat[0]['mes'] = default_ch_mes;
             }
         }
-        function activateMembers(members, input) {
-            let activatedNames = [];
-    
-            // find mentions
-            if (input && input.length) {
-                for (let inputWord of extractAllWords(input)) {
-                    for (let member of members) {
-                        if (extractAllWords(member).includes(inputWord)) {
-                            activatedNames.push(member);
-                            break;
-                        }
+        printMessages();
+        select_selected_character(this_chid);
+    }
+    async function generateGroupWrapper(by_auto_mode) {
+        console.log('generateGroupWrapper entered');
+        if (online_status === 'no_connection') {
+            is_group_generating = false;
+            is_send_press = false;
+            return;
+        }
+
+        const group = groups.find(x => x.id === selected_group);
+
+        if (!group || !Array.isArray(group.members) || !group.members.length) {
+            sendSystemMessage(system_message_types.EMPTY);
+            return;
+        }
+
+        try {
+            is_group_generating = true;
+            this_chid = undefined;
+            name2 = '';
+            const userInput = $("#send_textarea").val();
+
+            let typingIndicator = $('#chat .typing_indicator');
+
+            if (typingIndicator.length === 0) {
+                typingIndicator = $('#typing_indicator_template .typing_indicator').clone();
+                typingIndicator.hide();
+                $('#chat').append(typingIndicator);
+            }
+
+            let messagesBefore = chat.length;
+            let activationText = '';
+            if (userInput && userInput.length && !by_auto_mode) {
+                activationText = userInput;
+                messagesBefore++;
+            } else {
+                const lastMessage = chat[chat.length - 1];
+                if (lastMessage && !lastMessage.is_system) {
+                    activationText = lastMessage.mes;
+                }
+            }
+
+            const activatedMembers = activateMembers(group.members, activationText);
+            // now the real generation begins: cycle through every character
+            for (const chId of activatedMembers) {
+                this_chid = chId;
+                name2 = characters[chId].name;
+
+                await Generate('group_chat', by_auto_mode);
+
+                // update indicator and scroll down
+                typingIndicator.find('.typing_indicator_name').text(characters[chId].name);
+                $('#chat').append(typingIndicator);
+                typingIndicator.show(250, function () {
+                    typingIndicator.get(0).scrollIntoView({ behavior: 'smooth' });
+                });
+
+                while (true) {
+                    // check if message generated already
+                    if (chat.length == messagesBefore) {
+                        await delay(10);
+                    } else {
+                        messagesBefore++;
+                        break;
+                    }
+                }
+
+                // hide and reapply the indicator to the bottom of the list
+                typingIndicator.hide(250);
+                $('#chat').append(typingIndicator);
+            }
+
+        } finally {
+            is_group_generating = false;
+            is_send_press = false;
+            this_chid = undefined;
+        }
+    }
+    function activateMembers(members, input) {
+        let activatedNames = [];
+
+        // find mentions
+        if (input && input.length) {
+            for (let inputWord of extractAllWords(input)) {
+                for (let member of members) {
+                    if (extractAllWords(member).includes(inputWord)) {
+                        activatedNames.push(member);
+                        break;
                     }
                 }
             }
-    
-            // activation by talkativeness (in shuffled order)
-            const shuffledMembers = shuffle([...members]);
-            for (let member of shuffledMembers) {
-                const character = characters.find(x => x.name === member);
-    
-                if (!character) {
-                    continue;
-                }
-    
-                const rollValue = Math.random();
-                let talkativeness = Number(character.talkativeness);
-                talkativeness = Number.isNaN(talkativeness) ? talkativeness_default : talkativeness;
-                if (talkativeness >= rollValue) {
-                    activatedNames.push(member);
-                }
-            }
-    
-            // pick 1 at random if no one was activated
-            if (activatedNames.length === 0) {
-                const randomIndex = Math.floor(Math.random() * members.length);
-                activatedNames.push(members[randomIndex]);
-            }
-    
-            // de-duplicate array of names
-            activatedNames = activatedNames.filter(onlyUnique);
-    
-            // map to character ids
-            const memberIds = activatedNames.map(x => characters.findIndex(y => y.name === x)).filter(x => x !== -1);
-            return memberIds;
         }
-        function extractAllWords(value) {
-            const words = [];
-    
-            if (!value) {
-                return words;
+
+        // activation by talkativeness (in shuffled order)
+        const shuffledMembers = shuffle([...members]);
+        for (let member of shuffledMembers) {
+            const character = characters.find(x => x.name === member);
+
+            if (!character) {
+                continue;
             }
-    
-            const matches = value.matchAll(/\b\w+\b/gmi);
-            for (let match of matches) {
-                words.push(match[0].toLowerCase());
+
+            const rollValue = Math.random();
+            let talkativeness = Number(character.talkativeness);
+            talkativeness = Number.isNaN(talkativeness) ? talkativeness_default : talkativeness;
+            if (talkativeness >= rollValue) {
+                activatedNames.push(member);
             }
+        }
+
+        // pick 1 at random if no one was activated
+        if (activatedNames.length === 0) {
+            const randomIndex = Math.floor(Math.random() * members.length);
+            activatedNames.push(members[randomIndex]);
+        }
+
+        // de-duplicate array of names
+        activatedNames = activatedNames.filter(onlyUnique);
+
+        // map to character ids
+        const memberIds = activatedNames.map(x => characters.findIndex(y => y.name === x)).filter(x => x !== -1);
+        return memberIds;
+    }
+    function extractAllWords(value) {
+        const words = [];
+
+        if (!value) {
             return words;
         }
-        async function getGroupChat(id) {
-            const response = await fetch('/getgroupchat', {
-                method: 'POST',
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRF-Token": token,
-                },
-                body: JSON.stringify({ id: id }),
-            });
-    
-            if (response.ok) {
-                const data = await response.json();
-                if (Array.isArray(data) && data.length) {
-                    for (let key of data) {
-                        chat.push(key);
-                    }
-                    printMessages();
+
+        const matches = value.matchAll(/\b\w+\b/gmi);
+        for (let match of matches) {
+            words.push(match[0].toLowerCase());
+        }
+        return words;
+    }
+    async function getGroupChat(id) {
+        const response = await fetch('/getgroupchat', {
+            method: 'POST',
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRF-Token": token,
+            },
+            body: JSON.stringify({ id: id }),
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            if (Array.isArray(data) && data.length) {
+                for (let key of data) {
+                    chat.push(key);
                 }
-                else {
-                    sendSystemMessage(system_message_types.GROUP);
-                    const group = groups.find(x => x.id === id);
-                    if (group && Array.isArray(group.members)) {
-                        for (let name of group.members) {
-                            const character = characters.find(x => x.name === name);
-    
-                            if (!character) {
-                                continue;
-                            }
-    
-                            const mes = {};
-                            mes['is_user'] = false;
-                            mes['is_system'] = false;
-                            mes['name'] = character.name;
-                            mes['is_name'] = true;
-                            mes['send_date'] = humanizedDateTime();
-                            mes['mes'] = character.first_mes ? substituteParams(character.first_mes.trim()) : mes['mes'] = default_ch_mes;
-                            mes['force_avatar'] = character.avatar != 'none' ? `characters/${character.avatar}?${Date.now()}` : 'img/fluffy.png';
-                            chat.push(mes);
-                            addOneMessage(mes);
+                printMessages();
+            }
+            else {
+                sendSystemMessage(system_message_types.GROUP);
+                const group = groups.find(x => x.id === id);
+                if (group && Array.isArray(group.members)) {
+                    for (let name of group.members) {
+                        const character = characters.find(x => x.name === name);
+
+                        if (!character) {
+                            continue;
                         }
+
+                        const mes = {};
+                        mes['is_user'] = false;
+                        mes['is_system'] = false;
+                        mes['name'] = character.name;
+                        mes['is_name'] = true;
+                        mes['send_date'] = humanizedDateTime();
+                        mes['mes'] = character.first_mes ? substituteParams(character.first_mes.trim()) : mes['mes'] = default_ch_mes;
+                        mes['force_avatar'] = character.avatar != 'none' ? `characters/${character.avatar}?${Date.now()}` : 'img/fluffy.png';
+                        chat.push(mes);
+console.log('getGroupChat calls addOneMessage');
+                        addOneMessage(mes);
                     }
                 }
-    
-                await saveGroupChat(id);
             }
+
+            await saveGroupChat(id);
         }
-        async function saveGroupChat(id) {
-            const response = await fetch('/savegroupchat', {
+    }
+    async function saveGroupChat(id) {
+        const response = await fetch('/savegroupchat', {
+            method: 'POST',
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRF-Token": token,
+            },
+            body: JSON.stringify({ id: id, chat: [...chat] })
+        });
+    }
+    async function getGroups() {
+        const response = await fetch('/getgroups', {
+            method: 'POST',
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRF-Token": token,
+            },
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            groups = data.sort((a, b) => a.id - b.id);
+        }
+    }
+    async function deleteGroup(id) {
+        const response = await fetch('/deletegroup', {
+            method: 'POST',
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRF-Token": token,
+            },
+            body: JSON.stringify({ id: id }),
+        });
+
+        if (response.ok) {
+            active_character = 'invalid-safety-id';	    //unsets the chid in settings (this prevents AutoLoadChat from trying to load the wrong ChID
+            this_chid = 'invalid-safety-id';            //unsets expected chid before reloading (related to getCharacters/printCharacters from using old arrays)
+            selected_group = null;
+            characters.length = 0;                      // resets the characters array, forcing getcharacters to reset
+            name2 = "Chloe";                            // replaces deleted charcter name with Chloe, since she wil be displayed next.
+            chat = [...safetychat];                          // sets up chloe to tell user about having deleted a character
+
+            /*   QuickRefresh(); */
+            $('#rm_info_avatar').html('');
+            $('#rm_info_block').transition({ opacity: 0, duration: 0 });
+            select_rm_info("Group deleted!");
+            $('#rm_info_block').transition({ opacity: 1.0, duration: 2000 });
+        }
+
+    }
+    async function editGroup(id, immediately) {
+        const group = groups.find(x => x.id == id);
+
+        if (!group) {
+            return;
+        }
+
+        async function _save() {
+            const response = await fetch('/editgroup', {
                 method: 'POST',
                 headers: {
                     "Content-Type": "application/json",
                     "X-CSRF-Token": token,
                 },
-                body: JSON.stringify({ id: id, chat: [...chat] })
+                body: JSON.stringify(group),
             });
         }
-        async function getGroups() {
-            const response = await fetch('/getgroups', {
-                method: 'POST',
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRF-Token": token,
-                },
-            });
-    
-            if (response.ok) {
-                const data = await response.json();
-                groups = data.sort((a, b) => a.id - b.id);
-            }
+
+        if (immediately) {
+            return await _save();
         }
-        async function deleteGroup(id) {
-            const response = await fetch('/deletegroup', {
-                method: 'POST',
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRF-Token": token,
-                },
-                body: JSON.stringify({ id: id }),
-            });
-    
-            if (response.ok) {
-                active_character = 'invalid-safety-id';	    //unsets the chid in settings (this prevents AutoLoadChat from trying to load the wrong ChID
-                this_chid = 'invalid-safety-id';            //unsets expected chid before reloading (related to getCharacters/printCharacters from using old arrays)
-                selected_group = null;
-                characters.length = 0;                      // resets the characters array, forcing getcharacters to reset
-                name2 = "Chloe";                            // replaces deleted charcter name with Chloe, since she wil be displayed next.
-                chat = [...safetychat];                          // sets up chloe to tell user about having deleted a character
-    
-              /*   QuickRefresh(); */
-                $('#rm_info_avatar').html('');
-                $('#rm_info_block').transition({ opacity: 0, duration: 0 });
-                select_rm_info("Group deleted!");
-                $('#rm_info_block').transition({ opacity: 1.0, duration: 2000 });
-            }
-    
+
+        clearTimeout(timerGroupSave);
+        timerGroupSave = setTimeout(async () => await _save(), durationSaveEdit);
+    }
+    async function groupChatAutoModeWorker() {
+        if (!is_group_automode_enabled || online_status === 'no_connection') {
+            return;
         }
-        async function editGroup(id, immediately) {
-            const group = groups.find(x => x.id == id);
-    
-            if (!group) {
-                return;
-            }
-    
-            async function _save() {
-                const response = await fetch('/editgroup', {
-                    method: 'POST',
-                    headers: {
-                        "Content-Type": "application/json",
-                        "X-CSRF-Token": token,
-                    },
-                    body: JSON.stringify(group),
-                });
-            }
-    
-            if (immediately) {
-                return await _save();
-            }
-    
-            clearTimeout(timerGroupSave);
-            timerGroupSave = setTimeout(async () => await _save(), durationSaveEdit);
+
+        if (!selected_group || is_send_press || is_group_generating) {
+            return;
         }
-        async function groupChatAutoModeWorker() {
-            if (!is_group_automode_enabled || online_status === 'no_connection') {
-                return;
-            }
-    
-            if (!selected_group || is_send_press || is_group_generating) {
-                return;
-            }
-    
-            const group = groups.find(x => x.id === selected_group);
-    
-            if (!group || !Array.isArray(group.members) || !group.members.length) {
-                return;
-            }
-    
-            await generateGroupWrapper(true);
+
+        const group = groups.find(x => x.id === selected_group);
+
+        if (!group || !Array.isArray(group.members) || !group.members.length) {
+            return;
         }
-    
-        function select_group_chats(chat_id) {
-            menu_type = 'group_chats';
-            const group = chat_id && groups.find(x => x.id == chat_id);
-            const groupName = group?.name ?? '';
-    
-            $('#rm_group_chat_name').val(groupName);
-            $('#rm_group_chat_name').off();
-            $('#rm_group_chat_name').on('input', async function () {
-                if (chat_id) {
-                    group.name = $(this).val();
-                    await editGroup(chat_id);
-                }
-            });
-            $('#rm_group_filter').val('').trigger('input');
-            $("#rm_group_chats_block").css("display", "flex");
-            $('#rm_group_chats_block').css('opacity', 0.0);
-            $('#rm_group_chats_block').transition({
-                opacity: 1.0,
-                duration: animation_rm_duration,
-                easing: animation_rm_easing,
-                complete: function () { }
-            });
-    
-            $("#rm_ch_create_block").css("display", "none");
-            $("#rm_characters_block").css("display", "none");
-    
-            async function memberClickHandler(event) {
-                event.stopPropagation();
-                const id = $(this).data('id');
-                const isDelete = !!($(this).closest('#rm_group_members').length);
-                const template = $(this).clone();
-                template.data('id', id);
-                template.click(memberClickHandler);
-    
+
+        await generateGroupWrapper(true);
+    }
+    function select_group_chats(chat_id) {
+        menu_type = 'group_chats';
+        const group = chat_id && groups.find(x => x.id == chat_id);
+        const groupName = group?.name ?? '';
+
+        $('#rm_group_chat_name').val(groupName);
+        $('#rm_group_chat_name').off();
+        $('#rm_group_chat_name').on('input', async function () {
+            if (chat_id) {
+                group.name = $(this).val();
+                await editGroup(chat_id);
+            }
+        });
+        $('#rm_group_filter').val('').trigger('input');
+        $("#rm_group_chats_block").css("display", "flex");
+        $('#rm_group_chats_block').css('opacity', 0.0);
+        $('#rm_group_chats_block').transition({
+            opacity: 1.0,
+            duration: animation_rm_duration,
+            easing: animation_rm_easing,
+            complete: function () { }
+        });
+
+        $("#rm_ch_create_block").css("display", "none");
+        $("#rm_characters_block").css("display", "none");
+
+        async function memberClickHandler(event) {
+            event.stopPropagation();
+            const id = $(this).data('id');
+            const isDelete = !!($(this).closest('#rm_group_members').length);
+            const template = $(this).clone();
+            template.data('id', id);
+            template.click(memberClickHandler);
+
+            if (isDelete) {
+                template.find('.plus').show();
+                template.find('.minus').hide();
+                $('#rm_group_add_members').prepend(template);
+            } else {
+                template.find('.plus').hide();
+                template.find('.minus').show();
+                $('#rm_group_members').prepend(template);
+            }
+
+            if (group) {
                 if (isDelete) {
-                    template.find('.plus').show();
-                    template.find('.minus').hide();
-                    $('#rm_group_add_members').prepend(template);
-                } else {
-                    template.find('.plus').hide();
-                    template.find('.minus').show();
-                    $('#rm_group_members').prepend(template);
-                }
-    
-                if (group) {
-                    if (isDelete) {
-                        const index = group.members.findIndex(x => x === id);
-                        if (index !== -1) {
-                            group.members.splice(index, 1);
-                        }
-                    } else {
-                        group.members.push(id);
+                    const index = group.members.findIndex(x => x === id);
+                    if (index !== -1) {
+                        group.members.splice(index, 1);
                     }
-                    await editGroup(chat_id);
-                    updateGroupAvatar(group);
-                }
-    
-                $(this).remove();
-                const groupHasMembers = !!$('#rm_group_members').children().length;
-                $("#rm_group_submit").prop('disabled', !groupHasMembers);
-            }
-    
-            // render characters list
-            $('#rm_group_add_members').empty();
-            $('#rm_group_members').empty();
-            for (let character of characters) {
-                const avatar = character.avatar != 'none' ? `characters/${character.avatar}#${Date.now()}` : default_avatar;
-                const template = $('#group_member_template .group_member').clone();
-                template.data('id', character.name);
-                template.find('.avatar img').attr('src', avatar);
-                template.find('.ch_name').html(character.name);
-                template.click(memberClickHandler);
-    
-                if (group && Array.isArray(group.members) && group.members.includes(character.name)) {
-                    template.find('.plus').hide();
-                    template.find('.minus').show();
-                    $('#rm_group_members').append(template);
                 } else {
-                    template.find('.plus').show();
-                    template.find('.minus').hide();
-                    $('#rm_group_add_members').append(template);
+                    group.members.push(id);
                 }
+                await editGroup(chat_id);
+                updateGroupAvatar(group);
             }
-    
+
+            $(this).remove();
             const groupHasMembers = !!$('#rm_group_members').children().length;
             $("#rm_group_submit").prop('disabled', !groupHasMembers);
-    
-            // bottom buttons
-            if (chat_id) {
-                $('#rm_group_submit').hide();
-                $('#rm_group_delete').show();
+        }
+
+        // render characters list
+        $('#rm_group_add_members').empty();
+        $('#rm_group_members').empty();
+        for (let character of characters) {
+            const avatar = character.avatar != 'none' ? `characters/${character.avatar}#${Date.now()}` : default_avatar;
+            const template = $('#group_member_template .group_member').clone();
+            template.data('id', character.name);
+            template.find('.avatar img').attr('src', avatar);
+            template.find('.ch_name').html(character.name);
+            template.click(memberClickHandler);
+
+            if (group && Array.isArray(group.members) && group.members.includes(character.name)) {
+                template.find('.plus').hide();
+                template.find('.minus').show();
+                $('#rm_group_members').append(template);
             } else {
-                $('#rm_group_submit').show();
-                $('#rm_group_delete').hide();
-            }
-    
-            $('#rm_group_delete').off();
-            $('#rm_group_delete').on('click', function () {
-                popup_type = 'del_group';
-                $('#dialogue_popup').data('group_id', chat_id);
-                callPopup('<h3>Delete the group?</h3>');
-            });
-    
-            // top bar
-            if (group) {
-                var display_name = groupName;
-                $("#rm_button_selected_ch").children("h2").css(deselected_button_style);
-                $("#rm_button_selected_ch").children("h2").text('');
+                template.find('.plus').show();
+                template.find('.minus').hide();
+                $('#rm_group_add_members').append(template);
             }
         }
-        function openNavToggle() {
-            if (!$('#nav-toggle').prop('checked')) {
-                $('#nav-toggle').trigger('click');
-            }
+
+        const groupHasMembers = !!$('#rm_group_members').children().length;
+        $("#rm_group_submit").prop('disabled', !groupHasMembers);
+
+        // bottom buttons
+        if (chat_id) {
+            $('#rm_group_submit').hide();
+            $('#rm_group_delete').show();
+        } else {
+            $('#rm_group_submit').show();
+            $('#rm_group_delete').hide();
         }
-        function changeMainAPI() {
-            if ($('#main_api').find(":selected").val() == 'kobold') {
-                $('#kobold_api').css("display", "block");
-                $('#novel_api').css("display", "none");
-                $('#textgenerationwebui_api').css("display", "none");
-                main_api = 'kobold';
-                $('#max_context_block').css('display', 'block');
-                $('#amount_gen_block').css('display', 'block');
-                $('#softprompt_block').css('display', 'block');
-                $('#settings_perset').trigger('change');
-            }
-            if ($('#main_api').find(":selected").val() == 'textgenerationwebui') {
-                $('#kobold_api').css("display", "none");
-                $('#novel_api').css("display", "none");
-                $('#textgenerationwebui_api').css("display", "block");
-                main_api = 'textgenerationwebui';
-                $('#max_context_block').css('display', 'block');
-                $('#amount_gen_block').css('display', 'block');
-                $('#softprompt_block').css('display', 'block');
-                $("#amount_gen_block").children().prop("disabled", false);
-                $("#amount_gen_block").css('opacity', 1.0);
-            }
-    
-            if ($('#main_api').find(":selected").val() == 'novel') {
-                $('#kobold_api').css("display", "none");
-                $('#novel_api').css("display", "block");
-                $('#textgenerationwebui_api').css("display", "none");
-                main_api = 'novel';
-                $('#max_context_block').css('display', 'none');
-                $('#amount_gen_block').css('display', 'none');
-                $('#softprompt_block').css('display', 'none');
-            }
+
+        $('#rm_group_delete').off();
+        $('#rm_group_delete').on('click', function () {
+            popup_type = 'del_group';
+            $('#dialogue_popup').data('group_id', chat_id);
+            callPopup('<h3>Delete the group?</h3>');
+        });
+
+        // top bar
+        if (group) {
+            var display_name = groupName;
+            //$("#rm_button_selected_ch").children("h2").css(deselected_button_style);
+            $("#rm_button_selected_ch").children("h2").text('');
         }
-        async function getUserAvatars() {
-            $("#user_avatar_block").html("");		//RossAscends: necessary to avoid doubling avatars each QuickRefresh.
-            $('#user_avatar_block').append('<div class="avatar_upload">+</div>');
-            const response = await fetch("/getuseravatars", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRF-Token": token
-                },
-                body: JSON.stringify({
-                    "": ""
-                })
-    
-            });
-            if (response.ok === true) {
-                const getData = await response.json();
-                //background = getData;
-                //console.log(getData.length);
-    
-                for (var i = 0; i < getData.length; i++) {
-                    //console.log(1);
-                    appendUserAvatar(getData[i]);
-                }
-                //var aa = JSON.parse(getData[0]);
-                //const load_ch_coint = Object.getOwnPropertyNames(getData);
-    
-    
+    }
+    function openNavToggle() {
+        if (!$('#nav-toggle').prop('checked')) {
+            $('#nav-toggle').trigger('click');
+        }
+    }
+    function changeMainAPI() {
+        if ($('#main_api').find(":selected").val() == 'kobold') {
+            $('#kobold_api').css("display", "block");
+            $('#novel_api').css("display", "none");
+            $('#textgenerationwebui_api').css("display", "none");
+            main_api = 'kobold';
+            $('#max_context_block').css('display', 'block');
+            $('#amount_gen_block').css('display', 'block');
+            $('#softprompt_block').css('display', 'block');
+            $('#settings_perset').trigger('change');
+        }
+        if ($('#main_api').find(":selected").val() == 'textgenerationwebui') {
+            $('#kobold_api').css("display", "none");
+            $('#novel_api').css("display", "none");
+            $('#textgenerationwebui_api').css("display", "block");
+            main_api = 'textgenerationwebui';
+            $('#max_context_block').css('display', 'block');
+            $('#amount_gen_block').css('display', 'block');
+            $('#softprompt_block').css('display', 'block');
+            $("#amount_gen_block").children().prop("disabled", false);
+            $("#amount_gen_block").css('opacity', 1.0);
+        }
+
+        if ($('#main_api').find(":selected").val() == 'novel') {
+            $('#kobold_api').css("display", "none");
+            $('#novel_api').css("display", "block");
+            $('#textgenerationwebui_api').css("display", "none");
+            main_api = 'novel';
+            $('#max_context_block').css('display', 'none');
+            $('#amount_gen_block').css('display', 'none');
+            $('#softprompt_block').css('display', 'none');
+        }
+    }
+    async function getUserAvatars() {
+        $("#user_avatar_block").html("");		//RossAscends: necessary to avoid doubling avatars each QuickRefresh.
+        $('#user_avatar_block').append('<div class="avatar_upload">+</div>');
+        const response = await fetch("/getuseravatars", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRF-Token": token
+            },
+            body: JSON.stringify({
+                "": ""
+            })
+
+        });
+        if (response.ok === true) {
+            const getData = await response.json();
+            //background = getData;
+            //console.log(getData.length);
+
+            for (var i = 0; i < getData.length; i++) {
+                //console.log(1);
+                appendUserAvatar(getData[i]);
             }
+            //var aa = JSON.parse(getData[0]);
+            //const load_ch_coint = Object.getOwnPropertyNames(getData);
+
+
         }
-    
-        function highlightSelectedAvatar() {
-            $("#user_avatar_block").find('.avatar').removeClass('selected');
-            $("#user_avatar_block").find(`.avatar[imgfile='${user_avatar}']`).addClass('selected');
-        }
-    
-        function appendUserAvatar(name) {
-            const block = $("#user_avatar_block").append('<div imgfile="' + name + '" class="avatar"><img src="User Avatars/' + name + '"</div>');
-            highlightSelectedAvatar();
-        }
-            //***************SETTINGS****************//
+    }
+    function highlightSelectedAvatar() {
+        $("#user_avatar_block").find('.avatar').removeClass('selected');
+        $("#user_avatar_block").find(`.avatar[imgfile='${user_avatar}']`).addClass('selected');
+    }
+    function appendUserAvatar(name) {
+        const block = $("#user_avatar_block").append('<div imgfile="' + name + '" class="avatar"><img src="User Avatars/' + name + '"></div>');
+        highlightSelectedAvatar();
+    }
+    //***************SETTINGS****************//
     ///////////////////////////////////////////
     async function getSettings(type) {//timer
 
-        //console.log('getSettings() pinging server for settings request');
+        console.log('getSettings() -- Entered');
         jQuery.ajax({
             type: 'POST',
             url: '/getsettings',
             data: JSON.stringify({}),
             beforeSend: function () {
-
+                console.log('getSettings -- before pull -- amount_gen = '+amount_gen)
 
             },
             cache: false,
@@ -2300,38 +2398,45 @@ window['TavernAI'] = {};
                     textgenerationwebui_settings = settings.textgenerationwebui_settings || textgenerationwebui_settings;
 
                     temp = settings.temp;
-                    amount_gen = settings.amount_gen;
-                    if (settings.max_context !== undefined) max_context = parseInt(settings.max_context);
-                    if (settings.anchor_order !== undefined) anchor_order = parseInt(settings.anchor_order);
-                    if (settings.style_anchor !== undefined) style_anchor = !!settings.style_anchor;
-                    if (settings.character_anchor !== undefined) character_anchor = !!settings.character_anchor;
-                    if (settings.world_info_depth !== undefined) world_info_depth = Number(settings.world_info_depth);
-                    if (settings.world_info_budget !== undefined) world_info_budget = Number(settings.world_info_budget);
-
-                    //load poweruser options	
-                    if (settings.auto_connect !== undefined) auto_connect = !!settings.auto_connect;
-                    if (settings.auto_load_chat !== undefined) auto_load_chat = !!settings.auto_load_chat;
-
-                    rep_pen = settings.rep_pen;
-                    rep_pen_size = settings.rep_pen_size;
-
                     var addZeros = "";
                     if (isInt(temp)) addZeros = ".00";
                     $('#temp').val(temp);
                     $('#temp_counter').html(temp + addZeros);
 
+                    amount_gen = settings.amount_gen;
+                    $('#amount_gen').val(amount_gen);
+                    $('#amount_gen_counter').html(amount_gen + ' Tokens');
+                    console.log('getSettings -- just pulled -- amount_gen ='+amount_gen);
+
+                    if (settings.max_context !== undefined) max_context = parseInt(settings.max_context);
+                    $('#max_context').val(max_context);
+                    $('#max_context_counter').html(max_context + ' Tokens');
+
+                    if (settings.anchor_order !== undefined) anchor_order = parseInt(settings.anchor_order);
+                    if (settings.style_anchor !== undefined) style_anchor = !!settings.style_anchor;
+                    if (settings.character_anchor !== undefined) character_anchor = !!settings.character_anchor;
                     $('#style_anchor').prop('checked', style_anchor);
                     $('#character_anchor').prop('checked', character_anchor);
                     $("#anchor_order option[value=" + anchor_order + "]").attr('selected', 'true');
 
-                    $('#auto-connect-checkbox').prop('checked', auto_connect);
-                    $('#auto-load-chat-checkbox').prop('checked', auto_load_chat);
+                    if (settings.world_info_depth !== undefined) world_info_depth = Number(settings.world_info_depth);
+                    if (settings.world_info_budget !== undefined) world_info_budget = Number(settings.world_info_budget);
 
-                    $('#max_context').val(max_context);
-                    $('#max_context_counter').html(max_context + ' Tokens');
+                    rep_pen = settings.rep_pen;
+                    rep_pen_size = settings.rep_pen_size;
 
-                    $('#amount_gen').val(amount_gen);
-                    $('#amount_gen_counter').html(amount_gen + ' Tokens');
+                    swipes = !!settings.swipes;  //// swipecode
+                    $('#swipes-checkbox').prop('checked', swipes); /// swipecode
+                    console.log('getSettings -- swipes = '+swipes+'. toggling box');
+                    hideSwipeButtons();
+                    showSwipeButtons();
+
+/*                      $('#swipes-checkbox').change(function() {
+                        swipes = !!$('#swipes-checkbox').prop('checked');
+
+                        //if(swipes){ showSwipeButtons(); }else{ hideSwipeButtons(); }
+                        saveSettings();
+                    });  */
 
                     $('#world_info_depth_counter').html(`${world_info_depth} Messages`);
                     $('#world_info_depth').val(world_info_depth);
@@ -2446,26 +2551,14 @@ window['TavernAI'] = {};
                         $("#" + i + "_counter_textgenerationwebui")
                             .html(textgenerationwebui_settings[i]);
                     }
-/*                            //RossAscends: getting variables added/adjusted/applied with RA-mods
-                        active_character = settings.active_character;
-                        this_chid = settings.active_character; //forcing variable sameness for chid and this_chid with active_character in order to load RA_ALC
-                        var chid = settings.active_character; //forcing variable sameness for chid and this_chid with active_character in order to load RA_ALC
-                        console.log(
-                            "getSettings -- loaded from file -- active_character : " +
-                            settings.active_character
-                        );
-                        auto_connect = settings.auto_connect;
-                        auto_load_chat = settings.auto_load_chat; */
+
                         selected_button = settings.selected_button;
-/*                         NavOpenClosePref = settings.NavOpenClosePref;
-                        stickyNavPref = settings.stickyNavPref; */
-/*                         $("#nav-toggle").prop("checked", NavOpenClosePref);
-                        $("#rm_button_panel_pin").prop("checked", stickyNavPref);
-                        $("#auto-connect-checkbox").prop("checked", auto_connect);
-                        $("#auto-load-chat-checkbox").prop("checked", auto_load_chat);  */
+
+
                 }
                 
                 if (!is_checked_colab) isColab();
+                console.log('getSettings() -- success -- amount_gen='+amount_gen );
             },
             error: function (jqXHR, exception) {
                 console.log(exception);
@@ -2477,9 +2570,8 @@ window['TavernAI'] = {};
         collapse_newlines = localStorage.getItem(storage_keys.collapse_newlines) == 'true';
         $('#collapse-newlines-checkbox').prop('checked', collapse_newlines);
     }
-
     async function saveSettings(type) {
-        //console.log('Entering settings with name1 = '+name1);
+        console.log('saveSettings() -- Entered');
         jQuery.ajax({
             type: 'POST',
             url: '/savesettings',
@@ -2496,8 +2588,6 @@ window['TavernAI'] = {};
                 anchor_order: anchor_order,
                 style_anchor: style_anchor,
                 character_anchor: character_anchor,
-                auto_connect: auto_connect,
-                auto_load_chat: auto_load_chat,
                 main_api: main_api,
                 api_key_novel: api_key_novel,
                 rep_pen: rep_pen,
@@ -2511,9 +2601,11 @@ window['TavernAI'] = {};
                 world_info_budget: world_info_budget,
                 active_character: active_character,
                 textgenerationwebui_settings: textgenerationwebui_settings,
+                swipes: swipes
             }),
             beforeSend: function () {
                 //console.log('saveSettings() -- active_character -- '+active_character);
+                //console.log('saveSettings() -- before send - amount_gen = '+amount_gen);
                 if (type == 'change_name') {
                     name1 = $('#your_name').val()
                //     console.log('beforeSend name1 = '+name1);
@@ -2535,7 +2627,7 @@ window['TavernAI'] = {};
             
 
                   }
-
+                //console.log('saveSettings() -- success -- amount_gen='+amount_gen);
             },
             error: function (jqXHR, exception) {
                 console.log(exception);
@@ -2616,16 +2708,7 @@ window['TavernAI'] = {};
                         }
                     }
                 }
-                //<div id="select_chat_div">
 
-                //<div id="load_select_chat_div">
-                //console.log(data);
-                //chat.length = 0;
-
-                //chat =  data;
-                //getChatResult();
-                //saveChat();
-                //console.log('getAllCharaChats() -- Finished successfully');
             },
             error: function (jqXHR, exception) {
                 //getChatResult();
@@ -2873,36 +2956,318 @@ window['TavernAI'] = {};
         $("#rm_button_settings").css("class", "deselected-right-tab");
         $("#rm_button_selected_ch").css("class", "deselected-right-tab");
     }
+    function showSwipeButtons(){
+        
+        if(chat[chat.length-1].name !== 'TavernAI'){
+            if(swipes){
+                //console.log('showSwipeButtons -- entered');
+                //console.log('SSB -- are we showing a char first_message? mesid = '+$('.mes:last').attr('mesid'));
+                if($('.mes:last').attr('mesid') > 0){   // don't show swipes for opening messages. 
+                    //console.log('SSB -- for right button - is this a user message?'+(chat[chat.length-1]['is_user'])+' and count_view_mes = '+count_view_mes);
+                    if(!chat[chat.length-1]['is_user'] && count_view_mes > 1){      // if the last chat is not from user, and there is more than one msg to view
+                        //console.log('SSB -- CONFIRM -- showing right button');
+                        $("#chat").children().filter('[mesid="'+(count_view_mes-1)+'"]').children('.swipe_right').css('display', 'flex');       // display right swipe
+                        //console.log('SSB -- for left - how many messages exist to the left? '+(chat[chat.length-1]['swipe_id']));
+                        if(chat[chat.length-1]['swipe_id'] !== undefined){  //if swipe_id exists (mean swipes have happened on this message-cell before)
+                            //console.log('SBB -- for left pt2 -- What swipe message # is this?'+chat[chat.length-1]['swipe_id']);
+                            if(chat[chat.length-1]['swipe_id'] != 0){   //and it's not 0 (meaning there is at least one message to view to the left)                            
+                                $("#chat").children().filter('[mesid="'+(count_view_mes-1)+'"]').children('.swipe_left').css('display', 'flex');    //display left swipe
+                                //console.log('SSB -- CONFIRM -- showed left button');
+                            }//else{console.log('SSB -- only showed right side because only one swipe option.');}
+                        }//else{console.log('SSB -- noped out of showing left button because swipe_id didnt exist');}
+                    }//else{console.log('SSB -- noped out of showing swipes on User message');}
+                }//else{console.log('SSB -- noped out of first message swiping');}
+            }//else{console.log('SSB -- swipes not enabled');}
+        }//else{console.log('SBB -- noped out of swiping system messages');}
     
+    }
+
+    function hideSwipeButtons(){
+        console.log('hideswipebuttons entered');
+        $("#chat").children().filter('[mesid="'+(count_view_mes-1)+'"]').children('.swipe_right').css('display', 'none');
+        $("#chat").children().filter('[mesid="'+(count_view_mes-1)+'"]').children('.swipe_left').css('display', 'none');
+    }
+    function onlyUnique(value, index, array) {
+        return array.indexOf(value) === index;
+    }
+
+    function shuffle(array) {
+        let currentIndex = array.length, randomIndex;
+
+        while (currentIndex != 0) {
+            randomIndex = Math.floor(Math.random() * currentIndex);
+            currentIndex--;
+            [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+        }
+        return array;
+    }
+
+    function setExtensionPrompt(key, value) {
+        extension_prompts[key] = value;
+    }
+
+    window['TavernAI'].getContext = function () {
+        return {
+            chat: chat,
+            characters: characters,
+            groups: groups,
+            worldInfo: world_info_data,
+            name1: name1,
+            name2: name2,
+            characterId: this_chid,
+            groupId: selected_group,
+            chatId: (this_chid && characters[this_chid] && characters[this_chid].chat),
+            onlineStatus: online_status,
+            addOneMessage: addOneMessage,
+            generate: Generate,
+            encode: encode,
+            extensionPrompts: extension_prompts,
+            setExtensionPrompt: setExtensionPrompt,
+            saveChat: saveChat,
+            sendSystemMessage: sendSystemMessage,
+        };
+    };
+    
+/////////////////////////////////////////////////////////    
+///////// INTERACTIVE FUNCTIONS AND LISTENERS ///////////
+/////////////////////////////////////////////////////////
+
 
 import { encode, decode } from "../scripts/gpt-2-3-tokenizer/mod.js";
 $(document).ready(function () {
 
-
-
-
-/*     //RossAscends: a smaller load-up function to be used instead of refreshing the page in cases like deleting a character and changing username	
-    function QuickRefresh() {
-        flushSettings();
-        clearChat();
-        //characters.length = 0		//if this could be enabled it would allow the GetCharacters function to detect files added or removed from the char dir on each panel load
-        //console.log('quickRefresh() -- active_character -- '+active_character);
-        //console.log('quickRefresh() -- this_chid -- '+this_chid);
-        getSettings("def");
-        getCharacters();
-        getUserAvatars();
-        //console.log(chat);
-        printMessages();
-
-        if (!this_chid || this_chid === 'invalid-safety-id') {
-            $("#rm_button_selected_ch").css("class", "deselected-right-tab");
-            $("#rm_button_selected_ch").children("h2").text('');
+    $('#swipes-checkbox').change(function() {
+        console.log('detected swipes-checkbox changed values')
+        swipes = !!$('#swipes-checkbox').prop('checked');
+        if(swipes){
+            showSwipeButtons();
+        }else{
+            hideSwipeButtons();
         }
+        saveSettings();
+    });
+///// SWIPE BUTTON CLICKS ///////
 
-        if (NavToggle.checked === false) {
-            document.getElementById('nav-toggle').click();
-        };
-    } */
+    $(document).on('click', '.swipe_right', function(){               //when we click swipe right button
+        const swipe_duration = 120;
+        const swipe_range = 700;
+        //console.log(swipe_range);
+        let run_generate = false;
+        let run_swipe_right = false;
+        if(chat[chat.length-1]['swipe_id'] === undefined){              // if there is no swipe-message in the last spot of the chat array
+            chat[chat.length-1]['swipe_id'] = 0;                        // set it to id 0
+            chat[chat.length-1]['swipes'] = [];                         // empty the array
+            chat[chat.length-1]['swipes'][0] = chat[chat.length-1]['mes'];  //assign swipe array with last message from chat
+        }
+        chat[chat.length-1]['swipe_id']++;                                      //make new slot in array
+        //console.log(chat[chat.length-1]['swipes']);
+        if(parseInt(chat[chat.length-1]['swipe_id']) === chat[chat.length-1]['swipes'].length){     //if swipe id of last message is the same as the length of the 'swipes' array
+            run_generate = true;  
+        }else if(parseInt(chat[chat.length-1]['swipe_id']) < chat[chat.length-1]['swipes'].length){ //otherwise, if the id is less than the number of swipes
+            chat[chat.length-1]['mes'] = chat[chat.length-1]['swipes'][chat[chat.length-1]['swipe_id']]; //load the last mes box with the latest generation
+            run_swipe_right = true; //then swipe
+        }
+        
+        if(chat[chat.length-1]['swipe_id'] > chat[chat.length-1]['swipes'].length){ //if we swipe right while generating (the swipe ID is greater than what we are viewing now)
+            chat[chat.length-1]['swipe_id'] = chat[chat.length-1]['swipes'].length; //show that message slot (will be '...' while generating)
+        }
+        if(run_generate){               //hide swipe arrows while generating
+            $(this).css('display', 'none');
+            
+        }
+        if(run_generate || run_swipe_right){                // handles animated transitions when swipe right, specifically height transitions between messages
+            
+            let this_mes_div = $(this).parent();
+            let this_mes_block = $(this).parent().children('.mes_block').children('.mes_text');
+            const this_mes_div_height = this_mes_div[0].scrollHeight;
+            const this_mes_block_height = this_mes_block[0].scrollHeight;
+            
+            this_mes_div.children('.swipe_left').css('display', 'flex');
+            this_mes_div.children('.mes_block').transition({        // this moves the div back and forth
+                    x: '-'+swipe_range,
+                    duration: swipe_duration,
+                    easing: animation_rm_easing,
+                    queue:false,
+                    complete: function() {
+                        
+                        const is_animation_scroll = ($('#chat').scrollTop() >= ($('#chat').prop("scrollHeight") - $('#chat').outerHeight()) - 10);
+                        //console.log(parseInt(chat[chat.length-1]['swipe_id']));
+                        //console.log(chat[chat.length-1]['swipes'].length);
+                        if(run_generate && parseInt(chat[chat.length-1]['swipe_id']) === chat[chat.length-1]['swipes'].length){
+                            //console.log('showing ...');
+                            $("#chat").children().filter('[mesid="'+(count_view_mes-1)+'"]').children('.mes_block').children('.mes_text').html('...');  //shows ... while generating
+                        }else{
+                            //console.log('showing previously generated swipe candidate, or "..."');
+                            addOneMessage(chat[chat.length-1], 'swipe');
+                        }
+                        let new_height = this_mes_div_height-(this_mes_block_height - this_mes_block[0].scrollHeight);
+                        if(new_height < 103) new_height = 103;
+                        
+                        
+                        this_mes_div.animate({height: new_height+'px'}, {
+                            duration: 100,
+                            queue:false,
+                            progress: function() {
+                                // Scroll the chat down as the message expands
+                                if(is_animation_scroll) $("#chat").scrollTop($("#chat")[0].scrollHeight);
+                            },
+                            complete: function() {
+                                this_mes_div.css('height', 'auto');
+                                // Scroll the chat down to the bottom once the animation is complete
+                                if(is_animation_scroll) $("#chat").scrollTop($("#chat")[0].scrollHeight);
+                            }
+                        });
+                        this_mes_div.children('.mes_block').transition({  
+                                x: swipe_range,
+                                duration: 0,
+                                easing: animation_rm_easing,
+                                queue:false,
+                                complete: function() {  
+                                    this_mes_div.children('.mes_block').transition({  
+                                            x: '0px',
+                                            duration: swipe_duration,
+                                            easing: animation_rm_easing,
+                                            queue:false,
+                                            complete: function() {  
+                                                if(run_generate && !is_send_press && parseInt(chat[chat.length-1]['swipe_id']) === chat[chat.length-1]['swipes'].length){
+                                                    console.log('caught here 2');
+                                                    is_send_press = true;
+                                                    Generate('swipe');
+                                                }else{
+                                                    if(parseInt(chat[chat.length-1]['swipe_id']) !== chat[chat.length-1]['swipes'].length){
+                                                        console.log('caught here 3');
+                                                        saveChat();
+                                                    }
+                                                }
+                                            }
+                                    });
+                                }
+                        });
+                    }
+            });
+    
+            $(this).parent().children('.avatar').transition({ // moves avatar aong with swipe
+                    x: '-'+swipe_range,
+                    duration: swipe_duration,
+                    easing: animation_rm_easing,
+                    queue:false,
+                    complete: function() {  
+                        $(this).parent().children('.avatar').transition({  
+                                x: swipe_range,
+                                duration: 0,
+                                easing: animation_rm_easing,
+                                queue:false,
+                                complete: function() {  
+                                    $(this).parent().children('.avatar').transition({  
+                                            x: '0px',
+                                            duration: swipe_duration,
+                                            easing: animation_rm_easing,
+                                            queue:false,
+                                            complete: function() {  
+    
+                                            }
+                                    });
+                                }
+                        });
+                    }
+            });
+        }
+        
+    });
+    $(document).on('click', '.swipe_left', function(){      // when we swipe left..but no generation.
+        const swipe_duration = 120;
+        const swipe_range = '700px';
+        chat[chat.length-1]['swipe_id']--;
+        if(chat[chat.length-1]['swipe_id'] >= 0){           // hide the left arrow if we are viewing the first candidate of the last message block
+            $(this).parent().children('swipe_right_button').css('display', 'flex');
+            if(chat[chat.length-1]['swipe_id'] === 0){
+                $(this).css('display', 'none');
+            }
+            
+            let this_mes_div = $(this).parent();
+            let this_mes_block = $(this).parent().children('.mes_block').children('.mes_text');
+            const this_mes_div_height = this_mes_div[0].scrollHeight;
+            this_mes_div.css('height', this_mes_div_height);
+            const this_mes_block_height = this_mes_block[0].scrollHeight;
+            
+            chat[chat.length-1]['mes'] = chat[chat.length-1]['swipes'][chat[chat.length-1]['swipe_id']];
+            $(this).parent().children('.mes_block').transition({ 
+                    x: swipe_range,
+                    duration: swipe_duration,
+                    easing: animation_rm_easing,
+                    queue:false,
+                    complete: function() {
+                        const is_animation_scroll = ($('#chat').scrollTop() >= ($('#chat').prop("scrollHeight") - $('#chat').outerHeight()) - 10);
+console.log('sipwing left after tr5ansition calls addOneMessage');
+                        addOneMessage(chat[chat.length-1], 'swipe');
+                        let new_height = this_mes_div_height-(this_mes_block_height - this_mes_block[0].scrollHeight);
+                        if(new_height < 103) new_height = 103;
+                        this_mes_div.animate({height: new_height+'px'}, {
+                            duration: 100,
+                            queue:false,
+                            progress: function() {
+                                // Scroll the chat down as the message expands
+                                
+                                if(is_animation_scroll) $("#chat").scrollTop($("#chat")[0].scrollHeight);
+                            },
+                            complete: function() {
+                                this_mes_div.css('height', 'auto');
+                                // Scroll the chat down to the bottom once the animation is complete
+                                if(is_animation_scroll) $("#chat").scrollTop($("#chat")[0].scrollHeight);
+                            }
+                        });
+                        $(this).parent().children('.mes_block').transition({  
+                                x: '-'+swipe_range,
+                                duration: 0,
+                                easing: animation_rm_easing,
+                                queue:false,
+                                complete: function() {  
+                                    $(this).parent().children('.mes_block').transition({  
+                                            x: '0px',
+                                            duration: swipe_duration,
+                                            easing: animation_rm_easing,
+                                            queue:false,
+                                            complete: function() {  
+                                                saveChat();
+                                            }
+                                    });
+                                }
+                        });
+                    }
+            });
+    
+            $(this).parent().children('.avatar').transition({ 
+                    x: swipe_range,
+                    duration: swipe_duration,
+                    easing: animation_rm_easing,
+                    queue:false,
+                    complete: function() {  
+                        $(this).parent().children('.avatar').transition({  
+                                x: '-'+swipe_range,
+                                duration: 0,
+                                easing: animation_rm_easing,
+                                queue:false,
+                                complete: function() {  
+                                    $(this).parent().children('.avatar').transition({  
+                                            x: '0px',
+                                            duration: swipe_duration,
+                                            easing: animation_rm_easing,
+                                            queue:false,
+                                            complete: function() {  
+    
+                                            }
+                                    });
+                                }
+                        });
+                    }
+            });
+        }
+        if(chat[chat.length-1]['swipe_id'] < 0){
+            chat[chat.length-1]['swipe_id'] = 0;
+        }
+    });
+
+//// CHAR SEARCH BAR /////
 
     $('#character_search_bar').on('input', function () {
         const searchValue = $(this).val().trim().toLowerCase();
@@ -2918,67 +3283,26 @@ $(document).ready(function () {
         }
     });
 
-
-/*     //RossAscends: a utility function for counting characters, even works for unsaved characters. 
-    function CountCharTokens() {
-        $('#result_info').html('');
-        if (selected_button == 'create') {
-            var count_tokens = encode(JSON.stringify(create_save_description + create_save_personality + create_save_scenario + create_save_mes_example)).length;
-            console.log('This unsaved character has ' + count_tokens + ' tokens in the defs.');
-        } else {
-            var count_tokens = encode(JSON.stringify(characters[this_chid].description + characters[this_chid].personality + characters[this_chid].scenario + characters[this_chid].mes_example)).length;
-            console.log(characters[this_chid].name + ' has ' + count_tokens + ' tokens in the defs.');
-        }
-
-        if (count_tokens < 1024) {
-            $('#result_info').html(count_tokens + " Tokens");
-        } else {
-            $('#result_info').html("<font color=red>" + count_tokens + " Tokens(TOO MANY TOKENS)</font>");
-        }
-    } */
-
     $('#characloud_url').click(function () {
         window.open('https://boosty.to/tavernai', '_blank');
     });
     $("#send_but").click(function () {
-        //$( "#send_but" ).css({"background": "url('img/load.gif')","background-size": "100%, 100%", "background-position": "center center"});
         if (is_send_press == false) {
+            hideSwipeButtons();
             is_send_press = true;
 
             Generate();
         }
     });
 
-    //hotkey to send input with enter (shift+enter generates a new line in the chat input box)
-    //this is not ideal for touch device users with virtual keyboards.
-    //ideally we would detect if the user is using a virtual keyboard, and disable this shortcut for them.
-    //because mobile users' hands are always near the screen, tapping the send button is better for them, and enter should always make a new line.
-    //note: CAI seems to have this handled. PC: shift+enter = new line, enter = send. iOS: shift+enter AND enter both make new lines, and only the send button sends. 
-    //maybe a way to simulate this would be to disable the eventListener for people iOS.
-
     $("#send_textarea").keydown(function (e) {
         if (!e.shiftKey && !e.ctrlKey && e.key == "Enter" && is_send_press == false) {
+            hideSwipeButtons();
             is_send_press = true;
             e.preventDefault();
             Generate();
         }
     });
-
-/*     //RossAscends: Additional hotkeys
-    document.addEventListener('keydown', (event) => {
-
-        if (event.ctrlKey && event.key == "Enter") {				// Ctrl+Enter for Regeneration Last Response
-
-            if (is_send_press == false) {
-                is_send_press = true;
-                Generate('regenerate');
-            }
-        } else if (event.ctrlKey && event.key == "ArrowUp") {		//Ctrl+UpArrow for Connect to last server
-
-            document.getElementById('api_button').click();
-
-        }
-    }); */
 
     //menu buttons setup
     var selected_button_style = {};
@@ -3712,26 +4036,6 @@ $(document).ready(function () {
         }
     });
 
-/*     // RossAscends: Added functionality that will close the RightNav panel click outside of it or related panels (adv editing popup, or dialog popups)		
-
-    var NavToggle = document.getElementById("nav-toggle");
-    var PanelPin = document.getElementById("rm_button_panel_pin");
-    $('document').ready(function () {
-        $("html").click(function (e) {
-            if (NavToggle.checked === true && PanelPin.checked === false) {
-                if ($(e.target).attr('id') !== "nav-toggle") {
-                    if (document.querySelector('#right-nav-panel').contains(e.target) === false) {
-                        if (document.querySelector('#character_popup').contains(e.target) === false) {
-                            if (document.querySelector('#dialogue_popup').contains(e.target) === false) {
-                                document.getElementById('nav-toggle').click();
-                            }
-                        }
-                    }
-                }
-            };
-        });
-    }); */
-
     $("#options_button").click(function () {					// this is the options button click function, shows the options menu if closed
         if ($("#options").css('display') === 'none' && $("#options").css('opacity') == 0.0) {
             $("#options").css('display', 'block');
@@ -3774,12 +4078,14 @@ $(document).ready(function () {
     });
     $("#option_regenerate").click(function () {
         if (is_send_press == false) {
+            hideSwipeButtons();
             is_send_press = true;
             Generate('regenerate');
         }
     });
     // this function hides the input form, and shows the delete/cancel buttons for deleting messages from chat
     $("#option_delete_mes").click(function () {
+        hideSwipeButtons();
         if (this_chid != undefined && !is_send_press || (selected_group && !is_group_generating)) {
             $('#dialogue_del_mes').css('display', 'block');
             $('#send_form').css('display', 'none');
@@ -3803,6 +4109,7 @@ $(document).ready(function () {
 
         });
         this_del_mes = 0;
+        showSwipeButtons();
 
     });
     //confirms message delation with the "ok" button
@@ -3831,6 +4138,9 @@ $(document).ready(function () {
             $textchat.scrollTop($textchat[0].scrollHeight);
         }
         this_del_mes = 0;
+        $('#chat .mes').last().addClass('last_mes');
+        $('#chat .mes').eq(-2).removeClass('last_mes');
+        showSwipeButtons();
 
 
     });
@@ -3851,11 +4161,12 @@ $(document).ready(function () {
     });
 
     $("#settings_perset").change(function () {
-
+console.log('#settings_preset sensor -- starting');
         if ($('#settings_perset').find(":selected").val() != 'gui') {
             preset_settings = $('#settings_perset').find(":selected").text();
             temp = koboldai_settings[koboldai_setting_names[preset_settings]].temp;
             amount_gen = koboldai_settings[koboldai_setting_names[preset_settings]].genamt;
+            console.log('settings_perset -- changed -- amount_gen ='+ amount_gen);
             rep_pen = koboldai_settings[koboldai_setting_names[preset_settings]].rep_pen;
             rep_pen_size = koboldai_settings[koboldai_setting_names[preset_settings]].rep_pen_range;
             max_context = koboldai_settings[koboldai_setting_names[preset_settings]].max_length;
@@ -3887,6 +4198,7 @@ $(document).ready(function () {
             $("#amount_gen_block").children().prop("disabled", true);
             $("#amount_gen_block").css('opacity', 0.45);
         }
+        console.log('setting_preset -- finished');
         saveSettings();
     });
     $("#settings_perset_novel").change(function () {
@@ -4088,7 +4400,21 @@ $(document).ready(function () {
 
             let chatScrollPosition = $("#chat").scrollTop();
             if (this_edit_mes_id !== undefined) {
+                
+                let run_edit = true;
+                var edit_mes_id = $(this).parent().parent().parent().attr('mesid');
                 let mes_edited = $('#chat').children().filter('[mesid="' + this_edit_mes_id + '"]').children('.mes_block').children('.ch_name').children('.mes_edit_done');
+                if(edit_mes_id == count_view_mes-1){ //if the generating swipe (...)
+                    if(chat[edit_mes_id]['swipe_id'] !== undefined){
+                        if(chat[edit_mes_id]['swipes'].length === chat[edit_mes_id]['swipe_id']){
+                            run_edit = false;
+                        }
+                    }
+                    if(run_edit){
+                        hideSwipeButtons();
+                    }
+                }
+                
                 messageEditDone(mes_edited);
             }
             $(this).parent().parent().children('.mes_text').empty();
@@ -4773,46 +5099,7 @@ $(document).ready(function () {
     });
 
     /// UTILS
-    function onlyUnique(value, index, array) {
-        return array.indexOf(value) === index;
-    }
 
-    function shuffle(array) {
-        let currentIndex = array.length, randomIndex;
-
-        while (currentIndex != 0) {
-            randomIndex = Math.floor(Math.random() * currentIndex);
-            currentIndex--;
-            [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
-        }
-        return array;
-    }
-
-    function setExtensionPrompt(key, value) {
-        extension_prompts[key] = value;
-    }
-
-    window['TavernAI'].getContext = function () {
-        return {
-            chat: chat,
-            characters: characters,
-            groups: groups,
-            worldInfo: world_info_data,
-            name1: name1,
-            name2: name2,
-            characterId: this_chid,
-            groupId: selected_group,
-            chatId: (this_chid && characters[this_chid] && characters[this_chid].chat),
-            onlineStatus: online_status,
-            addOneMessage: addOneMessage,
-            generate: Generate,
-            encode: encode,
-            extensionPrompts: extension_prompts,
-            setExtensionPrompt: setExtensionPrompt,
-            saveChat: saveChat,
-            sendSystemMessage: sendSystemMessage,
-        };
-    };
 
 /*     //RossAscends: auto-load last character function (fires when active_character is defined and auto_load_chat is true)					
     function autoloadchat() {
