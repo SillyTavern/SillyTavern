@@ -626,7 +626,7 @@ async function charaWrite(img_url, data, target_img, response = undefined, mes =
     try {
         // Read the image, resize, and save it as a PNG into the buffer
         const rawImg = await jimp.read(img_url);
-        const image = await rawImg.resize(400, 600).getBufferAsync(jimp.MIME_PNG);
+        const image = await rawImg.cover(400, 600).getBufferAsync(jimp.MIME_PNG);
 
         // Get the chunks
         const chunks = extract(image);
@@ -1372,7 +1372,7 @@ app.post('/uploaduseravatar', urlencodedParser, async (request, response) => {
     try {
         const pathToUpload = path.join('./uploads/' + request.file.filename);
         const rawImg = await jimp.read(pathToUpload);
-        const image = await rawImg.resize(400, 400).getBufferAsync(jimp.MIME_PNG);
+        const image = await rawImg.cover(400, 400).getBufferAsync(jimp.MIME_PNG);
 
         const filename = `${Date.now()}.png`;
         const pathToNewFile = path.join(directories.avatars, filename);
