@@ -1463,6 +1463,7 @@ async function Generate(type, automatic_trigger) {
                         textgenerationwebui_settings.top_p, // top_p
                         textgenerationwebui_settings.typical_p, // typical_p
                         textgenerationwebui_settings.rep_pen, // repetition_penalty
+                        1.0, // encoder rep pen
                         textgenerationwebui_settings.top_k, // top_k
                         0, // min_length
                         textgenerationwebui_settings.rep_pen_size, // no_repeat_ngram_size
@@ -1540,7 +1541,7 @@ async function Generate(type, automatic_trigger) {
                         } else if (main_api == "textgenerationwebui") {
                             getMessage = data.data[0];
                             if (getMessage == null || data.error) {
-                                popup_type = "default";
+                                popup_type = "text";
                                 callPopup(
                                     "<h3>Got empty response from Text generation web UI. Try restarting the API with recommended options.</h3>"
                                 );

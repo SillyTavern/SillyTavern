@@ -62,7 +62,7 @@ function setWorldInfoSettings(settings, data) {
 // World Info Editor
 async function showWorldEditor() {
     if (!world_info) {
-        callPopup("<h3>Select a world info first!</h3>", "default");
+        callPopup("<h3>Select a world info first!</h3>", "text");
         return;
     }
 
