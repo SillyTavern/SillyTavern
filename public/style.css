@@ -491,7 +491,7 @@ textarea {
 
 
 .right_menu {
-    max-height: 90vh;
+    max-height: calc(100% - 60px);
     padding: 0 20px;
 }
 
@@ -532,6 +532,8 @@ input[type=submit] {}
     width: calc(100% - 70px);
     margin-left: 20px;
     margin-right: 30px;
+    display: flex;
+    align-items: flex-start;
 }
 
 /* ##################################################################### */
@@ -555,13 +557,6 @@ input[type=submit] {}
     filter: brightness(150%) grayscale(1);
 }
 
-#rm_button_panel_pin_div {
-    height: 20px;
-    width: 20px;
-    margin-top: 0;
-    margin-right: 0;
-    float: right;
-}
 
 #rm_button_panel_pin {
     padding: 0;
@@ -572,35 +567,50 @@ input[type=submit] {}
     z-index: 3001;
 }
 
+#rm_button_panel_pin_div {
+    width: 26px;
+    height: 26px;
+}
+
 #rm_button_panel_pin:hover::after {
-    filter: grayscale(1) brightness(150%);
+    filter: invert(1) brightness(150%);
 }
 
 #rm_button_panel_pin::after {
-    content: '\01F513';
+    content: ' ';
+    transform: translateY(-100%);
+    background-repeat: no-repeat;
+    background-position: center;
     position: absolute;
-    filter: grayscale(1);
-    line-height: 20px;
-    font-size: 15px;
+    display: block;
     padding: 0;
-    text-align: center;
-    vertical-align: middle;
-    display: inline-block;
-    width: 20px;
-    height: 20px;
-    margin-top: -25px;
-    margin-left: 0;
+    margin: 0;
+    background-image: url('/img/lock-open-solid.svg');
+    filter: invert(1);
+    width: 26px;
+    height: 26px;
     -webkit-transition: all 0.275s;
     transition: all 0.275s;
 }
 
 #rm_button_panel_pin:checked::after {
-    content: '\01F512';
-    /*closed lock emoji*/
-    line-height: 20px;
-    font-size: 15px;
+    background-image: url('/img/lock-solid.svg');
 }
 
+#rm_button_selected_ch {
+    flex: 1;
+    overflow: hidden;
+}
+
+#rm_button_selected_ch h2 {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    text-align: left;
+}
+
+.selected-right-tab {
+    filter: brightness(200%);
+}
 
 /* ####################################################################### */
 
@@ -619,6 +629,11 @@ input[type=submit] {}
 }
 
 #rm_ch_create_block {
+    display: none;
+    overflow-y: auto;
+}
+
+#rm_extensions_block {
     display: none;
     overflow-y: auto;
 }
@@ -707,6 +722,7 @@ select option:not(:checked) {
 
 #rm_characters_block {
     display: block;
+    overflow-y: auto;
     /* visibility: hidden; */
 }
 
@@ -777,6 +793,8 @@ input[type=search]:focus::-webkit-search-cancel-button {
     margin-left: 10px;
     margin-top: 5px;
     transform: translateY(25%);
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .character_select:hover {
@@ -1988,6 +2006,16 @@ input[type="range"] {
 	width:30px;*/
 }
 
+#select_chat_cross {
+    position: absolute;
+    right: 15px;
+    top:14px;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    opacity: 0.6;
+}
+
 #advanced_book_logo {
     width: 35px;
     height: 35px;
@@ -2148,6 +2176,9 @@ input[type="range"] {
 .group_member .ch_name {
     flex-grow: 1;
     margin-left: 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: calc(100% - 110px);
 }
 
 .group_member:hover {
@@ -2396,6 +2427,11 @@ h2 {
     margin-top: 0;
     margin-bottom: 0;
     font-size: 1.25rem;
+}
+
+.right_menu_button img {
+    filter: invert(1);
+    height: 26px;
 }
 
 a {

@@ -51,6 +51,8 @@ export {
     setCharacterName,
     setEditedMessageId,
     setSendButtonState,
+    selectRightMenuWithAnimation,
+    setRightTabSelectedClass,
     chat,
     this_chid,
     settings,
@@ -2486,18 +2488,45 @@ function compareVersions(v1, v2) {
     return 0;
 }
 
+function selectRightMenuWithAnimation(selectedMenuId) {
+    const displayModes = {
+        'rm_info_block': 'flex',
+        'rm_group_chats_block': 'flex',
+        'rm_api_block': 'grid',
+    };
+    document.querySelectorAll('#right-nav-panel .right_menu').forEach((menu) => {
+        $(menu).css('display', 'none');
+
+        if (selectedMenuId && selectedMenuId.replace('#', '') === menu.id) {
+            const mode = displayModes[menu.id] ?? 'block';
+            $(menu).css('display', mode);
+            $(menu).css("opacity", 0.0);
+            $(menu).transition({
+                opacity: 1.0,
+                duration: animation_rm_duration,
+                easing: animation_rm_easing,
+                complete: function () { },
+            });
+        }
+    })
+}
+
+function setRightTabSelectedClass(selectedButtonId) {
+    document.querySelectorAll('#right-nav-panel-tabs .right_menu_button').forEach((button) => {
+        button.classList.remove('selected-right-tab');
+        
+        if (selectedButtonId && selectedButtonId.replace('#', '') === button.id) {
+            button.classList.add('selected-right-tab');
+        }
+    });
+}
+
 function select_rm_info(text, charId = null) {
-    $("#rm_characters_block").css("display", "none");
-    $("#rm_api_block").css("display", "none");
-    $("#rm_ch_create_block").css("display", "none");
-    $("#rm_group_chats_block").css("display", "none");
-    $("#rm_info_block").css("display", "flex");
 
     $("#rm_info_text").html("<h3>" + text + "</h3>");
 
-    $("#rm_button_characters").css("class", "deselected-right-tab");
-    $("#rm_button_settings").css("class", "deselected-right-tab");
-    $("#rm_button_selected_ch").css("class", "deselected-right-tab");
+    selectRightMenuWithAnimation('rm_info_block');
+    setRightTabSelectedClass();
 
     prev_selected_char = charId;
 }
@@ -2509,7 +2538,7 @@ function select_selected_character(chid) {
     menu_type = "character_edit";
     $("#delete_button").css("display", "block");
     $("#export_button").css("display", "block");
-    $("#rm_button_selected_ch").css("class", "selected-right-tab");
+    setRightTabSelectedClass('rm_button_selected_ch');
     var display_name = characters[chid].name;
 
     $("#rm_button_selected_ch").children("h2").text(display_name);
@@ -2519,15 +2548,8 @@ function select_selected_character(chid) {
     //$("#character_import_button").css("display", "none");
     $("#create_button").attr("value", "Save");
     $("#create_button").css("display", "none");
-    var i = 0;
-    while ($("#rm_button_selected_ch").width() > 170 && i < 100) {
-        display_name = display_name.slice(0, display_name.length - 2);
-        //console.log(display_name);
-        $("#rm_button_selected_ch")
-            .children("h2")
-            .text($.trim(display_name) + "...");
-        i++;
-    }
+
+    $("#rm_button_selected_ch").children("h2").text(display_name);
     $("#add_avatar_button").val("");
 
     $("#character_popup_text_h3").text(characters[chid].name);
@@ -2571,19 +2593,8 @@ function select_rm_create() {
         }
     }
 
-    $("#rm_characters_block").css("display", "none");
-    $("#rm_api_block").css("display", "none");
-    $("#rm_ch_create_block").css("display", "block");
-    $("#rm_group_chats_block").css("display", "none");
-
-    $("#rm_ch_create_block").css("opacity", 0.0);
-    $("#rm_ch_create_block").transition({
-        opacity: 1.0,
-        duration: animation_rm_duration,
-        easing: animation_rm_easing,
-        complete: function () { },
-    });
-    $("#rm_info_block").css("display", "none");
+    selectRightMenuWithAnimation('rm_ch_create_block');
+    setRightTabSelectedClass();
 
     $("#delete_button_div").css("display", "none");
     $("#delete_button").css("display", "none");
@@ -2592,9 +2603,6 @@ function select_rm_create() {
     $("#create_button").attr("value", "Create");
     //RossAscends: commented this out as part of the auto-loading token counter
     //$('#result_info').html('&nbsp;');
-    $("#rm_button_characters").css("class", "deselected-right-tab");
-    $("#rm_button_settings").css("class", "deselected-right-tab");
-    $("#rm_button_selected_ch").css("class", "deselected-right-tab");
 
     //create text poles
     $("#rm_button_back").css("display", "inline-block");
@@ -2619,8 +2627,6 @@ function select_rm_create() {
 }
 
 function select_rm_characters() {
-    /* QuickRefresh(true); */
-
     if (prev_selected_char) {
         let newChId = characters.findIndex((x) => x.name == prev_selected_char);
         $(`.character_select[chid="${newChId}"]`).trigger("click");
@@ -2628,23 +2634,8 @@ function select_rm_characters() {
     }
 
     menu_type = "characters";
-    $("#rm_characters_block").css("display", "block");
-    $("#rm_characters_block").css("opacity", 0.0);
-    $("#rm_characters_block").transition({
-        opacity: 1.0,
-        duration: animation_rm_duration,
-        easing: animation_rm_easing,
-        complete: function () { },
-    });
-
-    $("#rm_api_block").css("display", "none");
-    $("#rm_ch_create_block").css("display", "none");
-    $("#rm_info_block").css("display", "none");
-    $("#rm_group_chats_block").css("display", "none");
-
-    $("#rm_button_characters").css("class", "selected-right-tab");
-    $("#rm_button_settings").css("class", "deselected-right-tab");
-    $("#rm_button_selected_ch").css("class", "deselected-right-tab");
+    selectRightMenuWithAnimation('rm_characters_block');
+    setRightTabSelectedClass('rm_button_characters');
 }
 
 function setExtensionPrompt(key, value) {
@@ -2820,48 +2811,13 @@ $(document).ready(function () {
         }
     });
 
-    /*     //RossAscends: Additional hotkeys
-      document.addEventListener('keydown', (event) => {
-  
-          if (event.ctrlKey && event.key == "Enter") {				// Ctrl+Enter for Regeneration Last Response
-  
-              if (is_send_press == false) {
-                  is_send_press = true;
-                  Generate('regenerate');
-              }
-          } else if (event.ctrlKey && event.key == "ArrowUp") {		//Ctrl+UpArrow for Connect to last server
-  
-              document.getElementById('api_button').click();
-  
-          }
-      }); */
-
     //menu buttons setup
-    var selected_button_style = {};
-    var deselected_button_style = {};
-
-    $("#rm_button_create").css("class", "deselected-right-tab");
-    $("#rm_button_characters").css("class", "deselected-right-tab");
 
     $("#rm_button_settings").click(function () {
         selected_button = "settings";
         menu_type = "settings";
-        $("#rm_characters_block").css("display", "none");
-        $("#rm_api_block").css("display", "grid");
-        $("#rm_api_block").css("opacity", 0.0);
-        $("#rm_api_block").transition({
-            opacity: 1.0,
-            duration: animation_rm_duration,
-            easing: animation_rm_easing,
-            complete: function () { },
-        });
-
-        $("#rm_ch_create_block").css("display", "none");
-        $("#rm_info_block").css("display", "none");
-        $("#rm_group_chats_block").css("display", "none");
-        $("#rm_button_characters").css("class", "deselected-right-tab");
-        $("#rm_button_settings").css("class", "selected-right-tab");
-        $("#rm_button_selected_ch").css("class", "deselected-right-tab");
+        selectRightMenuWithAnimation('rm_api_block');
+        setRightTabSelectedClass('rm_button_settings');
     });
     $("#rm_button_characters").click(function () {
         selected_button = "characters";
@@ -3106,10 +3062,7 @@ $(document).ready(function () {
                     characters.length = 0; // resets the characters array, forcing getcharacters to reset
                     name2 = systemUserName; // replaces deleted charcter name with system user since she will be displayed next.
                     chat = [...safetychat]; // sets up system user to tell user about having deleted a character
-                    $(document.getElementById("rm_button_selected_ch")).css(
-                        "class",
-                        "deselected-right-tab"
-                    ); // 'deselects' character's tab panel
+                    setRightTabSelectedClass() // 'deselects' character's tab panel
                     $(document.getElementById("rm_button_selected_ch"))
                         .children("h2")
                         .text(""); // removes character name from nav tabs
@@ -4064,6 +4017,13 @@ $(document).ready(function () {
     $("#rm_button_back_from_group").click(function () {
         selected_button = "characters";
         select_rm_characters();
+    });
+
+    $("#rm_button_extensions").click(function () {
+        menu_type = 'extennsions';
+        selected_button = 'extensions';
+        setRightTabSelectedClass('rm_button_extensions');
+        selectRightMenuWithAnimation('rm_extensions_block');
     });
 
     $(document).on("click", ".select_chat_block", function () {

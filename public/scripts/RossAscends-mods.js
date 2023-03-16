@@ -301,6 +301,9 @@ $("document").ready(function () {
 		//SaveLocal('ActiveChar',this_chid);
 		SaveLocal('SelectedNavTab','rm_button_selected_ch');
 	});
+    $("#rm_button_extensions").click(function() {
+		SaveLocal('SelectedNavTab','rm_button_extensions');
+    });
 	$("#rm_button_characters").click( function () {			//if char list is clicked, in addition to saving it...
 		SaveLocal('SelectedNavTab','rm_button_characters');
 		characters.sort(Intl.Collator().compare);			// we sort the list	

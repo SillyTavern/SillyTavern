@@ -244,8 +244,7 @@
     <div id="shadow_select_chat_popup">
         <div id="select_chat_popup">
             <div id="select_chat_popup_text">
-                <img id="select_chat_cross" src="img/cross.png"
-                    style="position: absolute; right: 15px; top:14px; width: 20px; height: 20px; cursor: pointer; opacity: 0.6">
+                <img id="select_chat_cross" src="img/cross.png" alt="Close">
 
             </div>
             <div id="select_chat_import"> <!-- import chat popup header -->
@@ -321,8 +320,15 @@
 
     <nav id="right-nav-panel">
         <div id="right-nav-panel-tabs">
-            <div class="right_menu_button" id="rm_button_characters" title="Select/Create Characters">&#x1F464;</div>
-            <div class="right_menu_button" id="rm_button_settings" title="API and AI Settings">⚙️</div>
+            <div class="right_menu_button" id="rm_button_characters" title="Select/Create Characters">
+                <img alt="" src="img/id-card-regular.svg" />
+            </div>
+            <div class="right_menu_button" id="rm_button_settings" title="API and AI Settings">
+                <img alt="" src="img/gear-solid.svg" />
+            </div>
+            <div class="right_menu_button" id="rm_button_extensions" title="Extensions">
+                <img alt="" src="img/cubes-solid.svg" />
+            </div>
             <div class="right_menu_button" id="rm_button_selected_ch">
                 <h2></h2>
             </div>
@@ -419,12 +425,12 @@
             <div id="group_member_template">
                 <div class="group_member">
                     <div class="avatar">
-                        <img src="" />
+                        <img alt="Avatar" src="" />
                     </div>
                     <div class="ch_name"></div>
                     <div class="group_member_icon">
-                        <img class="minus" src="img/minus-solid.svg">
-                        <img class="plus" src="img/plus-solid.svg">
+                        <img alt="Remove" class="minus" src="img/minus-solid.svg">
+                        <img alt="Add" class="plus" src="img/plus-solid.svg">
                     </div>
                 </div>
             </div>
@@ -466,7 +472,7 @@
                 <div id="kobold_api" style="position: relative;"> <!-- shows the kobold settings -->
                     <div class="API-logo">
                         <a href="https://github.com/KoboldAI/KoboldAI-Client" target="_blank">
-                            <img src="img/kobold.png" style="width:40px;height:40px;">
+                            <img alt="KoboldAI Logo" src="img/kobold.png" style="width:40px;height:40px;">
                         </a>
                     </div>
                     <form action="javascript:void(null);" method="post" enctype="multipart/form-data">
@@ -746,9 +752,10 @@
                     </label>
                 </div>
             </div>
+        </div>
 
+        <div id="rm_extensions_block" class="right_menu">
             <div class="extensions_block">
-                <hr>
                 <h3>Extensions: <a target="_blank" href="https://github.com/SillyLossy/TavernAI-extras">TavernAI-extras</a></h3>
                 <input id="extensions_url" type="text" class="text_pole" />
                 <div class="extensions_url_block">
@@ -836,12 +843,22 @@
                 <div id="options_button">
                     <div id="options">
                         <div class="options-content">
-                            <a id="option_start_new_chat"><img src="img/save_and_start_new_chat.png"><span>Start new
-                                    chat</span></a>
-                            <a id="option_select_chat"><img src="img/book6.png"><span>View Past Chats</span></a>
+                            <a id="option_start_new_chat">
+                                <img alt="" src="img/save_and_start_new_chat.png">
+                                <span>Start new chat</span></a>
+                            <a id="option_select_chat">
+                                <img alt="" src="img/book6.png">
+                                <span>View Past Chats</span>
+                            </a>
                             <hr>
-                            <a id="option_delete_mes"><img src="img/del_mes.png"><span>Delete messages</span></a>
-                            <a id="option_regenerate"><img src="img/regenerate.png"><span>Regenerate</span></a>
+                            <a id="option_delete_mes">
+                                <img alt="" src="img/del_mes.png">
+                                <span>Delete messages</span>
+                            </a>
+                            <a id="option_regenerate">
+                                <img alt="" src="img/regenerate.png">
+                                <span>Regenerate</span>
+                            </a>
                         </div>
                     </div>
                 </div>

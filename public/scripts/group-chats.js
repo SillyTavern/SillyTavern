@@ -29,6 +29,8 @@ import {
     system_message_types,
     online_status,
     talkativeness_default,
+    selectRightMenuWithAnimation,
+    setRightTabSelectedClass,
 } from "../script.js";
 
 export {
@@ -442,17 +444,8 @@ function select_group_chats(chat_id) {
         }
     });
     $("#rm_group_filter").val("").trigger("input");
-    $("#rm_group_chats_block").css("display", "flex");
-    $("#rm_group_chats_block").css("opacity", 0.0);
-    $("#rm_group_chats_block").transition({
-        opacity: 1.0,
-        duration: 200,
-        easing: '',
-        complete: function () { },
-    });
 
-    $("#rm_ch_create_block").css("display", "none");
-    $("#rm_characters_block").css("display", "none");
+    selectRightMenuWithAnimation('rm_group_chats_block')
 
     async function memberClickHandler(event) {
         event.stopPropagation();
@@ -539,8 +532,8 @@ function select_group_chats(chat_id) {
 
     // top bar
     if (group) {
-        $("#rm_button_selected_ch").children("h2").css({});
         $("#rm_button_selected_ch").children("h2").text("");
+        setRightTabSelectedClass();
     }
 }
 
