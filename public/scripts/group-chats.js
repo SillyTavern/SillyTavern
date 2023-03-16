@@ -31,6 +31,7 @@ import {
     talkativeness_default,
     selectRightMenuWithAnimation,
     setRightTabSelectedClass,
+    default_ch_mes,
 } from "../script.js";
 
 export {

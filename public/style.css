@@ -530,7 +530,7 @@ input[type=submit] {}
 #right-nav-panel-tabs {
     margin-top: 10px;
     margin-bottom: 10px;
-    width: calc(100% - 70px);
+    width: calc(100% - 50px);
     margin-left: 20px;
     margin-right: 30px;
     display: flex;
@@ -560,42 +560,23 @@ input[type=submit] {}
 
 
 #rm_button_panel_pin {
-    padding: 0;
-    margin: 0;
-    cursor: pointer;
-    height: 0;
-    width: 0;
-    z-index: 3001;
+    display: none;
 }
 
-#rm_button_panel_pin_div {
-    width: 26px;
-    height: 26px;
-}
-
-#rm_button_panel_pin:hover::after {
-    filter: invert(1) brightness(150%);
-}
-
-#rm_button_panel_pin::after {
-    content: ' ';
-    transform: translateY(-100%);
-    background-repeat: no-repeat;
-    background-position: center;
-    position: absolute;
+#rm_button_panel_pin:checked + label .checked {
     display: block;
-    padding: 0;
-    margin: 0;
-    background-image: url('/img/lock-open-solid.svg');
-    filter: invert(1);
-    width: 26px;
-    height: 26px;
-    -webkit-transition: all 0.275s;
-    transition: all 0.275s;
 }
 
-#rm_button_panel_pin:checked::after {
-    background-image: url('/img/lock-solid.svg');
+#rm_button_panel_pin:checked + label .unchecked {
+    display: none;
+}
+
+#rm_button_panel_pin:not(:checked)  + label .checked {
+    display: none;
+}
+
+#rm_button_panel_pin:not(:checked) + label .unchecked {
+    display: block;
 }
 
 #rm_button_selected_ch {
@@ -2215,6 +2196,9 @@ input[type="range"] {
 
 .group_select .ch_name {
     flex-grow: 1;
+    max-width: calc(100% - 100px);
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .group_select .group_icon img {
@@ -2432,6 +2416,7 @@ h2 {
 
 .right_menu_button img {
     filter: invert(1);
+    cursor: pointer;
     height: 26px;
 }
 

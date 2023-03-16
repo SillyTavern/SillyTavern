@@ -66,6 +66,7 @@ export {
     default_avatar,
     system_message_types,
     talkativeness_default,
+    default_ch_mes,
 }
 
 // API OBJECT FOR EXTERNAL WIRING
@@ -91,7 +92,7 @@ let safetychat = [
 let chat_create_date = 0;
 
 let prev_selected_char = null;
-let default_ch_mes = "Hello";
+const default_ch_mes = "Hello";
 let count_view_mes = 0;
 let mesStr = "";
 let generatedPromtCache = "";
