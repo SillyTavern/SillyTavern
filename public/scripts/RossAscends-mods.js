@@ -362,7 +362,7 @@ $("document").ready(function () {
 			ClearLocal();
 		}
 		if (event.key == "ArrowLeft") {		//swipes left
-			$('.swipe_left:last').click();;
+			$('.swipe_left:last').click();
 		}
 		if (event.key == "ArrowRight") {		//swipes right
 			$('.swipe_right:last').click();
