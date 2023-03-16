@@ -375,7 +375,7 @@ async function getStatus() {
                 if (online_status == undefined) {
                     online_status = "no_connection";
                 }
-                if (online_status.toLowerCase().indexOf("pygmalion") != -1 || force_pygmalion_formatting) {
+                if (online_status.toLowerCase().indexOf("pygmalion") != -1 || (online_status !== "no_connection" && force_pygmalion_formatting)) {
                     is_pygmalion = true;
                     online_status += " (Pyg. formatting on)";
                 } else {
