@@ -312,7 +312,10 @@ function checkOnlineStatus() {
     } else {
         $("#send_textarea").attr("placeholder", "Type a message..."); //on connect, placeholder tells user to type message
         $("#send_form").css("background-color", "rgba(0,0,0,0.7)"); //on connect, form BG changes to transprent black
-        $("#send_but").css("display", "inline"); //on connect, send button shows up
+
+        if (!is_send_press) {
+            $("#send_but").css("display", "inline"); //on connect, send button shows up
+        }
 
         $("#online_status_indicator2").css("background-color", "green");
         $("#online_status_text2").html(online_status);
@@ -1888,7 +1891,6 @@ function changeMainAPI() {
         $("#max_context_block").css("display", "block");
         $("#amount_gen_block").css("display", "block");
         $("#softprompt_block").css("display", "block");
-        $("#settings_perset").trigger("change");
     }
     if ($("#main_api").find(":selected").val() == "textgenerationwebui") {
         $("#kobold_api").css("display", "none");
@@ -2126,13 +2128,8 @@ async function getSettings(type) {
                     $("#amount_gen_block").css("opacity", 0.45);
                 } else {
                     if (typeof koboldai_setting_names[preset_settings] !== "undefined") {
-                        $(
-                            "#settings_perset option[value=" +
-                            koboldai_setting_names[preset_settings] +
-                            "]"
-                        )
-                            .attr("selected", "true")
-                            .trigger("change");
+                        $(`#settings_perset option[value=${koboldai_setting_names[preset_settings]}]`)
+                            .attr("selected", "true");
                     } else {
                         $("#range_block").children().prop("disabled", true);
                         $("#range_block").css("opacity", 0.5);

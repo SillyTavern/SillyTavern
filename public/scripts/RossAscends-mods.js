@@ -191,7 +191,10 @@ function RA_checkOnlineStatus() {
     if (online_status !== undefined && online_status !== "no_connection") {
       $("#send_textarea").attr("placeholder", "Type a message..."); //on connect, placeholder tells user to type message
       $("#send_form").css("background-color", "rgba(0,0,0,0.7)"); //on connect, form BG changes to transprent black
-      $("#send_but").css("display", "inline"); //on connect, send button shows
+
+      if (!is_send_press) {
+        $("#send_but").css("display", "inline"); //on connect, send button shows
+      }
     }
   }
 }

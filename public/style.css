@@ -251,6 +251,7 @@ code {
     background: url('img/load.svg') no-repeat;
     background-size: 26px 26px;
     background-position: center center;
+    order: 99999;
 }
 
 #options_button {
