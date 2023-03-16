@@ -2767,12 +2767,13 @@ window["TavernAI"].getContext = function () {
 $(document).ready(function () {
 
     $("#character_search_bar").on("input", function () {
+        const selector = ['#rm_print_characters_block .character_select', '#rm_print_characters_block .group_select'].join(',');
         const searchValue = $(this).val().trim().toLowerCase();
 
         if (!searchValue) {
-            $("#rm_print_characters_block .character_select").show();
+            $(selector).show();
         } else {
-            $("#rm_print_characters_block .character_select").each(function () {
+            $(selector).each(function () {
                 $(this).children(".ch_name").text().toLowerCase().includes(searchValue)
                     ? $(this).show()
                     : $(this).hide();
