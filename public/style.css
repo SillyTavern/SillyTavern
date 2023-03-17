@@ -706,6 +706,10 @@ select option:not(:checked) {
     text-align: center;
 }
 
+img[src*="user-slash-solid.svg"] {
+    filter: invert(1)
+}
+
 #api_url_text,
 #textgenerationwebui_api_url_text {
     /*margin-right: 4px;*/
@@ -1573,6 +1577,10 @@ input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):checked::after
     height: 64px;
     border: 2px solid rgba(255,255,255,0.7);
     border-radius: 50%;
+}
+
+#user_avatar_block .avatar:not(.selected) {
+    border: 2px solid transparent;
 }
 
 #user_avatar_block .avatar img {
