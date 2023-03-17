@@ -533,6 +533,11 @@ function select_group_chats(chat_id) {
 
     $("#rm_group_delete").off();
     $("#rm_group_delete").on("click", function () {
+        if (is_group_generating) {
+            callPopup('<h3>Not so fast! Wait for the characters to stop typing before deleting the group.</h3>', 'text');
+            return;
+        }
+
         $("#dialogue_popup").data("group_id", chat_id);
         callPopup("<h3>Delete the group?</h3>", "del_group");
     });

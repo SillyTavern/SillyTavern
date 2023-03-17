@@ -20,6 +20,7 @@ import {
 } from "../script.js";
 
 import { LoadLocal, SaveLocal, ClearLocal, CheckLocal, LoadLocalBool } from "./f-localStorage.js";
+import { selected_group, is_group_generating } from "./group-chats.js";
 
 var NavToggle = document.getElementById("nav-toggle");
 var PanelPin = document.getElementById("rm_button_panel_pin");
@@ -192,7 +193,7 @@ function RA_checkOnlineStatus() {
       $("#send_textarea").attr("placeholder", "Type a message..."); //on connect, placeholder tells user to type message
       $("#send_form").css("background-color", "rgba(0,0,0,0.7)"); //on connect, form BG changes to transprent black
 
-      if (!is_send_press) {
+      if (!is_send_press && !(selected_group && is_group_generating)) {
         $("#send_but").css("display", "inline"); //on connect, send button shows
       }
     }

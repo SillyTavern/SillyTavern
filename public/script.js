@@ -315,7 +315,7 @@ function checkOnlineStatus() {
         $("#send_textarea").attr("placeholder", "Type a message..."); //on connect, placeholder tells user to type message
         $("#send_form").css("background-color", "rgba(0,0,0,0.7)"); //on connect, form BG changes to transprent black
 
-        if (!is_send_press) {
+        if (!is_send_press && !(selected_group && is_group_generating)) {
             $("#send_but").css("display", "inline"); //on connect, send button shows up
         }
 
@@ -921,7 +921,7 @@ async function Generate(type, automatic_trigger) {
         return;
     }
 
-    if (selected_group) {
+    if (selected_group && !is_group_generating) {
         generateGroupWrapper(false);
         return;
     }
@@ -2844,6 +2844,10 @@ $(document).ready(function () {
     });
 
     $(document).on("click", ".character_select", function () {
+        if (selected_group && is_group_generating) {
+            return;
+        }
+
         if (this_chid !== $(this).attr("chid")) {
             //if clicked on a different character from what was currently selected
             if (!is_send_press) {
