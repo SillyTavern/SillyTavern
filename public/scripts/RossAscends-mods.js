@@ -2,13 +2,6 @@ import { encode } from "../scripts/gpt-2-3-tokenizer/mod.js";
 
 import {
   Generate,
-/*   getSettings,
-  saveSettings,
-  printMessages,
-  clearChat,
-  getChat,
-  chat
-  settings, */
   this_chid,  
   characters,
   online_status,
@@ -60,7 +53,6 @@ observer.observe(document.documentElement, observerConfig);
 //Mostly I wanted this to be for file names, but couldn't figure out exactly where the filename save code was as everything seemed to be connected.
 //Does not break old characters/chats, as the code just uses whatever timestamp exists in the chat.
 //New chats made with characters will use this new formatting.
-//Useable variable is (( HumanizedDateTime ))
 export function humanizedDateTime() {
   let baseDate = new Date(Date.now());
   let humanYear = baseDate.getFullYear();

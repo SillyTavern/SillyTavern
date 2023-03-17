@@ -32,7 +32,7 @@ import {
 
 import { debounce, delay } from "./scripts/utils.js";
 
-//RossAscends: exporting functions and vars for RA mods.
+//exporting functions and vars for mods
 export {
     Generate,
     getSettings,
@@ -106,7 +106,7 @@ let is_colab = false;
 let is_checked_colab = false;
 let is_mes_reload_avatar = false;
 
-const durationSaveEdit = 500;
+const durationSaveEdit = 200;
 const saveSettingsDebounced = debounce(() => saveSettings(), durationSaveEdit);
 const saveCharacterDebounced = debounce(() => $("#create_button").click(), durationSaveEdit);
 
@@ -186,7 +186,7 @@ var create_save_mes_example = "";
 var create_save_talkativeness = talkativeness_default;
 
 //animation right menu
-var animation_rm_duration = 200;
+var animation_rm_duration = 500;
 var animation_rm_easing = "";
 
 var popup_type = "";
@@ -207,9 +207,12 @@ var add_mes_without_animation = false;
 
 var this_del_mes = 0;
 
+//message editing and chat scroll posistion persistence
 var this_edit_mes_text = "";
 var this_edit_mes_chname = "";
 var this_edit_mes_id;
+var scroll_holder = 0;
+var is_use_scroll_holder = false;
 
 //settings
 var settings;
@@ -269,6 +272,7 @@ var colab_ini_step = 1;
 
 var token;
 
+//////////// Is this needed?
 setInterval(function () {
     switch (colab_ini_step) {
         case 0:
@@ -295,6 +299,7 @@ $.ajaxPrefilter((options, originalOptions, xhr) => {
     xhr.setRequestHeader("X-CSRF-Token", token);
 });
 
+///// initialization protocol ////////
 $.get("/csrf-token").then((data) => {
     token = data.token;
     getCharacters();
@@ -305,36 +310,79 @@ $.get("/csrf-token").then((data) => {
     getUserAvatars();
 });
 
-function checkOnlineStatus() {
-    //console.log(online_status);
-    if (online_status == "no_connection") {
-        $("#send_textarea").attr("placeholder", "Not connected to API!"); //Input bar placeholder tells users they are not connected
-        $("#send_form").css("background-color", "rgba(100,0,0,0.7)"); //entire input form area is red when not connected
-        $("#send_but").css("display", "none"); //send button is hidden when not connected
+///////////// UNUSED FUNCTIONS MOVED TO TOP ///////////////
+function cleanGroupMessage(getMessage) {
+    const group = groups.find((x) => x.id == selected_group);
 
-        $("#online_status_indicator2").css("background-color", "red");
+    if (group && Array.isArray(group.members) && group.members) {
+        for (let member of group.members) {
+            // Skip current speaker.
+            if (member === name2) {
+                continue;
+            }
+
+            const indexOfMember = getMessage.indexOf(member + ":");
+            if (indexOfMember != -1) {
+                getMessage = getMessage.substr(0, indexOfMember);
+            }
+        }
+    }
+    return getMessage;
+}
+
+function getExtensionPrompt() {
+    let extension_prompt = Object.keys(extension_prompts)
+        .sort()
+        .map((x) => extension_prompts[x])
+        .filter(x => x)
+        .join("\n");
+    if (extension_prompt.length && !extension_prompt.endsWith("\n")) {
+        extension_prompt += "\n";
+    }
+    return extension_prompt;
+}
+
+function getWorldInfoPrompt(chat2) {
+    let worldInfoString = "", worldInfoBefore = "", worldInfoAfter = "";
+
+    if (world_info && world_info_data) {
+        const activatedWorldInfo = checkWorldInfo(chat2);
+        worldInfoBefore = activatedWorldInfo.worldInfoBefore;
+        worldInfoAfter = activatedWorldInfo.worldInfoAfter;
+        worldInfoString = worldInfoBefore + worldInfoAfter;
+    }
+    return { worldInfoString, worldInfoBefore, worldInfoAfter };
+}
+
+function newMesPattern(name) {
+    //Patern which denotes a new message
+    name = name + ":";
+    return name;
+}
+
+//////////////////////////////////////////
+
+function checkOnlineStatus() {
+  ///////// REMOVED LINES THAT DUPLICATE RA_CHeckOnlineStatus FEATURES 
+
+    if (online_status == "no_connection") {
+        $("#online_status_indicator2").css("background-color", "red");  //Kobold
         $("#online_status_text2").html("No connection...");
-        $("#online_status_indicator3").css("background-color", "red");
+        $("#online_status_indicator3").css("background-color", "red");  //Novel
         $("#online_status_text3").html("No connection...");
         is_get_status = false;
         is_get_status_novel = false;
     } else {
-        $("#send_textarea").attr("placeholder", "Type a message..."); //on connect, placeholder tells user to type message
-        $("#send_form").css("background-color", "rgba(0,0,0,0.7)"); //on connect, form BG changes to transprent black
-
-        if (!is_send_press && !(selected_group && is_group_generating)) {
-            $("#send_but").css("display", "inline"); //on connect, send button shows up
-        }
-
-        $("#online_status_indicator2").css("background-color", "green");
+        $("#online_status_indicator2").css("background-color", "green"); //kobold
         $("#online_status_text2").html(online_status);
-        $("#online_status_indicator3").css("background-color", "green");
+        $("#online_status_indicator3").css("background-color", "green"); //novel
         $("#online_status_text3").html(online_status);
-        $("#online_status_indicator4").css("background-color", "green");
+        $("#online_status_indicator4").css("background-color", "green"); //extensions api
         $("#online_status_text4").html(online_status);
     }
 }
 
+///// DO WE STILL NEED THIS?
 async function getLastVersion() {
     jQuery.ajax({
         type: "POST", //
@@ -415,7 +463,7 @@ async function getStatus() {
             online_status = "no_connection";
         }
     }
-}
+} 
 
 function resultCheckStatus() {
     is_api_button_press = false;
@@ -497,7 +545,11 @@ function printCharacters() {
             this_avatar = "characters/" + item.avatar + "?" + Date.now();
         } //RossAscends: changed 'prepend' to 'append' to make alphabetical sorting display correctly.
         $("#rm_print_characters_block").append(
-            `<div class=character_select chid=${i} id="CharID${i}"><div class=avatar><img src="${this_avatar}"></div><div class=ch_name>${item.name}</div></div>`
+
+            `<div class=character_select chid=${i} id="CharID${i}">
+                <div class=avatar><img src="${this_avatar}"></div>
+                <div class=ch_name>${item.name}</div>
+            </div>`
         );
         //console.log('printcharacters() -- printing -- ChID '+i+' ('+item.name+')');
     });
@@ -732,9 +784,7 @@ function appendImageToMessage(mes, messageElement) {
 }
 
 function addOneMessage(mes, type = "normal") {
-    //var message = mes['mes'];
-    //message = mes['mes'].replace(/^\s+/g, '');
-    //console.log(message.indexOf(name1+":"));
+
     var messageText = mes["mes"];
     var characterName = name1;
     var avatarImg = "User Avatars/" + user_avatar;
@@ -750,7 +800,6 @@ function addOneMessage(mes, type = "normal") {
                 avatarImg = "characters/" + characters[this_chid].avatar;
                 if (is_mes_reload_avatar !== false) {
                     avatarImg += "?" + is_mes_reload_avatar;
-                    //console.log(avatarImg);
                 }
             } else {
                 avatarImg = default_avatar;
@@ -760,12 +809,6 @@ function addOneMessage(mes, type = "normal") {
         characterName = mes.is_system || mes.force_avatar ? mes.name : name2;
     }
 
-    //Formating
-    //messageText = messageText.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\*(.+?)\*/g, '<i>$1</i>').replace(/\n/g, '<br/>');
-    //if(characterName != name1){
-    //messageText = messageText.replaceAll(name2+":", "");
-    //}
-    //console.log(messageText);
     if (count_view_mes == 0) {
         messageText = substituteParams(messageText);
     }
@@ -779,28 +822,33 @@ function addOneMessage(mes, type = "normal") {
 
     var HTMLForEachMes =
         '<div class="mes" mesid="' + count_view_mes + '" ch_name="' + characterName + '" is_user="' + mes["is_user"] + '">' +
-        '<div class="for_checkbox"></div>' +
-        '<input type="checkbox" class="del_checkbox">' +
-        '<div class="avatar">' +
-        '<img src="' + avatarImg + '">' +
-        '</div>' +
-        '<div class="swipe_left">' +
-        '<img src="img/swipe_left.png">' +
-        '</div>' +
-        '<div class="mes_block">' +
-        '<div class="ch_name">' +
-        characterName +
-        '<div title=Edit class=mes_edit></div>' +
-        '<div class=mes_edit_cancel><img src=img/cancel.png></div>' +
-        '<div class=mes_edit_done><img src=img/done.png></div>' +
-        '</div>' +
-        '<div class=mes_text></div>' +
-        '</div>' +
-        '<div class="mes_bias">' + bias + '</div>' +
-        '<div class="swipe_right">' +
-        '   <img src="img/swipe_right.png">' +
-        '</div>' +
+            '<div class="for_checkbox"></div>' +
+            '<input type="checkbox" class="del_checkbox">' +
+            '<div class="avatar">' +
+                '<img src="' + avatarImg + '">' +
+            '</div>' +
+            '<div class="swipe_left">' +
+                '<img src="img/swipe_left.png">' +
+            '</div>' +
+            '<div class="mes_block">' +
+                '<div class="ch_name">' +
+                    characterName +
+                    '<div title=Edit class=mes_edit></div>' +
+                    '<div class=mes_edit_cancel>'+
+                        '<img src=img/cancel.png>'+
+                    '</div>' +
+                    '<div class=mes_edit_done>'+
+                        '<img src=img/done.png>'+
+                    '</div>' +
+                '</div>' +
+                '<div class=mes_text></div>' +
+            '</div>' +
+            '<div class="mes_bias">' + bias + '</div>' +
+            '<div class="swipe_right">' +
+            '   <img src="img/swipe_right.png">' +
+            '</div>' +
         '</div>';
+
     if (type !== 'swipe') {
         $("#chat").append(HTMLForEachMes);
     }
@@ -817,67 +865,22 @@ function addOneMessage(mes, type = "normal") {
     newMessage.find('.avatar img').on('error', function () {
         $(this).attr("src", "/img/user-slash-solid.svg");
         $(this).css('filter', 'invert(1)');
-    });
-
-    //////// swipecode inside addOneMessage - to keep swipes displayed while 
-    // SWIPE BUTTON DISPLAY SHOULD BE HANDLED IN showSwipeButtons/hideSwipeButtons, not here. Commented out duplicate code.
-
-    //console.log('addOneMessage -- type = '+type);                                   
+    });                               
     if (type === 'swipe') {
-        //console.log('addOneMessage -- detected adding one swipe message')
         $("#chat").children().filter('[mesid="' + (count_view_mes - 1) + '"]').children('.mes_block').children('.mes_text').html('');
         $("#chat").children().filter('[mesid="' + (count_view_mes - 1) + '"]').children('.mes_block').children('.mes_text').append(messageText);
-
-        /*                 if(mes['swipe_id'] !== 0 && swipes){
-                            console.log('addOneMessage -- swipe_id is not 0, adding both buttons');
-                            $("#chat").children().filter('[mesid="'+(count_view_mes-1)+'"]').children('.swipe_right').css('display', 'flex');
-                            $("#chat").children().filter('[mesid="'+(count_view_mes-1)+'"]').children('.swipe_left').css('display', 'flex');
-                        } */
-    } else { //if this is not a display of a new swipe message..
-        //console.log('addOneMessage -- adding message');
+    } else {
         $("#chat").children().filter('[mesid="' + count_view_mes + '"]').children('.mes_block').children('.mes_text').append(messageText);
-        //console.log('addOneMessage - hiding swipe buttons');
-        hideSwipeButtons();     //disabling this leaves buttons visibile on all messages, breaks swipes
-        //console.log('addOneMessage -- checking for swipes'); 
-        /* if(parseInt(chat.length-1) === parseInt(count_view_mes) && !mes['is_user'] && swipes){
-            console.log('chat length - 1 = '+(chat[chat.length-1]['mesid']));
-            if(chat[chat.length-1]['mesid'] !==undefined){ 
-                    if(mes['swipe_id'] === undefined && count_view_mes !== 0){
-                        console.log('addOneMessage -- no swipes here, showing right button for possible generation');
-                        $("#chat").children().filter('[mesid="'+(count_view_mes)+'"]').children('.swipe_right').css('display', 'flex');
-                    }else if(mes['swipe_id'] !== undefined){ // if swipes aren't undefined == swipes exist at this node
-                        console.log('addOneMessage -- found swipes')
-                        if(mes['swipe_id'] === 0){ //if we are viewing the first swipe message, display right
-                            console.log('addOneMessage -- found lone swipe, displaying right button');
-                            $("#chat").children().filter('[mesid="'+(count_view_mes)+'"]').children('.swipe_right').css('display', 'flex');
-                        }else { // if swipe_id is more than 0, than means we must have multiple swipes, so show both items
-                            console.log('addOneMessage -- found multiple swipes, showing both buttons');
-                            $("#chat").children().filter('[mesid="'+(count_view_mes)+'"]').children('.swipe_right').css('display', 'flex');
-                            $("#chat").children().filter('[mesid="'+(count_view_mes)+'"]').children('.swipe_left').css('display', 'flex');
-                        }
-                    }
-                }
-        }else{console.log('apparently no swipes found, and not a valid mesage to add hideSwipeButtons, so skipping');} */
+        hideSwipeButtons();   
         count_view_mes++;
     }
-    /* } */
-    // if(type !== 'swipe'){count_view_mes++;}
-
-
     var $textchat = $("#chat");
     $('#chat .mes').last().addClass('last_mes');
     $('#chat .mes').eq(-2).removeClass('last_mes');
-    //$('#chat').children().last().css("opacity", "1");
     $textchat.scrollTop(($textchat[0].scrollHeight));
 
-    hideSwipeButtons(); //disabling this prevents left button from correctly removing on last message without swipe to the left...
+    hideSwipeButtons();
     showSwipeButtons();
-}
-
-function newMesPattern(name) {
-    //Patern which denotes a new message
-    name = name + ":";
-    return name;
 }
 
 function substituteParams(content) {
@@ -932,15 +935,16 @@ function extractMessageBias(message) {
     return ` ${found.join(" ")} `;
 }
 
-async function Generate(type, automatic_trigger) {
-    //encode("dsfs").length
+
+
+async function Generate(type, automatic_trigger) {//encode("dsfs").length
     console.log('Generate entered');
     tokens_already_generated = 0;
-    message_already_generated = name2 + ": ";
+    message_already_generated = name2 + ': ';
 
     if (isHelpRequest($("#send_textarea").val())) {
         sendSystemMessage(system_message_types.HELP);
-        $("#send_textarea").val("").trigger("input");
+        $("#send_textarea").val('').trigger('input');
         return;
     }
 
@@ -949,30 +953,27 @@ async function Generate(type, automatic_trigger) {
         return;
     }
 
-    if (
-        online_status != "no_connection" &&
-        this_chid != undefined &&
-        this_chid !== "invalid-safety-id"
-    ) {
-        if (type !== "regenerate") {
+    if (online_status != 'no_connection' && this_chid != undefined && this_chid !== 'invalid-safety-id') {
+        if (type !== 'regenerate') {
             is_send_press = true;
             var textareaText = $("#send_textarea").val();
             //console.log('Not a Regenerate call, so posting normall with input of: ' +textareaText);
-            $("#send_textarea").val("").trigger("input");
+            $("#send_textarea").val('').trigger('input');
+
         } else {
             //console.log('Regenerate call detected')
             var textareaText = "";
-            if (chat[chat.length - 1]["is_user"]) {
-                //If last message from You
+            if (chat[chat.length - 1]['is_user']) {//If last message from You
+
             } else {
                 chat.length = chat.length - 1;
                 count_view_mes -= 1;
                 //$('#chat').children().last().css({'transition':'all 0.5s ease-in-out'});
                 //$('#chat').children().last().css({'transform':'translateX(100vh) scale(0.1,0.1)'});
                 //$('#chat').children().last().css({'opacity':'0'});
-                setTimeout(function () {
+                setTimeout(function(){
                     $('#chat').children().last().remove();
-                }, 1000);
+                },1000);
             }
         }
 
@@ -989,18 +990,17 @@ async function Generate(type, automatic_trigger) {
             }
         }
 
-        // bias from the latest message is top priority
-        promptBias = messageBias ?? promptBias ?? "";
+        // bias from the latest message is top priority//
+
+        promptBias = messageBias ?? promptBias ?? '';
 
         var storyString = "";
         var userSendString = "";
         var finalPromt = "";
-
-        var postAnchorChar = "talks a lot with descriptions"; //'Talk a lot with description what is going on around';// in asterisks
-        var postAnchorStyle = "Writing style: very long messages"; //"[Genre: roleplay chat][Tone: very long messages with descriptions]";
-
-        var anchorTop = "";
-        var anchorBottom = "";
+        var postAnchorChar = "talks a lot with descriptions";//'Talk a lot with description what is going on around';// in asterisks
+        var postAnchorStyle = "Writing style: very long messages";//"[Genre: roleplay chat][Tone: very long messages with descriptions]";
+        var anchorTop = '';
+        var anchorBottom = '';
         var topAnchorDepth = 8;
 
         if (character_anchor && !is_pygmalion) {
@@ -1025,31 +1025,29 @@ async function Generate(type, automatic_trigger) {
         //*********************************
         if (textareaText != "" && !automatic_trigger) {
             chat[chat.length] = {};
-            chat[chat.length - 1]["name"] = name1;
-            chat[chat.length - 1]["is_user"] = true;
-            chat[chat.length - 1]["is_name"] = true;
-            chat[chat.length - 1]["send_date"] = humanizedDateTime();
-            chat[chat.length - 1]["mes"] = textareaText;
-            chat[chat.length - 1]["extra"] = {};
+            chat[chat.length - 1]['name'] = name1;
+            chat[chat.length - 1]['is_user'] = true;
+            chat[chat.length - 1]['is_name'] = true;
+            chat[chat.length - 1]['send_date'] = humanizedDateTime();
+            chat[chat.length - 1]['mes'] = textareaText;
+            chat[chat.length - 1]['extra'] = {};
 
             if (messageBias) {
                 console.log('checking bias');
-                chat[chat.length - 1]["extra"]["bias"] = messageBias;
+                chat[chat.length - 1]['extra']['bias'] = messageBias;
             }
-
             console.log('Generate calls addOneMessage');
             addOneMessage(chat[chat.length - 1]);
         }
-        var chatString = "";
+////////////////////////////////////
+        var chatString = '';
         var arrMes = [];
         var mesSend = [];
+        var mesExamplesArray = [];
         var charDescription = baseChatReplaceAndSplit($.trim(characters[this_chid].description), name1, name2);
         var charPersonality = baseChatReplaceAndSplit($.trim(characters[this_chid].personality), name1, name2);
         var Scenario = baseChatReplaceAndSplit($.trim(characters[this_chid].scenario), name1, name2);
         var mesExamples = baseChatReplaceAndSplit($.trim(characters[this_chid].mes_example.replace(/<START>/gi, '')), name1, name2);
-
-        let blocks = mesExamples.split(/<START>/gi);
-        let mesExamplesArray = blocks.slice(1).map(block => `<START>\n${block.trim()}\n`).join('');
 
         function baseChatReplaceAndSplit(value, name1, name2) {
             if (value !== undefined && value.length > 0) {
@@ -1061,15 +1059,17 @@ async function Generate(type, automatic_trigger) {
                 value = value.replace(/{{char}}/gi, name2);
                 value = value.replace(/<USER>/gi, name1);
                 value = value.replace(/<BOT>/gi, name2);
+                let blocks = value.split(/<START>/gi);
+                return blocks.slice(1).map(block => `<START>\n${block.trim()}\n`).join('');
             }
             return value;
         }
 
         function appendToStoryString(value, prefix) {
-            if (value !== undefined && value.length > 0) {
-                return prefix + value + '\n';
-            }
-            return '';
+        if (value !== undefined && value.length > 0) {
+            return prefix + value + '\n';
+        }
+        return '';
         }
 
         if (is_pygmalion) {
@@ -1077,232 +1077,183 @@ async function Generate(type, automatic_trigger) {
             storyString += appendToStoryString(charPersonality, 'Personality: ');
             storyString += appendToStoryString(Scenario, 'Scenario: ');
         } else {
-            if (charDescription !== undefined) {
-                if (charPersonality.length > 0) {
-                    charPersonality = name2 + "'s personality: " + charPersonality;
-                }
-            }
-
-            storyString += appendToStoryString(charDescription, '');
-
-            if (storyString.endsWith('\n')) {
-                storyString = storyString.slice(0, -1);
-            }
-
-            if (count_view_mes < topAnchorDepth) {
-                storyString += '\n' + appendToStoryString(charPersonality, '');
+        if (charDescription !== undefined) {
+            if (charPersonality.length > 0) {
+            charPersonality = name2 + "'s personality: " + charPersonality;
             }
         }
+
+        storyString += appendToStoryString(charDescription, '');
+
+        if (storyString.endsWith('\n')) {
+            storyString = storyString.slice(0, -1);
+        }
+
+        if (count_view_mes < topAnchorDepth) {
+            storyString += '\n' + appendToStoryString(charPersonality, '');
+        }
+        }
+//////////////////////////////////
 
         var count_exm_add = 0;
         console.log('emptying chat2');
         var chat2 = [];
         var j = 0;
-        console.log('pre-replace chat.length = ' + chat.length);
+        console.log('pre-replace chat.length = '+chat.length);
         for (var i = chat.length - 1; i >= 0; i--) {
+            
             if (j == 0) {
-                chat[j]["mes"] = chat[j]["mes"].replace(/{{user}}/gi, name1);
-                chat[j]["mes"] = chat[j]["mes"].replace(/{{char}}/gi, name2);
-                chat[j]["mes"] = chat[j]["mes"].replace(/<USER>/gi, name1);
-                chat[j]["mes"] = chat[j]["mes"].replace(/<BOT>/gi, name2);
+                chat[j]['mes'] = chat[j]['mes'].replace(/{{user}}/gi, name1);
+                chat[j]['mes'] = chat[j]['mes'].replace(/{{char}}/gi, name2);
+                chat[j]['mes'] = chat[j]['mes'].replace(/<USER>/gi, name1);
+                chat[j]['mes'] = chat[j]['mes'].replace(/<BOT>/gi, name2);
             }
-            let this_mes_ch_name = "";
-            if (chat[j]["is_user"]) {
+            let this_mes_ch_name = '';
+            if (chat[j]['is_user']) {
                 this_mes_ch_name = name1;
             } else {
                 this_mes_ch_name = name2;
             }
-            if (chat[j]["is_name"]) {
-                chat2[i] = this_mes_ch_name + ": " + chat[j]["mes"] + "\n";
+            if (chat[j]['is_name']) {
+                chat2[i] = this_mes_ch_name + ': ' + chat[j]['mes'] + '\n';
             } else {
-                chat2[i] = chat[j]["mes"] + "\n";
+                chat2[i] = chat[j]['mes'] + '\n';
             }
             // system messages produce no text
-            if (chat[j]["is_system"]) {
-                chat2[i] = "";
+            if (chat[j]['is_system']) {
+                chat2[i] = '';
             }
+           
             // replace bias markup
-            chat2[i] = (chat2[i] ?? "").replace(/{([^}]+)}/g, "");
+            chat2[i] = (chat2[i] ?? '').replace(/{([^}]+)}/g, ''); 
+            //console.log('replacing chat2 {}s');
             j++;
         }
-        console.log('post replace chat.length = ' + chat.length);
+        console.log('post replace chat.length = '+chat.length);
         //chat2 = chat2.reverse();
         var this_max_context = 1487;
-        if (main_api == "kobold") this_max_context = max_context;
-        if (main_api == "novel") {
+        if (main_api == 'kobold') this_max_context = max_context;
+        if (main_api == 'novel') {
             if (novel_tier === 1) {
                 this_max_context = 1024;
             } else {
-                this_max_context = 2048 - 60; //fix for fat tokens
-                if (model_novel == "krake-v2") {
+                this_max_context = 2048 - 60;//fix for fat tokens 
+                if (model_novel == 'krake-v2') {
                     this_max_context -= 160;
                 }
             }
         }
 
-        let { worldInfoString, worldInfoBefore, worldInfoAfter } = getWorldInfoPrompt(chat2);
+        let worldInfoString = '', worldInfoBefore = '', worldInfoAfter = '';
 
-        let extension_prompt = getExtensionPrompt();
+        if (world_info && world_info_data) {
+            const activatedWorldInfo = checkWorldInfo(chat2);
+            worldInfoBefore = activatedWorldInfo.worldInfoBefore;
+            worldInfoAfter = activatedWorldInfo.worldInfoAfter;
+            worldInfoString = worldInfoBefore + worldInfoAfter;
+        }
 
+        let extension_prompt = Object.keys(extension_prompts).sort().map(x => extension_prompts[x]).filter(x => x).join('\n');
+        if (extension_prompt.length && !extension_prompt.endsWith('\n')) {
+            extension_prompt += '\n';
+        }
         /////////////////////// swipecode
-        if (type == 'swipe') {
-
+        if(type == 'swipe'){
+            
             console.log('pre swipe shift: ' + chat2.length);
             console.log('shifting swipe chat2');
             chat2.shift();
-
+            
         }
-        console.log('post swipe shift:' + chat2.length);
-
+        console.log('post swipe shift:'+chat2.length);
         var i = 0;
 
-        for (var item of chat2) {
-            //console.log(encode("dsfs").length);
+        for (var item of chat2) {//console.log(encode("dsfs").length);
             chatString = item + chatString;
-            if (
-                encode(
-                    JSON.stringify(
-                        worldInfoString +
-                        storyString +
-                        chatString +
-                        anchorTop +
-                        anchorBottom +
-                        charPersonality +
-                        promptBias +
-                        extension_prompt
-                    )
-                ).length +
-                120 <
-                this_max_context
-            ) {
-                //(The number of tokens in the entire promt) need fix, it must count correctly (added +120, so that the description of the character does not hide)
-
+            if (encode(JSON.stringify(
+                    worldInfoString + storyString + chatString + 
+                    anchorTop + anchorBottom + 
+                    charPersonality + promptBias + extension_prompt
+                    )).length + 120 < this_max_context) { //(The number of tokens in the entire promt) need fix, it must count correctly (added +120, so that the description of the character does not hide)
                 //if (is_pygmalion && i == chat2.length-1) item='<START>\n'+item;
                 arrMes[arrMes.length] = item;
             } else {
                 console.log('reducing chat.length by 1');
                 i = chat.length - 1;
             }
+
             await delay(1); //For disable slow down (encode gpt-2 need fix)
-            //console.log(i+' '+chat.length);
+           // console.log(i+' '+chat.length);
+           
             count_exm_add = 0;
-            if (i == chat.length - 1) {
-                //arrMes[arrMes.length-1] = '<START>\n'+arrMes[arrMes.length-1];
-                let mesExmString = "";
-                for (let iii = 0; iii < mesExamplesArray.length; iii++) {
-                    //mesExamplesArray It need to make from end to start
-                    console.log('checking prompt tokens');
-                    mesExmString = mesExmString + mesExamplesArray[iii];
-                    if (
-                        encode(
-                            JSON.stringify(
-                                worldInfoString +
-                                storyString +
-                                mesExmString +
-                                chatString +
-                                anchorTop +
-                                anchorBottom +
-                                charPersonality +
-                                promptBias +
-                                extension_prompt
-                            )
-                        ).length +
-                        120 <
-                        this_max_context
-                    ) {
-                        //example of dialogs
+            
+            if (i === chat.length - 1) {
+                let mesExmString = '';
+                for (let iii = mesExamplesArray.length - 1; iii >= 0; iii--) {
+                    mesExmString += mesExamplesArray[iii];
+                    const prompt = worldInfoString + storyString + mesExmString + chatString + anchorTop + anchorBottom + charPersonality + promptBias + extension_prompt;
+                    if (encode(JSON.stringify(prompt)).length + 120 < this_max_context) {
                         if (!is_pygmalion) {
-                            mesExamplesArray[iii] = mesExamplesArray[iii].replace(
-                                /<START>/i,
-                                "This is how " + name2 + " should talk"
-                            ); //An example of how '+name2+' responds
+                            mesExamplesArray[iii] = mesExamplesArray[iii].replace(/<START>/i, `This is how ${name2} should talk`);
                         }
                         count_exm_add++;
                         await delay(1);
-
-                        //arrMes[arrMes.length] = item;
                     } else {
-                        iii = mesExamplesArray.length;
+                        break;
                     }
                 }
-
-                if (!is_pygmalion) {
-                    if (Scenario !== undefined) {
-                        if (Scenario.length > 0) {
-                            storyString +=
-                                "Circumstances and context of the dialogue: " + Scenario + "\n";
-                        }
-                    }
-                    //storyString+='\nThen the roleplay chat between '+name1+' and '+name2+' begins.\n';
+                if (!is_pygmalion && Scenario && Scenario.length > 0) {
+                    storyString += `Circumstances and context of the dialogue: ${Scenario}\n`;
                 }
-                runGenerate();
-                return;
             }
             i++;
         }
+        console.log('calling runGenerate');
+        runGenerate();
+        return;
 
-        function runGenerate(cycleGenerationPromt = "") {
-            console.log('rungenerate entered');
+        function runGenerate(cycleGenerationPromt = '') {
+        console.log('rungenerate entered');
+
             generatedPromtCache += cycleGenerationPromt;
             if (generatedPromtCache.length == 0) {
                 console.log('generating prompt');
                 chatString = "";
                 arrMes = arrMes.reverse();
                 var is_add_personality = false;
-                arrMes.forEach(function (item, i, arr) {
-                    //For added anchors and others
+                arrMes.forEach(function (item, i, arr) {//For added anchors and others
 
-                    if (
-                        i >= arrMes.length - 1 &&
-                        $.trim(item).substr(0, (name1 + ":").length) != name1 + ":"
-                    ) {
+                    if (i >= arrMes.length - 1 && $.trim(item).substr(0, (name1 + ":").length) != name1 + ":") {
                         if (textareaText == "") {
                             item = item.substr(0, item.length - 1);
                         }
                     }
-                    if (
-                        i === arrMes.length - topAnchorDepth &&
-                        count_view_mes >= topAnchorDepth &&
-                        !is_add_personality
-                    ) {
+                    if (i === arrMes.length - topAnchorDepth && count_view_mes >= topAnchorDepth && !is_add_personality) {
+
                         is_add_personality = true;
                         //chatString = chatString.substr(0,chatString.length-1);
                         //anchorAndPersonality = "[Genre: roleplay chat][Tone: very long messages with descriptions]";
                         if ((anchorTop != "" || charPersonality != "") && !is_pygmalion) {
-                            if (anchorTop != "") charPersonality += " ";
-                            item += "[" + charPersonality + anchorTop + "]\n";
+                            if (anchorTop != "") charPersonality += ' ';
+                            item += "[" + charPersonality + anchorTop + ']\n';
                         }
                     }
-                    if (
-                        i >= arrMes.length - 1 &&
-                        count_view_mes > 8 &&
-                        $.trim(item).substr(0, (name1 + ":").length) == name1 + ":" &&
-                        !is_pygmalion
-                    ) {
-                        //For add anchor in end
+                    if (i >= arrMes.length - 1 && count_view_mes > 8 && $.trim(item).substr(0, (name1 + ":").length) == name1 + ":" && !is_pygmalion) {//For add anchor in end
                         item = item.substr(0, item.length - 1);
                         //chatString+=postAnchor+"\n";//"[Writing style: very long messages]\n";
                         item = item + anchorBottom + "\n";
                     }
                     if (is_pygmalion) {
-                        if (
-                            i >= arrMes.length - 1 &&
-                            $.trim(item).substr(0, (name1 + ":").length) == name1 + ":"
-                        ) {
-                            //for add name2 when user sent
+                        if (i >= arrMes.length - 1 && $.trim(item).substr(0, (name1 + ":").length) == name1 + ":") {//for add name2 when user sent
                             item = item + name2 + ":";
                         }
-                        if (
-                            i >= arrMes.length - 1 &&
-                            $.trim(item).substr(0, (name1 + ":").length) != name1 + ":"
-                        ) {
-                            //for add name2 when continue
+                        if (i >= arrMes.length - 1 && $.trim(item).substr(0, (name1 + ":").length) != name1 + ":") {//for add name2 when continue
                             if (textareaText == "") {
-                                item = item + "\n" + name2 + ":";
+                                item = item + '\n' + name2 + ":";
                             }
                         }
                         if ($.trim(item).indexOf(name1) === 0) {
-                            item = item.replace(name1 + ":", "You:");
+                            item = item.replace(name1 + ':', 'You:');
                         }
                     }
                     mesSend[mesSend.length] = item;
@@ -1314,123 +1265,87 @@ async function Generate(type, automatic_trigger) {
 
             //console.log(encode(characters[this_chid].description+chatString).length);
             //console.log(encode(JSON.stringify(characters[this_chid].description+chatString)).length);
-            if (type == "force_name2") {
-                finalPromt += name2 + ":";
+            if (type == 'force_name2') {
+                finalPromt += name2 + ':';
             }
             //console.log(JSON.stringify(storyString));
             //Send story string
-            var mesSendString = "";
-            var mesExmString = "";
+            var mesSendString = '';
+            var mesExmString = '';
 
             function setPromtString() {
-                mesSendString = "";
-                mesExmString = "";
+                mesSendString = '';
+                mesExmString = '';
                 for (let j = 0; j < count_exm_add; j++) {
                     mesExmString += mesExamplesArray[j];
                 }
                 for (let j = 0; j < mesSend.length; j++) {
+                    //console.log('compiling messages for prompt');
                     mesSendString += mesSend[j];
                 }
             }
 
             function checkPromtSize() {
+                //console.log('checking prompt size');
                 setPromtString();
-                let thisPromtContextSize =
-                    encode(
-                        JSON.stringify(
-                            worldInfoString +
-                            storyString +
-                            mesExmString +
-                            mesSendString +
-                            anchorTop +
-                            anchorBottom +
-                            charPersonality +
-                            generatedPromtCache +
-                            promptBias +
-                            extension_prompt
-                        )
-                    ).length + 120;
+                let thisPromtContextSize = encode(JSON.stringify(worldInfoString + storyString + mesExmString + mesSendString + anchorTop + anchorBottom + charPersonality + generatedPromtCache + promptBias + extension_prompt)).length + 120;
 
-                if (thisPromtContextSize > this_max_context) {
-                    //if the prepared prompt is larger than the max context size...
+                if (thisPromtContextSize > this_max_context) {		//if the prepared prompt is larger than the max context size...
 
-                    if (count_exm_add > 0) {
-                        // ..and we have example mesages..
+                    if (count_exm_add > 0) {							// ..and we have example mesages..
                         //console.log('Context size: '+thisPromtContextSize+' -- too big, removing example message');
                         //mesExamplesArray.length = mesExamplesArray.length-1;
-                        count_exm_add--; // remove the example messages...
-                        checkPromtSize(); // and try agin...
-                    } else if (mesSend.length > 0) {
-                        // if the chat history is longer than 0
+                        count_exm_add--;							// remove the example messages...
+                        checkPromtSize();							// and try agin...
+                    } else if (mesSend.length > 0) {					// if the chat history is longer than 0
                         //console.log('Context size: '+thisPromtContextSize+' -- too big, removing oldest chat message');
-                        mesSend.shift(); // remove the first (oldest) chat entry..
-                        checkPromtSize(); // and check size again..
+                        mesSend.shift();							// remove the first (oldest) chat entry..
+                        checkPromtSize();							// and check size again..
                     } else {
                         //end
                     }
                 }
             }
 
+
+
             if (generatedPromtCache.length > 0) {
                 //console.log('Generated Prompt Cache length: '+generatedPromtCache.length);
                 checkPromtSize();
             } else {
+                console.log('calling setPromtString')
                 setPromtString();
             }
 
             if (!is_pygmalion) {
-                mesSendString =
-                    "\nThen the roleplay chat between " +
-                    name1 +
-                    " and " +
-                    name2 +
-                    " begins.\n" +
-                    mesSendString;
+                mesSendString = '\nThen the roleplay chat between ' + name1 + ' and ' + name2 + ' begins.\n' + mesSendString;
             } else {
-                mesSendString = "<START>\n" + mesSendString;
+                mesSendString = '<START>\n' + mesSendString;
                 //mesSendString = mesSendString; //This edit simply removes the first "<START>" that is prepended to all context prompts
             }
-            finalPromt =
-                worldInfoBefore +
-                storyString +
-                worldInfoAfter +
-                extension_prompt +
-                mesExmString +
-                mesSendString +
-                generatedPromtCache +
-                promptBias;
-            finalPromt = finalPromt.replace(/\r/gm, "");
+            finalPromt = worldInfoBefore + storyString + worldInfoAfter + extension_prompt + mesExmString + mesSendString + generatedPromtCache + promptBias;
+            finalPromt = finalPromt.replace(/\r/gm, '');
             console.log('final prompt decided');
 
-
             //if we aren't using the kobold GUI settings...
-            if (
-                main_api == "textgenerationwebui" ||
-                (main_api == "kobold" && preset_settings != "gui")
-            ) {
-                var this_settings =
-                    koboldai_settings[koboldai_setting_names[preset_settings]];
+            if (main_api == 'textgenerationwebui' || main_api == 'kobold' && preset_settings != 'gui') {
+                var this_settings = koboldai_settings[koboldai_setting_names[preset_settings]];
 
                 var this_amount_gen = parseInt(amount_gen); // how many tokens the AI will be requested to generate
-                if (is_pygmalion) {
-                    // if we are using a pygmalion model...
-                    if (tokens_already_generated === 0) {
-                        // if nothing has been generated yet..
-                        if (parseInt(amount_gen) >= 50) {
-                            // if the max gen setting is > 50...(
+                if (is_pygmalion) { // if we are using a pygmalion model...
+                    if (tokens_already_generated === 0) { // if nothing has been generated yet..
+                        if (parseInt(amount_gen) >= 50) { // if the max gen setting is > 50...(
                             this_amount_gen = 50; // then only try to make 50 this cycle..
-                        } else {
+                        }
+                        else {
                             this_amount_gen = parseInt(amount_gen); // otherwise, make as much as the max amount request.
                         }
-                    } else {
-                        // if we already recieved some generated text...
-                        if (
-                            parseInt(amount_gen) - tokens_already_generated <
-                            tokens_cycle_count
-                        ) {
-                            // if the remaining tokens to be made is less than next potential cycle count
+                    }
+                    else { // if we already recieved some generated text...
+                        if (parseInt(amount_gen) - tokens_already_generated < tokens_cycle_count) { // if the remaining tokens to be made is less than next potential cycle count
                             this_amount_gen = parseInt(amount_gen) - tokens_already_generated; // subtract already generated amount from the desired max gen amount
-                        } else {
+                        }
+                        else {
                             this_amount_gen = tokens_cycle_count; // otherwise make the standard cycle amont (frist 50, and 30 after that)
                         }
                     }
@@ -1438,21 +1353,16 @@ async function Generate(type, automatic_trigger) {
             }
 
             var generate_data;
-            if (main_api == "kobold") {
-                var generate_data = {
-                    prompt: finalPromt,
-                    gui_settings: true,
-                    max_length: amount_gen,
-                    temperature: temp,
-                    max_context_length: max_context,
-                };
-                if (preset_settings != "gui") {
+            if (main_api == 'kobold') {
+                var generate_data = { prompt: finalPromt, gui_settings: true, max_length: amount_gen, temperature: temp, max_context_length: max_context };
+                if (preset_settings != 'gui') {
+
                     generate_data = {
                         prompt: finalPromt,
                         gui_settings: false,
                         sampler_order: this_settings.sampler_order,
-                        max_context_length: parseInt(max_context), //this_settings.max_length,
-                        max_length: this_amount_gen, //parseInt(amount_gen),
+                        max_context_length: parseInt(max_context),//this_settings.max_length,
+                        max_length: this_amount_gen,//parseInt(amount_gen),
                         rep_pen: parseFloat(rep_pen),
                         rep_pen_range: parseInt(rep_pen_size),
                         rep_pen_slope: this_settings.rep_pen_slope,
@@ -1474,7 +1384,7 @@ async function Generate(type, automatic_trigger) {
                 }
             }
 
-            if (main_api == "textgenerationwebui") {
+            if (main_api == 'textgenerationwebui') {
                 const doSample = textgenerationwebui_settings.penalty_alpha == 0;
                 var generate_data = {
                     data: [
@@ -1485,7 +1395,6 @@ async function Generate(type, automatic_trigger) {
                         textgenerationwebui_settings.top_p, // top_p
                         textgenerationwebui_settings.typical_p, // typical_p
                         textgenerationwebui_settings.rep_pen, // repetition_penalty
-                        1.0, // encoder rep pen
                         textgenerationwebui_settings.top_k, // top_k
                         0, // min_length
                         textgenerationwebui_settings.rep_pen_size, // no_repeat_ngram_size
@@ -1495,61 +1404,61 @@ async function Generate(type, automatic_trigger) {
                         false, // early_stopping
                         name1, // name1
                         name2, // name2
-                        "", // Context
+                        "",  // Context
                         true, // stop at newline
                         max_context, // Maximum prompt size in tokens
                         1, // num attempts
-                    ],
+                    ]
                 };
             }
 
-            if (main_api == "novel") {
-                var this_settings =
-                    novelai_settings[novelai_setting_names[preset_settings_novel]];
+            if (main_api == 'novel') {
+                var this_settings = novelai_settings[novelai_setting_names[preset_settings_novel]];
                 generate_data = {
-                    input: finalPromt,
-                    model: model_novel,
-                    use_string: true,
-                    temperature: parseFloat(temp_novel),
-                    max_length: this_settings.max_length,
-                    min_length: this_settings.min_length,
-                    tail_free_sampling: this_settings.tail_free_sampling,
-                    repetition_penalty: parseFloat(rep_pen_novel),
-                    repetition_penalty_range: parseInt(rep_pen_size_novel),
-                    repetition_penalty_frequency:
-                        this_settings.repetition_penalty_frequency,
-                    repetition_penalty_presence:
-                        this_settings.repetition_penalty_presence,
+                    "input": finalPromt,
+                    "model": model_novel,
+                    "use_string": true,
+                    "temperature": parseFloat(temp_novel),
+                    "max_length": this_settings.max_length,
+                    "min_length": this_settings.min_length,
+                    "tail_free_sampling": this_settings.tail_free_sampling,
+                    "repetition_penalty": parseFloat(rep_pen_novel),
+                    "repetition_penalty_range": parseInt(rep_pen_size_novel),
+                    "repetition_penalty_frequency": this_settings.repetition_penalty_frequency,
+                    "repetition_penalty_presence": this_settings.repetition_penalty_presence,
                     //"stop_sequences": {{187}},
                     //bad_words_ids = {{50256}, {0}, {1}};
                     //generate_until_sentence = true;
-                    use_cache: false,
+                    "use_cache": false,
                     //use_string = true;
-                    return_full_text: false,
-                    prefix: "vanilla",
-                    order: this_settings.order,
+                    "return_full_text": false,
+                    "prefix": "vanilla",
+                    "order": this_settings.order
                 };
             }
-            var generate_url = "";
-            if (main_api == "kobold") {
-                generate_url = "/generate";
-            } else if (main_api == "textgenerationwebui") {
-                generate_url = "/generate_textgenerationwebui";
-            } else if (main_api == "novel") {
-                generate_url = "/generate_novelai";
+            var generate_url = '';
+            if (main_api == 'kobold') {
+                generate_url = '/generate';
+            } else if (main_api == 'textgenerationwebui') {
+                generate_url = '/generate_textgenerationwebui';
+            } else if (main_api == 'novel') {
+                generate_url = '/generate_novelai';
             }
+            console.log('rungenerate calling API');
             jQuery.ajax({
-                type: "POST", //
-                url: generate_url, //
+                type: 'POST', // 
+                url: generate_url, // 
                 data: JSON.stringify(generate_data),
                 beforeSend: function () {
-                    //$('#create_button').attr('value','Creating...');
+                    //$('#create_button').attr('value','Creating...'); 
                 },
                 cache: false,
                 dataType: "json",
                 contentType: "application/json",
                 success: function (data) {
-                    tokens_already_generated += this_amount_gen; // add new gen amt to any prev gen counter..
+                    console.log('generation success');
+                    tokens_already_generated += this_amount_gen;			// add new gen amt to any prev gen counter..
+
 
                     //console.log('Tokens requested in total: '+tokens_already_generated);
                     //$("#send_textarea").focus();
@@ -1558,19 +1467,17 @@ async function Generate(type, automatic_trigger) {
                     if (!data.error) {
                         //const getData = await response.json();
                         var getMessage = "";
-                        if (main_api == "kobold") {
+                        if (main_api == 'kobold') {
                             getMessage = data.results[0].text;
-                        } else if (main_api == "textgenerationwebui") {
+                        } else if (main_api == 'textgenerationwebui') {
                             getMessage = data.data[0];
                             if (getMessage == null || data.error) {
-                                popup_type = "text";
-                                callPopup(
-                                    "<h3>Got empty response from Text generation web UI. Try restarting the API with recommended options.</h3>"
-                                );
+                                popup_type = 'default';
+                                callPopup('<h3>Got empty response from Text generation web UI. Try restarting the API with recommended options.</h3>');
                                 return;
                             }
                             getMessage = getMessage.substring(finalPromt.length);
-                        } else if (main_api == "novel") {
+                        } else if (main_api == 'novel') {
                             getMessage = data.output;
                         }
 
@@ -1583,110 +1490,113 @@ async function Generate(type, automatic_trigger) {
                         if (is_pygmalion) {
                             if_typing_text = false;
                             message_already_generated += getMessage;
-                            promptBias = "";
+                            promptBias = '';
                             //console.log('AI Response so far: '+message_already_generated);
-                            if (
-                                message_already_generated.indexOf("You:") === -1 && //if there is no 'You:' in the response msg
-                                message_already_generated.indexOf("<|endoftext|>") === -1 && //if there is no <endoftext> stamp in the response msg
-                                tokens_already_generated < parseInt(amount_gen) && //if the gen'd msg is less than the max response length..
-                                getMessage.length > 0
-                            ) {
-                                //if we actually have gen'd text at all...
-                                runGenerate(getMessage); //generate again with the 'GetMessage' argument..
+                            if (message_already_generated.indexOf('You:') === -1 && 			//if there is no 'You:' in the response msg
+                                message_already_generated.indexOf('<|endoftext|>') === -1 && 	//if there is no <endoftext> stamp in the response msg
+                                tokens_already_generated < parseInt(amount_gen) && 				//if the gen'd msg is less than the max response length..
+                                getMessage.length > 0) {											//if we actually have gen'd text at all... 
+                                runGenerate(getMessage);										//generate again with the 'GetMessage' argument..
                                 return;
                             }
 
                             getMessage = message_already_generated;
+
                         }
                         //Formating
                         getMessage = $.trim(getMessage);
                         if (is_pygmalion) {
-                            getMessage = getMessage.replace(new RegExp("<USER>", "g"), name1);
-                            getMessage = getMessage.replace(new RegExp("<BOT>", "g"), name2);
-                            getMessage = getMessage.replace(
-                                new RegExp("You:", "g"),
-                                name1 + ":"
-                            );
+                            getMessage = getMessage.replace(new RegExp('<USER>', "g"), name1);
+                            getMessage = getMessage.replace(new RegExp('<BOT>', "g"), name2);
+                            getMessage = getMessage.replace(new RegExp('You:', "g"), name1 + ':');
                         }
                         if (getMessage.indexOf(name1 + ":") != -1) {
-                            getMessage = getMessage.substr(
-                                0,
-                                getMessage.indexOf(name1 + ":")
-                            );
+                            getMessage = getMessage.substr(0, getMessage.indexOf(name1 + ":"));
+
                         }
-                        if (getMessage.indexOf("<|endoftext|>") != -1) {
-                            getMessage = getMessage.substr(
-                                0,
-                                getMessage.indexOf("<|endoftext|>")
-                            );
+                        if (getMessage.indexOf('<|endoftext|>') != -1) {
+                            getMessage = getMessage.substr(0, getMessage.indexOf('<|endoftext|>'));
+
                         }
                         // clean-up group message from excessive generations
-                        if (selected_group) {
-                            getMessage = cleanGroupMessage(getMessage);
+                        if (type == 'group_chat' && selected_group) {
+                            const group = groups.find(x => x.id == selected_group);
+
+                            if (group && Array.isArray(group.members) && group.members) {
+                                for (let member of group.members) {
+                                    // Skip current speaker.
+                                    if (member === name2) {
+                                        continue;
+                                    }
+
+                                    const indexOfMember = getMessage.indexOf(member + ":");
+                                    if (indexOfMember != -1) {
+                                        getMessage = getMessage.substr(0, indexOfMember);
+                                    }
+                                }
+                            }
                         }
                         let this_mes_is_name = true;
                         if (getMessage.indexOf(name2 + ":") === 0) {
-                            getMessage = getMessage.replace(name2 + ":", "");
+                            getMessage = getMessage.replace(name2 + ':', '');
                             getMessage = getMessage.trimStart();
                         } else {
                             this_mes_is_name = false;
                         }
-                        if (type === "force_name2") this_mes_is_name = true;
+                        if (type === 'force_name2') this_mes_is_name = true;
                         //getMessage = getMessage.replace(/^\s+/g, '');
                         if (getMessage.length > 0) {
-                            if (chat[chat.length - 1]['swipe_id'] === undefined ||
-                                chat[chat.length - 1]['is_user']) { type = 'normal'; }
-                            if (type === 'swipe') {
-
-                                chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipes'].length] = getMessage;
-                                if (chat[chat.length - 1]['swipe_id'] === chat[chat.length - 1]['swipes'].length - 1) {
+                            if(chat[chat.length-1]['swipe_id'] === undefined || 
+                            chat[chat.length-1]['is_user']){type = 'normal';}
+                            if(type === 'swipe'){
+                            
+                                chat[chat.length-1]['swipes'][chat[chat.length-1]['swipes'].length] = getMessage;
+                                if(chat[chat.length-1]['swipe_id'] === chat[chat.length-1]['swipes'].length-1){
                                     //console.log(getMessage);
-                                    chat[chat.length - 1]['mes'] = getMessage;
+                                    chat[chat.length-1]['mes'] = getMessage;
                                     console.log('runGenerate calls addOneMessage for swipe');
-                                    addOneMessage(chat[chat.length - 1], 'swipe');
-                                } else {
-                                    chat[chat.length - 1]['mes'] = getMessage;
+                                    addOneMessage(chat[chat.length-1], 'swipe');
+                                }else{
+                                    chat[chat.length-1]['mes'] = getMessage;
                                 }
                                 is_send_press = false;
-                            } else {
+                            }else{
                                 console.log('entering chat update routine for non-swipe post');
                                 is_send_press = false;
                                 chat[chat.length] = {};
-                                chat[chat.length - 1]["name"] = name2;
-                                chat[chat.length - 1]["is_user"] = false;
-                                chat[chat.length - 1]["is_name"] = this_mes_is_name;
-                                chat[chat.length - 1]["send_date"] = humanizedDateTime();
+                                chat[chat.length - 1]['name'] = name2;
+                                chat[chat.length - 1]['is_user'] = false;
+                                chat[chat.length - 1]['is_name'] = this_mes_is_name;
+                                chat[chat.length - 1]['send_date'] = humanizedDateTime();
                                 getMessage = $.trim(getMessage);
-                                chat[chat.length - 1]["mes"] = getMessage;
+                                chat[chat.length - 1]['mes'] = getMessage;
 
-                                if (selected_group) {
+                                if (type === 'group_chat') {
                                     console.log('entering chat update for groups');
-                                    let avatarImg = default_avatar;
-                                    if (characters[this_chid].avatar != "none") {
+                                    let avatarImg = 'img/fluffy.png';
+                                    if (characters[this_chid].avatar != 'none') {
                                         avatarImg = `characters/${characters[this_chid].avatar}?${Date.now()}`;
                                     }
-                                    chat[chat.length - 1]["is_name"] = true;
-                                    chat[chat.length - 1]["force_avatar"] = avatarImg;
+                                    chat[chat.length - 1]['is_name'] = true;
+                                    chat[chat.length - 1]['force_avatar'] = avatarImg;
                                 }
-
                                 console.log('runGenerate calls addOneMessage');
                                 addOneMessage(chat[chat.length - 1]);
                                 console.log('should hide loading mes and return with send button now');
                                 $("#send_but").css("display", "inline");
                                 $("#loading_mes").css("display", "none");
 
-                                if (selected_group) {
+                                if (type == 'group_chat' && selected_group) {
                                     saveGroupChat(selected_group);
-                                } /*else {
+                                } /* else {
+                                    console.log('saving message for non group chat');
                                     saveChat();
-                                }*/
-                                //console.log('/savechat called by /Generate');
-                                //let final_message_length = encode(JSON.stringify(getMessage)).length;
-                                //console.log('AI Response: +'+getMessage+ '('+final_message_length+' tokens)');
+                                } */
                             }
-                        }
-                        else {
-                            Generate("force_name2");
+                            
+
+                        } else {
+                            Generate('force_name2');
                         }
                     } else {
                         console.log('final re-setting of send button due to error');
@@ -1694,7 +1604,6 @@ async function Generate(type, automatic_trigger) {
                         $("#loading_mes").css("display", "none");
                         showSwipeButtons();
                     }
-
                     console.log('/savechat called by /Generate');
                     saveChat();
                     //let final_message_length = encode(JSON.stringify(getMessage)).length;
@@ -1705,69 +1614,33 @@ async function Generate(type, automatic_trigger) {
                     showSwipeButtons();
 
                     $("#loading_mes").css("display", "none");
+
                 },
                 error: function (jqXHR, exception) {
-                    $("#send_textarea").removeAttr("disabled");
+
+                    $("#send_textarea").removeAttr('disabled');
                     is_send_press = false;
                     $("#send_but").css("display", "inline");
                     $("#loading_mes").css("display", "none");
                     console.log(exception);
                     console.log(jqXHR);
-                },
-            });
-        }
-    } else {
-        if (this_chid == undefined || this_chid == "invalid-safety-id") {
+                    
+                }
+                
+            }); //end of "if not data error"
+        } //rungenerate ends
+
+    } else {    //generate's primary loop ends, after this is error handling for no-connection or safety-id
+
+        if (this_chid == undefined || this_chid == 'invalid-safety-id') {
             //send ch sel
-            popup_type = "char_not_selected";
-            callPopup("<h3>Сharacter is not selected</h3>");
+            popup_type = 'char_not_selected';
+            callPopup('<h3>Сharacter is not selected</h3>');
         }
         is_send_press = false;
     }
-}
-
-function cleanGroupMessage(getMessage) {
-    const group = groups.find((x) => x.id == selected_group);
-
-    if (group && Array.isArray(group.members) && group.members) {
-        for (let member of group.members) {
-            // Skip current speaker.
-            if (member === name2) {
-                continue;
-            }
-
-            const indexOfMember = getMessage.indexOf(member + ":");
-            if (indexOfMember != -1) {
-                getMessage = getMessage.substr(0, indexOfMember);
-            }
-        }
-    }
-    return getMessage;
-}
-
-function getExtensionPrompt() {
-    let extension_prompt = Object.keys(extension_prompts)
-        .sort()
-        .map((x) => extension_prompts[x])
-        .filter(x => x)
-        .join("\n");
-    if (extension_prompt.length && !extension_prompt.endsWith("\n")) {
-        extension_prompt += "\n";
-    }
-    return extension_prompt;
-}
-
-function getWorldInfoPrompt(chat2) {
-    let worldInfoString = "", worldInfoBefore = "", worldInfoAfter = "";
-
-    if (world_info && world_info_data) {
-        const activatedWorldInfo = checkWorldInfo(chat2);
-        worldInfoBefore = activatedWorldInfo.worldInfoBefore;
-        worldInfoAfter = activatedWorldInfo.worldInfoAfter;
-        worldInfoString = worldInfoBefore + worldInfoAfter;
-    }
-    return { worldInfoString, worldInfoBefore, worldInfoAfter };
-}
+    console.log('generate ending');
+} //generate ends
 
 function resetChatState() {
     active_character = "invalid-safety-id"; //unsets the chid in settings (this prevents AutoLoadChat from trying to load the wrong ChID
@@ -1846,7 +1719,6 @@ async function saveChat() {
     });
 }
 
-
 function read_avatar_load(input) {
     if (input.files && input.files[0]) {
         const reader = new FileReader();
@@ -1868,42 +1740,33 @@ function read_avatar_load(input) {
 }
 
 async function getChat() {
-    console.log("/getchat -- entered for -- " + characters[this_chid].name);
-    jQuery.ajax({
-        type: "POST",
-        url: "/getchat",
-        data: JSON.stringify({
-            ch_name: characters[this_chid].name,
-            file_name: characters[this_chid].chat,
-            avatar_url: characters[this_chid].avatar,
-        }),
-        beforeSend: function () {
-            //$('#create_button').attr('value','Creating...');
-        },
-        cache: false,
-        dataType: "json",
-        contentType: "application/json",
-        success: function (data) {
-            //console.log(data);
-            //chat.length = 0;
-            if (data[0] !== undefined) {
-                chat.push(...data);
-                chat_create_date = chat[0]['create_date'];
-                chat.shift();
-            } else {
-                chat_create_date = humanizedDateTime();
-            }
-            //console.log(chat);
-            getChatResult();
-            saveChat();
-        },
-        error: function (jqXHR, exception) {
-            getChatResult();
-            console.log(exception);
-            console.log(jqXHR);
-        },
-    });
+    console.log('/getchat -- entered for -- ' + characters[this_chid].name);
+    try {
+        const response = await $.ajax({
+            type: 'POST',
+            url: '/getchat',
+            data: JSON.stringify({ 
+                ch_name: characters[this_chid].name, 
+                file_name: characters[this_chid].chat, 
+                avatar_url: characters[this_chid].avatar }),
+            dataType: 'json',
+            contentType: 'application/json',
+        });
+        if (response[0] !== undefined) {
+            chat.push(...response);
+            chat_create_date = chat[0]['create_date'];
+            chat.shift();
+        } else {
+            chat_create_date = humanizedDateTime();
+        }
+        getChatResult();
+        saveChat();
+    } catch (error) {
+        getChatResult();
+        console.log(error);
+    }
 }
+
 function getChatResult() {
     name2 = characters[this_chid].name;
     if (chat.length > 1) {
@@ -1927,11 +1790,13 @@ function getChatResult() {
     printMessages();
     select_selected_character(this_chid);
 }
+
 function openNavToggle() {
     if (!$("#nav-toggle").prop("checked")) {
         $("#nav-toggle").trigger("click");
     }
 }
+
 function changeMainAPI() {
     if ($("#main_api").find(":selected").val() == "kobold") {
         $("#kobold_api").css("display", "block");
@@ -1964,6 +1829,7 @@ function changeMainAPI() {
         $("#softprompt_block").css("display", "none");
     }
 }
+
 async function getUserAvatars() {
     $("#user_avatar_block").html(""); //RossAscends: necessary to avoid doubling avatars each QuickRefresh.
     $("#user_avatar_block").append('<div class="avatar_upload">+</div>');
@@ -2798,7 +2664,6 @@ function read_bg_load(input) {
     }
 }
 
-
 function showSwipeButtons() {
     if (
         chat[chat.length - 1].name === 'TavernAI' ||
@@ -2858,223 +2723,222 @@ $(document).ready(function () {
 
     ///// SWIPE BUTTON CLICKS ///////
 
-    $(document).on('click', '.swipe_right', function () {               //when we click swipe right button
+    $(document).on('click', '.swipe_right', function(){               //when we click swipe right button
         const swipe_duration = 120;
         const swipe_range = 700;
         //console.log(swipe_range);
         let run_generate = false;
         let run_swipe_right = false;
-        if (chat[chat.length - 1]['swipe_id'] === undefined) {              // if there is no swipe-message in the last spot of the chat array
-            chat[chat.length - 1]['swipe_id'] = 0;                        // set it to id 0
-            chat[chat.length - 1]['swipes'] = [];                         // empty the array
-            chat[chat.length - 1]['swipes'][0] = chat[chat.length - 1]['mes'];  //assign swipe array with last message from chat
+        if(chat[chat.length-1]['swipe_id'] === undefined){              // if there is no swipe-message in the last spot of the chat array
+            chat[chat.length-1]['swipe_id'] = 0;                        // set it to id 0
+            chat[chat.length-1]['swipes'] = [];                         // empty the array
+            chat[chat.length-1]['swipes'][0] = chat[chat.length-1]['mes'];  //assign swipe array with last message from chat
         }
-        chat[chat.length - 1]['swipe_id']++;                                      //make new slot in array
+        chat[chat.length-1]['swipe_id']++;                                      //make new slot in array
         //console.log(chat[chat.length-1]['swipes']);
-        if (parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length) {     //if swipe id of last message is the same as the length of the 'swipes' array
-            run_generate = true;
-        } else if (parseInt(chat[chat.length - 1]['swipe_id']) < chat[chat.length - 1]['swipes'].length) { //otherwise, if the id is less than the number of swipes
-            chat[chat.length - 1]['mes'] = chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipe_id']]; //load the last mes box with the latest generation
+        if(parseInt(chat[chat.length-1]['swipe_id']) === chat[chat.length-1]['swipes'].length){     //if swipe id of last message is the same as the length of the 'swipes' array
+            run_generate = true;  
+        }else if(parseInt(chat[chat.length-1]['swipe_id']) < chat[chat.length-1]['swipes'].length){ //otherwise, if the id is less than the number of swipes
+            chat[chat.length-1]['mes'] = chat[chat.length-1]['swipes'][chat[chat.length-1]['swipe_id']]; //load the last mes box with the latest generation
             run_swipe_right = true; //then swipe
         }
-
-        if (chat[chat.length - 1]['swipe_id'] > chat[chat.length - 1]['swipes'].length) { //if we swipe right while generating (the swipe ID is greater than what we are viewing now)
-            chat[chat.length - 1]['swipe_id'] = chat[chat.length - 1]['swipes'].length; //show that message slot (will be '...' while generating)
+        
+        if(chat[chat.length-1]['swipe_id'] > chat[chat.length-1]['swipes'].length){ //if we swipe right while generating (the swipe ID is greater than what we are viewing now)
+            chat[chat.length-1]['swipe_id'] = chat[chat.length-1]['swipes'].length; //show that message slot (will be '...' while generating)
         }
-        if (run_generate) {               //hide swipe arrows while generating
+        if(run_generate){               //hide swipe arrows while generating
             $(this).css('display', 'none');
-
+            
         }
-        if (run_generate || run_swipe_right) {                // handles animated transitions when swipe right, specifically height transitions between messages
-
+        if(run_generate || run_swipe_right){                // handles animated transitions when swipe right, specifically height transitions between messages
+            
             let this_mes_div = $(this).parent();
             let this_mes_block = $(this).parent().children('.mes_block').children('.mes_text');
             const this_mes_div_height = this_mes_div[0].scrollHeight;
             const this_mes_block_height = this_mes_block[0].scrollHeight;
-
+            
             this_mes_div.children('.swipe_left').css('display', 'flex');
             this_mes_div.children('.mes_block').transition({        // this moves the div back and forth
-                x: '-' + swipe_range,
-                duration: swipe_duration,
-                easing: animation_rm_easing,
-                queue: false,
-                complete: function () {
-
-                    const is_animation_scroll = ($('#chat').scrollTop() >= ($('#chat').prop("scrollHeight") - $('#chat').outerHeight()) - 10);
-                    //console.log(parseInt(chat[chat.length-1]['swipe_id']));
-                    //console.log(chat[chat.length-1]['swipes'].length);
-                    if (run_generate && parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length) {
-                        //console.log('showing ...');
-                        $("#chat").children().filter('[mesid="' + (count_view_mes - 1) + '"]').children('.mes_block').children('.mes_text').html('...');  //shows ... while generating
-                    } else {
-                        //console.log('showing previously generated swipe candidate, or "..."');
-                        addOneMessage(chat[chat.length - 1], 'swipe');
+                    x: '-'+swipe_range,
+                    duration: swipe_duration,
+                    easing: animation_rm_easing,
+                    queue:false,
+                    complete: function() {
+                        
+                        const is_animation_scroll = ($('#chat').scrollTop() >= ($('#chat').prop("scrollHeight") - $('#chat').outerHeight()) - 10);
+                        //console.log(parseInt(chat[chat.length-1]['swipe_id']));
+                        //console.log(chat[chat.length-1]['swipes'].length);
+                        if(run_generate && parseInt(chat[chat.length-1]['swipe_id']) === chat[chat.length-1]['swipes'].length){
+                            //console.log('showing ...');
+                            $("#chat").children().filter('[mesid="'+(count_view_mes-1)+'"]').children('.mes_block').children('.mes_text').html('...');  //shows ... while generating
+                        }else{
+                            //console.log('showing previously generated swipe candidate, or "..."');
+                            addOneMessage(chat[chat.length-1], 'swipe');
+                        }
+                        let new_height = this_mes_div_height-(this_mes_block_height - this_mes_block[0].scrollHeight);
+                        if(new_height < 103) new_height = 103;
+                        
+                        
+                        this_mes_div.animate({height: new_height+'px'}, {
+                            duration: 100,
+                            queue:false,
+                            progress: function() {
+                                // Scroll the chat down as the message expands
+                                if(is_animation_scroll) $("#chat").scrollTop($("#chat")[0].scrollHeight);
+                            },
+                            complete: function() {
+                                this_mes_div.css('height', 'auto');
+                                // Scroll the chat down to the bottom once the animation is complete
+                                if(is_animation_scroll) $("#chat").scrollTop($("#chat")[0].scrollHeight);
+                            }
+                        });
+                        this_mes_div.children('.mes_block').transition({  
+                                x: swipe_range,
+                                duration: 0,
+                                easing: animation_rm_easing,
+                                queue:false,
+                                complete: function() {  
+                                    this_mes_div.children('.mes_block').transition({  
+                                            x: '0px',
+                                            duration: swipe_duration,
+                                            easing: animation_rm_easing,
+                                            queue:false,
+                                            complete: function() {  
+                                                if(run_generate && !is_send_press && parseInt(chat[chat.length-1]['swipe_id']) === chat[chat.length-1]['swipes'].length){
+                                                    console.log('caught here 2');
+                                                    is_send_press = true;
+                                                    Generate('swipe');
+                                                }else{
+                                                    if(parseInt(chat[chat.length-1]['swipe_id']) !== chat[chat.length-1]['swipes'].length){
+                                                        console.log('caught here 3');
+                                                        saveChat();
+                                                    }
+                                                }
+                                            }
+                                    });
+                                }
+                        });
                     }
-                    let new_height = this_mes_div_height - (this_mes_block_height - this_mes_block[0].scrollHeight);
-                    if (new_height < 103) new_height = 103;
-
-
-                    this_mes_div.animate({ height: new_height + 'px' }, {
-                        duration: 100,
-                        queue: false,
-                        progress: function () {
-                            // Scroll the chat down as the message expands
-                            if (is_animation_scroll) $("#chat").scrollTop($("#chat")[0].scrollHeight);
-                        },
-                        complete: function () {
-                            this_mes_div.css('height', 'auto');
-                            // Scroll the chat down to the bottom once the animation is complete
-                            if (is_animation_scroll) $("#chat").scrollTop($("#chat")[0].scrollHeight);
-                        }
-                    });
-                    this_mes_div.children('.mes_block').transition({
-                        x: swipe_range,
-                        duration: 0,
-                        easing: animation_rm_easing,
-                        queue: false,
-                        complete: function () {
-                            this_mes_div.children('.mes_block').transition({
-                                x: '0px',
-                                duration: swipe_duration,
-                                easing: animation_rm_easing,
-                                queue: false,
-                                complete: function () {
-                                    if (run_generate && !is_send_press && parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length) {
-                                        console.log('caught here 2');
-                                        is_send_press = true;
-                                        Generate('swipe');
-                                    } else {
-                                        if (parseInt(chat[chat.length - 1]['swipe_id']) !== chat[chat.length - 1]['swipes'].length) {
-                                            console.log('caught here 3');
-                                            saveChat();
-                                        }
-                                    }
-                                }
-                            });
-                        }
-                    });
-                }
             });
-
+    
             $(this).parent().children('.avatar').transition({ // moves avatar aong with swipe
-                x: '-' + swipe_range,
-                duration: swipe_duration,
-                easing: animation_rm_easing,
-                queue: false,
-                complete: function () {
-                    $(this).parent().children('.avatar').transition({
-                        x: swipe_range,
-                        duration: 0,
-                        easing: animation_rm_easing,
-                        queue: false,
-                        complete: function () {
-                            $(this).parent().children('.avatar').transition({
-                                x: '0px',
-                                duration: swipe_duration,
+                    x: '-'+swipe_range,
+                    duration: swipe_duration,
+                    easing: animation_rm_easing,
+                    queue:false,
+                    complete: function() {  
+                        $(this).parent().children('.avatar').transition({  
+                                x: swipe_range,
+                                duration: 0,
                                 easing: animation_rm_easing,
-                                queue: false,
-                                complete: function () {
-
+                                queue:false,
+                                complete: function() {  
+                                    $(this).parent().children('.avatar').transition({  
+                                            x: '0px',
+                                            duration: swipe_duration,
+                                            easing: animation_rm_easing,
+                                            queue:false,
+                                            complete: function() {  
+    
+                                            }
+                                    });
                                 }
-                            });
-                        }
-                    });
-                }
+                        });
+                    }
             });
         }
-
+        
     });
-
-    $(document).on('click', '.swipe_left', function () {      // when we swipe left..but no generation.
+    $(document).on('click', '.swipe_left', function(){      // when we swipe left..but no generation.
         const swipe_duration = 120;
         const swipe_range = '700px';
-        chat[chat.length - 1]['swipe_id']--;
-        if (chat[chat.length - 1]['swipe_id'] >= 0) {           // hide the left arrow if we are viewing the first candidate of the last message block
+        chat[chat.length-1]['swipe_id']--;
+        if(chat[chat.length-1]['swipe_id'] >= 0){           // hide the left arrow if we are viewing the first candidate of the last message block
             $(this).parent().children('swipe_right_button').css('display', 'flex');
-            if (chat[chat.length - 1]['swipe_id'] === 0) {
+            if(chat[chat.length-1]['swipe_id'] === 0){
                 $(this).css('display', 'none');
             }
-
+            
             let this_mes_div = $(this).parent();
             let this_mes_block = $(this).parent().children('.mes_block').children('.mes_text');
             const this_mes_div_height = this_mes_div[0].scrollHeight;
             this_mes_div.css('height', this_mes_div_height);
             const this_mes_block_height = this_mes_block[0].scrollHeight;
-
-            chat[chat.length - 1]['mes'] = chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipe_id']];
-            $(this).parent().children('.mes_block').transition({
-                x: swipe_range,
-                duration: swipe_duration,
-                easing: animation_rm_easing,
-                queue: false,
-                complete: function () {
-                    const is_animation_scroll = ($('#chat').scrollTop() >= ($('#chat').prop("scrollHeight") - $('#chat').outerHeight()) - 10);
-                    console.log('sipwing left after tr5ansition calls addOneMessage');
-                    addOneMessage(chat[chat.length - 1], 'swipe');
-                    let new_height = this_mes_div_height - (this_mes_block_height - this_mes_block[0].scrollHeight);
-                    if (new_height < 103) new_height = 103;
-                    this_mes_div.animate({ height: new_height + 'px' }, {
-                        duration: 100,
-                        queue: false,
-                        progress: function () {
-                            // Scroll the chat down as the message expands
-
-                            if (is_animation_scroll) $("#chat").scrollTop($("#chat")[0].scrollHeight);
-                        },
-                        complete: function () {
-                            this_mes_div.css('height', 'auto');
-                            // Scroll the chat down to the bottom once the animation is complete
-                            if (is_animation_scroll) $("#chat").scrollTop($("#chat")[0].scrollHeight);
-                        }
-                    });
-                    $(this).parent().children('.mes_block').transition({
-                        x: '-' + swipe_range,
-                        duration: 0,
-                        easing: animation_rm_easing,
-                        queue: false,
-                        complete: function () {
-                            $(this).parent().children('.mes_block').transition({
-                                x: '0px',
-                                duration: swipe_duration,
+            
+            chat[chat.length-1]['mes'] = chat[chat.length-1]['swipes'][chat[chat.length-1]['swipe_id']];
+            $(this).parent().children('.mes_block').transition({ 
+                    x: swipe_range,
+                    duration: swipe_duration,
+                    easing: animation_rm_easing,
+                    queue:false,
+                    complete: function() {
+                        const is_animation_scroll = ($('#chat').scrollTop() >= ($('#chat').prop("scrollHeight") - $('#chat').outerHeight()) - 10);
+console.log('sipwing left after tr5ansition calls addOneMessage');
+                        addOneMessage(chat[chat.length-1], 'swipe');
+                        let new_height = this_mes_div_height-(this_mes_block_height - this_mes_block[0].scrollHeight);
+                        if(new_height < 103) new_height = 103;
+                        this_mes_div.animate({height: new_height+'px'}, {
+                            duration: 100,
+                            queue:false,
+                            progress: function() {
+                                // Scroll the chat down as the message expands
+                                
+                                if(is_animation_scroll) $("#chat").scrollTop($("#chat")[0].scrollHeight);
+                            },
+                            complete: function() {
+                                this_mes_div.css('height', 'auto');
+                                // Scroll the chat down to the bottom once the animation is complete
+                                if(is_animation_scroll) $("#chat").scrollTop($("#chat")[0].scrollHeight);
+                            }
+                        });
+                        $(this).parent().children('.mes_block').transition({  
+                                x: '-'+swipe_range,
+                                duration: 0,
                                 easing: animation_rm_easing,
-                                queue: false,
-                                complete: function () {
-                                    saveChat();
+                                queue:false,
+                                complete: function() {  
+                                    $(this).parent().children('.mes_block').transition({  
+                                            x: '0px',
+                                            duration: swipe_duration,
+                                            easing: animation_rm_easing,
+                                            queue:false,
+                                            complete: function() {  
+                                                saveChat();
+                                            }
+                                    });
                                 }
-                            });
-                        }
-                    });
-                }
+                        });
+                    }
             });
-
-            $(this).parent().children('.avatar').transition({
-                x: swipe_range,
-                duration: swipe_duration,
-                easing: animation_rm_easing,
-                queue: false,
-                complete: function () {
-                    $(this).parent().children('.avatar').transition({
-                        x: '-' + swipe_range,
-                        duration: 0,
-                        easing: animation_rm_easing,
-                        queue: false,
-                        complete: function () {
-                            $(this).parent().children('.avatar').transition({
-                                x: '0px',
-                                duration: swipe_duration,
+    
+            $(this).parent().children('.avatar').transition({ 
+                    x: swipe_range,
+                    duration: swipe_duration,
+                    easing: animation_rm_easing,
+                    queue:false,
+                    complete: function() {  
+                        $(this).parent().children('.avatar').transition({  
+                                x: '-'+swipe_range,
+                                duration: 0,
                                 easing: animation_rm_easing,
-                                queue: false,
-                                complete: function () {
-
+                                queue:false,
+                                complete: function() {  
+                                    $(this).parent().children('.avatar').transition({  
+                                            x: '0px',
+                                            duration: swipe_duration,
+                                            easing: animation_rm_easing,
+                                            queue:false,
+                                            complete: function() {  
+    
+                                            }
+                                    });
                                 }
-                            });
-                        }
-                    });
-                }
+                        });
+                    }
             });
         }
-        if (chat[chat.length - 1]['swipe_id'] < 0) {
-            chat[chat.length - 1]['swipe_id'] = 0;
+        if(chat[chat.length-1]['swipe_id'] < 0){
+            chat[chat.length-1]['swipe_id'] = 0;
         }
     });
 
@@ -3172,8 +3036,8 @@ $(document).ready(function () {
         }
         $("#character_search_bar").val("").trigger("input");
     });
-    var scroll_holder = 0;
-    var is_use_scroll_holder = false;
+
+
     $(document).on("input", ".edit_textarea", function () {
         scroll_holder = $("#chat").scrollTop();
         $(this).height(0).height(this.scrollHeight);
@@ -3562,10 +3426,6 @@ $(document).ready(function () {
                         $("#add_avatar_button").val("").clone(true)
                     );
                     $("#create_button").attr("value", "Save");
-                    //console.log('/editcharacters -- this_chid -- '+this_chid);
-                    /*                     if (this_chid != undefined && this_chid != 'invalid-safety-id') {   //added check to avoid trying to load tokens in case of character deletion
-                                  CountCharTokens();
-                              } */
                 },
                 error: function (jqXHR, exception) {
                     $("#create_button").removeAttr("disabled");
@@ -3587,61 +3447,28 @@ $(document).ready(function () {
         select_rm_characters();
     });
 
-    //@@@@@@@@@@@@@@@@@@@@@@@@
-    //character text poles creating and editing save
+//////// OPTIMIZED ALL CHAR CREATION/EDITING TEXTAREA LISTENERS ///////////////
+
     $("#character_name_pole").on("change keyup paste", function () {
         if (menu_type == "create") {
             create_save_name = $("#character_name_pole").val();
         }
     });
-
-    $("#description_textarea").on("keyup paste cut", function () {
-        //change keyup paste cut
-
-        if (menu_type == "create") {
-            create_save_description = $("#description_textarea").val();
-            CountCharTokens();
-        } else {
-            saveCharacterDebounced();
-        }
-    });
-
-    $("#personality_textarea").on("keyup paste cut", function () {
-        if (menu_type == "create") {
-            create_save_personality = $("#personality_textarea").val();
-            CountCharTokens();
-        } else {
-            saveCharacterDebounced();
-        }
-    });
-
-    $("#scenario_pole").on("keyup paste cut", function () {
-        if (menu_type == "create") {
-            create_save_scenario = $("#scenario_pole").val();
-            CountCharTokens();
-        } else {
-            saveCharacterDebounced();
-        }
-    });
-
-    $("#mes_example_textarea").on("keyup paste cut", function () {
-        if (menu_type == "create") {
-            create_save_mes_example = $("#mes_example_textarea").val();
-            CountCharTokens();
-        } else {
-            saveCharacterDebounced();
-        }
-    });
-
-    $("#firstmessage_textarea").on("keyup paste cut", function () {
-        if (menu_type == "create") {
-            create_save_first_message = $("#firstmessage_textarea").val();
-            CountCharTokens();
-        } else {
-            saveCharacterDebounced();
-        }
-    });
-
+    
+    $("#description_textarea, #personality_textarea, #scenario_pole"+
+      "#mes_example_textarea, #firstmessage_textarea")
+      .on("keyup paste cut", function () {
+            if (menu_type == "create") {
+                create_save_description = $("#description_textarea").val();
+                create_save_personality = $("#personality_textarea").val();
+                create_save_scenario = $("#scenario_pole").val();
+                create_save_mes_example = $("#mes_example_textarea").val();
+                create_save_first_message = $("#firstmessage_textarea").val();
+            } else {
+                saveCharacterDebounced();
+            }
+        });
+    
     $("#talkativeness_slider").on("input", function () {
         if (menu_type == "create") {
             create_save_talkativeness = $("#talkativeness_slider").val();
@@ -3649,6 +3476,8 @@ $(document).ready(function () {
             saveCharacterDebounced();
         }
     });
+
+///////////////////////////////////////////////////////////////////////////////////
 
     $("#api_button").click(function () {
         if ($("#api_url_text").val() != "") {
@@ -3736,63 +3565,67 @@ $(document).ready(function () {
         }
     });
 
-    $("#option_select_chat").click(function () {
-        if (selected_group) {
+///////////// OPTIMIZED LISTENERS FOR LEFT SIDE OPTIONS POPUP MENU //////////////////////
+
+    $("#options_button [id]").on("click", function() {
+        var id = $(this).attr("id");
+        
+        if (id == "option_select_chat") {
+          if (selected_group) {
             // will open a chat selection screen
             openNavToggle();
             $("#rm_button_characters").trigger("click");
             return;
-        }
-        if (this_chid != undefined && !is_send_press) {
+          }
+          if (this_chid != undefined && !is_send_press) {
             getAllCharaChats();
             $("#shadow_select_chat_popup").css("display", "block");
             $("#shadow_select_chat_popup").css("opacity", 0.0);
             $("#shadow_select_chat_popup").transition({
-                opacity: 1.0,
-                duration: animation_rm_duration,
-                easing: animation_rm_easing,
+              opacity: 1.0,
+              duration: animation_rm_duration,
+              easing: animation_rm_easing,
             });
+          }
         }
-    });
-
-    $("#option_start_new_chat").click(function () {
-        if (selected_group) {
+        
+        else if (id == "option_start_new_chat") {
+          if (selected_group) {
             // will open a group creation screen
             openNavToggle();
             $("#rm_button_group_chats").trigger("click");
             return;
-        }
-        if (this_chid != undefined && !is_send_press) {
+          }
+          if (this_chid != undefined && !is_send_press) {
             popup_type = "new_chat";
             callPopup("<h3>Start new chat?</h3>");
+          }
         }
-    });
-
-    $("#option_regenerate").click(function () {
-        if (is_send_press == false) {
+        
+        else if (id == "option_regenerate") {
+          if (is_send_press == false) {
             hideSwipeButtons();
             is_send_press = true;
             Generate("regenerate");
+          }
         }
-    });
-
-    // this function hides the input form, and shows the delete/cancel buttons for deleting messages from chat
-    $("#option_delete_mes").click(function () {
-        hideSwipeButtons();
-        if (
-            (this_chid != undefined && !is_send_press) ||
-            (selected_group && !is_group_generating)
-        ) {
+        
+        else if (id == "option_delete_mes") {
+          hideSwipeButtons();
+          if ((this_chid != undefined && !is_send_press) || (selected_group && !is_group_generating)) {
             $("#dialogue_del_mes").css("display", "block");
             $("#send_form").css("display", "none");
             $(".del_checkbox").each(function () {
-                if ($(this).parent().attr("mesid") != 0) {
-                    $(this).css("display", "block");
-                    $(this).parent().children(".for_checkbox").css("display", "none");
-                }
+              if ($(this).parent().attr("mesid") != 0) {
+                $(this).css("display", "block");
+                $(this).parent().children(".for_checkbox").css("display", "none");
+              }
             });
+          }
         }
-    });
+      });
+
+//////////////////////////////////////////////////////////////////////////////////////////////
 
     //functionality for the cancel delete messages button, reverts to normal display of input form
     $("#dialogue_del_mes_cancel").click(function () {
@@ -3944,6 +3777,8 @@ $(document).ready(function () {
         }
     });
 
+
+
     for (var i of [
         "temp",
         "rep_pen",
@@ -3967,27 +3802,63 @@ $(document).ready(function () {
         });
     }
 
-    $(document).on("input", "#temp", function () {
-        temp = $(this).val();
-        if (isInt(temp)) {
-            $("#temp_counter").html($(this).val() + ".00");
-        } else {
-            $("#temp_counter").html($(this).val());
+////////////////// OPTIMIZED RANGE SLIDER LISTENERS////////////////
+
+    const sliders = [
+        {
+          sliderId: "#temp",
+          counterId: "#temp_counter",
+          format: (val) => isInt(val) ? val + ".00" : val
+        },
+        {
+          sliderId: "#amount_gen",
+          counterId: "#amount_gen_counter",
+          format: (val) => val
+        },
+        {
+          sliderId: "#max_context",
+          counterId: "#max_context_counter",
+          format: (val) => val + " Tokens"
+        },
+        {
+          sliderId: "#rep_pen",
+          counterId: "#rep_pen_counter",
+          format: (val) => isInt(val) ? val + ".00" : val
+        },
+        {
+          sliderId: "#rep_pen_size",
+          counterId: "#rep_pen_size_counter",
+          format: (val) => val + " Tokens"
+        },
+        {
+          sliderId: "#temp_novel",
+          counterId: "#temp_counter_novel",
+          format: (val) => isInt(val) ? val + ".00" : val
+        },
+        {
+          sliderId: "#rep_pen_novel",
+          counterId: "#rep_pen_counter_novel",
+          format: (val) => isInt(val) ? val + ".00" : val
+        },
+        {
+          sliderId: "#rep_pen_size_novel",
+          counterId: "#rep_pen_size_counter_novel",
+          format: (val) => val + " Tokens"
         }
-        saveSettingsDebounced();
-    });
+      ];
+      
+      sliders.forEach(slider => {
+        $(document).on("input", slider.sliderId, function () {
+          const value = $(this).val();
+          const formattedValue = slider.format(value);
+          $(slider.counterId).html(formattedValue);
+          console.log('saving');
+          saveSettingsDebounced();
+        });
+      });
 
-    $(document).on("input", "#amount_gen", function () {
-        amount_gen = $(this).val();
-        $("#amount_gen_counter").html($(this).val());
-        saveSettingsDebounced();
-    });
+    //////////////////////////////////////////////////////////////
 
-    $(document).on("input", "#max_context", function () {
-        max_context = parseInt($(this).val());
-        $("#max_context_counter").html($(this).val() + " Tokens");
-        saveSettingsDebounced();
-    });
 
     $("#style_anchor").change(function () {
         style_anchor = !!$("#style_anchor").prop("checked");
@@ -3996,50 +3867,6 @@ $(document).ready(function () {
 
     $("#character_anchor").change(function () {
         character_anchor = !!$("#character_anchor").prop("checked");
-        saveSettingsDebounced();
-    });
-
-    $(document).on("input", "#rep_pen", function () {
-        rep_pen = $(this).val();
-        if (isInt(rep_pen)) {
-            $("#rep_pen_counter").html($(this).val() + ".00");
-        } else {
-            $("#rep_pen_counter").html($(this).val());
-        }
-        saveSettingsDebounced();
-    });
-
-    $(document).on("input", "#rep_pen_size", function () {
-        rep_pen_size = $(this).val();
-        $("#rep_pen_size_counter").html($(this).val() + " Tokens");
-        saveSettingsDebounced();
-    });
-
-    //Novel
-    $(document).on("input", "#temp_novel", function () {
-        temp_novel = $(this).val();
-
-        if (isInt(temp_novel)) {
-            $("#temp_counter_novel").html($(this).val() + ".00");
-        } else {
-            $("#temp_counter_novel").html($(this).val());
-        }
-        saveSettingsDebounced();
-    });
-
-    $(document).on("input", "#rep_pen_novel", function () {
-        rep_pen_novel = $(this).val();
-        if (isInt(rep_pen_novel)) {
-            $("#rep_pen_counter_novel").html($(this).val() + ".00");
-        } else {
-            $("#rep_pen_counter_novel").html($(this).val());
-        }
-        saveSettingsDebounced();
-    });
-
-    $(document).on("input", "#rep_pen_size_novel", function () {
-        rep_pen_size_novel = $(this).val();
-        $("#rep_pen_size_counter_novel").html($(this).val() + " Tokens");
         saveSettingsDebounced();
     });
 
