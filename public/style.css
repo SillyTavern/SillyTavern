@@ -605,8 +605,7 @@ input[type=submit] {}
 }
 
 #rm_print_characters_block {
-    margin-top: 15px;
-    padding-bottom: 10vh;
+    margin: 15px 0;
     overflow-y: auto;
 }
 

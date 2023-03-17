@@ -83,6 +83,7 @@ async function getGroupChat(id) {
     if (response.ok) {
         const data = await response.json();
         if (Array.isArray(data) && data.length) {
+            data[0].is_group = true;
             for (let key of data) {
                 chat.push(key);
             }
@@ -238,6 +239,10 @@ async function generateGroupWrapper(by_auto_mode) {
         return;
     }
 
+    if (is_group_generating) {
+        return false;
+    }
+
     const group = groups.find((x) => x.id === selected_group);
 
     if (!group || !Array.isArray(group.members) || !group.members.length) {
@@ -308,6 +313,7 @@ async function generateGroupWrapper(by_auto_mode) {
         is_group_generating = false;
         setSendButtonState(false);
         setCharacterId(undefined);
+        setCharacterName('');
     }
 }
 

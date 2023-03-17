@@ -143,6 +143,7 @@ const system_messages = {
         is_user: false,
         is_system: true,
         is_name: true,
+        is_group: true,
         mes: "Group chat created. Say 'Hi' to lovely people!",
     },
     empty: {
@@ -920,7 +921,7 @@ async function Generate(type, automatic_trigger) {
         return;
     }
 
-    if (selected_group && !is_group_generating) {
+    if (selected_group) {
         generateGroupWrapper(false);
         return;
     }
@@ -1607,7 +1608,7 @@ async function Generate(type, automatic_trigger) {
                             );
                         }
                         // clean-up group message from excessive generations
-                        if (type == "group_chat" && selected_group) {
+                        if (selected_group) {
                             getMessage = cleanGroupMessage(getMessage);
                         }
                         let this_mes_is_name = true;
@@ -1628,7 +1629,7 @@ async function Generate(type, automatic_trigger) {
                             getMessage = $.trim(getMessage);
                             chat[chat.length - 1]["mes"] = getMessage;
 
-                            if (type === "group_chat") {
+                            if (selected_group) {
                                 let avatarImg = default_avatar;
                                 if (characters[this_chid].avatar != "none") {
                                     avatarImg = `characters/${characters[this_chid].avatar}?${Date.now()}`;
@@ -1641,7 +1642,7 @@ async function Generate(type, automatic_trigger) {
                             $("#send_but").css("display", "inline");
                             $("#loading_mes").css("display", "none");
 
-                            if (type == "group_chat" && selected_group) {
+                            if (selected_group) {
                                 saveGroupChat(selected_group);
                             } else {
                                 saveChat();
@@ -1753,6 +1754,10 @@ function resultCheckStatusNovel() {
 
 async function saveChat() {
     chat.forEach(function (item, i) {
+        if (item["is_group"]) {
+            alert('Trying to save group chat with regular saveChat function. Aborting to prevent corruption.');
+            throw new Error('Group chat saved from saveChat');
+        }
         if (item["is_user"]) {
             var str = item["mes"].replace(name1 + ":", default_user_name + ":");
             chat[i]["mes"] = str;
