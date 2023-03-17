@@ -275,9 +275,6 @@ $("document").ready(function () {
 	});
 
 	//Regenerate if user swipes on the last mesage in chat
-	//TODO: 
-	//1. Make it detect if the last message is from user, and ignore swipes then...
-	//2. find a way to make the chat slide down smoothly when the last mes div gets .remove()-d
 
 	document.addEventListener('swiped-left', function(e) {
 		var SwipeButR = $('.swipe_right:last');
