@@ -648,23 +648,7 @@ var token;
         }
     }
     async function setBackground(bg) {
-        /*
-        const response = await fetch("/setbackground", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                    "bg": bg
-                })
 
-        });
-        if (response.ok === true) {
-            //const getData = await response.json();
-            //background = getData;
-
-            //var aa = JSON.parse(getData[0]);
-            //const load_ch_coint = Object.getOwnPropertyNames(getData);
-        }*/
-        //console.log(bg);
         jQuery.ajax({
             type: 'POST', // 
             url: '/setbackground', // 
@@ -679,9 +663,6 @@ var token;
             contentType: "application/json",
             //processData: false, 
             success: function (html) {
-                //setBackground(html);
-                //$('body').css('background-image', 'linear-gradient(rgba(19,21,44,0.75), rgba(19,21,44,0.75)), url('+e.target.result+')');
-                //$("#form_bg_download").after("<div class=bg_example><img bgfile='"+html+"' class=bg_example_img src='backgrounds/"+html+"'><img bgfile='"+html+"' class=bg_example_cross src=img/cross.png></div>");
             },
             error: function (jqXHR, exception) {
                 console.log(exception);
@@ -702,20 +683,10 @@ var token;
 
         });
         if (response.ok === true) {
-            //const getData = await response.json();
-            //background = getData;
-
-            //var aa = JSON.parse(getData[0]);
-            //const load_ch_coint = Object.getOwnPropertyNames(getData);
-
-
         }
     }
     function printMessages() {
-        //console.log(chat);
-        //console.log('printMessages() -- printing messages for -- '+this_chid+' '+active_character+' '+characters[this_chid]);
         chat.forEach(function (item, i, arr) {
-            //console.log('printMessage calls addOneMessage');
             addOneMessage(item);
         });
     }
@@ -826,58 +797,31 @@ var token;
         if (isSystem) {
             newMessage.find('.mes_edit').hide();
         }
-//////// swipecode inside addOneMessage - to keep swipes displayed while 
-// SWIPE BUTTON DISPLAY SHOULD BE HANDLED IN showSwipeButtons/hideSwipeButtons, not here. Commented out duplicate code.
+                             
+            if (type === "swipe") {
+              $("#chat")
+                .children()
+                .filter('[mesid="' + (count_view_mes - 1) + '"]')
+                .children(".mes_block")
+                .children(".mes_text")
+                .html("");
+              $("#chat")
+                .children()
+                .filter('[mesid="' + (count_view_mes - 1) + '"]')
+                .children(".mes_block")
+                .children(".mes_text")
+                .append(messageText);
 
-            console.log('addOneMessage -- type = '+type);                                   
-            if(type === 'swipe'){
-                console.log('addOneMessage -- detected adding one swipe message')
-                $("#chat").children().filter('[mesid="'+(count_view_mes-1)+'"]').children('.mes_block').children('.mes_text').html('');
-                $("#chat").children().filter('[mesid="'+(count_view_mes-1)+'"]').children('.mes_block').children('.mes_text').append(messageText);
-
-/*                 if(mes['swipe_id'] !== 0 && swipes){
-                    console.log('addOneMessage -- swipe_id is not 0, adding both buttons');
-                    $("#chat").children().filter('[mesid="'+(count_view_mes-1)+'"]').children('.swipe_right').css('display', 'flex');
-                    $("#chat").children().filter('[mesid="'+(count_view_mes-1)+'"]').children('.swipe_left').css('display', 'flex');
-                } */
-            }else{ //if this is not a display of a new swipe message..
-                console.log('addOneMessage -- adding message');
-                $("#chat").children().filter('[mesid="'+count_view_mes+'"]').children('.mes_block').children('.mes_text').append(messageText);
-                console.log('addOneMessage - hiding swipe buttons');
-                hideSwipeButtons();     //disabling this leaves buttons visibile on all messages, breaks swipes
-                //console.log('addOneMessage -- checking for swipes'); 
-                /* if(parseInt(chat.length-1) === parseInt(count_view_mes) && !mes['is_user'] && swipes){
-
-                    console.log('chat length - 1 = '+(chat[chat.length-1]['mesid']));
-                    if(chat[chat.length-1]['mesid'] !==undefined){ 
-                            if(mes['swipe_id'] === undefined && count_view_mes !== 0){
-                                console.log('addOneMessage -- no swipes here, showing right button for possible generation');
-                                $("#chat").children().filter('[mesid="'+(count_view_mes)+'"]').children('.swipe_right').css('display', 'flex');
-                            }else if(mes['swipe_id'] !== undefined){ // if swipes aren't undefined == swipes exist at this node
-                                console.log('addOneMessage -- found swipes')
-                                if(mes['swipe_id'] === 0){ //if we are viewing the first swipe message, display right
-                                    console.log('addOneMessage -- found lone swipe, displaying right button');
-                                    $("#chat").children().filter('[mesid="'+(count_view_mes)+'"]').children('.swipe_right').css('display', 'flex');
-                                }else { // if swipe_id is more than 0, than means we must have multiple swipes, so show both items
-                                    console.log('addOneMessage -- found multiple swipes, showing both buttons');
-                                    $("#chat").children().filter('[mesid="'+(count_view_mes)+'"]').children('.swipe_right').css('display', 'flex');
-                                    $("#chat").children().filter('[mesid="'+(count_view_mes)+'"]').children('.swipe_left').css('display', 'flex');
-                                }
-                            }
-                        }
-                }else{console.log('apparently no swipes found, and not a valid mesage to add hideSwipeButtons, so skipping');} */
-                count_view_mes++;
+              count_view_mes++;
             }
-        /* } */
-       // if(type !== 'swipe'){count_view_mes++;}
 
-        var $textchat = $('#chat');      
-        $('#chat .mes').last().addClass('last_mes');
-        $('#chat .mes').eq(-2).removeClass('last_mes');
-        $textchat.scrollTop($textchat[0].scrollHeight);
+            var $textchat = $("#chat");
+            $("#chat .mes").last().addClass("last_mes");
+            $("#chat .mes").eq(-2).removeClass("last_mes");
+            $textchat.scrollTop($textchat[0].scrollHeight);
 
-        hideSwipeButtons(); //disabling this prevents left button from correctly removing on last message without swipe to the left...
-        showSwipeButtons();
+            hideSwipeButtons();
+            showSwipeButtons();
 
     }
     function substituteParams(content) {
@@ -1000,6 +944,7 @@ console.log('sendSystemMessage calls addOneMessage');
 
         return ` ${found.join(' ')} `;
     }
+
     async function Generate(type, automatic_trigger) {//encode("dsfs").length
         console.log('Generate entered');
         tokens_already_generated = 0;
@@ -1060,11 +1005,8 @@ console.log('sendSystemMessage calls addOneMessage');
             var storyString = "";
             var userSendString = "";
             var finalPromt = "";
-
             var postAnchorChar = "talks a lot with descriptions";//'Talk a lot with description what is going on around';// in asterisks
             var postAnchorStyle = "Writing style: very long messages";//"[Genre: roleplay chat][Tone: very long messages with descriptions]";
-
-
             var anchorTop = '';
             var anchorBottom = '';
             var topAnchorDepth = 8;
@@ -1105,89 +1047,64 @@ console.log('sendSystemMessage calls addOneMessage');
                 console.log('Generate calls addOneMessage');
                 addOneMessage(chat[chat.length - 1]);
             }
+////////////////////////////////////
             var chatString = '';
             var arrMes = [];
             var mesSend = [];
-            var charDescription = $.trim(characters[this_chid].description);
-            var charPersonality = $.trim(characters[this_chid].personality);
-            var Scenario = $.trim(characters[this_chid].scenario);
-            var mesExamples = $.trim(characters[this_chid].mes_example);
-            var checkMesExample = $.trim(mesExamples.replace(/<START>/gi, ''));//for check length without tag
-            if (checkMesExample.length == 0) mesExamples = '';
             var mesExamplesArray = [];
-            //***Base replace***
-            if (mesExamples !== undefined) {
-                if (mesExamples.length > 0) {
+            var charDescription = baseChatReplaceAndSplit($.trim(characters[this_chid].description), name1, name2);
+            var charPersonality = baseChatReplaceAndSplit($.trim(characters[this_chid].personality), name1, name2);
+            var Scenario = baseChatReplaceAndSplit($.trim(characters[this_chid].scenario), name1, name2);
+            var mesExamples = baseChatReplaceAndSplit($.trim(characters[this_chid].mes_example.replace(/<START>/gi, '')), name1, name2);
+
+            function baseChatReplaceAndSplit(value, name1, name2) {
+                if (value !== undefined && value.length > 0) {
                     if (is_pygmalion) {
-                        mesExamples = mesExamples.replace(/{{user}}:/gi, 'You:');
-                        mesExamples = mesExamples.replace(/<USER>:/gi, 'You:');
+                        value = value.replace(/{{user}}:/gi, "You:");
+                        value = value.replace(/<USER>:/gi, "You:");
                     }
-                    mesExamples = mesExamples.replace(/{{user}}/gi, name1);
-                    mesExamples = mesExamples.replace(/{{char}}/gi, name2);
-                    mesExamples = mesExamples.replace(/<USER>/gi, name1);
-                    mesExamples = mesExamples.replace(/<BOT>/gi, name2);
-                    //mesExamples = mesExamples.replaceAll('<START>', '[An example of how '+name2+' responds]');
-                    let blocks = mesExamples.split(/<START>/gi);
-                    mesExamplesArray = blocks.slice(1).map(block => `<START>\n${block.trim()}\n`);
+                    value = value.replace(/{{user}}/gi, name1);
+                    value = value.replace(/{{char}}/gi, name2);
+                    value = value.replace(/<USER>/gi, name1);
+                    value = value.replace(/<BOT>/gi, name2);
+                    let blocks = value.split(/<START>/gi);
+                    return blocks.slice(1).map(block => `<START>\n${block.trim()}\n`).join('');
                 }
+                return value;
             }
-            if (charDescription !== undefined) {
-                if (charDescription.length > 0) {
-                    charDescription = charDescription.replace(/{{user}}/gi, name1);
-                    charDescription = charDescription.replace(/{{char}}/gi, name2);
-                    charDescription = charDescription.replace(/<USER>/gi, name1);
-                    charDescription = charDescription.replace(/<BOT>/gi, name2);
-                }
+
+            function appendToStoryString(value, prefix) {
+            if (value !== undefined && value.length > 0) {
+                return prefix + value + '\n';
             }
-            if (charPersonality !== undefined) {
-                if (charPersonality.length > 0) {
-                    charPersonality = charPersonality.replace(/{{user}}/gi, name1);
-                    charPersonality = charPersonality.replace(/{{char}}/gi, name2);
-                    charPersonality = charPersonality.replace(/<USER>/gi, name1);
-                    charPersonality = charPersonality.replace(/<BOT>/gi, name2);
-                }
+            return '';
             }
-            if (Scenario !== undefined) {
-                if (Scenario.length > 0) {
-                    Scenario = Scenario.replace(/{{user}}/gi, name1);
-                    Scenario = Scenario.replace(/{{char}}/gi, name2);
-                    Scenario = Scenario.replace(/<USER>/gi, name1);
-                    Scenario = Scenario.replace(/<BOT>/gi, name2);
-                }
-            }
+
             if (is_pygmalion) {
-                if (charDescription.length > 0) {
-                    storyString = name2 + "'s Persona: " + charDescription + "\n";
-                }
-                if (charPersonality.length > 0) {
-                    storyString += 'Personality: ' + charPersonality + '\n';
-                }
-                if (Scenario.length > 0) {
-                    storyString += 'Scenario: ' + Scenario + '\n';
-                }
+                storyString += appendToStoryString(charDescription, name2 + "'s Persona: ");
+                storyString += appendToStoryString(charPersonality, 'Personality: ');
+                storyString += appendToStoryString(Scenario, 'Scenario: ');
             } else {
-                if (charDescription !== undefined) {
-                    if (charPersonality.length > 0) {
-                        charPersonality = name2 + "'s personality: " + charPersonality;//"["+name2+"'s personality: "+charPersonality+"]";
-                    }
+            if (charDescription !== undefined) {
+                if (charPersonality.length > 0) {
+                charPersonality = name2 + "'s personality: " + charPersonality;
                 }
-                if (charDescription !== undefined) {
-                    if ($.trim(charDescription).length > 0) {
-                        if (charDescription.slice(-1) !== ']' || charDescription.substr(0, 1) !== '[') {
-                            //charDescription = '['+charDescription+']';
-                        }
-                        storyString += charDescription + '\n';
-                    }
-                }
-
-                if (count_view_mes < topAnchorDepth) {
-                    storyString += charPersonality + '\n';
-                }
-
-
             }
 
-            var count_exm_add = 0;  console.log('emptying chat2');
+            storyString += appendToStoryString(charDescription, '');
+
+            if (storyString.endsWith('\n')) {
+                storyString = storyString.slice(0, -1);
+            }
+
+            if (count_view_mes < topAnchorDepth) {
+                storyString += '\n' + appendToStoryString(charPersonality, '');
+            }
+            }
+//////////////////////////////////
+
+            var count_exm_add = 0;
+            console.log('emptying chat2');
             var chat2 = [];
             var j = 0;
             console.log('pre-replace chat.length = '+chat.length);
@@ -1278,43 +1195,26 @@ console.log('sendSystemMessage calls addOneMessage');
                
                 count_exm_add = 0;
                 
-                if (i == chat.length - 1) {
-                    //console.log('checking chat length');
-                    //arrMes[arrMes.length-1] = '<START>\n'+arrMes[arrMes.length-1];
+                if (i === chat.length - 1) {
                     let mesExmString = '';
-                    for (let iii = 0; iii < mesExamplesArray.length; iii++) {//mesExamplesArray It need to make from end to start
-                        mesExmString = mesExmString + mesExamplesArray[iii];
-                        console.log('checking prompt tokens');
-                        if (encode(JSON.stringify(worldInfoString + storyString + mesExmString + chatString + anchorTop + anchorBottom + charPersonality + promptBias + extension_prompt)).length + 120 < this_max_context) { //example of dialogs
+                    for (let iii = mesExamplesArray.length - 1; iii >= 0; iii--) {
+                        mesExmString += mesExamplesArray[iii];
+                        const prompt = worldInfoString + storyString + mesExmString + chatString + anchorTop + anchorBottom + charPersonality + promptBias + extension_prompt;
+                        if (encode(JSON.stringify(prompt)).length + 120 < this_max_context) {
                             if (!is_pygmalion) {
-                                mesExamplesArray[iii] = mesExamplesArray[iii].replace(/<START>/i, 'This is how ' + name2 + ' should talk');//An example of how '+name2+' responds
+                                mesExamplesArray[iii] = mesExamplesArray[iii].replace(/<START>/i, `This is how ${name2} should talk`);
                             }
                             count_exm_add++;
                             await delay(1);
-
-                            //arrMes[arrMes.length] = item;
                         } else {
-
-                            iii = mesExamplesArray.length;
+                            break;
                         }
-
                     }
-
-                    if (!is_pygmalion) {
-                        if (Scenario !== undefined) {
-                            if (Scenario.length > 0) {
-                                storyString += 'Circumstances and context of the dialogue: ' + Scenario + '\n';
-                            }
-                        }
-                        //storyString+='\nThen the roleplay chat between '+name1+' and '+name2+' begins.\n';
+                    if (!is_pygmalion && Scenario && Scenario.length > 0) {
+                        storyString += `Circumstances and context of the dialogue: ${Scenario}\n`;
                     }
-
                 }
                 i++;
-                //console.log((i == chat.length - 1) + ', i: '+i+ ' chat length: '+chat.length);
-                
-                
-
             }
             console.log('calling runGenerate');
             runGenerate();
@@ -1747,110 +1647,92 @@ console.log('sendSystemMessage calls addOneMessage');
         }
         console.log('generate ending');
     } //generate ends
-
     async function saveChat() {
         console.log('savechat entered');
         chat.forEach(function (item, i) {
-            if (item['is_user']) {
-                var str = item['mes'].replace(name1 + ':', default_user_name + ':');
-                chat[i]['mes'] = str;
-                chat[i]['name'] = default_user_name;
-            }else if(i !== chat.length-1){
-                if(chat[i]['swipe_id'] !== undefined){
-                    delete chat[i]['swipes'];
-                    delete chat[i]['swipe_id'];
-                }
-            }
+          if (item.is_user) {
+            var str = item.mes.replace(`${name1}:`, `${default_user_name}:`);
+            chat[i].mes = str;
+            chat[i].name = default_user_name;
+          } else if (i !== chat.length - 1 && chat[i].swipe_id !== undefined) {
+            delete chat[i].swipes;
+            delete chat[i].swipe_id;
+          }
         });
-        var save_chat = [{ user_name: default_user_name, character_name: name2, create_date: chat_create_date }, ...chat];
-        jQuery.ajax({
-            type: 'POST',
+        var save_chat = [
+          { user_name: default_user_name, character_name: name2, create_date: chat_create_date },
+          ...chat,
+        ];
+        try {
+          const response = await $.ajax({
             url: '/savechat',
-            data: JSON.stringify({ ch_name: characters[this_chid].name, file_name: characters[this_chid].chat, chat: save_chat, avatar_url: characters[this_chid].avatar }),
-            beforeSend: function () {
-                //$('#create_button').attr('value','Creating...'); 
-            },
-            cache: false,
-            dataType: "json",
-            contentType: "application/json",
-            success: function (data) {
-
-            },
-            error: function (jqXHR, exception) {
-
-                console.log(exception);
-                console.log(jqXHR);
-            }
-        });
-    }
+            method: 'POST',
+            dataType: 'json',
+            contentType: 'application/json',
+            data: JSON.stringify({
+              ch_name: characters[this_chid].name,
+              file_name: characters[this_chid].chat,
+              chat: save_chat,
+              avatar_url: characters[this_chid].avatar,
+            }),
+          });
+          console.log(response);
+        } catch (error) {
+          console.log(error);
+        }
+      }
     async function getChat() {
         console.log('/getchat -- entered for -- ' + characters[this_chid].name);
-        jQuery.ajax({
-            type: 'POST',
-            url: '/getchat',
-            data: JSON.stringify({ ch_name: characters[this_chid].name, file_name: characters[this_chid].chat, avatar_url: characters[this_chid].avatar }),
-            beforeSend: function () {
-                //$('#create_button').attr('value','Creating...'); 
-            },
-            cache: false,
-            dataType: "json",
-            contentType: "application/json",
-            success: function (data) {
-                //console.log(data);
-                //chat.length = 0;
-                if (data[0] !== undefined) {
-                    for (let key in data) {
-                        chat.push(data[key]);
-                    }
-                    //chat =  data;
-                    chat_create_date = chat[0]['create_date'];
-                    //console.log('/getchat saw chat_create_date: '+chat_create_date);
-                    chat.shift();
-
-                } else {
-                    chat_create_date = humanizedDateTime();
-                }
-                //console.log(chat);
-                getChatResult();
-                saveChat();
-            },
-            error: function (jqXHR, exception) {
-                getChatResult();
-                console.log(exception);
-                console.log(jqXHR);
+        try {
+            const response = await $.ajax({
+                type: 'POST',
+                url: '/getchat',
+                data: JSON.stringify({ ch_name: characters[this_chid].name, file_name: characters[this_chid].chat, avatar_url: characters[this_chid].avatar }),
+                dataType: 'json',
+                contentType: 'application/json',
+            });
+            if (response[0] !== undefined) {
+                chat.push(...response);
+                chat_create_date = chat[0]['create_date'];
+                chat.shift();
+            } else {
+                chat_create_date = humanizedDateTime();
             }
-        });
+            getChatResult();
+            saveChat();
+        } catch (error) {
+            getChatResult();
+            console.log(error);
+        }
     }
     function getChatResult() {
         console.log('getchatresults entered');
         name2 = characters[this_chid].name;
+    
         if (chat.length > 1) {
-
-            chat.forEach(function (item, i) {
+            for (let i = 0; i < chat.length; i++) {
+                const item = chat[i];
                 if (item['is_user']) {
-                    var str = item['mes'].replace(default_user_name + ':', name1 + ':');
-                    chat[i]['mes'] = str;
-                    chat[i]['name'] = name1;
+                    item['mes'] = item['mes'].replace(default_user_name + ':', name1 + ':');
+                    item['name'] = name1;
                 }
-            });
-
-
-        } else {
-            //console.log(characters[this_chid].first_mes);
-            chat[0] = {};
-            chat[0]['name'] = name2;
-            chat[0]['is_user'] = false;
-            chat[0]['is_name'] = true;
-            chat[0]['send_date'] = humanizedDateTime();
-            if (characters[this_chid].first_mes != "") {
-                chat[0]['mes'] = characters[this_chid].first_mes;
-            } else {
-                chat[0]['mes'] = default_ch_mes;
             }
+        } else {
+            const firstMes = characters[this_chid].first_mes || default_ch_mes;
+            chat[0] = {
+                name: name2,
+                is_user: false,
+                is_name: true,
+                send_date: humanizedDateTime(),
+                mes: firstMes
+            };
         }
+    
         printMessages();
         select_selected_character(this_chid);
     }
+
+///////// GROUP CHAT FUNCTIONS /////////////////////
     async function generateGroupWrapper(by_auto_mode) {
         console.log('generateGroupWrapper entered');
         if (online_status === 'no_connection') {
@@ -2235,6 +2117,8 @@ console.log('getGroupChat calls addOneMessage');
             $("#rm_button_selected_ch").children("h2").text('');
         }
     }
+////////////////////////////////////////////////////
+
     function openNavToggle() {
         if (!$('#nav-toggle').prop('checked')) {
             $('#nav-toggle').trigger('click');
@@ -2310,6 +2194,7 @@ console.log('getGroupChat calls addOneMessage');
         const block = $("#user_avatar_block").append('<div imgfile="' + name + '" class="avatar"><img src="User Avatars/' + name + '"></div>');
         highlightSelectedAvatar();
     }
+
     //***************SETTINGS****************//
     ///////////////////////////////////////////
     async function getSettings(type) {//timer
@@ -2566,7 +2451,6 @@ console.log('getGroupChat calls addOneMessage');
 
             }
         });
-
         collapse_newlines = localStorage.getItem(storage_keys.collapse_newlines) == 'true';
         $('#collapse-newlines-checkbox').prop('checked', collapse_newlines);
     }
@@ -2603,31 +2487,19 @@ console.log('getGroupChat calls addOneMessage');
                 textgenerationwebui_settings: textgenerationwebui_settings,
                 swipes: swipes
             }),
-            beforeSend: function () {
-                //console.log('saveSettings() -- active_character -- '+active_character);
-                //console.log('saveSettings() -- before send - amount_gen = '+amount_gen);
+            beforeSend: function () { 
                 if (type == 'change_name') {
                     name1 = $('#your_name').val()
-               //     console.log('beforeSend name1 = '+name1);
                 }
                 },
             cache: false,
             dataType: "json",
             contentType: "application/json",
-            //processData: false, 
             success: function (data) {
-                //online_status = data.result;
                 if (type == 'change_name') {
-                    //console.log('got name change');
-                    //console.log('success: reading from settings = ' + settings.username);
-                    //name1 = settings.username;
-
                     clearChat();
                     printMessages();
-            
-
                   }
-                //console.log('saveSettings() -- success -- amount_gen='+amount_gen);
             },
             error: function (jqXHR, exception) {
                 console.log(exception);
@@ -2635,7 +2507,6 @@ console.log('getGroupChat calls addOneMessage');
 
             }
         });
-
         localStorage.setItem(storage_keys.collapse_newlines, collapse_newlines);
     }
     function isInt(value) {
@@ -2956,34 +2827,24 @@ console.log('getGroupChat calls addOneMessage');
         $("#rm_button_settings").css("class", "deselected-right-tab");
         $("#rm_button_selected_ch").css("class", "deselected-right-tab");
     }
-    function showSwipeButtons(){
+    function showSwipeButtons() {
+        if (
+            chat[chat.length - 1].name === 'TavernAI' ||
+            !swipes ||
+            $('.mes:last').attr('mesid') <= 0 ||
+            chat[chat.length - 1].is_user ||
+            count_view_mes <= 1
+        ) {return;}
+        const currentMessage = $("#chat").children().filter(`[mesid="${count_view_mes-1}"]`);
+        const swipeId = chat[chat.length - 1].swipe_id;
         
-        if(chat[chat.length-1].name !== 'TavernAI'){
-            if(swipes){
-                //console.log('showSwipeButtons -- entered');
-                //console.log('SSB -- are we showing a char first_message? mesid = '+$('.mes:last').attr('mesid'));
-                if($('.mes:last').attr('mesid') > 0){   // don't show swipes for opening messages. 
-                    //console.log('SSB -- for right button - is this a user message?'+(chat[chat.length-1]['is_user'])+' and count_view_mes = '+count_view_mes);
-                    if(!chat[chat.length-1]['is_user'] && count_view_mes > 1){      // if the last chat is not from user, and there is more than one msg to view
-                        //console.log('SSB -- CONFIRM -- showing right button');
-                        $("#chat").children().filter('[mesid="'+(count_view_mes-1)+'"]').children('.swipe_right').css('display', 'flex');       // display right swipe
-                        //console.log('SSB -- for left - how many messages exist to the left? '+(chat[chat.length-1]['swipe_id']));
-                        if(chat[chat.length-1]['swipe_id'] !== undefined){  //if swipe_id exists (mean swipes have happened on this message-cell before)
-                            //console.log('SBB -- for left pt2 -- What swipe message # is this?'+chat[chat.length-1]['swipe_id']);
-                            if(chat[chat.length-1]['swipe_id'] != 0){   //and it's not 0 (meaning there is at least one message to view to the left)                            
-                                $("#chat").children().filter('[mesid="'+(count_view_mes-1)+'"]').children('.swipe_left').css('display', 'flex');    //display left swipe
-                                //console.log('SSB -- CONFIRM -- showed left button');
-                            }//else{console.log('SSB -- only showed right side because only one swipe option.');}
-                        }//else{console.log('SSB -- noped out of showing left button because swipe_id didnt exist');}
-                    }//else{console.log('SSB -- noped out of showing swipes on User message');}
-                }//else{console.log('SSB -- noped out of first message swiping');}
-            }//else{console.log('SSB -- swipes not enabled');}
-        }//else{console.log('SBB -- noped out of swiping system messages');}
-    
-    }
-
+        if (swipeId !== undefined && swipeId != 0) {
+          currentMessage.children('.swipe_left').css('display', 'flex');
+        }
+        currentMessage.children('.swipe_right').css('display', 'flex');
+      }
     function hideSwipeButtons(){
-        console.log('hideswipebuttons entered');
+        //console.log('hideswipebuttons entered');
         $("#chat").children().filter('[mesid="'+(count_view_mes-1)+'"]').children('.swipe_right').css('display', 'none');
         $("#chat").children().filter('[mesid="'+(count_view_mes-1)+'"]').children('.swipe_left').css('display', 'none');
     }
@@ -3027,6 +2888,502 @@ console.log('getGroupChat calls addOneMessage');
             sendSystemMessage: sendSystemMessage,
         };
     };
+    function callPopup(text) {
+        $("#dialogue_popup_cancel").css("display", "inline-block");
+        switch (popup_type) {
+            case 'text':
+            case 'char_not_selected':
+
+                $("#dialogue_popup_ok").text("Ok");
+                $("#dialogue_popup_cancel").css("display", "none");
+                break;
+
+            case 'world_imported':
+            case 'new_chat':
+
+
+                $("#dialogue_popup_ok").text("Yes");
+                break;
+            case 'del_world':
+            case 'del_group':
+            default:
+
+                $("#dialogue_popup_ok").text("Delete");
+
+        }
+        $("#dialogue_popup_text").html(text);
+        $("#shadow_popup").css('display', 'block');
+        $('#shadow_popup').transition({ opacity: 1.0, duration: animation_rm_duration, easing: animation_rm_easing });
+    }
+    function read_bg_load(input) {
+        if (input.files && input.files[0]) {
+            var reader = new FileReader();
+
+            reader.onload = function (e) {
+                $('#bg_load_preview')
+                    .attr('src', e.target.result)
+                    .width(103)
+                    .height(83);
+
+                var formData = new FormData($("#form_bg_download").get(0));
+
+                //console.log(formData);
+                jQuery.ajax({
+                    type: 'POST',
+                    url: '/downloadbackground',
+                    data: formData,
+                    beforeSend: function () {
+                        //$('#create_button').attr('value','Creating...'); 
+                    },
+                    cache: false,
+                    contentType: false,
+                    processData: false,
+                    success: function (html) {
+                        setBackground(html);
+                        if (bg1_toggle == true) {				// this is a repeat of the background setting function for when  user uploads a new BG image
+                            bg1_toggle = false;				// should make the Bg setting a modular function to be called in both cases
+                            var number_bg = 2;
+                            var target_opacity = 1.0;
+                        } else {
+                            bg1_toggle = true;
+                            var number_bg = 1;
+                            var target_opacity = 0.0;
+                        }
+                        $('#bg2').transition({
+                            opacity: target_opacity,
+                            duration: 1300,//animation_rm_duration,
+                            easing: "linear",
+                            complete: function () {
+                                $("#options").css('display', 'none');
+                            }
+                        });
+                        $('#bg' + number_bg).css('background-image', 'url(' + e.target.result + ')');
+                        $("#form_bg_download").after("<div class=bg_example><img bgfile='" + html + "' class=bg_example_img src='backgrounds/" + html + "'><img bgfile='" + html + "' class=bg_example_cross src=img/cross.png></div>");
+                    },
+                    error: function (jqXHR, exception) {
+                        console.log(exception);
+                        console.log(jqXHR);
+                    }
+                });
+
+            };
+
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+        function read_avatar_load(input) {
+
+        if (input.files && input.files[0]) {
+            var reader = new FileReader();
+            if (selected_button == 'create') {
+
+                create_save_avatar = input.files;
+            }
+            reader.onload = function (e) {
+
+                if (selected_button == 'character_edit') {
+
+                    timerSaveEdit = setTimeout(() => { $("#create_button").click(); }, durationSaveEdit);
+                }
+                $('#avatar_load_preview')
+                    .attr('src', e.target.result);
+                //.width(103)
+                //.height(83);
+                //console.log(e.target.result.name);   
+
+            };
+
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+    function resultCheckStatusNovel() {
+        is_api_button_press_novel = false;
+        checkOnlineStatus();
+        $("#api_loading_novel").css("display", 'none');
+        $("#api_button_novel").css("display", 'inline-block');
+    }
+    
+    async function updateWorldInfoList(importedWorldName) {
+        var result = await fetch('/getsettings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                "X-CSRF-Token": token,
+            },
+            body: JSON.stringify({})
+        });
+
+        if (result.ok) {
+            var data = await result.json();
+            world_names = data.world_names?.length ? data.world_names : [];
+            $('#world_info').find('option[value!="None"]').remove();
+
+            world_names.forEach((item, i) => {
+                $('#world_info').append(`<option value='${i}'>${item}</option>`);
+            });
+
+            if (importedWorldName) {
+                const indexOf = world_names.indexOf(world_info);
+                $('#world_info').val(indexOf);
+
+                popup_type = 'world_imported';
+                callPopup('<h3>World imported successfully! Select it now?</h3>');
+            }
+        }
+    }
+
+    function download(content, fileName, contentType) {
+        var a = document.createElement("a");
+        var file = new Blob([content], { type: contentType });
+        a.href = URL.createObjectURL(file);
+        a.download = fileName;
+        a.click();
+    }
+       // World Info Editor
+       async function showWorldEditor() {
+        if (!world_info) {
+            popup_type = 'default';
+            callPopup('<h3>Select a world info first!</h3>');
+            return;
+        }
+
+        is_world_edit_open = true;
+        $('#world_popup_name').val(world_info);
+        $('#world_popup').css('display', 'flex');
+        await loadWorldInfoData();
+        displayWorldEntries(world_info_data);
+    }
+
+    async function loadWorldInfoData() {
+        if (!world_info) {
+            return;
+        }
+
+        const response = await fetch("/getworldinfo", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRF-Token": token,
+            },
+            body: JSON.stringify({ name: world_info })
+        });
+
+        if (response.ok) {
+            world_info_data = await response.json();
+        }
+    }
+
+    function hideWorldEditor() {
+        is_world_edit_open = false;
+        $('#world_popup').css('display', 'none');
+    }
+
+    function displayWorldEntries(data) {
+        $('#world_popup_entries_list').empty();
+
+        if (!data || !('entries' in data)) {
+            return;
+        }
+
+        for (const entryUid in data.entries) {
+            const entry = data.entries[entryUid];
+            appendWorldEntry(entry);
+        }
+    }
+
+    function appendWorldEntry(entry) {
+        const template = $('#entry_edit_template .world_entry').clone();
+        template.data('uid', entry.uid);
+
+        // key
+        const keyInput = template.find('textarea[name="key"]');
+        keyInput.data('uid', entry.uid);
+        keyInput.on('input', function () {
+            const uid = $(this).data('uid');
+            const value = $(this).val();
+            $(this).css("height", ""); //reset the height
+            $(this).css("height", $(this).prop('scrollHeight') + "px");
+            world_info_data.entries[uid].key = value.split(',').map(x => x.trim()).filter(x => x);
+            saveWorldInfo();
+        });
+        keyInput.val(entry.key.join(',')).trigger('input');
+        keyInput.css("height", ""); //reset the height
+        keyInput.css("height", $(this).prop('scrollHeight') + "px");
+
+        // keysecondary
+        const keySecondaryInput = template.find('textarea[name="keysecondary"]');
+        keySecondaryInput.data('uid', entry.uid);
+        keySecondaryInput.on('input', function () {
+            const uid = $(this).data('uid');
+            const value = $(this).val();
+            $(this).css("height", ""); //reset the height
+            $(this).css("height", $(this).prop('scrollHeight') + "px");
+            world_info_data.entries[uid].keysecondary = value.split(',').map(x => x.trim()).filter(x => x);
+            saveWorldInfo();
+        });
+        keySecondaryInput.val(entry.keysecondary.join(',')).trigger('input');
+        keySecondaryInput.css("height", ""); //reset the height
+        keySecondaryInput.css("height", $(this).prop('scrollHeight') + "px");
+
+        // comment
+        const commentInput = template.find('textarea[name="comment"]');
+        commentInput.data('uid', entry.uid);
+        commentInput.on('input', function () {
+            const uid = $(this).data('uid');
+            const value = $(this).val();
+            $(this).css("height", ""); //reset the height
+            $(this).css("height", $(this).prop('scrollHeight') + "px");
+            world_info_data.entries[uid].comment = value;
+            saveWorldInfo();
+        });
+        commentInput.val(entry.comment).trigger('input');
+        commentInput.css("height", ""); //reset the height
+        commentInput.css("height", $(this).prop('scrollHeight') + "px");
+
+        // content
+        const contentInput = template.find('textarea[name="content"]');
+        contentInput.data('uid', entry.uid);
+        contentInput.on('input', function () {
+            const uid = $(this).data('uid');
+            const value = $(this).val();
+            world_info_data.entries[uid].content = value;
+            $(this).css("height", ""); //reset the height
+            $(this).css("height", $(this).prop('scrollHeight') + "px");
+            saveWorldInfo();
+
+            // count tokens
+            const numberOfTokens = encode(value).length;
+            $(this).closest('.world_entry').find('.world_entry_form_token_counter').html(numberOfTokens);
+        });
+        contentInput.val(entry.content).trigger('input');
+        contentInput.css("height", ""); //reset the height
+        contentInput.css("height", $(this).prop('scrollHeight') + "px");
+
+        // selective
+        const selectiveInput = template.find('input[name="selective"]');
+        selectiveInput.data('uid', entry.uid);
+        selectiveInput.on('input', function () {
+            const uid = $(this).data('uid');
+            const value = $(this).prop('checked');
+            world_info_data.entries[uid].selective = value;
+            saveWorldInfo();
+
+            const keysecondary = $(this).closest('.world_entry').find('.keysecondary');
+            value ? keysecondary.show() : keysecondary.hide();
+        });
+        selectiveInput.prop('checked', entry.selective).trigger('input');
+        selectiveInput.siblings('.checkbox_fancy').click(function () {
+            $(this).siblings('input').click();
+        });
+
+
+        // constant
+        const constantInput = template.find('input[name="constant"]');
+        constantInput.data('uid', entry.uid);
+        constantInput.on('input', function () {
+            const uid = $(this).data('uid');
+            const value = $(this).prop('checked');
+            world_info_data.entries[uid].constant = value;
+            saveWorldInfo();
+        });
+        constantInput.prop('checked', entry.constant).trigger('input');
+        constantInput.siblings('.checkbox_fancy').click(function () {
+            $(this).siblings('input').click();
+        });
+
+        // order
+        const orderInput = template.find('input[name="order"]');
+        orderInput.data('uid', entry.uid);
+        orderInput.on('input', function () {
+            const uid = $(this).data('uid');
+            const value = Number($(this).val());
+
+            world_info_data.entries[uid].order = !isNaN(value) ? value : 0;
+            saveWorldInfo();
+        });
+        orderInput.val(entry.order).trigger('input');
+
+        // position
+        if (entry.position === undefined) {
+            entry.position = 0;
+        }
+
+        const positionInput = template.find('input[name="position"]');
+        positionInput.data('uid', entry.uid);
+        positionInput.on('input', function () {
+            const uid = $(this).data('uid');
+            const value = Number($(this).val());
+            world_info_data.entries[uid].position = !isNaN(value) ? value : 0;
+            saveWorldInfo();
+        })
+        template.find(`input[name="position"][value=${entry.position}]`).prop('checked', true).trigger('input');
+
+        // display uid
+        template.find('.world_entry_form_uid_value').html(entry.uid);
+
+        // delete button
+        const deleteButton = template.find('input.delete_entry_button');
+        deleteButton.data('uid', entry.uid);
+        deleteButton.on('click', function () {
+            const uid = $(this).data('uid');
+            deleteWorldInfoEntry(uid);
+            $(this).closest('.world_entry').remove();
+            saveWorldInfo();
+        });
+
+        template.appendTo('#world_popup_entries_list');
+        return template;
+    }
+
+    async function deleteWorldInfoEntry(uid) {
+        if (!world_info_data || !('entries' in world_info_data)) {
+            return;
+        }
+
+        delete world_info_data.entries[uid];
+    }
+
+    function createWorldInfoEntry() {
+        const newEntryTemplate = {
+            key: [],
+            keysecondary: [],
+            comment: '',
+            content: '',
+            constant: false,
+            selective: false,
+            order: 100,
+            position: 0,
+        };
+        const newUid = getFreeWorldEntryUid();
+
+        if (!Number.isInteger(newUid)) {
+            console.error("Couldn't assign UID to a new entry");
+            return;
+        }
+
+        const newEntry = { uid: newUid, ...newEntryTemplate };
+        world_info_data.entries[newUid] = newEntry;
+
+        const entryTemplate = appendWorldEntry(newEntry);
+        entryTemplate.get(0).scrollIntoView({ behavior: 'smooth' });
+    }
+
+    async function saveWorldInfo(immediately) {
+        if (!world_info || !world_info_data) {
+            return;
+        }
+
+        async function _save() {
+            const response = await fetch("/editworldinfo", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-Token": token,
+                },
+                body: JSON.stringify({ name: world_info, data: world_info_data })
+            });
+        }
+
+        if (immediately) {
+            return await _save();
+        }
+
+        clearTimeout(timerWorldSave);
+        timerWorldSave = setTimeout(async () => await _save(), durationSaveEdit);
+    }
+
+    async function renameWorldInfo() {
+        const oldName = world_info;
+        const newName = $('#world_popup_name').val();
+
+        if (oldName === newName) {
+            return;
+        }
+
+        world_info = newName;
+        await saveWorldInfo(true);
+        await deleteWorldInfo(oldName, newName);
+    }
+
+    async function deleteWorldInfo(worldInfoName, selectWorldName) {
+        if (!world_names.includes(worldInfoName)) {
+            return;
+        }
+
+        const response = await fetch("/deleteworldinfo", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRF-Token": token,
+            },
+            body: JSON.stringify({ name: worldInfoName })
+        });
+
+        if (response.ok) {
+            await updateWorldInfoList();
+
+            const selectedIndex = world_names.indexOf(selectWorldName);
+            if (selectedIndex !== -1) {
+                $('#world_info').val(selectedIndex).change();
+            }
+            else {
+                $('#world_info').val('None').change();
+            }
+
+            hideWorldEditor();
+        }
+    }
+
+    function getFreeWorldEntryUid() {
+        if (!world_info_data || !('entries' in world_info_data)) {
+            return null;
+        }
+
+        const MAX_UID = 1_000_000; // <- should be safe enough :)
+        for (let uid = 0; uid < MAX_UID; uid++) {
+            if (uid in world_info_data.entries) {
+                continue;
+            }
+            return uid;
+        }
+
+        return null;
+    }
+
+    function getFreeWorldName() {
+        const MAX_FREE_NAME = 100_000;
+        for (let index = 1; index < MAX_FREE_NAME; index++) {
+            const newName = `New World (${index})`;
+            if (world_names.includes(newName)) {
+                continue;
+            }
+            return newName;
+        }
+
+        return undefined;
+    }
+
+    async function createNewWorldInfo() {
+        const worldInfoTemplate = { entries: {} };
+        const worldInfoName = getFreeWorldName();
+
+        if (!worldInfoName) {
+            return;
+        }
+
+        world_info = worldInfoName;
+        world_info_data = { ...worldInfoTemplate };
+        await saveWorldInfo(true);
+        await updateWorldInfoList();
+
+        const selectedIndex = world_names.indexOf(worldInfoName);
+        if (selectedIndex !== -1) {
+            $('#world_info').val(selectedIndex).change();
+        }
+        else {
+            $('#world_info').val('None').change();
+        }
+    }
     
 /////////////////////////////////////////////////////////    
 ///////// INTERACTIVE FUNCTIONS AND LISTENERS ///////////
@@ -3425,7 +3782,6 @@ console.log('sipwing left after tr5ansition calls addOneMessage');
         is_group_automode_enabled = value;
     });
 
-
     $(document).on('click', '.character_select', function () {
         if (this_chid !== $(this).attr("chid")) {					//if clicked on a different character from what was currently selected
             if (!is_send_press) {
@@ -3667,118 +4023,12 @@ console.log('sipwing left after tr5ansition calls addOneMessage');
         $("#shadow_popup").css('opacity:', 0.0);
         popup_type = '';
     });
-    function callPopup(text) {
-        $("#dialogue_popup_cancel").css("display", "inline-block");
-        switch (popup_type) {
-            case 'text':
-            case 'char_not_selected':
 
-                $("#dialogue_popup_ok").text("Ok");
-                $("#dialogue_popup_cancel").css("display", "none");
-                break;
-
-            case 'world_imported':
-            case 'new_chat':
-
-
-                $("#dialogue_popup_ok").text("Yes");
-                break;
-            case 'del_world':
-            case 'del_group':
-            default:
-
-                $("#dialogue_popup_ok").text("Delete");
-
-        }
-        $("#dialogue_popup_text").html(text);
-        $("#shadow_popup").css('display', 'block');
-        $('#shadow_popup').transition({ opacity: 1.0, duration: animation_rm_duration, easing: animation_rm_easing });
-    }
-    function read_bg_load(input) {
-        if (input.files && input.files[0]) {
-            var reader = new FileReader();
-
-            reader.onload = function (e) {
-                $('#bg_load_preview')
-                    .attr('src', e.target.result)
-                    .width(103)
-                    .height(83);
-
-                var formData = new FormData($("#form_bg_download").get(0));
-
-                //console.log(formData);
-                jQuery.ajax({
-                    type: 'POST',
-                    url: '/downloadbackground',
-                    data: formData,
-                    beforeSend: function () {
-                        //$('#create_button').attr('value','Creating...'); 
-                    },
-                    cache: false,
-                    contentType: false,
-                    processData: false,
-                    success: function (html) {
-                        setBackground(html);
-                        if (bg1_toggle == true) {				// this is a repeat of the background setting function for when  user uploads a new BG image
-                            bg1_toggle = false;				// should make the Bg setting a modular function to be called in both cases
-                            var number_bg = 2;
-                            var target_opacity = 1.0;
-                        } else {
-                            bg1_toggle = true;
-                            var number_bg = 1;
-                            var target_opacity = 0.0;
-                        }
-                        $('#bg2').transition({
-                            opacity: target_opacity,
-                            duration: 1300,//animation_rm_duration,
-                            easing: "linear",
-                            complete: function () {
-                                $("#options").css('display', 'none');
-                            }
-                        });
-                        $('#bg' + number_bg).css('background-image', 'url(' + e.target.result + ')');
-                        $("#form_bg_download").after("<div class=bg_example><img bgfile='" + html + "' class=bg_example_img src='backgrounds/" + html + "'><img bgfile='" + html + "' class=bg_example_cross src=img/cross.png></div>");
-                    },
-                    error: function (jqXHR, exception) {
-                        console.log(exception);
-                        console.log(jqXHR);
-                    }
-                });
-
-            };
-
-            reader.readAsDataURL(input.files[0]);
-        }
-    }
     $("#add_bg_button").change(function () {
         read_bg_load(this);
 
     });
-    function read_avatar_load(input) {
 
-        if (input.files && input.files[0]) {
-            var reader = new FileReader();
-            if (selected_button == 'create') {
-
-                create_save_avatar = input.files;
-            }
-            reader.onload = function (e) {
-
-                if (selected_button == 'character_edit') {
-
-                    timerSaveEdit = setTimeout(() => { $("#create_button").click(); }, durationSaveEdit);
-                }
-                $('#avatar_load_preview')
-                    .attr('src', e.target.result);
-                //.width(103)
-                //.height(83);
-                //console.log(e.target.result.name);   
-
-            };
-
-            reader.readAsDataURL(input.files[0]);
-        }
-    }
     $("#add_avatar_button").change(function () {
 
         is_mes_reload_avatar = Date.now();
@@ -3888,7 +4138,7 @@ console.log('sipwing left after tr5ansition calls addOneMessage');
                             chat[0]['is_user'] = false;
                             chat[0]['is_name'] = true;
                             chat[0]['mes'] = this_ch_mes;
-                            add_mes_without_animation = true;
+                            //add_mes_without_animation = true;
                             addOneMessage(chat[0]);
                         }
                     }
@@ -4254,7 +4504,6 @@ console.log('#settings_preset sensor -- starting');
         }
     });
 
-
     for (var i of ["temp", "rep_pen", "rep_pen_size", "top_k", "top_p", "typical_p", "penalty_alpha"]) {
         $('#' + i + '_textgenerationwebui').attr('x-setting-id', i);
         $(document).on('input', '#' + i + '_textgenerationwebui', function () {
@@ -4506,12 +4755,7 @@ console.log('#settings_preset sensor -- starting');
             is_api_button_press_novel = true;
         }
     });
-    function resultCheckStatusNovel() {
-        is_api_button_press_novel = false;
-        checkOnlineStatus();
-        $("#api_loading_novel").css("display", 'none');
-        $("#api_button_novel").css("display", 'inline-block');
-    }
+
     $("#model_novel_select").change(function () {
         model_novel = $('#model_novel_select').find(":selected").val();
         saveSettings();
@@ -4682,389 +4926,6 @@ console.log('#settings_preset sensor -- starting');
         $('#form_world_import').trigger("reset");
     });
 
-    async function updateWorldInfoList(importedWorldName) {
-        var result = await fetch('/getsettings', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                "X-CSRF-Token": token,
-            },
-            body: JSON.stringify({})
-        });
-
-        if (result.ok) {
-            var data = await result.json();
-            world_names = data.world_names?.length ? data.world_names : [];
-            $('#world_info').find('option[value!="None"]').remove();
-
-            world_names.forEach((item, i) => {
-                $('#world_info').append(`<option value='${i}'>${item}</option>`);
-            });
-
-            if (importedWorldName) {
-                const indexOf = world_names.indexOf(world_info);
-                $('#world_info').val(indexOf);
-
-                popup_type = 'world_imported';
-                callPopup('<h3>World imported successfully! Select it now?</h3>');
-            }
-        }
-    }
-
-    function download(content, fileName, contentType) {
-        var a = document.createElement("a");
-        var file = new Blob([content], { type: contentType });
-        a.href = URL.createObjectURL(file);
-        a.download = fileName;
-        a.click();
-    }
-
-    // World Info Editor
-    async function showWorldEditor() {
-        if (!world_info) {
-            popup_type = 'default';
-            callPopup('<h3>Select a world info first!</h3>');
-            return;
-        }
-
-        is_world_edit_open = true;
-        $('#world_popup_name').val(world_info);
-        $('#world_popup').css('display', 'flex');
-        await loadWorldInfoData();
-        displayWorldEntries(world_info_data);
-    }
-
-    async function loadWorldInfoData() {
-        if (!world_info) {
-            return;
-        }
-
-        const response = await fetch("/getworldinfo", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRF-Token": token,
-            },
-            body: JSON.stringify({ name: world_info })
-        });
-
-        if (response.ok) {
-            world_info_data = await response.json();
-        }
-    }
-
-    function hideWorldEditor() {
-        is_world_edit_open = false;
-        $('#world_popup').css('display', 'none');
-    }
-
-    function displayWorldEntries(data) {
-        $('#world_popup_entries_list').empty();
-
-        if (!data || !('entries' in data)) {
-            return;
-        }
-
-        for (const entryUid in data.entries) {
-            const entry = data.entries[entryUid];
-            appendWorldEntry(entry);
-        }
-    }
-
-    function appendWorldEntry(entry) {
-        const template = $('#entry_edit_template .world_entry').clone();
-        template.data('uid', entry.uid);
-
-        // key
-        const keyInput = template.find('textarea[name="key"]');
-        keyInput.data('uid', entry.uid);
-        keyInput.on('input', function () {
-            const uid = $(this).data('uid');
-            const value = $(this).val();
-            $(this).css("height", ""); //reset the height
-            $(this).css("height", $(this).prop('scrollHeight') + "px");
-            world_info_data.entries[uid].key = value.split(',').map(x => x.trim()).filter(x => x);
-            saveWorldInfo();
-        });
-        keyInput.val(entry.key.join(',')).trigger('input');
-        keyInput.css("height", ""); //reset the height
-        keyInput.css("height", $(this).prop('scrollHeight') + "px");
-
-        // keysecondary
-        const keySecondaryInput = template.find('textarea[name="keysecondary"]');
-        keySecondaryInput.data('uid', entry.uid);
-        keySecondaryInput.on('input', function () {
-            const uid = $(this).data('uid');
-            const value = $(this).val();
-            $(this).css("height", ""); //reset the height
-            $(this).css("height", $(this).prop('scrollHeight') + "px");
-            world_info_data.entries[uid].keysecondary = value.split(',').map(x => x.trim()).filter(x => x);
-            saveWorldInfo();
-        });
-        keySecondaryInput.val(entry.keysecondary.join(',')).trigger('input');
-        keySecondaryInput.css("height", ""); //reset the height
-        keySecondaryInput.css("height", $(this).prop('scrollHeight') + "px");
-
-        // comment
-        const commentInput = template.find('textarea[name="comment"]');
-        commentInput.data('uid', entry.uid);
-        commentInput.on('input', function () {
-            const uid = $(this).data('uid');
-            const value = $(this).val();
-            $(this).css("height", ""); //reset the height
-            $(this).css("height", $(this).prop('scrollHeight') + "px");
-            world_info_data.entries[uid].comment = value;
-            saveWorldInfo();
-        });
-        commentInput.val(entry.comment).trigger('input');
-        commentInput.css("height", ""); //reset the height
-        commentInput.css("height", $(this).prop('scrollHeight') + "px");
-
-        // content
-        const contentInput = template.find('textarea[name="content"]');
-        contentInput.data('uid', entry.uid);
-        contentInput.on('input', function () {
-            const uid = $(this).data('uid');
-            const value = $(this).val();
-            world_info_data.entries[uid].content = value;
-            $(this).css("height", ""); //reset the height
-            $(this).css("height", $(this).prop('scrollHeight') + "px");
-            saveWorldInfo();
-
-            // count tokens
-            const numberOfTokens = encode(value).length;
-            $(this).closest('.world_entry').find('.world_entry_form_token_counter').html(numberOfTokens);
-        });
-        contentInput.val(entry.content).trigger('input');
-        contentInput.css("height", ""); //reset the height
-        contentInput.css("height", $(this).prop('scrollHeight') + "px");
-
-        // selective
-        const selectiveInput = template.find('input[name="selective"]');
-        selectiveInput.data('uid', entry.uid);
-        selectiveInput.on('input', function () {
-            const uid = $(this).data('uid');
-            const value = $(this).prop('checked');
-            world_info_data.entries[uid].selective = value;
-            saveWorldInfo();
-
-            const keysecondary = $(this).closest('.world_entry').find('.keysecondary');
-            value ? keysecondary.show() : keysecondary.hide();
-        });
-        selectiveInput.prop('checked', entry.selective).trigger('input');
-        selectiveInput.siblings('.checkbox_fancy').click(function () {
-            $(this).siblings('input').click();
-        });
-
-
-        // constant
-        const constantInput = template.find('input[name="constant"]');
-        constantInput.data('uid', entry.uid);
-        constantInput.on('input', function () {
-            const uid = $(this).data('uid');
-            const value = $(this).prop('checked');
-            world_info_data.entries[uid].constant = value;
-            saveWorldInfo();
-        });
-        constantInput.prop('checked', entry.constant).trigger('input');
-        constantInput.siblings('.checkbox_fancy').click(function () {
-            $(this).siblings('input').click();
-        });
-
-        // order
-        const orderInput = template.find('input[name="order"]');
-        orderInput.data('uid', entry.uid);
-        orderInput.on('input', function () {
-            const uid = $(this).data('uid');
-            const value = Number($(this).val());
-
-            world_info_data.entries[uid].order = !isNaN(value) ? value : 0;
-            saveWorldInfo();
-        });
-        orderInput.val(entry.order).trigger('input');
-
-        // position
-        if (entry.position === undefined) {
-            entry.position = 0;
-        }
-
-        const positionInput = template.find('input[name="position"]');
-        positionInput.data('uid', entry.uid);
-        positionInput.on('input', function () {
-            const uid = $(this).data('uid');
-            const value = Number($(this).val());
-            world_info_data.entries[uid].position = !isNaN(value) ? value : 0;
-            saveWorldInfo();
-        })
-        template.find(`input[name="position"][value=${entry.position}]`).prop('checked', true).trigger('input');
-
-        // display uid
-        template.find('.world_entry_form_uid_value').html(entry.uid);
-
-        // delete button
-        const deleteButton = template.find('input.delete_entry_button');
-        deleteButton.data('uid', entry.uid);
-        deleteButton.on('click', function () {
-            const uid = $(this).data('uid');
-            deleteWorldInfoEntry(uid);
-            $(this).closest('.world_entry').remove();
-            saveWorldInfo();
-        });
-
-        template.appendTo('#world_popup_entries_list');
-        return template;
-    }
-
-    async function deleteWorldInfoEntry(uid) {
-        if (!world_info_data || !('entries' in world_info_data)) {
-            return;
-        }
-
-        delete world_info_data.entries[uid];
-    }
-
-    function createWorldInfoEntry() {
-        const newEntryTemplate = {
-            key: [],
-            keysecondary: [],
-            comment: '',
-            content: '',
-            constant: false,
-            selective: false,
-            order: 100,
-            position: 0,
-        };
-        const newUid = getFreeWorldEntryUid();
-
-        if (!Number.isInteger(newUid)) {
-            console.error("Couldn't assign UID to a new entry");
-            return;
-        }
-
-        const newEntry = { uid: newUid, ...newEntryTemplate };
-        world_info_data.entries[newUid] = newEntry;
-
-        const entryTemplate = appendWorldEntry(newEntry);
-        entryTemplate.get(0).scrollIntoView({ behavior: 'smooth' });
-    }
-
-    async function saveWorldInfo(immediately) {
-        if (!world_info || !world_info_data) {
-            return;
-        }
-
-        async function _save() {
-            const response = await fetch("/editworldinfo", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRF-Token": token,
-                },
-                body: JSON.stringify({ name: world_info, data: world_info_data })
-            });
-        }
-
-        if (immediately) {
-            return await _save();
-        }
-
-        clearTimeout(timerWorldSave);
-        timerWorldSave = setTimeout(async () => await _save(), durationSaveEdit);
-    }
-
-    async function renameWorldInfo() {
-        const oldName = world_info;
-        const newName = $('#world_popup_name').val();
-
-        if (oldName === newName) {
-            return;
-        }
-
-        world_info = newName;
-        await saveWorldInfo(true);
-        await deleteWorldInfo(oldName, newName);
-    }
-
-    async function deleteWorldInfo(worldInfoName, selectWorldName) {
-        if (!world_names.includes(worldInfoName)) {
-            return;
-        }
-
-        const response = await fetch("/deleteworldinfo", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRF-Token": token,
-            },
-            body: JSON.stringify({ name: worldInfoName })
-        });
-
-        if (response.ok) {
-            await updateWorldInfoList();
-
-            const selectedIndex = world_names.indexOf(selectWorldName);
-            if (selectedIndex !== -1) {
-                $('#world_info').val(selectedIndex).change();
-            }
-            else {
-                $('#world_info').val('None').change();
-            }
-
-            hideWorldEditor();
-        }
-    }
-
-    function getFreeWorldEntryUid() {
-        if (!world_info_data || !('entries' in world_info_data)) {
-            return null;
-        }
-
-        const MAX_UID = 1_000_000; // <- should be safe enough :)
-        for (let uid = 0; uid < MAX_UID; uid++) {
-            if (uid in world_info_data.entries) {
-                continue;
-            }
-            return uid;
-        }
-
-        return null;
-    }
-
-    function getFreeWorldName() {
-        const MAX_FREE_NAME = 100_000;
-        for (let index = 1; index < MAX_FREE_NAME; index++) {
-            const newName = `New World (${index})`;
-            if (world_names.includes(newName)) {
-                continue;
-            }
-            return newName;
-        }
-
-        return undefined;
-    }
-
-    async function createNewWorldInfo() {
-        const worldInfoTemplate = { entries: {} };
-        const worldInfoName = getFreeWorldName();
-
-        if (!worldInfoName) {
-            return;
-        }
-
-        world_info = worldInfoName;
-        world_info_data = { ...worldInfoTemplate };
-        await saveWorldInfo(true);
-        await updateWorldInfoList();
-
-        const selectedIndex = world_names.indexOf(worldInfoName);
-        if (selectedIndex !== -1) {
-            $('#world_info').val(selectedIndex).change();
-        }
-        else {
-            $('#world_info').val('None').change();
-        }
-    }
-
     $('#world_info_edit_button').click(() => {
         is_world_edit_open ? hideWorldEditor() : showWorldEditor();
     });
@@ -5097,96 +4958,4 @@ console.log('#settings_preset sensor -- starting');
     $('#world_create_button').click(() => {
         createNewWorldInfo();
     });
-
-    /// UTILS
-
-
-/*     //RossAscends: auto-load last character function (fires when active_character is defined and auto_load_chat is true)					
-    function autoloadchat() {
-        console.log('starting autoloadchat routine');
-        jQuery.ajax({
-            type: 'POST',
-            url: '/getsettings',
-            data: JSON.stringify({}),
-            beforeSend: function () {
-            },
-            cache: false,
-            dataType: "json",
-            contentType: "application/json",
-            success: function (data) {
-                if (data.result != 'file not find') {
-                    settings = JSON.parse(data.settings);
-                    //get the character to auto-load
-                    if (settings.active_character !== undefined) {
-                        if (settings.active_character !== '') {
-                            active_character = settings.active_character;
-                        }
-                    }
-                }
-                console.log('active_character = ' + active_character);
-                console.log('auto_load_chat = ' + auto_load_chat);
-
-                if (active_character !== undefined && auto_load_chat == true) {
-                    $('#CharID' + active_character).click(); //will auto-select and load chat of last selected character is auto_load_chat is true
-                }
-            },
-            error: function (jqXHR, exception) {
-                console.log(exception);
-                console.log(jqXHR);
-
-            }
-        }); 
-
-    }*/
-  /*   //RossAscends: auto-connect to last API function (fires when API URL exists in settings and auto_connect is true)		
-    function autoconnect() {
-        console.log('starting autoconnect routine');
-        jQuery.ajax({
-            type: 'POST',
-            url: '/getsettings',
-            data: JSON.stringify({}),
-            beforeSend: function () {
-            },
-            cache: false,
-            dataType: "json",
-            contentType: "application/json",
-            //processData: false, 
-            success: function (data) {
-                if (data.result != 'file not find') {
-                    settings = JSON.parse(data.settings);
-
-                    //Load the API server URL from settings
-                    api_server = settings.api_server;
-                    api_server_textgenerationwebui = settings.api_server_textgenerationwebui;
-                    api_key_novel = settings.api_key_novel;
-                    $('#api_url_text').val(api_server);
-                    $('#textgenerationwebui_api_url_text').val(api_server_textgenerationwebui);
-                    $('#api_key_novel').val(api_key_novel);
-                }
-
-                console.log('api_server = ' + api_server);
-                console.log('api_server_textgenerationwebui = ' + api_server_textgenerationwebui);
-                console.log('api_key_novel = ' + api_key_novel);
-                console.log('auto_connect = ' + auto_connect);
-                changeMainAPI();
-
-                if (main_api === 'kobold' && api_server && auto_connect) {
-                    $('#api_button').click();
-                }
-
-                if (main_api === 'textgenerationwebui' && api_server_textgenerationwebui && auto_connect) {
-                    $('#api_button_textgenerationwebui').click();
-                }
-
-                if (main_api === 'novel' && api_key_novel && auto_connect) {
-                    $('#api_button_novel').click();
-                }
-            },
-            error: function (jqXHR, exception) {
-                console.log(exception);
-                console.log(jqXHR);
-
-            }
-        });
-    } */
 });
