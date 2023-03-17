@@ -25,7 +25,7 @@ const whitelist = config.whitelist;
 const whitelistMode = config.whitelistMode;
 const autorun = config.autorun;
 const enableExtensions = config.enableExtensions;
-
+const listen = config.listen;
 
 var Client = require('node-rest-client').Client;
 var client = new Client();
@@ -1536,7 +1536,7 @@ function getAsync(url, args) {
 }
 // ** END **
 
-app.listen(server_port, function () {
+app.listen(server_port, (listen ? '0.0.0.0' : '127.0.0.1'), function () {
     if (process.env.colab !== undefined) {
         if (process.env.colab == 2) {
             is_colab = true;
