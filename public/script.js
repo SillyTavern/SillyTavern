@@ -864,7 +864,6 @@ function addOneMessage(mes, type = "normal") {
 
     newMessage.find('.avatar img').on('error', function () {
         $(this).attr("src", "/img/user-slash-solid.svg");
-        $(this).css('filter', 'invert(1)');
     });
     if (type === 'swipe') {
         $("#chat").children().filter('[mesid="' + (count_view_mes - 1) + '"]').children('.mes_block').children('.mes_text').html('');
