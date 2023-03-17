@@ -731,7 +731,7 @@ function appendImageToMessage(mes, messageElement) {
     }
 }
 
-function addOneMessage(mes) {
+function addOneMessage(mes, type = "normal") {
     //var message = mes['mes'];
     //message = mes['mes'].replace(/^\s+/g, '');
     //console.log(message.indexOf(name1+":"));
@@ -1043,11 +1043,13 @@ async function Generate(type, automatic_trigger) {
         var chatString = "";
         var arrMes = [];
         var mesSend = [];
-        var mesExamplesArray = [];
         var charDescription = baseChatReplaceAndSplit($.trim(characters[this_chid].description), name1, name2);
         var charPersonality = baseChatReplaceAndSplit($.trim(characters[this_chid].personality), name1, name2);
         var Scenario = baseChatReplaceAndSplit($.trim(characters[this_chid].scenario), name1, name2);
         var mesExamples = baseChatReplaceAndSplit($.trim(characters[this_chid].mes_example.replace(/<START>/gi, '')), name1, name2);
+
+        let blocks = mesExamples.split(/<START>/gi);
+        let mesExamplesArray = blocks.slice(1).map(block => `<START>\n${block.trim()}\n`).join('');
 
         function baseChatReplaceAndSplit(value, name1, name2) {
             if (value !== undefined && value.length > 0) {
@@ -1059,8 +1061,6 @@ async function Generate(type, automatic_trigger) {
                 value = value.replace(/{{char}}/gi, name2);
                 value = value.replace(/<USER>/gi, name1);
                 value = value.replace(/<BOT>/gi, name2);
-                let blocks = value.split(/<START>/gi);
-                return blocks.slice(1).map(block => `<START>\n${block.trim()}\n`).join('');
             }
             return value;
         }
@@ -2798,6 +2798,30 @@ function read_bg_load(input) {
     }
 }
 
+
+function showSwipeButtons() {
+    if (
+        chat[chat.length - 1].name === 'TavernAI' ||
+        !swipes ||
+        $('.mes:last').attr('mesid') <= 0 ||
+        chat[chat.length - 1].is_user ||
+        count_view_mes <= 1
+    ) { return; }
+    const currentMessage = $("#chat").children().filter(`[mesid="${count_view_mes - 1}"]`);
+    const swipeId = chat[chat.length - 1].swipe_id;
+
+    if (swipeId !== undefined && swipeId != 0) {
+        currentMessage.children('.swipe_left').css('display', 'flex');
+    }
+    currentMessage.children('.swipe_right').css('display', 'flex');
+}
+
+function hideSwipeButtons() {
+    //console.log('hideswipebuttons entered');
+    $("#chat").children().filter('[mesid="' + (count_view_mes - 1) + '"]').children('.swipe_right').css('display', 'none');
+    $("#chat").children().filter('[mesid="' + (count_view_mes - 1) + '"]').children('.swipe_left').css('display', 'none');
+}
+
 window["TavernAI"].getContext = function () {
     return {
         chat: chat,
@@ -4072,7 +4096,7 @@ $(document).ready(function () {
                     if (run_edit) {
                         hideSwipeButtons();
                     }
-                }   
+                }
                 messageEditDone(mes_edited);
             }
             $(this).parent().parent().children(".mes_text").empty();
