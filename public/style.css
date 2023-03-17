@@ -492,7 +492,7 @@ textarea {
 
 
 .right_menu {
-    max-height: calc(100% - 60px);
+    max-height: calc(100% - 50px);
     padding: 0 20px;
 }
 
@@ -534,7 +534,7 @@ input[type=submit] {}
     margin-left: 20px;
     margin-right: 30px;
     display: flex;
-    align-items: flex-start;
+    align-items: flex-end;
 }
 
 /* ##################################################################### */
@@ -542,9 +542,8 @@ input[type=submit] {}
 /* ##################################################################### */
 
 .right_menu_button {
-    display: inline-block;
+    display: block;
     cursor: pointer;
-    vertical-align: middle;
     text-align: center;
     padding-right: 20px;
     font-size: 1.5rem;
@@ -561,6 +560,10 @@ input[type=submit] {}
 
 #rm_button_panel_pin {
     display: none;
+}
+
+#rm_button_panel_pin:checked + label {
+    display: block;
 }
 
 #rm_button_panel_pin:checked + label .checked {
@@ -605,7 +608,7 @@ input[type=submit] {}
 }
 
 #rm_print_characters_block {
-    margin: 15px 0;
+    padding: 15px 0;
     overflow-y: auto;
 }
 
@@ -2415,6 +2418,7 @@ h2 {
 }
 
 .right_menu_button img {
+    display: block;
     filter: invert(1);
     cursor: pointer;
     height: 26px;
