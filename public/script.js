@@ -125,7 +125,12 @@ const system_messages = {
         is_user: false,
         is_system: true,
         is_name: true,
-        mes: 'Hi there! The following chat formatting commands are supported:<br><ul><li><tt>*text*</tt> – format the actions that your character does</li><li><tt>{*text*}</tt> – set the behavioral bias for your character</li></ul><p>Need more help? Visit our wiki – <a target="_blank" href="https://github.com/TavernAI/TavernAI/wiki">TavernAI Wiki</a>!</p>',
+        mes: `Hi there! The following chat formatting commands are supported:<br>
+        <ul>
+            <li><tt>*text*</tt> – format the actions that your character does</li>
+            <li><tt>{*text*}</tt> – set the behavioral bias for your character</li>
+        </ul>
+        <p>Need more help? Visit our wiki – <a href=\"https://github.com/TavernAI/TavernAI/wiki\">TavernAI Wiki</a>!</p>`,
     },
     welcome:
     {
@@ -234,6 +239,8 @@ var message_already_generated = "";
 var if_typing_text = false;
 const tokens_cycle_count = 30;
 var cycle_count_generation = 0;
+
+var swipes = false;
 
 var anchor_order = 0;
 var style_anchor = true;
@@ -490,15 +497,7 @@ function printCharacters() {
             this_avatar = "characters/" + item.avatar + "?" + Date.now();
         } //RossAscends: changed 'prepend' to 'append' to make alphabetical sorting display correctly.
         $("#rm_print_characters_block").append(
-            "<div class=character_select chid=" +
-            i +
-            ' id="CharID' +
-            i +
-            '"><div class=avatar><img src="' +
-            this_avatar +
-            '"></div><div class=ch_name>' +
-            item.name +
-            "</div></div>"
+            `<div class=character_select chid=${i} id="CharID${i}"><div class=avatar><img src="${this_avatar}"></div><div class=ch_name>${item.name}</div></div>`
         );
         //console.log('printcharacters() -- printing -- ChID '+i+' ('+item.name+')');
     });
@@ -778,18 +777,33 @@ function addOneMessage(mes) {
     );
     const bias = messageFormating(mes.extra?.bias ?? "");
 
-    $("#chat").append(
-        "<div class='mes' mesid=" +
-        count_view_mes +
-        " ch_name=" +
+    var HTMLForEachMes =
+        '<div class="mes" mesid="' + count_view_mes + '" ch_name="' + characterName + '" is_user="' + mes["is_user"] + '">' +
+        '<div class="for_checkbox"></div>' +
+        '<input type="checkbox" class="del_checkbox">' +
+        '<div class="avatar">' +
+        '<img src="' + avatarImg + '">' +
+        '</div>' +
+        '<div class="swipe_left">' +
+        '<img src="img/swipe_left.png">' +
+        '</div>' +
+        '<div class="mes_block">' +
+        '<div class="ch_name">' +
         characterName +
-        "><div class='for_checkbox'></div><input type='checkbox' class='del_checkbox'><div class=avatar><img src='" +
-        avatarImg +
-        "'></div><div class=mes_block><div class=ch_name>" +
-        characterName +
-        "<div title=Edit class=mes_edit></div><div class=mes_edit_cancel><img src=img/cancel.png></div><div class=mes_edit_done><img src=img/done.png></div></div><div class=mes_text>" +
-        `</div><div class='mes_bias'>${bias}</div></div></div>`
-    );
+        '<div title=Edit class=mes_edit></div>' +
+        '<div class=mes_edit_cancel><img src=img/cancel.png></div>' +
+        '<div class=mes_edit_done><img src=img/done.png></div>' +
+        '</div>' +
+        '<div class=mes_text></div>' +
+        '</div>' +
+        '<div class="mes_bias">' + bias + '</div>' +
+        '<div class="swipe_right">' +
+        '   <img src="img/swipe_right.png">' +
+        '</div>' +
+        '</div>';
+    if (type !== 'swipe') {
+        $("#chat").append(HTMLForEachMes);
+    }
 
     const newMessage = $(`#chat [mesid="${count_view_mes}"]`);
     newMessage.data("isSystem", isSystem);
@@ -800,57 +814,64 @@ function addOneMessage(mes) {
         newMessage.find(".mes_edit").hide();
     }
 
-    newMessage.find('.avatar img').on('error', function() {
+    newMessage.find('.avatar img').on('error', function () {
         $(this).attr("src", "/img/user-slash-solid.svg");
         $(this).css('filter', 'invert(1)');
     });
 
-    if (!if_typing_text) {
-        //console.log(messageText);
-        $("#chat")
-            .children()
-            .filter('[mesid="' + count_view_mes + '"]')
-            .children(".mes_block")
-            .children(".mes_text")
-            .append(messageText);
-    } else {
-        typeWriter(
-            $("#chat")
-                .children()
-                .filter('[mesid="' + count_view_mes + '"]')
-                .children(".mes_block")
-                .children(".mes_text"),
-            messageText,
-            50,
-            0
-        );
+    //////// swipecode inside addOneMessage - to keep swipes displayed while 
+    // SWIPE BUTTON DISPLAY SHOULD BE HANDLED IN showSwipeButtons/hideSwipeButtons, not here. Commented out duplicate code.
+
+    //console.log('addOneMessage -- type = '+type);                                   
+    if (type === 'swipe') {
+        //console.log('addOneMessage -- detected adding one swipe message')
+        $("#chat").children().filter('[mesid="' + (count_view_mes - 1) + '"]').children('.mes_block').children('.mes_text').html('');
+        $("#chat").children().filter('[mesid="' + (count_view_mes - 1) + '"]').children('.mes_block').children('.mes_text').append(messageText);
+
+        /*                 if(mes['swipe_id'] !== 0 && swipes){
+                            console.log('addOneMessage -- swipe_id is not 0, adding both buttons');
+                            $("#chat").children().filter('[mesid="'+(count_view_mes-1)+'"]').children('.swipe_right').css('display', 'flex');
+                            $("#chat").children().filter('[mesid="'+(count_view_mes-1)+'"]').children('.swipe_left').css('display', 'flex');
+                        } */
+    } else { //if this is not a display of a new swipe message..
+        //console.log('addOneMessage -- adding message');
+        $("#chat").children().filter('[mesid="' + count_view_mes + '"]').children('.mes_block').children('.mes_text').append(messageText);
+        //console.log('addOneMessage - hiding swipe buttons');
+        hideSwipeButtons();     //disabling this leaves buttons visibile on all messages, breaks swipes
+        //console.log('addOneMessage -- checking for swipes'); 
+        /* if(parseInt(chat.length-1) === parseInt(count_view_mes) && !mes['is_user'] && swipes){
+            console.log('chat length - 1 = '+(chat[chat.length-1]['mesid']));
+            if(chat[chat.length-1]['mesid'] !==undefined){ 
+                    if(mes['swipe_id'] === undefined && count_view_mes !== 0){
+                        console.log('addOneMessage -- no swipes here, showing right button for possible generation');
+                        $("#chat").children().filter('[mesid="'+(count_view_mes)+'"]').children('.swipe_right').css('display', 'flex');
+                    }else if(mes['swipe_id'] !== undefined){ // if swipes aren't undefined == swipes exist at this node
+                        console.log('addOneMessage -- found swipes')
+                        if(mes['swipe_id'] === 0){ //if we are viewing the first swipe message, display right
+                            console.log('addOneMessage -- found lone swipe, displaying right button');
+                            $("#chat").children().filter('[mesid="'+(count_view_mes)+'"]').children('.swipe_right').css('display', 'flex');
+                        }else { // if swipe_id is more than 0, than means we must have multiple swipes, so show both items
+                            console.log('addOneMessage -- found multiple swipes, showing both buttons');
+                            $("#chat").children().filter('[mesid="'+(count_view_mes)+'"]').children('.swipe_right').css('display', 'flex');
+                            $("#chat").children().filter('[mesid="'+(count_view_mes)+'"]').children('.swipe_left').css('display', 'flex');
+                        }
+                    }
+                }
+        }else{console.log('apparently no swipes found, and not a valid mesage to add hideSwipeButtons, so skipping');} */
+        count_view_mes++;
     }
-    count_view_mes++;
-    //console.log('add mes without animation = '+add_mes_without_animation);
-    //console.log(!add_mes_without_animation);
-    if (!add_mes_without_animation) {
-        console.log('adding mes with animation')
-        //$('#chat').children().last().css('transition','all 2s ease-in-out');
-        $('#chat').children().last().css("opacity", "1");
-        //$('#chat').children().last().css('transition','all 2s ease-in-out');
+    /* } */
+    // if(type !== 'swipe'){count_view_mes++;}
 
 
-    }else {
-        console.log('add mes with animation was false, and is set to false again')
-        add_mes_without_animation = false;
-    }
     var $textchat = $("#chat");
+    $('#chat .mes').last().addClass('last_mes');
+    $('#chat .mes').eq(-2).removeClass('last_mes');
     //$('#chat').children().last().css("opacity", "1");
     $textchat.scrollTop(($textchat[0].scrollHeight));
-}
 
-function typeWriter(target, text, speed, i) {
-    if (i < text.length) {
-        //target.append(text.charAt(i));
-        target.html(target.html() + text.charAt(i));
-        i++;
-        setTimeout(() => typeWriter(target, text, speed, i), speed);
-    }
+    hideSwipeButtons(); //disabling this prevents left button from correctly removing on last message without swipe to the left...
+    showSwipeButtons();
 }
 
 function newMesPattern(name) {
@@ -886,6 +907,7 @@ function sendSystemMessage(type, text) {
     }
 
     chat.push(newMessage);
+    console.log('sendSystemMessage calls addOneMessage');
     addOneMessage(newMessage);
     is_send_press = false;
 }
@@ -912,6 +934,7 @@ function extractMessageBias(message) {
 
 async function Generate(type, automatic_trigger) {
     //encode("dsfs").length
+    console.log('Generate entered');
     tokens_already_generated = 0;
     message_already_generated = name2 + ": ";
 
@@ -942,15 +965,14 @@ async function Generate(type, automatic_trigger) {
             if (chat[chat.length - 1]["is_user"]) {
                 //If last message from You
             } else {
-                //console.log('about to remove last msg')
                 chat.length = chat.length - 1;
                 count_view_mes -= 1;
                 //$('#chat').children().last().css({'transition':'all 0.5s ease-in-out'});
                 //$('#chat').children().last().css({'transform':'translateX(100vh) scale(0.1,0.1)'});
                 //$('#chat').children().last().css({'opacity':'0'});
-                setTimeout(function(){
+                setTimeout(function () {
                     $('#chat').children().last().remove();
-               },1000);
+                }, 1000);
             }
         }
 
@@ -982,9 +1004,11 @@ async function Generate(type, automatic_trigger) {
         var topAnchorDepth = 8;
 
         if (character_anchor && !is_pygmalion) {
+            console.log('saw not pyg');
             if (anchor_order === 0) {
                 anchorTop = name2 + " " + postAnchorChar;
             } else {
+                console.log('saw pyg, adding anchors')
                 anchorBottom = "[" + name2 + " " + postAnchorChar + "]";
             }
         }
@@ -1009,100 +1033,72 @@ async function Generate(type, automatic_trigger) {
             chat[chat.length - 1]["extra"] = {};
 
             if (messageBias) {
+                console.log('checking bias');
                 chat[chat.length - 1]["extra"]["bias"] = messageBias;
             }
 
+            console.log('Generate calls addOneMessage');
             addOneMessage(chat[chat.length - 1]);
         }
         var chatString = "";
         var arrMes = [];
         var mesSend = [];
-        var charDescription = $.trim(characters[this_chid].description);
-        var charPersonality = $.trim(characters[this_chid].personality);
-        var Scenario = $.trim(characters[this_chid].scenario);
-        var mesExamples = $.trim(characters[this_chid].mes_example);
-        var checkMesExample = $.trim(mesExamples.replace(/<START>/gi, "")); //for check length without tag
-        if (checkMesExample.length == 0) mesExamples = "";
         var mesExamplesArray = [];
-        //***Base replace***
-        if (mesExamples !== undefined) {
-            if (mesExamples.length > 0) {
+        var charDescription = baseChatReplaceAndSplit($.trim(characters[this_chid].description), name1, name2);
+        var charPersonality = baseChatReplaceAndSplit($.trim(characters[this_chid].personality), name1, name2);
+        var Scenario = baseChatReplaceAndSplit($.trim(characters[this_chid].scenario), name1, name2);
+        var mesExamples = baseChatReplaceAndSplit($.trim(characters[this_chid].mes_example.replace(/<START>/gi, '')), name1, name2);
+
+        function baseChatReplaceAndSplit(value, name1, name2) {
+            if (value !== undefined && value.length > 0) {
                 if (is_pygmalion) {
-                    mesExamples = mesExamples.replace(/{{user}}:/gi, "You:");
-                    mesExamples = mesExamples.replace(/<USER>:/gi, "You:");
+                    value = value.replace(/{{user}}:/gi, "You:");
+                    value = value.replace(/<USER>:/gi, "You:");
                 }
-                mesExamples = mesExamples.replace(/{{user}}/gi, name1);
-                mesExamples = mesExamples.replace(/{{char}}/gi, name2);
-                mesExamples = mesExamples.replace(/<USER>/gi, name1);
-                mesExamples = mesExamples.replace(/<BOT>/gi, name2);
-                //mesExamples = mesExamples.replaceAll('<START>', '[An example of how '+name2+' responds]');
-                let blocks = mesExamples.split(/<START>/gi);
-                mesExamplesArray = blocks
-                    .slice(1)
-                    .map((block) => `<START>\n${block.trim()}\n`);
+                value = value.replace(/{{user}}/gi, name1);
+                value = value.replace(/{{char}}/gi, name2);
+                value = value.replace(/<USER>/gi, name1);
+                value = value.replace(/<BOT>/gi, name2);
+                let blocks = value.split(/<START>/gi);
+                return blocks.slice(1).map(block => `<START>\n${block.trim()}\n`).join('');
             }
+            return value;
         }
-        if (charDescription !== undefined) {
-            if (charDescription.length > 0) {
-                charDescription = charDescription.replace(/{{user}}/gi, name1);
-                charDescription = charDescription.replace(/{{char}}/gi, name2);
-                charDescription = charDescription.replace(/<USER>/gi, name1);
-                charDescription = charDescription.replace(/<BOT>/gi, name2);
+
+        function appendToStoryString(value, prefix) {
+            if (value !== undefined && value.length > 0) {
+                return prefix + value + '\n';
             }
-        }
-        if (charPersonality !== undefined) {
-            if (charPersonality.length > 0) {
-                charPersonality = charPersonality.replace(/{{user}}/gi, name1);
-                charPersonality = charPersonality.replace(/{{char}}/gi, name2);
-                charPersonality = charPersonality.replace(/<USER>/gi, name1);
-                charPersonality = charPersonality.replace(/<BOT>/gi, name2);
-            }
-        }
-        if (Scenario !== undefined) {
-            if (Scenario.length > 0) {
-                Scenario = Scenario.replace(/{{user}}/gi, name1);
-                Scenario = Scenario.replace(/{{char}}/gi, name2);
-                Scenario = Scenario.replace(/<USER>/gi, name1);
-                Scenario = Scenario.replace(/<BOT>/gi, name2);
-            }
+            return '';
         }
 
         if (is_pygmalion) {
-            if (charDescription.length > 0) {
-                storyString = name2 + "'s Persona: " + charDescription + "\n";
-            }
-            if (charPersonality.length > 0) {
-                storyString += "Personality: " + charPersonality + "\n";
-            }
-            if (Scenario.length > 0) {
-                storyString += "Scenario: " + Scenario + "\n";
-            }
+            storyString += appendToStoryString(charDescription, name2 + "'s Persona: ");
+            storyString += appendToStoryString(charPersonality, 'Personality: ');
+            storyString += appendToStoryString(Scenario, 'Scenario: ');
         } else {
             if (charDescription !== undefined) {
                 if (charPersonality.length > 0) {
-                    charPersonality = name2 + "'s personality: " + charPersonality; //"["+name2+"'s personality: "+charPersonality+"]";
-                }
-            }
-            if (charDescription !== undefined) {
-                if ($.trim(charDescription).length > 0) {
-                    if (
-                        charDescription.slice(-1) !== "]" ||
-                        charDescription.substr(0, 1) !== "["
-                    ) {
-                        //charDescription = '['+charDescription+']';
-                    }
-                    storyString += charDescription + "\n";
+                    charPersonality = name2 + "'s personality: " + charPersonality;
                 }
             }
 
+            storyString += appendToStoryString(charDescription, '');
+
+            if (storyString.endsWith('\n')) {
+                storyString = storyString.slice(0, -1);
+            }
+
             if (count_view_mes < topAnchorDepth) {
-                storyString += charPersonality + "\n";
+                storyString += '\n' + appendToStoryString(charPersonality, '');
             }
         }
 
         var count_exm_add = 0;
+        console.log('emptying chat2');
         var chat2 = [];
         var j = 0;
+        console.log('pre-replace chat.length = ' + chat.length);
         for (var i = chat.length - 1; i >= 0; i--) {
             if (j == 0) {
                 chat[j]["mes"] = chat[j]["mes"].replace(/{{user}}/gi, name1);
@@ -1129,6 +1125,7 @@ async function Generate(type, automatic_trigger) {
             chat2[i] = (chat2[i] ?? "").replace(/{([^}]+)}/g, "");
             j++;
         }
+        console.log('post replace chat.length = ' + chat.length);
         //chat2 = chat2.reverse();
         var this_max_context = 1487;
         if (main_api == "kobold") this_max_context = max_context;
@@ -1146,6 +1143,16 @@ async function Generate(type, automatic_trigger) {
         let { worldInfoString, worldInfoBefore, worldInfoAfter } = getWorldInfoPrompt(chat2);
 
         let extension_prompt = getExtensionPrompt();
+
+        /////////////////////// swipecode
+        if (type == 'swipe') {
+
+            console.log('pre swipe shift: ' + chat2.length);
+            console.log('shifting swipe chat2');
+            chat2.shift();
+
+        }
+        console.log('post swipe shift:' + chat2.length);
 
         var i = 0;
 
@@ -1173,6 +1180,7 @@ async function Generate(type, automatic_trigger) {
                 //if (is_pygmalion && i == chat2.length-1) item='<START>\n'+item;
                 arrMes[arrMes.length] = item;
             } else {
+                console.log('reducing chat.length by 1');
                 i = chat.length - 1;
             }
             await delay(1); //For disable slow down (encode gpt-2 need fix)
@@ -1183,6 +1191,7 @@ async function Generate(type, automatic_trigger) {
                 let mesExmString = "";
                 for (let iii = 0; iii < mesExamplesArray.length; iii++) {
                     //mesExamplesArray It need to make from end to start
+                    console.log('checking prompt tokens');
                     mesExmString = mesExmString + mesExamplesArray[iii];
                     if (
                         encode(
@@ -1233,8 +1242,10 @@ async function Generate(type, automatic_trigger) {
         }
 
         function runGenerate(cycleGenerationPromt = "") {
+            console.log('rungenerate entered');
             generatedPromtCache += cycleGenerationPromt;
             if (generatedPromtCache.length == 0) {
+                console.log('generating prompt');
                 chatString = "";
                 arrMes = arrMes.reverse();
                 var is_add_personality = false;
@@ -1389,6 +1400,8 @@ async function Generate(type, automatic_trigger) {
                 generatedPromtCache +
                 promptBias;
             finalPromt = finalPromt.replace(/\r/gm, "");
+            console.log('final prompt decided');
+
 
             //if we aren't using the kobold GUI settings...
             if (
@@ -1621,42 +1634,77 @@ async function Generate(type, automatic_trigger) {
                         if (type === "force_name2") this_mes_is_name = true;
                         //getMessage = getMessage.replace(/^\s+/g, '');
                         if (getMessage.length > 0) {
-                            chat[chat.length] = {};
-                            chat[chat.length - 1]["name"] = name2;
-                            chat[chat.length - 1]["is_user"] = false;
-                            chat[chat.length - 1]["is_name"] = this_mes_is_name;
-                            chat[chat.length - 1]["send_date"] = humanizedDateTime();
-                            getMessage = $.trim(getMessage);
-                            chat[chat.length - 1]["mes"] = getMessage;
+                            if (chat[chat.length - 1]['swipe_id'] === undefined ||
+                                chat[chat.length - 1]['is_user']) { type = 'normal'; }
+                            if (type === 'swipe') {
 
-                            if (selected_group) {
-                                let avatarImg = default_avatar;
-                                if (characters[this_chid].avatar != "none") {
-                                    avatarImg = `characters/${characters[this_chid].avatar}?${Date.now()}`;
+                                chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipes'].length] = getMessage;
+                                if (chat[chat.length - 1]['swipe_id'] === chat[chat.length - 1]['swipes'].length - 1) {
+                                    //console.log(getMessage);
+                                    chat[chat.length - 1]['mes'] = getMessage;
+                                    console.log('runGenerate calls addOneMessage for swipe');
+                                    addOneMessage(chat[chat.length - 1], 'swipe');
+                                } else {
+                                    chat[chat.length - 1]['mes'] = getMessage;
                                 }
-                                chat[chat.length - 1]["is_name"] = true;
-                                chat[chat.length - 1]["force_avatar"] = avatarImg;
-                            }
-
-                            addOneMessage(chat[chat.length - 1]);
-                            $("#send_but").css("display", "inline");
-                            $("#loading_mes").css("display", "none");
-
-                            if (selected_group) {
-                                saveGroupChat(selected_group);
+                                is_send_press = false;
                             } else {
-                                saveChat();
+                                console.log('entering chat update routine for non-swipe post');
+                                is_send_press = false;
+                                chat[chat.length] = {};
+                                chat[chat.length - 1]["name"] = name2;
+                                chat[chat.length - 1]["is_user"] = false;
+                                chat[chat.length - 1]["is_name"] = this_mes_is_name;
+                                chat[chat.length - 1]["send_date"] = humanizedDateTime();
+                                getMessage = $.trim(getMessage);
+                                chat[chat.length - 1]["mes"] = getMessage;
+
+                                if (selected_group) {
+                                    console.log('entering chat update for groups');
+                                    let avatarImg = default_avatar;
+                                    if (characters[this_chid].avatar != "none") {
+                                        avatarImg = `characters/${characters[this_chid].avatar}?${Date.now()}`;
+                                    }
+                                    chat[chat.length - 1]["is_name"] = true;
+                                    chat[chat.length - 1]["force_avatar"] = avatarImg;
+                                }
+
+                                console.log('runGenerate calls addOneMessage');
+                                addOneMessage(chat[chat.length - 1]);
+                                console.log('should hide loading mes and return with send button now');
+                                $("#send_but").css("display", "inline");
+                                $("#loading_mes").css("display", "none");
+
+                                if (selected_group) {
+                                    saveGroupChat(selected_group);
+                                } /*else {
+                                    saveChat();
+                                }*/
+                                //console.log('/savechat called by /Generate');
+                                //let final_message_length = encode(JSON.stringify(getMessage)).length;
+                                //console.log('AI Response: +'+getMessage+ '('+final_message_length+' tokens)');
                             }
-                            //console.log('/savechat called by /Generate');
-                            //let final_message_length = encode(JSON.stringify(getMessage)).length;
-                            //console.log('AI Response: +'+getMessage+ '('+final_message_length+' tokens)');
-                        } else {
+                        }
+                        else {
                             Generate("force_name2");
                         }
                     } else {
+                        console.log('final re-setting of send button due to error');
                         $("#send_but").css("display", "inline");
                         $("#loading_mes").css("display", "none");
+                        showSwipeButtons();
                     }
+
+                    console.log('/savechat called by /Generate');
+                    saveChat();
+                    //let final_message_length = encode(JSON.stringify(getMessage)).length;
+                    //console.log('AI Response: +'+getMessage+ '('+final_message_length+' tokens)');
+
+                    $("#send_but").css("display", "inline");
+                    console.log('attempting to show swipes');
+                    showSwipeButtons();
+
+                    $("#loading_mes").css("display", "none");
                 },
                 error: function (jqXHR, exception) {
                     $("#send_textarea").removeAttr("disabled");
@@ -1758,10 +1806,13 @@ async function saveChat() {
             alert('Trying to save group chat with regular saveChat function. Aborting to prevent corruption.');
             throw new Error('Group chat saved from saveChat');
         }
-        if (item["is_user"]) {
-            var str = item["mes"].replace(name1 + ":", default_user_name + ":");
-            chat[i]["mes"] = str;
-            chat[i]["name"] = default_user_name;
+        if (item.is_user) {
+            var str = item.mes.replace(`${name1}:`, `${default_user_name}:`);
+            chat[i].mes = str;
+            chat[i].name = default_user_name;
+        } else if (i !== chat.length - 1 && chat[i].swipe_id !== undefined) {
+            delete chat[i].swipes;
+            delete chat[i].swipe_id;
         }
     });
     var save_chat = [
@@ -1836,12 +1887,8 @@ async function getChat() {
             //console.log(data);
             //chat.length = 0;
             if (data[0] !== undefined) {
-                for (let key in data) {
-                    chat.push(data[key]);
-                }
-                //chat =  data;
-                chat_create_date = chat[0]["create_date"];
-                //console.log('/getchat saw chat_create_date: '+chat_create_date);
+                chat.push(...response);
+                chat_create_date = chat[0]['create_date'];
                 chat.shift();
             } else {
                 chat_create_date = humanizedDateTime();
@@ -1860,25 +1907,22 @@ async function getChat() {
 function getChatResult() {
     name2 = characters[this_chid].name;
     if (chat.length > 1) {
-        chat.forEach(function (item, i) {
+        for (let i = 0; i < chat.length; i++) {
+            const item = chat[i];
             if (item["is_user"]) {
-                var str = item["mes"].replace(default_user_name + ":", name1 + ":");
-                chat[i]["mes"] = str;
-                chat[i]["name"] = name1;
+                item['mes'] = item['mes'].replace(default_user_name + ':', name1 + ':');
+                item['name'] = name1;
             }
-        });
-    } else {
-        //console.log(characters[this_chid].first_mes);
-        chat[0] = {};
-        chat[0]["name"] = name2;
-        chat[0]["is_user"] = false;
-        chat[0]["is_name"] = true;
-        chat[0]["send_date"] = humanizedDateTime();
-        if (characters[this_chid].first_mes != "") {
-            chat[0]["mes"] = characters[this_chid].first_mes;
-        } else {
-            chat[0]["mes"] = default_ch_mes;
         }
+    } else {
+        const firstMes = characters[this_chid].first_mes || default_ch_mes;
+        chat[0] = {
+            name: name2,
+            is_user: false,
+            is_name: true,
+            send_date: humanizedDateTime(),
+            mes: firstMes
+        };
     }
     printMessages();
     select_selected_character(this_chid);
@@ -2104,6 +2148,12 @@ async function getSettings(type) {
                 $("#rep_pen_size").val(rep_pen_size);
                 $("#rep_pen_size_counter").html(rep_pen_size + " Tokens");
 
+                swipes = !!settings.swipes;  //// swipecode
+                $('#swipes-checkbox').prop('checked', swipes); /// swipecode
+                console.log('getSettings -- swipes = ' + swipes + '. toggling box');
+                hideSwipeButtons();
+                showSwipeButtons();
+
                 //Novel
                 temp_novel = settings.temp_novel;
                 rep_pen_novel = settings.rep_pen_novel;
@@ -2265,6 +2315,7 @@ async function saveSettings(type) {
             world_info_budget: world_info_budget,
             active_character: active_character,
             textgenerationwebui_settings: textgenerationwebui_settings,
+            swipes: swipes,
         }),
         beforeSend: function () {
             //console.log('saveSettings() -- active_character -- '+active_character);
@@ -2520,7 +2571,7 @@ function selectRightMenuWithAnimation(selectedMenuId) {
 function setRightTabSelectedClass(selectedButtonId) {
     document.querySelectorAll('#right-nav-panel-tabs .right_menu_button').forEach((button) => {
         button.classList.remove('selected-right-tab');
-        
+
         if (selectedButtonId && selectedButtonId.replace('#', '') === button.id) {
             button.classList.add('selected-right-tab');
         }
@@ -2771,6 +2822,238 @@ window["TavernAI"].getContext = function () {
 
 $(document).ready(function () {
 
+    $('#swipes-checkbox').change(function () {
+        console.log('detected swipes-checkbox changed values')
+        swipes = !!$('#swipes-checkbox').prop('checked');
+        if (swipes) {
+            showSwipeButtons();
+        } else {
+            hideSwipeButtons();
+        }
+    });
+
+    ///// SWIPE BUTTON CLICKS ///////
+
+    $(document).on('click', '.swipe_right', function () {               //when we click swipe right button
+        const swipe_duration = 120;
+        const swipe_range = 700;
+        //console.log(swipe_range);
+        let run_generate = false;
+        let run_swipe_right = false;
+        if (chat[chat.length - 1]['swipe_id'] === undefined) {              // if there is no swipe-message in the last spot of the chat array
+            chat[chat.length - 1]['swipe_id'] = 0;                        // set it to id 0
+            chat[chat.length - 1]['swipes'] = [];                         // empty the array
+            chat[chat.length - 1]['swipes'][0] = chat[chat.length - 1]['mes'];  //assign swipe array with last message from chat
+        }
+        chat[chat.length - 1]['swipe_id']++;                                      //make new slot in array
+        //console.log(chat[chat.length-1]['swipes']);
+        if (parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length) {     //if swipe id of last message is the same as the length of the 'swipes' array
+            run_generate = true;
+        } else if (parseInt(chat[chat.length - 1]['swipe_id']) < chat[chat.length - 1]['swipes'].length) { //otherwise, if the id is less than the number of swipes
+            chat[chat.length - 1]['mes'] = chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipe_id']]; //load the last mes box with the latest generation
+            run_swipe_right = true; //then swipe
+        }
+
+        if (chat[chat.length - 1]['swipe_id'] > chat[chat.length - 1]['swipes'].length) { //if we swipe right while generating (the swipe ID is greater than what we are viewing now)
+            chat[chat.length - 1]['swipe_id'] = chat[chat.length - 1]['swipes'].length; //show that message slot (will be '...' while generating)
+        }
+        if (run_generate) {               //hide swipe arrows while generating
+            $(this).css('display', 'none');
+
+        }
+        if (run_generate || run_swipe_right) {                // handles animated transitions when swipe right, specifically height transitions between messages
+
+            let this_mes_div = $(this).parent();
+            let this_mes_block = $(this).parent().children('.mes_block').children('.mes_text');
+            const this_mes_div_height = this_mes_div[0].scrollHeight;
+            const this_mes_block_height = this_mes_block[0].scrollHeight;
+
+            this_mes_div.children('.swipe_left').css('display', 'flex');
+            this_mes_div.children('.mes_block').transition({        // this moves the div back and forth
+                x: '-' + swipe_range,
+                duration: swipe_duration,
+                easing: animation_rm_easing,
+                queue: false,
+                complete: function () {
+
+                    const is_animation_scroll = ($('#chat').scrollTop() >= ($('#chat').prop("scrollHeight") - $('#chat').outerHeight()) - 10);
+                    //console.log(parseInt(chat[chat.length-1]['swipe_id']));
+                    //console.log(chat[chat.length-1]['swipes'].length);
+                    if (run_generate && parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length) {
+                        //console.log('showing ...');
+                        $("#chat").children().filter('[mesid="' + (count_view_mes - 1) + '"]').children('.mes_block').children('.mes_text').html('...');  //shows ... while generating
+                    } else {
+                        //console.log('showing previously generated swipe candidate, or "..."');
+                        addOneMessage(chat[chat.length - 1], 'swipe');
+                    }
+                    let new_height = this_mes_div_height - (this_mes_block_height - this_mes_block[0].scrollHeight);
+                    if (new_height < 103) new_height = 103;
+
+
+                    this_mes_div.animate({ height: new_height + 'px' }, {
+                        duration: 100,
+                        queue: false,
+                        progress: function () {
+                            // Scroll the chat down as the message expands
+                            if (is_animation_scroll) $("#chat").scrollTop($("#chat")[0].scrollHeight);
+                        },
+                        complete: function () {
+                            this_mes_div.css('height', 'auto');
+                            // Scroll the chat down to the bottom once the animation is complete
+                            if (is_animation_scroll) $("#chat").scrollTop($("#chat")[0].scrollHeight);
+                        }
+                    });
+                    this_mes_div.children('.mes_block').transition({
+                        x: swipe_range,
+                        duration: 0,
+                        easing: animation_rm_easing,
+                        queue: false,
+                        complete: function () {
+                            this_mes_div.children('.mes_block').transition({
+                                x: '0px',
+                                duration: swipe_duration,
+                                easing: animation_rm_easing,
+                                queue: false,
+                                complete: function () {
+                                    if (run_generate && !is_send_press && parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length) {
+                                        console.log('caught here 2');
+                                        is_send_press = true;
+                                        Generate('swipe');
+                                    } else {
+                                        if (parseInt(chat[chat.length - 1]['swipe_id']) !== chat[chat.length - 1]['swipes'].length) {
+                                            console.log('caught here 3');
+                                            saveChat();
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+
+            $(this).parent().children('.avatar').transition({ // moves avatar aong with swipe
+                x: '-' + swipe_range,
+                duration: swipe_duration,
+                easing: animation_rm_easing,
+                queue: false,
+                complete: function () {
+                    $(this).parent().children('.avatar').transition({
+                        x: swipe_range,
+                        duration: 0,
+                        easing: animation_rm_easing,
+                        queue: false,
+                        complete: function () {
+                            $(this).parent().children('.avatar').transition({
+                                x: '0px',
+                                duration: swipe_duration,
+                                easing: animation_rm_easing,
+                                queue: false,
+                                complete: function () {
+
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+        }
+
+    });
+
+    $(document).on('click', '.swipe_left', function () {      // when we swipe left..but no generation.
+        const swipe_duration = 120;
+        const swipe_range = '700px';
+        chat[chat.length - 1]['swipe_id']--;
+        if (chat[chat.length - 1]['swipe_id'] >= 0) {           // hide the left arrow if we are viewing the first candidate of the last message block
+            $(this).parent().children('swipe_right_button').css('display', 'flex');
+            if (chat[chat.length - 1]['swipe_id'] === 0) {
+                $(this).css('display', 'none');
+            }
+
+            let this_mes_div = $(this).parent();
+            let this_mes_block = $(this).parent().children('.mes_block').children('.mes_text');
+            const this_mes_div_height = this_mes_div[0].scrollHeight;
+            this_mes_div.css('height', this_mes_div_height);
+            const this_mes_block_height = this_mes_block[0].scrollHeight;
+
+            chat[chat.length - 1]['mes'] = chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipe_id']];
+            $(this).parent().children('.mes_block').transition({
+                x: swipe_range,
+                duration: swipe_duration,
+                easing: animation_rm_easing,
+                queue: false,
+                complete: function () {
+                    const is_animation_scroll = ($('#chat').scrollTop() >= ($('#chat').prop("scrollHeight") - $('#chat').outerHeight()) - 10);
+                    console.log('sipwing left after tr5ansition calls addOneMessage');
+                    addOneMessage(chat[chat.length - 1], 'swipe');
+                    let new_height = this_mes_div_height - (this_mes_block_height - this_mes_block[0].scrollHeight);
+                    if (new_height < 103) new_height = 103;
+                    this_mes_div.animate({ height: new_height + 'px' }, {
+                        duration: 100,
+                        queue: false,
+                        progress: function () {
+                            // Scroll the chat down as the message expands
+
+                            if (is_animation_scroll) $("#chat").scrollTop($("#chat")[0].scrollHeight);
+                        },
+                        complete: function () {
+                            this_mes_div.css('height', 'auto');
+                            // Scroll the chat down to the bottom once the animation is complete
+                            if (is_animation_scroll) $("#chat").scrollTop($("#chat")[0].scrollHeight);
+                        }
+                    });
+                    $(this).parent().children('.mes_block').transition({
+                        x: '-' + swipe_range,
+                        duration: 0,
+                        easing: animation_rm_easing,
+                        queue: false,
+                        complete: function () {
+                            $(this).parent().children('.mes_block').transition({
+                                x: '0px',
+                                duration: swipe_duration,
+                                easing: animation_rm_easing,
+                                queue: false,
+                                complete: function () {
+                                    saveChat();
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+
+            $(this).parent().children('.avatar').transition({
+                x: swipe_range,
+                duration: swipe_duration,
+                easing: animation_rm_easing,
+                queue: false,
+                complete: function () {
+                    $(this).parent().children('.avatar').transition({
+                        x: '-' + swipe_range,
+                        duration: 0,
+                        easing: animation_rm_easing,
+                        queue: false,
+                        complete: function () {
+                            $(this).parent().children('.avatar').transition({
+                                x: '0px',
+                                duration: swipe_duration,
+                                easing: animation_rm_easing,
+                                queue: false,
+                                complete: function () {
+
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+        }
+        if (chat[chat.length - 1]['swipe_id'] < 0) {
+            chat[chat.length - 1]['swipe_id'] = 0;
+        }
+    });
+
     $("#character_search_bar").on("input", function () {
         const selector = ['#rm_print_characters_block .character_select', '#rm_print_characters_block .group_select'].join(',');
         const searchValue = $(this).val().trim().toLowerCase();
@@ -2790,8 +3073,8 @@ $(document).ready(function () {
         window.open("https://boosty.to/tavernai", "_blank");
     });
     $("#send_but").click(function () {
-        //$( "#send_but" ).css({"background": "url('img/load.gif')","background-size": "100%, 100%", "background-position": "center center"});
         if (is_send_press == false) {
+            hideSwipeButtons();
             is_send_press = true;
 
             Generate();
@@ -2806,12 +3089,8 @@ $(document).ready(function () {
     //maybe a way to simulate this would be to disable the eventListener for people iOS.
 
     $("#send_textarea").keydown(function (e) {
-        if (
-            !e.shiftKey &&
-            !e.ctrlKey &&
-            e.key == "Enter" &&
-            is_send_press == false
-        ) {
+        if (!e.shiftKey && !e.ctrlKey && e.key == "Enter" && is_send_press == false) {
+            hideSwipeButtons();
             is_send_press = true;
             e.preventDefault();
             Generate();
@@ -3467,6 +3746,7 @@ $(document).ready(function () {
 
     $("#option_regenerate").click(function () {
         if (is_send_press == false) {
+            hideSwipeButtons();
             is_send_press = true;
             Generate("regenerate");
         }
@@ -3474,6 +3754,7 @@ $(document).ready(function () {
 
     // this function hides the input form, and shows the delete/cancel buttons for deleting messages from chat
     $("#option_delete_mes").click(function () {
+        hideSwipeButtons();
         if (
             (this_chid != undefined && !is_send_press) ||
             (selected_group && !is_group_generating)
@@ -3500,6 +3781,7 @@ $(document).ready(function () {
             $(this).prop("checked", false);
         });
         this_del_mes = 0;
+        showSwipeButtons();
     });
 
     //confirms message delation with the "ok" button
@@ -3528,6 +3810,9 @@ $(document).ready(function () {
             $textchat.scrollTop($textchat[0].scrollHeight);
         }
         this_del_mes = 0;
+        $('#chat .mes').last().addClass('last_mes');
+        $('#chat .mes').eq(-2).removeClass('last_mes');
+        showSwipeButtons();
     });
 
     $("#settings_perset").change(function () {
@@ -3778,6 +4063,16 @@ $(document).ready(function () {
                     .children(".mes_block")
                     .children(".ch_name")
                     .children(".mes_edit_done");
+                if (edit_mes_id == count_view_mes - 1) { //if the generating swipe (...)
+                    if (chat[edit_mes_id]['swipe_id'] !== undefined) {
+                        if (chat[edit_mes_id]['swipes'].length === chat[edit_mes_id]['swipe_id']) {
+                            run_edit = false;
+                        }
+                    }
+                    if (run_edit) {
+                        hideSwipeButtons();
+                    }
+                }   
                 messageEditDone(mes_edited);
             }
             $(this).parent().parent().children(".mes_text").empty();
