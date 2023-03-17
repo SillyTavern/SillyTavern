@@ -1805,6 +1805,7 @@ function openNavToggle() {
 
 function changeMainAPI() {
     const selectedVal = $("#main_api").val();
+    console.log(selectedVal);
     const apiElements = {
         "kobold": {
             apiElem: $("#kobold_api"),
@@ -1829,10 +1830,13 @@ function changeMainAPI() {
     for (const apiName in apiElements) {
         const apiObj = apiElements[apiName];
         const isCurrentApi = selectedVal === apiName;
+        console.log(isCurrentApi);
+        console.log(selectedVal);
         apiObj.apiElem.css("display", isCurrentApi ? "block" : "none");
-        apiObj.maxContextElem.css("display", isCurrentApi && apiName !== "novel" ? "block" : "none");
-        apiObj.amountGenElem.css("display", isCurrentApi && apiName !== "novel" ? "block" : "none");
-        apiObj.softPromptElem.css("display", isCurrentApi && apiName !== "novel" ? "block" : "none");
+
+        if (isCurrentApi && apiName === "kobold") {
+            $("#softprompt_block").css("display", "block");
+        }
 
         if (isCurrentApi && apiName === "textgenerationwebui") {
             apiObj.amountGenElem.children().prop("disabled", false);
