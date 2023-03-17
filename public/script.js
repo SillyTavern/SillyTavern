@@ -70,7 +70,12 @@ const system_messages = {
         "is_user": false,
         "is_system": true,
         "is_name": true,
-        "mes": "Hi there! The following chat formatting commands are supported:<br><ul><li><tt>*text*</tt> – format the actions that your character does</li><li><tt>{*text*}</tt> – set the behavioral bias for your character</li></ul><p>Need more help? Visit our wiki – <a href=\"https://github.com/TavernAI/TavernAI/wiki\">TavernAI Wiki</a>!</p>"
+        "mes": `Hi there! The following chat formatting commands are supported:<br>
+            <ul>
+                <li><tt>*text*</tt> – format the actions that your character does</li>
+                <li><tt>{*text*}</tt> – set the behavioral bias for your character</li>
+            </ul>
+            <p>Need more help? Visit our wiki – <a href=\"https://github.com/TavernAI/TavernAI/wiki\">TavernAI Wiki</a>!</p>`
     },
     'group': {
         "name": systemUserName,
