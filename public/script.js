@@ -1887,7 +1887,7 @@ async function getChat() {
             //console.log(data);
             //chat.length = 0;
             if (data[0] !== undefined) {
-                chat.push(...response);
+                chat.push(...data);
                 chat_create_date = chat[0]['create_date'];
                 chat.shift();
             } else {
