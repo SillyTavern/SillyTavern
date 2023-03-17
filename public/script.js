@@ -1,4 +1,5 @@
 import { humanizedDateTime } from "./scripts/RossAscends-mods.js";
+import { encode, decode } from "../scripts/gpt-2-3-tokenizer/mod.js";
 
 //RossAscends: exporting functions and vars for RA mods. 
 export {
@@ -648,7 +649,23 @@ var token;
         }
     }
     async function setBackground(bg) {
+        /*
+        const response = await fetch("/setbackground", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                    "bg": bg
+                })
 
+        });
+        if (response.ok === true) {
+            //const getData = await response.json();
+            //background = getData;
+
+            //var aa = JSON.parse(getData[0]);
+            //const load_ch_coint = Object.getOwnPropertyNames(getData);
+        }*/
+        //console.log(bg);
         jQuery.ajax({
             type: 'POST', // 
             url: '/setbackground', // 
@@ -663,6 +680,9 @@ var token;
             contentType: "application/json",
             //processData: false, 
             success: function (html) {
+                //setBackground(html);
+                //$('body').css('background-image', 'linear-gradient(rgba(19,21,44,0.75), rgba(19,21,44,0.75)), url('+e.target.result+')');
+                //$("#form_bg_download").after("<div class=bg_example><img bgfile='"+html+"' class=bg_example_img src='backgrounds/"+html+"'><img bgfile='"+html+"' class=bg_example_cross src=img/cross.png></div>");
             },
             error: function (jqXHR, exception) {
                 console.log(exception);
@@ -683,10 +703,20 @@ var token;
 
         });
         if (response.ok === true) {
+            //const getData = await response.json();
+            //background = getData;
+
+            //var aa = JSON.parse(getData[0]);
+            //const load_ch_coint = Object.getOwnPropertyNames(getData);
+
+
         }
     }
     function printMessages() {
+        //console.log(chat);
+        //console.log('printMessages() -- printing messages for -- '+this_chid+' '+active_character+' '+characters[this_chid]);
         chat.forEach(function (item, i, arr) {
+            //console.log('printMessage calls addOneMessage');
             addOneMessage(item);
         });
     }
@@ -797,31 +827,58 @@ var token;
         if (isSystem) {
             newMessage.find('.mes_edit').hide();
         }
-                             
-            if (type === "swipe") {
-              $("#chat")
-                .children()
-                .filter('[mesid="' + (count_view_mes - 1) + '"]')
-                .children(".mes_block")
-                .children(".mes_text")
-                .html("");
-              $("#chat")
-                .children()
-                .filter('[mesid="' + (count_view_mes - 1) + '"]')
-                .children(".mes_block")
-                .children(".mes_text")
-                .append(messageText);
+//////// swipecode inside addOneMessage - to keep swipes displayed while 
+// SWIPE BUTTON DISPLAY SHOULD BE HANDLED IN showSwipeButtons/hideSwipeButtons, not here. Commented out duplicate code.
 
-              count_view_mes++;
+            //console.log('addOneMessage -- type = '+type);                                   
+            if(type === 'swipe'){
+                //console.log('addOneMessage -- detected adding one swipe message')
+                $("#chat").children().filter('[mesid="'+(count_view_mes-1)+'"]').children('.mes_block').children('.mes_text').html('');
+                $("#chat").children().filter('[mesid="'+(count_view_mes-1)+'"]').children('.mes_block').children('.mes_text').append(messageText);
+
+/*                 if(mes['swipe_id'] !== 0 && swipes){
+                    console.log('addOneMessage -- swipe_id is not 0, adding both buttons');
+                    $("#chat").children().filter('[mesid="'+(count_view_mes-1)+'"]').children('.swipe_right').css('display', 'flex');
+                    $("#chat").children().filter('[mesid="'+(count_view_mes-1)+'"]').children('.swipe_left').css('display', 'flex');
+                } */
+            }else{ //if this is not a display of a new swipe message..
+                //console.log('addOneMessage -- adding message');
+                $("#chat").children().filter('[mesid="'+count_view_mes+'"]').children('.mes_block').children('.mes_text').append(messageText);
+                //console.log('addOneMessage - hiding swipe buttons');
+                hideSwipeButtons();     //disabling this leaves buttons visibile on all messages, breaks swipes
+                //console.log('addOneMessage -- checking for swipes'); 
+                /* if(parseInt(chat.length-1) === parseInt(count_view_mes) && !mes['is_user'] && swipes){
+
+                    console.log('chat length - 1 = '+(chat[chat.length-1]['mesid']));
+                    if(chat[chat.length-1]['mesid'] !==undefined){ 
+                            if(mes['swipe_id'] === undefined && count_view_mes !== 0){
+                                console.log('addOneMessage -- no swipes here, showing right button for possible generation');
+                                $("#chat").children().filter('[mesid="'+(count_view_mes)+'"]').children('.swipe_right').css('display', 'flex');
+                            }else if(mes['swipe_id'] !== undefined){ // if swipes aren't undefined == swipes exist at this node
+                                console.log('addOneMessage -- found swipes')
+                                if(mes['swipe_id'] === 0){ //if we are viewing the first swipe message, display right
+                                    console.log('addOneMessage -- found lone swipe, displaying right button');
+                                    $("#chat").children().filter('[mesid="'+(count_view_mes)+'"]').children('.swipe_right').css('display', 'flex');
+                                }else { // if swipe_id is more than 0, than means we must have multiple swipes, so show both items
+                                    console.log('addOneMessage -- found multiple swipes, showing both buttons');
+                                    $("#chat").children().filter('[mesid="'+(count_view_mes)+'"]').children('.swipe_right').css('display', 'flex');
+                                    $("#chat").children().filter('[mesid="'+(count_view_mes)+'"]').children('.swipe_left').css('display', 'flex');
+                                }
+                            }
+                        }
+                }else{console.log('apparently no swipes found, and not a valid mesage to add hideSwipeButtons, so skipping');} */
+                count_view_mes++;
             }
+        /* } */
+       // if(type !== 'swipe'){count_view_mes++;}
 
-            var $textchat = $("#chat");
-            $("#chat .mes").last().addClass("last_mes");
-            $("#chat .mes").eq(-2).removeClass("last_mes");
-            $textchat.scrollTop($textchat[0].scrollHeight);
+        var $textchat = $('#chat');      
+        $('#chat .mes').last().addClass('last_mes');
+        $('#chat .mes').eq(-2).removeClass('last_mes');
+        $textchat.scrollTop($textchat[0].scrollHeight);
 
-            hideSwipeButtons();
-            showSwipeButtons();
+        hideSwipeButtons(); //disabling this prevents left button from correctly removing on last message without swipe to the left...
+        showSwipeButtons();
 
     }
     function substituteParams(content) {
@@ -3039,358 +3096,359 @@ console.log('getGroupChat calls addOneMessage');
         a.download = fileName;
         a.click();
     }
-       // World Info Editor
-       async function showWorldEditor() {
-        if (!world_info) {
-            popup_type = 'default';
-            callPopup('<h3>Select a world info first!</h3>');
-            return;
+
+        // World Info Editor
+        async function showWorldEditor() {
+            if (!world_info) {
+                popup_type = 'default';
+                callPopup('<h3>Select a world info first!</h3>');
+                return;
+            }
+    
+            is_world_edit_open = true;
+            $('#world_popup_name').val(world_info);
+            $('#world_popup').css('display', 'flex');
+            await loadWorldInfoData();
+            displayWorldEntries(world_info_data);
         }
-
-        is_world_edit_open = true;
-        $('#world_popup_name').val(world_info);
-        $('#world_popup').css('display', 'flex');
-        await loadWorldInfoData();
-        displayWorldEntries(world_info_data);
-    }
-
-    async function loadWorldInfoData() {
-        if (!world_info) {
-            return;
-        }
-
-        const response = await fetch("/getworldinfo", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRF-Token": token,
-            },
-            body: JSON.stringify({ name: world_info })
-        });
-
-        if (response.ok) {
-            world_info_data = await response.json();
-        }
-    }
-
-    function hideWorldEditor() {
-        is_world_edit_open = false;
-        $('#world_popup').css('display', 'none');
-    }
-
-    function displayWorldEntries(data) {
-        $('#world_popup_entries_list').empty();
-
-        if (!data || !('entries' in data)) {
-            return;
-        }
-
-        for (const entryUid in data.entries) {
-            const entry = data.entries[entryUid];
-            appendWorldEntry(entry);
-        }
-    }
-
-    function appendWorldEntry(entry) {
-        const template = $('#entry_edit_template .world_entry').clone();
-        template.data('uid', entry.uid);
-
-        // key
-        const keyInput = template.find('textarea[name="key"]');
-        keyInput.data('uid', entry.uid);
-        keyInput.on('input', function () {
-            const uid = $(this).data('uid');
-            const value = $(this).val();
-            $(this).css("height", ""); //reset the height
-            $(this).css("height", $(this).prop('scrollHeight') + "px");
-            world_info_data.entries[uid].key = value.split(',').map(x => x.trim()).filter(x => x);
-            saveWorldInfo();
-        });
-        keyInput.val(entry.key.join(',')).trigger('input');
-        keyInput.css("height", ""); //reset the height
-        keyInput.css("height", $(this).prop('scrollHeight') + "px");
-
-        // keysecondary
-        const keySecondaryInput = template.find('textarea[name="keysecondary"]');
-        keySecondaryInput.data('uid', entry.uid);
-        keySecondaryInput.on('input', function () {
-            const uid = $(this).data('uid');
-            const value = $(this).val();
-            $(this).css("height", ""); //reset the height
-            $(this).css("height", $(this).prop('scrollHeight') + "px");
-            world_info_data.entries[uid].keysecondary = value.split(',').map(x => x.trim()).filter(x => x);
-            saveWorldInfo();
-        });
-        keySecondaryInput.val(entry.keysecondary.join(',')).trigger('input');
-        keySecondaryInput.css("height", ""); //reset the height
-        keySecondaryInput.css("height", $(this).prop('scrollHeight') + "px");
-
-        // comment
-        const commentInput = template.find('textarea[name="comment"]');
-        commentInput.data('uid', entry.uid);
-        commentInput.on('input', function () {
-            const uid = $(this).data('uid');
-            const value = $(this).val();
-            $(this).css("height", ""); //reset the height
-            $(this).css("height", $(this).prop('scrollHeight') + "px");
-            world_info_data.entries[uid].comment = value;
-            saveWorldInfo();
-        });
-        commentInput.val(entry.comment).trigger('input');
-        commentInput.css("height", ""); //reset the height
-        commentInput.css("height", $(this).prop('scrollHeight') + "px");
-
-        // content
-        const contentInput = template.find('textarea[name="content"]');
-        contentInput.data('uid', entry.uid);
-        contentInput.on('input', function () {
-            const uid = $(this).data('uid');
-            const value = $(this).val();
-            world_info_data.entries[uid].content = value;
-            $(this).css("height", ""); //reset the height
-            $(this).css("height", $(this).prop('scrollHeight') + "px");
-            saveWorldInfo();
-
-            // count tokens
-            const numberOfTokens = encode(value).length;
-            $(this).closest('.world_entry').find('.world_entry_form_token_counter').html(numberOfTokens);
-        });
-        contentInput.val(entry.content).trigger('input');
-        contentInput.css("height", ""); //reset the height
-        contentInput.css("height", $(this).prop('scrollHeight') + "px");
-
-        // selective
-        const selectiveInput = template.find('input[name="selective"]');
-        selectiveInput.data('uid', entry.uid);
-        selectiveInput.on('input', function () {
-            const uid = $(this).data('uid');
-            const value = $(this).prop('checked');
-            world_info_data.entries[uid].selective = value;
-            saveWorldInfo();
-
-            const keysecondary = $(this).closest('.world_entry').find('.keysecondary');
-            value ? keysecondary.show() : keysecondary.hide();
-        });
-        selectiveInput.prop('checked', entry.selective).trigger('input');
-        selectiveInput.siblings('.checkbox_fancy').click(function () {
-            $(this).siblings('input').click();
-        });
-
-
-        // constant
-        const constantInput = template.find('input[name="constant"]');
-        constantInput.data('uid', entry.uid);
-        constantInput.on('input', function () {
-            const uid = $(this).data('uid');
-            const value = $(this).prop('checked');
-            world_info_data.entries[uid].constant = value;
-            saveWorldInfo();
-        });
-        constantInput.prop('checked', entry.constant).trigger('input');
-        constantInput.siblings('.checkbox_fancy').click(function () {
-            $(this).siblings('input').click();
-        });
-
-        // order
-        const orderInput = template.find('input[name="order"]');
-        orderInput.data('uid', entry.uid);
-        orderInput.on('input', function () {
-            const uid = $(this).data('uid');
-            const value = Number($(this).val());
-
-            world_info_data.entries[uid].order = !isNaN(value) ? value : 0;
-            saveWorldInfo();
-        });
-        orderInput.val(entry.order).trigger('input');
-
-        // position
-        if (entry.position === undefined) {
-            entry.position = 0;
-        }
-
-        const positionInput = template.find('input[name="position"]');
-        positionInput.data('uid', entry.uid);
-        positionInput.on('input', function () {
-            const uid = $(this).data('uid');
-            const value = Number($(this).val());
-            world_info_data.entries[uid].position = !isNaN(value) ? value : 0;
-            saveWorldInfo();
-        })
-        template.find(`input[name="position"][value=${entry.position}]`).prop('checked', true).trigger('input');
-
-        // display uid
-        template.find('.world_entry_form_uid_value').html(entry.uid);
-
-        // delete button
-        const deleteButton = template.find('input.delete_entry_button');
-        deleteButton.data('uid', entry.uid);
-        deleteButton.on('click', function () {
-            const uid = $(this).data('uid');
-            deleteWorldInfoEntry(uid);
-            $(this).closest('.world_entry').remove();
-            saveWorldInfo();
-        });
-
-        template.appendTo('#world_popup_entries_list');
-        return template;
-    }
-
-    async function deleteWorldInfoEntry(uid) {
-        if (!world_info_data || !('entries' in world_info_data)) {
-            return;
-        }
-
-        delete world_info_data.entries[uid];
-    }
-
-    function createWorldInfoEntry() {
-        const newEntryTemplate = {
-            key: [],
-            keysecondary: [],
-            comment: '',
-            content: '',
-            constant: false,
-            selective: false,
-            order: 100,
-            position: 0,
-        };
-        const newUid = getFreeWorldEntryUid();
-
-        if (!Number.isInteger(newUid)) {
-            console.error("Couldn't assign UID to a new entry");
-            return;
-        }
-
-        const newEntry = { uid: newUid, ...newEntryTemplate };
-        world_info_data.entries[newUid] = newEntry;
-
-        const entryTemplate = appendWorldEntry(newEntry);
-        entryTemplate.get(0).scrollIntoView({ behavior: 'smooth' });
-    }
-
-    async function saveWorldInfo(immediately) {
-        if (!world_info || !world_info_data) {
-            return;
-        }
-
-        async function _save() {
-            const response = await fetch("/editworldinfo", {
+    
+        async function loadWorldInfoData() {
+            if (!world_info) {
+                return;
+            }
+    
+            const response = await fetch("/getworldinfo", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     "X-CSRF-Token": token,
                 },
-                body: JSON.stringify({ name: world_info, data: world_info_data })
+                body: JSON.stringify({ name: world_info })
             });
+    
+            if (response.ok) {
+                world_info_data = await response.json();
+            }
         }
-
-        if (immediately) {
-            return await _save();
+    
+        function hideWorldEditor() {
+            is_world_edit_open = false;
+            $('#world_popup').css('display', 'none');
         }
-
-        clearTimeout(timerWorldSave);
-        timerWorldSave = setTimeout(async () => await _save(), durationSaveEdit);
-    }
-
-    async function renameWorldInfo() {
-        const oldName = world_info;
-        const newName = $('#world_popup_name').val();
-
-        if (oldName === newName) {
-            return;
+    
+        function displayWorldEntries(data) {
+            $('#world_popup_entries_list').empty();
+    
+            if (!data || !('entries' in data)) {
+                return;
+            }
+    
+            for (const entryUid in data.entries) {
+                const entry = data.entries[entryUid];
+                appendWorldEntry(entry);
+            }
         }
-
-        world_info = newName;
-        await saveWorldInfo(true);
-        await deleteWorldInfo(oldName, newName);
-    }
-
-    async function deleteWorldInfo(worldInfoName, selectWorldName) {
-        if (!world_names.includes(worldInfoName)) {
-            return;
+    
+        function appendWorldEntry(entry) {
+            const template = $('#entry_edit_template .world_entry').clone();
+            template.data('uid', entry.uid);
+    
+            // key
+            const keyInput = template.find('textarea[name="key"]');
+            keyInput.data('uid', entry.uid);
+            keyInput.on('input', function () {
+                const uid = $(this).data('uid');
+                const value = $(this).val();
+                $(this).css("height", ""); //reset the height
+                $(this).css("height", $(this).prop('scrollHeight') + "px");
+                world_info_data.entries[uid].key = value.split(',').map(x => x.trim()).filter(x => x);
+                saveWorldInfo();
+            });
+            keyInput.val(entry.key.join(',')).trigger('input');
+            keyInput.css("height", ""); //reset the height
+            keyInput.css("height", $(this).prop('scrollHeight') + "px");
+    
+            // keysecondary
+            const keySecondaryInput = template.find('textarea[name="keysecondary"]');
+            keySecondaryInput.data('uid', entry.uid);
+            keySecondaryInput.on('input', function () {
+                const uid = $(this).data('uid');
+                const value = $(this).val();
+                $(this).css("height", ""); //reset the height
+                $(this).css("height", $(this).prop('scrollHeight') + "px");
+                world_info_data.entries[uid].keysecondary = value.split(',').map(x => x.trim()).filter(x => x);
+                saveWorldInfo();
+            });
+            keySecondaryInput.val(entry.keysecondary.join(',')).trigger('input');
+            keySecondaryInput.css("height", ""); //reset the height
+            keySecondaryInput.css("height", $(this).prop('scrollHeight') + "px");
+    
+            // comment
+            const commentInput = template.find('textarea[name="comment"]');
+            commentInput.data('uid', entry.uid);
+            commentInput.on('input', function () {
+                const uid = $(this).data('uid');
+                const value = $(this).val();
+                $(this).css("height", ""); //reset the height
+                $(this).css("height", $(this).prop('scrollHeight') + "px");
+                world_info_data.entries[uid].comment = value;
+                saveWorldInfo();
+            });
+            commentInput.val(entry.comment).trigger('input');
+            commentInput.css("height", ""); //reset the height
+            commentInput.css("height", $(this).prop('scrollHeight') + "px");
+    
+            // content
+            const contentInput = template.find('textarea[name="content"]');
+            contentInput.data('uid', entry.uid);
+            contentInput.on('input', function () {
+                const uid = $(this).data('uid');
+                const value = $(this).val();
+                world_info_data.entries[uid].content = value;
+                $(this).css("height", ""); //reset the height
+                $(this).css("height", $(this).prop('scrollHeight') + "px");
+                saveWorldInfo();
+    
+                // count tokens
+                const numberOfTokens = encode(value).length;
+                $(this).closest('.world_entry').find('.world_entry_form_token_counter').html(numberOfTokens);
+            });
+            contentInput.val(entry.content).trigger('input');
+            contentInput.css("height", ""); //reset the height
+            contentInput.css("height", $(this).prop('scrollHeight') + "px");
+    
+            // selective
+            const selectiveInput = template.find('input[name="selective"]');
+            selectiveInput.data('uid', entry.uid);
+            selectiveInput.on('input', function () {
+                const uid = $(this).data('uid');
+                const value = $(this).prop('checked');
+                world_info_data.entries[uid].selective = value;
+                saveWorldInfo();
+    
+                const keysecondary = $(this).closest('.world_entry').find('.keysecondary');
+                value ? keysecondary.show() : keysecondary.hide();
+            });
+            selectiveInput.prop('checked', entry.selective).trigger('input');
+            selectiveInput.siblings('.checkbox_fancy').click(function () {
+                $(this).siblings('input').click();
+            });
+    
+    
+            // constant
+            const constantInput = template.find('input[name="constant"]');
+            constantInput.data('uid', entry.uid);
+            constantInput.on('input', function () {
+                const uid = $(this).data('uid');
+                const value = $(this).prop('checked');
+                world_info_data.entries[uid].constant = value;
+                saveWorldInfo();
+            });
+            constantInput.prop('checked', entry.constant).trigger('input');
+            constantInput.siblings('.checkbox_fancy').click(function () {
+                $(this).siblings('input').click();
+            });
+    
+            // order
+            const orderInput = template.find('input[name="order"]');
+            orderInput.data('uid', entry.uid);
+            orderInput.on('input', function () {
+                const uid = $(this).data('uid');
+                const value = Number($(this).val());
+    
+                world_info_data.entries[uid].order = !isNaN(value) ? value : 0;
+                saveWorldInfo();
+            });
+            orderInput.val(entry.order).trigger('input');
+    
+            // position
+            if (entry.position === undefined) {
+                entry.position = 0;
+            }
+    
+            const positionInput = template.find('input[name="position"]');
+            positionInput.data('uid', entry.uid);
+            positionInput.on('input', function () {
+                const uid = $(this).data('uid');
+                const value = Number($(this).val());
+                world_info_data.entries[uid].position = !isNaN(value) ? value : 0;
+                saveWorldInfo();
+            })
+            template.find(`input[name="position"][value=${entry.position}]`).prop('checked', true).trigger('input');
+    
+            // display uid
+            template.find('.world_entry_form_uid_value').html(entry.uid);
+    
+            // delete button
+            const deleteButton = template.find('input.delete_entry_button');
+            deleteButton.data('uid', entry.uid);
+            deleteButton.on('click', function () {
+                const uid = $(this).data('uid');
+                deleteWorldInfoEntry(uid);
+                $(this).closest('.world_entry').remove();
+                saveWorldInfo();
+            });
+    
+            template.appendTo('#world_popup_entries_list');
+            return template;
         }
-
-        const response = await fetch("/deleteworldinfo", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRF-Token": token,
-            },
-            body: JSON.stringify({ name: worldInfoName })
-        });
-
-        if (response.ok) {
+    
+        async function deleteWorldInfoEntry(uid) {
+            if (!world_info_data || !('entries' in world_info_data)) {
+                return;
+            }
+    
+            delete world_info_data.entries[uid];
+        }
+    
+        function createWorldInfoEntry() {
+            const newEntryTemplate = {
+                key: [],
+                keysecondary: [],
+                comment: '',
+                content: '',
+                constant: false,
+                selective: false,
+                order: 100,
+                position: 0,
+            };
+            const newUid = getFreeWorldEntryUid();
+    
+            if (!Number.isInteger(newUid)) {
+                console.error("Couldn't assign UID to a new entry");
+                return;
+            }
+    
+            const newEntry = { uid: newUid, ...newEntryTemplate };
+            world_info_data.entries[newUid] = newEntry;
+    
+            const entryTemplate = appendWorldEntry(newEntry);
+            entryTemplate.get(0).scrollIntoView({ behavior: 'smooth' });
+        }
+    
+        async function saveWorldInfo(immediately) {
+            if (!world_info || !world_info_data) {
+                return;
+            }
+    
+            async function _save() {
+                const response = await fetch("/editworldinfo", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-Token": token,
+                    },
+                    body: JSON.stringify({ name: world_info, data: world_info_data })
+                });
+            }
+    
+            if (immediately) {
+                return await _save();
+            }
+    
+            clearTimeout(timerWorldSave);
+            timerWorldSave = setTimeout(async () => await _save(), durationSaveEdit);
+        }
+    
+        async function renameWorldInfo() {
+            const oldName = world_info;
+            const newName = $('#world_popup_name').val();
+    
+            if (oldName === newName) {
+                return;
+            }
+    
+            world_info = newName;
+            await saveWorldInfo(true);
+            await deleteWorldInfo(oldName, newName);
+        }
+    
+        async function deleteWorldInfo(worldInfoName, selectWorldName) {
+            if (!world_names.includes(worldInfoName)) {
+                return;
+            }
+    
+            const response = await fetch("/deleteworldinfo", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-Token": token,
+                },
+                body: JSON.stringify({ name: worldInfoName })
+            });
+    
+            if (response.ok) {
+                await updateWorldInfoList();
+    
+                const selectedIndex = world_names.indexOf(selectWorldName);
+                if (selectedIndex !== -1) {
+                    $('#world_info').val(selectedIndex).change();
+                }
+                else {
+                    $('#world_info').val('None').change();
+                }
+    
+                hideWorldEditor();
+            }
+        }
+    
+        function getFreeWorldEntryUid() {
+            if (!world_info_data || !('entries' in world_info_data)) {
+                return null;
+            }
+    
+            const MAX_UID = 1_000_000; // <- should be safe enough :)
+            for (let uid = 0; uid < MAX_UID; uid++) {
+                if (uid in world_info_data.entries) {
+                    continue;
+                }
+                return uid;
+            }
+    
+            return null;
+        }
+    
+        function getFreeWorldName() {
+            const MAX_FREE_NAME = 100_000;
+            for (let index = 1; index < MAX_FREE_NAME; index++) {
+                const newName = `New World (${index})`;
+                if (world_names.includes(newName)) {
+                    continue;
+                }
+                return newName;
+            }
+    
+            return undefined;
+        }
+    
+        async function createNewWorldInfo() {
+            const worldInfoTemplate = { entries: {} };
+            const worldInfoName = getFreeWorldName();
+    
+            if (!worldInfoName) {
+                return;
+            }
+    
+            world_info = worldInfoName;
+            world_info_data = { ...worldInfoTemplate };
+            await saveWorldInfo(true);
             await updateWorldInfoList();
-
-            const selectedIndex = world_names.indexOf(selectWorldName);
+    
+            const selectedIndex = world_names.indexOf(worldInfoName);
             if (selectedIndex !== -1) {
                 $('#world_info').val(selectedIndex).change();
             }
             else {
                 $('#world_info').val('None').change();
             }
-
-            hideWorldEditor();
         }
-    }
-
-    function getFreeWorldEntryUid() {
-        if (!world_info_data || !('entries' in world_info_data)) {
-            return null;
-        }
-
-        const MAX_UID = 1_000_000; // <- should be safe enough :)
-        for (let uid = 0; uid < MAX_UID; uid++) {
-            if (uid in world_info_data.entries) {
-                continue;
-            }
-            return uid;
-        }
-
-        return null;
-    }
-
-    function getFreeWorldName() {
-        const MAX_FREE_NAME = 100_000;
-        for (let index = 1; index < MAX_FREE_NAME; index++) {
-            const newName = `New World (${index})`;
-            if (world_names.includes(newName)) {
-                continue;
-            }
-            return newName;
-        }
-
-        return undefined;
-    }
-
-    async function createNewWorldInfo() {
-        const worldInfoTemplate = { entries: {} };
-        const worldInfoName = getFreeWorldName();
-
-        if (!worldInfoName) {
-            return;
-        }
-
-        world_info = worldInfoName;
-        world_info_data = { ...worldInfoTemplate };
-        await saveWorldInfo(true);
-        await updateWorldInfoList();
-
-        const selectedIndex = world_names.indexOf(worldInfoName);
-        if (selectedIndex !== -1) {
-            $('#world_info').val(selectedIndex).change();
-        }
-        else {
-            $('#world_info').val('None').change();
-        }
-    }
     
 /////////////////////////////////////////////////////////    
 ///////// INTERACTIVE FUNCTIONS AND LISTENERS ///////////
 /////////////////////////////////////////////////////////
 
 
-import { encode, decode } from "../scripts/gpt-2-3-tokenizer/mod.js";
+
 $(document).ready(function () {
 
     $('#swipes-checkbox').change(function() {
