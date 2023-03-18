@@ -1,4 +1,5 @@
 export {
+    collapseNewlines,
     collapse_newlines,
     force_pygmalion_formatting,
 };
@@ -10,6 +11,10 @@ const storage_keys = {
     collapse_newlines: "TavernAI_collapse_newlines",
     force_pygmalion_formatting: "TavernAI_force_pygmalion_formatting",
 };
+
+function collapseNewlines(x) {
+    return x.replaceAll(/\n+/g, "\n");
+}
 
 function loadPowerUserSettings() {
     collapse_newlines = localStorage.getItem(storage_keys.collapse_newlines) == "true";

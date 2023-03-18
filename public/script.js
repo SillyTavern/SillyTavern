@@ -34,6 +34,7 @@ import {
 import {
     force_pygmalion_formatting,
     collapse_newlines,
+    collapseNewlines,
 } from "./scripts/power-user.js";
 
 import { debounce, delay } from "./scripts/utils.js";
@@ -1336,6 +1337,10 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
             }
             finalPromt = worldInfoBefore + storyString + worldInfoAfter + extension_prompt + mesExmString + mesSendString + generatedPromtCache + promptBias;
             finalPromt = finalPromt.replace(/\r/gm, '');
+
+            if (collapse_newlines) {
+                finalPromt = collapseNewlines(finalPromt);
+            }
             //console.log('final prompt decided');
 
             //if we aren't using the kobold GUI settings...
@@ -1493,7 +1498,7 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
                         }
 
                         if (collapse_newlines) {
-                            getMessage = getMessage.replaceAll(/\n+/g, "\n");
+                            getMessage = collapseNewlines(getMessage);
                         }
 
                         //Pygmalion run again													// to make it continue generating so long as it's under max_amount and hasn't signaled

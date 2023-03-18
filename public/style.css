@@ -88,6 +88,10 @@ body {
     text-align: right;
 }
 
+.mes_text br {
+    content: ' ';
+}
+
 .mes_bias {
     display: block;
     font-size: 0.9rem;
