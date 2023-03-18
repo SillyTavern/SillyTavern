@@ -345,8 +345,8 @@
             <form id="form_create" action="javascript:void(null);" method="post" enctype="multipart/form-data">
                 <div id="avatar-and-name-block">
                     <div id="name_div">
-                        <h4>Character Name</h4><br>
-                        <input id="character_name_pole" name="ch_name" class="text_pole" maxlength="120" value=""
+                        <h4>Character Name</h4>
+                        <input id="character_name_pole" name="ch_name" class="text_pole" placeholder="Name this character" maxlength="120" value=""
                             autocomplete="off">
                     </div>
                     <div id="avatar_div" class="avatar_div">
@@ -357,24 +357,35 @@
                             title="Click to select a new avatar for this character">
                             <input type="file" id="add_avatar_button" name="avatar"
                                 accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp">
-                            Change Avatar
+                                📷
                         </label>
+                        <div class="form_create_bottom_buttons_block">
+                            <div id="rm_button_back" class="menu_button">🔙</div>
+                            <div id="advanced_div" class="menu_button" title="Advanced Definitions">🧠</div>
+                            <div id="export_button" class="menu_button" title="Export and Download">💾</div>
+                            <!-- <div id="create_button" class="menu_button" type="submit" title="Create Character">✅</div> -->
+                            <label for="create_button" id="create_button_label" class="menu_button" title="Create Character">
+                                <input type="submit" id="create_button" name="create_button">✅
+                            </label>
+                            <!-- <input id="create_button" class="menu_button" title="Create Character" type="submit" value="✅"> -->
+                            <div id="delete_button" class="menu_button" title="Delete Character" >🗑️</div>
+                        </div>
                     </div>
-                    <div id="result_info" style="width: 100px;">&nbsp;</div>
+                    <div id="result_info"></div>
                 </div>
                 <hr>
-                <div id="description_div" class="margin-bot-10px">
+                <div id="description_div"  class="margin-bot-10px">
                     <h4>Description <a href="/notes/1" class="notes-link" target="_blank"><span
                                 class="note-link-span">?</span></a></h4>
                 </div>
-                <textarea id="description_textarea" class="margin-bot-10px" name="description"
+                <textarea id="description_textarea" placeholder="Describe your character's physical and mental traits here." class="margin-bot-10px" name="description"
                     placeholder=""></textarea>
 
-                <div id="first_message_div" class="margin-bot-10px">
+                <div id="first_message_div"  class="margin-bot-10px">
                     <h4>First message<a href="/notes/3" class="notes-link" target="_blank"><span
                                 class="note-link-span">?</span></a></h4>
                 </div>
-                <textarea id="firstmessage_textarea" class="margin-bot-10px" name="first_mes" placeholder=""></textarea>
+                <textarea id="firstmessage_textarea" placeholder="This will be the first message from the character that starts every chat." class="margin-bot-10px" name="first_mes" placeholder=""></textarea>
 
                 <!-- these divs are invisible and used for server communication purposes -->
                 <div id="hidden-divs">
@@ -397,15 +408,9 @@
                 </div>
                 <!-- now back to normal divs for display purposes-->
 
-                <input id="advanced_div" class="menu_button" type="button" value="Advanced Edit">
+               
 
-                <div class="form_create_bottom_buttons_block">
-                    <div id="rm_button_back" class="menu_button">Go Back</div>
-                    <input id="delete_button" class="menu_button" type="button" value="Delete">
-                    <input id="export_button" class="menu_button" type="button" value="Export">
-                    <input id="create_button" class="menu_button" type="submit" value="Create">
 
-                </div>
 
             </form>
         </div>
@@ -794,13 +799,13 @@
 
         <div id="rm_characters_block" class="right_menu">
             <div class="form_create_bottom_buttons_block">
-                <div id="rm_button_create" class="menu_button">+New Character</div>
-                <div id="character_import_button" class="menu_button">+Import</div>
-                <div id="rm_button_group_chats" class="menu_button">+Group</div>
+                <div id="rm_button_create" title="Create New Character" class="menu_button">+👤</div>
+                <div id="character_import_button" title="Import Character from File" class="menu_button">+📂</div>
+                <div id="rm_button_group_chats" title="Create New Chat Group" class="menu_button">+👨‍👩‍👧‍👦</div>
             </div>
 
             <form id="form_character_search_form" action="javascript:void(null);">
-                <input id="character_search_bar" class="text_pole" type="search" placeholder="Search here..." />
+                <input id="character_search_bar" class="text_pole" type="search" placeholder="Character search..." />
             </form>
             <div id="rm_print_characters_block"></div>
 

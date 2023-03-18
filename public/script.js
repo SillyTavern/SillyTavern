@@ -2500,8 +2500,8 @@ function select_selected_character(chid) {
     //create text poles
     $("#rm_button_back").css("display", "none");
     //$("#character_import_button").css("display", "none");
-    $("#create_button").attr("value", "Save");
-    $("#create_button").css("display", "none");
+    $("#create_button").attr("value", "Save");              // what is the use case for this?
+    $("#create_button_label").css("display", "none");
 
     $("#rm_button_selected_ch").children("h2").text(display_name);
     $("#add_avatar_button").val("");
@@ -2553,7 +2553,7 @@ function select_rm_create() {
     $("#delete_button_div").css("display", "none");
     $("#delete_button").css("display", "none");
     $("#export_button").css("display", "none");
-    $("#create_button").css("display", "block");
+    $("#create_button_label").css("display", "block");
     $("#create_button").attr("value", "Create");
     //RossAscends: commented this out as part of the auto-loading token counter
     //$('#result_info').html('&nbsp;');
@@ -2573,7 +2573,7 @@ function select_rm_create() {
     } else {
         $("#mes_example_textarea").val(create_save_mes_example);
     }
-    $("#avatar_div").css("display", "grid");
+    $("#avatar_div").css("display", "flex");
     $("#avatar_load_preview").attr("src", default_avatar);
     $("#name_div").css("display", "block");
 
@@ -3373,7 +3373,7 @@ $(document).ready(function () {
                     data: formData,
                     beforeSend: function () {
                         $("#create_button").attr("disabled", true);
-                        $("#create_button").attr("value", "Creating...");
+                        $("#create_button").attr("value", "⏳");
                     },
                     cache: false,
                     contentType: false,
@@ -3405,7 +3405,7 @@ $(document).ready(function () {
                             $("#add_avatar_button").val("").clone(true)
                         );
 
-                        $("#create_button").attr("value", "Create");
+                        $("#create_button").attr("value", "✅");
                         if (true) {
                             let oldSelectedChar = null;
                             if (this_chid != undefined && this_chid != "invalid-safety-id") {
