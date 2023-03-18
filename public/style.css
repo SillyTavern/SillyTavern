@@ -181,7 +181,7 @@ code {
     padding-bottom: 0;
     overflow-y: scroll;
     display: flex;
-    flex-wrap: wrap;
+    
     margin-top: 40px;
     bottom: 10px;
     border-bottom: 1px solid var(--black30a);
@@ -193,7 +193,7 @@ code {
     text-shadow: #000 0 0 3px;
     scrollbar-width: thin;
     transition: all 1s ease-in-out;
-    align-content: end;
+    flex-direction: column;
 
     /*old style top to bottom flow*/
 /*     overflow-x: hidden;
@@ -375,7 +375,6 @@ code {
     margin-top: 0;
     width: 100%;
     color: var(--ivory, white);
-    align-self: flex-end;
 
   /*   display: grid;
     grid-template-columns: min-content min-content auto min-content min-content;
