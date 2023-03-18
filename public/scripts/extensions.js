@@ -1,3 +1,4 @@
+import { callPopup } from "../script.js";
 import { isSubsetOf } from "./utils.js";
 export {
     getContext,
@@ -9,7 +10,10 @@ const extensionNames = ['caption', 'dice', 'expressions', 'floating-prompt', 'me
 const manifests = await getManifests(extensionNames);
 const extensions_urlKey = 'extensions_url';
 const extensions_autoConnectKey = 'extensions_autoconnect';
+const extensions_disabledKey = 'extensions_disabled';
+
 let modules = [];
+let disabledExtensions = getDisabledExtensions();
 let activeExtensions = new Set();
 
 const getContext = () => window['TavernAI'].getContext();
@@ -17,6 +21,33 @@ const getApiUrl = () => localStorage.getItem('extensions_url');
 const defaultUrl = "http://localhost:5100";
 const defaultRequestArgs = { method: 'GET', headers: { 'Bypass-Tunnel-Reminder': 'bypass' } };
 let connectedToApi = false;
+
+function getDisabledExtensions() {
+    const value = localStorage.getItem(extensions_disabledKey);
+    return value ? JSON.parse(value) : [];
+}
+
+function onDisableExtensionClick() {
+    const name = $(this).data('name');
+    disableExtension(name);
+}
+
+function onEnableExtensionClick() {
+    const name = $(this).data('name');
+    enableExtension(name);
+}
+
+function enableExtension(name) {
+    disabledExtensions = disabledExtensions.filter(x => x !== name);
+    localStorage.setItem(extensions_disabledKey, JSON.stringify(disabledExtensions));
+    location.reload();
+}
+
+function disableExtension(name) {
+    disabledExtensions.push(name);
+    localStorage.setItem(extensions_disabledKey, JSON.stringify(disabledExtensions));
+    location.reload();
+}
 
 async function getManifests(names) {
     const obj = {};
@@ -45,10 +76,22 @@ async function activateExtensions() {
         // all required modules are active (offline extensions require none)
         if (isSubsetOf(modules, manifest.requires)) {
             try {
-                await addExtensionScript(name, manifest);
-                await addExtensionStyle(name, manifest);
-                activeExtensions.add(name);
-                $('#extensions_list').append(`<li id="${name}">${manifest.display_name}</li>`);
+                const isDisabled = disabledExtensions.includes(name);
+                const li = document.createElement('li');
+
+                if (!isDisabled) {
+                    await addExtensionScript(name, manifest);
+                    await addExtensionStyle(name, manifest);
+                    activeExtensions.add(name);
+                }
+                else {
+                    li.classList.add('disabled');
+                }
+
+                li.id = name;
+                li.innerText = manifest.display_name;
+
+                $('#extensions_list').append(li);
             }
             catch (error) {
                 console.error(`Could not activate extension: ${name}`);
@@ -156,6 +199,32 @@ function addExtensionScript(name, manifest) {
     return Promise.resolve();
 }
 
+function showExtensionsDetails() {
+    let html = '<h3>Modules provided by your Extensions API:</h3>';
+    html += modules.length ? modules.join(', ') : '<p class="failure">Not connected to the API!</p>';
+    html += '<h3>Available extensions:</h3>';
+
+    Object.entries(manifests).sort((a, b) => a[1].loading_order - b[1].loading_order).forEach(extension => {
+        const name = extension[0];
+        const manifest = extension[1];
+        html += `<h4>${manifest.display_name}</h4>`;
+        if (activeExtensions.has(name)) {
+            html += `<p class="success">Extension is active. <a href="javascript:void" data-name="${name}" class="disable_extension">Disable</a></p>`;
+        }
+        else if (disabledExtensions.includes(name)) {
+            html += `<p class="disabled">Extension is disabled. <a href="javascript:void" data-name=${name} class="enable_extension">Enable</a></p>`;
+        }
+        else {
+            const requirements = new Set(manifest.requires);
+            modules.forEach(x => requirements.delete(x));
+            const requirementsString = [...requirements].join(', ');
+            html += `<p>Missing modules: <span class="failure">${requirementsString}</span></p>`
+        }
+    });
+
+    callPopup(`<div class="extensions_info">${html}</div>`, 'text');
+}
+
 $(document).ready(async function () {
     const url = localStorage.getItem(extensions_urlKey) ?? defaultUrl;
     const autoConnect = localStorage.getItem(extensions_autoConnectKey) == 'true';
@@ -163,6 +232,9 @@ $(document).ready(async function () {
     $("#extensions_connect").on('click', connectClickHandler);
     $("#extensions_autoconnect").on('input', autoConnectInputHandler);
     $("#extensions_autoconnect").prop('checked', autoConnect).trigger('input');
+    $("#extensions_details").on('click', showExtensionsDetails);
+    $(document).on('click', '.disable_extension', onDisableExtensionClick);
+    $(document).on('click', '.enable_extension', onEnableExtensionClick);
 
     // Activate offline extensions
     activateExtensions();
