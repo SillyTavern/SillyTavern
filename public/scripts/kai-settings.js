@@ -8,6 +8,9 @@ export {
 };
 
 const kai_settings = {
+    temp: 1,
+    rep_pen: 1,
+    rep_pen_range: 0,
     top_p: 1,
     top_a: 1,
     top_k: 0,
@@ -18,45 +21,79 @@ const kai_settings = {
 
 function loadKoboldSettings(preset) {
     for (const name of Object.keys(kai_settings)) {
-        kai_settings[name] = preset[name];
-        $(`#${name}`).val(kai_settings[name]);
-        $(`#${name}_counter`).text(kai_settings[name]);
+        const value = preset[name];
+
+        if (value === undefined) {
+            continue;
+        }
+
+        const slider = sliders.find(x => x.name === name);
+        const formattedValue = slider.format(value);
+        slider.setValue(preset[name]);
+        $(slider.sliderId).val(preset[name]);
+        $(slider.counterId).text(formattedValue);
     }
 }
 
-// Cohee's TODO: Merge with sliders block in script.js
 const sliders = [
     {
+        name: "temp",
+        sliderId: "#temp",
+        counterId: "#temp_counter",
+        format: (val) => Number(val).toFixed(2),
+        setValue: (val) => { kai_settings.temp = Number(val); },
+    },
+    {
+        name: "rep_pen",
+        sliderId: "#rep_pen",
+        counterId: "#rep_pen_counter",
+        format: (val) => Number(val).toFixed(2),
+        setValue: (val) => { kai_settings.rep_pen = Number(val); },
+    },
+    {
+        name: "rep_pen_range",
+        sliderId: "#rep_pen_range",
+        counterId: "#rep_pen_range_counter",
+        format: (val) => val + " Tokens",
+        setValue: (val) => { kai_settings.rep_pen_range = Number(val); },
+    },
+    {
+        name: "top_p",
         sliderId: "#top_p",
         counterId: "#top_p_counter",
         format: (val) => val,
         setValue: (val) => { kai_settings.top_p = Number(val); },
     },
     {
+        name: "top_a",
         sliderId: "#top_a",
         counterId: "#top_a_counter",
         format: (val) => val,
         setValue: (val) => { kai_settings.top_a = Number(val); },
     },
     {
+        name: "top_k",
         sliderId: "#top_k",
         counterId: "#top_k_counter",
         format: (val) => val,
         setValue: (val) => { kai_settings.top_k = Number(val); },
     },
     {
+        name: "typical",
         sliderId: "#typical",
         counterId: "#typical_counter",
         format: (val) => val,
         setValue: (val) => { kai_settings.typical = Number(val); },
     },
     {
+        name: "tfs",
         sliderId: "#tfs",
         counterId: "#tfs_counter",
         format: (val) => val,
         setValue: (val) => { kai_settings.tfs = Number(val); },
     },
     {
+        name: "rep_pen_slope",
         sliderId: "#rep_pen_slope",
         counterId: "#rep_pen_slope_counter",
         format: (val) => val,
@@ -65,12 +102,6 @@ const sliders = [
 ];
 
 $(document).ready(function () {
-    $('.drawer-toggle').click(function () {
-        var icon = $(this).find('.drawer-icon');
-        icon.toggleClass('down up');
-        $(this).closest('.drawer').find('.drawer-content').slideToggle();
-    });
-
     sliders.forEach(slider => {
         $(document).on("input", slider.sliderId, function () {
             const value = $(this).val();

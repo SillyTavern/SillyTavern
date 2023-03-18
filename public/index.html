@@ -540,9 +540,9 @@
                                     <h4>Repetition Penalty Range</h4>
                                 </div>
                                 <div class="range-block-counter">
-                                    <h5 id="rep_pen_size_counter">select</h5>
+                                    <h5 id="rep_pen_range_counter">select</h5>
                                 </div>
-                                <div class="range-block-range"><input type="range" id="rep_pen_size" name="volume"
+                                <div class="range-block-range"><input type="range" id="rep_pen_range" name="volume"
                                         min="0" max="2048" step="1"></div>
                             </div>
                         </div>
@@ -673,19 +673,26 @@
                         <input type="range" id="rep_pen_size_textgenerationwebui" name="volume" min="0" max="2048"
                             step="1">
 
-                        <h4>Top K</h4>
-                        <h5 id="top_k_counter_textgenerationwebui">select</h5>
-                        <input type="range" id="top_k_textgenerationwebui" name="volume" min="0" max="200" step="1">
-                        <h4>Top P</h4>
-                        <h5 id="top_p_counter_textgenerationwebui">select</h5>
-                        <input type="range" id="top_p_textgenerationwebui" name="volume" min="0" max="1" step="0.1">
-                        <h4>Typical P</h4>
-                        <h5 id="typical_p_counter_textgenerationwebui">select</h5>
-                        <input type="range" id="typical_p_textgenerationwebui" name="volume" min="0" max="1" step="0.1">
-                        <h4>Penalty Alpha</h4>
-                        <h5 id="penalty_alpha_counter_textgenerationwebui">select</h5>
-                        <input type="range" id="penalty_alpha_textgenerationwebui" name="volume" min="0" max="5"
-                            step="0.05" />
+                        <div class="drawer">
+                            <div class="drawer-toggle drawer-header">
+                                <h3>Advanced Settings</h3>
+                                <div class="drawer-icon down"></div>
+                            </div>
+                            <div class="drawer-content">
+                                <h4>Top K</h4>
+                                <h5 id="top_k_counter_textgenerationwebui">select</h5>
+                                <input type="range" id="top_k_textgenerationwebui" name="volume" min="0" max="200" step="1">
+                                <h4>Top P</h4>
+                                <h5 id="top_p_counter_textgenerationwebui">select</h5>
+                                <input type="range" id="top_p_textgenerationwebui" name="volume" min="0" max="1" step="0.1">
+                                <h4>Typical P</h4>
+                                <h5 id="typical_p_counter_textgenerationwebui">select</h5>
+                                <input type="range" id="typical_p_textgenerationwebui" name="volume" min="0" max="1" step="0.1">
+                                <h4>Penalty Alpha</h4>
+                                <h5 id="penalty_alpha_counter_textgenerationwebui">select</h5>
+                                <input type="range" id="penalty_alpha_textgenerationwebui" name="volume" min="0" max="5" step="0.05" />
+                            </div>
+                        </div>
                     </div>
                 </div>
 

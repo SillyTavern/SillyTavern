@@ -235,11 +235,8 @@ var koboldai_settings;
 var koboldai_setting_names;
 var preset_settings = "gui";
 var user_avatar = "you.png";
-var temp = 0.5;
 var amount_gen = 80; //default max length of AI generated responses
 var max_context = 2048;
-var rep_pen = 1;
-var rep_pen_size = 100;
 
 var textgenerationwebui_settings = {
     temp: 0.5,
@@ -1365,7 +1362,7 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
 
             var generate_data;
             if (main_api == 'kobold') {
-                var generate_data = { prompt: finalPromt, gui_settings: true, max_length: amount_gen, temperature: temp, max_context_length: max_context };
+                var generate_data = { prompt: finalPromt, gui_settings: true, max_length: amount_gen, temperature: kai_settings.temp, max_context_length: max_context };
                 if (preset_settings != 'gui') {
 
                     generate_data = {
@@ -1374,10 +1371,10 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
                         sampler_order: this_settings.sampler_order,
                         max_context_length: parseInt(max_context),//this_settings.max_length,
                         max_length: this_amount_gen,//parseInt(amount_gen),
-                        rep_pen: parseFloat(rep_pen),
-                        rep_pen_range: parseInt(rep_pen_size),
+                        rep_pen: parseFloat(kai_settings.rep_pen),
+                        rep_pen_range: parseInt(kai_settings.rep_pen_range),
                         rep_pen_slope: kai_settings.rep_pen_slope,
-                        temperature: parseFloat(temp),
+                        temperature: parseFloat(kai_settings.temp),
                         tfs: kai_settings.tfs,
                         top_a: kai_settings.top_a,
                         top_k: kai_settings.top_k,
@@ -2004,7 +2001,6 @@ async function getSettings(type) {
                 textgenerationwebui_settings =
                     settings.textgenerationwebui_settings || textgenerationwebui_settings;
 
-                temp = settings.temp;
                 amount_gen = settings.amount_gen;
                 if (settings.max_context !== undefined)
                     max_context = parseInt(settings.max_context);
@@ -2014,14 +2010,6 @@ async function getSettings(type) {
                     style_anchor = !!settings.style_anchor;
                 if (settings.character_anchor !== undefined)
                     character_anchor = !!settings.character_anchor;
-
-                rep_pen = settings.rep_pen;
-                rep_pen_size = settings.rep_pen_size;
-
-                var addZeros = "";
-                if (isInt(temp)) addZeros = ".00";
-                $("#temp").val(temp);
-                $("#temp_counter").html(temp + addZeros);
 
                 $("#style_anchor").prop("checked", style_anchor);
                 $("#character_anchor").prop("checked", character_anchor);
@@ -2035,14 +2023,6 @@ async function getSettings(type) {
 
                 $("#amount_gen").val(amount_gen);
                 $("#amount_gen_counter").html(amount_gen + " Tokens");
-
-                addZeros = "";
-                if (isInt(rep_pen)) addZeros = ".00";
-                $("#rep_pen").val(rep_pen);
-                $("#rep_pen_counter").html(rep_pen + addZeros);
-
-                $("#rep_pen_size").val(rep_pen_size);
-                $("#rep_pen_size_counter").html(rep_pen_size + " Tokens");
 
                 swipes = !!settings.swipes;  //// swipecode
                 $('#swipes-checkbox').prop('checked', swipes); /// swipecode
@@ -2058,7 +2038,7 @@ async function getSettings(type) {
                 rep_pen_novel = settings.rep_pen_novel;
                 rep_pen_size_novel = settings.rep_pen_size_novel;
 
-                addZeros = "";
+                let addZeros = "";
                 if (isInt(temp_novel)) addZeros = ".00";
                 $("#temp_novel").val(temp_novel);
                 $("#temp_counter_novel").html(temp_novel + addZeros);
@@ -2181,7 +2161,6 @@ async function saveSettings(type) {
             preset_settings: preset_settings,
             preset_settings_novel: preset_settings_novel,
             user_avatar: user_avatar,
-            temp: temp,
             amount_gen: amount_gen,
             max_context: max_context,
             anchor_order: anchor_order,
@@ -2189,8 +2168,6 @@ async function saveSettings(type) {
             character_anchor: character_anchor,
             main_api: main_api,
             api_key_novel: api_key_novel,
-            rep_pen: rep_pen,
-            rep_pen_size: rep_pen_size,
             model_novel: model_novel,
             temp_novel: temp_novel,
             rep_pen_novel: rep_pen_novel,
@@ -3732,21 +3709,9 @@ $(document).ready(function () {
             const preset = koboldai_settings[koboldai_setting_names[preset_settings]];
             loadKoboldSettings(preset);
 
-            temp = preset.temp;
-            $("#temp").val(temp);
-            $("#temp_counter").html(temp);
-
             amount_gen = preset.genamt;
             $("#amount_gen").val(amount_gen);
             $("#amount_gen_counter").html(amount_gen);
-
-            rep_pen = preset.rep_pen;
-            $("#rep_pen").val(rep_pen);
-            $("#rep_pen_counter").html(rep_pen);
-
-            rep_pen_size = preset.rep_pen_range;
-            $("#rep_pen_size").val(rep_pen_size);
-            $("#rep_pen_size_counter").html(rep_pen_size + " Tokens");
 
             max_context = preset.max_length;
             $("#max_context").val(max_context);
@@ -3858,12 +3823,6 @@ $(document).ready(function () {
 
     const sliders = [
         {
-            sliderId: "#temp",
-            counterId: "#temp_counter",
-            format: (val) => isInt(val) ? val + ".00" : val,
-            setValue: (val) => { temp = Number(val); },
-        },
-        {
             sliderId: "#amount_gen",
             counterId: "#amount_gen_counter",
             format: (val) => val,
@@ -3874,18 +3833,6 @@ $(document).ready(function () {
             counterId: "#max_context_counter",
             format: (val) => val + " Tokens",
             setValue: (val) => { max_context = Number(val); },
-        },
-        {
-            sliderId: "#rep_pen",
-            counterId: "#rep_pen_counter",
-            format: (val) => isInt(val) ? val + ".00" : val,
-            setValue: (val) => { rep_pen = Number(val); },
-        },
-        {
-            sliderId: "#rep_pen_size",
-            counterId: "#rep_pen_size_counter",
-            format: (val) => val + " Tokens",
-            setValue: (val) => { rep_pen_size = Number(val); },
         },
         {
             sliderId: "#temp_novel",
@@ -4255,5 +4202,11 @@ $(document).ready(function () {
         $("#create_button").click();
         $("#shadow_select_chat_popup").css("display", "none");
         $("#load_select_chat_div").css("display", "block");
+    });
+
+    $('.drawer-toggle').click(function () {
+        var icon = $(this).find('.drawer-icon');
+        icon.toggleClass('down up');
+        $(this).closest('.drawer').find('.drawer-content').slideToggle();
     });
 });
