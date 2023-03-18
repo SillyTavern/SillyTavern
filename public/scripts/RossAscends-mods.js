@@ -279,7 +279,8 @@ $("document").ready(function () {
 		var SwipeButR = $('.swipe_right:last');
 		var SwipeTargetMesClassParent = e.target.closest('.last_mes');
 		if (SwipeTargetMesClassParent !== null) {
-			if (SwipeButR.attr('style') == 'display: flex;' == true) {
+			if (SwipeButR.css('display') === 'flex') {
+				//if (SwipeButR.attr('style') == 'display: flex;' == true) {
 				SwipeButR.click();
 			}
 		}
@@ -287,8 +288,10 @@ $("document").ready(function () {
 	document.addEventListener('swiped-right', function (e) {
 		var SwipeButL = $('.swipe_left:last');
 		var SwipeTargetMesClassParent = e.target.closest('.last_mes');
+		//console.log('Touch swipe check -- closest last_mes = "' + (SwipeTargetMesClassParent !== null) + ' Button display = ' + (SwipeButL.attr('style') == 'display: flex;' == true));
 		if (SwipeTargetMesClassParent !== null) {
-			if (SwipeButL.attr('style') == 'display: flex;' == true) {
+			if (SwipeButL.css('display') === 'flex') {
+				//if (SwipeButL.attr('style') == 'display: flex;' == true) {
 				SwipeButL.click();
 			}
 		}

@@ -2709,7 +2709,7 @@ function showSwipeButtons() {
     if (swipeId !== undefined && swipeId != 0) {
         currentMessage.children('.swipe_left').css('display', 'flex');
     }
-    if (is_send_press === false || chat[chat.length - 1].swipes.length > swipeId) {     //only show right when generate is off, or when next right swipe would not make a generate happen
+    if (is_send_press === false || chat[chat.length - 1].swipes.length >= swipeId) {     //only show right when generate is off, or when next right swipe would not make a generate happen
         currentMessage.children('.swipe_right').css('display', 'flex');
         currentMessage.children('.swipe_right').css('opacity', '0.3');
     }
@@ -3024,7 +3024,7 @@ $(document).ready(function () {
     });
     $("#send_but").click(function () {
         if (is_send_press == false) {
-            hideSwipeButtons();
+            //hideSwipeButtons();
             is_send_press = true;
 
             Generate();
@@ -3040,7 +3040,7 @@ $(document).ready(function () {
 
     $("#send_textarea").keydown(function (e) {
         if (!e.shiftKey && !e.ctrlKey && e.key == "Enter" && is_send_press == false) {
-            hideSwipeButtons();
+            //hideSwipeButtons();
             is_send_press = true;
             e.preventDefault();
             Generate();
@@ -3667,7 +3667,7 @@ $(document).ready(function () {
 
         else if (id == "option_regenerate") {
             if (is_send_press == false) {
-                hideSwipeButtons();
+                //hideSwipeButtons();
                 is_send_press = true;
                 Generate("regenerate");
             }

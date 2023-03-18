@@ -363,34 +363,33 @@ code {
 /* SWIPE RELATED STYLES*/
 
 .swipe_right,.swipe_left {
-    height: 30px;
-    width: 30px;
+    height: 40px;
+    width: 40px;
     opacity: 0.36;
     position: absolute;
     right: 15px;
-    margin-top: 62px;
+    margin-top: 60px;
     left: auto;
     background-color: var(--black50a);
-    padding: 20px;
     border-radius: 50%;
     align-items: center;
     justify-content: center;
-    /* display: none; */
     border: 1px solid grey;
+    flex-wrap: wrap;
 }
 
 .swipe_right img, .swipe_left img {
     height: 30px;
+    display: flex;
     width: 30px;
 }
 .swipes-counter{
-display: inline;
-height: 15px;
-width: 30px;
-color: white;
-position: fixed;
-border: 1px solid red;
-font-size: 12px;
+    display: flex;
+    color: white;
+    position: fixed;
+    font-size: 12px;
+    padding: 0;
+    margin-top: 60px;
 }
 
 .swipe_left {
@@ -2631,7 +2630,9 @@ a {
         min-width: 33%;
     }
     /*for debug purposes*/
-    /** {border: 1px solid purple;}*/ 
+/* 
+    * {border: 1px solid purple;}
+     */
 }
 
 @media (max-width: 768px) {
