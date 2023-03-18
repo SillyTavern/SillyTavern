@@ -32,6 +32,7 @@ import {
     selectRightMenuWithAnimation,
     setRightTabSelectedClass,
     default_ch_mes,
+    deleteLastMessage,
 } from "../script.js";
 
 export {
@@ -72,7 +73,17 @@ async function _save(group) {
 
 // Group chats
 async function regenerateGroup() {
-    // placeholder
+    while (chat.length > 0) {
+        const lastMes = chat[chat.length - 1];
+
+        if (lastMes.is_user || lastMes.is_system) {
+            break;
+        }
+
+        deleteLastMessage();
+    }
+
+    generateGroupWrapper();
 }
 
 async function getGroupChat(id) {
@@ -237,7 +248,7 @@ function getGroupAvatar(group) {
 }
 
 
-async function generateGroupWrapper(by_auto_mode) {
+async function generateGroupWrapper(by_auto_mode, type=null) {
     if (online_status === "no_connection") {
         is_group_generating = false;
         setSendButtonState(false);
@@ -271,40 +282,49 @@ async function generateGroupWrapper(by_auto_mode) {
             $("#chat").append(typingIndicator);
         }
 
+        const lastMessage = chat[chat.length - 1];
         let messagesBefore = chat.length;
+        let lastMessageText = lastMessage.mes;
         let activationText = "";
         if (userInput && userInput.length && !by_auto_mode) {
             activationText = userInput;
             messagesBefore++;
         } else {
-            const lastMessage = chat[chat.length - 1];
             if (lastMessage && !lastMessage.is_system) {
                 activationText = lastMessage.mes;
             }
         }
 
-        const activatedMembers = activateMembers(group.members, activationText);
+        const activatedMembers = type !== "swipe" ? activateMembers(group.members, activationText) : activateSwipe(group.members);
         // now the real generation begins: cycle through every character
         for (const chId of activatedMembers) {
+            const generateType = type !== "swipe" ? "group_chat" : "swipe";
             setCharacterId(chId);
             setCharacterName(characters[chId].name)
 
-            await Generate("group_chat", by_auto_mode);
+            await Generate(generateType, by_auto_mode);
 
-            // update indicator and scroll down
-            typingIndicator
-                .find(".typing_indicator_name")
-                .text(characters[chId].name);
-            $("#chat").append(typingIndicator);
-            typingIndicator.show(250, function () {
-                typingIndicator.get(0).scrollIntoView({ behavior: "smooth" });
-            });
+            if (type !== "swipe") {
+                // update indicator and scroll down
+                typingIndicator
+                    .find(".typing_indicator_name")
+                    .text(characters[chId].name);
+                $("#chat").append(typingIndicator);
+                typingIndicator.show(250, function () {
+                    typingIndicator.get(0).scrollIntoView({ behavior: "smooth" });
+                });
+            }
 
             while (true) {
-                // check if message generated already
-                if (chat.length == messagesBefore) {
-                    await delay(10);
-                } else {
+                // if not swipe - check if message generated already
+                if (type !== "swipe" && chat.length == messagesBefore) {
+                    await delay(100);
+                }
+                // if swipe - see if message changed
+                else if (type === "swipe" && lastMessageText === chat[chat.length - 1].mes) {
+                    await delay(100);
+                } 
+                else {
                     messagesBefore++;
                     break;
                 }
@@ -320,6 +340,15 @@ async function generateGroupWrapper(by_auto_mode) {
         setCharacterId(undefined);
         setCharacterName('');
     }
+}
+
+function activateSwipe(members) {
+    const name = chat[chat.length -1].name;
+    const activatedNames = members.includes(name) ? [name] : [];
+    const memberIds = activatedNames
+        .map((x) => characters.findIndex((y) => y.name === x))
+        .filter((x) => x !== -1);
+    return memberIds;
 }
 
 function activateMembers(members, input) {

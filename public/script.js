@@ -52,6 +52,7 @@ export {
     substituteParams,
     sendSystemMessage,
     addOneMessage,
+    deleteLastMessage,
     resetChatState,
     select_rm_info,
     setCharacterId,
@@ -721,6 +722,12 @@ function clearChat() {
     $("#chat").html("");
 }
 
+function deleteLastMessage() {
+    count_view_mes--;
+    chat.length = chat.length - 1;
+    $('#chat').children('.mes').last().remove();
+}
+
 function messageFormating(mes, ch_name, isSystem, forceAvatar) {
     if (this_chid != undefined && !isSystem)
         mes = mes.replaceAll("<", "&lt;").replaceAll(">", "&gt;"); //for welcome message
@@ -979,7 +986,7 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
     }
 
     if (selected_group && !is_group_generating) {
-        generateGroupWrapper(false);
+        generateGroupWrapper(false, type = type);
         return;
     }
 
@@ -1524,7 +1531,7 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
 
                         }
                         // clean-up group message from excessive generations
-                        if (type == 'group_chat' && selected_group) {
+                        if (selected_group) {
                             getMessage = cleanGroupMessage(getMessage);
                         }
                         let this_mes_is_name = true;
@@ -1562,7 +1569,7 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
                                 getMessage = $.trim(getMessage);
                                 chat[chat.length - 1]['mes'] = getMessage;
 
-                                if (type === 'group_chat') {
+                                if (selected_group) {
                                     console.log('entering chat update for groups');
                                     let avatarImg = 'img/fluffy.png';
                                     if (characters[this_chid].avatar != 'none') {
@@ -1576,13 +1583,6 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
 
                                 $("#send_but").css("display", "inline");
                                 $("#loading_mes").css("display", "none");
-
-                                if (type == 'group_chat' && selected_group) {
-                                    saveGroupChat(selected_group);
-                                } /* else {
-                                    console.log('saving message for non group chat');
-                                    saveChat();
-                                } */
                             }
 
 
@@ -1597,7 +1597,12 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
                         showSwipeButtons();
                     }
                     console.log('/savechat called by /Generate');
-                    saveChat();
+
+                    if (selected_group) {
+                        saveGroupChat(selected_group);
+                    } else {
+                        saveChat();
+                    }
                     //let final_message_length = encode(JSON.stringify(getMessage)).length;
                     //console.log('AI Response: +'+getMessage+ '('+final_message_length+' tokens)');
 
@@ -2821,8 +2826,11 @@ $(document).ready(function () {
                                         Generate('swipe');
                                     } else {
                                         if (parseInt(chat[chat.length - 1]['swipe_id']) !== chat[chat.length - 1]['swipes'].length) {
-
-                                            saveChat();
+                                            if (selected_group) {
+                                                saveGroupChat(selected_group);
+                                            } else {
+                                                saveChat();
+                                            }
                                         }
                                     }
                                 }
@@ -2914,7 +2922,11 @@ $(document).ready(function () {
                                 easing: animation_rm_easing,
                                 queue: false,
                                 complete: function () {
-                                    saveChat();
+                                    if (selected_group) {
+                                        saveGroupChat(selected_group);
+                                    } else {
+                                        saveChat();
+                                    }
                                 }
                             });
                         }
@@ -3617,12 +3629,12 @@ $(document).ready(function () {
         else if (id == "option_regenerate") {
             if (is_send_press == false) {
                 //hideSwipeButtons();
-                is_send_press = true;
                 
                 if (selected_group) {
                     regenerateGroup();
                 }
                 else {
+                    is_send_press = true;
                     Generate("regenerate");
                 }
             }

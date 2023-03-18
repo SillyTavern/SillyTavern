@@ -748,7 +748,7 @@ img[src*="user-slash-solid.svg"] {
 }
 
 .menu_button .svg_icon {
-    height: 24px;
+    height: 22px;
     vertical-align: middle;
     margin: 5px;
     filter: invert(1) brightness(75%);
@@ -824,7 +824,7 @@ img[src*="user-slash-solid.svg"] {
     display: flex;
     flex-direction: row;
     align-items: center;
-    width: 98%;
+    margin-bottom: 10px;
 }
 
 #character_search_bar {
