@@ -1073,13 +1073,17 @@ input[type=search]:focus::-webkit-search-cancel-button {
     /* width: 100%; */
 }
 
+#rm_characters_block .form_create_bottom_buttons_block {
+    justify-content: space-evenly !important;
+}
+
 .form_create_bottom_buttons_block {
     display: flex;
     flex: 1;
     grid-template-columns: repeat(3, min-content);
     grid-gap: 20px;
     align-items: center;
-    justify-content: space-evenly;
+    justify-content: end;
 }
 
 #rm_info_block {
@@ -2155,6 +2159,7 @@ input[type="range"] {
     flex-direction: row;
     align-items: center;
     width: 100%;
+    column-gap: 15px;
 }
 
 #rm_button_group_chats {
@@ -2332,6 +2337,10 @@ input[type="range"] {
     max-width: calc(100% - 100px);
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+#rm_button_back_from_group {
+    padding: 0;
 }
 
 #typing_indicator_template {
