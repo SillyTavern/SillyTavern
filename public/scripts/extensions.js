@@ -5,20 +5,8 @@ export {
     defaultRequestArgs,
 };
 
-import * as captionManifest from "./extensions/caption/manifest.json" assert {type: 'json'};
-import * as diceManifest from "./extensions/dice/manifest.json" assert {type: 'json'};
-import * as expressionsManifest from "./extensions/expressions/manifest.json" assert {type: 'json'};
-import * as floatingPromptManifest from "./extensions/floating-prompt/manifest.json" assert {type: 'json'};
-import * as memoryManifest from "./extensions/memory/manifest.json" assert {type: 'json'};
-
-const manifests = {
-    'floating-prompt': floatingPromptManifest.default,
-    'dice': diceManifest.default,
-    'caption': captionManifest.default,
-    'expressions': expressionsManifest.default,
-    'memory': memoryManifest.default,
-};
-
+const extensionNames = ['caption', 'dice', 'expressions', 'floating-prompt', 'memory'];
+const manifests = await getManifests(extensionNames);
 const extensions_urlKey = 'extensions_url';
 const extensions_autoConnectKey = 'extensions_autoconnect';
 let modules = [];
@@ -29,6 +17,19 @@ const getApiUrl = () => localStorage.getItem('extensions_url');
 const defaultUrl = "http://localhost:5100";
 const defaultRequestArgs = { method: 'GET', headers: { 'Bypass-Tunnel-Reminder': 'bypass' } };
 let connectedToApi = false;
+
+async function getManifests(names) {
+    const obj = {};
+    for (const name of names) {
+        const response = await fetch(`/scripts/extensions/${name}/manifest.json`);
+
+        if (response.ok) {
+            const json = await response.json();
+            obj[name] = json;
+        }
+    }
+    return obj;
+}
 
 async function activateExtensions() {
     const extensions = Object.entries(manifests).sort((a, b) => a[1].loading_order - b[1].loading_order);
