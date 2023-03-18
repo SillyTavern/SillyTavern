@@ -37,4 +37,5 @@
     box-sizing: border-box;
     user-select: none;
     cursor: pointer;
+    backdrop-filter: blur(10px);
 }

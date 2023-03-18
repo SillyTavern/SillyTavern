@@ -17,7 +17,7 @@ function doDiceRoll() {
     if (isValid) {
         const result = droll.roll(value);
         const context = getContext();
-        context.sendSystemMessage('generic', `${context.name1} rolls the ${value}. The result is: ${result.total}`);
+        context.sendSystemMessage('generic', `${context.name1} rolls a ${value}. The result is: ${result.total}`);
     }
 }
 
