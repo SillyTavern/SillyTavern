@@ -46,6 +46,7 @@
     <script type="module" src="scripts/world-info.js"></script>
     <script type="module" src="scripts/group-chats.js"></script>
     <script type="module" src="scripts/power-user.js"></script>
+    <script type="module" src="scripts/kai-settings.js"></script>
 
     <title>Tavern.AI</title>
 </head>
@@ -540,6 +541,80 @@
                                 </div>
                                 <div class="range-block-range"><input type="range" id="rep_pen_size" name="volume"
                                         min="0" max="2048" step="1"></div>
+                            </div>
+                        </div>
+                        <div class="drawer">
+                            <div class="drawer-toggle drawer-header">
+                                <h3>Advanced Settings</h3>
+                                <div class="drawer-icon down"></div>
+                            </div>
+                            <div class="drawer-content">
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        <h4>Top P Sampling</h4>
+                                    </div>
+                                    <div class="range-block-counter">
+                                        <h5 id="top_p_counter">select</h5>
+                                    </div>
+                                    <div class="range-block-range">
+                                        <input type="range" id="top_p" name="volume" min="0" max="1" step="0.01">
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        <h4>Top A Sampling</h4>
+                                    </div>
+                                    <div class="range-block-counter">
+                                        <h5 id="top_a_counter">select</h5>
+                                    </div>
+                                    <div class="range-block-range">
+                                        <input type="range" id="top_a" name="volume" min="0" max="1" step="0.01">
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        <h4>Top K Sampling</h4>
+                                    </div>
+                                    <div class="range-block-counter">
+                                        <h5 id="top_k_counter">select</h5>
+                                    </div>
+                                    <div class="range-block-range">
+                                        <input type="range" id="top_k" name="volume" min="0" max="100" step="1">
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        <h4>Typical Sampling</h4>
+                                    </div>
+                                    <div class="range-block-counter">
+                                        <h5 id="typical_counter">select</h5>
+                                    </div>
+                                    <div class="range-block-range">
+                                        <input type="range" id="typical" name="volume" min="0" max="1" step="0.01">
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        <h4>Tail Free Sampling</h4>
+                                    </div>
+                                    <div class="range-block-counter">
+                                        <h5 id="tfs_counter">select</h5>
+                                    </div>
+                                    <div class="range-block-range">
+                                        <input type="range" id="tfs" name="volume" min="0" max="1" step="0.05">
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        <h4>Repetition Penalty Slope</h4>
+                                    </div>
+                                    <div class="range-block-counter">
+                                        <h5 id="rep_pen_slope_counter">select</h5>
+                                    </div>
+                                    <div class="range-block-range">
+                                        <input type="range" id="rep_pen_slope" name="volume" min="0" max="10" step="0.1">
+                                    </div>
+                                </div>
                             </div>
                         </div>
 

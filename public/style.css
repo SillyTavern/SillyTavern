@@ -2783,3 +2783,35 @@ label[for="extensions_autoconnect"] {
 .expander {
     flex-grow: 1;
 }
+
+.drawer {
+    padding-bottom: 10px;
+}
+
+.drawer-icon {
+    display: block;
+    cursor: pointer;
+    width: 26px;
+    height: 26px;
+    background-size: cover;
+    background-repeat: no-repeat;
+    filter: invert(1) brightness(75%);
+}
+
+.drawer-icon.up {
+    background-image: url('img/circle-chevron-up-solid.svg');
+}
+
+.drawer-icon.down {
+    background-image: url('img/circle-chevron-down-solid.svg');
+}
+
+.drawer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.drawer-content {
+    display: none;
+}

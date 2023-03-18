@@ -2,6 +2,11 @@ import { humanizedDateTime } from "./scripts/RossAscends-mods.js";
 import { encode, decode } from "../scripts/gpt-2-3-tokenizer/mod.js";
 
 import {
+    kai_settings,
+    loadKoboldSettings,
+} from "./scripts/kai-settings.js";
+
+import {
     world_info_budget,
     world_info_data,
     world_info_depth,
@@ -37,6 +42,7 @@ export {
     Generate,
     getSettings,
     saveSettings,
+    saveSettingsDebounced,
     printMessages,
     clearChat,
     getChat,
@@ -1370,13 +1376,13 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
                         max_length: this_amount_gen,//parseInt(amount_gen),
                         rep_pen: parseFloat(rep_pen),
                         rep_pen_range: parseInt(rep_pen_size),
-                        rep_pen_slope: this_settings.rep_pen_slope,
+                        rep_pen_slope: kai_settings.rep_pen_slope,
                         temperature: parseFloat(temp),
-                        tfs: this_settings.tfs,
-                        top_a: this_settings.top_a,
-                        top_k: this_settings.top_k,
-                        top_p: this_settings.top_p,
-                        typical: this_settings.typical,
+                        tfs: kai_settings.tfs,
+                        top_a: kai_settings.top_a,
+                        top_k: kai_settings.top_k,
+                        top_p: kai_settings.top_p,
+                        typical: kai_settings.typical,
                         s1: this_settings.sampler_order[0],
                         s2: this_settings.sampler_order[1],
                         s3: this_settings.sampler_order[2],
@@ -2045,6 +2051,8 @@ async function getSettings(type) {
                 //console.log('getsettings calling showswipebtns');
                 showSwipeButtons();
 
+                loadKoboldSettings(settings);
+
                 //Novel
                 temp_novel = settings.temp_novel;
                 rep_pen_novel = settings.rep_pen_novel;
@@ -2193,6 +2201,7 @@ async function saveSettings(type) {
             active_character: active_character,
             textgenerationwebui_settings: textgenerationwebui_settings,
             swipes: swipes,
+            ...kai_settings,
         }),
         beforeSend: function () {
             //console.log('saveSettings() -- active_character -- '+active_character);
@@ -3720,30 +3729,28 @@ $(document).ready(function () {
     $("#settings_perset").change(function () {
         if ($("#settings_perset").find(":selected").val() != "gui") {
             preset_settings = $("#settings_perset").find(":selected").text();
-            temp = koboldai_settings[koboldai_setting_names[preset_settings]].temp;
-            amount_gen =
-                koboldai_settings[koboldai_setting_names[preset_settings]].genamt;
-            rep_pen =
-                koboldai_settings[koboldai_setting_names[preset_settings]].rep_pen;
-            rep_pen_size =
-                koboldai_settings[koboldai_setting_names[preset_settings]]
-                    .rep_pen_range;
-            max_context =
-                koboldai_settings[koboldai_setting_names[preset_settings]].max_length;
+            const preset = koboldai_settings[koboldai_setting_names[preset_settings]];
+            loadKoboldSettings(preset);
+
+            temp = preset.temp;
             $("#temp").val(temp);
             $("#temp_counter").html(temp);
 
+            amount_gen = preset.genamt;
             $("#amount_gen").val(amount_gen);
             $("#amount_gen_counter").html(amount_gen);
 
-            $("#max_context").val(max_context);
-            $("#max_context_counter").html(max_context + " Tokens");
-
+            rep_pen = preset.rep_pen;
             $("#rep_pen").val(rep_pen);
             $("#rep_pen_counter").html(rep_pen);
 
+            rep_pen_size = preset.rep_pen_range;
             $("#rep_pen_size").val(rep_pen_size);
             $("#rep_pen_size_counter").html(rep_pen_size + " Tokens");
+
+            max_context = preset.max_length;
+            $("#max_context").val(max_context);
+            $("#max_context_counter").html(max_context + " Tokens");
 
             $("#range_block").children().prop("disabled", false);
             $("#range_block").css("opacity", 1.0);
