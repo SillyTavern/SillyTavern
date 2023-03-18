@@ -125,12 +125,14 @@ const system_messages = {
         is_user: false,
         is_system: true,
         is_name: true,
-        mes: `Hi there! The following chat formatting commands are supported:<br>
-        <ul>
-            <li><tt>*text*</tt> – format the actions that your character does</li>
-            <li><tt>{*text*}</tt> – set the behavioral bias for your character</li>
-        </ul>
-        <p>Need more help? Visit our wiki – <a href=\"https://github.com/TavernAI/TavernAI/wiki\">TavernAI Wiki</a>!</p>`,
+        mes: [
+            'Hi there! The following chat formatting commands are supported:',
+            '<ol>',
+            '<li><tt>*text*</tt> – format the actions that your character does</li>',
+            '<li><tt>{*text*}</tt> – set the behavioral bias for your character</li>',
+            '</ol>',
+            'Need more help? Visit our wiki – <a href=\"https://github.com/TavernAI/TavernAI/wiki\">TavernAI Wiki</a>!'
+        ].join('')
     },
     welcome:
     {
@@ -138,9 +140,16 @@ const system_messages = {
         force_avatar: system_avatar,
         is_user: false,
         is_name: true,
-        mes:
-            'Hello there! In order to begin chatting:<ol><li>Connect to one of the supported generation APIs</li><li>Create or pick a character from the list</li></ol>' +
-            'Still have questions left? Check out built-in help or visit our <a target="_blank" href="https://github.com/TavernAI/TavernAI/wiki">TavernAI Wiki</a>!'
+        mes: [
+            'Welcome to TavernAI! In order to begin chatting:',
+            '<ul>',
+            '<li>Connect to one of the supported generation APIs</li>',
+            '<li>Create or pick a character from the list</li>',
+            '</ul>',
+            'Still have questions left?\n',
+            'Check out built-in help by typing <tt>/?</tt> in any chat or visit our ',
+            '<a target="_blank" href="https://github.com/TavernAI/TavernAI/wiki">TavernAI Wiki</a>!'
+        ].join('')
     },
     group: {
         name: systemUserName,
