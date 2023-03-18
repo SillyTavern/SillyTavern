@@ -279,7 +279,8 @@ $("document").ready(function () {
 		var SwipeButR = $('.swipe_right:last');
 		var SwipeTargetMesClassParent = e.target.closest('.last_mes');
 		if (SwipeTargetMesClassParent !== null) {
-			if (SwipeButR.attr('style') == 'display: flex;' == true) {
+			if (SwipeButR.css('display') === 'flex') {
+				//if (SwipeButR.attr('style') == 'display: flex;' == true) {
 				SwipeButR.click();
 			}
 		}
@@ -287,12 +288,18 @@ $("document").ready(function () {
 	document.addEventListener('swiped-right', function (e) {
 		var SwipeButL = $('.swipe_left:last');
 		var SwipeTargetMesClassParent = e.target.closest('.last_mes');
+		//console.log('Touch swipe check -- closest last_mes = "' + (SwipeTargetMesClassParent !== null) + ' Button display = ' + (SwipeButL.attr('style') == 'display: flex;' == true));
 		if (SwipeTargetMesClassParent !== null) {
-			if (SwipeButL.attr('style') == 'display: flex;' == true) {
+			if (SwipeButL.css('display') === 'flex') {
+				//if (SwipeButL.attr('style') == 'display: flex;' == true) {
 				SwipeButL.click();
 			}
 		}
 	});
+
+	function isInputElementInFocus() {
+		return $(document.activeElement).is(":input");
+	}
 
 	//Additional hotkeys CTRL+ENTER and CTRL+UPARROW
 	document.addEventListener("keydown", (event) => {
@@ -316,11 +323,36 @@ $("document").ready(function () {
 			ClearLocal();
 		}
 		if (event.key == "ArrowLeft") {		//swipes left
-			$('.swipe_left:last').click();
-		}
-		if (event.key == "ArrowRight") {		//swipes right
-			$('.swipe_right:last').click();
-		}
-	});
+			/* console.log('SWIPE FILTER -- ' +
+				$("#send_textarea").val() + ' ' +
+				$("#character_popup").css("display") + ' ' +
+				$("#shadow_select_chat_popup").css("display") + ' ' +
+				isInputElementInFocus()); */
 
-})
+			if (
+				$("#send_textarea").val() === '' &&
+				$("#character_popup").css("display") === "none" &&
+				$("#shadow_select_chat_popup").css("display") === "none" &&
+				!isInputElementInFocus()
+			) {
+				$('.swipe_left:last').click();
+			}
+		}
+		if (event.key == "ArrowRight") { //swipes right
+			/* console.log('SWIPE FILTER -- ' +
+				$("#send_textarea").val() + ' ' +
+				$("#character_popup").css("display") + ' ' +
+				$("#shadow_select_chat_popup").css("display") + ' ' +
+				isInputElementInFocus()); */
+
+			if (
+				$("#send_textarea").val() === '' &&
+				$("#character_popup").css("display") === "none" &&
+				$("#shadow_select_chat_popup").css("display") === "none" &&
+				!isInputElementInFocus()
+			) {
+				$('.swipe_right:last').click();
+			}
+		};
+	})
+});

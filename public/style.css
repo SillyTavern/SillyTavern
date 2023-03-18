@@ -176,7 +176,27 @@ code {
 }
 
 #chat {
+
     overflow-x: hidden;
+    padding-bottom: 0;
+    overflow-y: scroll;
+    display: flex;
+    flex-wrap: wrap;
+    margin-top: 40px;
+    bottom: 10px;
+    border-bottom: 1px solid var(--black30a);
+    border-left: 1px solid var(--black30a);
+    border-right: 1px solid var(--black30a);
+    backdrop-filter: blur(20px);
+    background-color: var(--black70a);
+    -webkit-backdrop-filter: blur(20px);
+    text-shadow: #000 0 0 3px;
+    scrollbar-width: thin;
+    transition: all 1s ease-in-out;
+    align-content: end;
+
+    /*old style top to bottom flow*/
+/*     overflow-x: hidden;
     overflow-y: scroll;
     margin-top: 40px;
     border-bottom: 1px solid var(--black30a);
@@ -187,7 +207,7 @@ code {
     -webkit-backdrop-filter: blur(20px);
     text-shadow: #000 0 0 3px;
     scrollbar-width: thin;
-    transition: all 1s ease-in-out;
+    transition: all 1s ease-in-out; */
 
 }
 
@@ -348,16 +368,25 @@ code {
 }
 
 .mes {
+
     display: grid;
+    grid-template-columns: min-content min-content auto min-content min-content;
+    padding: 10px 10px 0 10px;
+    margin-top: 0;
+    width: 100%;
+    color: var(--ivory, white);
+    align-self: flex-end;
+
+  /*   display: grid;
     grid-template-columns: min-content min-content auto min-content min-content;
     padding: 10px 10px 0 10px;
     vertical-align: top;
     width: 100%;
-    color: var(--ivory, white);
+    color: var(--ivory, white); */
 }
 
 .last_mes .mes_text {
-    min-height: 7em;
+    min-height: 6em;
 }
 
 .last_mes{
@@ -367,25 +396,33 @@ code {
 /* SWIPE RELATED STYLES*/
 
 .swipe_right,.swipe_left {
-    height: 30px;
-    width: 30px;
+    height: 40px;
+    width: 40px;
     opacity: 0.36;
     position: absolute;
     right: 15px;
-    margin-top: 62px;
+    margin-top: 60px;
     left: auto;
     background-color: var(--black50a);
-    padding: 20px;
     border-radius: 50%;
     align-items: center;
     justify-content: center;
-    /* display: none; */
     border: 1px solid grey;
+    flex-wrap: wrap;
 }
 
 .swipe_right img, .swipe_left img {
     height: 30px;
+    display: flex;
     width: 30px;
+}
+.swipes-counter{
+    display: flex;
+    color: white;
+    position: fixed;
+    font-size: 12px;
+    padding: 0;
+    margin-top: 60px;
 }
 
 .swipe_left {
@@ -2582,9 +2619,9 @@ a {
 
     #sheld {    /*margin around the sides, and a larger one on bottom to avoid iOS Home bar*/
         height: calc(100svh - 15px);
-        width: 100vw; //calc(100vw - 15px);
+        width: calc(100vw - 10px);
+        margin: 0 auto;
         margin-left: 5px;
-        margin-right: 5px;
         position: fixed;
     }
     #send_textarea {    /*larger input bar for mobile screens, easier to tap*/
@@ -2608,8 +2645,13 @@ a {
         max-height: 300px;
     }
 
+    #rm_api_block {
+        width:100vw;
+
+    }
+
     #right-nav-panel, #character_popup {        /* character_popup display needs work, "width:100%" items push outside the box */
-        width: 100%;
+        width: 100vw;
         box-shadow: none;
     }
 
@@ -2626,7 +2668,9 @@ a {
         min-width: 33%;
     }
     /*for debug purposes*/
-    /** {border: 1px solid purple;}*/ 
+/* 
+    * {border: 1px solid purple;}
+     */
 }
 
 @media (max-width: 768px) {
