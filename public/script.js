@@ -2677,12 +2677,23 @@ function read_bg_load(input) {
 
 function showSwipeButtons() {
     if (
-        chat[chat.length - 1].name === 'TavernAI' ||
+        chat[chat.length - 1].is_system ||
         !swipes ||
         $('.mes:last').attr('mesid') <= 0 ||
         chat[chat.length - 1].is_user ||
         count_view_mes <= 1
     ) { return; }
+
+    //had to add this to make the swipe counter work
+    //(copied from the onclick functions for swipe buttons..
+    //don't know why the array isn't set for non-swipe messsages in Generate or addOneMessage..)
+
+    if (chat[chat.length - 1]['swipe_id'] === undefined) {              // if there is no swipe-message in the last spot of the chat array
+        chat[chat.length - 1]['swipe_id'] = 0;                        // set it to id 0
+        chat[chat.length - 1]['swipes'] = [];                         // empty the array
+        chat[chat.length - 1]['swipes'][0] = chat[chat.length - 1]['mes'];  //assign swipe array with last message from chat
+    }
+
     const currentMessage = $("#chat").children().filter(`[mesid="${count_view_mes - 1}"]`);
     const swipeId = chat[chat.length - 1].swipe_id;
     var swipesCounterHTML = (`${(swipeId + 1)}/${(chat[chat.length - 1].swipes.length)}`);
@@ -2693,16 +2704,6 @@ function showSwipeButtons() {
     if (is_send_press === false || chat[chat.length - 1].swipes.length >= swipeId) {     //only show right when generate is off, or when next right swipe would not make a generate happen
         currentMessage.children('.swipe_right').css('display', 'flex');
         currentMessage.children('.swipe_right').css('opacity', '0.3');
-    }
-
-    //had to add this to make the swipe counter work
-    //(copied from the onclick functions for swipe buttons..
-    //don't know why the array isn't set for non-swipe messsages in Generate or addOneMessage..)
-
-    if (chat[chat.length - 1]['swipe_id'] === undefined) {              // if there is no swipe-message in the last spot of the chat array
-        chat[chat.length - 1]['swipe_id'] = 0;                        // set it to id 0
-        chat[chat.length - 1]['swipes'] = [];                         // empty the array
-        chat[chat.length - 1]['swipes'][0] = chat[chat.length - 1]['mes'];  //assign swipe array with last message from chat
     }
     //console.log((chat[chat.length - 1]));
     if (is_send_press === false && (chat[chat.length - 1].swipes.length - swipeId) === 1) {

@@ -384,9 +384,9 @@ code {
     color: var(--ivory, white); */
 }
 
-.last_mes .mes_text {
+/*.last_mes .mes_text {
     min-height: 10em;
-}
+}*/
 
 .last_mes{
     grid-template-columns: [checkbox] fit-content(60px) [avatar] 50px [msg_block] auto [rightswipe] fit-content(48px);
