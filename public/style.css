@@ -178,7 +178,7 @@ code {
 #chat {
 
     overflow-x: hidden;
-    padding-bottom: 30px;
+    padding-bottom: 0;
     overflow-y: scroll;
     display: flex;
     flex-wrap: wrap;
@@ -193,6 +193,7 @@ code {
     text-shadow: #000 0 0 3px;
     scrollbar-width: thin;
     transition: all 1s ease-in-out;
+    align-content: end;
 
     /*old style top to bottom flow*/
 /*     overflow-x: hidden;
@@ -381,7 +382,7 @@ code {
 }
 
 .last_mes .mes_text {
-    min-height: 7em;
+    min-height: 6em;
 }
 
 .last_mes{
@@ -2614,9 +2615,9 @@ a {
 
     #sheld {    /*margin around the sides, and a larger one on bottom to avoid iOS Home bar*/
         height: calc(100svh - 15px);
-        width: 100vw /* calc(100svw - 15px); */
+        width: calc(100vw - 10px);
+        margin: 0 auto;
         margin-left: 5px;
-        margin-right: 5px;
         position: fixed;
     }
     #send_textarea {    /*larger input bar for mobile screens, easier to tap*/
