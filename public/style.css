@@ -363,6 +363,10 @@ code {
 }
 
 
+#message_template {
+    display: none !important;
+}
+
 .mes {
 
     display: grid;

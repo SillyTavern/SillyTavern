@@ -823,6 +823,26 @@
         <div class="typing_indicator"><span class="typing_indicator_name">CHAR</span> is typing</div>
     </div>
 
+    <div id="message_template">
+        <div class="mes" mesid="${count_view_mes}" ch_name="${characterName}" is_user="${mes.is_user}">
+            <div class="for_checkbox"></div><input type="checkbox" class="del_checkbox">
+            <div class="avatar"><img src="${avatarImg}"></div>
+            <div class="swipe_left"><img src="img/swipe_left.png"></div>
+            <div class="mes_block">
+                <div class="ch_name">
+                    <span class="name_text">${characterName}</span>
+                    <div title=Edit class=mes_edit></div>
+                    <div class=mes_edit_cancel><img src=img/cancel.png></div>
+                    <div class=mes_edit_done><img src=img/done.png></div>
+                </div>
+                <div class=mes_text></div>
+            </div>
+            <div class="mes_bias">${bias}</div>
+            <div class="swipe_right"> <img src="img/swipe_right.png"></div>
+            <div class="swipes-counter"></div>
+        </div>
+    </div>
+
     <div id="group_avatars_template">
         <div class="avatar avatar_collage collage_1">
             <img alt="img1" class="img_1" src="">

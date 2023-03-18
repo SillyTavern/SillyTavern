@@ -784,6 +784,15 @@ function messageFormating(mes, ch_name, isSystem, forceAvatar) {
     return mes;
 }
 
+function getMessageFromTemplate(mesId, characterName, isUser, avatarImg, bias) {
+    const mes = $('#message_template .mes').clone();
+    mes.attr({ 'mesid': mesId, 'ch_name': characterName, 'is_user': isUser });
+    mes.find('.avatar img').attr('src', avatarImg);
+    mes.find('.ch_name .name_text').text(characterName);
+    mes.find('.mes_bias').html(bias);
+    return mes;
+}
+
 function appendImageToMessage(mes, messageElement) {
     if (mes.extra?.image) {
         const image = document.createElement("img");
@@ -830,34 +839,7 @@ function addOneMessage(mes, type = "normal") {
     );
     const bias = messageFormating(mes.extra?.bias ?? "");
 
-    var HTMLForEachMes =
-        '<div class="mes" mesid="' + count_view_mes + '" ch_name="' + characterName + '" is_user="' + mes["is_user"] + '">' +
-        '<div class="for_checkbox"></div>' +
-        '<input type="checkbox" class="del_checkbox">' +
-        '<div class="avatar">' +
-        '<img src="' + avatarImg + '">' +
-        '</div>' +
-        '<div class="swipe_left">' +
-        '<img src="img/swipe_left.png">' +
-        '</div>' +
-        '<div class="mes_block">' +
-        '<div class="ch_name">' +
-        characterName +
-        '<div title=Edit class=mes_edit></div>' +
-        '<div class=mes_edit_cancel>' +
-        '<img src=img/cancel.png>' +
-        '</div>' +
-        '<div class=mes_edit_done>' +
-        '<img src=img/done.png>' +
-        '</div>' +
-        '</div>' +
-        '<div class=mes_text></div>' +
-        '</div>' +
-        '<div class="mes_bias">' + bias + '</div>' +
-        '<div class="swipe_right">' +
-        '   <img src="img/swipe_right.png"><div class="swipes-counter"></div>' +
-        '</div>' +
-        '</div>';
+    var HTMLForEachMes = getMessageFromTemplate(count_view_mes, characterName, mes.is_user, avatarImg, bias);
 
     if (type !== 'swipe') {
         $("#chat").append(HTMLForEachMes);
