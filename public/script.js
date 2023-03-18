@@ -739,6 +739,7 @@ function printMessages() {
     //console.log(chat);
     //console.log('printMessages() -- printing messages for -- '+this_chid+' '+active_character+' '+characters[this_chid]);
     chat.forEach(function (item, i, arr) {
+        //console.log('print message calling addOneMessage');
         addOneMessage(item);
     });
 }
@@ -845,7 +846,7 @@ function addOneMessage(mes, type = "normal") {
         '</div>' +
         '<div class="mes_bias">' + bias + '</div>' +
         '<div class="swipe_right">' +
-        '   <img src="img/swipe_right.png">' +
+        '   <img src="img/swipe_right.png"><div class="swipes-counter"></div>' +
         '</div>' +
         '</div>';
 
@@ -868,17 +869,32 @@ function addOneMessage(mes, type = "normal") {
     if (type === 'swipe') {
         $("#chat").children().filter('[mesid="' + (count_view_mes - 1) + '"]').children('.mes_block').children('.mes_text').html('');
         $("#chat").children().filter('[mesid="' + (count_view_mes - 1) + '"]').children('.mes_block').children('.mes_text').append(messageText);
+
+        //console.log(mes);
     } else {
         $("#chat").children().filter('[mesid="' + count_view_mes + '"]').children('.mes_block').children('.mes_text').append(messageText);
         hideSwipeButtons();
         count_view_mes++;
+
     }
     var $textchat = $("#chat");
     $('#chat .mes').last().addClass('last_mes');
     $('#chat .mes').eq(-2).removeClass('last_mes');
     $textchat.scrollTop(($textchat[0].scrollHeight));
 
+
+
+    //console.log(chat[chat.length - 1].["swipes"]);
+    //console.log(mes);
+    /*     if (mes["swipes"] !== undefined) {
+            if (mes["swipes"].length - 1 == mes["swipe_id"]) {           //this works to detect when next right swipe would generate
+                $(".swipe_right").css('opacity', '0.7')          // but we need it to happen on load, not only when swiping happens.
+            } else {
+                $(".swipe_right").css('opacity', '0.3')
+            };
+        } */
     hideSwipeButtons();
+    //console.log('addonemessage calling showSwipeBtns');
     showSwipeButtons();
 }
 
@@ -909,7 +925,7 @@ function sendSystemMessage(type, text) {
     }
 
     chat.push(newMessage);
-    console.log('sendSystemMessage calls addOneMessage');
+    //console.log('sendSystemMessage calls addOneMessage');
     addOneMessage(newMessage);
     is_send_press = false;
 }
@@ -1035,7 +1051,7 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
                 console.log('checking bias');
                 chat[chat.length - 1]['extra']['bias'] = messageBias;
             }
-            console.log('Generate calls addOneMessage');
+            //console.log('Generate calls addOneMessage');
             addOneMessage(chat[chat.length - 1]);
         }
         ////////////////////////////////////
@@ -1212,7 +1228,7 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
         return;
 
         function runGenerate(cycleGenerationPromt = '') {
-
+            $(".swipe_right").css("display", "none");
             is_send_press = true;
 
             generatedPromtCache += cycleGenerationPromt;
@@ -1555,7 +1571,7 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
                                 if (chat[chat.length - 1]['swipe_id'] === chat[chat.length - 1]['swipes'].length - 1) {
                                     //console.log(getMessage);
                                     chat[chat.length - 1]['mes'] = getMessage;
-                                    console.log('runGenerate calls addOneMessage for swipe');
+                                    // console.log('runGenerate calls addOneMessage for swipe');
                                     addOneMessage(chat[chat.length - 1], 'swipe');
                                 } else {
                                     chat[chat.length - 1]['mes'] = getMessage;
@@ -1581,7 +1597,7 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
                                     chat[chat.length - 1]['is_name'] = true;
                                     chat[chat.length - 1]['force_avatar'] = avatarImg;
                                 }
-                                console.log('runGenerate calls addOneMessage');
+                                //console.log('runGenerate calls addOneMessage');
                                 addOneMessage(chat[chat.length - 1]);
 
                                 $("#send_but").css("display", "inline");
@@ -1603,6 +1619,7 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
 
                         $("#send_but").css("display", "inline");
                         $("#loading_mes").css("display", "none");
+                        //console.log('runGenerate calling showSwipeBtns');
                         showSwipeButtons();
                     }
                     console.log('/savechat called by /Generate');
@@ -1611,7 +1628,7 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
                     //console.log('AI Response: +'+getMessage+ '('+final_message_length+' tokens)');
 
                     $("#send_but").css("display", "inline");
-
+                    //console.log('runGenerate calling showSwipeBtns pt. 2');
                     showSwipeButtons();
 
                     $("#loading_mes").css("display", "none");
@@ -2036,6 +2053,7 @@ async function getSettings(type) {
                 $('#swipes-checkbox').prop('checked', swipes); /// swipecode
                 console.log('getSettings -- swipes = ' + swipes + '. toggling box');
                 hideSwipeButtons();
+                //console.log('getsettings calling showswipebtns');
                 showSwipeButtons();
 
                 //Novel
@@ -2140,23 +2158,9 @@ async function getSettings(type) {
                         textgenerationwebui_settings[i]
                     );
                 }
-                /*                            //RossAscends: getting variables added/adjusted/applied with RA-mods
-                                active_character = settings.active_character;
-                                this_chid = settings.active_character; //forcing variable sameness for chid and this_chid with active_character in order to load RA_ALC
-                                var chid = settings.active_character; //forcing variable sameness for chid and this_chid with active_character in order to load RA_ALC
-                                console.log(
-                                    "getSettings -- loaded from file -- active_character : " +
-                                    settings.active_character
-                                );
-                                auto_connect = settings.auto_connect;
-                                auto_load_chat = settings.auto_load_chat; */
+
                 selected_button = settings.selected_button;
-                /*                         NavOpenClosePref = settings.NavOpenClosePref;
-                                stickyNavPref = settings.stickyNavPref; */
-                /*                         $("#nav-toggle").prop("checked", NavOpenClosePref);
-                                $("#rm_button_panel_pin").prop("checked", stickyNavPref);
-                                $("#auto-connect-checkbox").prop("checked", auto_connect);
-                                $("#auto-load-chat-checkbox").prop("checked", auto_load_chat);  */
+
             }
 
             if (!is_checked_colab) isColab();
@@ -2696,7 +2700,33 @@ function showSwipeButtons() {
     if (swipeId !== undefined && swipeId != 0) {
         currentMessage.children('.swipe_left').css('display', 'flex');
     }
-    currentMessage.children('.swipe_right').css('display', 'flex');
+    if (is_send_press === false || chat[chat.length - 1].swipes.length > swipeId) {     //only show right when generate is off, or when next right swipe would not make a generate happen
+        currentMessage.children('.swipe_right').css('display', 'flex');
+        currentMessage.children('.swipe_right').css('opacity', '0.3');
+    }
+
+    //had to add this to make the swipe counter work
+    //(copied from the onclick functions for swipe buttons..
+    //don't know why the array isn't set for non-swipe messsages in Generate or addOneMessage..)
+
+    if (chat[chat.length - 1]['swipe_id'] === undefined) {              // if there is no swipe-message in the last spot of the chat array
+        chat[chat.length - 1]['swipe_id'] = 0;                        // set it to id 0
+        chat[chat.length - 1]['swipes'] = [];                         // empty the array
+        chat[chat.length - 1]['swipes'][0] = chat[chat.length - 1]['mes'];  //assign swipe array with last message from chat
+    }
+    //console.log((chat[chat.length - 1]));
+    if (is_send_press === false && (chat[chat.length - 1].swipes.length - swipeId) === 1) {
+        console.log('highlighting R swipe');
+        currentMessage.children('.swipe_right').css('opacity', '0.7');
+    }
+
+    var swipesCounterHTML = (`${(swipeId + 1)}/${(chat[chat.length - 1].swipes.length)}`);
+    console.log(swipesCounterHTML);
+
+    $(".swipes-counter").html(swipesCounterHTML);
+
+    //console.log(swipeId);
+    //console.log(chat[chat.length - 1].swipes.length);
 }
 
 function hideSwipeButtons() {
@@ -2733,6 +2763,7 @@ $(document).ready(function () {
         console.log('detected swipes-checkbox changed values')
         swipes = !!$('#swipes-checkbox').prop('checked');
         if (swipes) {
+            //console.log('toggle change calling showswipebtns');
             showSwipeButtons();
         } else {
             hideSwipeButtons();
@@ -2754,11 +2785,14 @@ $(document).ready(function () {
         }
         chat[chat.length - 1]['swipe_id']++;                                      //make new slot in array
         //console.log(chat[chat.length-1]['swipes']);
-        if (parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length) {     //if swipe id of last message is the same as the length of the 'swipes' array
+        if (parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length) { //if swipe id of last message is the same as the length of the 'swipes' array
+
             run_generate = true;
         } else if (parseInt(chat[chat.length - 1]['swipe_id']) < chat[chat.length - 1]['swipes'].length) { //otherwise, if the id is less than the number of swipes
             chat[chat.length - 1]['mes'] = chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipe_id']]; //load the last mes box with the latest generation
-            run_swipe_right = true; //then swipe
+            run_swipe_right = true; //then prepare to do normal right swipe to show next message
+
+
         }
 
         if (chat[chat.length - 1]['swipe_id'] > chat[chat.length - 1]['swipes'].length) { //if we swipe right while generating (the swipe ID is greater than what we are viewing now)
@@ -2787,10 +2821,11 @@ $(document).ready(function () {
                     //console.log(parseInt(chat[chat.length-1]['swipe_id']));
                     //console.log(chat[chat.length-1]['swipes'].length);
                     if (run_generate && parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length) {
-                        //console.log('showing ...');
-                        $("#chat").children().filter('[mesid="' + (count_view_mes - 1) + '"]').children('.mes_block').children('.mes_text').html('...');  //shows ... while generating
+                        //console.log('showing ""..."');
+                        $("#chat").children().filter('[mesid="' + (count_view_mes - 1) + '"]').children('.mes_block').children('.mes_text').html('...');  //shows "..." while generating
                     } else {
                         //console.log('showing previously generated swipe candidate, or "..."');
+                        //console.log('onclick right swipe calling addOneMessage');
                         addOneMessage(chat[chat.length - 1], 'swipe');
                     }
                     let new_height = this_mes_div_height - (this_mes_block_height - this_mes_block[0].scrollHeight);
@@ -2828,7 +2863,7 @@ $(document).ready(function () {
                                         Generate('swipe');
                                     } else {
                                         if (parseInt(chat[chat.length - 1]['swipe_id']) !== chat[chat.length - 1]['swipes'].length) {
-                                            console.log('caught here 3');
+
                                             saveChat();
                                         }
                                     }
@@ -2891,7 +2926,7 @@ $(document).ready(function () {
                 queue: false,
                 complete: function () {
                     const is_animation_scroll = ($('#chat').scrollTop() >= ($('#chat').prop("scrollHeight") - $('#chat').outerHeight()) - 10);
-                    console.log('sipwing left after tr5ansition calls addOneMessage');
+                    //console.log('on left swipe click calling addOneMessage');
                     addOneMessage(chat[chat.length - 1], 'swipe');
                     let new_height = this_mes_div_height - (this_mes_block_height - this_mes_block[0].scrollHeight);
                     if (new_height < 103) new_height = 103;
@@ -3434,6 +3469,7 @@ $(document).ready(function () {
                             chat[0]["is_name"] = true;
                             chat[0]["mes"] = this_ch_mes;
                             add_mes_without_animation = true;
+                            //console.log('form create submission calling addOneMessage');
                             addOneMessage(chat[0]);
                         }
                     }
@@ -3656,6 +3692,7 @@ $(document).ready(function () {
             $(this).prop("checked", false);
         });
         this_del_mes = 0;
+        console.log('canceled del msgs, calling showswipesbtns');
         showSwipeButtons();
     });
 
@@ -3687,6 +3724,7 @@ $(document).ready(function () {
         this_del_mes = 0;
         $('#chat .mes').last().addClass('last_mes');
         $('#chat .mes').eq(-2).removeClass('last_mes');
+        console.log('confirmed del msgs, calling showswipesbtns');
         showSwipeButtons();
     });
 

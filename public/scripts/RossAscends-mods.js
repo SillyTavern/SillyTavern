@@ -294,6 +294,10 @@ $("document").ready(function () {
 		}
 	});
 
+	function isInputElementInFocus() {
+		return $(document.activeElement).is(":input");
+	}
+
 	//Additional hotkeys CTRL+ENTER and CTRL+UPARROW
 	document.addEventListener("keydown", (event) => {
 		if (event.ctrlKey && event.key == "Enter") {
@@ -316,11 +320,36 @@ $("document").ready(function () {
 			ClearLocal();
 		}
 		if (event.key == "ArrowLeft") {		//swipes left
-			$('.swipe_left:last').click();
-		}
-		if (event.key == "ArrowRight") {		//swipes right
-			$('.swipe_right:last').click();
-		}
-	});
+			/* console.log('SWIPE FILTER -- ' +
+				$("#send_textarea").val() + ' ' +
+				$("#character_popup").css("display") + ' ' +
+				$("#shadow_select_chat_popup").css("display") + ' ' +
+				isInputElementInFocus()); */
 
-})
+			if (
+				$("#send_textarea").val() === '' &&
+				$("#character_popup").css("display") === "none" &&
+				$("#shadow_select_chat_popup").css("display") === "none" &&
+				!isInputElementInFocus()
+			) {
+				$('.swipe_left:last').click();
+			}
+		}
+		if (event.key == "ArrowRight") { //swipes right
+			/* console.log('SWIPE FILTER -- ' +
+				$("#send_textarea").val() + ' ' +
+				$("#character_popup").css("display") + ' ' +
+				$("#shadow_select_chat_popup").css("display") + ' ' +
+				isInputElementInFocus()); */
+
+			if (
+				$("#send_textarea").val() === '' &&
+				$("#character_popup").css("display") === "none" &&
+				$("#shadow_select_chat_popup").css("display") === "none" &&
+				!isInputElementInFocus()
+			) {
+				$('.swipe_right:last').click();
+			}
+		};
+	})
+});

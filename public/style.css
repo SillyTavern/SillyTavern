@@ -383,6 +383,15 @@ code {
     height: 30px;
     width: 30px;
 }
+.swipes-counter{
+display: inline;
+height: 15px;
+width: 30px;
+color: white;
+position: fixed;
+border: 1px solid red;
+font-size: 12px;
+}
 
 .swipe_left {
     left: 20px;

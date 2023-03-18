@@ -180,14 +180,14 @@ async function setExpression(character, expression) {
     const debugImageStatus = document.querySelector(`#image_list li[id="${filename}"]`);
 
     if (debugImageStatus && !debugImageStatus.classList.contains('failure')) {
-        console.log('setting expression from character images folder');
+        //console.log('setting expression from character images folder');
         const imgUrl = `/characters/${character}/${filename}`;
         $('img.expression').prop('src', imgUrl);
     } else {
         if (showDefault) {
-            console.log('no character images, trying default expressions');
+            //console.log('no character images, trying default expressions');
             const defImgUrl = `/img/default-expressions/${filename}`;
-            console.log(defImgUrl);
+            //console.log(defImgUrl);
             $('img.expression').prop('src', defImgUrl);
         }
     }
