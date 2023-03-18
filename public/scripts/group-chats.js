@@ -486,7 +486,7 @@ function select_group_chats(chat_id) {
     });
     $("#rm_group_filter").val("").trigger("input");
 
-    selectRightMenuWithAnimation('rm_group_chats_block')
+    selectRightMenuWithAnimation('rm_group_chats_block');
 
     async function memberClickHandler(event) {
         event.stopPropagation();
@@ -578,8 +578,8 @@ function select_group_chats(chat_id) {
 
     // top bar
     if (group) {
-        $("#rm_button_selected_ch").children("h2").text("");
-        setRightTabSelectedClass();
+        $("#rm_button_selected_ch").children("h2").text(groupName);
+        setRightTabSelectedClass('rm_button_selected_ch');
     }
 }
 

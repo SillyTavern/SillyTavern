@@ -2453,8 +2453,6 @@ function select_selected_character(chid) {
     setRightTabSelectedClass('rm_button_selected_ch');
     var display_name = characters[chid].name;
 
-    $("#rm_button_selected_ch").children("h2").text(display_name);
-
     //create text poles
     $("#rm_button_back").css("display", "none");
     //$("#character_import_button").css("display", "none");
@@ -3034,8 +3032,12 @@ $(document).ready(function () {
         select_rm_create();
     });
     $("#rm_button_selected_ch").click(function () {
-        selected_button = "character_edit";
-        select_selected_character(this_chid);
+        if (selected_group) {
+            select_group_chats(selected_group);
+        } else {
+            selected_button = "character_edit";
+            select_selected_character(this_chid);
+        }
     });
 
     $(document).on("click", ".character_select", function () {
