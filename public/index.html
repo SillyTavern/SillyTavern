@@ -321,13 +321,13 @@
     <nav id="right-nav-panel">
         <div id="right-nav-panel-tabs">
             <div class="right_menu_button" id="rm_button_characters" title="Select/Create Characters">
-                <img alt="" src="img/id-card-regular.svg" />
+                <img alt="" class="svg_icon" src="img/id-card-regular.svg" />
             </div>
             <div class="right_menu_button" id="rm_button_settings" title="API and AI Settings">
-                <img alt="" src="img/gear-solid.svg" />
+                <img alt="" class="svg_icon" src="img/gear-solid.svg" />
             </div>
             <div class="right_menu_button" id="rm_button_extensions" title="Extensions">
-                <img alt="" src="img/cubes-solid.svg" />
+                <img alt="" class="svg_icon" src="img/cubes-solid.svg" />
             </div>
             <div class="right_menu_button" id="rm_button_selected_ch">
                 <h2></h2>
@@ -335,8 +335,8 @@
             <div class="right_menu_button" id="rm_button_panel_pin_div" title="Locked = Settings panel stays open">
                 <input type="checkbox" id="rm_button_panel_pin">
                 <label for="rm_button_panel_pin">
-                    <img class="unchecked" alt="" src="img/lock-open-solid.svg" />
-                    <img class="checked" alt="" src="img/lock-solid.svg" />
+                    <img class="unchecked svg_icon" alt="" src="img/lock-open-solid.svg" />
+                    <img class="checked svg_icon" alt="" src="img/lock-solid.svg" />
                 </label>
             </div>
         </div>
@@ -357,18 +357,27 @@
                             title="Click to select a new avatar for this character">
                             <input type="file" id="add_avatar_button" name="avatar"
                                 accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp">
-                                📷
+                                <img alt="" class="svg_icon" src="img/file-image-solid.svg">
                         </label>
                         <div class="form_create_bottom_buttons_block">
-                            <div id="rm_button_back" class="menu_button">🔙</div>
-                            <div id="advanced_div" class="menu_button" title="Advanced Definitions">🧠</div>
-                            <div id="export_button" class="menu_button" title="Export and Download">💾</div>
+                            <div id="rm_button_back" class="menu_button">
+                                <img alt="" class="svg_icon" src="img/left-long-solid.svg">
+                            </div>
+                            <div id="advanced_div" class="menu_button" title="Advanced Definitions">
+                                <img alt="" class="svg_icon" src="img/user-pen-solid.svg">
+                            </div>
+                            <div id="export_button" class="menu_button" title="Export and Download">
+                                <img alt="" class="svg_icon" src="img/file-export-solid.svg">
+                            </div>
                             <!-- <div id="create_button" class="menu_button" type="submit" title="Create Character">✅</div> -->
                             <label for="create_button" id="create_button_label" class="menu_button" title="Create Character">
-                                <input type="submit" id="create_button" name="create_button">✅
+                                <input type="submit" id="create_button" name="create_button">
+                                <img alt="" class="svg_icon" src="img/user-check-solid.svg">
                             </label>
                             <!-- <input id="create_button" class="menu_button" title="Create Character" type="submit" value="✅"> -->
-                            <div id="delete_button" class="menu_button" title="Delete Character" >🗑️</div>
+                            <div id="delete_button" class="menu_button" title="Delete Character" >
+                                <img alt="" class="svg_icon" src="img/trash-can-solid.svg">
+                            </div>
                         </div>
                     </div>
                     <div id="result_info"></div>
@@ -407,11 +416,6 @@
                     </div>
                 </div>
                 <!-- now back to normal divs for display purposes-->
-
-               
-
-
-
             </form>
         </div>
         <div id="rm_group_chats_block" class="right_menu">
@@ -439,8 +443,8 @@
                     </div>
                     <div class="ch_name"></div>
                     <div class="group_member_icon">
-                        <img alt="Remove" class="minus" src="img/minus-solid.svg">
-                        <img alt="Add" class="plus" src="img/plus-solid.svg">
+                        <img alt="Remove" class="minus svg_icon" src="img/minus-solid.svg">
+                        <img alt="Add" class="plus svg_icon" src="img/plus-solid.svg">
                     </div>
                 </div>
             </div>
@@ -451,7 +455,7 @@
                         <img src="">
                     </div>
                     <div class="group_icon">
-                        <img src="img/user-group-solid.svg">
+                        <img class="svg_icon" src="img/user-group-solid.svg">
                     </div>
                     <div class="ch_name"></div>
                 </div>
@@ -799,9 +803,15 @@
 
         <div id="rm_characters_block" class="right_menu">
             <div class="form_create_bottom_buttons_block">
-                <div id="rm_button_create" title="Create New Character" class="menu_button">+👤</div>
-                <div id="character_import_button" title="Import Character from File" class="menu_button">+📂</div>
-                <div id="rm_button_group_chats" title="Create New Chat Group" class="menu_button">+👨‍👩‍👧‍👦</div>
+                <div id="rm_button_create" title="Create New Character" class="menu_button">
+                    <img alt="" class="svg_icon" src="img/user-plus-solid.svg">
+                </div>
+                <div id="character_import_button" title="Import Character from File" class="menu_button">
+                    <img alt="" class="svg_icon" src="img/file-arrow-up-solid.svg">
+                </div>
+                <div id="rm_button_group_chats" title="Create New Chat Group" class="menu_button">
+                    <img alt="" class="svg_icon" src="img/user-group-solid.svg">
+                </div>
             </div>
 
             <form id="form_character_search_form" action="javascript:void(null);">
