@@ -323,48 +323,6 @@ $.get("/csrf-token").then((data) => {
 });
 
 ///////////// UNUSED FUNCTIONS MOVED TO TOP ///////////////
-function cleanGroupMessage(getMessage) {
-    const group = groups.find((x) => x.id == selected_group);
-
-    if (group && Array.isArray(group.members) && group.members) {
-        for (let member of group.members) {
-            // Skip current speaker.
-            if (member === name2) {
-                continue;
-            }
-
-            const indexOfMember = getMessage.indexOf(member + ":");
-            if (indexOfMember != -1) {
-                getMessage = getMessage.substr(0, indexOfMember);
-            }
-        }
-    }
-    return getMessage;
-}
-
-function getExtensionPrompt() {
-    let extension_prompt = Object.keys(extension_prompts)
-        .sort()
-        .map((x) => extension_prompts[x])
-        .filter(x => x)
-        .join("\n");
-    if (extension_prompt.length && !extension_prompt.endsWith("\n")) {
-        extension_prompt += "\n";
-    }
-    return extension_prompt;
-}
-
-function getWorldInfoPrompt(chat2) {
-    let worldInfoString = "", worldInfoBefore = "", worldInfoAfter = "";
-
-    if (world_info && world_info_data) {
-        const activatedWorldInfo = checkWorldInfo(chat2);
-        worldInfoBefore = activatedWorldInfo.worldInfoBefore;
-        worldInfoAfter = activatedWorldInfo.worldInfoAfter;
-        worldInfoString = worldInfoBefore + worldInfoAfter;
-    }
-    return { worldInfoString, worldInfoBefore, worldInfoAfter };
-}
 
 function newMesPattern(name) {
     //Patern which denotes a new message
@@ -944,7 +902,69 @@ function extractMessageBias(message) {
     return ` ${found.join(" ")} `;
 }
 
+function cleanGroupMessage(getMessage) {
+    const group = groups.find((x) => x.id == selected_group);
 
+    if (group && Array.isArray(group.members) && group.members) {
+        for (let member of group.members) {
+            // Skip current speaker.
+            if (member === name2) {
+                continue;
+            }
+
+            const indexOfMember = getMessage.indexOf(member + ":");
+            if (indexOfMember != -1) {
+                getMessage = getMessage.substr(0, indexOfMember);
+            }
+        }
+    }
+    return getMessage;
+}
+
+function getExtensionPrompt() {
+    let extension_prompt = Object.keys(extension_prompts)
+        .sort()
+        .map((x) => extension_prompts[x])
+        .filter(x => x)
+        .join("\n");
+    if (extension_prompt.length && !extension_prompt.endsWith("\n")) {
+        extension_prompt += "\n";
+    }
+    return extension_prompt;
+}
+
+function getWorldInfoPrompt(chat2) {
+    let worldInfoString = "", worldInfoBefore = "", worldInfoAfter = "";
+
+    if (world_info && world_info_data) {
+        const activatedWorldInfo = checkWorldInfo(chat2);
+        worldInfoBefore = activatedWorldInfo.worldInfoBefore;
+        worldInfoAfter = activatedWorldInfo.worldInfoAfter;
+        worldInfoString = worldInfoBefore + worldInfoAfter;
+    }
+    return { worldInfoString, worldInfoBefore, worldInfoAfter };
+}
+
+function baseChatReplaceAndSplit(value, name1, name2) {
+    if (value !== undefined && value.length > 0) {
+        if (is_pygmalion) {
+            value = value.replace(/{{user}}:/gi, "You:");
+            value = value.replace(/<USER>:/gi, "You:");
+        }
+        value = value.replace(/{{user}}/gi, name1);
+        value = value.replace(/{{char}}/gi, name2);
+        value = value.replace(/<USER>/gi, name1);
+        value = value.replace(/<BOT>/gi, name2);;
+    }
+    return value;
+}
+
+function appendToStoryString(value, prefix) {
+    if (value !== undefined && value.length > 0) {
+        return prefix + value + '\n';
+    }
+    return '';
+}
 
 async function Generate(type, automatic_trigger) {//encode("dsfs").length
     console.log('Generate entered');
@@ -1047,37 +1067,23 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
             addOneMessage(chat[chat.length - 1]);
         }
         ////////////////////////////////////
-        var chatString = '';
-        var arrMes = [];
-        var mesSend = [];
-        var mesExamplesArray = [];
-        var charDescription = baseChatReplaceAndSplit($.trim(characters[this_chid].description), name1, name2);
-        var charPersonality = baseChatReplaceAndSplit($.trim(characters[this_chid].personality), name1, name2);
-        var Scenario = baseChatReplaceAndSplit($.trim(characters[this_chid].scenario), name1, name2);
-        var mesExamples = baseChatReplaceAndSplit($.trim(characters[this_chid].mes_example.replace(/<START>/gi, '')), name1, name2);
+        let chatString = '';
+        let arrMes = [];
+        let mesSend = [];
+        let charDescription = baseChatReplaceAndSplit($.trim(characters[this_chid].description), name1, name2);
+        let charPersonality = baseChatReplaceAndSplit($.trim(characters[this_chid].personality), name1, name2);
+        let Scenario = baseChatReplaceAndSplit($.trim(characters[this_chid].scenario), name1, name2);
+        let mesExamples = baseChatReplaceAndSplit($.trim(characters[this_chid].mes_example), name1, name2);
 
-        function baseChatReplaceAndSplit(value, name1, name2) {
-            if (value !== undefined && value.length > 0) {
-                if (is_pygmalion) {
-                    value = value.replace(/{{user}}:/gi, "You:");
-                    value = value.replace(/<USER>:/gi, "You:");
-                }
-                value = value.replace(/{{user}}/gi, name1);
-                value = value.replace(/{{char}}/gi, name2);
-                value = value.replace(/<USER>/gi, name1);
-                value = value.replace(/<BOT>/gi, name2);
-                let blocks = value.split(/<START>/gi);
-                return blocks.slice(1).map(block => `<START>\n${block.trim()}\n`).join('');
-            }
-            return value;
+        if (!mesExamples.startsWith('<START>')) {
+            mesExamples = '<START>\n' + mesExamples.trim();
         }
 
-        function appendToStoryString(value, prefix) {
-            if (value !== undefined && value.length > 0) {
-                return prefix + value + '\n';
-            }
-            return '';
+        if (mesExamples.replace(/<START>/gi, '').trim().length === 0) {
+            mesExamples = '';
         }
+
+        let mesExamplesArray = mesExamples.split(/<START>/gi).slice(1).map(block => `<START>\n${block.trim()}\n`);
 
         if (is_pygmalion) {
             storyString += appendToStoryString(charDescription, name2 + "'s Persona: ");
@@ -1151,19 +1157,9 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
             }
         }
 
-        let worldInfoString = '', worldInfoBefore = '', worldInfoAfter = '';
+        let { worldInfoString, worldInfoBefore, worldInfoAfter } = getWorldInfoPrompt(chat2);
+        let extension_prompt = getExtensionPrompt();
 
-        if (world_info && world_info_data) {
-            const activatedWorldInfo = checkWorldInfo(chat2);
-            worldInfoBefore = activatedWorldInfo.worldInfoBefore;
-            worldInfoAfter = activatedWorldInfo.worldInfoAfter;
-            worldInfoString = worldInfoBefore + worldInfoAfter;
-        }
-
-        let extension_prompt = Object.keys(extension_prompts).sort().map(x => extension_prompts[x]).filter(x => x).join('\n');
-        if (extension_prompt.length && !extension_prompt.endsWith('\n')) {
-            extension_prompt += '\n';
-        }
         /////////////////////// swipecode
         if (type == 'swipe') {
 
@@ -1529,21 +1525,7 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
                         }
                         // clean-up group message from excessive generations
                         if (type == 'group_chat' && selected_group) {
-                            const group = groups.find(x => x.id == selected_group);
-
-                            if (group && Array.isArray(group.members) && group.members) {
-                                for (let member of group.members) {
-                                    // Skip current speaker.
-                                    if (member === name2) {
-                                        continue;
-                                    }
-
-                                    const indexOfMember = getMessage.indexOf(member + ":");
-                                    if (indexOfMember != -1) {
-                                        getMessage = getMessage.substr(0, indexOfMember);
-                                    }
-                                }
-                            }
+                            getMessage = cleanGroupMessage(getMessage);
                         }
                         let this_mes_is_name = true;
                         if (getMessage.indexOf(name2 + ":") === 0) {
