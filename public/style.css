@@ -343,6 +343,10 @@ code {
 }
 
 
+#message_template {
+    display: none !important;
+}
+
 .mes {
     display: grid;
     grid-template-columns: min-content min-content auto min-content min-content;
