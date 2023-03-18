@@ -977,9 +977,9 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
                 //$('#chat').children().last().css({'transition':'all 0.5s ease-in-out'});
                 //$('#chat').children().last().css({'transform':'translateX(100vh) scale(0.1,0.1)'});
                 //$('#chat').children().last().css({'opacity':'0'});
-                setTimeout(function () {
-                    $('#chat').children().last().remove();
-                }, 1000);
+                $('#chat').children().last().fadeOut(300, function() {
+                    $(this).remove();
+                });
             }
         }
 

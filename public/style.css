@@ -744,7 +744,18 @@ select option:not(:checked) {
 }
 
 img[src*="user-slash-solid.svg"] {
-    filter: invert(1)
+    filter: invert(1);
+}
+
+.menu_button .svg_icon {
+    height: 24px;
+    vertical-align: middle;
+    margin: 5px;
+    filter: invert(1) brightness(75%);
+}
+
+.svg_icon {
+    filter: invert(1);
 }
 
 #api_url_text,
@@ -1061,13 +1072,17 @@ input[type=search]:focus::-webkit-search-cancel-button {
     /* width: 100%; */
 }
 
+#rm_characters_block .form_create_bottom_buttons_block {
+    justify-content: space-evenly !important;
+}
+
 .form_create_bottom_buttons_block {
     display: flex;
     flex: 1;
     grid-template-columns: repeat(3, min-content);
     grid-gap: 20px;
     align-items: center;
-    justify-content: right;
+    justify-content: end;
 }
 
 #rm_info_block {
@@ -2143,6 +2158,7 @@ input[type="range"] {
     flex-direction: row;
     align-items: center;
     width: 100%;
+    column-gap: 15px;
 }
 
 #rm_button_group_chats {
@@ -2266,10 +2282,6 @@ input[type="range"] {
     margin: 0 10px;
 }
 
-.group_member_icon img {
-    filter: invert(1);
-}
-
 .group_member {
     display: flex;
     flex-direction: row;
@@ -2326,8 +2338,8 @@ input[type="range"] {
     text-overflow: ellipsis;
 }
 
-.group_select .group_icon img {
-    filter: invert(1);
+#rm_button_back_from_group {
+    padding: 0;
 }
 
 #typing_indicator_template {
@@ -2541,7 +2553,6 @@ h2 {
 
 .right_menu_button img {
     display: block;
-    filter: invert(1);
     cursor: pointer;
     height: 26px;
 }
