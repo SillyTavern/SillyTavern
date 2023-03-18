@@ -45,6 +45,7 @@ export {
     getGroupAvatar,
     getGroups,
     printGroups,
+    regenerateGroup,
     resetSelectedGroup,
     select_group_chats,
 }
@@ -70,6 +71,10 @@ async function _save(group) {
 
 
 // Group chats
+async function regenerateGroup() {
+    // placeholder
+}
+
 async function getGroupChat(id) {
     const response = await fetch("/getgroupchat", {
         method: "POST",

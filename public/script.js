@@ -28,6 +28,7 @@ import {
     printGroups,
     resetSelectedGroup,
     select_group_chats,
+    regenerateGroup,
 } from "./scripts/group-chats.js";
 
 import {
@@ -997,10 +998,9 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
             } else {
                 chat.length = chat.length - 1;
                 count_view_mes -= 1;
-                //$('#chat').children().last().css({'transition':'all 0.5s ease-in-out'});
-                //$('#chat').children().last().css({'transform':'translateX(100vh) scale(0.1,0.1)'});
-                //$('#chat').children().last().css({'opacity':'0'});
-                $('#chat').children().last().remove();
+                $('#chat').children().last().hide(500, function() {
+                    $(this).remove();
+                });
             }
         }
 
@@ -2725,6 +2725,7 @@ $(document).ready(function () {
         } else {
             hideSwipeButtons();
         }
+        saveSettingsDebounced();
     });
 
     ///// SWIPE BUTTON CLICKS ///////
@@ -3617,7 +3618,13 @@ $(document).ready(function () {
             if (is_send_press == false) {
                 //hideSwipeButtons();
                 is_send_press = true;
-                Generate("regenerate");
+                
+                if (selected_group) {
+                    regenerateGroup();
+                }
+                else {
+                    Generate("regenerate");
+                }
             }
         }
 
