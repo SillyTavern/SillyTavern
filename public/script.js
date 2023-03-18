@@ -2715,7 +2715,7 @@ function showSwipeButtons() {
         currentMessage.children('.swipe_right').css('opacity', '0.3');
     }
     //console.log((chat[chat.length - 1]));
-    if (is_send_press === false && (chat[chat.length - 1].swipes.length - swipeId) === 1) {
+    if ((chat[chat.length - 1].swipes.length - swipeId) === 1) {
         console.log('highlighting R swipe');
         currentMessage.children('.swipe_right').css('opacity', '0.7');
     }
