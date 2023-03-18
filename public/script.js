@@ -3855,42 +3855,50 @@ $(document).ready(function () {
         {
             sliderId: "#temp",
             counterId: "#temp_counter",
-            format: (val) => isInt(val) ? val + ".00" : val
+            format: (val) => isInt(val) ? val + ".00" : val,
+            setValue: (val) => { temp = Number(val); },
         },
         {
             sliderId: "#amount_gen",
             counterId: "#amount_gen_counter",
-            format: (val) => val
+            format: (val) => val,
+            setValue: (val) => { amount_gen = Number(val); },
         },
         {
             sliderId: "#max_context",
             counterId: "#max_context_counter",
-            format: (val) => val + " Tokens"
+            format: (val) => val + " Tokens",
+            setValue: (val) => { max_context = Number(val); },
         },
         {
             sliderId: "#rep_pen",
             counterId: "#rep_pen_counter",
-            format: (val) => isInt(val) ? val + ".00" : val
+            format: (val) => isInt(val) ? val + ".00" : val,
+            setValue: (val) => { rep_pen = Number(val); },
         },
         {
             sliderId: "#rep_pen_size",
             counterId: "#rep_pen_size_counter",
-            format: (val) => val + " Tokens"
+            format: (val) => val + " Tokens",
+            setValue: (val) => { rep_pen_size = Number(val); },
         },
         {
             sliderId: "#temp_novel",
             counterId: "#temp_counter_novel",
-            format: (val) => isInt(val) ? val + ".00" : val
+            format: (val) => isInt(val) ? val + ".00" : val,
+            setValue: (val) => { temp_novel = Number(val); },
         },
         {
             sliderId: "#rep_pen_novel",
             counterId: "#rep_pen_counter_novel",
-            format: (val) => isInt(val) ? val + ".00" : val
+            format: (val) => isInt(val) ? val + ".00" : val,
+            setValue: (val) => { rep_pen_novel = Number(val); },
         },
         {
             sliderId: "#rep_pen_size_novel",
             counterId: "#rep_pen_size_counter_novel",
-            format: (val) => val + " Tokens"
+            format: (val) => val + " Tokens",
+            setValue: (val) => { rep_pen_size_novel = Number(val); },
         }
     ];
 
@@ -3898,6 +3906,7 @@ $(document).ready(function () {
         $(document).on("input", slider.sliderId, function () {
             const value = $(this).val();
             const formattedValue = slider.format(value);
+            slider.setValue(value);
             $(slider.counterId).html(formattedValue);
             console.log('saving');
             saveSettingsDebounced();
