@@ -54,10 +54,10 @@ function addDiceRollButton() {
         if (target.is(button) && !dropdown.is(":visible")) {
             e.preventDefault();
 
-            dropdown.show();
+            dropdown.show(200);
             popper.update();
         } else {
-            dropdown.hide();
+            dropdown.hide(200);
         }
     });
 }
