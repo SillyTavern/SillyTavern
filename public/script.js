@@ -2687,6 +2687,7 @@ function showSwipeButtons() {
     ) { return; }
     const currentMessage = $("#chat").children().filter(`[mesid="${count_view_mes - 1}"]`);
     const swipeId = chat[chat.length - 1].swipe_id;
+    var swipesCounterHTML = (`${(swipeId + 1)}/${(chat[chat.length - 1].swipes.length)}`);
 
     if (swipeId !== undefined && swipeId != 0) {
         currentMessage.children('.swipe_left').css('display', 'flex');
@@ -2710,8 +2711,6 @@ function showSwipeButtons() {
         console.log('highlighting R swipe');
         currentMessage.children('.swipe_right').css('opacity', '0.7');
     }
-
-    var swipesCounterHTML = (`${(swipeId + 1)}/${(chat[chat.length - 1].swipes.length)}`);
     console.log(swipesCounterHTML);
 
     $(".swipes-counter").html(swipesCounterHTML);
