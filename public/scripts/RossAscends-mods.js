@@ -12,6 +12,10 @@ import {
 
 } from "../script.js";
 
+import {
+    pin_examples,
+} from "./power-user.js";
+
 import { LoadLocal, SaveLocal, ClearLocal, CheckLocal, LoadLocalBool } from "./f-localStorage.js";
 import { selected_group, is_group_generating } from "./group-chats.js";
 
@@ -141,7 +145,8 @@ function RA_CountCharTokens() {
 					characters[this_chid].name +
 					characters[this_chid].description +
 					characters[this_chid].personality +
-					characters[this_chid].scenario
+					characters[this_chid].scenario +
+                    (pin_examples ? characters[this_chid].mes_example : '') // add examples to permanent if they are pinned
 				)).length;
 		} else { console.log("RA_TC -- no valid char found, closing."); }				// if neither, probably safety char or some error in loading
 	}
