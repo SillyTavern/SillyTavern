@@ -290,10 +290,7 @@ app.post("/generate", jsonParser, async function (request, response_generate = r
                     case 503:
                         await delay(delayAmount);
                         break;
-                    case 422:
-                        console.log('Validation error');
-                    case 501:
-                    case 507:
+                    default:
                         return response_generate.send({ error: true });
                 }
             } else {
