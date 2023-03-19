@@ -36,6 +36,9 @@ import {
     collapse_newlines,
     pin_examples,
     collapseNewlines,
+    disable_description_formatting,
+    disable_personality_formatting,
+    disable_scenario_formatting,
 } from "./scripts/power-user.js";
 
 import { debounce, delay } from "./scripts/utils.js";
@@ -1099,12 +1102,12 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
         let mesExamplesArray = mesExamples.split(/<START>/gi).slice(1).map(block => `<START>\n${block.trim()}\n`);
 
         if (is_pygmalion) {
-            storyString += appendToStoryString(charDescription, name2 + "'s Persona: ");
-            storyString += appendToStoryString(charPersonality, 'Personality: ');
-            storyString += appendToStoryString(Scenario, 'Scenario: ');
+            storyString += appendToStoryString(charDescription, disable_description_formatting ? '' : name2 + "'s Persona: ");
+            storyString += appendToStoryString(charPersonality, disable_personality_formatting ? '' : 'Personality: ');
+            storyString += appendToStoryString(Scenario, disable_scenario_formatting ? '' : 'Scenario: ');
         } else {
             if (charDescription !== undefined) {
-                if (charPersonality.length > 0) {
+                if (charPersonality.length > 0 && !disable_personality_formatting) {
                     charPersonality = name2 + "'s personality: " + charPersonality;
                 }
             }
@@ -1120,12 +1123,15 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
             }
         }
 
-        if (pin_examples){
+        if (pin_examples) {
             for (let example of mesExamplesArray) {
                 if(!is_pygmalion) {
+                    if (!storyString.endsWith('\n')) {
+                        storyString += '\n';
+                    }
                     example = example.replace(/<START>/i, 'This is how '+name2+' should talk');//An example of how '+name2+' responds
                 }
-                storyString += example;
+                storyString += appendToStoryString(example, '');
             }
         }
         //////////////////////////////////
@@ -1230,7 +1236,10 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
                     }
                 }
                 if (!is_pygmalion && Scenario && Scenario.length > 0) {
-                    storyString += `Circumstances and context of the dialogue: ${Scenario}\n`;
+                    if (!storyString.endsWith('\n')) {
+                        storyString += '\n';
+                    }
+                    storyString += !disable_scenario_formatting ? `Circumstances and context of the dialogue: ${Scenario}\n` : `${Scenario}\n`;
                 }
                 console.log('calling runGenerate');
                 runGenerate();
@@ -1353,6 +1362,10 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
             }
             finalPromt = worldInfoBefore + storyString + worldInfoAfter + extension_prompt + mesExmString + mesSendString + generatedPromtCache + promptBias;
             finalPromt = finalPromt.replace(/\r/gm, '');
+
+            if (collapse_newlines) {
+                finalPromt = collapseNewlines(finalPromt);
+            }
 
             //console.log('final prompt decided');
 
