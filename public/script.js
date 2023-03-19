@@ -3480,15 +3480,14 @@ $(document).ready(function () {
 
     //////// OPTIMIZED ALL CHAR CREATION/EDITING TEXTAREA LISTENERS ///////////////
 
-    $("#character_name_pole").on("change keyup paste", function () {
+    $("#character_name_pole").on("input", function () {
         if (menu_type == "create") {
             create_save_name = $("#character_name_pole").val();
         }
     });
 
-    $("#description_textarea, #personality_textarea, #scenario_pole" +
-        "#mes_example_textarea, #firstmessage_textarea")
-        .on("keyup paste cut", function () {
+    $("#description_textarea, #personality_textarea, #scenario_pole, #mes_example_textarea, #firstmessage_textarea")
+        .on("input", function () {
             if (menu_type == "create") {
                 create_save_description = $("#description_textarea").val();
                 create_save_personality = $("#personality_textarea").val();
