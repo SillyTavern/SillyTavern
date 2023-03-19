@@ -1204,7 +1204,7 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
                 arrMes[arrMes.length] = item;
             } else {
                 console.log('reducing chat.length by 1');
-                i = chat.length - 1;
+                i = chat2.length - 1;
             }
 
             await delay(1); //For disable slow down (encode gpt-2 need fix)
@@ -1212,7 +1212,7 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
 
             count_exm_add = 0;
 
-            if (i === chat.length - 1) {
+            if (i === chat2.length - 1) {
                 if (!pin_examples) {
                     let mesExmString = '';
                     for (let iii = 0; iii < mesExamplesArray.length; iii++) {
