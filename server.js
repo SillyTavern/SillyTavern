@@ -56,7 +56,7 @@ var api_key_novel;
 //New chats made with characters will use this new formatting.
 //Useable variable is (( humanizedISO8601Datetime ))
 
-
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 
 function humanizedISO8601DateTime() {
     let baseDate = new Date(Date.now());
@@ -225,7 +225,7 @@ app.post("/getlastversion", jsonParser, function (request, response_getlastversi
 });
 
 //**************Kobold api
-app.post("/generate", jsonParser, function (request, response_generate = response) {
+app.post("/generate", jsonParser, async function (request, response_generate = response) {
     if (!request.body) return response_generate.sendStatus(400);
     //console.log(request.body.prompt);
     //const dataJson = JSON.parse(request.body);
@@ -271,24 +271,36 @@ app.post("/generate", jsonParser, function (request, response_generate = respons
         data: this_settings,
         headers: { "Content-Type": "application/json" }
     };
-    client.post(api_server + "/v1/generate", args, function (data, response) {
-        if (response.statusCode == 200) {
+
+    const MAX_RETRIES = 10;
+    const delayAmount = 3000;
+    for (let i = 0; i < MAX_RETRIES; i++) {
+        try {
+            const data = await postAsync(api_server + "/v1/generate", args);
             console.log(data);
-            response_generate.send(data);
+            return response_generate.send(data);
         }
-        if (response.statusCode == 422) {
-            console.log('Validation error');
-            response_generate.send({ error: true });
+        catch (error) {
+            // data
+            console.log(error[0]);
+
+            // response
+            if (error[1]) {
+                switch (error[1].statusCode) {
+                    case 503:
+                        await delay(delayAmount);
+                        break;
+                    case 422:
+                        console.log('Validation error');
+                    case 501:
+                    case 507:
+                        return response_generate.send({ error: true });
+                }
+            } else {
+                return response_generate.send({ error: true });
+            }
         }
-        if (response.statusCode == 501 || response.statusCode == 503 || response.statusCode == 507) {
-            console.log(data);
-            response_generate.send({ error: true });
-        }
-    }).on('error', function (err) {
-        console.log(err);
-        //console.log('something went wrong on the request', err.request.options);
-        response_generate.send({ error: true });
-    });
+    }
 });
 
 //************** Text generation web UI
@@ -1513,15 +1525,15 @@ function putAsync(url, args) {
     })
 }
 
-function postAsync(url, args) {
-    return new Promise((resolve, reject) => {
-        client.post(url, args, (data, response) => {
-            if (response.statusCode >= 400) {
-                reject(data);
-            }
-            resolve(data);
-        }).on('error', e => reject(e));
-    })
+    function postAsync(url, args) {
+        return new Promise((resolve, reject) => {
+            client.post(url, args, (data, response) => {
+                if (response.statusCode >= 400) {
+                    reject([data, response]);
+                }
+                resolve(data);
+            }).on('error', e => reject(e));
+        })
 }
 
 function getAsync(url, args) {
