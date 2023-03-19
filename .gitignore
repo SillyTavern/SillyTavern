@@ -3,6 +3,7 @@ public/chats/
 public/characters/
 public/User Avatars/
 public/backgrounds/
+public/css/bg_load.css
 /uploads/
 *.jsonl
 public/settings.json
