@@ -198,7 +198,7 @@ app.get("/notes/*", function (request, response) {
 app.post("/getlastversion", jsonParser, function (request, response_getlastversion = response) {
     if (!request.body) return response_getlastversion.sendStatus(400);
 
-    const repo = 'TavernAI/TavernAI';
+    const repo = 'SillyLossy/TavernAI';
     let req;
     req = https.request({
         hostname: 'github.com',
@@ -207,7 +207,7 @@ app.post("/getlastversion", jsonParser, function (request, response_getlastversi
     }, (res) => {
         if (res.statusCode === 302) {
             const glocation = res.headers.location;
-            const versionStartIndex = glocation.lastIndexOf('@') + 1;
+            const versionStartIndex = glocation.lastIndexOf('/tag/') + 5;
             const version = glocation.substring(versionStartIndex);
             //console.log(version);
             response_getlastversion.send({ version: version });
