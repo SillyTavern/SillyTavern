@@ -847,7 +847,6 @@ function addOneMessage(mes, type = "normal") {
     $('#chat .mes').last().addClass('last_mes');
     $('#chat .mes').eq(-2).removeClass('last_mes');
     //$textchat.scrollTop(($textchat[0].scrollHeight));
-    $('#chat .mes').last().get(0).scrollIntoView({ behavior: "smooth" });
 
 
     //console.log(chat[chat.length - 1].["swipes"]);
@@ -862,6 +861,8 @@ function addOneMessage(mes, type = "normal") {
     hideSwipeButtons();
     //console.log('addonemessage calling showSwipeBtns');
     showSwipeButtons();
+
+    $('#chat .mes').last().get(0).scrollIntoView({ behavior: "smooth" });
 }
 
 function substituteParams(content) {
