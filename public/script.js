@@ -1215,7 +1215,7 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
             if (i === chat.length - 1) {
                 if (!pin_examples) {
                     let mesExmString = '';
-                    for (let iii = mesExamplesArray.length - 1; iii >= 0; iii--) {
+                    for (let iii = 0; iii < mesExamplesArray.length; iii++) {
                         mesExmString += mesExamplesArray[iii];
                         const prompt = worldInfoString + storyString + mesExmString + chatString + anchorTop + anchorBottom + charPersonality + promptBias + extension_prompt;
                         if (encode(JSON.stringify(prompt)).length + 120 < this_max_context) {
@@ -1225,19 +1225,19 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
                             count_exm_add++;
                             await delay(1);
                         } else {
-                            break;
+                            iii = mesExamplesArray.length;
                         }
                     }
                 }
                 if (!is_pygmalion && Scenario && Scenario.length > 0) {
                     storyString += `Circumstances and context of the dialogue: ${Scenario}\n`;
                 }
+                console.log('calling runGenerate');
+                runGenerate();
+                return;
             }
             i++;
         }
-        console.log('calling runGenerate');
-        runGenerate();
-        return;
 
         function runGenerate(cycleGenerationPromt = '') {
             $(".swipe_right").css("display", "none");
@@ -1424,6 +1424,7 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
                         textgenerationwebui_settings.top_p, // top_p
                         textgenerationwebui_settings.typical_p, // typical_p
                         textgenerationwebui_settings.rep_pen, // repetition_penalty
+                        1.0, // encoder rep pen
                         textgenerationwebui_settings.top_k, // top_k
                         0, // min_length
                         textgenerationwebui_settings.rep_pen_size, // no_repeat_ngram_size
