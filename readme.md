@@ -1,25 +1,32 @@
-## RossAscends mods ported into SillyLossy's TavernAI 1.2.8
-
-
-<img width="400" alt="image" src="https://user-images.githubusercontent.com/18619528/224549531-ab30db22-fe33-49c5-81a8-945c543a1e05.png">
+## Silly TavernAI mod. Based on fork of TavernAI 1.2.8
+### Brought to you by @SillyLossy and @RossAscends
 
 ## This branch includes: 
 * Base TavernAI 1.2.8
-* SillyLossy's extensive 1.2.8 modifications and functions
-   * World Info
-   * OobaBooga's TextGen WebUI API connection
-   * Soft prompts
-   * installing [SillyLossy's TAI-extras](https://github.com/SillyLossy/TavernAI-extras) will give support for
-     * Character emotional expressions
-     * Auto-Summary of the chat history
-     * sending images to chat, and the AI interpreting the content.
-   
+* Swipes
+* Group chats
+* Advanced KoboldAI generation settings
+* World Info support
+* [Oobabooga's TextGen WebUI](https://github.com/oobabooga/text-generation-webui) API connection
+* Soft prompts selector for KoboldAI
+* Prompt generation formatting tweaking
+* Extensibility support via [SillyLossy's TAI-extras](https://github.com/SillyLossy/TavernAI-extras) plugins
+    * Character emotional expressions
+    * Auto-Summary of the chat history
+    * Sending images to chat, and the AI interpreting the content.
+
+## UI Extensions 🚀
+| Name             | Description                      | Required [Modules](#modules) | Screenshot |
+| ---------------- | ---------------------------------| ---------------------------- | ---------- |
+| Image Captioning | Send a cute picture to your bot!<br><br>Picture select option will appear beside "Message send" button. | `caption`                    | <img src="https://user-images.githubusercontent.com/18619528/224161576-ddfc51cd-995e-44ec-bf2d-d2477d603f0c.png" style="max-width:200px" />  |
+| Character Expressions | See your character reacting to your messages!<br><br>**You need to provide your own character images!**<br><br>1. Create a folder in TavernAI called `public/characters/<name>`, where `<name>` is a name of your character.<br>2. For base emotion classification model, put six PNG files there with the following names: `joy.png`, `anger.png`, `fear.png`, `love.png`, `sadness.png`, `surprise.png`. Other models may provide another options.<br>3. Images only display in desktop mode. | `classify` | <img style="max-width:200px" alt="image" src="https://user-images.githubusercontent.com/18619528/223765089-34968217-6862-47e0-85da-7357370f8de6.png"> |
+| Memory | Chatbot long-term memory simulation using automatic message context summarization. | `summarize` |  <img style="max-width:200px" alt="image" src="https://user-images.githubusercontent.com/18619528/223766279-88a46481-1fa6-40c5-9724-6cdd6f587233.png"> |
+| Floating Prompt | Adds a string to your scenario after certain amount of messages you send. Usage ideas: reinforce certain events during roleplay. Thanks @Ali឵#2222 for suggesting me that! | None | <img style="max-width:200px" src="https://user-images.githubusercontent.com/18619528/224158641-c317313c-b87d-42b2-9702-ea4ba896593e.png" /> | 
+| D&D Dice | A set of 7 classic D&D dice for all your dice rolling needs.<br><br>*I used to roll the dice.<br>Feel the fear in my enemies' eyes* | None | <img style="max-width:200px" alt="image" src="https://user-images.githubusercontent.com/18619528/226199925-a066c6fc-745e-4a2b-9203-1cbffa481b14.png"> |
 
 ...and...
 
 ## UI/CSS/Quality of Life tweaks by RossAscends
-
-*Many of these were incorporated in SillyLossy's TAI branch already, but I updated them and split the Javascript into a separate file for this release.*
 
 * Mobile-friendly page design
 * HotKeys
@@ -78,7 +85,10 @@ To connect over wifi you'll need your PC's local wifi IP address
 if you want other people on the internet to connect, and check [here](https://whatismyipaddress.com/) for 'IPv4'
 
 ## Questions or suggestions?
-Contact me on Discord: RossAscends#1779
+Contact us on Discord: Cohee#1207 or RossAscends#1779
+
+## Screenshots
+<img width="400" alt="image" src="https://user-images.githubusercontent.com/18619528/224549531-ab30db22-fe33-49c5-81a8-945c543a1e05.png">
 
 ## License
 * TAI Base: Unknown
