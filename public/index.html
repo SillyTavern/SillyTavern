@@ -52,10 +52,459 @@
 </head>
 
 <body>
+
+<!-- background selection menu -->
+    <div id="bg_menu">
+        <div id="logo_block">
+            <div id="bg_menu_button"><img src="img/tri.png">
+            </div>
+            <img src="img/logo.png" id="site_logo">
+            <div id="update-notification">
+                <a id="verson" href="https://github.com/TavernAI/TavernAI" target="_blank"></a>
+            </div>
+        </div>
+
+        <div id="bg_menu_content">
+            <form id="form_bg_download" action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                <label class="input-file">
+                    <input type="file" id="add_bg_button" name="avatar"
+                        accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp">
+                    <span class="bg_example_but_load"><img src='img/addbg3.png'></span>
+
+                </label>
+            </form>
+
+        </div>
+    </div>
     <div id="bg1"></div>
     <div id="bg2"></div>
-    <div id="top-bar"></div>
 
+<!-- top bar central settings buttons -->
+    <div id="top-bar">
+        <div id="top-settings-holder">
+            
+            <div id="sys-settings-button" class="drawer" style="z-index:3001;">
+                <div class="drawer-toggle drawer-header">
+                    <div class="drawer-icon icon-connect closedIcon"></div>
+                </div>
+                <div id="rm_api_block" class="drawer-content closedDrawer" >
+                    <div id="main-API-selector-block">
+                        <h3 id="title_api">API</h3>
+                        <select id="main_api">
+                            <option value="kobold">KoboldAI</option>
+                            <option value="textgenerationwebui">Text generation web UI</option>
+                            <option value="novel">NovelAI</option>
+                        </select>
+                    </div>
+                    <div id="kobold_api" style="position: relative;"> <!-- shows the kobold settings -->
+                        <form action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                            <h4>API url</h4>
+                            <h5>Example: http://127.0.0.1:5000/api </h5>
+                            <input id="api_url_text" name="api_url" class="text_pole" maxlength="500" value=""
+                                autocomplete="off">
+                            <input id="api_button" class="menu_button" type="submit" value="Connect">
+                            <img id="api_loading" src="img/load.svg">
+                            <div id="online_status2">
+                                <div id="online_status_indicator2"></div>
+                                <div id="online_status_text2">Not connected</div>
+                            </div>
+                        </form>
+                        <div id="kobold_api-presets">
+                            <h3>Kobold Presets
+                                <a href="/notes/4" class="notes-link" target="_blank">
+                                    <span class="note-link-span">?</span>
+                                </a>
+                            </h3>
+                            <select id="settings_perset">
+                                <option value="gui">GUI KoboldAI Settings</option>
+                            </select>
+                        </div>    
+                    </div>
+                    <div id="novel_api" style="display: none;position: relative;"> <!-- shows the novel settings -->
+                        <h4>Novel AI Model
+                            <a href="/notes/8" class="notes-link" target="_blank">
+                                <span class="note-link-span">?</span>
+                            </a>
+                        </h4>
+                        <select id="model_novel_select" class="option_select_right_menu" style='margin-bottom: 16px;'>
+                            <option value="euterpe-v2">Euterpe</option>
+                            <option value="krake-v2">Krake</option>
+                        </select><br>
+                        Preset settings
+                        <a href="/notes/7" class="notes-link" target="_blank">
+                            <span class="note-link-span">?</span>
+                        </a><br>
+                        <select id="settings_perset_novel" class="option_select_right_menu">
+                            <option value="gui">Default</option>
+                        </select>
+                    </div>
+                    <div id="textgenerationwebui_api" style="display: none;position: relative;">
+                        <div class="oobabooga_logo">
+                            <a href="https://github.com/oobabooga/text-generation-webui"target="_blank">
+                                oobabooga/text-generation-webui
+                            </a>
+                        </div>
+                        <span>Make sure you run it:
+                            <ul>
+                                <li>with <pre>--no-stream</pre> option</li>
+                                <li>in notebook mode (not <pre>--cai-chat</pre> or <pre>--chat</pre>)</li>
+                            </ul>
+                        </span>
+                        <form action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                            <h4>API url</h4>
+                            <h5>Example: http://127.0.0.1:7860/ </h5>
+                            <input id="textgenerationwebui_api_url_text" name="textgenerationwebui_api_url"
+                                class="text_pole" maxlength="500" size="35" value="" autocomplete="off">
+                            <input id="api_button_textgenerationwebui" class="menu_button" type="submit" value="Connect">
+                            <img id="api_loading_textgenerationwebui" src="img/load.svg">
+                        </form>
+                        <div id="online_status4">
+                            <div id="online_status_indicator4"></div>
+                            <div id="online_status_text4">Not connected</div>
+                        </div>
+                    </div>
+                </div>
+            </div>   
+
+            <div id="user-settings-button" class="drawer" style="z-index:3004;">
+                <div class="drawer-toggle">
+                    <div class="drawer-icon icon-user closedIcon"></div>
+                </div>
+                <div id="user-settings-block" class="drawer-content closedDrawer">
+                    <h3>User Settings</h3>
+                    <h4>Your Avatar</h4>
+                    <div id="user_avatar_block">
+                        <div class="avatar_upload">+</div>
+                    </div>
+                    <form id="form_upload_avatar" action="javascript:void(null);" method="post"
+                        enctype="multipart/form-data">
+                        <input type="file" id="avatar_upload_file" accept="image/png" name="avatar">
+                    </form>
+                    <form id='form_change_name' action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                        <br>
+                        <h4>Name</h4>
+                        <input id="your_name" name="your_name" class="text_pole" maxlength="35" value=""
+                            autocomplete="off"><br>
+                        <input id="your_name_button" class="menu_button" type="submit"
+                            title="Click to set a new User Name (reloads page)" value="Change Name">
+                    </form>
+                    <div id="power-user-options-block">
+                        <h3>Power User Options</h3>
+                        <div id="power-user-option-checkboxes">
+                            <label for="auto-connect-checkbox"><input id="auto-connect-checkbox" type="checkbox" />
+                                Auto-connect to Last Server
+                            </label>
+                            <label for="auto-load-chat-checkbox"><input id="auto-load-chat-checkbox" type="checkbox" />
+                                Auto-load Last Chat
+                            </label>
+                            <label for="collapse-newlines-checkbox"><input id="collapse-newlines-checkbox" type="checkbox" />
+                                Collapse Newlines in Output
+                            </label>
+                            <label for="force-pygmalion-formatting-checkbox"><input id="force-pygmalion-formatting-checkbox" type="checkbox" />
+                                Pygmalion Formatting for All Models
+                            </label>
+                            <label for="swipes-checkbox"><input id="swipes-checkbox" type="checkbox" />
+                                Swipes
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="ai-config-button" class="drawer" style="z-index:3002;">
+                <div class="drawer-toggle drawer-header">
+                    <div class="drawer-icon icon-sliders closedIcon"></div>
+                </div>
+                <div class="drawer-content closedDrawer">
+                    <div class="flex-container">
+                        <div id="ai-settings-flex-col1" class="wide50p">
+                            <div id="common-gen-settings-block">
+                                <div id="pro-settings-block">
+                                    <div id="amount_gen_block" class="range-block">
+                                        <div class="range-block-title">
+                                            Amount generation
+                                        </div>
+                                        <span id="amount_gen_counter" class="range-block-counter">select</span>
+                                        <input type="range" class="range-block-range" id="amount_gen" name="volume" min="16" max="512" step="1">
+                                    </div>
+                                    <div id="max_context_block" class="range-block">
+                                        <div class="range-block-title">
+                                            Context Size
+                                        </div>
+                                        <span id="max_context_counter" class="range-block-counter">select</span>
+                                        <input type="range" class="range-block-range" id="max_context" name="volume" min="512" max="2048" step="1">
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="respective-ranges-and-temps">
+                                <div id="range_block">
+                                    
+                                    <div class="range-block">
+                                        <div class="range-block-title">
+                                            Temperature 
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <span id="temp_counter">select</span>
+                                        </div>
+                                        <div class="range-block-range">
+                                            <input type="range" id="temp" name="volume" min="0.1" max="2.0" step="0.01">
+                                        </div>
+                                    </div>
+                                    <div class="range-block">
+                                        <div class="range-block-title">
+                                            Repetition Penalty 
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <span id="rep_pen_counter">select</span>
+                                        </div>
+                                        <div class="range-block-range">
+                                            <input type="range" id="rep_pen" name="volume" min="1" max="1.5" step="0.01">
+                                        </div>
+                                    </div>
+                                    <div class="range-block">
+                                        <div class="range-block-title">
+                                            Repetition Penalty Range
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <span id="rep_pen_range_counter">select</span>
+                                        </div>
+                                        <div class="range-block-range">
+                                            <input type="range" id="rep_pen_range" name="volume" min="0" max="2048" step="1">
+                                        </div>
+                                    </div>
+                                </div> 
+                                <div id="range_block_novel">
+                                    Temperature
+                                    <span id="temp_counter_novel">select</span>
+                                    <input type="range" id="temp_novel" name="volume" min="0.1" max="2.0" step="0.01">
+                                    Repetition Penalty
+                                    <span id="rep_pen_counter_novel">select</span>
+                                    <input type="range" id="rep_pen_novel" name="volume" min="1" max="1.5" step="0.01">
+                                    Repetition Penalty Range
+                                    <span id="rep_pen_size_counter_novel">select</span>
+                                    <input type="range" id="rep_pen_size_novel" name="volume" min="0" max="2048" step="1">
+                                </div>
+                                <div id="range_block_textgenerationwebui">
+                                    Temperature 
+                                    <span id="temp_counter_textgenerationwebui">select</span>
+                                    <input type="range" id="temp_textgenerationwebui" name="volume" min="0.1" max="2.0" step="0.01">
+                                    Repetition Penalty 
+                                    <span id="rep_pen_counter_textgenerationwebui">select</span>
+                                    <input type="range" id="rep_pen_textgenerationwebui" name="volume" min="1" max="1.5" step="0.01">
+                                    Repetition Penalty Range
+                                    <span id="rep_pen_size_counter_textgenerationwebui">select</span>
+                                    <input type="range" id="rep_pen_size_textgenerationwebui" name="volume" min="0" max="2048" step="1">
+                                </div>
+                            </div>
+                            <div id="anchors-block">
+                                Anchors Order
+                                <a href="/notes/9" class="notes-link" target="_blank"><span class="note-link-span">?</span></a>
+                                <br>
+                                <select id="anchor_order">
+                                    <option value="0">Character then Style</option>
+                                    <option value="1">Style then Character</option>
+                                </select>
+                                <div id="anchor_checkbox">
+                                    <label for="character_anchor"><input id="character_anchor" type="checkbox" />
+                                        Character Anchor
+                                    </label>
+                                    <label for="style_anchor"><input id="style_anchor" type="checkbox" />
+                                        Style Anchor
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="ai-settings-flex-col2" class="wide50p">
+                            <div id="advanced-ai-config-block">
+                                <div id="kobold_api-settings">
+                                    <div id="kobold-advanced-config">
+                                        
+                                        <div class="range-block">
+                                            <div class="range-block-title">
+                                                Top P Sampling
+                                            </div>
+                                            <div class="range-block-counter">
+                                                <span id="top_p_counter">select</span>
+                                            </div>
+                                            <div class="range-block-range">
+                                                <input type="range" id="top_p" name="volume" min="0" max="1" step="0.01">
+                                            </div>
+                                        </div>
+                                        <div class="range-block">
+                                            <div class="range-block-title">
+                                                Top A Sampling
+                                            </div>
+                                            <div class="range-block-counter">
+                                                <span id="top_a_counter">select</span>
+                                            </div>
+                                            <div class="range-block-range">
+                                                <input type="range" id="top_a" name="volume" min="0" max="1" step="0.01">
+                                            </div>
+                                        </div>
+                                        <div class="range-block">
+                                            <div class="range-block-title">
+                                                Top K Sampling
+                                            </div>
+                                            <div class="range-block-counter">
+                                                <span id="top_k_counter">select</span>
+                                            </div>
+                                            <div class="range-block-range">
+                                                <input type="range" id="top_k" name="volume" min="0" max="100" step="1">
+                                            </div>
+                                        </div>
+                                        <div class="range-block">
+                                            <div class="range-block-title">
+                                                Typical Sampling
+                                            </div>
+                                            <div class="range-block-counter">
+                                                <span id="typical_counter">select</span>
+                                            </div>
+                                            <div class="range-block-range">
+                                                <input type="range" id="typical" name="volume" min="0" max="1" step="0.01">
+                                            </div>
+                                        </div>
+                                        <div class="range-block">
+                                            <div class="range-block-title">
+                                                Tail Free Sampling
+                                            </div>
+                                            <div class="range-block-counter">
+                                                <span id="tfs_counter">select</span>
+                                            </div>
+                                            <div class="range-block-range">
+                                                <input type="range" id="tfs" name="volume" min="0" max="1" step="0.05">
+                                            </div>
+                                        </div>
+                                        <div class="range-block">
+                                            <div class="range-block-title">
+                                                Repetition Penalty Slope
+                                            </div>
+                                            <div class="range-block-counter">
+                                                <span id="rep_pen_slope_counter">select</span>
+                                            </div>
+                                            <div class="range-block-range">
+                                                <input type="range" id="rep_pen_slope" name="volume" min="0" max="10" step="0.1">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="novel_api-settings">
+
+
+                                    
+                                </div>
+                                <div id="textgenerationwebui_api-settings">
+
+
+                                    <div>
+                                        <h3>Advanced Settings</h3>
+                                        Top K
+                                        <span id="top_k_counter_textgenerationwebui">select</span>
+                                        <input type="range" id="top_k_textgenerationwebui" name="volume" min="0" max="200" step="1">
+                                        Top P
+                                        <span id="top_p_counter_textgenerationwebui">select</span>
+                                        <input type="range" id="top_p_textgenerationwebui" name="volume" min="0" max="1" step="0.1">
+                                        Typical P
+                                        <span id="typical_p_counter_textgenerationwebui">select</span>
+                                        <input type="range" id="typical_p_textgenerationwebui" name="volume" min="0" max="1" step="0.1">
+                                        <h4>Penalty Alpha
+                                        <span id="penalty_alpha_counter_textgenerationwebui">select</span>
+                                        <input type="range" id="penalty_alpha_textgenerationwebui" name="volume" min="0" max="5" step="0.05" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="WI-SP-button" class="drawer" style="z-index:3003;">
+                <div class="drawer-toggle drawer-header">
+                    <div class="drawer-icon icon-globe closedIcon "></div>
+                </div>
+                <div class="drawer-content closedDrawer">
+                    <div id="wi-holder">
+                    <div id="world_info_block">
+                        <h3>World Info</h3>
+                        <div id="world_info_buttons">
+                            <div id="world_create_button" class="right_menu_button">
+                                <h4>+Create</h4>
+                            </div>
+                            <div id="world_import_button" class="right_menu_button">
+                                <h4>+Import</h4>
+                            </div>
+                        </div>
+                    </div>
+                    <h4>How to use <a href="/notes/13" class="notes-link" target="_blank"><span
+                                class="note-link-span">?</span></a></h4>
+                    <div id="rm_world_import" class="right_menu" style="display: none;">
+                        <form id="form_world_import" action="javascript:void(null);" method="post"
+                            enctype="multipart/form-data">
+                            <input type="file" id="world_import_file" accept=".json" name="avatar">
+                        </form>
+                    </div>
+                    <select id="world_info">
+                        <option value="None">None</option>
+                    </select>
+                    <input id="world_info_edit_button" class="menu_button" type="submit" value="Details">
+                    <div id="world_info_depth_block">
+                        <h4>
+                            Scan Depth <a href="/notes/13_1" class="notes-link" target="_blank"><span
+                                    class="note-link-span">?</span></a>
+                        </h4>
+                        <span id="world_info_depth_counter">depth</span>
+                        <input type="range" id="world_info_depth" name="volume" min="1" max="10" step="1">
+                    </div>
+                    <div id="world_info_budget_block">
+                        <h4>
+                            Token Budget <a href="/notes/13_2" class="notes-link" target="_blank"><span
+                                    class="note-link-span">?</span></a>
+                        </h4>
+                        <span id="world_info_budget_counter">budget</span>
+                        <input type="range" id="world_info_budget" name="volume" min="32" max="2048" step="16">
+                    </div>
+                    </div>
+                    <div id="softprompt_block">
+                        <h4>Soft Prompt</h4>
+                        <h5>About soft prompts <a href="/notes/14" class="notes-link" target="_blank"><span
+                                    class="note-link-span">?</span></a></h5>
+                        <select id="softprompt">
+                            <option value="">None</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div id="extensions-settings-button" class="drawer" style="z-index:3004;">
+                <div class="drawer-toggle">
+                    <div class="drawer-icon icon-cubes closedIcon"></div>
+                </div>
+                <div id="rm_extensions_block" class="drawer-content closedDrawer">
+                    <div class="extensions_block">
+                        <h3>Extensions API: <a target="_blank" href="https://github.com/SillyLossy/TavernAI-extras">TavernAI-extras</a></h3>
+                        <input id="extensions_url" type="text" class="text_pole" />
+                        <div class="extensions_url_block">
+                            <input id="extensions_connect" class="menu_button" type="submit" value="Connect" />
+                            <span class="expander"></span>
+                            <label for="extensions_autoconnect"><input id="extensions_autoconnect" type="checkbox"/>Auto-connect</label>
+                        </div>
+                        <div id="extensions_status">Not connected</div>
+                        <div id="extensions_loaded">
+                            <h4>Active extensions</h4>
+                            <ul id="extensions_list">
+                            </ul>
+                            <p>Missing something? Press <a id="extensions_details" href="javascript:void">here</a> for more details!</p>
+                        </div>
+                        <div id="extensions_settings">
+                            <h3>Extension settings</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+<!-- various fullscreen popups -->
     <div id="shadow_popup">
         <div id="dialogue_popup">
             <div id="dialogue_popup_text">
@@ -130,7 +579,6 @@
         <div id="character_popup_ok" class="menu_button">Save</div>
 
     </div>
-
     <div id="world_popup">
         <div id="world_popup_text">
             <img id="world_cross" src="img/cross.png">
@@ -241,7 +689,6 @@
             </div>
         </div>
     </div>
-
     <div id="shadow_select_chat_popup">
         <div id="select_chat_popup">
             <div id="select_chat_popup_text">
@@ -295,41 +742,20 @@
             <!--<div style="margin-bottom:5px;">***</div><div>TRX: TCiBKCt6xEGrsjpgQA2jDXWJLyUh1KN2Sn</div><div>BTC: 1LASziomyYNkZ2zk8Sa4ZLTkvczBMrjyjP</div>-->
         </div>
     </div>
-    <div id="bg_menu">
-        <div id="logo_block">
-            <div id="bg_menu_button"><img src="img/tri.png">
-            </div>
-            <img src="img/logo.png" id="site_logo">
-            <div id="update-notification">
-                <a id="verson" href="https://github.com/TavernAI/TavernAI" target="_blank"></a>
-            </div>
-        </div>
 
-        <div id="bg_menu_content">
-            <form id="form_bg_download" action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                <label class="input-file">
-                    <input type="file" id="add_bg_button" name="avatar"
-                        accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp">
-                    <span class="bg_example_but_load"><img src='img/addbg3.png'></span>
-
-                </label>
-            </form>
-
-        </div>
-    </div>
+<!-- right nav panel for character/groups management/editing/creation -->
     <input type="checkbox" id="nav-toggle">
-
     <nav id="right-nav-panel">
         <div id="right-nav-panel-tabs">
             <div class="right_menu_button" id="rm_button_characters" title="Select/Create Characters">
                 <img alt="" class="svg_icon" src="img/id-card-regular.svg" />
             </div>
-            <div class="right_menu_button" id="rm_button_settings" title="API and AI Settings">
+<!--        <div class="right_menu_button" id="rm_button_settings" title="API and AI Settings">
                 <img alt="" class="svg_icon" src="img/gear-solid.svg" />
             </div>
             <div class="right_menu_button" id="rm_button_extensions" title="Extensions">
                 <img alt="" class="svg_icon" src="img/cubes-solid.svg" />
-            </div>
+            </div>-->
             <div class="right_menu_button" id="rm_button_selected_ch">
                 <h2></h2>
             </div>
@@ -341,7 +767,6 @@
                 </label>
             </div>
         </div>
-
         <div id="rm_ch_create_block" class="right_menu" style="display: none;">
             <form id="form_create" action="javascript:void(null);" method="post" enctype="multipart/form-data">
                 <div id="avatar-and-name-block">
@@ -472,415 +897,6 @@
                 <input id="rm_group_delete" class="menu_button" type="submit" value="Delete">
             </div>
         </div>
-        <div id="rm_api_block" class="right_menu">
-
-            <div id="main-API-selector-block">
-                <h3 id="title_api">API</h3>
-                <select id="main_api">
-                    <option value="kobold">KoboldAI</option>
-                    <option value="textgenerationwebui">Text generation web UI</option>
-                    <option value="novel">NovelAI</option>
-                </select>
-            </div>
-
-            <div id="respective-settings-block">
-                <div id="kobold_api" style="position: relative;"> <!-- shows the kobold settings -->
-                    <div class="API-logo">
-                        <a href="https://github.com/KoboldAI/KoboldAI-Client" target="_blank">
-                            <img alt="KoboldAI Logo" src="img/kobold.png" style="width:40px;height:40px;">
-                        </a>
-                    </div>
-                    <form action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                        <h4>API url</h4>
-                        <h5>Example: http://127.0.0.1:5000/api </h5>
-                        <input id="api_url_text" name="api_url" class="text_pole" maxlength="500" value=""
-                            autocomplete="off">
-                        <input id="api_button" class="menu_button" type="submit" value="Connect">
-                        <img id="api_loading" src="img/load.svg">
-                        <div id="online_status2">
-                            <div id="online_status_indicator2"></div>
-                            <div id="online_status_text2">Not connected</div>
-                        </div>
-                    </form>
-
-                    <hr>
-
-                    <div id="ai-presets-and-config-block">
-                        <h3>Preset settings
-                            <a href="/notes/4" class="notes-link" target="_blank">
-                                <span class="note-link-span">?</span>
-                            </a>
-                        </h3>
-                        <select id="settings_perset">
-                            <option value="gui">GUI KoboldAI Settings</option>
-                        </select>
-                        <div id="range_block">
-                            <div class="range-block">
-                                <div class="range-block-title">
-                                    <h4>Temperature </h4>
-                                </div>
-                                <div class="range-block-counter">
-                                    <h5 id="temp_counter">select</h5>
-                                </div>
-                                <div class="range-block-range"><input type="range" id="temp" name="volume" min="0.1"
-                                        max="2.0" step="0.01"></div>
-                            </div>
-                            <div class="range-block">
-                                <div class="range-block-title">
-                                    <h4>Repetition Penalty </h4>
-                                </div>
-                                <div class="range-block-counter">
-                                    <h5 id="rep_pen_counter">select</h5>
-                                </div>
-                                <div class="range-block-range"><input type="range" id="rep_pen" name="volume" min="1"
-                                        max="1.5" step="0.01"></div>
-                            </div>
-                            <div class="range-block">
-                                <div class="range-block-title">
-                                    <h4>Repetition Penalty Range</h4>
-                                </div>
-                                <div class="range-block-counter">
-                                    <h5 id="rep_pen_range_counter">select</h5>
-                                </div>
-                                <div class="range-block-range"><input type="range" id="rep_pen_range" name="volume"
-                                        min="0" max="2048" step="1"></div>
-                            </div>
-                        </div>
-                        <div class="drawer">
-                            <div class="drawer-toggle drawer-header">
-                                <h3>Advanced Settings
-                                    <a href="/notes/kai_advanced" class="notes-link" target="_blank">
-                                        <span class="note-link-span">?</span>
-                                    </a>
-                                </h3>
-                                <div class="drawer-icon down"></div>
-                            </div>
-                            <div class="drawer-content">
-                                <div class="range-block">
-                                    <div class="range-block-title">
-                                        <h4>Top P Sampling</h4>
-                                    </div>
-                                    <div class="range-block-counter">
-                                        <h5 id="top_p_counter">select</h5>
-                                    </div>
-                                    <div class="range-block-range">
-                                        <input type="range" id="top_p" name="volume" min="0" max="1" step="0.01">
-                                    </div>
-                                </div>
-                                <div class="range-block">
-                                    <div class="range-block-title">
-                                        <h4>Top A Sampling</h4>
-                                    </div>
-                                    <div class="range-block-counter">
-                                        <h5 id="top_a_counter">select</h5>
-                                    </div>
-                                    <div class="range-block-range">
-                                        <input type="range" id="top_a" name="volume" min="0" max="1" step="0.01">
-                                    </div>
-                                </div>
-                                <div class="range-block">
-                                    <div class="range-block-title">
-                                        <h4>Top K Sampling</h4>
-                                    </div>
-                                    <div class="range-block-counter">
-                                        <h5 id="top_k_counter">select</h5>
-                                    </div>
-                                    <div class="range-block-range">
-                                        <input type="range" id="top_k" name="volume" min="0" max="100" step="1">
-                                    </div>
-                                </div>
-                                <div class="range-block">
-                                    <div class="range-block-title">
-                                        <h4>Typical Sampling</h4>
-                                    </div>
-                                    <div class="range-block-counter">
-                                        <h5 id="typical_counter">select</h5>
-                                    </div>
-                                    <div class="range-block-range">
-                                        <input type="range" id="typical" name="volume" min="0" max="1" step="0.01">
-                                    </div>
-                                </div>
-                                <div class="range-block">
-                                    <div class="range-block-title">
-                                        <h4>Tail Free Sampling</h4>
-                                    </div>
-                                    <div class="range-block-counter">
-                                        <h5 id="tfs_counter">select</h5>
-                                    </div>
-                                    <div class="range-block-range">
-                                        <input type="range" id="tfs" name="volume" min="0" max="1" step="0.05">
-                                    </div>
-                                </div>
-                                <div class="range-block">
-                                    <div class="range-block-title">
-                                        <h4>Repetition Penalty Slope</h4>
-                                    </div>
-                                    <div class="range-block-counter">
-                                        <h5 id="rep_pen_slope_counter">select</h5>
-                                    </div>
-                                    <div class="range-block-range">
-                                        <input type="range" id="rep_pen_slope" name="volume" min="0" max="10" step="0.1">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div id="softprompt_block">
-                            <h4>Soft Prompt</h4>
-                            <h5>About soft prompts <a href="/notes/14" class="notes-link" target="_blank"><span
-                                        class="note-link-span">?</span></a></h5>
-                            <select id="softprompt">
-                                <option value="">None</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="textgenerationwebui_api" style="display: none;position: relative;">
-                    <div class="oobabooga_logo"><a href="https://github.com/oobabooga/text-generation-webui"
-                            target="_blank">
-                            oobabooga/text-generation-webui
-                        </a></div>
-                    <span>Make sure you run it:
-                        <ul>
-                            <li>with <pre>--no-stream</pre> option</li>
-                            <li>in notebook mode (not <pre>--cai-chat</pre> or <pre>--chat</pre>)</li>
-                        </ul>
-                    </span>
-                    <form action="javascript:void(null);" method="post" enctype="multipart/form-data">
-
-                        <h4>API url</h4>
-                        <h5>Example: http://127.0.0.1:7860/ </h5>
-                        <input id="textgenerationwebui_api_url_text" name="textgenerationwebui_api_url"
-                            class="text_pole" maxlength="500" size="35" value="" autocomplete="off">
-                        <input id="api_button_textgenerationwebui" class="menu_button" type="submit" value="Connect">
-                        <img id="api_loading_textgenerationwebui" src="img/load.svg">
-                    </form>
-                    <div id="online_status4">
-                        <div id="online_status_indicator4"></div>
-                        <div id="online_status_text4">Not connected</div>
-                    </div>
-                    <div id="range_block">
-                        <h4>Temperature </h4>
-                        <h5 id="temp_counter_textgenerationwebui">select</h5>
-                        <input type="range" id="temp_textgenerationwebui" name="volume" min="0.1" max="2.0" step="0.01">
-                        <h4>Repetition Penalty </h4>
-                        <h5 id="rep_pen_counter_textgenerationwebui">select</h5>
-                        <input type="range" id="rep_pen_textgenerationwebui" name="volume" min="1" max="1.5"
-                            step="0.01">
-                        <h4>Repetition Penalty Range</h4>
-                        <h5 id="rep_pen_size_counter_textgenerationwebui">select</h5>
-                        <input type="range" id="rep_pen_size_textgenerationwebui" name="volume" min="0" max="2048"
-                            step="1">
-
-                        <div class="drawer">
-                            <div class="drawer-toggle drawer-header">
-                                <h3>Advanced Settings</h3>
-                                <div class="drawer-icon down"></div>
-                            </div>
-                            <div class="drawer-content">
-                                <h4>Top K</h4>
-                                <h5 id="top_k_counter_textgenerationwebui">select</h5>
-                                <input type="range" id="top_k_textgenerationwebui" name="volume" min="0" max="200" step="1">
-                                <h4>Top P</h4>
-                                <h5 id="top_p_counter_textgenerationwebui">select</h5>
-                                <input type="range" id="top_p_textgenerationwebui" name="volume" min="0" max="1" step="0.1">
-                                <h4>Typical P</h4>
-                                <h5 id="typical_p_counter_textgenerationwebui">select</h5>
-                                <input type="range" id="typical_p_textgenerationwebui" name="volume" min="0" max="1" step="0.1">
-                                <h4>Penalty Alpha</h4>
-                                <h5 id="penalty_alpha_counter_textgenerationwebui">select</h5>
-                                <input type="range" id="penalty_alpha_textgenerationwebui" name="volume" min="0" max="5" step="0.05" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="novel_api" style="display: none;position: relative;"> <!-- shows the novel settings -->
-                    <div class="API-logo">
-                        <a href="https://novelai.net/" target="_blank">
-                            <img src="img/novelai.png" style="width:auto;height:22px;">
-                        </a>
-                    </div>
-                    <form action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                        <h4>Novel API key<a href="/notes/6" class="notes-link" target="_blank"><span
-                                    class="note-link-span">?</span></a></h4>
-                        <input id="api_key_novel" name="api_key_novel" class="text_pole" maxlength="500" value=""
-                            autocomplete="off">
-                        <Br>
-                        <input id="api_button_novel" class="menu_button" type="submit" value="Connect">
-                        <img id="api_loading_novel" src="img/load.svg">
-                    </form>
-                    <div id="online_status3">
-                        <div id="online_status_indicator3"></div>
-                        <div id="online_status_text3">No connection...</div>
-                    </div>
-                    <h4>Novel AI Model<a href="/notes/8" class="notes-link" target="_blank"><span
-                                class="note-link-span">?</span></a></h4>
-                    <select id="model_novel_select" class="option_select_right_menu" style='margin-bottom: 16px;'>
-                        <option value="euterpe-v2">Euterpe</option>
-                        <option value="krake-v2">Krake</option>
-                    </select>
-                    <h4>Preset settings<a href="/notes/7" class="notes-link" target="_blank"><span
-                                class="note-link-span">?</span></a></h4>
-                    <select id="settings_perset_novel" class="option_select_right_menu">
-                        <option value="gui">Default</option>
-                    </select>
-                    <div id="range_block_novel">
-                        <h4>Temperature </h4>
-                        <h5 id="temp_counter_novel">select</h5>
-                        <input type="range" id="temp_novel" name="volume" min="0.1" max="2.0" step="0.01">
-                        <h4>Repetition Penalty </h4>
-                        <h5 id="rep_pen_counter_novel">select</h5>
-                        <input type="range" id="rep_pen_novel" name="volume" min="1" max="1.5" step="0.01">
-                        <h4>Repetition Penalty Range</h4>
-                        <h5 id="rep_pen_size_counter_novel">select</h5>
-                        <input type="range" id="rep_pen_size_novel" name="volume" min="0" max="2048" step="1">
-                    </div>
-                </div>
-            </div>
-
-            <hr>
-
-            <div id="user-settings-block">
-                <h3>User Settings</h3>
-                <h4>Your Avatar</h4>
-                <div id="user_avatar_block">
-                    <div class="avatar_upload">+</div>
-                </div>
-                <form id="form_upload_avatar" action="javascript:void(null);" method="post"
-                    enctype="multipart/form-data">
-                    <input type="file" id="avatar_upload_file" accept="image/png" name="avatar">
-                </form>
-                <form id='form_change_name' action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                    <br>
-                    <h4>Name</h4>
-                    <input id="your_name" name="your_name" class="text_pole" maxlength="35" value=""
-                        autocomplete="off"><br>
-                    <input id="your_name_button" class="menu_button" type="submit"
-                        title="Click to set a new User Name (reloads page)" value="Change Name">
-                </form>
-            </div>
-
-            <hr>
-
-            <div id="world_info_block">
-                <h3>World Info</h3>
-                <div id="world_info_buttons">
-                    <div id="world_create_button" class="right_menu_button">
-                        <h4>+Create</h4>
-                    </div>
-                    <div id="world_import_button" class="right_menu_button">
-                        <h4>+Import</h4>
-                    </div>
-                </div>
-            </div>
-            <h4>How to use <a href="/notes/13" class="notes-link" target="_blank"><span
-                        class="note-link-span">?</span></a></h4>
-            <div id="rm_world_import" class="right_menu" style="display: none;">
-                <form id="form_world_import" action="javascript:void(null);" method="post"
-                    enctype="multipart/form-data">
-                    <input type="file" id="world_import_file" accept=".json" name="avatar">
-                </form>
-            </div>
-            <select id="world_info">
-                <option value="None">None</option>
-            </select>
-            <input id="world_info_edit_button" class="menu_button" type="submit" value="Details">
-            <div id="world_info_depth_block">
-                <h4>
-                    Scan Depth <a href="/notes/13_1" class="notes-link" target="_blank"><span
-                            class="note-link-span">?</span></a>
-                </h4>
-                <h5 id="world_info_depth_counter">depth</h5>
-                <input type="range" id="world_info_depth" name="volume" min="1" max="10" step="1">
-            </div>
-            <div id="world_info_budget_block">
-                <h4>
-                    Token Budget <a href="/notes/13_2" class="notes-link" target="_blank"><span
-                            class="note-link-span">?</span></a>
-                </h4>
-                <h5 id="world_info_budget_counter">budget</h5>
-                <input type="range" id="world_info_budget" name="volume" min="32" max="2048" step="16">
-            </div>
-            <hr>
-
-            <div id="pro-settings-block">
-                <h3>Pro Settings</h3>
-                <div id="amount_gen_block">
-                    <h4>Amount generation </h4>
-                    <h5 id="amount_gen_counter">select</h5>
-                    <input type="range" id="amount_gen" name="volume" min="16" max="512" step="1">
-                </div>
-                <div id="max_context_block">
-                    <h4>Context Size</h4>
-                    <h5 id="max_context_counter">select</h5>
-                    <input type="range" id="max_context" name="volume" min="512" max="2048" step="1">
-                </div>
-                <div id="anchors-block">
-                    <h4>Anchors Order</h4>
-                    <h5>Helps to increase the length of messages <a href="/notes/9" class="notes-link"
-                            target="_blank"><span class="note-link-span">?</span></a></h5>
-                    <select id="anchor_order">
-                        <option value="0">Character Anchor - Style Anchor</option>
-                        <option value="1">Style Anchor - Character Anchor</option>
-                    </select>
-                    <div id="anchor_checkbox">
-                        <label for="character_anchor"><input id="character_anchor" type="checkbox" />
-                            <h4>Character Anchor</h4>
-                        </label>
-                        <label for="style_anchor"><input id="style_anchor" type="checkbox" />
-                            <h4>Style Anchor</h4>
-                        </label>
-                    </div>
-                </div>
-            </div>
-
-            <hr>
-
-            <div id="power-user-options-block">
-                <h3>Power User Options</h3>
-                <div id="power-user-option-checkboxes">
-                    <label for="auto-connect-checkbox"><input id="auto-connect-checkbox" type="checkbox" />
-                        <h4>Auto-connects Last Server</h4>
-                    </label>
-                    <label for="auto-load-chat-checkbox"><input id="auto-load-chat-checkbox" type="checkbox" />
-                        <h4>Auto-load Last Chat</h4>
-                    </label>
-                    <label for="collapse-newlines-checkbox"><input id="collapse-newlines-checkbox" type="checkbox" />
-                        <h4>Collapse Newlines in Output</h4>
-                    </label>
-                    <label for="force-pygmalion-formatting-checkbox"><input id="force-pygmalion-formatting-checkbox" type="checkbox" />
-                        <h4>Force Pygmalion formatting for any model</h4>
-                    </label>
-                    <label for="swipes-checkbox"><input id="swipes-checkbox" type="checkbox" />
-                        <h4>Swipes</h4>
-                    </label>
-                </div>
-            </div>
-        </div>
-
-        <div id="rm_extensions_block" class="right_menu">
-            <div class="extensions_block">
-                <h3>Extensions API: <a target="_blank" href="https://github.com/SillyLossy/TavernAI-extras">TavernAI-extras</a></h3>
-                <input id="extensions_url" type="text" class="text_pole" />
-                <div class="extensions_url_block">
-                    <input id="extensions_connect" class="menu_button" type="submit" value="Connect" />
-                    <span class="expander"></span>
-                    <label for="extensions_autoconnect"><input id="extensions_autoconnect" type="checkbox"/>Auto-connect</label>
-                </div>
-                <div id="extensions_status">Not connected</div>
-                <div id="extensions_loaded">
-                    <h4>Active extensions</h4>
-                    <ul id="extensions_list">
-                    </ul>
-                    <p>Missing something? Press <a id="extensions_details" href="javascript:void">here</a> for more details!</p>
-                </div>
-                <div id="extensions_settings">
-                    <h3>Extension settings</h3>
-                </div>
-            </div>
-        </div>
 
         <div id="rm_character_import" class="right_menu" style="display: none;">
             <form id="form_import" action="javascript:void(null);" method="post" enctype="multipart/form-data">
@@ -889,8 +905,6 @@
                     value="" autocomplete="off">
             </form>
         </div>
-
-
         <div id="rm_characters_block" class="right_menu">
             <div class="form_create_bottom_buttons_block">
                 <div id="rm_button_create" title="Create New Character" class="menu_button">
@@ -917,12 +931,10 @@
                 <div id="rm_info_button" class="menu_button">Back</div>
             </div>
         </div>
+
     </nav>
 
-    <div id="typing_indicator_template">
-        <div class="typing_indicator"><span class="typing_indicator_name">CHAR</span> is typing</div>
-    </div>
-
+<!-- templates for JS to reuse when needed -->
     <div id="message_template">
         <div class="mes" mesid="${count_view_mes}" ch_name="${characterName}" is_user="${mes.is_user}">
             <div class="for_checkbox"></div><input type="checkbox" class="del_checkbox">
@@ -944,7 +956,6 @@
             </div>
         </div>
     </div>
-
     <div id="group_avatars_template">
         <div class="avatar avatar_collage collage_1">
             <img alt="img1" class="img_1" src="">
@@ -966,6 +977,10 @@
         </div>
     </div>
 
+<!-- chat and input bar -->
+    <div id="typing_indicator_template">
+        <div class="typing_indicator"><span class="typing_indicator_name">CHAR</span> is typing</div>
+    </div>
     <div id="sheld">
         <div id="chat">
         </div>
@@ -1007,6 +1022,7 @@
             </form>
         </div>
     </div>
+
 </body>
 
 </html>

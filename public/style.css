@@ -162,8 +162,11 @@ code {
     backdrop-filter: blur(10px);
     background-color: var(--black70a);
     -webkit-backdrop-filter: blur(10px);
-    z-index: 2001;
+    z-index: 3000;
 }
+
+
+
 
 #sheld {
     display: grid;
@@ -339,7 +342,8 @@ code {
 }
 
 #right-nav-panel hr,
-#personality_div hr {
+#personality_div hr,
+#top-settings-holder hr {
     background-image: linear-gradient(90deg, var(--transparent), var(--white30a), var(--transparent));
 }
 
@@ -568,25 +572,25 @@ textarea {
 }
 
 
-.right_menu {
+/* .topbar {
     max-height: calc(100% - 50px);
     padding: 0 20px;
 }
-
-.right_menu h3 {
+ */
+#top-bar h3 {
     margin: 0;
     padding: 10px 0;
 }
 
-.right_menu h4 {
+#top-bar h4 {
     margin: 0;
     padding: 5px 0;
 }
 
-.right_menu h5 {
+#top-bar h5 {
     color: var(--white50a);
-    margin: 0;
-    padding-bottom: 5px;
+    margin-bottom: 0;
+    margin-top: 0;
     font-size: 0.75rem;
 }
 
@@ -711,6 +715,7 @@ select {
     border: 1px solid var(--white30a);
     border-radius: 10px;
     width: 100%;
+    margin-bottom:10px;
 }
 
 select option {
@@ -1701,82 +1706,38 @@ input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):checked::after
     display: none !important;
 }
 
-#temp {
-    margin-left: 10px;
-    margin-bottom: 20px;
+.range-block {
+    height:min-content;
 }
 
-#temp_counter {
-    margin-bottom: 0;
+.range-block-title{
+    margin: 0;
+    padding: 0;
+    font-size: 14px;
 }
-
-#amount_gen {
-    margin-left: 10px;
-    margin-bottom: 20px;
-}
-
-#amount_gen_counter {
-    margin-bottom: 0;
-}
-
-#max_context {
-    margin-left: 10px;
-    margin-bottom: 20px;
-}
-
-#max_context_counter {
-    margin-bottom: 0;
-}
-
-#range_block input {
-    margin-left: 10px;
-    margin-bottom: 20px;
-}
-
-#range_block_novel input {
-    margin-left: 10px;
-    margin-bottom: 20px;
-}
-
-/* range sliders */
-
-#range_block,
-#range_block_novel {
-    margin-top: 10px;
-}
-
-#range_block input,
-#range_block_novel input {
-    margin-bottom: 20px;
-}
-
-#temp,
-#amount_gen,
-#max_context {
-    margin-bottom: 20px;
-}
-
-#temp_counter,
-#amount_gen_counter,
-#max_context_counter {
-    margin-bottom: 0;
-}
-
 .range-block-counter {
-    width: min-content;
-    margin: 0 auto;
+    width: max-content;
+    position: relative;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 10px;
+    font-size:11px;
+    color: var(--white50a);
 }
 
 .range-block-range {
     margin: 0 auto;
+    margin-bottom: 10px;
     width: 100%;
+    margin-bottom: 10px;
 }
 
 input[type="range"] {
     -webkit-appearance: none;
-    margin: 0 auto;
+    margin: 0;
+    padding: 0;
     width: 100%;
-    height: 7px;
+    height: 5px;
     background: var(--white50a);
     border-radius: 15px;
     background-size: 70% 100%;
@@ -1897,8 +1858,6 @@ input[type="range"] {
 }
 
 #anchor_order {
-    width: 284px;
-
     margin-bottom: 15px;
     color: var(--white70a);
     background-color: var(--black50a);
@@ -2587,7 +2546,7 @@ a {
     backdrop-filter: blur(10px);
     background-color: var(--black70a);
     -webkit-backdrop-filter: blur(10px);
-    z-index: 2050;
+    z-index: 3000;
     white-space: nowrap;
     border-left: 1px solid var(--black30a);
     scrollbar-width: thin;
@@ -2659,13 +2618,188 @@ a {
     display: none;
 }
 
+/* Extensions */
+#extensions_url {
+    display: block;
+}
 
+#extensions_status {
+    margin-bottom: 10px;
+    font-weight: 700;
+}
+
+.extensions_block input[type="submit"]:hover{
+    background-color: green;
+}
+
+.extensions_block input[type="checkbox"] {
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+label[for="extensions_autoconnect"] {
+    display: flex;
+    align-items: center;
+    margin: 0 !important;
+}
+
+.extensions_url_block {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.extensions_url_block h4 {
+    display: inline;
+}
+
+.extensions_block {
+    clear: both;
+    padding: 0.05px; /* clear fix */
+}
+.extensions_info {
+    text-align: left;
+    margin: 0 1em;
+}
+
+.extensions_info h3 {
+    margin-bottom: 0.5em;
+}
+
+.extensions_info h4 {
+    margin-bottom: 0.5em;
+}
+
+.extensions_info p {
+    margin-bottom: 0.5em;
+}
+
+.extensions_info .disabled {
+    color: lightgray;
+}
+
+#extensions_list .disabled {
+    text-decoration: line-through;
+    color: lightgray;
+}
+
+.success {
+    color: green;
+}
+
+.failure {
+    color: red;
+}
+
+.expander {
+    flex-grow: 1;
+}
+
+/*------------ TOP SIDE SETTINGS ----------------*/
+
+.drawer {
+    align-items: center;
+    display: flex;
+    flex-flow: column;
+
+}
+
+.drawer-icon {
+    display: inline-block;
+    cursor: pointer;
+    width: 26px;
+    height: 26px;
+    background-size: contain;
+    background-repeat: no-repeat;
+}
+
+.icon-connect{
+    background-image: url('img/wifi-solid.svg');
+}
+.icon-sliders{
+    background-image: url('img/sliders-solid.svg');
+}
+.icon-globe{
+    background-image: url('img/book-atlas-solid.svg');
+}
+.icon-user{
+    background-image: url('img/face-smile-regular.svg');
+}
+
+.icon-cubes {
+    background-image: url('img/cubes-solid.svg');
+}
+
+.drawer-icon.openIcon {
+   /*  background-image: url('img/circle-chevron-up-solid.svg'); */
+   filter: invert(1) brightness(200%);
+}
+
+.drawer-icon.closedIcon {
+    /* background-image: url('img/circle-chevron-down-solid.svg'); */
+    filter: invert(1) brightness(75%);
+}
+
+.drawer-header {
+    display: flex;
+    align-items: center;
+}
+
+.drawer-content {
+    background-color: black;
+    color: white;
+    border-radius: 20px;
+    padding: 10px;
+    border: 1px solid grey;
+    box-shadow: 0 0 20px black;
+    /* min-width:400px; */
+    width: max-content;
+    overflow-y: scroll;
+    margin-top: 10px;
+    max-height: 90vh;
+    display: none;
+    position: fixed;
+    width: max-content;
+    margin: 30px auto;
+}
+
+.flex-container {
+    display: flex;
+    gap: 20px;
+}
+
+.wide50p { width:50%;}
+
+#top-settings-holder{
+    margin: 5px auto;
+    height: 40px;
+    max-width: 400px;
+    color: white;
+    justify-content: space-around;
+    display: grid;
+    grid-template-columns: 20% 20% 20% 20% 20%;
+    /* grid-gap: 20px; */
+
+}
+
+
+/* ---------- @media quaries must always go at the bottom ------------*/
 
 @media screen and (max-width: 450px) {      /*styles for mobile phones (tested on iPhone 13 Pro)*/
     body {
         font-size: 18px;
     }
 
+    .drawer-content {
+        width: 100vw;
+        position: fixed;
+        left: 0;
+        top: 10px;
+    }
+
+    #top-settings-holder{
+        max-width:70vw;
+    }
     #bg1, #bg2 {position:fixed;}
 
     #sheld {    /*margin around the sides, and a larger one on bottom to avoid iOS Home bar*/
@@ -2730,119 +2864,3 @@ a {
     }
 }
 
-@media all and (display-mode: browser) {        /*Even in iOS WebApp mode the window detects as this; unhelpful.*/
-    * { 
-
-    }
-
-}
-
-/* Extensions */
-#extensions_url {
-    display: block;
-}
-
-#extensions_status {
-    margin-bottom: 10px;
-    font-weight: 700;
-}
-
-.extensions_block input[type="submit"]:hover{
-    background-color: green;
-}
-
-.extensions_block input[type="checkbox"] {
-    margin-left: 10px;
-    margin-right: 10px;
-}
-
-label[for="extensions_autoconnect"] {
-    display: flex;
-    align-items: center;
-    margin: 0 !important;
-}
-
-.extensions_url_block {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.extensions_url_block h4 {
-    display: inline;
-}
-
-.extensions_block {
-    clear: both;
-    padding: 0.05px; /* clear fix */
-}
-
-.success {
-    color: green;
-}
-
-.failure {
-    color: red;
-}
-
-.expander {
-    flex-grow: 1;
-}
-
-.drawer {
-    padding-bottom: 10px;
-}
-
-.drawer-icon {
-    display: block;
-    cursor: pointer;
-    width: 26px;
-    height: 26px;
-    background-size: cover;
-    background-repeat: no-repeat;
-    filter: invert(1) brightness(75%);
-}
-
-.drawer-icon.up {
-    background-image: url('img/circle-chevron-up-solid.svg');
-}
-
-.drawer-icon.down {
-    background-image: url('img/circle-chevron-down-solid.svg');
-}
-
-.drawer-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.drawer-content {
-    display: none;
-}
-
-.extensions_info {
-    text-align: left;
-    margin: 0 1em;
-}
-
-.extensions_info h3 {
-    margin-bottom: 0.5em;
-}
-
-.extensions_info h4 {
-    margin-bottom: 0.5em;
-}
-
-.extensions_info p {
-    margin-bottom: 0.5em;
-}
-
-.extensions_info .disabled {
-    color: lightgray;
-}
-
-#extensions_list .disabled {
-    text-decoration: line-through;
-    color: lightgray;
-}

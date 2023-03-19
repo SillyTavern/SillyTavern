@@ -1006,7 +1006,7 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
             } else {
                 chat.length = chat.length - 1;
                 count_view_mes -= 1;
-                $('#chat').children().last().hide(500, function() {
+                $('#chat').children().last().hide(500, function () {
                     $(this).remove();
                 });
             }
@@ -1805,40 +1805,55 @@ function openNavToggle() {
 
 function changeMainAPI() {
     const selectedVal = $("#main_api").val();
-    console.log(selectedVal);
+    //console.log(selectedVal);
     const apiElements = {
         "kobold": {
-            apiElem: $("#kobold_api"),
+            apiSettings: $("#kobold_api-settings"),
+            apiConnector: $("#kobold_api"),
+            apiRanges: $("#range_block"),
             maxContextElem: $("#max_context_block"),
             amountGenElem: $("#amount_gen_block"),
             softPromptElem: $("#softprompt_block")
         },
         "textgenerationwebui": {
-            apiElem: $("#textgenerationwebui_api"),
+            apiSettings: $("#textgenerationwebui_api-settings"),
+            apiConnector: $("#textgenerationwebui_api"),
+            apiRanges: $("#range_block_textgenerationwebui"),
             maxContextElem: $("#max_context_block"),
             amountGenElem: $("#amount_gen_block"),
             softPromptElem: $("#softprompt_block")
         },
         "novel": {
-            apiElem: $("#novel_api"),
+            apiSettings: $("#novel_api-settings"),
+            apiConnector: $("#novel_api"),
+
+            apiRanges: $("#range_block_novel"),
             maxContextElem: $("#max_context_block"),
             amountGenElem: $("#amount_gen_block"),
             softPromptElem: $("#softprompt_block")
         }
     };
+    console.log('--- apiElements--- ');
+    //console.log(apiElements);
 
     for (const apiName in apiElements) {
         const apiObj = apiElements[apiName];
         const isCurrentApi = selectedVal === apiName;
-        console.log(isCurrentApi);
-        console.log(selectedVal);
-        apiObj.apiElem.css("display", isCurrentApi ? "block" : "none");
+
+        apiObj.apiSettings.css("display", isCurrentApi ? "block" : "none");
+        apiObj.apiConnector.css("display", isCurrentApi ? "block" : "none");
+        apiObj.apiRanges.css("display", isCurrentApi ? "block" : "none");
+        //console.log('--- apiObj.apiElem ---');
+        //console.log(apiObj.apiElem);
+        //console.log(apiObj.apiElem.css("display"));
 
         if (isCurrentApi && apiName === "kobold") {
+            console.log("enabling SP for kobold");
             $("#softprompt_block").css("display", "block");
         }
 
         if (isCurrentApi && apiName === "textgenerationwebui") {
+            console.log("enabling amount_gen for ooba");
             apiObj.amountGenElem.children().prop("disabled", false);
             apiObj.amountGenElem.css("opacity", 1.0);
         }
@@ -2048,20 +2063,21 @@ async function getSettings(type) {
                     $("#settings_perset option[value=gui]")
                         .attr("selected", "true")
                         .trigger("change");
-                    $("#range_block").children().prop("disabled", true);
-                    $("#range_block").css("opacity", 0.5);
-
-                    $("#amount_gen_block").children().prop("disabled", true);
-                    $("#amount_gen_block").css("opacity", 0.45);
+                    /*                     $("#range_block").children().prop("disabled", true);
+                    
+                                        $("#range_block").css("opacity", 0.5);
+                    
+                                        $("#amount_gen_block").children().prop("disabled", true);
+                                        $("#amount_gen_block").css("opacity", 0.45); */
                 } else {
                     if (typeof koboldai_setting_names[preset_settings] !== "undefined") {
                         $(`#settings_perset option[value=${koboldai_setting_names[preset_settings]}]`)
                             .attr("selected", "true");
                     } else {
-                        $("#range_block").children().prop("disabled", true);
-                        $("#range_block").css("opacity", 0.5);
-                        $("#amount_gen_block").children().prop("disabled", true);
-                        $("#amount_gen_block").css("opacity", 0.45);
+                        /*                         $("#range_block").children().prop("disabled", true);
+                                                $("#range_block").css("opacity", 0.5);
+                                                $("#amount_gen_block").children().prop("disabled", true);
+                                                $("#amount_gen_block").css("opacity", 0.45); */
 
                         preset_settings = "gui";
                         $("#settings_perset option[value=gui]")
@@ -2685,10 +2701,10 @@ function showSwipeButtons() {
     }
     //console.log((chat[chat.length - 1]));
     if ((chat[chat.length - 1].swipes.length - swipeId) === 1) {
-        console.log('highlighting R swipe');
+        //console.log('highlighting R swipe');
         currentMessage.children('.swipe_right').css('opacity', '0.7');
     }
-    console.log(swipesCounterHTML);
+    //console.log(swipesCounterHTML);
 
     $(".swipes-counter").html(swipesCounterHTML);
 
@@ -3634,7 +3650,7 @@ $(document).ready(function () {
         else if (id == "option_regenerate") {
             if (is_send_press == false) {
                 //hideSwipeButtons();
-                
+
                 if (selected_group) {
                     regenerateGroup();
                 }
@@ -3724,15 +3740,19 @@ $(document).ready(function () {
             $("#max_context_counter").html(max_context + " Tokens");
 
             $("#range_block").children().prop("disabled", false);
+
             $("#range_block").css("opacity", 1.0);
             $("#amount_gen_block").children().prop("disabled", false);
+
             $("#amount_gen_block").css("opacity", 1.0);
         } else {
             //$('.button').disableSelection();
             preset_settings = "gui";
             $("#range_block").children().prop("disabled", true);
+
             $("#range_block").css("opacity", 0.5);
             $("#amount_gen_block").children().prop("disabled", true);
+
             $("#amount_gen_block").css("opacity", 0.45);
         }
         saveSettingsDebounced();
@@ -4211,8 +4231,27 @@ $(document).ready(function () {
     });
 
     $('.drawer-toggle').click(function () {
+        //$('#top-settings-holder').find('.open').slideToggle(0, "swing");
         var icon = $(this).find('.drawer-icon');
-        icon.toggleClass('down up');
-        $(this).closest('.drawer').find('.drawer-content').slideToggle();
+        var drawer = $(this).parent().find('.drawer-content');
+        var drawerWasOpenAlready = $(this).parent().find('.drawer-content').hasClass('openDrawer');
+        var iconWasOpenAlready = $(this).find('.drawer-icon').hasClass('openicon');
+        console.log('Draw Open? ' + drawerWasOpenAlready + ' Icon Open? ' + iconWasOpenAlready);
+
+        if (!drawerWasOpenAlready) {
+            $('.openDrawer').slideToggle(200, "swing")                                      //close all open drawers
+            $('.openIcon').toggleClass('closedIcon openIcon');                  //set all icons   to closed state
+            $('.openDrawer').toggleClass('closedDrawer openDrawer');            //set all drawers to closed state
+            console.log('drawer was closed, so opening');
+            icon.toggleClass('openIcon closedIcon');
+            drawer.toggleClass('openDrawer closedDrawer');                      //mark selected drawer as open if closed
+            $(this).closest('.drawer').find('.drawer-content').slideToggle(200, "swing");   //open selected drawer
+
+        } else if (drawerWasOpenAlready) {
+            console.log('found the drawer was already open, so closing');
+            icon.toggleClass('closedIcon openIcon');
+            $('.openDrawer').slideToggle(200, "swing");
+            drawer.toggleClass('closedDrawer openDrawer');
+        }
     });
 });
