@@ -1912,7 +1912,8 @@ input[type="range"] {
 }
 
 #anchor_checkbox label,
-#power-user-option-checkboxes label {
+#power-user-option-checkboxes label,
+.checkbox_label {
     display: flex;
     flex-direction: row;
     column-gap: 10px;

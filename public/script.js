@@ -34,6 +34,7 @@ import {
 import {
     force_pygmalion_formatting,
     collapse_newlines,
+    pin_examples,
     collapseNewlines,
 } from "./scripts/power-user.js";
 
@@ -954,7 +955,7 @@ function getWorldInfoPrompt(chat2) {
     return { worldInfoString, worldInfoBefore, worldInfoAfter };
 }
 
-function baseChatReplaceAndSplit(value, name1, name2) {
+function baseChatReplace(value, name1, name2) {
     if (value !== undefined && value.length > 0) {
         if (is_pygmalion) {
             value = value.replace(/{{user}}:/gi, "You:");
@@ -963,7 +964,11 @@ function baseChatReplaceAndSplit(value, name1, name2) {
         value = value.replace(/{{user}}/gi, name1);
         value = value.replace(/{{char}}/gi, name2);
         value = value.replace(/<USER>/gi, name1);
-        value = value.replace(/<BOT>/gi, name2);;
+        value = value.replace(/<BOT>/gi, name2);
+
+        if (collapse_newlines) {
+            value = collapseNewlines(value);
+        }
     }
     return value;
 }
@@ -1078,10 +1083,10 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
         let chatString = '';
         let arrMes = [];
         let mesSend = [];
-        let charDescription = baseChatReplaceAndSplit($.trim(characters[this_chid].description), name1, name2);
-        let charPersonality = baseChatReplaceAndSplit($.trim(characters[this_chid].personality), name1, name2);
-        let Scenario = baseChatReplaceAndSplit($.trim(characters[this_chid].scenario), name1, name2);
-        let mesExamples = baseChatReplaceAndSplit($.trim(characters[this_chid].mes_example), name1, name2);
+        let charDescription = baseChatReplace($.trim(characters[this_chid].description), name1, name2);
+        let charPersonality = baseChatReplace($.trim(characters[this_chid].personality), name1, name2);
+        let Scenario = baseChatReplace($.trim(characters[this_chid].scenario), name1, name2);
+        let mesExamples = baseChatReplace($.trim(characters[this_chid].mes_example), name1, name2);
 
         if (!mesExamples.startsWith('<START>')) {
             mesExamples = '<START>\n' + mesExamples.trim();
@@ -1112,6 +1117,15 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
 
             if (count_view_mes < topAnchorDepth) {
                 storyString += '\n' + appendToStoryString(charPersonality, '');
+            }
+        }
+
+        if (pin_examples){
+            for (let example of mesExamplesArray) {
+                if(!is_pygmalion) {
+                    example = example.replace(/<START>/i, 'This is how '+name2+' should talk');//An example of how '+name2+' responds
+                }
+                storyString += example;
             }
         }
         //////////////////////////////////
@@ -1199,18 +1213,20 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
             count_exm_add = 0;
 
             if (i === chat.length - 1) {
-                let mesExmString = '';
-                for (let iii = mesExamplesArray.length - 1; iii >= 0; iii--) {
-                    mesExmString += mesExamplesArray[iii];
-                    const prompt = worldInfoString + storyString + mesExmString + chatString + anchorTop + anchorBottom + charPersonality + promptBias + extension_prompt;
-                    if (encode(JSON.stringify(prompt)).length + 120 < this_max_context) {
-                        if (!is_pygmalion) {
-                            mesExamplesArray[iii] = mesExamplesArray[iii].replace(/<START>/i, `This is how ${name2} should talk`);
+                if (!pin_examples) {
+                    let mesExmString = '';
+                    for (let iii = mesExamplesArray.length - 1; iii >= 0; iii--) {
+                        mesExmString += mesExamplesArray[iii];
+                        const prompt = worldInfoString + storyString + mesExmString + chatString + anchorTop + anchorBottom + charPersonality + promptBias + extension_prompt;
+                        if (encode(JSON.stringify(prompt)).length + 120 < this_max_context) {
+                            if (!is_pygmalion) {
+                                mesExamplesArray[iii] = mesExamplesArray[iii].replace(/<START>/i, `This is how ${name2} should talk`);
+                            }
+                            count_exm_add++;
+                            await delay(1);
+                        } else {
+                            break;
                         }
-                        count_exm_add++;
-                        await delay(1);
-                    } else {
-                        break;
                     }
                 }
                 if (!is_pygmalion && Scenario && Scenario.length > 0) {
@@ -1338,9 +1354,6 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
             finalPromt = worldInfoBefore + storyString + worldInfoAfter + extension_prompt + mesExmString + mesSendString + generatedPromtCache + promptBias;
             finalPromt = finalPromt.replace(/\r/gm, '');
 
-            if (collapse_newlines) {
-                finalPromt = collapseNewlines(finalPromt);
-            }
             //console.log('final prompt decided');
 
             //if we aren't using the kobold GUI settings...
