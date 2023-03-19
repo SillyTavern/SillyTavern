@@ -38,6 +38,11 @@ function saveSettings() {
 
 async function moduleWorker() {
     const context = getContext();
+
+    if (!context.groupId && !context.characterId) {
+        return;
+    }
+
     loadSettings();
 
     // take the count of messages

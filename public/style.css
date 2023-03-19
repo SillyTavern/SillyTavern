@@ -125,7 +125,7 @@ code {
 }
 
 #bg1 {
-    background: url(backgrounds/tavern.png);
+    background: url(backgrounds/tavern.jpg);
     background-repeat: no-repeat;
     background-attachment: fixed;
     background-size: cover;
@@ -137,7 +137,7 @@ code {
 }
 
 #bg2 {
-    background: url(backgrounds/tavern.png);
+    background: url(backgrounds/tavern.jpg);
     background-repeat: no-repeat;
     background-attachment: fixed;
     filter: blur(2px);

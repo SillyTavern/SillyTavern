@@ -178,7 +178,7 @@ function printGroups() {
     for (let group of groups) {
         const template = $("#group_list_template .group_select").clone();
         template.data("id", group.id);
-        template.find(".ch_name").html(group.name);
+        template.find(".ch_name").text(group.name);
         $("#rm_print_characters_block").prepend(template);
         updateGroupAvatar(group);
     }
@@ -437,6 +437,9 @@ async function deleteGroup(id) {
         $("#rm_info_block").transition({ opacity: 0, duration: 0 });
         select_rm_info("Group deleted!");
         $("#rm_info_block").transition({ opacity: 1.0, duration: 2000 });
+
+        $("#rm_button_selected_ch").children("h2").text('');
+        setRightTabSelectedClass();
     }
 }
 
@@ -535,7 +538,7 @@ function select_group_chats(chat_id) {
         const template = $("#group_member_template .group_member").clone();
         template.data("id", character.name);
         template.find(".avatar img").attr("src", avatar);
-        template.find(".ch_name").html(character.name);
+        template.find(".ch_name").text(character.name);
         template.click(memberClickHandler);
 
         if (

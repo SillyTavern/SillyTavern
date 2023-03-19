@@ -562,6 +562,7 @@ async function getCharacters() {
         for (var i = 0; i < load_ch_count.length; i++) {
             characters[i] = [];
             characters[i] = getData[i];
+            characters[i]['name'] = DOMPurify.sanitize(characters[i]['name']);
             //console.log('/getcharacters -- loaded character #'+(i+1)+' ('+characters[i].name+')');
         }
         //RossAscends: updated character sorting to be alphabetical

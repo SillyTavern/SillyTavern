@@ -612,24 +612,25 @@ app.post("/editcharacter", urlencodedParser, async function (request, response) 
     }
 });
 app.post("/deletecharacter", urlencodedParser, function (request, response) {
-    if (!request.body) return response.sendStatus(400);
-    rimraf(charactersPath + request.body.avatar_url, (err) => {
+    if (!request.body || !request.body.avatar_url) {
+        return response.sendStatus(400);
+    }
+
+    const avatarPath = charactersPath + request.body.avatar_url;
+    if (!fs.existsSync(avatarPath)) {
+        return response.sendStatus(400);
+    }
+
+    fs.rmSync(avatarPath);
+    let dir_name = request.body.avatar_url;
+    rimraf(chatsPath + dir_name.replace('.png', ''), (err) => {
         if (err) {
             response.send(err);
             return console.log(err);
         } else {
             //response.redirect("/");
-            let dir_name = request.body.avatar_url;
-            rimraf(chatsPath + dir_name.replace('.png', ''), (err) => {
-                if (err) {
-                    response.send(err);
-                    return console.log(err);
-                } else {
-                    //response.redirect("/");
 
-                    response.send('ok');
-                }
-            });
+            response.send('ok');
         }
     });
 });
