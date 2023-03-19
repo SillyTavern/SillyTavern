@@ -1307,12 +1307,12 @@ input[type=search]:focus::-webkit-search-cancel-button {
     margin-right: auto;
     left: 0;
     right: 0;
-    margin-top: 40px;
     box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
     padding: 4px;
     /*border: 1px solid #333333;*/
     flex-direction: column;
     z-index: 2064;
+    border-radius: 0 0 20px 20px;
 }
 
 #world_popup_bottom_holder {
@@ -1874,7 +1874,6 @@ input[type="range"]{
     margin-right: auto;
     left: 0;
     right: 0;
-    margin-top: 40px;
     box-shadow: 0 0 20px var(--black70a);
     padding-left: 30px;
     padding-right: 30px;
