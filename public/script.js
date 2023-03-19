@@ -846,8 +846,8 @@ function addOneMessage(mes, type = "normal") {
     var $textchat = $("#chat");
     $('#chat .mes').last().addClass('last_mes');
     $('#chat .mes').eq(-2).removeClass('last_mes');
-    $textchat.scrollTop(($textchat[0].scrollHeight));
-
+    //$textchat.scrollTop(($textchat[0].scrollHeight));
+    $('#chat .mes').last().get(0).scrollIntoView({ behavior: "smooth" });
 
 
     //console.log(chat[chat.length - 1].["swipes"]);
@@ -1397,7 +1397,14 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
 
             var generate_data;
             if (main_api == 'kobold') {
-                var generate_data = { prompt: finalPromt, gui_settings: true, max_length: amount_gen, temperature: kai_settings.temp, max_context_length: max_context };
+                var generate_data = { 
+                    prompt: finalPromt,
+                    gui_settings: true,
+                    max_length: amount_gen,
+                    temperature: kai_settings.temp,
+                    max_context_length: max_context,
+                    singleline: kai_settings.single_line,
+                };
                 if (preset_settings != 'gui') {
 
                     generate_data = {
@@ -1423,6 +1430,7 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
                         s6: this_settings.sampler_order[5],
                         s7: this_settings.sampler_order[6],
                         use_world_info: false,
+                        singleline: kai_settings.single_line,
                     };
                 }
             }

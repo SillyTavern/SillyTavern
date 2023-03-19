@@ -17,21 +17,28 @@ const kai_settings = {
     typical: 1,
     tfs: 1,
     rep_pen_slope: 0.9,
+    single_line: false,
 };
 
 function loadKoboldSettings(preset) {
     for (const name of Object.keys(kai_settings)) {
         const value = preset[name];
+        const slider = sliders.find(x => x.name === name);
 
-        if (value === undefined) {
+        if (value === undefined || !slider) {
             continue;
         }
 
-        const slider = sliders.find(x => x.name === name);
         const formattedValue = slider.format(value);
         slider.setValue(preset[name]);
         $(slider.sliderId).val(preset[name]);
         $(slider.counterId).text(formattedValue);
+    }
+
+    // TODO: refactor checkboxes (if adding any more)
+    if (preset.hasOwnProperty('single_line')) {
+        kai_settings.single_line = preset.single_line;
+        $('#single_line').prop('checked', kai_settings.single_line);
     }
 }
 
@@ -110,5 +117,11 @@ $(document).ready(function () {
             $(slider.counterId).html(formattedValue);
             saveSettingsDebounced();
         });
+    });
+
+    $('#single_line').on("input", function() {
+        const value = $(this).prop('checked');
+        kai_settings.single_line = value;
+        saveSettingsDebounced();
     });
 });

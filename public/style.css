@@ -2822,6 +2822,10 @@ label[for="extensions_autoconnect"] {
     display: none;
 }
 
+.drawer-content .checkbox_label {
+    margin: 1rem 0;
+}
+
 .extensions_info {
     text-align: left;
     margin: 0 1em;

@@ -238,7 +238,8 @@ app.post("/generate", jsonParser, async function (request, response_generate = r
         use_memory: false,
         use_authors_note: false,
         use_world_info: false,
-        max_context_length: request.body.max_context_length
+        max_context_length: request.body.max_context_length,
+        singleline: !!request.body.singleline,
         //temperature: request.body.temperature,
         //max_length: request.body.max_length
     };
@@ -262,7 +263,8 @@ app.post("/generate", jsonParser, async function (request, response_generate = r
             top_k: request.body.top_k,
             top_p: request.body.top_p,
             typical: request.body.typical,
-            sampler_order: sampler_order
+            sampler_order: sampler_order,
+            singleline: !!request.body.singleline,
         };
     }
 
