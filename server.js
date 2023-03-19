@@ -1525,15 +1525,15 @@ function putAsync(url, args) {
     })
 }
 
-    function postAsync(url, args) {
-        return new Promise((resolve, reject) => {
-            client.post(url, args, (data, response) => {
-                if (response.statusCode >= 400) {
-                    reject([data, response]);
-                }
-                resolve(data);
-            }).on('error', e => reject(e));
-        })
+function postAsync(url, args) {
+    return new Promise((resolve, reject) => {
+        client.post(url, args, (data, response) => {
+            if (response.statusCode >= 400) {
+                reject([data, response]);
+            }
+            resolve(data);
+        }).on('error', e => reject(e));
+    })
 }
 
 function getAsync(url, args) {
