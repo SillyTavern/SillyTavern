@@ -83,7 +83,7 @@ window["TavernAI"] = {};
 
 const VERSION = "1.2.8";
 let converter = new showdown.Converter({ emoji: "true" });
-let bg_menu_toggle = false;
+/* let bg_menu_toggle = false; */
 const systemUserName = "TavernAI";
 let default_user_name = "You";
 let name1 = default_user_name;
@@ -606,13 +606,9 @@ async function getBackgrounds() {
         for (var i = 0; i < getData.length; i++) {
             //console.log(1);
             $("#bg_menu_content").append(
-                "<div class=bg_example><img bgfile='" +
-                getData[i] +
-                "' class=bg_example_img src='backgrounds/" +
-                getData[i] +
-                "'><img bgfile='" +
-                getData[i] +
-                "' class=bg_example_cross src=img/cross.png></div>"
+                `<div class="bg_example" bgfile="${getData[i]}" class="bg_example_img" style="background-image: url(backgrounds/${getData[i]});">
+                <div bgfile="${getData[i]}" class=bg_example_cross style="background-image: url(img/cross.png);">
+            </div>`
             );
         }
         //var aa = JSON.parse(getData[0]);
@@ -647,23 +643,7 @@ async function isColab() {
 }
 
 async function setBackground(bg) {
-    /*
-              const response = await fetch("/setbackground", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                          "bg": bg
-                      })
-      
-              });
-              if (response.ok === true) {
-                  //const getData = await response.json();
-                  //background = getData;
-      
-                  //var aa = JSON.parse(getData[0]);
-                  //const load_ch_coint = Object.getOwnPropertyNames(getData);
-              }*/
-    //console.log(bg);
+
     jQuery.ajax({
         type: "POST", //
         url: "/setbackground", //
@@ -677,11 +657,7 @@ async function setBackground(bg) {
         dataType: "json",
         contentType: "application/json",
         //processData: false,
-        success: function (html) {
-            //setBackground(html);
-            //$('body').css('background-image', 'linear-gradient(rgba(19,21,44,0.75), rgba(19,21,44,0.75)), url('+e.target.result+')');
-            //$("#form_bg_download").after("<div class=bg_example><img bgfile='"+html+"' class=bg_example_img src='backgrounds/"+html+"'><img bgfile='"+html+"' class=bg_example_cross src=img/cross.png></div>");
-        },
+        success: function (html) { },
         error: function (jqXHR, exception) {
             console.log(exception);
             console.log(jqXHR);
@@ -2649,13 +2625,10 @@ function read_bg_load(input) {
                         "url(" + e.target.result + ")"
                     );
                     $("#form_bg_download").after(
-                        "<div class=bg_example><img bgfile='" +
-                        html +
-                        "' class=bg_example_img src='backgrounds/" +
-                        html +
-                        "'><img bgfile='" +
-                        html +
-                        "' class=bg_example_cross src=img/cross.png></div>"
+                        `<div class=bg_example>
+                            <img bgfile="${html}" class="bg_example_img" style="background-image: url(backgrounds/"${html});">
+                            <img bgfile="${html}" class=bg_example_cross src="img/cross.png">
+                        </div>`
                     );
                 },
                 error: function (jqXHR, exception) {
@@ -3156,40 +3129,8 @@ $(document).ready(function () {
         // Will allow to select the same file twice in a row
         $("#form_upload_avatar").trigger("reset");
     });
-    $("#logo_block").click(function (event) {
-        if (!bg_menu_toggle) {
-            $("#bg_menu_button").transition({
-                perspective: "100px",
-                rotate3d: "1,1,0,180deg",
-            });
-            $("#bg_menu_content").transition({
-                opacity: 1.0,
-                height: "90vh",
-                duration: 340,
-                easing: "in",
-                complete: function () {
-                    bg_menu_toggle = true;
-                    $("#bg_menu_content").css("overflow-y", "auto");
-                },
-            });
-        } else {
-            $("#bg_menu_button").transition({
-                perspective: "100px",
-                rotate3d: "1,1,0,360deg",
-            });
-            $("#bg_menu_content").css("overflow-y", "hidden");
-            $("#bg_menu_content").transition({
-                opacity: 0.0,
-                height: "0px",
-                duration: 340,
-                easing: "in",
-                complete: function () {
-                    bg_menu_toggle = false;
-                },
-            });
-        }
-    });
-    $(document).on("click", ".bg_example_img", function () {
+
+    $(document).on("click", ".bg_example", function () {
         //when user clicks on a BG thumbnail...
         var this_bgfile = $(this).attr("bgfile"); // this_bgfile = whatever they clicked
 
@@ -3211,8 +3152,6 @@ $(document).ready(function () {
             duration: 1300, //animation_rm_duration,
             easing: "linear",
             complete: function () {
-                // why does the BG transition completion make the #options (right nav) invisible?
-                $("#options").css("display", "none");
             },
         });
         $("#bg" + number_bg).css(

@@ -53,35 +53,31 @@
 
 <body>
 
-<!-- background selection menu -->
-    <div id="bg_menu">
-        <div id="logo_block">
-            <div id="bg_menu_button"><img src="img/tri.png">
-            </div>
-            <img src="img/logo.png" id="site_logo">
-            <div id="update-notification">
-                <a id="verson" href="https://github.com/TavernAI/TavernAI" target="_blank"></a>
-            </div>
-        </div>
-
-        <div id="bg_menu_content">
-            <form id="form_bg_download" action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                <label class="input-file">
-                    <input type="file" id="add_bg_button" name="avatar"
-                        accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp">
-                    <span class="bg_example_but_load"><img src='img/addbg3.png'></span>
-
-                </label>
-            </form>
-
-        </div>
-    </div>
     <div id="bg1"></div>
     <div id="bg2"></div>
 
 <!-- top bar central settings buttons -->
     <div id="top-bar">
-        <div id="top-settings-holder">
+    </div>
+       <div id="top-settings-holder">
+        <!-- background selection menu -->
+            <div id="logo_block" class="drawer" style="z-index:3001;">
+                <div id="site_logo" class="drawer-toggle drawer-header">
+                    <div class="drawer-icon icon-panorama closedIcon"></div>
+                </div>
+                <div class="drawer-content closedDrawer">
+                    <div class="flex-container">
+                        <div id="bg_menu_content">
+                            <form id="form_bg_download" action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                                <label class="input-file">
+                                    <input type="file" id="add_bg_button" name="avatar" accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp">
+                                    <span class="bg_example_but_load"><img src='img/addbg3.png'></span>
+                                </label>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>  
             
             <div id="sys-settings-button" class="drawer" style="z-index:3001;">
                 <div class="drawer-toggle drawer-header">
@@ -502,8 +498,6 @@
             </div>
 
         </div>
-    </div>
-
 <!-- various fullscreen popups -->
     <div id="shadow_popup">
         <div id="dialogue_popup">
