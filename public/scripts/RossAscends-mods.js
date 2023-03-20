@@ -1,3 +1,4 @@
+esversion: 6
 import { encode } from "../scripts/gpt-2-3-tokenizer/mod.js";
 
 import {
@@ -153,7 +154,7 @@ function RA_CountCharTokens() {
 //Auto Load Last Charcter -- (fires when active_character is defined and auto_load_chat is true)
 async function RA_autoloadchat() {
 	if (document.getElementById('CharID0') !== null) {
-		console.log('char list loaded! clicking activeChar')
+		console.log('char list loaded! clicking activeChar');
 		var CharToAutoLoad = document.getElementById('CharID' + LoadLocal('ActiveChar'));
 		if (CharToAutoLoad != null) {
 			CharToAutoLoad.click();
@@ -162,17 +163,17 @@ async function RA_autoloadchat() {
 		}
 		RestoreNavTab();
 	} else {
-		console.log('no char list yet..')
-		setTimeout(RA_autoloadchat, 100)			// if the charcter list hadn't been loaded yet, try again. 
+		console.log('no char list yet..');
+		setTimeout(RA_autoloadchat, 100);			// if the charcter list hadn't been loaded yet, try again. 
 	}
 }
 //only triggers when AutoLoadChat is enabled, consider adding this as an independent feature later. 
 function RestoreNavTab() {
-	if ($(rm_button_selected_ch).children("h2").text() !== '') {		//check for a change in the character edit tab name
+	if ($('#rm_button_selected_ch').children("h2").text() !== '') {		//check for a change in the character edit tab name
 		console.log('detected ALC char finished loaded, proceeding to restore tab.');
-		$(SelectedNavTab).click() 									//click to restore saved tab when name has changed (signalling char load is done)
+		$(SelectedNavTab).click(); 									//click to restore saved tab when name has changed (signalling char load is done)
 	} else {
-		setTimeout(RestoreNavTab, 100)								//if not changed yet, check again after 100ms
+		setTimeout(RestoreNavTab, 100);								//if not changed yet, check again after 100ms
 	}
 }
 //changes input bar and send button display depending on connection status
@@ -228,7 +229,7 @@ $("document").ready(function () {
 
 	if (LoadLocalBool('AutoLoadChatEnabled') == true) { RA_autoloadchat(); }
 	//Autoconnect on page load if enabled, or when api type is changed
-	if (LoadLocalBool("AutoConnectEnabled") == true) { RA_autoconnect() }
+	if (LoadLocalBool("AutoConnectEnabled") == true) { RA_autoconnect(); }
 	$("#main_api").change(function () { RA_autoconnect(); });
 	$("#api_button").click(function () { setTimeout(RA_checkOnlineStatus, 100); });
 
@@ -337,6 +338,6 @@ $("document").ready(function () {
 			) {
 				$('.swipe_right:last').click();
 			}
-		};
-	})
+		}
+	});
 });
