@@ -843,7 +843,6 @@ function addOneMessage(mes, type = "normal") {
         count_view_mes++;
 
     }
-    var $textchat = $("#chat");
     $('#chat .mes').last().addClass('last_mes');
     $('#chat .mes').eq(-2).removeClass('last_mes');
     //$textchat.scrollTop(($textchat[0].scrollHeight));
@@ -862,7 +861,10 @@ function addOneMessage(mes, type = "normal") {
     //console.log('addonemessage calling showSwipeBtns');
     showSwipeButtons();
 
-    $('#chat .mes').last().get(0).scrollIntoView({ behavior: "smooth" });
+    // TODO: figure out smooth scrolling that wouldn't hit performance much.
+    var $textchat = $("#chat");
+    $textchat.scrollTop(($textchat[0].scrollHeight));
+    //$('#chat .mes').last().get(0).scrollIntoView({ behavior: "smooth" });
 }
 
 function substituteParams(content) {
