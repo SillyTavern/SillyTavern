@@ -1,3 +1,4 @@
+esversion: 6
 import { encode } from "../scripts/gpt-2-3-tokenizer/mod.js";
 
 import {
@@ -158,7 +159,7 @@ function RA_CountCharTokens() {
 //Auto Load Last Charcter -- (fires when active_character is defined and auto_load_chat is true)
 async function RA_autoloadchat() {
 	if (document.getElementById('CharID0') !== null) {
-		console.log('char list loaded! clicking activeChar')
+		console.log('char list loaded! clicking activeChar');
 		var CharToAutoLoad = document.getElementById('CharID' + LoadLocal('ActiveChar'));
 		if (CharToAutoLoad != null) {
 			CharToAutoLoad.click();
@@ -167,17 +168,17 @@ async function RA_autoloadchat() {
 		}
 		RestoreNavTab();
 	} else {
-		console.log('no char list yet..')
-		setTimeout(RA_autoloadchat, 100)			// if the charcter list hadn't been loaded yet, try again. 
+		console.log('no char list yet..');
+		setTimeout(RA_autoloadchat, 100);			// if the charcter list hadn't been loaded yet, try again. 
 	}
 }
 //only triggers when AutoLoadChat is enabled, consider adding this as an independent feature later. 
 function RestoreNavTab() {
-	if ($(rm_button_selected_ch).children("h2").text() !== '') {		//check for a change in the character edit tab name
+	if ($('#rm_button_selected_ch').children("h2").text() !== '') {		//check for a change in the character edit tab name
 		console.log('detected ALC char finished loaded, proceeding to restore tab.');
-		$(SelectedNavTab).click() 									//click to restore saved tab when name has changed (signalling char load is done)
+		$(SelectedNavTab).click(); 									//click to restore saved tab when name has changed (signalling char load is done)
 	} else {
-		setTimeout(RestoreNavTab, 100)								//if not changed yet, check again after 100ms
+		setTimeout(RestoreNavTab, 100);								//if not changed yet, check again after 100ms
 	}
 }
 //changes input bar and send button display depending on connection status
@@ -205,9 +206,6 @@ function RA_autoconnect() {
 			if (isUrlOrAPIKey(api_server) && main_api === "kobold") {
 				$("#api_url_text").val(api_server);
 				$("#api_button").click();
-				//} else if (isUrlOrAPIKey(api_key_novel) && main_api === "novel") {
-				// $("#api_key_novel").val(api_key_novel);
-				// $("#api_button").click();
 			}
 		}
 	} else {
@@ -236,7 +234,7 @@ $("document").ready(function () {
 
 	if (LoadLocalBool('AutoLoadChatEnabled') == true) { RA_autoloadchat(); }
 	//Autoconnect on page load if enabled, or when api type is changed
-	if (LoadLocalBool("AutoConnectEnabled") == true) { RA_autoconnect() }
+	if (LoadLocalBool("AutoConnectEnabled") == true) { RA_autoconnect(); }
 	$("#main_api").change(function () { RA_autoconnect(); });
 	$("#api_button").click(function () { setTimeout(RA_checkOnlineStatus, 100); });
 
@@ -285,7 +283,6 @@ $("document").ready(function () {
 		var SwipeTargetMesClassParent = e.target.closest('.last_mes');
 		if (SwipeTargetMesClassParent !== null) {
 			if (SwipeButR.css('display') === 'flex') {
-				//if (SwipeButR.attr('style') == 'display: flex;' == true) {
 				SwipeButR.click();
 			}
 		}
@@ -293,10 +290,8 @@ $("document").ready(function () {
 	document.addEventListener('swiped-right', function (e) {
 		var SwipeButL = $('.swipe_left:last');
 		var SwipeTargetMesClassParent = e.target.closest('.last_mes');
-		//console.log('Touch swipe check -- closest last_mes = "' + (SwipeTargetMesClassParent !== null) + ' Button display = ' + (SwipeButL.attr('style') == 'display: flex;' == true));
 		if (SwipeTargetMesClassParent !== null) {
 			if (SwipeButL.css('display') === 'flex') {
-				//if (SwipeButL.attr('style') == 'display: flex;' == true) {
 				SwipeButL.click();
 			}
 		}
@@ -328,14 +323,8 @@ $("document").ready(function () {
 			ClearLocal();
 		}
 		if (event.key == "ArrowLeft") {		//swipes left
-			/* console.log('SWIPE FILTER -- ' +
-				$("#send_textarea").val() + ' ' +
-				$("#character_popup").css("display") + ' ' +
-				$("#shadow_select_chat_popup").css("display") + ' ' +
-				isInputElementInFocus()); */
 			if (
-
-				$(".swipe_left:last").css("display") === "flex" &&
+				$(".swipe_left:last").css('display') === 'flex' &&
 				$("#send_textarea").val() === '' &&
 				$("#character_popup").css("display") === "none" &&
 				$("#shadow_select_chat_popup").css("display") === "none" &&
@@ -345,14 +334,8 @@ $("document").ready(function () {
 			}
 		}
 		if (event.key == "ArrowRight") { //swipes right
-			/* console.log('SWIPE FILTER -- ' +
-				$("#send_textarea").val() + ' ' +
-				$("#character_popup").css("display") + ' ' +
-				$("#shadow_select_chat_popup").css("display") + ' ' +
-				isInputElementInFocus()); */
 			if (
-
-				$(".swipe_right:last").css("display") === "flex" &&
+				$(".swipe_right:last").css('display') === 'flex' &&
 				$("#send_textarea").val() === '' &&
 				$("#character_popup").css("display") === "none" &&
 				$("#shadow_select_chat_popup").css("display") === "none" &&
@@ -360,6 +343,6 @@ $("document").ready(function () {
 			) {
 				$('.swipe_right:last').click();
 			}
-		};
-	})
+		}
+	});
 });

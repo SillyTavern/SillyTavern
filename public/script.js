@@ -87,7 +87,7 @@ window["TavernAI"] = {};
 
 const VERSION = "1.1.0";
 let converter = new showdown.Converter({ emoji: "true" });
-let bg_menu_toggle = false;
+/* let bg_menu_toggle = false; */
 const systemUserName = "TavernAI";
 let default_user_name = "You";
 let name1 = default_user_name;
@@ -397,13 +397,7 @@ async function getStatus() {
                     main_api == "kobold" ? api_server : api_server_textgenerationwebui,
                 main_api: main_api,
             }),
-            beforeSend: function () {
-                if (is_api_button_press) {
-                    //$("#api_loading").css("display", 'inline-block');
-                    //$("#api_button").css("display", 'none');
-                }
-                //$('#create_button').attr('value','Creating...'); //
-            },
+            beforeSend: function () { },
             cache: false,
             dataType: "json",
             crossDomain: true,
@@ -535,11 +529,7 @@ function printCharacters() {
 
 async function getCharacters() {
     await getGroups();
-
-    //console.log('getCharacters() -- entered');
-    //console.log(characters);
     var response = await fetch("/getcharacters", {
-        //RossAscends: changed from const
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -551,45 +541,17 @@ async function getCharacters() {
     });
     if (response.ok === true) {
         var getData = ""; //RossAscends: reset to force array to update to account for deleted character.
-        var getData = await response.json(); //RossAscends: changed from const
-        //console.log(getData);
-
-        //var aa = JSON.parse(getData[0]);
-
-        var load_ch_count = Object.getOwnPropertyNames(getData); //RossAscends: change from const to create dynamic character load amounts.
-        var charCount = load_ch_count.length;
-        //console.log('/getcharacters -- expecting to load '+charCount+' characters.')
+        getData = await response.json();
+        const load_ch_count = Object.getOwnPropertyNames(getData);
         for (var i = 0; i < load_ch_count.length; i++) {
             characters[i] = [];
             characters[i] = getData[i];
             characters[i]['name'] = DOMPurify.sanitize(characters[i]['name']);
-            //console.log('/getcharacters -- loaded character #'+(i+1)+' ('+characters[i].name+')');
         }
-        //RossAscends: updated character sorting to be alphabetical
-        characters.sort(function (a, b) {
-            //console.log('sorting characters: '+a.name+' vs '+b.name);
-            if (a.name < b.name) {
-                return -1;
-            }
-            if (a.name > b.name) {
-                return 1;
-            }
-            return 0;
-        });
-        //console.log(characters);
-
-        //characters.reverse();
-        //console.log('/getcharacters -- this_chid -- '+this_chid);
         if (this_chid != undefined && this_chid != "invalid-safety-id") {
             $("#avatar_url_pole").val(characters[this_chid].avatar);
         }
-
-        //console.log('/getcharacters -- sending '+i+' characters to /printcharacters');
         printCharacters();
-        //console.log(propOwn.length);
-        //return JSON.parse(getData[0]);
-        //const getData = await response.json();
-        //var getMessage = getData.results[0].text;
     }
 }
 
@@ -611,13 +573,9 @@ async function getBackgrounds() {
         for (var i = 0; i < getData.length; i++) {
             //console.log(1);
             $("#bg_menu_content").append(
-                "<div class=bg_example><img bgfile='" +
-                getData[i] +
-                "' class=bg_example_img src='backgrounds/" +
-                getData[i] +
-                "'><img bgfile='" +
-                getData[i] +
-                "' class=bg_example_cross src=img/cross.png></div>"
+                `<div class="bg_example" bgfile="${getData[i]}" class="bg_example_img" style="background-image: url(backgrounds/${getData[i]});">
+                <div bgfile="${getData[i]}" class=bg_example_cross style="background-image: url(img/cross.png);">
+            </div>`
             );
         }
         //var aa = JSON.parse(getData[0]);
@@ -652,23 +610,7 @@ async function isColab() {
 }
 
 async function setBackground(bg) {
-    /*
-              const response = await fetch("/setbackground", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                          "bg": bg
-                      })
-      
-              });
-              if (response.ok === true) {
-                  //const getData = await response.json();
-                  //background = getData;
-      
-                  //var aa = JSON.parse(getData[0]);
-                  //const load_ch_coint = Object.getOwnPropertyNames(getData);
-              }*/
-    //console.log(bg);
+
     jQuery.ajax({
         type: "POST", //
         url: "/setbackground", //
@@ -682,11 +624,7 @@ async function setBackground(bg) {
         dataType: "json",
         contentType: "application/json",
         //processData: false,
-        success: function (html) {
-            //setBackground(html);
-            //$('body').css('background-image', 'linear-gradient(rgba(19,21,44,0.75), rgba(19,21,44,0.75)), url('+e.target.result+')');
-            //$("#form_bg_download").after("<div class=bg_example><img bgfile='"+html+"' class=bg_example_img src='backgrounds/"+html+"'><img bgfile='"+html+"' class=bg_example_cross src=img/cross.png></div>");
-        },
+        success: function (html) { },
         error: function (jqXHR, exception) {
             console.log(exception);
             console.log(jqXHR);
@@ -706,18 +644,12 @@ async function delBackground(bg) {
         }),
     });
     if (response.ok === true) {
-        //const getData = await response.json();
-        //background = getData;
-        //var aa = JSON.parse(getData[0]);
-        //const load_ch_coint = Object.getOwnPropertyNames(getData);
+
     }
 }
 
 function printMessages() {
-    //console.log(chat);
-    //console.log('printMessages() -- printing messages for -- '+this_chid+' '+active_character+' '+characters[this_chid]);
     chat.forEach(function (item, i, arr) {
-        //console.log('print message calling addOneMessage');
         addOneMessage(item);
     });
 }
@@ -832,6 +764,7 @@ function addOneMessage(mes, type = "normal") {
     newMessage.find('.avatar img').on('error', function () {
         $(this).attr("src", "/img/user-slash-solid.svg");
     });
+
     if (type === 'swipe') {
         $("#chat").children().filter('[mesid="' + (count_view_mes - 1) + '"]').children('.mes_block').children('.mes_text').html('');
         $("#chat").children().filter('[mesid="' + (count_view_mes - 1) + '"]').children('.mes_block').children('.mes_text').append(messageText);
@@ -845,20 +778,8 @@ function addOneMessage(mes, type = "normal") {
     }
     $('#chat .mes').last().addClass('last_mes');
     $('#chat .mes').eq(-2).removeClass('last_mes');
-    //$textchat.scrollTop(($textchat[0].scrollHeight));
 
-
-    //console.log(chat[chat.length - 1].["swipes"]);
-    //console.log(mes);
-    /*     if (mes["swipes"] !== undefined) {
-            if (mes["swipes"].length - 1 == mes["swipe_id"]) {           //this works to detect when next right swipe would generate
-                $(".swipe_right").css('opacity', '0.7')          // but we need it to happen on load, not only when swiping happens.
-            } else {
-                $(".swipe_right").css('opacity', '0.3')
-            };
-        } */
     hideSwipeButtons();
-    //console.log('addonemessage calling showSwipeBtns');
     showSwipeButtons();
 
     // TODO: figure out smooth scrolling that wouldn't hit performance much.
@@ -908,7 +829,6 @@ function sendSystemMessage(type, text) {
     }
 
     chat.push(newMessage);
-    //console.log('sendSystemMessage calls addOneMessage');
     addOneMessage(newMessage);
     is_send_press = false;
 }
@@ -1270,7 +1190,6 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
         }
 
         function runGenerate(cycleGenerationPromt = '') {
-            $(".swipe_right").css("display", "none");
             is_send_press = true;
 
             generatedPromtCache += cycleGenerationPromt;
@@ -1315,18 +1234,9 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
                         }
                     }
                     mesSend[mesSend.length] = item;
-                    //chatString = chatString+item;
+
                 });
             }
-            //finalPromt +=chatString;
-            //console.log(storyString);
-
-            //console.log(encode(characters[this_chid].description+chatString).length);
-            //console.log(encode(JSON.stringify(characters[this_chid].description+chatString)).length);
-            //console.log(JSON.stringify(storyString));
-            //Send story string
-            var mesSendString = '';
-            var mesExmString = '';
 
             function setPromtString() {
                 mesSendString = '';
@@ -1335,6 +1245,7 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
                     mesExmString += mesExamplesArray[j];
                 }
                 for (let j = 0; j < mesSend.length; j++) {
+
                     mesSendString += mesSend[j];
                     if (force_name2 && j === mesSend.length - 1 && tokens_already_generated === 0) {
                         mesSendString += name2 + ':';
@@ -1343,7 +1254,7 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
             }
 
             function checkPromtSize() {
-                //console.log('checking prompt size');
+
                 setPromtString();
                 let thisPromtContextSize = encode(JSON.stringify(worldInfoString + storyString + mesExmString + mesSendString + anchorTop + anchorBottom + charPersonality + generatedPromtCache + promptBias + extension_prompt)).length + 120;
 
@@ -1863,40 +1774,51 @@ function openNavToggle() {
 
 function changeMainAPI() {
     const selectedVal = $("#main_api").val();
-    console.log(selectedVal);
+    //console.log(selectedVal);
     const apiElements = {
         "kobold": {
-            apiElem: $("#kobold_api"),
+            apiSettings: $("#kobold_api-settings"),
+            apiConnector: $("#kobold_api"),
+            apiRanges: $("#range_block"),
             maxContextElem: $("#max_context_block"),
             amountGenElem: $("#amount_gen_block"),
             softPromptElem: $("#softprompt_block")
         },
         "textgenerationwebui": {
-            apiElem: $("#textgenerationwebui_api"),
+            apiSettings: $("#textgenerationwebui_api-settings"),
+            apiConnector: $("#textgenerationwebui_api"),
+            apiRanges: $("#range_block_textgenerationwebui"),
             maxContextElem: $("#max_context_block"),
             amountGenElem: $("#amount_gen_block"),
             softPromptElem: $("#softprompt_block")
         },
         "novel": {
-            apiElem: $("#novel_api"),
+            apiSettings: $("#novel_api-settings"),
+            apiConnector: $("#novel_api"),
+            apiRanges: $("#range_block_novel"),
             maxContextElem: $("#max_context_block"),
             amountGenElem: $("#amount_gen_block"),
             softPromptElem: $("#softprompt_block")
         }
     };
+    console.log('--- apiElements--- ');
+    //console.log(apiElements);
 
     for (const apiName in apiElements) {
         const apiObj = apiElements[apiName];
         const isCurrentApi = selectedVal === apiName;
-        console.log(isCurrentApi);
-        console.log(selectedVal);
-        apiObj.apiElem.css("display", isCurrentApi ? "block" : "none");
+
+        apiObj.apiSettings.css("display", isCurrentApi ? "block" : "none");
+        apiObj.apiConnector.css("display", isCurrentApi ? "block" : "none");
+        apiObj.apiRanges.css("display", isCurrentApi ? "block" : "none");
 
         if (isCurrentApi && apiName === "kobold") {
+            console.log("enabling SP for kobold");
             $("#softprompt_block").css("display", "block");
         }
 
         if (isCurrentApi && apiName === "textgenerationwebui") {
+            console.log("enabling amount_gen for ooba");
             apiObj.amountGenElem.children().prop("disabled", false);
             apiObj.amountGenElem.css("opacity", 1.0);
         }
@@ -1908,7 +1830,7 @@ function changeMainAPI() {
 ////////////////////////////////////////////////////
 
 async function getUserAvatars() {
-    $("#user_avatar_block").html(""); //RossAscends: necessary to avoid doubling avatars each QuickRefresh.
+    $("#user_avatar_block").html(""); //RossAscends: necessary to avoid doubling avatars each refresh.
     $("#user_avatar_block").append('<div class="avatar_upload">+</div>');
     const response = await fetch("/getuseravatars", {
         method: "POST",
@@ -2030,7 +1952,7 @@ async function getSettings(type) {
                 });
                 var arr_holder = {};
 
-                $("#settings_perset").empty(); //RossAscends: uncommented this to prevent settings selector from doubling preset list on QuickRefresh
+                $("#settings_perset").empty(); //RossAscends: uncommented this to prevent settings selector from doubling preset list on refresh
                 $("#settings_perset").append(
                     '<option value="gui">GUI KoboldAI Settings</option>'
                 ); //adding in the GUI settings, since it is not loaded dynamically
@@ -2106,21 +2028,11 @@ async function getSettings(type) {
                     $("#settings_perset option[value=gui]")
                         .attr("selected", "true")
                         .trigger("change");
-                    $("#range_block").children().prop("disabled", true);
-                    $("#range_block").css("opacity", 0.5);
-
-                    $("#amount_gen_block").children().prop("disabled", true);
-                    $("#amount_gen_block").css("opacity", 0.45);
                 } else {
                     if (typeof koboldai_setting_names[preset_settings] !== "undefined") {
                         $(`#settings_perset option[value=${koboldai_setting_names[preset_settings]}]`)
                             .attr("selected", "true");
                     } else {
-                        $("#range_block").children().prop("disabled", true);
-                        $("#range_block").css("opacity", 0.5);
-                        $("#amount_gen_block").children().prop("disabled", true);
-                        $("#amount_gen_block").css("opacity", 0.45);
-
                         preset_settings = "gui";
                         $("#settings_perset option[value=gui]")
                             .attr("selected", "true")
@@ -2244,9 +2156,7 @@ async function saveSettings(type) {
         success: function (data) {
             //online_status = data.result;
             if (type == "change_name") {
-                //console.log('got name change');
-                //console.log('success: reading from settings = ' + settings.username);
-                //name1 = settings.username;
+
 
                 clearChat();
                 printMessages();
@@ -2357,20 +2267,9 @@ async function getAllCharaChats() {
                     }
                 }
             }
-            //<div id="select_chat_div">
-
-            //<div id="load_select_chat_div">
-            //console.log(data);
-            //chat.length = 0;
-
-            //chat =  data;
-            //getChatResult();
-            //saveChat();
-            //console.log('getAllCharaChats() -- Finished successfully');
         },
         error: function (jqXHR, exception) {
-            //getChatResult();
-            //console.log('getAllCharaChats() -- Failed');
+
             console.log(exception);
             console.log(jqXHR);
         },
@@ -2689,13 +2588,10 @@ function read_bg_load(input) {
                         "url(" + e.target.result + ")"
                     );
                     $("#form_bg_download").after(
-                        "<div class=bg_example><img bgfile='" +
-                        html +
-                        "' class=bg_example_img src='backgrounds/" +
-                        html +
-                        "'><img bgfile='" +
-                        html +
-                        "' class=bg_example_cross src=img/cross.png></div>"
+                        `<div class=bg_example>
+                            <img bgfile="${html}" class="bg_example_img" style="background-image: url(backgrounds/"${html});">
+                            <img bgfile="${html}" class=bg_example_cross src="img/cross.png">
+                        </div>`
                     );
                 },
                 error: function (jqXHR, exception) {
@@ -2741,10 +2637,10 @@ function showSwipeButtons() {
     }
     //console.log((chat[chat.length - 1]));
     if ((chat[chat.length - 1].swipes.length - swipeId) === 1) {
-        console.log('highlighting R swipe');
+        //console.log('highlighting R swipe');
         currentMessage.children('.swipe_right').css('opacity', '0.7');
     }
-    console.log(swipesCounterHTML);
+    //console.log(swipesCounterHTML);
 
     $(".swipes-counter").html(swipesCounterHTML);
 
@@ -2815,8 +2711,6 @@ $(document).ready(function () {
         } else if (parseInt(chat[chat.length - 1]['swipe_id']) < chat[chat.length - 1]['swipes'].length) { //otherwise, if the id is less than the number of swipes
             chat[chat.length - 1]['mes'] = chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipe_id']]; //load the last mes box with the latest generation
             run_swipe_right = true; //then prepare to do normal right swipe to show next message
-
-
         }
 
         if (chat[chat.length - 1]['swipe_id'] > chat[chat.length - 1]['swipes'].length) { //if we swipe right while generating (the swipe ID is greater than what we are viewing now)
@@ -2929,22 +2823,21 @@ $(document).ready(function () {
         }
 
     });
+
     $(document).on('click', '.swipe_left', function () {      // when we swipe left..but no generation.
         const swipe_duration = 120;
         const swipe_range = '700px';
         chat[chat.length - 1]['swipe_id']--;
-        if (chat[chat.length - 1]['swipe_id'] >= 0) {           // hide the left arrow if we are viewing the first candidate of the last message block
-            $(this).parent().children('swipe_right').css('display', 'flex');
+        if (chat[chat.length - 1]['swipe_id'] >= 0) {
+            /*$(this).parent().children('swipe_right').css('display', 'flex');
             if (chat[chat.length - 1]['swipe_id'] === 0) {
                 $(this).css('display', 'none');
-            }
-
+            }*/ // Just in case
             let this_mes_div = $(this).parent();
             let this_mes_block = $(this).parent().children('.mes_block').children('.mes_text');
             const this_mes_div_height = this_mes_div[0].scrollHeight;
             this_mes_div.css('height', this_mes_div_height);
             const this_mes_block_height = this_mes_block[0].scrollHeight;
-
             chat[chat.length - 1]['mes'] = chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipe_id']];
             $(this).parent().children('.mes_block').transition({
                 x: swipe_range,
@@ -3041,28 +2934,15 @@ $(document).ready(function () {
         }
     });
 
-    $("#characloud_url").click(function () {
-        window.open("https://boosty.to/tavernai", "_blank");
-    });
     $("#send_but").click(function () {
         if (is_send_press == false) {
-            //hideSwipeButtons();
             is_send_press = true;
-
             Generate();
         }
     });
 
-    //hotkey to send input with enter (shift+enter generates a new line in the chat input box)
-    //this is not ideal for touch device users with virtual keyboards.
-    //ideally we would detect if the user is using a virtual keyboard, and disable this shortcut for them.
-    //because mobile users' hands are always near the screen, tapping the send button is better for them, and enter should always make a new line.
-    //note: CAI seems to have this handled. PC: shift+enter = new line, enter = send. iOS: shift+enter AND enter both make new lines, and only the send button sends.
-    //maybe a way to simulate this would be to disable the eventListener for people iOS.
-
     $("#send_textarea").keydown(function (e) {
         if (!e.shiftKey && !e.ctrlKey && e.key == "Enter" && is_send_press == false) {
-            //hideSwipeButtons();
             is_send_press = true;
             e.preventDefault();
             Generate();
@@ -3200,40 +3080,8 @@ $(document).ready(function () {
         // Will allow to select the same file twice in a row
         $("#form_upload_avatar").trigger("reset");
     });
-    $("#logo_block").click(function (event) {
-        if (!bg_menu_toggle) {
-            $("#bg_menu_button").transition({
-                perspective: "100px",
-                rotate3d: "1,1,0,180deg",
-            });
-            $("#bg_menu_content").transition({
-                opacity: 1.0,
-                height: "90vh",
-                duration: 340,
-                easing: "in",
-                complete: function () {
-                    bg_menu_toggle = true;
-                    $("#bg_menu_content").css("overflow-y", "auto");
-                },
-            });
-        } else {
-            $("#bg_menu_button").transition({
-                perspective: "100px",
-                rotate3d: "1,1,0,360deg",
-            });
-            $("#bg_menu_content").css("overflow-y", "hidden");
-            $("#bg_menu_content").transition({
-                opacity: 0.0,
-                height: "0px",
-                duration: 340,
-                easing: "in",
-                complete: function () {
-                    bg_menu_toggle = false;
-                },
-            });
-        }
-    });
-    $(document).on("click", ".bg_example_img", function () {
+
+    $(document).on("click", ".bg_example", function () {
         //when user clicks on a BG thumbnail...
         var this_bgfile = $(this).attr("bgfile"); // this_bgfile = whatever they clicked
 
@@ -3255,8 +3103,6 @@ $(document).ready(function () {
             duration: 1300, //animation_rm_duration,
             easing: "linear",
             complete: function () {
-                // why does the BG transition completion make the #options (right nav) invisible?
-                $("#options").css("display", "none");
             },
         });
         $("#bg" + number_bg).css(
@@ -3783,15 +3629,19 @@ $(document).ready(function () {
             $("#max_context_counter").html(max_context + " Tokens");
 
             $("#range_block").children().prop("disabled", false);
+
             $("#range_block").css("opacity", 1.0);
             $("#amount_gen_block").children().prop("disabled", false);
+
             $("#amount_gen_block").css("opacity", 1.0);
         } else {
             //$('.button').disableSelection();
             preset_settings = "gui";
             $("#range_block").children().prop("disabled", true);
+
             $("#range_block").css("opacity", 0.5);
             $("#amount_gen_block").children().prop("disabled", true);
+
             $("#amount_gen_block").css("opacity", 0.45);
         }
         saveSettingsDebounced();
@@ -4270,8 +4120,27 @@ $(document).ready(function () {
     });
 
     $('.drawer-toggle').click(function () {
+        //$('#top-settings-holder').find('.open').slideToggle(0, "swing");
         var icon = $(this).find('.drawer-icon');
-        icon.toggleClass('down up');
-        $(this).closest('.drawer').find('.drawer-content').slideToggle();
+        var drawer = $(this).parent().find('.drawer-content');
+        var drawerWasOpenAlready = $(this).parent().find('.drawer-content').hasClass('openDrawer');
+        var iconWasOpenAlready = $(this).find('.drawer-icon').hasClass('openicon');
+        console.log('Draw Open? ' + drawerWasOpenAlready + ' Icon Open? ' + iconWasOpenAlready);
+
+        if (!drawerWasOpenAlready) {
+            $('.openDrawer').slideToggle(200, "swing")                                      //close all open drawers
+            $('.openIcon').toggleClass('closedIcon openIcon');                  //set all icons   to closed state
+            $('.openDrawer').toggleClass('closedDrawer openDrawer');            //set all drawers to closed state
+            console.log('drawer was closed, so opening');
+            icon.toggleClass('openIcon closedIcon');
+            drawer.toggleClass('openDrawer closedDrawer');                      //mark selected drawer as open if closed
+            $(this).closest('.drawer').find('.drawer-content').slideToggle(200, "swing");   //open selected drawer
+
+        } else if (drawerWasOpenAlready) {
+            console.log('found the drawer was already open, so closing');
+            icon.toggleClass('closedIcon openIcon');
+            $('.openDrawer').slideToggle(200, "swing");
+            drawer.toggleClass('closedDrawer openDrawer');
+        }
     });
 });
