@@ -13,7 +13,7 @@ import {
 } from "../script.js";
 
 import {
-    pin_examples,
+	pin_examples,
 } from "./power-user.js";
 
 import { LoadLocal, SaveLocal, ClearLocal, CheckLocal, LoadLocalBool } from "./f-localStorage.js";
@@ -146,7 +146,7 @@ function RA_CountCharTokens() {
 					characters[this_chid].description +
 					characters[this_chid].personality +
 					characters[this_chid].scenario +
-                    (pin_examples ? characters[this_chid].mes_example : '') // add examples to permanent if they are pinned
+					(pin_examples ? characters[this_chid].mes_example : '') // add examples to permanent if they are pinned
 				)).length;
 		} else { console.log("RA_TC -- no valid char found, closing."); }				// if neither, probably safety char or some error in loading
 	}
@@ -333,8 +333,9 @@ $("document").ready(function () {
 				$("#character_popup").css("display") + ' ' +
 				$("#shadow_select_chat_popup").css("display") + ' ' +
 				isInputElementInFocus()); */
-
 			if (
+
+				$(".swipe_left:last").css("display") === "flex" &&
 				$("#send_textarea").val() === '' &&
 				$("#character_popup").css("display") === "none" &&
 				$("#shadow_select_chat_popup").css("display") === "none" &&
@@ -349,8 +350,9 @@ $("document").ready(function () {
 				$("#character_popup").css("display") + ' ' +
 				$("#shadow_select_chat_popup").css("display") + ' ' +
 				isInputElementInFocus()); */
-
 			if (
+
+				$(".swipe_right:last").css("display") === "flex" &&
 				$("#send_textarea").val() === '' &&
 				$("#character_popup").css("display") === "none" &&
 				$("#shadow_select_chat_popup").css("display") === "none" &&

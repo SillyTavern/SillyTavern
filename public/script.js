@@ -1016,7 +1016,7 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
             } else {
                 chat.length = chat.length - 1;
                 count_view_mes -= 1;
-                $('#chat').children().last().hide(500, function() {
+                $('#chat').children().last().hide(500, function () {
                     $(this).remove();
                 });
             }
@@ -1127,11 +1127,11 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
 
         if (pin_examples) {
             for (let example of mesExamplesArray) {
-                if(!is_pygmalion) {
+                if (!is_pygmalion) {
                     if (!storyString.endsWith('\n')) {
                         storyString += '\n';
                     }
-                    example = example.replace(/<START>/i, 'This is how '+name2+' should talk');//An example of how '+name2+' responds
+                    example = example.replace(/<START>/i, 'This is how ' + name2 + ' should talk');//An example of how '+name2+' responds
                 }
                 storyString += appendToStoryString(example, '');
             }
@@ -1398,7 +1398,7 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
 
             var generate_data;
             if (main_api == 'kobold') {
-                var generate_data = { 
+                var generate_data = {
                     prompt: finalPromt,
                     gui_settings: true,
                     max_length: amount_gen,
@@ -2913,7 +2913,7 @@ $(document).ready(function () {
         const swipe_range = '700px';
         chat[chat.length - 1]['swipe_id']--;
         if (chat[chat.length - 1]['swipe_id'] >= 0) {           // hide the left arrow if we are viewing the first candidate of the last message block
-            $(this).parent().children('swipe_right_button').css('display', 'flex');
+            $(this).parent().children('swipe_right').css('display', 'flex');
             if (chat[chat.length - 1]['swipe_id'] === 0) {
                 $(this).css('display', 'none');
             }
@@ -3672,7 +3672,7 @@ $(document).ready(function () {
         else if (id == "option_regenerate") {
             if (is_send_press == false) {
                 //hideSwipeButtons();
-                
+
                 if (selected_group) {
                     regenerateGroup();
                 }
