@@ -393,13 +393,7 @@ async function getStatus() {
                     main_api == "kobold" ? api_server : api_server_textgenerationwebui,
                 main_api: main_api,
             }),
-            beforeSend: function () {
-                if (is_api_button_press) {
-                    //$("#api_loading").css("display", 'inline-block');
-                    //$("#api_button").css("display", 'none');
-                }
-                //$('#create_button').attr('value','Creating...'); //
-            },
+            beforeSend: function () { },
             cache: false,
             dataType: "json",
             crossDomain: true,
@@ -531,11 +525,7 @@ function printCharacters() {
 
 async function getCharacters() {
     await getGroups();
-
-    //console.log('getCharacters() -- entered');
-    //console.log(characters);
     var response = await fetch("/getcharacters", {
-        //RossAscends: changed from const
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -547,44 +537,16 @@ async function getCharacters() {
     });
     if (response.ok === true) {
         var getData = ""; //RossAscends: reset to force array to update to account for deleted character.
-        var getData = await response.json(); //RossAscends: changed from const
-        //console.log(getData);
-
-        //var aa = JSON.parse(getData[0]);
-
-        var load_ch_count = Object.getOwnPropertyNames(getData); //RossAscends: change from const to create dynamic character load amounts.
-        var charCount = load_ch_count.length;
-        //console.log('/getcharacters -- expecting to load '+charCount+' characters.')
+        getData = await response.json();
+        const load_ch_count = Object.getOwnPropertyNames(getData);
         for (var i = 0; i < load_ch_count.length; i++) {
             characters[i] = [];
             characters[i] = getData[i];
-            //console.log('/getcharacters -- loaded character #'+(i+1)+' ('+characters[i].name+')');
         }
-        //RossAscends: updated character sorting to be alphabetical
-        characters.sort(function (a, b) {
-            //console.log('sorting characters: '+a.name+' vs '+b.name);
-            if (a.name < b.name) {
-                return -1;
-            }
-            if (a.name > b.name) {
-                return 1;
-            }
-            return 0;
-        });
-        //console.log(characters);
-
-        //characters.reverse();
-        //console.log('/getcharacters -- this_chid -- '+this_chid);
         if (this_chid != undefined && this_chid != "invalid-safety-id") {
             $("#avatar_url_pole").val(characters[this_chid].avatar);
         }
-
-        //console.log('/getcharacters -- sending '+i+' characters to /printcharacters');
         printCharacters();
-        //console.log(propOwn.length);
-        //return JSON.parse(getData[0]);
-        //const getData = await response.json();
-        //var getMessage = getData.results[0].text;
     }
 }
 
@@ -677,18 +639,12 @@ async function delBackground(bg) {
         }),
     });
     if (response.ok === true) {
-        //const getData = await response.json();
-        //background = getData;
-        //var aa = JSON.parse(getData[0]);
-        //const load_ch_coint = Object.getOwnPropertyNames(getData);
+
     }
 }
 
 function printMessages() {
-    //console.log(chat);
-    //console.log('printMessages() -- printing messages for -- '+this_chid+' '+active_character+' '+characters[this_chid]);
     chat.forEach(function (item, i, arr) {
-        //console.log('print message calling addOneMessage');
         addOneMessage(item);
     });
 }
@@ -803,6 +759,7 @@ function addOneMessage(mes, type = "normal") {
     newMessage.find('.avatar img').on('error', function () {
         $(this).attr("src", "/img/user-slash-solid.svg");
     });
+
     if (type === 'swipe') {
         $("#chat").children().filter('[mesid="' + (count_view_mes - 1) + '"]').children('.mes_block').children('.mes_text').html('');
         $("#chat").children().filter('[mesid="' + (count_view_mes - 1) + '"]').children('.mes_block').children('.mes_text').append(messageText);
@@ -819,19 +776,7 @@ function addOneMessage(mes, type = "normal") {
     $('#chat .mes').eq(-2).removeClass('last_mes');
     $textchat.scrollTop(($textchat[0].scrollHeight));
 
-
-
-    //console.log(chat[chat.length - 1].["swipes"]);
-    //console.log(mes);
-    /*     if (mes["swipes"] !== undefined) {
-            if (mes["swipes"].length - 1 == mes["swipe_id"]) {           //this works to detect when next right swipe would generate
-                $(".swipe_right").css('opacity', '0.7')          // but we need it to happen on load, not only when swiping happens.
-            } else {
-                $(".swipe_right").css('opacity', '0.3')
-            };
-        } */
     hideSwipeButtons();
-    //console.log('addonemessage calling showSwipeBtns');
     showSwipeButtons();
 }
 
@@ -862,7 +807,6 @@ function sendSystemMessage(type, text) {
     }
 
     chat.push(newMessage);
-    //console.log('sendSystemMessage calls addOneMessage');
     addOneMessage(newMessage);
     is_send_press = false;
 }
@@ -1200,7 +1144,6 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
         return;
 
         function runGenerate(cycleGenerationPromt = '') {
-            $(".swipe_right").css("display", "none");
             is_send_press = true;
 
             generatedPromtCache += cycleGenerationPromt;
@@ -1245,19 +1188,14 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
                         }
                     }
                     mesSend[mesSend.length] = item;
-                    //chatString = chatString+item;
+
                 });
             }
-            //finalPromt +=chatString;
-            //console.log(storyString);
 
-            //console.log(encode(characters[this_chid].description+chatString).length);
-            //console.log(encode(JSON.stringify(characters[this_chid].description+chatString)).length);
             if (type == 'force_name2') {
                 finalPromt += name2 + ':';
             }
-            //console.log(JSON.stringify(storyString));
-            //Send story string
+
             var mesSendString = '';
             var mesExmString = '';
 
@@ -1268,13 +1206,13 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
                     mesExmString += mesExamplesArray[j];
                 }
                 for (let j = 0; j < mesSend.length; j++) {
-                    //console.log('compiling messages for prompt');
+
                     mesSendString += mesSend[j];
                 }
             }
 
             function checkPromtSize() {
-                //console.log('checking prompt size');
+
                 setPromtString();
                 let thisPromtContextSize = encode(JSON.stringify(worldInfoString + storyString + mesExmString + mesSendString + anchorTop + anchorBottom + charPersonality + generatedPromtCache + promptBias + extension_prompt)).length + 120;
 
@@ -1802,7 +1740,6 @@ function changeMainAPI() {
         "novel": {
             apiSettings: $("#novel_api-settings"),
             apiConnector: $("#novel_api"),
-
             apiRanges: $("#range_block_novel"),
             maxContextElem: $("#max_context_block"),
             amountGenElem: $("#amount_gen_block"),
@@ -1819,9 +1756,6 @@ function changeMainAPI() {
         apiObj.apiSettings.css("display", isCurrentApi ? "block" : "none");
         apiObj.apiConnector.css("display", isCurrentApi ? "block" : "none");
         apiObj.apiRanges.css("display", isCurrentApi ? "block" : "none");
-        //console.log('--- apiObj.apiElem ---');
-        //console.log(apiObj.apiElem);
-        //console.log(apiObj.apiElem.css("display"));
 
         if (isCurrentApi && apiName === "kobold") {
             console.log("enabling SP for kobold");
@@ -1841,7 +1775,7 @@ function changeMainAPI() {
 ////////////////////////////////////////////////////
 
 async function getUserAvatars() {
-    $("#user_avatar_block").html(""); //RossAscends: necessary to avoid doubling avatars each QuickRefresh.
+    $("#user_avatar_block").html(""); //RossAscends: necessary to avoid doubling avatars each refresh.
     $("#user_avatar_block").append('<div class="avatar_upload">+</div>');
     const response = await fetch("/getuseravatars", {
         method: "POST",
@@ -1963,7 +1897,7 @@ async function getSettings(type) {
                 });
                 var arr_holder = {};
 
-                $("#settings_perset").empty(); //RossAscends: uncommented this to prevent settings selector from doubling preset list on QuickRefresh
+                $("#settings_perset").empty(); //RossAscends: uncommented this to prevent settings selector from doubling preset list on refresh
                 $("#settings_perset").append(
                     '<option value="gui">GUI KoboldAI Settings</option>'
                 ); //adding in the GUI settings, since it is not loaded dynamically
@@ -2039,22 +1973,11 @@ async function getSettings(type) {
                     $("#settings_perset option[value=gui]")
                         .attr("selected", "true")
                         .trigger("change");
-                    /*                     $("#range_block").children().prop("disabled", true);
-                    
-                                        $("#range_block").css("opacity", 0.5);
-                    
-                                        $("#amount_gen_block").children().prop("disabled", true);
-                                        $("#amount_gen_block").css("opacity", 0.45); */
                 } else {
                     if (typeof koboldai_setting_names[preset_settings] !== "undefined") {
                         $(`#settings_perset option[value=${koboldai_setting_names[preset_settings]}]`)
                             .attr("selected", "true");
                     } else {
-                        /*                         $("#range_block").children().prop("disabled", true);
-                                                $("#range_block").css("opacity", 0.5);
-                                                $("#amount_gen_block").children().prop("disabled", true);
-                                                $("#amount_gen_block").css("opacity", 0.45); */
-
                         preset_settings = "gui";
                         $("#settings_perset option[value=gui]")
                             .attr("selected", "true")
@@ -2178,9 +2101,7 @@ async function saveSettings(type) {
         success: function (data) {
             //online_status = data.result;
             if (type == "change_name") {
-                //console.log('got name change');
-                //console.log('success: reading from settings = ' + settings.username);
-                //name1 = settings.username;
+
 
                 clearChat();
                 printMessages();
@@ -2291,20 +2212,9 @@ async function getAllCharaChats() {
                     }
                 }
             }
-            //<div id="select_chat_div">
-
-            //<div id="load_select_chat_div">
-            //console.log(data);
-            //chat.length = 0;
-
-            //chat =  data;
-            //getChatResult();
-            //saveChat();
-            //console.log('getAllCharaChats() -- Finished successfully');
         },
         error: function (jqXHR, exception) {
-            //getChatResult();
-            //console.log('getAllCharaChats() -- Failed');
+
             console.log(exception);
             console.log(jqXHR);
         },
@@ -2748,8 +2658,6 @@ $(document).ready(function () {
         } else if (parseInt(chat[chat.length - 1]['swipe_id']) < chat[chat.length - 1]['swipes'].length) { //otherwise, if the id is less than the number of swipes
             chat[chat.length - 1]['mes'] = chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipe_id']]; //load the last mes box with the latest generation
             run_swipe_right = true; //then prepare to do normal right swipe to show next message
-
-
         }
 
         if (chat[chat.length - 1]['swipe_id'] > chat[chat.length - 1]['swipes'].length) { //if we swipe right while generating (the swipe ID is greater than what we are viewing now)
@@ -2862,22 +2770,17 @@ $(document).ready(function () {
         }
 
     });
+
     $(document).on('click', '.swipe_left', function () {      // when we swipe left..but no generation.
         const swipe_duration = 120;
         const swipe_range = '700px';
         chat[chat.length - 1]['swipe_id']--;
-        if (chat[chat.length - 1]['swipe_id'] >= 0) {           // hide the left arrow if we are viewing the first candidate of the last message block
-            $(this).parent().children('swipe_right_button').css('display', 'flex');
-            if (chat[chat.length - 1]['swipe_id'] === 0) {
-                $(this).css('display', 'none');
-            }
-
+        if (chat[chat.length - 1]['swipe_id'] >= 0) {
             let this_mes_div = $(this).parent();
             let this_mes_block = $(this).parent().children('.mes_block').children('.mes_text');
             const this_mes_div_height = this_mes_div[0].scrollHeight;
             this_mes_div.css('height', this_mes_div_height);
             const this_mes_block_height = this_mes_block[0].scrollHeight;
-
             chat[chat.length - 1]['mes'] = chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipe_id']];
             $(this).parent().children('.mes_block').transition({
                 x: swipe_range,
@@ -2974,28 +2877,15 @@ $(document).ready(function () {
         }
     });
 
-    $("#characloud_url").click(function () {
-        window.open("https://boosty.to/tavernai", "_blank");
-    });
     $("#send_but").click(function () {
         if (is_send_press == false) {
-            //hideSwipeButtons();
             is_send_press = true;
-
             Generate();
         }
     });
 
-    //hotkey to send input with enter (shift+enter generates a new line in the chat input box)
-    //this is not ideal for touch device users with virtual keyboards.
-    //ideally we would detect if the user is using a virtual keyboard, and disable this shortcut for them.
-    //because mobile users' hands are always near the screen, tapping the send button is better for them, and enter should always make a new line.
-    //note: CAI seems to have this handled. PC: shift+enter = new line, enter = send. iOS: shift+enter AND enter both make new lines, and only the send button sends.
-    //maybe a way to simulate this would be to disable the eventListener for people iOS.
-
     $("#send_textarea").keydown(function (e) {
         if (!e.shiftKey && !e.ctrlKey && e.key == "Enter" && is_send_press == false) {
-            //hideSwipeButtons();
             is_send_press = true;
             e.preventDefault();
             Generate();

@@ -200,9 +200,6 @@ function RA_autoconnect() {
 			if (isUrlOrAPIKey(api_server) && main_api === "kobold") {
 				$("#api_url_text").val(api_server);
 				$("#api_button").click();
-				//} else if (isUrlOrAPIKey(api_key_novel) && main_api === "novel") {
-				// $("#api_key_novel").val(api_key_novel);
-				// $("#api_button").click();
 			}
 		}
 	} else {
@@ -280,7 +277,6 @@ $("document").ready(function () {
 		var SwipeTargetMesClassParent = e.target.closest('.last_mes');
 		if (SwipeTargetMesClassParent !== null) {
 			if (SwipeButR.css('display') === 'flex') {
-				//if (SwipeButR.attr('style') == 'display: flex;' == true) {
 				SwipeButR.click();
 			}
 		}
@@ -288,10 +284,8 @@ $("document").ready(function () {
 	document.addEventListener('swiped-right', function (e) {
 		var SwipeButL = $('.swipe_left:last');
 		var SwipeTargetMesClassParent = e.target.closest('.last_mes');
-		//console.log('Touch swipe check -- closest last_mes = "' + (SwipeTargetMesClassParent !== null) + ' Button display = ' + (SwipeButL.attr('style') == 'display: flex;' == true));
 		if (SwipeTargetMesClassParent !== null) {
 			if (SwipeButL.css('display') === 'flex') {
-				//if (SwipeButL.attr('style') == 'display: flex;' == true) {
 				SwipeButL.click();
 			}
 		}
@@ -323,13 +317,8 @@ $("document").ready(function () {
 			ClearLocal();
 		}
 		if (event.key == "ArrowLeft") {		//swipes left
-			/* console.log('SWIPE FILTER -- ' +
-				$("#send_textarea").val() + ' ' +
-				$("#character_popup").css("display") + ' ' +
-				$("#shadow_select_chat_popup").css("display") + ' ' +
-				isInputElementInFocus()); */
-
 			if (
+				$(".swipe_left:last").css('display') === 'flex' &&
 				$("#send_textarea").val() === '' &&
 				$("#character_popup").css("display") === "none" &&
 				$("#shadow_select_chat_popup").css("display") === "none" &&
@@ -339,13 +328,8 @@ $("document").ready(function () {
 			}
 		}
 		if (event.key == "ArrowRight") { //swipes right
-			/* console.log('SWIPE FILTER -- ' +
-				$("#send_textarea").val() + ' ' +
-				$("#character_popup").css("display") + ' ' +
-				$("#shadow_select_chat_popup").css("display") + ' ' +
-				isInputElementInFocus()); */
-
 			if (
+				$(".swipe_right:last").css('display') === 'flex' &&
 				$("#send_textarea").val() === '' &&
 				$("#character_popup").css("display") === "none" &&
 				$("#shadow_select_chat_popup").css("display") === "none" &&
