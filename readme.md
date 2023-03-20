@@ -88,8 +88,8 @@ if you want other people on the internet to connect, and check [here](https://wh
 Contact us on Discord: Cohee#1207 or RossAscends#1779
 
 ## Screenshots
-<img width="400" alt="image" src="https://user-images.githubusercontent.com/18619528/224549531-ab30db22-fe33-49c5-81a8-945c543a1e05.png">
 <img width="400" alt="image" src="https://user-images.githubusercontent.com/18619528/226418738-f75a9f46-cc6a-499d-9e27-0c06bf8efe02.png">
+<img width="400" alt="image" src="https://user-images.githubusercontent.com/18619528/226420134-171022a3-f799-4ea2-951f-a734a293579b.png">
 
 
 ## License
