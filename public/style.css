@@ -70,11 +70,11 @@ body {
     border-radius: 5px;
 }
 
-@supports (height: 100dvh) {
+/* @supports (height: 100dvh) {
     body {
         height: 100dvh;
     }
-}
+} */
 
 .mes_text p {
     margin-top: 0;
@@ -974,8 +974,15 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 #form_create {
     display: grid;
-    height: 90vh;
-    grid-template-rows: [avatar] min-content [hr] min-content [descriptionHeader] min-content [description] auto [firstmessageHeader] min-content [firstMessage] auto [hidden] min-content [advanced] min-content [tokenCounter] min-content [formButtons] min-content;
+    height: 95vh;
+    grid-template-rows: 
+        [avatar] min-content 
+        [hr] min-content 
+        [descriptionHeader] min-content 
+        [description] auto 
+        [firstmessageHeader] min-content 
+        [firstMessage] auto 
+        [hidden] min-content;
 }
 
 .avatar_div {
@@ -1311,7 +1318,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     padding: 4px;
     /*border: 1px solid #333333;*/
     flex-direction: column;
-    z-index: 2064;
+    z-index: 3010;
     border-radius: 0 0 20px 20px;
 }
 
@@ -2779,7 +2786,7 @@ label[for="extensions_autoconnect"] {
     }
 
     .drawer-content {
-        width: 100vw;
+        width: calc(100vw - 10px);
         position: fixed;
         left: 0;
         top: 10px;
@@ -2790,18 +2797,52 @@ label[for="extensions_autoconnect"] {
     }
     #bg1, #bg2 {position:fixed;}
 
-    #sheld {    /*margin around the sides, and a larger one on bottom to avoid iOS Home bar*/
-        height: calc(100svh - 15px);
+    #sheld, #character_popup, #world_popup, #right-nav-panel {    /*margin around the sides, and a larger one on bottom to avoid iOS Home bar*/
+        height: calc(100svh - 55px);
         width: calc(100vw - 10px);
         margin: 0 auto;
         margin-left: 5px;
         position: fixed;
     }
+
+    .mes-text {padding-right: 25px;}
+
+    #right-nav-panel {
+        margin-top: 0 auto;
+        border-radius: 0 0 0 20px;
+        height: calc(100vh - 30px);
+        width: calc(100vw - 5px);
+    }
+
+    #right-nav-panel h4 {margin: 5px auto;}
+
+    #form_create {
+        grid-template-rows: 
+            [avatar] min-content 
+            [hr] min-content 
+            [descriptionHeader] min-content 
+            [description] auto 
+            [firstmessageHeader] min-content 
+            [firstMessage] auto;
+    }
+
+    #result_info {    font-size: 14px;}
+
+    .avatar_div {margin-top: 5px;}
+
+    #character_popup {
+        width: calc(100vw - 5px);
+        border-radius: 0 0 0 20px;
+        margin-top: -35px;
+        height: calc(100vh - 30px);
+    }
+
+
     #send_textarea {    /*larger input bar for mobile screens, easier to tap*/
         font-size: 1.25rem;
         line-height: 1.5rem;
         min-height: calc(2rem + 0.75rem + 2px);
-        max-height: 35vh;
+        max-height: 200px;
         word-wrap: break-word;
         height: 40px;
         resize: vertical;
@@ -2815,26 +2856,7 @@ label[for="extensions_autoconnect"] {
         text-shadow: #000 0 0 3px;
     }
     #rm_ch_create_block textarea {  /*without this the text areas display far too large*/
-        max-height: 300px;
-    }
-
-    #rm_api_block {
-        width:100vw;
-
-    }
-
-    #right-nav-panel, #character_popup {        /* character_popup display needs work, "width:100%" items push outside the box */
-        width: 100vw;
-        box-shadow: none;
-    }
-
-    #character_popup {
-        margin-top:0;
-        height:100dvh;
-        padding-left:15px;
-        padding-right: 15px;
-        width: 100vw;
-        position: fixed;
+        max-height: 200px;
     }
 
     #talkativeness_hint span {
