@@ -873,9 +873,23 @@ function substituteParams(content) {
     return content;
 }
 
-function isHelpRequest(message) {
-    const helpTokens = ["/?", "/help"];
-    return helpTokens.includes(message.trim().toLowerCase());
+function getSlashCommand(message, type) {
+    if (type == "regenerate" || type == "swipe") {
+        return null;
+    }
+
+    const commandMap = {
+        "/?": system_message_types.HELP,
+        "/help": system_message_types.HELP
+    };
+
+    const activationText = message.trim().toLowerCase();
+
+    if (Object.keys(commandMap).includes(activationText)) {
+        return commandMap[activationText];
+    }
+
+    return null;
 }
 
 function sendSystemMessage(type, text) {
@@ -985,12 +999,14 @@ function appendToStoryString(value, prefix) {
     return '';
 }
 
-async function Generate(type, automatic_trigger) {//encode("dsfs").length
+async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").length
     console.log('Generate entered');
     tokens_already_generated = 0;
     message_already_generated = name2 + ': ';
 
-    if (isHelpRequest($("#send_textarea").val())) {
+    const slashCommand = getSlashCommand($("#send_textarea").val(), type);
+
+    if (slashCommand == system_message_types.HELP) {
         sendSystemMessage(system_message_types.HELP);
         $("#send_textarea").val('').trigger('input');
         return;
@@ -1002,7 +1018,7 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
     }
 
     if (online_status != 'no_connection' && this_chid != undefined && this_chid !== 'invalid-safety-id') {
-        if (type !== 'regenerate') {
+        if (type !== 'regenerate' && type !== "swipe") {
             is_send_press = true;
             var textareaText = $("#send_textarea").val();
             //console.log('Not a Regenerate call, so posting normall with input of: ' +textareaText);
@@ -1013,7 +1029,8 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
             var textareaText = "";
             if (chat[chat.length - 1]['is_user']) {//If last message from You
 
-            } else {
+            }
+            else if (type !== "swipe") {
                 chat.length = chat.length - 1;
                 count_view_mes -= 1;
                 $('#chat').children().last().hide(500, function () {
@@ -1304,9 +1321,6 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
 
             //console.log(encode(characters[this_chid].description+chatString).length);
             //console.log(encode(JSON.stringify(characters[this_chid].description+chatString)).length);
-            if (type == 'force_name2') {
-                finalPromt += name2 + ':';
-            }
             //console.log(JSON.stringify(storyString));
             //Send story string
             var mesSendString = '';
@@ -1319,8 +1333,10 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
                     mesExmString += mesExamplesArray[j];
                 }
                 for (let j = 0; j < mesSend.length; j++) {
-                    //console.log('compiling messages for prompt');
                     mesSendString += mesSend[j];
+                    if (force_name2 && j === mesSend.length - 1 && tokens_already_generated === 0) {
+                        mesSendString += name2 + ':';
+                    }
                 }
             }
 
@@ -1583,7 +1599,7 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
                         } else {
                             this_mes_is_name = false;
                         }
-                        if (type === 'force_name2') this_mes_is_name = true;
+                        if (force_name2) this_mes_is_name = true;
                         //getMessage = getMessage.replace(/^\s+/g, '');
                         if (getMessage.length > 0) {
                             if (chat[chat.length - 1]['swipe_id'] === undefined ||
@@ -1629,7 +1645,10 @@ async function Generate(type, automatic_trigger) {//encode("dsfs").length
 
 
                         } else {
-                            Generate('force_name2');
+                            // regenerate with character speech reenforced
+                            // to make sure we leave on swipe type while also adding the name2 appendage
+                            const newType = type == "swipe" ? "swipe" : "force_name2";
+                            Generate(newType, automatic_trigger=false, force_name2=true);
                         }
                     } else {
 
