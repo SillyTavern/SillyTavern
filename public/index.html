@@ -180,7 +180,6 @@
                     <input type="file" id="avatar_upload_file" accept="image/png" name="avatar">
                 </form>
                 <form id='form_change_name' action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                    <br>
                     <h4>Name</h4>
                     <input id="your_name" name="your_name" class="text_pole" maxlength="35" value="" autocomplete="off"><br>
                     <input id="your_name_button" class="menu_button" type="submit" title="Click to set a new User Name (reloads page)" value="Change Name">
@@ -356,11 +355,6 @@
                                 </label>
                             </div>
                         </div>
-                        
-                        <label class="checkbox_label" for="single_line">
-                            <input id="single_line" type="checkbox" />
-                            Single-line mode
-                        </label>
                     </div>
                     <div id="ai-settings-flex-col2" class="wide50p">
                         <div id="advanced-ai-config-block">
@@ -431,6 +425,12 @@
                                         <div class="range-block-range">
                                             <input type="range" id="rep_pen_slope" name="volume" min="0" max="10" step="0.1">
                                         </div>
+                                    </div>
+                                    <div class="range-block">
+                                        <label class="checkbox_label" for="single_line">
+                                            <input id="single_line" type="checkbox" />
+                                            Single-line mode
+                                        </label>
                                     </div>
                                 </div>
                             </div>
