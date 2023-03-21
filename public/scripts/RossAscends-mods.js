@@ -9,6 +9,7 @@ import {
 	main_api,
 	api_server,
 	api_key_novel,
+	api_server_textgenerationwebui,
 	is_send_press,
 
 } from "../script.js";
@@ -38,6 +39,10 @@ var create_save_scenario;
 var create_save_mes_example;
 var count_tokens;
 var perm_tokens;
+
+var connection_made = false;
+var retry_delay = 100;
+var RA_AC_retries = 1;
 
 const observerConfig = { childList: true, subtree: true };
 
@@ -188,11 +193,13 @@ function RA_checkOnlineStatus() {
 		$("#send_form").css("background-color", "rgba(100,0,0,0.7)"); //entire input form area is red when not connected
 		$("#send_but").css("display", "none"); //send button is hidden when not connected;
 		$("#API-status-top").addClass("redOverlayGlow");
+		connection_made = false;
 	} else {
 		if (online_status !== undefined && online_status !== "no_connection") {
 			$("#send_textarea").attr("placeholder", "Type a message..."); //on connect, placeholder tells user to type message
 			$("#send_form").css("background-color", "rgba(0,0,0,0.7)"); //on connect, form BG changes to transprent black
 			$("#API-status-top").removeClass("redOverlayGlow");
+			connection_made = true;
 
 			if (!is_send_press && !(selected_group && is_group_generating)) {
 				$("#send_but").css("display", "inline"); //on connect, send button shows
@@ -203,21 +210,37 @@ function RA_checkOnlineStatus() {
 //Auto-connect to API (when set to kobold, API URL exists, and auto_connect is true)
 
 function RA_autoconnect() {
-	console.log(main_api);
-	if (typeof online_status !== 'undefined' && (api_server !== '' || api_key_novel !== '')) {
-		if (online_status === "no_connection" && LoadLocalBool('AutoConnectEnabled')) {
-			if (isUrlOrAPIKey(api_server) && main_api === "kobold") {
-				$("#api_button").click();
-			}
-			if (main_api === "novel") {
-				$("#api_button_novel").click();
-			}
-			if (isUrlOrAPIKey(api_server) && main_api === "textgenerationwebui") {
-				$("#api_button_textgenerationwebui").click();
-			}
+	if (online_status === "no_connection" && LoadLocalBool('AutoConnectEnabled')) {
+		switch (main_api) {
+			case 'kobold':
+				if (api_server && isUrlOrAPIKey(api_server)) {
+					$("#api_button").click();
+					retry_delay = 100;
+					RA_AC_retries = 1;
+				}
+				break;
+			case 'novel':
+				if (api_key_novel) {
+					$("#api_button_novel").click();
+					retry_delay = 100;
+					RA_AC_retries = 1;
+				}
+				break;
+			case 'textgenerationwebui':
+				if (api_server_textgenerationwebui && isUrlOrAPIKey(api_server_textgenerationwebuiapi)) {
+					$("#api_button_textgenerationwebui").click();
+					retry_delay = 100;
+					RA_AC_retries = 1;
+				}
+				break;
 		}
-	} else {
-		setTimeout(RA_autoconnect, 100);
+
+		if (!connection_made) {
+			setTimeout(RA_autoconnect, retry_delay);
+			RA_AC_retries++;
+			retry_delay = Math.min(retry_delay * 2, 30000); // double retry delay up to to 30 secs
+			console.log('connection attempts: ' + RA_AC_retries + ' delay: ' + (retry_delay / 1000) + 's');
+		}
 	}
 }
 
