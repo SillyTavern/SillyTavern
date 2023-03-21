@@ -88,6 +88,7 @@ export {
     nai_settings,
     token,
     is_send_press,
+    api_server_textgenerationwebui,
     default_avatar,
     system_message_types,
     talkativeness_default,
@@ -271,8 +272,7 @@ let style_anchor = true;
 let character_anchor = true;
 let extension_prompts = {};
 
-var main_api = "kobold";
-
+var main_api;// = "kobold";
 //novel settings
 let novel_tier;
 let novelai_settings;
@@ -1560,7 +1560,7 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
                             // regenerate with character speech reenforced
                             // to make sure we leave on swipe type while also adding the name2 appendage
                             const newType = type == "swipe" ? "swipe" : "force_name2";
-                            Generate(newType, automatic_trigger=false, force_name2=true);
+                            Generate(newType, automatic_trigger = false, force_name2 = true);
                         }
                     } else {
 
