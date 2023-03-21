@@ -22,7 +22,7 @@ https://colab.research.google.com/github/SillyLossy/TavernAI-extras/blob/main/co
     * Sending images to chat, and the AI interpreting the content.
 
 ## UI Extensions 🚀
-| Name             | Description                      | Required [Extra Modules](https://github.com/SillyLossy/TavernAI-extras#modules) | Screenshot |
+| Name             | Description                      | Required <a href="https://github.com/SillyLossy/TavernAI-extras#modules" target="_blank">Extra Modules</a> | Screenshot |
 | ---------------- | ---------------------------------| ---------------------------- | ---------- |
 | Image Captioning | Send a cute picture to your bot!<br><br>Picture select option will appear beside "Message send" button. | `caption`                    | <img src="https://user-images.githubusercontent.com/18619528/224161576-ddfc51cd-995e-44ec-bf2d-d2477d603f0c.png" style="max-width:200px" />  |
 | Character Expressions | See your character reacting to your messages!<br><br>**You need to provide your own character images!**<br><br>1. Create a folder in TavernAI called `public/characters/<name>`, where `<name>` is a name of your character.<br>2. For base emotion classification model, put six PNG files there with the following names: `joy.png`, `anger.png`, `fear.png`, `love.png`, `sadness.png`, `surprise.png`. Other models may provide another options.<br>3. Images only display in desktop mode. | `classify` | <img style="max-width:200px" alt="image" src="https://user-images.githubusercontent.com/18619528/223765089-34968217-6862-47e0-85da-7357370f8de6.png"> |
