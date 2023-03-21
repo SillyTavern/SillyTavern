@@ -1582,8 +1582,8 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
                     $("#send_but").css("display", "inline");
                     //console.log('runGenerate calling showSwipeBtns pt. 2');
                     showSwipeButtons();
-
                     $("#loading_mes").css("display", "none");
+                    $('.mes_edit:last').show();
 
                 },
                 error: function (jqXHR, exception) {
@@ -1934,7 +1934,7 @@ async function getSettings(type) {
                 koboldai_settings.forEach(function (item, i, arr) {
                     koboldai_settings[i] = JSON.parse(item);
                 });
-                
+
                 arr_holder = {};
 
                 $("#settings_perset").empty(); //RossAscends: uncommented this to prevent settings selector from doubling preset list on refresh
@@ -2707,6 +2707,7 @@ $(document).ready(function () {
                                     if (run_generate && !is_send_press && parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length) {
                                         console.log('caught here 2');
                                         is_send_press = true;
+                                        $('.mes_edit:last').hide();
                                         Generate('swipe');
                                     } else {
                                         if (parseInt(chat[chat.length - 1]['swipe_id']) !== chat[chat.length - 1]['swipes'].length) {
@@ -3583,7 +3584,7 @@ $(document).ready(function () {
 
         const preset = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
         loadNovelPreset(preset);
-        
+
         saveSettingsDebounced();
     });
 
@@ -3823,7 +3824,7 @@ $(document).ready(function () {
         if ($("#api_key_novel").val() != "") {
             $("#api_loading_novel").css("display", "inline-block");
             $("#api_button_novel").css("display", "none");
-            nai_settings.api_key_novel = $.trim( $("#api_key_novel").val());
+            nai_settings.api_key_novel = $.trim($("#api_key_novel").val());
             saveSettingsDebounced();
             is_get_status_novel = true;
             is_api_button_press_novel = true;
