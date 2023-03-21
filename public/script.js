@@ -1238,6 +1238,9 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
                 });
             }
 
+            let mesSendString = '';
+            let mesExmString = '';
+
             function setPromtString() {
                 mesSendString = '';
                 mesExmString = '';
