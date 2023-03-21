@@ -1,5 +1,10 @@
 ## Silly TavernAI mod. Based on fork of TavernAI 1.2.8
 ### Brought to you by @SillyLossy and @RossAscends
+https://colab.research.google.com/github/SillyLossy/TavernAI-extras/blob/main/colab/GPU.ipynb
+
+Try on Colab (runs KoboldAI backend and TavernAI Extras server alongside):  <a target="_blank" href="https://colab.research.google.com/github/SillyLossy/TavernAI-extras/blob/main/colab/GPU.ipynb">
+  <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
+</a>
 
 ## This branch includes: 
 * Base TavernAI 1.2.8
