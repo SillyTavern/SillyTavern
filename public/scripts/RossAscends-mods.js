@@ -228,7 +228,7 @@ function RA_autoconnect() {
 				}
 				break;
 			case 'textgenerationwebui':
-				if (api_server_textgenerationwebui && isUrlOrAPIKey(api_server_textgenerationwebuiapi)) {
+				if (api_server_textgenerationwebui && isUrlOrAPIKey(api_server_textgenerationwebui)) {
 					$("#api_button_textgenerationwebui").click();
 					retry_delay = 100;
 					RA_AC_retries = 1;

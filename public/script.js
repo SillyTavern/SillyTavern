@@ -1872,6 +1872,8 @@ function changeMainAPI() {
     }
 
     main_api = selectedVal;
+    online_status = "no_connection";
+
 }
 
 ////////////////////////////////////////////////////
