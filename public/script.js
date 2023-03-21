@@ -46,6 +46,13 @@ import {
     disable_scenario_formatting,
 } from "./scripts/power-user.js";
 
+import {
+    getNovelTier,
+    loadNovelPreset,
+    loadNovelSettings,
+    nai_settings,
+} from "./scripts/nai-settings.js";
+
 import { debounce, delay } from "./scripts/utils.js";
 
 //exporting functions and vars for mods
@@ -78,7 +85,7 @@ export {
     online_status,
     main_api,
     api_server,
-    api_key_novel,
+    nai_settings,
     token,
     is_send_press,
     default_avatar,
@@ -259,23 +266,17 @@ var cycle_count_generation = 0;
 
 var swipes = false;
 
-var anchor_order = 0;
-var style_anchor = true;
-var character_anchor = true;
+let anchor_order = 0;
+let style_anchor = true;
+let character_anchor = true;
 let extension_prompts = {};
 
 var main_api = "kobold";
-//novel settings
-var temp_novel = 0.5;
-var rep_pen_novel = 1;
-var rep_pen_size_novel = 100;
 
-var api_key_novel = "";
-var novel_tier;
-var model_novel = "euterpe-v2";
-var novelai_settings;
-var novelai_setting_names;
-var preset_settings_novel = "Classic-Krake";
+//novel settings
+let novel_tier;
+let novelai_settings;
+let novelai_setting_names;
 
 //css
 var bg1_toggle = true; // inits the BG as BG1
@@ -284,7 +285,7 @@ var css_send_form_display = $("<div id=send_form></div>").css("display");
 
 var colab_ini_step = 1;
 
-var token;
+let token;
 
 //////////// Is this needed?
 setInterval(function () {
@@ -1115,7 +1116,7 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
                 this_max_context = 1024;
             } else {
                 this_max_context = 2048 - 60;//fix for fat tokens 
-                if (model_novel == 'krake-v2') {
+                if (nai_settings.model_novel == 'krake-v2') {
                     this_max_context -= 160;
                 }
             }
@@ -1393,17 +1394,17 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
             }
 
             if (main_api == 'novel') {
-                var this_settings = novelai_settings[novelai_setting_names[preset_settings_novel]];
+                const this_settings = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
                 generate_data = {
                     "input": finalPromt,
-                    "model": model_novel,
+                    "model": nai_settings.model_novel,
                     "use_string": true,
-                    "temperature": parseFloat(temp_novel),
+                    "temperature": parseFloat(nai_settings.temp_novel),
                     "max_length": this_settings.max_length,
                     "min_length": this_settings.min_length,
                     "tail_free_sampling": this_settings.tail_free_sampling,
-                    "repetition_penalty": parseFloat(rep_pen_novel),
-                    "repetition_penalty_range": parseInt(rep_pen_size_novel),
+                    "repetition_penalty": parseFloat(nai_settings.rep_pen_novel),
+                    "repetition_penalty_range": parseInt(nai_settings.rep_pen_size_novel),
                     "repetition_penalty_frequency": this_settings.repetition_penalty_frequency,
                     "repetition_penalty_presence": this_settings.repetition_penalty_presence,
                     //"stop_sequences": {{187}},
@@ -1815,8 +1816,8 @@ function changeMainAPI() {
             $("#softprompt_block").css("display", "block");
         }
 
-        if (isCurrentApi && apiName === "textgenerationwebui") {
-            console.log("enabling amount_gen for ooba");
+        if (isCurrentApi && (apiName === "textgenerationwebui" || apiName === "novel")) {
+            console.log("enabling amount_gen for ooba/novel");
             apiObj.amountGenElem.children().prop("disabled", false);
             apiObj.amountGenElem.css("opacity", 1.0);
         }
@@ -1905,41 +1906,26 @@ async function getSettings(type) {
                     );
                     changeMainAPI();
                 }
-                //load Novel API KEY is exists
-                if (settings.api_key_novel != undefined) {
-                    api_key_novel = settings.api_key_novel;
-                    $("#api_key_novel").val(api_key_novel);
-                }
-                //load the rest of the Novel settings without any checks
-                model_novel = settings.model_novel;
-                $("#model_novel_select option[value=" + model_novel + "]").attr(
-                    "selected",
-                    "true"
-                );
 
                 novelai_setting_names = data.novelai_setting_names;
                 novelai_settings = data.novelai_settings;
                 novelai_settings.forEach(function (item, i, arr) {
                     novelai_settings[i] = JSON.parse(item);
                 });
-                var arr_holder = {};
+                let arr_holder = {};
 
                 $("#settings_perset_novel").empty();
 
                 novelai_setting_names.forEach(function (item, i, arr) {
                     arr_holder[item] = i;
-                    $("#settings_perset_novel").append(
-                        "<option value=" + i + ">" + item + "</option>"
-                    );
+                    $("#settings_perset_novel").append(`<option value=${i}>${item}</option>`);
                 });
                 novelai_setting_names = {};
                 novelai_setting_names = arr_holder;
 
-                preset_settings_novel = settings.preset_settings_novel;
+                nai_settings.preset_settings_novel = settings.preset_settings_novel;
                 $(
-                    "#settings_perset_novel option[value=" +
-                    novelai_setting_names[preset_settings_novel] +
-                    "]"
+                    `#settings_perset_novel option[value=${novelai_setting_names[nai_settings.preset_settings_novel]}]`
                 ).attr("selected", "true");
 
                 //Load KoboldAI settings
@@ -1948,7 +1934,8 @@ async function getSettings(type) {
                 koboldai_settings.forEach(function (item, i, arr) {
                     koboldai_settings[i] = JSON.parse(item);
                 });
-                var arr_holder = {};
+                
+                arr_holder = {};
 
                 $("#settings_perset").empty(); //RossAscends: uncommented this to prevent settings selector from doubling preset list on refresh
                 $("#settings_perset").append(
@@ -1957,9 +1944,7 @@ async function getSettings(type) {
 
                 koboldai_setting_names.forEach(function (item, i, arr) {
                     arr_holder[item] = i;
-                    $("#settings_perset").append(
-                        "<option value=" + i + ">" + item + "</option>"
-                    );
+                    $("#settings_perset").append(`<option value=${i}>${item}</option>`);
                     //console.log('loading preset #'+i+' -- '+item);
                 });
                 koboldai_setting_names = {};
@@ -1988,10 +1973,10 @@ async function getSettings(type) {
                 );
 
                 $("#max_context").val(max_context);
-                $("#max_context_counter").html(max_context + " Tokens");
+                $("#max_context_counter").text(`${max_context} Tokens`);
 
                 $("#amount_gen").val(amount_gen);
-                $("#amount_gen_counter").html(amount_gen + " Tokens");
+                $("#amount_gen_counter").text(`${amount_gen} Tokens`);
 
                 swipes = !!settings.swipes;  //// swipecode
                 $('#swipes-checkbox').prop('checked', swipes); /// swipecode
@@ -2003,37 +1988,24 @@ async function getSettings(type) {
                 loadKoboldSettings(settings);
 
                 //Novel
-                temp_novel = settings.temp_novel;
-                rep_pen_novel = settings.rep_pen_novel;
-                rep_pen_size_novel = settings.rep_pen_size_novel;
-
-                let addZeros = "";
-                if (isInt(temp_novel)) addZeros = ".00";
-                $("#temp_novel").val(temp_novel);
-                $("#temp_counter_novel").html(temp_novel + addZeros);
-
-                addZeros = "";
-                if (isInt(rep_pen_novel)) addZeros = ".00";
-                $("#rep_pen_novel").val(rep_pen_novel);
-                $("#rep_pen_counter_novel").html(rep_pen_novel + addZeros);
-
-                $("#rep_pen_size_novel").val(rep_pen_size_novel);
-                $("#rep_pen_size_counter_novel").html(rep_pen_size_novel + " Tokens");
+                loadNovelSettings(settings);
 
                 //Enable GUI deference settings if GUI is selected for Kobold
-                if (preset_settings == "gui") {
-                    $("#settings_perset option[value=gui]")
-                        .attr("selected", "true")
-                        .trigger("change");
-                } else {
-                    if (typeof koboldai_setting_names[preset_settings] !== "undefined") {
-                        $(`#settings_perset option[value=${koboldai_setting_names[preset_settings]}]`)
-                            .attr("selected", "true");
-                    } else {
-                        preset_settings = "gui";
+                if (main_api === "kobold") {
+                    if (preset_settings == "gui") {
                         $("#settings_perset option[value=gui]")
                             .attr("selected", "true")
                             .trigger("change");
+                    } else {
+                        if (typeof koboldai_setting_names[preset_settings] !== "undefined") {
+                            $(`#settings_perset option[value=${koboldai_setting_names[preset_settings]}]`)
+                                .attr("selected", "true");
+                        } else {
+                            preset_settings = "gui";
+                            $("#settings_perset option[value=gui]")
+                                .attr("selected", "true")
+                                .trigger("change");
+                        }
                     }
                 }
 
@@ -2079,7 +2051,6 @@ async function getSettings(type) {
                 );
 
                 selected_button = settings.selected_button;
-
             }
 
             if (!is_checked_colab) isColab();
@@ -2101,7 +2072,6 @@ async function saveSettings(type) {
             api_server: api_server,
             api_server_textgenerationwebui: api_server_textgenerationwebui,
             preset_settings: preset_settings,
-            preset_settings_novel: preset_settings_novel,
             user_avatar: user_avatar,
             amount_gen: amount_gen,
             max_context: max_context,
@@ -2109,17 +2079,13 @@ async function saveSettings(type) {
             style_anchor: style_anchor,
             character_anchor: character_anchor,
             main_api: main_api,
-            api_key_novel: api_key_novel,
-            model_novel: model_novel,
-            temp_novel: temp_novel,
-            rep_pen_novel: rep_pen_novel,
-            rep_pen_size_novel: rep_pen_size_novel,
             world_info: world_info,
             world_info_depth: world_info_depth,
             world_info_budget: world_info_budget,
             active_character: active_character,
             textgenerationwebui_settings: textgenerationwebui_settings,
             swipes: swipes,
+            ...nai_settings,
             ...kai_settings,
         }),
         beforeSend: function () {
@@ -2261,7 +2227,7 @@ async function getAllCharaChats() {
 //************************************************************
 async function getStatusNovel() {
     if (is_get_status_novel) {
-        var data = { key: api_key_novel };
+        const data = { key: nai_settings.api_key_novel };
 
         jQuery.ajax({
             type: "POST", //
@@ -2275,24 +2241,8 @@ async function getStatusNovel() {
             contentType: "application/json",
             success: function (data) {
                 if (data.error != true) {
-                    //var settings2 = JSON.parse(data);
-                    //const getData = await response.json();
                     novel_tier = data.tier;
-                    if (novel_tier == undefined) {
-                        online_status = "no_connection";
-                    }
-                    if (novel_tier === 0) {
-                        online_status = "Paper";
-                    }
-                    if (novel_tier === 1) {
-                        online_status = "Tablet";
-                    }
-                    if (novel_tier === 2) {
-                        online_status = "Scroll";
-                    }
-                    if (novel_tier === 3) {
-                        online_status = "Opus";
-                    }
+                    online_status = getNovelTier(novel_tier);
                 }
                 resultCheckStatusNovel();
             },
@@ -2371,7 +2321,6 @@ function setRightTabSelectedClass(selectedButtonId) {
 }
 
 function select_rm_info(text, charId = null) {
-
     $("#rm_info_text").html("<h3>" + text + "</h3>");
 
     selectRightMenuWithAnimation('rm_info_block');
@@ -3602,11 +3551,11 @@ $(document).ready(function () {
 
             amount_gen = preset.genamt;
             $("#amount_gen").val(amount_gen);
-            $("#amount_gen_counter").html(amount_gen);
+            $("#amount_gen_counter").text(`${amount_gen} Tokens`);
 
             max_context = preset.max_length;
             $("#max_context").val(max_context);
-            $("#max_context_counter").html(max_context + " Tokens");
+            $("#max_context_counter").text(`${max_context} Tokens`);
 
             $("#range_block").children().prop("disabled", false);
 
@@ -3628,33 +3577,13 @@ $(document).ready(function () {
     });
 
     $("#settings_perset_novel").change(function () {
-        preset_settings_novel = $("#settings_perset_novel")
+        nai_settings.preset_settings_novel = $("#settings_perset_novel")
             .find(":selected")
             .text();
-        temp_novel =
-            novelai_settings[novelai_setting_names[preset_settings_novel]]
-                .temperature;
-        //amount_gen = koboldai_settings[koboldai_setting_names[preset_settings]].genamt;
-        rep_pen_novel =
-            novelai_settings[novelai_setting_names[preset_settings_novel]]
-                .repetition_penalty;
-        rep_pen_size_novel =
-            novelai_settings[novelai_setting_names[preset_settings_novel]]
-                .repetition_penalty_range;
-        $("#temp_novel").val(temp_novel);
-        $("#temp_counter_novel").html(temp_novel);
 
-        //$('#amount_gen').val(amount_gen);
-        //$('#amount_gen_counter').html(amount_gen);
-
-        $("#rep_pen_novel").val(rep_pen_novel);
-        $("#rep_pen_counter_novel").html(rep_pen_novel);
-
-        $("#rep_pen_size_novel").val(rep_pen_size_novel);
-        $("#rep_pen_size_counter_novel").html(rep_pen_size_novel + " Tokens");
-
-        //$("#range_block").children().prop("disabled", false);
-        //$("#range_block").css('opacity',1.0);
+        const preset = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
+        loadNovelPreset(preset);
+        
         saveSettingsDebounced();
     });
 
@@ -3695,32 +3624,14 @@ $(document).ready(function () {
         {
             sliderId: "#amount_gen",
             counterId: "#amount_gen_counter",
-            format: (val) => val,
+            format: (val) => `${val} Tokens`,
             setValue: (val) => { amount_gen = Number(val); },
         },
         {
             sliderId: "#max_context",
             counterId: "#max_context_counter",
-            format: (val) => val + " Tokens",
+            format: (val) => `${val} Tokens`,
             setValue: (val) => { max_context = Number(val); },
-        },
-        {
-            sliderId: "#temp_novel",
-            counterId: "#temp_counter_novel",
-            format: (val) => isInt(val) ? val + ".00" : val,
-            setValue: (val) => { temp_novel = Number(val); },
-        },
-        {
-            sliderId: "#rep_pen_novel",
-            counterId: "#rep_pen_counter_novel",
-            format: (val) => isInt(val) ? val + ".00" : val,
-            setValue: (val) => { rep_pen_novel = Number(val); },
-        },
-        {
-            sliderId: "#rep_pen_size_novel",
-            counterId: "#rep_pen_size_counter_novel",
-            format: (val) => val + " Tokens",
-            setValue: (val) => { rep_pen_size_novel = Number(val); },
         }
     ];
 
@@ -3729,7 +3640,7 @@ $(document).ready(function () {
             const value = $(this).val();
             const formattedValue = slider.format(value);
             slider.setValue(value);
-            $(slider.counterId).html(formattedValue);
+            $(slider.counterId).text(formattedValue);
             console.log('saving');
             saveSettingsDebounced();
         });
@@ -3880,8 +3791,7 @@ $(document).ready(function () {
         }
     });
     $(document).on("click", ".mes_edit_cancel", function () {
-        //var text = $(this).parent().parent().children('.mes_text').children('.edit_textarea').val();
-        var text = chat[this_edit_mes_id]["mes"];
+        let text = chat[this_edit_mes_id]["mes"];
 
         $(this).parent().parent().children(".mes_text").empty();
         $(this).css("display", "none");
@@ -3913,21 +3823,15 @@ $(document).ready(function () {
         if ($("#api_key_novel").val() != "") {
             $("#api_loading_novel").css("display", "inline-block");
             $("#api_button_novel").css("display", "none");
-            api_key_novel = $("#api_key_novel").val();
-            api_key_novel = $.trim(api_key_novel);
-            //console.log("1: "+api_server);
+            nai_settings.api_key_novel = $.trim( $("#api_key_novel").val());
             saveSettingsDebounced();
             is_get_status_novel = true;
             is_api_button_press_novel = true;
         }
     });
-    $("#model_novel_select").change(function () {
-        model_novel = $("#model_novel_select").find(":selected").val();
-        saveSettings();
-    });
     $("#anchor_order").change(function () {
         anchor_order = parseInt($("#anchor_order").find(":selected").val());
-        saveSettings();
+        saveSettingsDebounced();
     });
 
     //**************************CHARACTER IMPORT EXPORT*************************//
