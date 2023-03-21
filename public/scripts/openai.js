@@ -1,6 +1,7 @@
 /*
 * CODE FOR OPENAI SUPPORT
 * By CncAnon (@CncAnon1)
+* https://github.com/CncAnon1/TavernAITurbo
 */
 
 import {

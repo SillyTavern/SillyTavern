@@ -90,7 +90,8 @@ Contact us on Discord: Cohee#1207 or RossAscends#1779
 ## Screenshots
 <img width="400" alt="image" src="https://user-images.githubusercontent.com/18619528/224549531-ab30db22-fe33-49c5-81a8-945c543a1e05.png">
 
-## License
-* TAI Base: Unknown
+## License and credits
+* TAI Base by Humi: Unknown license
 * SillyLossy's TAI mod: Public domain
 * RossAscends' additions: Public domain
+* Portions of CncAnon's TavernAITurbo mod: Unknown license
