@@ -8,7 +8,7 @@ import {
 	online_status,
 	main_api,
 	api_server,
-	api_key_novel,
+	nai_settings,
 	api_server_textgenerationwebui,
 	is_send_press,
 

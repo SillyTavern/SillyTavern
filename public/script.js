@@ -7,6 +7,11 @@ import {
 } from "./scripts/kai-settings.js";
 
 import {
+    textgenerationwebui_settings,
+    loadTextGenSettings,
+} from "./scripts/textgen-settings.js";
+
+import {
     world_info_budget,
     world_info_data,
     world_info_depth,
@@ -245,16 +250,6 @@ var preset_settings = "gui";
 var user_avatar = "you.png";
 var amount_gen = 80; //default max length of AI generated responses
 var max_context = 2048;
-
-var textgenerationwebui_settings = {
-    temp: 0.5,
-    top_p: 0.9,
-    top_k: 0,
-    typical_p: 1,
-    rep_pen: 1.1,
-    rep_pen_size: 0,
-    penalty_alpha: 0,
-};
 
 var is_pygmalion = false;
 var tokens_already_generated = 0;
@@ -1974,8 +1969,7 @@ async function getSettings(type) {
 
                 //Load AI model config settings (temp, context length, anchors, and anchor order)
 
-                textgenerationwebui_settings =
-                    settings.textgenerationwebui_settings || textgenerationwebui_settings;
+                loadTextGenSettings(settings.textgenerationwebui_settings);
 
                 amount_gen = settings.amount_gen;
                 if (settings.max_context !== undefined)
@@ -2084,23 +2078,6 @@ async function getSettings(type) {
                 $("#textgenerationwebui_api_url_text").val(
                     api_server_textgenerationwebui
                 );
-
-                for (var i of [
-                    "temp",
-                    "rep_pen",
-                    "rep_pen_size",
-                    "top_k",
-                    "top_p",
-                    "typical_p",
-                    "penalty_alpha",
-                ]) {
-                    $("#" + i + "_textgenerationwebui").val(
-                        textgenerationwebui_settings[i]
-                    );
-                    $("#" + i + "_counter_textgenerationwebui").html(
-                        textgenerationwebui_settings[i]
-                    );
-                }
 
                 selected_button = settings.selected_button;
 
@@ -3712,31 +3689,6 @@ $(document).ready(function () {
             console.error("Couldn't change soft prompt");
         }
     });
-
-
-
-    for (var i of [
-        "temp",
-        "rep_pen",
-        "rep_pen_size",
-        "top_k",
-        "top_p",
-        "typical_p",
-        "penalty_alpha",
-    ]) {
-        $("#" + i + "_textgenerationwebui").attr("x-setting-id", i);
-        $(document).on("input", "#" + i + "_textgenerationwebui", function () {
-            var i = $(this).attr("x-setting-id");
-            var val = $(this).val();
-            if (isInt(val)) {
-                $("#" + i + "_counter_textgenerationwebui").html($(this).val() + ".00");
-            } else {
-                $("#" + i + "_counter_textgenerationwebui").html($(this).val());
-            }
-            textgenerationwebui_settings[i] = parseFloat(val);
-            saveSettingsDebounced();
-        });
-    }
 
     ////////////////// OPTIMIZED RANGE SLIDER LISTENERS////////////////
 

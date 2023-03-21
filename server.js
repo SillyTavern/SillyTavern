@@ -88,6 +88,11 @@ const directories = {
     avatars: 'public/User Avatars',
     groups: 'public/groups/',
     groupChats: 'public/group chats',
+    chats: 'public/chats/',
+    characters: 'public/characters/',
+    backgrounds: 'public/backgrounds',
+    novelAI_Settings: 'public/NovelAI Settings',
+    koboldAI_Settings: 'public/KoboldAI Settings',
 };
 
 // CSRF Protection //
@@ -1597,6 +1602,7 @@ app.listen(server_port, (listen ? '0.0.0.0' : '127.0.0.1'), function () {
             is_colab = true;
         }
     }
+    ensurePublicDirectoriesExist();
     console.log('Launching...');
     if (autorun) open('http:127.0.0.1:' + server_port);
     console.log('TavernAI started: http://127.0.0.1:' + server_port);
@@ -1789,5 +1795,13 @@ function getCharacterFile2(directories, i) {
         });
     } else {
         convertStage2();
+    }
+}
+
+function ensurePublicDirectoriesExist() {
+    for (const dir of Object.values(directories)) {
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir);
+        }
     }
 }

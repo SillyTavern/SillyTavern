@@ -48,6 +48,7 @@
     <script type="module" src="scripts/group-chats.js"></script>
     <script type="module" src="scripts/power-user.js"></script>
     <script type="module" src="scripts/kai-settings.js"></script>
+    <script type="module" src="scripts/textgen-settings.js"></script>
 
     <title>Tavern.AI</title>
 </head>
@@ -122,7 +123,7 @@
                         <h4>API key</h4>
                         <h5>Where to get (<a href="/notes/6" target="_blank">?</a>)</h5>
                         <input id="api_key_novel" name="api_key_novel" class="text_pole" maxlength="500" size="35" value="" autocomplete="off">
-                        <input id="api_button_novel" type="submit" value="Connect">
+                        <input id="api_button_novel" class="menu_button" type="submit" value="Connect">
                         <img id="api_loading_novel" src="img/load.svg">
                     </form>
                     <div id="online_status3">
@@ -137,27 +138,32 @@
                     <select id="model_novel_select" class="option_select_right_menu" style='margin-bottom: 16px;'>
                         <option value="euterpe-v2">Euterpe</option>
                         <option value="krake-v2">Krake</option>
-                    </select><br>
-                    Preset settings
-                    <a href="/notes/7" class="notes-link" target="_blank">
-                        <span class="note-link-span">?</span>
-                    </a><br>
+                    </select>
+                    <h4>
+                        Preset settings
+                        <a href="/notes/7" class="notes-link" target="_blank">
+                            <span class="note-link-span">?</span>
+                        </a>
+                    </h4>
                     <select id="settings_perset_novel" class="option_select_right_menu">
                         <option value="gui">Default</option>
                     </select>
-                </div>
+                    </div>
                 <div id="textgenerationwebui_api" style="display: none;position: relative;">
                     <div class="oobabooga_logo">
                         <a href="https://github.com/oobabooga/text-generation-webui" target="_blank">
                             oobabooga/text-generation-webui
                         </a>
                     </div>
-                    <span>Make sure you run it:
+                    <span>
+                        Make sure you run it:
                         <ul>
-                            <li>with
+                            <li>
+                                with
                                 <pre>--no-stream</pre> option
                             </li>
-                            <li>in notebook mode (not
+                            <li>
+                                in notebook mode (not
                                 <pre>--cai-chat</pre> or
                                 <pre>--chat</pre>)
                             </li>
@@ -457,7 +463,7 @@
                                         Top K
                                     </div>
                                     <div class="range-block-counter">
-                                        <span id=" top_k_counter_textgenerationwebui">select</span>
+                                        <span id="top_k_counter_textgenerationwebui">select</span>
                                     </div>
                                     <div class="range-block-range">
                                         <input type="range" id="top_k_textgenerationwebui" name="volume" min="0" max="200" step="1">
@@ -467,7 +473,7 @@
                                             Top P
                                         </div>
                                         <div class="range-block-counter">
-                                            <span id=" top_p_counter_textgenerationwebui">select</span>
+                                            <span id="top_p_counter_textgenerationwebui">select</span>
                                         </div>
                                         <div class="range-block-range">
                                             <input type="range" id="top_p_textgenerationwebui" name="volume" min="0" max="1" step="0.1">
@@ -478,7 +484,7 @@
                                             Typical P
                                         </div>
                                         <div class="range-block-counter">
-                                            <span id=" typical_p_counter_textgenerationwebui">select</span>
+                                            <span id="typical_p_counter_textgenerationwebui">select</span>
                                         </div>
                                         <div class="range-block-range">
                                             <input type="range" id="typical_p_textgenerationwebui" name="volume" min="0" max="1" step="0.1">
@@ -489,7 +495,7 @@
                                             Penalty Alpha
                                         </div>
                                         <div class="range-block-counter">
-                                            <span id=" penalty_alpha_counter_textgenerationwebui">select</span>
+                                            <span id="penalty_alpha_counter_textgenerationwebui">select</span>
                                         </div>
                                         <div class="range-block-range">
                                             <input type="range" id="penalty_alpha_textgenerationwebui" name="volume" min="0" max="5" step="0.05" />
@@ -1040,8 +1046,8 @@
                     <div class=mes_edit_done><img src=img/done.png></div>
                 </div>
                 <div class=mes_text></div>
+                <div class="mes_bias"></div>
             </div>
-            <div class="mes_bias">${bias}</div>
             <div class="swipe_right">
                 <img src="img/swipe_right.png">
                 <div class="swipes-counter"></div>
