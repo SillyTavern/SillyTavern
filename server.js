@@ -29,11 +29,15 @@ const autorun = config.autorun;
 const enableExtensions = config.enableExtensions;
 const listen = config.listen;
 
+const axios = require('axios');
+const tiktoken = require('@dqbd/tiktoken');
+
 var Client = require('node-rest-client').Client;
 var client = new Client();
 
 var api_server = "http://0.0.0.0:5000";
 var api_novelai = "https://api.novelai.net";
+let api_openai = "https://api.openai.com/v1";
 var main_api = "kobold";
 
 var response_get_story;
@@ -50,6 +54,10 @@ var response_getstatus;
 var response_getstatus_novel;
 var response_getlastversion;
 var api_key_novel;
+
+let response_generate_openai;
+let response_getstatus_openai;
+let api_key_openai;
 
 //RossAscends: Added function to format dates used in files and chat timestamps to a humanized format.
 //Mostly I wanted this to be for file names, but couldn't figure out exactly where the filename save code was as everything seemed to be connected. 
@@ -93,6 +101,7 @@ const directories = {
     backgrounds: 'public/backgrounds',
     novelAI_Settings: 'public/NovelAI Settings',
     koboldAI_Settings: 'public/KoboldAI Settings',
+    openAI_Settings: 'public/OpenAI Settings',
 };
 
 // CSRF Protection //
@@ -851,6 +860,8 @@ app.post('/getsettings', jsonParser, (request, response) => { //Wintermute's cod
     const koboldai_setting_names = [];
     const novelai_settings = [];
     const novelai_setting_names = [];
+    const openai_settings = [];
+    const openai_setting_names = [];
     const settings = fs.readFileSync('public/settings.json', 'utf8', (err, data) => {
         if (err) return response.sendStatus(500);
 
@@ -909,6 +920,30 @@ app.post('/getsettings', jsonParser, (request, response) => { //Wintermute's cod
         novelai_setting_names.push(item.replace(/\.[^/.]+$/, ''));
     });
 
+    //OpenAI
+    const files3 = fs
+    .readdirSync('public/OpenAI Settings')
+    .sort(
+      (a, b) =>
+        new Date(fs.statSync(`public/OpenAI Settings/${b}`).mtime) -
+        new Date(fs.statSync(`public/OpenAI Settings/${a}`).mtime)
+    );
+    
+    files3.forEach(item => {
+    const file3 = fs.readFileSync(
+        `public/OpenAI Settings/${item}`,
+        'utf8',
+        (err, data) => {
+            if (err) return response.sendStatus(500);
+
+            return data;
+        }
+    );
+
+        openai_settings.push(file3);
+        openai_setting_names.push(item.replace(/\.[^/.]+$/, ''));
+    });
+
     response.send({
         settings,
         koboldai_settings,
@@ -916,6 +951,8 @@ app.post('/getsettings', jsonParser, (request, response) => { //Wintermute's cod
         world_names,
         novelai_settings,
         novelai_setting_names,
+        openai_settings,
+        openai_setting_names,
         enable_extensions: enableExtensions,
     });
 });
@@ -1548,6 +1585,126 @@ app.post('/deletegroup', jsonParser, async (request, response) => {
     }
 
     return response.send({ ok: true });
+});
+
+/* OpenAI */
+app.post("/getstatus_openai", jsonParser, function(request, response_getstatus_openai = response){
+    if(!request.body) return response_getstatus_openai.sendStatus(400);
+    api_key_openai = request.body.key;
+    const args = {
+        headers: { "Authorization": "Bearer "+api_key_openai}
+    };
+    client.get(api_openai+"/models",args, function (data, response) {
+        if(response.statusCode == 200){
+            console.log(data);
+            response_getstatus_openai.send(data);//data);
+        }
+        if(response.statusCode == 401){
+            console.log('Access Token is incorrect.');
+            response_getstatus_openai.send({error: true});
+        }
+        if(response.statusCode == 500 || response.statusCode == 501 || response.statusCode == 501 || response.statusCode == 503 || response.statusCode == 507){
+            console.log(data);
+            response_getstatus_openai.send({error: true});
+        }
+    }).on('error', function (err) {
+        response_getstatus_openai.send({error: true});
+    });
+});
+
+app.post("/generate_openai", jsonParser, function(request, response_generate_openai){
+    if(!request.body) return response_generate_openai.sendStatus(400);
+
+    console.log(request.body);
+    const config = {
+        method: 'post',
+        url: api_openai + '/chat/completions',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + api_key_openai
+        },
+        data: {
+            "messages": request.body.messages,
+            "model": request.body.model,
+            "temperature": request.body.temperature,
+            "max_tokens": request.body.max_tokens,
+            "stream": request.body.stream,
+            "presence_penalty": request.body.presence_penalty,
+            "frequency_penalty": request.body.frequency_penalty,
+            "stop": request.body.stop,
+            "logit_bias": request.body.logit_bias
+        }
+    };
+
+    if (request.body.stream)
+        config.responseType = 'stream';
+
+    axios(config)
+        .then(function (response) {
+            if (response.status <= 299) {
+                if (request.body.stream) {
+                    console.log("Streaming request in progress")
+                    response.data.pipe(response_generate_openai);
+                    response.data.on('end', function () {
+                        console.log("Streaming request finished");
+                        response_generate_openai.end();
+                    });
+                } else {
+                    console.log(response.data);
+                    response_generate_openai.send(response.data);
+                }
+            } else if (response.status == 400) {
+                console.log('Validation error');
+                response_generate_openai.send({ error: true });
+            } else if (response.status == 401) {
+                console.log('Access Token is incorrect');
+                response_generate_openai.send({ error: true });
+            } else if (response.status == 402) {
+                console.log('An active subscription is required to access this endpoint');
+                response_generate_openai.send({ error: true });
+            } else if (response.status == 500 || response.status == 409) {
+                if (request.body.stream) {
+                    response.data.on('data', chunk => {
+                        console.log(chunk.toString());
+                    });                  
+                } else {
+                    console.log(response.data);
+                }
+                response_generate_openai.send({ error: true });
+            }
+        })
+        .catch(function (error) {
+            if(error.response){
+                if (request.body.stream) {
+                    error.response.data.on('data', chunk => {
+                        console.log(chunk.toString());
+                    });                  
+                } else {
+                    console.log(error.response.data);
+                }
+            }
+            response_generate_openai.send({ error: true });
+        });
+});
+
+const turbo_encoder = tiktoken.get_encoding("cl100k_base");
+
+app.post("/tokenize_openai", jsonParser, function(request, response_tokenize_openai = response){
+    if(!request.body) return response_tokenize_openai.sendStatus(400);
+
+    let num_tokens = 0;
+    for (var msg of request.body) {
+        num_tokens += 4;
+        for (const [key, value] of Object.entries(msg)) {
+            num_tokens += turbo_encoder.encode(value).length;
+            if (key == "name") {
+                num_tokens += -1;
+            }
+        }
+    }
+    num_tokens += 2;
+    
+    response_tokenize_openai.send({"token_count": num_tokens});
 });
 
 // ** REST CLIENT ASYNC WRAPPERS **

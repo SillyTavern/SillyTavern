@@ -47,6 +47,18 @@ import {
 } from "./scripts/power-user.js";
 
 import {
+    setOpenAIMessageExamples,
+    setOpenAIMessages,
+    prepareOpenAIMessages,
+    sendOpenAIRequest,
+    loadOpenAISettings,
+    setOpenAIOnlineStatus,
+    generateOpenAIPromptCache,
+    oai_settings,
+    is_get_status_openai
+} from "./scripts/openai.js";
+
+import {
     getNovelTier,
     loadNovelPreset,
     loadNovelSettings,
@@ -74,10 +86,13 @@ export {
     select_rm_info,
     setCharacterId,
     setCharacterName,
+    setOnlineStatus,
+    checkOnlineStatus,
     setEditedMessageId,
     setSendButtonState,
     selectRightMenuWithAnimation,
     setRightTabSelectedClass,
+    messageFormating,
     chat,
     this_chid,
     settings,
@@ -89,10 +104,12 @@ export {
     token,
     is_send_press,
     api_server_textgenerationwebui,
+    count_view_mes,
     default_avatar,
     system_message_types,
     talkativeness_default,
     default_ch_mes,
+    saveChat,
 }
 
 // API OBJECT FOR EXTERNAL WIRING
@@ -343,15 +360,18 @@ function checkOnlineStatus() {
         $("#online_status_text2").html("No connection...");
         $("#online_status_indicator3").css("background-color", "red");  //Novel
         $("#online_status_text3").html("No connection...");
+        $(".online_status_indicator4").css("background-color", "red");  //OAI / ooba
+        $(".online_status_text4").html("No connection...");
         is_get_status = false;
         is_get_status_novel = false;
+        setOpenAIOnlineStatus(false);
     } else {
         $("#online_status_indicator2").css("background-color", "green"); //kobold
         $("#online_status_text2").html(online_status);
         $("#online_status_indicator3").css("background-color", "green"); //novel
         $("#online_status_text3").html(online_status);
-        $("#online_status_indicator4").css("background-color", "green"); //extensions api
-        $("#online_status_text4").html(online_status);
+        $(".online_status_indicator4").css("background-color", "green"); //OAI / ooba
+        $(".online_status_text4").html(online_status);
     }
 }
 
@@ -426,7 +446,7 @@ async function getStatus() {
             },
         });
     } else {
-        if (is_get_status_novel != true) {
+        if (is_get_status_novel != true && is_get_status_openai != true) {
             online_status = "no_connection";
         }
     }
@@ -951,6 +971,7 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
             else if (type !== "swipe") {
                 chat.length = chat.length - 1;
                 count_view_mes -= 1;
+                openai_msgs.pop();
                 $('#chat').children().last().hide(500, function () {
                     $(this).remove();
                 });
@@ -1037,6 +1058,11 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
         }
 
         let mesExamplesArray = mesExamples.split(/<START>/gi).slice(1).map(block => `<START>\n${block.trim()}\n`);
+
+        if (main_api === 'openai') {
+            setOpenAIMessages(chat);
+            setOpenAIMessageExamples(mesExamplesArray);
+        }
 
         if (is_pygmalion) {
             storyString += appendToStoryString(charDescription, disable_description_formatting ? '' : name2 + "'s Persona: ");
@@ -1190,6 +1216,10 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
 
             generatedPromtCache += cycleGenerationPromt;
             if (generatedPromtCache.length == 0) {
+                if (main_api === 'openai') {
+                    generateOpenAIPromptCache(charPersonality, topAnchorDepth, anchorTop, anchorBottom);
+                }
+
                 console.log('generating prompt');
                 chatString = "";
                 arrMes = arrMes.reverse();
@@ -1417,6 +1447,8 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
                     "order": this_settings.order
                 };
             }
+
+
             var generate_url = '';
             if (main_api == 'kobold') {
                 generate_url = '/generate';
@@ -1426,180 +1458,182 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
                 generate_url = '/generate_novelai';
             }
             console.log('rungenerate calling API');
-            jQuery.ajax({
-                type: 'POST', // 
-                url: generate_url, // 
-                data: JSON.stringify(generate_data),
-                beforeSend: function () {
-                    //$('#create_button').attr('value','Creating...'); 
-                },
-                cache: false,
-                dataType: "json",
-                contentType: "application/json",
-                success: function (data) {
-                    //console.log('generation success');
-                    tokens_already_generated += this_amount_gen;			// add new gen amt to any prev gen counter..
 
 
-                    //console.log('Tokens requested in total: '+tokens_already_generated);
-                    //$("#send_textarea").focus();
-                    //$("#send_textarea").removeAttr('disabled');
-                    is_send_press = false;
-                    if (!data.error) {
-                        //const getData = await response.json();
-                        var getMessage = "";
-                        if (main_api == 'kobold') {
-                            getMessage = data.results[0].text;
-                        } else if (main_api == 'textgenerationwebui') {
-                            getMessage = data.data[0];
-                            if (getMessage == null || data.error) {
-                                callPopup('<h3>Got empty response from Text generation web UI. Try restarting the API with recommended options.</h3>', 'text');
-                                return;
-                            }
-                            getMessage = getMessage.substring(finalPromt.length);
-                        } else if (main_api == 'novel') {
-                            getMessage = data.output;
+            if (main_api == 'openai') {
+                let prompt = prepareOpenAIMessages(name2, storyString);
+                sendOpenAIRequest(prompt).then(onSuccess).catch(onError);
+            }
+            else {
+                jQuery.ajax({
+                    type: 'POST', // 
+                    url: generate_url, // 
+                    data: JSON.stringify(generate_data),
+                    beforeSend: function () {
+                        //$('#create_button').attr('value','Creating...'); 
+                    },
+                    cache: false,
+                    dataType: "json",
+                    contentType: "application/json",
+                    success: onSuccess,
+                    error: onError
+                }); //end of "if not data error"
+            }
+
+            function onSuccess(data) {
+                tokens_already_generated += this_amount_gen;			// add new gen amt to any prev gen counter..
+
+                is_send_press = false;
+                if (!data.error) {
+                    //const getData = await response.json();
+                    var getMessage = "";
+                    if (main_api == 'kobold') {
+                        getMessage = data.results[0].text;
+                    } else if (main_api == 'textgenerationwebui') {
+                        getMessage = data.data[0];
+                        if (getMessage == null || data.error) {
+                            callPopup('<h3>Got empty response from Text generation web UI. Try restarting the API with recommended options.</h3>', 'text');
+                            return;
                         }
-
-                        if (collapse_newlines) {
-                            getMessage = collapseNewlines(getMessage);
-                        }
-
-                        //Pygmalion run again													// to make it continue generating so long as it's under max_amount and hasn't signaled
-                        // an end to the character's response via typing "You:" or adding "<endoftext>"
-                        if (is_pygmalion) {
-                            if_typing_text = false;
-                            message_already_generated += getMessage;
-                            promptBias = '';
-                            //console.log('AI Response so far: '+message_already_generated);
-                            if (message_already_generated.indexOf('You:') === -1 && 			//if there is no 'You:' in the response msg
-                                message_already_generated.indexOf('<|endoftext|>') === -1 && 	//if there is no <endoftext> stamp in the response msg
-                                tokens_already_generated < parseInt(amount_gen) && 				//if the gen'd msg is less than the max response length..
-                                getMessage.length > 0) {											//if we actually have gen'd text at all... 
-                                runGenerate(getMessage);
-                                console.log('returning to make pyg generate again');									//generate again with the 'GetMessage' argument..
-                                return;
-                            }
-
-                            getMessage = message_already_generated;
-
-                        }
-                        //Formating
-                        getMessage = $.trim(getMessage);
-                        if (is_pygmalion) {
-                            getMessage = getMessage.replace(new RegExp('<USER>', "g"), name1);
-                            getMessage = getMessage.replace(new RegExp('<BOT>', "g"), name2);
-                            getMessage = getMessage.replace(new RegExp('You:', "g"), name1 + ':');
-                        }
-                        if (getMessage.indexOf(name1 + ":") != -1) {
-                            getMessage = getMessage.substr(0, getMessage.indexOf(name1 + ":"));
-
-                        }
-                        if (getMessage.indexOf('<|endoftext|>') != -1) {
-                            getMessage = getMessage.substr(0, getMessage.indexOf('<|endoftext|>'));
-
-                        }
-                        // clean-up group message from excessive generations
-                        if (selected_group) {
-                            getMessage = cleanGroupMessage(getMessage);
-                        }
-                        let this_mes_is_name = true;
-                        if (getMessage.indexOf(name2 + ":") === 0) {
-                            getMessage = getMessage.replace(name2 + ':', '');
-                            getMessage = getMessage.trimStart();
-                        } else {
-                            this_mes_is_name = false;
-                        }
-                        if (force_name2) this_mes_is_name = true;
-                        //getMessage = getMessage.replace(/^\s+/g, '');
-                        if (getMessage.length > 0) {
-                            if (chat[chat.length - 1]['swipe_id'] === undefined ||
-                                chat[chat.length - 1]['is_user']) { type = 'normal'; }
-                            if (type === 'swipe') {
-
-                                chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipes'].length] = getMessage;
-                                if (chat[chat.length - 1]['swipe_id'] === chat[chat.length - 1]['swipes'].length - 1) {
-                                    //console.log(getMessage);
-                                    chat[chat.length - 1]['mes'] = getMessage;
-                                    // console.log('runGenerate calls addOneMessage for swipe');
-                                    addOneMessage(chat[chat.length - 1], 'swipe');
-                                } else {
-                                    chat[chat.length - 1]['mes'] = getMessage;
-                                }
-                                is_send_press = false;
-                            } else {
-                                console.log('entering chat update routine for non-swipe post');
-                                is_send_press = false;
-                                chat[chat.length] = {};
-                                chat[chat.length - 1]['name'] = name2;
-                                chat[chat.length - 1]['is_user'] = false;
-                                chat[chat.length - 1]['is_name'] = this_mes_is_name;
-                                chat[chat.length - 1]['send_date'] = humanizedDateTime();
-                                getMessage = $.trim(getMessage);
-                                chat[chat.length - 1]['mes'] = getMessage;
-
-                                if (selected_group) {
-                                    console.log('entering chat update for groups');
-                                    let avatarImg = 'img/fluffy.png';
-                                    if (characters[this_chid].avatar != 'none') {
-                                        avatarImg = `characters/${characters[this_chid].avatar}?${Date.now()}`;
-                                    }
-                                    chat[chat.length - 1]['is_name'] = true;
-                                    chat[chat.length - 1]['force_avatar'] = avatarImg;
-                                }
-                                //console.log('runGenerate calls addOneMessage');
-                                addOneMessage(chat[chat.length - 1]);
-
-                                $("#send_but").css("display", "inline");
-                                $("#loading_mes").css("display", "none");
-                            }
-
-
-                        } else {
-                            // regenerate with character speech reenforced
-                            // to make sure we leave on swipe type while also adding the name2 appendage
-                            const newType = type == "swipe" ? "swipe" : "force_name2";
-                            Generate(newType, automatic_trigger = false, force_name2 = true);
-                        }
-                    } else {
-
-                        $("#send_but").css("display", "inline");
-                        $("#loading_mes").css("display", "none");
-                        //console.log('runGenerate calling showSwipeBtns');
-                        showSwipeButtons();
+                        getMessage = getMessage.substring(finalPromt.length);
+                    } else if (main_api == 'novel') {
+                        getMessage = data.output;
                     }
-                    console.log('/savechat called by /Generate');
+                    if (main_api == 'openai') {
+                        getMessage = data;
+                    }
 
+                    if (collapse_newlines) {
+                        getMessage = collapseNewlines(getMessage);
+                    }
+
+                    //Pygmalion run again													// to make it continue generating so long as it's under max_amount and hasn't signaled
+                    // an end to the character's response via typing "You:" or adding "<endoftext>"
+                    if (is_pygmalion) {
+                        if_typing_text = false;
+                        message_already_generated += getMessage;
+                        promptBias = '';
+                        //console.log('AI Response so far: '+message_already_generated);
+                        if (message_already_generated.indexOf('You:') === -1 && 			//if there is no 'You:' in the response msg
+                            message_already_generated.indexOf('<|endoftext|>') === -1 && 	//if there is no <endoftext> stamp in the response msg
+                            tokens_already_generated < parseInt(amount_gen) && 				//if the gen'd msg is less than the max response length..
+                            getMessage.length > 0) {											//if we actually have gen'd text at all... 
+                            runGenerate(getMessage);
+                            console.log('returning to make pyg generate again');									//generate again with the 'GetMessage' argument..
+                            return;
+                        }
+
+                        getMessage = message_already_generated;
+
+                    }
+                    //Formating
+                    getMessage = $.trim(getMessage);
+                    if (is_pygmalion) {
+                        getMessage = getMessage.replace(/<USER>/g, name1);
+                        getMessage = getMessage.replace(/<BOT>/g, name2);
+                        getMessage = getMessage.replace(/You:/g, name1 + ':');
+                    }
+                    if (getMessage.indexOf(name1 + ":") != -1) {
+                        getMessage = getMessage.substr(0, getMessage.indexOf(name1 + ":"));
+
+                    }
+                    if (getMessage.indexOf('<|endoftext|>') != -1) {
+                        getMessage = getMessage.substr(0, getMessage.indexOf('<|endoftext|>'));
+
+                    }
+                    // clean-up group message from excessive generations
                     if (selected_group) {
-                        saveGroupChat(selected_group);
-                    } else {
-                        saveChat();
+                        getMessage = cleanGroupMessage(getMessage);
                     }
-                    //let final_message_length = encode(JSON.stringify(getMessage)).length;
-                    //console.log('AI Response: +'+getMessage+ '('+final_message_length+' tokens)');
+                    let this_mes_is_name = true;
+                    if (getMessage.indexOf(name2 + ":") === 0) {
+                        getMessage = getMessage.replace(name2 + ':', '');
+                        getMessage = getMessage.trimStart();
+                    } else {
+                        this_mes_is_name = false;
+                    }
+                    if (force_name2) this_mes_is_name = true;
+                    //getMessage = getMessage.replace(/^\s+/g, '');
+                    if (getMessage.length > 0) {
+                        if (chat[chat.length - 1]['swipe_id'] === undefined ||
+                            chat[chat.length - 1]['is_user']) { type = 'normal'; }
+                        if (type === 'swipe') {
 
+                            chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipes'].length] = getMessage;
+                            if (chat[chat.length - 1]['swipe_id'] === chat[chat.length - 1]['swipes'].length - 1) {
+                                //console.log(getMessage);
+                                chat[chat.length - 1]['mes'] = getMessage;
+                                // console.log('runGenerate calls addOneMessage for swipe');
+                                addOneMessage(chat[chat.length - 1], 'swipe');
+                            } else {
+                                chat[chat.length - 1]['mes'] = getMessage;
+                            }
+                            is_send_press = false;
+                        } else {
+                            console.log('entering chat update routine for non-swipe post');
+                            is_send_press = false;
+                            chat[chat.length] = {};
+                            chat[chat.length - 1]['name'] = name2;
+                            chat[chat.length - 1]['is_user'] = false;
+                            chat[chat.length - 1]['is_name'] = this_mes_is_name;
+                            chat[chat.length - 1]['send_date'] = humanizedDateTime();
+                            getMessage = $.trim(getMessage);
+                            chat[chat.length - 1]['mes'] = getMessage;
+
+                            if (selected_group) {
+                                console.log('entering chat update for groups');
+                                let avatarImg = 'img/fluffy.png';
+                                if (characters[this_chid].avatar != 'none') {
+                                    avatarImg = `characters/${characters[this_chid].avatar}?${Date.now()}`;
+                                }
+                                chat[chat.length - 1]['is_name'] = true;
+                                chat[chat.length - 1]['force_avatar'] = avatarImg;
+                            }
+                            //console.log('runGenerate calls addOneMessage');
+                            addOneMessage(chat[chat.length - 1]);
+
+                            $("#send_but").css("display", "inline");
+                            $("#loading_mes").css("display", "none");
+                        }
+                    } else {
+                        // regenerate with character speech reenforced
+                        // to make sure we leave on swipe type while also adding the name2 appendage
+                        const newType = type == "swipe" ? "swipe" : "force_name2";
+                        Generate(newType, automatic_trigger = false, force_name2 = true);
+                    }
+                } else {
                     $("#send_but").css("display", "inline");
-                    //console.log('runGenerate calling showSwipeBtns pt. 2');
+                    $("#loading_mes").css("display", "none");
+                    //console.log('runGenerate calling showSwipeBtns');
                     showSwipeButtons();
-                    $("#loading_mes").css("display", "none");
-                    $('.mes_edit:last').show();
-
-                },
-                error: function (jqXHR, exception) {
-
-
-                    $("#send_textarea").removeAttr('disabled');
-                    is_send_press = false;
-                    $("#send_but").css("display", "inline");
-                    $("#loading_mes").css("display", "none");
-                    console.log(exception);
-                    console.log(jqXHR);
-
                 }
+                console.log('/savechat called by /Generate');
 
-            }); //end of "if not data error"
+                if (selected_group) {
+                    saveGroupChat(selected_group);
+                } else {
+                    saveChat();
+                }
+                //let final_message_length = encode(JSON.stringify(getMessage)).length;
+                //console.log('AI Response: +'+getMessage+ '('+final_message_length+' tokens)');
+
+                $("#send_but").css("display", "inline");
+                //console.log('runGenerate calling showSwipeBtns pt. 2');
+                showSwipeButtons();
+                $("#loading_mes").css("display", "none");
+                $('.mes_edit:last').show();
+            };
+
+            function onError(jqXHR, exception) {
+                $("#send_textarea").removeAttr('disabled');
+                is_send_press = false;
+                $("#send_but").css("display", "inline");
+                $("#loading_mes").css("display", "none");
+                console.log(exception);
+                console.log(jqXHR);
+            };
+
         } //rungenerate ends
-
     } else {    //generate's primary loop ends, after this is error handling for no-connection or safety-id
 
         if (this_chid == undefined || this_chid == 'invalid-safety-id') {
@@ -1626,6 +1660,10 @@ function setCharacterId(value) {
 
 function setCharacterName(value) {
     name2 = value;
+}
+
+function setOnlineStatus(value) {
+    online_status = value;
 }
 
 function setEditedMessageId(value) {
@@ -1797,7 +1835,15 @@ function changeMainAPI() {
             maxContextElem: $("#max_context_block"),
             amountGenElem: $("#amount_gen_block"),
             softPromptElem: $("#softprompt_block")
-        }
+        },
+        "openai": {
+            apiSettings: $("#openai_settings"),
+            apiConnector: $("#openai_api"),
+            apiRanges: $("#range_block_openai"),
+            maxContextElem: $("#max_context_block"),
+            amountGenElem: $("#amount_gen_block"),
+            softPromptElem: $("#softprompt_block"),
+        },
     };
     console.log('--- apiElements--- ');
     //console.log(apiElements);
@@ -1809,6 +1855,9 @@ function changeMainAPI() {
         apiObj.apiSettings.css("display", isCurrentApi ? "block" : "none");
         apiObj.apiConnector.css("display", isCurrentApi ? "block" : "none");
         apiObj.apiRanges.css("display", isCurrentApi ? "block" : "none");
+
+        // Hide common settings for OpenAI
+        $("#common-gen-settings-block").css("display", isCurrentApi && apiName !== "openai" ? "block" : "none");
 
         if (isCurrentApi && apiName === "kobold") {
             console.log("enabling SP for kobold");
@@ -1989,6 +2038,9 @@ async function getSettings(type) {
                 //Novel
                 loadNovelSettings(settings);
 
+                // OpenAI
+                loadOpenAISettings(data, settings);
+
                 //Enable GUI deference settings if GUI is selected for Kobold
                 if (main_api === "kobold") {
                     if (preset_settings == "gui") {
@@ -2086,6 +2138,7 @@ async function saveSettings(type) {
             swipes: swipes,
             ...nai_settings,
             ...kai_settings,
+            ...oai_settings,
         }),
         beforeSend: function () {
             //console.log('saveSettings() -- active_character -- '+active_character);
@@ -2253,7 +2306,7 @@ async function getStatusNovel() {
             },
         });
     } else {
-        if (is_get_status != true) {
+        if (is_get_status != true && is_get_status_openai != true) {
             online_status = "no_connection";
         }
     }
@@ -3591,6 +3644,7 @@ $(document).ready(function () {
         is_pygmalion = false;
         is_get_status = false;
         is_get_status_novel = false;
+        setOpenAIOnlineStatus(false);
         online_status = "no_connection";
         clearSoftPromptsList();
         checkOnlineStatus();

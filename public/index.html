@@ -92,6 +92,7 @@
                         <option value="kobold">KoboldAI</option>
                         <option value="textgenerationwebui">Text generation web UI</option>
                         <option value="novel">NovelAI</option>
+                        <option value="openai">OpenAI</option>
                     </select>
                 </div>
                 <div id="kobold_api" style="position: relative;"> <!-- shows the kobold settings -->
@@ -176,10 +177,29 @@
                         <input id="api_button_textgenerationwebui" class="menu_button" type="submit" value="Connect">
                         <img id="api_loading_textgenerationwebui" src="img/load.svg">
                     </form>
-                    <div id="online_status4">
-                        <div id="online_status_indicator4"></div>
-                        <div id="online_status_text4">Not connected</div>
+                    <div class="online_status4">
+                        <div class="online_status_indicator4"></div>
+                        <div class="online_status_text4">Not connected</div>
                     </div>
+                </div>
+    
+                <div id="openai_api" style="display: none;position: relative;">
+                    <form action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                        <h4>API key </h4>
+                        <input id="api_key_openai" name="api_key_openai" class="text_pole" maxlength="500" size="35" value=""
+                            autocomplete="off">
+                        <input id="api_button_openai" class="menu_button" type="submit" value="Connect">
+                        <img id="api_loading_openai" src="img/load.svg">
+                    </form>
+                    <div class="online_status4">
+                        <div class="online_status_indicator4"></div>
+                        <div class="online_status_text4">No connection...</div>
+                    </div>
+                    <h4>Preset settings</h4>
+                    <h5>Selecting settings</h5>
+                    <select id="settings_perset_openai" class="option_select_right_menu">
+                        <option value="gui">Default</option>
+                    </select>
                 </div>
             </div>
         </div>
@@ -227,7 +247,7 @@
                 </div>
             </div>
         </div>
-
+        
         <div id="ai-config-button" class="drawer" style="z-index:3002;">
             <div class="drawer-toggle drawer-header">
                 <div class="drawer-icon icon-sliders closedIcon"></div>
@@ -242,14 +262,16 @@
                                         Amount generation
                                     </div>
                                     <span id="amount_gen_counter" class="range-block-counter">select</span>
-                                    <input type="range" class="range-block-range" id="amount_gen" name="volume" min="16" max="512" step="1">
+                                    <input type="range" class="range-block-range" id="amount_gen" name="volume" min="16"
+                                        max="512" step="1">
                                 </div>
                                 <div id="max_context_block" class="range-block">
                                     <div class="range-block-title">
                                         Context Size
                                     </div>
                                     <span id="max_context_counter" class="range-block-counter">select</span>
-                                    <input type="range" class="range-block-range" id="max_context" name="volume" min="512" max="2048" step="1">
+                                    <input type="range" class="range-block-range" id="max_context" name="volume" min="512"
+                                        max="2048" step="1">
                                 </div>
                             </div>
                         </div>
@@ -310,7 +332,7 @@
                                 </div>
                                 <div class="range-block-title"></div>
                                 Repetition Penalty Range
-
+        
                                 <div class="range-block-counter">
                                     <span id="rep_pen_size_counter_novel">select</span>
                                 </div>
@@ -327,7 +349,8 @@
                                         <span id="temp_counter_textgenerationwebui">select</span>
                                     </div>
                                     <div class="range-block-range">
-                                        <input type="range" id="temp_textgenerationwebui" name="volume" min="0.1" max="2.0" step="0.01">
+                                        <input type="range" id="temp_textgenerationwebui" name="volume" min="0.1" max="2.0"
+                                            step="0.01">
                                     </div>
                                 </div>
                                 <div class="range-block">
@@ -338,7 +361,8 @@
                                         <span id="rep_pen_counter_textgenerationwebui">select</span>
                                     </div>
                                     <div class="range-block-range">
-                                        <input type="range" id="rep_pen_textgenerationwebui" name="volume" min="1" max="1.5" step="0.01">
+                                        <input type="range" id="rep_pen_textgenerationwebui" name="volume" min="1" max="1.5"
+                                            step="0.01">
                                     </div>
                                 </div>
                                 <div class="range-block">
@@ -349,7 +373,67 @@
                                         <span id="rep_pen_size_counter_textgenerationwebui">select</span>
                                     </div>
                                     <div class="range-block-range">
-                                        <input type="range" id="rep_pen_size_textgenerationwebui" name="volume" min="0" max="2048" step="1">
+                                        <input type="range" id="rep_pen_size_textgenerationwebui" name="volume" min="0"
+                                            max="2048" step="1">
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="range_block_openai">
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        OpenAI Context Size
+                                    </div>
+                                    <div class="range-block-counter">
+                                        <span id="openai_max_context_counter">select</span>
+                                    </div>
+                                    <div class="range-block-range">
+                                        <input type="range" id="openai_max_context" name="volume" min="512" max="4095" step="1">
+                                    </div>
+                                </div>
+        
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        OpenAI max response length (in tokens)
+                                    </div>
+                                    <div class="range-block-range">
+                                        <input type="number" id="openai_max_tokens" name="openai_max_tokens" class="text_pole"
+                                            min="50" max="1000">
+                                    </div>
+                                </div>
+
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        Temperature
+                                    </div>
+                                    <div class="range-block-counter">
+                                        <span id="temp_counter_openai">select</span>
+                                    </div>
+                                    <div class="range-block-range">
+                                        <input type="range" id="temp_openai" name="volume" min="0" max="2.0" step="0.01">
+                                    </div>
+                                </div>
+        
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        Frequency Penalty
+                                    </div>
+                                    <div class="range-block-counter">
+                                        <span id="freq_pen_counter_openai">select</span>
+                                    </div>
+                                    <div class="range-block-range">
+                                        <input type="range" id="freq_pen_openai" name="volume" min="-2" max="2" step="0.01">
+                                    </div>
+                                </div>
+        
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        Presence Penalty
+                                    </div>
+                                    <div class="range-block-counter">
+                                        <span id="pres_pen_counter_openai">select</span>
+                                    </div>
+                                    <div class="range-block-range">
+                                        <input type="range" id="pres_pen_openai" name="volume" min="-2" max="2" step="0.01">
                                     </div>
                                 </div>
                             </div>
@@ -453,9 +537,9 @@
                                 </div>
                             </div>
                             <div id="novel_api-settings">
-
+        
                                 ***COMING SOON***
-
+        
                             </div>
                             <div id="textgenerationwebui_api-settings">
                                 <div class="range-block">
@@ -466,41 +550,115 @@
                                         <span id="top_k_counter_textgenerationwebui">select</span>
                                     </div>
                                     <div class="range-block-range">
-                                        <input type="range" id="top_k_textgenerationwebui" name="volume" min="0" max="200" step="1">
+                                        <input type="range" id="top_k_textgenerationwebui" name="volume" min="0" max="200"
+                                            step="1">
                                     </div>
-                                    <div class="range-block">
-                                        <div class="range-block-title">
-                                            Top P
-                                        </div>
-                                        <div class="range-block-counter">
-                                            <span id="top_p_counter_textgenerationwebui">select</span>
-                                        </div>
-                                        <div class="range-block-range">
-                                            <input type="range" id="top_p_textgenerationwebui" name="volume" min="0" max="1" step="0.1">
-                                        </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        Top P
                                     </div>
-                                    <div class="range-block">
-                                        <div class="range-block-title">
-                                            Typical P
-                                        </div>
-                                        <div class="range-block-counter">
-                                            <span id="typical_p_counter_textgenerationwebui">select</span>
-                                        </div>
-                                        <div class="range-block-range">
-                                            <input type="range" id="typical_p_textgenerationwebui" name="volume" min="0" max="1" step="0.1">
-                                        </div>
+                                    <div class="range-block-counter">
+                                        <span id="top_p_counter_textgenerationwebui">select</span>
                                     </div>
-                                    <div class="range-block">
-                                        <div class="range-block-title">
-                                            Penalty Alpha
-                                        </div>
-                                        <div class="range-block-counter">
-                                            <span id="penalty_alpha_counter_textgenerationwebui">select</span>
-                                        </div>
-                                        <div class="range-block-range">
-                                            <input type="range" id="penalty_alpha_textgenerationwebui" name="volume" min="0" max="5" step="0.05" />
-                                        </div>
+                                    <div class="range-block-range">
+                                        <input type="range" id="top_p_textgenerationwebui" name="volume" min="0" max="1"
+                                            step="0.1">
                                     </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        Typical P
+                                    </div>
+                                    <div class="range-block-counter">
+                                        <span id="typical_p_counter_textgenerationwebui">select</span>
+                                    </div>
+                                    <div class="range-block-range">
+                                        <input type="range" id="typical_p_textgenerationwebui" name="volume" min="0" max="1"
+                                            step="0.1">
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        Penalty Alpha
+                                    </div>
+                                    <div class="range-block-counter">
+                                        <span id="penalty_alpha_counter_textgenerationwebui">select</span>
+                                    </div>
+                                    <div class="range-block-range">
+                                        <input type="range" id="penalty_alpha_textgenerationwebui" name="volume" min="0" max="5"
+                                            step="0.05" />
+                                    </div>
+                                </div>
+                            </div>
+        
+                            <div id="openai_settings">
+                                <div class="range-block">
+                                    <label class="checkbox_label" for="nsfw_toggle">
+                                        <input id="nsfw_toggle" type="checkbox" checked>
+                                        NSFW Toggle
+                                    </label>
+                                </div>
+                                
+                                <div class="range-block">
+                                    <label title="NSFW block goes first in the resulting prompt" class="checkbox_label">
+                                        <input id="nsfw_first" type="checkbox" />
+                                        NSFW first
+                                    </label>
+                                </div>
+        
+                                <!-- Currently broken -->
+                                <div style="display: none" class="range-block">
+                                    <label title="Enables OpenAI completion streaming" class="checkbox_label" for="stream_toggle">
+                                        <input id="stream_toggle" type="checkbox" />
+                                        Streaming
+                                    </label>
+                                </div>
+
+                                <div class="range-block">
+                                    <label title="Blends definitions with model's knowledge" class="checkbox_label">
+                                        <input id="enhance_definitions" type="checkbox" />
+                                        Enhance Definitions
+                                    </label>
+                                </div>
+        
+                                <div class="range-block">
+                                    <label for="wrap_in_quotes" title="Wrap user messages in quotes before sending" class="checkbox_label">
+                                        <input id="wrap_in_quotes" type="checkbox" />
+                                        Wrap in Quotes
+                                    </label>
+                                </div>
+
+                                <br> 
+
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        Main prompt
+                                    </div>
+                                    <div class="range-block-counter">
+                                        The main prompt used to set the model behavior
+                                    </div>
+                                    <div class="range-block-range">
+                                        <textarea id="main_prompt_textarea" class="text_pole" name="main_prompt" rows="5"
+                                            placeholder=""></textarea>
+                                    </div>
+                                </div>
+        
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        NSFW prompt
+                                    </div>
+                                    <div class="range-block-counter">
+                                        Prompt that is used when the NSFW toggle is on
+                                    </div>
+                                    <div class="range-block-range">
+                                        <textarea id="nsfw_prompt_textarea" class="custom_textarea" name="nsfw_prompt" rows="5"
+                                            placeholder=""></textarea>
+                                    </div>
+                                </div>
+        
+                                <div class="range-block">
+                                    <input id="save_prompts" class="menu_button" type="button" value="Save prompt settings">
                                 </div>
                             </div>
                         </div>
@@ -508,7 +666,7 @@
                 </div>
             </div>
         </div>
-
+        
         <div id="WI-SP-button" class="drawer" style="z-index:3003;">
             <div class="drawer-toggle drawer-header">
                 <div class="drawer-icon icon-globe closedIcon "></div>
