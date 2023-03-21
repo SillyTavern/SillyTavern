@@ -116,6 +116,18 @@
                     </div>
                 </div>
                 <div id="novel_api" style="display: none;position: relative;"> <!-- shows the novel settings -->
+                    <form action="javascript:void(null);" method="post" enctype="multipart/form-data">
+
+                        <h4>API key</h4>
+                        <h5>Where to get (<a href="/notes/6" target="_blank">?</a>)</h5>
+                        <input id="api_key_novel" name="api_key_novel" class="text_pole" maxlength="500" size="35" value="" autocomplete="off">
+                        <input id="api_button_novel" type="submit" value="Connect">
+                        <img id="api_loading_novel" src="img/load.svg">
+                    </form>
+                    <div id="online_status3">
+                        <div id="online_status_indicator3"></div>
+                        <div id="online_status_text3">No connection...</div>
+                    </div>
                     <h4>Novel AI Model
                         <a href="/notes/8" class="notes-link" target="_blank">
                             <span class="note-link-span">?</span>
