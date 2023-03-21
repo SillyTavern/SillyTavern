@@ -201,11 +201,17 @@ function RA_checkOnlineStatus() {
 //Auto-connect to API (when set to kobold, API URL exists, and auto_connect is true)
 
 function RA_autoconnect() {
+	console.log(main_api);
 	if (typeof online_status !== 'undefined' && (api_server !== '' || api_key_novel !== '')) {
 		if (online_status === "no_connection" && LoadLocalBool('AutoConnectEnabled')) {
 			if (isUrlOrAPIKey(api_server) && main_api === "kobold") {
-				$("#api_url_text").val(api_server);
 				$("#api_button").click();
+			}
+			if (main_api === "novel") {
+				$("#api_button_novel").click();
+			}
+			if (isUrlOrAPIKey(api_server) && main_api === "textgenerationwebui") {
+				$("#api_button_textgenerationwebui").click();
 			}
 		}
 	} else {
@@ -214,7 +220,6 @@ function RA_autoconnect() {
 }
 
 function isUrlOrAPIKey(string) {
-	//const pattern = /^\d{3}-\d{3}-\d{3}-\d{3}$/; //need a sample novelAI key to set this format
 	try {
 		new URL(string);
 		return true;
@@ -312,8 +317,17 @@ $("document").ready(function () {
 		}
 		if (event.ctrlKey && event.key == "ArrowUp") {
 			//Ctrl+UpArrow for Connect to last server
+			console.log(main_api);
 			if (online_status === "no_connection") {
-				document.getElementById("api_button").click();
+				if (main_api == "kobold") {
+					document.getElementById("api_button").click();
+				}
+				if (main_api == "novel") {
+					document.getElementById("api_button_novel").click();
+				}
+				if (main_api == "textgenerationwebui") {
+					document.getElementById("api_button_textgenerationwebui").click();
+				}
 			}
 		}
 		if (event.ctrlKey && event.key == "ArrowLeft") {		//for debug, show all local stored vars

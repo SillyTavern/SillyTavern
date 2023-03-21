@@ -224,6 +224,7 @@ margin-top:5px;
     white-space: nowrap;
     width: 100%;
     margin: 1px auto 10px auto;
+    z-index: 3;
 }
 
 #send_form {
