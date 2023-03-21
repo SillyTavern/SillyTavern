@@ -18,7 +18,7 @@
     --grey50: rgb(125, 125, 125);
     --grey70: rgb(175, 175, 175);
 
-    --grey30a: rgba(50,50,50,0.3);          // dark grey transparent for #chat and #send_form so their borders stand out on dark BGs
+    --grey30a: rgba(50,50,50,0.3);          /* dark grey transparent for #chat and #send_form so their borders stand out on dark BGs*/
 
     --fullred: rgba(255, 0, 0, 1);
     --crimson70a: rgba(100, 0, 0, 0.7);
@@ -34,10 +34,12 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     -moz-appearance: initial;
-    scrolling-behaviour: smooth;
+    scroll-behavior: smooth;
 }
 
-html { scroll-behaviour: smooth;}
+html { 
+    scroll-behavior: smooth;
+}
 
 body {
     margin: 0;
@@ -127,7 +129,7 @@ code {
 }
 
 #bg1 {
-    background: url(backgrounds/tavern.jpg);
+    background: url(backgrounds/tavern1.jpg);
     background-repeat: no-repeat;
     background-attachment: fixed;
     background-size: cover;
@@ -139,7 +141,7 @@ code {
 }
 
 #bg2 {
-    background: url(backgrounds/tavern.jpg);
+    background: url(backgrounds/tavern1.jpg);
     background-repeat: no-repeat;
     background-attachment: fixed;
     filter: blur(2px);
