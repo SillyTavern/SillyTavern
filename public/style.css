@@ -1211,6 +1211,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     width: 100%;
     height: 100vh;
     z-index: 9999;
+    top: 0;
 }
 
 #colab_shadow_popup {
