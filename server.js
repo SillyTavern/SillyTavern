@@ -15,6 +15,7 @@ const PNGtext = require('png-chunk-text');
 const jimp = require('jimp');
 const path = require('path');
 const sanitize = require('sanitize-filename');
+const mime = require('mime-types');
 
 const cookieParser = require('cookie-parser');
 const crypto = require('crypto');
@@ -987,13 +988,17 @@ function getCharacterFile(directories, response, i) { //old need del
         response.send(JSON.stringify(characters));
     }
 }
-function getImages(path) {
-    return fs.readdirSync(path).sort(Intl.Collator().compare);
 
-    /*     return fs.readdirSync(path).sort(function (a, b) {
-            return new Date(fs.statSync(path + '/' + a).mtime) - new Date(fs.statSync(path + '/' + b).mtime);
-        }).reverse(); */
+function getImages(path) {
+    return fs
+        .readdirSync(path)
+        .filter(file => {
+            const type = mime.lookup(file);
+            return type && type.startsWith('image/');
+        })
+        .sort(Intl.Collator().compare);
 }
+
 function getKoboldSettingFiles(path) {
     return fs.readdirSync(path).sort(function (a, b) {
         return new Date(fs.statSync(path + '/' + a).mtime) - new Date(fs.statSync(path + '/' + b).mtime);
