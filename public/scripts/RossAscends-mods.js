@@ -187,10 +187,12 @@ function RA_checkOnlineStatus() {
 		$("#send_textarea").attr("placeholder", "Not connected to API!"); //Input bar placeholder tells users they are not connected
 		$("#send_form").css("background-color", "rgba(100,0,0,0.7)"); //entire input form area is red when not connected
 		$("#send_but").css("display", "none"); //send button is hidden when not connected;
+		$("#API-status-top").addClass("redOverlayGlow");
 	} else {
 		if (online_status !== undefined && online_status !== "no_connection") {
 			$("#send_textarea").attr("placeholder", "Type a message..."); //on connect, placeholder tells user to type message
 			$("#send_form").css("background-color", "rgba(0,0,0,0.7)"); //on connect, form BG changes to transprent black
+			$("#API-status-top").removeClass("redOverlayGlow");
 
 			if (!is_send_press && !(selected_group && is_group_generating)) {
 				$("#send_but").css("display", "inline"); //on connect, send button shows

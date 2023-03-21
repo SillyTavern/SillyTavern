@@ -2755,6 +2755,10 @@ label[for="extensions_autoconnect"] {
    transition: all 0.275s;
 }
 
+.redOverlayGlow{
+filter: invert(20%) sepia(100%) saturate(2518%) hue-rotate(353deg) brightness(93%) contrast(125%) drop-shadow(0px 0px 1px #c00) !important;
+}
+
 .drawer-icon.closedIcon {
     /* background-image: url('img/circle-chevron-down-solid.svg'); */
     filter: invert(1);
