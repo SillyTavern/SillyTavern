@@ -536,12 +536,15 @@ function charaFormatData(data) {
     return char;
 }
 app.post("/createcharacter", urlencodedParser, function (request, response) {
-
-
-
     //var sameNameChar = fs.existsSync(charactersPath+request.body.ch_name+'.png');
     //if (sameNameChar == true) return response.sendStatus(500);
     if (!request.body) return response.sendStatus(400);
+
+    if (request.body.ch_name !== sanitize(request.body.ch_name)) {
+        console.error('Malicious character name prevented');
+        return response.send(400);
+    }
+
     console.log('/createcharacter -- looking for -- ' + (charactersPath + request.body.ch_name + '.png'));
     console.log('Does this file already exists? ' + fs.existsSync(charactersPath + request.body.ch_name + '.png'));
     if (!fs.existsSync(charactersPath + request.body.ch_name + '.png')) {
@@ -627,8 +630,14 @@ app.post("/deletecharacter", urlencodedParser, function (request, response) {
     }
 
     fs.rmSync(avatarPath);
-    let dir_name = request.body.avatar_url;
-    rimraf(chatsPath + dir_name.replace('.png', ''), (err) => {
+    let dir_name = (request.body.avatar_url.replace('.png', ''));
+
+    if (dir_name !== sanitize(dir_name)) {
+        console.error('Malicious dirname prevented');
+        return response.sendStatus(400);
+    }
+
+    rimraf(path.join(chatsPath, sanitize(dir_name)), (err) => {
         if (err) {
             response.send(err);
             return console.log(err);
@@ -770,16 +779,21 @@ app.post("/setbackground", jsonParser, function (request, response) {
 });
 app.post("/delbackground", jsonParser, function (request, response) {
     if (!request.body) return response.sendStatus(400);
-    rimraf('public/backgrounds/' + request.body.bg, (err) => {
-        if (err) {
-            response.send(err);
-            return console.log(err);
-        } else {
-            //response.redirect("/");
-            response.send('ok');
-        }
-    });
 
+    if (request.body.bg !== sanitize(request.body.bg)) {
+        console.error('Malicious bg name prevented');
+        return response.sendStatus(400);
+    }
+
+    const fileName = path.join('public/backgrounds/', sanitize(request.body.bg));
+
+    if (!fs.existsSync(fileName)) {
+        console.log('BG file not found');
+        return response.sendStatus(400);
+    }
+
+    fs.rmSync(fileName);
+    return response.send('ok');
 });
 app.post("/downloadbackground", urlencodedParser, function (request, response) {
     response_dw_bg = response;
@@ -916,7 +930,7 @@ app.post('/deleteworldinfo', jsonParser, (request, response) => {
     }
 
     const worldInfoName = request.body.name;
-    const filename = `${worldInfoName}.json`;
+    const filename = sanitize(`${worldInfoName}.json`);
     const pathToWorldInfo = path.join(directories.worlds, filename);
 
     if (!fs.existsSync(pathToWorldInfo)) {
@@ -1176,11 +1190,21 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                 const jsonData = JSON.parse(data);
 
                 if (jsonData.name !== undefined) {
+                    if (jsonData.name !== sanitize(jsonData.name)) {
+                        console.error('Malicious character name prevented');
+                        return response.send(400);
+                    }
+
                     png_name = getPngName(jsonData.name);
                     let char = { "name": jsonData.name, "description": jsonData.description ?? '', "personality": jsonData.personality ?? '', "first_mes": jsonData.first_mes ?? '', "avatar": 'none', "chat": humanizedISO8601DateTime(), "mes_example": jsonData.mes_example ?? '', "scenario": jsonData.scenario ?? '', "create_date": humanizedISO8601DateTime(), "talkativeness": jsonData.talkativeness ?? 0.5 };
                     char = JSON.stringify(char);
                     charaWrite('./public/img/fluffy.png', char, png_name, response, { file_name: png_name });
                 } else if (jsonData.char_name !== undefined) {//json Pygmalion notepad
+                    if (jsonData.char_name !== sanitize(jsonData.char_name)) {
+                        console.error('Malicious character name prevented');
+                        return response.send(400);
+                    }
+
                     png_name = getPngName(jsonData.char_name);
                     let char = { "name": jsonData.char_name, "description": jsonData.char_persona ?? '', "personality": '', "first_mes": jsonData.char_greeting ?? '', "avatar": 'none', "chat": humanizedISO8601DateTime(), "mes_example": jsonData.example_dialogue ?? '', "scenario": jsonData.world_scenario ?? '', "create_date": humanizedISO8601DateTime(), "talkativeness": jsonData.talkativeness ?? 0.5 };
                     char = JSON.stringify(char);
@@ -1195,6 +1219,12 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
 
                 var img_data = charaRead('./uploads/' + filedata.filename);
                 let jsonData = JSON.parse(img_data);
+
+                if (jsonData.name !== sanitize(jsonData.name)) {
+                    console.error('Malicious character name prevented');
+                    return response.send(400);
+                }
+
                 png_name = getPngName(jsonData.name);
 
                 if (jsonData.name !== undefined) {
@@ -1332,13 +1362,13 @@ app.post("/importchat", urlencodedParser, function (request, response) {
 app.post('/importworldinfo', urlencodedParser, (request, response) => {
     if (!request.file) return response.sendStatus(400);
 
-    const filename = request.file.originalname;
+    const filename = sanitize(request.file.originalname);
 
     if (path.parse(filename).ext.toLowerCase() !== '.json') {
         return response.status(400).send('Only JSON files are supported.')
     }
 
-    const pathToUpload = path.join('./uploads/' + request.file.filename);
+    const pathToUpload = path.join('./uploads/', request.file.filename);
     const fileContents = fs.readFileSync(pathToUpload, 'utf8');
 
     try {
@@ -1496,8 +1526,8 @@ app.post('/deletegroup', jsonParser, async (request, response) => {
     }
 
     const id = request.body.id;
-    const pathToGroup = path.join(directories.groups, `${id}.json`);
-    const pathToChat = path.join(directories.groupChats, `${id}.jsonl`);
+    const pathToGroup = path.join(directories.groups, sanitize(`${id}.json`));
+    const pathToChat = path.join(directories.groupChats, sanitize(`${id}.jsonl`));
 
     if (fs.existsSync(pathToGroup)) {
         fs.rmSync(pathToGroup);
