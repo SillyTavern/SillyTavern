@@ -1032,6 +1032,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 #rm_characters_block .form_create_bottom_buttons_block {
     justify-content: space-evenly !important;
+    flex-grow: 0;
 }
 
 .form_create_bottom_buttons_block {
