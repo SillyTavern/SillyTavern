@@ -8,7 +8,7 @@ import {
 	online_status,
 	main_api,
 	api_server,
-	api_key_novel,
+	nai_settings,
 	is_send_press,
 
 } from "../script.js";
@@ -204,7 +204,7 @@ function RA_checkOnlineStatus() {
 
 function RA_autoconnect() {
 	console.log(main_api);
-	if (typeof online_status !== 'undefined' && (api_server !== '' || api_key_novel !== '')) {
+	if (typeof online_status !== 'undefined' && (api_server !== '' || nai_settings.api_key_novel !== '')) {
 		if (online_status === "no_connection" && LoadLocalBool('AutoConnectEnabled')) {
 			if (isUrlOrAPIKey(api_server) && main_api === "kobold") {
 				$("#api_button").click();
