@@ -1453,8 +1453,7 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
                         } else if (main_api == 'textgenerationwebui') {
                             getMessage = data.data[0];
                             if (getMessage == null || data.error) {
-                                popup_type = 'default';
-                                callPopup('<h3>Got empty response from Text generation web UI. Try restarting the API with recommended options.</h3>');
+                                callPopup('<h3>Got empty response from Text generation web UI. Try restarting the API with recommended options.</h3>', 'text');
                                 return;
                             }
                             getMessage = getMessage.substring(finalPromt.length);
