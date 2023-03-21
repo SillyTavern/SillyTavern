@@ -787,7 +787,8 @@ img[src*="user-slash-solid.svg"] {
 }
 
 #api_button:hover,
-#api_button_novel:hover {
+#api_button_novel:hover,
+#api_button_textgenerationwebui {
     background-color: green;
 }
 
