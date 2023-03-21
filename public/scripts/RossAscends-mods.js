@@ -312,8 +312,17 @@ $("document").ready(function () {
 		}
 		if (event.ctrlKey && event.key == "ArrowUp") {
 			//Ctrl+UpArrow for Connect to last server
+			console.log(main_api);
 			if (online_status === "no_connection") {
-				document.getElementById("api_button").click();
+				if (main_api == "kobold") {
+					document.getElementById("api_button").click();
+				}
+				if (main_api == "novel") {
+					document.getElementById("api_button_novel").click();
+				}
+				if (main_api == "textgenerationwebui") {
+					document.getElementById("api_button_textgenerationwebui").click();
+				}
 			}
 		}
 		if (event.ctrlKey && event.key == "ArrowLeft") {		//for debug, show all local stored vars
