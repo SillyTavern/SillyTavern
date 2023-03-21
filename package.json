@@ -12,7 +12,8 @@
         "png-chunk-text": "^1.0.0",
         "png-chunks-encode": "^1.0.0",
         "png-chunks-extract": "^1.0.0",
-        "rimraf": "^3.0.2"
+        "rimraf": "^3.0.2",
+        "sanitize-filename": "^1.6.3"
     },
     "name": "TavernAI",
     "version": "1.1.0",

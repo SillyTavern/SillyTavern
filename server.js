@@ -14,6 +14,7 @@ const PNGtext = require('png-chunk-text');
 
 const jimp = require('jimp');
 const path = require('path');
+const sanitize = require('sanitize-filename');
 
 const cookieParser = require('cookie-parser');
 const crypto = require('crypto');
@@ -612,6 +613,11 @@ app.post("/editcharacter", urlencodedParser, async function (request, response) 
 });
 app.post("/deletecharacter", urlencodedParser, function (request, response) {
     if (!request.body || !request.body.avatar_url) {
+        return response.sendStatus(400);
+    }
+
+    if (request.body.avatar_url !== sanitize(request.body.avatar_url)) {
+        console.error('Malicious filename prevented');
         return response.sendStatus(400);
     }
 
