@@ -220,7 +220,7 @@ function RA_autoconnect() {
 				}
 				break;
 			case 'novel':
-				if (api_key_novel) {
+				if (nai_settings.api_key_novel) {
 					$("#api_button_novel").click();
 					retry_delay = 100;
 					RA_AC_retries = 1;
