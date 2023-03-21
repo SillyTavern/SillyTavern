@@ -163,7 +163,16 @@ function parseExampleIntoIndividual(messageExampleString) {
     return result;
 }
 
-function prepareOpenAIMessages(name2, storyString) {
+function formatWorldInfo(value) {
+    if (!value) {
+        return '';
+    }
+
+    // placeholder if we would want to apply some formatting
+    return `[Details of the fictional world the RP set in:\n${value}\n]`;
+}
+
+function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAfter, extensionPrompt) {
     let this_max_context = oai_settings.openai_max_context;
     let nsfw_toggle_prompt = "";
     let enhance_definitions_prompt = "";
@@ -181,10 +190,10 @@ function prepareOpenAIMessages(name2, storyString) {
     let whole_prompt = [];
     // If it's toggled, NSFW prompt goes first.
     if (oai_settings.nsfw_first) {
-        whole_prompt = [nsfw_toggle_prompt, oai_settings.main_prompt, enhance_definitions_prompt, "\n\n", storyString]
+        whole_prompt = [nsfw_toggle_prompt, oai_settings.main_prompt, enhance_definitions_prompt, "\n\n", formatWorldInfo(worldInfoBefore), storyString, formatWorldInfo(worldInfoAfter), extensionPrompt]
     }
     else {
-        whole_prompt = [oai_settings.main_prompt, nsfw_toggle_prompt, enhance_definitions_prompt, "\n\n", storyString]
+        whole_prompt = [oai_settings.main_prompt, nsfw_toggle_prompt, enhance_definitions_prompt, "\n\n", formatWorldInfo(worldInfoBefore), storyString, formatWorldInfo(worldInfoAfter), extensionPrompt]
     }
 
     // Join by a space and replace placeholders with real user/char names

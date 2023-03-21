@@ -16,7 +16,7 @@ import {
     world_info_data,
     world_info_depth,
     world_info,
-    checkWorldInfo,
+    getWorldInfoPrompt,
     selectImportedWorldInfo,
     setWorldInfoSettings,
     deleteWorldInfo,
@@ -55,7 +55,8 @@ import {
     setOpenAIOnlineStatus,
     generateOpenAIPromptCache,
     oai_settings,
-    is_get_status_openai
+    is_get_status_openai,
+    openai_msgs,
 } from "./scripts/openai.js";
 
 import {
@@ -900,18 +901,6 @@ function getExtensionPrompt() {
     return extension_prompt;
 }
 
-function getWorldInfoPrompt(chat2) {
-    let worldInfoString = "", worldInfoBefore = "", worldInfoAfter = "";
-
-    if (world_info && world_info_data) {
-        const activatedWorldInfo = checkWorldInfo(chat2);
-        worldInfoBefore = activatedWorldInfo.worldInfoBefore;
-        worldInfoAfter = activatedWorldInfo.worldInfoAfter;
-        worldInfoString = worldInfoBefore + worldInfoAfter;
-    }
-    return { worldInfoString, worldInfoBefore, worldInfoAfter };
-}
-
 function baseChatReplace(value, name1, name2) {
     if (value !== undefined && value.length > 0) {
         if (is_pygmalion) {
@@ -1461,7 +1450,7 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
 
 
             if (main_api == 'openai') {
-                let prompt = prepareOpenAIMessages(name2, storyString);
+                let prompt = prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAfter, extension_prompt);
                 sendOpenAIRequest(prompt).then(onSuccess).catch(onError);
             }
             else {
