@@ -18,6 +18,8 @@
     --grey50: rgb(125, 125, 125);
     --grey70: rgb(175, 175, 175);
 
+    --grey30a: rgba(50,50,50,0.3);          // dark grey transparent for #chat and #send_form so their borders stand out on dark BGs
+
     --fullred: rgba(255, 0, 0, 1);
     --crimson70a: rgba(100, 0, 0, 0.7);
     --cobalt30a: rgba(100, 100, 255, 0.3);
@@ -133,7 +135,7 @@ code {
     position: absolute;
     width: 100%;
     height: 100%;
-    z-index: -2;
+    z-index: 0;
 }
 
 #bg2 {
@@ -146,7 +148,7 @@ code {
     position: absolute;
     width: 100%;
     height: 100%;
-    z-index: -1;
+    z-index: 1;
 }
 
 /*TOPPER margin*/
@@ -172,13 +174,14 @@ code {
     display: grid;
     grid-template-rows: auto min-content;
     height: calc(100svh - 40px);
-
-    /*overflow: auto;*/
     overflow-x: hidden;
-    /*overflow-y: hidden;*/
     max-width: 800px;
-    margin-left: auto;
-    margin-right: auto;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 35px;
+    margin: 0 auto;
+    z-index: 2;
 
 }
 
@@ -189,16 +192,17 @@ margin-top:5px;
     overflow-y: scroll;
     display: flex;
     bottom: 10px;
-    border-bottom: 1px solid var(--black30a);
-    border-left: 1px solid var(--black30a);
-    border-right: 1px solid var(--black30a);
+    border-bottom: 1px solid var(--grey50a);
+    border-left: 1px solid var(--grey50a);
+    border-right: 1px solid var(--grey50a);
     backdrop-filter: blur(20px);
     background-color: var(--black70a);
-    -webkit-backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(10px);
     text-shadow: #000 0 0 3px;
     scrollbar-width: thin;
     transition: all 1s ease-in-out;
     flex-direction: column;
+    z-index: 3;
 
     /*old style top to bottom flow*/
 /*     overflow-x: hidden;
@@ -228,7 +232,7 @@ margin-top:5px;
     grid-template-columns: 40px auto 40px;
     width: 100%;
     margin: 0 auto 0 auto;
-    border: 1px solid var(--black30a);
+    border: 1px solid var(--grey50a);
 
     border-radius: 0 0 20px 20px;
     background-color: var(--crimson70a);
@@ -1881,6 +1885,7 @@ input[type="range"]{
     margin-right: auto;
     left: 0;
     right: 0;
+    top: 40px;
     box-shadow: 0 0 20px var(--black70a);
     padding-left: 30px;
     padding-right: 30px;
@@ -2676,8 +2681,7 @@ label[for="extensions_autoconnect"] {
     padding-top: 5px;
     /* right: auto; */
     height: 35px;
-    min-width: 20vw;
-    max-width: 700px;
+    width: 800px;
     color: white;
     justify-content: space-around;
     display: grid;
@@ -2793,16 +2797,20 @@ label[for="extensions_autoconnect"] {
     }
 
     #top-settings-holder{
-        max-width:70vw;
+        width:70vw;
+        position: fixed;
+        right: 0;
+        left: 0;
     }
     #bg1, #bg2 {position:fixed;}
 
     #sheld, #character_popup, #world_popup, #right-nav-panel {    /*margin around the sides, and a larger one on bottom to avoid iOS Home bar*/
-        height: calc(100svh - 55px);
+        height: calc(100svh - 15px);
         width: calc(100vw - 10px);
         margin: 0 auto;
         margin-left: 5px;
         position: fixed;
+
     }
 
     .mes-text {padding-right: 25px;}

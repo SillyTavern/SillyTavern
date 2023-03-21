@@ -956,9 +956,11 @@ function getCharacterFile(directories, response, i) { //old need del
     }
 }
 function getImages(path) {
-    return fs.readdirSync(path).sort(function (a, b) {
-        return new Date(fs.statSync(path + '/' + a).mtime) - new Date(fs.statSync(path + '/' + b).mtime);
-    }).reverse();
+    return fs.readdirSync(path).sort(Intl.Collator().compare);
+
+    /*     return fs.readdirSync(path).sort(function (a, b) {
+            return new Date(fs.statSync(path + '/' + a).mtime) - new Date(fs.statSync(path + '/' + b).mtime);
+        }).reverse(); */
 }
 function getKoboldSettingFiles(path) {
     return fs.readdirSync(path).sort(function (a, b) {
