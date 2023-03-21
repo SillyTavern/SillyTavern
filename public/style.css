@@ -616,9 +616,7 @@ input[type=submit] {}
 #right-nav-panel-tabs {
     margin-top: 10px;
     margin-bottom: 10px;
-    width: calc(100% - 50px);
-    margin-left: 20px;
-    margin-right: 30px;
+    width: calc(100% - 15px);
     max-height: 30px;
     display: flex;
     align-items: flex-end;
