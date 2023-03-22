@@ -104,6 +104,7 @@ export {
     nai_settings,
     token,
     name1,
+    name2,
     is_send_press,
     api_server_textgenerationwebui,
     count_view_mes,
@@ -1457,7 +1458,7 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
 
 
             if (main_api == 'openai') {
-                let prompt = prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAfter, extension_prompt);
+                let prompt = prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAfter, extension_prompt, promptBias);
                 sendOpenAIRequest(prompt).then(onSuccess).catch(onError);
             }
             else {
@@ -3277,6 +3278,10 @@ $(document).ready(function () {
                         }
                     },
                     error: function (jqXHR, exception) {
+                        if (jqXHR.status == 403) {
+                            callPopup(`Character can't be imported due to invalid name. Please choose other name`, 'text');
+                        }
+
                         //alert('ERROR: '+xhr.status+ ' Status Text: '+xhr.statusText+' '+xhr.responseText);
                         $("#create_button").removeAttr("disabled");
                     },
@@ -3941,6 +3946,9 @@ $(document).ready(function () {
                 }
             },
             error: function (jqXHR, exception) {
+                if (jqXHR.status == 403) {
+                    callPopup(`Character can't be imported due to invalid name. Please choose other name`, 'text');
+                }
                 $("#create_button").removeAttr("disabled");
             },
         });

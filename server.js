@@ -557,7 +557,7 @@ app.post("/createcharacter", urlencodedParser, function (request, response) {
 
     if (request.body.ch_name !== sanitize(request.body.ch_name)) {
         console.error('Malicious character name prevented');
-        return response.send(400);
+        return response.sendStatus(403);
     }
 
     console.log('/createcharacter -- looking for -- ' + (charactersPath + request.body.ch_name + '.png'));
@@ -636,7 +636,7 @@ app.post("/deletecharacter", urlencodedParser, function (request, response) {
 
     if (request.body.avatar_url !== sanitize(request.body.avatar_url)) {
         console.error('Malicious filename prevented');
-        return response.sendStatus(400);
+        return response.sendStatus(403);
     }
 
     const avatarPath = charactersPath + request.body.avatar_url;
@@ -649,7 +649,7 @@ app.post("/deletecharacter", urlencodedParser, function (request, response) {
 
     if (dir_name !== sanitize(dir_name)) {
         console.error('Malicious dirname prevented');
-        return response.sendStatus(400);
+        return response.sendStatus(403);
     }
 
     rimraf(path.join(chatsPath, sanitize(dir_name)), (err) => {
@@ -797,7 +797,7 @@ app.post("/delbackground", jsonParser, function (request, response) {
 
     if (request.body.bg !== sanitize(request.body.bg)) {
         console.error('Malicious bg name prevented');
-        return response.sendStatus(400);
+        return response.sendStatus(403);
     }
 
     const fileName = path.join('public/backgrounds/', sanitize(request.body.bg));
@@ -1239,7 +1239,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                 if (jsonData.name !== undefined) {
                     if (jsonData.name !== sanitize(jsonData.name)) {
                         console.error('Malicious character name prevented');
-                        return response.send(400);
+                        return response.sendStatus(403);
                     }
 
                     png_name = getPngName(jsonData.name);
@@ -1249,7 +1249,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                 } else if (jsonData.char_name !== undefined) {//json Pygmalion notepad
                     if (jsonData.char_name !== sanitize(jsonData.char_name)) {
                         console.error('Malicious character name prevented');
-                        return response.send(400);
+                        return response.sendStatus(403);
                     }
 
                     png_name = getPngName(jsonData.char_name);
@@ -1269,7 +1269,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
 
                 if (jsonData.name !== sanitize(jsonData.name)) {
                     console.error('Malicious character name prevented');
-                    return response.send(400);
+                    return response.sendStatus(403);
                 }
 
                 png_name = getPngName(jsonData.name);
@@ -1687,16 +1687,31 @@ app.post("/generate_openai", jsonParser, function(request, response_generate_ope
         });
 });
 
-const turbo_encoder = tiktoken.get_encoding("cl100k_base");
+const tokenizers = {
+    'gpt-3.5-turbo-0301': tiktoken.encoding_for_model('gpt-3.5-turbo-0301'),
+};
+
+function getTokenizer(model) {
+    let tokenizer = tokenizers[model];
+
+    if (!tokenizer) {
+        tokenizer = tiktoken.encoding_for_model(model);
+        tokenizers[tokenizer];
+    }
+
+    return tokenizer;
+}
 
 app.post("/tokenize_openai", jsonParser, function(request, response_tokenize_openai = response){
     if(!request.body) return response_tokenize_openai.sendStatus(400);
+
+    const tokenizer = getTokenizer(request.query.model);
 
     let num_tokens = 0;
     for (var msg of request.body) {
         num_tokens += 4;
         for (const [key, value] of Object.entries(msg)) {
-            num_tokens += turbo_encoder.encode(value).length;
+            num_tokens += tokenizer.encode(value).length;
             if (key == "name") {
                 num_tokens += -1;
             }
