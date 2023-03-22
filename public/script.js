@@ -1865,7 +1865,12 @@ function changeMainAPI() {
         }
 
         // Hide common settings for OpenAI
-        $("#common-gen-settings-block").css("display", (selectedVal !== "openai" ? "block" : "none"));
+        if (selectedVal == "openai") {
+            $("#common-gen-settings-block").css("display", "none");
+        } else {
+            $("#common-gen-settings-block").css("display", "block");
+        }
+
     }
 
     main_api = selectedVal;
