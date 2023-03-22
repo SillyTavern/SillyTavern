@@ -989,7 +989,7 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
         var storyString = "";
         var userSendString = "";
         var finalPromt = "";
-        var postAnchorChar = "talks a lot with descriptions";//'Talk a lot with description what is going on around';// in asterisks
+        var postAnchorChar = "Elaborate speaker";//'Talk a lot with description what is going on around';// in asterisks
         var postAnchorStyle = "Writing style: very long messages";//"[Genre: roleplay chat][Tone: very long messages with descriptions]";
         var anchorTop = '';
         var anchorBottom = '';
