@@ -44,6 +44,7 @@ import {
     disable_description_formatting,
     disable_personality_formatting,
     disable_scenario_formatting,
+    always_force_name2,
 } from "./scripts/power-user.js";
 
 import {
@@ -1094,6 +1095,11 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
                 storyString += appendToStoryString(example, '');
             }
         }
+
+        if (always_force_name2) {
+            force_name2 = true;
+        }
+
         //////////////////////////////////
 
         var count_exm_add = 0;
