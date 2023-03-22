@@ -53,7 +53,6 @@ body {
     font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
     font-size: 15px;
     color: var(--ivory);
-
 }
 
 
@@ -2520,29 +2519,37 @@ a {
 /* ############################################################# */
 
 #right-nav-panel {
-    width: 450px;
-    height: 100%;
+    width: calc((100vw - 800px) /2);
+    min-width: 450px;
+    height: calc(100vh - 55px);
     position: fixed;
-    top: 0;
-    bottom: 0;
+    top: 40px;
     margin: 0;
-    right: -450px;
+    right: 0;
+    left: auto;
     padding: 0 10px;
-    -webkit-transition: right 0.14s ease-in-out 0.02s;
-    -moz-transition: right 0.14s ease-in-out 0.02s;
-    transition: right 0.14s ease-in-out 0.02s;
     backdrop-filter: blur(10px);
     background-color: var(--black70a);
     -webkit-backdrop-filter: blur(10px);
     z-index: 3000;
     white-space: nowrap;
+    border: 0;
     border-left: 1px solid var(--black30a);
+    max-height: 100vh;
+    box-shadow: none;
+    border-radius: 0 0 0 20px;
+    overflow-y: hidden;
     scrollbar-width: thin;
 }
 
-@media screen and (max-width: 450px) {
-
-}
+/* #right-nav-panel.drawer-content{
+    left:5px;
+    height:calc(100vh - 55px);
+    min-height:calc(100vh - 55px);
+    
+    box-shadow: none;
+    
+} */
 
 #nav-toggle {
     position: fixed;
@@ -2588,8 +2595,8 @@ a {
 
 /* this is what causes the panel movement */
 #nav-toggle:checked~#right-nav-panel {
-    right: 0;
-    box-shadow: -5px 0 20px 0 var(--black70a);
+/*     right: 0;
+    box-shadow: -5px 0 20px 0 var(--black70a); */
     /*overflow-y: auto;*/
 }
 
@@ -2598,6 +2605,8 @@ a {
     height: calc(100% - 40px);
     overflow-y: auto;
 }
+
+#hidden-divs {display:none;}
 
 
 
@@ -2696,16 +2705,15 @@ label[for="extensions_autoconnect"] {
 #top-settings-holder{
     margin: 0 auto;
     padding-top: 5px;
-    /* right: auto; */
-    height: 35px;
-    width: 800px;
+    height: 40px;
+    max-width: 800px;
     color: white;
-    justify-content: space-around;
+    justify-content: center;
     display: grid;
-    grid-template-columns: 10% 10% 10% 10% 10% 10% 10%;
+    grid-template-columns: 10% 10% 10% 10% 10% 10% 10% 10%;
     z-index: 3000;
     position: relative;
-    /* grid-gap: 20px; */
+    grid-gap: 2%;
 
 }
 
@@ -2713,16 +2721,19 @@ label[for="extensions_autoconnect"] {
     align-items: center;
     display: flex;
     flex-flow: column;
+    width: 100%;
 
 }
 
 .drawer-icon {
     display: inline-block;
     cursor: pointer;
-    min-width: 36px;
-    height: 26px;
+    min-width: 15px;
+    width: 30px;
+    height: 30px;
     background-size: contain;
-    background-repeat: no-repeat;
+    background-position: center;
+    background-repeat: no-repeat;    
 }
 
 .icon-connect{
@@ -2736,6 +2747,10 @@ label[for="extensions_autoconnect"] {
 }
 .icon-user{
     background-image: url('img/face-smile-regular.svg');
+}
+
+.icon-idcard{
+    background-image: url('img/id-card-regular.svg');
 }
 
 .icon-panorama{
@@ -2771,10 +2786,10 @@ filter: invert(20%) sepia(100%) saturate(2518%) hue-rotate(353deg) brightness(93
     opacity: 1;
 }
 
-.drawer-header {
+/* .drawer-header {
     display: flex;
     align-items: center;
-}
+} */
 
 .drawer-content {
     background-color: var(--black50a);
@@ -2807,7 +2822,7 @@ filter: invert(20%) sepia(100%) saturate(2518%) hue-rotate(353deg) brightness(93
 
 
 
-/* ---------- @media quaries must always go at the bottom ------------*/
+/* ---------- @media queries must always go at the bottom ------------*/
 
 @media screen and (max-width: 450px) {      /*styles for mobile phones (tested on iPhone 13 Pro)*/
     body {
@@ -2822,15 +2837,14 @@ filter: invert(20%) sepia(100%) saturate(2518%) hue-rotate(353deg) brightness(93
     }
 
     #top-settings-holder{
-        width:70vw;
+        width:100vw;
         position: fixed;
-        right: 0;
-        left: 0;
+
     }
     #bg1, #bg2 {position:fixed;}
 
-    #sheld, #character_popup, #world_popup, #right-nav-panel {    /*margin around the sides, and a larger one on bottom to avoid iOS Home bar*/
-        height: calc(100svh - 15px);
+    #sheld, #character_popup, #world_popup {    /*margin around the sides, and a larger one on bottom to avoid iOS Home bar*/
+        height: calc(100svh - 55px);
         width: calc(100vw - 10px);
         margin: 0 auto;
         margin-left: 5px;
@@ -2840,11 +2854,16 @@ filter: invert(20%) sepia(100%) saturate(2518%) hue-rotate(353deg) brightness(93
 
     .mes-text {padding-right: 25px;}
 
-    #right-nav-panel {
-        margin-top: 0 auto;
-        border-radius: 0 0 0 20px;
-        height: calc(100vh - 30px);
+    #right-nav-panel {        
+        height: calc(100vh - 55px);
         width: calc(100vw - 5px);
+        min-width: 0px;
+        width: calc(100vw - 15px);
+        min-height: calc(100vh - 40px);
+        min-height: calc(100vh - 40px);
+        left: 5px !important;
+        overflow-y: hidden;
+        /* border: 0;*/
     }
 
     #right-nav-panel h4 {margin: 5px auto;}

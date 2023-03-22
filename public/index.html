@@ -148,7 +148,7 @@
                     <select id="settings_perset_novel" class="option_select_right_menu">
                         <option value="gui">Default</option>
                     </select>
-                    </div>
+                </div>
                 <div id="textgenerationwebui_api" style="display: none;position: relative;">
                     <div class="oobabooga_logo">
                         <a href="https://github.com/oobabooga/text-generation-webui" target="_blank">
@@ -621,6 +621,188 @@
             </div>
         </div>
 
+        <div id="rightNavHolder" class="drawer" style="z-index:3001;">
+            <div id="unimportantYes" class="drawer-toggle drawer-header">
+                <div class="drawer-icon icon-idcard closedIcon"></div>
+            </div>
+            <nav id="right-nav-panel" class="drawer-content closedDrawer">
+                <div id="right-nav-panel-tabs">
+                    <div class="right_menu_button" id="rm_button_characters" title="Select/Create Characters">
+                        <img alt="" class="svg_icon" src="img/list-ul-solid.svg" />
+                    </div>
+                    <div class="right_menu_button" id="rm_button_selected_ch">
+                        <h2></h2>
+                    </div>
+                    <div class="right_menu_button" id="rm_button_panel_pin_div" title="Locked = Settings panel stays open">
+                        <input type="checkbox" id="rm_button_panel_pin">
+                        <label for="rm_button_panel_pin">
+                            <img class="unchecked svg_icon" alt="" src="img/lock-open-solid.svg" />
+                            <img class="checked svg_icon" alt="" src="img/lock-solid.svg" />
+                        </label>
+                    </div>
+                </div>
+                <div id="rm_ch_create_block" class="right_menu" style="display: none;">
+                    <form id="form_create" action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                        <div id="avatar-and-name-block">
+                            <div id="name_div">
+                                <h4>Character Name</h4>
+                                <input id="character_name_pole" name="ch_name" class="text_pole" placeholder="Name this character" maxlength="120" value="" autocomplete="off">
+                            </div>
+                            <div id="avatar_div" class="avatar_div">
+                                <div id="avatar_div_div" class="avatar">
+                                    <img id="avatar_load_preview" src="img/fluffy.png" alt="avatar">
+                                </div>
+                                <label for="add_avatar_button" class="menu_button" title="Click to select a new avatar for this character">
+                                    <input type="file" id="add_avatar_button" name="avatar" accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp">
+                                    <img alt="" class="svg_icon" src="img/file-image-solid.svg">
+                                </label>
+                                <div class="form_create_bottom_buttons_block">
+                                    <div id="rm_button_back" class="menu_button">
+                                        <img alt="" class="svg_icon" src="img/left-long-solid.svg">
+                                    </div>
+                                    <div id="advanced_div" class="menu_button" title="Advanced Definitions">
+                                        <img alt="" class="svg_icon" src="img/book-solid.svg">
+                                    </div>
+                                    <div id="export_button" class="menu_button" title="Export and Download">
+                                        <img alt="" class="svg_icon" src="img/file-export-solid.svg">
+                                    </div>
+                                    <!-- <div id="create_button" class="menu_button" type="submit" title="Create Character">✅</div> -->
+                                    <label for="create_button" id="create_button_label" class="menu_button" title="Create Character">
+                                        <input type="submit" id="create_button" name="create_button">
+                                        <img alt="" class="svg_icon" src="img/user-check-solid.svg">
+                                    </label>
+                                    <!-- <input id="create_button" class="menu_button" title="Create Character" type="submit" value="✅"> -->
+                                    <div id="delete_button" class="menu_button" title="Delete Character">
+                                        <img alt="" class="svg_icon" src="img/trash-can-solid.svg">
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="result_info"></div>
+                        </div>
+                        <hr>
+                        <div id="description_div" class="margin-bot-10px">
+                            Description
+                            <a href="/notes/1" class="notes-link" target="_blank">
+                                <span class="note-link-span">?</span>
+                            </a>
+
+                        </div>
+                        <textarea id="description_textarea" placeholder="Describe your character's physical and mental traits here." class="margin-bot-10px" name="description" placeholder=""></textarea>
+
+                        <div id="first_message_div" class="margin-bot-10px">
+                            First message
+                            <a href="/notes/3" class="notes-link" target="_blank">
+                                <span class="note-link-span">?</span>
+                            </a>
+
+                        </div>
+                        <textarea id="firstmessage_textarea" placeholder="This will be the first message from the character that starts every chat." class="margin-bot-10px" name="first_mes" placeholder=""></textarea>
+
+                        <!-- these divs are invisible and used for server communication purposes -->
+                        <div id="hidden-divs">
+                            <div id="avatar_url_div">
+                                <input id="avatar_url_pole" name="avatar_url" class="text_pole" maxlength="999" size="2" value="" autocomplete="off">
+                            </div>
+                            <div id="selected_chat_div">
+                                <input id="selected_chat_pole" name="chat" class="text_pole" maxlength="999" size="2" value="" autocomplete="off">
+                            </div>
+                            <div id="create_date_div">
+                                <input id="create_date_pole" name="create_date" class="text_pole" maxlength="999" size="2" value="" autocomplete="off">
+                            </div>
+                            <div id="last_mes_div">
+                                <input id="last_mes_pole" name="last_mes" class="text_pole" maxlength="999" size="2" value="" autocomplete="off">
+                            </div>
+                        </div>
+                        <!-- now back to normal divs for display purposes-->
+                    </form>
+                </div>
+                <div id="rm_group_chats_block" class="right_menu">
+                    <div id="rm_group_top_bar">
+                        <div id="rm_button_back_from_group" class="menu_button">
+                            <img alt="" class="svg_icon" src="img/left-long-solid.svg">
+                        </div>
+                        <input id="rm_group_chat_name" class="text_pole" type="text" name="chat_name" placeholder="Chat Name (Optional)" />
+                    </div>
+                    <div id="rm_group_add_members_header">
+                        <h3>Add Members</h3>
+                        <input id="rm_group_filter" class="text_pole" type="search" placeholder="Filter..." />
+                    </div>
+                    <!-- !!!Don't break line after div!!! -->
+                    <div id="rm_group_add_members"></div>
+                    <h3>Members</h3>
+                    <!-- !!!Don't break line after div!!! -->
+                    <div id="rm_group_members"></div>
+
+                    <div id="group_member_template">
+                        <div class="group_member">
+                            <div class="avatar">
+                                <img alt="Avatar" src="" />
+                            </div>
+                            <div class="ch_name"></div>
+                            <div class="group_member_icon">
+                                <img alt="Remove" class="minus svg_icon" src="img/minus-solid.svg">
+                                <img alt="Add" class="plus svg_icon" src="img/plus-solid.svg">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="group_list_template">
+                        <div class="group_select">
+                            <div class="avatar">
+                                <img src="">
+                            </div>
+                            <div class="group_icon">
+                                <img class="svg_icon" src="img/user-group-solid.svg">
+                            </div>
+                            <div class="ch_name"></div>
+                        </div>
+                    </div>
+
+                    <div id="rm_group_buttons">
+                        <label class="checkbox" style="display:none">
+                            <input id="rm_group_automode" type="checkbox" /><span></span>
+                            <h4>Auto Mode</h4>
+                        </label>
+                        <input id="rm_group_submit" class="menu_button" type="submit" value="Create">
+                        <div id="rm_group_buttons_expander">&nbsp;</div>
+                        <input id="rm_group_delete" class="menu_button" type="submit" value="Delete">
+                    </div>
+                </div>
+
+                <div id="rm_character_import" class="right_menu" style="display: none;">
+                    <form id="form_import" action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                        <input type="file" id="character_import_file" accept=".json, image/png" name="avatar">
+                        <input id="character_import_file_type" name="file_type" class="text_pole" maxlength="999" size="2" value="" autocomplete="off">
+                    </form>
+                </div>
+                <div id="rm_characters_block" class="right_menu">
+                    <div class="form_create_bottom_buttons_block">
+                        <div id="rm_button_create" title="Create New Character" class="menu_button">
+                            <img alt="" class="svg_icon" src="img/user-plus-solid.svg">
+                        </div>
+                        <div id="character_import_button" title="Import Character from File" class="menu_button">
+                            <img alt="" class="svg_icon" src="img/file-arrow-up-solid.svg">
+                        </div>
+                        <div id="rm_button_group_chats" title="Create New Chat Group" class="menu_button">
+                            <img alt="" class="svg_icon" src="img/user-group-solid.svg">
+                        </div>
+                    </div>
+                    <form id="form_character_search_form" action="javascript:void(null);">
+                        <input id="character_search_bar" class="text_pole" type="search" placeholder="Character search..." />
+                    </form>
+                    <div id="rm_print_characters_block"></div>
+                </div>
+
+                <div id="rm_info_block" class="right_menu">
+                    <div id="rm_info_panel">
+                        <div id="rm_info_avatar"></div>
+                        <div id="rm_info_text"></div>
+                        <div id="rm_info_button" class="menu_button">Back</div>
+                    </div>
+                </div>
+            </nav>
+        </div>
+
     </div>
     <!-- various fullscreen popups -->
     <div id="shadow_popup">
@@ -854,183 +1036,9 @@
     </div>
 
     <!-- right nav panel for character/groups management/editing/creation -->
-    <input type="checkbox" id="nav-toggle">
-    <nav id="right-nav-panel">
-        <div id="right-nav-panel-tabs">
-            <div class="right_menu_button" id="rm_button_characters" title="Select/Create Characters">
-                <img alt="" class="svg_icon" src="img/id-card-regular.svg" />
-            </div>
-            <div class="right_menu_button" id="rm_button_selected_ch">
-                <h2></h2>
-            </div>
-            <div class="right_menu_button" id="rm_button_panel_pin_div" title="Locked = Settings panel stays open">
-                <input type="checkbox" id="rm_button_panel_pin">
-                <label for="rm_button_panel_pin">
-                    <img class="unchecked svg_icon" alt="" src="img/lock-open-solid.svg" />
-                    <img class="checked svg_icon" alt="" src="img/lock-solid.svg" />
-                </label>
-            </div>
-        </div>
-        <div id="rm_ch_create_block" class="right_menu" style="display: none;">
-            <form id="form_create" action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                <div id="avatar-and-name-block">
-                    <div id="name_div">
-                        <h4>Character Name</h4>
-                        <input id="character_name_pole" name="ch_name" class="text_pole" placeholder="Name this character" maxlength="120" value="" autocomplete="off">
-                    </div>
-                    <div id="avatar_div" class="avatar_div">
-                        <div id="avatar_div_div" class="avatar">
-                            <img id="avatar_load_preview" src="img/fluffy.png" alt="avatar">
-                        </div>
-                        <label for="add_avatar_button" class="menu_button" title="Click to select a new avatar for this character">
-                            <input type="file" id="add_avatar_button" name="avatar" accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp">
-                            <img alt="" class="svg_icon" src="img/file-image-solid.svg">
-                        </label>
-                        <div class="form_create_bottom_buttons_block">
-                            <div id="rm_button_back" class="menu_button">
-                                <img alt="" class="svg_icon" src="img/left-long-solid.svg">
-                            </div>
-                            <div id="advanced_div" class="menu_button" title="Advanced Definitions">
-                                <img alt="" class="svg_icon" src="img/book-solid.svg">
-                            </div>
-                            <div id="export_button" class="menu_button" title="Export and Download">
-                                <img alt="" class="svg_icon" src="img/file-export-solid.svg">
-                            </div>
-                            <!-- <div id="create_button" class="menu_button" type="submit" title="Create Character">✅</div> -->
-                            <label for="create_button" id="create_button_label" class="menu_button" title="Create Character">
-                                <input type="submit" id="create_button" name="create_button">
-                                <img alt="" class="svg_icon" src="img/user-check-solid.svg">
-                            </label>
-                            <!-- <input id="create_button" class="menu_button" title="Create Character" type="submit" value="✅"> -->
-                            <div id="delete_button" class="menu_button" title="Delete Character">
-                                <img alt="" class="svg_icon" src="img/trash-can-solid.svg">
-                            </div>
-                        </div>
-                    </div>
-                    <div id="result_info"></div>
-                </div>
-                <hr>
-                <div id="description_div" class="margin-bot-10px">
-                    <h4>Description
-                        <a href="/notes/1" class="notes-link" target="_blank">
-                            <span class="note-link-span">?</span>
-                        </a>
-                    </h4>
-                </div>
-                <textarea id="description_textarea" placeholder="Describe your character's physical and mental traits here." class="margin-bot-10px" name="description" placeholder=""></textarea>
+    <!-- <input type="checkbox" id="nav-toggle"> -->
 
-                <div id="first_message_div" class="margin-bot-10px">
-                    <h4>First message
-                        <a href="/notes/3" class="notes-link" target="_blank">
-                            <span class="note-link-span">?</span>
-                        </a>
-                    </h4>
-                </div>
-                <textarea id="firstmessage_textarea" placeholder="This will be the first message from the character that starts every chat." class="margin-bot-10px" name="first_mes" placeholder=""></textarea>
 
-                <!-- these divs are invisible and used for server communication purposes -->
-                <div id="hidden-divs">
-                    <div id="avatar_url_div">
-                        <input id="avatar_url_pole" name="avatar_url" class="text_pole" maxlength="999" size="2" value="" autocomplete="off">
-                    </div>
-                    <div id="selected_chat_div">
-                        <input id="selected_chat_pole" name="chat" class="text_pole" maxlength="999" size="2" value="" autocomplete="off">
-                    </div>
-                    <div id="create_date_div">
-                        <input id="create_date_pole" name="create_date" class="text_pole" maxlength="999" size="2" value="" autocomplete="off">
-                    </div>
-                    <div id="last_mes_div">
-                        <input id="last_mes_pole" name="last_mes" class="text_pole" maxlength="999" size="2" value="" autocomplete="off">
-                    </div>
-                </div>
-                <!-- now back to normal divs for display purposes-->
-            </form>
-        </div>
-        <div id="rm_group_chats_block" class="right_menu">
-            <div id="rm_group_top_bar">
-                <div id="rm_button_back_from_group" class="menu_button">
-                    <img alt="" class="svg_icon" src="img/left-long-solid.svg">
-                </div>
-                <input id="rm_group_chat_name" class="text_pole" type="text" name="chat_name" placeholder="Chat Name (Optional)" />
-            </div>
-            <div id="rm_group_add_members_header">
-                <h3>Add Members</h3>
-                <input id="rm_group_filter" class="text_pole" type="search" placeholder="Filter..." />
-            </div>
-            <!-- !!!Don't break line after div!!! -->
-            <div id="rm_group_add_members"></div>
-            <h3>Members</h3>
-            <!-- !!!Don't break line after div!!! -->
-            <div id="rm_group_members"></div>
-
-            <div id="group_member_template">
-                <div class="group_member">
-                    <div class="avatar">
-                        <img alt="Avatar" src="" />
-                    </div>
-                    <div class="ch_name"></div>
-                    <div class="group_member_icon">
-                        <img alt="Remove" class="minus svg_icon" src="img/minus-solid.svg">
-                        <img alt="Add" class="plus svg_icon" src="img/plus-solid.svg">
-                    </div>
-                </div>
-            </div>
-
-            <div id="group_list_template">
-                <div class="group_select">
-                    <div class="avatar">
-                        <img src="">
-                    </div>
-                    <div class="group_icon">
-                        <img class="svg_icon" src="img/user-group-solid.svg">
-                    </div>
-                    <div class="ch_name"></div>
-                </div>
-            </div>
-
-            <div id="rm_group_buttons">
-                <label class="checkbox" style="display:none">
-                    <input id="rm_group_automode" type="checkbox" /><span></span>
-                    <h4>Auto Mode</h4>
-                </label>
-                <input id="rm_group_submit" class="menu_button" type="submit" value="Create">
-                <div id="rm_group_buttons_expander">&nbsp;</div>
-                <input id="rm_group_delete" class="menu_button" type="submit" value="Delete">
-            </div>
-        </div>
-
-        <div id="rm_character_import" class="right_menu" style="display: none;">
-            <form id="form_import" action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                <input type="file" id="character_import_file" accept=".json, image/png" name="avatar">
-                <input id="character_import_file_type" name="file_type" class="text_pole" maxlength="999" size="2" value="" autocomplete="off">
-            </form>
-        </div>
-        <div id="rm_characters_block" class="right_menu">
-            <div class="form_create_bottom_buttons_block">
-                <div id="rm_button_create" title="Create New Character" class="menu_button">
-                    <img alt="" class="svg_icon" src="img/user-plus-solid.svg">
-                </div>
-                <div id="character_import_button" title="Import Character from File" class="menu_button">
-                    <img alt="" class="svg_icon" src="img/file-arrow-up-solid.svg">
-                </div>
-                <div id="rm_button_group_chats" title="Create New Chat Group" class="menu_button">
-                    <img alt="" class="svg_icon" src="img/user-group-solid.svg">
-                </div>
-            </div>
-            <form id="form_character_search_form" action="javascript:void(null);">
-                <input id="character_search_bar" class="text_pole" type="search" placeholder="Character search..." />
-            </form>
-            <div id="rm_print_characters_block"></div>
-        </div>
-
-        <div id="rm_info_block" class="right_menu">
-            <div id="rm_info_panel">
-                <div id="rm_info_avatar"></div>
-                <div id="rm_info_text"></div>
-                <div id="rm_info_button" class="menu_button">Back</div>
-            </div>
-        </div>
-    </nav>
 
     <!-- templates for JS to reuse when needed -->
     <div id="message_template">
