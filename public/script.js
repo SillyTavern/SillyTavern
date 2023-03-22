@@ -1402,7 +1402,7 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
                 var generate_data = {
                     data: [
                         finalPromt,
-                        this_amount_gen, // min_length
+                        this_amount_gen, // max new tokens
                         doSample, // do_sample
                         textgenerationwebui_settings.temp, // temperature
                         textgenerationwebui_settings.top_p, // top_p

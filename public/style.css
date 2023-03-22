@@ -615,10 +615,14 @@ input[type=submit] {}
 #right-nav-panel-tabs {
     margin-top: 10px;
     margin-bottom: 10px;
-    width: calc(100% - 15px);
+    width: 100%;
     max-height: 30px;
     display: flex;
     align-items: flex-end;
+}
+
+#right-nav-panel-tabs .right_menu_button:last-of-type {
+    padding-right: 0;
 }
 
 /* ##################################################################### */
