@@ -20,6 +20,7 @@ import {
 
 import { LoadLocal, SaveLocal, ClearLocal, CheckLocal, LoadLocalBool } from "./f-localStorage.js";
 import { selected_group, is_group_generating } from "./group-chats.js";
+import { oai_settings } from "./openai.js";
 
 var NavToggle = document.getElementById("nav-toggle");
 var PanelPin = document.getElementById("rm_button_panel_pin");
@@ -233,6 +234,12 @@ function RA_autoconnect() {
 					RA_AC_retries = 1;
 				}
 				break;
+            case 'openai':
+                if (oai_settings.api_key_openai) {
+                    $("#api_button_openai").click();
+                    retry_delay = 100;
+                    RA_AC_retries = 1;
+                }
 		}
 
 		if (!connection_made) {

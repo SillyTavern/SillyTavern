@@ -787,23 +787,14 @@ img[src*="user-slash-solid.svg"] {
 
 #api_button:hover,
 #api_button_novel:hover,
-#api_button_textgenerationwebui {
+#api_button_textgenerationwebui:hover {
     background-color: green;
 }
 
-#api_loading,
-#api_loading_textgenerationwebui {
+img[src="img/load.svg"] {
     width: 25px;
     height: 25px;
     display: none;
-
-}
-
-#api_loading_novel {
-    width: 25px;
-    height: 25px;
-    display: none;
-
 }
 
 #rm_characters_block {
@@ -1236,15 +1227,14 @@ input[type=search]:focus::-webkit-search-cancel-button {
 }
 /* ------ online status indicators and texts. 2 = kobold AI, 3 = Novel AI  ----------*/
 #online_status2,
-#online_status4 {
+.online_status4 {
     opacity: 0.5;
     margin-top: 2px;
-
     margin-bottom: 15px;
 }
 
 #online_status_indicator2,
-#online_status_indicator4 {
+.online_status_indicator4 {
     border-radius: 7px;
     width: 14px;
     height: 14px;
@@ -1253,7 +1243,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 }
 
 #online_status_text2,
-#online_status_text4 {
+.online_status_text4 {
     margin-left: 4px;
     display: inline-block;
 }
@@ -2737,7 +2727,10 @@ label[for="extensions_autoconnect"] {
 }
 
 .icon-connect{
-    background-image: url('img/wifi-solid.svg');
+    background-image: url('img/plug-solid.svg');
+}
+.icon-connect.redOverlayGlow {
+    background-image: url('img/plug-circle-exclamation-solid.svg');
 }
 .icon-sliders{
     background-image: url('img/sliders-solid.svg');
