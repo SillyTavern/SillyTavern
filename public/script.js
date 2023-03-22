@@ -4038,24 +4038,18 @@ $(document).ready(function () {
     });
 
     $('.drawer-toggle').click(function () {
-        //$('#top-settings-holder').find('.open').slideToggle(0, "swing");
         var icon = $(this).find('.drawer-icon');
         var drawer = $(this).parent().find('.drawer-content');
         var drawerWasOpenAlready = $(this).parent().find('.drawer-content').hasClass('openDrawer');
-        var iconWasOpenAlready = $(this).find('.drawer-icon').hasClass('openicon');
-        console.log('Draw Open? ' + drawerWasOpenAlready + ' Icon Open? ' + iconWasOpenAlready);
 
         if (!drawerWasOpenAlready) {
-            $('.openDrawer').slideToggle(200, "swing")                                      //close all open drawers
-            $('.openIcon').toggleClass('closedIcon openIcon');                  //set all icons   to closed state
-            $('.openDrawer').toggleClass('closedDrawer openDrawer');            //set all drawers to closed state
-            console.log('drawer was closed, so opening');
+            $('.openDrawer').not('.pinnedOpen').slideToggle(200, "swing");
+            $('.openIcon').toggleClass('closedIcon openIcon');
+            $('.openDrawer').not('.pinnedOpen').toggleClass('closedDrawer openDrawer');
             icon.toggleClass('openIcon closedIcon');
-            drawer.toggleClass('openDrawer closedDrawer');                      //mark selected drawer as open if closed
-            $(this).closest('.drawer').find('.drawer-content').slideToggle(200, "swing");   //open selected drawer
-
+            drawer.toggleClass('openDrawer closedDrawer');
+            $(this).closest('.drawer').find('.drawer-content').slideToggle(200, "swing");
         } else if (drawerWasOpenAlready) {
-            console.log('found the drawer was already open, so closing');
             icon.toggleClass('closedIcon openIcon');
             $('.openDrawer').slideToggle(200, "swing");
             drawer.toggleClass('closedDrawer openDrawer');
@@ -4065,14 +4059,14 @@ $(document).ready(function () {
     $("html").click(function (e) {
         var clickTarget = $(e.target);
         var targetParentHasOpenDrawer = clickTarget.parents('.openDrawer').length;
-        console.log('clicking ' + clickTarget + ' parents have OpenDrawer? ' + targetParentHasOpenDrawer);
-        if (clickTarget.hasClass('drawer-icon') == false && !clickTarget.hasClass('openDrawer')) {                         // don't run this check on drawer icons, as causes insta-closes
-            if (jQuery.find('.openDrawer').length !== 0) {                          // only run if opendrawers actually exist
-                if (targetParentHasOpenDrawer === 0) {                              // check if clicked target is NOT part of an OpenDrawer, and if so...
+        if (clickTarget.hasClass('drawer-icon') == false && !clickTarget.hasClass('openDrawer')) {
+            if (jQuery.find('.openDrawer').length !== 0) {
+                if (targetParentHasOpenDrawer === 0) {
+                    console.log($('.openDrawer').not('.pinnedOpen').length);
+                    $('.openDrawer').not('.pinnedOpen').slideToggle(200, "swing");
+                    $('.openIcon').toggleClass('closedIcon openIcon');
+                    $('.openDrawer').not('.pinnedOpen').toggleClass('closedDrawer openDrawer');
 
-                    $('.openDrawer').slideToggle(200, "swing")                          //close all open drawers
-                    $('.openIcon').toggleClass('closedIcon openIcon');                  //set all icons   to closed state
-                    $('.openDrawer').toggleClass('closedDrawer openDrawer');            //set all drawers to closed state
                 }
             }
 

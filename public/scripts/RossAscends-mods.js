@@ -262,9 +262,7 @@ function isUrlOrAPIKey(string) {
 
 $("document").ready(function () {
 
-	// read the state of Nav Lock and whether the nav was open or not before page load.
-	$(PanelPin).prop('checked', LoadLocalBool("NavLockOn"));
-	if (LoadLocalBool("NavLockOn") == true) { $(NavToggle).prop("checked", LoadLocalBool("NavOpened")); }
+
 	// read the state of AutoConnect and AutoLoadChat.
 	$(AutoConnectCheckbox).prop("checked", LoadLocalBool("AutoConnectEnabled"));
 	$(AutoLoadChatCheckbox).prop("checked", LoadLocalBool("AutoLoadChatEnabled"));
@@ -275,23 +273,49 @@ $("document").ready(function () {
 	$("#main_api").change(function () { RA_autoconnect(); });
 	$("#api_button").click(function () { setTimeout(RA_checkOnlineStatus, 100); });
 
-	//save NavLock prefs and record state of the Nav being open or closed
-	$(RightNavPanel).on("change", function () {
-		if ($(RightNavPanel).hasClass('openDrawer')) {
-			SaveLocal("NavOpened", true);
-		} else { SaveLocal("NavOpened", false); }
+	//toggle pin class when lock toggle clicked
+	$(PanelPin).on("click", function () {
+		SaveLocal("NavLockOn", $(PanelPin).prop("checked"));
+		if ($(PanelPin).prop("checked") == true) {
+			console.log('adding pin class to right nav');
+			$(RightNavPanel).addClass('pinnedOpen');
+		} else {
+			console.log('removing pin class from right nav');
+			$(RightNavPanel).removeClass('pinnedOpen');
+		}
 	});
 
-	$(PanelPin).on("change", function () { SaveLocal("NavLockOn", $(PanelPin).prop("checked")); });
+	// read the state of Nav Lock and apply to rightnav classlist
+	$(PanelPin).prop('checked', LoadLocalBool("NavLockOn"));
+	if (LoadLocalBool("NavLockOn") == true) {
+		console.log('setting pin class via local var');
+		$(RightNavPanel).addClass('pinnedOpen');
+	}
+	if ($(PanelPin).prop('checked' == true)) {
+		console.log('setting pin class via checkbox state');
+		$(RightNavPanel).addClass('pinnedOpen');
+	}
+
+	//save state of nav being open or closed
+	$("#rightNavDrawerIcon").on("click", function () {
+		if (!$("#rightNavDrawerIcon").hasClass('openIcon')) {
+			SaveLocal('NavOpened', 'true');
+		} else { SaveLocal('NavOpened', 'false'); }
+	});
+
+	if (LoadLocalBool("NavLockOn") == true && LoadLocalBool("NavOpened") == true) {
+		$("#rightNavDrawerIcon").click();
+	} else {
+		console.log('didnt see reason to open nav on load: ' +
+			LoadLocalBool("NavLockOn")
+			+ ' nav open pref' +
+			LoadLocalBool("NavOpened" == true));
+	}
 
 	//save AutoConnect and AutoLoadChat prefs
 	$(AutoConnectCheckbox).on("change", function () { SaveLocal("AutoConnectEnabled", $(AutoConnectCheckbox).prop("checked")); });
 	$(AutoLoadChatCheckbox).on("change", function () { SaveLocal("AutoLoadChatEnabled", $(AutoLoadChatCheckbox).prop("checked")); });
 
-	$("#rm_button_extensions").click(function () {
-		SaveLocal('SelectedNavTab', 'rm_button_extensions');
-	});
-	$("#rm_button_settings").click(function () { SaveLocal('SelectedNavTab', 'rm_button_settings'); });
 	$(SelectedCharacterTab).click(function () { SaveLocal('SelectedNavTab', 'rm_button_selected_ch'); });
 	$("#rm_button_characters").click(function () {			//if char list is clicked, in addition to saving it...
 		SaveLocal('SelectedNavTab', 'rm_button_characters');
@@ -337,7 +361,10 @@ $("document").ready(function () {
 			// Ctrl+Enter for Regeneration Last Response
 			if (is_send_press == false) {
 
-				Generate("regenerate");
+				$('#option_regenerate').click();
+				$('#options').hide();
+				//setTimeout(function () { $('#chat').click(); }, 50) //needed to remove the options menu popping up..
+				//Generate("regenerate");
 			}
 		}
 		if (event.ctrlKey && event.key == "ArrowUp") {
