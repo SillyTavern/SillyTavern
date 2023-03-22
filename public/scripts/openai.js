@@ -15,6 +15,7 @@ import {
     setOnlineStatus,
     token,
     name1,
+    name2,
 } from "../script.js";
 
 import {
@@ -184,7 +185,7 @@ function formatWorldInfo(value) {
     return `[Details of the fictional world the RP set in:\n${value}\n]`;
 }
 
-function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAfter, extensionPrompt) {
+function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAfter, extensionPrompt, bias) {
     let this_max_context = oai_settings.openai_max_context;
     let nsfw_toggle_prompt = "";
     let enhance_definitions_prompt = "";
@@ -219,6 +220,11 @@ function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAft
     let new_chat_msg = { "role": "system", "content": "[Start a new chat]" };
     let start_chat_count = countTokens([new_chat_msg]);
     let total_count = countTokens([prompt_msg], true) + start_chat_count;
+
+    if (bias) {
+        let bias_msg = { "role": "system", "content": bias };
+        openai_msgs.push(bias_msg);
+    }
 
     // The user wants to always have all example messages in the context
     if (pin_examples) {
@@ -314,6 +320,7 @@ async function sendOpenAIRequest(openai_msgs_tosend) {
     };
 
     const generate_url = '/generate_openai';
+    // TODO: fix streaming
     const streaming = oai_settings.stream_openai;
     const last_view_mes = count_view_mes;
 
@@ -392,7 +399,7 @@ function countTokens(messages, full = false) {
     jQuery.ajax({
         async: false,
         type: 'POST', // 
-        url: '/tokenize_openai', // 
+        url: `/tokenize_openai?model=${oai_settings.openai_model}`,
         data: JSON.stringify(messages),
         dataType: "json",
         contentType: "application/json",
