@@ -3278,10 +3278,6 @@ $(document).ready(function () {
                         }
                     },
                     error: function (jqXHR, exception) {
-                        if (jqXHR.status == 403) {
-                            callPopup(`Character can't be imported due to invalid name. Please choose other name`, 'text');
-                        }
-
                         //alert('ERROR: '+xhr.status+ ' Status Text: '+xhr.statusText+' '+xhr.responseText);
                         $("#create_button").removeAttr("disabled");
                     },
@@ -3946,9 +3942,6 @@ $(document).ready(function () {
                 }
             },
             error: function (jqXHR, exception) {
-                if (jqXHR.status == 403) {
-                    callPopup(`Character can't be imported due to invalid name. Please choose other name`, 'text');
-                }
                 $("#create_button").removeAttr("disabled");
             },
         });

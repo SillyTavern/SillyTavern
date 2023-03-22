@@ -555,10 +555,7 @@ app.post("/createcharacter", urlencodedParser, function (request, response) {
     //if (sameNameChar == true) return response.sendStatus(500);
     if (!request.body) return response.sendStatus(400);
 
-    if (request.body.ch_name !== sanitize(request.body.ch_name)) {
-        console.error('Malicious character name prevented');
-        return response.sendStatus(403);
-    }
+    request.body.ch_name = sanitize(request.body.ch_name);
 
     console.log('/createcharacter -- looking for -- ' + (charactersPath + request.body.ch_name + '.png'));
     console.log('Does this file already exists? ' + fs.existsSync(charactersPath + request.body.ch_name + '.png'));
@@ -1237,20 +1234,14 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                 const jsonData = JSON.parse(data);
 
                 if (jsonData.name !== undefined) {
-                    if (jsonData.name !== sanitize(jsonData.name)) {
-                        console.error('Malicious character name prevented');
-                        return response.sendStatus(403);
-                    }
+                    jsonData.name = sanitize(jsonData.name);
 
                     png_name = getPngName(jsonData.name);
                     let char = { "name": jsonData.name, "description": jsonData.description ?? '', "personality": jsonData.personality ?? '', "first_mes": jsonData.first_mes ?? '', "avatar": 'none', "chat": humanizedISO8601DateTime(), "mes_example": jsonData.mes_example ?? '', "scenario": jsonData.scenario ?? '', "create_date": humanizedISO8601DateTime(), "talkativeness": jsonData.talkativeness ?? 0.5 };
                     char = JSON.stringify(char);
                     charaWrite('./public/img/fluffy.png', char, png_name, response, { file_name: png_name });
                 } else if (jsonData.char_name !== undefined) {//json Pygmalion notepad
-                    if (jsonData.char_name !== sanitize(jsonData.char_name)) {
-                        console.error('Malicious character name prevented');
-                        return response.sendStatus(403);
-                    }
+                    jsonData.char_name = sanitize(jsonData.char_name);
 
                     png_name = getPngName(jsonData.char_name);
                     let char = { "name": jsonData.char_name, "description": jsonData.char_persona ?? '', "personality": '', "first_mes": jsonData.char_greeting ?? '', "avatar": 'none', "chat": humanizedISO8601DateTime(), "mes_example": jsonData.example_dialogue ?? '', "scenario": jsonData.world_scenario ?? '', "create_date": humanizedISO8601DateTime(), "talkativeness": jsonData.talkativeness ?? 0.5 };
@@ -1266,11 +1257,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
 
                 var img_data = charaRead('./uploads/' + filedata.filename);
                 let jsonData = JSON.parse(img_data);
-
-                if (jsonData.name !== sanitize(jsonData.name)) {
-                    console.error('Malicious character name prevented');
-                    return response.sendStatus(403);
-                }
+                jsonData.name = sanitize(jsonData.name);
 
                 png_name = getPngName(jsonData.name);
 
