@@ -1052,7 +1052,7 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
         if (main_api === 'openai') {
             const oai_chat = [...chat];
 
-            if (type == 'swipe') { 
+            if (type == 'swipe') {
                 oai_chat.pop();
             }
 
@@ -1796,11 +1796,11 @@ function getChatResult() {
     select_selected_character(this_chid);
 }
 
-function openNavToggle() {
+/* function openNavToggle() {
     if (!$("#nav-toggle").prop("checked")) {
         $("#nav-toggle").trigger("click");
     }
-}
+} */
 
 ////////// OPTIMZED MAIN API CHANGE FUNCTION ////////////
 
@@ -4054,4 +4054,21 @@ $(document).ready(function () {
             drawer.toggleClass('closedDrawer openDrawer');
         }
     });
-});
+
+    $("html").click(function (e) {
+        var clickTarget = $(e.target);
+        var targetParentHasOpenDrawer = clickTarget.parents('.openDrawer').length;
+        console.log('clicking ' + clickTarget + ' parents have OpenDrawer? ' + targetParentHasOpenDrawer);
+        if (clickTarget.hasClass('drawer-icon') == false && !clickTarget.hasClass('openDrawer')) {                         // don't run this check on drawer icons, as causes insta-closes
+            if (jQuery.find('.openDrawer').length !== 0) {                          // only run if opendrawers actually exist
+                if (targetParentHasOpenDrawer === 0) {                              // check if clicked target is NOT part of an OpenDrawer, and if so...
+
+                    $('.openDrawer').slideToggle(200, "swing")                          //close all open drawers
+                    $('.openIcon').toggleClass('closedIcon openIcon');                  //set all icons   to closed state
+                    $('.openDrawer').toggleClass('closedDrawer openDrawer');            //set all drawers to closed state
+                }
+            }
+
+        }
+    });
+})
