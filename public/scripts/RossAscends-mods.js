@@ -234,12 +234,12 @@ function RA_autoconnect() {
 					RA_AC_retries = 1;
 				}
 				break;
-            case 'openai':
-                if (oai_settings.api_key_openai) {
-                    $("#api_button_openai").click();
-                    retry_delay = 100;
-                    RA_AC_retries = 1;
-                }
+			case 'openai':
+				if (oai_settings.api_key_openai) {
+					$("#api_button_openai").click();
+					retry_delay = 100;
+					RA_AC_retries = 1;
+				}
 		}
 
 		if (!connection_made) {
@@ -274,18 +274,6 @@ $("document").ready(function () {
 	if (LoadLocalBool("AutoConnectEnabled") == true) { RA_autoconnect(); }
 	$("#main_api").change(function () { RA_autoconnect(); });
 	$("#api_button").click(function () { setTimeout(RA_checkOnlineStatus, 100); });
-
-	//close the RightNav panel when user clicks outside of it or related panels (adv editing popup, or dialog popups)
-	$("html").click(function (e) {
-		if ($(NavToggle).prop("checked") &&
-			!$(PanelPin).prop("checked") &&
-			$(e.target).attr("id") !== "nav-toggle" &&
-			!RightNavPanel.contains(e.target) &&
-			!AdvancedCharDefsPopup.contains(e.target) &&
-			!ConfirmationPopup.contains(e.target)) {
-			NavToggle.click();
-		}
-	});
 
 	//save NavLock prefs and record state of the Nav being open or closed
 	$(NavToggle).on("change", function () { SaveLocal("NavOpened", $(NavToggle).prop("checked")); });
