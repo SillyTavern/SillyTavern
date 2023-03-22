@@ -910,14 +910,14 @@ input[type=search]:focus::-webkit-search-cancel-button {
 #bg_menu_content {
     margin-top: 5px;
     display: flex;
-    flex-wrap:wrap;
-    max-width: 450px;
+    flex-wrap: wrap;
+    width: 100%;
+    max-width: 800px;
     justify-content: center;
 }
 
 .bg_example {
-    width: 30%;
-    max-height: 100px;
+    width: 23%;
     background-repeat: no-repeat;
     background-size: cover;
     background-position: center;
@@ -925,7 +925,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     border: 1px solid var(--black50a);
     box-shadow: 0 0 7px var(--black50a);
     margin: 5px;
-    aspect-ratio: 4/3;
+    aspect-ratio: 16/9;
 }
 
 .bg_example_cross {
@@ -946,7 +946,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 }
 
 #form_bg_download {
-    width:30%;
+    width: 23%;
     margin: 5px;
 }
 
@@ -2792,7 +2792,6 @@ filter: invert(20%) sepia(100%) saturate(2518%) hue-rotate(353deg) brightness(93
     border: 1px solid grey;
     box-shadow: 0 0 20px black;
     /* min-width:400px; */
-    width: max-content;
     overflow-y: scroll;
     max-height: 90vh;
     display: none;
@@ -2800,6 +2799,7 @@ filter: invert(20%) sepia(100%) saturate(2518%) hue-rotate(353deg) brightness(93
     left:0;
     right:0;
     width: max-content;
+    max-width:800px;
     margin: 30px auto;
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
@@ -2810,7 +2810,9 @@ filter: invert(20%) sepia(100%) saturate(2518%) hue-rotate(353deg) brightness(93
     gap: 20px;
 }
 
-.wide50p { width:50%;}
+.flexWide50p { flex:50%;}
+
+.widthFreeExpand {width: unset;}
 
 
 
