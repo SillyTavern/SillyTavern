@@ -102,6 +102,9 @@ const directories = {
     novelAI_Settings: 'public/NovelAI Settings',
     koboldAI_Settings: 'public/KoboldAI Settings',
     openAI_Settings: 'public/OpenAI Settings',
+    thumbnails: 'thumbnails/',
+    thumbnailsBg: 'thumbnails/bg/',
+    thumbnailsAvatar: 'thumbnails/avatar/',
 };
 
 // CSRF Protection //
@@ -805,6 +808,7 @@ app.post("/delbackground", jsonParser, function (request, response) {
     }
 
     fs.rmSync(fileName);
+    invalidateThumbnail('bg', request.body.bg);
     return response.send('ok');
 });
 app.post("/downloadbackground", urlencodedParser, function (request, response) {
@@ -824,6 +828,7 @@ app.post("/downloadbackground", urlencodedParser, function (request, response) {
     if (filedata.mimetype == "image/gif") fileType = ".gif";
     if (filedata.mimetype == "image/bmp") fileType = ".bmp";
     fs.copyFile(img_path + img_file, 'public/backgrounds/' + img_file + fileType, (err) => {
+        invalidateThumbnail('bg', img_file + fileType);
         if (err) {
 
             return console.log(err);
@@ -1574,6 +1579,83 @@ app.post('/deletegroup', jsonParser, async (request, response) => {
     return response.send({ ok: true });
 });
 
+function getThumbnailFolder(type) {
+    let thumbnailFolder;
+
+    switch (type) {
+        case 'bg':
+            thumbnailFolder = directories.thumbnailsBg;
+            break;
+        case 'avatar':
+            thumbnailFolder = directories.thumbnailsAvatar;
+            break;
+    }
+
+    return thumbnailFolder;
+}
+
+function getOriginalFolder(type) {
+    let originalFolder;
+
+    switch (type) {
+        case 'bg':
+            originalFolder = directories.backgrounds;
+            break;
+        case 'avatar':
+            originalFolder = directories.characters;
+            break;
+    }
+
+    return originalFolder;
+}
+
+function invalidateThumbnail(type, file) {
+    const folder = getThumbnailFolder(type);
+    const pathToThumbnail = path.join(folder, file);
+
+    if (fs.existsSync(pathToThumbnail)) {
+        fs.rmSync(pathToThumbnail);
+    }
+}
+
+app.get('/thumbnail', jsonParser, async function (request, response) {
+    const type = request.query.type;
+    const file = request.query.file;
+
+    if (!type || !file) {
+        return response.sendStatus(400);
+    }
+
+    if (!(type == 'bg' || type == 'avatar')) {
+        return response.sendStatus(400);
+    }
+
+    if (sanitize(file) !== file) {
+        console.error('Malicious filename prevented');
+        return response.sendStatus(403);
+    }
+
+    const pathToCachedFile = path.join(getThumbnailFolder(type), file);
+
+    if (fs.existsSync(pathToCachedFile)) {
+        return response.sendFile(pathToCachedFile, { root : __dirname});
+    }
+
+    const pathToOriginalFile = path.join(getOriginalFolder(type), file);
+
+    if (!fs.existsSync(pathToOriginalFile)) {
+        return response.sendStatus(404);
+    }
+
+    const imageSizes = { 'bg': [160, 90], 'avatar': [42, 42] };
+    const mySize = imageSizes[type];
+
+    const image = await jimp.read(pathToOriginalFile);
+    await image.cover(mySize[0], mySize[1]).quality(60).writeAsync(pathToCachedFile);
+
+    return response.sendFile(pathToCachedFile, { root : __dirname});
+});
+
 /* OpenAI */
 app.post("/getstatus_openai", jsonParser, function(request, response_getstatus_openai = response){
     if(!request.body) return response_getstatus_openai.sendStatus(400);
@@ -1960,7 +2042,7 @@ function getCharacterFile2(directories, i) {
 function ensurePublicDirectoriesExist() {
     for (const dir of Object.values(directories)) {
         if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir);
+            fs.mkdirSync(dir, { recursive: true });
         }
     }
 }

@@ -590,11 +590,11 @@ async function getBackgrounds() {
         const getData = await response.json();
         //background = getData;
         //console.log(getData.length);
-        for (var i = 0; i < getData.length; i++) {
-            //console.log(1);
+        for (const bg of getData) {
+            const thumbPath = `/thumbnail?type=bg&file=${bg}`;
             $("#bg_menu_content").append(
-                `<div class="bg_example" bgfile="${getData[i]}" class="bg_example_img" style="background-image: url(backgrounds/${getData[i]});">
-                <div bgfile="${getData[i]}" class=bg_example_cross style="background-image: url(img/cross.png);">
+                `<div class="bg_example" bgfile="${bg}" class="bg_example_img" style="background-image: url('${thumbPath}');">
+                <div bgfile="${bg}" class=bg_example_cross style="background-image: url(img/cross.png);">
             </div>`
             );
         }
@@ -2585,9 +2585,8 @@ function read_bg_load(input) {
                         "url(" + e.target.result + ")"
                     );
                     $("#form_bg_download").after(
-                        `<div class=bg_example>
-                            <img bgfile="${html}" class="bg_example_img" style="background-image: url(backgrounds/"${html});">
-                            <img bgfile="${html}" class=bg_example_cross src="img/cross.png">
+                        `<div class=bg_example bgfile="${html}" style="background-image: url('/thumbnail?type=bg&file=${html}');">
+                            <img class=bg_example_cross src="img/cross.png">
                         </div>`
                     );
                 },
