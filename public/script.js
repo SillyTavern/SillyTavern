@@ -1853,9 +1853,6 @@ function changeMainAPI() {
         apiObj.apiConnector.css("display", isCurrentApi ? "block" : "none");
         apiObj.apiRanges.css("display", isCurrentApi ? "block" : "none");
 
-        // Hide common settings for OpenAI
-        $("#common-gen-settings-block").css("display", isCurrentApi && apiName !== "openai" ? "block" : "none");
-
         if (isCurrentApi && apiName === "kobold") {
             console.log("enabling SP for kobold");
             $("#softprompt_block").css("display", "block");
@@ -1866,6 +1863,9 @@ function changeMainAPI() {
             apiObj.amountGenElem.children().prop("disabled", false);
             apiObj.amountGenElem.css("opacity", 1.0);
         }
+
+        // Hide common settings for OpenAI
+        $("#common-gen-settings-block").css("display", (selectedVal !== "openai" ? "block" : "none"));
     }
 
     main_api = selectedVal;
