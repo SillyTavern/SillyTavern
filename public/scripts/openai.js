@@ -50,7 +50,7 @@ const oai_settings = {
     temp_openai: 1.0,
     freq_pen_openai: 0,
     pres_pen_openai: 0,
-    stream_openai: true,
+    stream_openai: false,
     openai_max_context: 4095,
     openai_max_tokens: 300,
     nsfw_toggle: true,
@@ -316,7 +316,7 @@ async function sendOpenAIRequest(openai_msgs_tosend) {
         "frequency_penalty": parseFloat(oai_settings.freq_pen_openai),
         "presence_penalty": parseFloat(oai_settings.pres_pen_openai),
         "max_tokens": oai_settings.openai_max_tokens,
-        "stream": oai_settings.stream_openai,
+        "stream": false, //oai_settings.stream_openai,
     };
 
     const generate_url = '/generate_openai';

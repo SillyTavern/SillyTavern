@@ -989,7 +989,7 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
         var storyString = "";
         var userSendString = "";
         var finalPromt = "";
-        var postAnchorChar = "talks a lot with descriptions";//'Talk a lot with description what is going on around';// in asterisks
+        var postAnchorChar = "Elaborate speaker";//'Talk a lot with description what is going on around';// in asterisks
         var postAnchorStyle = "Writing style: very long messages";//"[Genre: roleplay chat][Tone: very long messages with descriptions]";
         var anchorTop = '';
         var anchorBottom = '';
@@ -1853,9 +1853,6 @@ function changeMainAPI() {
         apiObj.apiConnector.css("display", isCurrentApi ? "block" : "none");
         apiObj.apiRanges.css("display", isCurrentApi ? "block" : "none");
 
-        // Hide common settings for OpenAI
-        $("#common-gen-settings-block").css("display", isCurrentApi && apiName !== "openai" ? "block" : "none");
-
         if (isCurrentApi && apiName === "kobold") {
             console.log("enabling SP for kobold");
             $("#softprompt_block").css("display", "block");
@@ -1866,6 +1863,9 @@ function changeMainAPI() {
             apiObj.amountGenElem.children().prop("disabled", false);
             apiObj.amountGenElem.css("opacity", 1.0);
         }
+
+        // Hide common settings for OpenAI
+        $("#common-gen-settings-block").css("display", (selectedVal !== "openai" ? "block" : "none"));
     }
 
     main_api = selectedVal;
@@ -3278,10 +3278,6 @@ $(document).ready(function () {
                         }
                     },
                     error: function (jqXHR, exception) {
-                        if (jqXHR.status == 403) {
-                            callPopup(`Character can't be imported due to invalid name. Please choose other name`, 'text');
-                        }
-
                         //alert('ERROR: '+xhr.status+ ' Status Text: '+xhr.statusText+' '+xhr.responseText);
                         $("#create_button").removeAttr("disabled");
                     },
@@ -3946,9 +3942,6 @@ $(document).ready(function () {
                 }
             },
             error: function (jqXHR, exception) {
-                if (jqXHR.status == 403) {
-                    callPopup(`Character can't be imported due to invalid name. Please choose other name`, 'text');
-                }
                 $("#create_button").removeAttr("disabled");
             },
         });
