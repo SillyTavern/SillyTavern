@@ -14,6 +14,7 @@ import {
     checkOnlineStatus,
     setOnlineStatus,
     token,
+    name1,
 } from "../script.js";
 
 import {
@@ -57,6 +58,7 @@ const oai_settings = {
     nsfw_first: false,
     main_prompt: default_main_prompt,
     nsfw_prompt: default_nsfw_prompt,
+    openai_model: 'gpt-3.5-turbo-0301',
 };
 
 let openai_setting_names;
@@ -77,6 +79,16 @@ function setOpenAIMessages(chat) {
         }
         let role = chat[j]['is_user'] ? 'user' : 'assistant';
         let content = chat[j]['mes'];
+
+        // system messages produce no content
+        if (chat[j]['is_system']) {
+            role = 'system';
+            content = '';
+        }
+
+        // replace bias markup
+        content = (content ?? '').replace(/{([^}]+)}/g, '');
+    
         // Apply the "wrap in quotes" option
         if (role == 'user' && oai_settings.wrap_in_quotes) content = `"${content}"`;
         openai_msgs[i] = { "role": role, "content": content };
@@ -293,8 +305,7 @@ function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAft
 async function sendOpenAIRequest(openai_msgs_tosend) {
     const generate_data = {
         "messages": openai_msgs_tosend,
-        // todo: add setting for le custom model
-        "model": "gpt-3.5-turbo-0301",
+        "model": oai_settings.openai_model,
         "temperature": parseFloat(oai_settings.temp_openai),
         "frequency_penalty": parseFloat(oai_settings.freq_pen_openai),
         "presence_penalty": parseFloat(oai_settings.pres_pen_openai),
@@ -430,6 +441,7 @@ function loadOpenAISettings(data, settings) {
     if (settings.enhance_definitions !== undefined) oai_settings.enhance_definitions = !!settings.enhance_definitions;
     if (settings.wrap_in_quotes !== undefined) oai_settings.wrap_in_quotes = !!settings.wrap_in_quotes;
     if (settings.nsfw_first !== undefined) oai_settings.nsfw_first = !!settings.nsfw_first;
+    if (settings.openai_model !== undefined) oai_settings.openai_model = settings.openai_model;
 
     $('#stream_toggle').prop('checked', oai_settings.stream_openai);
 
@@ -437,6 +449,7 @@ function loadOpenAISettings(data, settings) {
     $('#openai_max_context_counter').html(`${oai_settings.openai_max_context} Tokens`);
 
     $('#openai_max_tokens').val(oai_settings.openai_max_tokens);
+    $(`#model_openai_select option[value="${oai_settings.openai_model}"`).attr('selected', true);
 
     $('#nsfw_toggle').prop('checked', oai_settings.nsfw_toggle);
     $('#keep_example_dialogue').prop('checked', oai_settings.keep_example_dialogue);
@@ -523,6 +536,12 @@ $(document).ready(function () {
 
     $(document).on('input', '#openai_max_tokens', function () {
         oai_settings.openai_max_tokens = parseInt($(this).val());
+        saveSettingsDebounced();
+    });
+
+    $("#model_openai_select").change(function() {
+        const value = $(this).val();
+        oai_settings.openai_model = value;
         saveSettingsDebounced();
     });
 

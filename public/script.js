@@ -103,6 +103,7 @@ export {
     api_server,
     nai_settings,
     token,
+    name1,
     is_send_press,
     api_server_textgenerationwebui,
     count_view_mes,
@@ -1049,7 +1050,13 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
         let mesExamplesArray = mesExamples.split(/<START>/gi).slice(1).map(block => `<START>\n${block.trim()}\n`);
 
         if (main_api === 'openai') {
-            setOpenAIMessages(chat);
+            const oai_chat = [...chat];
+
+            if (type == 'swipe') { 
+                oai_chat.pop();
+            }
+
+            setOpenAIMessages(oai_chat);
             setOpenAIMessageExamples(mesExamplesArray);
         }
 

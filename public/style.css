@@ -2716,7 +2716,10 @@ label[for="extensions_autoconnect"] {
 }
 
 .icon-connect{
-    background-image: url('img/wifi-solid.svg');
+    background-image: url('img/plug-solid.svg');
+}
+.icon-connect.redOverlayGlow {
+    background-image: url('img/plug-circle-exclamation-solid.svg');
 }
 .icon-sliders{
     background-image: url('img/sliders-solid.svg');
