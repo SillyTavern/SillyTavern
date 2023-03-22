@@ -276,7 +276,12 @@ $("document").ready(function () {
 	$("#api_button").click(function () { setTimeout(RA_checkOnlineStatus, 100); });
 
 	//save NavLock prefs and record state of the Nav being open or closed
-	$(NavToggle).on("change", function () { SaveLocal("NavOpened", $(NavToggle).prop("checked")); });
+	$(RightNavPanel).on("change", function () {
+		if ($(RightNavPanel).hasClass('openDrawer')) {
+			SaveLocal("NavOpened", true);
+		} else { SaveLocal("NavOpened", false); }
+	});
+
 	$(PanelPin).on("change", function () { SaveLocal("NavLockOn", $(PanelPin).prop("checked")); });
 
 	//save AutoConnect and AutoLoadChat prefs
