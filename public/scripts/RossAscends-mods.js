@@ -201,6 +201,8 @@ function RA_checkOnlineStatus() {
 			$("#send_form").css("background-color", "rgba(0,0,0,0.7)"); //on connect, form BG changes to transprent black
 			$("#API-status-top").removeClass("redOverlayGlow");
 			connection_made = true;
+			retry_delay = 100;
+			RA_AC_retries = 1;
 
 			if (!is_send_press && !(selected_group && is_group_generating)) {
 				$("#send_but").css("display", "inline"); //on connect, send button shows
@@ -210,43 +212,40 @@ function RA_checkOnlineStatus() {
 }
 //Auto-connect to API (when set to kobold, API URL exists, and auto_connect is true)
 
-function RA_autoconnect() {
+function RA_autoconnect(PrevApi) {
 	if (online_status === "no_connection" && LoadLocalBool('AutoConnectEnabled')) {
 		switch (main_api) {
 			case 'kobold':
 				if (api_server && isUrlOrAPIKey(api_server)) {
 					$("#api_button").click();
-					retry_delay = 100;
-					RA_AC_retries = 1;
+
 				}
 				break;
 			case 'novel':
 				if (nai_settings.api_key_novel) {
 					$("#api_button_novel").click();
-					retry_delay = 100;
-					RA_AC_retries = 1;
+
 				}
 				break;
 			case 'textgenerationwebui':
 				if (api_server_textgenerationwebui && isUrlOrAPIKey(api_server_textgenerationwebui)) {
 					$("#api_button_textgenerationwebui").click();
-					retry_delay = 100;
-					RA_AC_retries = 1;
+
 				}
 				break;
 			case 'openai':
 				if (oai_settings.api_key_openai) {
 					$("#api_button_openai").click();
-					retry_delay = 100;
-					RA_AC_retries = 1;
+
 				}
 		}
 
 		if (!connection_made) {
-			setTimeout(RA_autoconnect, retry_delay);
+
 			RA_AC_retries++;
 			retry_delay = Math.min(retry_delay * 2, 30000); // double retry delay up to to 30 secs
 			console.log('connection attempts: ' + RA_AC_retries + ' delay: ' + (retry_delay / 1000) + 's');
+			setTimeout(RA_autoconnect, retry_delay);
 		}
 	}
 }
@@ -270,7 +269,10 @@ $("document").ready(function () {
 	if (LoadLocalBool('AutoLoadChatEnabled') == true) { RA_autoloadchat(); }
 	//Autoconnect on page load if enabled, or when api type is changed
 	if (LoadLocalBool("AutoConnectEnabled") == true) { RA_autoconnect(); }
-	$("#main_api").change(function () { RA_autoconnect(); });
+	$("#main_api").change(function () {
+		var PrevAPI = main_api;
+		RA_autoconnect(PrevAPI);
+	});
 	$("#api_button").click(function () { setTimeout(RA_checkOnlineStatus, 100); });
 
 	//toggle pin class when lock toggle clicked
