@@ -1473,6 +1473,7 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
                         textgenerationwebui_settings.penalty_alpha, // penalty_alpha
                         1, // length_penalty
                         false, // early_stopping
+                        -1, // seed
                         name1, // name1
                         name2, // name2
                         "",  // Context
