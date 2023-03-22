@@ -724,6 +724,7 @@ function appendImageToMessage(mes, messageElement) {
     if (mes.extra?.image) {
         const image = document.createElement("img");
         image.src = mes.extra?.image;
+        image.title = mes.title;
         image.classList.add("img_extra");
         messageElement.find(".mes_text").prepend(image);
     }
@@ -1818,6 +1819,7 @@ function changeMainAPI() {
         "kobold": {
             apiSettings: $("#kobold_api-settings"),
             apiConnector: $("#kobold_api"),
+            apiPresets: $('#kobold_api-presets'),
             apiRanges: $("#range_block"),
             maxContextElem: $("#max_context_block"),
             amountGenElem: $("#amount_gen_block"),
@@ -1826,6 +1828,7 @@ function changeMainAPI() {
         "textgenerationwebui": {
             apiSettings: $("#textgenerationwebui_api-settings"),
             apiConnector: $("#textgenerationwebui_api"),
+            apiPresets: $('#textgenerationwebui_api-presets'),
             apiRanges: $("#range_block_textgenerationwebui"),
             maxContextElem: $("#max_context_block"),
             amountGenElem: $("#amount_gen_block"),
@@ -1834,6 +1837,7 @@ function changeMainAPI() {
         "novel": {
             apiSettings: $("#novel_api-settings"),
             apiConnector: $("#novel_api"),
+            apiPresets: $('#novel_api-presets'),
             apiRanges: $("#range_block_novel"),
             maxContextElem: $("#max_context_block"),
             amountGenElem: $("#amount_gen_block"),
@@ -1842,6 +1846,7 @@ function changeMainAPI() {
         "openai": {
             apiSettings: $("#openai_settings"),
             apiConnector: $("#openai_api"),
+            apiPresets: $('#openai_api-presets'),
             apiRanges: $("#range_block_openai"),
             maxContextElem: $("#max_context_block"),
             amountGenElem: $("#amount_gen_block"),
@@ -1858,6 +1863,7 @@ function changeMainAPI() {
         apiObj.apiSettings.css("display", isCurrentApi ? "block" : "none");
         apiObj.apiConnector.css("display", isCurrentApi ? "block" : "none");
         apiObj.apiRanges.css("display", isCurrentApi ? "block" : "none");
+        apiObj.apiPresets.css("display", isCurrentApi ? "block" : "none");
 
         if (isCurrentApi && apiName === "kobold") {
             console.log("enabling SP for kobold");
