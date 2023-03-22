@@ -361,7 +361,10 @@ $("document").ready(function () {
 			// Ctrl+Enter for Regeneration Last Response
 			if (is_send_press == false) {
 
-				Generate("regenerate");
+				$('#option_regenerate').click();
+				$('#options').hide();
+				//setTimeout(function () { $('#chat').click(); }, 50) //needed to remove the options menu popping up..
+				//Generate("regenerate");
 			}
 		}
 		if (event.ctrlKey && event.key == "ArrowUp") {
