@@ -724,6 +724,7 @@ function appendImageToMessage(mes, messageElement) {
     if (mes.extra?.image) {
         const image = document.createElement("img");
         image.src = mes.extra?.image;
+        image.title = mes.title;
         image.classList.add("img_extra");
         messageElement.find(".mes_text").prepend(image);
     }
