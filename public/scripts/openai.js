@@ -597,7 +597,8 @@ $(document).ready(function () {
         saveSettingsDebounced();
     });
 
-    $("#api_button_openai").click(function () {
+    $("#api_button_openai").click(function (e) {
+        e.stopPropagation();
         if ($('#api_key_openai').val() != '') {
             $("#api_loading_openai").css("display", 'inline-block');
             $("#api_button_openai").css("display", 'none');

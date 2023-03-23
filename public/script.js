@@ -3434,7 +3434,8 @@ $(document).ready(function () {
 
     ///////////////////////////////////////////////////////////////////////////////////
 
-    $("#api_button").click(function () {
+    $("#api_button").click(function (e) {
+        e.stopPropagation();
         if ($("#api_url_text").val() != "") {
             $("#api_loading").css("display", "inline-block");
             $("#api_button").css("display", "none");
@@ -3463,7 +3464,8 @@ $(document).ready(function () {
         }
     });
 
-    $("#api_button_textgenerationwebui").click(function () {
+    $("#api_button_textgenerationwebui").click(function (e) {
+        e.stopPropagation();
         if ($("#textgenerationwebui_api_url_text").val() != "") {
             $("#api_loading_textgenerationwebui").css("display", "inline-block");
             $("#api_button_textgenerationwebui").css("display", "none");
@@ -3912,7 +3914,8 @@ $(document).ready(function () {
     });
     //Select chat
 
-    $("#api_button_novel").click(function () {
+    $("#api_button_novel").click(function (e) {
+        e.stopPropagation();
         if ($("#api_key_novel").val() != "") {
             $("#api_loading_novel").css("display", "inline-block");
             $("#api_button_novel").css("display", "none");
