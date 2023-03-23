@@ -262,7 +262,7 @@
                                 </select>
                             </div>
                             <div id="textgenerationwebui_api-presets">
-                                <h3>Text generation presets</h3>
+                                <h3>Text generation web UI presets</h3>
                                 <select id="settings_preset_textgenerationwebui">
                                     <option value="gui">Default</option>
                                 </select>
@@ -350,14 +350,42 @@
                                 </div>
                                 <div class="range-block">
                                     <div class="range-block-title">
-                                        No repeat ngram size
+                                        Encoder Repetition Penalty
                                     </div>
                                     <div class="range-block-counter">
-                                        <span id="rep_pen_size_counter_textgenerationwebui">select</span>
+                                        <span id="encoder_rep_pen_counter_textgenerationwebui">select</span>
                                     </div>
                                     <div class="range-block-range">
-                                        <input type="range" id="rep_pen_size_textgenerationwebui" name="volume" min="0" max="20" step="1">
+                                        <input type="range" id="encoder_rep_pen_textgenerationwebui" name="volume" min="0.8" max="1.5" step="0.01" />
                                     </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        No Repeat Ngram Size
+                                    </div>
+                                    <div class="range-block-counter">
+                                        <span id="no_repeat_ngram_size_counter_textgenerationwebui">select</span>
+                                    </div>
+                                    <div class="range-block-range">
+                                        <input type="range" id="no_repeat_ngram_size_textgenerationwebui" name="volume" min="0" max="20" step="1">
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        Min Length
+                                    </div>
+                                    <div class="range-block-counter">
+                                        <span id="min_length_counter_textgenerationwebui">select</span>
+                                    </div>
+                                    <div class="range-block-range">
+                                        <input type="range" id="min_length_textgenerationwebui" name="volume" min="0" max="2000" step="1" />
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <label class="checkbox_label" for="do_sample_textgenerationwebui">
+                                        <input type="checkbox" id="do_sample_textgenerationwebui" />
+                                        Do Sample
+                                    </label>
                                 </div>
                             </div>
                             <div id="range_block_openai">
@@ -558,7 +586,7 @@
                                         <span id="top_p_counter_textgenerationwebui">select</span>
                                     </div>
                                     <div class="range-block-range">
-                                        <input type="range" id="top_p_textgenerationwebui" name="volume" min="0" max="1" step="0.1">
+                                        <input type="range" id="top_p_textgenerationwebui" name="volume" min="0" max="1" step="0.01">
                                     </div>
                                 </div>
                                 <div class="range-block">
@@ -569,9 +597,39 @@
                                         <span id="typical_p_counter_textgenerationwebui">select</span>
                                     </div>
                                     <div class="range-block-range">
-                                        <input type="range" id="typical_p_textgenerationwebui" name="volume" min="0" max="1" step="0.1">
+                                        <input type="range" id="typical_p_textgenerationwebui" name="volume" min="0" max="1" step="0.01">
                                     </div>
                                 </div>
+                                <h4>Beam search</h4>
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        Number of Beams
+                                    </div>
+                                    <div class="range-block-counter">
+                                        <span id="num_beams_counter_textgenerationwebui">select</span>
+                                    </div>
+                                    <div class="range-block-range">
+                                        <input type="range" id="num_beams_textgenerationwebui" name="volume" min="1" max="20" step="1" />
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        Length Penalty
+                                    </div>
+                                    <div class="range-block-counter">
+                                        <span id="length_penalty_counter_textgenerationwebui">select</span>
+                                    </div>
+                                    <div class="range-block-range">
+                                        <input type="range" id="length_penalty_textgenerationwebui" name="volume" min="-5" max="5" step="0.1" />
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <label class="checkbox_label" for="early_stopping_textgenerationwebui">
+                                        <input type="checkbox" id="early_stopping_textgenerationwebui" />
+                                        Early Stopping
+                                    </label>
+                                </div>
+                                <h4>Contrastive search</h4>
                                 <div class="range-block">
                                     <div class="range-block-title">
                                         Penalty Alpha
@@ -581,6 +639,17 @@
                                     </div>
                                     <div class="range-block-range">
                                         <input type="range" id="penalty_alpha_textgenerationwebui" name="volume" min="0" max="5" step="0.05" />
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        Seed
+                                    </div>
+                                    <div style="display: none" class="range-block-counter">
+                                        <span id="seed_counter_textgenerationwebui">select</span>
+                                    </div>
+                                    <div class="range-block-range">
+                                        <input type="number" id="seed_textgenerationwebui" class="text_pole" />
                                     </div>
                                 </div>
                             </div>

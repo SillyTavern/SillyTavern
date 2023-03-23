@@ -1428,25 +1428,24 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
             }
 
             if (main_api == 'textgenerationwebui') {
-                const doSample = textgenerationwebui_settings.penalty_alpha == 0;
                 var generate_data = {
                     data: [
                         finalPromt,
                         this_amount_gen, // max new tokens
-                        doSample, // do_sample
+                        textgenerationwebui_settings.do_sample, // do_sample
                         textgenerationwebui_settings.temp, // temperature
                         textgenerationwebui_settings.top_p, // top_p
                         textgenerationwebui_settings.typical_p, // typical_p
                         textgenerationwebui_settings.rep_pen, // repetition_penalty
-                        1.0, // encoder rep pen
+                        textgenerationwebui_settings.encoder_rep_pen, // encoder rep pen
                         textgenerationwebui_settings.top_k, // top_k
-                        0, // min_length
-                        textgenerationwebui_settings.rep_pen_size, // no_repeat_ngram_size
-                        1, // num_beams
+                        textgenerationwebui_settings.min_length, // min_length
+                        textgenerationwebui_settings.no_repeat_ngram_size, // no_repeat_ngram_size
+                        textgenerationwebui_settings.num_beams, // num_beams
                         textgenerationwebui_settings.penalty_alpha, // penalty_alpha
-                        1, // length_penalty
-                        false, // early_stopping
-                        -1, // seed
+                        textgenerationwebui_settings.length_penalty, // length_penalty
+                        textgenerationwebui_settings.early_stopping, // early_stopping
+                        textgenerationwebui_settings.seed, // seed
                         name1, // name1
                         name2, // name2
                         "",  // Context
