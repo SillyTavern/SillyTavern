@@ -196,8 +196,8 @@ margin-top:5px;
     border-bottom: 1px solid var(--grey30a);
     border-left: 1px solid var(--grey30a);
     border-right: 1px solid var(--grey30a);
-    backdrop-filter: blur(20px);
-    background-color: var(--black70a);
+    backdrop-filter: blur(10px);
+    background-color: var(--black50a);
     -webkit-backdrop-filter: blur(10px);
     text-shadow: #000 0 0 3px;
     scrollbar-width: thin;
@@ -238,7 +238,7 @@ margin-top:5px;
 
     border-radius: 0 0 20px 20px;
     background-color: var(--crimson70a);
-    backdrop-filter: blur(20px);
+    backdrop-filter: blur(10px);
 }
 
 #send_but_sheld {
@@ -949,28 +949,21 @@ input[type=search]:focus::-webkit-search-cancel-button {
     box-shadow: 0 0 0 2pt black;
 }
 
-#form_bg_download {
-    width: 23%;
-    margin: 5px;
-}
+.no-border {border:none !important;}
+.no-shadow {box-shadow: none !important;}
 
-.bg_example_but_load {
-}
-
-.bg_example_but_load img {
+.add_bg_but {
     cursor: pointer;
-    height: 100px;
-    object-fit: contain;
-    margin: auto auto;
-    border-radius: 10px;
     opacity: 0.1;
+    height: 100%;
+    width: 100%;
 }
 
-#add_bg_button {
-}
 .input-file {
     display: flex;
     justify-content: center;
+    align-items: center;
+    height: 100%;
 }
 
 
@@ -2514,7 +2507,7 @@ a {
 /* ############################################################# */
 
 #right-nav-panel {
-    width: calc((100vw - 800px) /2);
+    width: calc((100vw - 802px) / 2);
     min-width: 450px;
     height: calc(100vh - 55px);
     position: fixed;
@@ -2524,12 +2517,13 @@ a {
     left: auto;
     padding: 0 10px;
     backdrop-filter: blur(10px);
-    background-color: var(--black70a);
+    background-color: var(--black50a);
     -webkit-backdrop-filter: blur(10px);
     z-index: 3000;
     white-space: nowrap;
     border: 0;
-    border-left: 1px solid var(--black30a);
+    border-left: 1px solid var(--grey30a);
+    border-bottom: 1px solid var(--grey30a);
     max-height: 100vh;
     box-shadow: none;
     border-radius: 0 0 0 20px;
@@ -2794,11 +2788,11 @@ filter: invert(20%) sepia(100%) saturate(2518%) hue-rotate(353deg) brightness(93
     color: white;
     border-radius: 20px;
     padding: 10px;
-    border: 1px solid grey;
+    border: 1px solid var(--grey30a);
     box-shadow: 0 0 20px black;
     /* min-width:400px; */
     overflow-y: scroll;
-    max-height: 90vh;
+    max-height: calc(100vh - 70px);
     display: none;
     position: absolute;
     left:0;
@@ -2855,14 +2849,15 @@ filter: invert(20%) sepia(100%) saturate(2518%) hue-rotate(353deg) brightness(93
     .mes-text {padding-right: 25px;}
 
     #right-nav-panel {        
-        height: calc(100vh - 55px);
-        width: calc(100vw - 5px);
+        height: calc(100vh - 70px);
         min-width: 0px;
-        width: calc(100vw - 15px);
-        min-height: calc(100vh - 40px);
-        min-height: calc(100vh - 40px);
+        width: calc(100vw - 10px);
         left: 5px !important;
         overflow-y: hidden;
+        border-left: 1px solid var(--grey30a);
+        border-right: 1px solid var(--grey30a);
+        border-bottom: 1px solid var(--grey30a);
+        border-radius: 0 0 20px 20px;
         /* border: 0;*/
     }
 

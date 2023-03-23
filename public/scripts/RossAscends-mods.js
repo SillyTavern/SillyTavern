@@ -191,14 +191,14 @@ function RestoreNavTab() {
 function RA_checkOnlineStatus() {
 	if (online_status == "no_connection") {
 		$("#send_textarea").attr("placeholder", "Not connected to API!"); //Input bar placeholder tells users they are not connected
-		$("#send_form").css("background-color", "rgba(100,0,0,0.7)"); //entire input form area is red when not connected
+		$("#send_form").css("background-color", "rgba(100,0,0,0.5)"); //entire input form area is red when not connected
 		$("#send_but").css("display", "none"); //send button is hidden when not connected;
 		$("#API-status-top").addClass("redOverlayGlow");
 		connection_made = false;
 	} else {
 		if (online_status !== undefined && online_status !== "no_connection") {
 			$("#send_textarea").attr("placeholder", "Type a message..."); //on connect, placeholder tells user to type message
-			$("#send_form").css("background-color", "rgba(0,0,0,0.7)"); //on connect, form BG changes to transprent black
+			$("#send_form").css("background-color", "rgba(0,0,0,0.5)"); //on connect, form BG changes to transprent black
 			$("#API-status-top").removeClass("redOverlayGlow");
 			connection_made = true;
 			retry_delay = 100;

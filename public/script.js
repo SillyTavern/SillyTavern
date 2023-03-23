@@ -148,7 +148,7 @@ let characters = [];
 let this_chid;
 let active_character;
 let backgrounds = [];
-const default_avatar = "img/fluffy.png";
+const default_avatar = "img/ai4.png";
 const system_avatar = "img/five.png";
 let is_colab = false;
 let is_checked_colab = false;
@@ -1606,7 +1606,7 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
 
                             if (selected_group) {
                                 console.log('entering chat update for groups');
-                                let avatarImg = 'img/fluffy.png';
+                                let avatarImg = 'img/ai4.png';
                                 if (characters[this_chid].avatar != 'none') {
                                     avatarImg = `characters/${characters[this_chid].avatar}?${Date.now()}`;
                                 }

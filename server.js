@@ -572,7 +572,7 @@ app.post("/createcharacter", urlencodedParser, function (request, response) {
         var char = charaFormatData(request.body);//{"name": request.body.ch_name, "description": request.body.description, "personality": request.body.personality, "first_mes": request.body.first_mes, "avatar": 'none', "chat": Date.now(), "last_mes": '', "mes_example": ''};
         char = JSON.stringify(char);
         if (!filedata) {
-            charaWrite('./public/img/fluffy.png', char, request.body.ch_name, response);
+            charaWrite('./public/img/ai4.png', char, request.body.ch_name, response);
         } else {
 
             img_path = "./uploads/";
@@ -924,23 +924,23 @@ app.post('/getsettings', jsonParser, (request, response) => { //Wintermute's cod
 
     //OpenAI
     const files3 = fs
-    .readdirSync('public/OpenAI Settings')
-    .sort(
-      (a, b) =>
-        new Date(fs.statSync(`public/OpenAI Settings/${b}`).mtime) -
-        new Date(fs.statSync(`public/OpenAI Settings/${a}`).mtime)
-    );
-    
-    files3.forEach(item => {
-    const file3 = fs.readFileSync(
-        `public/OpenAI Settings/${item}`,
-        'utf8',
-        (err, data) => {
-            if (err) return response.sendStatus(500);
+        .readdirSync('public/OpenAI Settings')
+        .sort(
+            (a, b) =>
+                new Date(fs.statSync(`public/OpenAI Settings/${b}`).mtime) -
+                new Date(fs.statSync(`public/OpenAI Settings/${a}`).mtime)
+        );
 
-            return data;
-        }
-    );
+    files3.forEach(item => {
+        const file3 = fs.readFileSync(
+            `public/OpenAI Settings/${item}`,
+            'utf8',
+            (err, data) => {
+                if (err) return response.sendStatus(500);
+
+                return data;
+            }
+        );
 
         openai_settings.push(file3);
         openai_setting_names.push(item.replace(/\.[^/.]+$/, ''));
@@ -1244,14 +1244,14 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                     png_name = getPngName(jsonData.name);
                     let char = { "name": jsonData.name, "description": jsonData.description ?? '', "personality": jsonData.personality ?? '', "first_mes": jsonData.first_mes ?? '', "avatar": 'none', "chat": humanizedISO8601DateTime(), "mes_example": jsonData.mes_example ?? '', "scenario": jsonData.scenario ?? '', "create_date": humanizedISO8601DateTime(), "talkativeness": jsonData.talkativeness ?? 0.5 };
                     char = JSON.stringify(char);
-                    charaWrite('./public/img/fluffy.png', char, png_name, response, { file_name: png_name });
+                    charaWrite('./public/img/ai4.png', char, png_name, response, { file_name: png_name });
                 } else if (jsonData.char_name !== undefined) {//json Pygmalion notepad
                     jsonData.char_name = sanitize(jsonData.char_name);
 
                     png_name = getPngName(jsonData.char_name);
                     let char = { "name": jsonData.char_name, "description": jsonData.char_persona ?? '', "personality": '', "first_mes": jsonData.char_greeting ?? '', "avatar": 'none', "chat": humanizedISO8601DateTime(), "mes_example": jsonData.example_dialogue ?? '', "scenario": jsonData.world_scenario ?? '', "create_date": humanizedISO8601DateTime(), "talkativeness": jsonData.talkativeness ?? 0.5 };
                     char = JSON.stringify(char);
-                    charaWrite('./public/img/fluffy.png', char, png_name, response, { file_name: png_name });
+                    charaWrite('./public/img/ai4.png', char, png_name, response, { file_name: png_name });
                 } else {
                     console.log('Incorrect character format .json');
                     response.send({ error: true });
@@ -1638,7 +1638,7 @@ app.get('/thumbnail', jsonParser, async function (request, response) {
     const pathToCachedFile = path.join(getThumbnailFolder(type), file);
 
     if (fs.existsSync(pathToCachedFile)) {
-        return response.sendFile(pathToCachedFile, { root : __dirname});
+        return response.sendFile(pathToCachedFile, { root: __dirname });
     }
 
     const pathToOriginalFile = path.join(getOriginalFolder(type), file);
@@ -1653,36 +1653,36 @@ app.get('/thumbnail', jsonParser, async function (request, response) {
     const image = await jimp.read(pathToOriginalFile);
     await image.cover(mySize[0], mySize[1]).quality(60).writeAsync(pathToCachedFile);
 
-    return response.sendFile(pathToCachedFile, { root : __dirname});
+    return response.sendFile(pathToCachedFile, { root: __dirname });
 });
 
 /* OpenAI */
-app.post("/getstatus_openai", jsonParser, function(request, response_getstatus_openai = response){
-    if(!request.body) return response_getstatus_openai.sendStatus(400);
+app.post("/getstatus_openai", jsonParser, function (request, response_getstatus_openai = response) {
+    if (!request.body) return response_getstatus_openai.sendStatus(400);
     api_key_openai = request.body.key;
     const args = {
-        headers: { "Authorization": "Bearer "+api_key_openai}
+        headers: { "Authorization": "Bearer " + api_key_openai }
     };
-    client.get(api_openai+"/models",args, function (data, response) {
-        if(response.statusCode == 200){
+    client.get(api_openai + "/models", args, function (data, response) {
+        if (response.statusCode == 200) {
             console.log(data);
             response_getstatus_openai.send(data);//data);
         }
-        if(response.statusCode == 401){
+        if (response.statusCode == 401) {
             console.log('Access Token is incorrect.');
-            response_getstatus_openai.send({error: true});
+            response_getstatus_openai.send({ error: true });
         }
-        if(response.statusCode == 500 || response.statusCode == 501 || response.statusCode == 501 || response.statusCode == 503 || response.statusCode == 507){
+        if (response.statusCode == 500 || response.statusCode == 501 || response.statusCode == 501 || response.statusCode == 503 || response.statusCode == 507) {
             console.log(data);
-            response_getstatus_openai.send({error: true});
+            response_getstatus_openai.send({ error: true });
         }
     }).on('error', function (err) {
-        response_getstatus_openai.send({error: true});
+        response_getstatus_openai.send({ error: true });
     });
 });
 
-app.post("/generate_openai", jsonParser, function(request, response_generate_openai){
-    if(!request.body) return response_generate_openai.sendStatus(400);
+app.post("/generate_openai", jsonParser, function (request, response_generate_openai) {
+    if (!request.body) return response_generate_openai.sendStatus(400);
 
     console.log(request.body);
     const config = {
@@ -1735,7 +1735,7 @@ app.post("/generate_openai", jsonParser, function(request, response_generate_ope
                 if (request.body.stream) {
                     response.data.on('data', chunk => {
                         console.log(chunk.toString());
-                    });                  
+                    });
                 } else {
                     console.log(response.data);
                 }
@@ -1743,11 +1743,11 @@ app.post("/generate_openai", jsonParser, function(request, response_generate_ope
             }
         })
         .catch(function (error) {
-            if(error.response){
+            if (error.response) {
                 if (request.body.stream) {
                     error.response.data.on('data', chunk => {
                         console.log(chunk.toString());
-                    });                  
+                    });
                 } else {
                     console.log(error.response.data);
                 }
@@ -1771,8 +1771,8 @@ function getTokenizer(model) {
     return tokenizer;
 }
 
-app.post("/tokenize_openai", jsonParser, function(request, response_tokenize_openai = response){
-    if(!request.body) return response_tokenize_openai.sendStatus(400);
+app.post("/tokenize_openai", jsonParser, function (request, response_tokenize_openai = response) {
+    if (!request.body) return response_tokenize_openai.sendStatus(400);
 
     const tokenizer = getTokenizer(request.query.model);
 
@@ -1787,8 +1787,8 @@ app.post("/tokenize_openai", jsonParser, function(request, response_tokenize_ope
         }
     }
     num_tokens += 2;
-    
-    response_tokenize_openai.send({"token_count": num_tokens});
+
+    response_tokenize_openai.send({ "token_count": num_tokens });
 });
 
 // ** REST CLIENT ASYNC WRAPPERS **
@@ -1892,7 +1892,7 @@ function convertStage2() {
         var char = JSON.parse(charactersB[key]);
         char.create_date = humanizedISO8601DateTime();
         charactersB[key] = JSON.stringify(char);
-        var avatar = 'public/img/fluffy.png';
+        var avatar = 'public/img/ai4.png';
         if (char.avatar !== 'none') {
             avatar = 'public/characters/' + char.name + '/avatars/' + char.avatar;
         }
