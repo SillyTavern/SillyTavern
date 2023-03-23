@@ -2084,7 +2084,7 @@ async function getSettings(type) {
                 loadNovelSettings(settings);
 
                 // TextGen
-                loadTextGenSettings(settings);
+                loadTextGenSettings(data, settings);
 
                 // OpenAI
                 loadOpenAISettings(data, settings);

@@ -865,8 +865,8 @@ app.post('/getsettings', jsonParser, (request, response) => { //Wintermute's cod
     const novelai_setting_names = [];
     const openai_settings = [];
     const openai_setting_names = [];
-    const textgenerationwebui_settings = [];
-    const textgenerationwebui_setting_names = [];
+    const textgenerationwebui_presets = [];
+    const textgenerationwebui_preset_names = [];
     const settings = fs.readFileSync('public/settings.json', 'utf8', (err, data) => {
         if (err) return response.sendStatus(500);
 
@@ -952,11 +952,7 @@ app.post('/getsettings', jsonParser, (request, response) => { //Wintermute's cod
     // TextGenerationWebUI
     const textGenFiles = fs
         .readdirSync(directories.textGen_Settings)
-        .sort(
-            (a, b) =>
-                fs.statSync(path.join(directories.textGen_Settings, a)).mtimeMs -
-                fs.statSync(path.join(directories.textGen_Settings, b)).mtimeMs
-        );
+        .sort();
 
     textGenFiles.forEach(item => {
         const file = fs.readFileSync(
@@ -969,8 +965,8 @@ app.post('/getsettings', jsonParser, (request, response) => { //Wintermute's cod
             }
         );
 
-        textgenerationwebui_settings.push(file);
-        textgenerationwebui_setting_names.push(item.replace(/\.[^/.]+$/, ''));
+        textgenerationwebui_presets.push(file);
+        textgenerationwebui_preset_names.push(item.replace(/\.[^/.]+$/, ''));
     });
 
     response.send({
@@ -982,8 +978,8 @@ app.post('/getsettings', jsonParser, (request, response) => { //Wintermute's cod
         novelai_setting_names,
         openai_settings,
         openai_setting_names,
-        textgenerationwebui_settings,
-        textgenerationwebui_setting_names,
+        textgenerationwebui_presets,
+        textgenerationwebui_preset_names,
         enable_extensions: enableExtensions,
     });
 });

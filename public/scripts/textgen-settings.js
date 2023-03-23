@@ -46,22 +46,35 @@ const setting_names = [
 ];
 
 function selectPreset(name) {
-    const preset = textgenerationwebui_presets[name];
+    const preset = textgenerationwebui_presets[textgenerationwebui_preset_names.indexOf(name)];
 
     if (!preset) {
         return;
     }
 
+    textgenerationwebui_settings.preset = name;
     for (const name of setting_names) {
         const value = preset[name];
-        setSettingByName(name, value);
+        setSettingByName(name, value, true);
     }
+    saveSettingsDebounced();
 }
 
-function loadTextGenSettings(settings) {
-    textgenerationwebui_presets = settings.textgenerationwebui_presets ?? [];
-    textgenerationwebui_preset_names = settings.textgenerationwebui_preset_names ?? [];
+function convertPresets(presets) {
+    return Array.isArray(presets) ? presets.map(JSON.parse) : [];
+}
+
+function loadTextGenSettings(data, settings) {
+    textgenerationwebui_presets = convertPresets(data.textgenerationwebui_presets);
+    textgenerationwebui_preset_names = data.textgenerationwebui_preset_names ?? [];
     Object.assign(textgenerationwebui_settings, settings.textgenerationwebui_settings ?? {});
+
+    for (const name of textgenerationwebui_preset_names) {
+        const option = document.createElement('option');
+        option.value = name;
+        option.innerText = name;
+        $('#settings_preset_textgenerationwebui').append(option);
+    }
 
     if (textgenerationwebui_settings.preset) {
         $('#settings_preset_textgenerationwebui').val(textgenerationwebui_settings.preset);
@@ -100,7 +113,7 @@ $(document).ready(function () {
     }
 })
 
-function setSettingByName(i, value) {
+function setSettingByName(i, value, trigger) {
     if (value === null || value === undefined) {
         return;
     }
@@ -114,5 +127,9 @@ function setSettingByName(i, value) {
         const val = parseFloat(value);
         $(`#${i}_textgenerationwebui`).val(val);
         $(`#${i}_counter_textgenerationwebui`).text(val.toFixed(2));
+    }
+
+    if (trigger) {
+        $(`#${i}_textgenerationwebui`).trigger('input');
     }
 }
