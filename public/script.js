@@ -1706,7 +1706,7 @@ function resultCheckStatusNovel() {
 }
 
 async function saveChat(chat_name) {
-    let file_name = chat_name ?? characters[this_chid].chat; 
+    let file_name = chat_name ?? characters[this_chid].chat;
     chat.forEach(function (item, i) {
         if (item["is_group"]) {
             alert('Trying to save group chat with regular saveChat function. Aborting to prevent corruption.');
@@ -1773,7 +1773,7 @@ function read_avatar_load(input) {
 }
 
 async function getChat() {
-    console.log('/getchat -- entered for -- ' + characters[this_chid].name);
+    //console.log('/getchat -- entered for -- ' + characters[this_chid].name);
     try {
         const response = await $.ajax({
             type: 'POST',
@@ -1874,7 +1874,7 @@ function changeMainAPI() {
             softPromptElem: $("#softprompt_block"),
         },
     };
-    console.log('--- apiElements--- ');
+    //console.log('--- apiElements--- ');
     //console.log(apiElements);
 
     for (const apiName in apiElements) {
@@ -1887,7 +1887,7 @@ function changeMainAPI() {
         apiObj.apiPresets.css("display", isCurrentApi ? "block" : "none");
 
         if (isCurrentApi && apiName === "kobold") {
-            console.log("enabling SP for kobold");
+            //console.log("enabling SP for kobold");
             $("#softprompt_block").css("display", "block");
         }
 
@@ -2065,7 +2065,7 @@ async function getSettings(type) {
 
                 swipes = !!settings.swipes;  //// swipecode
                 $('#swipes-checkbox').prop('checked', swipes); /// swipecode
-                console.log('getSettings -- swipes = ' + swipes + '. toggling box');
+                //console.log('getSettings -- swipes = ' + swipes + '. toggling box');
                 hideSwipeButtons();
                 //console.log('getsettings calling showswipebtns');
                 showSwipeButtons();
@@ -4096,7 +4096,7 @@ $(document).ready(function () {
         if (clickTarget.hasClass('drawer-icon') == false && !clickTarget.hasClass('openDrawer')) {
             if (jQuery.find('.openDrawer').length !== 0) {
                 if (targetParentHasOpenDrawer === 0) {
-                    console.log($('.openDrawer').not('.pinnedOpen').length);
+                    //console.log($('.openDrawer').not('.pinnedOpen').length);
                     $('.openDrawer').not('.pinnedOpen').slideToggle(200, "swing");
                     $('.openIcon').toggleClass('closedIcon openIcon');
                     $('.openDrawer').not('.pinnedOpen').toggleClass('closedDrawer openDrawer');

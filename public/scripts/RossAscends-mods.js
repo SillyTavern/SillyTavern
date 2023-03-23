@@ -100,7 +100,7 @@ $("#character_popup").on("input", function () { RA_CountCharTokens(); }); 					 
 //function:
 function RA_CountCharTokens() {
 	$("#result_info").html("");
-	console.log('RA_TC -- starting with this_chid = ' + this_chid);
+	//console.log('RA_TC -- starting with this_chid = ' + this_chid);
 	if (document.getElementById('name_div').style.display == "block") {			//if new char
 
 		$("#form_create").on("input", function () {									//fill temp vars with form_create values
@@ -165,7 +165,7 @@ function RA_CountCharTokens() {
 //Auto Load Last Charcter -- (fires when active_character is defined and auto_load_chat is true)
 async function RA_autoloadchat() {
 	if (document.getElementById('CharID0') !== null) {
-		console.log('char list loaded! clicking activeChar');
+		//console.log('char list loaded! clicking activeChar');
 		var CharToAutoLoad = document.getElementById('CharID' + LoadLocal('ActiveChar'));
 		if (CharToAutoLoad != null) {
 			CharToAutoLoad.click();
@@ -174,14 +174,14 @@ async function RA_autoloadchat() {
 		}
 		RestoreNavTab();
 	} else {
-		console.log('no char list yet..');
+		//console.log('no char list yet..');
 		setTimeout(RA_autoloadchat, 100);			// if the charcter list hadn't been loaded yet, try again. 
 	}
 }
 //only triggers when AutoLoadChat is enabled, consider adding this as an independent feature later. 
 function RestoreNavTab() {
 	if ($('#rm_button_selected_ch').children("h2").text() !== '') {		//check for a change in the character edit tab name
-		console.log('detected ALC char finished loaded, proceeding to restore tab.');
+		//console.log('detected ALC char finished loaded, proceeding to restore tab.');
 		$(SelectedNavTab).click(); 									//click to restore saved tab when name has changed (signalling char load is done)
 	} else {
 		setTimeout(RestoreNavTab, 100);								//if not changed yet, check again after 100ms
@@ -244,7 +244,7 @@ function RA_autoconnect(PrevApi) {
 
 			RA_AC_retries++;
 			retry_delay = Math.min(retry_delay * 2, 30000); // double retry delay up to to 30 secs
-			console.log('connection attempts: ' + RA_AC_retries + ' delay: ' + (retry_delay / 1000) + 's');
+			//console.log('connection attempts: ' + RA_AC_retries + ' delay: ' + (retry_delay / 1000) + 's');
 			setTimeout(RA_autoconnect, retry_delay);
 		}
 	}
@@ -290,7 +290,7 @@ $("document").ready(function () {
 	// read the state of Nav Lock and apply to rightnav classlist
 	$(PanelPin).prop('checked', LoadLocalBool("NavLockOn"));
 	if (LoadLocalBool("NavLockOn") == true) {
-		console.log('setting pin class via local var');
+		//console.log('setting pin class via local var');
 		$(RightNavPanel).addClass('pinnedOpen');
 	}
 	if ($(PanelPin).prop('checked' == true)) {
