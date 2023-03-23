@@ -7,6 +7,7 @@ export {
     disable_scenario_formatting,
     disable_personality_formatting,
     always_force_name2,
+    custom_chat_separator,
 };
 
 let collapse_newlines = false;
@@ -16,6 +17,7 @@ let disable_description_formatting = false;
 let disable_scenario_formatting = false;
 let disable_personality_formatting = false;
 let always_force_name2 = false;
+let custom_chat_separator = '';
 
 const storage_keys = {
     collapse_newlines: "TavernAI_collapse_newlines",
@@ -25,6 +27,7 @@ const storage_keys = {
     disable_scenario_formatting: "TavernAI_disable_scenario_formatting",
     disable_personality_formatting: "TavernAI_disable_personality_formatting",
     always_force_name2: "TavernAI_always_force_name2",
+    custom_chat_separator: "TavernAI_custom_chat_separator",
 };
 
 function collapseNewlines(x) {
@@ -39,6 +42,7 @@ function loadPowerUserSettings() {
     disable_scenario_formatting = localStorage.getItem(storage_keys.disable_scenario_formatting) == "true";
     disable_personality_formatting = localStorage.getItem(storage_keys.disable_personality_formatting) == "true";
     always_force_name2 = localStorage.getItem(storage_keys.always_force_name2) == "true";
+    custom_chat_separator = localStorage.getItem(storage_keys.custom_chat_separator);
 
     $("#force-pygmalion-formatting-checkbox").prop("checked", force_pygmalion_formatting);
     $("#collapse-newlines-checkbox").prop("checked", collapse_newlines);
@@ -47,6 +51,7 @@ function loadPowerUserSettings() {
     $("#disable-scenario-formatting-checkbox").prop("checked", disable_scenario_formatting);
     $("#disable-personality-formatting-checkbox").prop("checked", disable_personality_formatting);
     $("#always-force-name2-checkbox").prop("checked", always_force_name2);
+    $("#custom_chat_separator").val(custom_chat_separator);
 }
 
 $(document).ready(() => {
@@ -86,5 +91,10 @@ $(document).ready(() => {
     $("#always-force-name2-checkbox").change(function () {
         always_force_name2 = !!$(this).prop("checked");
         localStorage.setItem(storage_keys.always_force_name2, always_force_name2);
+    });
+
+    $("#custom_chat_separator").on('input', function() {
+        custom_chat_separator = $(this).val();
+        localStorage.setItem(storage_keys.custom_chat_separator, custom_chat_separator);
     });
 });

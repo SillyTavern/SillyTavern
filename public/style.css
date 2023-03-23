@@ -2790,7 +2790,7 @@ filter: invert(20%) sepia(100%) saturate(2518%) hue-rotate(353deg) brightness(93
     padding: 10px;
     border: 1px solid var(--grey30a);
     box-shadow: 0 0 20px black;
-    /* min-width:400px; */
+    min-width: 400px;
     overflow-y: scroll;
     max-height: calc(100vh - 70px);
     display: none;
@@ -2824,6 +2824,7 @@ filter: invert(20%) sepia(100%) saturate(2518%) hue-rotate(353deg) brightness(93
     }
 
     .drawer-content {
+        min-width: unset;
         width: calc(100vw - 10px);
         position: fixed;
         left: 0;

@@ -48,6 +48,11 @@ async function moduleWorker() {
     // take the count of messages
     lastMessageNumber = Array.isArray(context.chat) && context.chat.length ? context.chat.filter(m => m.is_user).length : 0;
 
+    // special case for new chat
+    if (Array.isArray(context.chat) && context.chat.length === 1) {
+        lastMessageNumber = 1;
+    }
+
     if (lastMessageNumber <= 0 || promptInsertionInterval <= 0) {
         $('#extension_floating_counter').text('No');
         return;

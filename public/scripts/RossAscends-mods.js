@@ -287,6 +287,12 @@ $("document").ready(function () {
 		} else {
 			console.log('removing pin class from right nav');
 			$(RightNavPanel).removeClass('pinnedOpen');
+
+            if ($(RightNavPanel).hasClass('openDrawer') && $('.openDrawer').length > 1) {
+                $(RightNavPanel).slideToggle(200, "swing");
+                $(rightNavDrawerIcon).toggleClass('openIcon closedIcon');
+                $(RightNavPanel).toggleClass('openDrawer closedDrawer');
+            }
 		}
 	});
 

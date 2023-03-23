@@ -1,5 +1,5 @@
 import { humanizedDateTime } from "./scripts/RossAscends-mods.js";
-import { encode, decode } from "../scripts/gpt-2-3-tokenizer/mod.js";
+import { encode } from "../scripts/gpt-2-3-tokenizer/mod.js";
 
 import {
     kai_settings,
@@ -45,6 +45,7 @@ import {
     disable_personality_formatting,
     disable_scenario_formatting,
     always_force_name2,
+    custom_chat_separator,
 } from "./scripts/power-user.js";
 
 import {
@@ -67,7 +68,7 @@ import {
     nai_settings,
 } from "./scripts/nai-settings.js";
 
-import { debounce, delay, stringFormat } from "./scripts/utils.js";
+import { debounce, delay } from "./scripts/utils.js";
 
 //exporting functions and vars for mods
 export {
@@ -1114,6 +1115,12 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
             }
         }
 
+        if (custom_chat_separator && custom_chat_separator.length) {
+            for (let i = 0; i < mesExamplesArray.length; i++) {
+                mesExamplesArray[i] = mesExamplesArray[i].replace(/<START>/gi, custom_chat_separator);
+            }
+        }
+
         if (pin_examples) {
             for (let example of mesExamplesArray) {
                 if (!is_pygmalion) {
@@ -1179,6 +1186,12 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
                     this_max_context -= 160;
                 }
             }
+        }
+        if (main_api == 'openai') {
+            this_max_context = oai_settings.openai_max_context;
+        }
+        if (main_api == 'textgenerationwebui') {
+            this_max_context = (max_context - amount_gen);
         }
 
         let { worldInfoString, worldInfoBefore, worldInfoAfter } = getWorldInfoPrompt(chat2);
@@ -1347,9 +1360,16 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
                 setPromtString();
             }
 
-            if (!is_pygmalion) {
+            // add a custom dingus (if defined)
+            if (custom_chat_separator && custom_chat_separator.length) {
+                mesSendString = custom_chat_separator + '\n' + mesSendString;
+            }
+            // add non-pygma dingus
+            else if (!is_pygmalion) {
                 mesSendString = '\nThen the roleplay chat between ' + name1 + ' and ' + name2 + ' begins.\n' + mesSendString;
-            } else {
+            }
+            // add pygma <START>
+            else {
                 mesSendString = '<START>\n' + mesSendString;
                 //mesSendString = mesSendString; //This edit simply removes the first "<START>" that is prepended to all context prompts
             }
@@ -1450,7 +1470,7 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
                         name2, // name2
                         "",  // Context
                         true, // stop at newline
-                        max_context, // Maximum prompt size in tokens
+                        this_max_context, // Maximum prompt size in tokens
                         1, // num attempts
                     ]
                 };
@@ -4100,6 +4120,7 @@ $(document).ready(function () {
         var icon = $(this).find('.drawer-icon');
         var drawer = $(this).parent().find('.drawer-content');
         var drawerWasOpenAlready = $(this).parent().find('.drawer-content').hasClass('openDrawer');
+        const pinnedDrawerClicked = drawer.hasClass('pinnedOpen');
 
         if (!drawerWasOpenAlready) {
             $('.openDrawer').not('.pinnedOpen').slideToggle(200, "swing");
@@ -4110,7 +4131,14 @@ $(document).ready(function () {
             $(this).closest('.drawer').find('.drawer-content').slideToggle(200, "swing");
         } else if (drawerWasOpenAlready) {
             icon.toggleClass('closedIcon openIcon');
-            $('.openDrawer').slideToggle(200, "swing");
+
+            if (pinnedDrawerClicked) {
+                $(drawer).slideToggle(200, "swing");
+            }
+            else {
+                $('.openDrawer').not('.pinnedOpen').slideToggle(200, "swing");
+            }
+
             drawer.toggleClass('closedDrawer openDrawer');
         }
     });
