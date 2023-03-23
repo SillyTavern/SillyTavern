@@ -360,7 +360,8 @@ margin-top:5px;
 
 .options-content img {
     /* opacity: 0.5; */
-    margin-right: 10px;
+    width: 1.5rem;
+    margin-right: 5px;
     height: 1.25rem;
     vertical-align: middle;
 }
@@ -2717,8 +2718,7 @@ label[for="extensions_autoconnect"] {
 .drawer-icon {
     display: inline-block;
     cursor: pointer;
-    min-width: 15px;
-    width: 30px;
+    min-width: 40px;
     height: 30px;
     background-size: contain;
     background-position: center;
