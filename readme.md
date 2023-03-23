@@ -8,9 +8,10 @@ Try on Colab (runs KoboldAI backend and TavernAI Extras server alongside):  <a t
 https://colab.research.google.com/github/SillyLossy/TavernAI-extras/blob/main/colab/GPU.ipynb
 
 ## This branch includes: 
-* Base TavernAI 1.2.8
+* A heavily modified TavernAI 1.2.8 (more than 50% of code rewritten or optimized)
 * Swipes
 * Group chats
+* Chat bookmarks (duplicates the current in its curent state)
 * Advanced KoboldAI generation settings
 * World Info support
 * [Oobabooga's TextGen WebUI](https://github.com/oobabooga/text-generation-webui) API connection
@@ -39,12 +40,12 @@ https://colab.research.google.com/github/SillyLossy/TavernAI-extras/blob/main/co
   * Ctrl+Up = Connect to API 
   * Ctrl+Left = view locally stored variables (in the browser console window)
   * Ctrl+Right = clear locally stored variables.
-  * Ctrl+enter = Regenerate last AI response.
+  * Ctrl+Enter = Regenerate last AI response.
 
 * User Name Changes and Character Deletion no longer force the page to refresh.
 
-* Toggle option to automatically connect to API on page load (currently only for Kobold)
-* Toggle option to automatically load the most recently viewed character on page load
+* Toggle option to automatically connect to API on page load.
+* Toggle option to automatically load the most recently viewed character on page load.
 * Better Token Counter - works on unsaved characters, and shows both permanent and temporary tokens.
 
 * Better Past Chats View
@@ -55,7 +56,7 @@ https://colab.research.google.com/github/SillyLossy/TavernAI-extras/blob/main/co
 * Clicking the Lock on the nav panel will hold the panel open, and this setting be remembered across sessions.
 * Nav panel status of open or closed will also be saved across sessions.
 
-* Supports saving a shortcut to iOS homescreens and opening in fullscreen mode from that bookmark.
+* mobile UI optimized for iOS, and supports saving a shortcut to iOS homescreen and opening in fullscreen mode.
 
 ## Installation
 
