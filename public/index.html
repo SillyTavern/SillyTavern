@@ -49,6 +49,7 @@
     <script type="module" src="scripts/power-user.js"></script>
     <script type="module" src="scripts/kai-settings.js"></script>
     <script type="module" src="scripts/textgen-settings.js"></script>
+    <script type="module" src="scripts/bookmarks.js"></script>
 
     <title>Tavern.AI</title>
 </head>
@@ -789,7 +790,7 @@
                         <h4>Active extensions</h4>
                         <ul id="extensions_list">
                         </ul>
-                        <p>Missing something? Press <a id="extensions_details" href="javascript:void">here</a> for more details!</p>
+                        <p>Missing something? Press <a id="extensions_details" href="javascript:void(null);">here</a> for more details!</p>
                     </div>
                     <div id="extensions_settings">
                         <h3>Extension settings</h3>
@@ -1219,7 +1220,7 @@
 
     <!-- templates for JS to reuse when needed -->
     <div id="message_template">
-        <div class="mes" mesid="${count_view_mes}" ch_name="${characterName}" is_user="${mes.is_user}">
+        <div class="mes" mesid="${count_view_mes}" ch_name="${characterName}" is_user="${mes.is_user}" is_system="${mes.is_system}">
             <div class="for_checkbox"></div><input type="checkbox" class="del_checkbox">
             <div class="avatar"><img src=""></div>
             <div class="swipe_left"><img src="img/swipe_left.png"></div>
@@ -1276,20 +1277,24 @@
                 <div id="options_button">
                     <div id="options">
                         <div class="options-content">
+                            <a id="option_new_bookmark">
+                                <img class="svg_icon" alt="" src="img/bookmark-solid.svg">
+                                <span>Save bookmark</span>
+                            </a>
                             <a id="option_start_new_chat">
-                                <img alt="" src="img/save_and_start_new_chat.png">
+                                <img class="svg_icon" alt="" src="img/comment-dots-solid.svg">
                                 <span>Start new chat</span></a>
                             <a id="option_select_chat">
-                                <img alt="" src="img/book6.png">
+                                <img class="svg_icon" alt="" src="img/address-book-solid.svg">
                                 <span>View Past Chats</span>
                             </a>
                             <hr>
                             <a id="option_delete_mes">
-                                <img alt="" src="img/del_mes.png">
+                                <img class="svg_icon" alt="" src="img/trash-can-solid.svg">
                                 <span>Delete messages</span>
                             </a>
                             <a id="option_regenerate">
-                                <img alt="" src="img/regenerate.png">
+                                <img class="svg_icon" alt="" src="img/repeat-solid.svg">
                                 <span>Regenerate</span>
                             </a>
                         </div>

@@ -102,6 +102,7 @@ export {
     online_status,
     main_api,
     api_server,
+    system_messages,
     nai_settings,
     token,
     name1,
@@ -163,6 +164,8 @@ const system_message_types = {
     GROUP: "group",
     EMPTY: "empty",
     GENERIC: "generic",
+    BOOKMARK_CREATED: "bookmark_created",
+    BOOKMARK_BACK: "bookmark_back",
 };
 
 const system_messages = {
@@ -222,6 +225,22 @@ const system_messages = {
         is_system: true,
         is_name: true,
         mes: "Generic system message. User `text` parameter to override the contents",
+    },
+    bookmark_created: {
+        name: systemUserName,
+        force_avatar: system_avatar,
+        is_user: false,
+        is_system: true,
+        is_name: true,
+        mes: `Bookmark created! Click here to open the bookmark chat: <a class="bookmark_link" file_name="{0}" href="javascript:void(null);">{0}</a>`,
+    },
+    bookmark_back: {
+        name: systemUserName,
+        force_avatar: system_avatar,
+        is_user: false,
+        is_system: true,
+        is_name: true,
+        mes: `Click here to return to the original chat: <a class="bookmark_link" file_name="{0}" href="javascript:void(null);">{0}</a>`,
     },
 };
 
@@ -711,9 +730,9 @@ function messageFormating(mes, ch_name, isSystem, forceAvatar) {
     return mes;
 }
 
-function getMessageFromTemplate(mesId, characterName, isUser, avatarImg, bias) {
+function getMessageFromTemplate(mesId, characterName, isUser, avatarImg, bias, isSystem) {
     const mes = $('#message_template .mes').clone();
-    mes.attr({ 'mesid': mesId, 'ch_name': characterName, 'is_user': isUser });
+    mes.attr({ 'mesid': mesId, 'ch_name': characterName, 'is_user': isUser, 'is_system': !!isSystem });
     mes.find('.avatar img').attr('src', avatarImg);
     mes.find('.ch_name .name_text').text(characterName);
     mes.find('.mes_bias').html(bias);
@@ -767,7 +786,7 @@ function addOneMessage(mes, type = "normal") {
     );
     const bias = messageFormating(mes.extra?.bias ?? "");
 
-    var HTMLForEachMes = getMessageFromTemplate(count_view_mes, characterName, mes.is_user, avatarImg, bias);
+    var HTMLForEachMes = getMessageFromTemplate(count_view_mes, characterName, mes.is_user, avatarImg, bias, isSystem);
 
     if (type !== 'swipe') {
         $("#chat").append(HTMLForEachMes);
@@ -1686,7 +1705,8 @@ function resultCheckStatusNovel() {
     $("#api_button_novel").css("display", "inline-block");
 }
 
-async function saveChat() {
+async function saveChat(chat_name) {
+    let file_name = chat_name ?? characters[this_chid].chat; 
     chat.forEach(function (item, i) {
         if (item["is_group"]) {
             alert('Trying to save group chat with regular saveChat function. Aborting to prevent corruption.');
@@ -1714,7 +1734,7 @@ async function saveChat() {
         url: "/savechat",
         data: JSON.stringify({
             ch_name: characters[this_chid].name,
-            file_name: characters[this_chid].chat,
+            file_name: file_name,
             chat: save_chat,
             avatar_url: characters[this_chid].avatar,
         }),
@@ -3318,6 +3338,9 @@ $(document).ready(function () {
                 processData: false,
                 success: function (html) {
                     $(".mes").each(function () {
+                        if ($(this).attr("is_system") == 'true') {
+                            return;
+                        }
                         if ($(this).attr("ch_name") != name1) {
                             $(this)
                                 .children(".avatar")
@@ -4035,7 +4058,7 @@ $(document).ready(function () {
         selectRightMenuWithAnimation('rm_extensions_block');
     });
 
-    $(document).on("click", ".select_chat_block", function () {
+    $(document).on("click", ".select_chat_block, .bookmark_link", function () {
         let file_name = $(this).attr("file_name").replace(".jsonl", "");
         //console.log(characters[this_chid]['chat']);
         characters[this_chid]["chat"] = file_name;

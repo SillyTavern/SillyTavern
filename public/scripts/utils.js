@@ -8,6 +8,8 @@ export {
     debounce,
     delay,
     isSubsetOf,
+    incrementString,
+    stringFormat,
 };
 
 /// UTILS
@@ -86,3 +88,22 @@ function debounce(func, timeout = 300) {
 
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 const isSubsetOf = (a, b) => (Array.isArray(a) && Array.isArray(b)) ? b.every(val => a.includes(val)) : false;
+
+function incrementString(str) {
+    // Find the trailing number or it will match the empty string
+    const count = str.match(/\d*$/);
+
+    // Take the substring up until where the integer was matched
+    // Concatenate it to the matched count incremented by 1
+    return str.substr(0, count.index) + (++count[0]);
+};
+
+function stringFormat(format) {
+    const args = Array.prototype.slice.call(arguments, 1);
+    return format.replace(/{(\d+)}/g, function (match, number) {
+        return typeof args[number] != 'undefined'
+            ? args[number]
+            : match
+            ;
+    });
+};

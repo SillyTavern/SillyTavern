@@ -1970,7 +1970,8 @@ input[type="range"]{
     position: absolute;
     width: 100%;
     height: 100vh;
-    z-index: 2059;
+    z-index: 3001;
+    top: 0;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
 }
