@@ -1618,6 +1618,64 @@ function invalidateThumbnail(type, file) {
     }
 }
 
+async function ensureThumbnailCache() {
+    const cacheFiles = fs.readdirSync(directories.thumbnailsBg);
+
+    // files exist, all ok
+    if (cacheFiles.length) {
+        return;
+    }
+
+    console.log('Generating thumbnails cache. Please wait...');
+
+    const bgFiles = fs.readdirSync(directories.backgrounds);
+    const tasks = [];
+
+    for (const file of bgFiles) {
+        tasks.push(generateThumbnail('bg', file));
+    }
+
+    await Promise.all(tasks);
+    console.log(`Done! Generated: ${bgFiles.length} preview images`);
+}
+
+async function generateThumbnail(type, file) {
+    const pathToCachedFile = path.join(getThumbnailFolder(type), file);
+    const pathToOriginalFile = path.join(getOriginalFolder(type), file);
+
+    const cachedFileExists = fs.existsSync(pathToCachedFile);
+    const originalFileExists = fs.existsSync(pathToOriginalFile);
+
+    // to handle cases when original image was updated after thumb creation
+    let shouldRegenerate = false;
+
+    if (cachedFileExists && originalFileExists) {
+        const originalStat = fs.statSync(pathToOriginalFile);
+        const cachedStat = fs.statSync(pathToCachedFile);
+
+        if (originalStat.mtimeMs > cachedStat.ctimeMs) {
+            console.log('Original file changed. Regenerating thumbnail...');
+            shouldRegenerate = true;
+        }
+    }
+
+    if (cachedFileExists && !shouldRegenerate) {
+        return pathToCachedFile;
+    }
+
+    if (!originalFileExists) {
+        return null;
+    }
+
+    const imageSizes = { 'bg': [160, 90], 'avatar': [42, 42] };
+    const mySize = imageSizes[type];
+
+    const image = await jimp.read(pathToOriginalFile);
+    await image.cover(mySize[0], mySize[1]).quality(60).writeAsync(pathToCachedFile);
+
+    return pathToCachedFile;
+}
+
 app.get('/thumbnail', jsonParser, async function (request, response) {
     const type = request.query.type;
     const file = request.query.file;
@@ -1635,23 +1693,11 @@ app.get('/thumbnail', jsonParser, async function (request, response) {
         return response.sendStatus(403);
     }
 
-    const pathToCachedFile = path.join(getThumbnailFolder(type), file);
+    const pathToCachedFile = await generateThumbnail(type, file);
 
-    if (fs.existsSync(pathToCachedFile)) {
-        return response.sendFile(pathToCachedFile, { root: __dirname });
-    }
-
-    const pathToOriginalFile = path.join(getOriginalFolder(type), file);
-
-    if (!fs.existsSync(pathToOriginalFile)) {
+    if (!pathToCachedFile) {
         return response.sendStatus(404);
     }
-
-    const imageSizes = { 'bg': [160, 90], 'avatar': [42, 42] };
-    const mySize = imageSizes[type];
-
-    const image = await jimp.read(pathToOriginalFile);
-    await image.cover(mySize[0], mySize[1]).quality(60).writeAsync(pathToCachedFile);
 
     return response.sendFile(pathToCachedFile, { root: __dirname });
 });
@@ -1765,7 +1811,7 @@ function getTokenizer(model) {
 
     if (!tokenizer) {
         tokenizer = tiktoken.encoding_for_model(model);
-        tokenizers[tokenizer];
+        tokenizers[tokenizer] = tokenizer;
     }
 
     return tokenizer;
@@ -1777,7 +1823,7 @@ app.post("/tokenize_openai", jsonParser, function (request, response_tokenize_op
     const tokenizer = getTokenizer(request.query.model);
 
     let num_tokens = 0;
-    for (var msg of request.body) {
+    for (const msg of request.body) {
         num_tokens += 4;
         for (const [key, value] of Object.entries(msg)) {
             num_tokens += tokenizer.encode(value).length;
@@ -1837,13 +1883,14 @@ function getAsync(url, args) {
 }
 // ** END **
 
-app.listen(server_port, (listen ? '0.0.0.0' : '127.0.0.1'), function () {
+app.listen(server_port, (listen ? '0.0.0.0' : '127.0.0.1'), async function () {
     if (process.env.colab !== undefined) {
         if (process.env.colab == 2) {
             is_colab = true;
         }
     }
     ensurePublicDirectoriesExist();
+    await ensureThumbnailCache();
     console.log('Launching...');
     if (autorun) open('http:127.0.0.1:' + server_port);
     console.log('TavernAI started: http://127.0.0.1:' + server_port);
