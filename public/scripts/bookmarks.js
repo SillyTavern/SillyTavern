@@ -30,17 +30,24 @@ async function getExistingChatNames() {
     }
 }
 
-async function getBookmarkName() {
+async function getBookmarkName(currentChat) {
+    const nameToken = 'Bookmark #';
+    if (currentChat.includes(nameToken)) {
+        currentChat = currentChat.substring(0, currentChat.lastIndexOf(nameToken)).trim();
+    }
+
     const chatNames = await getExistingChatNames();
     let newChat = Date.now();
+    let friendlyName = '';
 
     for (let i = 0; i < 1000; i++) {
-        newChat = `Bookmark - ${i}`;
+        friendlyName = `${nameToken}${i}`;
+        newChat = `${currentChat} ${friendlyName}`;
         if (!chatNames.includes(newChat)) {
             break;
         }
     }
-    return newChat;
+    return { newChat, friendlyName };
 }
 
 $(document).ready(function () {
@@ -50,10 +57,10 @@ $(document).ready(function () {
             throw new Error('not yet implemented');
         }
 
-        let newChat = await getBookmarkName();
+        let { newChat, friendlyName } = await getBookmarkName(characters[this_chid].chat);
 
         saveChat(newChat);
-        let mainMessage = stringFormat(system_messages[system_message_types.BOOKMARK_CREATED].mes, newChat);
+        let mainMessage = stringFormat(system_messages[system_message_types.BOOKMARK_CREATED].mes, newChat, friendlyName);
         sendSystemMessage(system_message_types.BOOKMARK_CREATED, mainMessage);
         saveChat();
     });

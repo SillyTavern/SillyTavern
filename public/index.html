@@ -262,6 +262,10 @@
                                 </select>
                             </div>
                             <div id="textgenerationwebui_api-presets">
+                                <h3>Text generation presets</h3>
+                                <select id="settings_preset_textgenerationwebui">
+                                    <option value="gui">Default</option>
+                                </select>
                             </div>
                         </div>
                         <hr>
@@ -1192,32 +1196,6 @@
             </div>
         </div>
     </div>
-    <div id="shadow_tips_popup">
-        <div id="tips_popup">
-            <img id="tips_cross" src="img/cross.png" style="position: absolute; margin-left: 230px; width: 20px; height: 20px; cursor: pointer; opacity: 0.6">
-
-            <img src="img/love.png" style="width: 45px;height: 45px; margin-bottom: 0px; opacity: 0.6;">
-            <div style="margin-top:20px; margin-left: 20px; margin-right: 20px; margin-bottom: 15px;">
-                <u>TavernAI</u> is being developed with love and care on a voluntary basis. If you like
-                the project and
-                want to support it, your donation would make a huge impact! <u>Thank you!</u>
-            </div>
-            <img src="img/eth_icon.png" style="width: 35px;height: 35px; margin-bottom: 0px; opacity: 0.6;">
-            <img src="img/usdt.png" style="width: 35px;height: 35px; margin-bottom: 0px; opacity: 0.6;">
-            <div id="tips_text">
-                <h3 style="margin-top: 0px; opacity: 0.8">Ethereum or USDT</h3>
-            </div>
-
-            <img src="img/eth.png" style="opacity: 0.4; margin-bottom: 4px;">
-            <div>0x975E5C91042ce8168B3d37b17F99949c5eFB3Dfe</div>
-            <!--<div style="margin-bottom:5px;">***</div><div>TRX: TCiBKCt6xEGrsjpgQA2jDXWJLyUh1KN2Sn</div><div>BTC: 1LASziomyYNkZ2zk8Sa4ZLTkvczBMrjyjP</div>-->
-        </div>
-    </div>
-
-    <!-- right nav panel for character/groups management/editing/creation -->
-    <!-- <input type="checkbox" id="nav-toggle"> -->
-
-
 
     <!-- templates for JS to reuse when needed -->
     <div id="message_template">

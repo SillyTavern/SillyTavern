@@ -67,7 +67,7 @@ import {
     nai_settings,
 } from "./scripts/nai-settings.js";
 
-import { debounce, delay } from "./scripts/utils.js";
+import { debounce, delay, stringFormat } from "./scripts/utils.js";
 
 //exporting functions and vars for mods
 export {
@@ -232,7 +232,7 @@ const system_messages = {
         is_user: false,
         is_system: true,
         is_name: true,
-        mes: `Bookmark created! Click here to open the bookmark chat: <a class="bookmark_link" file_name="{0}" href="javascript:void(null);">{0}</a>`,
+        mes: `Bookmark created! Click here to open the bookmark chat: <a class="bookmark_link" file_name="{0}" href="javascript:void(null);">{1}</a>`,
     },
     bookmark_back: {
         name: systemUserName,
@@ -240,7 +240,7 @@ const system_messages = {
         is_user: false,
         is_system: true,
         is_name: true,
-        mes: `Click here to return to the original chat: <a class="bookmark_link" file_name="{0}" href="javascript:void(null);">{0}</a>`,
+        mes: `Click here to return to the previous chat: <a class="bookmark_link" file_name="{0}" href="javascript:void(null);">Return</a>`,
     },
 };
 
@@ -706,6 +706,10 @@ function deleteLastMessage() {
 }
 
 function messageFormating(mes, ch_name, isSystem, forceAvatar) {
+    if (!mes) {
+        mes = '';
+    }
+
     if (this_chid != undefined && !isSystem)
         mes = mes.replaceAll("<", "&lt;").replaceAll(">", "&gt;"); //for welcome message
     if (this_chid === undefined) {
@@ -867,6 +871,12 @@ function sendSystemMessage(type, text) {
     if (text) {
         newMessage.mes = text;
     }
+
+    if (!newMessage.extras) {
+        newMessage.extras = {};
+    }
+
+    newMessage.extras.type = type;
 
     chat.push(newMessage);
     addOneMessage(newMessage);
@@ -4061,17 +4071,28 @@ $(document).ready(function () {
         selectRightMenuWithAnimation('rm_extensions_block');
     });
 
-    $(document).on("click", ".select_chat_block, .bookmark_link", function () {
+    $(document).on("click", ".select_chat_block, .bookmark_link", async function () {
+        let originalChat = characters[this_chid]["chat"];
         let file_name = $(this).attr("file_name").replace(".jsonl", "");
         //console.log(characters[this_chid]['chat']);
         characters[this_chid]["chat"] = file_name;
         clearChat();
         chat.length = 0;
-        getChat();
+        await getChat();
         $("#selected_chat_pole").val(file_name);
         $("#create_button").click();
         $("#shadow_select_chat_popup").css("display", "none");
         $("#load_select_chat_div").css("display", "block");
+
+        // create "return back" message
+        /*if ($(this).hasClass('bookmark_link')) {
+            const existingMessageIndex = chat.findIndex(x => x.extras?.type === system_message_types.BOOKMARK_BACK);
+
+            if (existingMessageIndex === -1) {
+                const messageText = stringFormat(system_messages[system_message_types.BOOKMARK_BACK].mes, originalChat);
+                sendSystemMessage(system_message_types.BOOKMARK_BACK, messageText);
+            }
+        }*/
     });
 
     $('.drawer-toggle').click(function () {
