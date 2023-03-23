@@ -2047,8 +2047,6 @@ async function getSettings(type) {
 
                 //Load AI model config settings (temp, context length, anchors, and anchor order)
 
-                loadTextGenSettings(settings.textgenerationwebui_settings);
-
                 amount_gen = settings.amount_gen;
                 if (settings.max_context !== undefined)
                     max_context = parseInt(settings.max_context);
@@ -2079,10 +2077,14 @@ async function getSettings(type) {
                 //console.log('getsettings calling showswipebtns');
                 showSwipeButtons();
 
+                // Kobold
                 loadKoboldSettings(settings);
 
-                //Novel
+                // Novel
                 loadNovelSettings(settings);
+
+                // TextGen
+                loadTextGenSettings(settings);
 
                 // OpenAI
                 loadOpenAISettings(data, settings);

@@ -102,6 +102,7 @@ const directories = {
     novelAI_Settings: 'public/NovelAI Settings',
     koboldAI_Settings: 'public/KoboldAI Settings',
     openAI_Settings: 'public/OpenAI Settings',
+    textGen_Settings: 'public/TextGen Settings',
     thumbnails: 'thumbnails/',
     thumbnailsBg: 'thumbnails/bg/',
     thumbnailsAvatar: 'thumbnails/avatar/',
@@ -864,6 +865,8 @@ app.post('/getsettings', jsonParser, (request, response) => { //Wintermute's cod
     const novelai_setting_names = [];
     const openai_settings = [];
     const openai_setting_names = [];
+    const textgenerationwebui_settings = [];
+    const textgenerationwebui_setting_names = [];
     const settings = fs.readFileSync('public/settings.json', 'utf8', (err, data) => {
         if (err) return response.sendStatus(500);
 
@@ -946,6 +949,30 @@ app.post('/getsettings', jsonParser, (request, response) => { //Wintermute's cod
         openai_setting_names.push(item.replace(/\.[^/.]+$/, ''));
     });
 
+    // TextGenerationWebUI
+    const textGenFiles = fs
+        .readdirSync(directories.textGen_Settings)
+        .sort(
+            (a, b) =>
+                fs.statSync(path.join(directories.textGen_Settings, a)).mtimeMs -
+                fs.statSync(path.join(directories.textGen_Settings, b)).mtimeMs
+        );
+
+    textGenFiles.forEach(item => {
+        const file = fs.readFileSync(
+            path.join(directories.textGen_Settings, item),
+            'utf8',
+            (err, data) => {
+                if (err) return response.sendStatus(500);
+
+                return data;
+            }
+        );
+
+        textgenerationwebui_settings.push(file);
+        textgenerationwebui_setting_names.push(item.replace(/\.[^/.]+$/, ''));
+    });
+
     response.send({
         settings,
         koboldai_settings,
@@ -955,6 +982,8 @@ app.post('/getsettings', jsonParser, (request, response) => { //Wintermute's cod
         novelai_setting_names,
         openai_settings,
         openai_setting_names,
+        textgenerationwebui_settings,
+        textgenerationwebui_setting_names,
         enable_extensions: enableExtensions,
     });
 });

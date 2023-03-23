@@ -22,7 +22,11 @@ let textgenerationwebui_settings = {
     do_sample: true,
     early_stopping: false,
     seed: -1,
+    preset: 'Default',
 };
+
+let textgenerationwebui_presets = [];
+let textgenerationwebui_preset_names = [];
 
 const setting_names = [
     "temp",
@@ -41,26 +45,40 @@ const setting_names = [
     "seed",
 ];
 
-function loadTextGenSettings(settings) {
-    if (settings) {
-        Object.assign(textgenerationwebui_settings, settings);
+function selectPreset(name) {
+    const preset = textgenerationwebui_presets[name];
+
+    if (!preset) {
+        return;
     }
 
-    for (const i of setting_names) {
-        const isCheckbox = $(`#${i}_textgenerationwebui`).attr('type') == 'checkbox';
-        if (isCheckbox) {
-            const val = Boolean(textgenerationwebui_settings[i]);
-            $(`#${i}_textgenerationwebui`).prop('checked', val);
-        }
-        else {
-            const val = parseFloat(textgenerationwebui_settings[i]);
-            $(`#${i}_textgenerationwebui`).val(val);
-            $(`#${i}_counter_textgenerationwebui`).text(val.toFixed(2));
-        }
+    for (const name of setting_names) {
+        const value = preset[name];
+        setSettingByName(name, value);
     }
 }
 
-$(document).ready(function() {
+function loadTextGenSettings(settings) {
+    textgenerationwebui_presets = settings.textgenerationwebui_presets ?? [];
+    textgenerationwebui_preset_names = settings.textgenerationwebui_preset_names ?? [];
+    Object.assign(textgenerationwebui_settings, settings.textgenerationwebui_settings ?? {});
+
+    if (textgenerationwebui_settings.preset) {
+        $('#settings_preset_textgenerationwebui').val(textgenerationwebui_settings.preset);
+    }
+
+    for (const i of setting_names) {
+        const value = textgenerationwebui_settings[i];
+        setSettingByName(i, value);
+    }
+}
+
+$(document).ready(function () {
+    $('#settings_preset_textgenerationwebui').on('change', function() {
+        const presetName = $(this).val();
+        selectPreset(presetName);
+    });
+
     for (const i of setting_names) {
         $(`#${i}_textgenerationwebui`).attr("x-setting-id", i);
         $(document).on("input", `#${i}_textgenerationwebui`, function () {
@@ -81,3 +99,20 @@ $(document).ready(function() {
         });
     }
 })
+
+function setSettingByName(i, value) {
+    if (value === null || value === undefined) {
+        return;
+    }
+
+    const isCheckbox = $(`#${i}_textgenerationwebui`).attr('type') == 'checkbox';
+    if (isCheckbox) {
+        const val = Boolean(value);
+        $(`#${i}_textgenerationwebui`).prop('checked', val);
+    }
+    else {
+        const val = parseFloat(value);
+        $(`#${i}_textgenerationwebui`).val(val);
+        $(`#${i}_counter_textgenerationwebui`).text(val.toFixed(2));
+    }
+}
