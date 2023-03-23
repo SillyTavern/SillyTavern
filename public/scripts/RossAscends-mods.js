@@ -49,7 +49,9 @@ const observerConfig = { childList: true, subtree: true };
 
 const observer = new MutationObserver(function (mutations) {
 	mutations.forEach(function (mutation) {
-		if (mutation.target.id === "online_status_text2") {
+		if (mutation.target.id === "online_status_text2" ||
+            mutation.target.id === "online_status_text3" ||
+            mutation.target.classList.contains("online_status_text4")) {
 			RA_checkOnlineStatus();
 		} else if (mutation.target.parentNode === SelectedCharacterTab) {
 			setTimeout(RA_CountCharTokens, 200);
@@ -260,7 +262,8 @@ function isUrlOrAPIKey(string) {
 }
 
 $("document").ready(function () {
-
+    // initial status check
+    setTimeout(RA_checkOnlineStatus, 100);
 
 	// read the state of AutoConnect and AutoLoadChat.
 	$(AutoConnectCheckbox).prop("checked", LoadLocalBool("AutoConnectEnabled"));
