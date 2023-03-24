@@ -292,8 +292,6 @@ margin-top:5px;
 #options {
     opacity: 0.0;
     display: none;
-    bottom: 200px;
-    position: relative;
     z-index: 1990;
 
 }

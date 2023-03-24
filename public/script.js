@@ -158,7 +158,14 @@ let is_colab = false;
 let is_checked_colab = false;
 let is_mes_reload_avatar = false;
 let optionsPopper = Popper.createPopper(document.getElementById('options_button'), document.getElementById('options'), {
-    placement: 'top-start',
+    modifiers: [
+        {
+            name: 'offset',
+            options: {
+                offset: [0, -260],
+            },
+        },
+    ],
 });
 
 const durationSaveEdit = 200;
