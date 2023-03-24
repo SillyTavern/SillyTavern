@@ -814,8 +814,11 @@ app.post("/delbackground", jsonParser, function (request, response) {
 });
 
 app.post("/delchat", jsonParser, function (request, response) {
-
-    if (!request.body) return response.sendStatus(400);
+    console.log('/delchat entered');
+    if (!request.body) {
+        console.log('no request body seen');
+        return response.sendStatus(400);
+    }
 
     if (request.body.chatfile !== sanitize(request.body.chatfile)) {
         console.error('Malicious chat name prevented');
@@ -826,10 +829,15 @@ app.post("/delchat", jsonParser, function (request, response) {
     if (!fs.existsSync(fileName)) {
         console.log('Chat file not found');
         return response.sendStatus(400);
+    } else {
+        console.log('found the chat file: ' + fileName);
+        /* fs.unlinkSync(fileName); */
+        fs.rmSync(fileName);
+        console.log('deleted chat file: ' + fileName);
+
     }
 
-    fs.rmSync(fileName);
-    console.log('deleted chat file: ' + fileName);
+
     return response.send('ok');
 });
 

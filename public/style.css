@@ -2048,6 +2048,13 @@ input[type="range"]{
     margin-bottom: 10px;
 }
 
+.select_chat_block_wrapper{
+    display: grid;
+    grid-template-columns: auto auto;
+    align-items: center;
+    grid-gap: 10px;
+}
+
 .select_chat_block {
     border-radius: 10px;
     /* margin-right: 10px; */
@@ -2092,9 +2099,9 @@ input[type="range"]{
 }
 
 .PastChat_cross{
-    position: absolute;
+/*     position: absolute;
     right: 15px;
-    margin-top: 5px;
+    margin-top: 5px; */
     width: 15px;
     height: 15px;
     cursor: pointer;
@@ -2106,6 +2113,11 @@ input[type="range"]{
     background-position: center;
     border-radius: 50%;
     box-shadow: 0 0 0 2pt black;
+}
+
+.PastChat_cross:hover{
+    background-color: var(--fullred);
+    box-shadow: 0 0 0 2pt red;
 }
 
 #advanced_book_logo {

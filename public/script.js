@@ -702,7 +702,8 @@ async function delChat(chatfile) {
         }),
     });
     if (response.ok === true) {
-
+        clearChat();
+        getChat();
     }
 }
 
@@ -2330,19 +2331,17 @@ async function getAllCharaChats() {
                         mes = "..." + mes.substring(mes.length - strlen);
                     }
                     $("#select_chat_div").append(
-                        '<div class="select_chat_block" file_name="' +
-                        data[key]["file_name"] +
-                        '"><div class=avatar><img src="characters/' +
-                        characters[this_chid]["avatar"] +
-                        '""></div><div class="select_chat_block_filename">' +
-                        data[key]["file_name"] +
-                        '</div><div class="select_chat_block_mes">' +
+                        '<div class="select_chat_block_wrapper">' +
+                        '<div class="select_chat_block" file_name="' + data[key]["file_name"] + '">' +
+                        '<div class=avatar><img src="characters/' + characters[this_chid]["avatar"] + '""></div >' +
+                        '<div class="select_chat_block_filename">' + data[key]["file_name"] + '</div>' +
+                        '<div class="select_chat_block_mes">' +
                         mes +
                         "</div>" +
-                        '<div file_name="' +
-                        data[key]["file_name"] +
-                        '" class="PastChat_cross"></div>' +
-                        "</div >"
+                        "</div >" +
+                        '<div file_name="' + data[key]["file_name"] + '" class="PastChat_cross"></div>' +
+                        '</div>'
+
 
                     );
                     if (
@@ -2351,7 +2350,7 @@ async function getAllCharaChats() {
                     ) {
                         //children().last()
                         $("#select_chat_div")
-                            .children(":nth-last-child(1)")
+                            .find(".select_chat_block:last")
                             .attr("highlight", true);
                     }
                 }
@@ -3230,7 +3229,9 @@ $(document).ready(function () {
             bg_file_for_del.parent().remove();
         }
         if (popup_type == "del_chat") {
+            $("#select_chat_cross").click();
             delChat(chat_file_for_del);
+            $("#option_select_chat").click();
         }
         if (popup_type == "del_ch") {
             console.log(
