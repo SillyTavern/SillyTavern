@@ -202,8 +202,16 @@ async function setExpression(character, expression) {
         const html = `
         <div class="expression_settings">
             <h4>Expression images</h4>
-            <ul id="image_list"></ul>
-            <p><b>Hint:</b> <i>Create new folder in the <tt>public/characters/</tt> folder and name it as the name of the character. Put PNG images with expressions there.</i></p>
+            <div class="inline-drawer">
+            <div class="inline-drawer-toggle inline-drawer-header">
+                <b>View supported images</b>
+                <div class="inline-drawer-icon down"></div>
+            </div>
+            <div class="inline-drawer-content">
+                <ul id="image_list"></ul>
+                <p class="hint"><b>Hint:</b> <i>Create new folder in the <b>public/characters/</b> folder and name it as the name of the character. Put PNG images with expressions there.</i></p>
+                </div>
+            </div>
             <label for="expressions_show_default"><input id="expressions_show_default" type="checkbox">Show default images (emojis) if missing</label>
         </div>
         `;

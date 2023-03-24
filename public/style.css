@@ -2744,10 +2744,37 @@ filter: invert(20%) sepia(100%) saturate(2518%) hue-rotate(353deg) brightness(93
     opacity: 1;
 }
 
-/* .drawer-header {
+.inline-drawer {
+    padding-bottom: 10px;
+}
+
+.inline-drawer-icon {
+    display: block;
+    cursor: pointer;
+    width: 26px;
+    height: 26px;
+    background-size: cover;
+    background-repeat: no-repeat;
+    filter: invert(1) brightness(75%);
+}
+
+.inline-drawer-icon.up {
+    background-image: url('img/circle-chevron-up-solid.svg');
+}
+
+.inline-drawer-icon.down {
+    background-image: url('img/circle-chevron-down-solid.svg');
+}
+
+.inline-drawer-header {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-} */
+}
+
+.inline-drawer-content {
+    display: none;
+}
 
 .drawer-content {
     background-color: var(--black50a);
