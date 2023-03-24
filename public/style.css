@@ -309,6 +309,7 @@ margin-top:5px;
     text-shadow: 0 0 3px black;
     min-width: 200px;
     z-index: 2000;
+    margin-bottom: 13px;
 }
 
 .options-content hr {
@@ -1983,7 +1984,7 @@ right: -30px;
 
 .select_chat_block_wrapper{
     display: grid;
-    grid-template-columns: auto auto;
+    grid-template-columns: auto min-content;
     align-items: center;
     grid-gap: 10px;
 }

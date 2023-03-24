@@ -68,6 +68,8 @@ import {
     nai_settings,
 } from "./scripts/nai-settings.js";
 
+import { showBookmarksButtons } from "./scripts/bookmarks.js";
+
 import { debounce, delay } from "./scripts/utils.js";
 
 //exporting functions and vars for mods
@@ -95,6 +97,8 @@ export {
     setSendButtonState,
     selectRightMenuWithAnimation,
     setRightTabSelectedClass,
+    openCharacterChat,
+    saveChat,
     messageFormating,
     chat,
     this_chid,
@@ -115,7 +119,6 @@ export {
     system_message_types,
     talkativeness_default,
     default_ch_mes,
-    saveChat,
 }
 
 // API OBJECT FOR EXTERNAL WIRING
@@ -154,6 +157,9 @@ const system_avatar = "img/five.png";
 let is_colab = false;
 let is_checked_colab = false;
 let is_mes_reload_avatar = false;
+let optionsPopper = Popper.createPopper(document.getElementById('options_button'), document.getElementById('options'), {
+    placement: 'top-start',
+});
 
 const durationSaveEdit = 200;
 const saveSettingsDebounced = debounce(() => saveSettings(), durationSaveEdit);
@@ -1887,6 +1893,17 @@ function getChatResult() {
     select_selected_character(this_chid);
 }
 
+async function openCharacterChat(file_name) {
+    characters[this_chid]["chat"] = file_name;
+    clearChat();
+    chat.length = 0;
+    await getChat();
+    $("#selected_chat_pole").val(file_name);
+    $("#create_button").click();
+    $("#shadow_select_chat_popup").css("display", "none");
+    $("#load_select_chat_div").css("display", "block");
+}
+
 /* function openNavToggle() {
     if (!$("#nav-toggle").prop("checked")) {
         $("#nav-toggle").trigger("click");
@@ -3593,12 +3610,13 @@ $(document).ready(function () {
             $("#options").css("display") === "none" &&
             $("#options").css("opacity") == 0.0
         ) {
+            showBookmarksButtons();
             $("#options").css("display", "block");
             $("#options").transition({
                 opacity: 1.0, // the manual setting of CSS via JS is what allows the click-away feature to work
                 duration: 100,
                 easing: animation_rm_easing,
-                complete: function () { },
+                complete: function () { optionsPopper.update(); },
             });
         }
     });
@@ -4110,27 +4128,8 @@ $(document).ready(function () {
     });
 
     $(document).on("click", ".select_chat_block, .bookmark_link", async function () {
-        let originalChat = characters[this_chid]["chat"];
         let file_name = $(this).attr("file_name").replace(".jsonl", "");
-        //console.log(characters[this_chid]['chat']);
-        characters[this_chid]["chat"] = file_name;
-        clearChat();
-        chat.length = 0;
-        await getChat();
-        $("#selected_chat_pole").val(file_name);
-        $("#create_button").click();
-        $("#shadow_select_chat_popup").css("display", "none");
-        $("#load_select_chat_div").css("display", "block");
-
-        // create "return back" message
-        /*if ($(this).hasClass('bookmark_link')) {
-            const existingMessageIndex = chat.findIndex(x => x.extras?.type === system_message_types.BOOKMARK_BACK);
-
-            if (existingMessageIndex === -1) {
-                const messageText = stringFormat(system_messages[system_message_types.BOOKMARK_BACK].mes, originalChat);
-                sendSystemMessage(system_message_types.BOOKMARK_BACK, messageText);
-            }
-        }*/
+        openCharacterChat(file_name);
     });
 
     $('.drawer-toggle').click(function () {
