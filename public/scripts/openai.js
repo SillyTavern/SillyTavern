@@ -235,14 +235,25 @@ function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAft
     if (bias) {
         let bias_msg = { "role": "system", "content": bias };
         openai_msgs.push(bias_msg);
+        total_count += countTokens([bias_msg], true);
     }
     
     if (selected_group) {
+        // set "special" group nudging messages
         const groupMembers = groups.find(x => x.id === selected_group)?.members;
         const names = Array.isArray(groupMembers) ? groupMembers.join(', ') : '';
         new_chat_msg.content = `[Start a new group chat. Group members: ${names}]`;
         let group_nudge = { "role": "system", "content": `[Write the next reply only as ${name2}]` };
         openai_msgs.push(group_nudge);
+
+        // add a group nudge count
+        let group_nudge_count = countTokens([group_nudge], true);
+        total_count += group_nudge_count;
+        
+        // recount tokens for new start message
+        total_count -= start_chat_count
+        start_chat_count = countTokens([new_chat_msg]);
+        total_count += start_chat_count;
     }
 
     // The user wants to always have all example messages in the context
