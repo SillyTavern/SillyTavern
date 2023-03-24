@@ -104,3 +104,4 @@ Contact us on Discord: Cohee#1207 or RossAscends#1779
 * SillyLossy's TAI mod: Public domain
 * RossAscends' additions: Public domain
 * Portions of CncAnon's TavernAITurbo mod: Unknown license
+* Thanks oobabooga for compiling presets for TextGen
