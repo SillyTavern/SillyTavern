@@ -975,6 +975,9 @@ function getExtensionPrompt() {
         .map((x) => extension_prompts[x])
         .filter(x => x)
         .join("\n");
+    if (extension_prompt.length && !extension_prompt.startsWith("\n")) {
+        extension_prompt = "\n" + extension_prompt;
+    }
     if (extension_prompt.length && !extension_prompt.endsWith("\n")) {
         extension_prompt += "\n";
     }
