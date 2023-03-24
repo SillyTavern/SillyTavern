@@ -702,8 +702,22 @@ async function delChat(chatfile) {
         }),
     });
     if (response.ok === true) {
+        //close past chat popup
+        $("#select_chat_cross").click();
+
+        //this is a copy of what 'start new chat' does, just without the popup and confirmation
+        //not an ideal solution, and needs to be smarter
         clearChat();
+        chat.length = 0;
+        characters[this_chid].chat = name2 + " - " + humanizedDateTime();
+        $("#selected_chat_pole").val(characters[this_chid].chat);
+        saveCharacterDebounced();
         getChat();
+
+        //open the history view again after 100ms
+        setTimeout(function () { $("#option_select_chat").click() }, 100);
+        //hide option popup menu
+        $("#options").hide();
     }
 }
 
@@ -3229,9 +3243,9 @@ $(document).ready(function () {
             bg_file_for_del.parent().remove();
         }
         if (popup_type == "del_chat") {
-            $("#select_chat_cross").click();
+
             delChat(chat_file_for_del);
-            $("#option_select_chat").click();
+
         }
         if (popup_type == "del_ch") {
             console.log(
