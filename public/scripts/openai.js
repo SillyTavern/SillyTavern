@@ -17,6 +17,7 @@ import {
     name1,
     name2,
 } from "../script.js";
+import { groups, selected_group } from "./group-chats.js";
 
 import {
     pin_examples,
@@ -81,6 +82,11 @@ function setOpenAIMessages(chat) {
         let role = chat[j]['is_user'] ? 'user' : 'assistant';
         let content = chat[j]['mes'];
 
+        // for groups - prepend a character's name
+        if (selected_group) {
+            content = `${name2}: ${content}`;
+        }
+
         // system messages produce no content
         if (chat[j]['is_system']) {
             role = 'system';
@@ -141,6 +147,11 @@ function parseExampleIntoIndividual(messageExampleString) {
         // remove char name
         // strip to remove extra spaces
         let parsed_msg = cur_msg_lines.join("\n").replace(name + ":", "").trim();
+
+        if (selected_group && role == 'assistant') {
+            parsed_msg = `${name}: ${parsed_msg}`;
+        }
+
         result.push({ "role": role, "content": parsed_msg });
         cur_msg_lines = [];
     }
@@ -224,6 +235,14 @@ function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAft
     if (bias) {
         let bias_msg = { "role": "system", "content": bias };
         openai_msgs.push(bias_msg);
+    }
+    
+    if (selected_group) {
+        const groupMembers = groups.find(x => x.id === selected_group)?.members;
+        const names = Array.isArray(groupMembers) ? groupMembers.join(', ') : '';
+        new_chat_msg.content = `[Start a new group chat. Group members: ${names}]`;
+        let group_nudge = { "role": "system", "content": `[Write the next reply only as ${name2}]` };
+        openai_msgs.push(group_nudge);
     }
 
     // The user wants to always have all example messages in the context
