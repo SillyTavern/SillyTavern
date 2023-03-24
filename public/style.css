@@ -326,7 +326,7 @@ margin-top:5px;
 .options-content {
     overflow: hidden;
     display: block;
-    position: absolute;
+    /*position: absolute;*/
 /*     backdrop-filter: blur(10px); */          /* removed because we can't have both this and the input bar blurring*/
     background-color: var(--black100);
     /* -webkit-backdrop-filter: blur(10px); */ /* removed because we can't have both this and the input bar blurring*/
@@ -336,6 +336,7 @@ margin-top:5px;
     text-shadow: 0 0 3px black;
     min-width: 200px;
     z-index: 2000;
+    margin-bottom: 13px;
 }
 
 /* Ссылки внутри выпадающего блока */
@@ -2050,7 +2051,7 @@ input[type="range"]{
 
 .select_chat_block_wrapper{
     display: grid;
-    grid-template-columns: auto auto;
+    grid-template-columns: auto min-content;
     align-items: center;
     grid-gap: 10px;
 }
