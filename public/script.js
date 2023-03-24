@@ -2303,7 +2303,7 @@ async function getAllCharaChats() {
                 a["file_name"].localeCompare(b["file_name"])
             );
             data = data.reverse();
-
+            $("#ChatHistoryCharName").html(characters[this_chid].name);
             for (const key in data) {
                 let strlen = 300;
                 let mes = data[key]["mes"];
@@ -3561,7 +3561,7 @@ $(document).ready(function () {
         if (id == "option_select_chat") {
             if (selected_group) {
                 // will open a chat selection screen
-                openNavToggle();
+                /* openNavToggle(); */
                 $("#rm_button_characters").trigger("click");
                 return;
             }
@@ -3580,7 +3580,7 @@ $(document).ready(function () {
         else if (id == "option_start_new_chat") {
             if (selected_group) {
                 // will open a group creation screen
-                openNavToggle();
+                /* openNavToggle(); */
                 $("#rm_button_group_chats").trigger("click");
                 return;
             }

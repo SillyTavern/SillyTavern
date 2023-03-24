@@ -1246,15 +1246,14 @@
     </div>
     <div id="shadow_select_chat_popup">
         <div id="select_chat_popup">
-            <div id="select_chat_popup_text">
-                <img id="select_chat_cross" src="img/cross.png" alt="Close">
-
-            </div>
             <div id="select_chat_import"> <!-- import chat popup header -->
-                <div id="chat_import_button" class="right_menu_button">
-                    <img alt="" class="svg_icon" src="img/cloud-arrow-up-solid.svg" />
+                <div id="chat_import_button" class="menu_button">
+                    <img alt="" class="svg_icon" src="img/file-arrow-up-solid.svg" />
                 </div>
-                <div>
+                <div id="selectChatPopupHeaderText" class="TxtLrgBoldCenter">
+                    <span id="ChatHistoryCharName"></span>
+                    <br>
+                    Chat History
                     <a href="/notes/10" class="notes-link" target="_blank"><span class="note-link-span">?</span></a>
                 </div>
                 <form id="form_import_chat" action="javascript:void(null);" method="post" enctype="multipart/form-data" style="display: none;">
@@ -1263,6 +1262,7 @@
                     <input id="chat_import_avatar_url" name="avatar_url" class="text_pole" maxlength="999" size="2" value="" autocomplete="off" style="display: none;">
                     <input id="chat_import_character_name" name="character_name" class="text_pole" maxlength="999" size="2" value="" autocomplete="off" style="display: none;">
                 </form>
+                <img id="select_chat_cross" src="img/cross.png" alt="Close">
             </div>
 
             <div id="select_chat_div">
