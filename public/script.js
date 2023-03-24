@@ -2843,13 +2843,20 @@ $(document).ready(function () {
                 easing: animation_rm_easing,
                 queue: false,
                 complete: function () {
-
+                    /*if (!selected_group) {
+                        var typingIndicator = $("#typing_indicator_template .typing_indicator").clone();
+                        typingIndicator.find(".typing_indicator_name").text(characters[this_chid].name);
+                    } */
+                    /* $("#chat").append(typingIndicator); */
                     const is_animation_scroll = ($('#chat').scrollTop() >= ($('#chat').prop("scrollHeight") - $('#chat').outerHeight()) - 10);
                     //console.log(parseInt(chat[chat.length-1]['swipe_id']));
                     //console.log(chat[chat.length-1]['swipes'].length);
                     if (run_generate && parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length) {
                         //console.log('showing ""..."');
+                        /* if (!selected_group) {
+                        } else { */
                         $("#chat").children().filter('[mesid="' + (count_view_mes - 1) + '"]').children('.mes_block').children('.mes_text').html('...');  //shows "..." while generating
+                        /* } */
                     } else {
                         //console.log('showing previously generated swipe candidate, or "..."');
                         //console.log('onclick right swipe calling addOneMessage');
