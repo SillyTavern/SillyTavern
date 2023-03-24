@@ -111,7 +111,7 @@ async function moduleWorker() {
 
 function removeExpression() {
     lastMessage = null;
-    $('div.expression').css('background-image', 'unset');
+    $('img.expression').prop('src', '');
     $('.expression_settings').hide();
 }
 
