@@ -162,7 +162,7 @@ let optionsPopper = Popper.createPopper(document.getElementById('options_button'
         {
             name: 'offset',
             options: {
-                offset: [0, -260],
+                offset: [-20, -260],
             },
         },
     ],
