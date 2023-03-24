@@ -3893,34 +3893,8 @@ $(document).ready(function () {
             }
             $(this).parent().parent().children(".mes_text").empty();
             $(this).css("display", "none");
-            $(this)
-                .parent()
-                .children(".mes_edit_done")
-                .css("display", "inline-block");
-            $(this).parent().children(".mes_edit_done").css("opacity", 0.0);
-            $(this)
-                .parent()
-                .children(".mes_edit_cancel")
-                .css("display", "inline-block");
-            $(this).parent().children(".mes_edit_cancel").css("opacity", 0.0);
-            $(this)
-                .parent()
-                .children(".mes_edit_done")
-                .transition({
-                    opacity: 1.0,
-                    duration: 600,
-                    easing: "",
-                    complete: function () { },
-                });
-            $(this)
-                .parent()
-                .children(".mes_edit_cancel")
-                .transition({
-                    opacity: 1.0,
-                    duration: 600,
-                    easing: "",
-                    complete: function () { },
-                });
+            $(this).parent().children(".mes_edit_done").css("display", "inline-block");
+            $(this).parent().children(".mes_edit_cancel").css("display", "inline-block");
             var edit_mes_id = $(this).parent().parent().parent().attr("mesid");
             this_edit_mes_id = edit_mes_id;
 
@@ -3947,17 +3921,10 @@ $(document).ready(function () {
                 .parent()
                 .children(".mes_text")
                 .children(".edit_textarea");
-            edit_textarea.css("opacity", 0.0);
-            edit_textarea.transition({
-                opacity: 1.0,
-                duration: 0,
-                easing: "",
-                complete: function () { },
-            });
             edit_textarea.height(0);
             edit_textarea.height(edit_textarea[0].scrollHeight);
             edit_textarea.focus();
-            edit_textarea[0].setSelectionRange(
+            edit_textarea[0].setSelectionRange(     //this sets the cursor at the end of the text
                 edit_textarea.val().length,
                 edit_textarea.val().length
             );
