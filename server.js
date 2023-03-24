@@ -622,6 +622,7 @@ app.post("/editcharacter", urlencodedParser, async function (request, response) 
             img_path = "uploads/";
             img_file = filedata.filename;
 
+            invalidateThumbnail('avatar', request.body.avatar_url);
             await charaWrite(img_path + img_file, char, target_img, response, 'Character saved');
             //response.send('Character saved');
         }
@@ -646,6 +647,7 @@ app.post("/deletecharacter", urlencodedParser, function (request, response) {
     }
 
     fs.rmSync(avatarPath);
+    invalidateThumbnail('avatar', request.body.avatar_url);
     let dir_name = (request.body.avatar_url.replace('.png', ''));
 
     if (dir_name !== sanitize(dir_name)) {
@@ -1722,11 +1724,11 @@ async function generateThumbnail(type, file) {
         return null;
     }
 
-    const imageSizes = { 'bg': [160, 90], 'avatar': [42, 42] };
+    const imageSizes = { 'bg': [160, 90], 'avatar': [48, 48] };
     const mySize = imageSizes[type];
 
     const image = await jimp.read(pathToOriginalFile);
-    await image.cover(mySize[0], mySize[1]).quality(60).writeAsync(pathToCachedFile);
+    await image.cover(mySize[0], mySize[1]).quality(95).writeAsync(pathToCachedFile);
 
     return pathToCachedFile;
 }

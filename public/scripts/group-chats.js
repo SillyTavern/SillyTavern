@@ -126,7 +126,7 @@ async function getGroupChat(id) {
                         : default_ch_mes;
                     mes["force_avatar"] =
                         character.avatar != "none"
-                            ? `characters/${character.avatar}?${Date.now()}`
+                            ? `/thumbnail?type=avatar&file=${encodeURIComponent(character.avatar)}&${Date.now()}`
                             : default_avatar;
                     chat.push(mes);
                     addOneMessage(mes);
@@ -201,7 +201,7 @@ function getGroupAvatar(group) {
         for (const member of group.members) {
             const charIndex = characters.findIndex((x) => x.name === member);
             if (charIndex !== -1 && characters[charIndex].avatar !== "none") {
-                const avatar = `characters/${characters[charIndex].avatar}#${Date.now()}`;
+                const avatar = `/thumbnail?type=avatar&file=${encodeURIComponent(characters[charIndex].avatar)}&${Date.now()}`;
                 memberAvatars.push(avatar);
             }
             if (memberAvatars.length === 4) {
@@ -533,7 +533,7 @@ function select_group_chats(chat_id) {
     for (let character of characters) {
         const avatar =
             character.avatar != "none"
-                ? `characters/${character.avatar}#${Date.now()}`
+                ? `/thumbnail?type=avatar&file=${encodeURIComponent(character.avatar)}&${Date.now()}`
                 : default_avatar;
         const template = $("#group_member_template .group_member").clone();
         template.data("id", character.name);

@@ -565,9 +565,9 @@ function printCharacters() {
     $("#rm_print_characters_block").empty();
     //console.log('printCharacters() -- sees '+characters.length+' characters.');
     characters.forEach(function (item, i, arr) {
-        var this_avatar = default_avatar;
+        let this_avatar = default_avatar;
         if (item.avatar != "none") {
-            this_avatar = "characters/" + item.avatar + "?" + Date.now();
+            this_avatar = `/thumbnail?type=avatar&file=${encodeURIComponent(item.avatar)}&${Date.now()}`;
         } //RossAscends: changed 'prepend' to 'append' to make alphabetical sorting display correctly.
         $("#rm_print_characters_block").append(
 
@@ -625,7 +625,7 @@ async function getBackgrounds() {
         //background = getData;
         //console.log(getData.length);
         for (const bg of getData) {
-            const thumbPath = `/thumbnail?type=bg&file=${bg}`;
+            const thumbPath = `/thumbnail?type=bg&file=${encodeURIComponent(bg)}`;
             $("#bg_menu_content").append(
                 `<div class="bg_example" bgfile="${bg}" class="bg_example_img" style="background-image: url('${thumbPath}');">
                 <div bgfile="${bg}" class="bg_example_cross">
@@ -814,9 +814,9 @@ function addOneMessage(mes, type = "normal") {
             avatarImg = system_avatar;
         } else {
             if (characters[this_chid].avatar != "none") {
-                avatarImg = "characters/" + characters[this_chid].avatar;
+                avatarImg = `/thumbnail?type=avatar&file=${encodeURIComponent(characters[this_chid].avatar)}`;
                 if (is_mes_reload_avatar !== false) {
-                    avatarImg += "?" + is_mes_reload_avatar;
+                    avatarImg += "&" + is_mes_reload_avatar;
                 }
             } else {
                 avatarImg = default_avatar;
@@ -2546,7 +2546,7 @@ function select_selected_character(chid) {
     //$("#avatar_div").css("display", "none");
     var this_avatar = default_avatar;
     if (characters[chid].avatar != "none") {
-        this_avatar = "characters/" + characters[chid].avatar;
+        this_avatar = "characters/" + encodeURIComponent(characters[chid].avatar);
     }
     $("#avatar_load_preview").attr("src", this_avatar + "?" + Date.now());
     $("#name_div").css("display", "none");
@@ -2698,7 +2698,7 @@ function read_bg_load(input) {
                         "url(" + e.target.result + ")"
                     );
                     $("#form_bg_download").after(
-                        `<div class=bg_example bgfile="${html}" style="background-image: url('/thumbnail?type=bg&file=${html}');">
+                        `<div class=bg_example bgfile="${html}" style="background-image: url('/thumbnail?type=bg&file=${encodeURIComponent(html)}');">
                             <img class=bg_example_cross src="img/cross.png">
                         </div>`
                     );
