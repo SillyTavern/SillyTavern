@@ -1711,7 +1711,7 @@ async function generateThumbnail(type, file) {
         const cachedStat = fs.statSync(pathToCachedFile);
 
         if (originalStat.mtimeMs > cachedStat.ctimeMs) {
-            console.log('Original file changed. Regenerating thumbnail...');
+            //console.log('Original file changed. Regenerating thumbnail...');
             shouldRegenerate = true;
         }
     }
