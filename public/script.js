@@ -4208,4 +4208,10 @@ $(document).ready(function () {
 
         }
     });
+
+    $(document).on('click', '.inline-drawer-toggle', function () {
+        var icon = $(this).find('.inline-drawer-icon');
+        icon.toggleClass('down up');
+        $(this).closest('.inline-drawer').find('.inline-drawer-content').slideToggle();
+    });
 })

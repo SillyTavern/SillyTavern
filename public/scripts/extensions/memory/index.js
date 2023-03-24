@@ -320,24 +320,32 @@ function setMemoryContext(value, saveToMessage) {
 $(document).ready(function () {
     function addExtensionControls() {
         const settingsHtml = `
-        <h4>Memory</h4>
         <div id="memory_settings">
+            <h4>Memory</h4>
             <label for="memory_contents">Memory contents</label>
             <textarea id="memory_contents" class="text_pole" rows="8" placeholder="Context will be generated here..."></textarea>
             <div class="memory_contents_controls">
                 <input id="memory_restore" class="menu_button" type="submit" value="Restore previous state" />
                 <label for="memory_frozen"><input id="memory_frozen" type="checkbox" /> Freeze context</label>
             </div>
-            <label for="memory_short_length">Memory summarization [short-term] length (<span id="memory_short_length_tokens"></span> tokens)</label>
-            <input id="memory_short_length" type="range" value="${defaultSettings.shortMemoryLength}" min="${defaultSettings.minShortMemory}" max="${defaultSettings.maxShortMemory}" step="${defaultSettings.shortMemoryStep}" />
-            <label for="memory_long_length">Memory context [long-term] length (<span id="memory_long_length_tokens"></span> tokens)</label>
-            <input id="memory_long_length" type="range" value="${defaultSettings.longMemoryLength}" min="${defaultSettings.minLongMemory}" max="${defaultSettings.maxLongMemory}" step="${defaultSettings.longMemoryStep}" />
-            <label for="memory_temperature">Summarization temperature (<span id="memory_temperature_value"></span>)</label>
-            <input id="memory_temperature" type="range" value="${defaultSettings.temperature}" min="${defaultSettings.minTemperature}" max="${defaultSettings.maxTemperature}" step="${defaultSettings.temperatureStep}" />
-            <label for="memory_repetition_penalty">Summarization repetition penalty (<span id="memory_repetition_penalty_value"></span>)</label>
-            <input id="memory_repetition_penalty" type="range" value="${defaultSettings.repetitionPenalty}" min="${defaultSettings.minRepetitionPenalty}" max="${defaultSettings.maxRepetitionPenalty}" step="${defaultSettings.repetitionPenaltyStep}" />
-            <label for="memory_length_penalty">Summarization length penalty (<span id="memory_length_penalty_value"></span>)</label>
-            <input id="memory_length_penalty" type="range" value="${defaultSettings.lengthPenalty}" min="${defaultSettings.minLengthPenalty}" max="${defaultSettings.maxLengthPenalty}" step="${defaultSettings.lengthPenaltyStep}" />
+            <div class="inline-drawer">
+                <div class="inline-drawer-toggle inline-drawer-header">
+                    <b>Summarization settings</b>
+                    <div class="inline-drawer-icon down"></div>
+                </div>
+                <div class="inline-drawer-content">
+                    <label for="memory_short_length">Memory summarization [short-term] length (<span id="memory_short_length_tokens"></span> tokens)</label>
+                    <input id="memory_short_length" type="range" value="${defaultSettings.shortMemoryLength}" min="${defaultSettings.minShortMemory}" max="${defaultSettings.maxShortMemory}" step="${defaultSettings.shortMemoryStep}" />
+                    <label for="memory_long_length">Memory context [long-term] length (<span id="memory_long_length_tokens"></span> tokens)</label>
+                    <input id="memory_long_length" type="range" value="${defaultSettings.longMemoryLength}" min="${defaultSettings.minLongMemory}" max="${defaultSettings.maxLongMemory}" step="${defaultSettings.longMemoryStep}" />
+                    <label for="memory_temperature">Summarization temperature (<span id="memory_temperature_value"></span>)</label>
+                    <input id="memory_temperature" type="range" value="${defaultSettings.temperature}" min="${defaultSettings.minTemperature}" max="${defaultSettings.maxTemperature}" step="${defaultSettings.temperatureStep}" />
+                    <label for="memory_repetition_penalty">Summarization repetition penalty (<span id="memory_repetition_penalty_value"></span>)</label>
+                    <input id="memory_repetition_penalty" type="range" value="${defaultSettings.repetitionPenalty}" min="${defaultSettings.minRepetitionPenalty}" max="${defaultSettings.maxRepetitionPenalty}" step="${defaultSettings.repetitionPenaltyStep}" />
+                    <label for="memory_length_penalty">Summarization length penalty (<span id="memory_length_penalty_value"></span>)</label>
+                    <input id="memory_length_penalty" type="range" value="${defaultSettings.lengthPenalty}" min="${defaultSettings.minLengthPenalty}" max="${defaultSettings.maxLengthPenalty}" step="${defaultSettings.lengthPenaltyStep}" />
+                </div>
+            </div>
         </div>
         `;
         $('#extensions_settings').append(settingsHtml);

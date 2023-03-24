@@ -45,12 +45,9 @@ img.expression {
     color: red;
 }
 
-.expression_settings {
-    white-space: pre-line;
-}
-
 .expression_settings p {
-    margin-bottom: 0px;
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
 }
 
 .expression_settings label {
