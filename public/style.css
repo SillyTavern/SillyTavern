@@ -18,10 +18,11 @@
     --grey50: rgb(125, 125, 125);
     --grey70: rgb(175, 175, 175);
 
-    --grey30a: rgba(50,50,50,0.3);          /* dark grey transparent for #chat and #send_form so their borders stand out on dark BGs*/
+    --grey30a: rgba(50,50,50,0.3);
 
     --fullred: rgba(255, 0, 0, 1);
     --crimson70a: rgba(100, 0, 0, 0.7);
+    --okGreen70a:rgba(0,100,0,0.7);
     --cobalt30a: rgba(100, 100, 255, 0.3);
     --sienna: rgb(210, 100, 40);
     --orangered: rgb(255, 90, 0);
@@ -55,8 +56,6 @@ body {
     color: var(--ivory);
 }
 
-
-
 ::-webkit-scrollbar {
     width: 0.6em;
 }
@@ -72,12 +71,6 @@ body {
     box-shadow: inset 0 0 5px black;
     border-radius: 5px;
 }
-
-/* @supports (height: 100dvh) {
-    body {
-        height: 100dvh;
-    }
-} */
 
 .mes_text p {
     margin-top: 0;
@@ -102,7 +95,6 @@ body {
     color: darkgoldenrod;
 }
 
-/*.mes_text br {display:none;}*/
 .mes_text i,
 .mes_text em {
     color: var(--grey70);
@@ -204,21 +196,6 @@ margin-top:5px;
     transition: all 1s ease-in-out;
     flex-direction: column;
     z-index: 3;
-
-    /*old style top to bottom flow*/
-/*     overflow-x: hidden;
-    overflow-y: scroll;
-    margin-top: 40px;
-    border-bottom: 1px solid var(--black30a);
-    border-left: 1px solid var(--black30a);
-    border-right: 1px solid var(--black30a);
-    backdrop-filter: blur(20px);
-    background-color: var(--black70a);
-    -webkit-backdrop-filter: blur(20px);
-    text-shadow: #000 0 0 3px;
-    scrollbar-width: thin;
-    transition: all 1s ease-in-out; */
-
 }
 
 #form_sheld {
@@ -265,7 +242,7 @@ margin-top:5px;
     border: none;
     cursor: pointer;
     transition: 0.3s;
-    filter: brightness(0.5);
+    filter: brightness(0.7);
     order: 99999;
 }
 
@@ -303,7 +280,6 @@ margin-top:5px;
 
 #options_button:after {
     content: '\2630';
-    /*uses a unicode symbol for hamburger menu icon */
     text-decoration: none;
     font-size: 1.5rem;
 
@@ -316,9 +292,6 @@ margin-top:5px;
 #options {
     opacity: 0.0;
     display: none;
-    bottom: 200px;
-    /*sets vertical position of the options menu to the left of input bar */
-    position: relative;
     z-index: 1990;
 
 }
@@ -326,10 +299,8 @@ margin-top:5px;
 .options-content {
     overflow: hidden;
     display: block;
-    /*position: absolute;*/
-/*     backdrop-filter: blur(10px); */          /* removed because we can't have both this and the input bar blurring*/
+    position: absolute;
     background-color: var(--black100);
-    /* -webkit-backdrop-filter: blur(10px); */ /* removed because we can't have both this and the input bar blurring*/
     border: 1px solid #666;
     border-radius: 15px;
     box-shadow: 0 0 5px black;
@@ -339,7 +310,6 @@ margin-top:5px;
     margin-bottom: 13px;
 }
 
-/* Ссылки внутри выпадающего блока */
 .options-content hr {
     margin: 0;
     padding: 0;
@@ -360,7 +330,6 @@ margin-top:5px;
 }
 
 .options-content img {
-    /* opacity: 0.5; */
     width: 1.5rem;
     margin-right: 5px;
     height: 1.25rem;
@@ -371,7 +340,6 @@ margin-top:5px;
     vertical-align: middle;
 }
 
-/* Изменяем цвет ссылки при наведении */
 .options-content a:hover {
     background-color: var(--white30a);
 }
@@ -384,26 +352,17 @@ margin-top:5px;
 .mes {
 
     display: grid;
-    grid-template-columns: min-content min-content auto min-content min-content;
+    grid-template-columns: min-content min-content auto min-content;
     padding: 20px 10px 0 10px;
     margin-top: 0;
     width: 100%;
     color: var(--ivory, white);
-
-  /*   display: grid;
-    grid-template-columns: min-content min-content auto min-content min-content;
-    padding: 10px 10px 0 10px;
-    vertical-align: top;
-    width: 100%;
-    color: var(--ivory, white); */
 }
 
-/*.last_mes .mes_text {
-    min-height: 10em;
-}*/
-
 .last_mes{
-    grid-template-columns: [checkbox] fit-content(60px) [avatar] 50px [msg_block] auto [rightswipe] fit-content(48px);
+    grid-template-columns: [checkbox] fit-content(60px) [avatar-leftswipe] 50px [name-mestext] auto [edit-rightswipe] 30px !important;
+    grid-template-rows: [avatar-NameMesText-edit] 50px [swipes] auto;
+    grid-row-gap: 20px;
     
 }
 /* SWIPE RELATED STYLES*/
@@ -411,33 +370,32 @@ margin-top:5px;
 .swipe_right,.swipe_left {
     height: 40px;
     width: 40px;
-    opacity: 0.36;
-    position: absolute;
-    right: 10px;
-    margin-top: 5em;
-    left: auto;
+    opacity: 0.3;
+    right: 5px;
     align-items: center;
     justify-content: center;
-    flex-wrap: wrap;
+    z-index: 9999;
+    grid-row-start: 2;
+    grid-column-start: 4;
+    flex-flow:column;
 }
 
 .swipe_right img, .swipe_left img {
     height: 30px;
-    display: flex;
     width: 30px;
 }
 .swipes-counter{
-    display: flex;
     color: white;
-    position: fixed;
     font-size: 12px;
     padding: 0;
-    margin-top: 60px;
+    
 }
 
 .swipe_left {
     left: 15px;
     right: auto;
+    grid-column-start: 2;
+    align-items: flex-end;
 }
 
 .avatar {
@@ -454,37 +412,29 @@ margin-top:5px;
     border-radius: 50%;
     border: 1px solid var(--black30a);
     box-shadow: 0 0 5px var(--black50a);
-
-
-}
-
-.avatar.selected img {
-/*     outline-style: solid;
-    outline-color: rgb(255 255 255 / 70%);
-    outline-width: 2px; */
 }
 
 .mes_block {
     padding-top: 0;
     padding-left: 10px;
+    grid-row-start: 1;
+    grid-row-end: 3;
+    grid-column-start:3;
 }
 
 .ch_name {
-
     font-weight: bolder;
 }
 
 .mes_text {
     font-weight: 400;
     line-height: 1.25rem;
-    padding-right: 60px;
     padding-left: 0;
     padding-top: 5px;
     padding-bottom: 5px;
     max-width: 720px;
     word-wrap: break-word;
     animation: typing 3.5s steps(40, end), blink-caret .75s step-end infinite;
-
 }
 
 .mes_text::after {
@@ -553,15 +503,12 @@ textarea {
 }
 
 #description_textarea {
-
     height: -webkit-fill-available;
-
 }
 
 #character_name_pole {margin-bottom:0;}
 
 #firstmessage_textarea {
-
     height: -webkit-fill-available;
 }
 
@@ -577,12 +524,6 @@ textarea {
     margin: 5px 0;
 }
 
-
-/* .topbar {
-    max-height: calc(100% - 50px);
-    padding: 0 20px;
-}
- */
 #top-bar h3 {
     margin: 0;
     padding: 10px 0;
@@ -606,13 +547,9 @@ select:focus {
     outline: none;
 }
 
-input::file-selector-button {}
-
 input[type="file"] {
     display: none;
 }
-
-input[type=submit] {}
 
 #right-nav-panel-tabs {
     margin-top: 10px;
@@ -1789,48 +1726,52 @@ input[type="range"]{
     float: right;
     color: var(--white30a);
     cursor: pointer;
-    margin-right: 4px;
     transition: 0.3s ease-in-out;
+    background-image: url(/img/pencil-solid.svg);
+    background-repeat: no-repeat;
+    background-attachment: local;
+    background-position: center;
     height: 20px;
     width: 20px;
+    filter: invert(1) drop-shadow(0px 0px 2px black);
+    opacity: 0.2;
 }
-
-.mes_edit:after {
-    content: "\270e";
-}
-
-/*unicode pencil*/
 
 .mes_edit:hover {
-    color: var(--white100);
+    opacity: 1;
 }
 
+.last_mes .mes_edit, .last_mes .mes_edit_done, .last_mes .mes_edit_cancel {
+grid-row-start: 1;
+position: relative;
+right: -30px;
+}
 
-.mes_edit_done {
+.mes_edit_done, .mes_edit_cancel {
     display: none;
     float: right;
-    right: 8px;
     cursor: pointer;
-    margin-right: 15px;
-    opacity: 0.5;
-}
-
-.mes_edit_done img {
-    width: 23px;
-    height: 23px;
+    margin-right: 10px;
+    filter: drop-shadow(0px 0px 2px black);
+    transition: 0.3s ease-in-out;
 }
 
 .mes_edit_cancel {
-    display: none;
-    float: right;
-    margin-right: 4px;
-    cursor: pointer;
-    opacity: 0.5;
+    margin-right: 0px;
 }
 
-.mes_edit_cancel img {
-    width: 23px;
-    height: 23px;
+.mes_edit_cancel.menu_button, .mes_edit_done.menu_button{
+    opacity: 0.5;
+    padding: 5px;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.mes_edit_cancel.menu_button{background-color: var(--crimson70a);}
+.mes_edit_done.menu_button{background-color: var(--okGreen70a);}
+
+.mes_edit_cancel.menu_button:hover, .mes_edit_done.menu_button:hover{
+    opacity: 1;
 }
 
 .edit_textarea {
@@ -1919,7 +1860,6 @@ input[type="range"]{
     margin-bottom: 3px;
     margin-left: 0;
     color: var(--grey50);
-
 }
 
 #character_popup_text {
@@ -1930,14 +1870,9 @@ input[type="range"]{
     width: 100%;
 }
 
-#personality_div {}
-
 #personality_textarea {
     width: 100%;
-
 }
-
-#scenario_div {}
 
 #mes_example_div {
     height: 100%;
@@ -2029,10 +1964,6 @@ input[type="range"]{
 }
 
 #select_chat_div {
-    /* margin-left: 5px; */
-    /* margin-top: 30px; */
-    /* overflow-x: hidden;
-    overflow-y: scroll; */
     padding: 0;
     height: min-content;
 }
@@ -2058,7 +1989,6 @@ input[type="range"]{
 
 .select_chat_block {
     border-radius: 10px;
-    /* margin-right: 10px; */
     margin-top: 10px;
     border: 1px solid var(--white30a);
     padding: 10px;
@@ -2100,9 +2030,6 @@ input[type="range"]{
 }
 
 .PastChat_cross{
-/*     position: absolute;
-    right: 15px;
-    margin-top: 5px; */
     width: 15px;
     height: 15px;
     cursor: pointer;
@@ -2131,8 +2058,6 @@ input[type="range"]{
     display: grid;
     grid-template-columns: 340px auto;
 }
-
-
 
 /* GROUP CHATS */
 
@@ -2890,9 +2815,15 @@ filter: invert(20%) sepia(100%) saturate(2518%) hue-rotate(353deg) brightness(93
 
 /* ---------- @media queries must always go at the bottom ------------*/
 
-@media screen and (max-width: 450px) {      /*styles for mobile phones (tested on iPhone 13 Pro)*/
+@media screen and (max-width: 450px) {    /*styles for mobile phones (tested on iPhone 13 Pro)*/
+
     body {
-        font-size: 18px;
+        font-size: 16px;
+        position: fixed;
+        touch-action: none;
+        overflow: hidden;
+        height: 100vh;
+        width: 100vw;
     }
 
     .drawer-content {
@@ -2901,6 +2832,13 @@ filter: invert(20%) sepia(100%) saturate(2518%) hue-rotate(353deg) brightness(93
         position: fixed;
         left: 0;
         top: 10px;
+        border: 1px solid var(--grey30);
+    }
+
+    #select_chat_popup{
+        align-items: start;
+        height: min-content;
+        align-content: start;
     }
 
     #top-settings-holder{
@@ -2916,7 +2854,22 @@ filter: invert(20%) sepia(100%) saturate(2518%) hue-rotate(353deg) brightness(93
         margin: 0 auto;
         margin-left: 5px;
         position: fixed;
+    }
 
+    #character_popup, #world_popup, #send_form {
+    border: 1px solid var(--grey30);
+    }
+
+    #chat {
+        border-left: 1px solid var(--grey30);
+        border-right: 1px solid var(--grey30);
+        border-bottom: 1px solid var(--grey30);
+        align-items: start;
+        align-content: start;
+        }
+
+    #sheld, #character_popup {
+        overflow-y: hidden;
     }
 
     .mes-text {padding-right: 25px;}
@@ -2927,9 +2880,9 @@ filter: invert(20%) sepia(100%) saturate(2518%) hue-rotate(353deg) brightness(93
         width: calc(100vw - 10px);
         left: 5px !important;
         overflow-y: hidden;
-        border-left: 1px solid var(--grey30a);
-        border-right: 1px solid var(--grey30a);
-        border-bottom: 1px solid var(--grey30a);
+        border-left: 1px solid var(--grey30);
+        border-right: 1px solid var(--grey30);
+        border-bottom: 1px solid var(--grey30);
         border-radius: 0 0 20px 20px;
         /* border: 0;*/
     }
@@ -2982,10 +2935,9 @@ filter: invert(20%) sepia(100%) saturate(2518%) hue-rotate(353deg) brightness(93
     #talkativeness_hint span {
         min-width: 33%;
     }
+
     /*for debug purposes*/
-/* 
-    * {border: 1px solid purple;}
-     */
+    /* div {border: 1px solid purple;} */
 }
 
 @media (max-width: 768px) {
