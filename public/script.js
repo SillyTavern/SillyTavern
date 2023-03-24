@@ -267,6 +267,7 @@ var animation_rm_easing = "";
 
 var popup_type = "";
 var bg_file_for_del = "";
+var chat_file_for_del = "";
 var online_status = "no_connection";
 
 var api_server = "";
@@ -614,7 +615,7 @@ async function getBackgrounds() {
             const thumbPath = `/thumbnail?type=bg&file=${bg}`;
             $("#bg_menu_content").append(
                 `<div class="bg_example" bgfile="${bg}" class="bg_example_img" style="background-image: url('${thumbPath}');">
-                <div bgfile="${bg}" class=bg_example_cross style="background-image: url(img/cross.png);">
+                <div bgfile="${bg}" class="bg_example_cross">
             </div>`
             );
         }
@@ -681,6 +682,23 @@ async function delBackground(bg) {
         },
         body: JSON.stringify({
             bg: bg,
+        }),
+    });
+    if (response.ok === true) {
+
+    }
+}
+
+async function delChat(chatfile) {
+    const response = await fetch("/delchat", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-Token": token,
+        },
+        body: JSON.stringify({
+            chatfile: chatfile,
+            id: characters[this_chid].name
         }),
     });
     if (response.ok === true) {
@@ -2320,7 +2338,12 @@ async function getAllCharaChats() {
                         data[key]["file_name"] +
                         '</div><div class="select_chat_block_mes">' +
                         mes +
-                        "</div></div>"
+                        "</div>" +
+                        '<div file_name="' +
+                        data[key]["file_name"] +
+                        '" class="PastChat_cross"></div>' +
+                        "</div >"
+
                     );
                     if (
                         characters[this_chid]["chat"] ==
@@ -2577,6 +2600,7 @@ function callPopup(text, type) {
             break;
         case "del_world":
         case "del_group":
+        case "del_chat":
         default:
             $("#dialogue_popup_ok").text("Delete");
     }
@@ -3167,6 +3191,14 @@ $(document).ready(function () {
         popup_type = "del_bg";
         callPopup("<h3>Delete the background?</h3>");
     });
+
+    $(document).on("click", ".PastChat_cross", function () {
+        chat_file_for_del = $(this).attr('file_name');
+        console.log('detected cross click for' + chat_file_for_del);
+        popup_type = "del_chat";
+        callPopup("<h3>Delete the Chat File?</h3>");
+    });
+
     $("#advanced_div").click(function () {
         if (!is_advanced_char_open) {
             is_advanced_char_open = true;
@@ -3196,6 +3228,9 @@ $(document).ready(function () {
         if (popup_type == "del_bg") {
             delBackground(bg_file_for_del.attr("bgfile"));
             bg_file_for_del.parent().remove();
+        }
+        if (popup_type == "del_chat") {
+            delChat(chat_file_for_del);
         }
         if (popup_type == "del_ch") {
             console.log(

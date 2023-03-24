@@ -812,6 +812,28 @@ app.post("/delbackground", jsonParser, function (request, response) {
     invalidateThumbnail('bg', request.body.bg);
     return response.send('ok');
 });
+
+app.post("/delchat", jsonParser, function (request, response) {
+
+    if (!request.body) return response.sendStatus(400);
+
+    if (request.body.chatfile !== sanitize(request.body.chatfile)) {
+        console.error('Malicious chat name prevented');
+        return response.sendStatus(403);
+    }
+
+    const fileName = path.join(directories.chats, '/', sanitize(request.body.id), '/', sanitize(request.body.chatfile));
+    if (!fs.existsSync(fileName)) {
+        console.log('Chat file not found');
+        return response.sendStatus(400);
+    }
+
+    fs.rmSync(fileName);
+    console.log('deleted chat file: ' + fileName);
+    return response.send('ok');
+});
+
+
 app.post("/downloadbackground", urlencodedParser, function (request, response) {
     response_dw_bg = response;
     if (!request.body) return response.sendStatus(400);

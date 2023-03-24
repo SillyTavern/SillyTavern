@@ -948,6 +948,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     background-size: cover;
     background-position: center;
     box-shadow: 0 0 0 2pt black;
+    background-image: url(img/cross.png);
 }
 
 .no-border {border:none !important;}
@@ -2088,6 +2089,23 @@ input[type="range"]{
     height: 20px;
     cursor: pointer;
     opacity: 0.6;
+}
+
+.PastChat_cross{
+    position: absolute;
+    right: 15px;
+    margin-top: 5px;
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+    opacity: 0.4;
+    background-image: url(img/cross.png);
+    background-size: contain;
+    background-color: var(--black100);
+    background-repeat: no-repeat;
+    background-position: center;
+    border-radius: 50%;
+    box-shadow: 0 0 0 2pt black;
 }
 
 #advanced_book_logo {
