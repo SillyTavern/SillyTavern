@@ -28,21 +28,7 @@
     <link rel="stylesheet" href="css/bg_load.css">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
 
-    <script type=module>
-        //To DO:: 
-        //2) Count tokens print fix 
-        //6) Reload setting files when they was rewrite 
-        //7) Show an indicator that shows the message in context or not
-        //8) Сombine multiple messages into one if the text continues
-        //10) Design presets
-        //11) Fix sending propt with json additional symbols (kinda \\ and etc)
-        //import {encode, decode} from "../scripts/gpt-2-3-tokenizer/mod.js";
-        //let text = "hello world";
-        //console.log(encode("dsfs").length); // [258, 18798, 995]
-    </script>
-
-    <script type=module src="script.js">
-    </script>
+    <script type=module src="script.js"></script>
 
     <script type="module" src="scripts/world-info.js"></script>
     <script type="module" src="scripts/group-chats.js"></script>
@@ -150,7 +136,7 @@
                     <form action="javascript:void(null);" method="post" enctype="multipart/form-data">
                         <h4>API url</h4>
                         <h5>Example: http://127.0.0.1:7860/ </h5>
-                        <input id="textgenerationwebui_api_url_text" name="textgenerationwebui_api_url" class="text_pole" maxlength="500" size="35" value="" autocomplete="off">
+                        <input id="textgenerationwebui_api_url_text" name="textgenerationwebui_api_url" class="text_pole" maxlength="500" value="" autocomplete="off">
                         <input id="api_button_textgenerationwebui" class="menu_button" type="submit" value="Connect">
                         <img id="api_loading_textgenerationwebui" src="img/load.svg">
                     </form>
@@ -168,8 +154,9 @@
                                 <span class="note-link-span">?</span>
                             </a>
                         </h5>
-                        <input id="api_key_openai" name="api_key_openai" class="text_pole" maxlength="500" size="35" value="" autocomplete="off">
+                        <input id="api_key_openai" name="api_key_openai" class="text_pole" maxlength="500" value="" autocomplete="off">
                         <input id="api_button_openai" class="menu_button" type="submit" value="Connect">
+                        <a href="https://platform.openai.com/account/usage" target="_blank">View API Usage Metrics</a>
                         <img id="api_loading_openai" src="img/load.svg">
                     </form>
                     <div class="online_status4">

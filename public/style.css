@@ -661,7 +661,6 @@ select {
     font-size: 15px;
     border: 1px solid var(--white30a);
     border-radius: 10px;
-    width: 100%;
     margin-bottom:10px;
 }
 
@@ -682,10 +681,7 @@ select option:not(:checked) {
 
 #rm_api_block {
     display: none;
-    padding-bottom: 5px;
     overflow-y: auto;
-    grid-template-rows: auto;
-    grid-gap: 10px;
 }
 
 .API-logo {
