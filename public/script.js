@@ -2546,9 +2546,9 @@ function select_selected_character(chid) {
     //$("#avatar_div").css("display", "none");
     var this_avatar = default_avatar;
     if (characters[chid].avatar != "none") {
-        this_avatar = "characters/" + encodeURIComponent(characters[chid].avatar);
+        this_avatar = "/thumbnail?type=avatar&file=" + encodeURIComponent(characters[chid].avatar);
     }
-    $("#avatar_load_preview").attr("src", this_avatar + "?" + Date.now());
+    $("#avatar_load_preview").attr("src", this_avatar + "&" + Date.now());
     $("#name_div").css("display", "none");
 
     $("#form_create").attr("actiontype", "editcharacter");
