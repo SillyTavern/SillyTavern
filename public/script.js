@@ -4,6 +4,7 @@ import { encode } from "../scripts/gpt-2-3-tokenizer/mod.js";
 import {
     kai_settings,
     loadKoboldSettings,
+    formatKoboldUrl,
 } from "./scripts/kai-settings.js";
 
 import {
@@ -3270,7 +3271,8 @@ $(document).ready(function () {
         is_advanced_char_open = false;
         $("#character_popup").css("display", "none");
     });
-    $("#dialogue_popup_ok").click(function () {
+    $("#dialogue_popup_ok").click(function (e) {
+        e.stopPropagation();
         $("#shadow_popup").css("display", "none");
         $("#shadow_popup").css("opacity:", 0.0);
         if (popup_type == "del_bg") {
@@ -3352,6 +3354,7 @@ $(document).ready(function () {
         }
     });
     $("#dialogue_popup_cancel").click(function () {
+        e.stopPropagation();
         $("#shadow_popup").css("display", "none");
         $("#shadow_popup").css("opacity:", 0.0);
         popup_type = "";
@@ -3553,23 +3556,18 @@ $(document).ready(function () {
     $("#api_button").click(function (e) {
         e.stopPropagation();
         if ($("#api_url_text").val() != "") {
+            let value = formatKoboldUrl($.trim($("#api_url_text").val()));
+
+            if (!value) {
+                callPopup('Please enter a valid URL.', 'text');
+                return;
+            }
+
+            $("#api_url_text").val(value); 
+            api_server = value;
             $("#api_loading").css("display", "inline-block");
             $("#api_button").css("display", "none");
-            api_server = $("#api_url_text").val();
-            api_server = $.trim(api_server);
-            //console.log("1: "+api_server);
-            if (api_server.substr(api_server.length - 1, 1) == "/") {
-                api_server = api_server.substr(0, api_server.length - 1);
-            }
-            if (
-                !(
-                    api_server.substr(api_server.length - 3, 3) == "api" ||
-                    api_server.substr(api_server.length - 4, 4) == "api/"
-                )
-            ) {
-                api_server = api_server + "/api";
-            }
-            //console.log("2: "+api_server);
+
             main_api = "kobold";
             saveSettingsDebounced();
             is_get_status = true;
