@@ -1182,7 +1182,8 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
             }
         }
 
-        if (always_force_name2) {
+        // Pygmalion does that anyway
+        if (always_force_name2 && !is_pygmalion) {
             force_name2 = true;
         }
 
