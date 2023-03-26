@@ -31,10 +31,39 @@ img.expression {
     height: 0px;
 }
 
-#image_list {
-    margin-top: 0;
-    margin-bottom: 0;
+.expression_list_item {
+    position: relative;
+    max-width: 33%;
+    max-height: 200px;
+    background-color: #515151b0;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.expression_list_title {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    text-align: center;
     font-weight: 600;
+    background-color: #000000a8;
+    width: 100%;
+    height: 20%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.expression_list_image {
+    max-width: 100%;
+    height: 100%;
+}
+
+#image_list {
+    display: flex;
+    flex-direction: row;
+    column-gap: 1rem;
+    margin: 1rem;
 }
 
 #image_list .success {

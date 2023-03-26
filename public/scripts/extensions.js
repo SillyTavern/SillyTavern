@@ -4,6 +4,7 @@ export {
     getContext,
     getApiUrl,
     defaultRequestArgs,
+    modules,
 };
 
 const extensionNames = ['caption', 'dice', 'expressions', 'floating-prompt', 'memory'];

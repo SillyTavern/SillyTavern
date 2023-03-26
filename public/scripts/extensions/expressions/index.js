@@ -1,5 +1,4 @@
-import { getContext, getApiUrl } from "../../extensions.js";
-import { urlContentToDataUri } from "../../utils.js";
+import { getContext, getApiUrl, modules } from "../../extensions.js";
 export { MODULE_NAME };
 
 const MODULE_NAME = 'expressions';
@@ -65,6 +64,15 @@ async function moduleWorker() {
     if (lastCharacter !== context.characterId) {
         removeExpression();
         validateImages();
+    }
+
+    if (!modules.includes('classify')) {
+        $('.expression_settings .offline_mode').css('display', 'block');
+        lastCharacter = context.characterId;
+        return;
+    }
+    else {
+        $('.expression_settings .offline_mode').css('display', 'none');
     }
 
     // check if last message changed
@@ -139,14 +147,23 @@ async function validateImages() {
         image.width = '0px';
         image.height = '0px';
         image.onload = function () {
-            $('#image_list').append(`<li id="${item}" class="success">${item} - OK</li>`);
+            $('#image_list').append(getListItem(item, image.src, 'success'));
         }
         image.onerror = function () {
-            $('#image_list').append(`<li id="${item}" class="failure">${item} - Missing</li>`);
+            $('#image_list').append(getListItem(item, '/img/No-Image-Placeholder.svg', 'failure'));
         }
         $('#image_list').prepend(image);
     });
     imagesValidating = false;
+}
+
+function getListItem(item, imageSrc, textClass) {
+    return `
+        <div id="${item}" class="expression_list_item">
+            <span class="expression_list_title ${textClass}">${item}</span>
+            <img class="expression_list_image" src="${imageSrc}" />
+        </div>
+    `;
 }
 
 async function getExpressionsList() {
@@ -175,11 +192,11 @@ async function getExpressionsList() {
     }
 }
 
-async function setExpression(character, expression) {
+async function setExpression(character, expression, force) {
     const filename = `${expression}.png`;
-    const debugImageStatus = document.querySelector(`#image_list li[id="${filename}"]`);
+    const debugImageStatus = document.querySelector(`#image_list div[id="${filename}"] span`);
 
-    if (debugImageStatus && !debugImageStatus.classList.contains('failure')) {
+    if (force || (debugImageStatus && !debugImageStatus.classList.contains('failure'))) {
         //console.log('setting expression from character images folder');
         const imgUrl = `/characters/${character}/${filename}`;
         $('img.expression').prop('src', imgUrl);
@@ -191,6 +208,17 @@ async function setExpression(character, expression) {
             $('img.expression').prop('src', defImgUrl);
         }
     }
+}
+
+function onClickExpressionImage() {
+    // online mode doesn't need force set
+    if (modules.includes('classify')) {
+        return;
+    }
+
+    const context = getContext();
+    const expression = $(this).attr('id').replace('.png', '');
+    setExpression(context.name2, expression, true);
 }
 
 (function () {
@@ -208,7 +236,8 @@ async function setExpression(character, expression) {
                 <div class="inline-drawer-icon down"></div>
             </div>
             <div class="inline-drawer-content">
-                <ul id="image_list"></ul>
+                <p class="offline_mode">You are in offline mode. Click on the image below to set the expression.</p>
+                <div id="image_list"></div>
                 <p class="hint"><b>Hint:</b> <i>Create new folder in the <b>public/characters/</b> folder and name it as the name of the character. Put PNG images with expressions there.</i></p>
                 </div>
             </div>
@@ -217,6 +246,7 @@ async function setExpression(character, expression) {
         `;
         $('#extensions_settings').append(html);
         $('#expressions_show_default').on('input', onExpressionsShowDefaultInput);
+        $(document).on('click', '.expression_list_item', onClickExpressionImage);
         $('.expression_settings').hide();
     }
 
