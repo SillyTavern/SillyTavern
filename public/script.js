@@ -101,6 +101,7 @@ export {
     openCharacterChat,
     saveChat,
     messageFormating,
+    getExtensionPrompt,
     chat,
     this_chid,
     settings,
@@ -120,6 +121,7 @@ export {
     system_message_types,
     talkativeness_default,
     default_ch_mes,
+    extension_prompt_types,
 }
 
 // API OBJECT FOR EXTERNAL WIRING
@@ -183,6 +185,11 @@ const system_message_types = {
     BOOKMARK_BACK: "bookmark_back",
 };
 
+const extension_prompt_types = {
+    AFTER_SCENARIO: 0,
+    IN_CHAT: 1
+};
+
 const system_messages = {
     help: {
         name: systemUserName,
@@ -195,6 +202,7 @@ const system_messages = {
             '<ol>',
             '<li><tt>*text*</tt> – format the actions that your character does</li>',
             '<li><tt>{*text*}</tt> – set the behavioral bias for your character</li>',
+            '<li><tt>{}</tt> – cancel a previously set bias</li>',
             '</ol>',
             'Need more help? Visit our wiki – <a href=\"https://github.com/TavernAI/TavernAI/wiki\">TavernAI Wiki</a>!'
         ].join('')
@@ -767,7 +775,7 @@ function messageFormating(mes, ch_name, isSystem, forceAvatar) {
             .replace(/\n/g, "<br/>");
     } else if (!isSystem) {
         mes = converter.makeHtml(mes);
-        mes = mes.replace(/{([^}]+)}/g, "");
+        mes = mes.replace(/{.*}/g, "");
         mes = mes.replace(/\n/g, "<br/>");
         mes = mes.trim();
     }
@@ -945,7 +953,11 @@ function extractMessageBias(message) {
     }
 
     if (!found.length) {
-        return "";
+        // cancels a bias
+        if (message.includes('{') && message.includes('}')) {
+            return '';
+        }
+        return null;
     }
 
     return ` ${found.join(" ")} `;
@@ -970,11 +982,12 @@ function cleanGroupMessage(getMessage) {
     return getMessage;
 }
 
-function getExtensionPrompt() {
+function getExtensionPrompt(position = 0, depth) {
     let extension_prompt = Object.keys(extension_prompts)
         .sort()
         .map((x) => extension_prompts[x])
-        .filter(x => x)
+        .filter(x => x.position == position && x.value && (depth === undefined || x.depth == depth))
+        .map(x => x.value)
         .join("\n");
     if (extension_prompt.length && !extension_prompt.startsWith("\n")) {
         extension_prompt = "\n" + extension_prompt;
@@ -1058,9 +1071,12 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
         let messageBias = extractMessageBias(textareaText);
 
         // gets bias of the latest message where it was applied
-        for (let mes of chat) {
+        for (let mes of chat.slice().reverse()) {
             if (mes && mes.is_user && mes.extra && mes.extra.bias) {
-                promptBias = mes.extra.bias;
+                if (mes.extra.bias.trim().length > 0) {
+                    promptBias = mes.extra.bias;
+                }
+                break;
             }
         }
 
@@ -1220,7 +1236,7 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
             }
 
             // replace bias markup
-            chat2[i] = (chat2[i] ?? '').replace(/{([^}]+)}/g, '');
+            chat2[i] = (chat2[i] ?? '').replace(/{.*}/g, '');
             //console.log('replacing chat2 {}s');
             j++;
         }
@@ -1246,7 +1262,7 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
         }
 
         let { worldInfoString, worldInfoBefore, worldInfoAfter } = getWorldInfoPrompt(chat2);
-        let extension_prompt = getExtensionPrompt();
+        let extension_prompt = getExtensionPrompt(extension_prompt_types.AFTER_SCENARIO);
 
         /////////////////////// swipecode
         if (type == 'swipe') {
@@ -1356,6 +1372,24 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
                             item = item.replace(name1 + ':', 'You:');
                         }
                     }
+
+                    if (i === 0) {
+                        // Process those that couldn't get that far
+                        for (let upperDepth = 100; upperDepth >= arrMes.length; upperDepth--) {
+                            const upperAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, upperDepth);
+                            if (upperAnchor && upperAnchor.length) {
+                                item = upperAnchor + item;
+                            }
+                        }
+                    }
+
+                    const anchorDepth = Math.abs(i - arrMes.length + 1);
+                    const extensionAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, anchorDepth);
+
+                    if (extensionAnchor && extensionAnchor.length) {
+                        item += extensionAnchor;
+                    }
+
                     mesSend[mesSend.length] = item;
 
                 });
@@ -2619,8 +2653,8 @@ function select_rm_characters() {
     setRightTabSelectedClass('rm_button_characters');
 }
 
-function setExtensionPrompt(key, value) {
-    extension_prompts[key] = value;
+function setExtensionPrompt(key, value, position, depth) {
+    extension_prompts[key] = { value, position, depth };
 }
 
 function callPopup(text, type) {

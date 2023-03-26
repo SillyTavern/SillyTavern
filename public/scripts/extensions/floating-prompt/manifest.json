@@ -1,5 +1,5 @@
 {
-    "display_name": "Floating Prompt",
+    "display_name": "Floating Prompt / Author's Note",
     "loading_order": 1,
     "requires": [],
     "js": "index.js",

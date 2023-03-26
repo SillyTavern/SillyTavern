@@ -13,9 +13,11 @@ import {
     saveChat,
     checkOnlineStatus,
     setOnlineStatus,
+    getExtensionPrompt,
     token,
     name1,
     name2,
+    extension_prompt_types,
 } from "../script.js";
 import { groups, selected_group } from "./group-chats.js";
 
@@ -94,12 +96,20 @@ function setOpenAIMessages(chat) {
         }
 
         // replace bias markup
-        content = (content ?? '').replace(/{([^}]+)}/g, '');
+        content = (content ?? '').replace(/{.*}/g, '');
     
         // Apply the "wrap in quotes" option
         if (role == 'user' && oai_settings.wrap_in_quotes) content = `"${content}"`;
         openai_msgs[i] = { "role": role, "content": content };
         j++;
+    }
+
+    for (let i = 1; i < 100; i++) {
+        const anchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, i);
+
+        if (anchor && anchor.length) {
+            openai_msgs.splice(i, 0, { "role": 'system', 'content': anchor.trim() })
+        }
     }
 }
 
@@ -130,6 +140,7 @@ function generateOpenAIPromptCache(charPersonality, topAnchorDepth, anchorTop, a
         if (i >= openai_msgs.length - 1 && count_view_mes > 8 && $.trim(item).substr(0, (name1 + ":").length) == name1 + ":") {//For add anchor in end
             item = anchorBottom + "\n" + item;
         }
+
         msg["content"] = item;
         openai_msgs[i] = msg;
     });
@@ -232,8 +243,8 @@ function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAft
     let start_chat_count = countTokens([new_chat_msg]);
     let total_count = countTokens([prompt_msg], true) + start_chat_count;
 
-    if (bias) {
-        let bias_msg = { "role": "system", "content": bias };
+    if (bias && bias.trim().length) {
+        let bias_msg = { "role": "system", "content": bias.trim() };
         openai_msgs.push(bias_msg);
         total_count += countTokens([bias_msg], true);
     }
