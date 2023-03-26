@@ -3272,7 +3272,6 @@ $(document).ready(function () {
         $("#character_popup").css("display", "none");
     });
     $("#dialogue_popup_ok").click(function (e) {
-        e.stopPropagation();
         $("#shadow_popup").css("display", "none");
         $("#shadow_popup").css("opacity:", 0.0);
         if (popup_type == "del_bg") {
@@ -3354,7 +3353,6 @@ $(document).ready(function () {
         }
     });
     $("#dialogue_popup_cancel").click(function (e) {
-        e.stopPropagation();
         $("#shadow_popup").css("display", "none");
         $("#shadow_popup").css("opacity:", 0.0);
         popup_type = "";
@@ -4177,6 +4175,14 @@ $(document).ready(function () {
 
     $("html").click(function (e) {
         var clickTarget = $(e.target);
+
+        const forbiddenTargets = ['#character_cross', '#avatar-and-name-block', '#shadow_popup'];
+        for (const id of forbiddenTargets) {
+            if (clickTarget.closest(id).length > 0) {
+                return;
+            }
+        }
+
         var targetParentHasOpenDrawer = clickTarget.parents('.openDrawer').length;
         if (clickTarget.hasClass('drawer-icon') == false && !clickTarget.hasClass('openDrawer')) {
             if (jQuery.find('.openDrawer').length !== 0) {
