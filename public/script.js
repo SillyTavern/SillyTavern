@@ -3353,7 +3353,7 @@ $(document).ready(function () {
             getChat();
         }
     });
-    $("#dialogue_popup_cancel").click(function () {
+    $("#dialogue_popup_cancel").click(function (e) {
         e.stopPropagation();
         $("#shadow_popup").css("display", "none");
         $("#shadow_popup").css("opacity:", 0.0);
