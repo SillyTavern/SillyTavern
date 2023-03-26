@@ -84,7 +84,7 @@ function setOpenAIMessages(chat) {
 
         // for groups - prepend a character's name
         if (selected_group) {
-            content = `${name2}: ${content}`;
+            content = `${chat[j].name}: ${content}`;
         }
 
         // system messages produce no content
