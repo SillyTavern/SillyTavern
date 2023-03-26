@@ -1196,18 +1196,18 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
         var j = 0;
         console.log('pre-replace chat.length = ' + chat.length);
         for (var i = chat.length - 1; i >= 0; i--) {
-
+            let charName = selected_group ? chat[j].name : name2;
             if (j == 0) {
                 chat[j]['mes'] = chat[j]['mes'].replace(/{{user}}/gi, name1);
-                chat[j]['mes'] = chat[j]['mes'].replace(/{{char}}/gi, name2);
+                chat[j]['mes'] = chat[j]['mes'].replace(/{{char}}/gi, charName);
                 chat[j]['mes'] = chat[j]['mes'].replace(/<USER>/gi, name1);
-                chat[j]['mes'] = chat[j]['mes'].replace(/<BOT>/gi, name2);
+                chat[j]['mes'] = chat[j]['mes'].replace(/<BOT>/gi, charName);
             }
             let this_mes_ch_name = '';
             if (chat[j]['is_user']) {
                 this_mes_ch_name = name1;
             } else {
-                this_mes_ch_name = name2;
+                this_mes_ch_name = charName;
             }
             if (chat[j]['is_name']) {
                 chat2[i] = this_mes_ch_name + ': ' + chat[j]['mes'] + '\n';
