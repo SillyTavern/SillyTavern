@@ -4216,7 +4216,7 @@ $(document).ready(function () {
     $("html").on('touchstart mousedown', function (e) {
         var clickTarget = $(e.target);
 
-        const forbiddenTargets = ['#character_cross', '#avatar-and-name-block', '#shadow_popup'];
+        const forbiddenTargets = ['#character_cross', '#avatar-and-name-block', '#shadow_popup', '#world_popup'];
         for (const id of forbiddenTargets) {
             if (clickTarget.closest(id).length > 0) {
                 return;
