@@ -2,6 +2,7 @@
     "display_name": "Floating Prompt / Author's Note",
     "loading_order": 1,
     "requires": [],
+    "optional": [],
     "js": "index.js",
     "css": "style.css"
 }

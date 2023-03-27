@@ -2655,6 +2655,10 @@ label[for="extensions_autoconnect"] {
     color: red;
 }
 
+.optional {
+    color: lightgray;
+}
+
 .expander {
     flex-grow: 1;
 }

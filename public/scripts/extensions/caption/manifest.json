@@ -4,6 +4,7 @@
     "requires": [
         "caption"
     ],
+    "optional": [],
     "js": "index.js",
     "css": "style.css"
 }
