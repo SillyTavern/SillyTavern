@@ -19,6 +19,7 @@ const kai_settings = {
     tfs: 1,
     rep_pen_slope: 0.9,
     single_line: false,
+    no_repeat_bot: false,
 };
 
 function formatKoboldUrl(value) {
@@ -51,6 +52,10 @@ function loadKoboldSettings(preset) {
     if (preset.hasOwnProperty('single_line')) {
         kai_settings.single_line = preset.single_line;
         $('#single_line').prop('checked', kai_settings.single_line);
+    }
+    if (preset.hasOwnProperty('no_repeat_bot')) {
+        kai_settings.no_repeat_bot = preset.no_repeat_bot;
+        $('#no_repeat_bot').prop('checked', kai_settings.no_repeat_bot);
     }
 }
 
@@ -134,6 +139,11 @@ $(document).ready(function () {
     $('#single_line').on("input", function() {
         const value = $(this).prop('checked');
         kai_settings.single_line = value;
+        saveSettingsDebounced();
+    });
+    $('#no_repeat_bot').on("input", function() {
+        const value = $(this).prop('checked');
+        kai_settings.no_repeat_bot = value;
         saveSettingsDebounced();
     });
 });

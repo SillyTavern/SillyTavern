@@ -35,6 +35,11 @@ import {
     deleteLastMessage,
 } from "../script.js";
 
+import {
+    kai_settings,
+} from "./kai-settings.js";
+
+
 export {
     selected_group,
     is_group_automode_enabled,
@@ -384,9 +389,39 @@ function activateMembers(members, input) {
             activatedNames.push(member);
         }
     }
+	
+    // remove member who spoke last from activatedNames if no_repeat is true
+	// I wanted to make anyone be able to talk again if I jumped in, but something weird is happening with chat.length, and I can't figure it out.
+	// if you want to see what I mean, uncomment these console.log() commands.
+//    console.log(input);
+//    console.log("chat = " + chat);
+//    console.log(chat);
+//    console.log("chat[chat.length -2].name = " + chat[chat.length -2].name);
+//    console.log("chat[chat.length -1].name = " + chat[chat.length -1].name);
+//    console.log("chat.length = " + chat.length);
+//    console.log("lastSpeaker(code method) = " + chat[chat.length -1].name)
+    var repeat_name_filtered = false;
+    var no_repeat = true;
+    while (kai_settings.no_repeat_bot && !repeat_name_filtered) {
+        if (activatedNames.length > 0) {
+            var lastSpeaker = chat[chat.length -1].name;
+            console.log("activatedNames = " + activatedNames + "\nlastSpeaker = " + lastSpeaker)
+    
+            activatedNames = activatedNames.filter((name) => name !== lastSpeaker);
+        }
+        // pick 1 at random if no one was activated
+        if (activatedNames.length === 0) {
+            console.log("activatedNames is 0")
+            const randomIndex = Math.floor(Math.random() * members.length);
+            activatedNames.push(members[randomIndex]);
+        } else {
+            repeat_name_filtered = true;
+        }
+    }
 
     // pick 1 at random if no one was activated
     if (activatedNames.length === 0) {
+        console.log("activatedNames is 0")
         const randomIndex = Math.floor(Math.random() * members.length);
         activatedNames.push(members[randomIndex]);
     }
