@@ -33,6 +33,8 @@ import {
     setRightTabSelectedClass,
     default_ch_mes,
     deleteLastMessage,
+    showSwipeButtons,
+    hideSwipeButtons,
 } from "../script.js";
 
 export {
@@ -267,6 +269,7 @@ async function generateGroupWrapper(by_auto_mode, type=null) {
     }
 
     try {
+        hideSwipeButtons();
         is_group_generating = true;
         setCharacterName('');
         setCharacterId(undefined);
@@ -339,6 +342,7 @@ async function generateGroupWrapper(by_auto_mode, type=null) {
         setSendButtonState(false);
         setCharacterId(undefined);
         setCharacterName('');
+        showSwipeButtons();
     }
 }
 

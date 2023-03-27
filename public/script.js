@@ -102,6 +102,8 @@ export {
     saveChat,
     messageFormating,
     getExtensionPrompt,
+    showSwipeButtons,
+    hideSwipeButtons,
     chat,
     this_chid,
     settings,
@@ -1722,7 +1724,7 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
                                 console.log('entering chat update for groups');
                                 let avatarImg = 'img/ai4.png';
                                 if (characters[this_chid].avatar != 'none') {
-                                    avatarImg = `characters/${characters[this_chid].avatar}?${Date.now()}`;
+                                    avatarImg = `/thumbnail?type=avatar&file=${encodeURIComponent(characters[this_chid].avatar)}&${Date.now()}`;
                                 }
                                 chat[chat.length - 1]['is_name'] = true;
                                 chat[chat.length - 1]['force_avatar'] = avatarImg;
@@ -2770,7 +2772,8 @@ function showSwipeButtons() {
         !swipes ||
         $('.mes:last').attr('mesid') <= 0 ||
         chat[chat.length - 1].is_user ||
-        count_view_mes <= 1
+        count_view_mes <= 1 ||
+        (selected_group && is_group_generating)
     ) { return; }
 
     //had to add this to make the swipe counter work
