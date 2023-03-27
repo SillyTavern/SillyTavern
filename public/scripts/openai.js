@@ -650,4 +650,10 @@ $(document).ready(function () {
             getStatusOpen();
         }
     });
+
+    $("#save_prompts").click(function () {
+        oai_settings.main_prompt = $('#main_prompt_textarea').val();
+        oai_settings.nsfw_prompt = $('#nsfw_prompt_textarea').val();
+        saveSettingsDebounced();
+    });
 });
