@@ -218,7 +218,10 @@ function onClickExpressionImage() {
 
     const context = getContext();
     const expression = $(this).attr('id').replace('.png', '');
-    setExpression(context.name2, expression, true);
+
+    if ($(this).find('.failure').length === 0) {
+        setExpression(context.name2, expression, true);
+    }
 }
 
 (function () {
