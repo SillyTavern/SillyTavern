@@ -55,16 +55,14 @@ function saveSettings() {
 
 function loadSettings() {
     const savedSettings = JSON.parse(localStorage.getItem(SETTINGS_KEY));
-
-    if (savedSettings) {
-        Object.assign(settings, savedSettings);
-        $('#memory_long_length').val(settings.longMemoryLength).trigger('input');
-        $('#memory_short_length').val(settings.shortMemoryLength).trigger('input');
-        $('#memory_repetition_penalty').val(settings.repetitionPenalty).trigger('input');
-        $('#memory_temperature').val(settings.temperature).trigger('input');
-        $('#memory_length_penalty').val(settings.lengthPenalty).trigger('input');
-        $('#memory_frozen').prop('checked', settings.memoryFrozen).trigger('input');
-    }
+    Object.assign(settings, savedSettings ?? defaultSettings)
+    
+    $('#memory_long_length').val(settings.longMemoryLength).trigger('input');
+    $('#memory_short_length').val(settings.shortMemoryLength).trigger('input');
+    $('#memory_repetition_penalty').val(settings.repetitionPenalty).trigger('input');
+    $('#memory_temperature').val(settings.temperature).trigger('input');
+    $('#memory_length_penalty').val(settings.lengthPenalty).trigger('input');
+    $('#memory_frozen').prop('checked', settings.memoryFrozen).trigger('input');
 }
 
 function onMemoryShortInput() {
