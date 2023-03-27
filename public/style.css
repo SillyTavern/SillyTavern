@@ -28,7 +28,7 @@
     --sienna: rgb(210, 100, 40);
     --orangered: rgb(255, 90, 0);
     --greyCAIbg: rgb(36, 36, 37);
-    --ivory: rgba(229, 224, 216, 1);
+    --ivory: rgb(230, 230, 220);
 }
 
 * {
@@ -99,7 +99,7 @@ body {
 .mes_text i,
 .mes_text em {
     color: var(--grey75);
-    font-weight: 500;
+    font-weight: 600;
 }
 
 .mes_text strong,
