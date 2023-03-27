@@ -865,6 +865,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     border: 1px solid var(--black50a);
     box-shadow: 0 0 7px var(--black50a);
     margin: 5px;
+    cursor: pointer;
     aspect-ratio: 16/9;
 }
 
