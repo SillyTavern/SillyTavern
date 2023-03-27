@@ -19,7 +19,7 @@
         "sanitize-filename": "^1.6.3"
     },
     "name": "TavernAI",
-    "version": "1.1.1",
+    "version": "1.2.0",
     "bin": {
         "TavernAI": "server.js"
     },

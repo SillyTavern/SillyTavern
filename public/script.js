@@ -127,7 +127,7 @@ export {
 // API OBJECT FOR EXTERNAL WIRING
 window["TavernAI"] = {};
 
-const VERSION = "1.1.1";
+const VERSION = "1.2.0";
 let converter = new showdown.Converter({ emoji: "true" });
 /* let bg_menu_toggle = false; */
 const systemUserName = "TavernAI";
