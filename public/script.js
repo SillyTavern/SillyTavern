@@ -4213,7 +4213,7 @@ $(document).ready(function () {
         }
     });
 
-    $("html").click(function (e) {
+    $("html").on('touchstart mousedown', function (e) {
         var clickTarget = $(e.target);
 
         const forbiddenTargets = ['#character_cross', '#avatar-and-name-block', '#shadow_popup'];
