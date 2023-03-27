@@ -2018,7 +2018,7 @@ function changeMainAPI() {
 
         if (isCurrentApi && (apiName === "textgenerationwebui" || apiName === "novel")) {
             console.log("enabling amount_gen for ooba/novel");
-            apiObj.amountGenElem.children().prop("disabled", false);
+            apiObj.amountGenElem.find('input').prop("disabled", false);
             apiObj.amountGenElem.css("opacity", 1.0);
         }
 
@@ -3804,19 +3804,23 @@ $(document).ready(function () {
             $("#max_context").val(max_context);
             $("#max_context_counter").text(`${max_context} Tokens`);
 
-            $("#range_block").children().prop("disabled", false);
+            $("#range_block").find('input').prop("disabled", false);
+            $("#kobold-advanced-config").find('input').prop("disabled", false);
+            $("#kobold-advanced-config").css('opacity', 1.0);
 
             $("#range_block").css("opacity", 1.0);
-            $("#amount_gen_block").children().prop("disabled", false);
+            $("#amount_gen_block").find('input').prop("disabled", false);
 
             $("#amount_gen_block").css("opacity", 1.0);
         } else {
             //$('.button').disableSelection();
             preset_settings = "gui";
-            $("#range_block").children().prop("disabled", true);
+            $("#range_block").find('input').prop("disabled", true);
+            $("#kobold-advanced-config").find('input').prop("disabled", true);
+            $("#kobold-advanced-config").css('opacity', 0.5);
 
             $("#range_block").css("opacity", 0.5);
-            $("#amount_gen_block").children().prop("disabled", true);
+            $("#amount_gen_block").find('input').prop("disabled", true);
 
             $("#amount_gen_block").css("opacity", 0.45);
         }
