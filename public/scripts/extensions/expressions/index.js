@@ -4,6 +4,7 @@ export { MODULE_NAME };
 const MODULE_NAME = 'expressions';
 const DEFAULT_KEY = 'extensions_expressions_showDefault';
 const UPDATE_INTERVAL = 1000;
+const DEFAULT_EXPRESSIONS = ['anger', 'fear', 'joy', 'love', 'sadness', 'surprise'];
 
 let expressionsList = null;
 let lastCharacter = undefined;
@@ -67,6 +68,7 @@ async function moduleWorker() {
     }
 
     if (!modules.includes('classify')) {
+        $('.expression_settings').show();
         $('.expression_settings .offline_mode').css('display', 'block');
         lastCharacter = context.characterId;
         return;
@@ -136,6 +138,7 @@ async function validateImages() {
     $('#image_list').empty();
 
     if (!context.characterId) {
+        imagesValidating = false;
         return;
     }
 
@@ -167,6 +170,11 @@ function getListItem(item, imageSrc, textClass) {
 }
 
 async function getExpressionsList() {
+    // get something for offline mode (6 default images)
+    if (!modules.includes('classify')) {
+        return DEFAULT_EXPRESSIONS;
+    }
+
     if (Array.isArray(expressionsList)) {
         return expressionsList;
     }

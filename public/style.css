@@ -1221,6 +1221,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 #world_info_block {
     display: flex;
     align-items: center;
+    justify-content: space-between;
 }
 
 #world_import_button,
