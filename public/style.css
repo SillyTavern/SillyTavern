@@ -17,6 +17,7 @@
     --grey30: rgb(75, 75, 75);
     --grey50: rgb(125, 125, 125);
     --grey70: rgb(175, 175, 175);
+    --grey75: rgb(190, 190, 190);
 
     --grey30a: rgba(50,50,50,0.3);
 
@@ -80,7 +81,7 @@ body {
 .mes_text li tt {
     min-width: 80px;
     display: inline-block;
-    color: grey !important;
+    color: var(--grey50) !important;
     text-align: right;
 }
 
@@ -97,7 +98,7 @@ body {
 
 .mes_text i,
 .mes_text em {
-    color: var(--grey70);
+    color: var(--grey75);
     font-weight: 500;
 }
 
