@@ -3272,7 +3272,8 @@ $(document).ready(function () {
         );
         setBackground(this_bgfile);
     });
-    $(document).on("click", ".bg_example_cross", function () {
+    $(document).on("click", ".bg_example_cross", function (e) {
+        e.stopPropagation();
         bg_file_for_del = $(this);
         //$(this).parent().remove();
         //delBackground(this_bgfile);
