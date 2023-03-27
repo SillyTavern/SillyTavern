@@ -3241,6 +3241,11 @@ $(document).ready(function () {
         //when user clicks on a BG thumbnail...
         var this_bgfile = $(this).attr("bgfile"); // this_bgfile = whatever they clicked
 
+        // if clicked on upload button
+        if (!this_bgfile) {
+            return;
+        }
+
         if (bg1_toggle == true) {
             //if bg1 is toggled true (initially set as true in first JS vars)
             bg1_toggle = false; // then toggle it false
