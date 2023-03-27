@@ -1305,7 +1305,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     display: flex;
     flex-direction: row;
     align-items: center;
-    margin-left: 36px;
+    margin-left: 18px;
 }
 
 #form_rename_world {
