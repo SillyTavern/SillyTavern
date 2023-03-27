@@ -1632,6 +1632,7 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
                     } else if (main_api == 'textgenerationwebui') {
                         getMessage = data.data[0];
                         if (getMessage == null || data.error) {
+                            activateSendButtons();
                             callPopup('<h3>Got empty response from Text generation web UI. Try restarting the API with recommended options.</h3>', 'text');
                             return;
                         }
@@ -1732,8 +1733,7 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
                             //console.log('runGenerate calls addOneMessage');
                             addOneMessage(chat[chat.length - 1]);
 
-                            $("#send_but").css("display", "inline");
-                            $("#loading_mes").css("display", "none");
+                            activateSendButtons();
                         }
                     } else {
                         // regenerate with character speech reenforced
@@ -1742,8 +1742,7 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
                         Generate(newType, automatic_trigger = false, force_name2 = true);
                     }
                 } else {
-                    $("#send_but").css("display", "inline");
-                    $("#loading_mes").css("display", "none");
+                    activateSendButtons();
                     //console.log('runGenerate calling showSwipeBtns');
                     showSwipeButtons();
                 }
@@ -1757,18 +1756,15 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
                 //let final_message_length = encode(JSON.stringify(getMessage)).length;
                 //console.log('AI Response: +'+getMessage+ '('+final_message_length+' tokens)');
 
-                $("#send_but").css("display", "inline");
-                //console.log('runGenerate calling showSwipeBtns pt. 2');
+                activateSendButtons();
                 showSwipeButtons();
-                $("#loading_mes").css("display", "none");
                 $('.mes_edit:last').show();
             };
 
             function onError(jqXHR, exception) {
                 $("#send_textarea").removeAttr('disabled');
                 is_send_press = false;
-                $("#send_but").css("display", "inline");
-                $("#loading_mes").css("display", "none");
+                activateSendButtons();
                 console.log(exception);
                 console.log(jqXHR);
             };
@@ -1785,6 +1781,12 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
     }
     console.log('generate ending');
 } //generate ends
+
+function activateSendButtons() {
+    is_send_press = false;
+    $("#send_but").css("display", "inline");
+    $("#loading_mes").css("display", "none");
+}
 
 function resetChatState() {
     active_character = "invalid-safety-id"; //unsets the chid in settings (this prevents AutoLoadChat from trying to load the wrong ChID
