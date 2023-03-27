@@ -817,7 +817,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 }
 
 .character_select:hover {
-    background-color: var(--white50a);
+    background-color: var(--white30a);
 }
 
 #avatar_url_div {
@@ -2210,7 +2210,7 @@ right: -30px;
 }
 
 .group_member:hover {
-    background-color: #ffffff11;
+    background-color: var(--white30a);
 }
 
 #group_member_template {
@@ -2231,7 +2231,7 @@ right: -30px;
 }
 
 .group_select:hover {
-    background-color: #ffffff11;
+    background-color: var(--white30a);
 }
 
 .group_select .group_icon {
@@ -2260,7 +2260,7 @@ right: -30px;
     bottom: 10px;
     margin: 10px;
     opacity: 0.6;
-    text-shadow: 2px 2px 2px rgba(0, 0, 0, 0.6);
+    text-shadow: 2px 2px 2px var(--black60a);
 }
 
 .typing_indicator:after {
@@ -2469,7 +2469,6 @@ h2 {
 a {
     color: orange;
     text-decoration: none;
-
 }
 
 
