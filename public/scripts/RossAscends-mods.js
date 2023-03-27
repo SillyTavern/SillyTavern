@@ -200,7 +200,7 @@ function RA_checkOnlineStatus() {
 	} else {
 		if (online_status !== undefined && online_status !== "no_connection") {
 			$("#send_textarea").attr("placeholder", "Type a message..."); //on connect, placeholder tells user to type message
-			$("#send_form").css("background-color", "rgba(0,0,0,0.5)"); //on connect, form BG changes to transprent black
+			$("#send_form").css("background-color", "rgba(0,0,0,0.7)"); //on connect, form BG changes to transprent black
 			$("#API-status-top").removeClass("redOverlayGlow");
 			connection_made = true;
 			retry_delay = 100;

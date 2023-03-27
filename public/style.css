@@ -190,7 +190,7 @@ margin-top:5px;
     border-left: 1px solid var(--grey30a);
     border-right: 1px solid var(--grey30a);
     backdrop-filter: blur(10px);
-    background-color: var(--black50a);
+    background-color: var(--black70a);
     -webkit-backdrop-filter: blur(10px);
     text-shadow: #000 0 0 3px;
     scrollbar-width: thin;
@@ -2487,7 +2487,7 @@ a {
     left: auto;
     padding: 0 10px;
     backdrop-filter: blur(10px);
-    background-color: var(--black50a);
+    background-color: var(--black70a);
     -webkit-backdrop-filter: blur(10px);
     z-index: 3000;
     white-space: nowrap;
