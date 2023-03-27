@@ -16,6 +16,7 @@
     text-align: center;
     filter: drop-shadow(2px 2px 2px #51515199);
     transition: 500ms;
+    z-index: 3;
 }
 
 img.expression {
