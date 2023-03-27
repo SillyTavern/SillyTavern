@@ -298,7 +298,7 @@ async function generateGroupWrapper(by_auto_mode, type=null) {
             }
         }
 
-        const activatedMembers = type !== "swipe" ? activateMembers(group.members, activationText) : activateSwipe(group.members);
+        const activatedMembers = type !== "swipe" ? activateMembers(group.members, activationText, lastMessage) : activateSwipe(group.members);
         // now the real generation begins: cycle through every character
         for (const chId of activatedMembers) {
             const generateType = type !== "swipe" ? "group_chat" : "swipe";
@@ -355,13 +355,20 @@ function activateSwipe(members) {
     return memberIds;
 }
 
-function activateMembers(members, input) {
+function activateMembers(members, input, lastMessage) {
     let activatedNames = [];
 
-    // find mentions
+    // prevents the same character from speaking twice
+    let bannedUser = lastMessage && !lastMessage.is_user && lastMessage.name;
+
+    // find mentions (excluding self)
     if (input && input.length) {
         for (let inputWord of extractAllWords(input)) {
             for (let member of members) {
+                if (member == bannedUser) {
+                    continue;
+                }
+
                 if (extractAllWords(member).includes(inputWord)) {
                     activatedNames.push(member);
                     break;
@@ -370,9 +377,13 @@ function activateMembers(members, input) {
         }
     }
 
-    // activation by talkativeness (in shuffled order)
+    // activation by talkativeness (in shuffled order, except banned)
     const shuffledMembers = shuffle([...members]);
     for (let member of shuffledMembers) {
+        if (member == bannedUser) {
+            continue;
+        }
+
         const character = characters.find((x) => x.name === member);
 
         if (!character) {
