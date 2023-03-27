@@ -2546,6 +2546,13 @@ function select_rm_info(text, charId = null) {
     setRightTabSelectedClass();
 
     prev_selected_char = charId;
+
+    if (prev_selected_char) {
+        const newId = characters.findIndex((x) => x.name == prev_selected_char);
+        if (newId >= 0) {
+            this_chid = newId;
+        }
+    }
 }
 
 function select_selected_character(chid) {
@@ -2642,15 +2649,19 @@ function select_rm_create() {
 }
 
 function select_rm_characters() {
+    restoreSelectedCharacter();
+
+    menu_type = "characters";
+    selectRightMenuWithAnimation('rm_characters_block');
+    setRightTabSelectedClass('rm_button_characters');
+}
+
+function restoreSelectedCharacter() {
     if (prev_selected_char) {
         let newChId = characters.findIndex((x) => x.name == prev_selected_char);
         $(`.character_select[chid="${newChId}"]`).trigger("click");
         prev_selected_char = null;
     }
-
-    menu_type = "characters";
-    selectRightMenuWithAnimation('rm_characters_block');
-    setRightTabSelectedClass('rm_button_characters');
 }
 
 function setExtensionPrompt(key, value, position, depth) {
