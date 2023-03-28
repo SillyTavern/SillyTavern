@@ -700,19 +700,51 @@ async function delChat(chatfile) {
         //close past chat popup
         $("#select_chat_cross").click();
 
-        //this is a copy of what 'start new chat' does, just without the popup and confirmation
-        //not an ideal solution, and needs to be smarter
-        clearChat();
-        chat.length = 0;
-        characters[this_chid].chat = name2 + " - " + humanizedDateTime();
-        $("#selected_chat_pole").val(characters[this_chid].chat);
-        saveCharacterDebounced();
-        getChat();
+        // choose another chat if current was deleted
+        if (chatfile.replace('.jsonl', '') === characters[this_chid].chat) {
+            await replaceCurrentChat();
+        }
 
         //open the history view again after 100ms
-        setTimeout(function () { $("#option_select_chat").click() }, 100);
         //hide option popup menu
-        $("#options").hide();
+        setTimeout(function () {
+            $("#option_select_chat").click();
+            $("#options").hide();
+        }, 100);
+    }
+}
+
+async function replaceCurrentChat() {
+    clearChat();
+    chat.length = 0;
+
+    const chatsResponse = await fetch("/getallchatsofcharacter", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            "X-CSRF-Token": token,
+        },
+        body: JSON.stringify({ avatar_url: characters[this_chid].avatar })
+    });
+
+    if (chatsResponse.ok) {
+        const chats = Object.values(await chatsResponse.json());
+
+        // pick existing chat
+        if (chats.length && typeof chats[0] === 'object') {
+            characters[this_chid].chat = chats[0].file_name.replace('.jsonl', '');
+            $("#selected_chat_pole").val(characters[this_chid].chat);
+            saveCharacterDebounced();
+            await getChat();
+        }
+
+        // start new chat
+        else {
+            characters[this_chid].chat = name2 + " - " + humanizedDateTime();
+            $("#selected_chat_pole").val(characters[this_chid].chat);
+            saveCharacterDebounced();
+            await getChat();
+        }
     }
 }
 
