@@ -100,7 +100,7 @@ async function moduleWorker() {
 (function() {
     function addExtensionsSettings() {
         const settingsHtml = `
-        <h4>Floating Prompt / Author's Note</h4>
+        <h4>Author's Note / Character Bias</h4>
         <div class="floating_prompt_settings">
             <label for="extension_floating_prompt">Append the following text:</label>
             <textarea id="extension_floating_prompt" class="text_pole" rows="2"></textarea>
@@ -116,7 +116,7 @@ async function moduleWorker() {
             <input id="extension_floating_interval" class="text_pole" type="number" value="0" min="0" max="999" />
             <label for="extension_floating_interval">Insertion depth (for in-chat positioning):</label>
             <input id="extension_floating_depth" class="text_pole" type="number" value="0" min="0" max="99" />
-            <span>Appending the prompt in next: <span id="extension_floating_counter">No</span> message(s)</span>
+            <span>Appending to the prompt in next: <span id="extension_floating_counter">No</span> message(s)</span>
         </div>
         `;
 
