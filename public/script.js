@@ -47,6 +47,7 @@ import {
     disable_scenario_formatting,
     always_force_name2,
     custom_chat_separator,
+    multigen,
 } from "./scripts/power-user.js";
 
 import {
@@ -129,7 +130,6 @@ export {
 // API OBJECT FOR EXTERNAL WIRING
 window["TavernAI"] = {};
 
-const VERSION = "1.2.0";
 let converter = new showdown.Converter({ emoji: "true" });
 /* let bg_menu_toggle = false; */
 const systemUserName = "TavernAI";
@@ -385,7 +385,6 @@ $.get("/csrf-token").then((data) => {
     token = data.token;
     getCharacters();
     getSettings("def");
-    getLastVersion();
     sendSystemMessage(system_message_types.WELCOME);
     getBackgrounds();
     getUserAvatars();
@@ -422,34 +421,6 @@ function checkOnlineStatus() {
         $(".online_status_indicator4").css("background-color", "green"); //OAI / ooba
         $(".online_status_text4").html(online_status);
     }
-}
-
-///// DO WE STILL NEED THIS?
-async function getLastVersion() {
-    jQuery.ajax({
-        type: "POST", //
-        url: "/getlastversion", //
-        data: JSON.stringify({
-            "": "",
-        }),
-        beforeSend: function () { },
-        cache: false,
-        dataType: "json",
-        contentType: "application/json",
-        //processData: false,
-        success: function (data) {
-            var getVersion = data.version;
-            if (getVersion !== "error" && getVersion != undefined) {
-                if (compareVersions(getVersion, VERSION) === 1) {
-                    $("#verson").append(" <span>(v." + getVersion + ")</span>");
-                }
-            }
-        },
-        error: function (jqXHR, exception) {
-            console.log(exception);
-            console.log(jqXHR);
-        },
-    });
 }
 
 async function getStatus() {
@@ -1473,7 +1444,7 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
 
             const zeroDepthAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, 0, ' ');
             if (zeroDepthAnchor && zeroDepthAnchor.length) {
-                if (!is_pygmalion || tokens_already_generated == 0) {
+                if (!isMultigenEnabled() || tokens_already_generated == 0) {
                     const trimBothEnds = !force_name2 && !is_pygmalion;
                     finalPromt += (trimBothEnds ? zeroDepthAnchor.trim() : zeroDepthAnchor.trimEnd());
                 }
@@ -1486,28 +1457,24 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
             }
 
             //console.log('final prompt decided');
+            let this_amount_gen = parseInt(amount_gen); // how many tokens the AI will be requested to generate
+            let this_settings = koboldai_settings[koboldai_setting_names[preset_settings]];
 
-            //if we aren't using the kobold GUI settings...
-            if (main_api == 'textgenerationwebui' || main_api == 'kobold' && preset_settings != 'gui') {
-                var this_settings = koboldai_settings[koboldai_setting_names[preset_settings]];
-
-                var this_amount_gen = parseInt(amount_gen); // how many tokens the AI will be requested to generate
-                if (is_pygmalion) { // if we are using a pygmalion model...
-                    if (tokens_already_generated === 0) { // if nothing has been generated yet..
-                        if (parseInt(amount_gen) >= 50) { // if the max gen setting is > 50...(
-                            this_amount_gen = 50; // then only try to make 50 this cycle..
-                        }
-                        else {
-                            this_amount_gen = parseInt(amount_gen); // otherwise, make as much as the max amount request.
-                        }
+            if (isMultigenEnabled()) {
+                if (tokens_already_generated === 0) { // if nothing has been generated yet..
+                    if (parseInt(amount_gen) >= 50) { // if the max gen setting is > 50...(
+                        this_amount_gen = 50; // then only try to make 50 this cycle..
                     }
-                    else { // if we already recieved some generated text...
-                        if (parseInt(amount_gen) - tokens_already_generated < tokens_cycle_count) { // if the remaining tokens to be made is less than next potential cycle count
-                            this_amount_gen = parseInt(amount_gen) - tokens_already_generated; // subtract already generated amount from the desired max gen amount
-                        }
-                        else {
-                            this_amount_gen = tokens_cycle_count; // otherwise make the standard cycle amont (frist 50, and 30 after that)
-                        }
+                    else {
+                        this_amount_gen = parseInt(amount_gen); // otherwise, make as much as the max amount request.
+                    }
+                }
+                else { // if we already recieved some generated text...
+                    if (parseInt(amount_gen) - tokens_already_generated < tokens_cycle_count) { // if the remaining tokens to be made is less than next potential cycle count
+                        this_amount_gen = parseInt(amount_gen) - tokens_already_generated; // subtract already generated amount from the desired max gen amount
+                    }
+                    else {
+                        this_amount_gen = tokens_cycle_count; // otherwise make the standard cycle amont (frist 50, and 30 after that)
                     }
                 }
             }
@@ -1666,25 +1633,25 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
                         getMessage = collapseNewlines(getMessage);
                     }
 
-                    //Pygmalion run again													// to make it continue generating so long as it's under max_amount and hasn't signaled
+                    //Pygmalion run again
+                    // to make it continue generating so long as it's under max_amount and hasn't signaled
                     // an end to the character's response via typing "You:" or adding "<endoftext>"
-                    if (is_pygmalion) {
+                    if (isMultigenEnabled()) {
                         if_typing_text = false;
                         message_already_generated += getMessage;
                         promptBias = '';
-                        //console.log('AI Response so far: '+message_already_generated);
-                        if (message_already_generated.indexOf('You:') === -1 && 			//if there is no 'You:' in the response msg
-                            message_already_generated.indexOf('<|endoftext|>') === -1 && 	//if there is no <endoftext> stamp in the response msg
-                            tokens_already_generated < parseInt(amount_gen) && 				//if the gen'd msg is less than the max response length..
-                            getMessage.length > 0) {											//if we actually have gen'd text at all... 
+                        if (message_already_generated.indexOf('You:') === -1 &&             //if there is no 'You:' in the response msg
+                            message_already_generated.indexOf('<|endoftext|>') === -1 &&    //if there is no <endoftext> stamp in the response msg
+                            tokens_already_generated < parseInt(amount_gen) &&              //if the gen'd msg is less than the max response length..
+                            getMessage.length > 0) {                                        //if we actually have gen'd text at all... 
                             runGenerate(getMessage);
-                            console.log('returning to make pyg generate again');									//generate again with the 'GetMessage' argument..
+                            console.log('returning to make generate again');            //generate again with the 'GetMessage' argument..
                             return;
                         }
 
                         getMessage = message_already_generated;
-
                     }
+
                     //Formating
                     getMessage = $.trim(getMessage);
                     if (is_pygmalion) {
@@ -1795,6 +1762,10 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
     }
     console.log('generate ending');
 } //generate ends
+
+function isMultigenEnabled() {
+    return multigen && (main_api == 'textgenerationwebui' || main_api == 'kobold' || main_api == 'novel');
+}
 
 function activateSendButtons() {
     is_send_press = false;

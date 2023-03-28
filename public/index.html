@@ -40,7 +40,7 @@
     <title>Tavern.AI</title>
 </head>
 
-<body>
+<body class="no-blur">
 
     <div id="bg1"></div>
     <div id="bg2"></div>
@@ -808,8 +808,18 @@
                     <input id="always-force-name2-checkbox" type="checkbox" />
                     Always add character's name to prompt
                 </label>
-                <label class="checkbox_label" for="force-pygmalion-formatting-checkbox"><input id="force-pygmalion-formatting-checkbox" type="checkbox" />
+                <label class="checkbox_label" for="force-pygmalion-formatting-checkbox">
+                    <input id="force-pygmalion-formatting-checkbox" type="checkbox" />
                     Pygmalion Formatting for All Models
+                </label>
+                <label class="checkbox_label" for="multigen">
+                    <input id="multigen" type="checkbox" />
+                    <span>
+                        Multigen 
+                        <a href="/notes/multigen" class="notes-link" target="_blank">
+                            <span class="note-link-span">?</span>
+                        </a>
+                    </span>
                 </label>
                 <label class="checkbox_label" for="pin-examples-checkbox"><input id="pin-examples-checkbox" type="checkbox" />
                     Keep Example Messages in Prompt

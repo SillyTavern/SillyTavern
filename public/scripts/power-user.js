@@ -9,6 +9,7 @@ export {
     always_force_name2,
     custom_chat_separator,
     fast_ui_mode,
+    multigen,
 };
 
 let collapse_newlines = false;
@@ -19,6 +20,7 @@ let disable_scenario_formatting = false;
 let disable_personality_formatting = false;
 let always_force_name2 = false;
 let fast_ui_mode = false;
+let multigen = false;
 let custom_chat_separator = '';
 
 const storage_keys = {
@@ -31,6 +33,7 @@ const storage_keys = {
     always_force_name2: "TavernAI_always_force_name2",
     custom_chat_separator: "TavernAI_custom_chat_separator",
     fast_ui_mode: "TavernAI_fast_ui_mode",
+    multigen: "TavernAI_multigen",
 };
 
 function collapseNewlines(x) {
@@ -59,6 +62,7 @@ function loadPowerUserSettings() {
     always_force_name2 = localStorage.getItem(storage_keys.always_force_name2) == "true";
     custom_chat_separator = localStorage.getItem(storage_keys.custom_chat_separator);
     fast_ui_mode = localStorage.getItem(storage_keys.fast_ui_mode) == "true";
+    multigen = localStorage.getItem(storage_keys.multigen) == "true";
 
     $("#force-pygmalion-formatting-checkbox").prop("checked", force_pygmalion_formatting);
     $("#collapse-newlines-checkbox").prop("checked", collapse_newlines);
@@ -69,6 +73,7 @@ function loadPowerUserSettings() {
     $("#always-force-name2-checkbox").prop("checked", always_force_name2);
     $("#custom_chat_separator").val(custom_chat_separator);
     $("#fast_ui_mode").prop("checked", fast_ui_mode);
+    $("#multigen").prop("checked", multigen);
 }
 
 $(document).ready(() => {
@@ -119,5 +124,10 @@ $(document).ready(() => {
         fast_ui_mode = $(this).prop("checked");
         localStorage.setItem(storage_keys.fast_ui_mode, fast_ui_mode);
         switchUiMode();
+    });
+
+    $("#multigen").change(function () {
+        multigen = $(this).prop("checked");
+        localStorage.setItem(storage_keys.multigen, multigen);
     });
 });
