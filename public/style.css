@@ -708,6 +708,11 @@ img[src*="user-slash-solid.svg"] {
     filter: invert(1) brightness(75%);
 }
 
+.menu_button.disabled {
+    filter: brightness(50%);
+    cursor: not-allowed;
+}
+
 .svg_icon {
     filter: invert(1);
 }

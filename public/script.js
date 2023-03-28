@@ -1758,11 +1758,7 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
                 }
                 console.log('/savechat called by /Generate');
 
-                if (selected_group) {
-                    saveGroupChat(selected_group);
-                } else {
-                    saveChat();
-                }
+                saveChatConditional();
                 //let final_message_length = encode(JSON.stringify(getMessage)).length;
                 //console.log('AI Response: +'+getMessage+ '('+final_message_length+' tokens)');
 
@@ -2374,11 +2370,7 @@ function messageEditDone(div) {
     mesBlock.find(".mes_bias").append(messageFormating(bias));
     appendImageToMessage(chat[this_edit_mes_id], div.closest(".mes"));
     this_edit_mes_id = undefined;
-    if (selected_group) {
-        saveGroupChat(selected_group);
-    } else {
-        saveChat();
-    }
+    saveChatConditional();
 }
 
 async function getAllCharaChats() {
@@ -2817,6 +2809,46 @@ function hideSwipeButtons() {
     $("#chat").children().filter('[mesid="' + (count_view_mes - 1) + '"]').children('.swipe_left').css('display', 'none');
 }
 
+function saveChatConditional() {
+    if (selected_group) {
+        saveGroupChat(selected_group);
+    }
+    else {
+        saveChat();
+    }
+}
+
+function updateViewMessageIds() {
+    $('#chat').find(".mes").each(function (index, element) {
+        $(element).attr("mesid", index);
+    });
+
+    $('#chat .mes').removeClass('last_mes');
+    $('#chat .mes').last().addClass('last_mes');
+
+    updateEditArrowClasses();
+}
+
+function updateEditArrowClasses() {
+    $("#chat .mes .mes_edit_up").removeClass("disabled");
+    $("#chat .mes .mes_edit_down").removeClass("disabled");
+
+    if (this_edit_mes_id !== undefined) {
+        const down = $(`#chat .mes[mesid="${this_edit_mes_id}"] .mes_edit_down`);
+        const up = $(`#chat .mes[mesid="${this_edit_mes_id}"] .mes_edit_up`);
+        const lastId = Number($("#chat .mes").last().attr("mesid"));
+        const firstId = Number($("#chat .mes").first().attr("mesid"));
+
+        if (lastId == Number(this_edit_mes_id)) {
+            down.addClass("disabled");
+        }
+
+        if (firstId == Number(this_edit_mes_id)) {
+            up.addClass("disabled");
+        }
+    }
+}
+
 window["TavernAI"].getContext = function () {
     return {
         chat: chat,
@@ -2952,11 +2984,7 @@ $(document).ready(function () {
                                         Generate('swipe');
                                     } else {
                                         if (parseInt(chat[chat.length - 1]['swipe_id']) !== chat[chat.length - 1]['swipes'].length) {
-                                            if (selected_group) {
-                                                saveGroupChat(selected_group);
-                                            } else {
-                                                saveChat();
-                                            }
+                                            saveChatConditional();
                                         }
                                     }
                                 }
@@ -3047,11 +3075,7 @@ $(document).ready(function () {
                                 easing: animation_rm_easing,
                                 queue: false,
                                 complete: function () {
-                                    if (selected_group) {
-                                        saveGroupChat(selected_group);
-                                    } else {
-                                        saveChat();
-                                    }
+                                    saveChatConditional();
                                 }
                             });
                         }
@@ -3790,11 +3814,7 @@ $(document).ready(function () {
             $(".mes[mesid='" + this_del_mes + "']").remove();
             chat.length = this_del_mes;
             count_view_mes = this_del_mes;
-            if (selected_group) {
-                saveGroupChat(selected_group);
-            } else {
-                saveChat();
-            }
+            saveChatConditional();
             var $textchat = $("#chat");
             $textchat.scrollTop($textchat[0].scrollHeight);
         }
@@ -4017,6 +4037,8 @@ $(document).ready(function () {
             if (this_edit_mes_id == count_view_mes - 1) {
                 $("#chat").scrollTop(chatScrollPosition);
             }
+
+            updateEditArrowClasses();
         }
     });
     $(document).on("click", ".mes_edit_cancel", function () {
@@ -4031,6 +4053,64 @@ $(document).ready(function () {
             .append(messageFormating(text, this_edit_mes_chname));
         appendImageToMessage(chat[this_edit_mes_id], $(this).closest(".mes"));
         this_edit_mes_id = undefined;
+    });
+
+    $(document).on("click", ".mes_edit_up", function() {
+        if (this_edit_mes_id <= 0) {
+             return;
+        }
+
+        hideSwipeButtons();
+        const targetId = Number(this_edit_mes_id) - 1;
+        const target = $(`#chat .mes[mesid="${targetId}"]`);
+        const root = $(this).closest('.mes');
+
+        if (root.length === 0 || target.length === 0) {
+            return;
+        }
+
+        root.insertBefore(target);
+
+        target.attr("mesid", this_edit_mes_id);
+        root.attr("mesid", targetId);
+
+        const temp = chat[targetId];
+        chat[targetId] = chat[this_edit_mes_id];
+        chat[this_edit_mes_id] = temp;
+
+        this_edit_mes_id = targetId;
+        updateViewMessageIds();
+        saveChatConditional();
+        showSwipeButtons();
+    });
+
+    $(document).on("click", ".mes_edit_down", function () {
+        if (this_edit_mes_id >= chat.length - 1) {
+            return;
+        }
+
+        hideSwipeButtons();
+        const targetId = Number(this_edit_mes_id) + 1;
+        const target = $(`#chat .mes[mesid="${targetId}"]`);
+        const root = $(this).closest('.mes');
+
+        if (root.length === 0 || target.length === 0) {
+            return;
+        }
+
+        root.insertAfter(target);
+
+        target.attr("mesid", this_edit_mes_id);
+        root.attr("mesid", targetId);
+
+        const temp = chat[targetId];
+        chat[targetId] = chat[this_edit_mes_id];
+        chat[this_edit_mes_id] = temp;
+
+        this_edit_mes_id = targetId;
+        updateViewMessageIds();
+        saveChatConditional();
+        showSwipeButtons();
     });
 
     $(document).on("click", ".mes_edit_copy", function () {
@@ -4300,20 +4380,3 @@ $(document).ready(function () {
         $(this).closest('.inline-drawer').find('.inline-drawer-content').slideToggle();
     });
 })
-function saveChatConditional() {
-    if (selected_group) {
-        saveGroupChat();
-    }
-    else {
-        saveChat();
-    }
-}
-
-function updateViewMessageIds() {
-    $('#chat').find(".mes").each(function (index, element) {
-        $(element).attr("mesid", index);
-    });
-
-    $('#chat .mes').removeClass('last_mes');
-    $('#chat .mes').last().addClass('last_mes');
-}

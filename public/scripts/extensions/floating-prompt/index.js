@@ -19,7 +19,14 @@ function onExtensionFloatingIntervalInput() {
 }
 
 function onExtensionFloatingDepthInput() {
-    promptInsertionDepth = Number($(this).val());
+    let value = Number($(this).val());
+
+    if (promptInsertionDepth < 0) {
+        value = Math.abs(value);
+        $(this).val(value);
+    }
+
+    promptInsertionDepth = value;
     saveSettings();
 }
 
