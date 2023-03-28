@@ -770,7 +770,7 @@ function messageFormating(mes, ch_name, isSystem, forceAvatar) {
 
     if (this_chid != undefined && !isSystem)
         mes = mes.replaceAll("<", "&lt;").replaceAll(">", "&gt;"); //for welcome message
-    if (this_chid === undefined) {
+    if (this_chid === undefined && !selected_group) {
         mes = mes
             .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
             .replace(/\*(.+?)\*/g, "<i>$1</i>")
@@ -2365,7 +2365,7 @@ function messageEditDone(div) {
     mesBlock.find(".mes_text").empty();
     mesBlock.find(".mes_edit_buttons").css("display", "none");
     mesBlock.find(".mes_edit").css("display", "inline-block");
-    mesBlock.find(".mes_text").append(messageFormating(text, this_edit_mes_chname));
+    mesBlock.find(".mes_text").append(messageFormating(text, this_edit_mes_chname, chat[this_edit_mes_id].is_system, chat[this_edit_mes_id].force_avatar));
     mesBlock.find(".mes_bias").empty();
     mesBlock.find(".mes_bias").append(messageFormating(bias));
     appendImageToMessage(chat[this_edit_mes_id], div.closest(".mes"));
