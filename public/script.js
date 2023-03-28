@@ -4035,7 +4035,7 @@ $(document).ready(function () {
     });
 
     $(document).on("click", ".mes_edit_up", function() {
-        if (this_edit_mes_id <= 0) {
+        if (is_send_press || this_edit_mes_id <= 0) {
              return;
         }
 
@@ -4064,7 +4064,7 @@ $(document).ready(function () {
     });
 
     $(document).on("click", ".mes_edit_down", function () {
-        if (this_edit_mes_id >= chat.length - 1) {
+        if (is_send_press || this_edit_mes_id >= chat.length - 1) {
             return;
         }
 
