@@ -2828,6 +2828,12 @@ function updateEditArrowClasses() {
     }
 }
 
+function closeMessageEditor() {
+    if (this_edit_mes_id) {
+        $(`#chat .mes[mesid="${this_edit_mes_id}"] .mes_edit_cancel`).click();
+    }
+}
+
 window["TavernAI"].getContext = function () {
     return {
         chat: chat,
@@ -2867,6 +2873,10 @@ $(document).ready(function () {
     ///// SWIPE BUTTON CLICKS ///////
 
     $(document).on('click', '.swipe_right', function () {               //when we click swipe right button
+        if (chat.length -1 === Number(this_edit_mes_id)) {
+            closeMessageEditor();
+        }
+
         const swipe_duration = 120;
         const swipe_range = 700;
         //console.log(swipe_range);
@@ -3003,6 +3013,10 @@ $(document).ready(function () {
     });
 
     $(document).on('click', '.swipe_left', function () {      // when we swipe left..but no generation.
+        if (chat.length -1 === Number(this_edit_mes_id)) {
+            closeMessageEditor();
+        }
+
         const swipe_duration = 120;
         const swipe_range = '700px';
         chat[chat.length - 1]['swipe_id']--;
@@ -3745,6 +3759,7 @@ $(document).ready(function () {
         }
 
         else if (id == "option_delete_mes") {
+            closeMessageEditor();
             hideSwipeButtons();
             if ((this_chid != undefined && !is_send_press) || (selected_group && !is_group_generating)) {
                 $("#dialogue_del_mes").css("display", "block");
