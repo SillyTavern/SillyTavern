@@ -994,18 +994,18 @@ function cleanGroupMessage(getMessage) {
     return getMessage;
 }
 
-function getExtensionPrompt(position = 0, depth) {
+function getExtensionPrompt(position = 0, depth = undefined, separator = "\n") {
     let extension_prompt = Object.keys(extension_prompts)
         .sort()
         .map((x) => extension_prompts[x])
         .filter(x => x.position == position && x.value && (depth === undefined || x.depth == depth))
-        .map(x => x.value)
-        .join("\n");
-    if (extension_prompt.length && !extension_prompt.startsWith("\n")) {
-        extension_prompt = "\n" + extension_prompt;
+        .map(x => x.value.trim())
+        .join(separator);
+    if (extension_prompt.length && !extension_prompt.startsWith(separator)) {
+        extension_prompt = separator + extension_prompt;
     }
-    if (extension_prompt.length && !extension_prompt.endsWith("\n")) {
-        extension_prompt += "\n";
+    if (extension_prompt.length && !extension_prompt.endsWith(separator)) {
+        extension_prompt = extension_prompt + separator;
     }
     return extension_prompt;
 }
@@ -1398,12 +1398,11 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
                     const anchorDepth = Math.abs(i - arrMes.length + 1);
                     const extensionAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, anchorDepth);
 
-                    if (extensionAnchor && extensionAnchor.length) {
+                    if (anchorDepth > 0 && extensionAnchor && extensionAnchor.length) {
                         item += extensionAnchor;
                     }
 
                     mesSend[mesSend.length] = item;
-
                 });
             }
 
@@ -1471,6 +1470,15 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
                 //mesSendString = mesSendString; //This edit simply removes the first "<START>" that is prepended to all context prompts
             }
             finalPromt = worldInfoBefore + storyString + worldInfoAfter + extension_prompt + mesExmString + mesSendString + generatedPromtCache + promptBias;
+
+            const zeroDepthAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, 0, ' ');
+            if (zeroDepthAnchor && zeroDepthAnchor.length) {
+                if (!is_pygmalion || tokens_already_generated == 0) {
+                    const trimBothEnds = !force_name2 && !is_pygmalion;
+                    finalPromt += (trimBothEnds ? zeroDepthAnchor.trim() : zeroDepthAnchor.trimEnd());
+                }
+            }
+
             finalPromt = finalPromt.replace(/\r/gm, '');
 
             if (collapse_newlines) {
