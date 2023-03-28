@@ -1330,13 +1330,13 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
                     storyString += !disable_scenario_formatting ? `Circumstances and context of the dialogue: ${Scenario}\n` : `${Scenario}\n`;
                 }
                 console.log('calling runGenerate');
-                runGenerate();
+                await runGenerate();
                 return;
             }
             i++;
         }
 
-        function runGenerate(cycleGenerationPromt = '') {
+        async function runGenerate(cycleGenerationPromt = '') {
             is_send_press = true;
 
             generatedPromtCache += cycleGenerationPromt;
@@ -1611,7 +1611,7 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
 
 
             if (main_api == 'openai') {
-                let prompt = prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAfter, extension_prompt, promptBias);
+                let prompt = await prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAfter, extension_prompt, promptBias);
                 sendOpenAIRequest(prompt).then(onSuccess).catch(onError);
             }
             else {

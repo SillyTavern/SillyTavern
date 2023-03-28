@@ -210,7 +210,7 @@ function formatWorldInfo(value) {
     return `[Details of the fictional world the RP set in:\n${value}\n]`;
 }
 
-function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAfter, extensionPrompt, bias) {
+async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAfter, extensionPrompt, bias) {
     let this_max_context = oai_settings.openai_max_context;
     let nsfw_toggle_prompt = "";
     let enhance_definitions_prompt = "";
@@ -243,13 +243,13 @@ function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAft
 
     // todo: static value, maybe include in the initial context calculation
     let new_chat_msg = { "role": "system", "content": "[Start a new chat]" };
-    let start_chat_count = countTokens([new_chat_msg]);
-    let total_count = countTokens([prompt_msg], true) + start_chat_count;
+    let start_chat_count = await countTokens([new_chat_msg]);
+    let total_count = await countTokens([prompt_msg], true) + start_chat_count;
 
     if (bias && bias.trim().length) {
         let bias_msg = { "role": "system", "content": bias.trim() };
         openai_msgs.push(bias_msg);
-        total_count += countTokens([bias_msg], true);
+        total_count += await countTokens([bias_msg], true);
     }
     
     if (selected_group) {
@@ -261,12 +261,12 @@ function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAft
         openai_msgs.push(group_nudge);
 
         // add a group nudge count
-        let group_nudge_count = countTokens([group_nudge], true);
+        let group_nudge_count = await countTokens([group_nudge], true);
         total_count += group_nudge_count;
         
         // recount tokens for new start message
         total_count -= start_chat_count
-        start_chat_count = countTokens([new_chat_msg]);
+        start_chat_count = await countTokens([new_chat_msg]);
         total_count += start_chat_count;
     }
 
@@ -289,11 +289,11 @@ function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAft
                 examples_tosend.push(example);
             }
         }
-        total_count += countTokens(examples_tosend);
+        total_count += await countTokens(examples_tosend);
         // go from newest message to oldest, because we want to delete the older ones from the context
         for (let j = openai_msgs.length - 1; j >= 0; j--) {
             let item = openai_msgs[j];
-            let item_count = countTokens(item);
+            let item_count = await countTokens(item);
             // If we have enough space for this message, also account for the max assistant reply size
             if ((total_count + item_count) < (this_max_context - oai_settings.openai_max_tokens)) {
                 openai_msgs_tosend.push(item);
@@ -307,7 +307,7 @@ function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAft
     } else {
         for (let j = openai_msgs.length - 1; j >= 0; j--) {
             let item = openai_msgs[j];
-            let item_count = countTokens(item);
+            let item_count = await countTokens(item);
             // If we have enough space for this message, also account for the max assistant reply size
             if ((total_count + item_count) < (this_max_context - oai_settings.openai_max_tokens)) {
                 openai_msgs_tosend.push(item);
@@ -327,7 +327,7 @@ function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAft
 
             for (let k = 0; k < example_block.length; k++) {
                 if (example_block.length == 0) { continue; }
-                let example_count = countTokens(example_block[k]);
+                let example_count = await countTokens(example_block[k]);
                 // add all the messages from the example
                 if ((total_count + example_count + start_chat_count) < (this_max_context - oai_settings.openai_max_tokens)) {
                     if (k == 0) {
@@ -435,24 +435,26 @@ function onStream(e, resolve, reject, last_view_mes) {
     }
 }
 
-function countTokens(messages, full = false) {
-    if (!Array.isArray(messages)) {
-        messages = [messages];
-    }
-    let token_count = -1;
-    jQuery.ajax({
-        async: false,
-        type: 'POST', // 
-        url: `/tokenize_openai?model=${oai_settings.openai_model}`,
-        data: JSON.stringify(messages),
-        dataType: "json",
-        contentType: "application/json",
-        success: function (data) {
-            token_count = data.token_count;
-        }
-    });
-    if (!full) token_count -= 2;
-    return token_count;
+async function countTokens(messages, full = false) {
+        return new Promise((resolve) => {
+            if (!Array.isArray(messages)) {
+                messages = [messages];
+            }
+            let token_count = -1;
+            jQuery.ajax({
+                async: true,
+                type: 'POST', // 
+                url: `/tokenize_openai?model=${oai_settings.openai_model}`,
+                data: JSON.stringify(messages),
+                dataType: "json",
+                contentType: "application/json",
+                success: function (data) {
+                    token_count = data.token_count;
+                    if (!full) token_count -= 2;
+                    resolve(token_count);
+                }
+            });
+        });
 }
 
 function loadOpenAISettings(data, settings) {
