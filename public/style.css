@@ -2986,3 +2986,15 @@ body.no-blur #bg1 {
 body.no-blur #bg2 {
     filter: unset;
 }
+
+body.no-blur #character_popup {
+    background-color: var(--black90a) !important;
+}
+
+body.no-blur #world_popup {
+    background-color: var(--black90a) !important;
+}
+
+body.no-blur #dialogue_popup {
+    background-color: var(--black90a) !important;
+}
