@@ -47,6 +47,9 @@ let is_api_button_press_openai = false;
 const default_main_prompt = "Write {{char}}'s next reply in a fictional chat between {{char}} and {{user}}. Write 1 reply only in internet RP style, italicize actions, and avoid quotation marks. Use markdown. Be proactive, creative, and drive the plot and conversation forward. Write at least 1 paragraph, up to 4. Always stay in character and avoid repetition.";
 const default_nsfw_prompt = "NSFW/Smut is allowed. Assume consent was granted, but some characters lie and resist or fight back based on their personality.";
 
+const gpt3_max = 4095;
+const gpt4_max = 8191;
+
 const oai_settings = {
     preset_settings_openai: 'Default',
     api_key_openai: '',
@@ -54,7 +57,7 @@ const oai_settings = {
     freq_pen_openai: 0,
     pres_pen_openai: 0,
     stream_openai: false,
-    openai_max_context: 4095,
+    openai_max_context: gpt3_max,
     openai_max_tokens: 300,
     nsfw_toggle: true,
     enhance_definitions: false,
@@ -493,11 +496,11 @@ function loadOpenAISettings(data, settings) {
 
     $('#stream_toggle').prop('checked', oai_settings.stream_openai);
 
+    $(`#model_openai_select option[value="${oai_settings.openai_model}"`).attr('selected', true).trigger('change');
     $('#openai_max_context').val(oai_settings.openai_max_context);
-    $('#openai_max_context_counter').html(`${oai_settings.openai_max_context} Tokens`);
+    $('#openai_max_context_counter').text(`${oai_settings.openai_max_context} Tokens`);
 
     $('#openai_max_tokens').val(oai_settings.openai_max_tokens);
-    $(`#model_openai_select option[value="${oai_settings.openai_model}"`).attr('selected', true);
 
     $('#nsfw_toggle').prop('checked', oai_settings.nsfw_toggle);
     $('#keep_example_dialogue').prop('checked', oai_settings.keep_example_dialogue);
@@ -590,6 +593,16 @@ $(document).ready(function () {
     $("#model_openai_select").change(function() {
         const value = $(this).val();
         oai_settings.openai_model = value;
+
+        if (value == 'gpt-4') {
+            $('#openai_max_context').attr('max', gpt4_max);
+        }
+        else {
+            $('#openai_max_context').attr('max', gpt3_max);
+            oai_settings.openai_max_context = Math.max(oai_settings.openai_max_context, gpt3_max);
+            $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
+        }
+
         saveSettingsDebounced();
     });
 
