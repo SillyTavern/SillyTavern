@@ -7,6 +7,12 @@ Try on Colab (runs KoboldAI backend and TavernAI Extras server alongside):  <a t
 
 https://colab.research.google.com/github/SillyLossy/TavernAI-extras/blob/main/colab/GPU.ipynb
 
+## Mobile support
+
+> **This fork can be ran natively on Android phones using Termux. Please refer to this guide by ArroganceComplex#2659:**
+
+https://rentry.org/TAI_Termux
+
 ## This branch includes: 
 * Base TavernAI 1.2.8
 * Swipes
