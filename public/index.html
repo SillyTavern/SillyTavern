@@ -22,6 +22,7 @@
     <script src="scripts/showdown.min.js"></script>
     <script src="scripts/popper.js"></script>
     <script src="scripts/purify.min.js"></script>
+    <script type="module" src="scripts/power-user.js"></script>
     <script type="module" src="scripts/RossAscends-mods.js"></script>
     <script type="module" src="scripts/swiped-events.js"></script>
     <link rel="stylesheet" type="text/css" href="style.css">
@@ -32,7 +33,6 @@
 
     <script type="module" src="scripts/world-info.js"></script>
     <script type="module" src="scripts/group-chats.js"></script>
-    <script type="module" src="scripts/power-user.js"></script>
     <script type="module" src="scripts/kai-settings.js"></script>
     <script type="module" src="scripts/textgen-settings.js"></script>
     <script type="module" src="scripts/bookmarks.js"></script>
@@ -188,6 +188,17 @@
                     <input id="your_name" name="your_name" class="text_pole" maxlength="35" value="" autocomplete="off"><br>
                     <input id="your_name_button" class="menu_button" type="submit" title="Click to set a new User Name (reloads page)" value="Change Name">
                 </form>
+                <div class="range-block">
+                    <div class="range-block-title">
+                        <h4>Fast UI Mode (no background blur)</h4>
+                    </div>
+                    <div class="range-block-range">
+                        <label for="fast_ui_mode" class="checkbox_label">
+                            <input id="fast_ui_mode" type="checkbox" />
+                            Enabled
+                        </label>
+                    </div>
+                </div>
                 <div id="power-user-options-block">
                     <h3>Power User Options</h3>
                     <div id="power-user-option-checkboxes">

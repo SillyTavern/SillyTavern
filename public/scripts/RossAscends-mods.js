@@ -15,6 +15,7 @@ import {
 } from "../script.js";
 
 import {
+    fast_ui_mode,
 	pin_examples,
 } from "./power-user.js";
 
@@ -200,7 +201,8 @@ function RA_checkOnlineStatus() {
 	} else {
 		if (online_status !== undefined && online_status !== "no_connection") {
 			$("#send_textarea").attr("placeholder", "Type a message..."); //on connect, placeholder tells user to type message
-			$("#send_form").css("background-color", "rgba(0,0,0,0.6)"); //on connect, form BG changes to transprent black
+            const formColor = fast_ui_mode ? "var(--black90a)": "var(--black60a)";
+			$("#send_form").css("background-color", formColor); //on connect, form BG changes to transprent black
 			$("#API-status-top").removeClass("redOverlayGlow");
 			connection_made = true;
 			retry_delay = 100;

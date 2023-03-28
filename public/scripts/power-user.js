@@ -8,6 +8,7 @@ export {
     disable_personality_formatting,
     always_force_name2,
     custom_chat_separator,
+    fast_ui_mode,
 };
 
 let collapse_newlines = false;
@@ -17,6 +18,7 @@ let disable_description_formatting = false;
 let disable_scenario_formatting = false;
 let disable_personality_formatting = false;
 let always_force_name2 = false;
+let fast_ui_mode = false;
 let custom_chat_separator = '';
 
 const storage_keys = {
@@ -28,11 +30,24 @@ const storage_keys = {
     disable_personality_formatting: "TavernAI_disable_personality_formatting",
     always_force_name2: "TavernAI_always_force_name2",
     custom_chat_separator: "TavernAI_custom_chat_separator",
+    fast_ui_mode: "TavernAI_fast_ui_mode",
 };
 
 function collapseNewlines(x) {
     return x.replaceAll(/\n+/g, "\n");
 }
+
+function switchUiMode() {
+    fast_ui_mode = localStorage.getItem(storage_keys.fast_ui_mode) == "true";
+    if (fast_ui_mode) {
+        $("body").addClass("no-blur");
+    }
+    else {
+        $("body").removeClass("no-blur");
+    }
+}
+
+switchUiMode();
 
 function loadPowerUserSettings() {
     collapse_newlines = localStorage.getItem(storage_keys.collapse_newlines) == "true";
@@ -43,6 +58,7 @@ function loadPowerUserSettings() {
     disable_personality_formatting = localStorage.getItem(storage_keys.disable_personality_formatting) == "true";
     always_force_name2 = localStorage.getItem(storage_keys.always_force_name2) == "true";
     custom_chat_separator = localStorage.getItem(storage_keys.custom_chat_separator);
+    fast_ui_mode = localStorage.getItem(storage_keys.fast_ui_mode) == "true";
 
     $("#force-pygmalion-formatting-checkbox").prop("checked", force_pygmalion_formatting);
     $("#collapse-newlines-checkbox").prop("checked", collapse_newlines);
@@ -52,6 +68,7 @@ function loadPowerUserSettings() {
     $("#disable-personality-formatting-checkbox").prop("checked", disable_personality_formatting);
     $("#always-force-name2-checkbox").prop("checked", always_force_name2);
     $("#custom_chat_separator").val(custom_chat_separator);
+    $("#fast_ui_mode").prop("checked", fast_ui_mode);
 }
 
 $(document).ready(() => {
@@ -96,5 +113,11 @@ $(document).ready(() => {
     $("#custom_chat_separator").on('input', function() {
         custom_chat_separator = $(this).val();
         localStorage.setItem(storage_keys.custom_chat_separator, custom_chat_separator);
+    });
+
+    $("#fast_ui_mode").change(function () {
+        fast_ui_mode = $(this).prop("checked");
+        localStorage.setItem(storage_keys.fast_ui_mode, fast_ui_mode);
+        switchUiMode();
     });
 });
