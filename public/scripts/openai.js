@@ -107,7 +107,7 @@ function setOpenAIMessages(chat) {
         j++;
     }
 
-    for (let i = 1; i < 100; i++) {
+    for (let i = 0; i < 100; i++) {
         const anchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, i);
 
         if (anchor && anchor.length) {

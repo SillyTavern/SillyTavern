@@ -91,7 +91,7 @@ async function moduleWorker() {
     const messagesTillInsertion = lastMessageNumber >= promptInsertionInterval
         ? (lastMessageNumber % promptInsertionInterval)
         : (promptInsertionInterval - lastMessageNumber);
-    const shouldAddPrompt = messagesTillInsertion == 0 && (promptInsertionPosition == 0 || promptInsertionDepth > 0);
+    const shouldAddPrompt = messagesTillInsertion == 0;
     const prompt = shouldAddPrompt ? $('#extension_floating_prompt').val() : '';
     context.setExtensionPrompt(MODULE_NAME, prompt, promptInsertionPosition, promptInsertionDepth);
     $('#extension_floating_counter').text(shouldAddPrompt ? 'This' : messagesTillInsertion);
@@ -114,7 +114,7 @@ async function moduleWorker() {
             </label>
             <label for="extension_floating_interval">Every N messages <b>you</b> send (set to 0 to disable):</label>
             <input id="extension_floating_interval" class="text_pole" type="number" value="0" min="0" max="999" />
-            <label for="extension_floating_interval">Insertion depth (for in-chat positioning, set to 0 to disable):</label>
+            <label for="extension_floating_interval">Insertion depth (for in-chat positioning):</label>
             <input id="extension_floating_depth" class="text_pole" type="number" value="0" min="0" max="99" />
             <span>Appending the prompt in next: <span id="extension_floating_counter">No</span> message(s)</span>
         </div>
