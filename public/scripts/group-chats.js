@@ -180,6 +180,7 @@ function printGroups() {
     for (let group of groups) {
         const template = $("#group_list_template .group_select").clone();
         template.data("id", group.id);
+        template.attr("grid", group.id);
         template.find(".ch_name").text(group.name);
         $("#rm_print_characters_block").prepend(template);
         updateGroupAvatar(group);
