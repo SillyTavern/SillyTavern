@@ -1553,7 +1553,13 @@ app.post('/creategroup', jsonParser, (request, response) => {
     }
 
     const id = Date.now();
-    const chatMetadata = { id: id, name: request.body.name ?? 'New Group', members: request.body.members ?? [], avatar_url: request.body.avatar_url };
+    const chatMetadata = {
+        id: id,
+        name: request.body.name ?? 'New Group',
+        members: request.body.members ?? [],
+        avatar_url: request.body.avatar_url,
+        allow_self_responses: !!request.body.allow_self_responses,
+    };
     const pathToFile = path.join(directories.groups, `${id}.json`);
     const fileData = JSON.stringify(chatMetadata);
 

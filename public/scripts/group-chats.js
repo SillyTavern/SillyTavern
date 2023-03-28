@@ -298,7 +298,7 @@ async function generateGroupWrapper(by_auto_mode, type=null) {
             }
         }
 
-        const activatedMembers = type !== "swipe" ? activateMembers(group.members, activationText, lastMessage) : activateSwipe(group.members);
+        const activatedMembers = type !== "swipe" ? activateMembers(group.members, activationText, lastMessage, group.allow_self_responses) : activateSwipe(group.members);
         // now the real generation begins: cycle through every character
         for (const chId of activatedMembers) {
             const generateType = type !== "swipe" ? "group_chat" : "swipe";
@@ -355,17 +355,22 @@ function activateSwipe(members) {
     return memberIds;
 }
 
-function activateMembers(members, input, lastMessage) {
+function activateMembers(members, input, lastMessage, allowSelfResponses) {
     let activatedNames = [];
 
     // prevents the same character from speaking twice
     let bannedUser = lastMessage && !lastMessage.is_user && lastMessage.name;
 
+    // ...unless allowed to do so
+    if (allowSelfResponses) {
+        bannedUser = undefined;
+    }
+
     // find mentions (excluding self)
     if (input && input.length) {
         for (let inputWord of extractAllWords(input)) {
             for (let member of members) {
-                if (member == bannedUser) {
+                if (member === bannedUser) {
                     continue;
                 }
 
@@ -380,7 +385,7 @@ function activateMembers(members, input, lastMessage) {
     // activation by talkativeness (in shuffled order, except banned)
     const shuffledMembers = shuffle([...members]);
     for (let member of shuffledMembers) {
-        if (member == bannedUser) {
+        if (member === bannedUser) {
             continue;
         }
 
@@ -573,6 +578,7 @@ function select_group_chats(chat_id) {
 
     const groupHasMembers = !!$("#rm_group_members").children().length;
     $("#rm_group_submit").prop("disabled", !groupHasMembers);
+    $("#rm_group_allow_self_responses").prop("checked", group && group.allow_self_responses);
 
     // bottom buttons
     if (chat_id) {
@@ -594,10 +600,23 @@ function select_group_chats(chat_id) {
         callPopup("<h3>Delete the group?</h3>", "del_group");
     });
 
+    $("#rm_group_allow_self_responses").off();
+    $("#rm_group_allow_self_responses").on("input", async function () {
+        if (group) {
+            const value = $(this).prop("checked");
+            group.allow_self_responses = value;
+            await editGroup(chat_id);
+        }
+    });
+
     // top bar
     if (group) {
+        $("#rm_group_automode_label").show();
         $("#rm_button_selected_ch").children("h2").text(groupName);
         setRightTabSelectedClass('rm_button_selected_ch');
+    }
+    else {
+        $("#rm_group_automode_label").hide();
     }
 }
 
@@ -636,6 +655,7 @@ $(document).ready(() => {
 
     $("#rm_group_submit").click(async function () {
         let name = $("#rm_group_chat_name").val();
+        let allow_self_responses = !!$("#rm_group_allow_self_responses").prop("checked");
         const members = $("#rm_group_members .group_member")
             .map((_, x) => $(x).data("id"))
             .toArray();
@@ -657,6 +677,7 @@ $(document).ready(() => {
                 name: name,
                 members: members,
                 avatar_url: avatar_url,
+                allow_self_responses: allow_self_responses,
             }),
         });
 

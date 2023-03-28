@@ -2111,8 +2111,9 @@ input[type="range"]{
     display: flex;
     flex-direction: row;
     width: 100%;
-    align-items: flex-end;
-    margin-bottom: 10px;
+    align-items: center;
+    margin-bottom: 5px;
+    column-gap: 10px;
 }
 
 #rm_group_buttons .checkbox {
