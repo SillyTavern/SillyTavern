@@ -1741,26 +1741,32 @@ input[type="range"]{
     opacity: 1;
 }
 
-.last_mes .mes_edit, .last_mes .mes_edit_done, .last_mes .mes_edit_cancel {
-grid-row-start: 1;
-position: relative;
-right: -30px;
+.last_mes .mes_edit, .last_mes .mes_edit_buttons {
+    grid-row-start: 1;
+    position: relative;
+    right: -30px;
 }
 
-.mes_edit_done, .mes_edit_cancel {
+.mes_edit_buttons {
     display: none;
+    flex-direction: row;
+    column-gap: 10px;
     float: right;
     cursor: pointer;
-    margin-right: 10px;
+    padding-bottom: 5px;
     filter: drop-shadow(0px 0px 2px black);
     transition: 0.3s ease-in-out;
 }
 
-.mes_edit_cancel {
-    margin-right: 0px;
+.mes_edit_buttons .menu_button .svg_icon {
+    height: 18px;
+    width: 18px;
+    margin: 2px;
+    filter: invert(1);
 }
 
-.mes_edit_cancel.menu_button, .mes_edit_done.menu_button{
+
+.mes_edit_buttons .menu_button {
     opacity: 0.5;
     padding: 5px;
     margin-top: 0;
@@ -1770,7 +1776,7 @@ right: -30px;
 .mes_edit_cancel.menu_button{background-color: var(--crimson70a);}
 .mes_edit_done.menu_button{background-color: var(--okGreen70a);}
 
-.mes_edit_cancel.menu_button:hover, .mes_edit_done.menu_button:hover{
+.mes_edit_buttons .menu_button:hover {
     opacity: 1;
 }
 

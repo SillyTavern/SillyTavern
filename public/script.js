@@ -811,7 +811,7 @@ function appendImageToMessage(mes, messageElement) {
     }
 }
 
-function addOneMessage(mes, type = "normal") {
+function addOneMessage(mes, type = "normal", insertAfter = null) {
 
     var messageText = mes["mes"];
     var characterName = name1;
@@ -851,7 +851,15 @@ function addOneMessage(mes, type = "normal") {
     var HTMLForEachMes = getMessageFromTemplate(count_view_mes, characterName, mes.is_user, avatarImg, bias, isSystem);
 
     if (type !== 'swipe') {
-        $("#chat").append(HTMLForEachMes);
+        if (!insertAfter) {
+            $("#chat").append(HTMLForEachMes);
+        }
+        else {
+            const target = $("#chat").find(`.mes[mesid="${insertAfter}"]`);
+            $(HTMLForEachMes).insertAfter(target);
+            $(HTMLForEachMes).find('.swipe_left').css('display', 'none');
+            $(HTMLForEachMes).find('.swipe_right').css('display', 'none');
+        }
     }
 
     const newMessage = $(`#chat [mesid="${count_view_mes}"]`);
@@ -878,16 +886,18 @@ function addOneMessage(mes, type = "normal") {
         count_view_mes++;
 
     }
-    $('#chat .mes').last().addClass('last_mes');
-    $('#chat .mes').eq(-2).removeClass('last_mes');
 
-    hideSwipeButtons();
-    showSwipeButtons();
+    // Don't scroll if not inserting last
+    if (!insertAfter) {
+        $('#chat .mes').last().addClass('last_mes');
+        $('#chat .mes').eq(-2).removeClass('last_mes');
 
-    // TODO: figure out smooth scrolling that wouldn't hit performance much.
-    var $textchat = $("#chat");
-    $textchat.scrollTop(($textchat[0].scrollHeight));
-    //$('#chat .mes').last().get(0).scrollIntoView({ behavior: "smooth" });
+        hideSwipeButtons();
+        showSwipeButtons();
+
+        var $textchat = $("#chat");
+        $textchat.scrollTop(($textchat[0].scrollHeight));
+    }
 }
 
 function substituteParams(content) {
@@ -2344,14 +2354,8 @@ function isInt(value) {
 }
 
 function messageEditDone(div) {
-    var text = div
-        .parent()
-        .parent()
-        .children(".mes_text")
-        .children(".edit_textarea")
-        .val();
-    //var text = chat[this_edit_mes_id];
-    text = text.trim();
+    let mesBlock = div.closest(".mes_block");
+    var text = mesBlock.find(".edit_textarea").val().trim();
     const bias = extractMessageBias(text);
     chat[this_edit_mes_id]["mes"] = text;
 
@@ -2362,17 +2366,12 @@ function messageEditDone(div) {
 
     chat[this_edit_mes_id]["extra"]["bias"] = bias ?? null;
 
-    div.parent().parent().children(".mes_text").empty();
-    div.css("display", "none");
-    div.parent().children(".mes_edit_cancel").css("display", "none");
-    div.parent().children(".mes_edit").css("display", "inline-block");
-    div
-        .parent()
-        .parent()
-        .children(".mes_text")
-        .append(messageFormating(text, this_edit_mes_chname));
-    div.parent().parent().children(".mes_bias").empty();
-    div.parent().parent().children(".mes_bias").append(messageFormating(bias));
+    mesBlock.find(".mes_text").empty();
+    mesBlock.find(".mes_edit_buttons").css("display", "none");
+    mesBlock.find(".mes_edit").css("display", "inline-block");
+    mesBlock.find(".mes_text").append(messageFormating(text, this_edit_mes_chname));
+    mesBlock.find(".mes_bias").empty();
+    mesBlock.find(".mes_bias").append(messageFormating(bias));
     appendImageToMessage(chat[this_edit_mes_id], div.closest(".mes"));
     this_edit_mes_id = undefined;
     if (selected_group) {
@@ -3968,9 +3967,8 @@ $(document).ready(function () {
                 let mes_edited = $("#chat")
                     .children()
                     .filter('[mesid="' + this_edit_mes_id + '"]')
-                    .children(".mes_block")
-                    .children(".ch_name")
-                    .children(".mes_edit_done");
+                    .find(".mes_block")
+                    .find(".mes_edit_done");
                 if (edit_mes_id == count_view_mes - 1) { //if the generating swipe (...)
                     if (chat[edit_mes_id]['swipe_id'] !== undefined) {
                         if (chat[edit_mes_id]['swipes'].length === chat[edit_mes_id]['swipe_id']) {
@@ -3983,11 +3981,10 @@ $(document).ready(function () {
                 }
                 messageEditDone(mes_edited);
             }
-            $(this).parent().parent().children(".mes_text").empty();
+            $(this).closest(".mes_block").find(".mes_text").empty();
             $(this).css("display", "none");
-            $(this).parent().children(".mes_edit_done").css("display", "inline-block");
-            $(this).parent().children(".mes_edit_cancel").css("display", "inline-block");
-            var edit_mes_id = $(this).parent().parent().parent().attr("mesid");
+            $(this).closest(".mes_block").find(".mes_edit_buttons").css("display", "inline-flex");
+            var edit_mes_id = $(this).closest(".mes").attr("mesid");
             this_edit_mes_id = edit_mes_id;
 
             var text = chat[edit_mes_id]["mes"];
@@ -4000,19 +3997,16 @@ $(document).ready(function () {
             }
             text = text.trim();
             $(this)
-                .parent()
-                .parent()
-                .children(".mes_text")
+                .closest(".mes_block")
+                .find(".mes_text")
                 .append(
                     '<textarea class=edit_textarea style="max-width:auto; ">' +
                     text +
                     "</textarea>"
                 );
             let edit_textarea = $(this)
-                .parent()
-                .parent()
-                .children(".mes_text")
-                .children(".edit_textarea");
+                .closest(".mes_block")
+                .find(".edit_textarea");
             edit_textarea.height(0);
             edit_textarea.height(edit_textarea[0].scrollHeight);
             edit_textarea.focus();
@@ -4028,18 +4022,60 @@ $(document).ready(function () {
     $(document).on("click", ".mes_edit_cancel", function () {
         let text = chat[this_edit_mes_id]["mes"];
 
-        $(this).parent().parent().children(".mes_text").empty();
-        $(this).css("display", "none");
-        $(this).parent().children(".mes_edit_done").css("display", "none");
-        $(this).parent().children(".mes_edit").css("display", "inline-block");
+        $(this).closest(".mes_block").find(".mes_text").empty();
+        $(this).closest(".mes_edit_buttons").css("display", "none");
+        $(this).closest(".mes_block").find(".mes_edit").css("display", "inline-block");
         $(this)
-            .parent()
-            .parent()
-            .children(".mes_text")
+            .closest(".mes_block")
+            .find(".mes_text")
             .append(messageFormating(text, this_edit_mes_chname));
         appendImageToMessage(chat[this_edit_mes_id], $(this).closest(".mes"));
         this_edit_mes_id = undefined;
     });
+
+    $(document).on("click", ".mes_edit_copy", function () {
+        if (!confirm('Create a copy of this message?')) {
+            return;
+        }
+
+        hideSwipeButtons();
+        let oldScroll = $('#chat')[0].scrollTop;
+        const clone = JSON.parse(JSON.stringify(chat[this_edit_mes_id])); // quick and dirty clone
+        clone.send_date = Date.now();
+        clone.mes = $(this).closest(".mes").find('.edit_textarea').val().trim();
+
+        chat.splice(Number(this_edit_mes_id) + 1, 0, clone);
+        addOneMessage(clone, 'normal', this_edit_mes_id);
+
+        updateViewMessageIds();
+        saveChatConditional();
+        $('#chat')[0].scrollTop = oldScroll;
+        showSwipeButtons();
+    });
+
+    $(document).on("click", ".mes_edit_delete", function () {
+        if (!confirm("Are you sure you want to delete this message?")) {
+            return;
+        }
+
+        const mes = $(this).closest(".mes");
+
+        if (!mes) {
+            return;
+        }
+
+        chat.splice(this_edit_mes_id, 1);
+        this_edit_mes_id = undefined;
+        mes.remove();
+        count_view_mes--;
+
+        updateViewMessageIds();
+        saveChatConditional();
+
+        hideSwipeButtons();
+        showSwipeButtons();
+    });
+
     $(document).on("click", ".mes_edit_done", function () {
         messageEditDone($(this));
     });
@@ -4264,3 +4300,20 @@ $(document).ready(function () {
         $(this).closest('.inline-drawer').find('.inline-drawer-content').slideToggle();
     });
 })
+function saveChatConditional() {
+    if (selected_group) {
+        saveGroupChat();
+    }
+    else {
+        saveChat();
+    }
+}
+
+function updateViewMessageIds() {
+    $('#chat').find(".mes").each(function (index, element) {
+        $(element).attr("mesid", index);
+    });
+
+    $('#chat .mes').removeClass('last_mes');
+    $('#chat .mes').last().addClass('last_mes');
+}
