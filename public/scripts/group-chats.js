@@ -290,7 +290,10 @@ async function generateGroupWrapper(by_auto_mode, type=null) {
         let messagesBefore = chat.length;
         let lastMessageText = lastMessage.mes;
         let activationText = "";
+        let isUserInput = false;
+
         if (userInput && userInput.length && !by_auto_mode) {
+            isUserInput = true;
             activationText = userInput;
             messagesBefore++;
         } else {
@@ -299,7 +302,10 @@ async function generateGroupWrapper(by_auto_mode, type=null) {
             }
         }
 
-        const activatedMembers = type !== "swipe" ? activateMembers(group.members, activationText, lastMessage, group.allow_self_responses) : activateSwipe(group.members);
+        const activatedMembers = type !== "swipe"
+            ? activateMembers(group.members, activationText, lastMessage, group.allow_self_responses, isUserInput)
+            : activateSwipe(group.members);
+
         // now the real generation begins: cycle through every character
         for (const chId of activatedMembers) {
             const generateType = type !== "swipe" ? "group_chat" : "swipe";
@@ -356,11 +362,11 @@ function activateSwipe(members) {
     return memberIds;
 }
 
-function activateMembers(members, input, lastMessage, allowSelfResponses) {
+function activateMembers(members, input, lastMessage, allowSelfResponses, isUserInput) {
     let activatedNames = [];
 
     // prevents the same character from speaking twice
-    let bannedUser = lastMessage && !lastMessage.is_user && lastMessage.name;
+    let bannedUser = !isUserInput && lastMessage && !lastMessage.is_user && lastMessage.name;
 
     // ...unless allowed to do so
     if (allowSelfResponses) {
