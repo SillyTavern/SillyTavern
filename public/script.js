@@ -1290,6 +1290,11 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
         console.log('post swipe shift:' + chat2.length);
         var i = 0;
 
+        // hack for regeneration of the first message
+        if (chat2.length == 0) {
+            chat2.push('');
+        }
+
         for (var item of chat2) {//console.log(encode("dsfs").length);
             chatString = item + chatString;
             if (encode(JSON.stringify(
@@ -1713,8 +1718,10 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
                     if (force_name2) this_mes_is_name = true;
                     //getMessage = getMessage.replace(/^\s+/g, '');
                     if (getMessage.length > 0) {
-                        if (chat[chat.length - 1]['swipe_id'] === undefined ||
-                            chat[chat.length - 1]['is_user']) { type = 'normal'; }
+                        if (chat.length && (chat[chat.length - 1]['swipe_id'] === undefined ||
+                            chat[chat.length - 1]['is_user'])) {
+                                type = 'normal';
+                            }
                         if (type === 'swipe') {
 
                             chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipes'].length] = getMessage;
