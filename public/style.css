@@ -12,6 +12,7 @@
 
     --white30a: rgba(255, 255, 255, 0.3);
     --white50a: rgba(255, 255, 255, 0.5);
+    --white60a: rgba(255, 255, 255, 0.6);
     --white70a: rgba(255, 255, 255, 0.7);
     --white100: rgba(255, 255, 255, 1);
 
@@ -30,7 +31,7 @@
     --sienna: rgb(210, 100, 40);
     --orangered: rgb(255, 90, 0);
     --greyCAIbg: rgb(36, 36, 37);
-    --ivory: rgb(230, 230, 220);
+    --ivory: rgb(220, 220, 210);
 }
 
 * {
@@ -100,8 +101,8 @@ body {
 
 .mes_text i,
 .mes_text em {
-    color: var(--grey75);
-    font-weight: 600;
+    color: var(--white60a);
+    font-weight: 500;
 }
 
 .mes_text strong,
