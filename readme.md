@@ -39,7 +39,6 @@ https://colab.research.google.com/github/SillyLossy/TavernAI-extras/blob/main/co
 * HotKeys
   * Ctrl+Up = Connect to API 
   * Ctrl+Left = view locally stored variables (in the browser console window)
-  * Ctrl+Right = clear locally stored variables.
   * Ctrl+Enter = Regenerate last AI response.
 
 * User Name Changes and Character Deletion no longer force the page to refresh.

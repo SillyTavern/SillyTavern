@@ -412,9 +412,11 @@ $("document").ready(function () {
         if (event.ctrlKey && event.key == "ArrowLeft") {        //for debug, show all local stored vars
             CheckLocal();
         }
+        /*
         if (event.ctrlKey && event.key == "ArrowRight") {        //for debug, empty local storage state
             ClearLocal();
         }
+        */
         if (event.key == "ArrowLeft") {        //swipes left
             if (
                 $(".swipe_left:last").css('display') === 'flex' &&
