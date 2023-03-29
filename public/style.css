@@ -2113,8 +2113,13 @@ input[type="range"]{
     flex-direction: row;
     width: 100%;
     align-items: center;
-    margin-bottom: 5px;
+    margin-bottom: 10px;
     column-gap: 10px;
+}
+
+.rm_group_settings {
+    display: flex;
+    flex-direction: column;
 }
 
 #rm_group_buttons .checkbox {

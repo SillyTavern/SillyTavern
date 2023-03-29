@@ -505,6 +505,7 @@ function select_group_chats(chat_id) {
     $("#rm_group_chat_name").on("input", async function () {
         if (chat_id) {
             group.name = $(this).val();
+            $("#rm_button_selected_ch").children("h2").text(group.name);
             await editGroup(chat_id);
         }
     });
