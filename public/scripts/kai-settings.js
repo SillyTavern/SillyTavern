@@ -5,6 +5,7 @@ import {
 export {
     kai_settings,
     loadKoboldSettings,
+    formatKoboldUrl,
 };
 
 const kai_settings = {
@@ -19,6 +20,17 @@ const kai_settings = {
     rep_pen_slope: 0.9,
     single_line: false,
 };
+
+function formatKoboldUrl(value) {
+    try {
+        const url = new URL(value);
+        url.pathname = '/api';
+        return url.toString();
+    }
+    catch {
+        return null;
+    }
+}
 
 function loadKoboldSettings(preset) {
     for (const name of Object.keys(kai_settings)) {

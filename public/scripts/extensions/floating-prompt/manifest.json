@@ -1,7 +1,8 @@
 {
-    "display_name": "Floating Prompt",
+    "display_name": "Author's Note / Character Bias",
     "loading_order": 1,
     "requires": [],
+    "optional": [],
     "js": "index.js",
     "css": "style.css"
 }

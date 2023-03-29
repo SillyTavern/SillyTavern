@@ -3,9 +3,12 @@ public/chats/
 public/characters/
 public/User Avatars/
 public/backgrounds/
+public/groups/
+public/worlds/
+public/css/bg_load.css
 /uploads/
 *.jsonl
-public/settings.json
 config.conf
 .DS_Store
 public/settings.json
+/thumbnails

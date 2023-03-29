@@ -1,0 +1,33 @@
+<html>
+
+<head>
+    <title>Multigen</title>
+    <link rel="stylesheet" href="/css/notes.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&amp;display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div id="main">
+        <div id="content">
+            <h2>Multigen</h2>
+            <p>TavernAI tries to create longer responses by chaining the generation using smaller batches.</p>
+            <h3>Algorithm:</h3>
+            <p>1. If amount of generation is more than 50 tokens, then generate first 50 tokens.</p>
+            <p>2. Generate by 30 tokens until one of the stopping conditions is reached.</p>
+            <p>3. Append the generated batch to the next cycle's prompt.</p>
+            <h3>Stopping conditions:</h3>
+            <p>1. Generated enough text.</p>
+            <p>2. Character starts speaking for You.</p>
+            <p>3. <tt>&lt;|endoftext|&gt;</tt> token reached.</p>
+            <p>4. No text generated.</p>
+        </div>
+    </div>
+</body>
+
+</html>

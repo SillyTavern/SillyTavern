@@ -2,6 +2,7 @@
     "display_name": "D&D Dice",
     "loading_order": 5,
     "requires": [],
+    "optional": [],
     "js": "index.js",
     "css": "style.css"
 }

@@ -25,17 +25,25 @@
     padding-left: 0;
     margin-top: 0;
     margin-bottom: 3px;
+    overflow: hidden;
+    background-color: black;
+    border: 1px solid #666;
+    border-radius: 15px;
+    box-shadow: 0 0 5px black;
+    text-shadow: 0 0 3px black;
+}
+
+.list-group-item:hover {
+    background-color: rgba(255, 255, 255, 0.3);
 }
 
 .list-group-item {
+    color: rgba(229, 224, 216, 1);
     position: relative;
     display: block;
     padding: 0.75rem 1.25rem;
     margin-bottom: -1px;
-    background-color: rgba(0,0,0,0.5);
-    border: 1px solid rgba(0,0,0,0.7);
     box-sizing: border-box;
     user-select: none;
     cursor: pointer;
-    backdrop-filter: blur(10px);
 }

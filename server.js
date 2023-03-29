@@ -14,6 +14,8 @@ const PNGtext = require('png-chunk-text');
 
 const jimp = require('jimp');
 const path = require('path');
+const sanitize = require('sanitize-filename');
+const mime = require('mime-types');
 
 const cookieParser = require('cookie-parser');
 const crypto = require('crypto');
@@ -27,11 +29,15 @@ const autorun = config.autorun;
 const enableExtensions = config.enableExtensions;
 const listen = config.listen;
 
+const axios = require('axios');
+const tiktoken = require('@dqbd/tiktoken');
+
 var Client = require('node-rest-client').Client;
 var client = new Client();
 
 var api_server = "http://0.0.0.0:5000";
 var api_novelai = "https://api.novelai.net";
+let api_openai = "https://api.openai.com/v1";
 var main_api = "kobold";
 
 var response_get_story;
@@ -48,6 +54,10 @@ var response_getstatus;
 var response_getstatus_novel;
 var response_getlastversion;
 var api_key_novel;
+
+let response_generate_openai;
+let response_getstatus_openai;
+let api_key_openai;
 
 //RossAscends: Added function to format dates used in files and chat timestamps to a humanized format.
 //Mostly I wanted this to be for file names, but couldn't figure out exactly where the filename save code was as everything seemed to be connected. 
@@ -86,6 +96,16 @@ const directories = {
     avatars: 'public/User Avatars',
     groups: 'public/groups/',
     groupChats: 'public/group chats',
+    chats: 'public/chats/',
+    characters: 'public/characters/',
+    backgrounds: 'public/backgrounds',
+    novelAI_Settings: 'public/NovelAI Settings',
+    koboldAI_Settings: 'public/KoboldAI Settings',
+    openAI_Settings: 'public/OpenAI Settings',
+    textGen_Settings: 'public/TextGen Settings',
+    thumbnails: 'thumbnails/',
+    thumbnailsBg: 'thumbnails/bg/',
+    thumbnailsAvatar: 'thumbnails/avatar/',
 };
 
 // CSRF Protection //
@@ -194,34 +214,6 @@ app.get("/", function (request, response) {
 app.get("/notes/*", function (request, response) {
     response.sendFile(__dirname + "/public" + request.url + ".html");
     //response.send("<h1>Главная страница</h1>");
-});
-app.post("/getlastversion", jsonParser, function (request, response_getlastversion = response) {
-    if (!request.body) return response_getlastversion.sendStatus(400);
-
-    const repo = 'SillyLossy/TavernAI';
-    let req;
-    req = https.request({
-        hostname: 'github.com',
-        path: `/${repo}/releases/latest`,
-        method: 'HEAD'
-    }, (res) => {
-        if (res.statusCode === 302) {
-            const glocation = res.headers.location;
-            const versionStartIndex = glocation.lastIndexOf('/tag/') + 5;
-            const version = glocation.substring(versionStartIndex);
-            //console.log(version);
-            response_getlastversion.send({ version: version });
-        } else {
-            response_getlastversion.send({ version: 'error' });
-        }
-    });
-
-    req.on('error', (error) => {
-        console.error(error);
-        response_getlastversion.send({ version: 'error' });
-    });
-
-    req.end();
 });
 
 //**************Kobold api
@@ -535,12 +527,12 @@ function charaFormatData(data) {
     return char;
 }
 app.post("/createcharacter", urlencodedParser, function (request, response) {
-
-
-
     //var sameNameChar = fs.existsSync(charactersPath+request.body.ch_name+'.png');
     //if (sameNameChar == true) return response.sendStatus(500);
     if (!request.body) return response.sendStatus(400);
+
+    request.body.ch_name = sanitize(request.body.ch_name);
+
     console.log('/createcharacter -- looking for -- ' + (charactersPath + request.body.ch_name + '.png'));
     console.log('Does this file already exists? ' + fs.existsSync(charactersPath + request.body.ch_name + '.png'));
     if (!fs.existsSync(charactersPath + request.body.ch_name + '.png')) {
@@ -553,7 +545,7 @@ app.post("/createcharacter", urlencodedParser, function (request, response) {
         var char = charaFormatData(request.body);//{"name": request.body.ch_name, "description": request.body.description, "personality": request.body.personality, "first_mes": request.body.first_mes, "avatar": 'none', "chat": Date.now(), "last_mes": '', "mes_example": ''};
         char = JSON.stringify(char);
         if (!filedata) {
-            charaWrite('./public/img/fluffy.png', char, request.body.ch_name, response);
+            charaWrite('./public/img/ai4.png', char, request.body.ch_name, response);
         } else {
 
             img_path = "./uploads/";
@@ -602,6 +594,7 @@ app.post("/editcharacter", urlencodedParser, async function (request, response) 
             img_path = "uploads/";
             img_file = filedata.filename;
 
+            invalidateThumbnail('avatar', request.body.avatar_url);
             await charaWrite(img_path + img_file, char, target_img, response, 'Character saved');
             //response.send('Character saved');
         }
@@ -615,14 +608,26 @@ app.post("/deletecharacter", urlencodedParser, function (request, response) {
         return response.sendStatus(400);
     }
 
+    if (request.body.avatar_url !== sanitize(request.body.avatar_url)) {
+        console.error('Malicious filename prevented');
+        return response.sendStatus(403);
+    }
+
     const avatarPath = charactersPath + request.body.avatar_url;
     if (!fs.existsSync(avatarPath)) {
         return response.sendStatus(400);
     }
 
     fs.rmSync(avatarPath);
-    let dir_name = request.body.avatar_url;
-    rimraf(chatsPath + dir_name.replace('.png', ''), (err) => {
+    invalidateThumbnail('avatar', request.body.avatar_url);
+    let dir_name = (request.body.avatar_url.replace('.png', ''));
+
+    if (dir_name !== sanitize(dir_name)) {
+        console.error('Malicious dirname prevented');
+        return response.sendStatus(403);
+    }
+
+    rimraf(path.join(chatsPath, sanitize(dir_name)), (err) => {
         if (err) {
             response.send(err);
             return console.log(err);
@@ -764,17 +769,53 @@ app.post("/setbackground", jsonParser, function (request, response) {
 });
 app.post("/delbackground", jsonParser, function (request, response) {
     if (!request.body) return response.sendStatus(400);
-    rimraf('public/backgrounds/' + request.body.bg, (err) => {
-        if (err) {
-            response.send(err);
-            return console.log(err);
-        } else {
-            //response.redirect("/");
-            response.send('ok');
-        }
-    });
 
+    if (request.body.bg !== sanitize(request.body.bg)) {
+        console.error('Malicious bg name prevented');
+        return response.sendStatus(403);
+    }
+
+    const fileName = path.join('public/backgrounds/', sanitize(request.body.bg));
+
+    if (!fs.existsSync(fileName)) {
+        console.log('BG file not found');
+        return response.sendStatus(400);
+    }
+
+    fs.rmSync(fileName);
+    invalidateThumbnail('bg', request.body.bg);
+    return response.send('ok');
 });
+
+app.post("/delchat", jsonParser, function (request, response) {
+    console.log('/delchat entered');
+    if (!request.body) {
+        console.log('no request body seen');
+        return response.sendStatus(400);
+    }
+
+    if (request.body.chatfile !== sanitize(request.body.chatfile)) {
+        console.error('Malicious chat name prevented');
+        return response.sendStatus(403);
+    }
+
+    const fileName = path.join(directories.chats, '/', sanitize(request.body.id), '/', sanitize(request.body.chatfile));
+    if (!fs.existsSync(fileName)) {
+        console.log('Chat file not found');
+        return response.sendStatus(400);
+    } else {
+        console.log('found the chat file: ' + fileName);
+        /* fs.unlinkSync(fileName); */
+        fs.rmSync(fileName);
+        console.log('deleted chat file: ' + fileName);
+
+    }
+
+
+    return response.send('ok');
+});
+
+
 app.post("/downloadbackground", urlencodedParser, function (request, response) {
     response_dw_bg = response;
     if (!request.body) return response.sendStatus(400);
@@ -792,6 +833,7 @@ app.post("/downloadbackground", urlencodedParser, function (request, response) {
     if (filedata.mimetype == "image/gif") fileType = ".gif";
     if (filedata.mimetype == "image/bmp") fileType = ".bmp";
     fs.copyFile(img_path + img_file, 'public/backgrounds/' + img_file + fileType, (err) => {
+        invalidateThumbnail('bg', img_file + fileType);
         if (err) {
 
             return console.log(err);
@@ -825,6 +867,10 @@ app.post('/getsettings', jsonParser, (request, response) => { //Wintermute's cod
     const koboldai_setting_names = [];
     const novelai_settings = [];
     const novelai_setting_names = [];
+    const openai_settings = [];
+    const openai_setting_names = [];
+    const textgenerationwebui_presets = [];
+    const textgenerationwebui_preset_names = [];
     const settings = fs.readFileSync('public/settings.json', 'utf8', (err, data) => {
         if (err) return response.sendStatus(500);
 
@@ -883,6 +929,50 @@ app.post('/getsettings', jsonParser, (request, response) => { //Wintermute's cod
         novelai_setting_names.push(item.replace(/\.[^/.]+$/, ''));
     });
 
+    //OpenAI
+    const files3 = fs
+        .readdirSync('public/OpenAI Settings')
+        .sort(
+            (a, b) =>
+                new Date(fs.statSync(`public/OpenAI Settings/${b}`).mtime) -
+                new Date(fs.statSync(`public/OpenAI Settings/${a}`).mtime)
+        );
+
+    files3.forEach(item => {
+        const file3 = fs.readFileSync(
+            `public/OpenAI Settings/${item}`,
+            'utf8',
+            (err, data) => {
+                if (err) return response.sendStatus(500);
+
+                return data;
+            }
+        );
+
+        openai_settings.push(file3);
+        openai_setting_names.push(item.replace(/\.[^/.]+$/, ''));
+    });
+
+    // TextGenerationWebUI
+    const textGenFiles = fs
+        .readdirSync(directories.textGen_Settings)
+        .sort();
+
+    textGenFiles.forEach(item => {
+        const file = fs.readFileSync(
+            path.join(directories.textGen_Settings, item),
+            'utf8',
+            (err, data) => {
+                if (err) return response.sendStatus(500);
+
+                return data;
+            }
+        );
+
+        textgenerationwebui_presets.push(file);
+        textgenerationwebui_preset_names.push(item.replace(/\.[^/.]+$/, ''));
+    });
+
     response.send({
         settings,
         koboldai_settings,
@@ -890,6 +980,10 @@ app.post('/getsettings', jsonParser, (request, response) => { //Wintermute's cod
         world_names,
         novelai_settings,
         novelai_setting_names,
+        openai_settings,
+        openai_setting_names,
+        textgenerationwebui_presets,
+        textgenerationwebui_preset_names,
         enable_extensions: enableExtensions,
     });
 });
@@ -910,7 +1004,7 @@ app.post('/deleteworldinfo', jsonParser, (request, response) => {
     }
 
     const worldInfoName = request.body.name;
-    const filename = `${worldInfoName}.json`;
+    const filename = sanitize(`${worldInfoName}.json`);
     const pathToWorldInfo = path.join(directories.worlds, filename);
 
     if (!fs.existsSync(pathToWorldInfo)) {
@@ -967,11 +1061,17 @@ function getCharacterFile(directories, response, i) { //old need del
         response.send(JSON.stringify(characters));
     }
 }
+
 function getImages(path) {
-    return fs.readdirSync(path).sort(function (a, b) {
-        return new Date(fs.statSync(path + '/' + a).mtime) - new Date(fs.statSync(path + '/' + b).mtime);
-    }).reverse();
+    return fs
+        .readdirSync(path)
+        .filter(file => {
+            const type = mime.lookup(file);
+            return type && type.startsWith('image/');
+        })
+        .sort(Intl.Collator().compare);
 }
+
 function getKoboldSettingFiles(path) {
     return fs.readdirSync(path).sort(function (a, b) {
         return new Date(fs.statSync(path + '/' + a).mtime) - new Date(fs.statSync(path + '/' + b).mtime);
@@ -1168,15 +1268,19 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                 const jsonData = JSON.parse(data);
 
                 if (jsonData.name !== undefined) {
+                    jsonData.name = sanitize(jsonData.name);
+
                     png_name = getPngName(jsonData.name);
                     let char = { "name": jsonData.name, "description": jsonData.description ?? '', "personality": jsonData.personality ?? '', "first_mes": jsonData.first_mes ?? '', "avatar": 'none', "chat": humanizedISO8601DateTime(), "mes_example": jsonData.mes_example ?? '', "scenario": jsonData.scenario ?? '', "create_date": humanizedISO8601DateTime(), "talkativeness": jsonData.talkativeness ?? 0.5 };
                     char = JSON.stringify(char);
-                    charaWrite('./public/img/fluffy.png', char, png_name, response, { file_name: png_name });
+                    charaWrite('./public/img/ai4.png', char, png_name, response, { file_name: png_name });
                 } else if (jsonData.char_name !== undefined) {//json Pygmalion notepad
+                    jsonData.char_name = sanitize(jsonData.char_name);
+
                     png_name = getPngName(jsonData.char_name);
                     let char = { "name": jsonData.char_name, "description": jsonData.char_persona ?? '', "personality": '', "first_mes": jsonData.char_greeting ?? '', "avatar": 'none', "chat": humanizedISO8601DateTime(), "mes_example": jsonData.example_dialogue ?? '', "scenario": jsonData.world_scenario ?? '', "create_date": humanizedISO8601DateTime(), "talkativeness": jsonData.talkativeness ?? 0.5 };
                     char = JSON.stringify(char);
-                    charaWrite('./public/img/fluffy.png', char, png_name, response, { file_name: png_name });
+                    charaWrite('./public/img/ai4.png', char, png_name, response, { file_name: png_name });
                 } else {
                     console.log('Incorrect character format .json');
                     response.send({ error: true });
@@ -1187,6 +1291,8 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
 
                 var img_data = charaRead('./uploads/' + filedata.filename);
                 let jsonData = JSON.parse(img_data);
+                jsonData.name = sanitize(jsonData.name);
+
                 png_name = getPngName(jsonData.name);
 
                 if (jsonData.name !== undefined) {
@@ -1324,13 +1430,13 @@ app.post("/importchat", urlencodedParser, function (request, response) {
 app.post('/importworldinfo', urlencodedParser, (request, response) => {
     if (!request.file) return response.sendStatus(400);
 
-    const filename = request.file.originalname;
+    const filename = sanitize(request.file.originalname);
 
     if (path.parse(filename).ext.toLowerCase() !== '.json') {
         return response.status(400).send('Only JSON files are supported.')
     }
 
-    const pathToUpload = path.join('./uploads/' + request.file.filename);
+    const pathToUpload = path.join('./uploads/', request.file.filename);
     const fileContents = fs.readFileSync(pathToUpload, 'utf8');
 
     try {
@@ -1419,7 +1525,13 @@ app.post('/creategroup', jsonParser, (request, response) => {
     }
 
     const id = Date.now();
-    const chatMetadata = { id: id, name: request.body.name ?? 'New Group', members: request.body.members ?? [], avatar_url: request.body.avatar_url };
+    const chatMetadata = {
+        id: id,
+        name: request.body.name ?? 'New Group',
+        members: request.body.members ?? [],
+        avatar_url: request.body.avatar_url,
+        allow_self_responses: !!request.body.allow_self_responses,
+    };
     const pathToFile = path.join(directories.groups, `${id}.json`);
     const fileData = JSON.stringify(chatMetadata);
 
@@ -1488,8 +1600,8 @@ app.post('/deletegroup', jsonParser, async (request, response) => {
     }
 
     const id = request.body.id;
-    const pathToGroup = path.join(directories.groups, `${id}.json`);
-    const pathToChat = path.join(directories.groupChats, `${id}.jsonl`);
+    const pathToGroup = path.join(directories.groups, sanitize(`${id}.json`));
+    const pathToChat = path.join(directories.groupChats, sanitize(`${id}.jsonl`));
 
     if (fs.existsSync(pathToGroup)) {
         fs.rmSync(pathToGroup);
@@ -1500,6 +1612,264 @@ app.post('/deletegroup', jsonParser, async (request, response) => {
     }
 
     return response.send({ ok: true });
+});
+
+function getThumbnailFolder(type) {
+    let thumbnailFolder;
+
+    switch (type) {
+        case 'bg':
+            thumbnailFolder = directories.thumbnailsBg;
+            break;
+        case 'avatar':
+            thumbnailFolder = directories.thumbnailsAvatar;
+            break;
+    }
+
+    return thumbnailFolder;
+}
+
+function getOriginalFolder(type) {
+    let originalFolder;
+
+    switch (type) {
+        case 'bg':
+            originalFolder = directories.backgrounds;
+            break;
+        case 'avatar':
+            originalFolder = directories.characters;
+            break;
+    }
+
+    return originalFolder;
+}
+
+function invalidateThumbnail(type, file) {
+    const folder = getThumbnailFolder(type);
+    const pathToThumbnail = path.join(folder, file);
+
+    if (fs.existsSync(pathToThumbnail)) {
+        fs.rmSync(pathToThumbnail);
+    }
+}
+
+async function ensureThumbnailCache() {
+    const cacheFiles = fs.readdirSync(directories.thumbnailsBg);
+
+    // files exist, all ok
+    if (cacheFiles.length) {
+        return;
+    }
+
+    console.log('Generating thumbnails cache. Please wait...');
+
+    const bgFiles = fs.readdirSync(directories.backgrounds);
+    const tasks = [];
+
+    for (const file of bgFiles) {
+        tasks.push(generateThumbnail('bg', file));
+    }
+
+    await Promise.all(tasks);
+    console.log(`Done! Generated: ${bgFiles.length} preview images`);
+}
+
+async function generateThumbnail(type, file) {
+    const pathToCachedFile = path.join(getThumbnailFolder(type), file);
+    const pathToOriginalFile = path.join(getOriginalFolder(type), file);
+
+    const cachedFileExists = fs.existsSync(pathToCachedFile);
+    const originalFileExists = fs.existsSync(pathToOriginalFile);
+
+    // to handle cases when original image was updated after thumb creation
+    let shouldRegenerate = false;
+
+    if (cachedFileExists && originalFileExists) {
+        const originalStat = fs.statSync(pathToOriginalFile);
+        const cachedStat = fs.statSync(pathToCachedFile);
+
+        if (originalStat.mtimeMs > cachedStat.ctimeMs) {
+            //console.log('Original file changed. Regenerating thumbnail...');
+            shouldRegenerate = true;
+        }
+    }
+
+    if (cachedFileExists && !shouldRegenerate) {
+        return pathToCachedFile;
+    }
+
+    if (!originalFileExists) {
+        return null;
+    }
+
+    const imageSizes = { 'bg': [160, 90], 'avatar': [96, 96] };
+    const mySize = imageSizes[type];
+
+    const image = await jimp.read(pathToOriginalFile);
+    await image.cover(mySize[0], mySize[1]).quality(95).writeAsync(pathToCachedFile);
+
+    return pathToCachedFile;
+}
+
+app.get('/thumbnail', jsonParser, async function (request, response) {
+    const type = request.query.type;
+    const file = request.query.file;
+
+    if (!type || !file) {
+        return response.sendStatus(400);
+    }
+
+    if (!(type == 'bg' || type == 'avatar')) {
+        return response.sendStatus(400);
+    }
+
+    if (sanitize(file) !== file) {
+        console.error('Malicious filename prevented');
+        return response.sendStatus(403);
+    }
+
+    const pathToCachedFile = await generateThumbnail(type, file);
+
+    if (!pathToCachedFile) {
+        return response.sendStatus(404);
+    }
+
+    return response.sendFile(pathToCachedFile, { root: __dirname });
+});
+
+/* OpenAI */
+app.post("/getstatus_openai", jsonParser, function (request, response_getstatus_openai = response) {
+    if (!request.body) return response_getstatus_openai.sendStatus(400);
+    api_key_openai = request.body.key;
+    const args = {
+        headers: { "Authorization": "Bearer " + api_key_openai }
+    };
+    client.get(api_openai + "/models", args, function (data, response) {
+        if (response.statusCode == 200) {
+            console.log(data);
+            response_getstatus_openai.send(data);//data);
+        }
+        if (response.statusCode == 401) {
+            console.log('Access Token is incorrect.');
+            response_getstatus_openai.send({ error: true });
+        }
+        if (response.statusCode == 500 || response.statusCode == 501 || response.statusCode == 501 || response.statusCode == 503 || response.statusCode == 507) {
+            console.log(data);
+            response_getstatus_openai.send({ error: true });
+        }
+    }).on('error', function (err) {
+        response_getstatus_openai.send({ error: true });
+    });
+});
+
+app.post("/generate_openai", jsonParser, function (request, response_generate_openai) {
+    if (!request.body) return response_generate_openai.sendStatus(400);
+
+    console.log(request.body);
+    const config = {
+        method: 'post',
+        url: api_openai + '/chat/completions',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + api_key_openai
+        },
+        data: {
+            "messages": request.body.messages,
+            "model": request.body.model,
+            "temperature": request.body.temperature,
+            "max_tokens": request.body.max_tokens,
+            "stream": request.body.stream,
+            "presence_penalty": request.body.presence_penalty,
+            "frequency_penalty": request.body.frequency_penalty,
+            "stop": request.body.stop,
+            "logit_bias": request.body.logit_bias
+        }
+    };
+
+    if (request.body.stream)
+        config.responseType = 'stream';
+
+    axios(config)
+        .then(function (response) {
+            if (response.status <= 299) {
+                if (request.body.stream) {
+                    console.log("Streaming request in progress")
+                    response.data.pipe(response_generate_openai);
+                    response.data.on('end', function () {
+                        console.log("Streaming request finished");
+                        response_generate_openai.end();
+                    });
+                } else {
+                    console.log(response.data);
+                    response_generate_openai.send(response.data);
+                }
+            } else if (response.status == 400) {
+                console.log('Validation error');
+                response_generate_openai.send({ error: true });
+            } else if (response.status == 401) {
+                console.log('Access Token is incorrect');
+                response_generate_openai.send({ error: true });
+            } else if (response.status == 402) {
+                console.log('An active subscription is required to access this endpoint');
+                response_generate_openai.send({ error: true });
+            } else if (response.status == 500 || response.status == 409) {
+                if (request.body.stream) {
+                    response.data.on('data', chunk => {
+                        console.log(chunk.toString());
+                    });
+                } else {
+                    console.log(response.data);
+                }
+                response_generate_openai.send({ error: true });
+            }
+        })
+        .catch(function (error) {
+            if (error.response) {
+                if (request.body.stream) {
+                    error.response.data.on('data', chunk => {
+                        console.log(chunk.toString());
+                    });
+                } else {
+                    console.log(error.response.data);
+                }
+            }
+            response_generate_openai.send({ error: true });
+        });
+});
+
+const tokenizers = {
+    'gpt-3.5-turbo-0301': tiktoken.encoding_for_model('gpt-3.5-turbo-0301'),
+};
+
+function getTokenizer(model) {
+    let tokenizer = tokenizers[model];
+
+    if (!tokenizer) {
+        tokenizer = tiktoken.encoding_for_model(model);
+        tokenizers[tokenizer] = tokenizer;
+    }
+
+    return tokenizer;
+}
+
+app.post("/tokenize_openai", jsonParser, function (request, response_tokenize_openai = response) {
+    if (!request.body) return response_tokenize_openai.sendStatus(400);
+
+    const tokenizer = getTokenizer(request.query.model);
+
+    let num_tokens = 0;
+    for (const msg of request.body) {
+        num_tokens += 4;
+        for (const [key, value] of Object.entries(msg)) {
+            num_tokens += tokenizer.encode(value).length;
+            if (key == "name") {
+                num_tokens += -1;
+            }
+        }
+    }
+    num_tokens += 2;
+
+    response_tokenize_openai.send({ "token_count": num_tokens });
 });
 
 // ** REST CLIENT ASYNC WRAPPERS **
@@ -1548,12 +1918,14 @@ function getAsync(url, args) {
 }
 // ** END **
 
-app.listen(server_port, (listen ? '0.0.0.0' : '127.0.0.1'), function () {
+app.listen(server_port, (listen ? '0.0.0.0' : '127.0.0.1'), async function () {
     if (process.env.colab !== undefined) {
         if (process.env.colab == 2) {
             is_colab = true;
         }
     }
+    ensurePublicDirectoriesExist();
+    await ensureThumbnailCache();
     console.log('Launching...');
     if (autorun) open('http:127.0.0.1:' + server_port);
     console.log('TavernAI started: http://127.0.0.1:' + server_port);
@@ -1602,7 +1974,7 @@ function convertStage2() {
         var char = JSON.parse(charactersB[key]);
         char.create_date = humanizedISO8601DateTime();
         charactersB[key] = JSON.stringify(char);
-        var avatar = 'public/img/fluffy.png';
+        var avatar = 'public/img/ai4.png';
         if (char.avatar !== 'none') {
             avatar = 'public/characters/' + char.name + '/avatars/' + char.avatar;
         }
@@ -1746,5 +2118,13 @@ function getCharacterFile2(directories, i) {
         });
     } else {
         convertStage2();
+    }
+}
+
+function ensurePublicDirectoriesExist() {
+    for (const dir of Object.values(directories)) {
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        }
     }
 }

@@ -13,6 +13,7 @@ export {
     deleteWorldInfo,
     selectImportedWorldInfo,
     setWorldInfoSettings,
+    getWorldInfoPrompt,
 }
 
 let world_info = null;
@@ -29,6 +30,18 @@ const world_info_position = {
     before: 0,
     after: 1,
 };
+
+function getWorldInfoPrompt(chat2) {
+    let worldInfoString = "", worldInfoBefore = "", worldInfoAfter = "";
+
+    if (world_info && world_info_data) {
+        const activatedWorldInfo = checkWorldInfo(chat2);
+        worldInfoBefore = activatedWorldInfo.worldInfoBefore;
+        worldInfoAfter = activatedWorldInfo.worldInfoAfter;
+        worldInfoString = worldInfoBefore + worldInfoAfter;
+    }
+    return { worldInfoString, worldInfoBefore, worldInfoAfter };
+}
 
 function setWorldInfoSettings(settings, data) {
     if (settings.world_info_depth !== undefined)

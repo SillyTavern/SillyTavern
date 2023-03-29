@@ -4,6 +4,7 @@ export {
     getContext,
     getApiUrl,
     defaultRequestArgs,
+    modules,
 };
 
 const extensionNames = ['caption', 'dice', 'expressions', 'floating-prompt', 'memory'];
@@ -210,6 +211,14 @@ function showExtensionsDetails() {
         html += `<h4>${DOMPurify.sanitize(manifest.display_name)}</h4>`;
         if (activeExtensions.has(name)) {
             html += `<p class="success">Extension is active. <a href="javascript:void" data-name="${name}" class="disable_extension">Disable</a></p>`;
+            if (Array.isArray(manifest.optional)) {
+                const optional = new Set(manifest.optional);
+                modules.forEach(x => optional.delete(x));
+                if (optional.size > 0) {
+                    const optionalString = DOMPurify.sanitize([...optional].join(', '));
+                    html += `<p>Optional modules: <span class="optional">${optionalString}</span></p>`;
+                }
+            }
         }
         else if (disabledExtensions.includes(name)) {
             html += `<p class="disabled">Extension is disabled. <a href="javascript:void" data-name=${name} class="enable_extension">Enable</a></p>`;

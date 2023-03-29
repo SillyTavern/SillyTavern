@@ -14,9 +14,10 @@ https://colab.research.google.com/github/SillyLossy/TavernAI-extras/blob/main/co
 https://rentry.org/TAI_Termux
 
 ## This branch includes: 
-* Base TavernAI 1.2.8
+* A heavily modified TavernAI 1.2.8 (more than 50% of code rewritten or optimized)
 * Swipes
 * Group chats
+* Chat bookmarks (duplicates the current in its curent state)
 * Advanced KoboldAI generation settings
 * World Info support
 * [Oobabooga's TextGen WebUI](https://github.com/oobabooga/text-generation-webui) API connection
@@ -44,13 +45,12 @@ https://rentry.org/TAI_Termux
 * HotKeys
   * Ctrl+Up = Connect to API 
   * Ctrl+Left = view locally stored variables (in the browser console window)
-  * Ctrl+Right = clear locally stored variables.
-  * Ctrl+enter = Regenerate last AI response.
+  * Ctrl+Enter = Regenerate last AI response.
 
 * User Name Changes and Character Deletion no longer force the page to refresh.
 
-* Toggle option to automatically connect to API on page load (currently only for Kobold)
-* Toggle option to automatically load the most recently viewed character on page load
+* Toggle option to automatically connect to API on page load.
+* Toggle option to automatically load the most recently viewed character on page load.
 * Better Token Counter - works on unsaved characters, and shows both permanent and temporary tokens.
 
 * Better Past Chats View
@@ -61,7 +61,7 @@ https://rentry.org/TAI_Termux
 * Clicking the Lock on the nav panel will hold the panel open, and this setting be remembered across sessions.
 * Nav panel status of open or closed will also be saved across sessions.
 
-* Supports saving a shortcut to iOS homescreens and opening in fullscreen mode from that bookmark.
+* mobile UI optimized for iOS, and supports saving a shortcut to iOS homescreen and opening in fullscreen mode.
 
 ## Installation
 
@@ -104,7 +104,9 @@ Contact us on Discord: Cohee#1207 or RossAscends#1779
 <img width="400" alt="image" src="https://user-images.githubusercontent.com/18619528/226420134-171022a3-f799-4ea2-951f-a734a293579b.png">
 
 
-## License
-* TAI Base: Unknown
+## License and credits
+* TAI Base by Humi: Unknown license
 * SillyLossy's TAI mod: Public domain
 * RossAscends' additions: Public domain
+* Portions of CncAnon's TavernAITurbo mod: Unknown license
+* Thanks oobabooga for compiling presets for TextGen

@@ -1,32 +1,105 @@
 <html>
-    <head>
-        <title>TavernAI - Note - KobolAI Settings</title>
-        <link rel="stylesheet" href="/css/notes.css">
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1">
-		<link rel="preconnect" href="https://fonts.googleapis.com">
-		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
-		<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&amp;display=swap" rel="stylesheet">
-    </head>
-    <body>
-        <div id="main">
-            <div id="content">
-                <h2>KoboldAI Settings</h2>
-                <p>Standard KoboldAI settings files are used here. To add your own settings, simply add the file .settings in TavernAI\public\KoboldAI Settings
-                </p>
-                <h3>Temperature</h3>
-                <p>Value from 0.1 to 2.0. Lower value - the answers are more logical, but less creative. Higher value - the answers are more creative, but less logical.</p>
-                <h3>Repetition penalty</h3>
-                <p>Repetition penalty is responsible for the penalty of repeated words. If the character is fixated on something or repeats the same phrase, then increasing this parameter will fix it. It is not recommended to increase this parameter too much for the chat format, as it may break this format. The standard value for chat is approximately 1.0 - 1.05</p>
-                <h3>Repetition penalty range</h3>
-                <p>The range of influence of Repetition penalty in tokens.</p><br>
-                <h2>Pro settings</h2>
-                <h3>Amount generation</h3>
-                <p>The maximum amount of tokens that a AI will generate to respond. One word is approximately 3-4 tokens. The larger the parameter value, the longer the generation time takes.</p>
-                <h3>Context size</h3>
-                <p>How much will the AI remember. Context size also affects the speed of generation.<br><br>
-<u>Important</u>: The setting of Context Size in TavernAI GUI override setting for KoboldAI GUI</p>
-            </div>
+
+<head>
+    <title>TavernAI - Note - KobolAI Settings</title>
+    <link rel="stylesheet" href="/css/notes.css">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&amp;display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div id="main">
+        <div id="content">
+            <h2>KoboldAI Settings</h2>
+            <p>Standard KoboldAI settings files are used here. To add your own settings, simply add the file .settings
+                in TavernAI\public\KoboldAI Settings
+            </p>
+            <h3>Temperature</h3>
+            <p>Value from 0.1 to 2.0. Lower value - the answers are more logical, but less creative. Higher value - the
+                answers are more creative, but less logical.</p>
+            <h3>Repetition penalty</h3>
+            <p>Repetition penalty is responsible for the penalty of repeated words. If the character is fixated on
+                something or repeats the same phrase, then increasing this parameter will fix it. It is not recommended
+                to increase this parameter too much for the chat format, as it may break this format. The standard value
+                for chat is approximately 1.0 - 1.05</p>
+            <h3>Repetition penalty range</h3>
+            <p>The range of influence of Repetition penalty in tokens.</p>
+            <h3>Amount generation</h3>
+            <p>The maximum amount of tokens that a AI will generate to respond. One word is approximately 3-4 tokens.
+                The larger the parameter value, the longer the generation time takes.</p>
+            <h3>Context size</h3>
+            <p>How much will the AI remember. Context size also affects the speed of generation.<br><br>
+                <u>Important</u>: The setting of Context Size in TavernAI GUI override setting for KoboldAI GUI
+            </p>
+
+            <h2>Advanced Settings</h2>
+            <p>
+                The settings provided in this section offer a more detailed level of control over the text generation
+                process. It is important to be careful when making changes to these settings without proper
+                consideration, as doing so may result in degraded quality of responses.
+            </p>
+            <h3>Single-line mode</h3>
+            <p>
+                In single-line mode the AI generates only one line per request. This allows for quicker generation of
+                shorter prompts, but it does not produce responses that consist of more than one line.
+            </p>
+            <h3>Top P Sampling</h3>
+            <p>
+                This setting controls how much of the text generated is based on the most likely options.
+                The top P words with the highest probabilities are considered. A word is then chosen at random, with a
+                higher chance of selecting words with higher probabilities.
+            </p>
+            <p>
+                Set value to 1 to disable its effect.
+            </p>
+            <h3>Top K Sampling</h3>
+            <p>
+                This setting limits the number of words to choose from to the top K most likely options. Can be used
+                together with Top P sampling.
+            </p>
+            <p>
+                Set value to 0 to disable its effect.
+            </p>
+            <h3>Top A Sampling</h3>
+            <p>
+                This setting allows for a more flexible version of sampling, where the number of words chosen from
+                the most likely options is automatically determined based on the likelihood distribution of the options,
+                but instead of choosing the top P or K words, it chooses all words with probabilities above a certain
+                threshold.
+            </p>
+            <p>
+                Set value to 0 to disable its effect.
+            </p>
+            <h3>Typical Sampling</h3>
+            <p>
+                This setting selects words randomly from the list of possible words, with each word having an equal
+                chance of being selected. This method can produce text that is more diverse but may also be less
+                coherent.
+            </p>
+            <p>
+                Set value to 1 to disable its effect.
+            </p>
+            <h3>Tail Free Sampling</h3>
+            <p>
+                This setting removes the least probable words from consideration during text generation, which can
+                improve the quality and coherence of the generated text.
+            </p>
+            <p>
+                Set value to 1 to disable its effect.
+            </p>
+            <h3>Repetition Penalty Slope</h3>
+            <p>
+                If both this and Repetition Penalty Range are above 0, then repetition penalty will have more effect
+                closer to the end of the prompt. The higher the value, the stronger the effect.
+            </p>
+            <p>Set value to 1 for linear interpolation or 0 to disable interpolation.</p>
         </div>
-    </body>
+    </div>
+</body>
+
 </html>
