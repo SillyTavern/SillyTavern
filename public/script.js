@@ -162,15 +162,8 @@ const system_avatar = "img/five.png";
 let is_colab = false;
 let is_checked_colab = false;
 let is_mes_reload_avatar = false;
-let optionsPopper = Popper.createPopper(document.getElementById('options_button'), document.getElementById('options'), {
-    modifiers: [
-        {
-            name: 'offset',
-            options: {
-                offset: [-20, -260],
-            },
-        },
-    ],
+let optionsPopper = Popper.createPopper(document.getElementById('send_form'), document.getElementById('options'), {
+    placement: 'top-start'
 });
 
 const durationSaveEdit = 200;
@@ -3735,6 +3728,7 @@ $(document).ready(function () {
             $("#options").css("display") === "none" &&
             $("#options").css("opacity") == 0.0
         ) {
+            optionsPopper.update();
             showBookmarksButtons();
             $("#options").css("display", "block");
             $("#options").transition({

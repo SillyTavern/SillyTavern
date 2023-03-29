@@ -302,7 +302,6 @@ margin-top:5px;
 .options-content {
     overflow: hidden;
     display: block;
-    position: absolute;
     background-color: var(--black100);
     border: 1px solid #666;
     border-radius: 15px;
@@ -310,7 +309,7 @@ margin-top:5px;
     text-shadow: 0 0 3px black;
     min-width: 200px;
     z-index: 2000;
-    margin-bottom: 13px;
+    margin-bottom: 3px;
 }
 
 .options-content hr {
