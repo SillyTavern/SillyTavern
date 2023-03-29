@@ -96,6 +96,10 @@ To connect over wifi you'll need your PC's local wifi IP address
   - (For Windows: windows button > type 'cmd.exe' in the search bar> type 'ipconfig' in the console, hit Enter > "IPv4" listing)
 if you want other people on the internet to connect, and check [here](https://whatismyipaddress.com/) for 'IPv4'
 
+## Performance issues?
+
+Try enabling the Fast UI mode on User settings panel.
+
 ## Questions or suggestions?
 Contact us on Discord: Cohee#1207 or RossAscends#1779
 
