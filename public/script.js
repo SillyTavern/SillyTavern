@@ -262,6 +262,16 @@ const system_messages = {
     },
 };
 
+// refresh token
+$(document).ajaxError(function myErrorHandler(_, xhr) {
+    if (xhr.status == 403) {
+        $.get("/csrf-token").then((data) => {
+            console.log('refreshed csrf token');
+            token = data.token;
+        });
+    }
+});
+
 const talkativeness_default = 0.5;
 
 var is_advanced_char_open = false;

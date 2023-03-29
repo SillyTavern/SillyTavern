@@ -622,7 +622,7 @@ app.post("/deletecharacter", urlencodedParser, function (request, response) {
     invalidateThumbnail('avatar', request.body.avatar_url);
     let dir_name = (request.body.avatar_url.replace('.png', ''));
 
-    if (dir_name !== sanitize(dir_name)) {
+    if (!dir_name.length) {
         console.error('Malicious dirname prevented');
         return response.sendStatus(403);
     }
@@ -1713,7 +1713,7 @@ async function generateThumbnail(type, file) {
 
 app.get('/thumbnail', jsonParser, async function (request, response) {
     const type = request.query.type;
-    const file = request.query.file;
+    const file = sanitize(request.query.file);
 
     if (!type || !file) {
         return response.sendStatus(400);
