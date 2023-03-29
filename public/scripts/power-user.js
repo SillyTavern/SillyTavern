@@ -92,7 +92,7 @@ $(document).ready(() => {
 
     $("#pin-examples-checkbox").change(function () {
         pin_examples = !!$(this).prop("checked");
-        localStorage.setItem(storage_keys.force_pygmalion_formatting, pin_examples);
+        localStorage.setItem(storage_keys.pin_examples, pin_examples);
     });
 
     $("#disable-description-formatting-checkbox").change(function () {
