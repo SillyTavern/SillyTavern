@@ -60,8 +60,8 @@ function getMainChatName(currentChat) {
 }
 
 function showBookmarksButtons() {
-    // In groups
-    if (selected_group) {
+    // In groups or without an active chat
+    if (selected_group || !characters[this_chid].chat) {
         $("#option_back_to_main").hide();
         $("#option_new_bookmark").hide();
     }
