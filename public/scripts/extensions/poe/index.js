@@ -245,12 +245,12 @@ $('document').ready(function () {
         <ol>
         <li>Login to <a href="https://poe.com" target="_blank">poe.com</a></li>
         <li>Open browser DevTools (F12) and navigate to "Application" tab</li>
-        <li>Find a p-b cookie for poe.com domain and copy its value</li>
-        <li>Select "Extensions" in TavernAI API selector</li>
+        <li>Find a <tt>p-b</tt> cookie for poe.com domain and copy its value</li>
+        <li>Select "Extension" in TavernAI API selector</li>
         <li>Paste cookie value to the box below and click "Connect"</li>
         <li>Select a character and start chatting</li>
         </ol>
-        <label for="poe_token">poe.com assess token (p-b cookie value)</label>
+        <label for="poe_token">poe.com access token (p-b cookie value)</label>
         <input id="poe_token" class="text_pole" type="text" placeholder="Example: nTLG2bNvbOi8qxc-DbaSlw%3D%3D" />
         <label for="poe_activation_message">Jailbreak activation message</label>
         <textarea id="poe_activation_message" rows="3"></textarea>
