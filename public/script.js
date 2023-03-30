@@ -262,6 +262,16 @@ const system_messages = {
     },
 };
 
+// refresh token
+$(document).ajaxError(function myErrorHandler(_, xhr) {
+    if (xhr.status == 403) {
+        $.get("/csrf-token").then((data) => {
+            console.log('refreshed csrf token');
+            token = data.token;
+        });
+    }
+});
+
 const talkativeness_default = 0.5;
 
 var is_advanced_char_open = false;
@@ -323,6 +333,7 @@ var message_already_generated = "";
 var if_typing_text = false;
 const tokens_cycle_count = 30;
 var cycle_count_generation = 0;
+let extension_generation_function = null;
 
 var swipes = false;
 
@@ -459,7 +470,7 @@ async function getStatus() {
             },
         });
     } else {
-        if (is_get_status_novel != true && is_get_status_openai != true) {
+        if (is_get_status_novel != true && is_get_status_openai != true && main_api != "extension") {
             online_status = "no_connection";
         }
     }
@@ -896,11 +907,14 @@ function addOneMessage(mes, type = "normal", insertAfter = null) {
     }
 }
 
-function substituteParams(content) {
-    content = content.replace(/{{user}}/gi, name1);
-    content = content.replace(/{{char}}/gi, name2);
-    content = content.replace(/<USER>/gi, name1);
-    content = content.replace(/<BOT>/gi, name2);
+function substituteParams(content, _name1, _name2) {
+    _name1 = _name1 ?? name1;
+    _name2 = _name2 ?? name2;
+
+    content = content.replace(/{{user}}/gi, _name1);
+    content = content.replace(/{{char}}/gi, _name2);
+    content = content.replace(/<USER>/gi, _name1);
+    content = content.replace(/<BOT>/gi, _name2);
     return content;
 }
 
@@ -1072,8 +1086,7 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
             }
         }
 
-        $("#send_but").css("display", "none");
-        $("#loading_mes").css("display", "inline-block");
+        deactivateSendButtons();
 
         let promptBias = null;
         let messageBias = extractMessageBias(textareaText);
@@ -1286,6 +1299,17 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
         // hack for regeneration of the first message
         if (chat2.length == 0) {
             chat2.push('');
+        }
+
+        if (main_api === 'extension') {
+            if (typeof extension_generation_function !== 'function') {
+                callPopup('No extensions are hooked up to a generation process. Check you extension settings!', 'text');
+                activateSendButtons();
+                return;
+            }
+
+            await extension_generation_function(type, chat2, storyString, mesExamplesArray, promptBias, extension_prompt, worldInfoBefore, worldInfoAfter);
+            return;
         }
 
         for (var item of chat2) {//console.log(encode("dsfs").length);
@@ -1711,47 +1735,7 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
                     if (force_name2) this_mes_is_name = true;
                     //getMessage = getMessage.replace(/^\s+/g, '');
                     if (getMessage.length > 0) {
-                        if (chat.length && (chat[chat.length - 1]['swipe_id'] === undefined ||
-                            chat[chat.length - 1]['is_user'])) {
-                                type = 'normal';
-                            }
-                        if (type === 'swipe') {
-
-                            chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipes'].length] = getMessage;
-                            if (chat[chat.length - 1]['swipe_id'] === chat[chat.length - 1]['swipes'].length - 1) {
-                                //console.log(getMessage);
-                                chat[chat.length - 1]['mes'] = getMessage;
-                                // console.log('runGenerate calls addOneMessage for swipe');
-                                addOneMessage(chat[chat.length - 1], 'swipe');
-                            } else {
-                                chat[chat.length - 1]['mes'] = getMessage;
-                            }
-                            is_send_press = false;
-                        } else {
-                            console.log('entering chat update routine for non-swipe post');
-                            is_send_press = false;
-                            chat[chat.length] = {};
-                            chat[chat.length - 1]['name'] = name2;
-                            chat[chat.length - 1]['is_user'] = false;
-                            chat[chat.length - 1]['is_name'] = this_mes_is_name;
-                            chat[chat.length - 1]['send_date'] = humanizedDateTime();
-                            getMessage = $.trim(getMessage);
-                            chat[chat.length - 1]['mes'] = getMessage;
-
-                            if (selected_group) {
-                                console.log('entering chat update for groups');
-                                let avatarImg = 'img/ai4.png';
-                                if (characters[this_chid].avatar != 'none') {
-                                    avatarImg = `/thumbnail?type=avatar&file=${encodeURIComponent(characters[this_chid].avatar)}&${Date.now()}`;
-                                }
-                                chat[chat.length - 1]['is_name'] = true;
-                                chat[chat.length - 1]['force_avatar'] = avatarImg;
-                            }
-                            //console.log('runGenerate calls addOneMessage');
-                            addOneMessage(chat[chat.length - 1]);
-
-                            activateSendButtons();
-                        }
+                        ({ type, getMessage } = saveReply(type, getMessage, this_mes_is_name));
                     } else {
                         // regenerate with character speech reenforced
                         // to make sure we leave on swipe type while also adding the name2 appendage
@@ -1795,6 +1779,51 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
     console.log('generate ending');
 } //generate ends
 
+function saveReply(type, getMessage, this_mes_is_name) {
+    if (chat.length && (chat[chat.length - 1]['swipe_id'] === undefined ||
+        chat[chat.length - 1]['is_user'])) {
+        type = 'normal';
+    }
+
+    if (type === 'swipe') {
+        chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipes'].length] = getMessage;
+        if (chat[chat.length - 1]['swipe_id'] === chat[chat.length - 1]['swipes'].length - 1) {
+            //console.log(getMessage);
+            chat[chat.length - 1]['mes'] = getMessage;
+            // console.log('runGenerate calls addOneMessage for swipe');
+            addOneMessage(chat[chat.length - 1], 'swipe');
+        } else {
+            chat[chat.length - 1]['mes'] = getMessage;
+        }
+        is_send_press = false;
+    } else {
+        console.log('entering chat update routine for non-swipe post');
+        is_send_press = false;
+        chat[chat.length] = {};
+        chat[chat.length - 1]['name'] = name2;
+        chat[chat.length - 1]['is_user'] = false;
+        chat[chat.length - 1]['is_name'] = this_mes_is_name;
+        chat[chat.length - 1]['send_date'] = humanizedDateTime();
+        getMessage = $.trim(getMessage);
+        chat[chat.length - 1]['mes'] = getMessage;
+
+        if (selected_group) {
+            console.log('entering chat update for groups');
+            let avatarImg = 'img/ai4.png';
+            if (characters[this_chid].avatar != 'none') {
+                avatarImg = `/thumbnail?type=avatar&file=${encodeURIComponent(characters[this_chid].avatar)}&${Date.now()}`;
+            }
+            chat[chat.length - 1]['is_name'] = true;
+            chat[chat.length - 1]['force_avatar'] = avatarImg;
+        }
+        //console.log('runGenerate calls addOneMessage');
+        addOneMessage(chat[chat.length - 1]);
+
+        activateSendButtons();
+    }
+    return { type, getMessage };
+}
+
 function isMultigenEnabled() {
     return multigen && (main_api == 'textgenerationwebui' || main_api == 'kobold' || main_api == 'novel');
 }
@@ -1803,6 +1832,11 @@ function activateSendButtons() {
     is_send_press = false;
     $("#send_but").css("display", "inline");
     $("#loading_mes").css("display", "none");
+}
+
+function deactivateSendButtons() {
+    $("#send_but").css("display", "none");
+    $("#loading_mes").css("display", "inline-block");
 }
 
 function resetChatState() {
@@ -2019,6 +2053,15 @@ function changeMainAPI() {
             amountGenElem: $("#amount_gen_block"),
             softPromptElem: $("#softprompt_block"),
         },
+        "extension": {
+            apiSettings: $(""),
+            apiConnector: $("#extension_api"),
+            apiPresets: $(""),
+            apiRanges: $(""),
+            maxContextElem: $("#max_context_block"),
+            amountGenElem: $("#amount_gen_block"),
+            softPromptElem: $("#softprompt_block"),
+        }
     };
     //console.log('--- apiElements--- ');
     //console.log(apiElements);
@@ -2055,6 +2098,10 @@ function changeMainAPI() {
     main_api = selectedVal;
     online_status = "no_connection";
 
+    if (main_api == "extension") {
+        online_status = "Connected";
+        checkOnlineStatus();
+    }
 }
 
 ////////////////////////////////////////////////////
@@ -2479,7 +2526,7 @@ async function getStatusNovel() {
             },
         });
     } else {
-        if (is_get_status != true && is_get_status_openai != true) {
+        if (is_get_status != true && is_get_status_openai != true && main_api != "extension") {
             online_status = "no_connection";
         }
     }
@@ -2866,6 +2913,10 @@ function closeMessageEditor() {
     }
 }
 
+function setGenerationFunction(func) {
+    extension_generation_function = func;
+}
+
 window["TavernAI"].getContext = function () {
     return {
         chat: chat,
@@ -2878,13 +2929,19 @@ window["TavernAI"].getContext = function () {
         groupId: selected_group,
         chatId: this_chid && characters[this_chid] && characters[this_chid].chat,
         onlineStatus: online_status,
+        maxContext: Number(max_context),
         addOneMessage: addOneMessage,
         generate: Generate,
         encode: encode,
         extensionPrompts: extension_prompts,
         setExtensionPrompt: setExtensionPrompt,
-        saveChat: saveChat,
+        saveChat: saveChatConditional,
         sendSystemMessage: sendSystemMessage,
+        setGenerationFunction: setGenerationFunction,
+        generationFunction: extension_generation_function,
+        activateSendButtons,
+        deactivateSendButtons, 
+        saveReply,
     };
 };
 
@@ -4406,4 +4463,10 @@ $(document).ready(function () {
         icon.toggleClass('down up');
         $(this).closest('.inline-drawer').find('.inline-drawer-content').slideToggle();
     });
+
+    $(document).keyup(function(e) {
+        if (e.key === "Escape") {
+            closeMessageEditor();
+       }
+   });
 })

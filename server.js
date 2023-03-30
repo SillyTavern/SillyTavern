@@ -622,7 +622,7 @@ app.post("/deletecharacter", urlencodedParser, function (request, response) {
     invalidateThumbnail('avatar', request.body.avatar_url);
     let dir_name = (request.body.avatar_url.replace('.png', ''));
 
-    if (dir_name !== sanitize(dir_name)) {
+    if (!dir_name.length) {
         console.error('Malicious dirname prevented');
         return response.sendStatus(403);
     }
@@ -1713,7 +1713,7 @@ async function generateThumbnail(type, file) {
 
 app.get('/thumbnail', jsonParser, async function (request, response) {
     const type = request.query.type;
-    const file = request.query.file;
+    const file = sanitize(request.query.file);
 
     if (!type || !file) {
         return response.sendStatus(400);
@@ -1837,25 +1837,10 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
         });
 });
 
-const tokenizers = {
-    'gpt-3.5-turbo-0301': tiktoken.encoding_for_model('gpt-3.5-turbo-0301'),
-};
-
-function getTokenizer(model) {
-    let tokenizer = tokenizers[model];
-
-    if (!tokenizer) {
-        tokenizer = tiktoken.encoding_for_model(model);
-        tokenizers[tokenizer] = tokenizer;
-    }
-
-    return tokenizer;
-}
-
 app.post("/tokenize_openai", jsonParser, function (request, response_tokenize_openai = response) {
     if (!request.body) return response_tokenize_openai.sendStatus(400);
 
-    const tokenizer = getTokenizer(request.query.model);
+    const tokenizer = tiktoken.encoding_for_model(request.query.model);
 
     let num_tokens = 0;
     for (const msg of request.body) {
