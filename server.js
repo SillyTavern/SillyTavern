@@ -1837,25 +1837,10 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
         });
 });
 
-const tokenizers = {
-    'gpt-3.5-turbo-0301': tiktoken.encoding_for_model('gpt-3.5-turbo-0301'),
-};
-
-function getTokenizer(model) {
-    let tokenizer = tokenizers[model];
-
-    if (!tokenizer) {
-        tokenizer = tiktoken.encoding_for_model(model);
-        tokenizers[tokenizer] = tokenizer;
-    }
-
-    return tokenizer;
-}
-
 app.post("/tokenize_openai", jsonParser, function (request, response_tokenize_openai = response) {
     if (!request.body) return response_tokenize_openai.sendStatus(400);
 
-    const tokenizer = getTokenizer(request.query.model);
+    const tokenizer = tiktoken.encoding_for_model(request.query.model);
 
     let num_tokens = 0;
     for (const msg of request.body) {
