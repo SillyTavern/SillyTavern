@@ -1,5 +1,6 @@
 import { getContext, getApiUrl } from "../../extensions.js";
 import { delay } from "../../utils.js";
+import { showSwipeButtons, hideSwipeButtons } from "../../../script.js";
 
 const TOKEN_KEY = 'extensions_poe_token';
 const BOT_KEY = 'extensions_poe_bot';
@@ -73,56 +74,56 @@ function onBotChange() {
     saveSettings();
 }
 
-async function generate(chat2, storyString, mesExamplesArray, promptBias, extension_prompt, worldInfoBefore, worldInfoAfter) {
+async function generate(type, chat2, storyString, mesExamplesArray, promptBias, extension_prompt, worldInfoBefore, worldInfoAfter) {
     const context = getContext();
     context.deactivateSendButtons();
+    hideSwipeButtons();
 
-    await purgeConversation();
-
-    let jailbroken = false;
-
-    for (let retryNumber = 0; retryNumber < MAX_RETRIES_FOR_ACTIVATION; retryNumber++) {
-        const reply = await sendMessage(jailbreak_message);
-
-        if (reply.toLowerCase().includes(jailbreak_response.toLowerCase())) {
-            jailbroken = true;
-            break;
+    try {
+        await purgeConversation();
+    
+        let jailbroken = false;
+    
+        for (let retryNumber = 0; retryNumber < MAX_RETRIES_FOR_ACTIVATION; retryNumber++) {
+            const reply = await sendMessage(jailbreak_message);
+    
+            if (reply.toLowerCase().includes(jailbreak_response.toLowerCase())) {
+                jailbroken = true;
+                break;
+            }
         }
-    }
-
-    if (!jailbroken) {
-        console.log('Could not jailbreak the bot');
-    }
-
-    let prompt = [worldInfoBefore, storyString, worldInfoAfter, extension_prompt, promptBias].join('\n').replace(/<START>/gm, '').trim();
-    let messageSendString = '';
-
-    for (const item of [...chat2, ...mesExamplesArray]) {
-        const promptLength = context.encode(prompt + messageSendString + item).length;
-        await delay(1);
-
-        if (promptLength >= Number(max_context)) {
-            break;
+    
+        if (!jailbroken) {
+            console.log('Could not jailbreak the bot');
         }
-
-        messageSendString = item + messageSendString;
+    
+        let prompt = [worldInfoBefore, storyString, worldInfoAfter, extension_prompt, promptBias].join('\n').replace(/<START>/gm, '').trim();
+        let messageSendString = '';
+    
+        for (const item of [...chat2, ...mesExamplesArray]) {
+            const promptLength = context.encode(prompt + messageSendString + item).length;
+            await delay(1);
+    
+            if (promptLength >= Number(max_context)) {
+                break;
+            }
+    
+            messageSendString = item + messageSendString;
+        }
+    
+        const finalPrompt = [prompt, messageSendString, `[Write the next reply as ${context.name2} only]`].join('\n');
+        const reply = await sendMessage(finalPrompt);
+    
+        context.saveReply(type, reply, true);
+        context.saveChat();
     }
-
-    const finalPrompt = [prompt, messageSendString, `[Write the next reply as ${context.name2} only]`].join('\n');
-    const reply = await sendMessage(finalPrompt);
-
-    const message = {
-        name: context.name2,
-        is_user: false,
-        is_name: true,
-        send_date: Date.now(),
-        mes: reply,
-    };
-
-    context.chat.push(message);
-    context.addOneMessage(message);
-    context.saveChat();
-    context.activateSendButtons();
+    catch (err) {
+        console.error(err);
+    }
+    finally {
+        context.activateSendButtons();
+        showSwipeButtons();
+    }
 }
 
 async function purgeConversation() {

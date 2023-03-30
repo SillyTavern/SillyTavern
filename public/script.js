@@ -1304,10 +1304,11 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
         if (main_api === 'extension') {
             if (typeof extension_generation_function !== 'function') {
                 callPopup('No extensions are hooked up to a generation process. Check you extension settings!', 'text');
+                activateSendButtons();
                 return;
             }
 
-            await extension_generation_function(chat2, storyString, mesExamplesArray, promptBias, extension_prompt, worldInfoBefore, worldInfoAfter);
+            await extension_generation_function(type, chat2, storyString, mesExamplesArray, promptBias, extension_prompt, worldInfoBefore, worldInfoAfter);
             return;
         }
 
@@ -1734,47 +1735,7 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
                     if (force_name2) this_mes_is_name = true;
                     //getMessage = getMessage.replace(/^\s+/g, '');
                     if (getMessage.length > 0) {
-                        if (chat.length && (chat[chat.length - 1]['swipe_id'] === undefined ||
-                            chat[chat.length - 1]['is_user'])) {
-                                type = 'normal';
-                            }
-                        if (type === 'swipe') {
-
-                            chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipes'].length] = getMessage;
-                            if (chat[chat.length - 1]['swipe_id'] === chat[chat.length - 1]['swipes'].length - 1) {
-                                //console.log(getMessage);
-                                chat[chat.length - 1]['mes'] = getMessage;
-                                // console.log('runGenerate calls addOneMessage for swipe');
-                                addOneMessage(chat[chat.length - 1], 'swipe');
-                            } else {
-                                chat[chat.length - 1]['mes'] = getMessage;
-                            }
-                            is_send_press = false;
-                        } else {
-                            console.log('entering chat update routine for non-swipe post');
-                            is_send_press = false;
-                            chat[chat.length] = {};
-                            chat[chat.length - 1]['name'] = name2;
-                            chat[chat.length - 1]['is_user'] = false;
-                            chat[chat.length - 1]['is_name'] = this_mes_is_name;
-                            chat[chat.length - 1]['send_date'] = humanizedDateTime();
-                            getMessage = $.trim(getMessage);
-                            chat[chat.length - 1]['mes'] = getMessage;
-
-                            if (selected_group) {
-                                console.log('entering chat update for groups');
-                                let avatarImg = 'img/ai4.png';
-                                if (characters[this_chid].avatar != 'none') {
-                                    avatarImg = `/thumbnail?type=avatar&file=${encodeURIComponent(characters[this_chid].avatar)}&${Date.now()}`;
-                                }
-                                chat[chat.length - 1]['is_name'] = true;
-                                chat[chat.length - 1]['force_avatar'] = avatarImg;
-                            }
-                            //console.log('runGenerate calls addOneMessage');
-                            addOneMessage(chat[chat.length - 1]);
-
-                            activateSendButtons();
-                        }
+                        ({ type, getMessage } = saveReply(type, getMessage, this_mes_is_name));
                     } else {
                         // regenerate with character speech reenforced
                         // to make sure we leave on swipe type while also adding the name2 appendage
@@ -1817,6 +1778,51 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
     }
     console.log('generate ending');
 } //generate ends
+
+function saveReply(type, getMessage, this_mes_is_name) {
+    if (chat.length && (chat[chat.length - 1]['swipe_id'] === undefined ||
+        chat[chat.length - 1]['is_user'])) {
+        type = 'normal';
+    }
+
+    if (type === 'swipe') {
+        chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipes'].length] = getMessage;
+        if (chat[chat.length - 1]['swipe_id'] === chat[chat.length - 1]['swipes'].length - 1) {
+            //console.log(getMessage);
+            chat[chat.length - 1]['mes'] = getMessage;
+            // console.log('runGenerate calls addOneMessage for swipe');
+            addOneMessage(chat[chat.length - 1], 'swipe');
+        } else {
+            chat[chat.length - 1]['mes'] = getMessage;
+        }
+        is_send_press = false;
+    } else {
+        console.log('entering chat update routine for non-swipe post');
+        is_send_press = false;
+        chat[chat.length] = {};
+        chat[chat.length - 1]['name'] = name2;
+        chat[chat.length - 1]['is_user'] = false;
+        chat[chat.length - 1]['is_name'] = this_mes_is_name;
+        chat[chat.length - 1]['send_date'] = humanizedDateTime();
+        getMessage = $.trim(getMessage);
+        chat[chat.length - 1]['mes'] = getMessage;
+
+        if (selected_group) {
+            console.log('entering chat update for groups');
+            let avatarImg = 'img/ai4.png';
+            if (characters[this_chid].avatar != 'none') {
+                avatarImg = `/thumbnail?type=avatar&file=${encodeURIComponent(characters[this_chid].avatar)}&${Date.now()}`;
+            }
+            chat[chat.length - 1]['is_name'] = true;
+            chat[chat.length - 1]['force_avatar'] = avatarImg;
+        }
+        //console.log('runGenerate calls addOneMessage');
+        addOneMessage(chat[chat.length - 1]);
+
+        activateSendButtons();
+    }
+    return { type, getMessage };
+}
 
 function isMultigenEnabled() {
     return multigen && (main_api == 'textgenerationwebui' || main_api == 'kobold' || main_api == 'novel');
@@ -2094,6 +2100,7 @@ function changeMainAPI() {
 
     if (main_api == "extension") {
         online_status = "Connected";
+        checkOnlineStatus();
     }
 }
 
@@ -2934,6 +2941,7 @@ window["TavernAI"].getContext = function () {
         generationFunction: extension_generation_function,
         activateSendButtons,
         deactivateSendButtons, 
+        saveReply,
     };
 };
 
