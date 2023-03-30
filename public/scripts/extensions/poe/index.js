@@ -128,6 +128,7 @@ async function generate(type, chat2, storyString, mesExamplesArray, promptBias, 
     finally {
         context.activateSendButtons();
         showSwipeButtons();
+        $('.mes_edit:last').show();
     }
 }
 
