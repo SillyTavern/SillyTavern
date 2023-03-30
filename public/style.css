@@ -2716,10 +2716,10 @@ label[for="extensions_autoconnect"] {
     background-repeat: no-repeat;    
 }
 
-.icon-connect{
+.icon-api{
     background-image: url('img/plug-solid.svg');
 }
-.icon-connect.redOverlayGlow {
+.icon-api.redOverlayGlow {
     background-image: url('img/plug-circle-exclamation-solid.svg');
 }
 .icon-sliders{
