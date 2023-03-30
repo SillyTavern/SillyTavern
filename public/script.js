@@ -4463,4 +4463,10 @@ $(document).ready(function () {
         icon.toggleClass('down up');
         $(this).closest('.inline-drawer').find('.inline-drawer-content').slideToggle();
     });
+
+    $(document).keyup(function(e) {
+        if (e.key === "Escape") {
+            closeMessageEditor();
+       }
+   });
 })
