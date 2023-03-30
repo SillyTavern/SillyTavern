@@ -333,6 +333,7 @@ var message_already_generated = "";
 var if_typing_text = false;
 const tokens_cycle_count = 30;
 var cycle_count_generation = 0;
+let extension_generation_function = null;
 
 var swipes = false;
 
@@ -469,7 +470,7 @@ async function getStatus() {
             },
         });
     } else {
-        if (is_get_status_novel != true && is_get_status_openai != true) {
+        if (is_get_status_novel != true && is_get_status_openai != true && main_api != "extension") {
             online_status = "no_connection";
         }
     }
@@ -906,11 +907,14 @@ function addOneMessage(mes, type = "normal", insertAfter = null) {
     }
 }
 
-function substituteParams(content) {
-    content = content.replace(/{{user}}/gi, name1);
-    content = content.replace(/{{char}}/gi, name2);
-    content = content.replace(/<USER>/gi, name1);
-    content = content.replace(/<BOT>/gi, name2);
+function substituteParams(content, _name1, _name2) {
+    _name1 = _name1 ?? name1;
+    _name2 = _name2 ?? name2;
+
+    content = content.replace(/{{user}}/gi, _name1);
+    content = content.replace(/{{char}}/gi, _name2);
+    content = content.replace(/<USER>/gi, _name1);
+    content = content.replace(/<BOT>/gi, _name2);
     return content;
 }
 
@@ -1082,8 +1086,7 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
             }
         }
 
-        $("#send_but").css("display", "none");
-        $("#loading_mes").css("display", "inline-block");
+        deactivateSendButtons();
 
         let promptBias = null;
         let messageBias = extractMessageBias(textareaText);
@@ -1296,6 +1299,16 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
         // hack for regeneration of the first message
         if (chat2.length == 0) {
             chat2.push('');
+        }
+
+        if (main_api === 'extension') {
+            if (typeof extension_generation_function !== 'function') {
+                callPopup('No extensions are hooked up to a generation process. Check you extension settings!', 'text');
+                return;
+            }
+
+            await extension_generation_function(chat2, storyString, mesExamplesArray, promptBias, extension_prompt, worldInfoBefore, worldInfoAfter);
+            return;
         }
 
         for (var item of chat2) {//console.log(encode("dsfs").length);
@@ -1815,6 +1828,11 @@ function activateSendButtons() {
     $("#loading_mes").css("display", "none");
 }
 
+function deactivateSendButtons() {
+    $("#send_but").css("display", "none");
+    $("#loading_mes").css("display", "inline-block");
+}
+
 function resetChatState() {
     active_character = "invalid-safety-id"; //unsets the chid in settings (this prevents AutoLoadChat from trying to load the wrong ChID
     this_chid = "invalid-safety-id"; //unsets expected chid before reloading (related to getCharacters/printCharacters from using old arrays)
@@ -2029,6 +2047,15 @@ function changeMainAPI() {
             amountGenElem: $("#amount_gen_block"),
             softPromptElem: $("#softprompt_block"),
         },
+        "extension": {
+            apiSettings: $(""),
+            apiConnector: $("#extension_api"),
+            apiPresets: $(""),
+            apiRanges: $(""),
+            maxContextElem: $("#max_context_block"),
+            amountGenElem: $("#amount_gen_block"),
+            softPromptElem: $("#softprompt_block"),
+        }
     };
     //console.log('--- apiElements--- ');
     //console.log(apiElements);
@@ -2065,6 +2092,9 @@ function changeMainAPI() {
     main_api = selectedVal;
     online_status = "no_connection";
 
+    if (main_api == "extension") {
+        online_status = "Connected";
+    }
 }
 
 ////////////////////////////////////////////////////
@@ -2489,7 +2519,7 @@ async function getStatusNovel() {
             },
         });
     } else {
-        if (is_get_status != true && is_get_status_openai != true) {
+        if (is_get_status != true && is_get_status_openai != true && main_api != "extension") {
             online_status = "no_connection";
         }
     }
@@ -2876,6 +2906,10 @@ function closeMessageEditor() {
     }
 }
 
+function setGenerationFunction(func) {
+    extension_generation_function = func;
+}
+
 window["TavernAI"].getContext = function () {
     return {
         chat: chat,
@@ -2888,13 +2922,18 @@ window["TavernAI"].getContext = function () {
         groupId: selected_group,
         chatId: this_chid && characters[this_chid] && characters[this_chid].chat,
         onlineStatus: online_status,
+        maxContext: Number(max_context),
         addOneMessage: addOneMessage,
         generate: Generate,
         encode: encode,
         extensionPrompts: extension_prompts,
         setExtensionPrompt: setExtensionPrompt,
-        saveChat: saveChat,
+        saveChat: saveChatConditional,
         sendSystemMessage: sendSystemMessage,
+        setGenerationFunction: setGenerationFunction,
+        generationFunction: extension_generation_function,
+        activateSendButtons,
+        deactivateSendButtons, 
     };
 };
 

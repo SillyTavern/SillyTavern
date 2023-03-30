@@ -80,6 +80,7 @@
                         <option value="textgenerationwebui">Text generation web UI</option>
                         <option value="novel">NovelAI</option>
                         <option value="openai">OpenAI</option>
+                        <option value="extension">Extension</option>
                     </select>
                 </div>
                 <div id="kobold_api" style="position: relative;"> <!-- shows the kobold settings -->
@@ -164,6 +165,11 @@
                         <div class="online_status_text4">No connection...</div>
                     </div>
                 </div>
+
+                <div id="extension_api">
+                    <b>Generation is handled by the external extensions.</b>
+                </div>
+
                 <label for="auto-connect-checkbox" class="checkbox_label"><input id="auto-connect-checkbox" type="checkbox" />
                     Auto-connect to Last Server
                 </label>

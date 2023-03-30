@@ -23,6 +23,7 @@ import {
     setCharacterName,
     setEditedMessageId,
     is_send_press,
+    name1,
     resetChatState,
     setSendButtonState,
     getCharacters,
@@ -124,7 +125,7 @@ async function getGroupChat(id) {
                     mes["is_name"] = true;
                     mes["send_date"] = humanizedDateTime();
                     mes["mes"] = character.first_mes
-                        ? substituteParams(character.first_mes.trim())
+                        ? substituteParams(character.first_mes.trim(), name1, character.name)
                         : default_ch_mes;
                     mes["force_avatar"] =
                         character.avatar != "none"
