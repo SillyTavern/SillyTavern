@@ -257,7 +257,7 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
 
     // todo: static value, maybe include in the initial context calculation
     let new_chat_msg = { "role": "system", "content": "[Start a new chat]" };
-    let start_chat_count = countTokens([new_chat_msg]);
+    let start_chat_count = countTokens([new_chat_msg], true);
     let total_count = countTokens([prompt_msg], true) + start_chat_count;
 
     if (bias && bias.trim().length) {
@@ -280,7 +280,7 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
 
         // recount tokens for new start message
         total_count -= start_chat_count
-        start_chat_count = countTokens([new_chat_msg]);
+        start_chat_count = countTokens([new_chat_msg], true);
         total_count += start_chat_count;
     }
 
@@ -310,11 +310,11 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
                 examples_tosend.push(example);
             }
         }
-        total_count += countTokens(examples_tosend);
+        total_count += countTokens(examples_tosend, true);
         // go from newest message to oldest, because we want to delete the older ones from the context
         for (let j = openai_msgs.length - 1; j >= 0; j--) {
             let item = openai_msgs[j];
-            let item_count = countTokens(item);
+            let item_count = countTokens(item, true);
             // If we have enough space for this message, also account for the max assistant reply size
             if ((total_count + item_count) < (this_max_context - oai_settings.openai_max_tokens)) {
                 openai_msgs_tosend.push(item);
@@ -328,7 +328,7 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
     } else {
         for (let j = openai_msgs.length - 1; j >= 0; j--) {
             let item = openai_msgs[j];
-            let item_count = countTokens(item);
+            let item_count = countTokens(item, true);
             // If we have enough space for this message, also account for the max assistant reply size
             if ((total_count + item_count) < (this_max_context - oai_settings.openai_max_tokens)) {
                 openai_msgs_tosend.push(item);
@@ -348,7 +348,7 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
 
             for (let k = 0; k < example_block.length; k++) {
                 if (example_block.length == 0) { continue; }
-                let example_count = countTokens(example_block[k]);
+                let example_count = countTokens(example_block[k], true);
                 // add all the messages from the example
                 if ((total_count + example_count + start_chat_count) < (this_max_context - oai_settings.openai_max_tokens)) {
                     if (k == 0) {
