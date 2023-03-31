@@ -1886,8 +1886,8 @@ async function saveChat(chat_name) {
             chat[i].mes = str;
             chat[i].name = default_user_name;
         } else if (i !== chat.length - 1 && chat[i].swipe_id !== undefined) {
-            delete chat[i].swipes;
-            delete chat[i].swipe_id;
+          //  delete chat[i].swipes;
+          //  delete chat[i].swipe_id;
         }
     });
     var save_chat = [
