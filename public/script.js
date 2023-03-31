@@ -196,8 +196,8 @@ const system_messages = {
             'Hi there! The following chat formatting commands are supported:',
             '<ol>',
             '<li><tt>*text*</tt> – format the actions that your character does</li>',
-            '<li><tt>{*text*}</tt> – set the behavioral bias for your character</li>',
-            '<li><tt>{}</tt> – cancel a previously set bias</li>',
+            '<li><tt>{{text}}</tt> – set the behavioral bias for the AI character</li>',
+            '<li><tt>{{}}</tt> – cancel a previously set bias</li>',
             '</ol>',
             'Need more help? Visit our wiki – <a href=\"https://github.com/TavernAI/TavernAI/wiki\">TavernAI Wiki</a>!'
         ].join('')
