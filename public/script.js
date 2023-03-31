@@ -196,8 +196,8 @@ const system_messages = {
             'Hi there! The following chat formatting commands are supported:',
             '<ol>',
             '<li><tt>*text*</tt> – format the actions that your character does</li>',
-            '<li><tt>{*text*}</tt> – set the behavioral bias for your character</li>',
-            '<li><tt>{}</tt> – cancel a previously set bias</li>',
+            '<li><tt>{{text}}</tt> – set the behavioral bias for the AI character</li>',
+            '<li><tt>{{}}</tt> – cancel a previously set bias</li>',
             '</ol>',
             'Need more help? Visit our wiki – <a href=\"https://github.com/TavernAI/TavernAI/wiki\">TavernAI Wiki</a>!'
         ].join('')
@@ -784,9 +784,16 @@ function messageFormating(mes, ch_name, isSystem, forceAvatar) {
             .replace(/\n/g, "<br/>");
     } else if (!isSystem) {
         mes = converter.makeHtml(mes);
-        mes = mes.replace(/{.*}/g, "");
+        //mes = mes.replace(/{.*}/g, "");
+        mes = mes.replace(/{{(\*?.+?\*?)}}/g, "");
+        
+
         mes = mes.replace(/\n/g, "<br/>");
         mes = mes.trim();
+
+        mes = mes.replace(/<code>[\s\S]*?<\/code>/g, function(match) {
+            return match.replace(/&amp;/g, '&');
+        });
     }
 
     if (forceAvatar) {
@@ -967,7 +974,8 @@ function extractMessageBias(message) {
     }
 
     const found = [];
-    const rxp = /{([^}]+)}/g;
+    const rxp = /{{(\*?.+?\*?)}}/g;
+    //const rxp = /{([^}]+)}/g;
     let curMatch;
 
     while ((curMatch = rxp.exec(message))) {
@@ -1017,6 +1025,7 @@ function getExtensionPrompt(position = 0, depth = undefined, separator = "\n") {
     if (extension_prompt.length && !extension_prompt.endsWith(separator)) {
         extension_prompt = extension_prompt + separator;
     }
+    extension_prompt = substituteParams(extension_prompt);
     return extension_prompt;
 }
 
@@ -1257,7 +1266,8 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
             }
 
             // replace bias markup
-            chat2[i] = (chat2[i] ?? '').replace(/{.*}/g, '');
+            //chat2[i] = (chat2[i] ?? '').replace(/{.*}/g, '');
+            chat2[i] = (chat2[i] ?? '').replace(/{{(\*?.+?\*?)}}/g, '');
             //console.log('replacing chat2 {}s');
             j++;
         }
@@ -1886,8 +1896,8 @@ async function saveChat(chat_name) {
             chat[i].mes = str;
             chat[i].name = default_user_name;
         } else if (i !== chat.length - 1 && chat[i].swipe_id !== undefined) {
-            delete chat[i].swipes;
-            delete chat[i].swipe_id;
+          //  delete chat[i].swipes;
+          //  delete chat[i].swipe_id;
         }
     });
     var save_chat = [

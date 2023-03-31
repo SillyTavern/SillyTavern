@@ -121,6 +121,7 @@ code {
     border-radius: 5px;
     background-color: var(--black70a);
     display: inline-block;
+    max-width: 80%;
 }
 
 #bg1 {
