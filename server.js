@@ -1702,7 +1702,7 @@ async function generateThumbnail(type, file) {
         return null;
     }
 
-    const imageSizes = { 'bg': [160, 90], 'avatar': [96, 96] };
+    const imageSizes = { 'bg': [160, 90], 'avatar': [96, 144] };
     const mySize = imageSizes[type];
 
     const image = await jimp.read(pathToOriginalFile);

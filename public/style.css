@@ -402,6 +402,22 @@ margin-top:5px;
     align-items: flex-end;
 }
 
+.ui-settings {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    column-gap: 10px;
+}
+
+.ui-settings > div {
+    flex: 1;
+}
+
+#avatars-style .range-block-range {
+    display: flex;
+    flex-direction: column;
+}
+
 .avatar {
     width: 50px;
     height: 50px;
@@ -416,6 +432,43 @@ margin-top:5px;
     border-radius: 50%;
     border: 1px solid var(--black30a);
     box-shadow: 0 0 5px var(--black50a);
+}
+
+body.big-avatars .avatar {
+    width: 60px;
+    height: 90px;
+    border-style: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: visible;
+    border-radius: 5px;
+    box-shadow: 0 0 5px var(--black50a);
+}
+
+body.big-avatars #user_avatar_block .avatar {
+    height: 90px;
+    width: 60px;
+    border-radius: 5px;
+}
+
+body.big-avatars #user_avatar_block .avatar img {
+    height: 90px;
+    width: 60px;
+}
+
+body.big-avatars .last_mes {
+    grid-template-rows: [avatar-NameMesText-edit] 80px [swipes] auto;
+    grid-template-columns: [checkbox] fit-content(60px) [avatar-leftswipe] fit-content(60px) [name-mestext] auto [edit-rightswipe] 30px !important;
+}
+
+body.big-avatars .avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    border: 1px solid var(--black30a);
+    border-radius: 10px;
 }
 
 .mes_block {
@@ -1552,12 +1605,12 @@ input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):checked::after
     cursor: pointer;
     width: 64px;
     height: 64px;
-    border: 2px solid rgba(255,255,255,0.7);
+    outline: 2px solid rgba(255,255,255,0.7);
     border-radius: 50%;
 }
 
 #user_avatar_block .avatar:not(.selected) {
-    border: 2px solid transparent;
+    outline: 2px solid transparent;
 }
 
 #user_avatar_block .avatar img {

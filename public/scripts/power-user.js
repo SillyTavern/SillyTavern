@@ -21,6 +21,7 @@ let disable_personality_formatting = false;
 let always_force_name2 = false;
 let fast_ui_mode = false;
 let multigen = false;
+let avatar_style = 0;
 let custom_chat_separator = '';
 
 const storage_keys = {
@@ -34,6 +35,7 @@ const storage_keys = {
     custom_chat_separator: "TavernAI_custom_chat_separator",
     fast_ui_mode: "TavernAI_fast_ui_mode",
     multigen: "TavernAI_multigen",
+    avatar_style: "TavernAI_avatar_style",
 };
 
 function collapseNewlines(x) {
@@ -50,6 +52,19 @@ function switchUiMode() {
     }
 }
 
+function applyAvatarStyle() {
+    avatar_style = Number(localStorage.getItem(storage_keys.avatar_style) ?? 0);
+    switch (avatar_style) {
+        case 0:
+            $("body").removeClass("big-avatars");
+            break;
+        case 1:
+            $("body").addClass("big-avatars");
+            break;
+    }
+}
+
+applyAvatarStyle();
 switchUiMode();
 
 function loadPowerUserSettings() {
@@ -63,6 +78,7 @@ function loadPowerUserSettings() {
     custom_chat_separator = localStorage.getItem(storage_keys.custom_chat_separator);
     fast_ui_mode = localStorage.getItem(storage_keys.fast_ui_mode) == "true";
     multigen = localStorage.getItem(storage_keys.multigen) == "true";
+    avatar_style = Number(localStorage.getItem(storage_keys.avatar_style) ?? 0);
 
     $("#force-pygmalion-formatting-checkbox").prop("checked", force_pygmalion_formatting);
     $("#collapse-newlines-checkbox").prop("checked", collapse_newlines);
@@ -74,6 +90,7 @@ function loadPowerUserSettings() {
     $("#custom_chat_separator").val(custom_chat_separator);
     $("#fast_ui_mode").prop("checked", fast_ui_mode);
     $("#multigen").prop("checked", multigen);
+    $(`input[name="avatar_style"][value="${avatar_style}"]`).prop("checked", true);
 }
 
 $(document).ready(() => {
@@ -129,5 +146,11 @@ $(document).ready(() => {
     $("#multigen").change(function () {
         multigen = $(this).prop("checked");
         localStorage.setItem(storage_keys.multigen, multigen);
+    });
+
+    $(`input[name="avatar_style"]`).on('input', function (e) {
+        avatar_style = Number(e.target.value);
+        localStorage.setItem(storage_keys.avatar_style, avatar_style);
+        applyAvatarStyle();
     });
 });
