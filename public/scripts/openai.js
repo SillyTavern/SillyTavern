@@ -108,7 +108,8 @@ function setOpenAIMessages(chat) {
         }
 
         // replace bias markup
-        content = (content ?? '').replace(/{.*}/g, '');
+        //content = (content ?? '').replace(/{.*}/g, '');
+        content = (content ?? '').replace(/{{(\*?.+?\*?)}}/g, '');
 
         // Apply the "wrap in quotes" option
         if (role == 'user' && oai_settings.wrap_in_quotes) content = `"${content}"`;

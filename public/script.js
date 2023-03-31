@@ -784,7 +784,10 @@ function messageFormating(mes, ch_name, isSystem, forceAvatar) {
             .replace(/\n/g, "<br/>");
     } else if (!isSystem) {
         mes = converter.makeHtml(mes);
-        mes = mes.replace(/{.*}/g, "");
+        //mes = mes.replace(/{.*}/g, "");
+        mes = mes.replace(/{{(\*?.+?\*?)}}/g, "");
+        
+
         mes = mes.replace(/\n/g, "<br/>");
         mes = mes.trim();
 
@@ -971,7 +974,8 @@ function extractMessageBias(message) {
     }
 
     const found = [];
-    const rxp = /{([^}]+)}/g;
+    const rxp = /{{(\*?.+?\*?)}}/g;
+    //const rxp = /{([^}]+)}/g;
     let curMatch;
 
     while ((curMatch = rxp.exec(message))) {
@@ -1261,7 +1265,8 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
             }
 
             // replace bias markup
-            chat2[i] = (chat2[i] ?? '').replace(/{.*}/g, '');
+            //chat2[i] = (chat2[i] ?? '').replace(/{.*}/g, '');
+            chat2[i] = (chat2[i] ?? '').replace(/{{(\*?.+?\*?)}}/g, '');
             //console.log('replacing chat2 {}s');
             j++;
         }
