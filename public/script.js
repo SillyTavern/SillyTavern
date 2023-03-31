@@ -1217,7 +1217,7 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
             }
         }
 
-        if (pin_examples) {
+        if (pin_examples && main_api !== 'openai') {
             for (let example of mesExamplesArray) {
                 if (!is_pygmalion) {
                     if (!storyString.endsWith('\n')) {
