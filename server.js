@@ -1854,6 +1854,8 @@ app.post("/tokenize_openai", jsonParser, function (request, response_tokenize_op
     }
     num_tokens += 2;
 
+    tokenizer.free();
+
     response_tokenize_openai.send({ "token_count": num_tokens });
 });
 
