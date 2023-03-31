@@ -1025,6 +1025,7 @@ function getExtensionPrompt(position = 0, depth = undefined, separator = "\n") {
     if (extension_prompt.length && !extension_prompt.endsWith(separator)) {
         extension_prompt = extension_prompt + separator;
     }
+    extension_prompt = substituteParams(extension_prompt);
     return extension_prompt;
 }
 

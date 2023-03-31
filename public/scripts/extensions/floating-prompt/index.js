@@ -5,8 +5,8 @@ const MODULE_NAME = '2_floating_prompt'; // <= Deliberate, for sorting lower tha
 const UPDATE_INTERVAL = 1000;
 
 let lastMessageNumber = null;
-let promptInsertionInterval = 0;
-let promptInsertionPosition = 0;
+let promptInsertionInterval = 1;
+let promptInsertionPosition = 1;
 let promptInsertionDepth = 0;
 
 function onExtensionFloatingPromptInput() {
@@ -49,8 +49,8 @@ function getLocalStorageKeys() {
 function loadSettings() {
     const keys = getLocalStorageKeys();
     const prompt = localStorage.getItem(keys.prompt) ?? '';
-    const interval = localStorage.getItem(keys.interval) ?? 0;
-    const position = localStorage.getItem(keys.position) ?? 0;
+    const interval = localStorage.getItem(keys.interval) ?? 1;
+    const position = localStorage.getItem(keys.position) ?? 1;
     const depth = localStorage.getItem(keys.depth) ?? 0;
     $('#extension_floating_prompt').val(prompt).trigger('input');
     $('#extension_floating_interval').val(interval).trigger('input');
@@ -113,9 +113,9 @@ async function moduleWorker() {
                 In-chat
             </label>
             <label for="extension_floating_interval">Every N messages <b>you</b> send (set to 0 to disable):</label>
-            <input id="extension_floating_interval" class="text_pole" type="number" value="0" min="0" max="999" />
+            <input id="extension_floating_interval" class="text_pole" type="number" min="0" max="999" />
             <label for="extension_floating_interval">Insertion depth (for in-chat positioning):</label>
-            <input id="extension_floating_depth" class="text_pole" type="number" value="0" min="0" max="99" />
+            <input id="extension_floating_depth" class="text_pole" type="number" min="0" max="99" />
             <span>Appending to the prompt in next: <span id="extension_floating_counter">No</span> message(s)</span>
         </div>
         `;

@@ -286,7 +286,7 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
     }
 
     if (oai_settings.jailbreak_system) {
-        const jailbreakMessage = { "role": "system", "content": `[System note: ${oai_settings.nsfw_prompt}]` };
+        const jailbreakMessage = { "role": "system", "content": substituteParams(`[System note: ${oai_settings.nsfw_prompt}]`) };
         openai_msgs.push(jailbreakMessage);
 
         total_count += countTokens([jailbreakMessage], true);
