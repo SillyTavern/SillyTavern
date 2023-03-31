@@ -3540,6 +3540,7 @@ $(document).ready(function () {
 
     $("#form_create").submit(function (e) {
         $("#rm_info_avatar").html("");
+        let save_name = create_save_name;
         var formData = new FormData($("#form_create").get(0));
         if ($("#form_create").attr("actiontype") == "createcharacter") {
             if ($("#character_name_pole").val().length > 0) {
@@ -3595,7 +3596,7 @@ $(document).ready(function () {
                             $("#rm_info_block").transition({ opacity: 0, duration: 0 });
                             var $prev_img = $("#avatar_div_div").clone();
                             $("#rm_info_avatar").append($prev_img);
-                            select_rm_info("Character created", oldSelectedChar);
+                            select_rm_info(`Character created<br><h4>${DOMPurify.sanitize(save_name)}</h4>`, oldSelectedChar);
 
                             $("#rm_info_block").transition({ opacity: 1.0, duration: 2000 });
                         } else {
@@ -4330,7 +4331,7 @@ $(document).ready(function () {
                     }
 
                     await getCharacters();
-                    select_rm_info("Character created", oldSelectedChar);
+                    select_rm_info(`Character imported<br><h4>${DOMPurify.sanitize(data.file_name)}</h4>`, oldSelectedChar);
                     $("#rm_info_block").transition({ opacity: 1, duration: 1000 });
                 }
             },

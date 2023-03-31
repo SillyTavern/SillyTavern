@@ -997,6 +997,10 @@ input[type=search]:focus::-webkit-search-cancel-button {
     margin-bottom:10px;
 }
 
+#description_div {
+    position: relative;
+}
+
 #name_div{
     width: 100%;
 }
@@ -1011,7 +1015,9 @@ input[type=search]:focus::-webkit-search-cancel-button {
     display: inline-block;
 }
 
-#first_message_div {}
+#first_message_div {
+    position: relative;
+}
 
 #advanced_div {
     /* width: 100%; */
@@ -1052,7 +1058,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 }
 
 #rm_info_avatar {
-    width: 69px;
+    width: fit-content;
     text-align: center;
     margin-left: auto;
     margin-right: auto;
