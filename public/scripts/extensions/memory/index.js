@@ -1,5 +1,6 @@
 import { getStringHash, debounce } from "../../utils.js";
 import { getContext, getApiUrl } from "../../extensions.js";
+import { extension_prompt_types } from "../../../script.js";
 export { MODULE_NAME };
 
 const MODULE_NAME = '1_memory';
@@ -13,7 +14,7 @@ let lastMessageHash = null;
 let lastMessageId = null;
 let inApiCall = false;
 
-const formatMemoryValue = (value) => value ? `[Context: "${value.trim()}"]` : '';
+const formatMemoryValue = (value) => value ? `Context: ${value.trim()}` : '';
 const saveChatDebounced = debounce(() => getContext().saveChat(), 2000);
 
 const defaultSettings = {
@@ -300,7 +301,7 @@ function onMemoryContentInput() {
 
 function setMemoryContext(value, saveToMessage) {
     const context = getContext();
-    context.setExtensionPrompt(MODULE_NAME, formatMemoryValue(value));
+    context.setExtensionPrompt(MODULE_NAME, formatMemoryValue(value), extension_prompt_types.AFTER_SCENARIO);
     $('#memory_contents').val(value);
 
     if (saveToMessage && context.chat.length) {
