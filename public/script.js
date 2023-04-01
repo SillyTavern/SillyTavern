@@ -1054,7 +1054,7 @@ function appendToStoryString(value, prefix) {
     return '';
 }
 
-async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").length
+async function Generate(type, automatic_trigger, force_name2) {
     console.log('Generate entered');
     tokens_already_generated = 0;
     message_already_generated = name2 + ': ';
@@ -1294,6 +1294,7 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
 
         let { worldInfoString, worldInfoBefore, worldInfoAfter } = getWorldInfoPrompt(chat2);
         let extension_prompt = getExtensionPrompt(extension_prompt_types.AFTER_SCENARIO);
+        const zeroDepthAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, 0, ' ');
 
         /////////////////////// swipecode
         if (type == 'swipe') {
@@ -1322,12 +1323,12 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
             return;
         }
 
-        for (var item of chat2) {//console.log(encode("dsfs").length);
+        for (var item of chat2) {
             chatString = item + chatString;
             if (encode(JSON.stringify(
                 worldInfoString + storyString + chatString +
                 anchorTop + anchorBottom +
-                charPersonality + promptBias + extension_prompt
+                charPersonality + promptBias + extension_prompt + zeroDepthAnchor
             )).length + 120 < this_max_context) { //(The number of tokens in the entire promt) need fix, it must count correctly (added +120, so that the description of the character does not hide)
                 //if (is_pygmalion && i == chat2.length-1) item='<START>\n'+item;
                 arrMes[arrMes.length] = item;
@@ -1346,7 +1347,7 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
                     let mesExmString = '';
                     for (let iii = 0; iii < mesExamplesArray.length; iii++) {
                         mesExmString += mesExamplesArray[iii];
-                        const prompt = worldInfoString + storyString + mesExmString + chatString + anchorTop + anchorBottom + charPersonality + promptBias + extension_prompt;
+                        const prompt = worldInfoString + storyString + mesExmString + chatString + anchorTop + anchorBottom + charPersonality + promptBias + extension_prompt + zeroDepthAnchor;
                         if (encode(JSON.stringify(prompt)).length + 120 < this_max_context) {
                             if (!is_pygmalion) {
                                 mesExamplesArray[iii] = mesExamplesArray[iii].replace(/<START>/i, `This is how ${name2} should talk`);
@@ -1454,6 +1455,9 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
 
                     mesSendString += mesSend[j];
                     if (force_name2 && j === mesSend.length - 1 && tokens_already_generated === 0) {
+                        if (!mesSendString.endsWith('\n')) {
+                            mesSendString += '\n';
+                        }
                         mesSendString += name2 + ':';
                     }
                 }
@@ -1462,7 +1466,7 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
             function checkPromtSize() {
 
                 setPromtString();
-                let thisPromtContextSize = encode(JSON.stringify(worldInfoString + storyString + mesExmString + mesSendString + anchorTop + anchorBottom + charPersonality + generatedPromtCache + promptBias + extension_prompt)).length + 120;
+                let thisPromtContextSize = encode(JSON.stringify(worldInfoString + storyString + mesExmString + mesSendString + anchorTop + anchorBottom + charPersonality + generatedPromtCache + promptBias + extension_prompt + zeroDepthAnchor)).length + 120;
 
                 if (thisPromtContextSize > this_max_context) {		//if the prepared prompt is larger than the max context size...
 
@@ -1506,11 +1510,20 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
             }
             finalPromt = worldInfoBefore + storyString + worldInfoAfter + extension_prompt + mesExmString + mesSendString + generatedPromtCache + promptBias;
 
-            const zeroDepthAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, 0, ' ');
             if (zeroDepthAnchor && zeroDepthAnchor.length) {
                 if (!isMultigenEnabled() || tokens_already_generated == 0) {
                     const trimBothEnds = !force_name2 && !is_pygmalion;
-                    finalPromt += (trimBothEnds ? zeroDepthAnchor.trim() : zeroDepthAnchor.trimEnd());
+                    let trimmedPrompt = (trimBothEnds ? zeroDepthAnchor.trim() : zeroDepthAnchor.trimEnd());
+
+                    if (trimBothEnds && !finalPromt.endsWith('\n')) {
+                        finalPromt += '\n';
+                    }
+
+                    finalPromt += trimmedPrompt;
+
+                    if (force_name2 || is_pygmalion) {
+                        finalPromt += ' ';
+                    }
                 }
             }
 
@@ -1760,8 +1773,6 @@ async function Generate(type, automatic_trigger, force_name2) {//encode("dsfs").
                 console.log('/savechat called by /Generate');
 
                 saveChatConditional();
-                //let final_message_length = encode(JSON.stringify(getMessage)).length;
-                //console.log('AI Response: +'+getMessage+ '('+final_message_length+' tokens)');
 
                 activateSendButtons();
                 showSwipeButtons();
