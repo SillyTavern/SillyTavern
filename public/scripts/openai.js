@@ -111,6 +111,8 @@ function setOpenAIMessages(chat) {
         //content = (content ?? '').replace(/{.*}/g, '');
         content = (content ?? '').replace(/{{(\*?.+?\*?)}}/g, '');
 
+        content = content.replace(/\r/gm, '');
+
         // Apply the "wrap in quotes" option
         if (role == 'user' && oai_settings.wrap_in_quotes) content = `"${content}"`;
         openai_msgs[i] = { "role": role, "content": content };
@@ -250,7 +252,7 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
     }
 
     // Join by a space and replace placeholders with real user/char names
-    storyString = substituteParams(whole_prompt.join(" "))
+    storyString = substituteParams(whole_prompt.join(" ")).replace(/\r/gm, '').trim();
 
     let prompt_msg = { "role": "system", "content": storyString }
     let examples_tosend = [];
