@@ -31,6 +31,8 @@ let bot;
 let jailbreak_response = DEFAULT_JAILBREAK_RESPONSE;
 let jailbreak_message = DEFAULT_JAILBREAK_MESSAGE;
 let max_context = DEFAULT_MAX_CONTEXT;
+let jailbroken = false;
+let got_reply = false;
 
 function loadSettings() {
     token = localStorage.getItem(TOKEN_KEY);
@@ -80,19 +82,25 @@ async function generate(type, chat2, storyString, mesExamplesArray, promptBias, 
     hideSwipeButtons();
 
     try {
-        await purgeConversation();
-    
-        let jailbroken = false;
-    
-        for (let retryNumber = 0; retryNumber < MAX_RETRIES_FOR_ACTIVATION; retryNumber++) {
-            const reply = await sendMessage(jailbreak_message);
-    
-            if (reply.toLowerCase().includes(jailbreak_response.toLowerCase())) {
-                jailbroken = true;
-                break;
+        let count_to_delete = -1;
+
+        if (jailbroken && got_reply) {
+            count_to_delete = 2;
+        }
+
+        await purgeConversation(count_to_delete);
+
+        if (!jailbroken) {
+            for (let retryNumber = 0; retryNumber < MAX_RETRIES_FOR_ACTIVATION; retryNumber++) {
+                const reply = await sendMessage(jailbreak_message);
+        
+                if (reply.toLowerCase().includes(jailbreak_response.toLowerCase())) {
+                    jailbroken = true;
+                    break;
+                }
             }
         }
-    
+
         if (!jailbroken) {
             console.log('Could not jailbreak the bot');
         }
@@ -117,9 +125,10 @@ async function generate(type, chat2, storyString, mesExamplesArray, promptBias, 
         }
     
         const finalPrompt = [prompt, messageSendString, activator].join('\n');
+        
         const reply = await sendMessage(finalPrompt);
-    
-        context.saveReply(type, reply, false);
+        got_reply = true;
+        context.saveReply(type, reply, true);
         context.saveChat();
     }
     catch (err) {
@@ -132,10 +141,11 @@ async function generate(type, chat2, storyString, mesExamplesArray, promptBias, 
     }
 }
 
-async function purgeConversation() {
+async function purgeConversation(count = -1) {
     const body = JSON.stringify({
         bot,
         token,
+        count,
     });
 
     const apiUrl = new URL(getApiUrl());
