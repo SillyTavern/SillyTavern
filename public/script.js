@@ -115,6 +115,7 @@ export {
     showSwipeButtons,
     hideSwipeButtons,
     changeMainAPI,
+    setGenerationProgress,
     chat,
     this_chid,
     settings,
@@ -1085,6 +1086,7 @@ function appendToStoryString(value, prefix) {
 
 async function Generate(type, automatic_trigger, force_name2) {
     console.log('Generate entered');
+    setGenerationProgress(0);
     tokens_already_generated = 0;
     message_already_generated = name2 + ': ';
 
@@ -1708,9 +1710,13 @@ async function Generate(type, automatic_trigger, force_name2) {
                 if (!data.error) {
                     //const getData = await response.json();
                     var getMessage = "";
-                    if (main_api == 'kobold') {
+                    if (main_api == 'kobold' && !horde_settings.use_horde) {
                         getMessage = data.results[0].text;
-                    } else if (main_api == 'textgenerationwebui') {
+                    }
+                    else if (main_api == 'kobold' && horde_settings.use_horde) {
+                        getMessage = data;
+                    }
+                    else if (main_api == 'textgenerationwebui') {
                         getMessage = data.data[0];
                         if (getMessage == null || data.error) {
                             activateSendButtons();
@@ -1718,7 +1724,8 @@ async function Generate(type, automatic_trigger, force_name2) {
                             return;
                         }
                         getMessage = getMessage.substring(finalPromt.length);
-                    } else if (main_api == 'novel') {
+                    }
+                    else if (main_api == 'novel') {
                         getMessage = data.output;
                     }
                     if (main_api == 'openai') {
@@ -1795,6 +1802,7 @@ async function Generate(type, automatic_trigger, force_name2) {
 
                 activateSendButtons();
                 showSwipeButtons();
+                setGenerationProgress(0);
                 $('.mes_edit:last').show();
             };
 
@@ -1802,6 +1810,7 @@ async function Generate(type, automatic_trigger, force_name2) {
                 $("#send_textarea").removeAttr('disabled');
                 is_send_press = false;
                 activateSendButtons();
+                setGenerationProgress(0);
                 console.log(exception);
                 console.log(jqXHR);
             };
@@ -2964,6 +2973,18 @@ function closeMessageEditor() {
 
 function setGenerationFunction(func) {
     extension_generation_function = func;
+}
+
+function setGenerationProgress(progress) {
+    if (!progress) {
+        $('#send_textarea').css({'background': '', 'transition': ''});
+    }
+    else {
+        $('#send_textarea').css({
+            'background': `linear-gradient(90deg, #008000d6 ${progress}%, transparent ${progress}%)`,
+            'transition': '0.25s ease-in-out'
+        });
+    }
 }
 
 window["TavernAI"].getContext = function () {

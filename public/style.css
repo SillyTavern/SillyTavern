@@ -1272,6 +1272,17 @@ input[type=search]:focus::-webkit-search-cancel-button {
     display: inline-block;
 }
 
+.horde_model_title {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    column-gap: 20px;
+}
+
+.horde_model_title .right_menu_button img.svg_icon {
+    height: 20px;
+}
+
 #softprompt {
     margin-bottom: 10px;
 }

@@ -88,7 +88,8 @@
                     <form action="javascript:void(null);" method="post" enctype="multipart/form-data">
                         <label for="use_horde" class="checkbox_label">
                             <input id="use_horde" type="checkbox" />
-                            Use Horde. <a target="_blank" href="https://stablehorde.net/">Learn more</a>
+                            Use Horde.
+                            <a target="_blank" href="https://horde.koboldai.net/">Learn more</a>
                         </label>
                         <div id="kobold_api_block">
                             <h4>API url</h4>
@@ -104,10 +105,17 @@
                                 Adjust generation to worker capabilities
                             </label>
                             <h4>API key</h4>
-                            <h5>Get it here: <a target="_blank" href="https://stablehorde.net/register">Register</a></h5>
+                            <h5>Get it here: <a target="_blank" href="https://horde.koboldai.net/register">Register</a></h5>
                             <input id="horde_api_key" name="horde_api_key" class="text_pole" maxlength="500" value="0000000000" autocomplete="off">
-                            <h4>Model</h4>
-                            <select id="horde_model"></select>
+                            <h4 class="horde_model_title">
+                                Model 
+                                <div id="horde_refresh" title="Refresh models" class="right_menu_button">
+                                    <img class="svg_icon" src="img/repeat-solid.svg" />
+                                </div>
+                            </h4>
+                            <select id="horde_model">
+                                <option>-- Not connected to Horde --</option>
+                            </select>
                         </div>
                         <div id="online_status2">
                             <div id="online_status_indicator2"></div>
