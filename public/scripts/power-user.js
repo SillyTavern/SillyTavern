@@ -1,28 +1,24 @@
+import { saveSettingsDebounced } from "../script.js";
+
 export {
+    loadPowerUserSettings,
     collapseNewlines,
-    collapse_newlines,
-    force_pygmalion_formatting,
-    pin_examples,
-    disable_description_formatting,
-    disable_scenario_formatting,
-    disable_personality_formatting,
-    always_force_name2,
-    custom_chat_separator,
-    fast_ui_mode,
-    multigen,
+    power_user,
 };
 
-let collapse_newlines = false;
-let force_pygmalion_formatting = false;
-let pin_examples = false;
-let disable_description_formatting = false;
-let disable_scenario_formatting = false;
-let disable_personality_formatting = false;
-let always_force_name2 = false;
-let fast_ui_mode = false;
-let multigen = false;
-let avatar_style = 0;
-let custom_chat_separator = '';
+let power_user = {
+    collapse_newlines: false,
+    force_pygmalion_formatting: false,
+    pin_examples: false,
+    disable_description_formatting: false,
+    disable_scenario_formatting: false,
+    disable_personality_formatting: false,
+    always_force_name2: false,
+    multigen: false,
+    custom_chat_separator: '',
+    fast_ui_mode: false,
+    avatar_style: 0,
+};
 
 const storage_keys = {
     collapse_newlines: "TavernAI_collapse_newlines",
@@ -43,8 +39,8 @@ function collapseNewlines(x) {
 }
 
 function switchUiMode() {
-    fast_ui_mode = localStorage.getItem(storage_keys.fast_ui_mode) == "true";
-    if (fast_ui_mode) {
+    power_user.fast_ui_mode = localStorage.getItem(storage_keys.fast_ui_mode) == "true";
+    if (power_user.fast_ui_mode) {
         $("body").addClass("no-blur");
     }
     else {
@@ -53,8 +49,8 @@ function switchUiMode() {
 }
 
 function applyAvatarStyle() {
-    avatar_style = Number(localStorage.getItem(storage_keys.avatar_style) ?? 0);
-    switch (avatar_style) {
+    power_user.avatar_style = Number(localStorage.getItem(storage_keys.avatar_style) ?? 0);
+    switch (power_user.avatar_style) {
         case 0:
             $("body").removeClass("big-avatars");
             break;
@@ -67,90 +63,101 @@ function applyAvatarStyle() {
 applyAvatarStyle();
 switchUiMode();
 
-function loadPowerUserSettings() {
-    collapse_newlines = localStorage.getItem(storage_keys.collapse_newlines) == "true";
-    force_pygmalion_formatting = localStorage.getItem(storage_keys.force_pygmalion_formatting) == "true";
-    pin_examples = localStorage.getItem(storage_keys.pin_examples) == "true";
-    disable_description_formatting = localStorage.getItem(storage_keys.disable_description_formatting) == "true";
-    disable_scenario_formatting = localStorage.getItem(storage_keys.disable_scenario_formatting) == "true";
-    disable_personality_formatting = localStorage.getItem(storage_keys.disable_personality_formatting) == "true";
-    always_force_name2 = localStorage.getItem(storage_keys.always_force_name2) == "true";
-    custom_chat_separator = localStorage.getItem(storage_keys.custom_chat_separator);
-    fast_ui_mode = localStorage.getItem(storage_keys.fast_ui_mode) == "true";
-    multigen = localStorage.getItem(storage_keys.multigen) == "true";
-    avatar_style = Number(localStorage.getItem(storage_keys.avatar_style) ?? 0);
+// TODO delete in next release
+function loadFromLocalStorage() {
+    power_user.collapse_newlines = localStorage.getItem(storage_keys.collapse_newlines) == "true";
+    power_user.force_pygmalion_formatting = localStorage.getItem(storage_keys.force_pygmalion_formatting) == "true";
+    power_user.pin_examples = localStorage.getItem(storage_keys.pin_examples) == "true";
+    power_user.disable_description_formatting = localStorage.getItem(storage_keys.disable_description_formatting) == "true";
+    power_user.disable_scenario_formatting = localStorage.getItem(storage_keys.disable_scenario_formatting) == "true";
+    power_user.disable_personality_formatting = localStorage.getItem(storage_keys.disable_personality_formatting) == "true";
+    power_user.always_force_name2 = localStorage.getItem(storage_keys.always_force_name2) == "true";
+    power_user.custom_chat_separator = localStorage.getItem(storage_keys.custom_chat_separator);
+    power_user.multigen = localStorage.getItem(storage_keys.multigen) == "true";
+}
 
-    $("#force-pygmalion-formatting-checkbox").prop("checked", force_pygmalion_formatting);
-    $("#collapse-newlines-checkbox").prop("checked", collapse_newlines);
-    $("#pin-examples-checkbox").prop("checked", pin_examples);
-    $("#disable-description-formatting-checkbox").prop("checked", disable_description_formatting);
-    $("#disable-scenario-formatting-checkbox").prop("checked", disable_scenario_formatting);
-    $("#disable-personality-formatting-checkbox").prop("checked", disable_personality_formatting);
-    $("#always-force-name2-checkbox").prop("checked", always_force_name2);
-    $("#custom_chat_separator").val(custom_chat_separator);
-    $("#fast_ui_mode").prop("checked", fast_ui_mode);
-    $("#multigen").prop("checked", multigen);
-    $(`input[name="avatar_style"][value="${avatar_style}"]`).prop("checked", true);
+function loadPowerUserSettings(settings) {
+    // Migrate legacy settings
+    loadFromLocalStorage();
+
+    // Now do it properly from settings.json
+    if (settings.power_user !== undefined) {
+        Object.assign(power_user, settings.power_user);
+    }
+
+    // These are still local storage
+    power_user.fast_ui_mode = localStorage.getItem(storage_keys.fast_ui_mode) == "true";
+    power_user.avatar_style = Number(localStorage.getItem(storage_keys.avatar_style) ?? 0);
+
+    $("#force-pygmalion-formatting-checkbox").prop("checked", power_user.force_pygmalion_formatting);
+    $("#collapse-newlines-checkbox").prop("checked", power_user.collapse_newlines);
+    $("#pin-examples-checkbox").prop("checked", power_user.pin_examples);
+    $("#disable-description-formatting-checkbox").prop("checked", power_user.disable_description_formatting);
+    $("#disable-scenario-formatting-checkbox").prop("checked", power_user.disable_scenario_formatting);
+    $("#disable-personality-formatting-checkbox").prop("checked", power_user.disable_personality_formatting);
+    $("#always-force-name2-checkbox").prop("checked", power_user.always_force_name2);
+    $("#custom_chat_separator").val(power_user.custom_chat_separator);
+    $("#fast_ui_mode").prop("checked", power_user.fast_ui_mode);
+    $("#multigen").prop("checked", power_user.multigen);
+    $(`input[name="avatar_style"][value="${power_user.avatar_style}"]`).prop("checked", true);
 }
 
 $(document).ready(() => {
-    // Auto-load from local storage
-    loadPowerUserSettings();
-
+    // Settings that go to settings.json
     $("#collapse-newlines-checkbox").change(function () {
-        collapse_newlines = !!$(this).prop("checked");
-        localStorage.setItem(storage_keys.collapse_newlines, collapse_newlines);
+        power_user.collapse_newlines = !!$(this).prop("checked");
+        saveSettingsDebounced();
     });
 
     $("#force-pygmalion-formatting-checkbox").change(function () {
-        force_pygmalion_formatting = !!$(this).prop("checked");
-        localStorage.setItem(storage_keys.force_pygmalion_formatting, force_pygmalion_formatting);
+        power_user.force_pygmalion_formatting = !!$(this).prop("checked");
+        saveSettingsDebounced();
     });
 
     $("#pin-examples-checkbox").change(function () {
-        pin_examples = !!$(this).prop("checked");
-        localStorage.setItem(storage_keys.pin_examples, pin_examples);
+        power_user.pin_examples = !!$(this).prop("checked");
+        saveSettingsDebounced();
     });
 
     $("#disable-description-formatting-checkbox").change(function () {
-        disable_description_formatting = !!$(this).prop('checked');
-        localStorage.setItem(storage_keys.disable_description_formatting, disable_description_formatting);
+        power_user.disable_description_formatting = !!$(this).prop('checked');
+        saveSettingsDebounced();
     })
 
     $("#disable-scenario-formatting-checkbox").change(function () {
-        disable_scenario_formatting = !!$(this).prop('checked');
-        localStorage.setItem(storage_keys.disable_scenario_formatting, disable_scenario_formatting);
+        power_user.disable_scenario_formatting = !!$(this).prop('checked');
+        saveSettingsDebounced();
     });
 
     $("#disable-personality-formatting-checkbox").change(function () {
-        disable_personality_formatting = !!$(this).prop('checked');
-        localStorage.setItem(storage_keys.disable_personality_formatting, disable_personality_formatting);
+        power_user.disable_personality_formatting = !!$(this).prop('checked');
+        saveSettingsDebounced();
     });
 
     $("#always-force-name2-checkbox").change(function () {
-        always_force_name2 = !!$(this).prop("checked");
-        localStorage.setItem(storage_keys.always_force_name2, always_force_name2);
+        power_user.always_force_name2 = !!$(this).prop("checked");
+        saveSettingsDebounced();
     });
 
     $("#custom_chat_separator").on('input', function() {
-        custom_chat_separator = $(this).val();
-        localStorage.setItem(storage_keys.custom_chat_separator, custom_chat_separator);
+        power_user.custom_chat_separator = $(this).val();
+        saveSettingsDebounced();
+    });
+    $("#multigen").change(function () {
+        power_user.multigen = $(this).prop("checked");
+        saveSettingsDebounced();
     });
 
+    // Settings that go to local storage
     $("#fast_ui_mode").change(function () {
-        fast_ui_mode = $(this).prop("checked");
-        localStorage.setItem(storage_keys.fast_ui_mode, fast_ui_mode);
+        power_user.fast_ui_mode = $(this).prop("checked");
+        localStorage.setItem(storage_keys.fast_ui_mode, power_user.fast_ui_mode);
         switchUiMode();
     });
 
-    $("#multigen").change(function () {
-        multigen = $(this).prop("checked");
-        localStorage.setItem(storage_keys.multigen, multigen);
-    });
-
     $(`input[name="avatar_style"]`).on('input', function (e) {
-        avatar_style = Number(e.target.value);
-        localStorage.setItem(storage_keys.avatar_style, avatar_style);
+        power_user.avatar_style = Number(e.target.value);
+        localStorage.setItem(storage_keys.avatar_style, power_user.avatar_style);
         applyAvatarStyle();
     });
 });

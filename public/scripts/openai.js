@@ -25,7 +25,7 @@ import {
 import { groups, selected_group } from "./group-chats.js";
 
 import {
-    pin_examples,
+    power_user,
 } from "./power-user.js";
 
 import {
@@ -294,7 +294,7 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
     }
 
     // The user wants to always have all example messages in the context
-    if (pin_examples) {
+    if (power_user.pin_examples) {
         // first we send *all* example messages
         // we don't check their token size since if it's bigger than the context, the user is fucked anyway
         // and should've have selected that option (maybe have some warning idk, too hard to add)

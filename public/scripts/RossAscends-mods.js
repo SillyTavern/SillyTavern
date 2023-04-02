@@ -15,8 +15,7 @@ import {
 } from "../script.js";
 
 import {
-    fast_ui_mode,
-    pin_examples,
+    power_user,
 } from "./power-user.js";
 
 import { LoadLocal, SaveLocal, ClearLocal, CheckLocal, LoadLocalBool } from "./f-localStorage.js";
@@ -156,7 +155,7 @@ function RA_CountCharTokens() {
                     characters[this_chid].description +
                     characters[this_chid].personality +
                     characters[this_chid].scenario +
-                    (pin_examples ? characters[this_chid].mes_example : '') // add examples to permanent if they are pinned
+                    (power_user.pin_examples ? characters[this_chid].mes_example : '') // add examples to permanent if they are pinned
                 )).length;
         } else { console.log("RA_TC -- no valid char found, closing."); }                // if neither, probably safety char or some error in loading
     }
@@ -206,7 +205,7 @@ function RA_checkOnlineStatus() {
     } else {
         if (online_status !== undefined && online_status !== "no_connection") {
             $("#send_textarea").attr("placeholder", "Type a message..."); //on connect, placeholder tells user to type message
-            const formColor = fast_ui_mode ? "var(--black90a)" : "var(--black60a)";
+            const formColor = power_user.fast_ui_mode ? "var(--black90a)" : "var(--black60a)";
             $("#send_form").css("background-color", formColor); //on connect, form BG changes to transprent black
             $("#API-status-top").removeClass("redOverlayGlow");
             connection_made = true;

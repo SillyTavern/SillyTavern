@@ -39,16 +39,9 @@ import {
 } from "./scripts/group-chats.js";
 
 import {
-    force_pygmalion_formatting,
-    collapse_newlines,
-    pin_examples,
     collapseNewlines,
-    disable_description_formatting,
-    disable_personality_formatting,
-    disable_scenario_formatting,
-    always_force_name2,
-    custom_chat_separator,
-    multigen,
+    loadPowerUserSettings,
+    power_user,
 } from "./scripts/power-user.js";
 
 import {
@@ -479,7 +472,7 @@ async function getStatus() {
                 if (online_status == undefined) {
                     online_status = "no_connection";
                 }
-                if (online_status.toLowerCase().indexOf("pygmalion") != -1 || (online_status !== "no_connection" && force_pygmalion_formatting)) {
+                if (online_status.toLowerCase().indexOf("pygmalion") != -1 || (online_status !== "no_connection" && power_user.force_pygmalion_formatting)) {
                     is_pygmalion = true;
                     online_status += " (Pyg. formatting on)";
                 } else {
@@ -1071,7 +1064,7 @@ function baseChatReplace(value, name1, name2) {
         value = value.replace(/<USER>/gi, name1);
         value = value.replace(/<BOT>/gi, name2);
 
-        if (collapse_newlines) {
+        if (power_user.collapse_newlines) {
             value = collapseNewlines(value);
         }
     }
@@ -1222,12 +1215,12 @@ async function Generate(type, automatic_trigger, force_name2) {
         }
 
         if (is_pygmalion) {
-            storyString += appendToStoryString(charDescription, disable_description_formatting ? '' : name2 + "'s Persona: ");
-            storyString += appendToStoryString(charPersonality, disable_personality_formatting ? '' : 'Personality: ');
-            storyString += appendToStoryString(Scenario, disable_scenario_formatting ? '' : 'Scenario: ');
+            storyString += appendToStoryString(charDescription, power_user.disable_description_formatting ? '' : name2 + "'s Persona: ");
+            storyString += appendToStoryString(charPersonality, power_user.disable_personality_formatting ? '' : 'Personality: ');
+            storyString += appendToStoryString(Scenario, power_user.disable_scenario_formatting ? '' : 'Scenario: ');
         } else {
             if (charDescription !== undefined) {
-                if (charPersonality.length > 0 && !disable_personality_formatting) {
+                if (charPersonality.length > 0 && !power_user.disable_personality_formatting) {
                     charPersonality = name2 + "'s personality: " + charPersonality;
                 }
             }
@@ -1243,13 +1236,13 @@ async function Generate(type, automatic_trigger, force_name2) {
             }
         }
 
-        if (custom_chat_separator && custom_chat_separator.length) {
+        if (power_user.custom_chat_separator && power_user.custom_chat_separator.length) {
             for (let i = 0; i < mesExamplesArray.length; i++) {
-                mesExamplesArray[i] = mesExamplesArray[i].replace(/<START>/gi, custom_chat_separator);
+                mesExamplesArray[i] = mesExamplesArray[i].replace(/<START>/gi, power_user.custom_chat_separator);
             }
         }
 
-        if (pin_examples && main_api !== 'openai') {
+        if (power_user.pin_examples && main_api !== 'openai') {
             for (let example of mesExamplesArray) {
                 if (!is_pygmalion) {
                     if (!storyString.endsWith('\n')) {
@@ -1262,7 +1255,7 @@ async function Generate(type, automatic_trigger, force_name2) {
         }
 
         // Pygmalion does that anyway
-        if (always_force_name2 && !is_pygmalion) {
+        if (power_user.always_force_name2 && !is_pygmalion) {
             force_name2 = true;
         }
 
@@ -1382,7 +1375,7 @@ async function Generate(type, automatic_trigger, force_name2) {
             count_exm_add = 0;
 
             if (i === chat2.length - 1) {
-                if (!pin_examples) {
+                if (!power_user.pin_examples) {
                     let mesExmString = '';
                     for (let iii = 0; iii < mesExamplesArray.length; iii++) {
                         mesExmString += mesExamplesArray[iii];
@@ -1402,7 +1395,7 @@ async function Generate(type, automatic_trigger, force_name2) {
                     if (!storyString.endsWith('\n')) {
                         storyString += '\n';
                     }
-                    storyString += !disable_scenario_formatting ? `Circumstances and context of the dialogue: ${Scenario}\n` : `${Scenario}\n`;
+                    storyString += !power_user.disable_scenario_formatting ? `Circumstances and context of the dialogue: ${Scenario}\n` : `${Scenario}\n`;
                 }
                 console.log('calling runGenerate');
                 await runGenerate();
@@ -1535,8 +1528,8 @@ async function Generate(type, automatic_trigger, force_name2) {
             }
 
             // add a custom dingus (if defined)
-            if (custom_chat_separator && custom_chat_separator.length) {
-                mesSendString = custom_chat_separator + '\n' + mesSendString;
+            if (power_user.custom_chat_separator && power_user.custom_chat_separator.length) {
+                mesSendString = power_user.custom_chat_separator + '\n' + mesSendString;
             }
             // add non-pygma dingus
             else if (!is_pygmalion) {
@@ -1568,7 +1561,7 @@ async function Generate(type, automatic_trigger, force_name2) {
 
             finalPromt = finalPromt.replace(/\r/gm, '');
 
-            if (collapse_newlines) {
+            if (power_user.collapse_newlines) {
                 finalPromt = collapseNewlines(finalPromt);
             }
 
@@ -1733,7 +1726,7 @@ async function Generate(type, automatic_trigger, force_name2) {
                         getMessage = data;
                     }
 
-                    if (collapse_newlines) {
+                    if (power_user.collapse_newlines) {
                         getMessage = collapseNewlines(getMessage);
                     }
 
@@ -1875,7 +1868,7 @@ function saveReply(type, getMessage, this_mes_is_name) {
 }
 
 function isMultigenEnabled() {
-    return multigen && (main_api == 'textgenerationwebui' || main_api == 'kobold' || main_api == 'novel');
+    return power_user.multigen && (main_api == 'textgenerationwebui' || main_api == 'kobold' || main_api == 'novel');
 }
 
 function activateSendButtons() {
@@ -2331,6 +2324,9 @@ async function getSettings(type) {
                 // Horde
                 loadHordeSettings(settings);
 
+                // Load power user settings
+                loadPowerUserSettings(settings);
+
                 //Enable GUI deference settings if GUI is selected for Kobold
                 if (main_api === "kobold") {
                     if (preset_settings == "gui") {
@@ -2427,6 +2423,7 @@ async function saveSettings(type) {
             textgenerationwebui_settings: textgenerationwebui_settings,
             swipes: swipes,
             horde_settings: horde_settings,
+            power_user: power_user,
             ...nai_settings,
             ...kai_settings,
             ...oai_settings,
