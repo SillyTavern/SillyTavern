@@ -60,21 +60,27 @@ function getMainChatName(currentChat) {
 }
 
 function showBookmarksButtons() {
-    // In groups or without an active chat
-    if (selected_group || !characters[this_chid].chat) {
+    try {
+        // In groups or without an active chat
+        if (selected_group || !characters[this_chid].chat) {
+            $("#option_back_to_main").hide();
+            $("#option_new_bookmark").hide();
+        }
+        // In main chat
+        else if (!characters[this_chid].chat.includes(bookmarkNameToken)) {
+            $("#option_back_to_main").hide();
+            $("#option_new_bookmark").show();
+
+        }
+        // In bookmark chat
+        else {
+            $("#option_back_to_main").show();
+            $("#option_new_bookmark").show();
+        }
+    }
+    catch {
         $("#option_back_to_main").hide();
         $("#option_new_bookmark").hide();
-    }
-    // In main chat
-    else if (!characters[this_chid].chat.includes(bookmarkNameToken)) {
-        $("#option_back_to_main").hide();
-        $("#option_new_bookmark").show();
-
-    }
-    // In bookmark chat
-    else {
-        $("#option_back_to_main").show();
-        $("#option_new_bookmark").show();
     }
 }
 
@@ -93,7 +99,7 @@ $(document).ready(function () {
         saveChat();
     });
 
-    $('#option_back_to_main').on('click', async function() {
+    $('#option_back_to_main').on('click', async function () {
         const mainChatName = getMainChatName(characters[this_chid].chat);
         const allChats = await getExistingChatNames();
 
