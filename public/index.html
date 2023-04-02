@@ -36,6 +36,7 @@
     <script type="module" src="scripts/kai-settings.js"></script>
     <script type="module" src="scripts/textgen-settings.js"></script>
     <script type="module" src="scripts/bookmarks.js"></script>
+    <script type="module" src="scripts/horde.js"></script>
 
     <title>Tavern.AI</title>
 </head>
@@ -85,11 +86,29 @@
                 </div>
                 <div id="kobold_api" style="position: relative;"> <!-- shows the kobold settings -->
                     <form action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                        <h4>API url</h4>
-                        <h5>Example: http://127.0.0.1:5000/api </h5>
-                        <input id="api_url_text" name="api_url" class="text_pole" maxlength="500" value="" autocomplete="off">
-                        <input id="api_button" class="menu_button" type="submit" value="Connect">
-                        <img id="api_loading" src="img/load.svg">
+                        <label for="use_horde" class="checkbox_label">
+                            <input id="use_horde" type="checkbox" />
+                            Use Horde. <a target="_blank" href="https://stablehorde.net/">Learn more</a>
+                        </label>
+                        <div id="kobold_api_block">
+                            <h4>API url</h4>
+                            <h5>Example: http://127.0.0.1:5000/api </h5>
+                            <input id="api_url_text" name="api_url" class="text_pole" maxlength="500" value="" autocomplete="off">
+                            <input id="api_button" class="menu_button" type="submit" value="Connect">
+                            <img id="api_loading" src="img/load.svg">
+                        </div>
+                        <div id="kobold_horde_block">
+
+                            <label for="horde_auto_adjust" class="checkbox_label">
+                                <input id="horde_auto_adjust" type="checkbox" />
+                                Adjust generation to worker capabilities
+                            </label>
+                            <h4>API key</h4>
+                            <h5>Get it here: <a target="_blank" href="https://stablehorde.net/register">Register</a></h5>
+                            <input id="horde_api_key" name="horde_api_key" class="text_pole" maxlength="500" value="0000000000" autocomplete="off">
+                            <h4>Model</h4>
+                            <select id="horde_model"></select>
+                        </div>
                         <div id="online_status2">
                             <div id="online_status_indicator2"></div>
                             <div id="online_status_text2">Not connected</div>

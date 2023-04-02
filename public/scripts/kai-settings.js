@@ -6,6 +6,7 @@ export {
     kai_settings,
     loadKoboldSettings,
     formatKoboldUrl,
+    getKoboldGenerationData,
 };
 
 const kai_settings = {
@@ -52,6 +53,35 @@ function loadKoboldSettings(preset) {
         kai_settings.single_line = preset.single_line;
         $('#single_line').prop('checked', kai_settings.single_line);
     }
+}
+
+function getKoboldGenerationData(finalPromt, this_settings, this_amount_gen, this_max_context) {
+    let generate_data = {
+        prompt: finalPromt,
+        gui_settings: false,
+        sampler_order: this_settings.sampler_order,
+        max_context_length: parseInt(this_max_context),
+        max_length: this_amount_gen,
+        rep_pen: parseFloat(kai_settings.rep_pen),
+        rep_pen_range: parseInt(kai_settings.rep_pen_range),
+        rep_pen_slope: kai_settings.rep_pen_slope,
+        temperature: parseFloat(kai_settings.temp),
+        tfs: kai_settings.tfs,
+        top_a: kai_settings.top_a,
+        top_k: kai_settings.top_k,
+        top_p: kai_settings.top_p,
+        typical: kai_settings.typical,
+        s1: this_settings.sampler_order[0],
+        s2: this_settings.sampler_order[1],
+        s3: this_settings.sampler_order[2],
+        s4: this_settings.sampler_order[3],
+        s5: this_settings.sampler_order[4],
+        s6: this_settings.sampler_order[5],
+        s7: this_settings.sampler_order[6],
+        use_world_info: false,
+        singleline: kai_settings.single_line,
+    };
+    return generate_data;
 }
 
 const sliders = [

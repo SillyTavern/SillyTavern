@@ -5,6 +5,7 @@ import {
     kai_settings,
     loadKoboldSettings,
     formatKoboldUrl,
+    getKoboldGenerationData,
 } from "./scripts/kai-settings.js";
 
 import {
@@ -72,6 +73,14 @@ import {
 
 import { showBookmarksButtons } from "./scripts/bookmarks.js";
 
+import {
+    horde_settings,
+    loadHordeSettings,
+    generateHorde,
+    checkHordeStatus,
+    adjustHordeGenerationParams,
+} from "./scripts/horde.js";
+
 import { debounce, delay } from "./scripts/utils.js";
 
 //exporting functions and vars for mods
@@ -105,6 +114,7 @@ export {
     getExtensionPrompt,
     showSwipeButtons,
     hideSwipeButtons,
+    changeMainAPI,
     chat,
     this_chid,
     settings,
@@ -169,6 +179,7 @@ let optionsPopper = Popper.createPopper(document.getElementById('send_form'), do
 const durationSaveEdit = 200;
 const saveSettingsDebounced = debounce(() => saveSettings(), durationSaveEdit);
 const saveCharacterDebounced = debounce(() => $("#create_button").click(), durationSaveEdit);
+const getStatusDebounced = debounce(() => getStatus(), 5000);
 
 const system_message_types = {
     HELP: "help",
@@ -429,6 +440,24 @@ function checkOnlineStatus() {
 
 async function getStatus() {
     if (is_get_status) {
+        if (main_api == "kobold" && horde_settings.use_horde) {
+            try {
+                const hordeStatus = await checkHordeStatus();
+                online_status = hordeStatus ? 'Connected' : 'no_connection';
+                resultCheckStatus();
+    
+                if (online_status !== "no_connection") {
+                    getStatusDebounced();
+                }
+            }
+            catch {
+                online_status = "no_connection";
+                resultCheckStatus();
+            }
+
+            return;
+        }
+
         jQuery.ajax({
             type: "POST", //
             url: "/getstatus", //
@@ -1292,6 +1321,13 @@ async function Generate(type, automatic_trigger, force_name2) {
             this_max_context = (max_context - amount_gen);
         }
 
+        let hordeAmountGen = null;
+        if (main_api == 'kobold' && horde_settings.use_horde && horde_settings.auto_adjust) {
+            const adjustedParams = await adjustHordeGenerationParams(this_max_context, amount_gen);
+            this_max_context = adjustedParams.maxContextLength;
+            hordeAmountGen = adjustedParams.maxLength;
+        }
+
         let { worldInfoString, worldInfoBefore, worldInfoAfter } = getWorldInfoPrompt(chat2);
         let extension_prompt = getExtensionPrompt(extension_prompt_types.AFTER_SCENARIO);
         const zeroDepthAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, 0, ' ');
@@ -1556,6 +1592,10 @@ async function Generate(type, automatic_trigger, force_name2) {
                 }
             }
 
+            if (main_api == 'kobold' && horde_settings.use_horde && hordeAmountGen) {
+                this_amount_gen = Math.min(this_amount_gen, hordeAmountGen);
+            }
+
             var generate_data;
             if (main_api == 'kobold') {
                 var generate_data = {
@@ -1566,33 +1606,9 @@ async function Generate(type, automatic_trigger, force_name2) {
                     max_context_length: max_context,
                     singleline: kai_settings.single_line,
                 };
-                if (preset_settings != 'gui') {
 
-                    generate_data = {
-                        prompt: finalPromt,
-                        gui_settings: false,
-                        sampler_order: this_settings.sampler_order,
-                        max_context_length: parseInt(max_context),//this_settings.max_length,
-                        max_length: this_amount_gen,//parseInt(amount_gen),
-                        rep_pen: parseFloat(kai_settings.rep_pen),
-                        rep_pen_range: parseInt(kai_settings.rep_pen_range),
-                        rep_pen_slope: kai_settings.rep_pen_slope,
-                        temperature: parseFloat(kai_settings.temp),
-                        tfs: kai_settings.tfs,
-                        top_a: kai_settings.top_a,
-                        top_k: kai_settings.top_k,
-                        top_p: kai_settings.top_p,
-                        typical: kai_settings.typical,
-                        s1: this_settings.sampler_order[0],
-                        s2: this_settings.sampler_order[1],
-                        s3: this_settings.sampler_order[2],
-                        s4: this_settings.sampler_order[3],
-                        s5: this_settings.sampler_order[4],
-                        s6: this_settings.sampler_order[5],
-                        s7: this_settings.sampler_order[6],
-                        use_world_info: false,
-                        singleline: kai_settings.single_line,
-                    };
+                if (preset_settings != 'gui' || horde_settings.use_horde) {
+                    generate_data = getKoboldGenerationData(finalPromt, this_settings, this_amount_gen, this_max_context);
                 }
             }
 
@@ -1665,6 +1681,9 @@ async function Generate(type, automatic_trigger, force_name2) {
             if (main_api == 'openai') {
                 let prompt = await prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAfter, extension_prompt, promptBias);
                 sendOpenAIRequest(prompt).then(onSuccess).catch(onError);
+            }
+            else if (main_api == 'kobold' && horde_settings.use_horde) {
+                generateHorde(finalPromt, generate_data).then(onSuccess).catch(onError);
             }
             else {
                 jQuery.ajax({
@@ -2123,6 +2142,11 @@ function changeMainAPI() {
         online_status = "Connected";
         checkOnlineStatus();
     }
+
+    if (main_api == "kobold" && horde_settings.use_horde) {
+        is_get_status = true;
+        getStatus();
+    }
 }
 
 ////////////////////////////////////////////////////
@@ -2294,6 +2318,9 @@ async function getSettings(type) {
                 // OpenAI
                 loadOpenAISettings(data, settings);
 
+                // Horde
+                loadHordeSettings(settings);
+
                 //Enable GUI deference settings if GUI is selected for Kobold
                 if (main_api === "kobold") {
                     if (preset_settings == "gui") {
@@ -2389,6 +2416,7 @@ async function saveSettings(type) {
             active_character: active_character,
             textgenerationwebui_settings: textgenerationwebui_settings,
             swipes: swipes,
+            horde_settings: horde_settings,
             ...nai_settings,
             ...kai_settings,
             ...oai_settings,
@@ -3736,7 +3764,7 @@ $(document).ready(function () {
 
     $("#api_button").click(function (e) {
         e.stopPropagation();
-        if ($("#api_url_text").val() != "") {
+        if ($("#api_url_text").val() != "" && !horde_settings.use_horde) {
             let value = formatKoboldUrl($.trim($("#api_url_text").val()));
 
             if (!value) {
@@ -3756,6 +3784,12 @@ $(document).ready(function () {
             getStatus();
             clearSoftPromptsList();
             getSoftPromptsList();
+        }
+        else if (horde_settings.use_horde) {
+            main_api = "kobold";
+            is_get_status = true;
+            getStatus();
+            clearSoftPromptsList();
         }
     });
 
