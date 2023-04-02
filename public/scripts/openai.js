@@ -607,6 +607,22 @@ function resultCheckStatusOpen() {
     $("#api_button_openai").css("display", 'inline-block');
 }
 
+function trySelectPresetByName(name) {
+    let preset_found = null;
+    for (const key in openai_setting_names) {
+        if (name.trim() == key.trim()) {
+            preset_found = key;
+        }
+    }
+
+    if (preset_found) {
+        oai_settings.preset_settings_openai = preset_found;
+        const value = openai_setting_names[preset_found]
+        $(`#settings_perset_openai option[value="${value}"]`).attr('selected', true);
+        $('#settings_perset_openai').trigger('change');
+    }
+}
+
 $(document).ready(function () {
     $(document).on('input', '#temp_openai', function () {
         oai_settings.temp_openai = $(this).val();
@@ -622,7 +638,7 @@ $(document).ready(function () {
 
     $(document).on('input', '#pres_pen_openai', function () {
         oai_settings.pres_pen_openai = $(this).val();
-        $('#pres_pen_counter_openai').text(Number($(this).val()));
+        $('#pres_pen_counter_openai').text(Number($(this).val()).toFixed(2));
         saveSettingsDebounced();
 
     });
@@ -742,9 +758,35 @@ $(document).ready(function () {
         saveSettingsDebounced();
     });
 
+    // auto-select a preset based on character/group name
+    $(document).on("click", ".character_select", function () {
+        const chid = $(this).attr('chid');
+        const name = characters[chid]?.name;
+
+        if (!name) {
+            return;
+        }
+
+        trySelectPresetByName(name);
+    });
+
+    $(document).on("click", ".group_select", function () {
+        const grid = $(this).data('id');
+        const name = groups.find(x => x.id === grid)?.name;
+
+        if (!name) {
+            return;
+        }
+
+        trySelectPresetByName(name);
+    });
+
     $("#save_preset").click(async function () {
+        const popupText = `
+            <h3>Preset name:</h3>
+            <h4>Hint: Use a character/group name to bind preset to a specific chat.</h4>`;
         $("#save_prompts").click();
-        const name = await callPopup('Preset name:', 'input');
+        const name = await callPopup(popupText, 'input');
 
         if (!name) {
             return;
@@ -778,13 +820,23 @@ $(document).ready(function () {
 
         if (savePresetSettings.ok) {
             const data = await savePresetSettings.json();
-            openai_settings.push(presetBody);
-            openai_setting_names[data.name] = openai_settings.length;
-            const option = document.createElement('option');
-            option.selected = true;
-            option.value = data.name;
-            option.innerText = data.name;
-            $('#settings_perset_openai').append(option).trigger('change');
+
+            if (Object.keys(openai_setting_names).includes(data.name)) {
+                oai_settings.preset_settings_openai = data.name;
+                const value = openai_setting_names[data.name];
+                Object.assign(openai_settings[value], presetBody);
+                $(`#settings_perset_openai option[value="${value}"]`).attr('selected', true);
+                $('#settings_perset_openai').trigger('change');
+            }
+            else {
+                openai_settings.push(presetBody);
+                openai_setting_names[data.name] = openai_settings.length;
+                const option = document.createElement('option');
+                option.selected = true;
+                option.value = openai_settings.length;
+                option.innerText = data.name;
+                $('#settings_perset_openai').append(option).trigger('change');
+            }
         }
     });
 });
