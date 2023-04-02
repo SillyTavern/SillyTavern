@@ -1859,6 +1859,18 @@ app.post("/tokenize_openai", jsonParser, function (request, response_tokenize_op
     response_tokenize_openai.send({ "token_count": num_tokens });
 });
 
+app.post("/savepreset_openai", jsonParser, function (request, response) {
+    const name = sanitize(request.query.name);
+    if (!request.body || !name) {
+        return response.sendStatus(400);
+    }
+
+    const filename = `${name}.settings`;
+    const fullpath = path.join(directories.openAI_Settings, filename);
+    fs.writeFileSync(fullpath, JSON.stringify(request.body), 'utf-8');
+    return response.send({ name });
+});
+
 // ** REST CLIENT ASYNC WRAPPERS **
 function deleteAsync(url, args) {
     return new Promise((resolve, reject) => {

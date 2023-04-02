@@ -176,6 +176,7 @@ let is_mes_reload_avatar = false;
 let optionsPopper = Popper.createPopper(document.getElementById('send_form'), document.getElementById('options'), {
     placement: 'top-start'
 });
+let dialogueResolve = null;
 
 const durationSaveEdit = 200;
 const saveSettingsDebounced = debounce(() => saveSettings(), durationSaveEdit);
@@ -2791,7 +2792,6 @@ function callPopup(text, type) {
             $("#dialogue_popup_ok").text("Ok");
             $("#dialogue_popup_cancel").css("display", "none");
             break;
-
         case "world_imported":
         case "new_chat":
             $("#dialogue_popup_ok").text("Yes");
@@ -2802,12 +2802,26 @@ function callPopup(text, type) {
         default:
             $("#dialogue_popup_ok").text("Delete");
     }
+
+    $("#dialogue_popup_input").val('');
+    if (popup_type == 'input') {
+        $("#dialogue_popup_input").css("display", "block");
+        $("#dialogue_popup_ok").text("Save");
+    }
+    else {
+        $("#dialogue_popup_input").css("display", "none");
+    }
+
     $("#dialogue_popup_text").html(text);
     $("#shadow_popup").css("display", "block");
     $("#shadow_popup").transition({
         opacity: 1.0,
         duration: animation_rm_duration,
         easing: animation_rm_easing,
+    });
+
+    return new Promise((resolve) => {
+        dialogueResolve = resolve;
     });
 }
 
@@ -3582,11 +3596,28 @@ $(document).ready(function () {
             saveCharacterDebounced();
             getChat();
         }
+
+        if (dialogueResolve) {
+            if (popup_type == 'input') {
+                dialogueResolve($("#dialogue_popup_input").val());
+                $("#dialogue_popup_input").val('');
+            }
+            else {
+                dialogueResolve(true);
+            }
+
+            dialogueResolve = null;
+        }
     });
     $("#dialogue_popup_cancel").click(function (e) {
         $("#shadow_popup").css("display", "none");
         $("#shadow_popup").css("opacity:", 0.0);
         popup_type = "";
+
+        if (dialogueResolve) {
+            dialogueResolve(false);
+            dialogueResolve = null;
+        }
     });
 
     $("#add_bg_button").change(function () {
