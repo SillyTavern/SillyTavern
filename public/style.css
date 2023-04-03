@@ -2966,7 +2966,7 @@ filter: invert(20%) sepia(100%) saturate(2518%) hue-rotate(353deg) brightness(93
     .mes-text {padding-right: 25px;}
 
     #right-nav-panel {        
-        height: calc(100vh - 70px);
+        height: calc(100svh - 70px);
         min-width: 0px;
         width: calc(100vw - 10px);
         left: 5px !important;
