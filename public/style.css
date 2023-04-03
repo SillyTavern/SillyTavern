@@ -2901,7 +2901,61 @@ filter: invert(20%) sepia(100%) saturate(2518%) hue-rotate(353deg) brightness(93
 
 .widthFreeExpand {width: unset;}
 
+#openai_api-presets {
+    display: flex;
+    flex-direction: row;
+    column-gap: 10px;
+}
 
+#openai_api-presets > div {
+    flex: 1;
+}
+
+#openai_api-presets select {
+    width: 100%;
+}
+
+#openai_logit_bias_text, .openai_logit_bias_range_block {
+    flex: 1;
+}
+
+.openai_logit_bias_form .range-block-counter {
+    margin-top: 0px;
+}
+
+.openai_logit_bias_form {
+    display: flex;
+    flex-direction: row;
+    column-gap: 10px;
+    align-items: center;
+}
+
+.openai_logit_bias_list {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    column-gap: 10px;
+    flex-wrap: wrap;
+}
+
+.openai_logit_bias_list_item .separator {
+    margin: 0 3px;
+    display: block;
+    font-weight: 700;
+    font-size: 1.2em;
+}
+
+.openai_logit_bias_list_item {
+    display: flex;
+    flex-direction: row;
+    align-items: baseline;
+    background-color: var(--ivory);
+    color: var(--black100);
+    font-weight: 500;
+    border-radius: 20px;
+    min-height: fit-content;
+    padding: 3px 5px;
+}
 
 
 /* ---------- @media queries must always go at the bottom ------------*/

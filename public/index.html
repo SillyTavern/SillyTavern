@@ -296,16 +296,20 @@
                                 </select>
                             </div>
                             <div id="openai_api-presets">
-                                <h3>OpenAI Presets</h3>
-                                <select id="settings_perset_openai">
-                                    <option value="gui">Default</option>
-                                </select>
-                                <h4>OpenAI Model</h4>
-                                <select id="model_openai_select">
-                                    <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
-                                    <option value="gpt-3.5-turbo-0301">gpt-3.5-turbo-0301</option>
-                                    <option value="gpt-4">gpt-4</option>
-                                </select>
+                                <div>
+                                    <h3>OpenAI Presets</h3>
+                                    <select id="settings_perset_openai">
+                                        <option value="gui">Default</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <h4>OpenAI Model</h4>
+                                    <select id="model_openai_select">
+                                        <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+                                        <option value="gpt-3.5-turbo-0301">gpt-3.5-turbo-0301</option>
+                                        <option value="gpt-4">gpt-4</option>
+                                    </select>
+                                </div>
                             </div>
                             <div id="textgenerationwebui_api-presets">
                                 <h3>Text generation web UI presets</h3>
@@ -488,6 +492,31 @@
                                     </div>
                                     <div class="range-block-range">
                                         <input type="range" id="pres_pen_openai" name="volume" min="-2" max="2" step="0.01">
+                                    </div>
+                                </div>
+
+                                <div style="display:none" class="range-block">
+                                    <div class="range-block-title">
+                                        Logit Bias
+                                    </div>
+                                    <div class="openai_logit_bias">
+                                        <div class="openai_logit_bias_form">
+                                            <input class="text_pole" id="openai_logit_bias_text" placeholder="text (will be converted to tokens)" />
+                                            <div class="openai_logit_bias_range_block">
+                                                <div class="range-block-counter">
+                                                    <span id="openai_logit_bias_value_counter">select</span>
+                                                </div>
+                                                <input id="openai_logit_bias_value" type="range" min="-100" value="0" max="100" />
+                                            </div>
+                                            <input class="menu_button" id="openai_logit_bias_add" type="button" value="Add" />
+                                        </div>
+                                        <div class="openai_logit_bias_list">
+                                            <div class="openai_logit_bias_list_item">
+                                                <span class="token_id">666</span>
+                                                <span class="separator">:</span>
+                                                <span class="bias_value">-100</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

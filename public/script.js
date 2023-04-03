@@ -2118,6 +2118,10 @@ function changeMainAPI() {
         apiObj.apiRanges.css("display", isCurrentApi ? "block" : "none");
         apiObj.apiPresets.css("display", isCurrentApi ? "block" : "none");
 
+        if (isCurrentApi && apiName === "openai") {
+            apiObj.apiPresets.css("display", "flex");
+        }
+
         if (isCurrentApi && apiName === "kobold") {
             //console.log("enabling SP for kobold");
             $("#softprompt_block").css("display", "block");
