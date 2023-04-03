@@ -64,6 +64,11 @@ class Client {
     bot_names = [];
     ws = null;
     ws_connected = false;
+    auto_reconnect = false;
+
+    constructor(auto_reconnect = false) {
+        this.auto_reconnect = auto_reconnect;
+    }
 
     async init(token, proxy = null) {
         this.proxy = proxy;
@@ -210,6 +215,10 @@ class Client {
             this.on_message(this.ws, message);
         });
 
+        this.ws.on('close', () => {
+            this.ws_connected = false;
+        });
+
         this.ws.on('error', (error) => {
             this.on_ws_error(this.ws, error);
         });
@@ -237,7 +246,10 @@ class Client {
     on_ws_error(ws, error) {
         logger.warn(`Websocket returned error: ${error}`);
         this.disconnect_ws();
-        this.connect_ws();
+
+        if (this.auto_reconnect) {
+            this.connect_ws();
+        }
     }
 
     on_message(ws, msg) {
