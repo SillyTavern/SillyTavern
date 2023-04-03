@@ -124,6 +124,7 @@ export {
     is_send_press,
     api_server_textgenerationwebui,
     count_view_mes,
+    max_context,
     default_avatar,
     system_message_types,
     talkativeness_default,

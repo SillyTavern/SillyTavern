@@ -830,10 +830,10 @@ $(document).ready(function () {
             }
             else {
                 openai_settings.push(presetBody);
-                openai_setting_names[data.name] = openai_settings.length;
+                openai_setting_names[data.name] = openai_settings.length - 1;
                 const option = document.createElement('option');
                 option.selected = true;
-                option.value = openai_settings.length;
+                option.value = openai_settings.length - 1;
                 option.innerText = data.name;
                 $('#settings_perset_openai').append(option).trigger('change');
             }

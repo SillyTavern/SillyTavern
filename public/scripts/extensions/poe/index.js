@@ -1,12 +1,18 @@
-import { getContext, getApiUrl } from "../../extensions.js";
+import { getContext } from "../../extensions.js";
 import { delay } from "../../utils.js";
-import { showSwipeButtons, hideSwipeButtons, getExtensionPrompt, extension_prompt_types } from "../../../script.js";
+import {
+    showSwipeButtons,
+    hideSwipeButtons,
+    getExtensionPrompt,
+    extension_prompt_types,
+    token as csrf_token,
+    max_context,
+} from "../../../script.js";
 
 const TOKEN_KEY = 'extensions_poe_token';
 const BOT_KEY = 'extensions_poe_bot';
 const RESPONSE_KEY = 'extensions_poe_response';
 const MESSAGE_KEY = 'extensions_poe_message';
-const MAX_CONTEXT_KEY = 'extensions_poe_max_context';
 
 const DEFAULT_MAX_CONTEXT = 2000;
 const MAX_RETRIES_FOR_ACTIVATION = 5;
@@ -30,7 +36,6 @@ let token;
 let bot;
 let jailbreak_response = DEFAULT_JAILBREAK_RESPONSE;
 let jailbreak_message = DEFAULT_JAILBREAK_MESSAGE;
-let max_context = DEFAULT_MAX_CONTEXT;
 let jailbroken = false;
 let got_reply = false;
 
@@ -39,10 +44,8 @@ function loadSettings() {
     bot = localStorage.getItem(BOT_KEY);
     jailbreak_response = localStorage.getItem(RESPONSE_KEY) ?? DEFAULT_JAILBREAK_RESPONSE;
     jailbreak_message = localStorage.getItem(MESSAGE_KEY) ?? DEFAULT_JAILBREAK_MESSAGE;
-    max_context = Number(localStorage.getItem(MAX_CONTEXT_KEY) ?? DEFAULT_MAX_CONTEXT);
     $('#poe_activation_response').val(jailbreak_response);
     $('#poe_activation_message').val(jailbreak_message);
-    $('#poe_max_context').val(max_context);
     $('#poe_token').val(token ?? '');
     selectBot();
 
@@ -63,7 +66,6 @@ function saveSettings() {
     localStorage.setItem(BOT_KEY, bot);
     localStorage.setItem(RESPONSE_KEY, jailbreak_response);
     localStorage.setItem(MESSAGE_KEY, jailbreak_message);
-    localStorage.setItem(MAX_CONTEXT_KEY, max_context);
 }
 
 function onTokenInput() {
@@ -110,6 +112,7 @@ async function generate(type, chat2, storyString, mesExamplesArray, promptBias, 
         let messageSendString = '';
 
         const allMessages = [...chat2, ...mesExamplesArray];
+        const maxContext = Math.min(Number(max_context), DEFAULT_MAX_CONTEXT);
     
         for (let index = 0; index < allMessages.length; ++index) {
             const item = allMessages[index];
@@ -117,7 +120,7 @@ async function generate(type, chat2, storyString, mesExamplesArray, promptBias, 
             const promptLength = context.encode(prompt + messageSendString + item + activator + extensionPrompt).length;
             await delay(1);
     
-            if (promptLength >= Number(max_context)) {
+            if (promptLength >= maxContext) {
                 break;
             }
     
@@ -148,13 +151,9 @@ async function purgeConversation(count = -1) {
         count,
     });
 
-    const apiUrl = new URL(getApiUrl());
-    apiUrl.pathname = '/api/poe/purge';
-
-
-    const response = await fetch(apiUrl, {
+    const response = await fetch('/purge_poe', {
         headers: {
-            'Bypass-Tunnel-Reminder': 'bypass',
+            'X-CSRF-Token': csrf_token,
             'Content-Type': 'application/json',
         },
         body: body,
@@ -171,12 +170,9 @@ async function sendMessage(prompt) {
         token,
     });
 
-    const apiUrl = new URL(getApiUrl());
-    apiUrl.pathname = '/api/poe/generate';
-
-    const response = await fetch(apiUrl, {
+    const response = await fetch('/generate_poe', {
         headers: {
-            'Bypass-Tunnel-Reminder': 'bypass',
+            'X-CSRF-Token': csrf_token,
             'Content-Type': 'application/json',
         },
         body: body,
@@ -199,12 +195,9 @@ async function sendMessage(prompt) {
 
 async function onConnectClick() {
     const body = JSON.stringify({ token: token });
-    const apiUrl = new URL(getApiUrl());
-    apiUrl.pathname = '/api/poe/status';
-
-    const response = await fetch(apiUrl, {
+    const response = await fetch('/status_poe', {
         headers: {
-            'Bypass-Tunnel-Reminder': 'bypass',
+            'X-CSRF-Token': csrf_token,
             'Content-Type': 'application/json',
         },
         body: body,
@@ -248,11 +241,6 @@ function onMessageInput() {
     saveSettings();
 }
 
-function onMaxContextInput() {
-    max_context = Number($(this).val());
-    saveSettings();
-}
-
 $('document').ready(function () {
     function addExtensionControls() {
         const settingsHtml = `
@@ -271,9 +259,7 @@ $('document').ready(function () {
         <label for="poe_activation_message">Jailbreak activation message</label>
         <textarea id="poe_activation_message" rows="3"></textarea>
         <label for="poe_activation_response">Jailbreak activation response</label>
-        <input id="poe_activation_response" class="text_pole" type="text />
-        <label for="poe_max_context">Max context (in tokens)</label>
-        <input id="poe_max_context" class="text_pole" type="number" min="0" max="4096" />
+        <input id="poe_activation_response" class="text_pole" type="text" />
         <input id="poe_connect" class="menu_button" type="button" value="Connect" />
         <div>
             <label for="poe_bots">List of bots:</label>
@@ -289,7 +275,6 @@ $('document').ready(function () {
         $('#poe_connect').on('click', onConnectClick);
         $('#poe_activation_response').on('input', onResponseInput);
         $('#poe_activation_message').on('input', onMessageInput);
-        $('#poe_max_context').on('input', onMaxContextInput);
     }
 
     addExtensionControls();
