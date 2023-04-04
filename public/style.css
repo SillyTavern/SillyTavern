@@ -2958,6 +2958,22 @@ filter: invert(20%) sepia(100%) saturate(2518%) hue-rotate(353deg) brightness(93
     padding: 3px 5px;
 }
 
+.openai_restorable {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.openai_restorable .right_menu_button img {
+    height: 20px;
+}
+
+.openai_preset_buttons {
+    display: flex;
+    justify-content: space-evenly;
+    flex-direction: row;
+}
 
 /* ---------- @media queries must always go at the bottom ------------*/
 

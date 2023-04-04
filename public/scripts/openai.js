@@ -60,6 +60,26 @@ const gpt4_max = 8191;
 
 const tokenCache = {};
 
+const default_settings = {
+    preset_settings_openai: 'Default',
+    api_key_openai: '',
+    temp_openai: 1.0,
+    freq_pen_openai: 0,
+    pres_pen_openai: 0,
+    stream_openai: false,
+    openai_max_context: gpt3_max,
+    openai_max_tokens: 300,
+    nsfw_toggle: true,
+    enhance_definitions: false,
+    wrap_in_quotes: false,
+    nsfw_first: false,
+    main_prompt: default_main_prompt,
+    nsfw_prompt: default_nsfw_prompt,
+    jailbreak_prompt: default_jailbreak_prompt,
+    openai_model: 'gpt-3.5-turbo-0301',
+    jailbreak_system: false,
+};
+
 const oai_settings = {
     preset_settings_openai: 'Default',
     api_key_openai: '',
@@ -524,12 +544,12 @@ function loadOpenAISettings(data, settings) {
     oai_settings.preset_settings_openai = settings.preset_settings_openai;
     $(`#settings_perset_openai option[value=${openai_setting_names[oai_settings.preset_settings_openai]}]`).attr('selected', true);
 
-    oai_settings.temp_openai = settings.temp_openai ?? 0.9;
-    oai_settings.freq_pen_openai = settings.freq_pen_openai ?? 0.7;
-    oai_settings.pres_pen_openai = settings.pres_pen_openai ?? 0.7;
-    oai_settings.stream_openai = settings.stream_openai ?? true;
-    oai_settings.openai_max_context = settings.openai_max_context ?? 4095;
-    oai_settings.openai_max_tokens = settings.openai_max_tokens ?? 300;
+    oai_settings.temp_openai = settings.temp_openai ?? default_settings.temp_openai;
+    oai_settings.freq_pen_openai = settings.freq_pen_openai ?? default_settings.freq_pen_openai;
+    oai_settings.pres_pen_openai = settings.pres_pen_openai ?? default_settings.pres_pen_openai;
+    oai_settings.stream_openai = settings.stream_openai ?? default_settings.stream_openai;
+    oai_settings.openai_max_context = settings.openai_max_context ?? default_settings.openai_max_context;
+    oai_settings.openai_max_tokens = settings.openai_max_tokens ?? default_settings.openai_max_tokens;
 
     if (settings.nsfw_toggle !== undefined) oai_settings.nsfw_toggle = !!settings.nsfw_toggle;
     if (settings.keep_example_dialogue !== undefined) oai_settings.keep_example_dialogue = !!settings.keep_example_dialogue;
@@ -612,6 +632,7 @@ function trySelectPresetByName(name) {
     for (const key in openai_setting_names) {
         if (name.trim() == key.trim()) {
             preset_found = key;
+            break;
         }
     }
 
@@ -619,7 +640,56 @@ function trySelectPresetByName(name) {
         oai_settings.preset_settings_openai = preset_found;
         const value = openai_setting_names[preset_found]
         $(`#settings_perset_openai option[value="${value}"]`).attr('selected', true);
-        $('#settings_perset_openai').trigger('change');
+        $('#settings_perset_openai').val(value).trigger('change');
+    }
+}
+
+async function saveOpenAIPreset(name, settings) {
+    const presetBody = {
+        openai_model: settings.openai_model,
+        temperature: settings.temp_openai,
+        frequency_penalty: settings.freq_pen_openai,
+        presence_penalty: settings.pres_pen_openai,
+        openai_max_context: settings.openai_max_context,
+        openai_max_tokens: settings.openai_max_tokens,
+        nsfw_toggle: settings.nsfw_toggle,
+        enhance_definitions: settings.enhance_definitions,
+        wrap_in_quotes: settings.wrap_in_quotes,
+        nsfw_first: settings.nsfw_first,
+        main_prompt: settings.main_prompt,
+        nsfw_prompt: settings.nsfw_prompt,
+        jailbreak_prompt: settings.jailbreak_prompt,
+        jailbreak_system: settings.jailbreak_system,
+    };
+
+    const savePresetSettings = await fetch(`/savepreset_openai?name=${name}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': token,
+        },
+        body: JSON.stringify(presetBody),
+    });
+
+    if (savePresetSettings.ok) {
+        const data = await savePresetSettings.json();
+
+        if (Object.keys(openai_setting_names).includes(data.name)) {
+            oai_settings.preset_settings_openai = data.name;
+            const value = openai_setting_names[data.name];
+            Object.assign(openai_settings[value], presetBody);
+            $(`#settings_perset_openai option[value="${value}"]`).attr('selected', true);
+            $('#settings_perset_openai').trigger('change');
+        }
+        else {
+            openai_settings.push(presetBody);
+            openai_setting_names[data.name] = openai_settings.length - 1;
+            const option = document.createElement('option');
+            option.selected = true;
+            option.value = openai_settings.length - 1;
+            option.innerText = data.name;
+            $('#settings_perset_openai').append(option).trigger('change');
+        }
     }
 }
 
@@ -727,6 +797,12 @@ $(document).ready(function () {
                     updateInput(selector, preset[key]);
                 }
                 oai_settings[setting] = preset[key];
+
+                if (key == 'openai_model') {
+                    $(`#model_openai_select option[value="${preset[key]}"`)
+                        .attr('selected', true)
+                        .trigger('change');
+                }
             }
         }
 
@@ -746,10 +822,18 @@ $(document).ready(function () {
         }
     });
 
-    $("#save_prompts").click(function () {
-        oai_settings.main_prompt = $('#main_prompt_textarea').val();
-        oai_settings.nsfw_prompt = $('#nsfw_prompt_textarea').val();
+    $("#jailbreak_prompt_textarea").on('input', function () {
         oai_settings.jailbreak_prompt = $('#jailbreak_prompt_textarea').val();
+        saveSettingsDebounced();
+    });
+    
+    $("#main_prompt_textarea").on('input', function () {
+        oai_settings.main_prompt = $('#main_prompt_textarea').val();
+        saveSettingsDebounced();
+    });
+
+    $("#nsfw_prompt_textarea").on('input', function () {
+        oai_settings.nsfw_prompt = $('#nsfw_prompt_textarea').val();
         saveSettingsDebounced();
     });
 
@@ -781,7 +865,13 @@ $(document).ready(function () {
         trySelectPresetByName(name);
     });
 
-    $("#save_preset").click(async function () {
+    $("#update_preset").click(async function () {
+        const name = oai_settings.preset_settings_openai;
+        await saveOpenAIPreset(name, oai_settings);
+        callPopup('Preset updated', 'text');
+    });
+
+    $("#new_preset").click(async function () {
         const popupText = `
             <h3>Preset name:</h3>
             <h4>Hint: Use a character/group name to bind preset to a specific chat.</h4>`;
@@ -792,51 +882,24 @@ $(document).ready(function () {
             return;
         }
 
-        const presetBody = {
-            openai_model: oai_settings.openai_model,
-            temperature: oai_settings.temp_openai,
-            frequency_penalty: oai_settings.freq_pen_openai,
-            presence_penalty: oai_settings.pres_pen_openai,
-            openai_max_context: oai_settings.openai_max_context,
-            openai_max_tokens: oai_settings.openai_max_tokens,
-            nsfw_toggle: oai_settings.nsfw_toggle,
-            enhance_definitions: oai_settings.enhance_definitions,
-            wrap_in_quotes: oai_settings.wrap_in_quotes,
-            nsfw_first: oai_settings.nsfw_first,
-            main_prompt: oai_settings.main_prompt,
-            nsfw_prompt: oai_settings.nsfw_prompt,
-            jailbreak_prompt: oai_settings.jailbreak_prompt,
-            jailbreak_system: oai_settings.jailbreak_system,
-        };
+        await saveOpenAIPreset(name, default_settings);
+    });
 
-        const savePresetSettings = await fetch(`/savepreset_openai?name=${name}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-Token': token,
-            },
-            body: JSON.stringify(presetBody),
-        });
+    $("#main_prompt_restore").click(function () {
+        oai_settings.main_prompt = default_main_prompt;
+        $('#main_prompt_textarea').val(oai_settings.main_prompt);
+        saveSettingsDebounced();
+    });
 
-        if (savePresetSettings.ok) {
-            const data = await savePresetSettings.json();
+    $("#nsfw_prompt_restore").click(function () {
+        oai_settings.nsfw_prompt = default_nsfw_prompt;
+        $('#nsfw_prompt_textarea').val(oai_settings.nsfw_prompt);
+        saveSettingsDebounced();
+    });
 
-            if (Object.keys(openai_setting_names).includes(data.name)) {
-                oai_settings.preset_settings_openai = data.name;
-                const value = openai_setting_names[data.name];
-                Object.assign(openai_settings[value], presetBody);
-                $(`#settings_perset_openai option[value="${value}"]`).attr('selected', true);
-                $('#settings_perset_openai').trigger('change');
-            }
-            else {
-                openai_settings.push(presetBody);
-                openai_setting_names[data.name] = openai_settings.length - 1;
-                const option = document.createElement('option');
-                option.selected = true;
-                option.value = openai_settings.length - 1;
-                option.innerText = data.name;
-                $('#settings_perset_openai').append(option).trigger('change');
-            }
-        }
+    $("#jailbreak_prompt_restore").click(function () {
+        oai_settings.jailbreak_prompt = default_jailbreak_prompt;
+        $('#jailbreak_prompt_textarea').val(oai_settings.jailbreak_prompt);
+        saveSettingsDebounced();
     });
 });

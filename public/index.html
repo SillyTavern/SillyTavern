@@ -816,8 +816,11 @@
                                 <br>
 
                                 <div class="range-block">
-                                    <div class="range-block-title">
-                                        Main prompt
+                                    <div class="range-block-title openai_restorable">
+                                        <span>Main prompt</span>
+                                        <div id="main_prompt_restore" title="Restore default prompt" class="right_menu_button">
+                                            <img alt="" class="svg_icon" src="img/clock-rotate-left-solid.svg" />
+                                        </div>
                                     </div>
                                     <div class="range-block-counter">
                                         The main prompt used to set the model behavior
@@ -828,8 +831,11 @@
                                 </div>
 
                                 <div class="range-block">
-                                    <div class="range-block-title">
-                                        NSFW prompt
+                                    <div class="range-block-title openai_restorable">
+                                        <span>NSFW prompt</span>
+                                        <div id="nsfw_prompt_restore" title="Restore default prompt" class="right_menu_button">
+                                            <img alt="" class="svg_icon" src="img/clock-rotate-left-solid.svg" />
+                                        </div>
                                     </div>
                                     <div class="range-block-counter">
                                         Prompt that is used when the NSFW toggle is on
@@ -840,8 +846,11 @@
                                 </div>
 
                                 <div class="range-block">
-                                    <div class="range-block-title">
-                                        Jailbreak prompt
+                                    <div class="range-block-title openai_restorable">
+                                        <span>Jailbreak prompt</span>
+                                        <div id="jailbreak_prompt_restore" title="Restore default prompt" class="right_menu_button">
+                                            <img alt="" class="svg_icon" src="img/clock-rotate-left-solid.svg" />
+                                        </div>
                                     </div>
                                     <div class="range-block-counter">
                                         Prompt that is used when the Jailbreak toggle is on
@@ -851,9 +860,9 @@
                                     </div>
                                 </div>
 
-                                <div class="range-block">
-                                    <input id="save_prompts" class="menu_button" type="button" value="Save prompt settings">
-                                    <input id="save_preset" class="menu_button" type="button" value="Save preset">
+                                <div class="range-block openai_preset_buttons">
+                                    <input id="update_preset" class="menu_button" type="button" value="Update current preset">
+                                    <input id="new_preset" class="menu_button" type="button" value="Create new preset">
                                 </div>
                             </div>
 
