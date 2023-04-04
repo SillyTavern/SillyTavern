@@ -7,7 +7,7 @@ export {
     modules,
 };
 
-const extensionNames = ['caption', 'dice', 'expressions', 'floating-prompt', 'memory', 'poe'];
+const extensionNames = ['caption', 'dice', 'expressions', 'floating-prompt', 'memory'];
 const manifests = await getManifests(extensionNames);
 const extensions_urlKey = 'extensions_url';
 const extensions_autoConnectKey = 'extensions_autoconnect';

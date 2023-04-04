@@ -74,6 +74,15 @@ import {
     adjustHordeGenerationParams,
 } from "./scripts/horde.js";
 
+import {
+    poe_settings,
+    loadPoeSettings,
+    POE_MAX_CONTEXT,
+    generatePoe,
+    is_get_status_poe,
+    setPoeOnlineStatus,
+} from "./scripts/poe.js";
+
 import { debounce, delay } from "./scripts/utils.js";
 
 //exporting functions and vars for mods
@@ -340,7 +349,6 @@ var message_already_generated = "";
 var if_typing_text = false;
 const tokens_cycle_count = 30;
 var cycle_count_generation = 0;
-let extension_generation_function = null;
 
 var swipes = false;
 
@@ -424,6 +432,7 @@ function checkOnlineStatus() {
         is_get_status = false;
         is_get_status_novel = false;
         setOpenAIOnlineStatus(false);
+        setPoeOnlineStatus(false);
     } else {
         $("#online_status_indicator2").css("background-color", "green"); //kobold
         $("#online_status_text2").html(online_status);
@@ -495,7 +504,7 @@ async function getStatus() {
             },
         });
     } else {
-        if (is_get_status_novel != true && is_get_status_openai != true && main_api != "extension") {
+        if (is_get_status_novel != true && is_get_status_openai != true && main_api != "poe") {
             online_status = "no_connection";
         }
     }
@@ -1318,6 +1327,10 @@ async function Generate(type, automatic_trigger, force_name2) {
             this_max_context = (max_context - amount_gen);
         }
 
+        if (main_api == 'poe') {
+            this_max_context = Math.min(Number(max_context), POE_MAX_CONTEXT);
+        }
+
         let hordeAmountGen = null;
         if (main_api == 'kobold' && horde_settings.use_horde && horde_settings.auto_adjust) {
             const adjustedParams = await adjustHordeGenerationParams(this_max_context, amount_gen);
@@ -1343,17 +1356,6 @@ async function Generate(type, automatic_trigger, force_name2) {
         // hack for regeneration of the first message
         if (chat2.length == 0) {
             chat2.push('');
-        }
-
-        if (main_api === 'extension') {
-            if (typeof extension_generation_function !== 'function') {
-                callPopup('No extensions are hooked up to a generation process. Check you extension settings!', 'text');
-                activateSendButtons();
-                return;
-            }
-
-            await extension_generation_function(type, chat2, storyString, mesExamplesArray, promptBias, extension_prompt, worldInfoBefore, worldInfoAfter);
-            return;
         }
 
         for (var item of chat2) {
@@ -1518,8 +1520,6 @@ async function Generate(type, automatic_trigger, force_name2) {
                 }
             }
 
-
-
             if (generatedPromtCache.length > 0) {
                 //console.log('Generated Prompt Cache length: '+generatedPromtCache.length);
                 checkPromtSize();
@@ -1663,7 +1663,6 @@ async function Generate(type, automatic_trigger, force_name2) {
                 };
             }
 
-
             var generate_url = '';
             if (main_api == 'kobold') {
                 generate_url = '/generate';
@@ -1681,6 +1680,9 @@ async function Generate(type, automatic_trigger, force_name2) {
             }
             else if (main_api == 'kobold' && horde_settings.use_horde) {
                 generateHorde(finalPromt, generate_data).then(onSuccess).catch(onError);
+            }
+            else if (main_api == 'poe') {
+                generatePoe(finalPromt).then(onSuccess).catch(onError);
             }
             else {
                 jQuery.ajax({
@@ -1723,7 +1725,7 @@ async function Generate(type, automatic_trigger, force_name2) {
                     else if (main_api == 'novel') {
                         getMessage = data.output;
                     }
-                    if (main_api == 'openai') {
+                    if (main_api == 'openai' || main_api == 'poe') {
                         getMessage = data;
                     }
 
@@ -2097,9 +2099,9 @@ function changeMainAPI() {
             amountGenElem: $("#amount_gen_block"),
             softPromptElem: $("#softprompt_block"),
         },
-        "extension": {
-            apiSettings: $(""),
-            apiConnector: $("#extension_api"),
+        "poe": {
+            apiSettings: $("#poe_settings"),
+            apiConnector: $("#poe_api"),
             apiPresets: $(""),
             apiRanges: $(""),
             maxContextElem: $("#max_context_block"),
@@ -2145,11 +2147,6 @@ function changeMainAPI() {
 
     main_api = selectedVal;
     online_status = "no_connection";
-
-    if (main_api == "extension") {
-        online_status = "Connected";
-        checkOnlineStatus();
-    }
 
     if (main_api == "kobold" && horde_settings.use_horde) {
         is_get_status = true;
@@ -2329,8 +2326,12 @@ async function getSettings(type) {
                 // Horde
                 loadHordeSettings(settings);
 
+                // Poe
+                loadPoeSettings(settings);
+
                 // Load power user settings
                 loadPowerUserSettings(settings);
+
 
                 //Enable GUI deference settings if GUI is selected for Kobold
                 if (main_api === "kobold") {
@@ -2429,6 +2430,7 @@ async function saveSettings(type) {
             swipes: swipes,
             horde_settings: horde_settings,
             power_user: power_user,
+            poe_settings: poe_settings,
             ...nai_settings,
             ...kai_settings,
             ...oai_settings,
@@ -2587,7 +2589,7 @@ async function getStatusNovel() {
             },
         });
     } else {
-        if (is_get_status != true && is_get_status_openai != true && main_api != "extension") {
+        if (is_get_status != true && is_get_status_openai != true && is_get_status_poe != true) {
             online_status = "no_connection";
         }
     }
@@ -2987,10 +2989,6 @@ function closeMessageEditor() {
     }
 }
 
-function setGenerationFunction(func) {
-    extension_generation_function = func;
-}
-
 function setGenerationProgress(progress) {
     if (!progress) {
         $('#send_textarea').css({'background': '', 'transition': ''});
@@ -3023,8 +3021,6 @@ window["TavernAI"].getContext = function () {
         setExtensionPrompt: setExtensionPrompt,
         saveChat: saveChatConditional,
         sendSystemMessage: sendSystemMessage,
-        setGenerationFunction: setGenerationFunction,
-        generationFunction: extension_generation_function,
         activateSendButtons,
         deactivateSendButtons, 
         saveReply,
@@ -4072,6 +4068,7 @@ $(document).ready(function () {
         is_get_status = false;
         is_get_status_novel = false;
         setOpenAIOnlineStatus(false);
+        setPoeOnlineStatus(false);
         online_status = "no_connection";
         clearSoftPromptsList();
         checkOnlineStatus();

@@ -1678,6 +1678,8 @@ app.post('/generate_poe', jsonParser, async (request, response) => {
         for await (const mes of client.send_message(bot, prompt)) {
             reply = mes.text;
         }
+
+        console.log(reply);
     
         client.disconnect_ws();
     

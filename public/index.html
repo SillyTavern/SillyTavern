@@ -37,6 +37,7 @@
     <script type="module" src="scripts/textgen-settings.js"></script>
     <script type="module" src="scripts/bookmarks.js"></script>
     <script type="module" src="scripts/horde.js"></script>
+    <script type="module" src="scripts/poe.js"></script>
 
     <title>Tavern.AI</title>
 </head>
@@ -81,7 +82,7 @@
                         <option value="textgenerationwebui">Text generation web UI</option>
                         <option value="novel">NovelAI</option>
                         <option value="openai">OpenAI</option>
-                        <option value="extension">Extension</option>
+                        <option value="poe">Poe</option>
                     </select>
                 </div>
                 <div id="kobold_api" style="position: relative;"> <!-- shows the kobold settings -->
@@ -193,8 +194,48 @@
                     </div>
                 </div>
 
-                <div id="extension_api">
-                    <b>Generation is handled by the external extensions.</b>
+                <div id="poe_api">
+                    <div class="inline-drawer">
+                        <div class="inline-drawer-toggle inline-drawer-header">
+                            <b>Instructions:</b>
+                            <div class="inline-drawer-icon down"></div>
+                        </div>
+                        <div class="inline-drawer-content">
+                            <ol>
+                                <li>Login to <a href="https://poe.com" target="_blank">poe.com</a></li>
+                                <li>Open browser DevTools (F12) and navigate to "Application" tab</li>
+                                <li>Find a <tt>p-b</tt> cookie for poe.com domain and copy its value</li>
+                                <li>Paste cookie value to the box below and click "Connect"</li>
+                                <li>Select a character and start chatting</li>
+                            </ol>
+                        </div>
+                    </div>
+                    <div class="range-block">
+                        <div class="range-block-title">
+                            poe.com access token (p-b cookie value)
+                        </div>
+                        <div class="range-block-range">
+                            <input id="poe_token" class="text_pole" type="text" placeholder="Example: nTLG2bNvbOi8qxc-DbaSlw%3D%3D" />
+                        </div>
+                    </div>
+
+                    <input id="poe_connect" class="menu_button" type="button" value="Connect" />
+                    <img id="api_loading_poe" src="img/load.svg">
+
+                    <div class="range-block">
+                        <div class="range-block-title">
+                            <h4>Bot</h4>
+                        </div>
+                        <div class="range-block-range">
+                            <select id="poe_bots">
+                                <option>-- Connect to the API --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="online_status4">
+                        <div class="online_status_indicator4"></div>
+                        <div class="online_status_text4">No connection...</div>
+                    </div>
                 </div>
 
                 <label for="auto-connect-checkbox" class="checkbox_label"><input id="auto-connect-checkbox" type="checkbox" />
@@ -813,6 +854,25 @@
                                 <div class="range-block">
                                     <input id="save_prompts" class="menu_button" type="button" value="Save prompt settings">
                                     <input id="save_preset" class="menu_button" type="button" value="Save preset">
+                                </div>
+                            </div>
+
+                            <div id="poe_settings">
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        Jailbreak activation message
+                                    </div>
+                                    <div class="range-block-range">
+                                        <textarea id="poe_activation_message" rows="3"></textarea>
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        Jailbreak activation response
+                                    </div>
+                                    <div class="range-block-range">
+                                        <input id="poe_activation_response" class="text_pole" type="text" />
+                                    </div>
                                 </div>
                             </div>
                         </div>

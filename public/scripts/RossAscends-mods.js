@@ -21,6 +21,7 @@ import {
 import { LoadLocal, SaveLocal, ClearLocal, CheckLocal, LoadLocalBool } from "./f-localStorage.js";
 import { selected_group, is_group_generating } from "./group-chats.js";
 import { oai_settings } from "./openai.js";
+import { poe_settings } from "./poe.js";
 
 var NavToggle = document.getElementById("nav-toggle");
 var PanelPin = document.getElementById("rm_button_panel_pin");
@@ -246,6 +247,12 @@ function RA_autoconnect(PrevApi) {
                     $("#api_button_openai").click();
 
                 }
+                break;
+            case 'poe':
+                if (poe_settings.token) {
+                    $("#poe_connect").click();
+                }
+                break;
         }
 
         if (!connection_made) {

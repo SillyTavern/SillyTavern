@@ -1,8 +1,0 @@
-{
-    "display_name": "poe.com generation",
-    "loading_order": 0,
-    "requires": [],
-    "optional": [],
-    "js": "index.js",
-    "css": "style.css"
-}
