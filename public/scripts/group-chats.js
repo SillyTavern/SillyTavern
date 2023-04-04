@@ -71,6 +71,7 @@ async function _save(group) {
         },
         body: JSON.stringify(group),
     });
+    await getCharacters();
 }
 
 
@@ -479,7 +480,7 @@ async function editGroup(id, immediately) {
     }
 
     if (immediately) {
-        return await _save();
+        return await _save(group);
     }
 
     saveGroupDebounced(group);
