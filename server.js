@@ -35,6 +35,10 @@ const tiktoken = require('@dqbd/tiktoken');
 var Client = require('node-rest-client').Client;
 var client = new Client();
 
+client.on('error', (err) => {
+    console.error('An error occurred:', err);
+});
+
 let poe = require('./poe');
 
 var api_server = "http://0.0.0.0:5000";
