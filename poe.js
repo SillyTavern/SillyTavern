@@ -376,7 +376,7 @@ class Client {
 
     async purge_conversation(chatbot, count = -1) {
         logger.info(`Purging messages from ${chatbot}`);
-        let last_messages = (await this.get_message_history(chatbot, count = 50)).reverse();
+        let last_messages = (await this.get_message_history(chatbot, 50)).reverse();
         while (last_messages.length) {
             const message_ids = [];
             for (const message of last_messages) {
@@ -392,7 +392,7 @@ class Client {
             if (count === 0) {
                 return;
             }
-            last_messages = (await this.get_message_history(chatbot, count = 50)).reverse();
+            last_messages = (await this.get_message_history(chatbot, 50)).reverse();
         }
         logger.info("No more messages left to delete.");
     }
