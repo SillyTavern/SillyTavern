@@ -1629,10 +1629,16 @@ app.post('/status_poe', jsonParser, async (request, response) => {
         return response.sendStatus(400);
     }
 
-    const client = await getPoeClient(request.body.token);
-    const botNames = client.get_bot_names();
-    client.disconnect_ws();
-    return response.send({'bot_names': botNames});
+    try {
+        const client = await getPoeClient(request.body.token);
+        const botNames = client.get_bot_names();
+        client.disconnect_ws();
+
+        return response.send({'bot_names': botNames});
+    }
+    catch {
+        return response.sendStatus(500);
+    }
 });
 
 app.post('/purge_poe', jsonParser, async (request, response) => {
@@ -1644,11 +1650,16 @@ app.post('/purge_poe', jsonParser, async (request, response) => {
     const bot = request.body.bot ?? POE_DEFAULT_BOT;
     const count = request.body.count ?? -1;
 
-    const client = await getPoeClient(token);
-    await client.purge_conversation(bot, count)
-    client.disconnect_ws();
-
-    return response.send({"ok" : true});
+    try {
+        const client = await getPoeClient(token);
+        await client.purge_conversation(bot, count)
+        client.disconnect_ws();
+    
+        return response.send({"ok" : true});
+    }
+    catch {
+        return response.sendStatus(500);
+    }
 });
 
 app.post('/generate_poe', jsonParser, async (request, response) => {
@@ -1660,16 +1671,21 @@ app.post('/generate_poe', jsonParser, async (request, response) => {
     const prompt = request.body.prompt;
     const bot = request.body.bot ?? POE_DEFAULT_BOT;
     
-    const client = await getPoeClient(token);
+    try {
+        const client = await getPoeClient(token);
     
-    let reply;
-    for await (const mes of client.send_message(bot, prompt)) {
-        reply = mes.text;
+        let reply;
+        for await (const mes of client.send_message(bot, prompt)) {
+            reply = mes.text;
+        }
+    
+        client.disconnect_ws();
+    
+        return response.send({'reply': reply});
     }
-
-    client.disconnect_ws();
-
-    return response.send({'reply': reply});
+    catch {
+        return response.sendStatus(500);
+    }
 });
 
 function getThumbnailFolder(type) {

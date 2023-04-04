@@ -50,7 +50,7 @@ function loadSettings() {
     selectBot();
 
     const autoConnect = localStorage.getItem('AutoConnectEnabled') == "true";
-    if (autoConnect && token) {
+    if (autoConnect && token && token.length) {
         onConnectClick();
     }
 }
@@ -69,12 +69,12 @@ function saveSettings() {
 }
 
 function onTokenInput() {
-    token = $(this).val();
+    token = $('#poe_token').val();
     saveSettings();
 }
 
 function onBotChange() {
-    bot = $(this).find(":selected").val();
+    bot = $('#poe_bots').find(":selected").val();
     saveSettings();
 }
 
@@ -194,6 +194,10 @@ async function sendMessage(prompt) {
 }
 
 async function onConnectClick() {
+    if (!token || !token.length) {
+        return;
+    }
+
     const body = JSON.stringify({ token: token });
     const response = await fetch('/status_poe', {
         headers: {
