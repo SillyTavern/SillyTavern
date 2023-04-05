@@ -367,7 +367,8 @@ let novelai_setting_names;
 var bg1_toggle = true; // inits the BG as BG1
 var css_mes_bg = $('<div class="mes"></div>').css("background");
 var css_send_form_display = $("<div id=send_form></div>").css("display");
-
+let generate_loop_counter = 0;
+const MAX_GENERATION_LOOPS = 5;
 var colab_ini_step = 1;
 
 let token;
@@ -1782,11 +1783,28 @@ async function Generate(type, automatic_trigger, force_name2) {
                     //getMessage = getMessage.replace(/^\s+/g, '');
                     if (getMessage.length > 0) {
                         ({ type, getMessage } = saveReply(type, getMessage, this_mes_is_name));
+                        generate_loop_counter = 0;
                     } else {
+                        ++generate_loop_counter;
+
+                        if (generate_loop_counter > MAX_GENERATION_LOOPS) {
+                            callPopup(`Could not extract reply in ${MAX_GENERATION_LOOPS} attempts. Try generating again`, 'text');
+                            generate_loop_counter = 0;
+                            $("#send_textarea").removeAttr('disabled');
+                            is_send_press = false;
+                            activateSendButtons();
+                            setGenerationProgress(0);
+                            showSwipeButtons();
+                            $('.mes_edit:last').show();
+                            throw new Error('Generate circuit breaker interruption');
+                        }
+
                         // regenerate with character speech reenforced
                         // to make sure we leave on swipe type while also adding the name2 appendage
-                        const newType = type == "swipe" ? "swipe" : "force_name2";
-                        Generate(newType, automatic_trigger = false, force_name2 = true);
+                        setTimeout(() => {
+                            const newType = type == "swipe" ? "swipe" : "force_name2";
+                            Generate(newType, automatic_trigger = false, force_name2 = true);
+                        }, generate_loop_counter * 1000);
                     }
                 } else {
                     activateSendButtons();
