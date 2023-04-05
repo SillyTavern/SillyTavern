@@ -1641,7 +1641,7 @@ app.post('/status_poe', jsonParser, async (request, response) => {
         return response.send({'bot_names': botNames});
     }
     catch {
-        return response.sendStatus(500);
+        return response.sendStatus(401);
     }
 });
 
