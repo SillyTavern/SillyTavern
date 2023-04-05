@@ -519,6 +519,15 @@ function select_group_chats(chat_id) {
     });
     $("#rm_group_filter").val("").trigger("input");
 
+    $('input[name="rm_group_activation_strategy"]').off();
+    $('input[name="rm_group_activation_strategy"]').on("input", async function(e) {
+        if (chat_id) {
+            group.activation_strategy = Number(e.target.value);
+            await editGroup(chat_id);
+        }
+    });
+    $(`input[name="rm_group_activation_strategy"][value="${Number(group?.activation_strategy ?? 0 )}"]`).prop('checked', true);
+
     selectRightMenuWithAnimation('rm_group_chats_block');
 
     async function memberClickHandler(event) {

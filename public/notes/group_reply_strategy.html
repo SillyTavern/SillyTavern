@@ -1,0 +1,64 @@
+<html>
+
+<head>
+    <title>Advanced Formatting</title>
+    <link rel="stylesheet" href="/css/notes.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&amp;display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div id="main">
+        <div id="content">
+            <h2>Group reply order strategies</h2>
+            <p>
+                Decides how characters in group chats are drafted for their replies.
+            </p>
+            <h3>Natural order</h3>
+            <p>
+                Tries to simulate the flow of a real human conversation. The algorithm is as follows:
+            </p>
+            <h4>1. Mentions of the group member names are extracted from the last message in chat.</h4>
+            <p>
+                Only whole words are recognized as mentions!
+                If your character's name is "Misaka Mikoto", they will reply only activate on "Misaka" or "Mikoto", but
+                never to "Misa", "Railgun", etc.
+            </p>
+            <p>
+                Unless "Allow bot responses to self" setting is enabled, characters won't reply to mentions of their
+                name in their own message!
+            </p>
+            <h4>2. Characters are activated by the "Talkativeness" factor.</h4>
+            <p>
+                Talkativeness defines how often the character speaks if it was not mentioned. Adjust this value on
+                "Advanced definitions" screen in character editor.
+                Slider values are on a linear scale from <b>0% / Shy</b> (character never talks unless mentioned) to
+                <b>100% / Chatty</b> (character always replies).
+                Default value for new characters is 50% chance.
+            </p>
+            <h4>3. Random character is selected.</h4>
+            <p>
+                If no characters were activated at previous steps, one speaker is selected randomly, ignoring all other
+                conditions.
+            </p>
+            <h3>List order</h3>
+            <p>
+                Characters are drafted based on the order they are presented in group members list. No other rules
+                apply.
+            </p>
+            <h3>Important!</h3>
+            <br>
+            <strong style="color: salmon">
+                Regeneration in group chats deletes all character message up until the <i>last message sent by you</i>.
+                Use swipes to generate just the latest message.
+            </strong>
+        </div>
+    </div>
+</body>
+
+</html>
