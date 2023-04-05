@@ -167,7 +167,7 @@ app.use(function (req, res, next) { //Security
 app.use((req, res, next) => {
     if (req.url.startsWith('/characters/') && is_colab && process.env.googledrive == 2) {
 
-        const filePath = path.join(__dirname, charactersPath, decodeURIComponent(req.url.substr('/characters'.length)));
+        const filePath = path.join(charactersPath, decodeURIComponent(req.url.substr('/characters'.length)));
         console.log('req.url: ' + req.url);
         console.log(filePath);
         fs.access(filePath, fs.constants.R_OK, (err) => {
