@@ -67,7 +67,7 @@ https://rentry.org/TAI_Termux
 
 *NOTE: This branch is intended for local install purposes, and has not been tested on a colab or other cloud notebook service.*
 
-  1. install [NodeJS](nodejs.org)
+  1. install [NodeJS](https://nodejs.org/en)
   2. download the zip from this github repo
   3. unzip it into a folder of your choice
   4. run start.bat via double clicking or in a command line.
