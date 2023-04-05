@@ -39,7 +39,7 @@ client.on('error', (err) => {
     console.error('An error occurred:', err);
 });
 
-let poe = require('./poe');
+let poe = require('./poe-client');
 
 var api_server = "http://0.0.0.0:5000";
 var api_novelai = "https://api.novelai.net";

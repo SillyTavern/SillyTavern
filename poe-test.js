@@ -1,4 +1,4 @@
-const poe = require('./poe');
+const poe = require('./poe-client');
 
 async function test() {
     const client = new poe.Client();
