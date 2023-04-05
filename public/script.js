@@ -2818,6 +2818,9 @@ function callPopup(text, type) {
 
     $("#dialogue_popup_text").html(text);
     $("#shadow_popup").css("display", "block");
+    if (popup_type == 'input') {
+        $("#dialogue_popup_input").focus();
+    }
     $("#shadow_popup").transition({
         opacity: 1.0,
         duration: animation_rm_duration,
