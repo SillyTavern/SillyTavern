@@ -168,9 +168,11 @@ app.use((req, res, next) => {
     if (req.url.startsWith('/characters/') && is_colab && process.env.googledrive == 2) {
 
         const filePath = path.join(__dirname, charactersPath, decodeURIComponent(req.url.substr('/characters'.length)));
+        console.log('req.url: ' + req.url);
+        console.log(filePath);
         fs.access(filePath, fs.constants.R_OK, (err) => {
             if (!err) {
-                res.sendFile(filePath);
+                res.sendFile(filePath, { root: __dirname });
             } else {
                 res.send('Character not found: ' + filePath);
                 //next();
