@@ -202,6 +202,9 @@ async function checkStatusPoe() {
         setOnlineStatus('Connected!');
     }
     else {
+        if (response.status == 401) {
+            alert('Invalid or expired token');
+        }
         setOnlineStatus('no_connection');
     }
 }
