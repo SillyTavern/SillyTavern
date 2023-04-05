@@ -59,6 +59,11 @@ let is_group_automode_enabled = false;
 let groups = [];
 let selected_group = null;
 
+const group_activation_strategy = {
+    NATURAL: 0,
+    LIST: 1,
+};
+
 const groupAutoModeInterval = setInterval(groupChatAutoModeWorker, 5000);
 const saveGroupDebounced = debounce(async (group) => await _save(group), 500);
 
@@ -304,9 +309,19 @@ async function generateGroupWrapper(by_auto_mode, type=null) {
             }
         }
 
-        const activatedMembers = type !== "swipe"
-            ? activateMembers(group.members, activationText, lastMessage, group.allow_self_responses, isUserInput)
-            : activateSwipe(group.members);
+
+        const activationStrategy = Number(group.activation_strategy ?? group_activation_strategy.NATURAL);
+        let activatedMembers = [];
+
+        if (type === "swipe") {
+            activatedMembers = activateSwipe(group.members);
+        }
+        else if (activationStrategy === group_activation_strategy.NATURAL) {
+            activatedMembers = activateNaturalOrder(group.members, activationText, lastMessage, group.allow_self_responses, isUserInput);
+        }
+        else if (activationStrategy === group_activation_strategy.LIST) {
+            activatedMembers = activateListOrder(group.members);
+        }
 
         // now the real generation begins: cycle through every character
         for (const chId of activatedMembers) {
@@ -364,7 +379,17 @@ function activateSwipe(members) {
     return memberIds;
 }
 
-function activateMembers(members, input, lastMessage, allowSelfResponses, isUserInput) {
+function activateListOrder(members) {
+    let activatedNames = members.filter(onlyUnique);
+
+    // map to character ids
+    const memberIds = activatedNames
+        .map((x) => characters.findIndex((y) => y.name === x))
+        .filter((x) => x !== -1);
+    return memberIds;
+}
+
+function activateNaturalOrder(members, input, lastMessage, allowSelfResponses, isUserInput) {
     let activatedNames = [];
 
     // prevents the same character from speaking twice
@@ -526,7 +551,7 @@ function select_group_chats(chat_id) {
             await editGroup(chat_id);
         }
     });
-    $(`input[name="rm_group_activation_strategy"][value="${Number(group?.activation_strategy ?? 0 )}"]`).prop('checked', true);
+    $(`input[name="rm_group_activation_strategy"][value="${Number(group?.activation_strategy ?? group_activation_strategy.NATURAL)}"]`).prop('checked', true);
 
     selectRightMenuWithAnimation('rm_group_chats_block');
 
@@ -587,6 +612,7 @@ function select_group_chats(chat_id) {
         ) {
             template.find(".plus").hide();
             template.find(".minus").show();
+            template.css({ 'order': group.members.indexOf(character.name) });
             $("#rm_group_members").append(template);
         } else {
             template.find(".plus").show();
@@ -675,6 +701,7 @@ $(document).ready(() => {
     $("#rm_group_submit").click(async function () {
         let name = $("#rm_group_chat_name").val();
         let allow_self_responses = !!$("#rm_group_allow_self_responses").prop("checked");
+        let activation_strategy = $('input[name="rm_group_activation_strategy"]:checked').val() ?? group_activation_strategy.NATURAL;
         const members = $("#rm_group_members .group_member")
             .map((_, x) => $(x).data("id"))
             .toArray();
@@ -697,6 +724,7 @@ $(document).ready(() => {
                 members: members,
                 avatar_url: avatar_url,
                 allow_self_responses: allow_self_responses,
+                activation_strategy: activation_strategy,
             }),
         });
 

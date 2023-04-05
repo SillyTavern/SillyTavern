@@ -2219,6 +2219,8 @@ input[type="range"]{
     width: 100%;
     flex: 1;
     overflow: auto;
+    display: flex;
+    flex-direction: column;
 }
 
 #rm_group_buttons_expander {
