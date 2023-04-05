@@ -252,23 +252,43 @@ class Client {
         }
     }
 
-    on_message(ws, msg) {
-        const data = JSON.parse(msg);
-        const message = JSON.parse(data["messages"][0])["payload"]["data"]["messageAdded"];
+    async on_message(ws, msg) {
+        try {
+            const data = JSON.parse(msg);
 
-        const copiedDict = Object.assign({}, this.active_messages);
-        for (const [key, value] of Object.entries(copiedDict)) {
-            //add the message to the appropriate queue
-            if (value === message["messageId"] && key in this.message_queues) {
-                this.message_queues[key].push(message);
+            if (!('messages' in data)) {
                 return;
             }
 
-            //indicate that the response id is tied to the human message id
-            else if (key !== "pending" && value === null && message["state"] !== "complete") {
-                this.active_messages[key] = message["messageId"];
-                this.message_queues[key].push(message);
+            for (const message_str of data["messages"]) {
+                const message_data = JSON.parse(message_str);
+
+                if (message_data["message_type"] != "subscriptionUpdate"){ 
+                    continue;
+                }
+
+                const message = message_data["payload"]["data"]["messageAdded"]
+        
+                const copiedDict = Object.assign({}, this.active_messages);
+                for (const [key, value] of Object.entries(copiedDict)) {
+                    //add the message to the appropriate queue
+                    if (value === message["messageId"] && key in this.message_queues) {
+                        this.message_queues[key].push(message);
+                        return;
+                    }
+        
+                    //indicate that the response id is tied to the human message id
+                    else if (key !== "pending" && value === null && message["state"] !== "complete") {
+                        this.active_messages[key] = message["messageId"];
+                        this.message_queues[key].push(message);
+                    }
+                }
             }
+        }
+        catch (err) {
+            console.log('Error occurred in onMessage', err);
+            this.disconnect_ws();
+            await this.connect_ws();
         }
     }
 
