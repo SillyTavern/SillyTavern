@@ -1,4 +1,4 @@
-## Silly TavernAI mod. Based on fork of TavernAI 1.2.8
+# SillyTavern. Based on fork of TavernAI 1.2.8
 ### Brought to you by @Cohee1207 and @RossAscends
 
 Try on Colab (runs KoboldAI backend and TavernAI Extras server alongside):  <a target="_blank" href="https://colab.research.google.com/github/Cohee1207/TavernAI-extras/blob/main/colab/GPU.ipynb">
@@ -6,6 +6,17 @@ Try on Colab (runs KoboldAI backend and TavernAI Extras server alongside):  <a t
 </a>
 
 https://colab.research.google.com/github/Cohee1207/TavernAI-extras/blob/main/colab/GPU.ipynb
+
+## What is TavernAI?
+
+TavernAI is a user interface you can install on your computer (and Android phones) that allows you to interact text generation AIs and chat/roleplay with characters you or the community create.
+
+## What do I need other than Tavern?
+
+On its own Tavern is useless, as it's just a user interface. You have to have access to an AI system backend that can act as the roleplay character. There are various supported backends: OpenAPI API (GPT), KoboldAI (either running locally or on Google Colab), and more.
+
+## Do I need a powerful PC to run Tavern?
+Since Tavern is only a user interface, it has tiny hardware requirements, it will run on a rusty toaster. It's the AI system backend that needs to be powerful.
 
 ## Mobile support
 
