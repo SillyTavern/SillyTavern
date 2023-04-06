@@ -1,0 +1,6 @@
+{
+    "dependencies": {
+        "webp-converter": "^2.3.3",
+        "exifreader": "^4.12.0"
+    }
+}
