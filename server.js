@@ -22,7 +22,7 @@ const crypto = require('crypto');
 const ipaddr = require('ipaddr.js');
 
 const config = require(path.join(process.cwd(), './config.conf'));
-const server_port = config.port;
+const server_port = process.env.SILLY_TAVERN_PORT || config.port;
 const whitelist = config.whitelist;
 const whitelistMode = config.whitelistMode;
 const autorun = config.autorun;
@@ -81,7 +81,7 @@ function humanizedISO8601DateTime() {
     return HumanizedDateTime;
 };
 
-var is_colab = false;
+var is_colab = process.env.colab !== undefined;
 var charactersPath = 'public/characters/';
 var chatsPath = 'public/chats/';
 if (is_colab && process.env.googledrive == 2) {
@@ -732,16 +732,13 @@ app.post("/getcharacters", jsonParser, function (request, response) {
 });
 app.post("/getbackgrounds", jsonParser, function (request, response) {
     var images = getImages("public/backgrounds");
-    if (is_colab === true) {
-        images = ['tavern.png'];
-    }
     response.send(JSON.stringify(images));
 
 });
 app.post("/iscolab", jsonParser, function (request, response) {
     let send_data = false;
-    if (process.env.colaburl !== undefined) {
-        send_data = String(process.env.colaburl).trim();
+    if (is_colab) {
+      send_data = String(process.env.colaburl).trim();
     }
     response.send({ colaburl: send_data });
 
@@ -1908,15 +1905,10 @@ function getAsync(url, args) {
 // ** END **
 
 app.listen(server_port, (listen ? '0.0.0.0' : '127.0.0.1'), async function () {
-    if (process.env.colab !== undefined) {
-        if (process.env.colab == 2) {
-            is_colab = true;
-        }
-    }
     ensurePublicDirectoriesExist();
     await ensureThumbnailCache();
     console.log('Launching...');
-    if (autorun) open('http:127.0.0.1:' + server_port);
+    if (autorun) open('http://127.0.0.1:' + server_port);
     console.log('TavernAI started: http://127.0.0.1:' + server_port);
     if (fs.existsSync('public/characters/update.txt') && !is_colab) {
         convertStage1();
