@@ -529,6 +529,44 @@ async function groupChatAutoModeWorker() {
     await generateGroupWrapper(true);
 }
 
+async function memberClickHandler(event) {
+    event.stopPropagation();
+    const id = $(this).data("id");
+    const isDelete = !!$(this).closest("#rm_group_members").length;
+    const template = $(this).clone();
+    let _thisGroup = groups.find((x) => x.id == selected_group);
+    template.data("id", id);
+    template.click(memberClickHandler);
+
+    if (isDelete) {
+        template.find(".plus").show();
+        template.find(".minus").hide();
+        $("#rm_group_add_members").prepend(template);
+    } else {
+        template.find(".plus").hide();
+        template.find(".minus").show();
+        $("#rm_group_members").prepend(template);
+    }
+
+    if (_thisGroup) {
+        if (isDelete) {
+            const index = _thisGroup.members.findIndex((x) => x === id);
+            if (index !== -1) {
+                _thisGroup.members.splice(index, 1);
+            }
+        } else {
+            _thisGroup.members.push(id);
+            template.css({ 'order': _thisGroup.members.length });
+        }
+        await editGroup(selected_group);
+        updateGroupAvatar(_thisGroup);
+    }
+
+    $(this).remove();
+    const groupHasMembers = !!$("#rm_group_members").children().length;
+    $("#rm_group_submit").prop("disabled", !groupHasMembers);
+}
+
 function select_group_chats(chat_id) {
     const group = chat_id && groups.find((x) => x.id == chat_id);
     const groupName = group?.name ?? "";
@@ -537,8 +575,9 @@ function select_group_chats(chat_id) {
     $("#rm_group_chat_name").off();
     $("#rm_group_chat_name").on("input", async function () {
         if (chat_id) {
-            group.name = $(this).val();
-            $("#rm_button_selected_ch").children("h2").text(group.name);
+            let _thisGroup = groups.find((x) => x.id == chat_id);
+            _thisGroup.name = $(this).val();
+            $("#rm_button_selected_ch").children("h2").text(_thisGroup.name);
             await editGroup(chat_id);
         }
     });
@@ -547,49 +586,14 @@ function select_group_chats(chat_id) {
     $('input[name="rm_group_activation_strategy"]').off();
     $('input[name="rm_group_activation_strategy"]').on("input", async function(e) {
         if (chat_id) {
-            group.activation_strategy = Number(e.target.value);
+            let _thisGroup = groups.find((x) => x.id == chat_id);
+            _thisGroup.activation_strategy = Number(e.target.value);
             await editGroup(chat_id);
         }
     });
     $(`input[name="rm_group_activation_strategy"][value="${Number(group?.activation_strategy ?? group_activation_strategy.NATURAL)}"]`).prop('checked', true);
 
     selectRightMenuWithAnimation('rm_group_chats_block');
-
-    async function memberClickHandler(event) {
-        event.stopPropagation();
-        const id = $(this).data("id");
-        const isDelete = !!$(this).closest("#rm_group_members").length;
-        const template = $(this).clone();
-        template.data("id", id);
-        template.click(memberClickHandler);
-
-        if (isDelete) {
-            template.find(".plus").show();
-            template.find(".minus").hide();
-            $("#rm_group_add_members").prepend(template);
-        } else {
-            template.find(".plus").hide();
-            template.find(".minus").show();
-            $("#rm_group_members").prepend(template);
-        }
-
-        if (group) {
-            if (isDelete) {
-                const index = group.members.findIndex((x) => x === id);
-                if (index !== -1) {
-                    group.members.splice(index, 1);
-                }
-            } else {
-                group.members.push(id);
-            }
-            await editGroup(chat_id);
-            updateGroupAvatar(group);
-        }
-
-        $(this).remove();
-        const groupHasMembers = !!$("#rm_group_members").children().length;
-        $("#rm_group_submit").prop("disabled", !groupHasMembers);
-    }
 
     // render characters list
     $("#rm_group_add_members").empty();
