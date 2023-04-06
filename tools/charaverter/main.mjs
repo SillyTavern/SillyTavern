@@ -83,7 +83,7 @@ async function charaWrite(img_url, data, target_img, response = undefined, mes =
 const p = process.argv[2]
 const files = fs.readdirSync(p).filter(e => e.endsWith(".webp"))
 
-const dst = "characters"
+const dst = p
 
 try { fs.mkdirSync(dst) } catch {}
 
@@ -96,4 +96,5 @@ for(const f of files) {
     await webp.dwebp(source, dest, "-o")
     console.log(`Write... ${dest}`)
     await charaWrite(dest, data, dest)
+    fs.rmSync(source)
 }
