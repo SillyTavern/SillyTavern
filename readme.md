@@ -27,7 +27,7 @@ https://colab.research.google.com/github/Cohee1207/SillyTavern/blob/main/colab/G
 
 If that didn't work, try the legacy link:
 
-https://colab.research.google.com/github/SillyLossy/TavernAI-extras/blob/main/colab/GPU.ipynb
+https://colab.research.google.com/github/Cohee1207/TavernAI-extras/blob/main/colab/GPU.ipynb
 
 ## Mobile support
 
