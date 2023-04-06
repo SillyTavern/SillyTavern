@@ -19,7 +19,7 @@ const saveChatDebounced = debounce(() => getContext().saveChat(), 2000);
 
 const defaultSettings = {
     minLongMemory: 16,
-    maxLongMemory: 512,
+    maxLongMemory: 1024,
     longMemoryLength: 128,
     shortMemoryLength: 512,
     minShortMemory: 128,

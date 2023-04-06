@@ -63,9 +63,9 @@ const tokenCache = {};
 const default_settings = {
     preset_settings_openai: 'Default',
     api_key_openai: '',
-    temp_openai: 1.0,
-    freq_pen_openai: 0,
-    pres_pen_openai: 0,
+    temp_openai: 0.9,
+    freq_pen_openai: 0.7,
+    pres_pen_openai: 0.7,
     stream_openai: false,
     openai_max_context: gpt3_max,
     openai_max_tokens: 300,

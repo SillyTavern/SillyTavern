@@ -215,7 +215,6 @@ const system_messages = {
             '<li><tt>{{text}}</tt> – set the behavioral bias for the AI character</li>',
             '<li><tt>{{}}</tt> – cancel a previously set bias</li>',
             '</ol>',
-            'Need more help? Visit our wiki – <a href=\"https://github.com/TavernAI/TavernAI/wiki\">TavernAI Wiki</a>!'
         ].join('')
     },
     welcome:
@@ -231,8 +230,7 @@ const system_messages = {
             '<li>Create or pick a character from the list</li>',
             '</ul>',
             'Still have questions left?\n',
-            'Check out built-in help by typing <tt>/?</tt> in any chat or visit our ',
-            '<a target="_blank" href="https://github.com/TavernAI/TavernAI/wiki">TavernAI Wiki</a>!'
+            'Check out built-in help or type <tt>/?</tt> in any chat.'
         ].join('')
     },
     group: {

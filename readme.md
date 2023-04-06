@@ -135,3 +135,5 @@ Contact us on Discord: Cohee#1207 or RossAscends#1779
 * Thanks Pygmalion University for being awesome testers and suggesting cool features! 
 * Thanks oobabooga for compiling presets for TextGen
 * poe-api client adapted from https://github.com/ading2210/poe-api (GPL v3)
+* GraphQL files for poe: https://github.com/muharamdani/poe (ISC License)
+* KoboldAI Presets from KAI Lite: https://lite.koboldai.net/ 
