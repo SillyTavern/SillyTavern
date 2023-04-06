@@ -8,6 +8,7 @@ let lastMessageNumber = null;
 let promptInsertionInterval = 1;
 let promptInsertionPosition = 1;
 let promptInsertionDepth = 0;
+let defaultNote = '';
 
 function onExtensionFloatingPromptInput() {
     saveSettings();
@@ -35,20 +36,39 @@ function onExtensionFloatingPositionInput(e) {
     saveSettings();
 }
 
+function onExtensionFloatingDefaultInput() {
+    defaultNote = $(this).val();
+    saveSettings();
+}
+
 function getLocalStorageKeys() {
     const context = getContext();
-    const keySuffix = context.groupId ? context.groupId : `${context.characters[context.characterId].name}_${context.chatId}`;
+
+    let keySuffix;
+
+    if (context.groupId) {
+        keySuffix = context.groupId;
+    }
+    else if (context.characterId) {
+        keySuffix = `${context.characters[context.characterId].name}_${context.chatId}`;
+    }
+    else {
+        keySuffix = 'undefined';
+    }
+
     return {
         prompt: `extensions_floating_prompt_${keySuffix}`,
         interval: `extensions_floating_interval_${keySuffix}`,
         depth: `extensions_floating_depth_${keySuffix}`,
         position: `extensions_floating_position_${keySuffix}`,
+        default: 'extensions_default_note',
      };
 }
 
 function loadSettings() {
     const keys = getLocalStorageKeys();
-    const prompt = localStorage.getItem(keys.prompt) ?? '';
+    defaultNote = localStorage.getItem(keys.default) ?? '';
+    const prompt = localStorage.getItem(keys.prompt) ?? defaultNote ?? '';
     const interval = localStorage.getItem(keys.interval) ?? 1;
     const position = localStorage.getItem(keys.position) ?? 1;
     const depth = localStorage.getItem(keys.depth) ?? 0;
@@ -56,6 +76,7 @@ function loadSettings() {
     $('#extension_floating_interval').val(interval).trigger('input');
     $('#extension_floating_depth').val(depth).trigger('input');
     $(`input[name="extension_floating_position"][value="${position}"]`).prop('checked', true).trigger('change');
+    $('#extension_floating_default').val(defaultNote);
 }
 
 function saveSettings() {
@@ -64,6 +85,7 @@ function saveSettings() {
     localStorage.setItem(keys.interval, $('#extension_floating_interval').val());
     localStorage.setItem(keys.depth, $('#extension_floating_depth').val());
     localStorage.setItem(keys.position, $('input:radio[name="extension_floating_position"]:checked').val());
+    localStorage.setItem(keys.default, defaultNote);
 }
 
 async function moduleWorker() {
@@ -117,6 +139,18 @@ async function moduleWorker() {
             <label for="extension_floating_interval">Insertion depth (for in-chat positioning):</label>
             <input id="extension_floating_depth" class="text_pole" type="number" min="0" max="99" />
             <span>Appending to the prompt in next: <span id="extension_floating_counter">No</span> message(s)</span>
+            <br>
+            <div class="inline-drawer">
+                <div class="inline-drawer-toggle inline-drawer-header">
+                    <b>Default note for new chats</b>
+                    <div class="inline-drawer-icon down"></div>
+                </div>
+                <div class="inline-drawer-content">
+                    <label for="extension_floating_default">Default Author's Note</label>
+                    <textarea id="extension_floating_default" class="text_pole" rows="3"
+                    placeholder="Example:\n[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
+                </div>
+            </div>
         </div>
         `;
 
@@ -124,6 +158,7 @@ async function moduleWorker() {
         $('#extension_floating_prompt').on('input', onExtensionFloatingPromptInput);
         $('#extension_floating_interval').on('input', onExtensionFloatingIntervalInput);
         $('#extension_floating_depth').on('input', onExtensionFloatingDepthInput);
+        $('#extension_floating_default').on('input', onExtensionFloatingDefaultInput);
         $('input[name="extension_floating_position"]').on('change', onExtensionFloatingPositionInput);
     }
 
