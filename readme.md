@@ -1,5 +1,24 @@
-## Silly TavernAI mod. Based on fork of TavernAI 1.2.8
+# SillyTavern
+
 ### Brought to you by @SillyLossy and @RossAscends
+
+### What is SillyTavern or TavernAI?
+Tavern is a user interface you can install on your computer (and Android phones) that allows you to interact text generation AIs and chat/roleplay with characters you or the community create.
+
+SillyTavern is a fork of TavernAI 1.2.8 which is under more active development, and has added many major features. At this point they can be thought of as completely independent programs.
+
+
+### What do I need other than Tavern?
+On its own Tavern is useless, as it's just a user interface. You have to have access to an AI system backend that can act as the roleplay character. There are various supported backends: OpenAPI API (GPT), KoboldAI (either running locally or on Google Colab), and more.
+
+### I'm new to all this. I just want to have a good time easily. What is the best AI backend to use?
+The most advanced/intelligent AI backend for roleplaying is to pay for OpenAI's GPT API. It's also among the easiest to use. Objectively, GPT is streets ahead of all other backends. However, OpenAI log all your activity, and your account MAY be banned in the future if you violate their policies (e.g. on adult content). However, there are no reports of anyone being banned yet.
+People who value privacy more tend to run a self-hosted AI backend like KoboldAI. Self-hosted backends do not log, but they are much less capable at roleplaying.
+
+### Do I need a powerful PC to run Tavern?**
+Since Tavern is only a user interface, it has tiny hardware requirements, it will run on anything. It's the AI system backend that needs to be powerful.
+
+### I want to try self-hosted easily. Got a Google Colab?
 
 Try on Colab (runs KoboldAI backend and TavernAI Extras server alongside):  <a target="_blank" href="https://colab.research.google.com/github/SillyLossy/TavernAI-extras/blob/main/colab/GPU.ipynb">
   <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
@@ -36,6 +55,8 @@ https://rentry.org/TAI_Termux
 | Memory | Chatbot long-term memory simulation using automatic message context summarization. | `summarize` |  <img style="max-width:200px" alt="image" src="https://user-images.githubusercontent.com/18619528/223766279-88a46481-1fa6-40c5-9724-6cdd6f587233.png"> |
 | Floating Prompt | Adds a string to your scenario after certain amount of messages you send. Usage ideas: reinforce certain events during roleplay. Thanks @Ali឵#2222 for suggesting me that! | None | <img style="max-width:200px" src="https://user-images.githubusercontent.com/18619528/224158641-c317313c-b87d-42b2-9702-ea4ba896593e.png" /> | 
 | D&D Dice | A set of 7 classic D&D dice for all your dice rolling needs.<br><br>*I used to roll the dice.<br>Feel the fear in my enemies' eyes* | None | <img style="max-width:200px" alt="image" src="https://user-images.githubusercontent.com/18619528/226199925-a066c6fc-745e-4a2b-9203-1cbffa481b14.png"> |
+| Author's Note | Built-in extension that allows you to append notes that will be added to the context and steer the story and character in a specific direction. Because it's sent after the character description, it has a lot of weight. | None | ![image](https://user-images.githubusercontent.com/128647114/230311637-d809cd9b-af66-4dd1-a310-7a27e847c011.png)
+ |
 
 ...and...
 
