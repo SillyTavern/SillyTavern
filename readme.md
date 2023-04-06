@@ -128,5 +128,5 @@ Contact us on Discord: Cohee#1207 or RossAscends#1779
 * Cohee's TAI mod: Public domain
 * RossAscends' additions: Public domain
 * Portions of CncAnon's TavernAITurbo mod: Unknown license
-* Thanks Pygmalion University on PygmalionAI Discord for being awesome testers and suggesting cool features! 
+* Thanks Pygmalion University for being awesome testers and suggesting cool features! 
 * Thanks oobabooga for compiling presets for TextGen
