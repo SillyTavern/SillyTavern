@@ -25,6 +25,10 @@ Try on Colab (runs KoboldAI backend and TavernAI Extras server alongside):  <a t
 
 https://colab.research.google.com/github/Cohee1207/SillyTavern/blob/main/colab/GPU.ipynb
 
+If that didn't work, try the legacy link:
+
+[https://github.com/Cohee1207/TavernAI-extras/blob/main/colab/GPU.ipynb](https://colab.research.google.com/github/SillyLossy/TavernAI-extras/blob/main/colab/GPU.ipynb)
+
 ## Mobile support
 
 > **This fork can be ran natively on Android phones using Termux. Please refer to this guide by ArroganceComplex#2659:**
