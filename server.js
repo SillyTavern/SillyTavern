@@ -81,7 +81,7 @@ function humanizedISO8601DateTime() {
     return HumanizedDateTime;
 };
 
-var is_colab = process.env.colab !== undefined;
+var is_colab = process.env.colaburl !== undefined;
 var charactersPath = 'public/characters/';
 var chatsPath = 'public/chats/';
 if (is_colab && process.env.googledrive == 2) {
