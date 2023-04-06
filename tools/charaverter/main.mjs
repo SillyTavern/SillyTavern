@@ -93,7 +93,7 @@ try { fs.mkdirSync(dst) } catch {}
 
 for(const f of files) {
     const source = path.join(p, f),
-        dest = path.join(dst, path.basename(f).split(".")[0] + ".png")
+        dest = path.join(dst, path.basename(f, ".webp") + ".png")
     console.log(`Read... ${source}`)
     const data = await charaRead(source)
     console.log(`Convert... ${source} -> ${dest}`)
