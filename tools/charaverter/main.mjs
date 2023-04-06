@@ -82,6 +82,10 @@ async function charaWrite(img_url, data, target_img, response = undefined, mes =
 
 const p = process.argv[2]
 const files = fs.readdirSync(p).filter(e => e.endsWith(".webp"))
+if (!files.length) {
+    console.log("Nothing to convert.")
+    process.exit(0)
+}
 
 const dst = p
 
