@@ -1,11 +1,22 @@
-## Silly TavernAI mod. Based on fork of TavernAI 1.2.8
-### Brought to you by @SillyLossy and @RossAscends
+# SillyTavern. Based on fork of TavernAI 1.2.8
+### Brought to you by @Cohee1207 and @RossAscends
 
-Try on Colab (runs KoboldAI backend and TavernAI Extras server alongside):  <a target="_blank" href="https://colab.research.google.com/github/SillyLossy/TavernAI-extras/blob/main/colab/GPU.ipynb">
+Try on Colab (runs KoboldAI backend and TavernAI Extras server alongside):  <a target="_blank" href="https://colab.research.google.com/github/Cohee1207/TavernAI-extras/blob/main/colab/GPU.ipynb">
   <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
 </a>
 
-https://colab.research.google.com/github/SillyLossy/TavernAI-extras/blob/main/colab/GPU.ipynb
+https://colab.research.google.com/github/Cohee1207/TavernAI-extras/blob/main/colab/GPU.ipynb
+
+## What is TavernAI?
+
+TavernAI is a user interface you can install on your computer (and Android phones) that allows you to interact text generation AIs and chat/roleplay with characters you or the community create.
+
+## What do I need other than Tavern?
+
+On its own Tavern is useless, as it's just a user interface. You have to have access to an AI system backend that can act as the roleplay character. There are various supported backends: OpenAPI API (GPT), KoboldAI (either running locally or on Google Colab), and more.
+
+## Do I need a powerful PC to run Tavern?
+Since Tavern is only a user interface, it has tiny hardware requirements, it will run on a rusty toaster. It's the AI system backend that needs to be powerful.
 
 ## Mobile support
 
@@ -23,18 +34,18 @@ https://rentry.org/TAI_Termux
 * [Oobabooga's TextGen WebUI](https://github.com/oobabooga/text-generation-webui) API connection
 * Soft prompts selector for KoboldAI
 * Prompt generation formatting tweaking
-* Extensibility support via [SillyLossy's TAI-extras](https://github.com/SillyLossy/TavernAI-extras) plugins
+* Extensibility support via [SillyLossy's TAI-extras](https://github.com/Cohee1207/TavernAI-extras) plugins
     * Character emotional expressions
     * Auto-Summary of the chat history
     * Sending images to chat, and the AI interpreting the content.
 
 ## UI Extensions 🚀
-| Name             | Description                      | Required <a href="https://github.com/SillyLossy/TavernAI-extras#modules" target="_blank">Extra Modules</a> | Screenshot |
+| Name             | Description                      | Required <a href="https://github.com/Cohee1207/TavernAI-extras#modules" target="_blank">Extra Modules</a> | Screenshot |
 | ---------------- | ---------------------------------| ---------------------------- | ---------- |
 | Image Captioning | Send a cute picture to your bot!<br><br>Picture select option will appear beside "Message send" button. | `caption`                    | <img src="https://user-images.githubusercontent.com/18619528/224161576-ddfc51cd-995e-44ec-bf2d-d2477d603f0c.png" style="max-width:200px" />  |
 | Character Expressions | See your character reacting to your messages!<br><br>**You need to provide your own character images!**<br><br>1. Create a folder in TavernAI called `public/characters/<name>`, where `<name>` is a name of your character.<br>2. For base emotion classification model, put six PNG files there with the following names: `joy.png`, `anger.png`, `fear.png`, `love.png`, `sadness.png`, `surprise.png`. Other models may provide another options.<br>3. Images only display in desktop mode. | `classify` | <img style="max-width:200px" alt="image" src="https://user-images.githubusercontent.com/18619528/223765089-34968217-6862-47e0-85da-7357370f8de6.png"> |
 | Memory | Chatbot long-term memory simulation using automatic message context summarization. | `summarize` |  <img style="max-width:200px" alt="image" src="https://user-images.githubusercontent.com/18619528/223766279-88a46481-1fa6-40c5-9724-6cdd6f587233.png"> |
-| Floating Prompt | Adds a string to your scenario after certain amount of messages you send. Usage ideas: reinforce certain events during roleplay. Thanks @Ali឵#2222 for suggesting me that! | None | <img style="max-width:200px" src="https://user-images.githubusercontent.com/18619528/224158641-c317313c-b87d-42b2-9702-ea4ba896593e.png" /> | 
+| Author's Note | Adds a string to your scenario after certain amount of messages you send. Usage ideas: reinforce certain events during roleplay. Thanks @Ali឵#2222 for suggesting me that! | None | <img style="max-width:200px" src="https://user-images.githubusercontent.com/18619528/224158641-c317313c-b87d-42b2-9702-ea4ba896593e.png" /> | 
 | D&D Dice | A set of 7 classic D&D dice for all your dice rolling needs.<br><br>*I used to roll the dice.<br>Feel the fear in my enemies' eyes* | None | <img style="max-width:200px" alt="image" src="https://user-images.githubusercontent.com/18619528/226199925-a066c6fc-745e-4a2b-9203-1cbffa481b14.png"> |
 
 ...and...
@@ -67,7 +78,7 @@ https://rentry.org/TAI_Termux
 
 *NOTE: This branch is intended for local install purposes, and has not been tested on a colab or other cloud notebook service.*
 
-  1. install [NodeJS](nodejs.org)
+  1. install [NodeJS](https://nodejs.org/en)
   2. download the zip from this github repo
   3. unzip it into a folder of your choice
   4. run start.bat via double clicking or in a command line.
@@ -109,7 +120,7 @@ Contact us on Discord: Cohee#1207 or RossAscends#1779
 
 ## License and credits
 * TAI Base by Humi: Unknown license
-* SillyLossy's TAI mod: Public domain
+* Cohee's TAI mod: Public domain
 * RossAscends' additions: Public domain
 * Portions of CncAnon's TavernAITurbo mod: Unknown license
 * Thanks oobabooga for compiling presets for TextGen
