@@ -80,25 +80,31 @@ async function charaWrite(img_url, data, target_img, response = undefined, mes =
 }
 
 
-const p = process.argv[2]
-const files = fs.readdirSync(p).filter(e => e.endsWith(".webp"))
-if (!files.length) {
-    console.log("Nothing to convert.")
-    process.exit(0)
-}
+(async function() {
+    const spath = process.argv[2]
+    const dpath = process.argv[3] || spath
+    const files = fs.readdirSync(spath).filter(e => e.endsWith(".webp"))
+    if (!files.length) {
+        console.log("Nothing to convert.")
+        return
+    }
 
-const dst = p
+    try { fs.mkdirSync(dpath) } catch {}
 
-try { fs.mkdirSync(dst) } catch {}
+    for(const f of files) {
+        const source = path.join(spath, f),
+            dest = path.join(dpath, path.basename(f, ".webp") + ".png")
 
-for(const f of files) {
-    const source = path.join(p, f),
-        dest = path.join(dst, path.basename(f, ".webp") + ".png")
-    console.log(`Read... ${source}`)
-    const data = await charaRead(source)
-    console.log(`Convert... ${source} -> ${dest}`)
-    await webp.dwebp(source, dest, "-o")
-    console.log(`Write... ${dest}`)
-    await charaWrite(dest, data, dest)
-    fs.rmSync(source)
-}
+        console.log(`Read... ${source}`)
+        const data = await charaRead(source)
+
+        console.log(`Convert... ${source} -> ${dest}`)
+        await webp.dwebp(source, dest, "-o")
+
+        console.log(`Write... ${dest}`)
+        await charaWrite(dest, data, dest)
+
+        console.log(`Remove... ${source}`)
+        fs.rmSync(source)
+    }
+})()
