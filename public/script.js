@@ -118,6 +118,7 @@ export {
     hideSwipeButtons,
     changeMainAPI,
     setGenerationProgress,
+    updateChatMetadata,
     chat,
     this_chid,
     settings,
@@ -134,6 +135,7 @@ export {
     api_server_textgenerationwebui,
     count_view_mes,
     max_context,
+    chat_metadata,
     default_avatar,
     system_message_types,
     talkativeness_default,
@@ -180,6 +182,7 @@ let optionsPopper = Popper.createPopper(document.getElementById('send_form'), do
     placement: 'top-start'
 });
 let dialogueResolve = null;
+let chat_metadata = {};
 
 const durationSaveEdit = 200;
 const saveSettingsDebounced = debounce(() => saveSettings(), durationSaveEdit);
@@ -1906,6 +1909,7 @@ function resetChatState() {
     this_chid = "invalid-safety-id"; //unsets expected chid before reloading (related to getCharacters/printCharacters from using old arrays)
     name2 = systemUserName; // replaces deleted charcter name with system user since it will be displayed next.
     chat = [...safetychat]; // sets up system user to tell user about having deleted a character
+    chat_metadata = {}; // resets chat metadata
     characters.length = 0; // resets the characters array, forcing getcharacters to reset
 }
 
@@ -1957,6 +1961,7 @@ async function saveChat(chat_name) {
             user_name: default_user_name,
             character_name: name2,
             create_date: chat_create_date,
+            chat_metadata: chat_metadata,
         },
         ...chat,
     ];
@@ -2020,6 +2025,7 @@ async function getChat() {
         if (response[0] !== undefined) {
             chat.push(...response);
             chat_create_date = chat[0]['create_date'];
+            chat_metadata = chat[0]['chat_metadata'] ?? {};
             chat.shift();
         } else {
             chat_create_date = humanizedDateTime();
@@ -2060,6 +2066,7 @@ async function openCharacterChat(file_name) {
     characters[this_chid]["chat"] = file_name;
     clearChat();
     chat.length = 0;
+    chat_metadata = {};
     await getChat();
     $("#selected_chat_pole").val(file_name);
     $("#create_button").click();
@@ -2800,6 +2807,10 @@ function setExtensionPrompt(key, value, position, depth) {
     extension_prompts[key] = { value, position, depth };
 }
 
+function updateChatMetadata(newValues, reset) {
+    chat_metadata = reset?  { ...newValues } : { ...chat_metadata, ...newValues };
+}
+
 function callPopup(text, type) {
     if (type) {
         popup_type = type;
@@ -3033,11 +3044,13 @@ window["TavernAI"].getContext = function () {
         chatId: this_chid && characters[this_chid] && characters[this_chid].chat,
         onlineStatus: online_status,
         maxContext: Number(max_context),
+        chatMetadata: chat_metadata,
         addOneMessage: addOneMessage,
         generate: Generate,
         encode: encode,
         extensionPrompts: extension_prompts,
         setExtensionPrompt: setExtensionPrompt,
+        updateChatMetadata: updateChatMetadata,
         saveChat: saveChatConditional,
         sendSystemMessage: sendSystemMessage,
         activateSendButtons,
@@ -3371,6 +3384,7 @@ $(document).ready(function () {
                 active_character = this_chid;
                 clearChat();
                 chat.length = 0;
+                chat_metadata = {};
                 getChat();
 
                 //console.log('Clicked on '+characters[this_chid].name+' Active_Character set to: '+active_character+' (ChID:'+this_chid+')');
@@ -3571,6 +3585,7 @@ $(document).ready(function () {
                     characters.length = 0; // resets the characters array, forcing getcharacters to reset
                     name2 = systemUserName; // replaces deleted charcter name with system user since she will be displayed next.
                     chat = [...safetychat]; // sets up system user to tell user about having deleted a character
+                    chat_metadata = {}; // resets chat metadata
                     setRightTabSelectedClass() // 'deselects' character's tab panel
                     $(document.getElementById("rm_button_selected_ch"))
                         .children("h2")
@@ -3608,6 +3623,7 @@ $(document).ready(function () {
             //Fix it; New chat doesn't create while open create character menu
             clearChat();
             chat.length = 0;
+            chat_metadata = {};
             characters[this_chid].chat = name2 + " - " + humanizedDateTime(); //RossAscends: added character name to new chat filenames and replaced Date.now() with humanizedDateTime;
             $("#selected_chat_pole").val(characters[this_chid].chat);
             saveCharacterDebounced();

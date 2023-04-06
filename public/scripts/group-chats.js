@@ -36,6 +36,8 @@ import {
     deleteLastMessage,
     showSwipeButtons,
     hideSwipeButtons,
+    chat_metadata,
+    updateChatMetadata,
 } from "../script.js";
 
 export {
@@ -115,7 +117,6 @@ async function getGroupChat(id) {
             printMessages();
         } else {
             sendSystemMessage(system_message_types.GROUP);
-            const group = groups.find((x) => x.id === id);
             if (group && Array.isArray(group.members)) {
                 for (let name of group.members) {
                     const character = characters.find((x) => x.name === name);
@@ -143,6 +144,12 @@ async function getGroupChat(id) {
             }
         }
 
+        const group = groups.find((x) => x.id === id);
+        if (group) {
+            let metadata = group.chat_metadata ?? {};
+            updateChatMetadata(metadata, true);
+        }
+
         await saveGroupChat(id);
     }
 }
@@ -163,7 +170,7 @@ async function saveGroupChat(id) {
     });
 
     if (response.ok) {
-        // response ok
+        await editGroup(id);
     }
 }
 
@@ -308,7 +315,6 @@ async function generateGroupWrapper(by_auto_mode, type=null) {
                 activationText = lastMessage.mes;
             }
         }
-
 
         const activationStrategy = Number(group.activation_strategy ?? group_activation_strategy.NATURAL);
         let activatedMembers = [];
@@ -498,7 +504,8 @@ async function deleteGroup(id) {
 }
 
 async function editGroup(id, immediately) {
-    const group = groups.find((x) => x.id == id);
+    let group = groups.find((x) => x.id == id);
+    group = { ...group, chat_metadata };
 
     if (!group) {
         return;
@@ -680,6 +687,7 @@ $(document).ready(() => {
                 setCharacterName('');
                 setEditedMessageId(undefined);
                 clearChat();
+                updateChatMetadata({}, true);
                 chat.length = 0;
                 await getGroupChat(id);
             }
@@ -729,6 +737,7 @@ $(document).ready(() => {
                 avatar_url: avatar_url,
                 allow_self_responses: allow_self_responses,
                 activation_strategy: activation_strategy,
+                chat_metadata: {},
             }),
         });
 
