@@ -1,6 +1,6 @@
 # SillyTavern
 ## Based on fork of TavernAI 1.2.8
-### Brought to you by @Cohee1207 and @RossAscends
+### Brought to you by Cohee and RossAscends
 
 ### What is SillyTavern or TavernAI?
 Tavern is a user interface you can install on your computer (and Android phones) that allows you to interact text generation AIs and chat/roleplay with characters you or the community create.
@@ -54,9 +54,6 @@ https://rentry.org/TAI_Termux
 | Memory | Chatbot long-term memory simulation using automatic message context summarization. | `summarize` |  <img style="max-width:200px" alt="image" src="https://user-images.githubusercontent.com/18619528/223766279-88a46481-1fa6-40c5-9724-6cdd6f587233.png"> |
 | D&D Dice | A set of 7 classic D&D dice for all your dice rolling needs.<br><br>*I used to roll the dice.<br>Feel the fear in my enemies' eyes* | None | <img style="max-width:200px" alt="image" src="https://user-images.githubusercontent.com/18619528/226199925-a066c6fc-745e-4a2b-9203-1cbffa481b14.png"> |
 | Author's Note | Built-in extension that allows you to append notes that will be added to the context and steer the story and character in a specific direction. Because it's sent after the character description, it has a lot of weight. Thanks Ali឵#2222 for pitching the idea! | None | ![image](https://user-images.githubusercontent.com/128647114/230311637-d809cd9b-af66-4dd1-a310-7a27e847c011.png)
- |
-
-...and...
 
 ## UI/CSS/Quality of Life tweaks by RossAscends
 
