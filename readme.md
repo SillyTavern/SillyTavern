@@ -1,4 +1,3 @@
-
 # SillyTavern
 ## Based on fork of TavernAI 1.2.8
 ### Brought to you by @Cohee1207 and @RossAscends
@@ -32,7 +31,7 @@ https://colab.research.google.com/github/Cohee1207/TavernAI-extras/blob/main/col
 
 https://rentry.org/TAI_Termux
 
-## This branch includes: 
+## This version includes
 * A heavily modified TavernAI 1.2.8 (more than 50% of code rewritten or optimized)
 * Swipes
 * Group chats
@@ -53,9 +52,8 @@ https://rentry.org/TAI_Termux
 | Image Captioning | Send a cute picture to your bot!<br><br>Picture select option will appear beside "Message send" button. | `caption`                    | <img src="https://user-images.githubusercontent.com/18619528/224161576-ddfc51cd-995e-44ec-bf2d-d2477d603f0c.png" style="max-width:200px" />  |
 | Character Expressions | See your character reacting to your messages!<br><br>**You need to provide your own character images!**<br><br>1. Create a folder in TavernAI called `public/characters/<name>`, where `<name>` is a name of your character.<br>2. For base emotion classification model, put six PNG files there with the following names: `joy.png`, `anger.png`, `fear.png`, `love.png`, `sadness.png`, `surprise.png`. Other models may provide another options.<br>3. Images only display in desktop mode. | `classify` | <img style="max-width:200px" alt="image" src="https://user-images.githubusercontent.com/18619528/223765089-34968217-6862-47e0-85da-7357370f8de6.png"> |
 | Memory | Chatbot long-term memory simulation using automatic message context summarization. | `summarize` |  <img style="max-width:200px" alt="image" src="https://user-images.githubusercontent.com/18619528/223766279-88a46481-1fa6-40c5-9724-6cdd6f587233.png"> |
-| Author's Note | Adds a string to your scenario after certain amount of messages you send. Usage ideas: reinforce certain events during roleplay. Thanks @Ali឵#2222 for suggesting me that! | None | <img style="max-width:200px" src="https://user-images.githubusercontent.com/18619528/224158641-c317313c-b87d-42b2-9702-ea4ba896593e.png" /> | 
 | D&D Dice | A set of 7 classic D&D dice for all your dice rolling needs.<br><br>*I used to roll the dice.<br>Feel the fear in my enemies' eyes* | None | <img style="max-width:200px" alt="image" src="https://user-images.githubusercontent.com/18619528/226199925-a066c6fc-745e-4a2b-9203-1cbffa481b14.png"> |
-| Author's Note | Built-in extension that allows you to append notes that will be added to the context and steer the story and character in a specific direction. Because it's sent after the character description, it has a lot of weight. | None | ![image](https://user-images.githubusercontent.com/128647114/230311637-d809cd9b-af66-4dd1-a310-7a27e847c011.png)
+| Author's Note | Built-in extension that allows you to append notes that will be added to the context and steer the story and character in a specific direction. Because it's sent after the character description, it has a lot of weight. Thanks Ali឵#2222 for pitching the idea! | None | ![image](https://user-images.githubusercontent.com/128647114/230311637-d809cd9b-af66-4dd1-a310-7a27e847c011.png)
  |
 
 ...and...
