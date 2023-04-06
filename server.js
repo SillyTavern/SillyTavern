@@ -84,10 +84,6 @@ function humanizedISO8601DateTime() {
 var is_colab = process.env.colaburl !== undefined;
 var charactersPath = 'public/characters/';
 var chatsPath = 'public/chats/';
-if (is_colab && process.env.googledrive == 2) {
-    charactersPath = '/content/drive/MyDrive/TavernAI/characters/';
-    chatsPath = '/content/drive/MyDrive/TavernAI/chats/';
-}
 const jsonParser = express.json({ limit: '100mb' });
 const urlencodedParser = express.urlencoded({ extended: true, limit: '100mb' });
 const baseRequestArgs = { headers: { "Content-Type": "application/json" } };
