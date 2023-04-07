@@ -84,6 +84,7 @@ import {
 } from "./scripts/poe.js";
 
 import { debounce, delay } from "./scripts/utils.js";
+import { extension_settings, loadExtensionSettings } from "./scripts/extensions.js";
 
 //exporting functions and vars for mods
 export {
@@ -2396,6 +2397,7 @@ async function getSettings(type) {
                         script.src = src;
                         $("body").append(script);
                     }
+                    loadExtensionSettings(settings);
                 }
 
                 //get the character to auto-load
@@ -2449,6 +2451,7 @@ async function saveSettings(type) {
             horde_settings: horde_settings,
             power_user: power_user,
             poe_settings: poe_settings,
+            extension_settings: extension_settings,
             ...nai_settings,
             ...kai_settings,
             ...oai_settings,

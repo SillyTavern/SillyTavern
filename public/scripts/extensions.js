@@ -1,32 +1,64 @@
-import { callPopup } from "../script.js";
+import { callPopup, saveSettings, saveSettingsDebounced } from "../script.js";
 import { isSubsetOf } from "./utils.js";
 export {
     getContext,
     getApiUrl,
+    loadExtensionSettings,
     defaultRequestArgs,
     modules,
+    extension_settings,
 };
 
 const extensionNames = ['caption', 'dice', 'expressions', 'floating-prompt', 'memory'];
 const manifests = await getManifests(extensionNames);
-const extensions_urlKey = 'extensions_url';
-const extensions_autoConnectKey = 'extensions_autoconnect';
-const extensions_disabledKey = 'extensions_disabled';
+
+// TODO: Delete in next release
+function migrateFromLocalStorage() {
+    const extensions_urlKey = 'extensions_url';
+    const extensions_autoConnectKey = 'extensions_autoconnect';
+    const extensions_disabledKey = 'extensions_disabled';
+
+    const apiUrl = localStorage.getItem(extensions_urlKey);
+    const autoConnect = localStorage.getItem(extensions_autoConnectKey);
+    const extensionsDisabled = localStorage.getItem(extensions_disabledKey);
+
+    if (apiUrl !== null) {
+        extension_settings.apiUrl = apiUrl;
+        localStorage.removeItem(extensions_urlKey);
+    }
+
+    if (autoConnect !== null) {
+        extension_settings.autoConnect = autoConnect;
+        localStorage.removeItem(extensions_autoConnectKey);
+    }
+
+    if (extensionsDisabled !== null) {
+        extension_settings.disabledExtensions = JSON.parse(extensionsDisabled);
+        localStorage.removeItem(extensions_disabledKey);
+    }
+}
+
+const extension_settings = {
+    apiUrl: '',
+    autoConnect: '',
+    disabledExtensions: [],
+    memory: {},
+    note: {
+        default: '',
+    },
+    caption: {},
+    expressions: {},
+    dice: {},
+};
 
 let modules = [];
-let disabledExtensions = getDisabledExtensions();
 let activeExtensions = new Set();
 
 const getContext = () => window['TavernAI'].getContext();
-const getApiUrl = () => localStorage.getItem('extensions_url');
+const getApiUrl = () => extension_settings.apiUrl;
 const defaultUrl = "http://localhost:5100";
 const defaultRequestArgs = { method: 'GET', headers: { 'Bypass-Tunnel-Reminder': 'bypass' } };
 let connectedToApi = false;
-
-function getDisabledExtensions() {
-    const value = localStorage.getItem(extensions_disabledKey);
-    return value ? JSON.parse(value) : [];
-}
 
 function onDisableExtensionClick() {
     const name = $(this).data('name');
@@ -38,15 +70,15 @@ function onEnableExtensionClick() {
     enableExtension(name);
 }
 
-function enableExtension(name) {
-    disabledExtensions = disabledExtensions.filter(x => x !== name);
-    localStorage.setItem(extensions_disabledKey, JSON.stringify(disabledExtensions));
+async function enableExtension(name) {
+    extension_settings.disabledExtensions = extension_settings.disabledExtensions.filter(x => x !== name);
+    await saveSettings();
     location.reload();
 }
 
-function disableExtension(name) {
-    disabledExtensions.push(name);
-    localStorage.setItem(extensions_disabledKey, JSON.stringify(disabledExtensions));
+async function disableExtension(name) {
+    extension_settings.disabledExtensions.push(name);
+    await saveSettings();
     location.reload();
 }
 
@@ -77,7 +109,7 @@ async function activateExtensions() {
         // all required modules are active (offline extensions require none)
         if (isSubsetOf(modules, manifest.requires)) {
             try {
-                const isDisabled = disabledExtensions.includes(name);
+                const isDisabled = extension_settings.disabledExtensions.includes(name);
                 const li = document.createElement('li');
 
                 if (!isDisabled) {
@@ -104,20 +136,27 @@ async function activateExtensions() {
 
 async function connectClickHandler() {
     const baseUrl = $("#extensions_url").val();
-    localStorage.setItem(extensions_urlKey, baseUrl);
+    extension_settings.apiUrl = baseUrl;
+    saveSettingsDebounced();
     await connectToApi(baseUrl);
 }
 
 function autoConnectInputHandler() {
     const value = $(this).prop('checked');
-    localStorage.setItem(extensions_autoConnectKey, value.toString());
+    extension_settings.autoConnect = !!value;
 
     if (value && !connectedToApi) {
         $("#extensions_connect").trigger('click');
     }
+    
+    saveSettingsDebounced();
 }
 
 async function connectToApi(baseUrl) {
+    if (!baseUrl) {
+        return;
+    }
+
     const url = new URL(baseUrl);
     url.pathname = '/api/modules';
 
@@ -220,7 +259,7 @@ function showExtensionsDetails() {
                 }
             }
         }
-        else if (disabledExtensions.includes(name)) {
+        else if (extension_settings.disabledExtensions.includes(name)) {
             html += `<p class="disabled">Extension is disabled. <a href="javascript:void" data-name=${name} class="enable_extension">Enable</a></p>`;
         }
         else {
@@ -234,17 +273,24 @@ function showExtensionsDetails() {
     callPopup(`<div class="extensions_info">${html}</div>`, 'text');
 }
 
-$(document).ready(async function () {
-    const url = localStorage.getItem(extensions_urlKey) ?? defaultUrl;
-    const autoConnect = localStorage.getItem(extensions_autoConnectKey) == 'true';
-    $("#extensions_url").val(url);
-    $("#extensions_connect").on('click', connectClickHandler);
-    $("#extensions_autoconnect").on('input', autoConnectInputHandler);
-    $("#extensions_autoconnect").prop('checked', autoConnect).trigger('input');
-    $("#extensions_details").on('click', showExtensionsDetails);
-    $(document).on('click', '.disable_extension', onDisableExtensionClick);
-    $(document).on('click', '.enable_extension', onEnableExtensionClick);
+function loadExtensionSettings(settings) {
+    migrateFromLocalStorage();
+
+    if (settings.extension_settings) {
+        Object.assign(extension_settings, settings.extension_settings);
+    }
+
+    $("#extensions_url").val(extension_settings.apiUrl);
+    $("#extensions_autoconnect").prop('checked', extension_settings.autoConnect).trigger('input');
 
     // Activate offline extensions
     activateExtensions();
+}
+
+$(document).ready(async function () {
+    $("#extensions_connect").on('click', connectClickHandler);
+    $("#extensions_autoconnect").on('input', autoConnectInputHandler);
+    $("#extensions_details").on('click', showExtensionsDetails);
+    $(document).on('click', '.disable_extension', onDisableExtensionClick);
+    $(document).on('click', '.enable_extension', onEnableExtensionClick);
 });
