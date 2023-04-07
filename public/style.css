@@ -3106,27 +3106,6 @@ filter: invert(20%) sepia(100%) saturate(2518%) hue-rotate(353deg) brightness(93
     }
 }
 
-/*FastUI blue removal*/
-
-body.no-blur * {
-    backdrop-filter: unset !important;
-}
-
-body.no-blur #bg1, body.no-blur #bg2 {
-    filter: unset;
-}
-
-body.no-blur .drawer-content,
-/*body.no-blur #chat,*/ /*removed as it clashed with bubbles*/
-body.no-blur .mes, /*applying to .mes block has the same effect as #chat, and works on both default and bubblechat*/
-body.no-blur #top-bar,
-body.no-blur #character_popup,
-body.no-blur #world_popup,
-body.no-blur #dialogue_popup,
-body.no-blur #select_chat_popup {
-    background-color: var(--black90a);
-}
-
 /*bubble chat style*/
 
 body.bubblechat #chat {
@@ -3168,7 +3147,8 @@ body.bubblechat .mes {
     width: 100%;
     color: rgb(181 181 181);
     border-radius: 20px;
-    backdrop-filter: blur(10px) brightness(0.3);
+    backdrop-filter: blur(10px);
+    background-color: var(--black60a);
     margin-top: 10px;
     border: 1px solid rgba(255,255,255,0.2);
 }
@@ -3187,4 +3167,25 @@ body.bubblechat ::-webkit-scrollbar-thumb {
     -webkit-box-shadow: inset 0 0 2px var(--black30a);
     box-shadow: inset 0 0 3px black;
     border-radius: 5px;
+}
+
+/*FastUI blue removal*/
+
+body.no-blur * {
+    backdrop-filter: unset !important;
+}
+
+body.no-blur #bg1, body.no-blur #bg2 {
+    filter: unset;
+}
+
+body.no-blur .drawer-content,
+/*body.no-blur #chat,*/ /*removed as it clashed with bubbles*/
+body.no-blur .mes, /*applying to .mes block has the same effect as #chat, and works on both default and bubblechat*/
+body.no-blur #top-bar,
+body.no-blur #character_popup,
+body.no-blur #world_popup,
+body.no-blur #dialogue_popup,
+body.no-blur #select_chat_popup {
+    background-color: var(--black90a);
 }
