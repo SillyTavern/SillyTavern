@@ -430,7 +430,8 @@ app.post("/getstatus", jsonParser, function (request, response_getstatus = respo
                     var response = body.match(/gradio_config[ =]*(\{.*\});/)[1];
                     if (!response)
                         throw "no_connection";
-                    data = { result: JSON.parse(response).components.filter((x) => x.props.label == "Model")[0].props.value };
+                    let model = JSON.parse(response).components.filter((x) => x.props.label == "Model" && x.type == "dropdown")[0].props.value;
+                    data = { result: model };
                     if (!data)
                         throw "no_connection";
                 } catch {
