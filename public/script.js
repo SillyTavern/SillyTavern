@@ -2129,7 +2129,7 @@ function changeMainAPI() {
             apiSettings: $("#poe_settings"),
             apiConnector: $("#poe_api"),
             apiPresets: $(""),
-            apiRanges: $(""),
+            apiRanges: $("#range_block_poe"),
             maxContextElem: $("#max_context_block"),
             amountGenElem: $("#amount_gen_block"),
             softPromptElem: $("#softprompt_block"),

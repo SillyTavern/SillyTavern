@@ -570,6 +570,50 @@
                                     </div>
                                 </div>
                             </div>
+                            <div id="range_block_poe">
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        Auto-purge poe.com chat
+                                    </div>
+                                    <div class="range-block-counter">
+                                        Deletes messages from poe before each prompt is sent
+                                    </div>
+                                    <div class="range-block-range">
+                                        <label for="poe_auto_purge" class="checkbox_label">
+                                            <input id="poe_auto_purge" type="checkbox">
+                                            Enable
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        Auto-jailbreak
+                                    </div>
+                                    <div class="range-block-counter">
+                                        Sends the jailbreak message and keeps it in context
+                                    </div>
+                                    <div class="range-block-range">
+                                        <label for="poe_auto_jailbreak" class="checkbox_label">
+                                            <input id="poe_auto_jailbreak" type="checkbox">
+                                            Enable
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        Send character note
+                                    </div>
+                                    <div class="range-block-counter">
+                                        Nudges the bot to reply as the character only
+                                    </div>
+                                    <div class="range-block-range">
+                                        <label for="poe_character_nudge" class="checkbox_label">
+                                            <input id="poe_character_nudge" class="text_pole" type="checkbox" />
+                                            Enable
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                     </div>
@@ -880,6 +924,9 @@
                                     <div class="range-block-title">
                                         Jailbreak activation message
                                     </div>
+                                    <div class="range-block-counter">
+                                        Message sent as a jailbreak to activate the roleplay
+                                    </div>
                                     <div class="range-block-range">
                                         <textarea id="poe_activation_message" rows="3"></textarea>
                                     </div>
@@ -888,8 +935,22 @@
                                     <div class="range-block-title">
                                         Jailbreak activation response
                                     </div>
+                                    <div class="range-block-counter">
+                                        Bot reply that counts as a successful jailbreak
+                                    </div>
                                     <div class="range-block-range">
                                         <input id="poe_activation_response" class="text_pole" type="text" />
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        Character note text
+                                    </div>
+                                    <div class="range-block-counter">
+                                        Text to be send as a character nudge
+                                    </div>
+                                    <div class="range-block-range">
+                                        <input id="poe_nudge_text" class="text_pole" type="text" />
                                     </div>
                                 </div>
                             </div>
