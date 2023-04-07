@@ -4,6 +4,7 @@ import subprocess
 
 
 def runServer():
+    global params
     cmd = f"python server.py {' '.join(params)}"
     print(cmd)
     extras_process = subprocess.Popen(
