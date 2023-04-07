@@ -6,6 +6,16 @@ export {
     power_user,
 };
 
+const avatar_styles = {
+    ROUND: 0,
+    RECTANGULAR: 1,
+}
+
+const chat_styles = {
+    DEFAULT: 0,
+    BUBBLES: 1,
+}
+
 let power_user = {
     collapse_newlines: false,
     force_pygmalion_formatting: false,
@@ -16,9 +26,9 @@ let power_user = {
     always_force_name2: false,
     multigen: false,
     custom_chat_separator: '',
-    fast_ui_mode: false,
-    avatar_style: 0,
-    chat_display: 0
+    fast_ui_mode: true,
+    avatar_style: avatar_styles.ROUND,
+    chat_display: chat_styles.DEFAULT,
 };
 
 const storage_keys = {
@@ -41,37 +51,19 @@ function collapseNewlines(x) {
 }
 
 function switchUiMode() {
-    power_user.fast_ui_mode = localStorage.getItem(storage_keys.fast_ui_mode) == "true";
-    if (power_user.fast_ui_mode) {
-        $("body").addClass("no-blur");
-    }
-    else {
-        $("body").removeClass("no-blur");
-    }
+    const fastUi = localStorage.getItem(storage_keys.fast_ui_mode);
+    power_user.fast_ui_mode = fastUi === null ? true : fastUi == "true";
+    $("body").toggleClass("no-blur", power_user.fast_ui_mode);
 }
 
 function applyAvatarStyle() {
-    power_user.avatar_style = Number(localStorage.getItem(storage_keys.avatar_style) ?? 0);
-    switch (power_user.avatar_style) {
-        case 0:
-            $("body").removeClass("big-avatars");
-            break;
-        case 1:
-            $("body").addClass("big-avatars");
-            break;
-    }
+    power_user.avatar_style = Number(localStorage.getItem(storage_keys.avatar_style) ?? avatar_styles.ROUND);
+    $("body").toggleClass("big-avatars", power_user.avatar_style === avatar_styles.RECTANGULAR);
 }
 
 function applyChatDisplay() {
-    power_user.chat_display = Number(localStorage.getItem(storage_keys.chat_display) ?? 0);
-    switch (power_user.chat_display) {
-        case 0:
-            $("body").removeClass("bubblechat");
-            break;
-        case 1:
-            $("body").addClass("bubblechat");
-            break;
-    }
+    power_user.chat_display = Number(localStorage.getItem(storage_keys.chat_display) ?? chat_styles.DEFAULT);
+    $("body").toggleClass("bubblechat", power_user.chat_display === chat_styles.BUBBLES);
 }
 
 applyAvatarStyle();
@@ -101,9 +93,10 @@ function loadPowerUserSettings(settings) {
     }
 
     // These are still local storage
-    power_user.fast_ui_mode = localStorage.getItem(storage_keys.fast_ui_mode) == "true";
-    power_user.avatar_style = Number(localStorage.getItem(storage_keys.avatar_style) ?? 0);
-    power_user.chat_display = Number(localStorage.getItem(storage_keys.chat_display) ?? 0);
+    const fastUi = localStorage.getItem(storage_keys.fast_ui_mode);
+    power_user.fast_ui_mode = fastUi === null ? true : fastUi == "true";
+    power_user.avatar_style = Number(localStorage.getItem(storage_keys.avatar_style) ?? avatar_styles.ROUND);
+    power_user.chat_display = Number(localStorage.getItem(storage_keys.chat_display) ?? chat_styles.DEFAULT);
 
     $("#force-pygmalion-formatting-checkbox").prop("checked", power_user.force_pygmalion_formatting);
     $("#collapse-newlines-checkbox").prop("checked", power_user.collapse_newlines);
@@ -160,6 +153,7 @@ $(document).ready(() => {
         power_user.custom_chat_separator = $(this).val();
         saveSettingsDebounced();
     });
+
     $("#multigen").change(function () {
         power_user.multigen = $(this).prop("checked");
         saveSettingsDebounced();
@@ -177,6 +171,7 @@ $(document).ready(() => {
         localStorage.setItem(storage_keys.avatar_style, power_user.avatar_style);
         applyAvatarStyle();
     });
+
     $(`input[name="chat_display"]`).on('input', function (e) {
         power_user.chat_display = Number(e.target.value);
         localStorage.setItem(storage_keys.chat_display, power_user.chat_display);
