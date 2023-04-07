@@ -1612,32 +1612,27 @@ async function Generate(type, automatic_trigger, force_name2) {
             }
 
             if (main_api == 'textgenerationwebui') {
-                var generate_data = {
-                    data: [
-                        finalPromt,
-                        this_amount_gen, // max new tokens
-                        textgenerationwebui_settings.do_sample, // do_sample
-                        textgenerationwebui_settings.temp, // temperature
-                        textgenerationwebui_settings.top_p, // top_p
-                        textgenerationwebui_settings.typical_p, // typical_p
-                        textgenerationwebui_settings.rep_pen, // repetition_penalty
-                        textgenerationwebui_settings.encoder_rep_pen, // encoder rep pen
-                        textgenerationwebui_settings.top_k, // top_k
-                        textgenerationwebui_settings.min_length, // min_length
-                        textgenerationwebui_settings.no_repeat_ngram_size, // no_repeat_ngram_size
-                        textgenerationwebui_settings.num_beams, // num_beams
-                        textgenerationwebui_settings.penalty_alpha, // penalty_alpha
-                        textgenerationwebui_settings.length_penalty, // length_penalty
-                        textgenerationwebui_settings.early_stopping, // early_stopping
-                        textgenerationwebui_settings.seed, // seed
-                        name1, // name1
-                        name2, // name2
-                        "",  // Context
-                        true, // stop at newline
-                        this_max_context, // Maximum prompt size in tokens
-                        1, // num attempts
-                    ]
-                };
+                let data = [
+                    finalPromt,
+                    {
+                        'max_new_tokens': this_amount_gen,
+                        'do_sample': textgenerationwebui_settings.do_sample,
+                        'temperature': textgenerationwebui_settings.temp,
+                        'top_p': textgenerationwebui_settings.top_p,
+                        'typical_p': textgenerationwebui_settings.typical_p,
+                        'repetition_penalty': textgenerationwebui_settings.rep_pen,
+                        'encoder_repetition_penalty': textgenerationwebui_settings.encoder_rep_pen,
+                        'top_k': textgenerationwebui_settings.top_k,
+                        'min_length': textgenerationwebui_settings.min_length,
+                        'no_repeat_ngram_size': textgenerationwebui_settings.no_repeat_ngram_size,
+                        'num_beams': textgenerationwebui_settings.num_beams,
+                        'penalty_alpha': textgenerationwebui_settings.penalty_alpha,
+                        'length_penalty': textgenerationwebui_settings.length_penalty,
+                        'early_stopping': textgenerationwebui_settings.early_stopping,
+                        'seed': textgenerationwebui_settings.seed,
+                    }
+                ];
+                generate_data = { "data": [ JSON.stringify(data) ]};
             }
 
             if (main_api == 'novel') {
