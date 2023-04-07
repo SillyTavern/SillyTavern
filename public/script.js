@@ -1336,7 +1336,14 @@ async function Generate(type, automatic_trigger, force_name2) {
 
         let hordeAmountGen = null;
         if (main_api == 'kobold' && horde_settings.use_horde && horde_settings.auto_adjust) {
-            const adjustedParams = await adjustHordeGenerationParams(this_max_context, amount_gen);
+            let adjustedParams;
+            try {
+                adjustedParams = await adjustHordeGenerationParams(this_max_context, amount_gen);
+            }
+            catch {
+                activateSendButtons();
+                return;
+            }
             this_max_context = adjustedParams.maxContextLength;
             hordeAmountGen = adjustedParams.maxLength;
         }
