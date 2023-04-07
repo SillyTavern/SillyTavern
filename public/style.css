@@ -480,12 +480,12 @@ body.big-avatars .avatar img {
 }
 
 .mes_text {
-    font-weight: 400;
-    line-height: 1.25rem;
+    font-weight: 500;
+    line-height: 1.5rem;
     padding-left: 0;
     padding-top: 5px;
     padding-bottom: 5px;
-    max-width: 720px;
+    /*max-width: 720px;*/
     word-wrap: break-word;
     animation: typing 3.5s steps(40, end), blink-caret .75s step-end infinite;
 }
@@ -3142,10 +3142,8 @@ body.bubblechat #send_form {
 body.bubblechat .mes {
     display: grid;
     grid-template-columns: min-content min-content auto min-content;
-    padding: 10px 10px 10px 10px;
-    margin-top: 0;
+    padding: 10px;
     width: 100%;
-    color: rgb(181 181 181);
     border-radius: 20px;
     backdrop-filter: blur(10px);
     background-color: var(--black60a);
@@ -3158,7 +3156,6 @@ but putting it here for now*/
 
 body.bubblechat ::-webkit-scrollbar {
     width: 5px;
-    border: 1px solid rgba(255,255,255,0.2);
     border-radius: 5px;
 }
 
@@ -3169,7 +3166,7 @@ body.bubblechat ::-webkit-scrollbar-thumb {
     border-radius: 5px;
 }
 
-/*FastUI blue removal*/
+/*FastUI blur removal*/
 
 body.no-blur * {
     backdrop-filter: unset !important;
