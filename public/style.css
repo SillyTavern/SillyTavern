@@ -165,9 +165,6 @@ code {
     z-index: 3000;
 }
 
-
-
-
 #sheld {
     display: grid;
     grid-template-rows: auto min-content;
@@ -183,7 +180,7 @@ code {
 
 }
 
-#chat {
+#chat { 
 margin-top:5px;
     overflow-x: hidden;
     padding-bottom: 0;
@@ -201,7 +198,7 @@ margin-top:5px;
     transition: all 1s ease-in-out;
     flex-direction: column;
     z-index: 3;
-}
+} 
 
 #form_sheld {
     white-space: nowrap;
@@ -221,7 +218,7 @@ margin-top:5px;
     border-radius: 0 0 20px 20px;
     background-color: var(--crimson70a);
     backdrop-filter: blur(10px);
-}
+} 
 
 #send_but_sheld {
     padding: 0;
@@ -354,14 +351,13 @@ margin-top:5px;
 }
 
 .mes {
-
     display: grid;
     grid-template-columns: min-content min-content auto min-content;
     padding: 20px 10px 0 10px;
     margin-top: 0;
     width: 100%;
     color: var(--ivory, white);
-}
+} 
 
 .last_mes{
     grid-template-columns: [checkbox] fit-content(60px) [avatar-leftswipe] 50px [name-mestext] auto [edit-rightswipe] 30px !important;
@@ -413,7 +409,7 @@ margin-top:5px;
     flex: 1;
 }
 
-#avatars-style .range-block-range {
+#avatars-style .range-block-range, #chat-display .range-block-range {
     display: flex;
     flex-direction: column;
 }
@@ -3110,6 +3106,8 @@ filter: invert(20%) sepia(100%) saturate(2518%) hue-rotate(353deg) brightness(93
     }
 }
 
+/*FastUI blue removal*/
+
 body.no-blur * {
     backdrop-filter: unset !important;
 }
@@ -3119,11 +3117,74 @@ body.no-blur #bg1, body.no-blur #bg2 {
 }
 
 body.no-blur .drawer-content,
-body.no-blur #chat,
+/*body.no-blur #chat,*/ /*removed as it clashed with bubbles*/
+body.no-blur .mes, /*applying to .mes block has the same effect as #chat, and works on both default and bubblechat*/
 body.no-blur #top-bar,
 body.no-blur #character_popup,
 body.no-blur #world_popup,
 body.no-blur #dialogue_popup,
 body.no-blur #select_chat_popup {
-    background-color: var(--black90a) !important;
+    background-color: var(--black90a);
+}
+
+/*bubble chat style*/
+
+body.bubblechat #chat {
+    margin-top: 5px;
+    overflow-x: hidden;
+    padding-bottom: 0;
+    overflow-y: scroll;
+    display: flex;
+    bottom: 10px;
+    -webkit-backdrop-filter: blur(10px);
+    text-shadow: #000 0 0 3px;
+    scrollbar-width: thin;
+    transition: all 1s ease-in-out;
+    flex-direction: column;
+    border-radius: 20px;
+    z-index: 3;
+    border: none;
+    backdrop-filter: unset;
+    background-color: unset;
+}
+
+body.bubblechat #send_form {
+    display: grid;
+    align-items: center;
+    grid-template-columns: 40px auto 40px;
+    width: 100%;
+    margin: 0 auto 0 auto;
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 20px;
+    background-color: var(--crimson70a);
+    backdrop-filter: blur(10px);
+}
+
+body.bubblechat .mes {
+    display: grid;
+    grid-template-columns: min-content min-content auto min-content;
+    padding: 10px 10px 10px 10px;
+    margin-top: 0;
+    width: 100%;
+    color: rgb(181 181 181);
+    border-radius: 20px;
+    backdrop-filter: blur(10px) brightness(0.3);
+    margin-top: 10px;
+    border: 1px solid rgba(255,255,255,0.2);
+}
+
+/*this could be a default replacement for the scrollbar regardless of chat style
+but putting it here for now*/
+
+body.bubblechat ::-webkit-scrollbar {
+    width: 5px;
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 5px;
+}
+
+body.bubblechat ::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.5);
+    -webkit-box-shadow: inset 0 0 2px var(--black30a);
+    box-shadow: inset 0 0 3px black;
+    border-radius: 5px;
 }

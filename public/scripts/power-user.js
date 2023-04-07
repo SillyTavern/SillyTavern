@@ -18,6 +18,7 @@ let power_user = {
     custom_chat_separator: '',
     fast_ui_mode: false,
     avatar_style: 0,
+    chat_display: 0
 };
 
 const storage_keys = {
@@ -32,6 +33,7 @@ const storage_keys = {
     fast_ui_mode: "TavernAI_fast_ui_mode",
     multigen: "TavernAI_multigen",
     avatar_style: "TavernAI_avatar_style",
+    chat_display: "TavernAI_chat_display"
 };
 
 function collapseNewlines(x) {
@@ -60,8 +62,21 @@ function applyAvatarStyle() {
     }
 }
 
+function applyChatDisplay() {
+    power_user.chat_display = Number(localStorage.getItem(storage_keys.chat_display) ?? 0);
+    switch (power_user.chat_display) {
+        case 0:
+            $("body").removeClass("bubblechat");
+            break;
+        case 1:
+            $("body").addClass("bubblechat");
+            break;
+    }
+}
+
 applyAvatarStyle();
 switchUiMode();
+applyChatDisplay();
 
 // TODO delete in next release
 function loadFromLocalStorage() {
@@ -88,6 +103,7 @@ function loadPowerUserSettings(settings) {
     // These are still local storage
     power_user.fast_ui_mode = localStorage.getItem(storage_keys.fast_ui_mode) == "true";
     power_user.avatar_style = Number(localStorage.getItem(storage_keys.avatar_style) ?? 0);
+    power_user.chat_display = Number(localStorage.getItem(storage_keys.chat_display) ?? 0);
 
     $("#force-pygmalion-formatting-checkbox").prop("checked", power_user.force_pygmalion_formatting);
     $("#collapse-newlines-checkbox").prop("checked", power_user.collapse_newlines);
@@ -100,6 +116,7 @@ function loadPowerUserSettings(settings) {
     $("#fast_ui_mode").prop("checked", power_user.fast_ui_mode);
     $("#multigen").prop("checked", power_user.multigen);
     $(`input[name="avatar_style"][value="${power_user.avatar_style}"]`).prop("checked", true);
+    $(`input[name="chat_display"][value="${power_user.chat_display}"]`).prop("checked", true);
 }
 
 $(document).ready(() => {
@@ -159,5 +176,10 @@ $(document).ready(() => {
         power_user.avatar_style = Number(e.target.value);
         localStorage.setItem(storage_keys.avatar_style, power_user.avatar_style);
         applyAvatarStyle();
+    });
+    $(`input[name="chat_display"]`).on('input', function (e) {
+        power_user.chat_display = Number(e.target.value);
+        localStorage.setItem(storage_keys.chat_display, power_user.chat_display);
+        applyChatDisplay();
     });
 });
