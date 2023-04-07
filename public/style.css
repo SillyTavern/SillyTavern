@@ -350,6 +350,10 @@ margin-top:5px;
     display: none !important;
 }
 
+.auto_hide {
+    content-visibility: auto;
+}
+
 .mes {
     display: grid;
     grid-template-columns: min-content min-content auto min-content;

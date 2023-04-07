@@ -793,6 +793,8 @@ function printMessages() {
     chat.forEach(function (item, i, arr) {
         addOneMessage(item);
     });
+
+    $('#chat .mes').addClass('auto_hide');
 }
 
 function clearChat() {
