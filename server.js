@@ -1,5 +1,8 @@
 const express = require('express');
+const compression = require('compression');
 const app = express();
+app.use(compression());
+
 const fs = require('fs');
 const readline = require('readline');
 const open = require('open');
@@ -127,6 +130,8 @@ const { invalidCsrfTokenError, generateToken, doubleCsrfProtection } = doubleCsr
     size: 64,
     getTokenFromRequest: (req) => req.headers["x-csrf-token"]
 });
+
+
 
 app.get("/csrf-token", (req, res) => {
     res.json({
