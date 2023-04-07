@@ -25,6 +25,10 @@ img.expression {
     vertical-align: bottom;
 }
 
+img.expression.default {
+    vertical-align: middle;
+}
+
 .debug-image {
     display: none;
     visibility: collapse;

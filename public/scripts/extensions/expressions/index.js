@@ -1,8 +1,8 @@
-import { getContext, getApiUrl, modules } from "../../extensions.js";
+import { saveSettingsDebounced } from "../../../script.js";
+import { getContext, getApiUrl, modules, extension_settings } from "../../extensions.js";
 export { MODULE_NAME };
 
 const MODULE_NAME = 'expressions';
-const DEFAULT_KEY = 'extensions_expressions_showDefault';
 const UPDATE_INTERVAL = 1000;
 const DEFAULT_EXPRESSIONS = ['anger', 'fear', 'joy', 'love', 'sadness', 'surprise'];
 
@@ -10,21 +10,11 @@ let expressionsList = null;
 let lastCharacter = undefined;
 let lastMessage = null;
 let inApiCall = false;
-let showDefault = false;
-
-function loadSettings() {
-    showDefault = localStorage.getItem(DEFAULT_KEY) == 'true';
-    $('#expressions_show_default').prop('checked', showDefault).trigger('input');
-}
-
-function saveSettings() {
-    localStorage.setItem(DEFAULT_KEY, showDefault.toString());
-}
 
 function onExpressionsShowDefaultInput() {
     const value = $(this).prop('checked');
-    showDefault = value;
-    saveSettings();
+    extension_settings.expressions.showDefault = value;
+    saveSettingsDebounced();
 
     const existingImageSrc = $('img.expression').prop('src');
     if (existingImageSrc !== undefined) {                      //if we have an image in src
@@ -122,6 +112,7 @@ async function moduleWorker() {
 function removeExpression() {
     lastMessage = null;
     $('img.expression').prop('src', '');
+    $('img.expression').removeClass('default');
     $('.expression_settings').hide();
 }
 
@@ -208,12 +199,14 @@ async function setExpression(character, expression, force) {
         //console.log('setting expression from character images folder');
         const imgUrl = `/characters/${character}/${filename}`;
         $('img.expression').prop('src', imgUrl);
+        $('img.expression').removeClass('default');
     } else {
-        if (showDefault) {
+        if (extension_settings.expressions.showDefault) {
             //console.log('no character images, trying default expressions');
             const defImgUrl = `/img/default-expressions/${filename}`;
             //console.log(defImgUrl);
             $('img.expression').prop('src', defImgUrl);
+            $('img.expression').addClass('default');
         }
     }
 }
@@ -257,12 +250,12 @@ function onClickExpressionImage() {
         `;
         $('#extensions_settings').append(html);
         $('#expressions_show_default').on('input', onExpressionsShowDefaultInput);
+        $('#expressions_show_default').prop('checked', extension_settings.expressions.showDefault).trigger('input');
         $(document).on('click', '.expression_list_item', onClickExpressionImage);
         $('.expression_settings').hide();
     }
 
     addExpressionImage();
     addSettings();
-    loadSettings();
     setInterval(moduleWorker, UPDATE_INTERVAL);
 })();
