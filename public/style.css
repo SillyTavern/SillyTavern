@@ -3177,12 +3177,12 @@ body.no-blur #bg1, body.no-blur #bg2 {
 }
 
 body.no-blur .drawer-content,
-/*body.no-blur #chat,*/ /*removed as it clashed with bubbles*/
-body.no-blur .mes, /*applying to .mes block has the same effect as #chat, and works on both default and bubblechat*/
+body:not(.bubblechat).no-blur #chat, /*apply black to whole chat with not in bubblechat*/
+body.bubblechat.no-blur .mes, /*apply black to each mes when in bubblechat*/
 body.no-blur #top-bar,
 body.no-blur #character_popup,
 body.no-blur #world_popup,
 body.no-blur #dialogue_popup,
 body.no-blur #select_chat_popup {
-    background-color: var(--black90a);
+    background-color: var(--black90a) !important;
 }
