@@ -1,4 +1,4 @@
-import { saveSettingsDebounced, changeMainAPI, callPopup, setGenerationProgress } from "../script.js";
+import { saveSettingsDebounced, changeMainAPI, callPopup, setGenerationProgress, main_api } from "../script.js";
 import { delay } from "./utils.js";
 
 export {
@@ -182,8 +182,7 @@ $(document).ready(function () {
         // Trigger status check
         changeMainAPI();
         saveSettingsDebounced();
-
-        if (horde_settings.use_horde) {
+        if (main_api === 'kobold' && horde_settings.use_horde) {
             await getHordeModels();
         }
     });
