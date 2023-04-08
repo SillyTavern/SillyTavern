@@ -175,7 +175,6 @@
                         <div class="online_status_text4">Not connected</div>
                     </div>
                 </div>
-
                 <div id="openai_api" style="display: none;position: relative;">
                     <form action="javascript:void(null);" method="post" enctype="multipart/form-data">
                         <h4>API key </h4>
@@ -197,7 +196,6 @@
                     </div>
                     <br>
                 </div>
-
                 <div id="poe_api">
                     <div class="inline-drawer">
                         <div class="inline-drawer-toggle inline-drawer-header">
@@ -297,6 +295,21 @@
                             </label>
                         </div>
                     </div>
+                    <div id="sheld-width" class="range-block" title="Adjust width of chat display on PCs and other wide screens">
+                        <div class="range-block-title">
+                            <h4>Chat Width (PC)</h4>
+                        </div>
+                        <div class="range-block-range">
+                            <label>
+                                <input name="sheld_width" type="radio" value="0" />
+                                800px
+                            </label>
+                            <label>
+                                <input name="sheld_width" type="radio" value="1" />
+                                1000px
+                            </label>
+                        </div>
+                    </div>
                 </div>
                 <div id="power-user-options-block">
                     <h3>Power User Options</h3>
@@ -321,9 +334,16 @@
 
         <div id="ai-config-button" class="drawer" style="z-index:3002;">
             <div class="drawer-toggle drawer-header">
-                <div class="drawer-icon icon-sliders closedIcon" title="AI Response Configuration"></div>
+                <div id="leftNavDrawerIcon" class="drawer-icon icon-sliders closedIcon" title="AI Response Configuration"></div>
             </div>
-            <div class="drawer-content fillLeft closedDrawer widthFreeExpand">
+            <div id="left-nav-panel" class="drawer-content fillLeft closedDrawer widthFreeExpand">
+                <div class="right_menu_button" id="lm_button_panel_pin_div" title="Locked = Character Management panel will stay open">
+                    <input type="checkbox" id="lm_button_panel_pin">
+                    <label for="lm_button_panel_pin">
+                        <img class="unchecked svg_icon" alt="" src="img/lock-open-solid.svg" />
+                        <img class="checked svg_icon" alt="" src="img/lock-solid.svg" />
+                    </label>
+                </div>
                 <div class="flex-container">
                     <div id="respective-presets-block" class="width100p">
                         <div id="kobold_api-presets">

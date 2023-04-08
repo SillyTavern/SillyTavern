@@ -16,6 +16,11 @@ const chat_styles = {
     BUBBLES: 1,
 }
 
+const sheld_width = {
+    DEFAULT: 0,
+    w1000px: 1,
+}
+
 let power_user = {
     collapse_newlines: false,
     force_pygmalion_formatting: false,
@@ -29,6 +34,7 @@ let power_user = {
     fast_ui_mode: true,
     avatar_style: avatar_styles.ROUND,
     chat_display: chat_styles.DEFAULT,
+    sheld_width: sheld_width.DEFAULT,
 };
 
 const storage_keys = {
@@ -43,7 +49,8 @@ const storage_keys = {
     fast_ui_mode: "TavernAI_fast_ui_mode",
     multigen: "TavernAI_multigen",
     avatar_style: "TavernAI_avatar_style",
-    chat_display: "TavernAI_chat_display"
+    chat_display: "TavernAI_chat_display",
+    sheld_width: "TavernAI_sheld_width"
 };
 
 function collapseNewlines(x) {
@@ -54,6 +61,7 @@ function switchUiMode() {
     const fastUi = localStorage.getItem(storage_keys.fast_ui_mode);
     power_user.fast_ui_mode = fastUi === null ? true : fastUi == "true";
     $("body").toggleClass("no-blur", power_user.fast_ui_mode);
+    $("#send_form").toggleClass("no-blur-sendtextarea", power_user.fast_ui_mode);
 }
 
 function applyAvatarStyle() {
@@ -66,9 +74,21 @@ function applyChatDisplay() {
     $("body").toggleClass("bubblechat", power_user.chat_display === chat_styles.BUBBLES);
 }
 
+function applySheldWidth() {
+    power_user.sheld_width = Number(localStorage.getItem(storage_keys.sheld_width) ?? chat_styles.DEFAULT);
+    $("body").toggleClass("w1000px", power_user.sheld_width === sheld_width.w1000px);
+    let r = document.documentElement;
+    if (power_user.sheld_width === 1) {
+        r.style.setProperty('--sheldWidth', '1000px');
+    } else {
+        r.style.setProperty('--sheldWidth', '800px');
+    }
+}
+
 applyAvatarStyle();
 switchUiMode();
 applyChatDisplay();
+applySheldWidth();
 
 // TODO delete in next release
 function loadFromLocalStorage() {
@@ -97,6 +117,7 @@ function loadPowerUserSettings(settings) {
     power_user.fast_ui_mode = fastUi === null ? true : fastUi == "true";
     power_user.avatar_style = Number(localStorage.getItem(storage_keys.avatar_style) ?? avatar_styles.ROUND);
     power_user.chat_display = Number(localStorage.getItem(storage_keys.chat_display) ?? chat_styles.DEFAULT);
+    power_user.sheld_width = Number(localStorage.getItem(storage_keys.sheld_width) ?? sheld_width.DEFAULT);
 
     $("#force-pygmalion-formatting-checkbox").prop("checked", power_user.force_pygmalion_formatting);
     $("#collapse-newlines-checkbox").prop("checked", power_user.collapse_newlines);
@@ -110,6 +131,7 @@ function loadPowerUserSettings(settings) {
     $("#multigen").prop("checked", power_user.multigen);
     $(`input[name="avatar_style"][value="${power_user.avatar_style}"]`).prop("checked", true);
     $(`input[name="chat_display"][value="${power_user.chat_display}"]`).prop("checked", true);
+    $(`input[name="sheld_width"][value="${power_user.sheld_width}"]`).prop("checked", true);
 }
 
 $(document).ready(() => {
@@ -149,7 +171,7 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
-    $("#custom_chat_separator").on('input', function() {
+    $("#custom_chat_separator").on('input', function () {
         power_user.custom_chat_separator = $(this).val();
         saveSettingsDebounced();
     });
@@ -176,5 +198,11 @@ $(document).ready(() => {
         power_user.chat_display = Number(e.target.value);
         localStorage.setItem(storage_keys.chat_display, power_user.chat_display);
         applyChatDisplay();
+    });
+    $(`input[name="sheld_width"]`).on('input', function (e) {
+        power_user.sheld_width = Number(e.target.value);
+        localStorage.setItem(storage_keys.sheld_width, power_user.sheld_width);
+        console.log("sheld width changing now");
+        applySheldWidth();
     });
 });

@@ -24,9 +24,11 @@ import { oai_settings } from "./openai.js";
 import { poe_settings } from "./poe.js";
 
 var NavToggle = document.getElementById("nav-toggle");
-var PanelPin = document.getElementById("rm_button_panel_pin");
+var RPanelPin = document.getElementById("rm_button_panel_pin");
+var LPanelPin = document.getElementById("lm_button_panel_pin");
 var SelectedCharacterTab = document.getElementById("rm_button_selected_ch");
 var RightNavPanel = document.getElementById("right-nav-panel");
+var LeftNavPanel = document.getElementById("left-nav-panel")
 var AdvancedCharDefsPopup = document.getElementById("character_popup");
 var ConfirmationPopup = document.getElementById("dialogue_popup");
 var AutoConnectCheckbox = document.getElementById("auto-connect-checkbox");
@@ -207,6 +209,7 @@ function RA_checkOnlineStatus() {
         if (online_status !== undefined && online_status !== "no_connection") {
             $("#send_textarea").attr("placeholder", "Type a message..."); //on connect, placeholder tells user to type message
             const formColor = power_user.fast_ui_mode ? "var(--black90a)" : "var(--black60a)";
+            /* console.log("RA-AC -- connected, coloring input as " + formColor); */
             $("#send_form").css("background-color", formColor); //on connect, form BG changes to transprent black
             $("#API-status-top").removeClass("redOverlayGlow");
             connection_made = true;
@@ -294,9 +297,9 @@ $("document").ready(function () {
     $("#api_button").click(function () { setTimeout(RA_checkOnlineStatus, 100); });
 
     //toggle pin class when lock toggle clicked
-    $(PanelPin).on("click", function () {
-        SaveLocal("NavLockOn", $(PanelPin).prop("checked"));
-        if ($(PanelPin).prop("checked") == true) {
+    $(RPanelPin).on("click", function () {
+        SaveLocal("NavLockOn", $(RPanelPin).prop("checked"));
+        if ($(RPanelPin).prop("checked") == true) {
             console.log('adding pin class to right nav');
             $(RightNavPanel).addClass('pinnedOpen');
         } else {
@@ -310,32 +313,80 @@ $("document").ready(function () {
             }
         }
     });
+    $(LPanelPin).on("click", function () {
+        SaveLocal("LNavLockOn", $(LPanelPin).prop("checked"));
+        if ($(LPanelPin).prop("checked") == true) {
+            console.log('adding pin class to Left nav');
+            $(LeftNavPanel).addClass('pinnedOpen');
+        } else {
+            console.log('removing pin class from Left nav');
+            $(LeftNavPanel).removeClass('pinnedOpen');
 
-    // read the state of Nav Lock and apply to rightnav classlist
-    $(PanelPin).prop('checked', LoadLocalBool("NavLockOn"));
+            if ($(LeftNavPanel).hasClass('openDrawer') && $('.openDrawer').length > 1) {
+                $(LeftNavPanel).slideToggle(200, "swing");
+                $(leftNavDrawerIcon).toggleClass('openIcon closedIcon');
+                $(LeftNavPanel).toggleClass('openDrawer closedDrawer');
+            }
+        }
+    });
+
+    // read the state of right Nav Lock and apply to rightnav classlist
+    $(RPanelPin).prop('checked', LoadLocalBool("NavLockOn"));
     if (LoadLocalBool("NavLockOn") == true) {
         //console.log('setting pin class via local var');
         $(RightNavPanel).addClass('pinnedOpen');
     }
-    if ($(PanelPin).prop('checked' == true)) {
+    if ($(RPanelPin).prop('checked' == true)) {
         console.log('setting pin class via checkbox state');
         $(RightNavPanel).addClass('pinnedOpen');
     }
+    // read the state of left Nav Lock and apply to leftnav classlist
+    $(LPanelPin).prop('checked', LoadLocalBool("LNavLockOn"));
+    if (LoadLocalBool("LNavLockOn") == true) {
+        //console.log('setting pin class via local var');
+        $(LeftNavPanel).addClass('pinnedOpen');
+    }
+    if ($(LPanelPin).prop('checked' == true)) {
+        console.log('setting pin class via checkbox state');
+        $(LeftNavPanel).addClass('pinnedOpen');
+    }
 
-    //save state of nav being open or closed
+    //save state of Right nav being open or closed
     $("#rightNavDrawerIcon").on("click", function () {
         if (!$("#rightNavDrawerIcon").hasClass('openIcon')) {
             SaveLocal('NavOpened', 'true');
         } else { SaveLocal('NavOpened', 'false'); }
     });
 
+    //save state of Left nav being open or closed
+    $("#leftNavDrawerIcon").on("click", function () {
+        if (!$("#leftNavDrawerIcon").hasClass('openIcon')) {
+            SaveLocal('LNavOpened', 'true');
+        } else { SaveLocal('LNavOpened', 'false'); }
+    });
+
+    //auto-open R nav if locked and previously open
+
     if (LoadLocalBool("NavLockOn") == true && LoadLocalBool("NavOpened") == true) {
+        console.log("RA -- clicking right nav to open");
         $("#rightNavDrawerIcon").click();
     } else {
-        console.log('didnt see reason to open nav on load: ' +
+        console.log('didnt see reason to open right nav on load: ' +
             LoadLocalBool("NavLockOn")
             + ' nav open pref' +
             LoadLocalBool("NavOpened" == true));
+    }
+
+    //auto-open L nav if locked and previously open
+
+    if (LoadLocalBool("LNavLockOn") == true && LoadLocalBool("LNavOpened") == true) {
+        console.log("RA -- clicking left nav to open");
+        $("#leftNavDrawerIcon").click();
+    } else {
+        console.log('didnt see reason to open left nav on load: ' +
+            LoadLocalBool("LNavLockOn")
+            + ' L-nav open pref' +
+            LoadLocalBool("LNavOpened" == true));
     }
 
     //save AutoConnect and AutoLoadChat prefs

@@ -33,8 +33,10 @@
     --greyCAIbg: rgb(36, 36, 37);
     --ivory: rgb(220, 220, 210);
 
-    --sheldWidth: 1000px;
+    --sheldWidth: 800px;
 }
+
+
 
 * {
     box-sizing: border-box;
@@ -154,7 +156,10 @@ code {
 /*TOPPER margin*/
 
 #top-bar {
-    width: 100vw;
+    width: var(--sheldWidth);
+    margin: 0 auto;
+    left: 0;
+    right: 0;
     display: inline-block;
     height: 40px;
     position: fixed;
@@ -163,6 +168,7 @@ code {
     box-shadow: 0 2px 20px 0 var(--black70a);
     backdrop-filter: blur(10px);
     background-color: var(--black70a);
+    /* border-radius: 0 0 20px 20px; */
     -webkit-backdrop-filter: blur(10px);
     z-index: 3000;
 }
@@ -170,20 +176,20 @@ code {
 #sheld {
     display: grid;
     grid-template-rows: auto min-content;
-    height: calc(100svh - 40px);
+    height: calc(100svh - 42px);
     overflow-x: hidden;
-    max-width: var(--sheldWidth);
+    max-width: 800px;
     position: absolute;
     left: 0;
     right: 0;
-    top: 35px;
+    top: 41px;
     margin: 0 auto;
     z-index: 2;
 
 }
 
 #chat {
-    margin-top: 5px;
+    /* margin-top: 5px; */
     overflow-x: hidden;
     padding-bottom: 0;
     overflow-y: scroll;
@@ -205,7 +211,7 @@ code {
 #form_sheld {
     white-space: nowrap;
     width: 100%;
-    margin: 1px auto 10px auto;
+    margin: 1px auto 0 auto;
     z-index: 3;
 }
 
@@ -420,7 +426,8 @@ code {
 }
 
 #avatars-style .range-block-range,
-#chat-display .range-block-range {
+#chat-display .range-block-range,
+#sheld-width .range-block-range {
     display: flex;
     flex-direction: column;
 }
@@ -651,27 +658,33 @@ input[type="file"] {
 }
 
 
-#rm_button_panel_pin {
+#rm_button_panel_pin,
+#lm_button_panel_pin {
     display: none;
 }
 
-#rm_button_panel_pin:checked+label {
+#rm_button_panel_pin:checked+label,
+#lm_button_panel_pin:checked+label {
     display: block;
 }
 
-#rm_button_panel_pin:checked+label .checked {
+#rm_button_panel_pin:checked+label .checked,
+#lm_button_panel_pin:checked+label .checked {
     display: block;
 }
 
-#rm_button_panel_pin:checked+label .unchecked {
+#rm_button_panel_pin:checked+label .unchecked,
+#lm_button_panel_pin:checked+label .unchecked {
     display: none;
 }
 
-#rm_button_panel_pin:not(:checked)+label .checked {
+#rm_button_panel_pin:not(:checked)+label .checked,
+#lm_button_panel_pin:not(:checked)+label .checked {
     display: none;
 }
 
-#rm_button_panel_pin:not(:checked)+label .unchecked {
+#rm_button_panel_pin:not(:checked)+label .unchecked,
+#lm_button_panel_pin:not(:checked)+label .unchecked {
     display: block;
 }
 
@@ -786,10 +799,6 @@ img[src*="user-slash-solid.svg"] {
     /*margin-right: 4px;*/
     display: block;
 }
-
-#api_button,
-#api_button_novel,
-#api_button_textgenerationwebui {}
 
 #textgenerationwebui_api pre {
     display: inline;
@@ -922,9 +931,9 @@ input[type=search]:focus::-webkit-search-cancel-button {
     margin-top: 5px;
     display: flex;
     flex-wrap: wrap;
-    width: 100%;
-    max-width: 800px;
-    justify-content: center;
+    width: calc(var(--sheldWidth) - 100px);
+    max-width: 100vw;
+    justify-content: space-evenly;
 }
 
 .bg_example {
@@ -1030,9 +1039,6 @@ input[type=search]:focus::-webkit-search-cancel-button {
     position: relative;
 }
 
-#advanced_div {
-    /* width: 100%; */
-}
 
 #rm_characters_block .form_create_bottom_buttons_block {
     justify-content: space-evenly !important;
@@ -1189,12 +1195,12 @@ input[type=search]:focus::-webkit-search-cancel-button {
     background-color: var(--black50a);
     border: 1px solid var(--white30a);
     border-radius: 10px;
-    padding: 5px;
+    padding: 10px;
     width: min-content;
     cursor: pointer;
     margin: 10px 0;
     transition: 0.3s;
-    /* font-size: 15px; */
+    font-size: 15px;
 }
 
 .menu_button:hover {
@@ -1335,7 +1341,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     background-color: rgba(0, 0, 0, 0.3);
     backdrop-filter: blur(50px);
     -webkit-backdrop-filter: blur(50px);
-    max-width: 800px;
+    max-width: var(--sheldWidth);
     height: calc(100% - 40px);
     position: absolute;
     margin-left: auto;
@@ -1581,7 +1587,7 @@ input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin) {
 }
 
 /* the checkbox starts with a size 0 background of a checkmark */
-input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin)::after {
+input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button_panel_pin)::after {
     content: '';
     color: var(--white100);
     position: absolute;
@@ -1602,14 +1608,12 @@ input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin)::after {
 }
 
 /* when the checkbox is checked, the background image is grown to normal size to fill the background of the 'checkbox'*/
-input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):checked::after {
+input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button_panel_pin):checked::after {
     -webkit-transform: scale(1);
     transform: scale(1);
 }
 
 /*---------------------------------------------------------------------------------------------------------*/
-
-#title_api {}
 
 .option_select_right_menu {
     width: 284px;
@@ -1924,8 +1928,8 @@ input[type="range"]::-webkit-slider-thumb {
     -webkit-backdrop-filter: blur(30px);
     grid-template-rows: 50px 100px 100px 100px auto;
     grid-gap: 10px;
-    max-width: 800px;
-    height: calc(100vh - 50px);
+    max-width: var(--sheldWidth);
+    height: calc(100vh - 40px);
     position: absolute;
     z-index: 3002;
     margin-left: auto;
@@ -2019,9 +2023,9 @@ input[type="range"]::-webkit-slider-thumb {
 #select_chat_popup {
     display: grid;
     grid-template-rows: auto auto;
-    max-width: 800px;
+    max-width: var(--sheldWidth);
     height: min-content;
-    max-height: calc(100vh - 55px);
+    max-height: calc(100vh - 40px);
     min-height: 100px;
     position: absolute;
     z-index: 2066;
@@ -2590,9 +2594,9 @@ a {
 #right-nav-panel {
     width: calc((100vw - var(--sheldWidth) - 2px) /2);
     /* min-width: 450px; */
-    height: calc(100vh - 55px);
+    height: 100vh;
     position: fixed;
-    top: 40px;
+    top: 0;
     margin: 0;
     right: 0;
     left: auto;
@@ -2653,14 +2657,6 @@ a {
     line-height: 30px;
     font-size: 2em;
 }
-
-/* this is what causes the panel movement */
-#nav-toggle:checked~#right-nav-panel {
-    /*     right: 0;
-    box-shadow: -5px 0 20px 0 var(--black70a); */
-    /*overflow-y: auto;*/
-}
-
 
 #right-nav-panel>div:not(#right-nav-panel-tabs) {
     height: calc(100% - 40px);
@@ -2774,7 +2770,7 @@ label[for="extensions_autoconnect"] {
     margin: 0 auto;
     padding-top: 5px;
     height: 40px;
-    max-width: 800px;
+    max-width: var(--sheldWidth);
     color: white;
     justify-content: center;
     display: grid;
@@ -2915,26 +2911,27 @@ label[for="extensions_autoconnect"] {
     -webkit-backdrop-filter: blur(20px);
 }
 
-.fillRight, .fillLeft {
+.fillRight,
+.fillLeft {
     min-width: unset;
 }
 
-.fillLeft{
+.fillLeft {
     max-width: calc((100vw - var(--sheldWidth) - 2px) /2);
-    max-height: calc(100vh - 55px);
-    height: calc(100vh - 55px);
+    height: 100vh;
+    max-height: 100vh;
     position: fixed;
-    top: 40px;
+    top: 0;
     margin: 0;
     left: 0;
     right: auto;
-    padding: 0 10px;
+    padding: 10px 10px 0 10px;
     border-radius: 0 0 20px 0;
     box-shadow: none;
 }
 
 .width100p {
-    width:100%;
+    width: 100%;
 }
 
 .drawer-content .text_pole {
@@ -3085,7 +3082,7 @@ label[for="extensions_autoconnect"] {
     #character_popup,
     #world_popup {
         /*margin around the sides, and a larger one on bottom to avoid iOS Home bar*/
-        height: calc(100svh - 55px);
+        height: calc(100svh - 40px);
         width: calc(100vw - 10px);
         margin: 0 auto;
         margin-left: 5px;
@@ -3194,7 +3191,7 @@ label[for="extensions_autoconnect"] {
 /*bubble chat style*/
 
 body.bubblechat #chat {
-    margin-top: 5px;
+    /* margin-top: 5px; */
     overflow-x: hidden;
     padding-bottom: 0;
     overflow-y: scroll;
@@ -3204,7 +3201,7 @@ body.bubblechat #chat {
     scrollbar-width: thin;
     transition: all 1s ease-in-out;
     flex-direction: column;
-    border-radius: 20px;
+    /* border-radius: 20px; */
     z-index: 3;
     border: none;
     backdrop-filter: unset;
@@ -3249,10 +3246,18 @@ body.bubblechat ::-webkit-scrollbar-thumb {
     border-radius: 5px;
 }
 
+body.w1000px #sheld {
+    max-width: 1000px !important;
+}
+
 /*FastUI blur removal*/
 
 body.no-blur * {
     backdrop-filter: unset !important;
+}
+
+#send_form.no-blur-sendtextarea {
+    background-color: var(--black90a) !important;
 }
 
 body.no-blur #bg1,
