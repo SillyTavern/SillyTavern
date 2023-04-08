@@ -2381,7 +2381,7 @@ input[type="range"]::-webkit-slider-thumb {
     position: sticky;
     bottom: 10px;
     margin: 10px;
-    opacity: 0.6;
+    opacity: 0.85;
     text-shadow: 2px 2px 2px var(--black60a);
 }
 

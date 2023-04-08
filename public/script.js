@@ -255,7 +255,7 @@ const system_messages = {
         is_user: false,
         is_system: true,
         is_name: true,
-        mes: "No one hears you. **Hint:** add more members to the group!",
+        mes: "No one hears you. <b>Hint&#58;</b> add more members to the group!",
     },
     generic: {
         name: systemUserName,
@@ -821,7 +821,6 @@ function messageFormating(mes, ch_name, isSystem, forceAvatar) {
     if (this_chid === undefined && !selected_group) {
         mes = mes
             .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
-            .replace(/\*(.+?)\*/g, "<i>$1</i>")
             .replace(/\n/g, "<br/>");
     } else if (!isSystem) {
         mes = converter.makeHtml(mes);
