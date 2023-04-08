@@ -2404,6 +2404,7 @@ async function getSettings(type) {
                             .attr("src", "User Avatars/" + user_avatar);
                     }
                 });
+                highlightSelectedAvatar();
 
                 //Load the API server URL from settings
                 api_server = settings.api_server;
