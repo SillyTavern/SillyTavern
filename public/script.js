@@ -182,6 +182,9 @@ let is_mes_reload_avatar = false;
 let optionsPopper = Popper.createPopper(document.getElementById('send_form'), document.getElementById('options'), {
     placement: 'top-start'
 });
+let exportPopper = Popper.createPopper(document.getElementById('export_button'), document.getElementById('export_format_popup'), {
+    placement: 'left',
+});
 let dialogueResolve = null;
 let chat_metadata = {};
 
@@ -4482,12 +4485,41 @@ $(document).ready(function () {
             },
         });
     });
-    $("#export_button").click(function () {
-        var link = document.createElement("a");
-        link.href = "characters/" + characters[this_chid].avatar;
-        link.download = characters[this_chid].avatar;
-        document.body.appendChild(link);
-        link.click();
+    $("#export_button").click(function (e) {
+        $('#export_format_popup').toggle();
+        exportPopper.update();
+    });
+    $(document).on('click', '.export_format', async function () {
+        const format = $(this).data('format');
+        
+        if (!format) {
+            return;
+        }
+
+        const body = { format, avatar_url: characters[this_chid].avatar };
+
+        const response = await fetch('/exportcharacter', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': token,
+            },
+            body: JSON.stringify(body),
+        });
+
+        if (response.ok) {
+            const filename = characters[this_chid].avatar.replace('.png', `.${format}`);
+            const blob = await response.blob();
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.setAttribute("download", filename);
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+
+        $('#export_format_popup').hide();
     });
     //**************************CHAT IMPORT EXPORT*************************//
     $("#chat_import_button").click(function () {
@@ -4589,6 +4621,10 @@ $(document).ready(function () {
     $("html").on('touchstart mousedown', function (e) {
         var clickTarget = $(e.target);
 
+        if ($('#export_format_popup').is(':visible') && clickTarget.closest('#export_button').length == 0 && clickTarget.closest('#export_format_popup').length == 0) {
+            $('#export_format_popup').hide();
+        }
+
         const forbiddenTargets = ['#character_cross', '#avatar-and-name-block', '#shadow_popup', '#world_popup'];
         for (const id of forbiddenTargets) {
             if (clickTarget.closest(id).length > 0) {
@@ -4607,7 +4643,6 @@ $(document).ready(function () {
 
                 }
             }
-
         }
     });
 
