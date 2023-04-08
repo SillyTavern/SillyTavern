@@ -1141,6 +1141,10 @@ input[type=search]:focus::-webkit-search-cancel-button {
     cursor: pointer;
 }
 
+#dialogue_popup_input {
+    width: 100%;
+}
+
 #dialogue_popup_cancel {
     display: inline-block;
     margin-left: 20px;
