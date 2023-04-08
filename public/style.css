@@ -3152,7 +3152,7 @@ label[for="extensions_autoconnect"] {
         width: calc(100vw - 10px);
         max-width: calc(100vw - 10px);
         left: 5px !important;
-        overflow-y: hidden;
+        overflow-y: auto;
         border-left: 1px solid var(--grey30);
         border-right: 1px solid var(--grey30);
         border-bottom: 1px solid var(--grey30);
