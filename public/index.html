@@ -52,285 +52,6 @@
     </div>
     <div id="top-settings-holder">
         <!-- background selection menu -->
-        <div id="logo_block" class="drawer" style="z-index:3001;" title="Change Background Image">
-            <div id="site_logo" class="drawer-toggle drawer-header">
-                <div class="drawer-icon icon-panorama closedIcon"></div>
-            </div>
-            <div class="drawer-content closedDrawer">
-                <div class="flex-container">
-                    <div id="bg_menu_content">
-                        <form id="form_bg_download" class="bg_example no-border no-shadow" action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                            <label class="input-file">
-                                <input type="file" id="add_bg_button" name="avatar" accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp">
-                                <div class="bg_example no-border no-shadow add_bg_but" style="background-image: url('/img/addbg3.png');"></div>
-                            </label>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="sys-settings-button" class="drawer" style="z-index:3001;">
-            <div class="drawer-toggle drawer-header">
-                <div id="API-status-top" class="drawer-icon icon-api closedIcon" title="API Connections"></div>
-            </div>
-            <div id="rm_api_block" class="drawer-content closedDrawer">
-                <div id="main-API-selector-block">
-                    <h3 id="title_api">API</h3>
-                    <select id="main_api">
-                        <option value="kobold">KoboldAI</option>
-                        <option value="textgenerationwebui">Text generation web UI</option>
-                        <option value="novel">NovelAI</option>
-                        <option value="openai">OpenAI</option>
-                        <option value="poe">Poe</option>
-                    </select>
-                </div>
-                <div id="kobold_api" style="position: relative;"> <!-- shows the kobold settings -->
-                    <form action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                        <label for="use_horde" class="checkbox_label">
-                            <input id="use_horde" type="checkbox" />
-                            Use Horde.
-                            <a target="_blank" href="https://horde.koboldai.net/">Learn more</a>
-                        </label>
-                        <div id="kobold_api_block">
-                            <h4>API url</h4>
-                            <h5>Example: http://127.0.0.1:5000/api </h5>
-                            <input id="api_url_text" name="api_url" class="text_pole" maxlength="500" value="" autocomplete="off">
-                            <input id="api_button" class="menu_button" type="submit" value="Connect">
-                            <img id="api_loading" src="img/load.svg">
-                        </div>
-                        <div id="kobold_horde_block">
-
-                            <label for="horde_auto_adjust" class="checkbox_label">
-                                <input id="horde_auto_adjust" type="checkbox" />
-                                Adjust generation to worker capabilities
-                            </label>
-                            <h4>API key</h4>
-                            <h5>Get it here: <a target="_blank" href="https://horde.koboldai.net/register">Register</a>
-                            </h5>
-                            <input id="horde_api_key" name="horde_api_key" class="text_pole" maxlength="500" value="0000000000" autocomplete="off">
-                            <h4 class="horde_model_title">
-                                Model
-                                <div id="horde_refresh" title="Refresh models" class="right_menu_button">
-                                    <img class="svg_icon" src="img/repeat-solid.svg" />
-                                </div>
-                            </h4>
-                            <select id="horde_model">
-                                <option>-- Not connected to Horde --</option>
-                            </select>
-                        </div>
-                        <div id="online_status2">
-                            <div id="online_status_indicator2"></div>
-                            <div id="online_status_text2">Not connected</div>
-                        </div>
-                    </form>
-                </div>
-                <div id="novel_api" style="display: none;position: relative;"> <!-- shows the novel settings -->
-                    <form action="javascript:void(null);" method="post" enctype="multipart/form-data">
-
-                        <h4>API key</h4>
-                        <h5>Where to get
-                            <a href="/notes/6" class="notes-link" target="_blank">
-                                <span class="note-link-span">?</span>
-                            </a>
-                        </h5>
-                        <input id="api_key_novel" name="api_key_novel" class="text_pole" maxlength="500" size="35" value="" autocomplete="off">
-                        <input id="api_button_novel" class="menu_button" type="submit" value="Connect">
-                        <img id="api_loading_novel" src="img/load.svg">
-                    </form>
-                    <div id="online_status3">
-                        <div id="online_status_indicator3"></div>
-                        <div id="online_status_text3">No connection...</div>
-                    </div>
-                </div>
-                <div id="textgenerationwebui_api" style="display: none;position: relative;">
-                    <div class="oobabooga_logo">
-                        <a href="https://github.com/oobabooga/text-generation-webui" target="_blank">
-                            oobabooga/text-generation-webui
-                        </a>
-                    </div>
-                    <span>
-                        Make sure you run it:
-                        <ul>
-                            <li>
-                                with
-                                <pre>--no-stream</pre> option
-                            </li>
-                            <li>
-                                in notebook mode (not
-                                <pre>--cai-chat</pre> or
-                                <pre>--chat</pre>)
-                            </li>
-                        </ul>
-                    </span>
-                    <form action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                        <h4>API url</h4>
-                        <h5>Example: http://127.0.0.1:7860/ </h5>
-                        <input id="textgenerationwebui_api_url_text" name="textgenerationwebui_api_url" class="text_pole" maxlength="500" value="" autocomplete="off">
-                        <input id="api_button_textgenerationwebui" class="menu_button" type="submit" value="Connect">
-                        <img id="api_loading_textgenerationwebui" src="img/load.svg">
-                    </form>
-                    <div class="online_status4">
-                        <div class="online_status_indicator4"></div>
-                        <div class="online_status_text4">Not connected</div>
-                    </div>
-                </div>
-                <div id="openai_api" style="display: none;position: relative;">
-                    <form action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                        <h4>API key </h4>
-                        <h5>Where to get
-                            <a href="/notes/oai_api_key" class="notes-link" target="_blank">
-                                <span class="note-link-span">?</span>
-                            </a>
-                        </h5>
-                        <input id="api_key_openai" name="api_key_openai" class="text_pole" maxlength="500" value="" autocomplete="off">
-                        <input id="api_button_openai" class="menu_button" type="submit" value="Connect">
-                        <img id="api_loading_openai" src="img/load.svg">
-                    </form>
-                    <div class="online_status4">
-                        <div class="online_status_indicator4"></div>
-                        <div class="online_status_text4">No connection...</div>
-                    </div>
-                    <div>
-                        <a href="https://platform.openai.com/account/usage" target="_blank">View API Usage Metrics</a>
-                    </div>
-                    <br>
-                </div>
-                <div id="poe_api">
-                    <div class="inline-drawer">
-                        <div class="inline-drawer-toggle inline-drawer-header">
-                            <b>Instructions:</b>
-                            <div class="inline-drawer-icon down"></div>
-                        </div>
-                        <div class="inline-drawer-content">
-                            <ol>
-                                <li>Login to <a href="https://poe.com" target="_blank">poe.com</a></li>
-                                <li>Open browser DevTools (F12) and navigate to "Application" tab</li>
-                                <li>Find a <tt>p-b</tt> cookie for poe.com domain and copy its value</li>
-                                <li>Paste cookie value to the box below and click "Connect"</li>
-                                <li>Select a character and start chatting</li>
-                            </ol>
-                        </div>
-                    </div>
-                    <div class="range-block">
-                        <div class="range-block-title">
-                            poe.com access token (p-b cookie value)
-                        </div>
-                        <div class="range-block-range">
-                            <input id="poe_token" class="text_pole" type="text" placeholder="Example: nTLG2bNvbOi8qxc-DbaSlw%3D%3D" />
-                        </div>
-                    </div>
-
-                    <input id="poe_connect" class="menu_button" type="button" value="Connect" />
-                    <img id="api_loading_poe" src="img/load.svg">
-
-                    <div class="range-block">
-                        <div class="range-block-title">
-                            <h4>Bot</h4>
-                        </div>
-                        <div class="range-block-range">
-                            <select id="poe_bots">
-                                <option>-- Connect to the API --</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="online_status4">
-                        <div class="online_status_indicator4"></div>
-                        <div class="online_status_text4">No connection...</div>
-                    </div>
-                </div>
-
-                <label for="auto-connect-checkbox" class="checkbox_label"><input id="auto-connect-checkbox" type="checkbox" />
-                    Auto-connect to Last Server
-                </label>
-            </div>
-        </div>
-
-        <div id="user-settings-button" class="drawer" style="z-index:3004;">
-            <div class="drawer-toggle">
-                <div class="drawer-icon icon-user closedIcon" title="User Settings"></div>
-            </div>
-            <div id="user-settings-block" class="drawer-content closedDrawer">
-                <h3>User Settings</h3>
-                <h4>Your Avatar</h4>
-                <div id="user_avatar_block">
-                    <div class="avatar_upload">+</div>
-                </div>
-                <form id="form_upload_avatar" action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                    <input type="file" id="avatar_upload_file" accept="image/*" name="avatar">
-                </form>
-                <form id='form_change_name' action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                    <h4>Name</h4>
-                    <input id="your_name" name="your_name" class="text_pole" maxlength="35" value="" autocomplete="off"><br>
-                    <input id="your_name_button" class="menu_button" type="submit" title="Click to set a new User Name (reloads page)" value="Change Name">
-                </form>
-                <div class="ui-settings">
-                    <div id="avatars-style" class="range-block">
-                        <div class="range-block-title">
-                            <h4>Avatars Style</h4>
-                        </div>
-                        <div class="range-block-range">
-                            <label>
-                                <input name="avatar_style" type="radio" value="0" />
-                                Round
-                            </label>
-                            <label>
-                                <input name="avatar_style" type="radio" value="1" />
-                                Rectangular
-                            </label>
-                        </div>
-                    </div>
-                    <div id="chat-display" class="range-block" title="NOTE: Using bubble chat with Blur Effect on can cause lag on browsers with no Hardware Acceleration.">
-                        <div class="range-block-title">
-                            <h4>Chat Style</h4>
-                        </div>
-                        <div class="range-block-range">
-                            <label>
-                                <input name="chat_display" type="radio" value="0" />
-                                Default
-                            </label>
-                            <label>
-                                <input name="chat_display" type="radio" value="1" />
-                                Bubbles
-                            </label>
-                        </div>
-                    </div>
-                    <div id="sheld-width" class="range-block" title="Adjust width of chat display on PCs and other wide screens">
-                        <div class="range-block-title">
-                            <h4>Chat Width (PC)</h4>
-                        </div>
-                        <div class="range-block-range">
-                            <label>
-                                <input name="sheld_width" type="radio" value="0" />
-                                800px
-                            </label>
-                            <label>
-                                <input name="sheld_width" type="radio" value="1" />
-                                1000px
-                            </label>
-                        </div>
-                    </div>
-                </div>
-                <div id="power-user-options-block">
-                    <h3>Power User Options</h3>
-                    <div id="power-user-option-checkboxes">
-
-                        <label for="auto-load-chat-checkbox"><input id="auto-load-chat-checkbox" type="checkbox" />
-                            Auto-load Last Chat
-                        </label>
-
-                        <label for="fast_ui_mode" class="checkbox_label" title="Blur can cause browser lag, especially in Bubble Chat mode. To fix: Turn on your browser's Hardware Acceleration, and restart your browser or simply disable the blur effect with this toggle.">
-                            <input id="fast_ui_mode" type="checkbox" />
-                            No Blur Effect
-                        </label>
-
-                        <label for="swipes-checkbox"><input id="swipes-checkbox" type="checkbox" />
-                            Swipes
-                        </label>
-                    </div>
-                </div>
-            </div>
-        </div>
 
         <div id="ai-config-button" class="drawer" style="z-index:3002;">
             <div class="drawer-toggle drawer-header">
@@ -974,58 +695,183 @@
             </div>
         </div>
 
-        <div id="WI-SP-button" class="drawer" style="z-index:3003;">
+
+
+        <div id="sys-settings-button" class="drawer" style="z-index:3001;">
             <div class="drawer-toggle drawer-header">
-                <div class="drawer-icon icon-globe closedIcon " title="World Info & Soft Prompts"></div>
+                <div id="API-status-top" class="drawer-icon icon-api closedIcon" title="API Connections"></div>
             </div>
-            <div class="drawer-content closedDrawer">
-                <div id="wi-holder">
-                    <div id="world_info_block">
-                        <h3>World Info</h3>
-                        <div id="world_info_buttons">
-                            <div id="world_create_button" class="right_menu_button">
-                                <h4>+Create</h4>
-                            </div>
-                            <div id="world_import_button" class="right_menu_button">
-                                <h4>+Import</h4>
-                            </div>
+            <div id="rm_api_block" class="drawer-content closedDrawer">
+                <div id="main-API-selector-block">
+                    <h3 id="title_api">API</h3>
+                    <select id="main_api">
+                        <option value="kobold">KoboldAI</option>
+                        <option value="textgenerationwebui">Text generation web UI</option>
+                        <option value="novel">NovelAI</option>
+                        <option value="openai">OpenAI</option>
+                        <option value="poe">Poe</option>
+                    </select>
+                </div>
+                <div id="kobold_api" style="position: relative;"> <!-- shows the kobold settings -->
+                    <form action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                        <label for="use_horde" class="checkbox_label">
+                            <input id="use_horde" type="checkbox" />
+                            Use Horde.
+                            <a target="_blank" href="https://horde.koboldai.net/">Learn more</a>
+                        </label>
+                        <div id="kobold_api_block">
+                            <h4>API url</h4>
+                            <h5>Example: http://127.0.0.1:5000/api </h5>
+                            <input id="api_url_text" name="api_url" class="text_pole" maxlength="500" value="" autocomplete="off">
+                            <input id="api_button" class="menu_button" type="submit" value="Connect">
+                            <img id="api_loading" src="img/load.svg">
+                        </div>
+                        <div id="kobold_horde_block">
+
+                            <label for="horde_auto_adjust" class="checkbox_label">
+                                <input id="horde_auto_adjust" type="checkbox" />
+                                Adjust generation to worker capabilities
+                            </label>
+                            <h4>API key</h4>
+                            <h5>Get it here: <a target="_blank" href="https://horde.koboldai.net/register">Register</a>
+                            </h5>
+                            <input id="horde_api_key" name="horde_api_key" class="text_pole" maxlength="500" value="0000000000" autocomplete="off">
+                            <h4 class="horde_model_title">
+                                Model
+                                <div id="horde_refresh" title="Refresh models" class="right_menu_button">
+                                    <img class="svg_icon" src="img/repeat-solid.svg" />
+                                </div>
+                            </h4>
+                            <select id="horde_model">
+                                <option>-- Not connected to Horde --</option>
+                            </select>
+                        </div>
+                        <div id="online_status2">
+                            <div id="online_status_indicator2"></div>
+                            <div id="online_status_text2">Not connected</div>
+                        </div>
+                    </form>
+                </div>
+                <div id="novel_api" style="display: none;position: relative;"> <!-- shows the novel settings -->
+                    <form action="javascript:void(null);" method="post" enctype="multipart/form-data">
+
+                        <h4>API key</h4>
+                        <h5>Where to get
+                            <a href="/notes/6" class="notes-link" target="_blank">
+                                <span class="note-link-span">?</span>
+                            </a>
+                        </h5>
+                        <input id="api_key_novel" name="api_key_novel" class="text_pole" maxlength="500" size="35" value="" autocomplete="off">
+                        <input id="api_button_novel" class="menu_button" type="submit" value="Connect">
+                        <img id="api_loading_novel" src="img/load.svg">
+                    </form>
+                    <div id="online_status3">
+                        <div id="online_status_indicator3"></div>
+                        <div id="online_status_text3">No connection...</div>
+                    </div>
+                </div>
+                <div id="textgenerationwebui_api" style="display: none;position: relative;">
+                    <div class="oobabooga_logo">
+                        <a href="https://github.com/oobabooga/text-generation-webui" target="_blank">
+                            oobabooga/text-generation-webui
+                        </a>
+                    </div>
+                    <span>
+                        Make sure you run it:
+                        <ul>
+                            <li>
+                                with
+                                <pre>--no-stream</pre> option
+                            </li>
+                            <li>
+                                in notebook mode (not
+                                <pre>--cai-chat</pre> or
+                                <pre>--chat</pre>)
+                            </li>
+                        </ul>
+                    </span>
+                    <form action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                        <h4>API url</h4>
+                        <h5>Example: http://127.0.0.1:7860/ </h5>
+                        <input id="textgenerationwebui_api_url_text" name="textgenerationwebui_api_url" class="text_pole" maxlength="500" value="" autocomplete="off">
+                        <input id="api_button_textgenerationwebui" class="menu_button" type="submit" value="Connect">
+                        <img id="api_loading_textgenerationwebui" src="img/load.svg">
+                    </form>
+                    <div class="online_status4">
+                        <div class="online_status_indicator4"></div>
+                        <div class="online_status_text4">Not connected</div>
+                    </div>
+                </div>
+                <div id="openai_api" style="display: none;position: relative;">
+                    <form action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                        <h4>API key </h4>
+                        <h5>Where to get
+                            <a href="/notes/oai_api_key" class="notes-link" target="_blank">
+                                <span class="note-link-span">?</span>
+                            </a>
+                        </h5>
+                        <input id="api_key_openai" name="api_key_openai" class="text_pole" maxlength="500" value="" autocomplete="off">
+                        <input id="api_button_openai" class="menu_button" type="submit" value="Connect">
+                        <img id="api_loading_openai" src="img/load.svg">
+                    </form>
+                    <div class="online_status4">
+                        <div class="online_status_indicator4"></div>
+                        <div class="online_status_text4">No connection...</div>
+                    </div>
+                    <div>
+                        <a href="https://platform.openai.com/account/usage" target="_blank">View API Usage Metrics</a>
+                    </div>
+                    <br>
+                </div>
+                <div id="poe_api">
+                    <div class="inline-drawer">
+                        <div class="inline-drawer-toggle inline-drawer-header">
+                            <b>Instructions:</b>
+                            <div class="inline-drawer-icon down"></div>
+                        </div>
+                        <div class="inline-drawer-content">
+                            <ol>
+                                <li>Login to <a href="https://poe.com" target="_blank">poe.com</a></li>
+                                <li>Open browser DevTools (F12) and navigate to "Application" tab</li>
+                                <li>Find a <tt>p-b</tt> cookie for poe.com domain and copy its value</li>
+                                <li>Paste cookie value to the box below and click "Connect"</li>
+                                <li>Select a character and start chatting</li>
+                            </ol>
                         </div>
                     </div>
-                    <h4>How to use <a href="/notes/13" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h4>
-                    <div id="rm_world_import" class="right_menu" style="display: none;">
-                        <form id="form_world_import" action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                            <input type="file" id="world_import_file" accept=".json" name="avatar">
-                        </form>
+                    <div class="range-block">
+                        <div class="range-block-title">
+                            poe.com access token (p-b cookie value)
+                        </div>
+                        <div class="range-block-range">
+                            <input id="poe_token" class="text_pole" type="text" placeholder="Example: nTLG2bNvbOi8qxc-DbaSlw%3D%3D" />
+                        </div>
                     </div>
-                    <select id="world_info">
-                        <option value="None">None</option>
-                    </select>
-                    <input id="world_info_edit_button" class="menu_button" type="submit" value="Details">
-                    <div id="world_info_depth_block">
-                        <h4>
-                            Scan Depth <a href="/notes/13_1" class="notes-link" target="_blank"><span class="note-link-span">?</span></a>
-                        </h4>
-                        <span id="world_info_depth_counter">depth</span>
-                        <input type="range" id="world_info_depth" name="volume" min="1" max="10" step="1">
+
+                    <input id="poe_connect" class="menu_button" type="button" value="Connect" />
+                    <img id="api_loading_poe" src="img/load.svg">
+
+                    <div class="range-block">
+                        <div class="range-block-title">
+                            <h4>Bot</h4>
+                        </div>
+                        <div class="range-block-range">
+                            <select id="poe_bots">
+                                <option>-- Connect to the API --</option>
+                            </select>
+                        </div>
                     </div>
-                    <div id="world_info_budget_block">
-                        <h4>
-                            Token Budget <a href="/notes/13_2" class="notes-link" target="_blank"><span class="note-link-span">?</span></a>
-                        </h4>
-                        <span id="world_info_budget_counter">budget</span>
-                        <input type="range" id="world_info_budget" name="volume" min="32" max="2048" step="16">
+                    <div class="online_status4">
+                        <div class="online_status_indicator4"></div>
+                        <div class="online_status_text4">No connection...</div>
                     </div>
                 </div>
-                <div id="softprompt_block">
-                    <h4>Soft Prompt</h4>
-                    <h5>About soft prompts <a href="/notes/14" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
-                    <select id="softprompt">
-                        <option value="">None</option>
-                    </select>
-                </div>
+
+                <label for="auto-connect-checkbox" class="checkbox_label"><input id="auto-connect-checkbox" type="checkbox" />
+                    Auto-connect to Last Server
+                </label>
             </div>
         </div>
-
         <div id="advanced-formatting-button" class="drawer" style="z-index:3005;">
             <div class="drawer-toggle">
                 <div class="drawer-icon icon-formatting closedIcon" title="AI Reponse Formatting"></div>
@@ -1101,6 +947,165 @@
                         <label for="style_anchor"><input id="style_anchor" type="checkbox" />
                             Style Anchor
                         </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+
+
+        <div id="WI-SP-button" class="drawer" style="z-index:3003;">
+            <div class="drawer-toggle drawer-header">
+                <div class="drawer-icon icon-globe closedIcon " title="World Info & Soft Prompts"></div>
+            </div>
+            <div class="drawer-content closedDrawer">
+                <div id="wi-holder">
+                    <div id="world_info_block">
+                        <h3>World Info</h3>
+                        <div id="world_info_buttons">
+                            <div id="world_create_button" class="right_menu_button">
+                                <h4>+Create</h4>
+                            </div>
+                            <div id="world_import_button" class="right_menu_button">
+                                <h4>+Import</h4>
+                            </div>
+                        </div>
+                    </div>
+                    <h4>How to use <a href="/notes/13" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h4>
+                    <div id="rm_world_import" class="right_menu" style="display: none;">
+                        <form id="form_world_import" action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                            <input type="file" id="world_import_file" accept=".json" name="avatar">
+                        </form>
+                    </div>
+                    <select id="world_info">
+                        <option value="None">None</option>
+                    </select>
+                    <input id="world_info_edit_button" class="menu_button" type="submit" value="Details">
+                    <div id="world_info_depth_block">
+                        <h4>
+                            Scan Depth <a href="/notes/13_1" class="notes-link" target="_blank"><span class="note-link-span">?</span></a>
+                        </h4>
+                        <span id="world_info_depth_counter">depth</span>
+                        <input type="range" id="world_info_depth" name="volume" min="1" max="10" step="1">
+                    </div>
+                    <div id="world_info_budget_block">
+                        <h4>
+                            Token Budget <a href="/notes/13_2" class="notes-link" target="_blank"><span class="note-link-span">?</span></a>
+                        </h4>
+                        <span id="world_info_budget_counter">budget</span>
+                        <input type="range" id="world_info_budget" name="volume" min="32" max="2048" step="16">
+                    </div>
+                </div>
+                <div id="softprompt_block">
+                    <h4>Soft Prompt</h4>
+                    <h5>About soft prompts <a href="/notes/14" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
+                    <select id="softprompt">
+                        <option value="">None</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+
+        <div id="user-settings-button" class="drawer" style="z-index:3004;">
+            <div class="drawer-toggle">
+                <div class="drawer-icon icon-user closedIcon" title="User Settings"></div>
+            </div>
+            <div id="user-settings-block" class="drawer-content closedDrawer">
+                <h3>User Settings</h3>
+                <h4>Your Avatar</h4>
+                <div id="user_avatar_block">
+                    <div class="avatar_upload">+</div>
+                </div>
+                <form id="form_upload_avatar" action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                    <input type="file" id="avatar_upload_file" accept="image/*" name="avatar">
+                </form>
+                <form id='form_change_name' action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                    <h4>Name</h4>
+                    <input id="your_name" name="your_name" class="text_pole" maxlength="35" value="" autocomplete="off"><br>
+                    <input id="your_name_button" class="menu_button" type="submit" title="Click to set a new User Name (reloads page)" value="Change Name">
+                </form>
+                <div class="ui-settings">
+                    <div id="avatars-style" class="range-block">
+                        <div class="range-block-title">
+                            <h4>Avatars Style</h4>
+                        </div>
+                        <div class="range-block-range">
+                            <label>
+                                <input name="avatar_style" type="radio" value="0" />
+                                Round
+                            </label>
+                            <label>
+                                <input name="avatar_style" type="radio" value="1" />
+                                Rectangular
+                            </label>
+                        </div>
+                    </div>
+                    <div id="chat-display" class="range-block" title="NOTE: Using bubble chat with Blur Effect on can cause lag on browsers with no Hardware Acceleration.">
+                        <div class="range-block-title">
+                            <h4>Chat Style</h4>
+                        </div>
+                        <div class="range-block-range">
+                            <label>
+                                <input name="chat_display" type="radio" value="0" />
+                                Default
+                            </label>
+                            <label>
+                                <input name="chat_display" type="radio" value="1" />
+                                Bubbles
+                            </label>
+                        </div>
+                    </div>
+                    <div id="sheld-width" class="range-block" title="Adjust width of chat display on PCs and other wide screens">
+                        <div class="range-block-title">
+                            <h4>Chat Width (PC)</h4>
+                        </div>
+                        <div class="range-block-range">
+                            <label>
+                                <input name="sheld_width" type="radio" value="0" />
+                                800px
+                            </label>
+                            <label>
+                                <input name="sheld_width" type="radio" value="1" />
+                                1000px
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div id="power-user-options-block">
+                    <h3>Power User Options</h3>
+                    <div id="power-user-option-checkboxes">
+
+                        <label for="auto-load-chat-checkbox"><input id="auto-load-chat-checkbox" type="checkbox" />
+                            Auto-load Last Chat
+                        </label>
+
+                        <label for="fast_ui_mode" class="checkbox_label" title="Blur can cause browser lag, especially in Bubble Chat mode. To fix: Turn on your browser's Hardware Acceleration, and restart your browser or simply disable the blur effect with this toggle.">
+                            <input id="fast_ui_mode" type="checkbox" />
+                            No Blur Effect
+                        </label>
+
+                        <label for="swipes-checkbox"><input id="swipes-checkbox" type="checkbox" />
+                            Swipes
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="logo_block" class="drawer" style="z-index:3001;" title="Change Background Image">
+            <div id="site_logo" class="drawer-toggle drawer-header">
+                <div class="drawer-icon icon-panorama closedIcon"></div>
+            </div>
+            <div class="drawer-content closedDrawer">
+                <div class="flex-container">
+                    <div id="bg_menu_content">
+                        <form id="form_bg_download" class="bg_example no-border no-shadow" action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                            <label class="input-file">
+                                <input type="file" id="add_bg_button" name="avatar" accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp">
+                                <div class="bg_example no-border no-shadow add_bg_but" style="background-image: url('/img/addbg3.png');"></div>
+                            </label>
+                        </form>
                     </div>
                 </div>
             </div>
