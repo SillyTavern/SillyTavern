@@ -32,6 +32,8 @@
     --orangered: rgb(255, 90, 0);
     --greyCAIbg: rgb(36, 36, 37);
     --ivory: rgb(220, 220, 210);
+
+    --sheldWidth: 1000px;
 }
 
 * {
@@ -170,7 +172,7 @@ code {
     grid-template-rows: auto min-content;
     height: calc(100svh - 40px);
     overflow-x: hidden;
-    max-width: 800px;
+    max-width: var(--sheldWidth);
     position: absolute;
     left: 0;
     right: 0;
@@ -577,7 +579,7 @@ textarea {
     font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
     font-size: 15px;
     padding: 7px;
-    width: 100%;
+    /* width: 100%; */
     margin: 5px 0;
 }
 
@@ -2568,8 +2570,8 @@ a {
 /* ############################################################# */
 
 #right-nav-panel {
-    width: calc((100vw - 802px) / 2);
-    min-width: 450px;
+    width: calc((100vw - var(--sheldWidth) +2) /2);
+    /* min-width: 450px; */
     height: calc(100vh - 55px);
     position: fixed;
     top: 40px;
@@ -2591,15 +2593,6 @@ a {
     overflow-y: hidden;
     scrollbar-width: thin;
 }
-
-/* #right-nav-panel.drawer-content{
-    left:5px;
-    height:calc(100vh - 55px);
-    min-height:calc(100vh - 55px);
-    
-    box-shadow: none;
-    
-} */
 
 #nav-toggle {
     position: fixed;
@@ -2881,15 +2874,15 @@ filter: invert(20%) sepia(100%) saturate(2518%) hue-rotate(353deg) brightness(93
     padding: 10px;
     border: 1px solid var(--grey30a);
     box-shadow: 0 0 20px black;
-    min-width: 400px;
+    min-width: 450px;
     overflow-y: scroll;
     max-height: calc(100svh - 70px);
     display: none;
     position: absolute;
     left:0;
     right:0;
-    width: max-content;
-    max-width:800px;
+    width: min-content;
+    max-width:var(--sheldWidth);
     margin: 30px auto;
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
