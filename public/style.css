@@ -2938,7 +2938,7 @@ label[for="extensions_autoconnect"] {
     right: 0;
     width: min-content;
     max-width: var(--sheldWidth);
-    margin: 30px auto;
+    margin: 35px auto 0 auto;
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
 }
