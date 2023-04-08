@@ -35,6 +35,10 @@ const tiktoken = require('@dqbd/tiktoken');
 var Client = require('node-rest-client').Client;
 var client = new Client();
 
+client.on('error', (err) => {
+    console.error('An error occurred:', err);
+});
+
 var api_server = "http://0.0.0.0:5000";
 var api_novelai = "https://api.novelai.net";
 let api_openai = "https://api.openai.com/v1";
