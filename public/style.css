@@ -924,7 +924,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     flex-wrap: wrap;
     width: 100%;
     max-width: 800px;
-    justify-content: center;
+    justify-content: space-evenly;
 }
 
 .bg_example {
