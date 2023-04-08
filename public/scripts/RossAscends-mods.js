@@ -279,6 +279,31 @@ function isUrlOrAPIKey(string) {
     }
 }
 
+function OpenNavPanels() {
+    //auto-open R nav if locked and previously open
+    if (LoadLocalBool("NavLockOn") == true && LoadLocalBool("NavOpened") == true) {
+        console.log("RA -- clicking right nav to open");
+        $("#rightNavDrawerIcon").click();
+    } else {
+        console.log('didnt see reason to open right nav on load: ' +
+            LoadLocalBool("NavLockOn")
+            + ' nav open pref' +
+            LoadLocalBool("NavOpened" == true));
+    }
+
+    //auto-open L nav if locked and previously open
+
+    if (LoadLocalBool("LNavLockOn") == true && LoadLocalBool("LNavOpened") == true) {
+        console.log("RA -- clicking left nav to open");
+        $("#leftNavDrawerIcon").click();
+    } else {
+        console.log('didnt see reason to open left nav on load: ' +
+            LoadLocalBool("LNavLockOn")
+            + ' L-nav open pref' +
+            LoadLocalBool("LNavOpened" == true));
+    }
+}
+
 $("document").ready(function () {
     // initial status check
     setTimeout(RA_checkOnlineStatus, 100);
@@ -365,29 +390,13 @@ $("document").ready(function () {
         } else { SaveLocal('LNavOpened', 'false'); }
     });
 
-    //auto-open R nav if locked and previously open
 
-    if (LoadLocalBool("NavLockOn") == true && LoadLocalBool("NavOpened") == true) {
-        console.log("RA -- clicking right nav to open");
-        $("#rightNavDrawerIcon").click();
-    } else {
-        console.log('didnt see reason to open right nav on load: ' +
-            LoadLocalBool("NavLockOn")
-            + ' nav open pref' +
-            LoadLocalBool("NavOpened" == true));
-    }
 
-    //auto-open L nav if locked and previously open
 
-    if (LoadLocalBool("LNavLockOn") == true && LoadLocalBool("LNavOpened") == true) {
-        console.log("RA -- clicking left nav to open");
-        $("#leftNavDrawerIcon").click();
-    } else {
-        console.log('didnt see reason to open left nav on load: ' +
-            LoadLocalBool("LNavLockOn")
-            + ' L-nav open pref' +
-            LoadLocalBool("LNavOpened" == true));
-    }
+
+    setTimeout(() => {
+        OpenNavPanels();
+    }, 300);
 
     //save AutoConnect and AutoLoadChat prefs
     $(AutoConnectCheckbox).on("change", function () { SaveLocal("AutoConnectEnabled", $(AutoConnectCheckbox).prop("checked")); });
