@@ -3087,6 +3087,7 @@ label[for="extensions_autoconnect"] {
     .drawer-content {
         min-width: unset;
         width: calc(100vw - 10px);
+        max-height: calc(100vh - 70px);
         position: fixed;
         left: 0;
         top: 10px;
@@ -3114,7 +3115,7 @@ label[for="extensions_autoconnect"] {
     #character_popup,
     #world_popup {
         /*margin around the sides, and a larger one on bottom to avoid iOS Home bar*/
-        height: calc(100svh - 40px);
+        height: calc(100svh - 70px);
         width: calc(100vw - 10px);
         margin: 0 auto;
         margin-left: 5px;
@@ -3144,17 +3145,19 @@ label[for="extensions_autoconnect"] {
         padding-right: 25px;
     }
 
-    #right-nav-panel {
+    #right-nav-panel,
+    #left-nav-panel {
         height: calc(100svh - 70px);
         min-width: 0px;
         width: calc(100vw - 10px);
+        max-width: calc(100vw - 10px);
         left: 5px !important;
         overflow-y: hidden;
         border-left: 1px solid var(--grey30);
         border-right: 1px solid var(--grey30);
         border-bottom: 1px solid var(--grey30);
         border-radius: 0 0 20px 20px;
-        /* border: 0;*/
+        top: 40px;
     }
 
     #right-nav-panel h4 {
