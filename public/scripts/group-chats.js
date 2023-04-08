@@ -109,6 +109,7 @@ async function getGroupChat(id) {
 
     if (response.ok) {
         const data = await response.json();
+        const group = groups.find((x) => x.id === id);
         if (Array.isArray(data) && data.length) {
             data[0].is_group = true;
             for (let key of data) {
@@ -144,7 +145,6 @@ async function getGroupChat(id) {
             }
         }
 
-        const group = groups.find((x) => x.id === id);
         if (group) {
             let metadata = group.chat_metadata ?? {};
             updateChatMetadata(metadata, true);

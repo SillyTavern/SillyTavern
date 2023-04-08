@@ -604,8 +604,8 @@ function printCharacters() {
         );
         //console.log('printcharacters() -- printing -- ChID '+i+' ('+item.name+')');
     });
-    sortCharactersList('name', 'asc');
     printGroups();
+    sortCharactersList('name', 'asc');
 }
 
 async function getCharacters() {
