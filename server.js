@@ -2071,6 +2071,12 @@ function getAsync(url, args) {
 app.listen(server_port, (listen ? '0.0.0.0' : '127.0.0.1'), async function () {
     ensurePublicDirectoriesExist();
     await ensureThumbnailCache();
+
+    // Colab users could run the embedded tool
+    if (!is_colab) {
+        await convertWebp();
+    }
+
     console.log('Launching...');
     if (autorun) open('http://127.0.0.1:' + server_port);
     console.log('TavernAI started: http://127.0.0.1:' + server_port);
@@ -2258,6 +2264,42 @@ function getCharacterFile2(directories, i) {
         });
     } else {
         convertStage2();
+    }
+}
+
+async function convertWebp() {
+    const files = fs.readdirSync(directories.characters).filter(e => e.endsWith(".webp"));
+
+    if (!files.length) {
+        return;
+    }
+
+    console.log(`${files.length} WEBP files will be automatically converted.`);
+
+    for (const file of files) {
+        try {
+            const source = path.join(directories.characters, file);
+            const dest = path.join(directories.characters, path.basename(file, ".webp") + ".png");
+
+            if (fs.existsSync(dest)) {
+                console.log(`${dest} already exists. Delete ${source} manually`);
+                continue;
+            }
+
+            console.log(`Read... ${source}`);
+            const data = await charaRead(source);
+
+            console.log(`Convert... ${source} -> ${dest}`);
+            await webp.dwebp(source, dest, "-o");
+
+            console.log(`Write... ${dest}`);
+            await charaWrite(dest, data, path.parse(dest).name);
+
+            console.log(`Remove... ${source}`);
+            fs.rmSync(source);
+        } catch (err) {
+            console.log(err);
+        }
     }
 }
 
