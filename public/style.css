@@ -697,6 +697,7 @@ input[type="file"] {
     text-overflow: ellipsis;
     overflow: hidden;
     text-align: left;
+    white-space: nowrap;
 }
 
 .selected-right-tab {
@@ -2242,7 +2243,7 @@ input[type="range"]::-webkit-slider-thumb {
 #rm_group_members,
 #rm_group_add_members {
     margin-top: 0.25rem;
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.5rem;
     width: 100%;
     flex: 1;
     overflow: auto;
