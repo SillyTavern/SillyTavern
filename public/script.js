@@ -604,6 +604,7 @@ function printCharacters() {
         );
         //console.log('printcharacters() -- printing -- ChID '+i+' ('+item.name+')');
     });
+    sortCharactersList('name', 'asc');
     printGroups();
 }
 
@@ -3049,6 +3050,14 @@ function setGenerationProgress(progress) {
             'background': `linear-gradient(90deg, #008000d6 ${progress}%, transparent ${progress}%)`,
             'transition': '0.25s ease-in-out'
         });
+    }
+}
+
+function sortCharactersList(field, order) {
+    let orderedList = characters.slice().sort((a, b) => order == 'asc' ? a[field].localeCompare(b[field]) : b[field].localeCompare(a[field]));
+
+    for (let i = 0; i < characters.length; i++) {
+        $(`.character_select[chid="${i}"]`).css({ 'order': orderedList.indexOf(characters[i]) });
     }
 }
 

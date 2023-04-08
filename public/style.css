@@ -717,6 +717,8 @@ input[type="file"] {
     padding: 15px 0;
     overflow-y: auto;
     flex-grow: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 #rm_ch_create_block {
