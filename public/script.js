@@ -4437,7 +4437,7 @@ $(document).ready(function () {
         var ext = file.name.match(/\.(\w+)$/);
         if (
             !ext ||
-            (ext[1].toLowerCase() != "json" && ext[1].toLowerCase() != "png")
+            (ext[1].toLowerCase() != "json" && ext[1].toLowerCase() != "png" && ext[1] != "webp")
         ) {
             return;
         }
