@@ -222,7 +222,7 @@ function RA_checkOnlineStatus() {
 //Auto-connect to API (when set to kobold, API URL exists, and auto_connect is true)
 
 function RA_autoconnect(PrevApi) {
-    if (online_status === "no_connection" && LoadLocalBool('AutoConnectEnabled')) {
+    if ((online_status === undefined || online_status === "no_connection") && LoadLocalBool('AutoConnectEnabled')) {
         switch (main_api) {
             case 'kobold':
                 if (api_server && isUrlOrAPIKey(api_server)) {
@@ -239,13 +239,11 @@ function RA_autoconnect(PrevApi) {
             case 'textgenerationwebui':
                 if (api_server_textgenerationwebui && isUrlOrAPIKey(api_server_textgenerationwebui)) {
                     $("#api_button_textgenerationwebui").click();
-
                 }
                 break;
             case 'openai':
                 if (oai_settings.api_key_openai) {
                     $("#api_button_openai").click();
-
                 }
                 break;
             case 'poe':
