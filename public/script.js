@@ -793,8 +793,6 @@ function printMessages() {
     chat.forEach(function (item, i, arr) {
         addOneMessage(item);
     });
-
-    $('#chat .mes').addClass('auto_hide');
 }
 
 function clearChat() {
@@ -939,6 +937,12 @@ function addOneMessage(mes, type = "normal", insertAfter = null) {
         count_view_mes++;
 
     }
+
+    /*
+    const lastMes = $('#chat .mes').last().get(0);
+    const rect = lastMes.getBoundingClientRect();
+    lastMes.style.containIntrinsicSize = `${rect.width}px ${rect.height}px`;
+    */
 
     // Don't scroll if not inserting last
     if (!insertAfter) {

@@ -3115,7 +3115,6 @@ body.bubblechat #chat {
     overflow-y: scroll;
     display: flex;
     bottom: 10px;
-    -webkit-backdrop-filter: blur(10px);
     text-shadow: #000 0 0 3px;
     scrollbar-width: thin;
     transition: all 1s ease-in-out;
@@ -3145,8 +3144,7 @@ body.bubblechat .mes {
     padding: 10px;
     width: 100%;
     border-radius: 20px;
-    backdrop-filter: blur(10px);
-    background-color: var(--black60a);
+    background-color: var(--black70a);
     margin-top: 10px;
     border: 1px solid rgba(255,255,255,0.2);
 }
