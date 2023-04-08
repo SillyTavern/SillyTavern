@@ -35,6 +35,8 @@ https://colab.research.google.com/github/Cohee1207/TavernAI-extras/blob/main/col
 
 https://rentry.org/TAI_Termux
 
+**.webp character cards import/export is not supported in Termux. Use either JSON or PNG formats instead.**
+
 ## This version includes
 * A heavily modified TavernAI 1.2.8 (more than 50% of code rewritten or optimized)
 * Swipes

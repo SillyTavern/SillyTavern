@@ -26,6 +26,7 @@ const ipaddr = require('ipaddr.js');
 const json5 = require('json5');
 
 const ExifReader = require('exifreader');
+const exif = require('piexifjs');
 const webp = require('webp-converter');
 
 const config = require(path.join(process.cwd(), './config.conf'));
@@ -1340,6 +1341,66 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
         }
     }
 });
+
+app.post("/exportcharacter", jsonParser, async function (request, response) {
+    if (!request.body.format || !request.body.avatar_url) {
+        return response.sendStatus(400);
+    }
+
+    let filename = path.join(directories.characters, sanitize(request.body.avatar_url));
+
+    if (!fs.existsSync(filename)) {
+        return response.sendStatus(404);
+    }
+
+    switch (request.body.format) {
+        case 'png':
+            return response.sendFile(filename, { root: __dirname });
+        case 'json': {
+            try {
+                let json = await charaRead(filename);
+                let jsonObject = json5.parse(json);
+                return response.type('json').send(jsonObject)
+            }
+            catch {
+                return response.sendStatus(400);
+            }
+        }
+        case 'webp': {
+            try {
+                let json = await charaRead(filename);
+                let inputWebpPath = `./uploads/${Date.now()}_input.webp`;
+                let outputWebpPath = `./uploads/${Date.now()}_output.webp`;
+                let metadataPath = `./uploads/${Date.now()}_metadata.exif`;
+                let metadata = 
+                {
+                        "Exif": {
+                            [exif.ExifIFD.UserComment]: json,
+                        },
+                };
+                const exifString = exif.dump(metadata);
+                fs.writeFileSync(metadataPath, exifString, 'binary');
+
+                await webp.cwebp(filename, inputWebpPath, '-q 95');
+                await webp.webpmux_add(inputWebpPath, outputWebpPath, metadataPath, 'exif');
+
+                response.sendFile(outputWebpPath, { root: __dirname });
+
+                fs.rmSync(inputWebpPath);
+                fs.rmSync(metadataPath);
+
+                return;
+            }
+            catch (err) {
+                console.log(err);
+                return response.sendStatus(400);
+            }
+        }
+    }
+
+    return response.sendStatus(400);
+});
+
 
 app.post("/importchat", urlencodedParser, function (request, response) {
     //console.log(humanizedISO8601DateTime()+':/importchat begun');
