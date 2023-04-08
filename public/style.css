@@ -3217,10 +3217,151 @@ label[for="extensions_autoconnect"] {
     /* div {border: 1px solid purple;} */
 }
 
-@media (max-width: 768px) {
+@media (max-width: 800px) {
     .mes img.img_extra {
         max-width: 100%;
     }
+
+    body {
+        font-size: 16px;
+        position: fixed;
+        touch-action: none;
+        overflow: hidden;
+        height: 100vh;
+        width: 100vw;
+    }
+
+    .drawer-content {
+        min-width: unset;
+        width: calc(100vw - 10px);
+        max-height: calc(100vh - 70px);
+        position: fixed;
+        left: 0;
+        top: 10px;
+        border: 1px solid var(--grey30);
+    }
+
+    #select_chat_popup {
+        align-items: start;
+        height: min-content;
+        align-content: start;
+    }
+
+    #top-settings-holder {
+        width: 100vw;
+        position: fixed;
+
+    }
+
+    #bg1,
+    #bg2 {
+        position: fixed;
+    }
+
+    #sheld,
+    #character_popup,
+    #world_popup {
+        /*margin around the sides, and a larger one on bottom to avoid iOS Home bar*/
+        height: calc(100svh - 70px);
+        width: calc(100vw - 10px);
+        margin: 0 auto;
+        margin-left: 5px;
+        position: fixed;
+    }
+
+    #character_popup,
+    #world_popup,
+    #send_form {
+        border: 1px solid var(--grey30);
+    }
+
+    #chat {
+        border-left: 1px solid var(--grey30);
+        border-right: 1px solid var(--grey30);
+        border-bottom: 1px solid var(--grey30);
+        align-items: start;
+        align-content: start;
+    }
+
+    #sheld,
+    #character_popup {
+        overflow-y: hidden;
+    }
+
+    .mes-text {
+        padding-right: 25px;
+    }
+
+    #right-nav-panel,
+    #left-nav-panel {
+        height: calc(100svh - 70px);
+        min-width: 0px;
+        width: calc(100vw - 10px);
+        max-width: calc(100vw - 10px);
+        left: 5px !important;
+        overflow-y: auto;
+        border-left: 1px solid var(--grey30);
+        border-right: 1px solid var(--grey30);
+        border-bottom: 1px solid var(--grey30);
+        border-radius: 0 0 20px 20px;
+        top: 40px;
+    }
+
+    #right-nav-panel h4 {
+        margin: 5px auto;
+    }
+
+    #form_create {
+        grid-template-rows:
+            [avatar] min-content [hr] min-content [descriptionHeader] min-content [description] auto [firstmessageHeader] min-content [firstMessage] auto;
+    }
+
+    #result_info {
+        font-size: 14px;
+    }
+
+    .avatar_div {
+        margin-top: 5px;
+    }
+
+    #character_popup {
+        width: calc(100vw - 5px);
+        border-radius: 0 0 0 20px;
+        margin-top: -35px;
+        height: calc(100vh - 30px);
+    }
+
+
+    #send_textarea {
+        /*larger input bar for mobile screens, easier to tap*/
+        font-size: 1.25rem;
+        line-height: 1.5rem;
+        min-height: calc(2rem + 0.75rem + 2px);
+        max-height: 200px;
+        word-wrap: break-word;
+        height: 40px;
+        resize: vertical;
+        display: block;
+        background-color: rgba(255, 0, 0, 0);
+        border: 0;
+        box-shadow: none;
+        padding: 6px 0 6px 0;
+        font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
+        margin: 0;
+        text-shadow: #000 0 0 3px;
+    }
+
+    #rm_ch_create_block textarea {
+        /*without this the text areas display far too large*/
+        max-height: 200px;
+    }
+
+    #talkativeness_hint span {
+        min-width: 33%;
+    }
+
+    /*for debug purposes*/
+    /* div {border: 1px solid purple;} */
 }
 
 /*bubble chat style*/
