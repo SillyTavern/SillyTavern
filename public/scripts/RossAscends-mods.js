@@ -317,7 +317,7 @@ $("document").ready(function () {
     if (LoadLocalBool("AutoConnectEnabled") == true) { RA_autoconnect(); }
     $("#main_api").change(function () {
         var PrevAPI = main_api;
-        RA_autoconnect(PrevAPI);
+        setTimeout(() => RA_autoconnect(PrevAPI), 100);
     });
     $("#api_button").click(function () { setTimeout(RA_checkOnlineStatus, 100); });
 
