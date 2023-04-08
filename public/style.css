@@ -1646,8 +1646,8 @@ input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
 }
 
 #user_avatar_block .avatar img {
-    width: 60px;
-    height: 60px;
+    width: 64px;
+    height: 64px;
 }
 
 #user_avatar_block .avatar_upload {
