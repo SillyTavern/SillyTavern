@@ -456,7 +456,7 @@ async function getStatus() {
                 const hordeStatus = await checkHordeStatus();
                 online_status = hordeStatus ? 'Connected' : 'no_connection';
                 resultCheckStatus();
-    
+
                 if (online_status !== "no_connection") {
                     getStatusDebounced();
                 }
@@ -826,12 +826,12 @@ function messageFormating(mes, ch_name, isSystem, forceAvatar) {
         mes = converter.makeHtml(mes);
         //mes = mes.replace(/{.*}/g, "");
         mes = mes.replace(/{{(\*?.+?\*?)}}/g, "");
-        
+
 
         mes = mes.replace(/\n/g, "<br/>");
         mes = mes.trim();
 
-        mes = mes.replace(/<code>[\s\S]*?<\/code>/g, function(match) {
+        mes = mes.replace(/<code>[\s\S]*?<\/code>/g, function (match) {
             return match.replace(/&amp;/g, '&');
         });
     }
@@ -1649,7 +1649,7 @@ async function Generate(type, automatic_trigger, force_name2) {
                         'seed': textgenerationwebui_settings.seed,
                     }
                 ];
-                generate_data = { "data": [ JSON.stringify(data) ]};
+                generate_data = { "data": [JSON.stringify(data)] };
             }
 
             if (main_api == 'novel') {
@@ -1964,8 +1964,8 @@ async function saveChat(chat_name) {
             chat[i].mes = str;
             chat[i].name = default_user_name;
         } else if (i !== chat.length - 1 && chat[i].swipe_id !== undefined) {
-          //  delete chat[i].swipes;
-          //  delete chat[i].swipe_id;
+            //  delete chat[i].swipes;
+            //  delete chat[i].swipe_id;
         }
     });
     var save_chat = [
@@ -2137,7 +2137,7 @@ function changeMainAPI() {
         "poe": {
             apiSettings: $("#poe_settings"),
             apiConnector: $("#poe_api"),
-            apiPresets: $(""),
+            apiPresets: $("#poe_api-presets"),
             apiRanges: $("#range_block_poe"),
             maxContextElem: $("#max_context_block"),
             amountGenElem: $("#amount_gen_block"),
@@ -2822,7 +2822,7 @@ function setExtensionPrompt(key, value, position, depth) {
 }
 
 function updateChatMetadata(newValues, reset) {
-    chat_metadata = reset?  { ...newValues } : { ...chat_metadata, ...newValues };
+    chat_metadata = reset ? { ...newValues } : { ...chat_metadata, ...newValues };
 }
 
 function callPopup(text, type) {
@@ -3035,7 +3035,7 @@ function closeMessageEditor() {
 
 function setGenerationProgress(progress) {
     if (!progress) {
-        $('#send_textarea').css({'background': '', 'transition': ''});
+        $('#send_textarea').css({ 'background': '', 'transition': '' });
     }
     else {
         $('#send_textarea').css({
@@ -3068,7 +3068,7 @@ window["TavernAI"].getContext = function () {
         saveChat: saveChatConditional,
         sendSystemMessage: sendSystemMessage,
         activateSendButtons,
-        deactivateSendButtons, 
+        deactivateSendButtons,
         saveReply,
     };
 };
@@ -3090,7 +3090,7 @@ $(document).ready(function () {
     ///// SWIPE BUTTON CLICKS ///////
 
     $(document).on('click', '.swipe_right', function () {               //when we click swipe right button
-        if (chat.length -1 === Number(this_edit_mes_id)) {
+        if (chat.length - 1 === Number(this_edit_mes_id)) {
             closeMessageEditor();
         }
 
@@ -3230,7 +3230,7 @@ $(document).ready(function () {
     });
 
     $(document).on('click', '.swipe_left', function () {      // when we swipe left..but no generation.
-        if (chat.length -1 === Number(this_edit_mes_id)) {
+        if (chat.length - 1 === Number(this_edit_mes_id)) {
             closeMessageEditor();
         }
 
@@ -3871,7 +3871,7 @@ $(document).ready(function () {
                 return;
             }
 
-            $("#api_url_text").val(value); 
+            $("#api_url_text").val(value);
             api_server = value;
             $("#api_loading").css("display", "inline-block");
             $("#api_button").css("display", "none");
@@ -4295,9 +4295,9 @@ $(document).ready(function () {
         this_edit_mes_id = undefined;
     });
 
-    $(document).on("click", ".mes_edit_up", function() {
+    $(document).on("click", ".mes_edit_up", function () {
         if (is_send_press || this_edit_mes_id <= 0) {
-             return;
+            return;
         }
 
         hideSwipeButtons();
@@ -4652,9 +4652,9 @@ $(document).ready(function () {
         $(this).closest('.inline-drawer').find('.inline-drawer-content').slideToggle();
     });
 
-    $(document).keyup(function(e) {
+    $(document).keyup(function (e) {
         if (e.key === "Escape") {
             closeMessageEditor();
-       }
-   });
+        }
+    });
 })
