@@ -653,7 +653,7 @@ async function getBackgrounds() {
         for (const bg of getData) {
             const thumbPath = `/thumbnail?type=bg&file=${encodeURIComponent(bg)}`;
             $("#bg_menu_content").append(
-                `<div class="bg_example" bgfile="${bg}" class="bg_example_img" style="background-image: url('${thumbPath}');">
+                `<div class="bg_example" bgfile="${bg}" class="bg_example_img" title="${bg}" style="background-image: url('${thumbPath}');">
                 <div bgfile="${bg}" class="bg_example_cross">
             </div>`
             );
