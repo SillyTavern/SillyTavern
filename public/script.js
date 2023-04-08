@@ -2177,6 +2177,12 @@ function changeMainAPI() {
         } else {
             $("#common-gen-settings-block").css("display", "block");
         }
+        // Hide amount gen for poe
+        if (selectedVal == "poe") {
+            $("#amount_gen_block").css("display", "none");
+        } else {
+            $("#amount_gen_block").css("display", "block");
+        }
 
     }
 
@@ -4491,7 +4497,7 @@ $(document).ready(function () {
     });
     $(document).on('click', '.export_format', async function () {
         const format = $(this).data('format');
-        
+
         if (!format) {
             return;
         }
