@@ -72,6 +72,7 @@ import {
     loadHordeSettings,
     generateHorde,
     checkHordeStatus,
+    getHordeModels,
     adjustHordeGenerationParams,
 } from "./scripts/horde.js";
 
@@ -1112,6 +1113,11 @@ async function Generate(type, automatic_trigger, force_name2) {
     if (slashCommand == system_message_types.HELP) {
         sendSystemMessage(system_message_types.HELP);
         $("#send_textarea").val('').trigger('input');
+        return;
+    }
+
+    if (isHordeGenerationNotAllowed()) {
+        is_send_press = false;
         return;
     }
 
@@ -2194,6 +2200,7 @@ function changeMainAPI() {
     if (main_api == "kobold" && horde_settings.use_horde) {
         is_get_status = true;
         getStatus();
+        getHordeModels();
     }
 }
 
@@ -2278,27 +2285,6 @@ async function getSettings(type) {
                     changeMainAPI();
                 }
 
-                novelai_setting_names = data.novelai_setting_names;
-                novelai_settings = data.novelai_settings;
-                novelai_settings.forEach(function (item, i, arr) {
-                    novelai_settings[i] = JSON.parse(item);
-                });
-                let arr_holder = {};
-
-                $("#settings_perset_novel").empty();
-
-                novelai_setting_names.forEach(function (item, i, arr) {
-                    arr_holder[item] = i;
-                    $("#settings_perset_novel").append(`<option value=${i}>${item}</option>`);
-                });
-                novelai_setting_names = {};
-                novelai_setting_names = arr_holder;
-
-                nai_settings.preset_settings_novel = settings.preset_settings_novel;
-                $(
-                    `#settings_perset_novel option[value=${novelai_setting_names[nai_settings.preset_settings_novel]}]`
-                ).attr("selected", "true");
-
                 //Load KoboldAI settings
                 koboldai_setting_names = data.koboldai_setting_names;
                 koboldai_settings = data.koboldai_settings;
@@ -2306,7 +2292,7 @@ async function getSettings(type) {
                     koboldai_settings[i] = JSON.parse(item);
                 });
 
-                arr_holder = {};
+                let arr_holder = {};
 
                 $("#settings_perset").empty(); //RossAscends: uncommented this to prevent settings selector from doubling preset list on refresh
                 $("#settings_perset").append(
@@ -2321,6 +2307,39 @@ async function getSettings(type) {
                 koboldai_setting_names = {};
                 koboldai_setting_names = arr_holder;
                 preset_settings = settings.preset_settings;
+
+                if (preset_settings == "gui") {
+                    selectKoboldGuiPreset();
+                } else {
+                    if (typeof koboldai_setting_names[preset_settings] !== "undefined") {
+                        $(`#settings_perset option[value=${koboldai_setting_names[preset_settings]}]`)
+                            .attr("selected", "true");
+                    } else {
+                        preset_settings = "gui";
+                        selectKoboldGuiPreset();
+                    }
+                }
+
+                novelai_setting_names = data.novelai_setting_names;
+                novelai_settings = data.novelai_settings;
+                novelai_settings.forEach(function (item, i, arr) {
+                    novelai_settings[i] = JSON.parse(item);
+                });
+                arr_holder = {};
+
+                $("#settings_perset_novel").empty();
+
+                novelai_setting_names.forEach(function (item, i, arr) {
+                    arr_holder[item] = i;
+                    $("#settings_perset_novel").append(`<option value=${i}>${item}</option>`);
+                });
+                novelai_setting_names = {};
+                novelai_setting_names = arr_holder;
+
+                nai_settings.preset_settings_novel = settings.preset_settings_novel;
+                $(
+                    `#settings_perset_novel option[value=${novelai_setting_names[nai_settings.preset_settings_novel]}]`
+                ).attr("selected", "true");
 
                 //Load AI model config settings (temp, context length, anchors, and anchor order)
 
@@ -2378,21 +2397,6 @@ async function getSettings(type) {
 
                 //Enable GUI deference settings if GUI is selected for Kobold
                 if (main_api === "kobold") {
-                    if (preset_settings == "gui") {
-                        $("#settings_perset option[value=gui]")
-                            .attr("selected", "true")
-                            .trigger("change");
-                    } else {
-                        if (typeof koboldai_setting_names[preset_settings] !== "undefined") {
-                            $(`#settings_perset option[value=${koboldai_setting_names[preset_settings]}]`)
-                                .attr("selected", "true");
-                        } else {
-                            preset_settings = "gui";
-                            $("#settings_perset option[value=gui]")
-                                .attr("selected", "true")
-                                .trigger("change");
-                        }
-                    }
                 }
 
                 //Load User's Name and Avatar
@@ -2448,6 +2452,12 @@ async function getSettings(type) {
             console.log(jqXHR);
         },
     });
+}
+
+function selectKoboldGuiPreset() {
+    $("#settings_perset option[value=gui]")
+        .attr("selected", "true")
+        .trigger("change");
 }
 
 async function saveSettings(type) {
@@ -3062,6 +3072,15 @@ function sortCharactersList(field, order) {
     }
 }
 
+function isHordeGenerationNotAllowed() {
+    if (main_api == "kobold" && horde_settings.use_horde && preset_settings == "gui") {
+        callPopup('GUI Settings preset is not supported for Horde. Please select another preset.', 'text');
+        return true;
+    }
+
+    return false;
+}
+
 window["TavernAI"].getContext = function () {
     return {
         chat: chat,
@@ -3109,6 +3128,10 @@ $(document).ready(function () {
     $(document).on('click', '.swipe_right', function () {               //when we click swipe right button
         if (chat.length - 1 === Number(this_edit_mes_id)) {
             closeMessageEditor();
+        }
+
+        if (isHordeGenerationNotAllowed()) {
+            return;
         }
 
         const swipe_duration = 120;

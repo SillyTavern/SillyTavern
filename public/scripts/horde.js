@@ -7,6 +7,7 @@ export {
     checkHordeStatus,
     loadHordeSettings,
     adjustHordeGenerationParams,
+    getHordeModels,
 }
 
 let models = [];
@@ -154,6 +155,16 @@ async function getHordeModels() {
         option.selected = horde_settings.model === model.name;
         $('#horde_model').append(option);
     }
+
+    // if previously selected is no longer available
+    if (horde_settings.model && !models.find(m => m.name == horde_settings.model)) {
+        horde_settings.model = null;
+    }
+
+    // if no models preselected - select a first one in dropdown
+    if (!horde_settings.model) {
+        horde_settings.model = $('#horde_model').find(":selected").val();
+    }
 }
 
 function loadHordeSettings(settings) {
@@ -182,9 +193,6 @@ $(document).ready(function () {
         // Trigger status check
         changeMainAPI();
         saveSettingsDebounced();
-        if (main_api === 'kobold' && horde_settings.use_horde) {
-            await getHordeModels();
-        }
     });
 
     $("#horde_model").on("change", function () {
