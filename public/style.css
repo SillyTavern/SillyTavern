@@ -238,6 +238,7 @@ code {
     background-position: center;
     display: flex;
     flex-direction: row;
+    overflow: hidden;
 }
 
 #send_but {
@@ -1015,6 +1016,10 @@ input[type=search]:focus::-webkit-search-cancel-button {
     margin-top: 16px;
     margin-bottom: 10px;
     align-items: center;
+}
+
+#user-settings-block h4, #user-settings-block h3  {
+    margin: 10px 0;
 }
 
 #avatar-and-name-block {
