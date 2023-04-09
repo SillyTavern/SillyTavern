@@ -3,6 +3,7 @@ import { saveSettingsDebounced } from "../script.js";
 export {
     loadPowerUserSettings,
     collapseNewlines,
+    playMessageSound,
     power_user,
 };
 
@@ -35,6 +36,7 @@ let power_user = {
     avatar_style: avatar_styles.ROUND,
     chat_display: chat_styles.DEFAULT,
     sheld_width: sheld_width.DEFAULT,
+    play_message_sound: false,
 };
 
 const storage_keys = {
@@ -52,6 +54,18 @@ const storage_keys = {
     chat_display: "TavernAI_chat_display",
     sheld_width: "TavernAI_sheld_width"
 };
+
+function playMessageSound() {
+    if (!power_user.play_message_sound) {
+        return;
+    }
+
+    const audio = document.getElementById('audio_message_sound');
+    audio.volume = 0.8;
+    audio.pause();
+    audio.currentTime = 0;
+    audio.play();
+}
 
 function collapseNewlines(x) {
     return x.replaceAll(/\n+/g, "\n");
@@ -129,6 +143,7 @@ function loadPowerUserSettings(settings) {
     $("#custom_chat_separator").val(power_user.custom_chat_separator);
     $("#fast_ui_mode").prop("checked", power_user.fast_ui_mode);
     $("#multigen").prop("checked", power_user.multigen);
+    $("#play_message_sound").prop("checked", power_user.play_message_sound);
     $(`input[name="avatar_style"][value="${power_user.avatar_style}"]`).prop("checked", true);
     $(`input[name="chat_display"][value="${power_user.chat_display}"]`).prop("checked", true);
     $(`input[name="sheld_width"][value="${power_user.sheld_width}"]`).prop("checked", true);
@@ -199,10 +214,16 @@ $(document).ready(() => {
         localStorage.setItem(storage_keys.chat_display, power_user.chat_display);
         applyChatDisplay();
     });
+
     $(`input[name="sheld_width"]`).on('input', function (e) {
         power_user.sheld_width = Number(e.target.value);
         localStorage.setItem(storage_keys.sheld_width, power_user.sheld_width);
         console.log("sheld width changing now");
         applySheldWidth();
+    });
+
+    $("#play_message_sound").on('input', function () {
+        power_user.play_message_sound = !!$(this).prop('checked');
+        saveSettingsDebounced();
     });
 });

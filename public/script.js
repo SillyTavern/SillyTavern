@@ -41,6 +41,7 @@ import {
 import {
     collapseNewlines,
     loadPowerUserSettings,
+    playMessageSound,
     power_user,
 } from "./scripts/power-user.js";
 
@@ -1796,6 +1797,7 @@ async function Generate(type, automatic_trigger, force_name2) {
                     //getMessage = getMessage.replace(/^\s+/g, '');
                     if (getMessage.length > 0) {
                         ({ type, getMessage } = saveReply(type, getMessage, this_mes_is_name));
+                        playMessageSound();
                         generate_loop_counter = 0;
                     } else {
                         ++generate_loop_counter;
