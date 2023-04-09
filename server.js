@@ -741,6 +741,7 @@ app.post("/getcharacters", jsonParser, function (request, response) {
                 characters[i] = jsonObject;
                 i++;
             } catch (error) {
+                console.log(`Could not read character: ${item}`);
                 if (error instanceof SyntaxError) {
                     console.log("String [" + (i) + "] is not valid JSON!");
                 } else {
