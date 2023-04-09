@@ -238,7 +238,9 @@ const system_messages = {
             '<li>Connect to one of the supported generation APIs</li>',
             '<li>Create or pick a character from the list</li>',
             '</ul>',
-            'Still have questions left?\n',
+            "<h4>Running on Colab and can't get an answer from the AI or getting Out of Memory errors?</h4>",
+            'Set a lower Context Size in AI generation settings.<br>Values in range of 1400-1600 Tokens would be the safest choice.',
+            '<h4>Still have questions left?</h4>',
             'Check out built-in help or type <tt>/?</tt> in any chat.'
         ].join('')
     },
