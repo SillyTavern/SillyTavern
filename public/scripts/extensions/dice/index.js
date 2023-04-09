@@ -1,3 +1,4 @@
+import { callPopup } from "../../../script.js";
 import { getContext } from "../../extensions.js";
 export { MODULE_NAME };
 
@@ -10,8 +11,13 @@ function setDiceIcon() {
     sendButton.classList.remove('spin');
 }
 
-function doDiceRoll() {
-    const value = $(this).data('value');
+async function doDiceRoll() {
+    let value = $(this).data('value');
+    
+    if (value == 'custom') {
+        value = await callPopup('Enter the dice formula:<br><i>(for example, <tt>2d6</tt>)</i>', 'input');
+    }
+
     const isValid = droll.validate(value);
 
     if (isValid) {
@@ -33,6 +39,7 @@ function addDiceRollButton() {
                 <li class="list-group-item" data-value="d12">d12</li>
                 <li class="list-group-item" data-value="d20">d20</li>
                 <li class="list-group-item" data-value="d100">d100</li>
+                <li class="list-group-item" data-value="custom">...</li>
             </ul>
         </div>
         `;

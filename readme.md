@@ -35,6 +35,8 @@ https://colab.research.google.com/github/Cohee1207/TavernAI-extras/blob/main/col
 
 https://rentry.org/TAI_Termux
 
+**.webp character cards import/export is not supported in Termux. Use either JSON or PNG formats instead.**
+
 ## This version includes
 * A heavily modified TavernAI 1.2.8 (more than 50% of code rewritten or optimized)
 * Swipes
@@ -134,3 +136,6 @@ Contact us on Discord: Cohee#1207 or RossAscends#1779
 * Portions of CncAnon's TavernAITurbo mod: Unknown license
 * Thanks Pygmalion University for being awesome testers and suggesting cool features! 
 * Thanks oobabooga for compiling presets for TextGen
+* poe-api client adapted from https://github.com/ading2210/poe-api (GPL v3)
+* GraphQL files for poe: https://github.com/muharamdani/poe (ISC License)
+* KoboldAI Presets from KAI Lite: https://lite.koboldai.net/ 

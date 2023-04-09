@@ -1,9 +1,9 @@
 import { getStringHash, debounce } from "../../utils.js";
-import { getContext, getApiUrl } from "../../extensions.js";
+import { getContext, getApiUrl, extension_settings } from "../../extensions.js";
+import { extension_prompt_types, saveSettingsDebounced } from "../../../script.js";
 export { MODULE_NAME };
 
 const MODULE_NAME = '1_memory';
-const SETTINGS_KEY = 'extensions_memory_settings';
 const UPDATE_INTERVAL = 1000;
 
 let lastCharacterId = null;
@@ -13,16 +13,16 @@ let lastMessageHash = null;
 let lastMessageId = null;
 let inApiCall = false;
 
-const formatMemoryValue = (value) => value ? `[Context: "${value.trim()}"]` : '';
+const formatMemoryValue = (value) => value ? `Context: ${value.trim()}` : '';
 const saveChatDebounced = debounce(() => getContext().saveChat(), 2000);
 
 const defaultSettings = {
     minLongMemory: 16,
-    maxLongMemory: 512,
+    maxLongMemory: 1024,
     longMemoryLength: 128,
     shortMemoryLength: 512,
     minShortMemory: 128,
-    maxShortMemory: 2048,
+    maxShortMemory: 1024,
     shortMemoryStep: 16,
     longMemoryStep: 8,
     repetitionPenaltyStep: 0.05,
@@ -40,80 +40,83 @@ const defaultSettings = {
     memoryFrozen: false,
 };
 
-const settings = {
-    shortMemoryLength: defaultSettings.shortMemoryLength,
-    longMemoryLength: defaultSettings.longMemoryLength,
-    repetitionPenalty: defaultSettings.repetitionPenalty,
-    temperature: defaultSettings.temperature,
-    lengthPenalty: defaultSettings.lengthPenalty,
-    memoryFrozen: defaultSettings.memoryFrozen,
-}
+// TODO Delete in next release
+function migrateFromLocalStorage() {
+    const SETTINGS_KEY = 'extensions_memory_settings';
+    const settings = localStorage.getItem(SETTINGS_KEY);
 
-function saveSettings() {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    if (settings !== null) {
+        const savedSettings = JSON.parse(settings);
+        Object.assign(extension_settings.memory, savedSettings);
+        localStorage.removeItem(SETTINGS_KEY);
+        saveSettingsDebounced();
+    }
 }
 
 function loadSettings() {
-    const savedSettings = JSON.parse(localStorage.getItem(SETTINGS_KEY));
-    Object.assign(settings, savedSettings ?? defaultSettings)
+    migrateFromLocalStorage();
     
-    $('#memory_long_length').val(settings.longMemoryLength).trigger('input');
-    $('#memory_short_length').val(settings.shortMemoryLength).trigger('input');
-    $('#memory_repetition_penalty').val(settings.repetitionPenalty).trigger('input');
-    $('#memory_temperature').val(settings.temperature).trigger('input');
-    $('#memory_length_penalty').val(settings.lengthPenalty).trigger('input');
-    $('#memory_frozen').prop('checked', settings.memoryFrozen).trigger('input');
+    if (Object.keys(extension_settings.memory).length === 0) {
+        Object.assign(extension_settings.memory, defaultSettings);
+    }
+    
+    $('#memory_long_length').val(extension_settings.memory.longMemoryLength).trigger('input');
+    $('#memory_short_length').val(extension_settings.memory.shortMemoryLength).trigger('input');
+    $('#memory_repetition_penalty').val(extension_settings.memory.repetitionPenalty).trigger('input');
+    $('#memory_temperature').val(extension_settings.memory.temperature).trigger('input');
+    $('#memory_length_penalty').val(extension_settings.memory.lengthPenalty).trigger('input');
+    $('#memory_frozen').prop('checked', extension_settings.memory.memoryFrozen).trigger('input');
 }
 
 function onMemoryShortInput() {
     const value = $(this).val();
-    settings.shortMemoryLength = Number(value);
+    extension_settings.memory.shortMemoryLength = Number(value);
     $('#memory_short_length_tokens').text(value);
-    saveSettings();
+    saveSettingsDebounced();
 
     // Don't let long buffer be bigger than short
-    if (settings.longMemoryLength > settings.shortMemoryLength) {
-        $('#memory_long_length').val(settings.shortMemoryLength).trigger('input');
+    if (extension_settings.memory.longMemoryLength > extension_settings.memory.shortMemoryLength) {
+        $('#memory_long_length').val(extension_settings.memory.shortMemoryLength).trigger('input');
     }
 }
 
 function onMemoryLongInput() {
     const value = $(this).val();
-    settings.longMemoryLength = Number(value);
+    extension_settings.memory.longMemoryLength = Number(value);
     $('#memory_long_length_tokens').text(value);
-    saveSettings();
+    saveSettingsDebounced();
 
     // Don't let long buffer be bigger than short
-    if (settings.longMemoryLength > settings.shortMemoryLength) {
-        $('#memory_short_length').val(settings.longMemoryLength).trigger('input');
+    if (extension_settings.memory.longMemoryLength > extension_settings.memory.shortMemoryLength) {
+        $('#memory_short_length').val(extension_settings.memory.longMemoryLength).trigger('input');
     }
 }
 
 function onMemoryRepetitionPenaltyInput() {
     const value = $(this).val();
-    settings.repetitionPenalty = Number(value);
-    $('#memory_repetition_penalty_value').text(settings.repetitionPenalty.toFixed(2));
-    saveSettings();
+    extension_settings.memory.repetitionPenalty = Number(value);
+    $('#memory_repetition_penalty_value').text(extension_settings.memory.repetitionPenalty.toFixed(2));
+    saveSettingsDebounced();
 }
 
 function onMemoryTemperatureInput() {
     const value = $(this).val();
-    settings.temperature = Number(value);
-    $('#memory_temperature_value').text(settings.temperature.toFixed(2));
-    saveSettings();
+    extension_settings.memory.temperature = Number(value);
+    $('#memory_temperature_value').text(extension_settings.memory.temperature.toFixed(2));
+    saveSettingsDebounced();
 }
 
 function onMemoryLengthPenaltyInput() {
     const value = $(this).val();
-    settings.lengthPenalty = Number(value);
-    $('#memory_length_penalty_value').text(settings.lengthPenalty.toFixed(2));
-    saveSettings();
+    extension_settings.memory.lengthPenalty = Number(value);
+    $('#memory_length_penalty_value').text(extension_settings.memory.lengthPenalty.toFixed(2));
+    saveSettingsDebounced();
 }
 
 function onMemoryFrozenInput() {
     const value = Boolean($(this).prop('checked'));
-    settings.memoryFrozen = value;
-    saveSettings();
+    extension_settings.memory.memoryFrozen = value;
+    saveSettingsDebounced();
 }
 
 function saveLastValues() {
@@ -158,7 +161,7 @@ async function moduleWorker() {
     }
 
     // Currently summarizing or frozen state - skip
-    if (inApiCall || settings.memoryFrozen) {
+    if (inApiCall || extension_settings.memory.memoryFrozen) {
         return;
     }
 
@@ -220,14 +223,14 @@ async function summarizeChat(context) {
         memoryBuffer.push(entry);
 
         // check if token limit was reached
-        if (context.encode(getMemoryString()).length >= settings.shortMemoryLength) {
+        if (context.encode(getMemoryString()).length >= extension_settings.memory.shortMemoryLength) {
             break;
         }
     }
 
     const resultingString = getMemoryString();
 
-    if (context.encode(resultingString).length < settings.shortMemoryLength) {
+    if (context.encode(resultingString).length < extension_settings.memory.shortMemoryLength) {
         return;
     }
 
@@ -246,11 +249,11 @@ async function summarizeChat(context) {
             body: JSON.stringify({
                 text: resultingString,
                 params: {
-                    min_length: settings.longMemoryLength * 0.8,
-                    max_length: settings.longMemoryLength,
-                    repetition_penalty: settings.repetitionPenalty,
-                    temperature: settings.temperature,
-                    length_penalty: settings.lengthPenalty,
+                    min_length: extension_settings.memory.longMemoryLength * 0.8,
+                    max_length: extension_settings.memory.longMemoryLength,
+                    repetition_penalty: extension_settings.memory.repetitionPenalty,
+                    temperature: extension_settings.memory.temperature,
+                    length_penalty: extension_settings.memory.lengthPenalty,
                 }
             })
         });
@@ -300,7 +303,7 @@ function onMemoryContentInput() {
 
 function setMemoryContext(value, saveToMessage) {
     const context = getContext();
-    context.setExtensionPrompt(MODULE_NAME, formatMemoryValue(value));
+    context.setExtensionPrompt(MODULE_NAME, formatMemoryValue(value), extension_prompt_types.AFTER_SCENARIO);
     $('#memory_contents').val(value);
 
     if (saveToMessage && context.chat.length) {
