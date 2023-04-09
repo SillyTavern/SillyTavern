@@ -705,8 +705,8 @@ app.post("/getcharacters", jsonParser, function (request, response) {
         var i = 0;
         pngFiles.forEach(item => {
             //console.log(item);
-            var img_data = charaRead(charactersPath + item);
             try {
+                var img_data = charaRead(charactersPath + item);
                 let jsonObject = JSON.parse(img_data);
                 jsonObject.avatar = item;
                 //console.log(jsonObject);
@@ -714,6 +714,7 @@ app.post("/getcharacters", jsonParser, function (request, response) {
                 characters[i] = jsonObject;
                 i++;
             } catch (error) {
+                console.log(`Could not read character: ${item}`);
                 if (error instanceof SyntaxError) {
                     console.log("String [" + (i) + "] is not valid JSON!");
                 } else {
