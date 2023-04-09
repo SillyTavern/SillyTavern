@@ -1014,6 +1014,10 @@ input[type=search]:focus::-webkit-search-cancel-button {
     align-items: center;
 }
 
+#user-settings-block h4, #user-settings-block h3  {
+    margin: 10px 0;
+}
+
 #avatar-and-name-block {
     justify-content: space-between;
     display: flex;
