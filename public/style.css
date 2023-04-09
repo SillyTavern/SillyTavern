@@ -234,6 +234,7 @@ code {
     background-position: center;
     display: flex;
     flex-direction: row;
+    overflow: hidden;
 }
 
 #send_but {
