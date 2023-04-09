@@ -3399,7 +3399,15 @@ body.no-blur * {
 }
 
 #send_form.no-blur-sendtextarea {
-    background-color: var(--black90a) !important;
+    background-color: var(--black90a);
+}
+
+#send_form.no-connection {
+    background-color: rgba(100, 0, 0, 0.5);
+}
+
+#send_form.no-blur-sendtextarea.no-connection {
+    background-color: rgba(100, 0, 0, 0.9);
 }
 
 body.no-blur #bg1,
