@@ -2203,6 +2203,11 @@ input[type="range"]::-webkit-slider-thumb {
     align-items: flex-start;
 }
 
+#rm_group_chats_block h3, #rm_group_chats_block h5 {
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
 #rm_group_chat_name {
     width: 90%;
 }
