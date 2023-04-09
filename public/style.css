@@ -456,14 +456,14 @@ body.big-avatars .avatar {
     justify-content: center;
     align-items: center;
     overflow: visible;
-    border-radius: 5px;
+    border-radius: 10px;
     box-shadow: 0 0 5px var(--black50a);
 }
 
 body.big-avatars #user_avatar_block .avatar {
     height: 90px;
     width: 60px;
-    border-radius: 5px;
+    border-radius: 10px;
 }
 
 body.big-avatars #user_avatar_block .avatar img {
@@ -631,6 +631,7 @@ input[type="file"] {
     max-height: 30px;
     display: flex;
     align-items: flex-end;
+    padding: 0 10px;
 }
 
 #right-nav-panel-tabs .right_menu_button:last-of-type {
@@ -725,6 +726,7 @@ input[type="file"] {
 #rm_ch_create_block {
     display: none;
     overflow-y: auto;
+    padding: 0 5px;
 }
 
 #rm_extensions_block {
@@ -853,6 +855,7 @@ img[src="img/load.svg"] {
     flex-direction: row;
     align-items: center;
     margin-bottom: 10px;
+    padding-left: 5px;
 }
 
 #character_search_bar {
@@ -2220,6 +2223,7 @@ input[type="range"]::-webkit-slider-thumb {
     align-items: center;
     column-gap: 10px;
     flex-wrap: wrap;
+    padding: 0 5px;
 }
 
 .rm_group_settings {
@@ -2428,9 +2432,21 @@ input[type="range"]::-webkit-slider-thumb {
     overflow: hidden;
 }
 
+body:not(.big-avatars) .avatar_collage {
+    min-width: 50px;
+}
+
+body.big-avatars .avatar_collage {
+    min-width: 60px;
+}
+
+
 .avatar_collage img {
     position: absolute;
     overflow: hidden;
+}
+
+body:not(.big-avatars) .avatar_collage img {
     border-radius: 0% !important;
 }
 
@@ -2513,6 +2529,44 @@ input[type="range"]::-webkit-slider-thumb {
     max-height: 50%;
     width: 50%;
     height: 50%;
+}
+
+/* border radius for big avatars collages */
+
+body.big-avatars .collage_2 .img_1 {
+    border-radius: 10px 0 0 10px !important;
+}
+
+body.big-avatars .collage_2 .img_2 {
+    border-radius: 0 10px 10px 0 !important;
+}
+
+body.big-avatars .collage_3 .img_1 {
+    border-radius: 10px 0 0 0 !important;
+}
+
+body.big-avatars .collage_3 .img_2 {
+    border-radius: 0 10px 0 0 !important;
+}
+
+body.big-avatars .collage_3 .img_3 {
+    border-radius: 0 0 10px 10px !important;
+}
+
+body.big-avatars .collage_4 .img_1 {
+    border-radius: 10px 0 0 0 !important;
+}
+
+body.big-avatars .collage_4 .img_2 {
+    border-radius: 0 10px 0 0 !important;
+}
+
+body.big-avatars .collage_4 .img_3 {
+    border-radius: 0 0 0 10px !important;
+}
+
+body.big-avatars .collage_4 .img_4 {
+    border-radius: 0 0 10px 0 !important;
 }
 
 span.warning {
@@ -2645,7 +2699,8 @@ a {
     margin: 0;
     right: 0;
     left: auto;
-    padding: 0 10px;
+    padding: 0;
+    padding-bottom: 5px;
     backdrop-filter: blur(10px);
     background-color: var(--black50a);
     -webkit-backdrop-filter: blur(10px);
@@ -3095,15 +3150,16 @@ label[for="extensions_autoconnect"] {
         overflow: hidden;
         height: 100vh;
         width: 100vw;
+        padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     }
 
     .drawer-content {
         min-width: unset;
-        width: calc(100vw - 10px);
-        max-height: calc(100vh - 70px);
+        width: 100vw;
+        max-height: calc(100vh - 45px);
         position: fixed;
         left: 0;
-        top: 10px;
+        top: 5px;
         border: 1px solid var(--grey30);
     }
 
@@ -3128,10 +3184,10 @@ label[for="extensions_autoconnect"] {
     #character_popup,
     #world_popup {
         /*margin around the sides, and a larger one on bottom to avoid iOS Home bar*/
-        height: calc(100svh - 70px);
-        width: calc(100vw - 10px);
+        height: calc(100svh - 45px);
+        width: 100vw;
         margin: 0 auto;
-        margin-left: 5px;
+        margin-left: 0px;
         position: fixed;
     }
 
@@ -3160,11 +3216,10 @@ label[for="extensions_autoconnect"] {
 
     #right-nav-panel,
     #left-nav-panel {
-        height: calc(100svh - 70px);
+        height: calc(100svh - 45px);
         min-width: 0px;
-        width: calc(100vw - 10px);
-        max-width: calc(100vw - 10px);
-        left: 5px !important;
+        width: 100vw;
+        max-width: 100vw;
         overflow-y: auto;
         border-left: 1px solid var(--grey30);
         border-right: 1px solid var(--grey30);
@@ -3246,11 +3301,11 @@ label[for="extensions_autoconnect"] {
 
     .drawer-content {
         min-width: unset;
-        width: calc(100vw - 10px);
-        max-height: calc(100vh - 70px);
+        width: 100vw;
+        max-height: calc(100vh - 45px);
         position: fixed;
         left: 0;
-        top: 10px;
+        top: 5px;
         border: 1px solid var(--grey30);
     }
 
@@ -3275,10 +3330,10 @@ label[for="extensions_autoconnect"] {
     #character_popup,
     #world_popup {
         /*margin around the sides, and a larger one on bottom to avoid iOS Home bar*/
-        height: calc(100svh - 70px);
-        width: calc(100vw - 10px);
+        height: calc(100svh - 45px);
+        width: 100vw;
         margin: 0 auto;
-        margin-left: 5px;
+        margin-left: 0px;
         position: fixed;
     }
 
@@ -3307,11 +3362,10 @@ label[for="extensions_autoconnect"] {
 
     #right-nav-panel,
     #left-nav-panel {
-        height: calc(100svh - 70px);
+        height: calc(100svh - 45px);
         min-width: 0px;
-        width: calc(100vw - 10px);
-        max-width: calc(100vw - 10px);
-        left: 5px !important;
+        width: 100vw;
+        max-width: 100vw;
         overflow-y: auto;
         border-left: 1px solid var(--grey30);
         border-right: 1px solid var(--grey30);
