@@ -58,7 +58,7 @@ body {
     width: 100%;
     /*fallback for JS load*/
     height: 100svh;
-    /*defaults as 100%, then reassigned via JS as pixels*/
+    /*defaults as 100%, then reassigned via JS as pixels, will work on PC and Android*/
     height: var(--doc-height);
     background-color: var(--greyCAIbg);
     background-repeat: no-repeat;
@@ -1018,7 +1018,8 @@ input[type=search]:focus::-webkit-search-cancel-button {
     align-items: center;
 }
 
-#user-settings-block h4, #user-settings-block h3  {
+#user-settings-block h4,
+#user-settings-block h3 {
     margin: 10px 0;
 }
 
@@ -3149,149 +3150,9 @@ label[for="extensions_autoconnect"] {
 
 /* ---------- @media queries must always go at the bottom ------------*/
 
-@media screen and (max-width: 450px) {
-    /*styles for mobile phones (tested on iPhone 13 Pro)*/
+/*will apply to anything 1000px or less. this catches ipads, horizontal phones, and vertical phones)*/
 
-    body {
-        font-size: 16px;
-        position: fixed;
-        touch-action: none;
-        overflow: hidden;
-    }
-
-    .drawer-content {
-        min-width: unset;
-        width: 100svw;
-        max-height: calc(100svh - 45px);
-        position: fixed;
-        left: 0;
-        top: 5px;
-        border: 1px solid var(--grey30);
-    }
-
-    #select_chat_popup {
-        align-items: start;
-        height: min-content;
-        align-content: start;
-    }
-
-    #top-settings-holder {
-        width: 100svw;
-        position: fixed;
-
-    }
-
-    #bg1,
-    #bg2 {
-        position: fixed;
-    }
-
-    #sheld,
-    #character_popup,
-    #world_popup {
-        /*margin around the sides, and a larger one on bottom to avoid iOS Home bar*/
-        height: calc(100svh - 45px);
-        width: 100svw;
-        margin: 0 auto;
-        margin-left: 0px;
-        position: fixed;
-    }
-
-    #character_popup,
-    #world_popup,
-    #send_form {
-        border: 1px solid var(--grey30);
-    }
-
-    #chat {
-        border-left: 1px solid var(--grey30);
-        border-right: 1px solid var(--grey30);
-        border-bottom: 1px solid var(--grey30);
-        align-items: start;
-        align-content: start;
-    }
-
-    #sheld,
-    #character_popup {
-        overflow-y: hidden;
-    }
-
-    .mes-text {
-        padding-right: 25px;
-    }
-
-    #right-nav-panel,
-    #left-nav-panel {
-        height: calc(100svh - 45px);
-        min-width: 0px;
-        width: 100svw;
-        max-width: 100svw;
-        overflow-y: auto;
-        border-left: 1px solid var(--grey30);
-        border-right: 1px solid var(--grey30);
-        border-bottom: 1px solid var(--grey30);
-        border-radius: 0 0 20px 20px;
-        top: 40px;
-    }
-
-    #right-nav-panel h4 {
-        margin: 5px auto;
-    }
-
-    #form_create {
-        grid-template-rows:
-            [avatar] min-content [hr] min-content [descriptionHeader] min-content [description] auto [firstmessageHeader] min-content [firstMessage] auto;
-    }
-
-    #result_info {
-        font-size: 14px;
-    }
-
-    .avatar_div {
-        margin-top: 5px;
-    }
-
-    #character_popup {
-        width: calc(100svw - 5px);
-        border-radius: 0 0 0 20px;
-        margin-top: -35px;
-        height: calc(100svh - 30px);
-    }
-
-
-    #send_textarea {
-        /*larger input bar for mobile screens, easier to tap*/
-        font-size: 1.25rem;
-        line-height: 1.5rem;
-        min-height: calc(2rem + 0.75rem + 2px);
-        max-height: 200px;
-        word-wrap: break-word;
-        height: 40px;
-        resize: vertical;
-        display: block;
-        background-color: rgba(255, 0, 0, 0);
-        border: 0;
-        box-shadow: none;
-        padding: 6px 0 6px 0;
-        font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
-        margin: 0;
-        text-shadow: #000 0 0 3px;
-    }
-
-    #rm_ch_create_block textarea {
-        /*without this the text areas display far too large*/
-        max-height: 200px;
-    }
-
-    #talkativeness_hint span {
-        min-width: 33%;
-    }
-
-    /*for debug purposes*/
-    /* div {border: 1px solid purple;} */
-}
-
-@media (max-width: 800px) {
+@media (max-width: 1000px) {
     .mes img.img_extra {
         max-width: 100%;
     }
@@ -3305,7 +3166,7 @@ label[for="extensions_autoconnect"] {
 
     .drawer-content {
         min-width: unset;
-        width: 100svw;
+        width: 100%;
         max-height: calc(100svh - 45px);
         position: fixed;
         left: 0;
@@ -3333,11 +3194,9 @@ label[for="extensions_autoconnect"] {
     #sheld,
     #character_popup,
     #world_popup {
-        /*margin around the sides, and a larger one on bottom to avoid iOS Home bar*/
         height: calc(100svh - 45px);
-        width: 100svw;
+        width: 100%;
         margin: 0 auto;
-        margin-left: 0px;
         position: fixed;
     }
 
@@ -3367,9 +3226,9 @@ label[for="extensions_autoconnect"] {
     #right-nav-panel,
     #left-nav-panel {
         height: calc(100svh - 45px);
-        min-width: 0px;
-        width: 100svw;
-        max-width: 100svw;
+        min-width: 100%;
+        width: 100%;
+        max-width: 100%;
         overflow-y: auto;
         border-left: 1px solid var(--grey30);
         border-right: 1px solid var(--grey30);
@@ -3396,10 +3255,10 @@ label[for="extensions_autoconnect"] {
     }
 
     #character_popup {
-        width: calc(100svw - 5px);
-        border-radius: 0 0 0 20px;
-        margin-top: -35px;
-        height: calc(100svh - 30px);
+        width: 100%;
+        border-radius: 0 0 20px 20px;
+        margin-top: 0px;
+        height: calc(100% - 40px);
     }
 
 
@@ -3484,4 +3343,55 @@ body.no-blur #world_popup,
 body.no-blur #dialogue_popup,
 body.no-blur #select_chat_popup {
     background-color: var(--black90a) !important;
+}
+
+/*this part only only applies to iOS devices*/
+@supports (-webkit-touch-callout: none) {
+    body {
+        margin: 0 auto;
+    }
+
+    #top-bar {
+        width: 100vw;
+    }
+
+    #sheld {
+        margin: unset;
+        padding: unset;
+        width: unset;
+        height: unset;
+        min-width: unset;
+        max-width: unset;
+        min-height: unset;
+        max-height: unset;
+
+        width: 100svw !important;
+        height: calc(100svh - 40px) !important;
+        padding-right: max(env(safe-area-inset-right), 5px) !important;
+        padding-left: max(env(safe-area-inset-left), 5px) !important;
+        padding-bottom: max(env(safe-area-inset-bottom), 15px) !important;
+    }
+
+    #character_popup,
+    #world_popup,
+    #left-nav-panel,
+    #right-nav-panel,
+    .drawer-content {
+        width: unset;
+        height: unset;
+        min-width: unset;
+        max-width: unset;
+        min-height: unset;
+        max-height: unset;
+
+        left: 0;
+        right: 0;
+        top: 0;
+        max-height: calc(100svh - env(safe-area-inset-bottom));
+        max-width: min(calc(100% - env(safe-area-inset-right) - env(safe-area-inset-left)), calc(100% - 5px));
+        margin: 0 auto;
+        margin-top: 40px;
+
+
+    }
 }
