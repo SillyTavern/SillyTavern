@@ -715,7 +715,7 @@ input[type="file"] {
 }
 
 #rm_print_characters_block {
-    padding: 15px 0;
+    padding: 5px 0;
     overflow-y: auto;
     flex-grow: 1;
     display: flex;
