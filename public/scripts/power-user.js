@@ -37,6 +37,7 @@ let power_user = {
     chat_display: chat_styles.DEFAULT,
     sheld_width: sheld_width.DEFAULT,
     play_message_sound: false,
+    play_sound_unfocused: true,
 };
 
 const storage_keys = {
@@ -57,6 +58,10 @@ const storage_keys = {
 
 function playMessageSound() {
     if (!power_user.play_message_sound) {
+        return;
+    }
+
+    if (power_user.play_sound_unfocused) {
         return;
     }
 
@@ -144,6 +149,7 @@ function loadPowerUserSettings(settings) {
     $("#fast_ui_mode").prop("checked", power_user.fast_ui_mode);
     $("#multigen").prop("checked", power_user.multigen);
     $("#play_message_sound").prop("checked", power_user.play_message_sound);
+    $("#play_sound_unfocused").prop("checked", power_user.play_sound_unfocused);
     $(`input[name="avatar_style"][value="${power_user.avatar_style}"]`).prop("checked", true);
     $(`input[name="chat_display"][value="${power_user.chat_display}"]`).prop("checked", true);
     $(`input[name="sheld_width"][value="${power_user.sheld_width}"]`).prop("checked", true);
@@ -224,6 +230,11 @@ $(document).ready(() => {
 
     $("#play_message_sound").on('input', function () {
         power_user.play_message_sound = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $("#play_sound_unfocused").on('input', function () {
+        power_user.play_sound_unfocused = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 });
