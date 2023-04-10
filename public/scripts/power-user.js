@@ -56,12 +56,15 @@ const storage_keys = {
     sheld_width: "TavernAI_sheld_width"
 };
 
+//Updated at the bottom of this script document based on 'focus' and 'blur' events
+let browser_has_focus = true;
+
 function playMessageSound() {
     if (!power_user.play_message_sound) {
         return;
     }
 
-    if (power_user.play_sound_unfocused) {
+    if (power_user.play_sound_unfocused && browser_has_focus) {
         return;
     }
 
@@ -236,5 +239,13 @@ $(document).ready(() => {
     $("#play_sound_unfocused").on('input', function () {
         power_user.play_sound_unfocused = !!$(this).prop('checked');
         saveSettingsDebounced();
+    });
+
+    $(window).on('focus', function() {
+        browser_has_focus = true;
+    });
+
+    $(window).on('blur', function() {
+        browser_has_focus = false;
     });
 });
