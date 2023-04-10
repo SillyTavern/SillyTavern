@@ -42,6 +42,7 @@ import {
     collapseNewlines,
     loadPowerUserSettings,
     playMessageSound,
+    sortCharactersList,
     power_user,
 } from "./scripts/power-user.js";
 
@@ -609,7 +610,7 @@ function printCharacters() {
         //console.log('printcharacters() -- printing -- ChID '+i+' ('+item.name+')');
     });
     printGroups();
-    sortCharactersList('name', 'asc');
+    sortCharactersList();
 }
 
 async function getCharacters() {
@@ -3063,14 +3064,6 @@ function setGenerationProgress(progress) {
             'background': `linear-gradient(90deg, #008000d6 ${progress}%, transparent ${progress}%)`,
             'transition': '0.25s ease-in-out'
         });
-    }
-}
-
-function sortCharactersList(field, order) {
-    let orderedList = characters.slice().sort((a, b) => order == 'asc' ? a[field].localeCompare(b[field]) : b[field].localeCompare(a[field]));
-
-    for (let i = 0; i < characters.length; i++) {
-        $(`.character_select[chid="${i}"]`).css({ 'order': orderedList.indexOf(characters[i]) });
     }
 }
 

@@ -859,17 +859,20 @@ img[src="img/load.svg"] {
     display: flex;
     flex-direction: row;
     align-items: center;
-    margin-bottom: 10px;
-    padding-left: 5px;
+    margin: 10px 5px;
+    column-gap: 10px;
+}
+
+#character_sort_order {
+    margin: 0;
+    flex: 1;
 }
 
 #character_search_bar {
     flex: 1;
     font-size: 1em;
     padding-left: 0.75em;
-    margin-left: 0;
-    margin-right: 0.5rem;
-    margin-bottom: 0;
+    margin: 0;
 }
 
 input[type=search]::-webkit-search-cancel-button {

@@ -739,6 +739,36 @@ app.post("/getcharacters", jsonParser, function (request, response) {
                 //console.log(jsonObject);
                 characters[i] = {};
                 characters[i] = jsonObject;
+
+                try {
+                    const charStat = fs.statSync(path.join(charactersPath, item));
+                    characters[i]['date_added'] = charStat.birthtimeMs;
+                    const char_dir = path.join(chatsPath, item.replace('.png', ''));
+    
+                    let chat_size = 0;
+                    let date_last_chat = 0;
+    
+                    if (fs.existsSync(char_dir)) { 
+                        const chats = fs.readdirSync(char_dir);
+    
+                        if (Array.isArray(chats) && chats.length) {
+                            for (const chat of chats) {
+                                const chatStat = fs.statSync(path.join(char_dir, chat));
+                                chat_size += chatStat.size;
+                                date_last_chat = Math.max(date_last_chat, chatStat.mtimeMs);
+                            }
+                        }
+                    }
+    
+                    characters[i]['date_last_chat'] = date_last_chat;
+                    characters[i]['chat_size'] = chat_size;
+                }
+                catch {
+                    characters[i]['date_added'] = 0;
+                    characters[i]['date_last_chat'] = 0;
+                    characters[i]['chat_size'] = 0;
+                }
+                
                 i++;
             } catch (error) {
                 console.log(`Could not read character: ${item}`);
