@@ -42,6 +42,7 @@ import {
     collapseNewlines,
     loadPowerUserSettings,
     playMessageSound,
+    sortCharactersList,
     power_user,
 } from "./scripts/power-user.js";
 
@@ -238,7 +239,9 @@ const system_messages = {
             '<li>Connect to one of the supported generation APIs</li>',
             '<li>Create or pick a character from the list</li>',
             '</ul>',
-            'Still have questions left?\n',
+            "<h4>Running on Colab and can't get an answer from the AI or getting Out of Memory errors?</h4>",
+            'Set a lower Context Size in AI generation settings.<br>Values in range of 1400-1600 Tokens would be the safest choice.',
+            '<h4>Still have questions left?</h4>',
             'Check out built-in help or type <tt>/?</tt> in any chat.'
         ].join('')
     },
@@ -607,7 +610,7 @@ function printCharacters() {
         //console.log('printcharacters() -- printing -- ChID '+i+' ('+item.name+')');
     });
     printGroups();
-    sortCharactersList('name', 'asc');
+    sortCharactersList();
 }
 
 async function getCharacters() {
@@ -3061,14 +3064,6 @@ function setGenerationProgress(progress) {
             'background': `linear-gradient(90deg, #008000d6 ${progress}%, transparent ${progress}%)`,
             'transition': '0.25s ease-in-out'
         });
-    }
-}
-
-function sortCharactersList(field, order) {
-    let orderedList = characters.slice().sort((a, b) => order == 'asc' ? a[field].localeCompare(b[field]) : b[field].localeCompare(a[field]));
-
-    for (let i = 0; i < characters.length; i++) {
-        $(`.character_select[chid="${i}"]`).css({ 'order': orderedList.indexOf(characters[i]) });
     }
 }
 

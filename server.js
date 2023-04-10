@@ -739,6 +739,36 @@ app.post("/getcharacters", jsonParser, function (request, response) {
                 //console.log(jsonObject);
                 characters[i] = {};
                 characters[i] = jsonObject;
+
+                try {
+                    const charStat = fs.statSync(path.join(charactersPath, item));
+                    characters[i]['date_added'] = charStat.birthtimeMs;
+                    const char_dir = path.join(chatsPath, item.replace('.png', ''));
+    
+                    let chat_size = 0;
+                    let date_last_chat = 0;
+    
+                    if (fs.existsSync(char_dir)) { 
+                        const chats = fs.readdirSync(char_dir);
+    
+                        if (Array.isArray(chats) && chats.length) {
+                            for (const chat of chats) {
+                                const chatStat = fs.statSync(path.join(char_dir, chat));
+                                chat_size += chatStat.size;
+                                date_last_chat = Math.max(date_last_chat, chatStat.mtimeMs);
+                            }
+                        }
+                    }
+    
+                    characters[i]['date_last_chat'] = date_last_chat;
+                    characters[i]['chat_size'] = chat_size;
+                }
+                catch {
+                    characters[i]['date_added'] = 0;
+                    characters[i]['date_last_chat'] = 0;
+                    characters[i]['chat_size'] = 0;
+                }
+                
                 i++;
             } catch (error) {
                 console.log(`Could not read character: ${item}`);
@@ -1893,16 +1923,21 @@ app.get('/thumbnail', jsonParser, async function (request, response) {
 app.post("/getstatus_openai", jsonParser, function (request, response_getstatus_openai = response) {
     if (!request.body) return response_getstatus_openai.sendStatus(400);
     api_key_openai = request.body.key;
+    const api_url = new URL(request.body.reverse_proxy || api_openai).toString();
     const args = {
         headers: { "Authorization": "Bearer " + api_key_openai }
     };
-    client.get(api_openai + "/models", args, function (data, response) {
+    client.get(api_url + "/models", args, function (data, response) {
         if (response.statusCode == 200) {
             console.log(data);
             response_getstatus_openai.send(data);//data);
         }
         if (response.statusCode == 401) {
             console.log('Access Token is incorrect.');
+            response_getstatus_openai.send({ error: true });
+        }
+        if (response.statusCode == 404) {
+            console.log('Endpoint not found.');
             response_getstatus_openai.send({ error: true });
         }
         if (response.statusCode == 500 || response.statusCode == 501 || response.statusCode == 501 || response.statusCode == 503 || response.statusCode == 507) {
@@ -1916,11 +1951,12 @@ app.post("/getstatus_openai", jsonParser, function (request, response_getstatus_
 
 app.post("/generate_openai", jsonParser, function (request, response_generate_openai) {
     if (!request.body) return response_generate_openai.sendStatus(400);
+    const api_url = new URL(request.body.reverse_proxy || api_openai).toString();
 
     console.log(request.body);
     const config = {
         method: 'post',
-        url: api_openai + '/chat/completions',
+        url: api_url + '/chat/completions',
         headers: {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer ' + api_key_openai

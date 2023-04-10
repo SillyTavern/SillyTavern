@@ -1,9 +1,10 @@
-import { saveSettingsDebounced } from "../script.js";
+import { saveSettingsDebounced, characters } from "../script.js";
 
 export {
     loadPowerUserSettings,
     collapseNewlines,
     playMessageSound,
+    sortCharactersList,
     power_user,
 };
 
@@ -37,6 +38,9 @@ let power_user = {
     chat_display: chat_styles.DEFAULT,
     sheld_width: sheld_width.DEFAULT,
     play_message_sound: false,
+    play_sound_unfocused: true,
+    sort_field: 'name',
+    sort_order: 'asc',
 };
 
 const storage_keys = {
@@ -59,7 +63,11 @@ const storage_keys = {
 let browser_has_focus = true;
 
 function playMessageSound() {
-    if (!power_user.play_message_sound || browser_has_focus) {
+    if (!power_user.play_message_sound) {
+        return;
+    }
+
+    if (power_user.play_sound_unfocused && browser_has_focus) {
         return;
     }
 
@@ -147,9 +155,29 @@ function loadPowerUserSettings(settings) {
     $("#fast_ui_mode").prop("checked", power_user.fast_ui_mode);
     $("#multigen").prop("checked", power_user.multigen);
     $("#play_message_sound").prop("checked", power_user.play_message_sound);
+    $("#play_sound_unfocused").prop("checked", power_user.play_sound_unfocused);
     $(`input[name="avatar_style"][value="${power_user.avatar_style}"]`).prop("checked", true);
     $(`input[name="chat_display"][value="${power_user.chat_display}"]`).prop("checked", true);
     $(`input[name="sheld_width"][value="${power_user.sheld_width}"]`).prop("checked", true);
+    $(`#character_sort_order option[data-order="${power_user.sort_order}"][data-field="${power_user.sort_field}"]`).prop("selected", true);
+    sortCharactersList();
+}
+
+function sortCharactersList() {
+    const sortFunc = (a, b) => power_user.sort_order == 'asc' ? compareFunc(a, b) : compareFunc(b, a);
+    const compareFunc = (first, second) => typeof first[power_user.sort_field] == "string"
+        ? first[power_user.sort_field].localeCompare(second[power_user.sort_field])
+        : first[power_user.sort_field] - second[power_user.sort_field];
+
+    if (power_user.sort_field == undefined || characters.length === 0) {
+        return;
+    }
+
+    let orderedList = characters.slice().sort(sortFunc);
+
+    for (let i = 0; i < characters.length; i++) {
+        $(`.character_select[chid="${i}"]`).css({ 'order': orderedList.indexOf(characters[i]) });
+    }
 }
 
 $(document).ready(() => {
@@ -230,9 +258,22 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
+    $("#play_sound_unfocused").on('input', function () {
+        power_user.play_sound_unfocused = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $("#character_sort_order").on('change', function () {
+        power_user.sort_field = $(this).find(":selected").data('field');
+        power_user.sort_order = $(this).find(":selected").data('order');
+        sortCharactersList();
+        saveSettingsDebounced();
+    });
+
     $(window).on('focus', function() {
         browser_has_focus = true;
     });
+
     $(window).on('blur', function() {
         browser_has_focus = false;
     });

@@ -247,6 +247,18 @@
                         <div id="range_block_openai">
                             <div class="range-block">
                                 <div class="range-block-title">
+                                    OpenAI Reverse Proxy
+                                </div>
+                                <div class="range-block-counter">
+                                    Alternative server URL (leave empty to use the default value).<br>
+                                    <b class="failure">Don't expose your real API keys to reverse proxies!</b>
+                                </div>
+                                <div class="range-block-range">
+                                    <input id="openai_reverse_proxy" type="text" class="text_pole" placeholder="https://api.openai.com/v1" />
+                                </div>
+                            </div>
+                            <div class="range-block">
+                                <div class="range-block-title">
                                     OpenAI Context Size
                                 </div>
                                 <div class="range-block-counter">
@@ -694,7 +706,7 @@
                                     Text to be send as a character nudge
                                 </div>
                                 <div class="range-block-range">
-                                    <input id="poe_nudge_text" class="text_pole" type="text" />
+                                    <textarea id="poe_nudge_text" class="text_pole" rows="3"></textarea>
                                 </div>
                             </div>
                         </div>
@@ -1100,6 +1112,11 @@
                             </span>
                         </label>
 
+                        <label for="play_sound_unfocused" class="checkbox_label">
+                            <input id="play_sound_unfocused" type="checkbox" />
+                            Sound only for unfocused window
+                        </label>
+
                         <label for="fast_ui_mode" class="checkbox_label" title="Blur can cause browser lag, especially in Bubble Chat mode. To fix: Turn on your browser's Hardware Acceleration, and restart your browser or simply disable the blur effect with this toggle.">
                             <input id="fast_ui_mode" type="checkbox" />
                             No Blur Effect
@@ -1357,6 +1374,15 @@
                     </div>
                     <form id="form_character_search_form" action="javascript:void(null);">
                         <input id="character_search_bar" class="text_pole" type="search" placeholder="Character search..." />
+                        <select id="character_sort_order" title="Characters sorting order">
+                            <option data-field="name" data-order="asc">Name, A-Z</option>
+                            <option data-field="name" data-order="desc">Name, Z-A</option>
+                            <option data-field="date_added" data-order="desc">Date added, newer first</option>
+                            <option data-field="date_added" data-order="asc">Date added, older first</option>
+                            <option data-field="date_last_chat" data-order="desc">Recently chatted</option>
+                            <option data-field="chat_size" data-order="desc">Most chatted</option>
+                            <option data-field="chat_size" data-order="asc">Least chatted</option>
+                        </select>
                     </form>
                     <div id="rm_print_characters_block"></div>
                 </div>
@@ -1410,7 +1436,7 @@
             <hr>
             <h4>Personality summary</h4>
             <h5>A brief description of the personality <a href="/notes/2" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
-            <input id="personality_textarea" name="personality" placeholder="" form="form_create" class="text_pole" autocomplete="off">
+            <textarea id="personality_textarea" name="personality" placeholder="" form="form_create" class="text_pole" autocomplete="off" rows="3"></textarea>
         </div>
 
         <div id="scenario_div">
@@ -1420,7 +1446,7 @@
                     <span class="note-link-span">?</span>
                 </a>
             </h5>
-            <input id="scenario_pole" name="scenario" class="text_pole" maxlength="9999" value="" autocomplete="off" form="form_create">
+            <textarea id="scenario_pole" name="scenario" class="text_pole" maxlength="9999" value="" autocomplete="off" form="form_create" rows="3"></textarea>
         </div>
 
         <div id="talkativeness_div">

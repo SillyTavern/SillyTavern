@@ -78,6 +78,7 @@ const default_settings = {
     jailbreak_prompt: default_jailbreak_prompt,
     openai_model: 'gpt-3.5-turbo-0301',
     jailbreak_system: false,
+    reverse_proxy: '',
 };
 
 const oai_settings = {
@@ -98,10 +99,27 @@ const oai_settings = {
     jailbreak_prompt: default_jailbreak_prompt,
     openai_model: 'gpt-3.5-turbo-0301',
     jailbreak_system: false,
+    reverse_proxy: '',
 };
 
 let openai_setting_names;
 let openai_settings;
+
+function validateReverseProxy() {
+    if (!oai_settings.reverse_proxy) {
+        return;
+    }
+
+    try {
+        new URL(oai_settings.reverse_proxy);
+    }
+    catch (err) {
+        callPopup('Entered reverse proxy address is not a valid URL', 'text');
+        setOnlineStatus('no_connection');
+        resultCheckStatusOpen();
+        throw err;
+    }
+}
 
 function setOpenAIOnlineStatus(value) {
     is_get_status_openai = value;
@@ -396,6 +414,10 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
 }
 
 async function sendOpenAIRequest(openai_msgs_tosend) {
+    if (oai_settings.reverse_proxy) {
+        validateReverseProxy();
+    }
+
     const generate_data = {
         "messages": openai_msgs_tosend,
         "model": oai_settings.openai_model,
@@ -404,6 +426,7 @@ async function sendOpenAIRequest(openai_msgs_tosend) {
         "presence_penalty": parseFloat(oai_settings.pres_pen_openai),
         "max_tokens": oai_settings.openai_max_tokens,
         "stream": false, //oai_settings.stream_openai,
+        "reverse_proxy": oai_settings.reverse_proxy,
     };
 
     const generate_url = '/generate_openai';
@@ -589,17 +612,28 @@ function loadOpenAISettings(data, settings) {
 
     $('#pres_pen_openai').val(oai_settings.pres_pen_openai);
     $('#pres_pen_counter_openai').text(Number(oai_settings.pres_pen_openai).toFixed(2));
+
+    if (settings.reverse_proxy !== undefined) oai_settings.reverse_proxy = settings.reverse_proxy;
+    $('#openai_reverse_proxy').val(oai_settings.reverse_proxy);
 }
 
 async function getStatusOpen() {
     if (is_get_status_openai) {
-        let data = { key: oai_settings.api_key_openai };
+
+        let data = {
+            key: oai_settings.api_key_openai,
+            reverse_proxy: oai_settings.reverse_proxy,
+        };
 
         jQuery.ajax({
             type: 'POST', // 
             url: '/getstatus_openai', // 
             data: JSON.stringify(data),
-            beforeSend: function () { },
+            beforeSend: function () {
+                if (oai_settings.reverse_proxy) {
+                    validateReverseProxy();
+                }
+            },
             cache: false,
             dataType: "json",
             contentType: "application/json",
@@ -900,6 +934,11 @@ $(document).ready(function () {
     $("#jailbreak_prompt_restore").click(function () {
         oai_settings.jailbreak_prompt = default_jailbreak_prompt;
         $('#jailbreak_prompt_textarea').val(oai_settings.jailbreak_prompt);
+        saveSettingsDebounced();
+    });
+
+    $("#openai_reverse_proxy").on('input', function () {
+        oai_settings.reverse_proxy = $(this).val();
         saveSettingsDebounced();
     });
 });
