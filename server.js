@@ -1923,10 +1923,11 @@ app.get('/thumbnail', jsonParser, async function (request, response) {
 app.post("/getstatus_openai", jsonParser, function (request, response_getstatus_openai = response) {
     if (!request.body) return response_getstatus_openai.sendStatus(400);
     api_key_openai = request.body.key;
+    const api_url = new URL(request.body.reverse_proxy || api_openai).toString();
     const args = {
         headers: { "Authorization": "Bearer " + api_key_openai }
     };
-    client.get(api_openai + "/models", args, function (data, response) {
+    client.get(api_url + "/models", args, function (data, response) {
         if (response.statusCode == 200) {
             console.log(data);
             response_getstatus_openai.send(data);//data);
@@ -1946,11 +1947,12 @@ app.post("/getstatus_openai", jsonParser, function (request, response_getstatus_
 
 app.post("/generate_openai", jsonParser, function (request, response_generate_openai) {
     if (!request.body) return response_generate_openai.sendStatus(400);
+    const api_url = new URL(request.body.reverse_proxy || api_openai).toString();
 
     console.log(request.body);
     const config = {
         method: 'post',
-        url: api_openai + '/chat/completions',
+        url: api_url + '/chat/completions',
         headers: {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer ' + api_key_openai
