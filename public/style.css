@@ -1946,7 +1946,7 @@ input[type="range"]::-webkit-slider-thumb {
     background-color: var(--black30a);
     backdrop-filter: blur(50px);
     -webkit-backdrop-filter: blur(30px);
-    grid-template-rows: 50px 110px 110px 90px auto;
+    grid-template-rows: 50px 1fr 1fr 1fr 5fr;
     grid-gap: 10px;
     max-width: var(--sheldWidth);
     height: calc(100svh - 40px);
