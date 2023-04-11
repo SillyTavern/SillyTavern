@@ -62,6 +62,9 @@ const storage_keys = {
     font_scale: "TavernAI_font_scale",
 };
 
+const chat = document.getElementById('chat');
+const chatTransition = window.getComputedStyle(chat).transition;
+
 //Updated at the bottom of this script document based on 'focus' and 'blur' events
 let browser_has_focus = true;
 
@@ -117,8 +120,6 @@ async function applyFontScale() {
     power_user.font_scale = Number(localStorage.getItem(storage_keys.font_scale) ?? 1);
 
     // temporarily unset transition from chat to not make the browser calculate the animation
-    const chat = document.getElementById('chat');
-    const chatTransition = window.getComputedStyle(chat).transition;
     chat.style.transition = 'unset';
 
     // now apply the font scale to the document
