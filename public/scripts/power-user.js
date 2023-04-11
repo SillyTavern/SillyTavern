@@ -348,25 +348,25 @@ $(document).ready(() => {
 
     $("#main-text-color-picker").on('change', (evt) => {
         power_user.main_text_color = evt.detail.rgba;
-        applyColorDebounced('main');
+        applyThemeColor('main');
         saveSettingsDebounced();
     });
 
     $("#italics-color-picker").on('change', (evt) => {
         power_user.italics_text_color = evt.detail.rgba;
-        applyColorDebounced('italics');
+        applyThemeColor('italics');
         saveSettingsDebounced();
     });
 
     $("#fastui-bg-color-picker").on('change', (evt) => {
         power_user.fastui_bg_color = evt.detail.rgba;
-        applyColorDebounced('fastUIBG');
+        applyThemeColor('fastUIBG');
         saveSettingsDebounced();
     });
 
     $("#blur-tint-color-picker").on('change', (evt) => {
         power_user.blur_tint_color = evt.detail.rgba;
-        applyColorDebounced('blurTint');
+        applyThemeColor('blurTint');
         saveSettingsDebounced();
     });
 
