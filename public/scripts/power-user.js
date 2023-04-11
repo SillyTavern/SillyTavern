@@ -1,4 +1,5 @@
 import { saveSettingsDebounced, characters } from "../script.js";
+import { delay } from "./utils.js";
 
 export {
     loadPowerUserSettings,
