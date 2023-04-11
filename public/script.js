@@ -977,6 +977,10 @@ function substituteParams(content, _name1, _name2) {
     return content;
 }
 
+function getStoppingStrings() {
+    return [`\n${name1}:`];
+}
+
 function getSlashCommand(message, type) {
     if (type == "regenerate" || type == "swipe") {
         return null;
@@ -1737,6 +1741,8 @@ async function Generate(type, automatic_trigger, force_name2) {
                         'length_penalty': textgenerationwebui_settings.length_penalty,
                         'early_stopping': textgenerationwebui_settings.early_stopping,
                         'seed': textgenerationwebui_settings.seed,
+                        'add_bos_token': textgenerationwebui_settings.add_bos_token, 
+                        'custom_stopping_strings': getStoppingStrings().concat(textgenerationwebui_settings.custom_stopping_strings),
                     }
                 ];
                 generate_data = { "data": [JSON.stringify(data)] };

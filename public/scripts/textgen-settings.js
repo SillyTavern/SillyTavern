@@ -23,6 +23,8 @@ let textgenerationwebui_settings = {
     early_stopping: false,
     seed: -1,
     preset: 'Default',
+    add_bos_token: true, 
+    custom_stopping_strings: [],
 };
 
 let textgenerationwebui_presets = [];
@@ -43,6 +45,7 @@ const setting_names = [
     "do_sample",
     "early_stopping",
     "seed",
+    "add_bos_token",
 ];
 
 function selectPreset(name) {
