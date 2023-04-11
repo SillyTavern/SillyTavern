@@ -40,14 +40,18 @@ https://rentry.org/TAI_Termux
 ## This version includes
 * A heavily modified TavernAI 1.2.8 (more than 50% of code rewritten or optimized)
 * Swipes
-* Group chats
-* Chat bookmarks (duplicates the current in its curent state)
-* Advanced KoboldAI generation settings
-* World Info support
+* Group chats: multi-bot rooms for characters to talk to you or each other
+* Chat bookmarks / branching (duplicates the current dialogue in its current state)
+* Advanced KoboldAI / TextGen generation settings with a lot of community-made presets
+* World Info support: create a rich lore or save tokens on your character card
 * [Oobabooga's TextGen WebUI](https://github.com/oobabooga/text-generation-webui) API connection
+* [AI Horde](https://horde.koboldai.net/) connection
+* [Poe.com](https://poe.com) (ChatGPT / Claude) connection
 * Soft prompts selector for KoboldAI
 * Prompt generation formatting tweaking
+* webp character card interoperability (PNG is still an internal format)
 * Extensibility support via [SillyLossy's TAI-extras](https://github.com/Cohee1207/TavernAI-extras) plugins
+    * Author's Note / Character Bias
     * Character emotional expressions
     * Auto-Summary of the chat history
     * Sending images to chat, and the AI interpreting the content.
@@ -78,12 +82,18 @@ https://rentry.org/TAI_Termux
 * Better Past Chats View
   * New Chat filenames are saved in a readable format of "(character) - (when it was created)"
   * Chat preview increased from 40 character to 300.
+  * Multiple options for characters list sorting (by name, creation date, chat sizes).
 
 * Now, by default the settings panel will close when you click away from it.
 * Clicking the Lock on the nav panel will hold the panel open, and this setting be remembered across sessions.
 * Nav panel status of open or closed will also be saved across sessions.
 
 * mobile UI optimized for iOS, and supports saving a shortcut to iOS homescreen and opening in fullscreen mode.
+* Customizable chat UI:
+    * Play a sound when new message arrives
+    * Switch between round or rectangle avatar styles
+    * Have a wider chat window on desktop
+    * Optional semi-transparent glass-like panels
 
 ## Installation
 
@@ -120,7 +130,7 @@ if you want other people on the internet to connect, and check [here](https://wh
 
 ## Performance issues?
 
-Try enabling the Fast UI mode on User settings panel.
+Try enabling the No Blur Effect mode on User settings panel.
 
 ## Questions or suggestions?
 Contact us on Discord: Cohee#1207 or RossAscends#1779
