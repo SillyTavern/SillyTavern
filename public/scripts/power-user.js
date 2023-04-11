@@ -23,8 +23,6 @@ const sheld_width = {
     w1000px: 1,
 }
 
-var font_scale = 1;
-
 let power_user = {
     collapse_newlines: false,
     force_pygmalion_formatting: false,
@@ -43,7 +41,7 @@ let power_user = {
     play_sound_unfocused: true,
     sort_field: 'name',
     sort_order: 'asc',
-    font_scale: '1'
+    font_scale: 1,
 };
 
 const storage_keys = {
@@ -60,7 +58,7 @@ const storage_keys = {
     avatar_style: "TavernAI_avatar_style",
     chat_display: "TavernAI_chat_display",
     sheld_width: "TavernAI_sheld_width",
-    font_scale: "TavernAI_font_scale"
+    font_scale: "TavernAI_font_scale",
 };
 
 //Updated at the bottom of this script document based on 'focus' and 'blur' events
@@ -113,32 +111,23 @@ function applySheldWidth() {
         r.style.setProperty('--sheldWidth', '800px');
     }
 }
-function applyFontScale() {
 
-    const sliders = [
-        {
-            sliderId: "#font_scale",
-            counterId: "#font_scale_counter",
-            format: (val) => `${val}`,
-            setValue: (val) => { font_scale = Number(val); },
-        }
-    ];
+async function applyFontScale() {
+    power_user.font_scale = Number(localStorage.getItem(storage_keys.font_scale) ?? 1);
 
-    sliders.forEach(slider => {
-        $(document).on("input", slider.sliderId, function () {
-            const value = $(this).val();
-            const formattedValue = slider.format(value);
-            slider.setValue(value);
-            $(slider.counterId).text(formattedValue);
-            console.log('saving');
-            saveSettingsDebounced();
-        });
-    });
+    // temporarily unset transition from chat to not make the browser calculate the animation
+    const chat = document.getElementById('chat');
+    const chatTransition = window.getComputedStyle(chat).transition;
+    chat.style.transition = 'unset';
 
-    power_user.font_scale = Number(localStorage.getItem(storage_keys.font_scale) ?? chat_styles.DEFAULT);
-    let r = document.documentElement;
-    r.style.setProperty('--fontScale', power_user.font_scale);
-    $("#font_scale_counter").html(power_user.font_scale);
+    // now apply the font scale to the document
+    document.documentElement.style.setProperty('--fontScale', power_user.font_scale);
+    $("#font_scale_counter").text(power_user.font_scale);
+
+    // a small delay to let the browser do the layout redraw
+    await delay(1);
+    // set transition back to chat
+    chat.style.transition = chatTransition;
 }
 
 applyAvatarStyle();
@@ -175,7 +164,7 @@ function loadPowerUserSettings(settings) {
     power_user.avatar_style = Number(localStorage.getItem(storage_keys.avatar_style) ?? avatar_styles.ROUND);
     power_user.chat_display = Number(localStorage.getItem(storage_keys.chat_display) ?? chat_styles.DEFAULT);
     power_user.sheld_width = Number(localStorage.getItem(storage_keys.sheld_width) ?? sheld_width.DEFAULT);
-    power_user.font_scale = Number(localStorage.getItem(storage_keys.font_scale) ?? font_scale);
+    power_user.font_scale = Number(localStorage.getItem(storage_keys.font_scale) ?? 1);
 
     $("#force-pygmalion-formatting-checkbox").prop("checked", power_user.force_pygmalion_formatting);
     $("#collapse-newlines-checkbox").prop("checked", power_user.collapse_newlines);
@@ -290,8 +279,8 @@ $(document).ready(() => {
 
     $(`input[name="font_scale"]`).on('input', function (e) {
         power_user.font_scale = Number(e.target.value);
+        $("#font_scale_counter").text(power_user.font_scale);
         localStorage.setItem(storage_keys.font_scale, power_user.font_scale);
-        /* console.log("font scale: " + power_user.font_scale); */
         applyFontScale();
     });
 
