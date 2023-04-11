@@ -128,7 +128,6 @@ function applySheldWidth() {
 }
 
 async function applyThemeColor(type) {
-
     const $MainTextColorPicker = document.getElementById('main-text-color-picker');
     const $ItalicsTextColorPicker = document.getElementById('italics-color-picker');
     const $FastUIBGColorPicker = document.getElementById('fastui-bg-color-picker');
@@ -138,25 +137,21 @@ async function applyThemeColor(type) {
     chat.style.transition = 'unset';
 
     if (type === 'main') {
-        $MainTextColorPicker.color = `${power_user.main_text_color}`;
         document.documentElement.style.setProperty('--SmartThemeBodyColor', power_user.main_text_color);
         console.log($MainTextColorPicker.color);
     }
 
     if (type === 'italics') {
-        $ItalicsTextColorPicker.color = `${power_user.italics_text_color}`;
         document.documentElement.style.setProperty('--SmartThemeEmColor', power_user.italics_text_color);
         console.log($ItalicsTextColorPicker.color);
     }
 
     if (type === 'fastUIBG') {
-        $FastUIBGColorPicker.color = `${power_user.fastui_bg_color}`;
         document.documentElement.style.setProperty('--SmartThemeFastUIBGColor', power_user.fastui_bg_color);
         console.log($FastUIBGColorPicker.color);
     }
 
     if (type === 'blurTint') {
-        $BlurTintColorPicker.color = `${power_user.blur_tint_color}`;
         document.documentElement.style.setProperty('--SmartThemeBlurTintColor', power_user.blur_tint_color);
         console.log($BlurTintColorPicker.color);
     }
@@ -189,8 +184,6 @@ applyChatDisplay();
 applySheldWidth();
 applyFontScale();
 applyThemeColor();
-
-const applyColorDebounced = debounce((type) => applyThemeColor(type), 100);
 
 // TODO delete in next release
 function loadFromLocalStorage() {
