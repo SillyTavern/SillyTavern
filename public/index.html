@@ -47,6 +47,7 @@
     <script type="module" src="scripts/horde.js"></script>
     <script type="module" src="scripts/poe.js"></script>
     <script type="module" src="scripts/RossAscends-mods.js"></script>
+    <script type="text/javascript" src="scripts/toolcool-color-picker.js"></script>
 
     <title>Tavern.AI</title>
 </head>
@@ -1106,6 +1107,27 @@
                         <input type="range" id="font_scale" name="font_scale" min="0.8" max="1.2" step="0.05">
                     </div>
                 </div>
+                <div id="color-picker-block" class="range-block">
+                    <div class="range-block-title">
+                        Main Text Color
+                    </div>
+                    <toolcool-color-picker id="main-text-color-picker"></toolcool-color-picker>
+                    <div class="range-block-title">
+                        Italics Text Color
+                    </div>
+                    <toolcool-color-picker id="italics-color-picker"></toolcool-color-picker>
+                    <div class="range-block-title">
+                        FastUI BG Color
+                    </div>
+                    <toolcool-color-picker id="fastui-bg-color-picker"></toolcool-color-picker>
+                    <div class="range-block-title"></div>
+                    Blur Tint Color
+                    <toolcool-color-picker id="blur-tint-color-picker"></toolcool-color-picker>
+                </div>
+
+
+
+
                 <hr>
                 <div id="power-user-options-block">
                     <h3>Power User Options</h3>

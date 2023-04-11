@@ -1,6 +1,7 @@
 import { saveSettingsDebounced, characters } from "../script.js";
 import { delay } from "./utils.js";
 
+
 export {
     loadPowerUserSettings,
     collapseNewlines,
@@ -43,6 +44,11 @@ let power_user = {
     sort_field: 'name',
     sort_order: 'asc',
     font_scale: 1,
+
+    main_text_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBodyColor').trim()}`,
+    italics_text_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeEmColor').trim()}`,
+    fastui_bg_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeFastUIBGColor').trim()}`,
+    blur_tint_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBlurTintColor').trim()}`,
 };
 
 const storage_keys = {
@@ -60,6 +66,11 @@ const storage_keys = {
     chat_display: "TavernAI_chat_display",
     sheld_width: "TavernAI_sheld_width",
     font_scale: "TavernAI_font_scale",
+
+    main_text_color: "TavernAI_main_text_color",
+    italics_text_color: "TavernAI_italics_text_color",
+    fastui_bg_color: "TavernAI_fastui_bg_color",
+    blur_tint_color: "TavernAI_blur_tint_color",
 };
 
 const chat = document.getElementById('chat');
@@ -116,6 +127,40 @@ function applySheldWidth() {
     }
 }
 
+function applyThemeColor(type) {
+
+    const $MainTextColorPicker = document.getElementById('main-text-color-picker');
+    const $ItalicsTextColorPicker = document.getElementById('italics-color-picker');
+    const $FastUIBGColorPicker = document.getElementById('fastui-bg-color-picker');
+    const $BlurTintColorPicker = document.getElementById('blur-tint-color-picker');
+
+    if (type === 'main') {
+        $MainTextColorPicker.color = `${power_user.main_text_color}`;
+        document.documentElement.style.setProperty('--SmartThemeBodyColor', power_user.main_text_color);
+        console.log($MainTextColorPicker.color);
+        return
+    }
+
+    if (type === 'italics') {
+        $ItalicsTextColorPicker.color = `${power_user.italics_text_color}`;
+        document.documentElement.style.setProperty('--SmartThemeEmColor', power_user.italics_text_color);
+        console.log($ItalicsTextColorPicker.color);
+        return
+    }
+    if (type === 'fastUIBG') {
+        $FastUIBGColorPicker.color = `${power_user.fastui_bg_color}`;
+        document.documentElement.style.setProperty('--SmartThemeFastUIBGColor', power_user.fastui_bg_color);
+        console.log($FastUIBGColorPicker.color);
+        return
+    }
+    if (type === 'blurTint') {
+        $BlurTintColorPicker.color = `${power_user.blur_tint_color}`;
+        document.documentElement.style.setProperty('--SmartThemeBlurTintColor', power_user.blur_tint_color);
+        console.log($BlurTintColorPicker.color);
+        return
+    }
+}
+
 async function applyFontScale() {
     power_user.font_scale = Number(localStorage.getItem(storage_keys.font_scale) ?? 1);
 
@@ -137,6 +182,7 @@ switchUiMode();
 applyChatDisplay();
 applySheldWidth();
 applyFontScale();
+applyThemeColor();
 
 // TODO delete in next release
 function loadFromLocalStorage() {
@@ -185,6 +231,12 @@ function loadPowerUserSettings(settings) {
     $(`input[name="sheld_width"][value="${power_user.sheld_width}"]`).prop("checked", true);
     $("#font_scale").val(power_user.font_scale);
     $("#font_scale_counter").html(power_user.font_scale);
+
+    $("#main-text-color-picker").attr('color', power_user.main_text_color);
+    $("#italics-color-picker").attr('color', power_user.italics_text_color);
+    $("#fastui-bg-color-picker").attr('color', power_user.fastui_bg_color);
+    $("#blur-tint-color-picker").attr('color', power_user.blur_tint_color);
+
     $(`#character_sort_order option[data-order="${power_user.sort_order}"][data-field="${power_user.sort_field}"]`).prop("selected", true);
     sortCharactersList();
 }
@@ -284,6 +336,30 @@ $(document).ready(() => {
         $("#font_scale_counter").text(power_user.font_scale);
         localStorage.setItem(storage_keys.font_scale, power_user.font_scale);
         applyFontScale();
+    });
+
+    $("#main-text-color-picker").on('change', (evt) => {
+        power_user.main_text_color = evt.detail.rgba;
+        applyThemeColor('main');
+        saveSettingsDebounced();
+    });
+
+    $("#italics-color-picker").on('change', (evt) => {
+        power_user.italics_text_color = evt.detail.rgba;
+        applyThemeColor('italics');
+        saveSettingsDebounced();
+    });
+
+    $("#fastui-bg-color-picker").on('change', (evt) => {
+        power_user.fastui_bg_color = evt.detail.rgba;
+        applyThemeColor('fastUIBG');
+        saveSettingsDebounced();
+    });
+
+    $("#blur-tint-color-picker").on('change', (evt) => {
+        power_user.blur_tint_color = evt.detail.rgba;
+        applyThemeColor('blurTint');
+        saveSettingsDebounced();
     });
 
     $("#play_message_sound").on('input', function () {

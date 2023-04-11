@@ -35,14 +35,19 @@
     --greyCAIbg: rgb(36, 36, 37);
     --ivory: rgb(220, 220, 210);
 
+
+    /*Default Theme, will be changed by ToolCool Color Picker*/
+    --SmartThemeBodyColor: rgb(220, 220, 210);
+    --SmartThemeEmColor: rgb(175, 175, 175);
+    --SmartThemeFastUIBGColor: rgba(0, 0, 0, 0.9);
+    --SmartThemeBlurTintColor: rgba(255, 255, 255, 0.5);
+
     --sheldWidth: 800px;
     /*base variable calculated in rems*/
     --fontScale: 1;
     --mainFontSize: calc(var(--fontScale) * 1rem);
 
 }
-
-
 
 * {
     box-sizing: border-box;
@@ -70,7 +75,7 @@ body {
     background-size: cover;
     font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
     font-size: var(--mainFontSize);
-    color: var(--ivory);
+    color: var(--SmartThemeBodyColor);
 }
 
 ::-webkit-scrollbar {
@@ -94,7 +99,6 @@ body {
 .mes_text li tt {
     min-width: 80px;
     display: inline-block;
-    color: var(--grey50) !important;
     text-align: right;
 }
 
@@ -111,7 +115,7 @@ body {
 
 .mes_text i,
 .mes_text em {
-    color: var(--white60a);
+    color: var(--SmartThemeEmColor);
     font-weight: 500;
 }
 
@@ -173,7 +177,7 @@ code {
     border-bottom: 1px solid var(--black70a);
     box-shadow: 0 2px 20px 0 var(--black70a);
     backdrop-filter: blur(10px);
-    background-color: var(--black70a);
+    background-color: var(--SmartThemeBlurTintColor);
     /* border-radius: 0 0 20px 20px; */
     -webkit-backdrop-filter: blur(10px);
     z-index: 3000;
@@ -205,7 +209,7 @@ code {
     border-left: 1px solid var(--grey30a);
     border-right: 1px solid var(--grey30a);
     backdrop-filter: blur(10px);
-    background-color: var(--black60a);
+    background-color: var(--SmartThemeBlurTintColor);
     -webkit-backdrop-filter: blur(10px);
     text-shadow: #000 0 0 3px;
     scrollbar-width: thin;
@@ -377,7 +381,7 @@ code {
     padding: 20px 10px 0 10px;
     margin-top: 0;
     width: 100%;
-    color: var(--ivory, white);
+    color: var(--SmartThemeBodyColor);
 }
 
 .last_mes {
@@ -557,7 +561,6 @@ input,
 select {
     font-size: var(--mainFontSize);
 }
-
 
 #send_textarea {
     /*     font-size: 1rem;
@@ -1888,8 +1891,6 @@ input[type="range"]::-webkit-slider-thumb {
 
 #anchor_order {
     margin-bottom: 15px;
-    color: var(--white70a);
-    background-color: var(--black50a);
 }
 
 #anchor_checkbox,
@@ -2039,7 +2040,7 @@ input[type="range"]::-webkit-slider-thumb {
     /* margin-top: 40px; */
     box-shadow: 0px 0px 20px black;
     padding: 10px;
-    background-color: var(--black50a);
+    background-color: var(--SmartThemeBlurTintColor);
     border-radius: 20px;
     overflow-y: auto;
     border: 1px solid var(--grey30);
@@ -2686,7 +2687,7 @@ a {
     padding: 0;
     margin-bottom: 5px;
     backdrop-filter: blur(10px);
-    background-color: var(--black50a);
+    background-color: var(--SmartThemeBlurTintColor);
     -webkit-backdrop-filter: blur(10px);
     z-index: 3000;
     border: 0;
@@ -2942,7 +2943,7 @@ label[for="extensions_autoconnect"] {
 
 
 .drawer-content {
-    background-color: var(--black50a);
+    background-color: var(--SmartThemeBlurTintColor);
     color: white;
     border-radius: 20px;
     padding: 10px;
@@ -3004,7 +3005,7 @@ label[for="extensions_autoconnect"] {
 }
 
 .wide50p {
-    width: 50%;
+    width: 50% !important;
 }
 
 
@@ -3106,7 +3107,7 @@ label[for="extensions_autoconnect"] {
     .world_entry_thin_controls {
         flex-direction: column;
     }
-    
+
     .world_entry_form_control.world_entry_form_horizontal {
         flex-direction: column;
         align-items: flex-start;
@@ -3268,7 +3269,7 @@ label[for="extensions_autoconnect"] {
 body.bubblechat .mes {
     padding: 10px;
     border-radius: 20px;
-    background-color: var(--black30a);
+    background-color: var(--SmartThemeBlurTintColor);
     margin-bottom: 5px;
     border: 1px solid var(--white30a);
 }
@@ -3284,7 +3285,7 @@ body.no-blur * {
 }
 
 #send_form.no-blur-sendtextarea {
-    background-color: var(--black90a);
+    background-color: var(--SmartThemeFastUIBGColor);
 }
 
 #send_form.no-connection {
@@ -3310,7 +3311,7 @@ body.no-blur #character_popup,
 body.no-blur #world_popup,
 body.no-blur #dialogue_popup,
 body.no-blur #select_chat_popup {
-    background-color: var(--black90a) !important;
+    background-color: var(--SmartThemeFastUIBGColor) !important;
 }
 
 /*this part only only applies to iOS devices*/
