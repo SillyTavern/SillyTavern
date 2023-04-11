@@ -1614,10 +1614,10 @@ input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
     content: '';
     color: var(--white100);
     position: absolute;
-    top: 4px;
-    right: 4px;
-    bottom: 4px;
-    left: 4px;
+    top: 1px;
+    right: 1px;
+    bottom: 1px;
+    left: 1px;
     background-color: var(--transparent);
     background-size: contain;
     background-position: center center;
