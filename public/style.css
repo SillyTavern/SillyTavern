@@ -598,7 +598,7 @@ textarea {
     font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
     font-size: 15px;
     padding: 7px;
-    /* width: 100%; */
+    width: 100%;
     margin: 5px 0;
 }
 
