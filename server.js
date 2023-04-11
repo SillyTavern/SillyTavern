@@ -1776,22 +1776,39 @@ app.post('/generate_poe', jsonParser, async (request, response) => {
     const token = request.body.token;
     const prompt = request.body.prompt;
     const bot = request.body.bot ?? POE_DEFAULT_BOT;
+    const streaming = request.body.streaming ?? false;
 
     try {
         const client = await getPoeClient(token);
 
-        let reply;
-        for await (const mes of client.send_message(bot, prompt)) {
-            reply = mes.text;
+        if (streaming) {
+            response.writeHead(200, {
+                'Transfer-Encoding': 'chunked',
+                'Cache-Control': 'no-transform',
+            });
+          
+            let reply = '';
+            for await (const mes of client.send_message(bot, prompt)) {
+                let newText = mes.text.substring(reply.length);
+                reply = mes.text;
+                response.write(newText);
+            }
+            console.log(reply);
+            client.disconnect_ws();
+            response.end();
         }
-
-        console.log(reply);
-
-        client.disconnect_ws();
-
-        return response.send({ 'reply': reply });
+        else {
+            let reply;
+            for await (const mes of client.send_message(bot, prompt)) {
+                reply = mes.text;
+            }
+            console.log(reply);
+            client.disconnect_ws();
+            return response.send({ 'reply': reply });
+        }
     }
-    catch {
+    catch (error) {
+        console.error(error);
         return response.sendStatus(500);
     }
 });

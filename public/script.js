@@ -1114,7 +1114,7 @@ function appendToStoryString(value, prefix) {
 }
 
 function isStreamingEnabled() {
-    return (main_api == 'openai' && oai_settings.stream_openai);
+    return (main_api == 'openai' && oai_settings.stream_openai) || (main_api == 'poe' && poe_settings.streaming);
 }
 
 class StreamingProcessor {
@@ -1811,8 +1811,6 @@ async function Generate(type, automatic_trigger, force_name2) {
 
                 if (isStreamingEnabled()) {
                     streamingProcessor.generator = await sendOpenAIRequest(prompt);
-                    await streamingProcessor.generate();
-                    streamingProcessor = null;
                 }
                 else {
                     sendOpenAIRequest(prompt).then(onSuccess).catch(onError);
@@ -1822,7 +1820,12 @@ async function Generate(type, automatic_trigger, force_name2) {
                 generateHorde(finalPromt, generate_data).then(onSuccess).catch(onError);
             }
             else if (main_api == 'poe') {
-                generatePoe(finalPromt).then(onSuccess).catch(onError);
+                if (isStreamingEnabled()) {
+                    streamingProcessor.generator = await generatePoe(finalPromt);
+                }
+                else {
+                    generatePoe(finalPromt).then(onSuccess).catch(onError);
+                }
             }
             else {
                 jQuery.ajax({
@@ -1838,6 +1841,11 @@ async function Generate(type, automatic_trigger, force_name2) {
                     success: onSuccess,
                     error: onError
                 }); //end of "if not data error"
+            }
+
+            if (isStreamingEnabled()) {
+                await streamingProcessor.generate();
+                streamingProcessor = null;
             }
 
             function onSuccess(data) {

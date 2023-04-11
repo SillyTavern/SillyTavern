@@ -43,6 +43,7 @@ const poe_settings = {
     auto_jailbreak: true,
     character_nudge: true,
     auto_purge: true,
+    streaming: false,
 };
 
 let auto_jailbroken = false;
@@ -61,6 +62,7 @@ function loadPoeSettings(settings) {
     $('#poe_character_nudge').prop('checked', poe_settings.character_nudge);
     $('#poe_auto_jailbreak').prop('checked', poe_settings.auto_jailbreak);
     $('#poe_auto_purge').prop('checked', poe_settings.auto_purge);
+    $('#poe_streaming').prop('checked', poe_settings.streaming);
     $('#poe_token').val(poe_settings.token ?? '');
     selectBot();
 }
@@ -94,7 +96,7 @@ async function generatePoe(finalPrompt) {
 
     if (poe_settings.auto_jailbreak && !auto_jailbroken) {
         for (let retryNumber = 0; retryNumber < MAX_RETRIES_FOR_ACTIVATION; retryNumber++) {
-            const reply = await sendMessage(poe_settings.jailbreak_message);
+            const reply = await sendMessage(poe_settings.jailbreak_message, false);
 
             if (reply.toLowerCase().includes(poe_settings.jailbreak_response.toLowerCase())) {
                 auto_jailbroken = true;
@@ -115,7 +117,7 @@ async function generatePoe(finalPrompt) {
         finalPrompt += nudge;
     }
 
-    const reply = await sendMessage(finalPrompt);
+    const reply = await sendMessage(finalPrompt, true);
     got_reply = true;
     return reply;
 }
@@ -139,10 +141,11 @@ async function purgeConversation(count = -1) {
     return response.ok;
 }
 
-async function sendMessage(prompt) {
+async function sendMessage(prompt, withStreaming) {
     const body = JSON.stringify({
         bot: poe_settings.bot,
         token: poe_settings.token,
+        streaming: withStreaming && poe_settings.streaming,
         prompt,
     });
 
@@ -154,6 +157,25 @@ async function sendMessage(prompt) {
         body: body,
         method: 'POST',
     });
+
+    if (withStreaming && poe_settings.streaming) {
+        return async function* streamData() {
+            const decoder = new TextDecoder();
+            const reader = response.body.getReader();
+            let getMessage = '';
+            while (true) {
+                const { done, value } = await reader.read();
+                let response = decoder.decode(value);
+                getMessage += response;
+
+                if (done) {
+                    return;
+                }
+
+                yield getMessage;
+            }
+        }
+    }
 
     try {
         if (response.ok) {
@@ -261,6 +283,11 @@ function onCharacterNudgeMessageInput() {
     saveSettingsDebounced();
 }
 
+function onStreamingInput() {
+    poe_settings.streaming = !!$(this).prop('checked');
+    saveSettingsDebounced();
+}
+
 $('document').ready(function () {
     $('#poe_token').on('input', onTokenInput);
     $('#poe_bots').on('change', onBotChange);
@@ -271,4 +298,5 @@ $('document').ready(function () {
     $('#poe_auto_jailbreak').on('input', onAutoJailbreakInput);
     $('#poe_character_nudge').on('input', onCharacterNudgeInput);
     $('#poe_nudge_text').on('input', onCharacterNudgeMessageInput);
+    $('#poe_streaming').on('input', onStreamingInput);
 });
