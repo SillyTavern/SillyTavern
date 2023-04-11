@@ -2195,6 +2195,7 @@ input[type="range"]::-webkit-slider-thumb {
     height: 100%;
     flex-direction: column;
     align-items: flex-start;
+    padding: 0 5px;
 }
 
 #rm_group_chats_block h3,
