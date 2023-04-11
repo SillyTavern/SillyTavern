@@ -40,7 +40,7 @@
     --SmartThemeBodyColor: rgb(220, 220, 210);
     --SmartThemeEmColor: rgb(175, 175, 175);
     --SmartThemeFastUIBGColor: rgba(0, 0, 0, 0.9);
-    --SmartThemeBlurTintColor: rgba(255, 255, 255, 0.5);
+    --SmartThemeBlurTintColor: rgba(0, 0, 0, 0.5);
 
     --sheldWidth: 800px;
     /*base variable calculated in rems*/
