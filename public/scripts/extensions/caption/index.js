@@ -27,8 +27,7 @@ async function setImageIcon() {
 async function setSpinnerIcon() {
     try {
         const sendButton = document.getElementById('send_picture');
-        sendButton.style.backgroundImage = `url('/img/spinner-solid.svg')`;
-        sendButton.classList.add('spin');
+        sendButton.style.backgroundImage = `url('/img/hourglass-half-solid.svg')`;
     }
     catch (error) {
         console.log(error);
