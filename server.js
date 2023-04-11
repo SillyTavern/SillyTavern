@@ -1887,8 +1887,13 @@ async function generateThumbnail(type, file) {
     const imageSizes = { 'bg': [160, 90], 'avatar': [96, 144] };
     const mySize = imageSizes[type];
 
-    const image = await jimp.read(pathToOriginalFile);
-    await image.cover(mySize[0], mySize[1]).quality(95).writeAsync(pathToCachedFile);
+    try {
+        const image = await jimp.read(pathToOriginalFile);
+        await image.cover(mySize[0], mySize[1]).quality(95).writeAsync(pathToCachedFile);
+    }
+    catch {
+        return null;
+    }
 
     return pathToCachedFile;
 }
