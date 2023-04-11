@@ -1046,19 +1046,20 @@
                     <input id="your_name" name="your_name" class="text_pole" maxlength="35" value="" autocomplete="off"><br>
                     <input id="your_name_button" class="menu_button" type="submit" title="Click to set a new User Name (reloads page)" value="Change Name">
                 </form>
+                <hr>
                 <div class="ui-settings">
                     <div id="avatars-style" class="range-block">
                         <div class="range-block-title">
-                            <h4>Avatars Style</h4>
+                            <h4>Avatar Style</h4>
                         </div>
                         <div class="range-block-range">
                             <label>
                                 <input name="avatar_style" type="radio" value="0" />
-                                Round
+                                Circle
                             </label>
                             <label>
                                 <input name="avatar_style" type="radio" value="1" />
-                                Rectangular
+                                Rectangle
                             </label>
                         </div>
                     </div>
@@ -1092,7 +1093,20 @@
                             </label>
                         </div>
                     </div>
+
                 </div>
+                <div id="font-scale-block" class="range-block wide50p">
+                    <div class="range-block-title">
+                        <h4>Font Scale</h4>
+                    </div>
+                    <div class="range-block-counter">
+                        <span id="font_scale_counter">select</span>
+                    </div>
+                    <div class="range-block-range">
+                        <input type="range" id="font_scale" name="font_scale" min="0.8" max="1.2" step="0.1">
+                    </div>
+                </div>
+                <hr>
                 <div id="power-user-options-block">
                     <h3>Power User Options</h3>
                     <div id="power-user-option-checkboxes">
