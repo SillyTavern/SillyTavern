@@ -2675,7 +2675,7 @@ a {
 
 #right-nav-panel {
     width: calc((100svw - var(--sheldWidth) - 2px) /2);
-    height: 100svh;
+    height: 99.9svh;
     position: fixed;
     top: 0;
     margin: 0;
