@@ -349,7 +349,7 @@ code {
 .options-content img {
     width: calc(var(--mainFontSize) + .5rem);
     margin-right: 5px;
-    width: calc(var(--mainFontSize) + .25rem);
+    height: calc(var(--mainFontSize) + .25rem);
     vertical-align: middle;
 }
 
@@ -470,7 +470,7 @@ body.big-avatars .avatar {
     box-shadow: 0 0 5px var(--black50a);
 }
 
-body.big-avatars #user_avatar_block .avatar {
+body.big-avatars #user_avatar_block .avatar, body.big-avatars #user_avatar_block .avatar_upload {
     height: 90px;
     width: 60px;
     border-radius: 10px;
@@ -637,7 +637,7 @@ input[type="file"] {
     width: 100%;
     max-height: 30px;
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     padding: 0 10px;
 }
 
@@ -1673,15 +1673,13 @@ input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
     cursor: pointer;
     width: 60px;
     height: 60px;
-    background: rgba(100, 100, 100, 0.5);
-    backdrop-filter: blur(10px) brightness(0.3);
+    background: var(--grey30);
     border-radius: 100%;
     display: flex;
     justify-content: center;
     align-items: center;
     /*this is just a big + sign, no need to dynamically size it*/
     font-size: 3rem;
-
 }
 
 #form_upload_avatar {
@@ -2288,12 +2286,12 @@ input[type="range"]::-webkit-slider-thumb {
     flex-direction: row;
     align-items: center;
     width: 100%;
+    column-gap: 1rem;
 }
 
 #rm_group_add_members_header input {
-    flex-grow: 1;
+    flex: 1;
     width: 100%;
-    margin-left: 1rem;
 }
 
 #rm_group_add_members:empty::before {
