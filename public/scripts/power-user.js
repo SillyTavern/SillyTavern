@@ -23,6 +23,8 @@ const sheld_width = {
     w1000px: 1,
 }
 
+var font_scale = 1;
+
 let power_user = {
     collapse_newlines: false,
     force_pygmalion_formatting: false,
@@ -41,6 +43,7 @@ let power_user = {
     play_sound_unfocused: true,
     sort_field: 'name',
     sort_order: 'asc',
+    font_scale: '1'
 };
 
 const storage_keys = {
@@ -56,7 +59,8 @@ const storage_keys = {
     multigen: "TavernAI_multigen",
     avatar_style: "TavernAI_avatar_style",
     chat_display: "TavernAI_chat_display",
-    sheld_width: "TavernAI_sheld_width"
+    sheld_width: "TavernAI_sheld_width",
+    font_scale: "TavernAI_font_scale"
 };
 
 //Updated at the bottom of this script document based on 'focus' and 'blur' events
@@ -109,11 +113,39 @@ function applySheldWidth() {
         r.style.setProperty('--sheldWidth', '800px');
     }
 }
+function applyFontScale() {
+
+    const sliders = [
+        {
+            sliderId: "#font_scale",
+            counterId: "#font_scale_counter",
+            format: (val) => `${val}`,
+            setValue: (val) => { font_scale = Number(val); },
+        }
+    ];
+
+    sliders.forEach(slider => {
+        $(document).on("input", slider.sliderId, function () {
+            const value = $(this).val();
+            const formattedValue = slider.format(value);
+            slider.setValue(value);
+            $(slider.counterId).text(formattedValue);
+            console.log('saving');
+            saveSettingsDebounced();
+        });
+    });
+
+    power_user.font_scale = Number(localStorage.getItem(storage_keys.font_scale) ?? chat_styles.DEFAULT);
+    let r = document.documentElement;
+    r.style.setProperty('--fontScale', power_user.font_scale);
+    $("#font_scale_counter").html(power_user.font_scale);
+}
 
 applyAvatarStyle();
 switchUiMode();
 applyChatDisplay();
 applySheldWidth();
+applyFontScale();
 
 // TODO delete in next release
 function loadFromLocalStorage() {
@@ -143,6 +175,7 @@ function loadPowerUserSettings(settings) {
     power_user.avatar_style = Number(localStorage.getItem(storage_keys.avatar_style) ?? avatar_styles.ROUND);
     power_user.chat_display = Number(localStorage.getItem(storage_keys.chat_display) ?? chat_styles.DEFAULT);
     power_user.sheld_width = Number(localStorage.getItem(storage_keys.sheld_width) ?? sheld_width.DEFAULT);
+    power_user.font_scale = Number(localStorage.getItem(storage_keys.font_scale) ?? font_scale);
 
     $("#force-pygmalion-formatting-checkbox").prop("checked", power_user.force_pygmalion_formatting);
     $("#collapse-newlines-checkbox").prop("checked", power_user.collapse_newlines);
@@ -159,6 +192,8 @@ function loadPowerUserSettings(settings) {
     $(`input[name="avatar_style"][value="${power_user.avatar_style}"]`).prop("checked", true);
     $(`input[name="chat_display"][value="${power_user.chat_display}"]`).prop("checked", true);
     $(`input[name="sheld_width"][value="${power_user.sheld_width}"]`).prop("checked", true);
+    $("#font_scale").val(power_user.font_scale);
+    $("#font_scale_counter").html(power_user.font_scale);
     $(`#character_sort_order option[data-order="${power_user.sort_order}"][data-field="${power_user.sort_field}"]`).prop("selected", true);
     sortCharactersList();
 }
@@ -253,6 +288,13 @@ $(document).ready(() => {
         applySheldWidth();
     });
 
+    $(`input[name="font_scale"]`).on('input', function (e) {
+        power_user.font_scale = Number(e.target.value);
+        localStorage.setItem(storage_keys.font_scale, power_user.font_scale);
+        /* console.log("font scale: " + power_user.font_scale); */
+        applyFontScale();
+    });
+
     $("#play_message_sound").on('input', function () {
         power_user.play_message_sound = !!$(this).prop('checked');
         saveSettingsDebounced();
@@ -270,11 +312,11 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
-    $(window).on('focus', function() {
+    $(window).on('focus', function () {
         browser_has_focus = true;
     });
 
-    $(window).on('blur', function() {
+    $(window).on('blur', function () {
         browser_has_focus = false;
     });
 });

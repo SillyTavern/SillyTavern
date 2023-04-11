@@ -37,7 +37,8 @@
 
     --sheldWidth: 800px;
     /*base variable calculated in rems*/
-    --mainFontSize: calc(1 * 1rem);
+    --fontScale: 1;
+    --mainFontSize: calc(var(--fontScale) * 1rem);
 
 }
 
@@ -427,7 +428,7 @@ code {
 .ui-settings {
     display: flex;
     flex-direction: row;
-    align-items: flex-end;
+    /* align-items: flex-end; */
     column-gap: 10px;
 }
 
@@ -470,7 +471,8 @@ body.big-avatars .avatar {
     box-shadow: 0 0 5px var(--black50a);
 }
 
-body.big-avatars #user_avatar_block .avatar, body.big-avatars #user_avatar_block .avatar_upload {
+body.big-avatars #user_avatar_block .avatar,
+body.big-avatars #user_avatar_block .avatar_upload {
     height: 90px;
     width: 60px;
     border-radius: 10px;
@@ -3002,6 +3004,11 @@ label[for="extensions_autoconnect"] {
 .flexWide50p {
     flex: 50%;
 }
+
+.wide50p {
+    width: 50%;
+}
+
 
 .justifyLeft {
     text-align: start;
