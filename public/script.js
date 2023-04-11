@@ -1331,7 +1331,9 @@ async function Generate(type, automatic_trigger, force_name2) {
         console.log('post replace chat.length = ' + chat.length);
         //chat2 = chat2.reverse();
         var this_max_context = 1487;
-        if (main_api == 'kobold') this_max_context = max_context;
+        if (main_api == 'kobold' || main_api == 'textgenerationwebui') { 
+            this_max_context = (max_context - amount_gen);
+        }
         if (main_api == 'novel') {
             if (novel_tier === 1) {
                 this_max_context = 1024;
@@ -1344,9 +1346,6 @@ async function Generate(type, automatic_trigger, force_name2) {
         }
         if (main_api == 'openai') {
             this_max_context = oai_settings.openai_max_context;
-        }
-        if (main_api == 'textgenerationwebui') {
-            this_max_context = (max_context - amount_gen);
         }
 
         if (main_api == 'poe') {
