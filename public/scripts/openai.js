@@ -453,51 +453,30 @@ async function sendOpenAIRequest(openai_msgs_tosend) {
 }
 
 // Unused
-function onStream(e, resolve, reject, last_view_mes) {
-    let end = false;
-    if (!oai_settings.stream_openai)
+async function* onStream(e) {
+    if (!oai_settings.stream_openai) {
         return;
+    }
+
     let response = e.currentTarget.response;
+
     if (response == "{\"error\":true}") {
-        reject('', 'error');
+        throw new Error('error during streaming');
     }
 
     let eventList = response.split("\n");
     let getMessage = "";
+
     for (let event of eventList) {
         if (!event.startsWith("data"))
             continue;
         if (event == "data: [DONE]") {
-            chat[chat.length - 1]['mes'] = getMessage;
-            $("#send_but").css("display", "block");
-            $("#loading_mes").css("display", "none");
-            saveChat();
-            end = true;
-            break;
+            return getMessage;
         }
         let data = JSON.parse(event.substring(6));
         // the first and last messages are undefined, protect against that
         getMessage += data.choices[0]["delta"]["content"] || "";
-    }
-
-    if ($("#chat").children().filter(`[mesid="${last_view_mes}"]`).length == 0) {
-        chat[chat.length] = {};
-        chat[chat.length - 1]['name'] = name2;
-        chat[chat.length - 1]['is_user'] = false;
-        chat[chat.length - 1]['is_name'] = false;
-        chat[chat.length - 1]['send_date'] = Date.now();
-        chat[chat.length - 1]['mes'] = "";
-        addOneMessage(chat[chat.length - 1]);
-    }
-
-    let messageText = messageFormating($.trim(getMessage), name1);
-    $("#chat").children().filter(`[mesid="${last_view_mes}"]`).children('.mes_block').children('.mes_text').html(messageText);
-
-    let $textchat = $('#chat');
-    $textchat.scrollTop($textchat[0].scrollHeight);
-
-    if (end) {
-        resolve();
+        yield getMessage;
     }
 }
 
