@@ -36,6 +36,9 @@
     --ivory: rgb(220, 220, 210);
 
     --sheldWidth: 800px;
+    /*base variable calculated in rems*/
+    --mainFontSize: calc(1 * 1rem);
+
 }
 
 
@@ -65,7 +68,7 @@ body {
     background-attachment: fixed;
     background-size: cover;
     font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
-    font-size: 15px;
+    font-size: var(--mainFontSize);
     color: var(--ivory);
 }
 
@@ -100,7 +103,7 @@ body {
 
 .mes_bias {
     display: block;
-    font-size: 0.9rem;
+    font-size: calc(var(--mainFontSize) - 0.1rem);
     font-weight: 500;
     color: darkgoldenrod;
 }
@@ -283,8 +286,6 @@ code {
     display: inline;
     color: var(--white50a);
     cursor: pointer;
-    font-size: 1rem;
-    line-height: 1rem;
     z-index: 2001;
     -webkit-transition: color .25s ease-in-out;
     -moz-transition: color .25s ease-in-out;
@@ -297,7 +298,8 @@ code {
 #options_button:after {
     content: '\2630';
     text-decoration: none;
-    font-size: 1.5rem;
+    font-size: calc(var(--mainFontSize) + .5rem);
+
 
 }
 
@@ -320,7 +322,7 @@ code {
     border-radius: 15px;
     box-shadow: 0 0 5px black;
     text-shadow: 0 0 3px black;
-    min-width: 200px;
+    /* min-width: 200px; */
     z-index: 2000;
     margin-bottom: 3px;
 }
@@ -345,9 +347,9 @@ code {
 }
 
 .options-content img {
-    width: 1.5rem;
+    width: calc(var(--mainFontSize) + .5rem);
     margin-right: 5px;
-    height: 1.25rem;
+    width: calc(var(--mainFontSize) + .25rem);
     vertical-align: middle;
 }
 
@@ -507,16 +509,16 @@ body.big-avatars .avatar img {
 
 .mes_text {
     font-weight: 500;
-    line-height: 1.5rem;
+    line-height: calc(var(--mainFontSize) + .5rem);
     padding-left: 0;
     padding-top: 5px;
     padding-bottom: 5px;
     /*max-width: 720px;*/
     word-wrap: break-word;
-    animation: typing 3.5s steps(40, end), blink-caret .75s step-end infinite;
+    /* animation: typing 3.5s steps(40, end), blink-caret .75s step-end infinite; */
 }
 
-.mes_text::after {
+/* .mes_text::after {
     content: "▋";
     animation: blink 1s steps(1) infinite;
     opacity: 0.7;
@@ -527,7 +529,7 @@ body.big-avatars .avatar img {
     60% {
         visibility: hidden;
     }
-}
+} */
 
 br {
     display: block;
@@ -543,17 +545,22 @@ textarea {
     border: 1px solid var(--white30a);
     border-radius: 10px;
     color: var(--white70a);
-    font-size: 15px;
+    font-size: var(--mainFontSize);
     font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
     padding: 5px 10px;
     scrollbar-width: thin;
 }
 
+input,
+select {
+    font-size: var(--mainFontSize);
+}
+
 
 #send_textarea {
-    font-size: 1rem;
+    /*     font-size: 1rem;
     line-height: 1.5rem;
-    min-height: calc(1.5em + 0.75rem + 2px);
+    min-height: calc(1.5em + 0.75rem + 2px); */
     max-height: 50svh;
     word-wrap: break-word;
     height: 40px;
@@ -573,7 +580,6 @@ textarea {
 }
 
 #rm_ch_create_block textarea {
-    font-size: 15px;
     min-height: 200px;
 }
 
@@ -599,7 +605,7 @@ textarea {
     border: 1px solid var(--white30a);
     border-radius: 10px;
     font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
-    font-size: 15px;
+
     padding: 7px;
     width: 100%;
     margin: 5px 0;
@@ -613,13 +619,6 @@ textarea {
 #top-bar h4 {
     margin: 0;
     padding: 5px 0;
-}
-
-#top-bar h5 {
-    color: var(--white50a);
-    margin-bottom: 0;
-    margin-top: 0;
-    font-size: 0.75rem;
 }
 
 input:focus,
@@ -655,7 +654,6 @@ input[type="file"] {
     cursor: pointer;
     text-align: center;
     padding-right: 20px;
-    font-size: 1.5rem;
     margin-top: 0;
     filter: grayscale(1) brightness(75%);
     -webkit-transition: all 0.5s ease-in-out;
@@ -750,7 +748,6 @@ select {
     color: var(--white70a);
     padding: 7px;
     background-color: var(--black30a);
-    font-size: 15px;
     border: 1px solid var(--white30a);
     border-radius: 10px;
     margin-bottom: 10px;
@@ -873,7 +870,6 @@ img[src="img/load.svg"] {
 
 #character_search_bar {
     flex: 1;
-    font-size: 1em;
     padding-left: 0.75em;
     margin: 0;
 }
@@ -1087,7 +1083,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 }
 
 #rm_info_panel {
-    font-size: 20px;
+    font-size: calc(var(--mainFontSize) + .5rem);
     display: block;
     text-align: center;
 }
@@ -1115,6 +1111,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 #result_info {
     color: var(--white30a);
     display: flex;
+    font-size: calc(var(--mainFontSize) - 0.2rem);
 }
 
 /* Focus */
@@ -1207,7 +1204,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     cursor: pointer;
     margin: 0;
     transition: 0.3s;
-    font-size: 22px;
+
     min-width: 40px;
     min-height: 40px;
     filter: grayscale(0.5);
@@ -1226,7 +1223,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     cursor: pointer;
     margin: 10px 0;
     transition: 0.3s;
-    font-size: 15px;
+
 }
 
 .menu_button:hover {
@@ -1235,7 +1232,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 
 #dialogue_del_mes .menu_button {
-    font-size: 1.25rem;
+
     margin-left: 25px;
     margin-right: 25px;
 }
@@ -1359,7 +1356,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     margin-top: auto;
     margin-bottom: auto;
     margin-left: 1rem;
-    font-size: 16px;
+
 }
 
 #world_popup {
@@ -1461,7 +1458,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 #world_popup_entries_list:empty::before {
     content: 'No entries exist. Try creating one!';
-    font-size: 1.5rem;
+    font-size: calc(var(--mainFontSize) + .5rem);
     font-weight: bolder;
     width: 100%;
     height: 100%;
@@ -1603,8 +1600,8 @@ input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin) {
     appearance: none;
     outline: none;
     position: relative;
-    width: 1.5rem;
-    height: 1.5rem;
+    width: var(--mainFontSize);
+    height: var(--mainFontSize);
     overflow: hidden;
     border-radius: 3px;
     background-color: white;
@@ -1682,7 +1679,9 @@ input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
     display: flex;
     justify-content: center;
     align-items: center;
+    /*this is just a big + sign, no need to dynamically size it*/
     font-size: 3rem;
+
 }
 
 #form_upload_avatar {
@@ -1696,7 +1695,7 @@ input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
 .range-block-title {
     margin: 0;
     padding: 0;
-    font-size: 14px;
+
 }
 
 .range-block-counter {
@@ -1707,7 +1706,7 @@ input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
     margin-left: auto;
     margin-right: auto;
     /* margin-top: 10px; */
-    font-size: 11px;
+    font-size: calc(var(--mainFontSize) - 0.3rem);
     color: var(--white50a);
 }
 
@@ -1717,27 +1716,6 @@ input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
     width: 100%;
     margin-bottom: 10px;
 }
-
-/* input[type=range] {
-    -webkit-appearance: none;
-    appearance: none;
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    height: 5px;
-    background: var(--white50a);
-    border-radius: 15px;
-    background-size: 70% 100%;
-    background-repeat: no-repeat;
-}
-input[type=range]::-webkit-slider-thumb, input[type=range]::-moz-range-thumb {
-    -webkit-appearance: none;
-    height: 15px;
-    width: 15px;
-    margin-top: -5px;
-    border-radius: 50%;
-    background:red;
-} */
 
 input[type="range"] {
     -webkit-appearance: none;
@@ -1789,16 +1767,14 @@ input[type="range"]::-webkit-slider-thumb {
     color: var(--sienna);
     border: 1px solid var(--sienna);
     border-radius: 10px;
-    line-height: 15px;
-    font-size: 15px;
-    width: 20px;
-    height: 20px;
-    padding-left: 6px;
-    padding-top: 1px;
+    line-height: var(--mainFontSize);
+    font-size: var(--mainFontSize);
+    width: calc(var(--mainFontSize) + 0.2rem);
+    height: calc(var(--mainFontSize) + 0.2rem);
     display: inline-block;
     opacity: 0.7;
     margin: 0 5px;
-    text-align: initial;
+    text-align: center;
 }
 
 
@@ -1909,8 +1885,7 @@ input[type="range"]::-webkit-slider-thumb {
     margin: 0;
     outline: none;
     background-color: var(--black50a);
-    font-size: 15px;
-    line-height: 1.25rem;
+    line-height: calc(var(--mainFontSize)+ .25rem);
 }
 
 #anchor_order {
@@ -2146,7 +2121,7 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .select_chat_block_mes {
-    font-size: 0.75rem;
+    font-size: calc(var(--mainFontSize) - .25rem);
 }
 
 #select_chat_cross {
@@ -2207,7 +2182,7 @@ input[type="range"]::-webkit-slider-thumb {
 #rm_button_group_chats h2 {
     margin-top: auto;
     margin-bottom: auto;
-    font-size: 16px;
+    /* font-size: 16px; */
     color: rgb(188, 193, 200, 1);
     border: 1px solid #333;
     background-color: rgba(0, 0, 0, 0.3);
@@ -2256,7 +2231,7 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 #rm_group_buttons>input {
-    font-size: 16px;
+
     cursor: pointer;
     user-select: none;
 }
@@ -2294,7 +2269,7 @@ input[type="range"]::-webkit-slider-thumb {
 
 #rm_group_members:empty::before {
     content: 'Group is empty';
-    font-size: 1rem;
+
     font-weight: bolder;
     width: 100%;
     height: 100%;
@@ -2323,7 +2298,7 @@ input[type="range"]::-webkit-slider-thumb {
 
 #rm_group_add_members:empty::before {
     content: 'No characters available';
-    font-size: 1rem;
+
     font-weight: bolder;
     width: 100%;
     height: 100%;
@@ -2609,7 +2584,7 @@ span.warning {
 
 #talkativeness_hint span {
     min-width: 10em;
-    font-size: small;
+    font-size: calc(var(--mainFontSize) - .25rem);
 }
 
 #talkativeness_hint span:nth-child(1) {
@@ -2638,24 +2613,19 @@ hr {
 }
 
 h1 {
-    font-size: 2rem;
+    font-size: calc(var(--mainFontSize) + 1rem);
     line-height: 32px;
     margin-bottom: 22px;
-    font-weight: 300;
 }
 
 h2 {
-    font-size: 1.5rem;
-    line-height: 1.5rem;
     margin-top: 5px;
     margin-bottom: 22px;
-    font-weight: 300;
 }
 
 .right_menu_button h2 {
     margin-top: 0;
     margin-bottom: 0;
-    font-size: 1.25rem;
 }
 
 .right_menu_button img {
@@ -2708,7 +2678,6 @@ a {
 
 #right-nav-panel {
     width: calc((100svw - var(--sheldWidth) - 2px) /2);
-    /* min-width: 450px; */
     height: 100svh;
     position: fixed;
     top: 0;
@@ -2721,7 +2690,6 @@ a {
     background-color: var(--black50a);
     -webkit-backdrop-filter: blur(10px);
     z-index: 3000;
-    /* white-space: nowrap; */
     border: 0;
     border-left: 1px solid var(--grey30a);
     border-bottom: 1px solid var(--grey30a);
@@ -2744,36 +2712,6 @@ a {
     z-index: 3001;
 }
 
-#nav-toggle:hover::after {
-    color: var(--ivory);
-}
-
-#nav-toggle::after {
-    content: '\2630';
-    line-height: 30px;
-    font-size: 2em;
-    padding: 0;
-    text-align: center;
-    vertical-align: middle;
-    display: inline-block;
-    width: 30px;
-    height: 30px;
-    margin-top: -8px;
-    margin-left: -24px;
-    border: 1px solid var(--white30a);
-    border-radius: 5px;
-    background: var(--black30a);
-    color: var(--white50a);
-    -webkit-transition: all 0.275s;
-    transition: all 0.275s;
-}
-
-#nav-toggle:checked::after {
-    content: '\2715';
-    line-height: 30px;
-    font-size: 2em;
-}
-
 #right-nav-panel>div:not(#right-nav-panel-tabs) {
     height: calc(100% - 40px);
     overflow-y: auto;
@@ -2782,8 +2720,6 @@ a {
 #hidden-divs {
     display: none;
 }
-
-
 
 /* Message images */
 .mes img.img_extra {
@@ -3121,7 +3057,7 @@ label[for="extensions_autoconnect"] {
     margin: 0 3px;
     display: block;
     font-weight: 700;
-    font-size: 1.2em;
+    font-size: calc(var(--mainFontSize) + .2rem);
 }
 
 .openai_logit_bias_list_item {
@@ -3164,7 +3100,6 @@ label[for="extensions_autoconnect"] {
     }
 
     body {
-        font-size: 16px;
         position: fixed;
         touch-action: none;
         overflow: hidden;
@@ -3253,7 +3188,7 @@ label[for="extensions_autoconnect"] {
     }
 
     #result_info {
-        font-size: 14px;
+        font-size: calc(var(--mainFontSize) - .1rem);
     }
 
     .avatar_div {
@@ -3270,8 +3205,8 @@ label[for="extensions_autoconnect"] {
 
     #send_textarea {
         /*larger input bar for mobile screens, easier to tap*/
-        font-size: 1.25rem;
-        line-height: 1.5rem;
+        font-size: calc(var(--mainFontSize) + .25rem);
+        line-height: calc(var(--mainFontSize) + .5rem);
         min-height: calc(2rem + 0.75rem + 2px);
         max-height: 200px;
         word-wrap: break-word;
@@ -3410,6 +3345,11 @@ body.no-blur #select_chat_popup {
 }
 
 @keyframes spin {
-    from {transform:rotate(0deg);}
-    to {transform:rotate(360deg);}
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
 }
