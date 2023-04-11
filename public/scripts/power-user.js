@@ -1,5 +1,5 @@
 import { saveSettingsDebounced, characters } from "../script.js";
-import { delay } from "./utils.js";
+import { delay, debounce } from "./utils.js";
 
 
 export {
@@ -127,38 +127,44 @@ function applySheldWidth() {
     }
 }
 
-function applyThemeColor(type) {
+async function applyThemeColor(type) {
 
     const $MainTextColorPicker = document.getElementById('main-text-color-picker');
     const $ItalicsTextColorPicker = document.getElementById('italics-color-picker');
     const $FastUIBGColorPicker = document.getElementById('fastui-bg-color-picker');
     const $BlurTintColorPicker = document.getElementById('blur-tint-color-picker');
 
+    // temporarily unset transition from chat to not make the browser calculate the animation
+    chat.style.transition = 'unset';
+
     if (type === 'main') {
         $MainTextColorPicker.color = `${power_user.main_text_color}`;
         document.documentElement.style.setProperty('--SmartThemeBodyColor', power_user.main_text_color);
         console.log($MainTextColorPicker.color);
-        return
     }
 
     if (type === 'italics') {
         $ItalicsTextColorPicker.color = `${power_user.italics_text_color}`;
         document.documentElement.style.setProperty('--SmartThemeEmColor', power_user.italics_text_color);
         console.log($ItalicsTextColorPicker.color);
-        return
     }
+
     if (type === 'fastUIBG') {
         $FastUIBGColorPicker.color = `${power_user.fastui_bg_color}`;
         document.documentElement.style.setProperty('--SmartThemeFastUIBGColor', power_user.fastui_bg_color);
         console.log($FastUIBGColorPicker.color);
-        return
     }
+
     if (type === 'blurTint') {
         $BlurTintColorPicker.color = `${power_user.blur_tint_color}`;
         document.documentElement.style.setProperty('--SmartThemeBlurTintColor', power_user.blur_tint_color);
         console.log($BlurTintColorPicker.color);
-        return
     }
+
+    // a small delay to let the browser do the layout redraw
+    await delay(1);
+    // set transition back to chat
+    chat.style.transition = chatTransition;
 }
 
 async function applyFontScale() {
@@ -183,6 +189,8 @@ applyChatDisplay();
 applySheldWidth();
 applyFontScale();
 applyThemeColor();
+
+const applyColorDebounced = debounce((type) => applyThemeColor(type), 100);
 
 // TODO delete in next release
 function loadFromLocalStorage() {
@@ -340,25 +348,25 @@ $(document).ready(() => {
 
     $("#main-text-color-picker").on('change', (evt) => {
         power_user.main_text_color = evt.detail.rgba;
-        applyThemeColor('main');
+        applyColorDebounced('main');
         saveSettingsDebounced();
     });
 
     $("#italics-color-picker").on('change', (evt) => {
         power_user.italics_text_color = evt.detail.rgba;
-        applyThemeColor('italics');
+        applyColorDebounced('italics');
         saveSettingsDebounced();
     });
 
     $("#fastui-bg-color-picker").on('change', (evt) => {
         power_user.fastui_bg_color = evt.detail.rgba;
-        applyThemeColor('fastUIBG');
+        applyColorDebounced('fastUIBG');
         saveSettingsDebounced();
     });
 
     $("#blur-tint-color-picker").on('change', (evt) => {
         power_user.blur_tint_color = evt.detail.rgba;
-        applyThemeColor('blurTint');
+        applyColorDebounced('blurTint');
         saveSettingsDebounced();
     });
 
