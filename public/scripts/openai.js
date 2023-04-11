@@ -425,15 +425,11 @@ async function sendOpenAIRequest(openai_msgs_tosend) {
         "frequency_penalty": parseFloat(oai_settings.freq_pen_openai),
         "presence_penalty": parseFloat(oai_settings.pres_pen_openai),
         "max_tokens": oai_settings.openai_max_tokens,
-        "stream": false, //oai_settings.stream_openai,
+        "stream": oai_settings.stream_openai,
         "reverse_proxy": oai_settings.reverse_proxy,
     };
 
     const generate_url = '/generate_openai';
-    // TODO: fix streaming
-    const streaming = oai_settings.stream_openai;
-    const last_view_mes = count_view_mes;
-
     const response = await fetch(generate_url, {
         method: 'POST',
         body: JSON.stringify(generate_data),
@@ -443,40 +439,47 @@ async function sendOpenAIRequest(openai_msgs_tosend) {
         }
     });
 
-    const data = await response.json();
+    if (oai_settings.stream_openai) {
+        return async function* streamData() {
+            const decoder = new TextDecoder();
+            const reader = response.body.getReader();
+            let getMessage = "";
+            while (true) {
+                const { done, value } = await reader.read();
+                let response = decoder.decode(value);
 
-    if (data.error) {
-        throw new Error(data);
-    }
+                if (response == "{\"error\":true}") {
+                    throw new Error('error during streaming');
+                }
 
-    return data.choices[0]["message"]["content"];
-}
+                let eventList = response.split("\n");
 
-// Unused
-async function* onStream(e) {
-    if (!oai_settings.stream_openai) {
-        return;
-    }
+                for (let event of eventList) {
+                    if (!event.startsWith("data"))
+                        continue;
+                    if (event == "data: [DONE]") {
+                        return;
+                    }
+                    let data = JSON.parse(event.substring(6));
+                    // the first and last messages are undefined, protect against that
+                    getMessage += data.choices[0]["delta"]["content"] || "";
+                    yield getMessage;
+                }
 
-    let response = e.currentTarget.response;
-
-    if (response == "{\"error\":true}") {
-        throw new Error('error during streaming');
-    }
-
-    let eventList = response.split("\n");
-    let getMessage = "";
-
-    for (let event of eventList) {
-        if (!event.startsWith("data"))
-            continue;
-        if (event == "data: [DONE]") {
-            return getMessage;
+                if (done) {
+                    return;
+                }
+            }
         }
-        let data = JSON.parse(event.substring(6));
-        // the first and last messages are undefined, protect against that
-        getMessage += data.choices[0]["delta"]["content"] || "";
-        yield getMessage;
+    }
+    else {
+        const data = await response.json();
+
+        if (data.error) {
+            throw new Error(data);
+        }
+
+        return data.choices[0]["message"]["content"];
     }
 }
 

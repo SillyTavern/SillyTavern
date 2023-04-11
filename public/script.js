@@ -960,10 +960,13 @@ function addOneMessage(mes, type = "normal", insertAfter = null) {
 
         hideSwipeButtons();
         showSwipeButtons();
-
-        var $textchat = $("#chat");
-        $textchat.scrollTop(($textchat[0].scrollHeight));
+        scrollChatToBottom();
     }
+}
+
+function scrollChatToBottom() {
+    var $textchat = $("#chat");
+    $textchat.scrollTop(($textchat[0].scrollHeight));
 }
 
 function substituteParams(content, _name1, _name2) {
@@ -1116,19 +1119,28 @@ function isStreamingEnabled() {
 
 class StreamingProcessor {
     onStartStreaming(text) {
-        saveReply(type, text);
+        saveReply(this.type, text);
+        hideSwipeButtons();
         return (count_view_mes - 1);
     }
     
     onProgressStreaming(messageId, text) {
         let processedText = cleanUpMessage(text);
-        ({isName, processedText} = extractNameFromMessage(processedText, force_name2));
+        let result = extractNameFromMessage(processedText, this.force_name2);
+        let isName = result.this_mes_is_name;
+        processedText = result.getMessage;
         chat[messageId]['is_name'] = isName;
         chat[messageId]['mes'] = processedText;
+
+        if (this.type == 'swipe' && Array.isArray(chat[messageId]['swipes'])) {
+            chat[messageId]['swipes'][chat[messageId]['swipe_id']] = processedText;
+        }
+
         let formattedText = messageFormating(processedText, chat[messageId].name, chat[messageId].is_system, chat[messageId].force_avatar);
         const mesText = $(`#chat .mes[mesid="${messageId}"] .mes_text`);
         mesText.empty();
         mesText.append(formattedText);
+        scrollChatToBottom();
     }
     
     onFinishStreaming(messageId, text) {
@@ -1146,6 +1158,7 @@ class StreamingProcessor {
         is_send_press = false;
         activateSendButtons();
         setGenerationProgress(0);
+        showSwipeButtons();
     }
     
     onStopStreaming() {
@@ -1156,16 +1169,18 @@ class StreamingProcessor {
         throw new Error('Generation function for streaming is not hooked up');
     }
 
-    constructor() {
+    constructor(type, force_name2) {
         this.result = "";
         this.messageId = -1;
+        this.type = type;
+        this.force_name2 = force_name2;
         this.isStopped = false;
         this.isFinished = false;
         this.generator = this.nullStreamingGeneration;
     }
 
     async generate() {
-        this.messageId = this.onStartStreaming('');
+        this.messageId = this.onStartStreaming('...');
 
         for await (const text of this.generator()) {
             if (this.isStopped) {
@@ -1207,6 +1222,14 @@ async function Generate(type, automatic_trigger, force_name2) {
     if (isHordeGenerationNotAllowed()) {
         is_send_press = false;
         return;
+    }
+
+    if (isStreamingEnabled()) {
+        streamingProcessor = new StreamingProcessor(type, force_name2);
+        hideSwipeButtons();
+    }
+    else {
+        streamingProcessor = false;
     }
 
     if (selected_group && !is_group_generating) {
@@ -1783,14 +1806,13 @@ async function Generate(type, automatic_trigger, force_name2) {
             }
             console.log('rungenerate calling API');
 
-            streamingProcessor = new StreamingProcessor();
-
             if (main_api == 'openai') {
                 let prompt = await prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAfter, extension_prompt, promptBias);
 
                 if (isStreamingEnabled()) {
-                    streamingProcessor.generator = () => sendOpenAIRequest(prompt);
+                    streamingProcessor.generator = await sendOpenAIRequest(prompt);
                     await streamingProcessor.generate();
+                    streamingProcessor = null;
                 }
                 else {
                     sendOpenAIRequest(prompt).then(onSuccess).catch(onError);
@@ -3387,6 +3409,10 @@ $(document).ready(function () {
     $(document).on('click', '.swipe_left', function () {      // when we swipe left..but no generation.
         if (chat.length - 1 === Number(this_edit_mes_id)) {
             closeMessageEditor();
+        }
+
+        if (isStreamingEnabled() && streamingProcessor) {
+            streamingProcessor.isStopped = true;
         }
 
         const swipe_duration = 120;
