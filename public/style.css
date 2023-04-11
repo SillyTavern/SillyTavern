@@ -268,11 +268,15 @@ code {
     width: 40px;
     height: 40px;
     margin: 0 auto;
-    /*margin-left: 2px;*/
-    background: url('img/load.svg') no-repeat;
-    background-size: 26px 26px;
-    background-position: center center;
     order: 99999;
+    align-items: center;
+    justify-content: center;
+    filter: brightness(0.7);
+}
+
+#loading_mes .svg_icon {
+    width: 24px;
+    height: 24px;
 }
 
 #options_button {
@@ -3397,4 +3401,16 @@ body.no-blur #select_chat_popup {
 
 
     }
+}
+
+.spin {
+    animation-name: spin;
+    animation-duration: 2000ms;
+    animation-iteration-count: infinite;
+    animation-timing-function: linear;
+}
+
+@keyframes spin {
+    from {transform:rotate(0deg);}
+    to {transform:rotate(360deg);}
 }

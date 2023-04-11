@@ -1924,7 +1924,7 @@ function activateSendButtons() {
 
 function deactivateSendButtons() {
     $("#send_but").css("display", "none");
-    $("#loading_mes").css("display", "inline-block");
+    $("#loading_mes").css("display", "flex");
 }
 
 function resetChatState() {
