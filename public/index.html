@@ -349,39 +349,39 @@
                         </div>
                         <div id="range_block_poe">
                             <div class="range-block">
-                                <label class="checkbox_label" for="poe_streaming">
+                                <label for="poe_streaming" class="checkbox_label widthFreeExpand">
                                     <input id="poe_streaming" type="checkbox" />
                                     Streaming
                                 </label>
                                 <div class="range-block-counter justifyLeft">
-                                    Displays the message text as soon as it is generated
+                                    Display bot response text chunks as they are generated.
                                 </div>
                             </div>
                             <div class="range-block">
-                                <label for="poe_auto_purge" class="checkbox_label">
+                                <label for="poe_auto_purge" class="checkbox_label widthFreeExpand">
                                     <input id="poe_auto_purge" type="checkbox">
-                                    Auto-purge chat cache
+                                    Auto-purge API context (save JB)
                                 </label>
                                 <div class="range-block-counter justifyLeft">
-                                    Deletes messages from poe before each prompt is sent
+                                    Delete non-JB messages from Poe context before sending a new prompt. Prevents auto-jailbreak message from being pushed out of context.
                                 </div>
                             </div>
                             <div class="range-block">
-                                <label for="poe_auto_jailbreak" class="checkbox_label">
+                                <label for="poe_auto_jailbreak" class="checkbox_label widthFreeExpand">
                                     <input id="poe_auto_jailbreak" type="checkbox">
                                     Auto-jailbreak
                                 </label>
                                 <div class="range-block-counter justifyLeft">
-                                    Sends the jailbreak message and keeps it in context
+                                    Send the jailbreak message before first generation after page refresh.
                                 </div>
                             </div>
                             <div class="range-block">
-                                <label for="poe_character_nudge" class="checkbox_label">
+                                <label for="poe_character_nudge" class="checkbox_label widthFreeExpand">
                                     <input id="poe_character_nudge" type="checkbox" />
                                     Send character note
                                 </label>
                                 <div class="range-block-counter justifyLeft">
-                                    Nudges the bot to reply as the character only
+                                    Sent with every prompt to modify bot responses.
                                 </div>
                                 <div class="range-block-range">
                                 </div>
@@ -687,33 +687,33 @@
                         </div>
                         <div id="poe_settings">
                             <div class="range-block">
-                                <div class="range-block-title">
+                                <div class="range-block-title justifyLeft">
                                     Jailbreak activation message
                                 </div>
                                 <div class="range-block-counter justifyLeft">
-                                    Message sent as a jailbreak to activate the roleplay
+                                    Message to send when auto-jailbreak is on.
                                 </div>
                                 <div class="wide100p">
                                     <textarea id="poe_activation_message" rows="10"></textarea>
                                 </div>
                             </div>
                             <div class="range-block">
-                                <div class="range-block-title">
-                                    Jailbreak activation response
+                                <div class="range-block-title justifyLeft">
+                                    Jailbreak confirmation reply
                                 </div>
                                 <div class="range-block-counter justifyLeft">
-                                    Bot reply that counts as a successful jailbreak
+                                    Bot must send this back to confirm jailbreak
                                 </div>
                                 <div class="wide100p">
                                     <input id="poe_activation_response" class="text_pole" type="text" />
                                 </div>
                             </div>
                             <div class="range-block">
-                                <div class="range-block-title">
-                                    Character note text
+                                <div class="range-block-title justifyLeft">
+                                    Character Note
                                 </div>
                                 <div class="range-block-counter justifyLeft">
-                                    Text to be send as a character nudge
+                                    Influences bot behavior in its responses.
                                 </div>
                                 <div class="wide100p">
                                     <textarea id="poe_nudge_text" class="text_pole" rows="3"></textarea>

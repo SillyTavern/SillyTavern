@@ -3064,7 +3064,7 @@ toolcool-color-picker {
 }
 
 .widthFreeExpand {
-    width: unset;
+    width: -webkit-fill-available;
 }
 
 .wide100p {
