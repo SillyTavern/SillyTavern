@@ -1057,6 +1057,41 @@
                     <input id="your_name_button" class="menu_button" type="submit" title="Click to set a new User Name (reloads page)" value="Change Name">
                 </form>
                 <hr>
+                <div id="power-user-options-block">
+                    <h3>Power User Options</h3>
+                    <div id="power-user-option-checkboxes">
+                        <label for="swipes-checkbox">
+                            <input id="swipes-checkbox" type="checkbox" />
+                            Swipes
+                        </label>
+
+                        <label for="play_message_sound" class="checkbox_label">
+                            <input id="play_message_sound" type="checkbox" />
+                            <audio id="audio_message_sound" src="sounds/message.mp3" hidden></audio>
+                            <span>
+                                Play a sound on new message
+                                <a href="/notes/message_sound" class="notes-link" target="_blank">
+                                    <span class="note-link-span">?</span>
+                                </a>
+                            </span>
+                        </label>
+
+                        <label for="play_sound_unfocused" class="checkbox_label">
+                            <input id="play_sound_unfocused" type="checkbox" />
+                            Sound only for unfocused window
+                        </label>
+
+                        <label for="fast_ui_mode" class="checkbox_label" title="Blur can cause browser lag, especially in Bubble Chat mode. To fix: Turn on your browser's Hardware Acceleration, and restart your browser or simply disable the blur effect with this toggle.">
+                            <input id="fast_ui_mode" type="checkbox" />
+                            No Blur Effect
+                        </label>
+
+                        <label for="auto-load-chat-checkbox"><input id="auto-load-chat-checkbox" type="checkbox" />
+                            Auto-load Last Chat
+                        </label>
+                    </div>
+                </div>
+                <hr>
                 <div class="ui-settings">
                     <div id="avatars-style" class="range-block">
                         <div class="range-block-title">
@@ -1106,8 +1141,8 @@
 
                 </div>
                 <hr>
-                <div class="flex-container">
-                    <div id="color-picker-block" class="range-block wide50p">
+                <div id="color-picker-block" class="flex-container">
+                    <div class="range-block wide50p">
                         <div class="flex-container wide100p flexflowcolumn">
                             <div class="range-block-title">
                                 <h4>UI Colors</h4>
@@ -1144,45 +1179,6 @@
                         <div class="range-block-counter">
                             <span id="font_scale_counter">select</span>
                         </div>
-                    </div>
-                </div>
-
-
-
-
-                <hr>
-                <div id="power-user-options-block">
-                    <h3>Power User Options</h3>
-                    <div id="power-user-option-checkboxes">
-                        <label for="swipes-checkbox">
-                            <input id="swipes-checkbox" type="checkbox" />
-                            Swipes
-                        </label>
-
-                        <label for="play_message_sound" class="checkbox_label">
-                            <input id="play_message_sound" type="checkbox" />
-                            <audio id="audio_message_sound" src="sounds/message.mp3" hidden></audio>
-                            <span>
-                                Play a sound on new message
-                                <a href="/notes/message_sound" class="notes-link" target="_blank">
-                                    <span class="note-link-span">?</span>
-                                </a>
-                            </span>
-                        </label>
-
-                        <label for="play_sound_unfocused" class="checkbox_label">
-                            <input id="play_sound_unfocused" type="checkbox" />
-                            Sound only for unfocused window
-                        </label>
-
-                        <label for="fast_ui_mode" class="checkbox_label" title="Blur can cause browser lag, especially in Bubble Chat mode. To fix: Turn on your browser's Hardware Acceleration, and restart your browser or simply disable the blur effect with this toggle.">
-                            <input id="fast_ui_mode" type="checkbox" />
-                            No Blur Effect
-                        </label>
-
-                        <label for="auto-load-chat-checkbox"><input id="auto-load-chat-checkbox" type="checkbox" />
-                            Auto-load Last Chat
-                        </label>
                     </div>
                 </div>
             </div>
