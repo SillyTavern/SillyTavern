@@ -1139,10 +1139,12 @@ function isStreamingEnabled() {
 class StreamingProcessor {
     showStopButton(messageId) {
         $(`#chat .mes[mesid="${messageId}"] .mes_stop`).css({'display': 'block'});
+        $(`#chat .mes[mesid="${messageId}"] .mes_edit`).css({'display': 'none'});
     }
 
     hideStopButton(messageId) {
         $(`#chat .mes[mesid="${messageId}"] .mes_stop`).css({'display': 'none'});
+        $(`#chat .mes[mesid="${messageId}"] .mes_edit`).css({'display': 'block'});
     }
 
     onStartStreaming(text) {
@@ -1150,6 +1152,7 @@ class StreamingProcessor {
         const messageId = count_view_mes - 1;
         hideSwipeButtons();
         this.showStopButton(messageId);
+        scrollChatToBottom();
         return messageId;
     }
 
@@ -1167,8 +1170,7 @@ class StreamingProcessor {
 
         let formattedText = messageFormating(processedText, chat[messageId].name, chat[messageId].is_system, chat[messageId].force_avatar);
         const mesText = $(`#chat .mes[mesid="${messageId}"] .mes_text`);
-        mesText.empty();
-        mesText.append(formattedText);
+        mesText.html(formattedText);
         scrollChatToBottom();
     }
 
@@ -1215,6 +1217,7 @@ class StreamingProcessor {
     async generate() {
         if (this.messageId == -1) {
             this.messageId = this.onStartStreaming('...');
+            await delay(1); // delay for message to be rendered
         }
 
         // for multigen

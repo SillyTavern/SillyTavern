@@ -63,12 +63,10 @@
     box-sizing: border-box;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    scroll-behavior: smooth;
     text-shadow: 0 0 3px black;
 }
 
 html {
-    scroll-behavior: smooth;
     /*fix for chrome flickering on blurred divs*/
     -webkit-transform: translateZ(0);
     -webkit-backface-visibility: hidden;
