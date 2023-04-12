@@ -1663,6 +1663,8 @@ async function Generate(type, automatic_trigger, force_name2) {
                         'seed': textgenerationwebui_settings.seed,
                         'add_bos_token': textgenerationwebui_settings.add_bos_token, 
                         'custom_stopping_strings': getStoppingStrings().concat(textgenerationwebui_settings.custom_stopping_strings),
+                        'truncation_length': max_context,
+                        'ban_eos_token': false,
                     }
                 ];
                 generate_data = { "data": [JSON.stringify(data)] };
