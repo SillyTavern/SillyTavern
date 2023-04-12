@@ -36,6 +36,8 @@
     --ivory: rgb(220, 220, 210);
 
     --sheldWidth: 800px;
+	
+	--italics_color: rgb(0,0,0);
 }
 
 
@@ -107,7 +109,7 @@ body {
 
 .mes_text i,
 .mes_text em {
-    color: var(--white60a);
+    color: var(--italics_color);
     font-weight: 500;
 }
 

@@ -6,6 +6,7 @@ export {
     playMessageSound,
     sortCharactersList,
     power_user,
+	applyItalicsColor,
 };
 
 const avatar_styles = {
@@ -41,6 +42,9 @@ let power_user = {
     play_sound_unfocused: true,
     sort_field: 'name',
     sort_order: 'asc',
+	italics_r: 0,
+	italics_g: 0,
+	italics_b: 0,
 };
 
 const storage_keys = {
@@ -56,7 +60,10 @@ const storage_keys = {
     multigen: "TavernAI_multigen",
     avatar_style: "TavernAI_avatar_style",
     chat_display: "TavernAI_chat_display",
-    sheld_width: "TavernAI_sheld_width"
+    sheld_width: "TavernAI_sheld_width",
+	italics_r: "TavernAI_italics_r",
+	italics_g: "TavernAI_italics_g",
+	italics_b: "TavernAI_italics_b",
 };
 
 //Updated at the bottom of this script document based on 'focus' and 'blur' events
@@ -110,10 +117,17 @@ function applySheldWidth() {
     }
 }
 
+function applyItalicsColor() {	 
+	 let r = document.documentElement;
+	 r.style.setProperty('--italics_color', 'rgb('+ power_user.italics_r.toString() +',' + power_user.italics_g.toString() +',' + power_user.italics_b.toString()+')');
+	 
+}
+
 applyAvatarStyle();
 switchUiMode();
 applyChatDisplay();
 applySheldWidth();
+applyItalicsColor();
 
 // TODO delete in next release
 function loadFromLocalStorage() {
@@ -126,6 +140,9 @@ function loadFromLocalStorage() {
     power_user.always_force_name2 = localStorage.getItem(storage_keys.always_force_name2) == "true";
     power_user.custom_chat_separator = localStorage.getItem(storage_keys.custom_chat_separator);
     power_user.multigen = localStorage.getItem(storage_keys.multigen) == "true";
+	power_user.italics_r = localStorage.getItem(storage_keys.italics_r) == "true";
+	power_user.italics_g = localStorage.getItem(storage_keys.italics_g) == "true";
+	power_user.italics_b = localStorage.getItem(storage_keys.italics_b) == "true";
 }
 
 function loadPowerUserSettings(settings) {
@@ -143,6 +160,7 @@ function loadPowerUserSettings(settings) {
     power_user.avatar_style = Number(localStorage.getItem(storage_keys.avatar_style) ?? avatar_styles.ROUND);
     power_user.chat_display = Number(localStorage.getItem(storage_keys.chat_display) ?? chat_styles.DEFAULT);
     power_user.sheld_width = Number(localStorage.getItem(storage_keys.sheld_width) ?? sheld_width.DEFAULT);
+	power_user.italics_color =(localStorage.getItem(storage_keys.italics_color));
 
     $("#force-pygmalion-formatting-checkbox").prop("checked", power_user.force_pygmalion_formatting);
     $("#collapse-newlines-checkbox").prop("checked", power_user.collapse_newlines);
