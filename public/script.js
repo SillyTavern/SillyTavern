@@ -1138,8 +1138,9 @@ function isStreamingEnabled() {
 class StreamingProcessor {
     onStartStreaming(text) {
         saveReply(this.type, text);
+        const messageId = count_view_mes - 1;
         hideSwipeButtons();
-        return (count_view_mes - 1);
+        return messageId;
     }
 
     onProgressStreaming(messageId, text) {

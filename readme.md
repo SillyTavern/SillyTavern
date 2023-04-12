@@ -144,6 +144,7 @@ Contact us on Discord: Cohee#1207 or RossAscends#1779
 * Cohee's TAI mod: Public domain
 * RossAscends' additions: Public domain
 * Portions of CncAnon's TavernAITurbo mod: Unknown license
+* Waifu mode inspired by the work of PepperTaco (https://github.com/peppertaco/Tavern/)
 * Thanks Pygmalion University for being awesome testers and suggesting cool features! 
 * Thanks oobabooga for compiling presets for TextGen
 * poe-api client adapted from https://github.com/ading2210/poe-api (GPL v3)
