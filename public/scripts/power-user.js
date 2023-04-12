@@ -1,5 +1,5 @@
-import { saveSettingsDebounced, characters } from "../script.js";
-import { delay, debounce } from "./utils.js";
+import { saveSettingsDebounced, characters, callPopup, token } from "../script.js";
+import { delay } from "./utils.js";
 
 
 export {
@@ -52,19 +52,13 @@ let power_user = {
     blur_tint_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBlurTintColor').trim()}`,
 
     waifuMode: false,
+    theme: 'Default (Dark)',
 };
 
+let themes = [];
+
 const storage_keys = {
-    collapse_newlines: "TavernAI_collapse_newlines",
-    force_pygmalion_formatting: "TavernAI_force_pygmalion_formatting",
-    pin_examples: "TavernAI_pin_examples",
-    disable_description_formatting: "TavernAI_disable_description_formatting",
-    disable_scenario_formatting: "TavernAI_disable_scenario_formatting",
-    disable_personality_formatting: "TavernAI_disable_personality_formatting",
-    always_force_name2: "TavernAI_always_force_name2",
-    custom_chat_separator: "TavernAI_custom_chat_separator",
     fast_ui_mode: "TavernAI_fast_ui_mode",
-    multigen: "TavernAI_multigen",
     avatar_style: "TavernAI_avatar_style",
     chat_display: "TavernAI_chat_display",
     sheld_width: "TavernAI_sheld_width",
@@ -207,6 +201,39 @@ async function applyFontScale() {
     chat.style.transition = chatTransition;
 }
 
+async function applyTheme(name) {
+    const theme = themes.find(x => x.name == name);
+
+    if (!theme) {
+        return;
+    }
+
+    const themeProperties = [
+        { key: 'main_text_color', selector: '#main-text-color-picker', type: 'main' },
+        { key: 'italics_text_color', selector: '#italics-color-picker', type: 'italics' },
+        { key: 'fastui_bg_color', selector: '#fastui-bg-color-picker', type: 'fastUIBG' },
+        { key: 'blur_tint_color', selector: '#blur-tint-color-picker', type: 'blurTint' },
+        {
+            key: 'blur_strength',
+            action: async () => {
+                localStorage.setItem(storage_keys.blur_strength, power_user.blur_strength);
+                await applyBlurStrength();
+            }
+        }
+    ];
+
+    for (const { key, selector, type, action } of themeProperties) {
+        if (theme[key] !== undefined) {
+            power_user[key] = theme[key];
+            if (selector) $(selector).attr('color', power_user[key]);
+            if (type) await applyThemeColor(type);
+            if (action) await action();
+        }
+    }
+
+    console.log('theme applied: ' + name);
+}
+
 applyAvatarStyle();
 switchUiMode();
 applyChatDisplay();
@@ -216,26 +243,14 @@ applyBlurStrength();
 applyThemeColor();
 switchWaifuMode()
 
-// TODO delete in next release
-function loadFromLocalStorage() {
-    power_user.collapse_newlines = localStorage.getItem(storage_keys.collapse_newlines) == "true";
-    power_user.force_pygmalion_formatting = localStorage.getItem(storage_keys.force_pygmalion_formatting) == "true";
-    power_user.pin_examples = localStorage.getItem(storage_keys.pin_examples) == "true";
-    power_user.disable_description_formatting = localStorage.getItem(storage_keys.disable_description_formatting) == "true";
-    power_user.disable_scenario_formatting = localStorage.getItem(storage_keys.disable_scenario_formatting) == "true";
-    power_user.disable_personality_formatting = localStorage.getItem(storage_keys.disable_personality_formatting) == "true";
-    power_user.always_force_name2 = localStorage.getItem(storage_keys.always_force_name2) == "true";
-    power_user.custom_chat_separator = localStorage.getItem(storage_keys.custom_chat_separator);
-    power_user.multigen = localStorage.getItem(storage_keys.multigen) == "true";
-}
-
-function loadPowerUserSettings(settings) {
-    // Migrate legacy settings
-    loadFromLocalStorage();
-
-    // Now do it properly from settings.json
+function loadPowerUserSettings(settings, data) {
+    // Load from settings.json
     if (settings.power_user !== undefined) {
         Object.assign(power_user, settings.power_user);
+    }
+
+    if (data.themes !== undefined) {
+        themes = data.themes;
     }
 
     // These are still local storage
@@ -266,16 +281,23 @@ function loadPowerUserSettings(settings) {
     $(`input[name="chat_display"][value="${power_user.chat_display}"]`).prop("checked", true);
     $(`input[name="sheld_width"][value="${power_user.sheld_width}"]`).prop("checked", true);
     $("#font_scale").val(power_user.font_scale);
-    $("#font_scale_counter").html(power_user.font_scale);
+    $("#font_scale_counter").text(power_user.font_scale);
 
     $("#blur_strength").val(power_user.blur_strength);
-    $("#blur_strength_counter").html(power_user.blur_strength);
+    $("#blur_strength_counter").text(power_user.blur_strength);
 
     $("#main-text-color-picker").attr('color', power_user.main_text_color);
     $("#italics-color-picker").attr('color', power_user.italics_text_color);
     $("#fastui-bg-color-picker").attr('color', power_user.fastui_bg_color);
     $("#blur-tint-color-picker").attr('color', power_user.blur_tint_color);
 
+    for (const theme of themes) {
+        const option = document.createElement('option');
+        option.value = theme.name;
+        option.innerText = theme.name;
+        option.selected = theme.name == power_user.theme;
+        $("#themes").append(option);
+    }
 
     $(`#character_sort_order option[data-order="${power_user.sort_order}"][data-field="${power_user.sort_field}"]`).prop("selected", true);
     sortCharactersList();
@@ -413,6 +435,58 @@ $(document).ready(() => {
         power_user.blur_tint_color = evt.detail.rgba;
         applyThemeColor('blurTint');
         saveSettingsDebounced();
+    });
+
+    $("#themes").on('change', function () {
+        const themeSelected = $(this).find(':selected').val();
+        power_user.theme = themeSelected;
+        applyTheme(themeSelected);
+        saveSettingsDebounced();
+    });
+
+    $("#ui-preset-save-button").on('click', async function () {
+        const name = await callPopup('Name him, name your son:', 'input');
+
+        if (!name) {
+            return;
+        }
+
+        const theme = {
+            name,
+            blur_strength: power_user.blur_strength,
+            main_text_color: power_user.main_text_color,
+            italics_text_color: power_user.italics_text_color,
+            fastui_bg_color: power_user.fastui_bg_color,
+            blur_tint_color: power_user.blur_tint_color,
+        };
+
+        const response = await fetch('/savetheme', {
+            method: 'POST', headers: {
+                'X-CSRF-Token': token,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(theme)
+        });
+
+        if (response.ok) {
+            const themeIndex = themes.findIndex(x => x.name == name);
+
+            if (themeIndex == -1) {
+                themes.push(theme);
+                const option = document.createElement('option');
+                option.selected = true;
+                option.value = name;
+                option.innerText = name;
+                $('#themes').append(option);
+            }
+            else {
+                themes[themeIndex] = theme;
+                $(`#themes option[value="${name}"]`).attr('selected', true);
+            }
+
+            power_user.theme = name;
+            saveSettingsDebounced();
+        }
     });
 
     $("#play_message_sound").on('input', function () {

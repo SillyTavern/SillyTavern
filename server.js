@@ -117,6 +117,7 @@ const directories = {
     thumbnails: 'thumbnails/',
     thumbnailsBg: 'thumbnails/bg/',
     thumbnailsAvatar: 'thumbnails/avatar/',
+    themes: 'public/themes',
 };
 
 // CSRF Protection //
@@ -1037,6 +1038,7 @@ app.post('/getsettings', jsonParser, (request, response) => { //Wintermute's cod
     const openai_setting_names = [];
     const textgenerationwebui_presets = [];
     const textgenerationwebui_preset_names = [];
+    const themes = [];
     const settings = fs.readFileSync('public/settings.json', 'utf8', (err, data) => {
         if (err) return response.sendStatus(500);
 
@@ -1139,6 +1141,30 @@ app.post('/getsettings', jsonParser, (request, response) => { //Wintermute's cod
         textgenerationwebui_preset_names.push(item.replace(/\.[^/.]+$/, ''));
     });
 
+    // Theme files
+    const themeFiles = fs
+        .readdirSync(directories.themes)
+        .filter(x => path.parse(x).ext == '.json')
+        .sort();
+
+    themeFiles.forEach(item => {
+        const file = fs.readFileSync(
+            path.join(directories.themes, item),
+            'utf-8',
+            (err, data) => {
+                if (err) return response.sendStatus(500);
+                return data;
+            }
+        );
+
+        try {
+            themes.push(json5.parse(file));
+        }
+        catch {
+            // skip
+        }
+    })
+
     response.send({
         settings,
         koboldai_settings,
@@ -1150,6 +1176,7 @@ app.post('/getsettings', jsonParser, (request, response) => { //Wintermute's cod
         openai_setting_names,
         textgenerationwebui_presets,
         textgenerationwebui_preset_names,
+        themes,
         enable_extensions: enableExtensions,
     });
 });
@@ -1178,6 +1205,17 @@ app.post('/deleteworldinfo', jsonParser, (request, response) => {
     }
 
     fs.rmSync(pathToWorldInfo);
+
+    return response.sendStatus(200);
+});
+
+app.post('/savetheme', jsonParser, (request, response) => {
+    if (!request.body || !request.body.name) {
+        return response.sendStatus(400);
+    }
+
+    const filename = path.join(directories.themes, sanitize(request.body.name) + '.json');
+    fs.writeFileSync(filename, JSON.stringify(request.body), 'utf8');
 
     return response.sendStatus(200);
 });

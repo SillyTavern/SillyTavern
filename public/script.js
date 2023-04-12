@@ -2612,7 +2612,7 @@ async function getSettings(type) {
                 loadPoeSettings(settings);
 
                 // Load power user settings
-                loadPowerUserSettings(settings);
+                loadPowerUserSettings(settings, data);
 
 
                 //Enable GUI deference settings if GUI is selected for Kobold
