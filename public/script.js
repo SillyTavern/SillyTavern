@@ -626,6 +626,7 @@ function printCharacters() {
         );
         //console.log('printcharacters() -- printing -- ChID '+i+' ('+item.name+')');
     });
+    $("#rm_print_characters_block").prepend(`<hr>`);
     printGroups();
     sortCharactersList();
 }

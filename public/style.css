@@ -353,6 +353,7 @@ code {
 #personality_div hr,
 #top-settings-holder hr {
     background-image: linear-gradient(90deg, var(--transparent), var(--white30a), var(--transparent));
+    min-height: 1px;
 }
 
 .options-content a {
