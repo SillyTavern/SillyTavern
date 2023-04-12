@@ -3182,9 +3182,9 @@ toolcool-color-picker {
     }
 
     body {
-        position: fixed;
+        position: auto;
         touch-action: none;
-        overflow: hidden;
+        overflow: scroll;
     }
 
     .drawer-content {
@@ -3220,7 +3220,7 @@ toolcool-color-picker {
         height: calc(100svh - 45px);
         width: 100%;
         margin: 0 auto;
-        position: fixed;
+        position: auto;
     }
 
     #character_popup,
@@ -3248,7 +3248,7 @@ toolcool-color-picker {
 
     #right-nav-panel,
     #left-nav-panel {
-        height: calc(100svh - 40px);
+        height: calc(100svh - 45px);
         min-width: 100%;
         width: 100%;
         max-width: 100%;
