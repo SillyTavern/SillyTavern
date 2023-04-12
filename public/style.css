@@ -63,8 +63,6 @@
     box-sizing: border-box;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    appearance: auto;
-    -moz-appearance: auto;
     scroll-behavior: smooth;
     text-shadow: 0 0 3px black;
 }
