@@ -114,7 +114,7 @@ function switchUiMode() {
 
 function switchWaifuMode() {
     const waifuMode = localStorage.getItem(storage_keys.waifuMode);
-    power_user.waifuMode = waifuMode === null ? true : waifuMode == "true";
+    power_user.waifuMode = waifuMode === null ? false : waifuMode == "true";
     $("body").toggleClass("waifuMode", power_user.waifuMode);
 }
 
@@ -242,7 +242,7 @@ function loadPowerUserSettings(settings) {
     const fastUi = localStorage.getItem(storage_keys.fast_ui_mode);
     const waifuMode = localStorage.getItem(storage_keys.waifuMode);
     power_user.fast_ui_mode = fastUi === null ? true : fastUi == "true";
-    power_user.waifuMode = waifuMode === null ? true : waifuMode == "true";
+    power_user.waifuMode = waifuMode === null ? false : waifuMode == "true";
     power_user.avatar_style = Number(localStorage.getItem(storage_keys.avatar_style) ?? avatar_styles.ROUND);
     power_user.chat_display = Number(localStorage.getItem(storage_keys.chat_display) ?? chat_styles.DEFAULT);
     power_user.sheld_width = Number(localStorage.getItem(storage_keys.sheld_width) ?? sheld_width.DEFAULT);

@@ -11,6 +11,7 @@ import {
 import {
     textgenerationwebui_settings,
     loadTextGenSettings,
+    generateTextGenWithStreaming,
 } from "./scripts/textgen-settings.js";
 
 import {
@@ -357,7 +358,6 @@ var max_context = 2048;
 var is_pygmalion = false;
 var tokens_already_generated = 0;
 var message_already_generated = "";
-var if_typing_text = false;
 const tokens_cycle_count = 30;
 var cycle_count_generation = 0;
 
@@ -499,6 +499,22 @@ async function getStatus() {
                     online_status += " (Pyg. formatting on)";
                 } else {
                     is_pygmalion = false;
+                }
+
+                // determine if streaming is enabled for ooba
+                if (main_api == 'textgenerationwebui' && typeof data.gradio_config == 'string') {
+                    try {
+                        let textGenConfig = JSON.parse(data.gradio_config);
+                        let commandLineConfig = textGenConfig.components.filter(x => x.type == "checkboxgroup" && Array.isArray(x.props.choices) && x.props.choices.includes("no_stream"));
+
+                        if (commandLineConfig.length) {
+                            let selectedOptions = commandLineConfig[0].props.value;
+                            textgenerationwebui_settings.streaming = !selectedOptions.includes('no_stream');
+                        }
+                    }
+                    catch {
+                        textgenerationwebui_settings.streaming = false;
+                    }
                 }
 
                 //console.log(online_status);
@@ -1114,7 +1130,9 @@ function appendToStoryString(value, prefix) {
 }
 
 function isStreamingEnabled() {
-    return (main_api == 'openai' && oai_settings.stream_openai) || (main_api == 'poe' && poe_settings.streaming);
+    return (main_api == 'openai' && oai_settings.stream_openai)
+        || (main_api == 'poe' && poe_settings.streaming)
+        || (main_api == 'textgenerationwebui' && textgenerationwebui_settings.streaming);
 }
 
 class StreamingProcessor {
@@ -1180,7 +1198,9 @@ class StreamingProcessor {
     }
 
     async generate() {
-        this.messageId = this.onStartStreaming('...');
+        if (this.messageId == -1) {
+            this.messageId = this.onStartStreaming('...');
+        }
 
         for await (const text of this.generator()) {
             if (this.isStopped) {
@@ -1202,6 +1222,7 @@ class StreamingProcessor {
 
         this.isFinished = true;
         this.onFinishStreaming(this.messageId, this.result);
+        return this.result;
     }
 }
 
@@ -1226,7 +1247,6 @@ async function Generate(type, automatic_trigger, force_name2) {
 
     if (isStreamingEnabled()) {
         streamingProcessor = new StreamingProcessor(type, force_name2);
-        hideSwipeButtons();
     }
     else {
         streamingProcessor = false;
@@ -1766,6 +1786,8 @@ async function Generate(type, automatic_trigger, force_name2) {
                         'seed': textgenerationwebui_settings.seed,
                         'add_bos_token': textgenerationwebui_settings.add_bos_token,
                         'custom_stopping_strings': getStoppingStrings().concat(textgenerationwebui_settings.custom_stopping_strings),
+                        'truncation_length': max_context,
+                        'ban_eos_token': textgenerationwebui_settings.ban_eos_token,
                     }
                 ];
                 generate_data = { "data": [JSON.stringify(data)] };
@@ -1827,6 +1849,9 @@ async function Generate(type, automatic_trigger, force_name2) {
                     generatePoe(finalPromt).then(onSuccess).catch(onError);
                 }
             }
+            else if (main_api == 'textgenerationwebui' && textgenerationwebui_settings.streaming) {
+                streamingProcessor.generator = await generateTextGenWithStreaming(generate_data, finalPromt);
+            }
             else {
                 jQuery.ajax({
                     type: 'POST', // 
@@ -1844,7 +1869,20 @@ async function Generate(type, automatic_trigger, force_name2) {
             }
 
             if (isStreamingEnabled()) {
-                await streamingProcessor.generate();
+                hideSwipeButtons();
+                let getMessage = await streamingProcessor.generate();
+
+                if (isMultigenEnabled()) {
+                    message_already_generated += getMessage;
+                    promptBias = '';
+                    if (!streamingProcessor.isStopped && shouldContinueMultigen(getMessage)) {
+                        streamingProcessor.isFinished = false;
+                        runGenerate(getMessage);
+                        console.log('returning to make generate again');
+                        return;
+                    }
+                }
+
                 streamingProcessor = null;
             }
 
@@ -1860,15 +1898,11 @@ async function Generate(type, automatic_trigger, force_name2) {
                     // to make it continue generating so long as it's under max_amount and hasn't signaled
                     // an end to the character's response via typing "You:" or adding "<endoftext>"
                     if (isMultigenEnabled()) {
-                        if_typing_text = false;
                         message_already_generated += getMessage;
                         promptBias = '';
-                        if (message_already_generated.indexOf('You:') === -1 &&             //if there is no 'You:' in the response msg
-                            message_already_generated.indexOf('<|endoftext|>') === -1 &&    //if there is no <endoftext> stamp in the response msg
-                            tokens_already_generated < parseInt(amount_gen) &&              //if the gen'd msg is less than the max response length..
-                            getMessage.length > 0) {                                        //if we actually have gen'd text at all... 
+                        if (shouldContinueMultigen(getMessage)) {
                             runGenerate(getMessage);
-                            console.log('returning to make generate again');            //generate again with the 'GetMessage' argument..
+                            console.log('returning to make generate again');
                             return;
                         }
 
@@ -1935,6 +1969,13 @@ async function Generate(type, automatic_trigger, force_name2) {
     }
     console.log('generate ending');
 } //generate ends
+
+function shouldContinueMultigen(getMessage) {
+    return message_already_generated.indexOf('You:') === -1 && //if there is no 'You:' in the response msg
+        message_already_generated.indexOf('<|endoftext|>') === -1 && //if there is no <endoftext> stamp in the response msg
+        tokens_already_generated < parseInt(amount_gen) && //if the gen'd msg is less than the max response length..
+        getMessage.length > 0;     //if we actually have gen'd text at all...
+}
 
 function extractNameFromMessage(getMessage, force_name2) {
     let this_mes_is_name = true;
