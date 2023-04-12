@@ -766,6 +766,7 @@ select {
     border: 1px solid var(--white30a);
     border-radius: 10px;
     margin-bottom: 10px;
+    height: min-content;
 }
 
 select option {
@@ -3007,6 +3008,26 @@ toolcool-color-picker {
     display: flex;
     row-gap: 10px;
     flex-wrap: wrap;
+}
+
+.flexnowrap {
+    flex-wrap: nowrap;
+}
+
+.alignitemscenter {
+    align-items: center;
+}
+
+.padding5 {
+    padding: 5px;
+}
+
+.margin0 {
+    margin: 0;
+}
+
+.margin-r5 {
+    margin-right: 5px;
 }
 
 .flex1 {

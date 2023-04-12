@@ -1141,8 +1141,8 @@
 
                 </div>
                 <hr>
-                <div id="color-picker-block" class="flex-container">
-                    <div class="range-block wide50p">
+                <div id="UI-Theme-Block" class="flex-container">
+                    <div id="color-picker-block" class="range-block wide50p">
                         <div class="flex-container wide100p flexflowcolumn">
                             <div class="range-block-title">
                                 <h4>UI Colors</h4>
@@ -1169,15 +1169,44 @@
                             </div>
                         </div>
                     </div>
-                    <div id="font-scale-block" class="range-block wide50p">
-                        <div class="range-block-title">
-                            <h4>Font Scale</h4>
+                    <div id="font-blur-UIpresets-block" class="range-block wide50p">
+                        <div id="font-scale-block" class="range-block">
+                            <div class="range-block-title">
+                                Font Scale
+                            </div>
+                            <div class="range-block-range">
+                                <input type="range" id="font_scale" name="font_scale" min="0.8" max="1.2" step="0.05">
+                            </div>
+                            <div class="range-block-counter">
+                                <span id="font_scale_counter">select</span>
+                            </div>
                         </div>
-                        <div class="range-block-range">
-                            <input type="range" id="font_scale" name="font_scale" min="0.8" max="1.2" step="0.05">
+                        <div id="blur-strength-block" class="range-block">
+                            <div class="range-block-title">
+                                Blur Strength
+                            </div>
+                            <div class="range-block-range">
+                                <input type="range" id="blur_strength" name="blur_strength" min="0.8" max="1.2" step="0.05">
+                            </div>
+                            <div class="range-block-counter">
+                                <span id="blur_strength_counter">WIP</span>
+                            </div>
                         </div>
-                        <div class="range-block-counter">
-                            <span id="font_scale_counter">select</span>
+                        <div id="UI-presets-block" class="range-block">
+                            <div class="range-block-title">
+                                UI Preset
+
+                            </div>
+                            <div class="flex-container flexnowrap alignitemscenter">
+                                <select id="main_api" class="margin0 margin-r5">
+                                    <option value="###">These</option>
+                                    <option value="###">Don't Do</option>
+                                    <option value="###">Anything Yet</option>
+                                    <option value="###">Feature Currently</option>
+                                    <option value="###">Under Construction</option>
+                                </select>
+                                <div id="ui-preset-save-button" class="menu_button padding5 margin0">+</div>
+                            </div>
                         </div>
                     </div>
                 </div>
