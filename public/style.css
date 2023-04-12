@@ -3390,6 +3390,7 @@ body.waifuMode img.expression {
     max-width: 100%;
     max-height: 90vh;
     vertical-align: bottom;
+    width: : calc(var(--sheldWidth) /2 -(calc(var(--sheldWidth) / 2)));
 }
 
 body.waifuMode #sheld {
@@ -3409,7 +3410,6 @@ body.waifuMode #sheld {
 }
 
 body.waifuMode #chat {
-    flex-direction: column-reverse;
     border-top: 1px solid var(--grey30a);
     border-radius: 20px;
 }
