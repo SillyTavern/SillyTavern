@@ -3410,6 +3410,7 @@ body.waifuMode #sheld {
 
 body.waifuMode #chat {
     flex-direction: column-reverse;
+    border-top: 1px solid var(--grey30a);
 }
 
 /*this part only only applies to iOS devices*/
