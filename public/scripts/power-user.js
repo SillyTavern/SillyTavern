@@ -50,6 +50,8 @@ let power_user = {
     italics_text_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeEmColor').trim()}`,
     fastui_bg_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeFastUIBGColor').trim()}`,
     blur_tint_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBlurTintColor').trim()}`,
+
+    waifuMode: false,
 };
 
 const storage_keys = {
@@ -73,6 +75,8 @@ const storage_keys = {
     fastui_bg_color: "TavernAI_fastui_bg_color",
     blur_tint_color: "TavernAI_blur_tint_color",
     blur_strength: "TavernAI_blur_strength",
+
+    waifuMode: "TavernAI_waifuMode",
 };
 
 const chat = document.getElementById('chat');
@@ -106,6 +110,12 @@ function switchUiMode() {
     power_user.fast_ui_mode = fastUi === null ? true : fastUi == "true";
     $("body").toggleClass("no-blur", power_user.fast_ui_mode);
     $("#send_form").toggleClass("no-blur-sendtextarea", power_user.fast_ui_mode);
+}
+
+function switchWaifuMode() {
+    const waifuMode = localStorage.getItem(storage_keys.waifuMode);
+    power_user.waifuMode = waifuMode === null ? true : waifuMode == "true";
+    $("body").toggleClass("waifuMode", power_user.waifuMode);
 }
 
 function applyAvatarStyle() {
@@ -204,6 +214,7 @@ applySheldWidth();
 applyFontScale();
 applyBlurStrength();
 applyThemeColor();
+switchWaifuMode()
 
 // TODO delete in next release
 function loadFromLocalStorage() {
@@ -229,7 +240,9 @@ function loadPowerUserSettings(settings) {
 
     // These are still local storage
     const fastUi = localStorage.getItem(storage_keys.fast_ui_mode);
+    const waifuMode = localStorage.getItem(storage_keys.waifuMode);
     power_user.fast_ui_mode = fastUi === null ? true : fastUi == "true";
+    power_user.waifuMode = waifuMode === null ? true : waifuMode == "true";
     power_user.avatar_style = Number(localStorage.getItem(storage_keys.avatar_style) ?? avatar_styles.ROUND);
     power_user.chat_display = Number(localStorage.getItem(storage_keys.chat_display) ?? chat_styles.DEFAULT);
     power_user.sheld_width = Number(localStorage.getItem(storage_keys.sheld_width) ?? sheld_width.DEFAULT);
@@ -245,6 +258,7 @@ function loadPowerUserSettings(settings) {
     $("#always-force-name2-checkbox").prop("checked", power_user.always_force_name2);
     $("#custom_chat_separator").val(power_user.custom_chat_separator);
     $("#fast_ui_mode").prop("checked", power_user.fast_ui_mode);
+    $("#waifuMode").prop("checked", power_user.waifuMode);
     $("#multigen").prop("checked", power_user.multigen);
     $("#play_message_sound").prop("checked", power_user.play_message_sound);
     $("#play_sound_unfocused").prop("checked", power_user.play_sound_unfocused);
@@ -336,6 +350,12 @@ $(document).ready(() => {
         power_user.fast_ui_mode = $(this).prop("checked");
         localStorage.setItem(storage_keys.fast_ui_mode, power_user.fast_ui_mode);
         switchUiMode();
+    });
+
+    $("#waifuMode").change(function () {
+        power_user.waifuMode = $(this).prop("checked");
+        localStorage.setItem(storage_keys.waifuMode, power_user.waifuMode);
+        switchWaifuMode();
     });
 
     $(`input[name="avatar_style"]`).on('input', function (e) {
