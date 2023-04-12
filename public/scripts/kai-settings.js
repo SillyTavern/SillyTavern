@@ -103,7 +103,7 @@ const sliders = [
         name: "rep_pen_range",
         sliderId: "#rep_pen_range",
         counterId: "#rep_pen_range_counter",
-        format: (val) => val + " Tokens",
+        format: (val) => val,
         setValue: (val) => { kai_settings.rep_pen_range = Number(val); },
     },
     {
@@ -161,7 +161,7 @@ $(document).ready(function () {
         });
     });
 
-    $('#single_line').on("input", function() {
+    $('#single_line').on("input", function () {
         const value = $(this).prop('checked');
         kai_settings.single_line = value;
         saveSettingsDebounced();

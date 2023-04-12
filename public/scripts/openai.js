@@ -568,7 +568,7 @@ function loadOpenAISettings(data, settings) {
 
     $(`#model_openai_select option[value="${oai_settings.openai_model}"`).attr('selected', true).trigger('change');
     $('#openai_max_context').val(oai_settings.openai_max_context);
-    $('#openai_max_context_counter').text(`${oai_settings.openai_max_context} Tokens`);
+    $('#openai_max_context_counter').text(`${oai_settings.openai_max_context}`);
 
     $('#openai_max_tokens').val(oai_settings.openai_max_tokens);
 
@@ -731,7 +731,7 @@ $(document).ready(function () {
 
     $(document).on('input', '#openai_max_context', function () {
         oai_settings.openai_max_context = parseInt($(this).val());
-        $('#openai_max_context_counter').text(`${$(this).val()} Tokens`);
+        $('#openai_max_context_counter').text(`${$(this).val()}`);
         saveSettingsDebounced();
     });
 
@@ -842,7 +842,7 @@ $(document).ready(function () {
         oai_settings.jailbreak_prompt = $('#jailbreak_prompt_textarea').val();
         saveSettingsDebounced();
     });
-    
+
     $("#main_prompt_textarea").on('input', function () {
         oai_settings.main_prompt = $('#main_prompt_textarea').val();
         saveSettingsDebounced();

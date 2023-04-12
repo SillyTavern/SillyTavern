@@ -1123,7 +1123,7 @@ class StreamingProcessor {
         hideSwipeButtons();
         return (count_view_mes - 1);
     }
-    
+
     onProgressStreaming(messageId, text) {
         let processedText = cleanUpMessage(text);
         let result = extractNameFromMessage(processedText, this.force_name2);
@@ -1142,7 +1142,7 @@ class StreamingProcessor {
         mesText.append(formattedText);
         scrollChatToBottom();
     }
-    
+
     onFinishStreaming(messageId, text) {
         this.onProgressStreaming(messageId, text);
         playMessageSound();
@@ -1152,7 +1152,7 @@ class StreamingProcessor {
         setGenerationProgress(0);
         $('.mes_edit:last').show();
     }
-    
+
     onErrorStreaming() {
         $("#send_textarea").removeAttr('disabled');
         is_send_press = false;
@@ -1160,11 +1160,11 @@ class StreamingProcessor {
         setGenerationProgress(0);
         showSwipeButtons();
     }
-    
+
     onStopStreaming() {
         this.onErrorStreaming();
     }
-    
+
     nullStreamingGeneration() {
         throw new Error('Generation function for streaming is not hooked up');
     }
@@ -1439,7 +1439,7 @@ async function Generate(type, automatic_trigger, force_name2) {
         console.log('post replace chat.length = ' + chat.length);
         //chat2 = chat2.reverse();
         var this_max_context = 1487;
-        if (main_api == 'kobold' || main_api == 'textgenerationwebui') { 
+        if (main_api == 'kobold' || main_api == 'textgenerationwebui') {
             this_max_context = (max_context - amount_gen);
         }
         if (main_api == 'novel') {
@@ -1764,7 +1764,7 @@ async function Generate(type, automatic_trigger, force_name2) {
                         'length_penalty': textgenerationwebui_settings.length_penalty,
                         'early_stopping': textgenerationwebui_settings.early_stopping,
                         'seed': textgenerationwebui_settings.seed,
-                        'add_bos_token': textgenerationwebui_settings.add_bos_token, 
+                        'add_bos_token': textgenerationwebui_settings.add_bos_token,
                         'custom_stopping_strings': getStoppingStrings().concat(textgenerationwebui_settings.custom_stopping_strings),
                     }
                 ];
@@ -2342,7 +2342,7 @@ function changeMainAPI() {
         if (selectedVal == "poe") {
             $("#amount_gen_block").css("display", "none");
         } else {
-            $("#amount_gen_block").css("display", "block");
+            $("#amount_gen_block").css("display", "flex");
         }
 
     }
@@ -2514,10 +2514,10 @@ async function getSettings(type) {
                 );
 
                 $("#max_context").val(max_context);
-                $("#max_context_counter").text(`${max_context} Tokens`);
+                $("#max_context_counter").text(`${max_context}`);
 
                 $("#amount_gen").val(amount_gen);
-                $("#amount_gen_counter").text(`${amount_gen} Tokens`);
+                $("#amount_gen_counter").text(`${amount_gen}`);
 
                 swipes = !!settings.swipes;  //// swipecode
                 $('#swipes-checkbox').prop('checked', swipes); /// swipecode
@@ -4261,11 +4261,11 @@ $(document).ready(function () {
 
             amount_gen = preset.genamt;
             $("#amount_gen").val(amount_gen);
-            $("#amount_gen_counter").text(`${amount_gen} Tokens`);
+            $("#amount_gen_counter").text(`${amount_gen}`);
 
             max_context = preset.max_length;
             $("#max_context").val(max_context);
-            $("#max_context_counter").text(`${max_context} Tokens`);
+            $("#max_context_counter").text(`${max_context}`);
 
             $("#range_block").find('input').prop("disabled", false);
             $("#kobold-advanced-config").find('input').prop("disabled", false);
@@ -4340,13 +4340,13 @@ $(document).ready(function () {
         {
             sliderId: "#amount_gen",
             counterId: "#amount_gen_counter",
-            format: (val) => `${val} Tokens`,
+            format: (val) => `${val}`,
             setValue: (val) => { amount_gen = Number(val); },
         },
         {
             sliderId: "#max_context",
             counterId: "#max_context_counter",
-            format: (val) => `${val} Tokens`,
+            format: (val) => `${val}`,
             setValue: (val) => { max_context = Number(val); },
         }
     ];
