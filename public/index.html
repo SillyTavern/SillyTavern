@@ -599,7 +599,7 @@
                             </div>
                         </div>
                         <div id="openai_settings">
-                            <div class="flex-container">
+                            <div class="">
                                 <div class="range-block">
                                     <label class="checkbox_label" for="nsfw_toggle">
                                         <input id="nsfw_toggle" type="checkbox" checked>
@@ -607,34 +607,39 @@
                                     </label>
                                 </div>
                                 <div class="range-block">
-                                    <label title="NSFW block goes first in the resulting prompt" class="checkbox_label">
+                                    <label title="NSFW block goes first in the resulting prompt" class="checkbox_label widthFreeExpand">
                                         <input id="nsfw_first" type="checkbox" />
                                         NSFW first
                                     </label>
+                                    <div class="range-block-counter justifyLeft">NSFW block goes first in the resulting prompt</div>
                                 </div>
                                 <div class="range-block">
-                                    <label title="Inserts jailbreak as a last system message" class="checkbox_label">
+                                    <label title="Inserts jailbreak as a last system message" class="checkbox_label widthFreeExpand">
                                         <input id="jailbreak_system" type="checkbox" />
                                         Send Jailbreak
                                     </label>
+                                    <div class="range-block-counter justifyLeft">Inserts jailbreak as a last system message</div>
                                 </div>
                                 <div class="range-block">
-                                    <label title="Enables OpenAI completion streaming" class="checkbox_label" for="stream_toggle">
+                                    <label for="stream_toggle" title="Enables OpenAI completion streaming" class="checkbox_label widthFreeExpand">
                                         <input id="stream_toggle" type="checkbox" />
                                         Streaming
                                     </label>
+                                    <div class="range-block-counter justifyLeft">Enables OpenAI completion streaming</div>
                                 </div>
                                 <div class="range-block">
-                                    <label title="Use OAI knowledge base to enhance definitions for public figures and known fictional characters" class="checkbox_label">
+                                    <label title="Use OAI knowledge base to enhance definitions for public figures and known fictional characters" class="checkbox_label widthFreeExpand">
                                         <input id="enhance_definitions" type="checkbox" />
                                         Enhance Definitions
                                     </label>
+                                    <div class="range-block-counter justifyLeft">Use OAI knowledge base to enhance definitions for public figures and known fictional characters</div>
                                 </div>
                                 <div class="range-block">
-                                    <label for="wrap_in_quotes" title="Wrap user messages in quotes before sending" class="checkbox_label">
+                                    <label for="wrap_in_quotes" title="Wrap user messages in quotes before sending" class="checkbox_label widthFreeExpand">
                                         <input id="wrap_in_quotes" type="checkbox" />
                                         Wrap in Quotes
                                     </label>
+                                    <div class="range-block-counter justifyLeft">Wrap entire user message in quotes before sending. Volatile impact on AI responses. Helps when using basic chats. Hurts when combining RP-style narration with quotes. Leave off if you use quotes manually for speech.</div>
                                 </div>
                             </div>
                             <br>
