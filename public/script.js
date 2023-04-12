@@ -1169,6 +1169,7 @@ class StreamingProcessor {
         showSwipeButtons();
         setGenerationProgress(0);
         $('.mes_edit:last').show();
+        generatedPromtCache = '';
     }
 
     onErrorStreaming() {
@@ -1189,6 +1190,7 @@ class StreamingProcessor {
 
     constructor(type, force_name2) {
         this.result = "";
+        this.prefix = "";
         this.messageId = -1;
         this.type = type;
         this.force_name2 = force_name2;
@@ -1202,6 +1204,11 @@ class StreamingProcessor {
             this.messageId = this.onStartStreaming('...');
         }
 
+        // for multigen
+        if (this.result.length) {
+            this.prefix = this.result;
+        }
+
         for await (const text of this.generator()) {
             if (this.isStopped) {
                 this.onStopStreaming();
@@ -1209,8 +1216,8 @@ class StreamingProcessor {
             }
 
             try {
-                this.result = text;
-                this.onProgressStreaming(this.messageId, text);
+                this.result = this.prefix + text;
+                this.onProgressStreaming(this.messageId, this.result);
             }
             catch (err) {
                 console.error(err);
@@ -1221,7 +1228,6 @@ class StreamingProcessor {
         }
 
         this.isFinished = true;
-        this.onFinishStreaming(this.messageId, this.result);
         return this.result;
     }
 }
@@ -1873,6 +1879,7 @@ async function Generate(type, automatic_trigger, force_name2) {
                 let getMessage = await streamingProcessor.generate();
 
                 if (isMultigenEnabled()) {
+                    tokens_already_generated += this_amount_gen;    // add new gen amt to any prev gen counter..
                     message_already_generated += getMessage;
                     promptBias = '';
                     if (!streamingProcessor.isStopped && shouldContinueMultigen(getMessage)) {
@@ -1882,7 +1889,8 @@ async function Generate(type, automatic_trigger, force_name2) {
                         return;
                     }
                 }
-
+                
+                streamingProcessor.onFinishStreaming(streamingProcessor.messageId, getMessage);
                 streamingProcessor = null;
             }
 
