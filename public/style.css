@@ -3201,7 +3201,8 @@ toolcool-color-picker {
 
     #top-settings-holder {
         width: 100svw;
-        position: fixed;
+        min-width: 100svw;
+        max-width: 100svw;
 
     }
 
