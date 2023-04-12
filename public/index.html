@@ -1105,33 +1105,46 @@
                     </div>
 
                 </div>
-                <div id="font-scale-block" class="range-block wide50p">
-                    <div class="range-block-title">
-                        <h4>Font Scale</h4>
+                <hr>
+                <div class="flex-container">
+                    <div id="color-picker-block" class="range-block wide50p">
+                        <div class="flex-container wide100p flexflowcolumn">
+                            <div class="range-block-title">
+                                <h4>UI Colors</h4>
+                            </div>
+                            <div class="flex-container">
+                                <toolcool-color-picker id="main-text-color-picker"></toolcool-color-picker>
+                                <div class="flex1">Main Text</div>
+                            </div>
+
+                            <div class="flex-container">
+                                <toolcool-color-picker id="italics-color-picker"></toolcool-color-picker>
+
+                                Italics Text
+                            </div>
+                            <div class="flex-container">
+                                <toolcool-color-picker id="fastui-bg-color-picker"></toolcool-color-picker>
+
+                                FastUI BG
+                            </div>
+                            <div class="flex-container">
+                                <toolcool-color-picker id="blur-tint-color-picker"></toolcool-color-picker>
+
+                                Blur Tint
+                            </div>
+                        </div>
                     </div>
-                    <div class="range-block-range">
-                        <input type="range" id="font_scale" name="font_scale" min="0.8" max="1.2" step="0.05">
+                    <div id="font-scale-block" class="range-block wide50p">
+                        <div class="range-block-title">
+                            <h4>Font Scale</h4>
+                        </div>
+                        <div class="range-block-range">
+                            <input type="range" id="font_scale" name="font_scale" min="0.8" max="1.2" step="0.05">
+                        </div>
+                        <div class="range-block-counter">
+                            <span id="font_scale_counter">select</span>
+                        </div>
                     </div>
-                    <div class="range-block-counter">
-                        <span id="font_scale_counter">select</span>
-                    </div>
-                </div>
-                <div id="color-picker-block" class="range-block">
-                    <div class="range-block-title">
-                        Main Text Color
-                    </div>
-                    <toolcool-color-picker id="main-text-color-picker"></toolcool-color-picker>
-                    <div class="range-block-title">
-                        Italics Text Color
-                    </div>
-                    <toolcool-color-picker id="italics-color-picker"></toolcool-color-picker>
-                    <div class="range-block-title">
-                        FastUI BG Color
-                    </div>
-                    <toolcool-color-picker id="fastui-bg-color-picker"></toolcool-color-picker>
-                    <div class="range-block-title"></div>
-                    Blur Tint Color
-                    <toolcool-color-picker id="blur-tint-color-picker"></toolcool-color-picker>
                 </div>
 
 

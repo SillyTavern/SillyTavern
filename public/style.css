@@ -47,12 +47,17 @@
     --fontScale: 1;
     --mainFontSize: calc(var(--fontScale) * 1rem);
 
+    /*styles for the color picker*/
+    --tool-cool-color-picker-btn-bg: transparent;
+    --tool-cool-color-picker-btn-border-color: transparent;
+
 }
 
 * {
     box-sizing: border-box;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    appearance: auto;
     -moz-appearance: auto;
     scroll-behavior: smooth;
     text-shadow: 0 0 3px black;
@@ -1954,12 +1959,6 @@ h4 {
     margin: 10px 0;
 }
 
-#character_popup h4 {
-    /*     margin-top: 0;
-    margin-bottom: 0;
-    margin-left: 0; */
-}
-
 h5 {
     margin: 5px 0;
 }
@@ -3000,10 +2999,26 @@ label[for="extensions_autoconnect"] {
     width: 100%;
 }
 
+toolcool-color-picker {
+    margin-right: 10px;
+}
+
 .flex-container {
     display: flex;
-    gap: 10px;
+    row-gap: 10px;
     flex-wrap: wrap;
+}
+
+.flex1 {
+    flex: 1;
+}
+
+.flexFlowColumn {
+    flex-flow: column;
+}
+
+.wideMinContent {
+    width: min-content;
 }
 
 .flexWide50p {
