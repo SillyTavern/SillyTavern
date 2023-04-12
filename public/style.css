@@ -1826,6 +1826,16 @@ input[type="range"]::-webkit-slider-thumb {
     background-color: var(--black70a);
 }
 
+.mes_stop {
+    display: none;
+    float: right;
+    cursor: pointer;
+    transition: opacity 0.3s ease-in-out; 
+    height: 20px;
+    width: 20px;
+    opacity: 0.5;
+}
+
 .mes_edit {
     float: right;
     color: var(--white30a);
@@ -1841,12 +1851,13 @@ input[type="range"]::-webkit-slider-thumb {
     opacity: 0.2;
 }
 
-.mes_edit:hover {
+.mes_edit:hover, .mes_stop:hover {
     opacity: 1;
 }
 
 .last_mes .mes_edit,
-.last_mes .mes_edit_buttons {
+.last_mes .mes_edit_buttons,
+.last_mes .mes_stop {
     grid-row-start: 1;
     position: relative;
     right: -30px;

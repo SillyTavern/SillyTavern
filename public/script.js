@@ -1136,10 +1136,19 @@ function isStreamingEnabled() {
 }
 
 class StreamingProcessor {
+    showStopButton(messageId) {
+        $(`#chat .mes[mesid="${messageId}"] .mes_stop`).css({'display': 'block'});
+    }
+
+    hideStopButton(messageId) {
+        $(`#chat .mes[mesid="${messageId}"] .mes_stop`).css({'display': 'none'});
+    }
+
     onStartStreaming(text) {
         saveReply(this.type, text);
         const messageId = count_view_mes - 1;
         hideSwipeButtons();
+        this.showStopButton(messageId);
         return messageId;
     }
 
@@ -1163,6 +1172,7 @@ class StreamingProcessor {
     }
 
     onFinishStreaming(messageId, text) {
+        this.hideStopButton(this.messageId);
         this.onProgressStreaming(messageId, text);
         playMessageSound();
         saveChatConditional();
@@ -1174,6 +1184,7 @@ class StreamingProcessor {
     }
 
     onErrorStreaming() {
+        this.hideStopButton(this.messageId);
         $("#send_textarea").removeAttr('disabled');
         is_send_press = false;
         activateSendButtons();
@@ -1891,8 +1902,10 @@ async function Generate(type, automatic_trigger, force_name2) {
                     }
                 }
                 
-                streamingProcessor.onFinishStreaming(streamingProcessor.messageId, getMessage);
-                streamingProcessor = null;
+                if (streamingProcessor.isFinished) {
+                    streamingProcessor.onFinishStreaming(streamingProcessor.messageId, getMessage);
+                    streamingProcessor = null;
+                }
             }
 
             function onSuccess(data) {
@@ -4828,6 +4841,13 @@ $(document).ready(function () {
     $(document).on("click", ".select_chat_block, .bookmark_link", async function () {
         let file_name = $(this).attr("file_name").replace(".jsonl", "");
         openCharacterChat(file_name);
+    });
+
+    $(document).on("click", ".mes_stop", function () {
+        if (streamingProcessor) {
+            streamingProcessor.isStopped = true;
+            streamingProcessor.onStopStreaming();
+        }
     });
 
     $('.drawer-toggle').click(function () {
