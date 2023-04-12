@@ -69,6 +69,10 @@
 
 html {
     scroll-behavior: smooth;
+    /*fix for chrome flickering on blurred divs*/
+    -webkit-transform: translateZ(0);
+    -webkit-backface-visibility: hidden;
+    -webkit-perspective: 1000;
 }
 
 body {
@@ -181,8 +185,7 @@ code {
     display: inline-block;
     height: 40px;
     position: fixed;
-    color: var(--black30a);
-    border-bottom: 1px solid var(--black70a);
+    border-bottom: 1px solid var(--grey30a);
     box-shadow: 0 2px 20px 0 var(--black70a);
     backdrop-filter: blur(var(--SmartThemeBlurStrength));
     background-color: var(--SmartThemeBlurTintColor);
@@ -588,7 +591,8 @@ select {
     text-shadow: #000 0 0 3px;
 }
 
-#send_textarea::placeholder {
+#send_textarea::placeholder,
+.text_pole::placeholder {
     color: var(--white70a)
 }
 
@@ -3369,6 +3373,33 @@ body.no-blur #select_chat_popup {
 
 /* wAIfu mode*/
 
+
+body.waifuMode #top-bar {
+    border-radius: 0 0 20px 20px;
+    /* color: var(--grey30a); */
+    border: 1px solid var(--grey30a);
+}
+
+body.waifuMode #sheld {
+    display: grid;
+    grid-template-rows: 30vh min-content;
+    height: calc(100svh - 42px);
+    overflow-x: hidden;
+    max-width: 800px;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 41px;
+    margin: 0 auto;
+    z-index: 2;
+    align-content: end;
+}
+
+body.waifuMode #chat {
+    border-top: 1px solid var(--grey30a);
+    border-radius: 20px 20px 0 0;
+}
+
 body.waifuMode .expression-holder {
     max-height: 90vh;
     max-width: unset;
@@ -3390,26 +3421,6 @@ body.waifuMode img.expression {
     max-width: 100%;
     max-height: 90vh;
     vertical-align: bottom;
-}
-
-body.waifuMode #sheld {
-    display: grid;
-    grid-template-rows: 30vh min-content;
-    height: calc(100svh - 42px);
-    overflow-x: hidden;
-    max-width: 800px;
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 41px;
-    margin: 0 auto;
-    z-index: 2;
-    align-content: end;
-}
-
-body.waifuMode #chat {
-    border-top: 1px solid var(--grey30a);
-    border-radius: 20px;
 }
 
 /*styles for potential variant of WaifuMode sheld 50% waifu, 50% chat*/
