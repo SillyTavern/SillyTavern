@@ -41,11 +41,17 @@
     --SmartThemeEmColor: rgb(175, 175, 175);
     --SmartThemeFastUIBGColor: rgba(0, 0, 0, 0.9);
     --SmartThemeBlurTintColor: rgba(0, 0, 0, 0.5);
+    --SmartThemeBlurStrength: calc(var(--blurStrength) * 1px);
 
     --sheldWidth: 800px;
     /*base variable calculated in rems*/
     --fontScale: 1;
     --mainFontSize: calc(var(--fontScale) * 1rem);
+
+    /* base variable for blur strength slider calculations */
+    --blurStrength: 10;
+
+
 
     /*styles for the color picker*/
     --tool-cool-color-picker-btn-bg: transparent;
@@ -182,10 +188,10 @@ code {
     color: var(--black30a);
     border-bottom: 1px solid var(--black70a);
     box-shadow: 0 2px 20px 0 var(--black70a);
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(var(--SmartThemeBlurStrength));
     background-color: var(--SmartThemeBlurTintColor);
     /* border-radius: 0 0 20px 20px; */
-    -webkit-backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(var(--SmartThemeBlurStrength));
     z-index: 3000;
 }
 
@@ -214,9 +220,9 @@ code {
     border-bottom: 1px solid var(--grey30a);
     border-left: 1px solid var(--grey30a);
     border-right: 1px solid var(--grey30a);
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(var(--SmartThemeBlurStrength));
     background-color: var(--SmartThemeBlurTintColor);
-    -webkit-backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(var(--SmartThemeBlurStrength));
     text-shadow: #000 0 0 3px;
     scrollbar-width: thin;
     transition: all 1s ease-in-out;
@@ -241,7 +247,7 @@ code {
 
     border-radius: 0 0 20px 20px;
     background-color: var(--crimson70a);
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(var(--SmartThemeBlurStrength));
 }
 
 #send_but_sheld {
@@ -1145,9 +1151,9 @@ input[type=search]:focus::-webkit-search-cancel-button {
     margin-top: 36svh;
     box-shadow: 0 0 2px var(--black50a);
     padding: 4px;
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(var(--SmartThemeBlurStrength));
     background-color: var(--black70a);
-    -webkit-backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(var(--SmartThemeBlurStrength));
     border-radius: 10px;
 }
 
@@ -1254,8 +1260,8 @@ input[type=search]:focus::-webkit-search-cancel-button {
 }
 
 #shadow_popup {
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
+    -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
     display: none;
     opacity: 0.0;
     position: absolute;
@@ -1267,8 +1273,8 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 #colab_shadow_popup {
 
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(var(--SmartThemeBlurStrength));
+    -webkit-backdrop-filter: blur(var(--SmartThemeBlurStrength));
     display: none;
     opacity: 1.0;
     position: absolute;
@@ -1377,8 +1383,8 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 #world_popup {
     display: none;
-    background-color: var(--black30a);
-    backdrop-filter: blur(50px);
+    background-color: var(--SmartThemeBlurTintColor);
+    backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
     max-width: var(--sheldWidth);
     height: calc(100% - 40px);
     position: absolute;
@@ -1803,9 +1809,9 @@ input[type="range"]::-webkit-slider-thumb {
     margin-top: 15vh;
     box-shadow: 5px 5px var(--black30a);
     padding: 4px;
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(var(--SmartThemeBlurStrength));
     background-color: var(--black70a);
-    -webkit-backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(var(--SmartThemeBlurStrength));
     border-radius: 10px;
     padding-top: 30px;
 }
@@ -1913,9 +1919,9 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 #shadow_character_popup {
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(var(--SmartThemeBlurStrength));
     background-color: var(--black70a);
-    -webkit-backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(var(--SmartThemeBlurStrength));
     display: none;
     opacity: 1.0;
     position: absolute;
@@ -1927,8 +1933,8 @@ input[type="range"]::-webkit-slider-thumb {
 #character_popup {
     display: none;
     background-color: var(--black30a);
-    backdrop-filter: blur(50px);
-    -webkit-backdrop-filter: blur(30px);
+    backdrop-filter: blur(var(--SmartThemeBlurStrength));
+    -webkit-backdrop-filter: blur(var(--SmartThemeBlurStrength));
     grid-template-rows: 50px 1fr 1fr 1fr 5fr;
     grid-gap: 10px;
     max-width: var(--sheldWidth);
@@ -2007,9 +2013,9 @@ h5 {
     height: 40px;
     margin-top: 15px;
     margin-left: 36px;
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(var(--SmartThemeBlurStrength));
     background-color: var(--black70a);
-    -webkit-backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(var(--SmartThemeBlurStrength));
     width: 110px;
     text-align: center;
 }
@@ -2022,8 +2028,8 @@ h5 {
     height: 100svh;
     z-index: 3001;
     top: 0;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(var(--SmartThemeBlurStrength));
+    -webkit-backdrop-filter: blur(var(--SmartThemeBlurStrength));
 }
 
 #select_chat_popup {
@@ -2692,9 +2698,9 @@ a {
     left: auto;
     padding: 0;
     margin-bottom: 5px;
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
     background-color: var(--SmartThemeBlurTintColor);
-    -webkit-backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
     z-index: 3000;
     border: 0;
     border-left: 1px solid var(--grey30a);
@@ -2895,7 +2901,8 @@ label[for="extensions_autoconnect"] {
 
 .drawer-icon.openIcon {
     /*  background-image: url('img/circle-chevron-up-solid.svg'); */
-    filter: invert(1) brightness(200%);
+    filter: invert(1) brightness(200%) drop-shadow(0px 0px 2px black);
+    ;
     transition: all 0.275s;
 }
 
@@ -2905,7 +2912,8 @@ label[for="extensions_autoconnect"] {
 
 .drawer-icon.closedIcon {
     /* background-image: url('img/circle-chevron-down-solid.svg'); */
-    filter: invert(1);
+    filter: invert(1) drop-shadow(0px 0px 2px black);
+    ;
     opacity: 0.3;
     transition: all 0.275s;
 }
@@ -2965,8 +2973,8 @@ label[for="extensions_autoconnect"] {
     width: min-content;
     max-width: var(--sheldWidth);
     margin: 35px auto 0 auto;
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
+    -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
 }
 
 .fillRight,

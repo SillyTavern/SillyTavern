@@ -44,6 +44,7 @@ let power_user = {
     sort_field: 'name',
     sort_order: 'asc',
     font_scale: 1,
+    blur_strength: 10,
 
     main_text_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBodyColor').trim()}`,
     italics_text_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeEmColor').trim()}`,
@@ -71,6 +72,7 @@ const storage_keys = {
     italics_text_color: "TavernAI_italics_text_color",
     fastui_bg_color: "TavernAI_fastui_bg_color",
     blur_tint_color: "TavernAI_blur_tint_color",
+    blur_strength: "TavernAI_blur_strength",
 };
 
 const chat = document.getElementById('chat');
@@ -162,6 +164,23 @@ async function applyThemeColor(type) {
     chat.style.transition = chatTransition;
 }
 
+async function applyBlurStrength() {
+    power_user.blur_strength = Number(localStorage.getItem(storage_keys.blur_strength) ?? 1);
+
+    // temporarily unset transition from chat to not make the browser calculate the animation
+    chat.style.transition = 'unset';
+
+    // now apply the blur strength to the document
+    document.documentElement.style.setProperty('--blurStrength', power_user.blur_strength);
+    $("#blur_strength_counter").text(power_user.blur_strength);
+
+    // a small delay to let the browser do the layout redraw
+    await delay(1);
+    // set transition back to chat
+    chat.style.transition = chatTransition;
+}
+
+
 async function applyFontScale() {
     power_user.font_scale = Number(localStorage.getItem(storage_keys.font_scale) ?? 1);
 
@@ -183,6 +202,7 @@ switchUiMode();
 applyChatDisplay();
 applySheldWidth();
 applyFontScale();
+applyBlurStrength();
 applyThemeColor();
 
 // TODO delete in next release
@@ -214,6 +234,7 @@ function loadPowerUserSettings(settings) {
     power_user.chat_display = Number(localStorage.getItem(storage_keys.chat_display) ?? chat_styles.DEFAULT);
     power_user.sheld_width = Number(localStorage.getItem(storage_keys.sheld_width) ?? sheld_width.DEFAULT);
     power_user.font_scale = Number(localStorage.getItem(storage_keys.font_scale) ?? 1);
+    power_user.blur_strength = Number(localStorage.getItem(storage_keys.blur_strength) ?? 10);
 
     $("#force-pygmalion-formatting-checkbox").prop("checked", power_user.force_pygmalion_formatting);
     $("#collapse-newlines-checkbox").prop("checked", power_user.collapse_newlines);
@@ -233,10 +254,14 @@ function loadPowerUserSettings(settings) {
     $("#font_scale").val(power_user.font_scale);
     $("#font_scale_counter").html(power_user.font_scale);
 
+    $("#blur_strength").val(power_user.blur_strength);
+    $("#blur_strength_counter").html(power_user.blur_strength);
+
     $("#main-text-color-picker").attr('color', power_user.main_text_color);
     $("#italics-color-picker").attr('color', power_user.italics_text_color);
     $("#fastui-bg-color-picker").attr('color', power_user.fastui_bg_color);
     $("#blur-tint-color-picker").attr('color', power_user.blur_tint_color);
+
 
     $(`#character_sort_order option[data-order="${power_user.sort_order}"][data-field="${power_user.sort_field}"]`).prop("selected", true);
     sortCharactersList();
@@ -337,6 +362,13 @@ $(document).ready(() => {
         $("#font_scale_counter").text(power_user.font_scale);
         localStorage.setItem(storage_keys.font_scale, power_user.font_scale);
         applyFontScale();
+    });
+
+    $(`input[name="blur_strength"]`).on('input', function (e) {
+        power_user.blur_strength = Number(e.target.value);
+        $("#blur_strength_counter").text(power_user.blur_strength);
+        localStorage.setItem(storage_keys.blur_strength, power_user.blur_strength);
+        applyBlurStrength();
     });
 
     $("#main-text-color-picker").on('change', (evt) => {
