@@ -148,8 +148,8 @@ class Client {
         const botList = viewer.availableBots;
 
         const bots = {};
-        for (const bot of botList) {
-            const url = `https://poe.com/_next/data/${this.next_data.buildId}/${bot.displayName.toLowerCase()}.json`;
+        for (const bot of botList.filter(x => x.deletionState == 'not_deleted')) {
+            const url = `https://poe.com/_next/data/${this.next_data.buildId}/${bot.displayName}.json`;
             logger.info(`Downloading ${url}`);
 
             const r = await request_with_retries(() => this.session.get(url));
