@@ -51,6 +51,7 @@ const setting_names = [
     "early_stopping",
     "seed",
     "add_bos_token",
+    "ban_eos_token",
 ];
 
 function selectPreset(name) {

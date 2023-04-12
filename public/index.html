@@ -245,16 +245,6 @@
                                     <span id="min_length_counter_textgenerationwebui">select</span>
                                 </div>
                             </div>
-                            <div class="range-block">
-                                <label class="checkbox_label" for="do_sample_textgenerationwebui">
-                                    <input type="checkbox" id="do_sample_textgenerationwebui" />
-                                    Do Sample
-                                </label>
-                                <label class="checkbox_label" for="add_bos_token_textgenerationwebui" title="Add the bos_token to the beginning of prompts. Disabling this can make the replies more creative.">
-                                    <input type="checkbox" id="add_bos_token_textgenerationwebui" />
-                                    Add BOS Token
-                                </label>
-                            </div>
                         </div>
                         <div id="range_block_openai">
                             <div class="range-block">
@@ -544,6 +534,30 @@
                                     <span id="typical_p_counter_textgenerationwebui">select</span>
                                 </div>
                             </div>
+                            <div class="range-block">
+                                <label class="checkbox_label" for="do_sample_textgenerationwebui">
+                                    <input type="checkbox" id="do_sample_textgenerationwebui" />
+                                    Do Sample
+                                </label>
+                            </div>
+                            <div class="range-block">
+                                <label class="checkbox_label" for="add_bos_token_textgenerationwebui">
+                                    <input type="checkbox" id="add_bos_token_textgenerationwebui" />
+                                    Add BOS Token
+                                </label>
+                                <div class="range-block-counter justifyLeft">
+                                    Add the bos_token to the beginning of prompts. Disabling this can make the replies more creative.
+                                </div>
+                            </div>
+                            <div class="range-block">
+                                <label class="checkbox_label" for="ban_eos_token_textgenerationwebui">
+                                    <input type="checkbox" id="ban_eos_token_textgenerationwebui" />
+                                    Ban EOS Token
+                                </label>
+                                <div class="range-block-counter justifyLeft">
+                                    Ban the eos_token. This forces the model to never end the generation prematurely.
+                                </div>
+                            </div>
                             <hr>
                             <h4>Beam search</h4>
                             <div class="range-block">
@@ -591,12 +605,7 @@
                                 <div class="range-block-title">
                                     Seed
                                 </div>
-                                <div class="range-block-range">
-                                    <input type="number" id="seed_textgenerationwebui" class="text_pole" />
-                                </div>
-                                <div style="display: none" class="range-block-counter">
-                                    <span id="seed_counter_textgenerationwebui">select</span>
-                                </div>
+                                <input type="number" id="seed_textgenerationwebui" class="text_pole" />
                             </div>
                         </div>
                         <div id="openai_settings">
@@ -730,8 +739,6 @@
                 </div>
             </div>
         </div>
-
-
 
         <div id="sys-settings-button" class="drawer" style="z-index:3001;">
             <div class="drawer-toggle drawer-header">
@@ -978,9 +985,6 @@
                 </div>
             </div>
         </div>
-
-
-
 
         <div id="WI-SP-button" class="drawer" style="z-index:3003;">
             <div class="drawer-toggle drawer-header">
@@ -1706,10 +1710,10 @@
                 <div class="ch_name">
                     <span class="name_text">${characterName}</span>
 
-                    <div title="Edit" class="mes_edit"></div>
                     <div title="Stop Streaming" class="mes_stop">
                         <i class="fa-xl fa-solid fa-circle-stop"></i>
                     </div>
+                    <div title="Edit" class="mes_edit"></div>
                     <div class="mes_edit_buttons">
                         <div class="mes_edit_done menu_button" title="Confirm">
                             <img alt="" class="svg_icon" src="img/check-solid.svg">
