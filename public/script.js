@@ -44,6 +44,7 @@ import {
     playMessageSound,
     sortCharactersList,
     power_user,
+	applyItalicsColor,
 } from "./scripts/power-user.js";
 
 import {
@@ -2406,6 +2407,37 @@ async function getSettings(type) {
                 loadPowerUserSettings(settings);
 
 
+				//Loads italics settings and applies them
+				if(power_user.italics_r != null && power_user.italics_r)
+				{
+					$("#italics_r_value").val(power_user.italics_r);
+				}
+				else
+				{
+					$("#italics_r_value").val(100);
+				}
+				if(power_user.italics_g != null)
+				{
+					$("#italics_g_value").val(power_user.italics_g);
+				}
+				else
+				{
+					$("#italics_g_value").val(100);
+				}
+				if(power_user.italics_b != null)
+				{
+					$("#italics_b_value").val(power_user.italics_b);
+				}
+				else
+				{
+					$("#italics_b_value").val(100);
+				}
+			    document.getElementById("italics_r_title").innerHTML = power_user.italics_r;
+			    document.getElementById("italics_g_title").innerHTML = power_user.italics_g;
+			    document.getElementById("italics_b_title").innerHTML = power_user.italics_b;
+			  
+			    applyItalicsColor();
+			  
                 //Enable GUI deference settings if GUI is selected for Kobold
                 if (main_api === "kobold") {
                 }
@@ -4699,5 +4731,34 @@ $(document).ready(function () {
         if (e.key === "Escape") {
             closeMessageEditor();
         }
+    });
+	
+	
+	 $(document).on("input", "#italics_r_value", function () {
+        power_user.italics_r = Number($(this).val());		
+		
+		document.getElementById("italics_r_title").innerHTML = power_user.italics_r;
+				
+		applyItalicsColor();		
+		
+        saveSettingsDebounced();
+    });
+	 $(document).on("input", "#italics_g_value", function () {
+        power_user.italics_g = Number($(this).val());
+			 
+	    document.getElementById("italics_g_title").innerHTML = power_user.italics_g;
+	 
+		applyItalicsColor();
+	 
+        saveSettingsDebounced();
+    });
+	 $(document).on("input", "#italics_b_value", function () {
+        power_user.italics_b = Number($(this).val());
+		
+	    document.getElementById("italics_b_title").innerHTML = power_user.italics_b;
+		
+		applyItalicsColor();
+		
+        saveSettingsDebounced();
     });
 })
