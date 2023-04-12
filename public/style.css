@@ -3376,7 +3376,7 @@ body.waifuMode .expression-holder {
     position: fixed;
     left: 0;
     right: 0;
-    bottom: 100px;
+    bottom: 0;
     padding-left: 10px;
     padding-right: 10px;
     text-align: center;
@@ -3386,7 +3386,7 @@ body.waifuMode .expression-holder {
 }
 
 body.waifuMode img.expression {
-    height: 70vh;
+    height: 90vh;
     max-width: 100%;
     max-height: 90vh;
     vertical-align: bottom;
