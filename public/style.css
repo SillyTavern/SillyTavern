@@ -3182,9 +3182,8 @@ toolcool-color-picker {
     }
 
     body {
-        position: auto;
         touch-action: none;
-        overflow: scroll;
+        overflow: auto;
     }
 
     .drawer-content {
@@ -3203,11 +3202,9 @@ toolcool-color-picker {
         align-content: start;
     }
 
-    #top-settings-holder {
+    #top-settings-holder,
+    #top-bar {
         width: 100svw;
-        min-width: 100svw;
-        max-width: 100svw;
-
     }
 
     #bg1,
