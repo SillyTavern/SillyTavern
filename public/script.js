@@ -626,6 +626,7 @@ function printCharacters() {
         );
         //console.log('printcharacters() -- printing -- ChID '+i+' ('+item.name+')');
     });
+    $("#rm_print_characters_block").prepend(`<hr>`);
     printGroups();
     sortCharactersList();
 }
@@ -1890,7 +1891,7 @@ async function Generate(type, automatic_trigger, force_name2) {
                         return;
                     }
                 }
-                
+
                 streamingProcessor.onFinishStreaming(streamingProcessor.messageId, getMessage);
                 streamingProcessor = null;
             }

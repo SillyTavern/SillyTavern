@@ -200,7 +200,6 @@ function printGroups() {
         updateGroupAvatar(group);
     }
 }
-
 function updateGroupAvatar(group) {
     $("#rm_print_characters_block .group_select").each(function () {
         if ($(this).data("id") == group.id) {
@@ -265,7 +264,7 @@ function getGroupAvatar(group) {
 }
 
 
-async function generateGroupWrapper(by_auto_mode, type=null) {
+async function generateGroupWrapper(by_auto_mode, type = null) {
     if (online_status === "no_connection") {
         is_group_generating = false;
         setSendButtonState(false);
@@ -356,7 +355,7 @@ async function generateGroupWrapper(by_auto_mode, type=null) {
                 // if swipe - see if message changed
                 else if (type === "swipe" && lastMessageText === chat[chat.length - 1].mes) {
                     await delay(100);
-                } 
+                }
                 else {
                     messagesBefore++;
                     break;
@@ -377,7 +376,7 @@ async function generateGroupWrapper(by_auto_mode, type=null) {
 }
 
 function activateSwipe(members) {
-    const name = chat[chat.length -1].name;
+    const name = chat[chat.length - 1].name;
     const activatedNames = members.includes(name) ? [name] : [];
     const memberIds = activatedNames
         .map((x) => characters.findIndex((y) => y.name === x))
@@ -591,7 +590,7 @@ function select_group_chats(chat_id) {
     $("#rm_group_filter").val("").trigger("input");
 
     $('input[name="rm_group_activation_strategy"]').off();
-    $('input[name="rm_group_activation_strategy"]').on("input", async function(e) {
+    $('input[name="rm_group_activation_strategy"]').on("input", async function (e) {
         if (chat_id) {
             let _thisGroup = groups.find((x) => x.id == chat_id);
             _thisGroup.activation_strategy = Number(e.target.value);
