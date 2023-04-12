@@ -1,10 +1,12 @@
 import {
     saveSettingsDebounced,
+    token,
 } from "../script.js";
 
 export {
     textgenerationwebui_settings,
     loadTextGenSettings,
+    generateTextGenWithStreaming,
 }
 
 let textgenerationwebui_settings = {
@@ -23,8 +25,11 @@ let textgenerationwebui_settings = {
     early_stopping: false,
     seed: -1,
     preset: 'Default',
-    add_bos_token: true, 
+    add_bos_token: true,
     custom_stopping_strings: [],
+    truncation_length: 2048,
+    ban_eos_token: false,
+    streaming: false,
 };
 
 let textgenerationwebui_presets = [];
@@ -134,5 +139,35 @@ function setSettingByName(i, value, trigger) {
 
     if (trigger) {
         $(`#${i}_textgenerationwebui`).trigger('input');
+    }
+}
+
+async function generateTextGenWithStreaming(generate_data, finalPromt) {
+    const response = await fetch('/generate_textgenerationwebui', {
+        headers: {
+            'X-CSRF-Token': token,
+            'Content-Type': 'application/json',
+            'X-Response-Streaming': true,
+        },
+        body: JSON.stringify(generate_data),
+        method: 'POST',
+    });
+
+    return async function* streamData() {
+        const decoder = new TextDecoder();
+        const reader = response.body.getReader();
+        let getMessage = '';
+        while (true) {
+            const { done, value } = await reader.read();
+            let response = decoder.decode(value);
+
+            getMessage += response;
+
+            if (done) {
+                return;
+            }
+
+            yield getMessage;
+        }
     }
 }
