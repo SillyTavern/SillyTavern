@@ -1871,7 +1871,7 @@ input[type="range"]::-webkit-slider-thumb {
 .mes_edit_buttons {
     display: none;
     flex-direction: row;
-    column-gap: 10px;
+    column-gap: 5px;
     float: right;
     cursor: pointer;
     padding-bottom: 5px;
@@ -1881,9 +1881,15 @@ input[type="range"]::-webkit-slider-thumb {
 
 .mes_edit_buttons .menu_button {
     opacity: 0.5;
-    padding: 5px;
+    padding: 0px;
+    font-size: 1rem;
+    height: 2rem;
     margin-top: 0;
     margin-bottom: 0;
+    aspect-ratio: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .mes_edit_cancel.menu_button {
