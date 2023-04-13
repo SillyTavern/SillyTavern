@@ -16,8 +16,8 @@ async function moduleWorker() {
 async function setImageIcon() {
     try {
         const sendButton = document.getElementById('send_picture');
-        sendButton.style.backgroundImage = `url('/img/image-solid.svg')`;
-        sendButton.classList.remove('spin');
+        sendButton.classList.add('fa-image');
+        sendButton.classList.remove('fa-hourglass-half', 'fa-spin');
     }
     catch (error) {
         console.log(error);
@@ -27,7 +27,8 @@ async function setImageIcon() {
 async function setSpinnerIcon() {
     try {
         const sendButton = document.getElementById('send_picture');
-        sendButton.style.backgroundImage = `url('/img/hourglass-half-solid.svg')`;
+        sendButton.classList.remove('fa-image');
+        sendButton.classList.add('fa-hourglass-half', 'fa-spin');
     }
     catch (error) {
         console.log(error);
@@ -96,9 +97,9 @@ $(document).ready(function () {
         $('#send_form').css('grid-template-columns', columns.join(' '));
     }
     function addSendPictureButton() {
-        const sendButton = document.createElement('input');
-        sendButton.type = 'button';
+        const sendButton = document.createElement('div');
         sendButton.id = 'send_picture';
+        sendButton.classList.add('fa-solid');
         $(sendButton).hide();
         $(sendButton).on('click', () => $('#img_file').click());
         $('#send_but_sheld').prepend(sendButton);

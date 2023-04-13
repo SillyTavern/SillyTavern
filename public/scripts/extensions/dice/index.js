@@ -30,21 +30,23 @@ async function doDiceRoll() {
 function addDiceRollButton() {
     const buttonHtml = `
         <div id="roll_dice" class="fa-solid fa-dice" /></div>
-        <div id="dice_dropdown">
-            <ul class="list-group">
-                <li class="list-group-item" data-value="d4">d4</li>
-                <li class="list-group-item" data-value="d6">d6</li>
-                <li class="list-group-item" data-value="d8">d8</li>
-                <li class="list-group-item" data-value="d10">d10</li>
-                <li class="list-group-item" data-value="d12">d12</li>
-                <li class="list-group-item" data-value="d20">d20</li>
-                <li class="list-group-item" data-value="d100">d100</li>
-                <li class="list-group-item" data-value="custom">...</li>
-            </ul>
-        </div>
         `;
+    const dropdownHtml = `
+    <div id="dice_dropdown">
+        <ul class="list-group">
+            <li class="list-group-item" data-value="d4">d4</li>
+            <li class="list-group-item" data-value="d6">d6</li>
+            <li class="list-group-item" data-value="d8">d8</li>
+            <li class="list-group-item" data-value="d10">d10</li>
+            <li class="list-group-item" data-value="d12">d12</li>
+            <li class="list-group-item" data-value="d20">d20</li>
+            <li class="list-group-item" data-value="d100">d100</li>
+            <li class="list-group-item" data-value="custom">...</li>
+        </ul>
+    </div>`;
 
     $('#send_but_sheld').prepend(buttonHtml);
+    $(document.body).append(dropdownHtml)
     $('#dice_dropdown li').on('click', doDiceRoll);
     const button = $('#roll_dice');
     const dropdown = $('#dice_dropdown');
