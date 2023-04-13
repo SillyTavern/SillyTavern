@@ -317,7 +317,7 @@ $(document).ready(function () {
             <div class="inline-drawer">
                 <div class="inline-drawer-toggle inline-drawer-header">
                     <b>Summarization settings</b>
-                    <div class="inline-drawer-icon down"></div>
+                    <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
                 </div>
                 <div class="inline-drawer-content">
                     <label for="memory_short_length">Memory summarization [short-term] length (<span id="memory_short_length_tokens"></span> tokens)</label>

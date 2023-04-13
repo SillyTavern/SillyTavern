@@ -262,6 +262,9 @@ code {
     background-position: center;
     display: flex;
     flex-direction: row;
+    column-gap: 5px;
+    font-size: 30px;
+    overflow: hidden;
 }
 
 #send_but {
@@ -270,12 +273,14 @@ code {
     margin: 0;
     display: none;
     outline: none;
-    font-size: 30px;
     border: none;
     cursor: pointer;
     transition: 0.3s;
     filter: brightness(0.7);
     order: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 #send_but:hover {
@@ -290,7 +295,6 @@ code {
     order: 99999;
     align-items: center;
     justify-content: center;
-    font-size: 24px;
     filter: brightness(0.7);
 }
 
@@ -2679,7 +2683,7 @@ a {
 .list-group-item {
     color: rgba(229, 224, 216, 1);
     position: relative;
-    display: block;
+    display: list-item;
     padding: 0.75rem 1.25rem;
     margin-bottom: -1px;
     box-sizing: border-box;

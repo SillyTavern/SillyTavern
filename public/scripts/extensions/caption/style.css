@@ -4,15 +4,14 @@
     height: 40px;
     margin: 0;
     padding: 1px;
-    background: no-repeat;
-    background-size: 24px 24px;
-    background-position: center center;
     outline: none;
     border: none;
     cursor: pointer;
     transition: 0.3s;
-    filter: invert(1);
     opacity: 0.5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 #send_picture:hover {

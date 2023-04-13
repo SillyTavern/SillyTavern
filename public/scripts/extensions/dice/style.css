@@ -3,19 +3,21 @@
     width: 40px;
     height: 40px;
     margin: 0;
-    margin-right: 5px;
     padding: 1px;
-    background: no-repeat;
-    background-size: 26px auto;
-    background-position: center center;
     outline: none;
     border: none;
     cursor: pointer;
     transition: 0.3s;
-    font-size: 30px;
     opacity: 0.5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 #roll_dice:hover {
     opacity: 1;
+}
+
+#dice_dropdown {
+    z-index: 100;
 }

@@ -2154,7 +2154,7 @@ function isMultigenEnabled() {
 
 function activateSendButtons() {
     is_send_press = false;
-    $("#send_but").css("display", "inline");
+    $("#send_but").css("display", "flex");
     $("#loading_mes").css("display", "none");
 }
 
