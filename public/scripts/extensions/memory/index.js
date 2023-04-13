@@ -40,22 +40,7 @@ const defaultSettings = {
     memoryFrozen: false,
 };
 
-// TODO Delete in next release
-function migrateFromLocalStorage() {
-    const SETTINGS_KEY = 'extensions_memory_settings';
-    const settings = localStorage.getItem(SETTINGS_KEY);
-
-    if (settings !== null) {
-        const savedSettings = JSON.parse(settings);
-        Object.assign(extension_settings.memory, savedSettings);
-        localStorage.removeItem(SETTINGS_KEY);
-        saveSettingsDebounced();
-    }
-}
-
 function loadSettings() {
-    migrateFromLocalStorage();
-    
     if (Object.keys(extension_settings.memory).length === 0) {
         Object.assign(extension_settings.memory, defaultSettings);
     }

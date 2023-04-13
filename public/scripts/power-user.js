@@ -1,4 +1,10 @@
-import { saveSettingsDebounced, characters, callPopup, token } from "../script.js";
+import {
+    saveSettingsDebounced,
+    scrollChatToBottom,
+    characters,
+    callPopup,
+    token,
+} from "../script.js";
 import { delay } from "./utils.js";
 
 
@@ -110,6 +116,7 @@ function switchWaifuMode() {
     const waifuMode = localStorage.getItem(storage_keys.waifuMode);
     power_user.waifuMode = waifuMode === null ? false : waifuMode == "true";
     $("body").toggleClass("waifuMode", power_user.waifuMode);
+    scrollChatToBottom();
 }
 
 function applyAvatarStyle() {
@@ -445,7 +452,7 @@ $(document).ready(() => {
     });
 
     $("#ui-preset-save-button").on('click', async function () {
-        const name = await callPopup('Name him, name your son:', 'input');
+        const name = await callPopup('Enter a theme preset name:', 'input');
 
         if (!name) {
             return;

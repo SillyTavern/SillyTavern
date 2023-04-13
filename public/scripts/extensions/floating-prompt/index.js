@@ -51,76 +51,7 @@ function onExtensionFloatingDefaultInput() {
     saveSettingsDebounced();
 }
 
-// TODO Remove in next release
-function getLocalStorageKeys() {
-    const context = getContext();
-
-    let keySuffix;
-
-    if (context.groupId) {
-        keySuffix = context.groupId;
-    }
-    else if (context.characterId) {
-        keySuffix = `${context.characters[context.characterId].name}_${context.chatId}`;
-    }
-    else {
-        keySuffix = 'undefined';
-    }
-
-    return {
-        prompt: `extensions_floating_prompt_${keySuffix}`,
-        interval: `extensions_floating_interval_${keySuffix}`,
-        depth: `extensions_floating_depth_${keySuffix}`,
-        position: `extensions_floating_position_${keySuffix}`,
-        default: 'extensions_default_note',
-     };
-}
-
-function migrateFromLocalStorage() {
-    const keys = getLocalStorageKeys();
-    const defaultNote = localStorage.getItem(keys.default);
-    const prompt = localStorage.getItem(keys.prompt);
-    const interval = localStorage.getItem(keys.interval);
-    const position = localStorage.getItem(keys.position);
-    const depth = localStorage.getItem(keys.depth);
-
-    if (defaultNote !== null) {
-        if (typeof extension_settings.note !== 'object') {
-            extension_settings.note = {};
-        }
-
-        extension_settings.note.default = defaultNote;
-        saveSettingsDebounced();
-        localStorage.removeItem(keys.default);
-    }
-
-    if (chat_metadata) {
-        if (interval !== null) {
-            chat_metadata[metadata_keys.interval] = interval;
-            localStorage.removeItem(keys.interval);
-        }
-
-        if (depth !== null) {
-            chat_metadata[metadata_keys.depth] = depth;
-            localStorage.removeItem(keys.depth);
-        }
-
-        if (position !== null) {
-            chat_metadata[metadata_keys.position] = position;
-            localStorage.removeItem(keys.position);
-        }
-
-        if (prompt !== null) {
-            chat_metadata[metadata_keys.prompt] = prompt;
-            localStorage.removeItem(keys.prompt);
-            saveChatDebounced();
-        }
-    }
-}
-
-
 function loadSettings() {
-    migrateFromLocalStorage();
     chat_metadata[metadata_keys.prompt] = chat_metadata[metadata_keys.prompt] ?? extension_settings.note.default ?? '';
     chat_metadata[metadata_keys.interval] = chat_metadata[metadata_keys.interval] ?? DEFAULT_INTERVAL;
     chat_metadata[metadata_keys.position] = chat_metadata[metadata_keys.position] ?? DEFAULT_POSITION;

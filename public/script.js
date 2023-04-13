@@ -124,6 +124,7 @@ export {
     changeMainAPI,
     setGenerationProgress,
     updateChatMetadata,
+    scrollChatToBottom,
     chat,
     this_chid,
     settings,

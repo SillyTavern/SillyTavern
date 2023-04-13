@@ -11,36 +11,11 @@ export {
 
 const extensionNames = ['caption', 'dice', 'expressions', 'floating-prompt', 'memory'];
 const manifests = await getManifests(extensionNames);
-
-// TODO: Delete in next release
-function migrateFromLocalStorage() {
-    const extensions_urlKey = 'extensions_url';
-    const extensions_autoConnectKey = 'extensions_autoconnect';
-    const extensions_disabledKey = 'extensions_disabled';
-
-    const apiUrl = localStorage.getItem(extensions_urlKey);
-    const autoConnect = localStorage.getItem(extensions_autoConnectKey);
-    const extensionsDisabled = localStorage.getItem(extensions_disabledKey);
-
-    if (apiUrl !== null) {
-        extension_settings.apiUrl = apiUrl;
-        localStorage.removeItem(extensions_urlKey);
-    }
-
-    if (autoConnect !== null) {
-        extension_settings.autoConnect = autoConnect;
-        localStorage.removeItem(extensions_autoConnectKey);
-    }
-
-    if (extensionsDisabled !== null) {
-        extension_settings.disabledExtensions = JSON.parse(extensionsDisabled);
-        localStorage.removeItem(extensions_disabledKey);
-    }
-}
+const defaultUrl = "http://localhost:5100";
 
 const extension_settings = {
-    apiUrl: '',
-    autoConnect: '',
+    apiUrl: defaultUrl,
+    autoConnect: false,
     disabledExtensions: [],
     memory: {},
     note: {
@@ -56,7 +31,6 @@ let activeExtensions = new Set();
 
 const getContext = () => window['TavernAI'].getContext();
 const getApiUrl = () => extension_settings.apiUrl;
-const defaultUrl = "http://localhost:5100";
 const defaultRequestArgs = { method: 'GET', headers: { 'Bypass-Tunnel-Reminder': 'bypass' } };
 let connectedToApi = false;
 
@@ -274,8 +248,6 @@ function showExtensionsDetails() {
 }
 
 function loadExtensionSettings(settings) {
-    migrateFromLocalStorage();
-
     if (settings.extension_settings) {
         Object.assign(extension_settings, settings.extension_settings);
     }
