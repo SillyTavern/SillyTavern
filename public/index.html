@@ -5,13 +5,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, viewport-fit=cover, initial-scale=1, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <!--<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">-->
-    <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN" crossorigin="anonymous"></script>-->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&amp;display=swap" rel="stylesheet">
+    <!-- fontawesome webfonts-->
     <link href="css/all.css" rel="stylesheet">
-  
+
     <link rel="apple-touch-icon" sizes="57x57" href="img/apple-icon-57x57.png" />
     <link rel="apple-touch-icon" sizes="72x72" href="img/apple-icon-72x72.png" />
     <link rel="apple-touch-icon" sizes="114x114" href="img/apple-icon-114x114.png" />
@@ -66,14 +65,14 @@
 
         <div id="ai-config-button" class="drawer" style="z-index:3002;">
             <div class="drawer-toggle drawer-header">
-                <div id="leftNavDrawerIcon" class="drawer-icon icon-sliders closedIcon" title="AI Response Configuration"></div>
+                <div id="leftNavDrawerIcon" class="drawer-icon fa-solid fa-sliders  closedIcon" title="AI Response Configuration"></div>
             </div>
             <div id="left-nav-panel" class="drawer-content fillLeft closedDrawer widthFreeExpand">
                 <div class="right_menu_button" id="lm_button_panel_pin_div" title="Locked = AI Configuration panel will stay open">
                     <input type="checkbox" id="lm_button_panel_pin">
                     <label for="lm_button_panel_pin">
-                        <img class="unchecked svg_icon" alt="" src="img/lock-open-solid.svg" />
-                        <img class="checked svg_icon" alt="" src="img/lock-solid.svg" />
+                        <div class="unchecked fa-solid fa-lock-open "></div>
+                        <div class="checked fa-solid fa-lock "></div>
                     </label>
                 </div>
                 <div class="flex-container">
@@ -657,7 +656,7 @@
                                 <div class="range-block-title openai_restorable">
                                     <span>Main prompt</span>
                                     <div id="main_prompt_restore" title="Restore default prompt" class="right_menu_button">
-                                        <img alt="" class="svg_icon" src="img/clock-rotate-left-solid.svg" />
+                                        <div alt="" class="fa-solid fa-clock-rotate-left "></div>
                                     </div>
                                 </div>
                                 <div class="range-block-counter">
@@ -671,7 +670,7 @@
                                 <div class="range-block-title openai_restorable">
                                     <span>NSFW prompt</span>
                                     <div id="nsfw_prompt_restore" title="Restore default prompt" class="right_menu_button">
-                                        <img alt="" class="svg_icon" src="img/clock-rotate-left-solid.svg" />
+                                        <div alt="" class="fa-solid fa-clock-rotate-left "></div>
                                     </div>
                                 </div>
                                 <div class="range-block-counter">
@@ -685,7 +684,7 @@
                                 <div class="range-block-title openai_restorable">
                                     <span>Jailbreak prompt</span>
                                     <div id="jailbreak_prompt_restore" title="Restore default prompt" class="right_menu_button">
-                                        <img alt="" class="svg_icon" src="img/clock-rotate-left-solid.svg" />
+                                        <div alt="" class="fa-solid fa-clock-rotate-left "></div>
                                     </div>
                                 </div>
                                 <div class="range-block-counter">
@@ -742,7 +741,7 @@
 
         <div id="sys-settings-button" class="drawer" style="z-index:3001;">
             <div class="drawer-toggle drawer-header">
-                <div id="API-status-top" class="drawer-icon icon-api closedIcon" title="API Connections"></div>
+                <div id="API-status-top" class="drawer-icon fa-solid fa-plug-circle-exclamation  closedIcon" title="API Connections"></div>
             </div>
             <div id="rm_api_block" class="drawer-content closedDrawer">
                 <div id="main-API-selector-block">
@@ -767,7 +766,7 @@
                             <h5>Example: http://127.0.0.1:5000/api </h5>
                             <input id="api_url_text" name="api_url" class="text_pole" maxlength="500" value="" autocomplete="off">
                             <input id="api_button" class="menu_button" type="submit" value="Connect">
-                            <img id="api_loading" src="img/load.svg">
+                            <div id="api_loading" class="api-load-icon fa-solid fa-hourglass fa-spin"></div>
                         </div>
                         <div id="kobold_horde_block">
 
@@ -782,7 +781,7 @@
                             <h4 class="horde_model_title">
                                 Model
                                 <div id="horde_refresh" title="Refresh models" class="right_menu_button">
-                                    <img class="svg_icon" src="img/repeat-solid.svg" />
+                                    <div class="fa-solid fa-repeat "></div>
                                 </div>
                             </h4>
                             <select id="horde_model">
@@ -806,7 +805,7 @@
                         </h5>
                         <input id="api_key_novel" name="api_key_novel" class="text_pole" maxlength="500" size="35" value="" autocomplete="off">
                         <input id="api_button_novel" class="menu_button" type="submit" value="Connect">
-                        <img id="api_loading_novel" src="img/load.svg">
+                        <div id="api_loading_novel" class="api-load-icon fa-solid fa-hourglass fa-spin"></div>
                     </form>
                     <div id="online_status3">
                         <div id="online_status_indicator3"></div>
@@ -829,7 +828,7 @@
                         <h5>Example: http://127.0.0.1:7860/ </h5>
                         <input id="textgenerationwebui_api_url_text" name="textgenerationwebui_api_url" class="text_pole" maxlength="500" value="" autocomplete="off">
                         <input id="api_button_textgenerationwebui" class="menu_button" type="submit" value="Connect">
-                        <img id="api_loading_textgenerationwebui" src="img/load.svg">
+                        <div id="api_loading_textgenerationwebui" class="api-load-icon fa-solid fa-hourglass fa-spin"></div>
                     </form>
                     <div class="online_status4">
                         <div class="online_status_indicator4"></div>
@@ -846,7 +845,7 @@
                         </h5>
                         <input id="api_key_openai" name="api_key_openai" class="text_pole" maxlength="500" value="" autocomplete="off">
                         <input id="api_button_openai" class="menu_button" type="submit" value="Connect">
-                        <img id="api_loading_openai" src="img/load.svg">
+                        <div id="api_loading_openai" class=" api-load-icon fa-solid fa-hourglass fa-spin"></div>
                     </form>
                     <div class="online_status4">
                         <div class="online_status_indicator4"></div>
@@ -861,7 +860,7 @@
                     <div class="inline-drawer">
                         <div class="inline-drawer-toggle inline-drawer-header">
                             <b>Instructions:</b>
-                            <div class="inline-drawer-icon down"></div>
+                            <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                         </div>
                         <div class="inline-drawer-content">
                             <ol>
@@ -883,7 +882,7 @@
                     </div>
 
                     <input id="poe_connect" class="menu_button" type="button" value="Connect" />
-                    <img id="api_loading_poe" src="img/load.svg">
+                    <div id="api_loading_poe" class="api-load-icon fa-solid fa-hourglass fa-spin"></div>
 
                     <div class="range-block">
                         <div class="range-block-title">
@@ -908,7 +907,7 @@
         </div>
         <div id="advanced-formatting-button" class="drawer" style="z-index:3005;">
             <div class="drawer-toggle">
-                <div class="drawer-icon icon-formatting closedIcon" title="AI Reponse Formatting"></div>
+                <div class="drawer-icon fa-solid fa-font  closedIcon" title="AI Reponse Formatting"></div>
             </div>
             <div class="drawer-content">
                 <h3>Advanced Formatting
@@ -988,7 +987,7 @@
 
         <div id="WI-SP-button" class="drawer" style="z-index:3003;">
             <div class="drawer-toggle drawer-header">
-                <div class="drawer-icon icon-globe closedIcon " title="World Info & Soft Prompts"></div>
+                <div class="drawer-icon fa-solid fa-book-atlas closedIcon " title="World Info & Soft Prompts"></div>
             </div>
             <div class="drawer-content closedDrawer">
                 <div id="wi-holder">
@@ -1041,7 +1040,7 @@
 
         <div id="user-settings-button" class="drawer" style="z-index:3004;">
             <div class="drawer-toggle">
-                <div class="drawer-icon icon-user closedIcon" title="User Settings"></div>
+                <div class="drawer-icon fa-regular fa-face-smile closedIcon" title="User Settings"></div>
             </div>
             <div id="user-settings-block" class="drawer-content closedDrawer">
                 <h3>User Settings</h3>
@@ -1214,7 +1213,7 @@
         </div>
         <div id="logo_block" class="drawer" style="z-index:3001;" title="Change Background Image">
             <div id="site_logo" class="drawer-toggle drawer-header">
-                <div class="drawer-icon icon-panorama closedIcon"></div>
+                <div class="drawer-icon fa-solid fa-panorama  closedIcon"></div>
             </div>
             <div class="drawer-content closedDrawer">
                 <div class="flex-container">
@@ -1232,7 +1231,7 @@
 
         <div id="extensions-settings-button" class="drawer" style="z-index:3004;">
             <div class="drawer-toggle">
-                <div class="drawer-icon icon-cubes closedIcon" title="Extensions"></div>
+                <div class="drawer-icon fa-solid fa-cubes  closedIcon" title="Extensions"></div>
             </div>
             <div id="rm_extensions_block" class="drawer-content closedDrawer">
                 <div class="extensions_block">
@@ -1268,22 +1267,20 @@
 
         <div id="rightNavHolder" class="drawer" style="z-index:3001;">
             <div id="unimportantYes" class="drawer-toggle drawer-header">
-                <div id="rightNavDrawerIcon" class="drawer-icon icon-idcard closedIcon" title="Character Management">
+                <div id="rightNavDrawerIcon" class="drawer-icon fa-regular fa-id-card  closedIcon" title="Character Management">
                 </div>
             </div>
             <nav id="right-nav-panel" class="drawer-content closedDrawer fillRight">
                 <div id="right-nav-panel-tabs">
-                    <div class="right_menu_button" id="rm_button_characters" title="Select/Create Characters">
-                        <img alt="" class="svg_icon" src="img/list-ul-solid.svg" />
-                    </div>
+                    <div class="right_menu_button fa-solid fa-list-ul" id="rm_button_characters" title="Select/Create Characters"></div>
                     <div class="right_menu_button" id="rm_button_selected_ch">
                         <h2></h2>
                     </div>
                     <div class="right_menu_button" id="rm_button_panel_pin_div" title="Locked = Character Management panel will stay open">
                         <input type="checkbox" id="rm_button_panel_pin">
                         <label for="rm_button_panel_pin">
-                            <img class="unchecked svg_icon" alt="" src="img/lock-open-solid.svg" />
-                            <img class="checked svg_icon" alt="" src="img/lock-solid.svg" />
+                            <div class="fa-solid unchecked  fa-lock-open" alt=""></div>
+                            <div class="fa-solid checked  fa-lock" alt=""></div>
                         </label>
                     </div>
                 </div>
@@ -1299,33 +1296,23 @@
                                     <img id="avatar_load_preview" src="img/ai4.png" alt="avatar">
                                 </div>
                                 <div class="form_create_bottom_buttons_block">
-                                    <label for="add_avatar_button" class="menu_button" title="Click to select a new avatar for this character">
+                                    <label for="add_avatar_button" class="menu_button fa-solid fa-file-image " title="Click to select a new avatar for this character">
                                         <input type="file" id="add_avatar_button" name="avatar" accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp">
-                                        <img alt="" class="svg_icon" src="img/file-image-solid.svg">
                                     </label>
-                                    <div id="rm_button_back" class="menu_button">
-                                        <img alt="" class="svg_icon" src="img/left-long-solid.svg">
-                                    </div>
-                                    <div id="advanced_div" class="menu_button" title="Advanced Definitions">
-                                        <img alt="" class="svg_icon" src="img/book-solid.svg">
-                                    </div>
+                                    <div id="rm_button_back" class="menu_button fa-solid fa-left-long "></div>
+                                    <div id="advanced_div" class="menu_button fa-solid fa-book " title="Advanced Definitions"></div>
                                     <div id="export_format_popup" class="list-group">
                                         <div class="export_format list-group-item" data-format="png">PNG</div>
                                         <div class="export_format list-group-item" data-format="json">JSON</div>
                                         <div class="export_format list-group-item" data-format="webp">WEBP</div>
                                     </div>
-                                    <div id="export_button" class="menu_button" title="Export and Download">
-                                        <img alt="" class="svg_icon" src="img/file-export-solid.svg">
-                                    </div>
+                                    <div id="export_button" class="menu_button fa-solid fa-file-export " title="Export and Download"></div>
                                     <!-- <div id="create_button" class="menu_button" type="submit" title="Create Character">✅</div> -->
                                     <label for="create_button" id="create_button_label" class="menu_button" title="Create Character">
-                                        <input type="submit" id="create_button" name="create_button">
-                                        <img alt="" class="svg_icon" src="img/user-check-solid.svg">
+                                        <input type="submit" id="create_button" name="create_button" class="fa-solid fa-user-check ">
                                     </label>
                                     <!-- <input id="create_button" class="menu_button" title="Create Character" type="submit" value="✅"> -->
-                                    <div id="delete_button" class="menu_button" title="Delete Character">
-                                        <img alt="" class="svg_icon" src="img/trash-can-solid.svg">
-                                    </div>
+                                    <div id="delete_button" class="menu_button fa-solid fa-trash-can " title="Delete Character"></div>
                                 </div>
                             </div>
                             <div id="result_info"></div>
@@ -1370,7 +1357,7 @@
                 <div id="rm_group_chats_block" class="right_menu">
                     <div id="rm_group_top_bar">
                         <div id="rm_button_back_from_group" class="menu_button">
-                            <img alt="" class="svg_icon" src="img/left-long-solid.svg">
+                            <div alt="" class="fa-solid fa-left-long "></div>
                         </div>
                         <input id="rm_group_chat_name" class="text_pole" type="text" name="chat_name" placeholder="Chat Name (Optional)" />
                     </div>
@@ -1418,8 +1405,8 @@
                             </div>
                             <div class="ch_name"></div>
                             <div class="group_member_icon">
-                                <img alt="Remove" class="minus svg_icon" src="img/minus-solid.svg">
-                                <img alt="Add" class="plus svg_icon" src="img/plus-solid.svg">
+                                <div alt="Remove" class="fa-solid fa-minus "></div>
+                                <div alt="Add" class="fa-solid fa-plus "></div>
                             </div>
                         </div>
                     </div>
@@ -1430,7 +1417,7 @@
                                 <img src="">
                             </div>
                             <div class="group_icon">
-                                <img class="svg_icon" src="img/user-group-solid.svg">
+                                <div class="fa-solid fa-user-grouup "></div>
                             </div>
                             <div class="ch_name"></div>
                         </div>
@@ -1445,15 +1432,9 @@
                 </div>
                 <div id="rm_characters_block" class="right_menu">
                     <div class="form_create_bottom_buttons_block">
-                        <div id="rm_button_create" title="Create New Character" class="menu_button">
-                            <img alt="" class="svg_icon" src="img/user-plus-solid.svg">
-                        </div>
-                        <div id="character_import_button" title="Import Character from File" class="menu_button">
-                            <img alt="" class="svg_icon" src="img/file-arrow-up-solid.svg">
-                        </div>
-                        <div id="rm_button_group_chats" title="Create New Chat Group" class="menu_button">
-                            <img alt="" class="svg_icon" src="img/user-group-solidplus.svg">
-                        </div>
+                        <div id="rm_button_create" title="Create New Character" class="menu_button fa-solid fa-user-plus "></div>
+                        <div id="character_import_button" title="Import Character from File" class="menu_button fa-solid fa-file-arrow-up "></div>
+                        <div id="rm_button_group_chats" title="Create New Chat Group" class="menu_button fa-solid fa-users-gear "></div>
                     </div>
                     <form id="form_character_search_form" action="javascript:void(null);">
                         <input id="character_search_bar" class="text_pole" type="search" placeholder="Character search..." />
@@ -1668,9 +1649,7 @@
     <div id="shadow_select_chat_popup">
         <div id="select_chat_popup">
             <div id="select_chat_import"> <!-- import chat popup header -->
-                <div id="chat_import_button" class="menu_button">
-                    <img alt="" class="svg_icon" src="img/file-arrow-up-solid.svg" />
-                </div>
+                <div id="chat_import_button" class="fa-solid fa-file-arrow-up  menu_button"></div>
                 <div id="selectChatPopupHeaderText" class="TxtLrgBoldCenter">
                     <span id="ChatHistoryCharName"></span>
                     <br>
@@ -1690,7 +1669,7 @@
 
             </div>
             <div id="load_select_chat_div">
-                <img src="img/load.svg">
+                <div class="fa-solid fa-hourglass fa-spin"></div>
             </div>
         </div>
     </div>
@@ -1708,26 +1687,14 @@
                     <div title="Stop Streaming" class="mes_stop">
                         <i class="fa-xl fa-solid fa-circle-stop"></i>
                     </div>
-                    <div title="Edit" class="mes_edit"></div>
+                    <div title="Edit" class="mes_edit fa-solid fa-pencil "></div>
                     <div class="mes_edit_buttons">
-                        <div class="mes_edit_done menu_button" title="Confirm">
-                            <img alt="" class="svg_icon" src="img/check-solid.svg">
-                        </div>
-                        <div class="mes_edit_copy menu_button" title="Copy this message">
-                            <img alt="" class="svg_icon" src="img/copy-solid.svg">
-                        </div>
-                        <div class="mes_edit_delete menu_button" title="Delete this message">
-                            <img alt="" class="svg_icon" src="img/scissors-solid.svg">
-                        </div>
-                        <div class="mes_edit_up menu_button" title="Move message up">
-                            <img alt="" class="svg_icon" src="img/chevron-up-solid.svg">
-                        </div>
-                        <div class="mes_edit_down menu_button" title="Move message down">
-                            <img alt="" class="svg_icon" src="img/chevron-down-solid.svg">
-                        </div>
-                        <div class="mes_edit_cancel menu_button" title="Cancel">
-                            <img alt="" class="svg_icon" src="img/xmark-solid.svg">
-                        </div>
+                        <div class="mes_edit_done menu_button  fa-solid fa-check" title="Confirm"></div>
+                        <div class="mes_edit_copy menu_button  fa-solid fa-copy" title="Copy this message"></div>
+                        <div class="mes_edit_delete menu_button  fa-solid fa-scissors" title="Delete this message"></div>
+                        <div class="mes_edit_up menu_button  fa-solid fa-chevron-up " title="Move message up"></div>
+                        <div class="mes_edit_down menu_button  fa-solid fa-chevron-down" title="Move message down"></div>
+                        <div class="mes_edit_cancel menu_button  fa-solid fa-xmark" title="Cancel"></div>
                     </div>
                 </div>
                 <div class=mes_text></div>
@@ -1779,27 +1746,28 @@
                     <div id="options">
                         <div class="options-content">
                             <a id="option_back_to_main">
-                                <img class="svg_icon" alt="" src="img/left-long-solid.svg">
+                                <div class="fa-solid fa-left-long "></div>
                                 <span>Back to main chat</span>
                             </a>
                             <a id="option_new_bookmark">
-                                <img class="svg_icon" alt="" src="img/bookmark-solid.svg">
+                                <div class="fa-solid fa-bookmark "></div>
                                 <span>Save bookmark</span>
                             </a>
                             <a id="option_start_new_chat">
-                                <img class="svg_icon" alt="" src="img/comment-dots-solid.svg">
-                                <span>Start new chat</span></a>
+                                <div class="fa-solid fa-comment-dots "></div>
+                                <span>Start new chat</span>
+                            </a>
                             <a id="option_select_chat">
-                                <img class="svg_icon" alt="" src="img/address-book-solid.svg">
+                                <div class="fa-solid fa-address-book "></div>
                                 <span>View past chats</span>
                             </a>
                             <hr>
                             <a id="option_delete_mes">
-                                <img class="svg_icon" alt="" src="img/trash-can-solid.svg">
+                                <div class="fa-solid fa-trash-can "></div>
                                 <span>Delete messages</span>
                             </a>
                             <a id="option_regenerate">
-                                <img class="svg_icon" alt="" src="img/repeat-solid.svg">
+                                <div class="fa-solid fa-repeat "></div>
                                 <span>Regenerate</span>
                             </a>
                         </div>
@@ -1808,9 +1776,9 @@
                 <textarea id="send_textarea" placeholder="Not connected to API!" name="text"></textarea>
                 <div id="send_but_sheld">
                     <div id="loading_mes">
-                        <img alt="" class="svg_icon" src="img/hourglass-half-solid.svg" />
+                        <div alt="" class="fa-solid fa-spin fa-hourglass-half "></div>
                     </div>
-                    <input id="send_but" type="button">
+                    <div id="send_but" class="fa-solid fa-feather-pointed"></div>
                 </div>
             </form>
         </div>

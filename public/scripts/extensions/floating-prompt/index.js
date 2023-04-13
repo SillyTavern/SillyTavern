@@ -119,7 +119,7 @@ async function moduleWorker() {
             <div class="inline-drawer">
                 <div class="inline-drawer-toggle inline-drawer-header">
                     <b>Default note for new chats</b>
-                    <div class="inline-drawer-icon down"></div>
+                    <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
                 </div>
                 <div class="inline-drawer-content">
                     <label for="extension_floating_default">Default Author's Note</label>

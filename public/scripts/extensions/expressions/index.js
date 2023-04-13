@@ -237,7 +237,7 @@ function onClickExpressionImage() {
             <div class="inline-drawer">
             <div class="inline-drawer-toggle inline-drawer-header">
                 <b>View supported images</b>
-                <div class="inline-drawer-icon down"></div>
+                <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
             </div>
             <div class="inline-drawer-content">
                 <p class="offline_mode">You are in offline mode. Click on the image below to set the expression.</p>

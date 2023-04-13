@@ -103,6 +103,12 @@ body {
     background-clip: content-box;
 }
 
+.fa-solid::before,
+.fa-regular::before {
+    vertical-align: middle;
+    text-align: center;
+}
+
 .mes_text p {
     margin-top: 0;
     margin-bottom: 10px;
@@ -263,12 +269,8 @@ code {
     height: 40px;
     margin: 0;
     display: none;
-    padding: 1px;
-    background: url('img/send3.png') no-repeat;
-    background-size: 26px auto;
-    background-position: center center;
     outline: none;
-
+    font-size: 30px;
     border: none;
     cursor: pointer;
     transition: 0.3s;
@@ -288,12 +290,8 @@ code {
     order: 99999;
     align-items: center;
     justify-content: center;
+    font-size: 24px;
     filter: brightness(0.7);
-}
-
-#loading_mes .svg_icon {
-    width: 24px;
-    height: 24px;
 }
 
 #options_button {
@@ -632,6 +630,23 @@ h3 {
     margin: 10px 0;
 }
 
+.menu_button {
+    /* font-weight: bold; */
+    color: var(--white70);
+    background-color: var(--black50a);
+    border: 1px solid var(--white30a);
+    border-radius: 10px;
+    padding: 10px;
+    width: min-content;
+    cursor: pointer;
+    margin: 10px 0;
+    transition: 0.3s;
+}
+
+.menu_button:hover {
+    background-color: var(--white30a);
+}
+
 #top-bar h3 {
     margin: 0;
     padding: 10px 0;
@@ -685,6 +700,15 @@ input[type="file"] {
     filter: brightness(150%) grayscale(1);
 }
 
+#rm_button_characters,
+#rm_button_panel_pin_div,
+#lm_button_panel_pin_div {
+    font-size: 24px;
+}
+
+#lm_button_panel_pin_div {
+    text-align: start;
+}
 
 #rm_button_panel_pin,
 #lm_button_panel_pin {
@@ -806,25 +830,15 @@ select option:not(:checked) {
     text-align: center;
 }
 
-img[src*="user-slash-solid.svg"] {
-    filter: invert(1);
-}
+img[src*="user-slash-solid.svg"] {}
 
-.menu_button .svg_icon {
-    height: 22px;
-    vertical-align: middle;
-    margin: 5px;
-    filter: invert(1) brightness(75%);
-}
+
 
 .menu_button.disabled {
     filter: brightness(50%);
     cursor: not-allowed;
 }
 
-.svg_icon {
-    filter: invert(1);
-}
 
 #api_url_text,
 #textgenerationwebui_api_url_text {
@@ -843,9 +857,8 @@ img[src*="user-slash-solid.svg"] {
     background-color: green;
 }
 
-img[src="img/load.svg"] {
-    width: 25px;
-    height: 25px;
+.api-load-icon {
+    font-size: 24px;
     display: none;
 }
 
@@ -905,7 +918,6 @@ input[type=search]::-webkit-search-cancel-button {
     background-size: contain;
     opacity: 0;
     pointer-events: none;
-    filter: invert(1);
     cursor: pointer;
 }
 
@@ -1222,35 +1234,20 @@ input[type=search]:focus::-webkit-search-cancel-button {
     background-color: var(--black50a);
     border: 1px solid var(--white30a);
     border-radius: 10px;
-    padding: 3px;
+    padding: 5px;
     cursor: pointer;
     margin: 0;
     transition: 0.3s;
-
-    min-width: 40px;
     min-height: 40px;
     filter: grayscale(0.5);
     text-align: center;
+    font-size: 25px;
+    aspect-ratio: 1;
+    /* vertical-align: middle; */
 }
 
-.menu_button {
 
-    /* font-weight: bold; */
-    color: var(--white70);
-    background-color: var(--black50a);
-    border: 1px solid var(--white30a);
-    border-radius: 10px;
-    padding: 10px;
-    width: min-content;
-    cursor: pointer;
-    margin: 10px 0;
-    transition: 0.3s;
 
-}
-
-.menu_button:hover {
-    background-color: var(--white30a);
-}
 
 
 #dialogue_del_mes .menu_button {
@@ -1342,9 +1339,6 @@ input[type=search]:focus::-webkit-search-cancel-button {
     column-gap: 20px;
 }
 
-.horde_model_title .right_menu_button img.svg_icon {
-    height: 20px;
-}
 
 #softprompt {
     margin-bottom: 10px;
@@ -1839,16 +1833,11 @@ input[type="range"]::-webkit-slider-thumb {
 
 .mes_edit {
     float: right;
-    color: var(--white30a);
     cursor: pointer;
     transition: 0.3s ease-in-out;
-    background-image: url(/img/pencil-solid.svg);
-    background-repeat: no-repeat;
-    background-attachment: local;
-    background-position: center;
     height: 20px;
     width: 20px;
-    filter: invert(1) drop-shadow(0px 0px 2px black);
+    filter: drop-shadow(0px 0px 2px black);
     opacity: 0.2;
 }
 
@@ -1875,14 +1864,6 @@ input[type="range"]::-webkit-slider-thumb {
     filter: drop-shadow(0px 0px 2px black);
     transition: 0.3s ease-in-out;
 }
-
-.mes_edit_buttons .menu_button .svg_icon {
-    height: 18px;
-    width: 18px;
-    margin: 2px;
-    filter: invert(1);
-}
-
 
 .mes_edit_buttons .menu_button {
     opacity: 0.5;
@@ -2869,64 +2850,20 @@ label[for="extensions_autoconnect"] {
 .drawer-icon {
     display: inline-block;
     cursor: pointer;
-    min-width: 40px;
-    height: 30px;
-    background-size: contain;
-    background-position: center;
-    background-repeat: no-repeat;
-}
-
-.icon-api {
-    background-image: url('img/plug-solid.svg');
-}
-
-.icon-api.redOverlayGlow {
-    background-image: url('img/plug-circle-exclamation-solid.svg');
-}
-
-.icon-sliders {
-    background-image: url('img/sliders-solid.svg');
-}
-
-.icon-globe {
-    background-image: url('img/book-atlas-solid.svg');
-}
-
-.icon-user {
-    background-image: url('img/face-smile-regular.svg');
-}
-
-.icon-idcard {
-    background-image: url('img/id-card-regular.svg');
-}
-
-.icon-panorama {
-    background-image: url('img/panorama-solid.svg');
-}
-
-.icon-cubes {
-    background-image: url('img/cubes-solid.svg');
-}
-
-.icon-formatting {
-    background-image: url('img/font-solid.svg');
+    /*     min-width: 40px;
+    height: 30px; */
+    font-size: 1.8rem;
 }
 
 .drawer-icon.openIcon {
-    /*  background-image: url('img/circle-chevron-up-solid.svg'); */
-    filter: invert(1) brightness(200%) drop-shadow(0px 0px 2px black);
+
+    filter: brightness(200%) drop-shadow(0px 0px 2px black);
     ;
     transition: all 0.275s;
 }
 
-.redOverlayGlow {
-    filter: invert(20%) sepia(100%) saturate(2518%) hue-rotate(353deg) brightness(93%) contrast(125%) drop-shadow(0px 0px 1px #c00) !important;
-}
-
 .drawer-icon.closedIcon {
-    /* background-image: url('img/circle-chevron-down-solid.svg'); */
-    filter: invert(1) drop-shadow(0px 0px 2px black);
-    ;
+    filter: drop-shadow(0px 0px 2px black);
     opacity: 0.3;
     transition: all 0.275s;
 }
@@ -2942,19 +2879,16 @@ label[for="extensions_autoconnect"] {
 .inline-drawer-icon {
     display: block;
     cursor: pointer;
-    width: 26px;
-    height: 26px;
+    font-size: calc(var(--mainFontSize)*1.5);
     background-size: cover;
     background-repeat: no-repeat;
-    filter: invert(1) brightness(75%);
+    filter: brightness(75%);
 }
 
-.inline-drawer-icon.up {
-    background-image: url('img/circle-chevron-up-solid.svg');
-}
-
-.inline-drawer-icon.down {
-    background-image: url('img/circle-chevron-down-solid.svg');
+.redOverlayGlow {
+    color: #ad0000;
+    opacity: 0.8 !important;
+    filter: drop-shadow(0px 0px 2px red) !important;
 }
 
 .inline-drawer-header {

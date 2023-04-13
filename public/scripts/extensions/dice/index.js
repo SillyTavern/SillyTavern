@@ -7,13 +7,13 @@ const UPDATE_INTERVAL = 1000;
 
 function setDiceIcon() {
     const sendButton = document.getElementById('roll_dice');
-    sendButton.style.backgroundImage = `url(/img/dice-solid.svg)`;
+    /* sendButton.style.backgroundImage = `url(/img/dice-solid.svg)`; */
     sendButton.classList.remove('spin');
 }
 
 async function doDiceRoll() {
     let value = $(this).data('value');
-    
+
     if (value == 'custom') {
         value = await callPopup('Enter the dice formula:<br><i>(for example, <tt>2d6</tt>)</i>', 'input');
     }
@@ -29,7 +29,7 @@ async function doDiceRoll() {
 
 function addDiceRollButton() {
     const buttonHtml = `
-        <input id="roll_dice" type="button" />
+        <div id="roll_dice" class="fa-solid fa-dice" /></div>
         <div id="dice_dropdown">
             <ul class="list-group">
                 <li class="list-group-item" data-value="d4">d4</li>

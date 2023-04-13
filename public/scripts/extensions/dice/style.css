@@ -3,6 +3,7 @@
     width: 40px;
     height: 40px;
     margin: 0;
+    margin-right: 5px;
     padding: 1px;
     background: no-repeat;
     background-size: 26px auto;
@@ -11,7 +12,7 @@
     border: none;
     cursor: pointer;
     transition: 0.3s;
-    filter: invert(1);
+    font-size: 30px;
     opacity: 0.5;
 }
 
