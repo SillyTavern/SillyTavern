@@ -150,6 +150,7 @@ async function moduleWorker() {
     }
 
     if (lastMessageNumber <= 0 || chat_metadata[metadata_keys.interval] <= 0) {
+        context.setExtensionPrompt(MODULE_NAME, '');
         $('#extension_floating_counter').text('No');
         return;
     }
