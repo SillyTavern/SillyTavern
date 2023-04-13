@@ -151,22 +151,22 @@ async function applyThemeColor(type) {
 
     if (type === 'main') {
         document.documentElement.style.setProperty('--SmartThemeBodyColor', power_user.main_text_color);
-        console.log($MainTextColorPicker.color);
+
     }
 
     if (type === 'italics') {
         document.documentElement.style.setProperty('--SmartThemeEmColor', power_user.italics_text_color);
-        console.log($ItalicsTextColorPicker.color);
+
     }
 
     if (type === 'fastUIBG') {
         document.documentElement.style.setProperty('--SmartThemeFastUIBGColor', power_user.fastui_bg_color);
-        console.log($FastUIBGColorPicker.color);
+
     }
 
     if (type === 'blurTint') {
         document.documentElement.style.setProperty('--SmartThemeBlurTintColor', power_user.blur_tint_color);
-        console.log($BlurTintColorPicker.color);
+
     }
 
     // a small delay to let the browser do the layout redraw
