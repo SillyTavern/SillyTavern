@@ -29,6 +29,8 @@ const parent_path = path.resolve(__dirname);
 const queries_path = path.join(parent_path, "poe_graphql");
 let queries = {};
 
+const cached_bots = {};
+
 const logger = console;
 
 const user_agent = "Mozilla/5.0 (X11; Linux x86_64; rv:102.0) Gecko/20100101 Firefox/102.0";
@@ -85,9 +87,11 @@ class Client {
     ws = null;
     ws_connected = false;
     auto_reconnect = false;
+    use_cached_bots = false;
 
-    constructor(auto_reconnect = false) {
+    constructor(auto_reconnect = false, use_cached_bots = false) {
         this.auto_reconnect = auto_reconnect;
+        this.use_cached_bots = use_cached_bots;
     }
 
     async init(token, proxy = null) {
@@ -150,9 +154,16 @@ class Client {
         const bots = {};
         for (const bot of botList.filter(x => x.deletionState == 'not_deleted')) {
             const url = `https://poe.com/_next/data/${this.next_data.buildId}/${bot.displayName}.json`;
-            logger.info(`Downloading ${url}`);
-
-            const r = await request_with_retries(() => this.session.get(url));
+            let r;
+            
+            if (this.use_cached_bots && cached_bots[url]) {
+                r = cached_bots[url];
+            }
+            else {
+                logger.info(`Downloading ${url}`);
+                r = await request_with_retries(() => this.session.get(url));
+                cached_bots[url] = r;
+            }
 
             const chatData = r.data.pageProps.payload.chatOfBotDisplayName;
             bots[chatData.defaultBotObject.nickname] = chatData;

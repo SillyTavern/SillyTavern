@@ -1871,8 +1871,8 @@ app.post('/deletegroup', jsonParser, async (request, response) => {
 
 const POE_DEFAULT_BOT = 'a2';
 
-async function getPoeClient(token) {
-    let client = new poe.Client();
+async function getPoeClient(token, useCache=false) {
+    let client = new poe.Client(false, useCache);
     await client.init(token);
     return client;
 }
@@ -1904,7 +1904,7 @@ app.post('/purge_poe', jsonParser, async (request, response) => {
     const count = request.body.count ?? -1;
 
     try {
-        const client = await getPoeClient(token);
+        const client = await getPoeClient(token, true);
         await client.purge_conversation(bot, count);
         client.disconnect_ws();
 
@@ -1928,7 +1928,7 @@ app.post('/generate_poe', jsonParser, async (request, response) => {
     let client;
 
     try {
-        client = await getPoeClient(token);
+        client = await getPoeClient(token, true);
     }
     catch (error) {
         console.error(error);
