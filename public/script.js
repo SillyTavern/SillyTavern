@@ -690,7 +690,7 @@ async function getBackgrounds() {
             const thumbPath = `/thumbnail?type=bg&file=${encodeURIComponent(bg)}`;
             $("#bg_menu_content").append(
                 `<div class="bg_example" bgfile="${bg}" class="bg_example_img" title="${bg}" style="background-image: url('${thumbPath}');">
-                <div bgfile="${bg}" class="bg_example_cross">
+                <div bgfile="${bg}" class="bg_example_cross fa-solid fa-circle-xmark"></div>
             </div>`
             );
         }
@@ -2827,7 +2827,7 @@ async function getAllCharaChats() {
                         mes +
                         "</div>" +
                         "</div >" +
-                        '<div file_name="' + data[key]["file_name"] + '" class="PastChat_cross"></div>' +
+                        '<div file_name="' + data[key]["file_name"] + '" class="PastChat_cross fa-solid fa-circle-xmark"></div>' +
                         '</div>'
 
 
@@ -3179,8 +3179,8 @@ function read_bg_load(input) {
                         "url(" + e.target.result + ")"
                     );
                     $("#form_bg_download").after(
-                        `<div class=bg_example bgfile="${html}" style="background-image: url('/thumbnail?type=bg&file=${encodeURIComponent(html)}');">
-                            <img class=bg_example_cross src="img/cross.png">
+                        `<div class="bg_example" bgfile="${html}" style="background-image: url('/thumbnail?type=bg&file=${encodeURIComponent(html)}');">
+                            <div class="bg_example_cross fa-solid fa-circle-xmark"></div>
                         </div>`
                     );
                 },
