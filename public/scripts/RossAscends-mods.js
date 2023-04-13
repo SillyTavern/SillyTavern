@@ -1,5 +1,4 @@
 esversion: 6
-import { encode } from "../scripts/gpt-2-3-tokenizer/mod.js";
 
 import {
     Generate,
@@ -11,6 +10,7 @@ import {
     nai_settings,
     api_server_textgenerationwebui,
     is_send_press,
+    getTokenCount,
 
 } from "../script.js";
 
@@ -121,45 +121,45 @@ function RA_CountCharTokens() {
         });
 
         //count total tokens, including those that will be removed from context once chat history is long
-        count_tokens = encode(JSON.stringify(
+        count_tokens = getTokenCount(JSON.stringify(
             create_save_name +
             create_save_description +
             create_save_personality +
             create_save_scenario +
             create_save_first_message +
             create_save_mes_example
-        )).length;
+        ));
 
         //count permanent tokens that will never get flushed out of context
-        perm_tokens = encode(JSON.stringify(
+        perm_tokens = getTokenCount(JSON.stringify(
             create_save_name +
             create_save_description +
             create_save_personality +
             create_save_scenario
-        )).length;
+        ));
 
     } else {
         if (this_chid !== undefined && this_chid !== "invalid-safety-id") {    // if we are counting a valid pre-saved char
 
             //same as above, all tokens including temporary ones
-            count_tokens = encode(
+            count_tokens = getTokenCount(
                 JSON.stringify(
                     characters[this_chid].description +
                     characters[this_chid].personality +
                     characters[this_chid].scenario +
                     characters[this_chid].first_mes +
                     characters[this_chid].mes_example
-                )).length;
+                ));
 
             //permanent tokens count
-            perm_tokens = encode(
+            perm_tokens = getTokenCount(
                 JSON.stringify(
                     characters[this_chid].name +
                     characters[this_chid].description +
                     characters[this_chid].personality +
                     characters[this_chid].scenario +
                     (power_user.pin_examples ? characters[this_chid].mes_example : '') // add examples to permanent if they are pinned
-                )).length;
+                ));
         } else { console.log("RA_TC -- no valid char found, closing."); }                // if neither, probably safety char or some error in loading
     }
     // display the counted tokens

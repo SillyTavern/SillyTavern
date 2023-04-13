@@ -208,14 +208,14 @@ async function summarizeChat(context) {
         memoryBuffer.push(entry);
 
         // check if token limit was reached
-        if (context.encode(getMemoryString()).length >= extension_settings.memory.shortMemoryLength) {
+        if (context.getTokenCount(getMemoryString()) >= extension_settings.memory.shortMemoryLength) {
             break;
         }
     }
 
     const resultingString = getMemoryString();
 
-    if (context.encode(resultingString).length < extension_settings.memory.shortMemoryLength) {
+    if (context.getTokenCount(resultingString) < extension_settings.memory.shortMemoryLength) {
         return;
     }
 

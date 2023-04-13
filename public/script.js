@@ -1,6 +1,6 @@
 import { humanizedDateTime } from "./scripts/RossAscends-mods.js";
 import { encode } from "../scripts/gpt-2-3-tokenizer/mod.js";
-
+import { GPT3BrowserTokenizer } from "../scripts/gpt-3-tokenizer/gpt3-tokenizer.js";
 import {
     kai_settings,
     loadKoboldSettings,
@@ -81,7 +81,6 @@ import {
 import {
     poe_settings,
     loadPoeSettings,
-    POE_MAX_CONTEXT,
     generatePoe,
     is_get_status_poe,
     setPoeOnlineStatus,
@@ -125,6 +124,7 @@ export {
     setGenerationProgress,
     updateChatMetadata,
     scrollChatToBottom,
+    getTokenCount,
     chat,
     this_chid,
     settings,
@@ -153,6 +153,7 @@ export {
 window["TavernAI"] = {};
 
 let converter = new showdown.Converter({ emoji: "true" });
+const gpt3 = new GPT3BrowserTokenizer({ type: 'gpt3' });
 /* let bg_menu_toggle = false; */
 const systemUserName = "TavernAI";
 let default_user_name = "You";
@@ -301,6 +302,15 @@ $(document).ajaxError(function myErrorHandler(_, xhr) {
     }
 });
 
+function getTokenCount(str, padding=0) {
+    if (main_api == 'poe' || main_api == 'openai') {
+        return gpt3.encode(str).bpe.length + padding;
+    }
+    else {
+        return encode(str).length + padding;
+    }
+}
+
 const talkativeness_default = 0.5;
 
 var is_advanced_char_open = false;
@@ -355,6 +365,7 @@ var preset_settings = "gui";
 var user_avatar = "you.png";
 var amount_gen = 80; //default max length of AI generated responses
 var max_context = 2048;
+let padding_tokens = 64; // reserved tokens to prevent prompt overflow
 
 var is_pygmalion = false;
 var tokens_already_generated = 0;
@@ -1500,7 +1511,7 @@ async function Generate(type, automatic_trigger, force_name2) {
         }
 
         if (main_api == 'poe') {
-            this_max_context = Math.min(Number(max_context), POE_MAX_CONTEXT);
+            this_max_context = Number(max_context);
         }
 
         let hordeAmountGen = null;
@@ -1539,11 +1550,13 @@ async function Generate(type, automatic_trigger, force_name2) {
 
         for (var item of chat2) {
             chatString = item + chatString;
-            if (encode(JSON.stringify(
+            const encodeString = JSON.stringify(
                 worldInfoString + storyString + chatString +
                 anchorTop + anchorBottom +
                 charPersonality + promptBias + extension_prompt + zeroDepthAnchor
-            )).length + 120 < this_max_context) { //(The number of tokens in the entire promt) need fix, it must count correctly (added +120, so that the description of the character does not hide)
+            );
+            const tokenCount = getTokenCount(encodeString, padding_tokens);
+            if (tokenCount < this_max_context) { //(The number of tokens in the entire promt) need fix, it must count correctly (added +120, so that the description of the character does not hide)
                 //if (is_pygmalion && i == chat2.length-1) item='<START>\n'+item;
                 arrMes[arrMes.length] = item;
             } else {
@@ -1561,8 +1574,9 @@ async function Generate(type, automatic_trigger, force_name2) {
                     let mesExmString = '';
                     for (let iii = 0; iii < mesExamplesArray.length; iii++) {
                         mesExmString += mesExamplesArray[iii];
-                        const prompt = worldInfoString + storyString + mesExmString + chatString + anchorTop + anchorBottom + charPersonality + promptBias + extension_prompt + zeroDepthAnchor;
-                        if (encode(JSON.stringify(prompt)).length + 120 < this_max_context) {
+                        const prompt = JSON.stringify(worldInfoString + storyString + mesExmString + chatString + anchorTop + anchorBottom + charPersonality + promptBias + extension_prompt + zeroDepthAnchor);
+                        const tokenCount = getTokenCount(prompt, padding_tokens);
+                        if (tokenCount < this_max_context) {
                             if (!is_pygmalion) {
                                 mesExamplesArray[iii] = mesExamplesArray[iii].replace(/<START>/i, `This is how ${name2} should talk`);
                             }
@@ -1678,9 +1692,9 @@ async function Generate(type, automatic_trigger, force_name2) {
             }
 
             function checkPromtSize() {
-
                 setPromtString();
-                let thisPromtContextSize = encode(JSON.stringify(worldInfoString + storyString + mesExmString + mesSendString + anchorTop + anchorBottom + charPersonality + generatedPromtCache + promptBias + extension_prompt + zeroDepthAnchor)).length + 120;
+                const prompt = JSON.stringify(worldInfoString + storyString + mesExmString + mesSendString + anchorTop + anchorBottom + charPersonality + generatedPromtCache + promptBias + extension_prompt + zeroDepthAnchor);
+                let thisPromtContextSize = getTokenCount(prompt, padding_tokens);
 
                 if (thisPromtContextSize > this_max_context) {		//if the prepared prompt is larger than the max context size...
 
@@ -3310,7 +3324,7 @@ window["TavernAI"].getContext = function () {
         chatMetadata: chat_metadata,
         addOneMessage: addOneMessage,
         generate: Generate,
-        encode: encode,
+        getTokenCount: getTokenCount,
         extensionPrompts: extension_prompts,
         setExtensionPrompt: setExtensionPrompt,
         updateChatMetadata: updateChatMetadata,
