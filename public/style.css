@@ -3376,7 +3376,8 @@ body.no-blur #top-bar,
 body.no-blur #character_popup,
 body.no-blur #world_popup,
 body.no-blur #dialogue_popup,
-body.no-blur #select_chat_popup {
+body.no-blur #select_chat_popup,
+body.no-blur #send_form {
     background-color: var(--SmartThemeFastUIBGColor) !important;
 }
 
