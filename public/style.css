@@ -309,15 +309,13 @@ code {
     transition: color .25s ease-in-out;
     padding-left: 10px;
     padding-top: 0;
-
+    font-size: 30px;
 }
 
-#options_button:after {
-    content: '\2630';
-    text-decoration: none;
-    font-size: calc(var(--mainFontSize) + .5rem);
-
-
+.font-family-reset {
+    font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
+    font-size: var(--mainFontSize);
+    font-weight: 400;
 }
 
 #options_button:hover {
