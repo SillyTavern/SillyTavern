@@ -69,7 +69,7 @@ async function moduleWorker() {
 
     // check if last message changed
     const currentLastMessage = getLastCharacterMessage();
-    if (lastCharacter === context.characterId && lastMessage === currentLastMessage) {
+    if (lastCharacter === context.characterId && lastMessage === currentLastMessage && $('img.expression').attr('src')) {
         return;
     }
 

@@ -1011,8 +1011,8 @@ function substituteParams(content, _name1, _name2) {
     return content;
 }
 
-function getStoppingStrings() {
-    return [`\n${name1}:`];
+function getStoppingStrings(isImpersonate) {
+    return isImpersonate ? [`\n${name2}: `] : [`\n${name1}:`];
 }
 
 function getSlashCommand(message, type) {
@@ -1152,39 +1152,63 @@ function isStreamingEnabled() {
 
 class StreamingProcessor {
     showStopButton(messageId) {
+        if (messageId == -1) {
+            return;
+        }
+
         $(`#chat .mes[mesid="${messageId}"] .mes_stop`).css({ 'display': 'block' });
         $(`#chat .mes[mesid="${messageId}"] .mes_edit`).css({ 'display': 'none' });
     }
 
     hideStopButton(messageId) {
+        if (messageId == -1) {
+            return;
+        }
+
         $(`#chat .mes[mesid="${messageId}"] .mes_stop`).css({ 'display': 'none' });
         $(`#chat .mes[mesid="${messageId}"] .mes_edit`).css({ 'display': 'block' });
     }
 
     onStartStreaming(text) {
-        saveReply(this.type, text);
-        const messageId = count_view_mes - 1;
+        let messageId = -1;
+
+        if (this.type == "impersonate") {
+            $('#send_textarea').val('').trigger('input');
+        }
+        else {
+            saveReply(this.type, text);
+            messageId = count_view_mes - 1;
+            this.showStopButton(messageId);
+        }
+        
         hideSwipeButtons();
-        this.showStopButton(messageId);
         scrollChatToBottom();
         return messageId;
     }
 
     onProgressStreaming(messageId, text) {
-        let processedText = cleanUpMessage(text);
-        let result = extractNameFromMessage(processedText, this.force_name2);
+        const isImpersonate = this.type == "impersonate";
+        let processedText = cleanUpMessage(text, isImpersonate);
+        let result = extractNameFromMessage(processedText, this.force_name2, isImpersonate);
         let isName = result.this_mes_is_name;
         processedText = result.getMessage;
-        chat[messageId]['is_name'] = isName;
-        chat[messageId]['mes'] = processedText;
 
-        if (this.type == 'swipe' && Array.isArray(chat[messageId]['swipes'])) {
-            chat[messageId]['swipes'][chat[messageId]['swipe_id']] = processedText;
+        if (isImpersonate) {
+            $('#send_textarea').val(processedText).trigger('input');
+        }
+        else {
+            chat[messageId]['is_name'] = isName;
+            chat[messageId]['mes'] = processedText;
+
+            if (this.type == 'swipe' && Array.isArray(chat[messageId]['swipes'])) {
+                chat[messageId]['swipes'][chat[messageId]['swipe_id']] = processedText;
+            }
+
+            let formattedText = messageFormating(processedText, chat[messageId].name, chat[messageId].is_system, chat[messageId].force_avatar);
+            const mesText = $(`#chat .mes[mesid="${messageId}"] .mes_text`);
+            mesText.html(formattedText);
         }
 
-        let formattedText = messageFormating(processedText, chat[messageId].name, chat[messageId].is_system, chat[messageId].force_avatar);
-        const mesText = $(`#chat .mes[mesid="${messageId}"] .mes_text`);
-        mesText.html(formattedText);
         scrollChatToBottom();
     }
 
@@ -1266,7 +1290,8 @@ async function Generate(type, automatic_trigger, force_name2) {
     console.log('Generate entered');
     setGenerationProgress(0);
     tokens_already_generated = 0;
-    message_already_generated = name2 + ': ';
+    const isImpersonate = type == "impersonate";
+    message_already_generated = isImpersonate ? `${name1}: ` : `${name2}: `;
 
     const slashCommand = getSlashCommand($("#send_textarea").val(), type);
 
@@ -1288,13 +1313,13 @@ async function Generate(type, automatic_trigger, force_name2) {
         streamingProcessor = false;
     }
 
-    if (selected_group && !is_group_generating) {
+    if (selected_group && !is_group_generating && !isImpersonate) {
         generateGroupWrapper(false, type = type);
         return;
     }
 
     if (online_status != 'no_connection' && this_chid != undefined && this_chid !== 'invalid-safety-id') {
-        if (type !== 'regenerate' && type !== "swipe") {
+        if (type !== 'regenerate' && type !== "swipe" && !isImpersonate) {
             is_send_press = true;
             var textareaText = $("#send_textarea").val();
             //console.log('Not a Regenerate call, so posting normall with input of: ' +textareaText);
@@ -1306,7 +1331,7 @@ async function Generate(type, automatic_trigger, force_name2) {
             if (chat[chat.length - 1]['is_user']) {//If last message from You
 
             }
-            else if (type !== "swipe") {
+            else if (type !== "swipe" && !isImpersonate) {
                 chat.length = chat.length - 1;
                 count_view_mes -= 1;
                 openai_msgs.pop();
@@ -1824,7 +1849,7 @@ async function Generate(type, automatic_trigger, force_name2) {
                         'early_stopping': textgenerationwebui_settings.early_stopping,
                         'seed': textgenerationwebui_settings.seed,
                         'add_bos_token': textgenerationwebui_settings.add_bos_token,
-                        'custom_stopping_strings': getStoppingStrings().concat(textgenerationwebui_settings.custom_stopping_strings),
+                        'custom_stopping_strings': getStoppingStrings(isImpersonate).concat(textgenerationwebui_settings.custom_stopping_strings),
                         'truncation_length': max_context,
                         'ban_eos_token': textgenerationwebui_settings.ban_eos_token,
                     }
@@ -1868,7 +1893,7 @@ async function Generate(type, automatic_trigger, force_name2) {
             console.log('rungenerate calling API');
 
             if (main_api == 'openai') {
-                let prompt = await prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAfter, extension_prompt, promptBias);
+                let prompt = await prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAfter, extension_prompt, promptBias, type);
 
                 if (isStreamingEnabled()) {
                     streamingProcessor.generator = await sendOpenAIRequest(prompt);
@@ -1955,13 +1980,18 @@ async function Generate(type, automatic_trigger, force_name2) {
                     }
 
                     //Formating
-                    getMessage = cleanUpMessage(getMessage);
+                    getMessage = cleanUpMessage(getMessage, isImpersonate);
 
                     let this_mes_is_name;
-                    ({ this_mes_is_name, getMessage } = extractNameFromMessage(getMessage, force_name2));
+                    ({ this_mes_is_name, getMessage } = extractNameFromMessage(getMessage, force_name2, isImpersonate));
                     //getMessage = getMessage.replace(/^\s+/g, '');
                     if (getMessage.length > 0) {
-                        ({ type, getMessage } = saveReply(type, getMessage, this_mes_is_name));
+                        if (isImpersonate) {
+                            $('#send_textarea').val(getMessage).trigger('input');
+                        }
+                        else {
+                            ({ type, getMessage } = saveReply(type, getMessage, this_mes_is_name));
+                        }
                         activateSendButtons();
                         playMessageSound();
                         generate_loop_counter = 0;
@@ -1975,7 +2005,9 @@ async function Generate(type, automatic_trigger, force_name2) {
                         // regenerate with character speech reenforced
                         // to make sure we leave on swipe type while also adding the name2 appendage
                         setTimeout(() => {
-                            const newType = type == "swipe" ? "swipe" : "force_name2";
+                            let newType = type == "swipe" ? "swipe" : "force_name2";
+                            newType = isImpersonate ? type : newType;
+                            
                             Generate(newType, automatic_trigger = false, force_name2 = true);
                         }, generate_loop_counter * 1000);
                     }
@@ -2022,16 +2054,22 @@ function shouldContinueMultigen(getMessage) {
         getMessage.length > 0;     //if we actually have gen'd text at all...
 }
 
-function extractNameFromMessage(getMessage, force_name2) {
+function extractNameFromMessage(getMessage, force_name2, isImpersonate) {
+    const nameToTrim = isImpersonate ? name1 : name2;
     let this_mes_is_name = true;
-    if (getMessage.indexOf(name2 + ":") === 0) {
-        getMessage = getMessage.replace(name2 + ':', '');
+    if (getMessage.indexOf(nameToTrim + ":") === 0) {
+        getMessage = getMessage.replace(nameToTrim + ':', '');
         getMessage = getMessage.trimStart();
     } else {
         this_mes_is_name = false;
     }
     if (force_name2)
         this_mes_is_name = true;
+
+    if (isImpersonate) {
+        getMessage = getMessage.trim();
+    }
+
     return { this_mes_is_name, getMessage };
 }
 
@@ -2079,7 +2117,8 @@ function extractMessageFromData(data, finalPromt) {
     return getMessage;
 }
 
-function cleanUpMessage(getMessage) {
+function cleanUpMessage(getMessage, isImpersonate) {
+    const nameToTrim = isImpersonate ? name2 : name1;
     if (power_user.collapse_newlines) {
         getMessage = collapseNewlines(getMessage);
     }
@@ -2090,9 +2129,8 @@ function cleanUpMessage(getMessage) {
         getMessage = getMessage.replace(/<BOT>/g, name2);
         getMessage = getMessage.replace(/You:/g, name1 + ':');
     }
-    if (getMessage.indexOf(name1 + ":") != -1) {
-        getMessage = getMessage.substr(0, getMessage.indexOf(name1 + ":"));
-
+    if (getMessage.indexOf(nameToTrim + ":") != -1) {
+        getMessage = getMessage.substr(0, getMessage.indexOf(nameToTrim + ":"));
     }
     if (getMessage.indexOf('<|endoftext|>') != -1) {
         getMessage = getMessage.substr(0, getMessage.indexOf('<|endoftext|>'));
@@ -2102,6 +2140,11 @@ function cleanUpMessage(getMessage) {
     if (selected_group) {
         getMessage = cleanGroupMessage(getMessage);
     }
+
+    if (isImpersonate) {
+        getMessage = getMessage.trim();
+    }
+
     return getMessage;
 }
 
@@ -4275,6 +4318,13 @@ $(document).ready(function () {
                     is_send_press = true;
                     Generate("regenerate");
                 }
+            }
+        }
+
+        else if (id == "option_impersonate") {
+            if (is_send_press == false) {
+                is_send_press = true;
+                Generate("impersonate");
             }
         }
 

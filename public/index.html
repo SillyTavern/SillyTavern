@@ -665,7 +665,7 @@
                                 <div class="range-block-title openai_restorable">
                                     <span>Main prompt</span>
                                     <div id="main_prompt_restore" title="Restore default prompt" class="right_menu_button">
-                                        <div alt="" class="fa-solid fa-clock-rotate-left "></div>
+                                        <div class="fa-solid fa-clock-rotate-left "></div>
                                     </div>
                                 </div>
                                 <div class="range-block-counter">
@@ -679,7 +679,7 @@
                                 <div class="range-block-title openai_restorable">
                                     <span>NSFW prompt</span>
                                     <div id="nsfw_prompt_restore" title="Restore default prompt" class="right_menu_button">
-                                        <div alt="" class="fa-solid fa-clock-rotate-left "></div>
+                                        <div class="fa-solid fa-clock-rotate-left "></div>
                                     </div>
                                 </div>
                                 <div class="range-block-counter">
@@ -693,7 +693,7 @@
                                 <div class="range-block-title openai_restorable">
                                     <span>Jailbreak prompt</span>
                                     <div id="jailbreak_prompt_restore" title="Restore default prompt" class="right_menu_button">
-                                        <div alt="" class="fa-solid fa-clock-rotate-left "></div>
+                                        <div class="fa-solid fa-clock-rotate-left"></div>
                                     </div>
                                 </div>
                                 <div class="range-block-counter">
@@ -701,6 +701,20 @@
                                 </div>
                                 <div class="wide100p">
                                     <textarea id="jailbreak_prompt_textarea" class="text_pole" name="jailbreak_prompt" rows="3" placeholder=""></textarea>
+                                </div>
+                            </div>
+                            <div class="range-block">
+                                <div class="range-block-title openai_restorable">
+                                    <span>Impersonation prompt</span>
+                                    <div id="impersonation_prompt_restore" title="Restore default prompt" class="right_menu_button">
+                                        <div class="fa-solid fa-clock-rotate-left"></div>
+                                    </div>
+                                </div>
+                                <div class="range-block-counter">
+                                    Prompt that is used for Impersonation function
+                                </div>
+                                <div class="wide100p">
+                                    <textarea id="impersonation_prompt_textarea" class="text_pole" name="impersonation_prompt" rows="3" placeholder=""></textarea>
                                 </div>
                             </div>
                             <div class="range-block openai_preset_buttons">
@@ -1772,6 +1786,10 @@
                             <a id="option_delete_mes">
                                 <div class="fa-lg fa-solid fa-trash-can"></div>
                                 <span>Delete messages</span>
+                            </a>
+                            <a id="option_impersonate" title="Ask AI to write your message for you">
+                                <div class="fa-lg fa-solid fa-user-secret"></div>
+                                <span>Impersonate</span>
                             </a>
                             <a id="option_regenerate">
                                 <div class="fa-lg fa-solid fa-repeat "></div>
