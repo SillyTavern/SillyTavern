@@ -95,13 +95,13 @@ async function moduleWorker() {
     $('#extension_floating_counter').text(shouldAddPrompt ? 'This' : messagesTillInsertion);
 }
 
-(function() {
+(function () {
     function addExtensionsSettings() {
         const settingsHtml = `
         <h4>Author's Note / Character Bias</h4>
         <div class="floating_prompt_settings">
             <label for="extension_floating_prompt">Append the following text:</label>
-            <textarea id="extension_floating_prompt" class="text_pole" rows="2"></textarea>
+            <textarea id="extension_floating_prompt" class="text_pole" rows="8"></textarea>
             <label>
                 <input type="radio" name="extension_floating_position" value="0" />
                 After scenario
@@ -119,11 +119,11 @@ async function moduleWorker() {
             <div class="inline-drawer">
                 <div class="inline-drawer-toggle inline-drawer-header">
                     <b>Default note for new chats</b>
-                    <div class="inline-drawer-icon down"></div>
+                    <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
                 </div>
                 <div class="inline-drawer-content">
                     <label for="extension_floating_default">Default Author's Note</label>
-                    <textarea id="extension_floating_default" class="text_pole" rows="3"
+                    <textarea id="extension_floating_default" class="text_pole" rows="8"
                     placeholder="Example:\n[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
                 </div>
             </div>

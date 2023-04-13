@@ -302,7 +302,7 @@ $(document).ajaxError(function myErrorHandler(_, xhr) {
     }
 });
 
-function getTokenCount(str, padding=0) {
+function getTokenCount(str, padding = 0) {
     if (main_api == 'poe' || main_api == 'openai') {
         return gpt3.encode(str).bpe.length + padding;
     }
@@ -961,7 +961,9 @@ function addOneMessage(mes, type = "normal", insertAfter = null) {
     }
 
     newMessage.find('.avatar img').on('error', function () {
-        $(this).attr("src", "/img/user-slash-solid.svg");
+        /* $(this).attr("src", "/img/user-slash-solid.svg"); */
+        $(this).hide();
+        $(this).parent().html(`<div class="missing-avatar fa-solid fa-user-slash"></div>`);
     });
 
     if (type === 'swipe') {
@@ -1150,13 +1152,13 @@ function isStreamingEnabled() {
 
 class StreamingProcessor {
     showStopButton(messageId) {
-        $(`#chat .mes[mesid="${messageId}"] .mes_stop`).css({'display': 'block'});
-        $(`#chat .mes[mesid="${messageId}"] .mes_edit`).css({'display': 'none'});
+        $(`#chat .mes[mesid="${messageId}"] .mes_stop`).css({ 'display': 'block' });
+        $(`#chat .mes[mesid="${messageId}"] .mes_edit`).css({ 'display': 'none' });
     }
 
     hideStopButton(messageId) {
-        $(`#chat .mes[mesid="${messageId}"] .mes_stop`).css({'display': 'none'});
-        $(`#chat .mes[mesid="${messageId}"] .mes_edit`).css({'display': 'block'});
+        $(`#chat .mes[mesid="${messageId}"] .mes_stop`).css({ 'display': 'none' });
+        $(`#chat .mes[mesid="${messageId}"] .mes_edit`).css({ 'display': 'block' });
     }
 
     onStartStreaming(text) {
@@ -1922,7 +1924,7 @@ async function Generate(type, automatic_trigger, force_name2) {
 
                     getMessage = message_already_generated;
                 }
-                
+
                 if (streamingProcessor.isFinished) {
                     streamingProcessor.onFinishStreaming(streamingProcessor.messageId, getMessage);
                     streamingProcessor = null;
@@ -4929,6 +4931,7 @@ $(document).ready(function () {
     $(document).on('click', '.inline-drawer-toggle', function () {
         var icon = $(this).find('.inline-drawer-icon');
         icon.toggleClass('down up');
+        icon.toggleClass('fa-circle-chevron-down fa-circle-chevron-up');
         $(this).closest('.inline-drawer').find('.inline-drawer-content').slideToggle();
     });
 

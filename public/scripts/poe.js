@@ -84,11 +84,11 @@ function onBotChange() {
 async function generatePoe(finalPrompt) {
     if (poe_settings.auto_purge) {
         let count_to_delete = -1;
-    
+
         if (auto_jailbroken && got_reply) {
             count_to_delete = 2;
         }
-    
+
         await purgeConversation(count_to_delete);
     }
 
@@ -196,7 +196,7 @@ async function onConnectClick() {
 
     setButtonState(true);
     is_get_status_poe = true;
-    
+
     try {
         await checkStatusPoe();
     }
@@ -208,7 +208,7 @@ async function onConnectClick() {
 
 function setButtonState(value) {
     is_poe_button_press = value;
-    $("#api_loading_poe").css("display", value ? 'block' : 'none');
+    $("#api_loading_poe").css("display", value ? 'inline-block' : 'none');
     $("#poe_connect").css("display", value ? 'none' : 'block');
 }
 

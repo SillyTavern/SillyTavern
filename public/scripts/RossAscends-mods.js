@@ -203,16 +203,18 @@ function RA_checkOnlineStatus() {
         $("#send_textarea").attr("placeholder", "Not connected to API!"); //Input bar placeholder tells users they are not connected
         $("#send_form").addClass('no-connection'); //entire input form area is red when not connected
         $("#send_but").css("display", "none"); //send button is hidden when not connected;
-        $("#API-status-top").addClass("redOverlayGlow");
+        $("#API-status-top").removeClass("fa-plug");
+        $("#API-status-top").addClass("fa-plug-circle-exclamation redOverlayGlow");
         connection_made = false;
     } else {
         if (online_status !== undefined && online_status !== "no_connection") {
             $("#send_textarea").attr("placeholder", "Type a message..."); //on connect, placeholder tells user to type message
-            const formColor = power_user.fast_ui_mode ? "var(--black90a)" : "var(--black60a)";
+            const formColor = power_user.fast_ui_mode ? "var(--SmartThemeFastUIBGColor)" : "var(--SmartThemeBlurTintColor)";
             /* console.log("RA-AC -- connected, coloring input as " + formColor); */
             $('#send_form').removeClass("no-connection");
             $("#send_form").css("background-color", formColor); //on connect, form BG changes to transprent black
-            $("#API-status-top").removeClass("redOverlayGlow");
+            $("#API-status-top").removeClass("fa-plug-circle-exclamation redOverlayGlow");
+            $("#API-status-top").addClass("fa-plug");
             connection_made = true;
             retry_delay = 100;
             RA_AC_retries = 1;
