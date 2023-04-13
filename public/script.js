@@ -1246,8 +1246,8 @@ class StreamingProcessor {
             }
 
             try {
-                this.result = this.prefix + text;
-                this.onProgressStreaming(this.messageId, this.result);
+                this.result = text;
+                this.onProgressStreaming(this.messageId, message_already_generated + text);
             }
             catch (err) {
                 console.error(err);
@@ -1889,7 +1889,7 @@ async function Generate(type, automatic_trigger, force_name2) {
                 }
             }
             else if (main_api == 'textgenerationwebui' && textgenerationwebui_settings.streaming) {
-                streamingProcessor.generator = await generateTextGenWithStreaming(generate_data, finalPromt);
+                streamingProcessor.generator = await generateTextGenWithStreaming(generate_data);
             }
             else {
                 jQuery.ajax({
@@ -1921,6 +1921,8 @@ async function Generate(type, automatic_trigger, force_name2) {
                         console.log('returning to make generate again');
                         return;
                     }
+
+                    getMessage = message_already_generated;
                 }
 
                 if (streamingProcessor.isFinished) {
