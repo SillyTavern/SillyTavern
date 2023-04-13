@@ -961,7 +961,9 @@ function addOneMessage(mes, type = "normal", insertAfter = null) {
     }
 
     newMessage.find('.avatar img').on('error', function () {
-        $(this).attr("src", "/img/user-slash-solid.svg");
+        /* $(this).attr("src", "/img/user-slash-solid.svg"); */
+        $(this).hide();
+        $(this).parent().html(`<div class="missing-avatar fa-solid fa-user-slash"></div>`);
     });
 
     if (type === 'swipe') {

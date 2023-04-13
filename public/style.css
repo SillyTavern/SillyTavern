@@ -2377,7 +2377,7 @@ h5 {
 }
 
 #rm_button_back_from_group {
-    padding: 0;
+    padding: 5px;
 }
 
 #typing_indicator_template {
@@ -2390,6 +2390,10 @@ h5 {
     margin: 10px;
     opacity: 0.85;
     text-shadow: 2px 2px 2px var(--black60a);
+}
+
+.missing-avatar {
+    font-size: 36px;
 }
 
 .typing_indicator:after {
