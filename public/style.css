@@ -649,23 +649,6 @@ h3 {
     margin: 10px 0;
 }
 
-.menu_button {
-    /* font-weight: bold; */
-    color: var(--white70);
-    background-color: var(--black50a);
-    border: 1px solid var(--white30a);
-    border-radius: 10px;
-    padding: 10px;
-    width: min-content;
-    cursor: pointer;
-    margin: 10px 0;
-    transition: 0.3s;
-}
-
-.menu_button:hover {
-    background-color: var(--white30a);
-}
-
 #top-bar h3 {
     margin: 0;
     padding: 10px 0;
@@ -1246,24 +1229,34 @@ input[type=search]:focus::-webkit-search-cancel-button {
     cursor: pointer;
 }
 
-.avatar_div .menu_button,
-.form_create_bottom_buttons_block .menu_button,
-#select_chat_popup .menu_button {
-    font-weight: bold;
+.menu_button {
+    /* font-weight: bold; */
     color: var(--white70);
     background-color: var(--black50a);
     border: 1px solid var(--white30a);
     border-radius: 10px;
-    padding: 5px;
+    padding: 10px;
+    width: min-content;
     cursor: pointer;
-    margin: 0;
+    margin: 10px 0;
     transition: 0.3s;
-    min-height: 40px;
+}
+
+.avatar_div .menu_button,
+.form_create_bottom_buttons_block .menu_button,
+#select_chat_popup .menu_button {
+    font-weight: bold;
+    padding: 5px;
+    margin: 0;
+    height: 40px;
     filter: grayscale(0.5);
     text-align: center;
-    font-size: 25px;
+    font-size: 24px;
     aspect-ratio: 1;
-    /* vertical-align: middle; */
+}
+
+.menu_button:hover {
+    background-color: var(--white30a);
 }
 
 
