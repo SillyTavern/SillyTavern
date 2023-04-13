@@ -278,7 +278,6 @@ code {
     transition: 0.3s;
     filter: brightness(0.7);
     order: 99999;
-    display: flex;
     align-items: center;
     justify-content: center;
 }
