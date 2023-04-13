@@ -220,7 +220,7 @@ function RA_checkOnlineStatus() {
             RA_AC_retries = 1;
 
             if (!is_send_press && !(selected_group && is_group_generating)) {
-                $("#send_but").css("display", "inline"); //on connect, send button shows
+                $("#send_but").css("display", "flex"); //on connect, send button shows
             }
         }
     }
