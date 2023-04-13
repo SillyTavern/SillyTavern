@@ -30,6 +30,7 @@ let textgenerationwebui_settings = {
     truncation_length: 2048,
     ban_eos_token: false,
     streaming: false,
+    fn_index: 29,
 };
 
 let textgenerationwebui_presets = [];
@@ -52,6 +53,7 @@ const setting_names = [
     "seed",
     "add_bos_token",
     "ban_eos_token",
+    "fn_index",
 ];
 
 function selectPreset(name) {
@@ -143,12 +145,13 @@ function setSettingByName(i, value, trigger) {
     }
 }
 
-async function generateTextGenWithStreaming(generate_data, finalPromt) {
+async function generateTextGenWithStreaming(generate_data) {
     const response = await fetch('/generate_textgenerationwebui', {
         headers: {
             'X-CSRF-Token': token,
             'Content-Type': 'application/json',
             'X-Response-Streaming': true,
+            'X-Gradio-Streaming-Function': textgenerationwebui_settings.fn_index,
         },
         body: JSON.stringify(generate_data),
         method: 'POST',
