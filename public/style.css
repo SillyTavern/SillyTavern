@@ -278,7 +278,6 @@ code {
     transition: 0.3s;
     filter: brightness(0.7);
     order: 99999;
-    display: flex;
     align-items: center;
     justify-content: center;
 }
@@ -359,7 +358,9 @@ code {
     color: var(--ivory, white);
     padding: 12px 16px;
     text-decoration: none;
-    display: block;
+    display: flex;
+    align-items: center;
+    column-gap: 10px;
 }
 
 .options-content img {
