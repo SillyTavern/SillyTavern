@@ -8,7 +8,7 @@
     border: none;
     cursor: pointer;
     transition: 0.3s;
-    opacity: 0.5;
+    filter: brightness(0.7);
     display: flex;
     align-items: center;
     justify-content: center;

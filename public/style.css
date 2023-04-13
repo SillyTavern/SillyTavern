@@ -590,7 +590,7 @@ select {
     background-color: rgba(255, 0, 0, 0);
     border: 0;
     box-shadow: none;
-    padding: 6px 0 6px 0;
+    padding: 6px;
     font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
     margin: 0;
     text-shadow: #000 0 0 3px;
