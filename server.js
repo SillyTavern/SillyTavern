@@ -353,6 +353,7 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
         const SEND_PARAMS_GRADIO_FN = 29;
 
         response_generate.writeHead(200, {
+            'Content-Type': 'text/plain;charset=utf-8',
             'Transfer-Encoding': 'chunked',
             'Cache-Control': 'no-transform',
         });
@@ -363,7 +364,7 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
             const websocket = new WebSocket(`ws://${url.host}/queue/join`, { perMessageDeflate: false });
             let text = '';
 
-            websocket.on('open', async function() {
+            websocket.on('open', async function () {
                 console.log('websocket open');
             });
 
@@ -405,13 +406,13 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
                 if (text == null) {
                     break;
                 }
-    
+
                 let newText = text.substring(result.length);
-    
+
                 if (!newText) {
                     continue;
                 }
-    
+
                 result = text;
                 response_generate.write(newText);
             }
@@ -853,13 +854,13 @@ app.post("/getcharacters", jsonParser, function (request, response) {
                     const charStat = fs.statSync(path.join(charactersPath, item));
                     characters[i]['date_added'] = charStat.birthtimeMs;
                     const char_dir = path.join(chatsPath, item.replace('.png', ''));
-    
+
                     let chat_size = 0;
                     let date_last_chat = 0;
-    
-                    if (fs.existsSync(char_dir)) { 
+
+                    if (fs.existsSync(char_dir)) {
                         const chats = fs.readdirSync(char_dir);
-    
+
                         if (Array.isArray(chats) && chats.length) {
                             for (const chat of chats) {
                                 const chatStat = fs.statSync(path.join(char_dir, chat));
@@ -868,7 +869,7 @@ app.post("/getcharacters", jsonParser, function (request, response) {
                             }
                         }
                     }
-    
+
                     characters[i]['date_last_chat'] = date_last_chat;
                     characters[i]['chat_size'] = chat_size;
                 }
@@ -877,7 +878,7 @@ app.post("/getcharacters", jsonParser, function (request, response) {
                     characters[i]['date_last_chat'] = 0;
                     characters[i]['chat_size'] = 0;
                 }
-                
+
                 i++;
             } catch (error) {
                 console.log(`Could not read character: ${item}`);
@@ -1549,11 +1550,11 @@ app.post("/exportcharacter", jsonParser, async function (request, response) {
                 let inputWebpPath = `./uploads/${Date.now()}_input.webp`;
                 let outputWebpPath = `./uploads/${Date.now()}_output.webp`;
                 let metadataPath = `./uploads/${Date.now()}_metadata.exif`;
-                let metadata = 
+                let metadata =
                 {
-                        "Exif": {
-                            [exif.ExifIFD.UserComment]: json,
-                        },
+                    "Exif": {
+                        [exif.ExifIFD.UserComment]: json,
+                    },
                 };
                 const exifString = exif.dump(metadata);
                 fs.writeFileSync(metadataPath, exifString, 'binary');
@@ -1924,15 +1925,24 @@ app.post('/generate_poe', jsonParser, async (request, response) => {
     const bot = request.body.bot ?? POE_DEFAULT_BOT;
     const streaming = request.body.streaming ?? false;
 
-    try {
-        const client = await getPoeClient(token);
+    let client;
 
-        if (streaming) {
+    try {
+        client = await getPoeClient(token);
+    }
+    catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+
+    if (streaming) {
+        try {
             response.writeHead(200, {
+                'Content-Type': 'text/plain;charset=utf-8',
                 'Transfer-Encoding': 'chunked',
                 'Cache-Control': 'no-transform',
             });
-          
+
             let reply = '';
             for await (const mes of client.send_message(bot, prompt)) {
                 let newText = mes.text.substring(reply.length);
@@ -1940,10 +1950,17 @@ app.post('/generate_poe', jsonParser, async (request, response) => {
                 response.write(newText);
             }
             console.log(reply);
-            client.disconnect_ws();
-            response.end();
         }
-        else {
+        catch (err) {
+            console.error(err);
+        }
+        finally {
+            client.disconnect_ws();
+            return response.end();
+        }
+    }
+    else {
+        try {
             let reply;
             for await (const mes of client.send_message(bot, prompt)) {
                 reply = mes.text;
@@ -1952,10 +1969,10 @@ app.post('/generate_poe', jsonParser, async (request, response) => {
             client.disconnect_ws();
             return response.send({ 'reply': reply });
         }
-    }
-    catch (error) {
-        console.error(error);
-        return response.sendStatus(500);
+        catch {
+            client.disconnect_ws();
+            return response.sendStatus(500);
+        }
     }
 });
 
