@@ -416,6 +416,7 @@ code {
     grid-row-start: 2;
     grid-column-start: 4;
     flex-flow: column;
+    font-size: 30px;
 }
 
 .swipe_right img,
@@ -428,6 +429,8 @@ code {
     color: white;
     font-size: 12px;
     padding: 0;
+    font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
+    font-weight: 400;
 
 }
 
@@ -436,6 +439,7 @@ code {
     right: auto;
     grid-column-start: 2;
     align-items: flex-end;
+    padding-bottom: 17px;
 }
 
 .ui-settings {
@@ -937,9 +941,10 @@ input[type=search]:focus::-webkit-search-cancel-button {
 .character_select .ch_name {
     margin-left: 10px;
     margin-top: 5px;
-    transform: translateY(25%);
+    /* transform: translateY(25%); */
     overflow: hidden;
     text-overflow: ellipsis;
+    align-self: center;
 }
 
 .character_select:hover {
