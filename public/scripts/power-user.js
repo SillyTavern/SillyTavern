@@ -109,7 +109,6 @@ function switchUiMode() {
     const fastUi = localStorage.getItem(storage_keys.fast_ui_mode);
     power_user.fast_ui_mode = fastUi === null ? true : fastUi == "true";
     $("body").toggleClass("no-blur", power_user.fast_ui_mode);
-    $("#send_form").toggleClass("no-blur-sendtextarea", power_user.fast_ui_mode);
 }
 
 function switchWaifuMode() {
@@ -241,13 +240,13 @@ async function applyTheme(name) {
     console.log('theme applied: ' + name);
 }
 
-applyAvatarStyle();
 switchUiMode();
-applyChatDisplay();
-applySheldWidth();
 applyFontScale();
-applyBlurStrength();
 applyThemeColor();
+applySheldWidth();
+applyAvatarStyle();
+applyBlurStrength();
+applyChatDisplay();
 switchWaifuMode()
 
 function loadPowerUserSettings(settings, data) {

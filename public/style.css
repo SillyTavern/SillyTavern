@@ -250,8 +250,12 @@ code {
     border: 1px solid var(--grey30a);
 
     border-radius: 0 0 20px 20px;
-    background-color: var(--crimson70a);
+    background-color: var(--SmartThemeBlurTintColor);
     backdrop-filter: blur(var(--SmartThemeBlurStrength));
+}
+
+#send_form.no-connection {
+    background-color: rgba(100, 0, 0, 0.5) !important;
 }
 
 #send_but_sheld {
@@ -3303,16 +3307,10 @@ body.no-blur * {
     backdrop-filter: unset !important;
 }
 
-#send_form.no-blur-sendtextarea {
-    background-color: var(--SmartThemeFastUIBGColor);
-}
 
-#send_form.no-connection {
-    background-color: rgba(100, 0, 0, 0.5);
-}
 
-#send_form.no-blur-sendtextarea.no-connection {
-    background-color: rgba(100, 0, 0, 0.9);
+body.no-blur #send_form.no-connection {
+    background-color: rgba(100, 0, 0, 0.9) !important;
 }
 
 body.no-blur #bg1,

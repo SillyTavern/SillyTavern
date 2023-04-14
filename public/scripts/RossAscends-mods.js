@@ -209,10 +209,7 @@ function RA_checkOnlineStatus() {
     } else {
         if (online_status !== undefined && online_status !== "no_connection") {
             $("#send_textarea").attr("placeholder", "Type a message..."); //on connect, placeholder tells user to type message
-            const formColor = power_user.fast_ui_mode ? "var(--SmartThemeFastUIBGColor)" : "var(--SmartThemeBlurTintColor)";
-            /* console.log("RA-AC -- connected, coloring input as " + formColor); */
             $('#send_form').removeClass("no-connection");
-            $("#send_form").css("background-color", formColor); //on connect, form BG changes to transprent black
             $("#API-status-top").removeClass("fa-plug-circle-exclamation redOverlayGlow");
             $("#API-status-top").addClass("fa-plug");
             connection_made = true;
