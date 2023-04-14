@@ -98,24 +98,32 @@ async function moduleWorker() {
 (function () {
     function addExtensionsSettings() {
         const settingsHtml = `
-        <h4>Author's Note / Character Bias</h4>
         <div class="floating_prompt_settings">
-            <label for="extension_floating_prompt">Append the following text:</label>
-            <textarea id="extension_floating_prompt" class="text_pole" rows="8"></textarea>
-            <label>
-                <input type="radio" name="extension_floating_position" value="0" />
-                After scenario
-            </label>
-            <label>
-                <input type="radio" name="extension_floating_position" value="1" />
-                In-chat
-            </label>
-            <label for="extension_floating_interval">Every N messages <b>you</b> send (set to 0 to disable):</label>
-            <input id="extension_floating_interval" class="text_pole" type="number" min="0" max="999" />
-            <label for="extension_floating_interval">Insertion depth (for in-chat positioning):</label>
-            <input id="extension_floating_depth" class="text_pole" type="number" min="0" max="99" />
-            <span>Appending to the prompt in next: <span id="extension_floating_counter">No</span> message(s)</span>
-            <br>
+            <div class="inline-drawer">
+                <div class="inline-drawer-toggle inline-drawer-header">
+                    <b>Author's Note / Character Bias</b>
+                    <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+            </div>
+            <div class="inline-drawer-content">
+                <label for="extension_floating_prompt">Append the following text:</label>
+                <textarea id="extension_floating_prompt" class="text_pole" rows="8"></textarea>
+                <div class="floating_prompt_radio_group">
+                    <label>
+                        <input type="radio" name="extension_floating_position" value="0" />
+                        After scenario
+                    </label>
+                    <label>
+                        <input type="radio" name="extension_floating_position" value="1" />
+                        In-chat
+                    </label>
+                </div>
+                <label for="extension_floating_interval">Every N messages <b>you</b> send (set to 0 to disable):</label>
+                <input id="extension_floating_interval" class="text_pole" type="number" min="0" max="999" />
+                <label for="extension_floating_interval">Insertion depth (for in-chat positioning):</label>
+                <input id="extension_floating_depth" class="text_pole" type="number" min="0" max="99" />
+                <span>Appending to the prompt in next: <span id="extension_floating_counter">No</span> message(s)</span>
+                </div>
+            </div>
             <div class="inline-drawer">
                 <div class="inline-drawer-toggle inline-drawer-header">
                     <b>Default note for new chats</b>

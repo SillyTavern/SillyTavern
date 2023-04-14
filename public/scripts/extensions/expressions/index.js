@@ -194,19 +194,20 @@ async function getExpressionsList() {
 async function setExpression(character, expression, force) {
     const filename = `${expression}.png`;
     const debugImageStatus = document.querySelector(`#image_list div[id="${filename}"] span`);
+    const img = $('img.expression');
 
     if (force || (debugImageStatus && !debugImageStatus.classList.contains('failure'))) {
         //console.log('setting expression from character images folder');
         const imgUrl = `/characters/${character}/${filename}`;
-        $('img.expression').prop('src', imgUrl);
-        $('img.expression').removeClass('default');
+        img.attr('src', imgUrl);
+        img.removeClass('default');
     } else {
         if (extension_settings.expressions.showDefault) {
             //console.log('no character images, trying default expressions');
             const defImgUrl = `/img/default-expressions/${filename}`;
             //console.log(defImgUrl);
-            $('img.expression').prop('src', defImgUrl);
-            $('img.expression').addClass('default');
+            img.attr('src', defImgUrl);
+            img.addClass('default');
         }
     }
 }
@@ -233,19 +234,18 @@ function onClickExpressionImage() {
     function addSettings() {
         const html = `
         <div class="expression_settings">
-            <h4>Expression images</h4>
             <div class="inline-drawer">
             <div class="inline-drawer-toggle inline-drawer-header">
-                <b>View supported images</b>
+                <b>Expression images</b>
                 <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
             </div>
             <div class="inline-drawer-content">
                 <p class="offline_mode">You are in offline mode. Click on the image below to set the expression.</p>
                 <div id="image_list"></div>
                 <p class="hint"><b>Hint:</b> <i>Create new folder in the <b>public/characters/</b> folder and name it as the name of the character. Put PNG images with expressions there.</i></p>
-                </div>
+                <label for="expressions_show_default"><input id="expressions_show_default" type="checkbox">Show default images (emojis) if missing</label>
             </div>
-            <label for="expressions_show_default"><input id="expressions_show_default" type="checkbox">Show default images (emojis) if missing</label>
+            </div>
         </div>
         `;
         $('#extensions_settings').append(html);

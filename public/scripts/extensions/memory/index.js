@@ -234,7 +234,7 @@ async function summarizeChat(context) {
             body: JSON.stringify({
                 text: resultingString,
                 params: {
-                    min_length: extension_settings.memory.longMemoryLength * 0.8,
+                    min_length: extension_settings.memory.longMemoryLength * 0, // testing how it behaves 0 min length
                     max_length: extension_settings.memory.longMemoryLength,
                     repetition_penalty: extension_settings.memory.repetitionPenalty,
                     temperature: extension_settings.memory.temperature,
@@ -307,16 +307,23 @@ $(document).ready(function () {
     function addExtensionControls() {
         const settingsHtml = `
         <div id="memory_settings">
-            <h4>Memory</h4>
-            <label for="memory_contents">Memory contents</label>
-            <textarea id="memory_contents" class="text_pole" rows="8" placeholder="Context will be generated here..."></textarea>
-            <div class="memory_contents_controls">
-                <input id="memory_restore" class="menu_button" type="submit" value="Restore previous state" />
-                <label for="memory_frozen"><input id="memory_frozen" type="checkbox" /> Freeze context</label>
+            <div class="inline-drawer">
+                <div class="inline-drawer-toggle inline-drawer-header">
+                <b>Chat memory</b>
+                <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+            </div>
+            <div class="inline-drawer-content">
+                <label for="memory_contents">Memory contents</label>
+                <textarea id="memory_contents" class="text_pole" rows="8" placeholder="Context will be generated here..."></textarea>
+                <div class="memory_contents_controls">
+                    <input id="memory_restore" class="menu_button" type="submit" value="Restore previous state" />
+                    <label for="memory_frozen"><input id="memory_frozen" type="checkbox" /> Freeze context</label>
+                </div>
+            </div>
             </div>
             <div class="inline-drawer">
                 <div class="inline-drawer-toggle inline-drawer-header">
-                    <b>Summarization settings</b>
+                    <b>Summarization parameters</b>
                     <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
                 </div>
                 <div class="inline-drawer-content">
