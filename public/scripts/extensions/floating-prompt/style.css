@@ -7,3 +7,13 @@
     font-weight: 600;
     color: orange;
 }
+
+.floating_prompt_settings textarea {
+    font-size: calc(var(--mainFontSize) * 0.9);
+    line-height: 1.2;
+}
+
+.floating_prompt_radio_group {
+    display: flex;
+    flex-direction: column;
+}
