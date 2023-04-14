@@ -611,6 +611,7 @@ select {
 
 #description_textarea {
     height: -webkit-fill-available;
+    width: -moz-available;
 }
 
 #character_name_pole {
@@ -632,6 +633,7 @@ select {
 
 #firstmessage_textarea {
     height: -webkit-fill-available;
+    width: -moz-available;
 }
 
 .text_pole {
@@ -3029,6 +3031,7 @@ toolcool-color-picker {
 
 .widthFreeExpand {
     width: -webkit-fill-available;
+    width: -moz-available;
 }
 
 .wide100p {
