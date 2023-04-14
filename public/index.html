@@ -1076,24 +1076,25 @@
             <div id="user-settings-block" class="drawer-content closedDrawer">
                 <h3>User Settings</h3>
                 <div class="flex-container">
-                    <div class="">
-                        <form id='form_change_name' action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                            <h4>Name</h4>
-                            <input id="your_name" name="your_name" class="text_pole widthNatural" maxlength="" value="" autocomplete="off">
-                            <input id="your_name_button" class="menu_button" type="submit" title="Click to set a new User Name (reloads page)" value="Update">
-                        </form>
-                    </div>
-                    <div>
-                        <h4>Your Avatar</h4>
-                        <div id="user_avatar_block">
-                            <div class="avatar_upload">+</div>
+                    <div name="NameAndAvatar" class="flex-container wide100p">
+                        <div name="NameChanger">
+                            <form id='form_change_name' action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                                <h4>Name</h4>
+                                <input id="your_name" name="your_name" class="text_pole widthNatural" maxlength="" value="" autocomplete="off">
+                                <input id="your_name_button" class="menu_button" type="submit" title="Click to set a new User Name (reloads page)" value="Update">
+                            </form>
                         </div>
+                        <div name="AvatarSelector">
+                            <h4>Your Avatar</h4>
+                            <div id="user_avatar_block">
+                                <div class="avatar_upload">+</div>
+                            </div>
 
-                        <form id="form_upload_avatar" action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                            <input type="file" id="avatar_upload_file" accept="image/*" name="avatar">
-                        </form>
+                            <form id="form_upload_avatar" action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                                <input type="file" id="avatar_upload_file" accept="image/*" name="avatar">
+                            </form>
+                        </div>
                     </div>
-
                     <div id="power-user-options-block" class="flex-container">
                         <div id="power-user-option-checkboxes">
                             <h4>Power User Options</h4>
