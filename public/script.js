@@ -1102,6 +1102,14 @@ function cleanGroupMessage(getMessage) {
     return getMessage;
 }
 
+function getAllExtensionPrompts() {
+    return substituteParams(Object
+        .values(extension_prompts)
+        .filter(x => x.value)
+        .map(x => x.value.trim())
+        .join('\n'));
+}
+
 function getExtensionPrompt(position = 0, depth = undefined, separator = "\n") {
     let extension_prompt = Object.keys(extension_prompts)
         .sort()
@@ -1556,7 +1564,10 @@ async function Generate(type, automatic_trigger, force_name2) {
         }
 
         let { worldInfoString, worldInfoBefore, worldInfoAfter } = getWorldInfoPrompt(chat2);
-        let extension_prompt = getExtensionPrompt(extension_prompt_types.AFTER_SCENARIO);
+
+        // Extension added strings
+        const allAnchors = getAllExtensionPrompts();
+        const afterScenarioAnchor = getExtensionPrompt(extension_prompt_types.AFTER_SCENARIO);
         const zeroDepthAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, 0, ' ');
 
         /////////////////////// swipecode
@@ -1580,7 +1591,7 @@ async function Generate(type, automatic_trigger, force_name2) {
             const encodeString = JSON.stringify(
                 worldInfoString + storyString + chatString +
                 anchorTop + anchorBottom +
-                charPersonality + promptBias + extension_prompt + zeroDepthAnchor
+                charPersonality + promptBias + allAnchors
             );
             const tokenCount = getTokenCount(encodeString, padding_tokens);
             if (tokenCount < this_max_context) { //(The number of tokens in the entire promt) need fix, it must count correctly (added +120, so that the description of the character does not hide)
@@ -1601,7 +1612,7 @@ async function Generate(type, automatic_trigger, force_name2) {
                     let mesExmString = '';
                     for (let iii = 0; iii < mesExamplesArray.length; iii++) {
                         mesExmString += mesExamplesArray[iii];
-                        const prompt = JSON.stringify(worldInfoString + storyString + mesExmString + chatString + anchorTop + anchorBottom + charPersonality + promptBias + extension_prompt + zeroDepthAnchor);
+                        const prompt = JSON.stringify(worldInfoString + storyString + mesExmString + chatString + anchorTop + anchorBottom + charPersonality + promptBias + allAnchors);
                         const tokenCount = getTokenCount(prompt, padding_tokens);
                         if (tokenCount < this_max_context) {
                             if (!is_pygmalion) {
@@ -1720,7 +1731,7 @@ async function Generate(type, automatic_trigger, force_name2) {
 
             function checkPromtSize() {
                 setPromtString();
-                const prompt = JSON.stringify(worldInfoString + storyString + mesExmString + mesSendString + anchorTop + anchorBottom + charPersonality + generatedPromtCache + promptBias + extension_prompt + zeroDepthAnchor);
+                const prompt = JSON.stringify(worldInfoString + storyString + mesExmString + mesSendString + anchorTop + anchorBottom + charPersonality + generatedPromtCache + promptBias + allAnchors);
                 let thisPromtContextSize = getTokenCount(prompt, padding_tokens);
 
                 if (thisPromtContextSize > this_max_context) {		//if the prepared prompt is larger than the max context size...
@@ -1761,7 +1772,7 @@ async function Generate(type, automatic_trigger, force_name2) {
                 mesSendString = '<START>\n' + mesSendString;
                 //mesSendString = mesSendString; //This edit simply removes the first "<START>" that is prepended to all context prompts
             }
-            finalPromt = worldInfoBefore + storyString + worldInfoAfter + extension_prompt + mesExmString + mesSendString + generatedPromtCache + promptBias;
+            finalPromt = worldInfoBefore + storyString + worldInfoAfter + afterScenarioAnchor + mesExmString + mesSendString + generatedPromtCache + promptBias;
 
             if (zeroDepthAnchor && zeroDepthAnchor.length) {
                 if (!isMultigenEnabled() || tokens_already_generated == 0) {
@@ -1893,7 +1904,7 @@ async function Generate(type, automatic_trigger, force_name2) {
             console.log('rungenerate calling API');
 
             if (main_api == 'openai') {
-                let prompt = await prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAfter, extension_prompt, promptBias, type);
+                let prompt = await prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAfter, afterScenarioAnchor, promptBias, type);
 
                 if (isStreamingEnabled()) {
                     streamingProcessor.generator = await sendOpenAIRequest(prompt);
