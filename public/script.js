@@ -1919,10 +1919,10 @@ async function Generate(type, automatic_trigger, force_name2) {
             }
             else if (main_api == 'poe') {
                 if (isStreamingEnabled()) {
-                    streamingProcessor.generator = await generatePoe(finalPromt);
+                    streamingProcessor.generator = await generatePoe(type, finalPromt);
                 }
                 else {
-                    generatePoe(finalPromt).then(onSuccess).catch(onError);
+                    generatePoe(type, finalPromt).then(onSuccess).catch(onError);
                 }
             }
             else if (main_api == 'textgenerationwebui' && textgenerationwebui_settings.streaming) {

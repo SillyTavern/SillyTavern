@@ -3142,7 +3142,7 @@ toolcool-color-picker {
     padding: 3px 5px;
 }
 
-.openai_restorable {
+.openai_restorable, .poe_restorable {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
@@ -3158,6 +3158,11 @@ toolcool-color-picker {
     justify-content: space-evenly;
     flex-direction: row;
     flex-wrap: wrap;
+}
+
+#poe_activation_message {
+    font-size: calc(var(--mainFontSize) * 0.9);
+    line-height: 1.2;
 }
 
 /* ---------- @media queries must always go at the bottom ------------*/
