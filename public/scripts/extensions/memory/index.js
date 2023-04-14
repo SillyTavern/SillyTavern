@@ -34,9 +34,9 @@ const defaultSettings = {
     maxTemperature: 2.0,
     temperatureStep: 0.05,
     lengthPenalty: 1,
-    minLengthPenalty: 0,
-    maxLengthPenalty: 2,
-    lengthPenaltyStep: 0.05,
+    minLengthPenalty: -4,
+    maxLengthPenalty: 4,
+    lengthPenaltyStep: 0.1,
     memoryFrozen: false,
 };
 
