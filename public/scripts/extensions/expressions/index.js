@@ -37,22 +37,22 @@ async function moduleWorker() {
                 continue;
             }
 
-            return mes.mes;
+            return { mes: mes.mes, name: mes.name };
         }
 
-        return '';
+        return { mes: '', name: null };
     }
 
     const context = getContext();
 
-    // group chats and non-characters not supported
-    if (context.groupId || !context.characterId) {
+    // non-characters not supported
+    if (!context.groupId && !context.characterId) {
         removeExpression();
         return;
     }
 
     // character changed
-    if (lastCharacter !== context.characterId) {
+    if (context.groupId !== lastCharacter && context.characterId !== lastCharacter) {
         removeExpression();
         validateImages();
     }
@@ -69,7 +69,7 @@ async function moduleWorker() {
 
     // check if last message changed
     const currentLastMessage = getLastCharacterMessage();
-    if (lastCharacter === context.characterId && lastMessage === currentLastMessage && $('img.expression').attr('src')) {
+    if (lastCharacter === context.characterId && lastMessage === currentLastMessage.mes && $('img.expression').attr('src')) {
         return;
     }
 
@@ -89,13 +89,15 @@ async function moduleWorker() {
                 'Content-Type': 'application/json',
                 'Bypass-Tunnel-Reminder': 'bypass',
             },
-            body: JSON.stringify({ text: currentLastMessage })
+            body: JSON.stringify({ text: currentLastMessage.mes })
         });
 
         if (apiResult.ok) {
+            const name = context.groupId ? currentLastMessage.name : context.name2;
+            const force = !!context.groupId;
             const data = await apiResult.json();
             const expression = data.classification[0].label;
-            setExpression(context.name2, expression);
+            setExpression(name, expression, force);
         }
 
     }
@@ -104,8 +106,8 @@ async function moduleWorker() {
     }
     finally {
         inApiCall = false;
-        lastCharacter = context.characterId;
-        lastMessage = currentLastMessage;
+        lastCharacter = context.groupId || context.characterId;
+        lastMessage = currentLastMessage.mes;
     }
 }
 

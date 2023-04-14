@@ -38,6 +38,7 @@ import {
     hideSwipeButtons,
     chat_metadata,
     updateChatMetadata,
+    isStreamingEnabled,
 } from "../script.js";
 
 export {
@@ -291,7 +292,7 @@ async function generateGroupWrapper(by_auto_mode, type = null) {
 
         let typingIndicator = $("#chat .typing_indicator");
 
-        if (typingIndicator.length === 0) {
+        if (typingIndicator.length === 0 && !isStreamingEnabled()) {
             typingIndicator = $(
                 "#typing_indicator_template .typing_indicator"
             ).clone();

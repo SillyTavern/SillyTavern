@@ -125,6 +125,7 @@ export {
     updateChatMetadata,
     scrollChatToBottom,
     getTokenCount,
+    isStreamingEnabled,
     chat,
     this_chid,
     settings,
