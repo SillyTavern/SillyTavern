@@ -1489,6 +1489,10 @@ async function Generate(type, automatic_trigger, force_name2) {
             force_name2 = true;
         }
 
+        if (isImpersonate) {
+            force_name2 = false;
+        }
+
         //////////////////////////////////
 
         var count_exm_add = 0;
@@ -1721,6 +1725,14 @@ async function Generate(type, automatic_trigger, force_name2) {
                 for (let j = 0; j < mesSend.length; j++) {
 
                     mesSendString += mesSend[j];
+                    if (isImpersonate && j === mesSend.length -1 && tokens_already_generated === 0) {
+                        const name = is_pygmalion ? 'You' : name1;
+                        if (!mesSendString.endsWith('\n')) {
+                            mesSendString += '\n';
+                        }
+                        mesSendString += name + ':';
+                    }
+
                     if (force_name2 && j === mesSend.length - 1 && tokens_already_generated === 0) {
                         if (!mesSendString.endsWith('\n')) {
                             mesSendString += '\n';
