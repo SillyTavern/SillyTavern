@@ -126,6 +126,7 @@ export {
     scrollChatToBottom,
     getTokenCount,
     isStreamingEnabled,
+    getThumbnailUrl,
     chat,
     this_chid,
     settings,
@@ -628,7 +629,7 @@ function printCharacters() {
     characters.forEach(function (item, i, arr) {
         let this_avatar = default_avatar;
         if (item.avatar != "none") {
-            this_avatar = `/thumbnail?type=avatar&file=${encodeURIComponent(item.avatar)}&${Date.now()}`;
+            this_avatar = getThumbnailUrl('avatar', item.avatar);
         } //RossAscends: changed 'prepend' to 'append' to make alphabetical sorting display correctly.
         $("#rm_print_characters_block").append(
 
@@ -688,7 +689,7 @@ async function getBackgrounds() {
         //background = getData;
         //console.log(getData.length);
         for (const bg of getData) {
-            const thumbPath = `/thumbnail?type=bg&file=${encodeURIComponent(bg)}`;
+            const thumbPath = getThumbnailUrl('bg', bg);
             $("#bg_menu_content").append(
                 `<div class="bg_example" bgfile="${bg}" class="bg_example_img" title="${bg}" style="background-image: url('${thumbPath}');">
                 <div bgfile="${bg}" class="bg_example_cross fa-solid fa-circle-xmark"></div>
@@ -902,7 +903,6 @@ function appendImageToMessage(mes, messageElement) {
 }
 
 function addOneMessage(mes, type = "normal", insertAfter = null) {
-
     var messageText = mes["mes"];
     var characterName = name1;
     var avatarImg = "User Avatars/" + user_avatar;
@@ -915,7 +915,7 @@ function addOneMessage(mes, type = "normal", insertAfter = null) {
             avatarImg = system_avatar;
         } else {
             if (characters[this_chid].avatar != "none") {
-                avatarImg = `/thumbnail?type=avatar&file=${encodeURIComponent(characters[this_chid].avatar)}`;
+                avatarImg = getThumbnailUrl('avatar', characters[this_chid].avatar);
                 if (is_mes_reload_avatar !== false) {
                     avatarImg += "&" + is_mes_reload_avatar;
                 }
@@ -2192,7 +2192,7 @@ function saveReply(type, getMessage, this_mes_is_name) {
             console.log('entering chat update for groups');
             let avatarImg = 'img/ai4.png';
             if (characters[this_chid].avatar != 'none') {
-                avatarImg = `/thumbnail?type=avatar&file=${encodeURIComponent(characters[this_chid].avatar)}&${Date.now()}`;
+                avatarImg = getThumbnailUrl('avatar', characters[this_chid].avatar);
             }
             chat[chat.length - 1]['is_name'] = true;
             chat[chat.length - 1]['force_avatar'] = avatarImg;
@@ -2319,7 +2319,21 @@ function read_avatar_load(input) {
         };
 
         reader.readAsDataURL(input.files[0]);
+
+        if (this_chid) {
+            fetch(getThumbnailUrl('avatar', characters[this_chid].avatar), {
+                method: 'GET',
+                headers: {
+                    'pragma': 'no-cache',
+                    'cache-control': 'no-cache',
+                }
+            }).then(() => console.log('Avatar refreshed'));
+        }
     }
+}
+
+function getThumbnailUrl(type, file) {
+    return `/thumbnail?type=${type}&file=${encodeURIComponent(file)}`;
 }
 
 async function getChat() {
@@ -3058,9 +3072,9 @@ function select_selected_character(chid) {
     //$("#avatar_div").css("display", "none");
     var this_avatar = default_avatar;
     if (characters[chid].avatar != "none") {
-        this_avatar = "/thumbnail?type=avatar&file=" + encodeURIComponent(characters[chid].avatar);
+        this_avatar = getThumbnailUrl('avatar', characters[chid].avatar);
     }
-    $("#avatar_load_preview").attr("src", this_avatar + "&" + Date.now());
+    $("#avatar_load_preview").attr("src", this_avatar);
     $("#name_div").css("display", "none");
 
     $("#form_create").attr("actiontype", "editcharacter");
@@ -3234,7 +3248,7 @@ function read_bg_load(input) {
                         "url(" + e.target.result + ")"
                     );
                     $("#form_bg_download").after(
-                        `<div class="bg_example" bgfile="${html}" style="background-image: url('/thumbnail?type=bg&file=${encodeURIComponent(html)}');">
+                        `<div class="bg_example" bgfile="${html}" style="background-image: url('${getThumbnailUrl('bg', html)}');">
                             <div class="bg_example_cross fa-solid fa-circle-xmark"></div>
                         </div>`
                     );

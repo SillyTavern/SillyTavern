@@ -5,6 +5,7 @@ import {
     delay,
 } from './utils.js';
 import { humanizedDateTime } from "./RossAscends-mods.js";
+import { sortCharactersList } from './power-user.js';
 
 import {
     chat,
@@ -39,6 +40,7 @@ import {
     chat_metadata,
     updateChatMetadata,
     isStreamingEnabled,
+    getThumbnailUrl,
 } from "../script.js";
 
 export {
@@ -138,7 +140,7 @@ async function getGroupChat(id) {
                         : default_ch_mes;
                     mes["force_avatar"] =
                         character.avatar != "none"
-                            ? `/thumbnail?type=avatar&file=${encodeURIComponent(character.avatar)}&${Date.now()}`
+                            ? getThumbnailUrl('avatar', character.avatar)
                             : default_avatar;
                     chat.push(mes);
                     addOneMessage(mes);
@@ -218,7 +220,7 @@ function getGroupAvatar(group) {
         for (const member of group.members) {
             const charIndex = characters.findIndex((x) => x.name === member);
             if (charIndex !== -1 && characters[charIndex].avatar !== "none") {
-                const avatar = `/thumbnail?type=avatar&file=${encodeURIComponent(characters[charIndex].avatar)}&${Date.now()}`;
+                const avatar = getThumbnailUrl('avatar', characters[charIndex].avatar);
                 memberAvatars.push(avatar);
             }
             if (memberAvatars.length === 4) {
@@ -321,6 +323,11 @@ async function generateGroupWrapper(by_auto_mode, type = null) {
 
         if (type === "swipe") {
             activatedMembers = activateSwipe(group.members);
+
+            if (activatedMembers.length === 0) {
+                callPopup('<h3>Deleted group member swiped. To get a reply, add them back to the group.</h3>', 'text');
+                throw new Error('Deleted group member swiped');
+            }
         }
         else if (activationStrategy === group_activation_strategy.NATURAL) {
             activatedMembers = activateNaturalOrder(group.members, activationText, lastMessage, group.allow_self_responses, isUserInput);
@@ -537,21 +544,26 @@ async function groupChatAutoModeWorker() {
 }
 
 async function memberClickHandler(event) {
+    // Handled by different function
+    if (!!$(this).closest("#rm_group_members").length) {
+        return;
+    }
+
     event.stopPropagation();
-    const id = $(this).data("id");
-    const isDelete = !!$(this).closest("#rm_group_members").length;
-    const template = $(this).clone();
+    await modifyGroupMember($(this).closest('.group_member'), false);
+}
+
+async function modifyGroupMember(groupMember, isDelete) { 
+    const id = groupMember.data("id");
+
+    const template = groupMember.clone();
     let _thisGroup = groups.find((x) => x.id == selected_group);
     template.data("id", id);
     template.click(memberClickHandler);
 
     if (isDelete) {
-        template.find(".plus").show();
-        template.find(".minus").hide();
         $("#rm_group_add_members").prepend(template);
     } else {
-        template.find(".plus").hide();
-        template.find(".minus").show();
         $("#rm_group_members").prepend(template);
     }
 
@@ -569,7 +581,7 @@ async function memberClickHandler(event) {
         updateGroupAvatar(_thisGroup);
     }
 
-    $(this).remove();
+    groupMember.remove();
     const groupHasMembers = !!$("#rm_group_members").children().length;
     $("#rm_group_submit").prop("disabled", !groupHasMembers);
 }
@@ -608,12 +620,13 @@ function select_group_chats(chat_id) {
     for (let character of characters) {
         const avatar =
             character.avatar != "none"
-                ? `/thumbnail?type=avatar&file=${encodeURIComponent(character.avatar)}&${Date.now()}`
+                ? getThumbnailUrl('avatar', character.avatar)
                 : default_avatar;
         const template = $("#group_member_template .group_member").clone();
         template.data("id", character.name);
         template.find(".avatar img").attr("src", avatar);
         template.find(".ch_name").text(character.name);
+        template.attr("chid", characters.indexOf(character));
         template.click(memberClickHandler);
 
         if (
@@ -621,16 +634,14 @@ function select_group_chats(chat_id) {
             Array.isArray(group.members) &&
             group.members.includes(character.name)
         ) {
-            template.find(".plus").hide();
-            template.find(".minus").show();
             template.css({ 'order': group.members.indexOf(character.name) });
             $("#rm_group_members").append(template);
         } else {
-            template.find(".plus").show();
-            template.find(".minus").hide();
             $("#rm_group_add_members").append(template);
         }
     }
+
+    sortCharactersList("#rm_group_add_members .group_member");
 
     const groupHasMembers = !!$("#rm_group_members").children().length;
     $("#rm_group_submit").prop("disabled", !groupHasMembers);
@@ -693,6 +704,15 @@ $(document).ready(() => {
             }
 
             select_group_chats(id);
+        }
+    });
+
+    $(document).on("click", ".group_member .right_menu_button", async function (event) {
+        const action = $(this).data('action');
+
+        if (action == 'remove') {
+            event.stopPropagation();
+            await modifyGroupMember($(this).closest('.group_member'), true);
         }
     });
 

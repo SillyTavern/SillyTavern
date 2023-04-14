@@ -2334,9 +2334,10 @@ h5 {
 }
 
 .group_member_icon {
-    width: 25px;
-    height: 25px;
     margin: 0 10px;
+    display: flex;
+    column-gap: 10px;
+    align-items: center;
 }
 
 .group_member {
@@ -2361,10 +2362,27 @@ h5 {
     background-color: var(--white30a);
 }
 
-#group_member_template {
-    display: none !important;
+#rm_group_members .group_member {
+    cursor: initial;
 }
 
+#rm_group_members .group_member:hover {
+    background-color: initial;
+}
+
+/* Rules for icon display */
+#rm_group_members .group_member:first-child .fa-chevron-down,
+#rm_group_members .group_member:last-child .fa-chevron-up,
+#rm_group_add_members .right_menu_button,
+#rm_group_members .fa-plus {
+    display: none;
+}
+
+#rm_group_members .right_menu_button {
+    padding: 0px;
+}
+
+#group_member_template,
 #group_list_template {
     display: none !important;
 }
@@ -2422,6 +2440,10 @@ h5 {
     content: "";
     /* ascii code for the ellipsis character */
     width: 0px;
+}
+
+.group_member .avatar {
+    flex-shrink: 0;
 }
 
 @keyframes ellipsis {

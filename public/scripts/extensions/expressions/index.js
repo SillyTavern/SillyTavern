@@ -69,7 +69,9 @@ async function moduleWorker() {
 
     // check if last message changed
     const currentLastMessage = getLastCharacterMessage();
-    if (lastCharacter === context.characterId && lastMessage === currentLastMessage.mes && $('img.expression').attr('src')) {
+    if ((lastCharacter === context.characterId || lastCharacter === context.groupId)
+        && lastMessage === currentLastMessage.mes
+        && $('img.expression').attr('src')) {
         return;
     }
 
@@ -197,6 +199,12 @@ async function setExpression(character, expression, force) {
     const filename = `${expression}.png`;
     const debugImageStatus = document.querySelector(`#image_list div[id="${filename}"] span`);
     const img = $('img.expression');
+
+    if (!debugImageStatus && !force) {
+        validateImages();
+        setTimeout(() => setExpression(character, expression, true), 500);
+        return;
+    }
 
     if (force || (debugImageStatus && !debugImageStatus.classList.contains('failure'))) {
         //console.log('setting expression from character images folder');

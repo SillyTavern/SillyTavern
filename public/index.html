@@ -1332,8 +1332,8 @@
                                     </div>
                                     <div id="export_button" class="menu_button fa-solid fa-file-export " title="Export and Download"></div>
                                     <!-- <div id="create_button" class="menu_button" type="submit" title="Create Character">✅</div> -->
-                                    <label for="create_button" id="create_button_label" class="menu_button" title="Create Character">
-                                        <input type="submit" id="create_button" name="create_button" class="fa-solid fa-user-check ">
+                                    <label for="create_button" id="create_button_label" class="menu_button fa-solid fa-user-check" title="Create Character">
+                                        <input type="submit" id="create_button" name="create_button">
                                     </label>
                                     <!-- <input id="create_button" class="menu_button" title="Create Character" type="submit" value="✅"> -->
                                     <div id="delete_button" class="menu_button fa-solid fa-trash-can " title="Delete Character"></div>
@@ -1427,8 +1427,10 @@
                             </div>
                             <div class="ch_name"></div>
                             <div class="group_member_icon">
-                                <div alt="Remove" class="fa-solid fa-minus "></div>
-                                <div alt="Add" class="fa-solid fa-plus "></div>
+                                <div title="Move up" data-action="up" class="right_menu_button fa-solid fa-lg fa-chevron-up"></div>
+                                <div title="Move down" data-action="down" class="right_menu_button fa-solid fa-lg fa-chevron-down"></div>
+                                <div title="Remove from group" data-action="remove" class="right_menu_button fa-solid fa-lg fa-xmark"></div>
+                                <div class="fa-solid fa-lg fa-plus"></div>
                             </div>
                         </div>
                     </div>
@@ -1439,7 +1441,7 @@
                                 <img src="">
                             </div>
                             <div class="group_icon">
-                                <div class="fa-solid fa-user-grouup "></div>
+                                <div class="fa-solid fa-user-group"></div>
                             </div>
                             <div class="ch_name"></div>
                         </div>

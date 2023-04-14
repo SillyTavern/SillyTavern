@@ -309,7 +309,7 @@ function loadPowerUserSettings(settings, data) {
     sortCharactersList();
 }
 
-function sortCharactersList() {
+function sortCharactersList(selector='.character_select') {
     const sortFunc = (a, b) => power_user.sort_order == 'asc' ? compareFunc(a, b) : compareFunc(b, a);
     const compareFunc = (first, second) => typeof first[power_user.sort_field] == "string"
         ? first[power_user.sort_field].localeCompare(second[power_user.sort_field])
@@ -322,7 +322,7 @@ function sortCharactersList() {
     let orderedList = characters.slice().sort(sortFunc);
 
     for (let i = 0; i < characters.length; i++) {
-        $(`.character_select[chid="${i}"]`).css({ 'order': orderedList.indexOf(characters[i]) });
+        $(`${selector}[chid="${i}"]`).css({ 'order': orderedList.indexOf(characters[i]) });
     }
 }
 
