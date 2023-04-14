@@ -7,6 +7,8 @@ import {
     system_message_types,
     this_chid,
     openCharacterChat,
+    chat_metadata,
+    callPopup,
 } from "../script.js";
 import { selected_group } from "./group-chats.js";
 
@@ -36,27 +38,40 @@ async function getExistingChatNames() {
     }
 }
 
-async function getBookmarkName(currentChat) {
+async function getBookmarkName() {
     const chatNames = await getExistingChatNames();
-    let mainChat = getMainChatName(currentChat);
-    let newChat = Date.now();
-    let friendlyName = '';
+    const popupText = `<h3>Enter the bookmark name:<h3>
+    <small>Using existing name will overwrite your bookmark chat.
+    <br>Leave empty to auto-generate.</small>`;
+    let name = await callPopup(popupText, 'input');
 
-    for (let i = 0; i < 1000; i++) {
-        friendlyName = `${bookmarkNameToken}${i}`;
-        newChat = `${mainChat} ${friendlyName}`;
-        if (!chatNames.includes(newChat)) {
-            break;
+    if (name === false) {
+        return null;
+    }
+    else if (name === '') {
+        for (let i = 0; i < 1000; i++) {
+            name = bookmarkNameToken + i;
+            if (!chatNames.includes(name)) {
+                break;
+            }
         }
     }
-    return { newChat, friendlyName };
+
+    return name;
 }
 
-function getMainChatName(currentChat) {
-    if (currentChat.includes(bookmarkNameToken)) {
-        currentChat = currentChat.substring(0, currentChat.lastIndexOf(bookmarkNameToken)).trim();
+function getMainChatName() {
+    if (chat_metadata) {
+        if (chat_metadata['main_chat']) {
+            return chat_metadata['main_chat'];
+        }
+        else if (characters[this_chid].chat && characters[this_chid].chat.includes(bookmarkNameToken)) {
+            const tokenIndex = characters[this_chid].chat.lastIndexOf(bookmarkNameToken);
+            chat_metadata['main_chat'] = characters[this_chid].chat.substring(0, tokenIndex).trim();
+            return chat_metadata['main_chat'];
+        }
     }
-    return currentChat;
+    return null;
 }
 
 function showBookmarksButtons() {
@@ -67,7 +82,7 @@ function showBookmarksButtons() {
             $("#option_new_bookmark").hide();
         }
         // In main chat
-        else if (!characters[this_chid].chat.includes(bookmarkNameToken)) {
+        else if (!chat_metadata['main_chat']) {
             $("#option_back_to_main").hide();
             $("#option_new_bookmark").show();
 
@@ -91,10 +106,15 @@ $(document).ready(function () {
             throw new Error();
         }
 
-        let { newChat, friendlyName } = await getBookmarkName(characters[this_chid].chat);
+        let name = await getBookmarkName(characters[this_chid].chat);
 
-        saveChat(newChat);
-        let mainMessage = stringFormat(system_messages[system_message_types.BOOKMARK_CREATED].mes, newChat, friendlyName);
+        if (!name) {
+            return;
+        }
+
+        const newMetadata = { main_chat: characters[this_chid].chat };
+        saveChat(name, newMetadata);
+        let mainMessage = stringFormat(system_messages[system_message_types.BOOKMARK_CREATED].mes, name, name);
         sendSystemMessage(system_message_types.BOOKMARK_CREATED, mainMessage);
         saveChat();
     });

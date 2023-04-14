@@ -367,6 +367,10 @@ code {
     column-gap: 10px;
 }
 
+.options-content a div:first-child {
+    min-width: 20px;
+}
+
 .options-content img {
     width: calc(var(--mainFontSize) + .5rem);
     margin-right: 5px;

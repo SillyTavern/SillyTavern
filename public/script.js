@@ -2254,7 +2254,8 @@ function resultCheckStatusNovel() {
     $("#api_button_novel").css("display", "inline-block");
 }
 
-async function saveChat(chat_name) {
+async function saveChat(chat_name, withMetadata) {
+    const metadata = { ...chat_metadata, ...(withMetadata || {}) };
     let file_name = chat_name ?? characters[this_chid].chat;
     chat.forEach(function (item, i) {
         if (item["is_group"]) {
@@ -2275,7 +2276,7 @@ async function saveChat(chat_name) {
             user_name: default_user_name,
             character_name: name2,
             create_date: chat_create_date,
-            chat_metadata: chat_metadata,
+            chat_metadata: metadata,
         },
         ...chat,
     ];
