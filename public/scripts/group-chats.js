@@ -543,23 +543,12 @@ async function groupChatAutoModeWorker() {
     await generateGroupWrapper(true);
 }
 
-async function memberClickHandler(event) {
-    // Handled by different function
-    if (!!$(this).closest("#rm_group_members").length) {
-        return;
-    }
-
-    event.stopPropagation();
-    await modifyGroupMember($(this).closest('.group_member'), false);
-}
-
-async function modifyGroupMember(groupMember, isDelete) { 
+async function modifyGroupMember(chat_id, groupMember, isDelete) { 
     const id = groupMember.data("id");
 
     const template = groupMember.clone();
-    let _thisGroup = groups.find((x) => x.id == selected_group);
+    let _thisGroup = groups.find((x) => x.id == chat_id);
     template.data("id", id);
-    template.click(memberClickHandler);
 
     if (isDelete) {
         $("#rm_group_add_members").prepend(template);
@@ -580,13 +569,54 @@ async function modifyGroupMember(groupMember, isDelete) {
         await editGroup(selected_group);
         updateGroupAvatar(_thisGroup);
     }
+    else {
+        template.css({ 'order': 'unset' });
+    }
 
     groupMember.remove();
     const groupHasMembers = !!$("#rm_group_members").children().length;
     $("#rm_group_submit").prop("disabled", !groupHasMembers);
 }
 
-function select_group_chats(chat_id) {
+async function reorderGroupMember(chat_id, groupMember, direction) {
+    const id = groupMember.data("id");
+    const group = groups.find((x) => x.id == chat_id);
+
+    // Existing groups need to modify members list
+    if (group && group.members.length > 1) {
+        const indexOf = group.members.indexOf(id);
+        if (direction == 'down') {
+            const next = group.members[indexOf + 1];
+            if (next) {
+                group.members[indexOf + 1] = group.members[indexOf];
+                group.members[indexOf] = next;
+            }
+        }
+        if (direction == 'up') {
+            const prev = group.members[indexOf - 1];
+            if (prev) {
+                group.members[indexOf - 1] = group.members[indexOf];
+                group.members[indexOf] = prev;
+            }
+        }
+        
+        await editGroup(chat_id);
+        updateGroupAvatar(group);
+        // stupid but lifts the manual reordering
+        select_group_chats(chat_id, true);
+    }
+    // New groups just can't be DOM-ordered
+    else {
+        if (direction == 'down') {
+            groupMember.insertAfter(groupMember.next());
+        }
+        if (direction == 'up') {
+            groupMember.insertBefore(groupMember.prev());
+        }
+    }
+}
+
+function select_group_chats(chat_id, skipAnimation) {
     const group = chat_id && groups.find((x) => x.id == chat_id);
     const groupName = group?.name ?? "";
 
@@ -612,7 +642,9 @@ function select_group_chats(chat_id) {
     });
     $(`input[name="rm_group_activation_strategy"][value="${Number(group?.activation_strategy ?? group_activation_strategy.NATURAL)}"]`).prop('checked', true);
 
-    selectRightMenuWithAnimation('rm_group_chats_block');
+    if (!skipAnimation) {
+        selectRightMenuWithAnimation('rm_group_chats_block');
+    }
 
     // render characters list
     $("#rm_group_add_members").empty();
@@ -627,7 +659,6 @@ function select_group_chats(chat_id) {
         template.find(".avatar img").attr("src", avatar);
         template.find(".ch_name").text(character.name);
         template.attr("chid", characters.indexOf(character));
-        template.click(memberClickHandler);
 
         if (
             group &&
@@ -685,6 +716,27 @@ function select_group_chats(chat_id) {
     else {
         $("#rm_group_automode_label").hide();
     }
+
+    $(document).off("click", ".group_member .right_menu_button");
+    $(document).on("click", ".group_member .right_menu_button", async function (event) {
+        event.stopPropagation();
+        const action = $(this).data('action');
+        const member = $(this).closest('.group_member');
+
+        if (action == 'remove') {
+            await modifyGroupMember(chat_id, member, true);
+        }
+        
+        if (action == 'add') {
+            await modifyGroupMember(chat_id, member, false);
+        }
+        
+        if (action == 'up' || action == 'down') {
+            await reorderGroupMember(chat_id, member, action);
+        }
+
+        sortCharactersList("#rm_group_add_members .group_member");
+    });
 }
 
 $(document).ready(() => {
@@ -704,15 +756,6 @@ $(document).ready(() => {
             }
 
             select_group_chats(id);
-        }
-    });
-
-    $(document).on("click", ".group_member .right_menu_button", async function (event) {
-        const action = $(this).data('action');
-
-        if (action == 'remove') {
-            event.stopPropagation();
-            await modifyGroupMember($(this).closest('.group_member'), true);
         }
     });
 
