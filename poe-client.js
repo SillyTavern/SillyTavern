@@ -35,6 +35,155 @@ const logger = console;
 
 const user_agent = "Mozilla/5.0 (X11; Linux x86_64; rv:102.0) Gecko/20100101 Firefox/102.0";
 
+
+function queryScrambler() {
+        function a(e, t) {
+            var r = (65535 & e) + (65535 & t);
+            return (e >> 16) + (t >> 16) + (r >> 16) << 16 | 65535 & r
+        }
+        function s(e, t, r, n, i, s) {
+            var o;
+            return a((o = a(a(t, e), a(n, s))) << i | o >>> 32 - i, r)
+        }
+        function o(e, t, r, n, i, a, o) {
+            return s(t & r | ~t & n, e, t, i, a, o)
+        }
+        function l(e, t, r, n, i, a, o) {
+            return s(t & n | r & ~n, e, t, i, a, o)
+        }
+        function u(e, t, r, n, i, a, o) {
+            return s(t ^ r ^ n, e, t, i, a, o)
+        }
+        function c(e, t, r, n, i, a, o) {
+            return s(r ^ (t | ~n), e, t, i, a, o)
+        }
+        function d(e, t) {
+            e[t >> 5] |= 128 << t % 32,
+            e[(t + 64 >>> 9 << 4) + 14] = t;
+            var r, n, i, s, d, f = 1732584193, h = -271733879, p = -1732584194, _ = 271733878;
+            for (r = 0; r < e.length; r += 16)
+                n = f,
+                i = h,
+                s = p,
+                d = _,
+                f = o(f, h, p, _, e[r], 7, -680876936),
+                _ = o(_, f, h, p, e[r + 1], 12, -389564586),
+                p = o(p, _, f, h, e[r + 2], 17, 606105819),
+                h = o(h, p, _, f, e[r + 3], 22, -1044525330),
+                f = o(f, h, p, _, e[r + 4], 7, -176418897),
+                _ = o(_, f, h, p, e[r + 5], 12, 1200080426),
+                p = o(p, _, f, h, e[r + 6], 17, -1473231341),
+                h = o(h, p, _, f, e[r + 7], 22, -45705983),
+                f = o(f, h, p, _, e[r + 8], 7, 1770035416),
+                _ = o(_, f, h, p, e[r + 9], 12, -1958414417),
+                p = o(p, _, f, h, e[r + 10], 17, -42063),
+                h = o(h, p, _, f, e[r + 11], 22, -1990404162),
+                f = o(f, h, p, _, e[r + 12], 7, 1804603682),
+                _ = o(_, f, h, p, e[r + 13], 12, -40341101),
+                p = o(p, _, f, h, e[r + 14], 17, -1502002290),
+                h = o(h, p, _, f, e[r + 15], 22, 1236535329),
+                f = l(f, h, p, _, e[r + 1], 5, -165796510),
+                _ = l(_, f, h, p, e[r + 6], 9, -1069501632),
+                p = l(p, _, f, h, e[r + 11], 14, 643717713),
+                h = l(h, p, _, f, e[r], 20, -373897302),
+                f = l(f, h, p, _, e[r + 5], 5, -701558691),
+                _ = l(_, f, h, p, e[r + 10], 9, 38016083),
+                p = l(p, _, f, h, e[r + 15], 14, -660478335),
+                h = l(h, p, _, f, e[r + 4], 20, -405537848),
+                f = l(f, h, p, _, e[r + 9], 5, 568446438),
+                _ = l(_, f, h, p, e[r + 14], 9, -1019803690),
+                p = l(p, _, f, h, e[r + 3], 14, -187363961),
+                h = l(h, p, _, f, e[r + 8], 20, 1163531501),
+                f = l(f, h, p, _, e[r + 13], 5, -1444681467),
+                _ = l(_, f, h, p, e[r + 2], 9, -51403784),
+                p = l(p, _, f, h, e[r + 7], 14, 1735328473),
+                h = l(h, p, _, f, e[r + 12], 20, -1926607734),
+                f = u(f, h, p, _, e[r + 5], 4, -378558),
+                _ = u(_, f, h, p, e[r + 8], 11, -2022574463),
+                p = u(p, _, f, h, e[r + 11], 16, 1839030562),
+                h = u(h, p, _, f, e[r + 14], 23, -35309556),
+                f = u(f, h, p, _, e[r + 1], 4, -1530992060),
+                _ = u(_, f, h, p, e[r + 4], 11, 1272893353),
+                p = u(p, _, f, h, e[r + 7], 16, -155497632),
+                h = u(h, p, _, f, e[r + 10], 23, -1094730640),
+                f = u(f, h, p, _, e[r + 13], 4, 681279174),
+                _ = u(_, f, h, p, e[r], 11, -358537222),
+                p = u(p, _, f, h, e[r + 3], 16, -722521979),
+                h = u(h, p, _, f, e[r + 6], 23, 76029189),
+                f = u(f, h, p, _, e[r + 9], 4, -640364487),
+                _ = u(_, f, h, p, e[r + 12], 11, -421815835),
+                p = u(p, _, f, h, e[r + 15], 16, 530742520),
+                h = u(h, p, _, f, e[r + 2], 23, -995338651),
+                f = c(f, h, p, _, e[r], 6, -198630844),
+                _ = c(_, f, h, p, e[r + 7], 10, 1126891415),
+                p = c(p, _, f, h, e[r + 14], 15, -1416354905),
+                h = c(h, p, _, f, e[r + 5], 21, -57434055),
+                f = c(f, h, p, _, e[r + 12], 6, 1700485571),
+                _ = c(_, f, h, p, e[r + 3], 10, -1894986606),
+                p = c(p, _, f, h, e[r + 10], 15, -1051523),
+                h = c(h, p, _, f, e[r + 1], 21, -2054922799),
+                f = c(f, h, p, _, e[r + 8], 6, 1873313359),
+                _ = c(_, f, h, p, e[r + 15], 10, -30611744),
+                p = c(p, _, f, h, e[r + 6], 15, -1560198380),
+                h = c(h, p, _, f, e[r + 13], 21, 1309151649),
+                f = c(f, h, p, _, e[r + 4], 6, -145523070),
+                _ = c(_, f, h, p, e[r + 11], 10, -1120210379),
+                p = c(p, _, f, h, e[r + 2], 15, 718787259),
+                h = c(h, p, _, f, e[r + 9], 21, -343485551),
+                f = a(f, n),
+                h = a(h, i),
+                p = a(p, s),
+                _ = a(_, d);
+            return [f, h, p, _]
+        }
+        function f(e) {
+            var t, r = "", n = 32 * e.length;
+            for (t = 0; t < n; t += 8)
+                r += String.fromCharCode(e[t >> 5] >>> t % 32 & 255);
+            return r
+        }
+        function h(e) {
+            var t, r = [];
+            for (t = 0,
+            r[(e.length >> 2) - 1] = void 0; t < r.length; t += 1)
+                r[t] = 0;
+            var n = 8 * e.length;
+            for (t = 0; t < n; t += 8)
+                r[t >> 5] |= (255 & e.charCodeAt(t / 8)) << t % 32;
+            return r
+        }
+        function p(e) {
+            var t, r, n = "0123456789abcdef", i = "";
+            for (r = 0; r < e.length; r += 1)
+                i += n.charAt((t = e.charCodeAt(r)) >>> 4 & 15) + n.charAt(15 & t);
+            return i
+        }
+        function _(e) {
+            return unescape(encodeURIComponent(e))
+        }
+        function v(e) {
+            var t;
+            return f(d(h(t = _(e)), 8 * t.length))
+        }
+        function g(e, t) {
+            return function(e, t) {
+                var r, n, i = h(e), a = [], s = [];
+                for (a[15] = s[15] = void 0,
+                i.length > 16 && (i = d(i, 8 * e.length)),
+                r = 0; r < 16; r += 1)
+                    a[r] = 909522486 ^ i[r],
+                    s[r] = 1549556828 ^ i[r];
+                return n = d(a.concat(h(t)), 512 + 8 * t.length),
+                f(d(s.concat(n), 640))
+            }(_(e), _(t))
+        }
+    function m(e, t, r) {
+        return t ? r ? g(t, e) : p(g(t, e)) : r ? v(e) : p(v(e))
+    }
+
+    return m;
+}
+
 function load_queries() {
     const files = fs.readdirSync(queries_path);
     for (const filename of files) {
@@ -48,9 +197,9 @@ function load_queries() {
     }
 }
 
-function generate_payload(query_name, variables) {
+function generate_payload(query, variables) {
     return {
-        query: queries[query_name],
+        query: queries[query],
         variables: variables,
     }
 }
@@ -198,9 +347,13 @@ class Client {
         return `wss://${this.ws_domain}.tch.${channel.baseHost}/up/${channel.boxName}/updates${query}`;
     }
 
-    async send_query(queryName, variables) {
+    async send_query(queryName, variables, queryDisplayName) {
         for (let i = 0; i < 20; i++) {
             const payload = generate_payload(queryName, variables);
+            if (queryDisplayName) payload['queryName'] = queryDisplayName;
+            const scramblePayload = JSON.stringify(payload);
+            const _headers = this.gql_headers;
+            _headers['poe-tag-id'] = queryScrambler()(scramblePayload + this.formkey + "WpuLMiXEKKE98j56k");
             const r = await request_with_retries(() => this.session.post(this.gql_url, payload, { headers: this.gql_headers }));
             if (!r.data.data) {
                 logger.warn(`${queryName} returned an error: ${data.errors[0].message} | Retrying (${i + 1}/20)`);
@@ -225,9 +378,14 @@ class Client {
                 {
                     "subscriptionName": "viewerStateUpdated",
                     "query": queries["ViewerStateUpdatedSubscription"]
-                }
+                },
+                {
+                    "subscriptionName": "viewerMessageLimitUpdated",
+                    "query": queries["ViewerMessageLimitUpdatedSubscription"]
+                },
             ]
-        });
+        },
+        'subscriptionsMutation');
     }
 
     ws_run_thread() {
