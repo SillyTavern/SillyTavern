@@ -451,13 +451,13 @@ code {
 
 .ui-settings {
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     /* align-items: flex-end; */
-    column-gap: 10px;
+    gap: 10px;
 }
 
 .ui-settings>div {
-    flex: 1;
+    /*     flex: 1; */
 }
 
 #avatars-style .range-block-range,
@@ -1245,7 +1245,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     padding: 10px;
     width: min-content;
     cursor: pointer;
-    margin: 10px 0;
+    margin: 5px 0;
     transition: 0.3s;
 }
 
@@ -1680,10 +1680,9 @@ input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
 }
 
 #user_avatar_block {
-    display: grid;
+    display: flex;
     grid-gap: 10px;
-    grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
-    grid-template-rows: min-content;
+    flex-wrap: wrap;
 }
 
 #user_avatar_block .avatar {
@@ -2932,6 +2931,25 @@ label[for="extensions_autoconnect"] {
     border: 1px solid var(--grey30a);
     box-shadow: 0 0 20px black;
     min-width: 450px;
+    width: var(--sheldWidth);
+    overflow-y: scroll;
+    max-height: calc(100svh - 70px);
+    display: none;
+    position: absolute;
+    left: 0;
+    right: 0;
+    /* width: min-content; */
+    max-width: var(--sheldWidth);
+    margin: 35px auto 0 auto;
+    backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
+    -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
+    /*     background-color: var(--SmartThemeBlurTintColor);
+    color: white;
+    border-radius: 20px;
+    padding: 10px;
+    border: 1px solid var(--grey30a);
+    box-shadow: 0 0 20px black;
+    min-width: 450px;
     overflow-y: scroll;
     max-height: calc(100svh - 70px);
     display: none;
@@ -2942,7 +2960,7 @@ label[for="extensions_autoconnect"] {
     max-width: var(--sheldWidth);
     margin: 35px auto 0 auto;
     backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
-    -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
+    -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength))); */
 }
 
 .fillRight,
@@ -2982,7 +3000,7 @@ toolcool-color-picker {
 
 .flex-container {
     display: flex;
-    row-gap: 10px;
+    gap: 10px;
     flex-wrap: wrap;
 }
 
@@ -3031,6 +3049,21 @@ toolcool-color-picker {
     text-align: start;
     justify-content: left;
     margin-left: unset;
+}
+
+.justifyCenter {
+    justify-content: center;
+    margin: 0 auto;
+}
+
+.spaceEvenly {
+    justify-content: space-evenly;
+}
+
+.widthNatural {
+    width: unset !important;
+    min-width: unset !important;
+    max-width: unset !important;
 }
 
 .widthFreeExpand {
