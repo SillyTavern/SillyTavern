@@ -114,14 +114,14 @@ async function generatePoe(type, finalPrompt) {
     if (poe_settings.auto_jailbreak && !auto_jailbroken) {
         console.log('Could not jailbreak the bot');
     }
-    
+
     const isImpersonate = type == 'impersonate';
 
     if (poe_settings.character_nudge && !isImpersonate) {
         let characterNudge = '\n' + substituteParams(poe_settings.character_nudge_message);
         finalPrompt += characterNudge;
     }
-    
+
     if (poe_settings.impersonation_prompt && isImpersonate) {
         let impersonationNudge = '\n' + substituteParams(poe_settings.impersonation_prompt);
         finalPrompt += impersonationNudge;
@@ -308,7 +308,31 @@ function onStreamingInput() {
 }
 
 function onImpersonationPromptInput() {
-    poe_settings.impersonation_prompt = !!$(this).prop('checked');
+    poe_settings.impersonation_prompt = $(this).val();
+    saveSettingsDebounced();
+}
+
+function onImpersonationPromptRestoreClick() {
+    poe_settings.impersonation_prompt = DEFAULT_IMPERSONATION_PROMPT;
+    $('#poe_impersonation_prompt').val(poe_settings.impersonation_prompt);
+    saveSettingsDebounced();
+}
+
+function onCharacterNudgeMessageRestoreClick() {
+    poe_settings.character_nudge_message = DEFAULT_CHARACTER_NUDGE_MESSAGE;
+    $('#poe_nudge_text').val(poe_settings.character_nudge_message);
+    saveSettingsDebounced();
+}
+
+function onResponseRestoreClick() {
+    poe_settings.jailbreak_response = DEFAULT_JAILBREAK_RESPONSE;
+    $('#poe_activation_response').val(poe_settings.jailbreak_response);
+    saveSettingsDebounced();
+}
+
+function onMessageRestoreClick() {
+    poe_settings.jailbreak_message = DEFAULT_JAILBREAK_MESSAGE;
+    $('#poe_activation_message').val(poe_settings.jailbreak_message);
     saveSettingsDebounced();
 }
 
@@ -323,4 +347,9 @@ $('document').ready(function () {
     $('#poe_character_nudge').on('input', onCharacterNudgeInput);
     $('#poe_nudge_text').on('input', onCharacterNudgeMessageInput);
     $('#poe_streaming').on('input', onStreamingInput);
+    $('#poe_impersonation_prompt').on('input', onImpersonationPromptInput);
+    $('#poe_impersonation_prompt_restore').on('click', onImpersonationPromptRestoreClick);
+    $('#poe_nudge_text_restore').on('click', onCharacterNudgeMessageRestoreClick);
+    $('#poe_activation_response_restore').on('click', onResponseRestoreClick);
+    $('#poe_activation_message_restore').on('click', onMessageRestoreClick);
 });

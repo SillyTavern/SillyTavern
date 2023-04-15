@@ -3153,7 +3153,7 @@ toolcool-color-picker {
     flex-wrap: wrap;
 }
 
-#poe_activation_message {
+.textarea_compact {
     font-size: calc(var(--mainFontSize) * 0.9);
     line-height: 1.2;
 }
