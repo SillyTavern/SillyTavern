@@ -4,7 +4,36 @@ export { MODULE_NAME };
 
 const MODULE_NAME = 'expressions';
 const UPDATE_INTERVAL = 1000;
-const DEFAULT_EXPRESSIONS = ['anger', 'fear', 'joy', 'love', 'sadness', 'surprise'];
+const DEFAULT_EXPRESSIONS = [
+    "admiration",
+    "amusement",
+    "anger",
+    "annoyance",
+    "approval",
+    "caring",
+    "confusion",
+    "curiosity",
+    "desire",
+    "disappointment",
+    "disapproval",
+    "disgust",
+    "embarrassment",
+    "excitement",
+    "fear",
+    "gratitude",
+    "grief",
+    "joy",
+    "love",
+    "nervousness",
+    "optimism",
+    "pride",
+    "realization",
+    "relief",
+    "remorse",
+    "sadness",
+    "surprise",
+    "neutral"
+];
 
 let expressionsList = null;
 let lastCharacter = undefined;
