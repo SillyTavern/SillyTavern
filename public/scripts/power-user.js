@@ -47,6 +47,8 @@ let power_user = {
     disable_personality_formatting: false,
     always_force_name2: false,
     multigen: false,
+    multigen_first_chunk: 50,
+    multigen_next_chunks: 30,
     custom_chat_separator: '',
     fast_ui_mode: true,
     avatar_style: avatar_styles.ROUND,
@@ -288,6 +290,8 @@ function loadPowerUserSettings(settings, data) {
     $("#fast_ui_mode").prop("checked", power_user.fast_ui_mode);
     $("#waifuMode").prop("checked", power_user.waifuMode);
     $("#multigen").prop("checked", power_user.multigen);
+    $("#multigen_first_chunk").val(power_user.multigen_first_chunk);
+    $("#multigen_next_chunks").val(power_user.multigen_next_chunks);
     $("#play_message_sound").prop("checked", power_user.play_message_sound);
     $("#play_sound_unfocused").prop("checked", power_user.play_sound_unfocused);
     $(`input[name="avatar_style"][value="${power_user.avatar_style}"]`).prop("checked", true);
@@ -516,6 +520,17 @@ $(document).ready(() => {
         power_user.sort_field = $(this).find(":selected").data('field');
         power_user.sort_order = $(this).find(":selected").data('order');
         sortCharactersList();
+        saveSettingsDebounced();
+    });
+
+    $("#multigen_first_chunk").on('input', function () {
+        power_user.multigen_first_chunk = Number($(this).val());
+        saveSettingsDebounced();
+    });
+
+
+    $("#multigen_next_chunks").on('input', function () {
+        power_user.multigen_next_chunks = Number($(this).val());
         saveSettingsDebounced();
     });
 

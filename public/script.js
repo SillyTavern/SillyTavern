@@ -373,7 +373,6 @@ let padding_tokens = 64; // reserved tokens to prevent prompt overflow
 var is_pygmalion = false;
 var tokens_already_generated = 0;
 var message_already_generated = "";
-const tokens_cycle_count = 30;
 var cycle_count_generation = 0;
 
 var swipes = false;
@@ -1015,7 +1014,9 @@ function substituteParams(content, _name1, _name2) {
 }
 
 function getStoppingStrings(isImpersonate) {
-    return isImpersonate ? [`\n${name2}: `] : [`\n${name1}:`];
+    const charString = [`\n${name2}: `];
+    const userString = is_pygmalion ? [`\nYou: `] : [`\n${name1}: `];
+    return isImpersonate ? charString : userString;
 }
 
 function getSlashCommand(message, type) {
@@ -1254,7 +1255,6 @@ class StreamingProcessor {
 
     constructor(type, force_name2) {
         this.result = "";
-        this.prefix = "";
         this.messageId = -1;
         this.type = type;
         this.force_name2 = force_name2;
@@ -1267,11 +1267,6 @@ class StreamingProcessor {
         if (this.messageId == -1) {
             this.messageId = this.onStartStreaming('...');
             await delay(1); // delay for message to be rendered
-        }
-
-        // for multigen
-        if (this.result.length) {
-            this.prefix = this.result;
         }
 
         for await (const text of this.generator()) {
@@ -1374,7 +1369,7 @@ async function Generate(type, automatic_trigger, force_name2) {
         var storyString = "";
         var userSendString = "";
         var finalPromt = "";
-        var postAnchorChar = "Elaborate speaker";//'Talk a lot with description what is going on around';// in asterisks
+        var postAnchorChar = "Elaborate speaker";
         var postAnchorStyle = "Writing style: very long messages";//"[Genre: roleplay chat][Tone: very long messages with descriptions]";
         var anchorTop = '';
         var anchorBottom = '';
@@ -1812,25 +1807,32 @@ async function Generate(type, automatic_trigger, force_name2) {
                 finalPromt = collapseNewlines(finalPromt);
             }
 
-            //console.log('final prompt decided');
             let this_amount_gen = parseInt(amount_gen); // how many tokens the AI will be requested to generate
             let this_settings = koboldai_settings[koboldai_setting_names[preset_settings]];
 
             if (isMultigenEnabled()) {
-                if (tokens_already_generated === 0) { // if nothing has been generated yet..
-                    if (parseInt(amount_gen) >= 50) { // if the max gen setting is > 50...(
-                        this_amount_gen = 50; // then only try to make 50 this cycle..
+                 // if nothing has been generated yet..
+                if (tokens_already_generated === 0) {
+                     // if the max gen setting is > 50...(
+                    if (parseInt(amount_gen) >= power_user.multigen_first_chunk) {
+                         // then only try to make 50 this cycle..
+                        this_amount_gen = power_user.multigen_first_chunk;
                     }
                     else {
-                        this_amount_gen = parseInt(amount_gen); // otherwise, make as much as the max amount request.
+                         // otherwise, make as much as the max amount request.
+                        this_amount_gen = parseInt(amount_gen);
                     }
                 }
-                else { // if we already recieved some generated text...
-                    if (parseInt(amount_gen) - tokens_already_generated < tokens_cycle_count) { // if the remaining tokens to be made is less than next potential cycle count
-                        this_amount_gen = parseInt(amount_gen) - tokens_already_generated; // subtract already generated amount from the desired max gen amount
+                // if we already received some generated text...
+                else {
+                    // if the remaining tokens to be made is less than next potential cycle count
+                    if (parseInt(amount_gen) - tokens_already_generated < power_user.multigen_next_chunks) { 
+                        // subtract already generated amount from the desired max gen amount
+                        this_amount_gen = parseInt(amount_gen) - tokens_already_generated; 
                     }
                     else {
-                        this_amount_gen = tokens_cycle_count; // otherwise make the standard cycle amont (frist 50, and 30 after that)
+                        // otherwise make the standard cycle amount (first 50, and 30 after that)
+                        this_amount_gen = power_user.multigen_next_chunks; 
                     }
                 }
             }
@@ -1962,6 +1964,10 @@ async function Generate(type, automatic_trigger, force_name2) {
                 hideSwipeButtons();
                 let getMessage = await streamingProcessor.generate();
 
+                if (generatedPromtCache.length === 0) {
+                    generatedPromtCache = message_already_generated;
+                }
+
                 if (isMultigenEnabled()) {
                     tokens_already_generated += this_amount_gen;    // add new gen amt to any prev gen counter..
                     message_already_generated += getMessage;
@@ -2074,7 +2080,8 @@ async function Generate(type, automatic_trigger, force_name2) {
 } //generate ends
 
 function shouldContinueMultigen(getMessage) {
-    return message_already_generated.indexOf('You:') === -1 && //if there is no 'You:' in the response msg
+    const nameString = is_pygmalion ? 'You:' : `${name1}:`;
+    return message_already_generated.indexOf(nameString) === -1 && //if there is no 'You:' in the response msg
         message_already_generated.indexOf('<|endoftext|>') === -1 && //if there is no <endoftext> stamp in the response msg
         tokens_already_generated < parseInt(amount_gen) && //if the gen'd msg is less than the max response length..
         getMessage.length > 0;     //if we actually have gen'd text at all...
@@ -3304,7 +3311,8 @@ function showSwipeButtons() {
     if (swipeId !== undefined && swipeId != 0) {
         currentMessage.children('.swipe_left').css('display', 'flex');
     }
-    if (is_send_press === false || chat[chat.length - 1].swipes.length >= swipeId) {     //only show right when generate is off, or when next right swipe would not make a generate happen
+    //only show right when generate is off, or when next right swipe would not make a generate happen
+    if (is_send_press === false || chat[chat.length - 1].swipes.length >= swipeId) {
         currentMessage.children('.swipe_right').css('display', 'flex');
         currentMessage.children('.swipe_right').css('opacity', '0.3');
     }

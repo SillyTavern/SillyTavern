@@ -968,45 +968,56 @@
                     <a href="/notes/advanced_formatting" class="notes-link" target="_blank">
                         <span class="note-link-span">?</span>
                     </a>
-                </h3>
-                <div class="flex-container">
-                    <div name="PygOverrides">
-                        <h4>AutoFormat Overrides</h4>
-                        <label class="checkbox_label" for="disable-description-formatting-checkbox">
-                            <input id="disable-description-formatting-checkbox" type="checkbox" />
-                            Disable description formatting
-                        </label>
-                        <label class="checkbox_label" for="disable-scenario-formatting-checkbox">
-                            <input id="disable-scenario-formatting-checkbox" type="checkbox" />
-                            Disable scenario formatting
-                        </label>
-                        <label class="checkbox_label" for="disable-personality-formatting-checkbox">
-                            <input id="disable-personality-formatting-checkbox" type="checkbox" />
-                            Disable personality formatting
-                        </label>
-                        <div>
-                            <h4>
-                                Custom Chat Separator
-                            </h4>
+                    </h3>
+                    <div class="flex-container">
+                        <div name="PygOverrides">
+                            <h4>AutoFormat Overrides</h4>
+                            <label class="checkbox_label" for="disable-description-formatting-checkbox">
+                                <input id="disable-description-formatting-checkbox" type="checkbox" />
+                                Disable description formatting
+                            </label>
+                            <label class="checkbox_label" for="disable-scenario-formatting-checkbox">
+                                <input id="disable-scenario-formatting-checkbox" type="checkbox" />
+                                Disable scenario formatting
+                            </label>
+                            <label class="checkbox_label" for="disable-personality-formatting-checkbox">
+                                <input id="disable-personality-formatting-checkbox" type="checkbox" />
+                                Disable personality formatting
+                            </label>
                             <div>
-                                <input id="custom_chat_separator" class="text_pole" type="text" placeholder="&lt;START&gt;" />
+                                <h4>
+                                    Custom Chat Separator
+                                </h4>
+                                <div>
+                                    <input id="custom_chat_separator" class="text_pole" type="text" placeholder="&lt;START&gt;" />
+                                </div>
+                            </div>
+                            <div id="anchors-block">
+                                <h4>
+                                    Anchors Order
+                                    <a href="/notes/9" class="notes-link" target="_blank">
+                                        <span class="note-link-span">?</span>
+                                    </a>
+                                </h4>
+                                <select id="anchor_order">
+                                    <option value="0">Character then Style</option>
+                                    <option value="1">Style then Character</option>
+                                </select>
+                                <div id="anchor_checkbox">
+                                    <label for="character_anchor"><input id="character_anchor" type="checkbox" />
+                                        Character Anchor
+                                    </label>
+                                    <label for="style_anchor"><input id="style_anchor" type="checkbox" />
+                                        Style Anchor
+                                    </label>
+                                </div>
                             </div>
                         </div>
-                    </div>
                     <div name="ContextFormatting">
                         <h4>Context Formatting</h4>
                         <label class="checkbox_label" for="always-force-name2-checkbox">
                             <input id="always-force-name2-checkbox" type="checkbox" />
                             Always add character's name to prompt
-                        </label>
-                        <label class="checkbox_label" for="multigen">
-                            <input id="multigen" type="checkbox" />
-                            <span>
-                                Multigen
-                                <a href="/notes/multigen" class="notes-link" target="_blank">
-                                    <span class="note-link-span">?</span>
-                                </a>
-                            </span>
                         </label>
                         <label class="checkbox_label" for="pin-examples-checkbox">
                             <input id="pin-examples-checkbox" type="checkbox" />
@@ -1023,29 +1034,31 @@
                                 <option value="1">Enabled for all models</option>
                             </select>
                         </div>
-                    </div>
-                    <div id="anchors-block">
-                        <h4>
-                            Anchors Order
-                            <a href="/notes/9" class="notes-link" target="_blank">
-                                <span class="note-link-span">?</span>
-                            </a>
-                        </h4>
-                        <select id="anchor_order">
-                            <option value="0">Character then Style</option>
-                            <option value="1">Style then Character</option>
-                        </select>
-                        <div id="anchor_checkbox">
-                            <label for="character_anchor"><input id="character_anchor" type="checkbox" />
-                                Character Anchor
+                        <div>
+                            <h4>
+                                Multigen 
+                                <a href="/notes/multigen" class="notes-link" target="_blank">
+                                    <span class="note-link-span">?</span>
+                                </a>
+                            </h4>
+                            <label class="checkbox_label" for="multigen">
+                                <input id="multigen" type="checkbox" />
+                                <span>
+                                    Enabled
+                                </span>
                             </label>
-                            <label for="style_anchor"><input id="style_anchor" type="checkbox" />
-                                Style Anchor
-                            </label>
+                            <div class="multigen_settings_block">
+                                <label for="multigen_1st_chunk">
+                                    <small>First chunk (tokens)</small>
+                                    <input id="multigen_first_chunk" type="number" class="text_pole" min="1" max="512" />
+                                </label>
+                                <label for="multigen_next_chunk">
+                                    <small>Next chunks (tokens)</small>
+                                    <input id="multigen_next_chunks" type="number" class="text_pole" min="1" max="512" />
+                                </label>
+                            </div>
                         </div>
                     </div>
-
-
                 </div>
             </div>
         </div>

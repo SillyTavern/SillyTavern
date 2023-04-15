@@ -164,8 +164,16 @@ async function generateTextGenWithStreaming(generate_data) {
         while (true) {
             const { done, value } = await reader.read();
             let response = decoder.decode(value);
+            let delta = '';
 
-            getMessage += response;
+            try {
+                delta = JSON.parse(response).delta;
+            }
+            catch {
+                delta = '';
+            }
+
+            getMessage += delta;
 
             if (done) {
                 return;

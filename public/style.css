@@ -1740,7 +1740,7 @@ input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
 .range-block-counter {
     width: max-content;
     margin-left: 5px;
-    font-size: calc(var(--mainFontSize) - 0.3rem);
+    font-size: calc(var(--mainFontSize) - 0.2rem);
     color: var(--white50a);
 }
 
@@ -1924,11 +1924,22 @@ input[type="range"]::-webkit-slider-thumb {
 
 #anchor_checkbox label,
 #power-user-option-checkboxes label,
-.checkbox_label {
+.checkbox_label,
+.multigen_settings_block {
     display: flex;
     flex-direction: row;
     column-gap: 5px;
     align-items: center;
+}
+
+.multigen_settings_block {
+    margin-top: 10px;
+}
+
+.multigen_settings_block label {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 #shadow_character_popup {

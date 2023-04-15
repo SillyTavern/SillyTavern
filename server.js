@@ -332,12 +332,12 @@ function textGenProcessStartedHandler(websocket, content, session, prompt, fn_in
         case "process_starts":
             break;
         case "process_generating":
-            return content.output.data[0];
+            return { text: content.output.data[0], completed: false };
         case "process_completed":
-            return null;
+            return { text: content.output.data[0], completed: true };
     }
 
-    return '';
+    return { text: '', completed: false };
 }
 
 //************** Text generation web UI
@@ -360,6 +360,7 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
             const url = new URL(api_server);
             const websocket = new WebSocket(`ws://${url.host}/queue/join`, { perMessageDeflate: false });
             let text = '';
+            let completed = false;
 
             websocket.on('open', async function () {
                 console.log('websocket open');
@@ -378,7 +379,9 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
             websocket.on('message', async (message) => {
                 const content = json5.parse(message);
                 console.log(content);
-                text = textGenProcessStartedHandler(websocket, content, session, request.body, fn_index);
+                let result = textGenProcessStartedHandler(websocket, content, session, request.body, fn_index);
+                text = result.text;
+                completed = result.completed;
             });
 
             while (true) {
@@ -386,17 +389,23 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
                     await delay(50);
                     yield text;
 
-                    if (!text && typeof text !== 'string') {
+                    if (completed || (!text && typeof text !== 'string')) {
                         websocket.close();
+                        yield null;
+                        break;
                     }
                 }
                 else {
                     break;
                 }
             }
+
+            return null;
         }
 
         let result = json5.parse(request.body.data)[0];
+        let prompt = result;
+        let stopping_strings = json5.parse(request.body.data)[1].custom_stopping_strings;
 
         try {
             for await (const text of readWebsocket()) {
@@ -411,7 +420,18 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
                 }
 
                 result = text;
-                response_generate.write(newText);
+
+                const generatedText = result.substring(prompt.length);
+
+                response_generate.write(JSON.stringify({ delta: newText }));
+
+                if (generatedText) {
+                    for (const str of stopping_strings) {
+                        if (generatedText.indexOf(str) !== -1) {
+                            break;
+                        }
+                    }
+                }
             }
         }
         finally {
