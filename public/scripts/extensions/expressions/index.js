@@ -127,7 +127,13 @@ async function moduleWorker() {
             const name = context.groupId ? currentLastMessage.name : context.name2;
             const force = !!context.groupId;
             const data = await apiResult.json();
-            const expression = data.classification[0].label;
+            let expression = data.classification[0].label;
+
+            // Character won't be angry on you for swiping
+            if (currentLastMessage.mes == '...' && expressionsList.includes('joy')) {
+                expression = 'joy';
+            }
+
             setExpression(name, expression, force);
         }
 
