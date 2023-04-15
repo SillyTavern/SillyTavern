@@ -62,6 +62,13 @@ fragment SubscriptionMessageLimitExplanation_viewer on Viewer {
 
 fragment WebSubscriptionPaywall_viewer on Viewer {
   ...SubscriptionMessageLimitExplanation_viewer
+  webSubscriptionPriceInfo {
+    monthlyPrice
+    yearlyPrice
+    yearlyPricePerMonth
+    yearlyPercentageSavings
+    id
+  }
 }
 
 fragment WebSubscriptionSuccessMessage_viewer on Viewer {

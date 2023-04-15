@@ -33,36 +33,41 @@ const cached_bots = {};
 
 const logger = console;
 
-const user_agent = "Mozilla/5.0 (X11; Linux x86_64; rv:102.0) Gecko/20100101 Firefox/102.0";
+const user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36";
 
+function unscrambleFormkey(c, code) {
+    var e;
+    eval(code);
+    return e.join('');
+}
 
 function queryScrambler() {
-        function a(e, t) {
-            var r = (65535 & e) + (65535 & t);
-            return (e >> 16) + (t >> 16) + (r >> 16) << 16 | 65535 & r
-        }
-        function s(e, t, r, n, i, s) {
-            var o;
-            return a((o = a(a(t, e), a(n, s))) << i | o >>> 32 - i, r)
-        }
-        function o(e, t, r, n, i, a, o) {
-            return s(t & r | ~t & n, e, t, i, a, o)
-        }
-        function l(e, t, r, n, i, a, o) {
-            return s(t & n | r & ~n, e, t, i, a, o)
-        }
-        function u(e, t, r, n, i, a, o) {
-            return s(t ^ r ^ n, e, t, i, a, o)
-        }
-        function c(e, t, r, n, i, a, o) {
-            return s(r ^ (t | ~n), e, t, i, a, o)
-        }
-        function d(e, t) {
-            e[t >> 5] |= 128 << t % 32,
+    function a(e, t) {
+        var r = (65535 & e) + (65535 & t);
+        return (e >> 16) + (t >> 16) + (r >> 16) << 16 | 65535 & r
+    }
+    function s(e, t, r, n, i, s) {
+        var o;
+        return a((o = a(a(t, e), a(n, s))) << i | o >>> 32 - i, r)
+    }
+    function o(e, t, r, n, i, a, o) {
+        return s(t & r | ~t & n, e, t, i, a, o)
+    }
+    function l(e, t, r, n, i, a, o) {
+        return s(t & n | r & ~n, e, t, i, a, o)
+    }
+    function u(e, t, r, n, i, a, o) {
+        return s(t ^ r ^ n, e, t, i, a, o)
+    }
+    function c(e, t, r, n, i, a, o) {
+        return s(r ^ (t | ~n), e, t, i, a, o)
+    }
+    function d(e, t) {
+        e[t >> 5] |= 128 << t % 32,
             e[(t + 64 >>> 9 << 4) + 14] = t;
-            var r, n, i, s, d, f = 1732584193, h = -271733879, p = -1732584194, _ = 271733878;
-            for (r = 0; r < e.length; r += 16)
-                n = f,
+        var r, n, i, s, d, f = 1732584193, h = -271733879, p = -1732584194, _ = 271733878;
+        for (r = 0; r < e.length; r += 16)
+            n = f,
                 i = h,
                 s = p,
                 d = _,
@@ -134,49 +139,49 @@ function queryScrambler() {
                 h = a(h, i),
                 p = a(p, s),
                 _ = a(_, d);
-            return [f, h, p, _]
-        }
-        function f(e) {
-            var t, r = "", n = 32 * e.length;
-            for (t = 0; t < n; t += 8)
-                r += String.fromCharCode(e[t >> 5] >>> t % 32 & 255);
-            return r
-        }
-        function h(e) {
-            var t, r = [];
-            for (t = 0,
+        return [f, h, p, _]
+    }
+    function f(e) {
+        var t, r = "", n = 32 * e.length;
+        for (t = 0; t < n; t += 8)
+            r += String.fromCharCode(e[t >> 5] >>> t % 32 & 255);
+        return r
+    }
+    function h(e) {
+        var t, r = [];
+        for (t = 0,
             r[(e.length >> 2) - 1] = void 0; t < r.length; t += 1)
-                r[t] = 0;
-            var n = 8 * e.length;
-            for (t = 0; t < n; t += 8)
-                r[t >> 5] |= (255 & e.charCodeAt(t / 8)) << t % 32;
-            return r
-        }
-        function p(e) {
-            var t, r, n = "0123456789abcdef", i = "";
-            for (r = 0; r < e.length; r += 1)
-                i += n.charAt((t = e.charCodeAt(r)) >>> 4 & 15) + n.charAt(15 & t);
-            return i
-        }
-        function _(e) {
-            return unescape(encodeURIComponent(e))
-        }
-        function v(e) {
-            var t;
-            return f(d(h(t = _(e)), 8 * t.length))
-        }
-        function g(e, t) {
-            return function(e, t) {
-                var r, n, i = h(e), a = [], s = [];
-                for (a[15] = s[15] = void 0,
+            r[t] = 0;
+        var n = 8 * e.length;
+        for (t = 0; t < n; t += 8)
+            r[t >> 5] |= (255 & e.charCodeAt(t / 8)) << t % 32;
+        return r
+    }
+    function p(e) {
+        var t, r, n = "0123456789abcdef", i = "";
+        for (r = 0; r < e.length; r += 1)
+            i += n.charAt((t = e.charCodeAt(r)) >>> 4 & 15) + n.charAt(15 & t);
+        return i
+    }
+    function _(e) {
+        return unescape(encodeURIComponent(e))
+    }
+    function v(e) {
+        var t;
+        return f(d(h(t = _(e)), 8 * t.length))
+    }
+    function g(e, t) {
+        return function (e, t) {
+            var r, n, i = h(e), a = [], s = [];
+            for (a[15] = s[15] = void 0,
                 i.length > 16 && (i = d(i, 8 * e.length)),
                 r = 0; r < 16; r += 1)
-                    a[r] = 909522486 ^ i[r],
+                a[r] = 909522486 ^ i[r],
                     s[r] = 1549556828 ^ i[r];
-                return n = d(a.concat(h(t)), 512 + 8 * t.length),
+            return n = d(a.concat(h(t)), 512 + 8 * t.length),
                 f(d(s.concat(n), 640))
-            }(_(e), _(t))
-        }
+        }(_(e), _(t))
+    }
     function m(e, t, r) {
         return t ? r ? g(t, e) : p(g(t, e)) : r ? v(e) : p(v(e))
     }
@@ -284,10 +289,13 @@ class Client {
 
         const r = await request_with_retries(() => this.session.get(this.home_url));
         const jsonRegex = /<script id="__NEXT_DATA__" type="application\/json">(.+?)<\/script>/;
+        const formKeyRegex = /var c="(.+?)",(.+?),window./;
         const jsonText = jsonRegex.exec(r.data)[1];
+        const key = formKeyRegex.exec(r.data)[1];
+        const code = formKeyRegex.exec(r.data)[2];
         const nextData = JSON.parse(jsonText);
 
-        this.formkey = nextData.props.formkey;
+        this.formkey = unscrambleFormkey(key, code);
         this.viewer = nextData.props.pageProps.payload.viewer;
 
         return nextData;
@@ -304,7 +312,7 @@ class Client {
         for (const bot of botList.filter(x => x.deletionState == 'not_deleted')) {
             const url = `https://poe.com/_next/data/${this.next_data.buildId}/${bot.displayName}.json`;
             let r;
-            
+
             if (this.use_cached_bots && cached_bots[url]) {
                 r = cached_bots[url];
             }
@@ -335,7 +343,6 @@ class Client {
         const r = await request_with_retries(() => this.session.get(this.settings_url));
         const data = r.data;
 
-        this.formkey = data.formkey;
         return data.tchannelData;
     }
 
@@ -354,6 +361,7 @@ class Client {
             const scramblePayload = JSON.stringify(payload);
             const _headers = this.gql_headers;
             _headers['poe-tag-id'] = queryScrambler()(scramblePayload + this.formkey + "WpuLMiXEKKE98j56k");
+            _headers['poe-formkey'] = this.formkey;
             const r = await request_with_retries(() => this.session.post(this.gql_url, payload, { headers: this.gql_headers }));
             if (!r.data.data) {
                 logger.warn(`${queryName} returned an error: ${data.errors[0].message} | Retrying (${i + 1}/20)`);
@@ -385,7 +393,7 @@ class Client {
                 },
             ]
         },
-        'subscriptionsMutation');
+            'subscriptionsMutation');
     }
 
     ws_run_thread() {
@@ -452,7 +460,7 @@ class Client {
             for (const message_str of data["messages"]) {
                 const message_data = JSON.parse(message_str);
 
-                if (message_data["message_type"] != "subscriptionUpdate"){ 
+                if (message_data["message_type"] != "subscriptionUpdate") {
                     continue;
                 }
 
@@ -461,7 +469,7 @@ class Client {
                 if (!message) {
                     return;
                 }
-        
+
                 const copiedDict = Object.assign({}, this.active_messages);
                 for (const [key, value] of Object.entries(copiedDict)) {
                     //add the message to the appropriate queue
@@ -469,7 +477,7 @@ class Client {
                         this.message_queues[key].push(message);
                         return;
                     }
-        
+
                     //indicate that the response id is tied to the human message id
                     else if (key !== "pending" && value === null && message["state"] !== "complete") {
                         this.active_messages[key] = message["messageId"];
