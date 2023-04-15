@@ -1092,53 +1092,8 @@
             </div>
             <div id="user-settings-block" class="drawer-content closedDrawer">
                 <h3>User Settings</h3>
-                <div class="flex-container">
-                    <div name="NameAndAvatar" class="flex-container wide100p">
-                        <div name="NameChanger">
-                            <form id='form_change_name' action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                                <h4>Name</h4>
-                                <input id="your_name" name="your_name" class="text_pole widthNatural" maxlength="" value="" autocomplete="off">
-                                <input id="your_name_button" class="menu_button" type="submit" title="Click to set a new User Name (reloads page)" value="Update">
-                            </form>
-                        </div>
-                        <div name="AvatarSelector">
-                            <h4>Your Avatar</h4>
-                            <div id="user_avatar_block">
-                                <div class="avatar_upload">+</div>
-                            </div>
-
-                            <form id="form_upload_avatar" action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                                <input type="file" id="avatar_upload_file" accept="image/*" name="avatar">
-                            </form>
-                        </div>
-                    </div>
-                    <div id="power-user-options-block" class="flex-container">
-                        <div id="power-user-option-checkboxes">
-                            <h4>Power User Options</h4>
-                            <label for="swipes-checkbox">
-                                <input id="swipes-checkbox" type="checkbox" />
-                                Swipes
-                            </label>
-                            <label for="play_message_sound" class="checkbox_label">
-                                <input id="play_message_sound" type="checkbox" />
-                                <audio id="audio_message_sound" src="sounds/message.mp3" hidden></audio>
-                                <span>
-                                    New Message Sound
-                                    <a href="/notes/message_sound" class="notes-link" target="_blank">
-                                        <span class="note-link-span">?</span>
-                                    </a>
-                                </span>
-                            </label>
-                            <label for="play_sound_unfocused" class="checkbox_label">
-                                <input id="play_sound_unfocused" type="checkbox" />
-                                Background Sound Only
-                            </label>
-                            <label for="auto-load-chat-checkbox"><input id="auto-load-chat-checkbox" type="checkbox" />
-                                Auto-load Last Chat
-                            </label>
-                        </div>
-                    </div>
-                    <div name="UI Customization" class="flex-container">
+                <div class="flex-container spaceEvenly">
+                    <div name="UI Customization" class="flex-container drawer25pWidth">
                         <div class="ui-settings">
                             <h4>UI Customization</h4>
                             <div id="font-blur-UIpresets-block" class="flex-container flexFlowColumn">
@@ -1212,8 +1167,7 @@
                         </div>
 
                     </div>
-
-                    <div id="UI-Theme-Block" class="flex-container flexFlowColumn">
+                    <div id="UI-Theme-Block" class="flex-container flexFlowColumn drawer25pWidth">
                         <div id="color-picker-block" class="flex-container flexFlowColumn">
                             <h4>UI Colors</h4>
                             <div class="flex-container">
@@ -1246,6 +1200,52 @@
                             </div>
                         </div>
 
+                    </div>
+                    <div id="power-user-options-block" class="flex-container drawer25pWidth">
+                        <div id="power-user-option-checkboxes">
+                            <h4>Power User Options</h4>
+                            <label for="swipes-checkbox">
+                                <input id="swipes-checkbox" type="checkbox" />
+                                Swipes
+                            </label>
+                            <label for="play_message_sound" class="checkbox_label">
+                                <input id="play_message_sound" type="checkbox" />
+                                <audio id="audio_message_sound" src="sounds/message.mp3" hidden></audio>
+                                <span>
+                                    New Message Sound
+                                    <a href="/notes/message_sound" class="notes-link" target="_blank">
+                                        <span class="note-link-span">?</span>
+                                    </a>
+                                </span>
+                            </label>
+                            <label for="play_sound_unfocused" class="checkbox_label">
+                                <input id="play_sound_unfocused" type="checkbox" />
+                                Background Sound Only
+                            </label>
+                            <label for="auto-load-chat-checkbox"><input id="auto-load-chat-checkbox" type="checkbox" />
+                                Auto-load Last Chat
+                            </label>
+                        </div>
+                    </div>
+
+                    <div name="NameAndAvatar" class="flex-container flexFlowColumn drawer25pWidth">
+                        <div name="NameChanger">
+                            <form id='form_change_name' action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                                <h4>Name</h4>
+                                <input id="your_name" name="your_name" class="text_pole" maxlength="" value="" autocomplete="off">
+                                <input id="your_name_button" class="menu_button" type="submit" title="Click to set a new User Name (reloads page)" value="Update">
+                            </form>
+                        </div>
+                        <div name="AvatarSelector">
+                            <h4>Your Avatar</h4>
+                            <div id="user_avatar_block">
+                                <div class="avatar_upload">+</div>
+                            </div>
+
+                            <form id="form_upload_avatar" action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                                <input type="file" id="avatar_upload_file" accept="image/*" name="avatar">
+                            </form>
+                        </div>
                     </div>
 
 

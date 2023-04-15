@@ -1778,13 +1778,6 @@ input[type="range"]::-webkit-slider-thumb {
 
 /*Notes '?' links*/
 
-
-.notes-link {
-    margin-left: 3px;
-    position: absolute;
-
-}
-
 .note-link-span {
     color: var(--sienna);
     border: 1px solid var(--sienna);
@@ -2924,6 +2917,11 @@ label[for="extensions_autoconnect"] {
     display: none;
 }
 
+/*utility class intended to force drawer flex items to be 25% width of drawer*/
+.drawer25pWidth {
+    flex-basis: calc((var(--sheldWidth) / 4) - 16px);
+}
+
 
 
 .drawer-content {
@@ -3323,8 +3321,18 @@ toolcool-color-picker {
         min-width: 33%;
     }
 
+    .drawer25pWidth {
+        flex-basis: max(calc(100% / 4 - 10px), 200px);
+    }
+
     /*for debug purposes*/
     /* div {border: 1px solid purple;} */
+}
+
+@media (max-width: 450px) {
+    .drawer25pWidth {
+        flex-basis: max(calc(100% / 2 - 10px), 200px);
+    }
 }
 
 /*bubble chat style*/
