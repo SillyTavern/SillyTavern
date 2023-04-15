@@ -457,6 +457,10 @@ class Client {
                 }
 
                 const message = message_data["payload"]["data"]["messageAdded"]
+
+                if (!message) {
+                    return;
+                }
         
                 const copiedDict = Object.assign({}, this.active_messages);
                 for (const [key, value] of Object.entries(copiedDict)) {

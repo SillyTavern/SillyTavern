@@ -421,7 +421,7 @@ function getSystemPrompt(nsfw_toggle_prompt, enhance_definitions_prompt, wiBefor
     let whole_prompt = [];
 
     if (isImpersonate) {
-        whole_prompt = [nsfw_toggle_prompt, enhance_definitions_prompt, "\n\n", wiBefore, wiAfter, extensionPrompt];
+        whole_prompt = [nsfw_toggle_prompt, enhance_definitions_prompt, "\n\n", wiBefore, storyString, wiAfter, extensionPrompt];
     }
     else {
         // If it's toggled, NSFW prompt goes first.

@@ -988,7 +988,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     margin-top: 5px;
     display: flex;
     flex-wrap: wrap;
-    width: calc(var(--sheldWidth) - 100px);
+    width: calc(var(--sheldWidth) - 10px);
     max-width: 100svw;
     justify-content: space-evenly;
 }

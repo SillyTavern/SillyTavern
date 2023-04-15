@@ -202,7 +202,7 @@ async function setExpression(character, expression, force) {
 
     if (!debugImageStatus && !force) {
         validateImages();
-        setTimeout(() => setExpression(character, expression, true), 500);
+        setTimeout(() => setExpression(character, expression, false), 2000);
         return;
     }
 
