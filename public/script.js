@@ -201,7 +201,7 @@ let streamingProcessor = null;
 const durationSaveEdit = 200;
 const saveSettingsDebounced = debounce(() => saveSettings(), durationSaveEdit);
 const saveCharacterDebounced = debounce(() => $("#create_button").click(), durationSaveEdit);
-const getStatusDebounced = debounce(() => getStatus(), 5000);
+const getStatusDebounced = debounce(() => getStatus(), 90000);
 
 const system_message_types = {
     HELP: "help",
@@ -342,7 +342,7 @@ var online_status = "no_connection";
 var api_server = "";
 var api_server_textgenerationwebui = "";
 //var interval_timer = setInterval(getStatus, 2000);
-var interval_timer_novel = setInterval(getStatusNovel, 3000);
+var interval_timer_novel = setInterval(getStatusNovel, 90000);
 var is_get_status = false;
 var is_get_status_novel = false;
 var is_api_button_press = false;
@@ -535,7 +535,7 @@ async function getStatus() {
                 //console.log(online_status);
                 resultCheckStatus();
                 if (online_status !== "no_connection") {
-                    var checkStatusNow = setTimeout(getStatus, 3000); //getStatus();
+                    getStatusDebounced();
                 }
             },
             error: function (jqXHR, exception) {
