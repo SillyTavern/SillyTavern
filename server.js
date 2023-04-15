@@ -2140,19 +2140,23 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
 app.post("/tokenize_openai", jsonParser, function (request, response_tokenize_openai = response) {
     if (!request.body) return response_tokenize_openai.sendStatus(400);
 
+    const tokensPerName = request.query.model.includes('gpt-4') ? 1 : -1;
+    const tokensPerMessage = request.query.model.includes('gpt-4') ? 3 : 4;
+    const tokensPadding = 3;
+
     const tokenizer = tiktoken.encoding_for_model(request.query.model);
 
     let num_tokens = 0;
     for (const msg of request.body) {
-        num_tokens += 4;
+        num_tokens += tokensPerMessage;
         for (const [key, value] of Object.entries(msg)) {
             num_tokens += tokenizer.encode(value).length;
             if (key == "name") {
-                num_tokens += -1;
+                num_tokens += tokensPerName;
             }
         }
     }
-    num_tokens += 2;
+    num_tokens += tokensPadding;
 
     tokenizer.free();
 

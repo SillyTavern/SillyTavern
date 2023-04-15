@@ -209,7 +209,7 @@ function parseExampleIntoIndividual(messageExampleString) {
     let in_user = false;
     let in_bot = false;
     // DRY my cock and balls
-    function add_msg(name, role) {
+    function add_msg(name, role, system_name) {
         // join different newlines (we split them by \n and join by \n)
         // remove char name
         // strip to remove extra spaces
@@ -219,7 +219,7 @@ function parseExampleIntoIndividual(messageExampleString) {
             parsed_msg = `${name}: ${parsed_msg}`;
         }
 
-        result.push({ "role": role, "content": parsed_msg });
+        result.push({ "role": role, "content": parsed_msg, "name": system_name });
         cur_msg_lines = [];
     }
     // skip first line as it'll always be "This is how {bot name} should talk"
@@ -231,14 +231,14 @@ function parseExampleIntoIndividual(messageExampleString) {
             in_user = true;
             // we were in the bot mode previously, add the message
             if (in_bot) {
-                add_msg(name2, "assistant");
+                add_msg(name2, "system", "example_assistant");
             }
             in_bot = false;
         } else if (cur_str.indexOf(name2 + ":") === 0) {
             in_bot = true;
             // we were in the user mode previously, add the message
             if (in_user) {
-                add_msg(name1, "user");
+                add_msg(name1, "system", "example_user");
             }
             in_user = false;
         }
@@ -247,9 +247,9 @@ function parseExampleIntoIndividual(messageExampleString) {
     }
     // Special case for last message in a block because we don't have a new message to trigger the switch
     if (in_user) {
-        add_msg(name1, "user");
+        add_msg(name1, "system", "example_user");
     } else if (in_bot) {
-        add_msg(name2, "assistant");
+        add_msg(name2, "system", "example_assistant");
     }
     return result;
 }
