@@ -1141,6 +1141,31 @@
                     <div name="UI Customization" class="flex-container">
                         <div class="ui-settings">
                             <h4>UI Customization</h4>
+                            <div id="font-blur-UIpresets-block" class="flex-container flexFlowColumn">
+                                <div id="font-scale-block" class="range-block">
+                                    <div class="range-block-title">
+                                        Font Scale
+                                    </div>
+                                    <div class="range-block-range">
+                                        <input type="range" id="font_scale" name="font_scale" min="0.8" max="1.2" step="0.05">
+                                    </div>
+                                    <div class="range-block-counter">
+                                        <span id="font_scale_counter">select</span>
+                                    </div>
+                                </div>
+                                <div id="blur-strength-block" class="range-block">
+                                    <div class="range-block-title">
+                                        Blur Strength
+                                    </div>
+                                    <div class="range-block-range">
+                                        <input type="range" id="blur_strength" name="blur_strength" min="0" max="30" step="1">
+                                    </div>
+                                    <div class="range-block-counter">
+                                        <span id="blur_strength_counter">select</span>
+                                    </div>
+                                </div>
+
+                            </div>
                             <div>
                                 Avatar Style:<br>
                                 <label>
@@ -1179,35 +1204,10 @@
                                     <input id="fast_ui_mode" type="checkbox" />
                                     No Blur Effect
                                 </label>
-                                <label for="waifuMode"  class="checkbox_label">
+                                <label for="waifuMode" class="checkbox_label">
                                     <input id="waifuMode" type="checkbox" />
                                     ♡ Waifu Mode ♡
                                 </label>
-                            </div>
-                            <div id="font-blur-UIpresets-block" class="flex-container flexFlowColumn">
-                                <div id="font-scale-block" class="range-block">
-                                    <div class="range-block-title">
-                                        Font Scale
-                                    </div>
-                                    <div class="range-block-range">
-                                        <input type="range" id="font_scale" name="font_scale" min="0.8" max="1.2" step="0.05">
-                                    </div>
-                                    <div class="range-block-counter">
-                                        <span id="font_scale_counter">select</span>
-                                    </div>
-                                </div>
-                                <div id="blur-strength-block" class="range-block">
-                                    <div class="range-block-title">
-                                        Blur Strength
-                                    </div>
-                                    <div class="range-block-range">
-                                        <input type="range" id="blur_strength" name="blur_strength" min="0" max="30" step="1">
-                                    </div>
-                                    <div class="range-block-counter">
-                                        <span id="blur_strength_counter">select</span>
-                                    </div>
-                                </div>
-
                             </div>
                         </div>
 
