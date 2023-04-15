@@ -14,6 +14,7 @@ export {
     playMessageSound,
     sortCharactersList,
     power_user,
+    pygmalion_options,
 };
 
 const avatar_styles = {
@@ -31,9 +32,15 @@ const sheld_width = {
     w1000px: 1,
 }
 
+const pygmalion_options = {
+    DISABLED: -1,
+    AUTO: 0,
+    ENABLED: 1,
+}
+
 let power_user = {
     collapse_newlines: false,
-    force_pygmalion_formatting: false,
+    pygmalion_formatting: pygmalion_options.AUTO,
     pin_examples: false,
     disable_description_formatting: false,
     disable_scenario_formatting: false,
@@ -270,7 +277,7 @@ function loadPowerUserSettings(settings, data) {
     power_user.font_scale = Number(localStorage.getItem(storage_keys.font_scale) ?? 1);
     power_user.blur_strength = Number(localStorage.getItem(storage_keys.blur_strength) ?? 10);
 
-    $("#force-pygmalion-formatting-checkbox").prop("checked", power_user.force_pygmalion_formatting);
+    $(`#pygmalion_formatting option[value=${power_user.pygmalion_formatting}]`).prop("checked", true);
     $("#collapse-newlines-checkbox").prop("checked", power_user.collapse_newlines);
     $("#pin-examples-checkbox").prop("checked", power_user.pin_examples);
     $("#disable-description-formatting-checkbox").prop("checked", power_user.disable_description_formatting);
@@ -333,8 +340,8 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
-    $("#force-pygmalion-formatting-checkbox").change(function () {
-        power_user.force_pygmalion_formatting = !!$(this).prop("checked");
+    $("#pygmalion_formatting").change(function (e) {
+        power_user.pygmalion_formatting = Number($(this).find(":selected").val());
         saveSettingsDebounced();
     });
 

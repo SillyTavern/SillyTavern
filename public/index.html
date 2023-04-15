@@ -999,10 +999,6 @@
                             <input id="always-force-name2-checkbox" type="checkbox" />
                             Always add character's name to prompt
                         </label>
-                        <label class="checkbox_label" for="force-pygmalion-formatting-checkbox">
-                            <input id="force-pygmalion-formatting-checkbox" type="checkbox" />
-                            Pygmalion Formatting for All Models
-                        </label>
                         <label class="checkbox_label" for="multigen">
                             <input id="multigen" type="checkbox" />
                             <span>
@@ -1019,6 +1015,14 @@
                         <label class="checkbox_label" for="collapse-newlines-checkbox"><input id="collapse-newlines-checkbox" type="checkbox" />
                             Remove Empty New Lines from Output
                         </label>
+                        <div>
+                            <h4>Pygmalion Formatting</h4>
+                            <select id="pygmalion_formatting">
+                                <option value="-1">Disabled for all models</option>
+                                <option value="0">Automatic (based on model name)</option>
+                                <option value="1">Enabled for all models</option>
+                            </select>
+                        </div>
                     </div>
                     <div id="anchors-block">
                         <h4>
@@ -1371,7 +1375,7 @@
                                     <div id="delete_button" class="menu_button fa-solid fa-trash-can " title="Delete Character"></div>
                                 </div>
                             </div>
-                            <div id="result_info"></div>
+                            <div title="Token counts may be inaccurate and provided just for reference." id="result_info"></div>
                         </div>
                         <hr>
                         <div id="description_div" class="margin-bot-10px">

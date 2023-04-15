@@ -1156,6 +1156,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     color: var(--white30a);
     display: flex;
     font-size: calc(var(--mainFontSize) - 0.2rem);
+    font-weight: bold;
 }
 
 /* Focus */

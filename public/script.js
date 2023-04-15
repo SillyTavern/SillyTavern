@@ -45,6 +45,7 @@ import {
     playMessageSound,
     sortCharactersList,
     power_user,
+    pygmalion_options,
 } from "./scripts/power-user.js";
 
 import {
@@ -508,7 +509,8 @@ async function getStatus() {
                 if (online_status == undefined) {
                     online_status = "no_connection";
                 }
-                if (online_status.toLowerCase().indexOf("pygmalion") != -1 || (online_status !== "no_connection" && power_user.force_pygmalion_formatting)) {
+                if ((online_status.toLowerCase().indexOf("pygmalion") != -1 && power_user.pygmalion_formatting == pygmalion_options.AUTO)
+                 || (online_status !== "no_connection" && power_user.pygmalion_formatting == pygmalion_options.ENABLED)) {
                     is_pygmalion = true;
                     online_status += " (Pyg. formatting on)";
                 } else {
@@ -2188,10 +2190,8 @@ function saveReply(type, getMessage, this_mes_is_name) {
         } else {
             chat[chat.length - 1]['mes'] = getMessage;
         }
-        is_send_press = false;
     } else {
         console.log('entering chat update routine for non-swipe post');
-        is_send_press = false;
         chat[chat.length] = {};
         chat[chat.length - 1]['name'] = name2;
         chat[chat.length - 1]['is_user'] = false;
