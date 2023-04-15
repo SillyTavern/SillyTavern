@@ -929,7 +929,7 @@ $(document).ready(function () {
             return;
         }
 
-        await saveOpenAIPreset(name, default_settings);
+        await saveOpenAIPreset(name, oai_settings);
     });
 
     $("#main_prompt_restore").click(function () {
