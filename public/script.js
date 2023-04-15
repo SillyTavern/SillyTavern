@@ -3060,8 +3060,8 @@ function select_selected_character(chid) {
     //console.log('select_selected_character() -- starting with input of -- '+chid+' (name:'+characters[chid].name+')');
     select_rm_create();
     menu_type = "character_edit";
-    $("#delete_button").css("display", "block");
-    $("#export_button").css("display", "block");
+    $("#delete_button").css("display", "flex");
+    $("#export_button").css("display", "flex");
     setRightTabSelectedClass('rm_button_selected_ch');
     var display_name = characters[chid].name;
 
@@ -3128,7 +3128,7 @@ function select_rm_create() {
 
     //create text poles
     $("#rm_button_back").css("display", "inline-block");
-    $("#character_import_button").css("display", "inline-block");
+    $("#character_import_button").css("display", "flex");
     $("#character_popup_text_h3").text("Create character");
     $("#character_name_pole").val(create_save_name);
     $("#description_textarea").val(create_save_description);
@@ -4804,58 +4804,63 @@ $(document).ready(function () {
     });
     $("#character_import_file").on("change", function (e) {
         $("#rm_info_avatar").html("");
-        var file = e.target.files[0];
-        //console.log(1);
-        if (!file) {
-            return;
-        }
-        var ext = file.name.match(/\.(\w+)$/);
-        if (
-            !ext ||
-            (ext[1].toLowerCase() != "json" && ext[1].toLowerCase() != "png" && ext[1] != "webp")
-        ) {
+        if (!e.target.files.length) {
             return;
         }
 
-        var format = ext[1].toLowerCase();
-        $("#character_import_file_type").val(format);
-        //console.log(format);
-        var formData = new FormData($("#form_import").get(0));
+        let names = [];
 
-        jQuery.ajax({
-            type: "POST",
-            url: "/importcharacter",
-            data: formData,
-            beforeSend: function () {
-                //$('#create_button').attr('disabled',true);
-                //$('#create_button').attr('value','Creating...');
-            },
-            cache: false,
-            contentType: false,
-            processData: false,
-            success: async function (data) {
-                if (data.file_name !== undefined) {
-                    $("#rm_info_block").transition({ opacity: 0, duration: 0 });
-                    var $prev_img = $("#avatar_div_div").clone();
-                    $prev_img
-                        .children("img")
-                        .attr("src", "characters/" + data.file_name + ".png");
-                    $("#rm_info_avatar").append($prev_img);
-
-                    let oldSelectedChar = null;
-                    if (this_chid != undefined && this_chid != "invalid-safety-id") {
-                        oldSelectedChar = characters[this_chid].name;
+        for (const file of e.target.files) {
+            var ext = file.name.match(/\.(\w+)$/);
+            if (
+                !ext ||
+                (ext[1].toLowerCase() != "json" && ext[1].toLowerCase() != "png" && ext[1] != "webp")
+            ) {
+                continue;
+            }
+    
+            var format = ext[1].toLowerCase();
+            $("#character_import_file_type").val(format);
+            var formData = new FormData();
+            formData.append('avatar', file);
+            formData.append('file_type', format);
+    
+            jQuery.ajax({
+                type: "POST",
+                url: "/importcharacter",
+                data: formData,
+                async: false,
+                beforeSend: function () {
+                },
+                cache: false,
+                contentType: false,
+                processData: false,
+                success: async function (data) {
+                    if (data.file_name !== undefined) {
+                        $("#rm_info_block").transition({ opacity: 0, duration: 0 });
+                        var $prev_img = $("#avatar_div_div").clone();
+                        $prev_img
+                            .children("img")
+                            .attr("src", "characters/" + data.file_name + ".png");
+                        $("#rm_info_avatar").append($prev_img);
+    
+                        let oldSelectedChar = null;
+                        if (this_chid != undefined && this_chid != "invalid-safety-id") {
+                            oldSelectedChar = characters[this_chid].name;
+                        }
+    
+                        names.push(data.file_name);
+                        let nameString = DOMPurify.sanitize(names.join(', '));
+                        await getCharacters();
+                        select_rm_info(`Character imported<br><h4>${nameString}</h4>`, oldSelectedChar);
+                        $("#rm_info_block").transition({ opacity: 1, duration: 1000 });
                     }
-
-                    await getCharacters();
-                    select_rm_info(`Character imported<br><h4>${DOMPurify.sanitize(data.file_name)}</h4>`, oldSelectedChar);
-                    $("#rm_info_block").transition({ opacity: 1, duration: 1000 });
-                }
-            },
-            error: function (jqXHR, exception) {
-                $("#create_button").removeAttr("disabled");
-            },
-        });
+                },
+                error: function (jqXHR, exception) {
+                    $("#create_button").removeAttr("disabled");
+                },
+            });
+        }
     });
     $("#export_button").click(function (e) {
         $('#export_format_popup').toggle();

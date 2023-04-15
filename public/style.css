@@ -1117,6 +1117,13 @@ input[type=search]:focus::-webkit-search-cancel-button {
     flex-wrap: wrap;
 }
 
+.form_create_bottom_buttons_block .menu_button
+{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
 #rm_info_block {
     display: none;
     width: 100%;
@@ -1138,6 +1145,8 @@ input[type=search]:focus::-webkit-search-cancel-button {
 }
 
 #rm_info_avatar {
+    display: flex;
+    column-gap: 10px;
     width: fit-content;
     text-align: center;
     margin-left: auto;
@@ -2197,11 +2206,6 @@ h5 {
     align-items: center;
     width: 100%;
     column-gap: 15px;
-}
-
-#rm_button_group_chats {
-    cursor: pointer;
-    display: inline-block;
 }
 
 #rm_button_group_chats h2 {
