@@ -2606,7 +2606,7 @@ body.big-avatars .collage_4 .img_4 {
 }
 
 span.warning {
-    color: rgb(190, 0, 0);
+    color: rgba(255, 0, 0, 0.5);
     font-weight: bolder;
 }
 
@@ -3148,9 +3148,8 @@ toolcool-color-picker {
     flex-wrap: wrap;
 }
 
-.reverse_proxy_warning {
-    color: red;
-    opacity: 0.5;
+.reverse_proxy_warning, .neutral_warning {
+    color: rgba(255, 0, 0, 0.5)
 }
 
 .textarea_compact {

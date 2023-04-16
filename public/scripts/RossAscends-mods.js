@@ -165,7 +165,7 @@ function RA_CountCharTokens() {
     // display the counted tokens
     if (count_tokens < 1024 && perm_tokens < 1024) {
         $("#result_info").html(count_tokens + " Tokens (" + perm_tokens + " Permanent Tokens)");      //display normal if both counts are under 1024
-    } else { $("#result_info").html("<font color=red>" + count_tokens + " Tokens (" + perm_tokens + " Permanent Tokens)(TOO MANY)</font>"); } //warn if either are over 1024
+    } else { $("#result_info").html(`<span class="neutral_warning">${count_tokens} Tokens (${perm_tokens} Permanent Tokens)(TOO MANY)</span>`); } //warn if either are over 1024
 }
 //Auto Load Last Charcter -- (fires when active_character is defined and auto_load_chat is true)
 async function RA_autoloadchat() {
