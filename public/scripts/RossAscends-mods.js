@@ -285,10 +285,10 @@ function OpenNavPanels() {
         console.log("RA -- clicking right nav to open");
         $("#rightNavDrawerIcon").click();
     } else {
-        console.log('didnt see reason to open right nav on load: ' +
-            LoadLocalBool("NavLockOn")
-            + ' nav open pref' +
-            LoadLocalBool("NavOpened" == true));
+        /*         console.log('didnt see reason to open right nav on load: R-nav locked? ' +
+                    LoadLocalBool("NavLockOn")
+                    + ' R-nav was open before? ' +
+                    LoadLocalBool("NavOpened" == true)); */
     }
 
     //auto-open L nav if locked and previously open
@@ -297,10 +297,10 @@ function OpenNavPanels() {
         console.log("RA -- clicking left nav to open");
         $("#leftNavDrawerIcon").click();
     } else {
-        console.log('didnt see reason to open left nav on load: ' +
-            LoadLocalBool("LNavLockOn")
-            + ' L-nav open pref' +
-            LoadLocalBool("LNavOpened" == true));
+        /*         console.log('didnt see reason to open left nav on load: L-Nav Locked? ' +
+                    LoadLocalBool("LNavLockOn")
+                    + ' L-nav was open before? ' +
+                    LoadLocalBool("LNavOpened" == true)); */
     }
 }
 
