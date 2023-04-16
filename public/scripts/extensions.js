@@ -9,7 +9,7 @@ export {
     extension_settings,
 };
 
-const extensionNames = ['caption', 'dice', 'expressions', 'floating-prompt', 'memory'];
+const extensionNames = ['caption', 'dice', 'expressions', 'floating-prompt', 'memory','elevenlabstts'];
 const manifests = await getManifests(extensionNames);
 
 // TODO: Delete in next release
@@ -49,6 +49,8 @@ const extension_settings = {
     caption: {},
     expressions: {},
     dice: {},
+    elevenlabstts: {},
+    elevenlabstts: {},
 };
 
 let modules = [];
