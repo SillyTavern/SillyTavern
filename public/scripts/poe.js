@@ -130,7 +130,7 @@ async function generatePoe(type, finalPrompt) {
     // If prompt overflows the max context, reduce it (or the generation would fail)
     // Split by sentence boundary and remove sentence-by-sentence from the beginning
     while (getTokenCount(finalPrompt) > max_context) {
-        const sentences = finalPrompt.split(/(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s/);
+        const sentences = finalPrompt.split(/([.?!])\s+/);
         const removed = sentences.shift();
         console.log(`Reducing Poe context due to overflow. Sentence dropped from prompt: "${removed}"`);
         finalPrompt = sentences.join('');
