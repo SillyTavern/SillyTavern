@@ -1475,7 +1475,8 @@ async function Generate(type, automatic_trigger, force_name2) {
                     if (!storyString.endsWith('\n')) {
                         storyString += '\n';
                     }
-                    example = example.replace(/<START>/i, 'This is how ' + name2 + ' should talk');//An example of how '+name2+' responds
+                    const replaceString = power_user.disable_examples_formatting ? `This is how ${name2} should talk` : '';
+                    example = example.replace(/<START>/i, replaceString);
                 }
                 storyString += appendToStoryString(example, '');
             }
@@ -1617,6 +1618,10 @@ async function Generate(type, automatic_trigger, force_name2) {
                         const prompt = JSON.stringify(worldInfoString + storyString + mesExmString + chatString + anchorTop + anchorBottom + charPersonality + promptBias + allAnchors);
                         const tokenCount = getTokenCount(prompt, padding_tokens);
                         if (tokenCount < this_max_context) {
+                            if (power_user.disable_examples_formatting) {
+                                mesExamplesArray[iii] = mesExamplesArray[iii].replace(/<START>/i, '');
+                            }
+
                             if (!is_pygmalion) {
                                 mesExamplesArray[iii] = mesExamplesArray[iii].replace(/<START>/i, `This is how ${name2} should talk`);
                             }
@@ -1772,6 +1777,10 @@ async function Generate(type, automatic_trigger, force_name2) {
             // add a custom dingus (if defined)
             if (power_user.custom_chat_separator && power_user.custom_chat_separator.length) {
                 mesSendString = power_user.custom_chat_separator + '\n' + mesSendString;
+            }
+            // if chat start formatting is disabled
+            else if (power_user.disable_start_formatting) {
+                mesSendString = mesSendString;
             }
             // add non-pygma dingus
             else if (!is_pygmalion) {

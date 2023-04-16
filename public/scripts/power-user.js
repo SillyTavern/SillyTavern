@@ -45,6 +45,8 @@ let power_user = {
     disable_description_formatting: false,
     disable_scenario_formatting: false,
     disable_personality_formatting: false,
+    disable_examples_formatting: false,
+    disable_start_formatting: false,
     always_force_name2: false,
     multigen: false,
     multigen_first_chunk: 50,
@@ -149,11 +151,6 @@ function applySheldWidth() {
 }
 
 async function applyThemeColor(type) {
-    const $MainTextColorPicker = document.getElementById('main-text-color-picker');
-    const $ItalicsTextColorPicker = document.getElementById('italics-color-picker');
-    const $FastUIBGColorPicker = document.getElementById('fastui-bg-color-picker');
-    const $BlurTintColorPicker = document.getElementById('blur-tint-color-picker');
-
     // temporarily unset transition from chat to not make the browser calculate the animation
     chat.style.transition = 'unset';
 
@@ -286,6 +283,8 @@ function loadPowerUserSettings(settings, data) {
     $("#disable-scenario-formatting-checkbox").prop("checked", power_user.disable_scenario_formatting);
     $("#disable-personality-formatting-checkbox").prop("checked", power_user.disable_personality_formatting);
     $("#always-force-name2-checkbox").prop("checked", power_user.always_force_name2);
+    $("#disable-examples-formatting-checkbox").prop("checked", power_user.disable_examples_formatting);
+    $('#disable-start-formatting-checkbox').prop("checked", power_user.disable_start_formatting);
     $("#custom_chat_separator").val(power_user.custom_chat_separator);
     $("#fast_ui_mode").prop("checked", power_user.fast_ui_mode);
     $("#waifuMode").prop("checked", power_user.waifuMode);
@@ -320,7 +319,7 @@ function loadPowerUserSettings(settings, data) {
     sortCharactersList();
 }
 
-function sortCharactersList(selector='.character_select') {
+function sortCharactersList(selector = '.character_select') {
     const sortFunc = (a, b) => power_user.sort_order == 'asc' ? compareFunc(a, b) : compareFunc(b, a);
     const compareFunc = (first, second) => typeof first[power_user.sort_field] == "string"
         ? first[power_user.sort_field].localeCompare(second[power_user.sort_field])
@@ -366,6 +365,16 @@ $(document).ready(() => {
 
     $("#disable-personality-formatting-checkbox").change(function () {
         power_user.disable_personality_formatting = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $("#disable-examples-formatting-checkbox").change(function () {
+        power_user.disable_examples_formatting = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    })
+
+    $("#disable-start-formatting-checkbox").change(function () {
+        power_user.disable_start_formatting = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 
@@ -416,18 +425,18 @@ $(document).ready(() => {
         applySheldWidth();
     });
 
-    $(`input[name="font_scale"]`).on('input', function (e) {
+    $(`input[name="font_scale"]`).on('input', async function (e) {
         power_user.font_scale = Number(e.target.value);
         $("#font_scale_counter").text(power_user.font_scale);
         localStorage.setItem(storage_keys.font_scale, power_user.font_scale);
-        applyFontScale();
+        await applyFontScale();
     });
 
-    $(`input[name="blur_strength"]`).on('input', function (e) {
+    $(`input[name="blur_strength"]`).on('input', async function (e) {
         power_user.blur_strength = Number(e.target.value);
         $("#blur_strength_counter").text(power_user.blur_strength);
         localStorage.setItem(storage_keys.blur_strength, power_user.blur_strength);
-        applyBlurStrength();
+        await applyBlurStrength();
     });
 
     $("#main-text-color-picker").on('change', (evt) => {
