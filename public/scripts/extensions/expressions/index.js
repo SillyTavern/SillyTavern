@@ -247,14 +247,25 @@ async function setExpression(character, expression, force) {
         const imgUrl = `/characters/${character}/${filename}`;
         img.attr('src', imgUrl);
         img.removeClass('default');
+        img.off('error');
+        img.on('error', function() {
+            $(this).attr('src', '');
+            if (force && extension_settings.expressions.showDefault) {
+                setDefault();
+            }
+        });
     } else {
         if (extension_settings.expressions.showDefault) {
             //console.log('no character images, trying default expressions');
-            const defImgUrl = `/img/default-expressions/${filename}`;
-            //console.log(defImgUrl);
-            img.attr('src', defImgUrl);
-            img.addClass('default');
+            setDefault();
         }
+    }
+
+    function setDefault() {
+        const defImgUrl = `/img/default-expressions/${filename}`;
+        //console.log(defImgUrl);
+        img.attr('src', defImgUrl);
+        img.addClass('default');
     }
 }
 
@@ -276,9 +287,6 @@ function onClickExpressionImage() {
     function addExpressionImage() {
         const html = `<div class="expression-holder"><img class="expression"></div>`;
         $('body').append(html);
-        $('img.expression').on('error', function () {
-            $(this).attr('src', '');
-        });
     }
     function addSettings() {
         const html = `
