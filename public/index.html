@@ -54,6 +54,7 @@
 
 <body class="no-blur">
 
+    <div id="bg_custom"></div>
     <div id="bg1"></div>
     <div id="bg2"></div>
 
@@ -252,7 +253,7 @@
                                 </div>
                                 <div class="range-block-counter">
                                     Alternative server URL (leave empty to use the default value).<br>
-                                    <b class="failure">Don't expose your real API keys to reverse proxies!</b>
+                                    <b class="reverse_proxy_warning">Don't expose your real API keys to reverse proxies!</b>
                                 </div>
                                 <div class="wide100p">
                                     <input id="openai_reverse_proxy" type="text" class="text_pole" placeholder="https://api.openai.com/v1" />
@@ -1819,7 +1820,7 @@
                 <textarea id="send_textarea" placeholder="Not connected to API!" name="text"></textarea>
                 <div id="send_but_sheld">
                     <div id="loading_mes">
-                        <div alt="" class="fa-solid fa-hourglass-half"></div>
+                        <div alt="" class="fa-solid fa-fade fa-hourglass-half"></div>
                     </div>
                     <div id="send_but" class="fa-solid fa-feather-pointed"></div>
                 </div>

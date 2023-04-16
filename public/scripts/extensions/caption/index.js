@@ -17,7 +17,7 @@ async function setImageIcon() {
     try {
         const sendButton = document.getElementById('send_picture');
         sendButton.classList.add('fa-image');
-        sendButton.classList.remove('fa-hourglass-half');
+        sendButton.classList.remove('fa-hourglass-half', 'fa-fade');
     }
     catch (error) {
         console.log(error);
@@ -28,7 +28,7 @@ async function setSpinnerIcon() {
     try {
         const sendButton = document.getElementById('send_picture');
         sendButton.classList.remove('fa-image');
-        sendButton.classList.add('fa-hourglass-half');
+        sendButton.classList.add('fa-hourglass-half', 'fa-fade');
     }
     catch (error) {
         console.log(error);

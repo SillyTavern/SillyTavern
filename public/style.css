@@ -3148,6 +3148,11 @@ toolcool-color-picker {
     flex-wrap: wrap;
 }
 
+.reverse_proxy_warning {
+    color: red;
+    opacity: 0.5;
+}
+
 .textarea_compact {
     font-size: calc(var(--mainFontSize) * 0.9);
     line-height: 1.2;
