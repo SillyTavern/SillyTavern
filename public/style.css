@@ -2686,6 +2686,7 @@ a {
 
 #export_format_popup {
     display: none;
+    z-index: 9999;
 }
 
 .list-group {

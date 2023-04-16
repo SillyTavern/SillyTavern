@@ -1373,17 +1373,10 @@
                                     </label>
                                     <div id="rm_button_back" class="menu_button fa-solid fa-left-long "></div>
                                     <div id="advanced_div" class="menu_button fa-solid fa-book " title="Advanced Definitions"></div>
-                                    <div id="export_format_popup" class="list-group">
-                                        <div class="export_format list-group-item" data-format="png">PNG</div>
-                                        <div class="export_format list-group-item" data-format="json">JSON</div>
-                                        <div class="export_format list-group-item" data-format="webp">WEBP</div>
-                                    </div>
                                     <div id="export_button" class="menu_button fa-solid fa-file-export " title="Export and Download"></div>
-                                    <!-- <div id="create_button" class="menu_button" type="submit" title="Create Character">✅</div> -->
                                     <label for="create_button" id="create_button_label" class="menu_button fa-solid fa-user-check" title="Create Character">
                                         <input type="submit" id="create_button" name="create_button">
                                     </label>
-                                    <!-- <input id="create_button" class="menu_button" title="Create Character" type="submit" value="✅"> -->
                                     <div id="delete_button" class="menu_button fa-solid fa-trash-can " title="Delete Character"></div>
                                 </div>
                             </div>
@@ -1826,6 +1819,7 @@
         </div>
     </div>
 
+    <!-- popups live outside sheld to avoid blur conflicts -->
     <div id="options" class="font-family-reset">
         <div class="options-content">
             <a id="option_back_to_main">
@@ -1858,6 +1852,12 @@
                 <span>Regenerate</span>
             </a>
         </div>
+    </div>
+
+    <div id="export_format_popup" class="list-group">
+        <div class="export_format list-group-item" data-format="png">PNG</div>
+        <div class="export_format list-group-item" data-format="json">JSON</div>
+        <div class="export_format list-group-item" data-format="webp">WEBP</div>
     </div>
 </body>
 
