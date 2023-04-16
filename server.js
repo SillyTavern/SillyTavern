@@ -270,6 +270,7 @@ app.post("/generate", jsonParser, async function (request, response_generate = r
             typical: request.body.typical,
             sampler_order: sampler_order,
             singleline: !!request.body.singleline,
+            stop_sequence: request.body.stop_sequence || [],
         };
     }
 
