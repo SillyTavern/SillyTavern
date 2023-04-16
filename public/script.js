@@ -129,6 +129,7 @@ export {
     isStreamingEnabled,
     getThumbnailUrl,
     getStoppingStrings,
+    getStatus,
     chat,
     this_chid,
     settings,

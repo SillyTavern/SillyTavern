@@ -4,6 +4,7 @@ import {
     characters,
     callPopup,
     token,
+    getStatus,
 } from "../script.js";
 import { delay } from "./utils.js";
 
@@ -345,6 +346,7 @@ $(document).ready(() => {
 
     $("#pygmalion_formatting").change(function (e) {
         power_user.pygmalion_formatting = Number($(this).find(":selected").val());
+        getStatus();
         saveSettingsDebounced();
     });
 
