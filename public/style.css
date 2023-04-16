@@ -335,11 +335,12 @@ code {
 .options-content {
     overflow: hidden;
     display: block;
-    background-color: var(--SmartThemeFastUIBGColor);
+    background-color: var(--SmartThemeBlurTintColor);
     border: 1px solid var(--white30a);
     border-radius: 15px;
     box-shadow: 0 0 5px black;
     text-shadow: 0 0 3px black;
+    backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)*2));
     /* min-width: 200px; */
     z-index: 2000;
     margin-bottom: 3px;
@@ -383,7 +384,7 @@ code {
 }
 
 .options-content a:hover {
-    background-color: var(--SmartThemeBlurTintColor);
+    background-color: var(--SmartThemeEmColor);
 }
 
 
@@ -1117,8 +1118,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     flex-wrap: wrap;
 }
 
-.form_create_bottom_buttons_block .menu_button
-{
+.form_create_bottom_buttons_block .menu_button {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -1289,6 +1289,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 #shadow_popup {
     backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
     -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
+    background-color: var(--black70a);
     display: none;
     opacity: 0.0;
     position: absolute;
@@ -1302,6 +1303,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
     backdrop-filter: blur(var(--SmartThemeBlurStrength));
     -webkit-backdrop-filter: blur(var(--SmartThemeBlurStrength));
+    background-color: var(--black30a);
     display: none;
     opacity: 1.0;
     position: absolute;
@@ -1841,6 +1843,8 @@ input[type="range"]::-webkit-slider-thumb {
     height: 100svh;
     z-index: 2055;
     background-color: var(--black70a);
+    -webkit-backdrop-filter: blur(var(--SmartThemeBlurStrength));
+    backdrop-filter: blur(var(--SmartThemeBlurStrength));
 }
 
 .mes_stop {
@@ -1966,8 +1970,8 @@ input[type="range"]::-webkit-slider-thumb {
 #character_popup {
     display: none;
     background-color: var(--black30a);
-    backdrop-filter: blur(var(--SmartThemeBlurStrength));
-    -webkit-backdrop-filter: blur(var(--SmartThemeBlurStrength));
+    backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)*2));
+    -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)*2));
     grid-template-rows: 50px 1fr 1fr 1fr 5fr;
     grid-gap: 10px;
     max-width: var(--sheldWidth);
@@ -2058,6 +2062,7 @@ h5 {
     height: 100svh;
     z-index: 3001;
     top: 0;
+    background-color: var(--black70a);
     backdrop-filter: blur(var(--SmartThemeBlurStrength));
     -webkit-backdrop-filter: blur(var(--SmartThemeBlurStrength));
 }
@@ -2690,7 +2695,8 @@ a {
     margin-top: 0;
     margin-bottom: 3px;
     overflow: hidden;
-    background-color: var(--SmartThemeFastUIBGColor);
+    background-color: var(--SmartThemeBlurTintColor);
+    backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)*2));
     border: 1px solid var(--white30a);
     border-radius: 15px;
     box-shadow: 0 0 5px black;
@@ -2698,7 +2704,7 @@ a {
 }
 
 .list-group-item:hover {
-    background-color: var(--SmartThemeBlurTintColor);
+    background-color: var(--SmartThemeEmColor);
 }
 
 .list-group-item {
@@ -3381,6 +3387,7 @@ body.no-blur #send_form.no-connection {
 body.no-blur #bg1,
 body.no-blur #bg2 {
     filter: unset;
+
 }
 
 body.no-blur .drawer-content,
@@ -3393,7 +3400,9 @@ body.no-blur #character_popup,
 body.no-blur #world_popup,
 body.no-blur #dialogue_popup,
 body.no-blur #select_chat_popup,
-body.no-blur #send_form {
+body.no-blur .options-content,
+body.no-blur #send_form,
+body.no-blur .list-group {
     background-color: var(--SmartThemeFastUIBGColor) !important;
 }
 

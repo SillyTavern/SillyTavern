@@ -509,7 +509,7 @@ async function getStatus() {
                     online_status = "no_connection";
                 }
                 if ((online_status.toLowerCase().indexOf("pygmalion") != -1 && power_user.pygmalion_formatting == pygmalion_options.AUTO)
-                 || (online_status !== "no_connection" && power_user.pygmalion_formatting == pygmalion_options.ENABLED)) {
+                    || (online_status !== "no_connection" && power_user.pygmalion_formatting == pygmalion_options.ENABLED)) {
                     is_pygmalion = true;
                     online_status += " (Pyg. formatting on)";
                 } else {
@@ -1192,7 +1192,7 @@ class StreamingProcessor {
             messageId = count_view_mes - 1;
             this.showStopButton(messageId);
         }
-        
+
         hideSwipeButtons();
         scrollChatToBottom();
         return messageId;
@@ -1722,7 +1722,7 @@ async function Generate(type, automatic_trigger, force_name2) {
                 for (let j = 0; j < mesSend.length; j++) {
 
                     mesSendString += mesSend[j];
-                    if (isImpersonate && j === mesSend.length -1 && tokens_already_generated === 0) {
+                    if (isImpersonate && j === mesSend.length - 1 && tokens_already_generated === 0) {
                         const name = is_pygmalion ? 'You' : name1;
                         if (!mesSendString.endsWith('\n')) {
                             mesSendString += '\n';
@@ -1811,28 +1811,28 @@ async function Generate(type, automatic_trigger, force_name2) {
             let this_settings = koboldai_settings[koboldai_setting_names[preset_settings]];
 
             if (isMultigenEnabled()) {
-                 // if nothing has been generated yet..
+                // if nothing has been generated yet..
                 if (tokens_already_generated === 0) {
-                     // if the max gen setting is > 50...(
+                    // if the max gen setting is > 50...(
                     if (parseInt(amount_gen) >= power_user.multigen_first_chunk) {
-                         // then only try to make 50 this cycle..
+                        // then only try to make 50 this cycle..
                         this_amount_gen = power_user.multigen_first_chunk;
                     }
                     else {
-                         // otherwise, make as much as the max amount request.
+                        // otherwise, make as much as the max amount request.
                         this_amount_gen = parseInt(amount_gen);
                     }
                 }
                 // if we already received some generated text...
                 else {
                     // if the remaining tokens to be made is less than next potential cycle count
-                    if (parseInt(amount_gen) - tokens_already_generated < power_user.multigen_next_chunks) { 
+                    if (parseInt(amount_gen) - tokens_already_generated < power_user.multigen_next_chunks) {
                         // subtract already generated amount from the desired max gen amount
-                        this_amount_gen = parseInt(amount_gen) - tokens_already_generated; 
+                        this_amount_gen = parseInt(amount_gen) - tokens_already_generated;
                     }
                     else {
                         // otherwise make the standard cycle amount (first 50, and 30 after that)
-                        this_amount_gen = power_user.multigen_next_chunks; 
+                        this_amount_gen = power_user.multigen_next_chunks;
                     }
                 }
             }
@@ -2039,7 +2039,7 @@ async function Generate(type, automatic_trigger, force_name2) {
                         setTimeout(() => {
                             let newType = type == "swipe" ? "swipe" : "force_name2";
                             newType = isImpersonate ? type : newType;
-                            
+
                             Generate(newType, automatic_trigger = false, force_name2 = true);
                         }, generate_loop_counter * 1000);
                     }
@@ -4319,7 +4319,7 @@ $(document).ready(function () {
 
     ///////////// OPTIMIZED LISTENERS FOR LEFT SIDE OPTIONS POPUP MENU //////////////////////
 
-    $("#options_button [id]").on("click", function () {
+    $("#options [id]").on("click", function () {
         var id = $(this).attr("id");
 
         if (id == "option_select_chat") {
@@ -4818,13 +4818,13 @@ $(document).ready(function () {
             ) {
                 continue;
             }
-    
+
             var format = ext[1].toLowerCase();
             $("#character_import_file_type").val(format);
             var formData = new FormData();
             formData.append('avatar', file);
             formData.append('file_type', format);
-    
+
             jQuery.ajax({
                 type: "POST",
                 url: "/importcharacter",
@@ -4843,12 +4843,12 @@ $(document).ready(function () {
                             .children("img")
                             .attr("src", "characters/" + data.file_name + ".png");
                         $("#rm_info_avatar").append($prev_img);
-    
+
                         let oldSelectedChar = null;
                         if (this_chid != undefined && this_chid != "invalid-safety-id") {
                             oldSelectedChar = characters[this_chid].name;
                         }
-    
+
                         names.push(data.file_name);
                         let nameString = DOMPurify.sanitize(names.join(', '));
                         await getCharacters();

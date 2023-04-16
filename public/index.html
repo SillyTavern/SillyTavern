@@ -967,51 +967,51 @@
                     <a href="/notes/advanced_formatting" class="notes-link" target="_blank">
                         <span class="note-link-span">?</span>
                     </a>
-                    </h3>
-                    <div class="flex-container">
-                        <div name="PygOverrides">
-                            <h4>AutoFormat Overrides</h4>
-                            <label class="checkbox_label" for="disable-description-formatting-checkbox">
-                                <input id="disable-description-formatting-checkbox" type="checkbox" />
-                                Disable description formatting
-                            </label>
-                            <label class="checkbox_label" for="disable-scenario-formatting-checkbox">
-                                <input id="disable-scenario-formatting-checkbox" type="checkbox" />
-                                Disable scenario formatting
-                            </label>
-                            <label class="checkbox_label" for="disable-personality-formatting-checkbox">
-                                <input id="disable-personality-formatting-checkbox" type="checkbox" />
-                                Disable personality formatting
-                            </label>
+                </h3>
+                <div class="flex-container">
+                    <div name="PygOverrides">
+                        <h4>AutoFormat Overrides</h4>
+                        <label class="checkbox_label" for="disable-description-formatting-checkbox">
+                            <input id="disable-description-formatting-checkbox" type="checkbox" />
+                            Disable description formatting
+                        </label>
+                        <label class="checkbox_label" for="disable-scenario-formatting-checkbox">
+                            <input id="disable-scenario-formatting-checkbox" type="checkbox" />
+                            Disable scenario formatting
+                        </label>
+                        <label class="checkbox_label" for="disable-personality-formatting-checkbox">
+                            <input id="disable-personality-formatting-checkbox" type="checkbox" />
+                            Disable personality formatting
+                        </label>
+                        <div>
+                            <h4>
+                                Custom Chat Separator
+                            </h4>
                             <div>
-                                <h4>
-                                    Custom Chat Separator
-                                </h4>
-                                <div>
-                                    <input id="custom_chat_separator" class="text_pole" type="text" placeholder="&lt;START&gt;" />
-                                </div>
-                            </div>
-                            <div id="anchors-block">
-                                <h4>
-                                    Anchors Order
-                                    <a href="/notes/9" class="notes-link" target="_blank">
-                                        <span class="note-link-span">?</span>
-                                    </a>
-                                </h4>
-                                <select id="anchor_order">
-                                    <option value="0">Character then Style</option>
-                                    <option value="1">Style then Character</option>
-                                </select>
-                                <div id="anchor_checkbox">
-                                    <label for="character_anchor"><input id="character_anchor" type="checkbox" />
-                                        Character Anchor
-                                    </label>
-                                    <label for="style_anchor"><input id="style_anchor" type="checkbox" />
-                                        Style Anchor
-                                    </label>
-                                </div>
+                                <input id="custom_chat_separator" class="text_pole" type="text" placeholder="&lt;START&gt;" />
                             </div>
                         </div>
+                        <div id="anchors-block">
+                            <h4>
+                                Anchors Order
+                                <a href="/notes/9" class="notes-link" target="_blank">
+                                    <span class="note-link-span">?</span>
+                                </a>
+                            </h4>
+                            <select id="anchor_order">
+                                <option value="0">Character then Style</option>
+                                <option value="1">Style then Character</option>
+                            </select>
+                            <div id="anchor_checkbox">
+                                <label for="character_anchor"><input id="character_anchor" type="checkbox" />
+                                    Character Anchor
+                                </label>
+                                <label for="style_anchor"><input id="style_anchor" type="checkbox" />
+                                    Style Anchor
+                                </label>
+                            </div>
+                        </div>
+                    </div>
                     <div name="ContextFormatting">
                         <h4>Context Formatting</h4>
                         <label class="checkbox_label" for="always-force-name2-checkbox">
@@ -1035,7 +1035,7 @@
                         </div>
                         <div>
                             <h4>
-                                Multigen 
+                                Multigen
                                 <a href="/notes/multigen" class="notes-link" target="_blank">
                                     <span class="note-link-span">?</span>
                                 </a>
@@ -1814,41 +1814,7 @@
                 <div id="dialogue_del_mes_cancel" class="menu_button">Cancel</div>
             </div>
             <form id="send_form" class="no-connection">
-                <div id="options_button" class="fa-solid fa-bars">
-                    <div id="options" class="font-family-reset">
-                        <div class="options-content">
-                            <a id="option_back_to_main">
-                                <div class="fa-lg fa-solid fa-left-long"></div>
-                                <span>Back to parent chat</span>
-                            </a>
-                            <a id="option_new_bookmark">
-                                <div class="fa-lg fa-solid fa-bookmark"></div>
-                                <span>Save bookmark</span>
-                            </a>
-                            <a id="option_start_new_chat">
-                                <div class="fa-lg fa-solid fa-comment-dots"></div>
-                                <span>Start new chat</span>
-                            </a>
-                            <a id="option_select_chat">
-                                <div class="fa-lg fa-solid fa-address-book"></div>
-                                <span>View past chats</span>
-                            </a>
-                            <hr>
-                            <a id="option_delete_mes">
-                                <div class="fa-lg fa-solid fa-trash-can"></div>
-                                <span>Delete messages</span>
-                            </a>
-                            <a id="option_impersonate" title="Ask AI to write your message for you">
-                                <div class="fa-lg fa-solid fa-user-secret"></div>
-                                <span>Impersonate</span>
-                            </a>
-                            <a id="option_regenerate">
-                                <div class="fa-lg fa-solid fa-repeat "></div>
-                                <span>Regenerate</span>
-                            </a>
-                        </div>
-                    </div>
-                </div>
+                <div id="options_button" class="fa-solid fa-bars"></div>
                 <textarea id="send_textarea" placeholder="Not connected to API!" name="text"></textarea>
                 <div id="send_but_sheld">
                     <div id="loading_mes">
@@ -1857,6 +1823,40 @@
                     <div id="send_but" class="fa-solid fa-feather-pointed"></div>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <div id="options" class="font-family-reset">
+        <div class="options-content">
+            <a id="option_back_to_main">
+                <div class="fa-lg fa-solid fa-left-long"></div>
+                <span>Back to parent chat</span>
+            </a>
+            <a id="option_new_bookmark">
+                <div class="fa-lg fa-solid fa-bookmark"></div>
+                <span>Save bookmark</span>
+            </a>
+            <a id="option_start_new_chat">
+                <div class="fa-lg fa-solid fa-comment-dots"></div>
+                <span>Start new chat</span>
+            </a>
+            <a id="option_select_chat">
+                <div class="fa-lg fa-solid fa-address-book"></div>
+                <span>View past chats</span>
+            </a>
+            <hr>
+            <a id="option_delete_mes">
+                <div class="fa-lg fa-solid fa-trash-can"></div>
+                <span>Delete messages</span>
+            </a>
+            <a id="option_impersonate" title="Ask AI to write your message for you">
+                <div class="fa-lg fa-solid fa-user-secret"></div>
+                <span>Impersonate</span>
+            </a>
+            <a id="option_regenerate">
+                <div class="fa-lg fa-solid fa-repeat "></div>
+                <span>Regenerate</span>
+            </a>
         </div>
     </div>
 </body>

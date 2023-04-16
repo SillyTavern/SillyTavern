@@ -12,6 +12,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+
 }
 
 #roll_dice:hover {
@@ -20,4 +21,5 @@
 
 #dice_dropdown {
     z-index: 100;
+    backdrop-filter: blur(--SmartThemeBlurStrength);
 }
