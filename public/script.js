@@ -1973,10 +1973,6 @@ async function Generate(type, automatic_trigger, force_name2) {
                 hideSwipeButtons();
                 let getMessage = await streamingProcessor.generate();
 
-                if (generatedPromtCache.length === 0) {
-                    generatedPromtCache = message_already_generated;
-                }
-
                 if (isMultigenEnabled()) {
                     tokens_already_generated += this_amount_gen;    // add new gen amt to any prev gen counter..
                     message_already_generated += getMessage;
@@ -1991,7 +1987,7 @@ async function Generate(type, automatic_trigger, force_name2) {
                     getMessage = message_already_generated;
                 }
 
-                if (streamingProcessor.isFinished) {
+                if (streamingProcessor && !streamingProcessor.isStopped && streamingProcessor.isFinished) {
                     streamingProcessor.onFinishStreaming(streamingProcessor.messageId, getMessage);
                     streamingProcessor = null;
                 }
@@ -4981,6 +4977,7 @@ $(document).ready(function () {
         if (streamingProcessor) {
             streamingProcessor.isStopped = true;
             streamingProcessor.onStopStreaming();
+            streamingProcessor = null;
         }
     });
 

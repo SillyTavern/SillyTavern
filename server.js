@@ -408,9 +408,9 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
             return null;
         }
 
-        let result = json5.parse(request.body.data)[0];
+        let result = JSON.parse(request.body.data)[0];
         let prompt = result;
-        let stopping_strings = json5.parse(request.body.data)[1].custom_stopping_strings;
+        let stopping_strings = JSON.parse(request.body.data)[1].custom_stopping_strings;
 
         try {
             for await (const text of readWebsocket()) {
@@ -428,7 +428,7 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
 
                 const generatedText = result.substring(prompt.length);
 
-                response_generate.write(JSON.stringify({ delta: newText }));
+                response_generate.write(JSON.stringify({ delta: newText }) + '\n');
 
                 if (generatedText) {
                     for (const str of stopping_strings) {

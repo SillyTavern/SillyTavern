@@ -30,7 +30,7 @@ let textgenerationwebui_settings = {
     truncation_length: 2048,
     ban_eos_token: false,
     streaming: false,
-    fn_index: 29,
+    fn_index: 34,
 };
 
 let textgenerationwebui_presets = [];
@@ -167,7 +167,13 @@ async function generateTextGenWithStreaming(generate_data) {
             let delta = '';
 
             try {
-                delta = JSON.parse(response).delta;
+                delta = response.split('\n').map(x => {
+                    try {
+                        return JSON.parse(x).delta;
+                    } catch { 
+                        return '';
+                    }
+                }).join('');
             }
             catch {
                 delta = '';
