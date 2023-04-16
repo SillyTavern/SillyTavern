@@ -35,13 +35,26 @@ const logger = console;
 
 const user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36";
 
-function unscrambleFormkey(c, code) {
-    var e;
-    eval(code);
-    return e.join('');
+function extractFormKey(html) {
+    const scriptRegex = /<script>if\(.+\)throw new Error;(.+)<\/script>/;
+    const scriptText = html.match(scriptRegex)[1];
+    const keyRegex = /var .="([0-9a-f]+)",/;
+    const keyText = scriptText.match(keyRegex)[1];
+    const cipherRegex = /.\[(\d+)\]=.\[(\d+)\]/g;
+    const cipherPairs = Array.from(scriptText.matchAll(cipherRegex));
+
+    const formKeyList = new Array(cipherPairs.length).fill("");
+    for (const pair of cipherPairs) {
+        const [formKeyIndex, keyIndex] = pair.slice(1).map(Number);
+        formKeyList[formKeyIndex] = keyText[keyIndex];
+    }
+    const formKey = formKeyList.join("");
+
+    return formKey;
 }
 
-function queryScrambler() {
+
+function md5() {
     function a(e, t) {
         var r = (65535 & e) + (65535 & t);
         return (e >> 16) + (t >> 16) + (r >> 16) << 16 | 65535 & r
@@ -269,18 +282,18 @@ class Client {
             "Origin": "https://poe.com",
             "Cookie": cookies,
         };
-        this.ws_domain = `tch${Math.floor(Math.random() * 1e6)}`;
         this.session.defaults.headers.common = this.headers;
         this.next_data = await this.get_next_data();
         this.channel = await this.get_channel_data();
-        await this.connect_ws();
         this.bots = await this.get_bots();
         this.bot_names = this.get_bot_names();
+        this.ws_domain = `tch${Math.floor(Math.random() * 1e6)}`;
         this.gql_headers = {
             "poe-formkey": this.formkey,
             "poe-tchannel": this.channel["channel"],
             ...this.headers,
         };
+        await this.connect_ws();
         await this.subscribe();
     }
 
@@ -289,13 +302,10 @@ class Client {
 
         const r = await request_with_retries(() => this.session.get(this.home_url));
         const jsonRegex = /<script id="__NEXT_DATA__" type="application\/json">(.+?)<\/script>/;
-        const formKeyRegex = /var c="(.+?)",(.+?),window./;
         const jsonText = jsonRegex.exec(r.data)[1];
-        const key = formKeyRegex.exec(r.data)[1];
-        const code = formKeyRegex.exec(r.data)[2];
         const nextData = JSON.parse(jsonText);
 
-        this.formkey = unscrambleFormkey(key, code);
+        this.formkey = extractFormKey(r.data);
         this.viewer = nextData.props.pageProps.payload.viewer;
 
         return nextData;
@@ -360,7 +370,7 @@ class Client {
             if (queryDisplayName) payload['queryName'] = queryDisplayName;
             const scramblePayload = JSON.stringify(payload);
             const _headers = this.gql_headers;
-            _headers['poe-tag-id'] = queryScrambler()(scramblePayload + this.formkey + "WpuLMiXEKKE98j56k");
+            _headers['poe-tag-id'] = md5()(scramblePayload + this.formkey + "WpuLMiXEKKE98j56k");
             _headers['poe-formkey'] = this.formkey;
             const r = await request_with_retries(() => this.session.post(this.gql_url, payload, { headers: this.gql_headers }));
             if (!r.data.data) {
