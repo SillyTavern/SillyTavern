@@ -31,6 +31,7 @@ let textgenerationwebui_settings = {
     ban_eos_token: false,
     streaming: false,
     fn_index: 34,
+    skip_special_tokens: true,
 };
 
 let textgenerationwebui_presets = [];
@@ -54,6 +55,7 @@ const setting_names = [
     "add_bos_token",
     "ban_eos_token",
     "fn_index",
+    "skip_special_tokens",
 ];
 
 function selectPreset(name) {

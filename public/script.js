@@ -1014,8 +1014,8 @@ function substituteParams(content, _name1, _name2) {
 }
 
 function getStoppingStrings(isImpersonate) {
-    const charString = [`\n${name2}: `];
-    const userString = is_pygmalion ? [`\nYou: `] : [`\n${name1}: `];
+    const charString = `"\n${name2}: "`;
+    const userString = is_pygmalion ? `"\nYou: "` : `"\n${name1}: "`;
     return isImpersonate ? charString : userString;
 }
 
@@ -1886,9 +1886,10 @@ async function Generate(type, automatic_trigger, force_name2) {
                         'early_stopping': textgenerationwebui_settings.early_stopping,
                         'seed': textgenerationwebui_settings.seed,
                         'add_bos_token': textgenerationwebui_settings.add_bos_token,
-                        'custom_stopping_strings': getStoppingStrings(isImpersonate).concat(textgenerationwebui_settings.custom_stopping_strings),
+                        'custom_stopping_strings': JSON.stringify(getStoppingStrings(isImpersonate)),
                         'truncation_length': max_context,
                         'ban_eos_token': textgenerationwebui_settings.ban_eos_token,
+                        'skip_special_tokens': textgenerationwebui_settings.skip_special_tokens,
                     }
                 ];
                 generate_data = { "data": [JSON.stringify(data)] };
