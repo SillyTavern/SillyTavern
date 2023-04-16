@@ -334,7 +334,12 @@ function textGenProcessStartedHandler(websocket, content, session, prompt, fn_in
         case "process_generating":
             return { text: content.output.data[0], completed: false };
         case "process_completed":
-            return { text: content.output.data[0], completed: true };
+            try {
+                return { text: content.output.data[0], completed: true };
+            }
+            catch {
+                return { text: '', completed: true };
+            }
     }
 
     return { text: '', completed: false };
