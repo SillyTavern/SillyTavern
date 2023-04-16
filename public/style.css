@@ -2889,8 +2889,6 @@ label[for="extensions_autoconnect"] {
 .drawer-icon {
     display: inline-block;
     cursor: pointer;
-    /*     min-width: 40px;
-    height: 30px; */
     font-size: 1.8rem;
 }
 
@@ -2940,12 +2938,9 @@ label[for="extensions_autoconnect"] {
     display: none;
 }
 
-/*utility class intended to force drawer flex items to be 25% width of drawer*/
 .drawer25pWidth {
     flex-basis: calc((var(--sheldWidth) / 4) - 16px);
 }
-
-
 
 .drawer-content {
     background-color: var(--SmartThemeBlurTintColor);
@@ -2962,29 +2957,10 @@ label[for="extensions_autoconnect"] {
     position: absolute;
     left: 0;
     right: 0;
-    /* width: min-content; */
     max-width: var(--sheldWidth);
     margin: 35px auto 0 auto;
     backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
     -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
-    /*     background-color: var(--SmartThemeBlurTintColor);
-    color: white;
-    border-radius: 20px;
-    padding: 10px;
-    border: 1px solid var(--grey30a);
-    box-shadow: 0 0 20px black;
-    min-width: 450px;
-    overflow-y: scroll;
-    max-height: calc(100svh - 70px);
-    display: none;
-    position: absolute;
-    left: 0;
-    right: 0;
-    width: min-content;
-    max-width: var(--sheldWidth);
-    margin: 35px auto 0 auto;
-    backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
-    -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength))); */
 }
 
 .fillRight,
@@ -3009,10 +2985,6 @@ label[for="extensions_autoconnect"] {
 .width100p {
     width: 100%;
 }
-
-/* .drawer-content .text_pole {
-    width: 100%;
-} */
 
 .drawer-content select {
     width: 100%;
@@ -3317,7 +3289,7 @@ toolcool-color-picker {
 
 
     #send_textarea {
-        /*larger input bar for mobile screens, easier to tap*/
+
         font-size: calc(var(--mainFontSize) + .25rem);
         line-height: calc(var(--mainFontSize) + .5rem);
         min-height: calc(2rem + 0.75rem + 2px);
@@ -3336,7 +3308,7 @@ toolcool-color-picker {
     }
 
     #rm_ch_create_block textarea {
-        /*without this the text areas display far too large*/
+
         max-height: 200px;
     }
 
@@ -3393,9 +3365,7 @@ body.no-blur #bg2 {
 
 body.no-blur .drawer-content,
 body:not(.bubblechat).no-blur #chat,
-/*apply black to whole chat with not in bubblechat*/
 body.bubblechat.no-blur .mes,
-/*apply black to each mes when in bubblechat*/
 body.no-blur #top-bar,
 body.no-blur #character_popup,
 body.no-blur #world_popup,
@@ -3412,7 +3382,6 @@ body.no-blur .list-group {
 
 body.waifuMode #top-bar {
     border-radius: 0 0 20px 20px;
-    /* color: var(--grey30a); */
     border: 1px solid var(--grey30a);
 }
 
@@ -3458,40 +3427,6 @@ body.waifuMode img.expression {
     max-height: 90vh;
     vertical-align: bottom;
 }
-
-/*styles for potential variant of WaifuMode sheld 50% waifu, 50% chat*/
-/*
-body.waifuMode2 #sheld {
-    display: grid;
-    grid-template-rows: auto min-content;
-    height: calc(100svh - 42px);
-    overflow-x: hidden;
-    max-width: calc(var(--sheldWidth) /2);
-    position: absolute;
-    right: calc((100vw - var(--sheldWidth))/2);
-    top: 41px;
-    margin: 0 auto;
-    z-index: 2;
-}
-
-body.waifuMode2 .expression-holder {
-    max-height: 90vh;
-    max-width: calc(var(--sheldWidth)/2);
-    position: fixed;
-    left: calc((100vw - var(--sheldWidth))/2);
-    right: auto;
-    bottom: 0;
-    filter: drop-shadow(2px 2px 2px #51515199);
-    transition: 500ms;
-    z-index: 1;
-}
-
-body.waifuMode2 img.expression {
-    max-width: 100%;
-    max-height: 90vh;
-    vertical-align: bottom;
-}
-*/
 
 /*this part only only applies to iOS devices*/
 @supports (-webkit-touch-callout: none) {
@@ -3544,7 +3479,7 @@ body.waifuMode2 img.expression {
     }
 }
 
-.spin {
+/* .spin {
     animation-name: spin;
     animation-duration: 2000ms;
     animation-iteration-count: infinite;
@@ -3560,3 +3495,4 @@ body.waifuMode2 img.expression {
         transform: rotate(360deg);
     }
 }
+*/
