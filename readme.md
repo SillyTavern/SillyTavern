@@ -14,6 +14,13 @@ On its own Tavern is useless, as it's just a user interface. You have to have ac
 The most advanced/intelligent AI backend for roleplaying is to pay for OpenAI's GPT API. It's also among the easiest to use. Objectively, GPT is streets ahead of all other backends. However, OpenAI logs all your activity, and your account MAY be banned in the future if you violate their policies (e.g. on adult content). However, there are no reports of anyone being banned yet.
 People who value privacy more tend to run a self-hosted AI backend like KoboldAI. Self-hosted backends do not log, but they are much less capable of roleplaying.
 
+#### OpenAI bots are too horny, aggressive, or you want to try something new? 🤔
+
+Try some other Jailbreak / NSFW prompts from this community-maintained list:
+
+https://rentry.org/GPTJailbreakPrompting
+
+
 ### Do I need a powerful PC to run Tavern?
 Since Tavern is only a user interface, it has tiny hardware requirements, it will run on anything. It's the AI system backend that needs to be powerful.
 
