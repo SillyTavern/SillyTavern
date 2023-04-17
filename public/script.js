@@ -6,6 +6,7 @@ import {
     loadKoboldSettings,
     formatKoboldUrl,
     getKoboldGenerationData,
+    canUseKoboldStopSequence,
 } from "./scripts/kai-settings.js";
 
 import {
@@ -516,6 +517,11 @@ async function getStatus() {
                     online_status += " (Pyg. formatting on)";
                 } else {
                     is_pygmalion = false;
+                }
+
+                // determine if we can use stop sequence
+                if (main_api == "kobold") {
+                    kai_settings.use_stop_sequence = canUseKoboldStopSequence(data.version);
                 }
 
                 // determine if streaming is enabled for ooba

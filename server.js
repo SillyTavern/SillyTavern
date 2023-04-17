@@ -270,8 +270,10 @@ app.post("/generate", jsonParser, async function (request, response_generate = r
             typical: request.body.typical,
             sampler_order: sampler_order,
             singleline: !!request.body.singleline,
-            stop_sequence: request.body.stop_sequence || [],
         };
+        if (!!request.body.stop_sequence) {
+            this_settings['stop_sequence'] = request.body.stop_sequence;
+        }
     }
 
     console.log(this_settings);
@@ -536,7 +538,7 @@ app.post("/getchat", jsonParser, function (request, response) {
 
 
 });
-app.post("/getstatus", jsonParser, function (request, response_getstatus = response) {
+app.post("/getstatus", jsonParser, async function (request, response_getstatus = response) {
     if (!request.body) return response_getstatus.sendStatus(400);
     api_server = request.body.api_server;
     main_api = request.body.main_api;
@@ -547,9 +549,18 @@ app.post("/getstatus", jsonParser, function (request, response_getstatus = respo
         headers: { "Content-Type": "application/json" }
     };
     var url = api_server + "/v1/model";
+    let version = '';
     if (main_api == "textgenerationwebui") {
         url = api_server;
         args = {}
+    }
+    if (main_api == "kobold") {
+        try {
+            version = (await getAsync(api_server + "/v1/info/version")).result;
+        }
+        catch {
+            version = '0.0.0';
+        }
     }
     client.get(url, args, function (data, response) {
         if (response.statusCode == 200) {
@@ -568,8 +579,8 @@ app.post("/getstatus", jsonParser, function (request, response_getstatus = respo
                     data = { result: "no_connection" };
                 }
             } else {
+                data.version = version;
                 if (data.result != "ReadOnly") {
-                    //response_getstatus.send(data.result);
                 } else {
                     data.result = "no_connection";
                 }
