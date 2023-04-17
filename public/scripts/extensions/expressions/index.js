@@ -38,6 +38,7 @@ const DEFAULT_EXPRESSIONS = [
 let expressionsList = null;
 let lastCharacter = undefined;
 let lastMessage = null;
+let existingExpressions = [];
 let inApiCall = false;
 
 function onExpressionsShowDefaultInput() {
@@ -96,11 +97,16 @@ async function moduleWorker() {
         $('.expression_settings .offline_mode').css('display', 'none');
     }
 
+    // character has no expressions or it is not loaded
+    if (!context.groupId && existingExpressions.length === 0) {
+        lastCharacter = context.groupId || context.characterId;
+        return;
+    }
+
     // check if last message changed
     const currentLastMessage = getLastCharacterMessage();
     if ((lastCharacter === context.characterId || lastCharacter === context.groupId)
-        && lastMessage === currentLastMessage.mes
-        && $('img.expression').attr('src')) {
+        && lastMessage === currentLastMessage.mes) {
         return;
     }
 
@@ -163,6 +169,7 @@ async function validateImages() {
     }
 
     imagesValidating = true;
+    existingExpressions = [];
     const context = getContext();
     $('.expression_settings').show();
     $('#image_list').empty();
@@ -172,18 +179,19 @@ async function validateImages() {
         return;
     }
 
-    const IMAGE_LIST = (await getExpressionsList()).map(x => `${x}.png`);
+    const IMAGE_LIST = (await getExpressionsList()).map(x => ({ name: x, file: `${x}.png` }));
     IMAGE_LIST.forEach((item) => {
         const image = document.createElement('img');
-        image.src = `/characters/${context.name2}/${item}`;
+        image.src = `/characters/${context.name2}/${item.file}`;
         image.classList.add('debug-image');
         image.width = '0px';
         image.height = '0px';
         image.onload = function () {
-            $('#image_list').append(getListItem(item, image.src, 'success'));
+            existingExpressions.push(item.name);
+            $('#image_list').append(getListItem(item.file, image.src, 'success'));
         }
         image.onerror = function () {
-            $('#image_list').append(getListItem(item, '/img/No-Image-Placeholder.svg', 'failure'));
+            $('#image_list').append(getListItem(item.file, '/img/No-Image-Placeholder.svg', 'failure'));
         }
         $('#image_list').prepend(image);
     });
@@ -232,28 +240,32 @@ async function getExpressionsList() {
 
 async function setExpression(character, expression, force) {
     const filename = `${expression}.png`;
-    const debugImageStatus = document.querySelector(`#image_list div[id="${filename}"] span`);
     const img = $('img.expression');
 
-    if (!debugImageStatus && !force) {
-        validateImages();
-        setTimeout(() => setExpression(character, expression, false), 2000);
-        return;
-    }
-
-    if (force || (debugImageStatus && !debugImageStatus.classList.contains('failure'))) {
+    if (force || (existingExpressions.includes(expression))) {
         //console.log('setting expression from character images folder');
         const imgUrl = `/characters/${character}/${filename}`;
         img.attr('src', imgUrl);
         img.removeClass('default');
+        img.off('error');
+        img.on('error', function() {
+            $(this).attr('src', '');
+            if (force && extension_settings.expressions.showDefault) {
+                setDefault();
+            }
+        });
     } else {
         if (extension_settings.expressions.showDefault) {
             //console.log('no character images, trying default expressions');
-            const defImgUrl = `/img/default-expressions/${filename}`;
-            //console.log(defImgUrl);
-            img.attr('src', defImgUrl);
-            img.addClass('default');
+            setDefault();
         }
+    }
+
+    function setDefault() {
+        const defImgUrl = `/img/default-expressions/${filename}`;
+        //console.log(defImgUrl);
+        img.attr('src', defImgUrl);
+        img.addClass('default');
     }
 }
 

@@ -128,6 +128,8 @@ export {
     getTokenCount,
     isStreamingEnabled,
     getThumbnailUrl,
+    getStoppingStrings,
+    getStatus,
     chat,
     this_chid,
     settings,
@@ -1013,10 +1015,11 @@ function substituteParams(content, _name1, _name2) {
     return content;
 }
 
-function getStoppingStrings(isImpersonate) {
-    const charString = `"\n${name2}: "`;
-    const userString = is_pygmalion ? `"\nYou: "` : `"\n${name1}: "`;
-    return isImpersonate ? charString : userString;
+function getStoppingStrings(isImpersonate, wrapInQuotes) {
+    const charString = `\n${name2}: `;
+    const userString = is_pygmalion ? `\nYou: ` : `\n${name1}: `;
+    const result = isImpersonate ? charString : userString;
+    return wrapInQuotes ? `"${result}"` : result;
 }
 
 function getSlashCommand(message, type) {
@@ -1862,7 +1865,7 @@ async function Generate(type, automatic_trigger, force_name2) {
                 };
 
                 if (preset_settings != 'gui' || horde_settings.use_horde) {
-                    generate_data = getKoboldGenerationData(finalPromt, this_settings, this_amount_gen, this_max_context);
+                    generate_data = getKoboldGenerationData(finalPromt, this_settings, this_amount_gen, this_max_context, isImpersonate);
                 }
             }
 
@@ -1886,7 +1889,7 @@ async function Generate(type, automatic_trigger, force_name2) {
                         'early_stopping': textgenerationwebui_settings.early_stopping,
                         'seed': textgenerationwebui_settings.seed,
                         'add_bos_token': textgenerationwebui_settings.add_bos_token,
-                        'custom_stopping_strings': JSON.stringify(getStoppingStrings(isImpersonate)),
+                        'custom_stopping_strings': JSON.stringify(getStoppingStrings(isImpersonate, false)),
                         'truncation_length': max_context,
                         'ban_eos_token': textgenerationwebui_settings.ban_eos_token,
                         'skip_special_tokens': textgenerationwebui_settings.skip_special_tokens,

@@ -1,5 +1,6 @@
 import {
     saveSettingsDebounced,
+    getStoppingStrings,
 } from "../script.js";
 
 export {
@@ -55,7 +56,7 @@ function loadKoboldSettings(preset) {
     }
 }
 
-function getKoboldGenerationData(finalPromt, this_settings, this_amount_gen, this_max_context) {
+function getKoboldGenerationData(finalPromt, this_settings, this_amount_gen, this_max_context, isImpersonate) {
     let generate_data = {
         prompt: finalPromt,
         gui_settings: false,
@@ -80,6 +81,7 @@ function getKoboldGenerationData(finalPromt, this_settings, this_amount_gen, thi
         s7: this_settings.sampler_order[6],
         use_world_info: false,
         singleline: kai_settings.single_line,
+        stop_sequence: [getStoppingStrings(isImpersonate, false)],
     };
     return generate_data;
 }
