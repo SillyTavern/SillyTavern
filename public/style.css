@@ -761,6 +761,18 @@ input[type="file"] {
 #rm_button_panel_pin_div,
 #lm_button_panel_pin_div {
     font-size: 24px;
+    display: inline;
+}
+
+#rm_button_panel_pin_div,
+#lm_button_panel_pin_div {
+    opacity: 0.5;
+    transition: 0.3s;
+}
+
+#rm_button_panel_pin_div:hover,
+#lm_button_panel_pin_div:hover {
+    opacity: 1;
 }
 
 #lm_button_panel_pin_div {
@@ -774,12 +786,12 @@ input[type="file"] {
 
 #rm_button_panel_pin:checked+label,
 #lm_button_panel_pin:checked+label {
-    display: block;
+    display: inline;
 }
 
 #rm_button_panel_pin:checked+label .checked,
 #lm_button_panel_pin:checked+label .checked {
-    display: block;
+    display: inline;
 }
 
 #rm_button_panel_pin:checked+label .unchecked,
@@ -794,12 +806,17 @@ input[type="file"] {
 
 #rm_button_panel_pin:not(:checked)+label .unchecked,
 #lm_button_panel_pin:not(:checked)+label .unchecked {
-    display: block;
+    display: inline;
 }
 
 #rm_button_selected_ch {
     flex: 1;
     overflow: hidden;
+    opacity: 0.5;
+}
+
+#rm_button_selected_ch:hover {
+    opacity: 1;
 }
 
 #rm_button_selected_ch h2 {
