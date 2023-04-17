@@ -157,7 +157,8 @@ code {
     line-height: var(--mainFontSize);
 }
 
-#bg1, #bg_custom {
+#bg1,
+#bg_custom {
     background-repeat: no-repeat;
     background-attachment: fixed;
     background-size: cover;
@@ -2923,6 +2924,7 @@ label[for="extensions_autoconnect"] {
     display: flex;
     flex-flow: column;
     width: 100%;
+    /* z-index: 3001; */
 
 }
 
@@ -3002,7 +3004,7 @@ label[for="extensions_autoconnect"] {
     backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
     -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
     resize: both;
-    z-index: 9999;
+    z-index: 9999 !important;
 }
 
 .fillRight,
