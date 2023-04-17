@@ -213,10 +213,10 @@ code {
     width: var(--sheldWidth);
 }
 
-#sheldheader {
+.drag-grabber {
     position: absolute;
-    width: 20px;
-    height: 20px;
+    width: 20px !important;
+    height: 20px !important;
     color: var(--SmartThemeBodyColor);
     z-index: 2000;
     text-align: center;
@@ -3001,6 +3001,8 @@ label[for="extensions_autoconnect"] {
     margin: 35px auto 0 auto;
     backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
     -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
+    resize: both;
+    z-index: 9999;
 }
 
 .fillRight,
@@ -3009,9 +3011,9 @@ label[for="extensions_autoconnect"] {
 }
 
 .fillLeft {
-    max-width: calc((100svw - var(--sheldWidth) - 2px) /2);
-    height: 99.9svh;
-    max-height: 99.9svh;
+    width: calc((100svw - var(--sheldWidth) - 2px) /2);
+    /* height: 99.9svh; */
+    max-height: calc(100svh - 42px);
     position: fixed;
     top: 0;
     margin: 0;
@@ -3020,6 +3022,12 @@ label[for="extensions_autoconnect"] {
     padding: 5px;
     border-radius: 0 0 20px 0;
     box-shadow: none;
+    overflow-y: hidden;
+}
+
+.scrollableInner {
+    overflow: auto;
+    height: 100%;
 }
 
 .width100p {
@@ -3292,7 +3300,7 @@ toolcool-color-picker {
 
     }
 
-    #sheldheader,
+    .drag-grabber,
     .pull-tab {
         display: none;
 
@@ -3318,7 +3326,8 @@ toolcool-color-picker {
         border-right: 1px solid var(--grey30);
         border-bottom: 1px solid var(--grey30);
         border-radius: 0 0 20px 20px;
-        top: 40px;
+        top: 40px !important;
+        left: 0 !important;
         backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
     }
 
