@@ -869,6 +869,9 @@ function messageFormating(mes, ch_name, isSystem, forceAvatar) {
             .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
             .replace(/\n/g, "<br/>");
     } else if (!isSystem) {
+        const image = /&lt;img src="(.*?)".*?alt="(.*?)".*?&gt;/g;
+        mes = mes.replace(image, '![$2]($1)');
+
         mes = converter.makeHtml(mes);
         //mes = mes.replace(/{.*}/g, "");
         mes = mes.replace(/{{(\*?.+?\*?)}}/g, "");
