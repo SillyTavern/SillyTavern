@@ -2013,9 +2013,10 @@ async function generateThumbnail(type, file) {
 
     try {
         const image = await jimp.read(pathToOriginalFile);
-        await image.cover(mySize[0], mySize[1]).quality(95).writeAsync(pathToCachedFile);
+        const buffer = await image.cover(mySize[0], mySize[1]).quality(95).getBufferAsync(mime.lookup('jpg'));
+        fs.writeFileSync(pathToCachedFile, buffer);
     }
-    catch {
+    catch (err) {
         return null;
     }
 
