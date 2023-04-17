@@ -6,6 +6,7 @@ import {
     loadKoboldSettings,
     formatKoboldUrl,
     getKoboldGenerationData,
+    canUseKoboldStopSequence,
 } from "./scripts/kai-settings.js";
 
 import {
@@ -516,6 +517,11 @@ async function getStatus() {
                     online_status += " (Pyg. formatting on)";
                 } else {
                     is_pygmalion = false;
+                }
+
+                // determine if we can use stop sequence
+                if (main_api == "kobold") {
+                    kai_settings.use_stop_sequence = canUseKoboldStopSequence(data.version);
                 }
 
                 // determine if streaming is enabled for ooba
@@ -2196,6 +2202,9 @@ function saveReply(type, getMessage, this_mes_is_name) {
         type = 'normal';
     }
 
+    const img = extractImageFromMessage(getMessage);
+    getMessage = img.getMessage;
+
     if (type === 'swipe') {
         chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipes'].length] = getMessage;
         if (chat[chat.length - 1]['swipe_id'] === chat[chat.length - 1]['swipes'].length - 1) {
@@ -2225,10 +2234,30 @@ function saveReply(type, getMessage, this_mes_is_name) {
             chat[chat.length - 1]['is_name'] = true;
             chat[chat.length - 1]['force_avatar'] = avatarImg;
         }
-        //console.log('runGenerate calls addOneMessage');
+
+        saveImageToMessage(img, chat[chat.length - 1]);
         addOneMessage(chat[chat.length - 1]);
     }
     return { type, getMessage };
+}
+
+function saveImageToMessage(img, mes) {
+    if (mes && img.image) {
+        if (typeof mes.extra !== 'object') {
+            mes.extra = {};
+        }
+        mes.extra.image = img.image;
+        mes.title = img.title;
+    }
+}
+
+function extractImageFromMessage(getMessage) {
+    const regex = /<img src="(.*?)".*?alt="(.*?)".*?>/g;
+    const results = regex.exec(getMessage);
+    const image = results ? results[1] : '';
+    const title = results ? results[2] : '';
+    getMessage = getMessage.replace(regex, '');
+    return { getMessage, image, title };
 }
 
 function isMultigenEnabled() {
