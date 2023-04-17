@@ -8,7 +8,7 @@
     border: none;
     cursor: pointer;
     transition: 0.3s;
-    filter: brightness(0.7);
+    opacity: 0.7;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -17,6 +17,7 @@
 
 #roll_dice:hover {
     opacity: 1;
+    filter: brightness(1.2);
 }
 
 #dice_dropdown {

@@ -273,7 +273,7 @@ function onClickExpressionImage() {
 
 (function () {
     function addExpressionImage() {
-        const html = `<div class="expression-holder"><img class="expression"></div>`;
+        const html = `<div id="expression-holder" class="expression-holder"><img class="expression"></div>`;
         $('body').append(html);
     }
     function addSettings() {

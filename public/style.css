@@ -206,16 +206,52 @@ code {
     overflow-x: hidden;
     max-width: 800px;
     position: absolute;
-    left: 0;
-    right: 0;
+    left: calc((100svw - var(--sheldWidth))/2);
     top: 41px;
-    margin: 0 auto;
+    /* margin: 0 auto; */
     z-index: 2;
+    resize: both;
+}
 
+#sheldheader {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    color: var(--SmartThemeBodyColor);
+    z-index: 2000;
+    text-align: center;
+    border-radius: 5px;
+    vertical-align: middle;
+    right: 5px;
+    top: 5px;
+    opacity: 0.5;
+    cursor: grab;
+    border: 1px solid var(--white30a);
+    cursor: -moz-grab;
+    cursor: -webkit-grab;
+}
+
+#sheldheader:active {
+    cursor: grabbing;
+    cursor: -moz-grabbing;
+    cursor: -webkit-grabbing;
+}
+
+.pull-tab {
+    height: 10px;
+    width: 10px;
+    background-color: var(--SmartThemeEmColor);
+    position: absolute;
+    bottom: 0px;
+    right: 0px;
+    pointer-events: none;
+    z-index: 2001;
 }
 
 #chat {
     /* margin-top: 5px; */
+    max-height: calc(100vh - 42px);
+
     overflow-x: hidden;
     padding-bottom: 0;
     overflow-y: scroll;
@@ -280,15 +316,12 @@ code {
     border: none;
     cursor: pointer;
     transition: 0.3s;
-    filter: brightness(0.7);
+    opacity: 0.7;
     order: 99999;
     align-items: center;
     justify-content: center;
 }
 
-#send_but:hover {
-    filter: brightness(150%);
-}
 
 #loading_mes {
     display: none;
@@ -302,16 +335,19 @@ code {
 }
 
 #options_button {
+    width: 40px;
+    height: 40px;
+    margin: 0;
+    outline: none;
+    border: none;
     position: relative;
     display: inline;
-    color: var(--white50a);
+    opacity: 0.7;
     cursor: pointer;
     z-index: 2001;
-    -webkit-transition: color .25s ease-in-out;
-    -moz-transition: color .25s ease-in-out;
-    transition: color .25s ease-in-out;
     padding-left: 10px;
     padding-top: 0;
+    transition: 0.3s;
     font-size: 30px;
 }
 
@@ -321,8 +357,10 @@ code {
     font-weight: 400;
 }
 
-#options_button:hover {
-    color: var(--white100);
+#options_button:hover,
+#send_but:hover {
+    opacity: 1;
+    filter: brightness(1.2);
 }
 
 #options {
@@ -3148,7 +3186,8 @@ toolcool-color-picker {
     flex-wrap: wrap;
 }
 
-.reverse_proxy_warning, .neutral_warning {
+.reverse_proxy_warning,
+.neutral_warning {
     color: rgba(255, 0, 0, 0.5)
 }
 
@@ -3223,8 +3262,8 @@ toolcool-color-picker {
     #sheld,
     #character_popup,
     #world_popup {
-        height: calc(100svh - 45px);
-        width: 100%;
+        height: calc(100svh - 45px) !important;
+        width: 100% !important;
         margin: 0 auto;
     }
 
@@ -3241,6 +3280,20 @@ toolcool-color-picker {
         border-bottom: 1px solid var(--grey30);
         align-items: start;
         align-content: start;
+    }
+
+    #sheld {
+        resize: none;
+
+        left: 0 !important;
+        top: 42px !important;
+
+    }
+
+    #sheldheader,
+    .pull-tab {
+        display: none;
+
     }
 
     #sheld,
@@ -3390,7 +3443,7 @@ body.waifuMode #top-bar {
 }
 
 body.waifuMode #sheld {
-    display: grid;
+    /*     display: grid;
     grid-template-rows: 30vh min-content;
     height: calc(100svh - 42px);
     overflow-x: hidden;
@@ -3401,7 +3454,12 @@ body.waifuMode #sheld {
     top: 41px;
     margin: 0 auto;
     z-index: 2;
+    align-content: end; */
+
     align-content: end;
+    height: 30vh;
+    top: unset;
+    bottom: 0;
 }
 
 body.waifuMode #chat {
