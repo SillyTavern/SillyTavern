@@ -344,7 +344,6 @@ code {
     outline: none;
     border: none;
     position: relative;
-    display: inline;
     opacity: 0.7;
     cursor: pointer;
     z-index: 2001;
@@ -352,6 +351,8 @@ code {
     padding-top: 0;
     transition: 0.3s;
     font-size: 30px;
+    display: flex;
+    align-items: center;
 }
 
 .font-family-reset {
@@ -407,6 +408,7 @@ code {
     display: flex;
     align-items: center;
     column-gap: 10px;
+    cursor: pointer;
 }
 
 .options-content a div:first-child {

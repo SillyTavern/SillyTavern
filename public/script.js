@@ -869,9 +869,6 @@ function messageFormating(mes, ch_name, isSystem, forceAvatar) {
             .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
             .replace(/\n/g, "<br/>");
     } else if (!isSystem) {
-        const image = /&lt;img src="(.*?)".*?alt="(.*?)".*?&gt;/g;
-        mes = mes.replace(image, '![$2]($1)');
-
         mes = converter.makeHtml(mes);
         //mes = mes.replace(/{.*}/g, "");
         mes = mes.replace(/{{(\*?.+?\*?)}}/g, "");
@@ -2205,6 +2202,9 @@ function saveReply(type, getMessage, this_mes_is_name) {
         type = 'normal';
     }
 
+    const img = extractImageFromMessage(getMessage);
+    getMessage = img.getMessage;
+
     if (type === 'swipe') {
         chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipes'].length] = getMessage;
         if (chat[chat.length - 1]['swipe_id'] === chat[chat.length - 1]['swipes'].length - 1) {
@@ -2234,10 +2234,30 @@ function saveReply(type, getMessage, this_mes_is_name) {
             chat[chat.length - 1]['is_name'] = true;
             chat[chat.length - 1]['force_avatar'] = avatarImg;
         }
-        //console.log('runGenerate calls addOneMessage');
+
+        saveImageToMessage(img, chat[chat.length - 1]);
         addOneMessage(chat[chat.length - 1]);
     }
     return { type, getMessage };
+}
+
+function saveImageToMessage(img, mes) {
+    if (mes && img.image) {
+        if (typeof mes.extra !== 'object') {
+            mes.extra = {};
+        }
+        mes.extra.image = img.image;
+        mes.title = img.title;
+    }
+}
+
+function extractImageFromMessage(getMessage) {
+    const regex = /<img src="(.*?)".*?alt="(.*?)".*?>/g;
+    const results = regex.exec(getMessage);
+    const image = results ? results[1] : '';
+    const title = results ? results[2] : '';
+    getMessage = getMessage.replace(regex, '');
+    return { getMessage, image, title };
 }
 
 function isMultigenEnabled() {
