@@ -68,7 +68,9 @@
             <div class="drawer-toggle drawer-header">
                 <div id="leftNavDrawerIcon" class="drawer-icon fa-solid fa-sliders  closedIcon" title="AI Response Configuration"></div>
             </div>
-            <div id="left-nav-panel" class="drawer-content fillLeft closedDrawer widthFreeExpand">
+
+            <div id="left-nav-panel" class="drawer-content fillLeft closedDrawer">
+                <div id="left-nav-panelheader" class="fa-solid fa-grip drag-grabber"></div>
                 <div class="right_menu_button" id="lm_button_panel_pin_div" title="Locked = AI Configuration panel will stay open">
                     <input type="checkbox" id="lm_button_panel_pin">
                     <label for="lm_button_panel_pin">
@@ -76,719 +78,721 @@
                         <div class="checked fa-solid fa-lock "></div>
                     </label>
                 </div>
-                <div class="flex-container">
-                    <div id="respective-presets-block" class="width100p">
-                        <div id="kobold_api-presets">
-                            <h3>Kobold Presets
-                                <a href="/notes/4" class="notes-link" target="_blank">
-                                    <span class="note-link-span">?</span>
-                                </a>
-                            </h3>
-                            <select id="settings_perset">
-                                <option value="gui">GUI KoboldAI Settings</option>
-                            </select>
-                        </div>
-                        <div id="novel_api-presets">
-                            <h3>
-                                NovelAI Presets
-                                <a href="/notes/7" class="notes-link" target="_blank">
-                                    <span class="note-link-span">?</span>
-                                </a>
-                            </h3>
-                            <select id="settings_perset_novel">
-                                <option value="gui">Default</option>
-                            </select>
-                        </div>
-                        <div id="openai_api-presets">
-                            <div>
-                                <h4>OpenAI Presets</h4>
-                                <select id="settings_perset_openai">
+                <div class="scrollableInner">
+                    <div class="flex-container">
+                        <div id="respective-presets-block" class="width100p">
+                            <div id="kobold_api-presets">
+                                <h3>Kobold Presets
+                                    <a href="/notes/4" class="notes-link" target="_blank">
+                                        <span class="note-link-span">?</span>
+                                    </a>
+                                </h3>
+                                <select id="settings_perset">
+                                    <option value="gui">GUI KoboldAI Settings</option>
+                                </select>
+                            </div>
+                            <div id="novel_api-presets">
+                                <h3>
+                                    NovelAI Presets
+                                    <a href="/notes/7" class="notes-link" target="_blank">
+                                        <span class="note-link-span">?</span>
+                                    </a>
+                                </h3>
+                                <select id="settings_perset_novel">
                                     <option value="gui">Default</option>
                                 </select>
                             </div>
-                            <div>
-                                <h4>OpenAI Model</h4>
-                                <select id="model_openai_select">
-                                    <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
-                                    <option value="gpt-3.5-turbo-0301">gpt-3.5-turbo-0301</option>
-                                    <option value="gpt-4">gpt-4</option>
+                            <div id="openai_api-presets">
+                                <div>
+                                    <h4>OpenAI Presets</h4>
+                                    <select id="settings_perset_openai">
+                                        <option value="gui">Default</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <h4>OpenAI Model</h4>
+                                    <select id="model_openai_select">
+                                        <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+                                        <option value="gpt-3.5-turbo-0301">gpt-3.5-turbo-0301</option>
+                                        <option value="gpt-4">gpt-4</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div id="textgenerationwebui_api-presets">
+                                <h3>Text Gen WebUI (ooba) presets</h3>
+                                <select id="settings_preset_textgenerationwebui">
                                 </select>
                             </div>
-                        </div>
-                        <div id="textgenerationwebui_api-presets">
-                            <h3>Text Gen WebUI (ooba) presets</h3>
-                            <select id="settings_preset_textgenerationwebui">
-                            </select>
-                        </div>
-                        <div id="poe_api-presets">
-                            <h3>Poe.com API Settings</h3>
-                            <!-- just a placeholder title for the Poe.com settings panel-->
-                        </div>
-                    </div>
-                    <div id="common-gen-settings-block" class="width100p">
-                        <div id="pro-settings-block">
-                            <div id="amount_gen_block" class="range-block">
-                                <div class="range-block-title">
-                                    Response Length (tokens)
-                                </div>
-                                <div class="range-block-range">
-                                    <input type="range" id="amount_gen" name="volume" min="16" max="512" step="1">
-                                </div>
-                                <div class="range-block-counter">
-                                    <span id="amount_gen_counter">select</span>
-                                </div>
+                            <div id="poe_api-presets">
+                                <h3>Poe.com API Settings</h3>
+                                <!-- just a placeholder title for the Poe.com settings panel-->
                             </div>
-                            <div id="max_context_block" class="range-block">
-                                <div class="range-block-title">
-                                    Context Size (tokens)
+                        </div>
+                        <div id="common-gen-settings-block" class="width100p">
+                            <div id="pro-settings-block">
+                                <div id="amount_gen_block" class="range-block">
+                                    <div class="range-block-title">
+                                        Response Length (tokens)
+                                    </div>
+                                    <div class="range-block-range">
+                                        <input type="range" id="amount_gen" name="volume" min="16" max="512" step="1">
+                                    </div>
+                                    <div class="range-block-counter">
+                                        <span id="amount_gen_counter">select</span>
+                                    </div>
                                 </div>
-                                <div class="range-block-range">
-                                    <input type="range" id="max_context" name="volume" min="512" max="2048" step="1">
-                                </div>
-                                <div class="range-block-counter">
-                                    <span id="max_context_counter">select</span>
+                                <div id="max_context_block" class="range-block">
+                                    <div class="range-block-title">
+                                        Context Size (tokens)
+                                    </div>
+                                    <div class="range-block-range">
+                                        <input type="range" id="max_context" name="volume" min="512" max="2048" step="1">
+                                    </div>
+                                    <div class="range-block-counter">
+                                        <span id="max_context_counter">select</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    <div id="respective-ranges-and-temps" class="width100p">
-                        <div id="range_block">
-                            <div class="range-block">
-                                <div class="range-block-title">
-                                    Temperature
+                        <div id="respective-ranges-and-temps" class="width100p">
+                            <div id="range_block">
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        Temperature
+                                    </div>
+                                    <div class="range-block-range">
+                                        <input type="range" id="temp" name="volume" min="0.1" max="2.0" step="0.01">
+                                    </div>
+                                    <div class="range-block-counter">
+                                        <span id="temp_counter">select</span>
+                                    </div>
                                 </div>
-                                <div class="range-block-range">
-                                    <input type="range" id="temp" name="volume" min="0.1" max="2.0" step="0.01">
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        Rep. Pen.
+                                    </div>
+                                    <div class="range-block-range">
+                                        <input type="range" id="rep_pen" name="volume" min="1" max="1.5" step="0.01">
+                                    </div>
+                                    <div class="range-block-counter">
+                                        <span id="rep_pen_counter">select</span>
+                                    </div>
                                 </div>
-                                <div class="range-block-counter">
-                                    <span id="temp_counter">select</span>
-                                </div>
-                            </div>
-                            <div class="range-block">
-                                <div class="range-block-title">
-                                    Rep. Pen.
-                                </div>
-                                <div class="range-block-range">
-                                    <input type="range" id="rep_pen" name="volume" min="1" max="1.5" step="0.01">
-                                </div>
-                                <div class="range-block-counter">
-                                    <span id="rep_pen_counter">select</span>
-                                </div>
-                            </div>
-                            <div class="range-block">
-                                <div class="range-block-title">
-                                    Rep. Pen. Range
-                                </div>
-                                <div class="range-block-range">
-                                    <input type="range" id="rep_pen_range" name="volume" min="0" max="2048" step="1">
-                                </div>
-                                <div class="range-block-counter">
-                                    <span id="rep_pen_range_counter">select</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="range_block_novel">
-                        </div>
-                        <div id="range_block_textgenerationwebui">
-                            <div class="range-block">
-                                <div class="range-block-title">
-                                    Temperature
-                                </div>
-                                <div class="range-block-range">
-                                    <input type="range" id="temp_textgenerationwebui" name="volume" min="0.1" max="2.0" step="0.01">
-                                </div>
-                                <div class="range-block-counter">
-                                    <span id="temp_counter_textgenerationwebui">select</span>
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        Rep. Pen. Range
+                                    </div>
+                                    <div class="range-block-range">
+                                        <input type="range" id="rep_pen_range" name="volume" min="0" max="2048" step="1">
+                                    </div>
+                                    <div class="range-block-counter">
+                                        <span id="rep_pen_range_counter">select</span>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="range-block">
-                                <div class="range-block-title">
-                                    Rep. Pen.
+                            <div id="range_block_novel">
+                            </div>
+                            <div id="range_block_textgenerationwebui">
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        Temperature
+                                    </div>
+                                    <div class="range-block-range">
+                                        <input type="range" id="temp_textgenerationwebui" name="volume" min="0.1" max="2.0" step="0.01">
+                                    </div>
+                                    <div class="range-block-counter">
+                                        <span id="temp_counter_textgenerationwebui">select</span>
+                                    </div>
                                 </div>
-                                <div class="range-block-range">
-                                    <input type="range" id="rep_pen_textgenerationwebui" name="volume" min="1" max="1.5" step="0.01">
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        Rep. Pen.
+                                    </div>
+                                    <div class="range-block-range">
+                                        <input type="range" id="rep_pen_textgenerationwebui" name="volume" min="1" max="1.5" step="0.01">
+                                    </div>
+                                    <div class="range-block-counter">
+                                        <span id="rep_pen_counter_textgenerationwebui">select</span>
+                                    </div>
                                 </div>
-                                <div class="range-block-counter">
-                                    <span id="rep_pen_counter_textgenerationwebui">select</span>
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        Encoder Rep. Pen.
+                                    </div>
+                                    <div class="range-block-range">
+                                        <input type="range" id="encoder_rep_pen_textgenerationwebui" name="volume" min="0.8" max="1.5" step="0.01" />
+                                    </div>
+                                    <div class="range-block-counter">
+                                        <span id="encoder_rep_pen_counter_textgenerationwebui">select</span>
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        No Repeat Ngram Size
+                                    </div>
+                                    <div class="range-block-range">
+                                        <input type="range" id="no_repeat_ngram_size_textgenerationwebui" name="volume" min="0" max="20" step="1">
+                                    </div>
+                                    <div class="range-block-counter">
+                                        <span id="no_repeat_ngram_size_counter_textgenerationwebui">select</span>
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        Min Length
+                                    </div>
+                                    <div class="range-block-range">
+                                        <input type="range" id="min_length_textgenerationwebui" name="volume" min="0" max="2000" step="1" />
+                                    </div>
+                                    <div class="range-block-counter">
+                                        <span id="min_length_counter_textgenerationwebui">select</span>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="range-block">
-                                <div class="range-block-title">
-                                    Encoder Rep. Pen.
+                            <div id="range_block_openai">
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        OpenAI Reverse Proxy
+                                    </div>
+                                    <div class="range-block-counter">
+                                        Alternative server URL (leave empty to use the default value).<br>
+                                        <b class="reverse_proxy_warning">Don't expose your real API keys to reverse proxies!</b>
+                                    </div>
+                                    <div class="wide100p">
+                                        <input id="openai_reverse_proxy" type="text" class="text_pole" placeholder="https://api.openai.com/v1" />
+                                    </div>
                                 </div>
-                                <div class="range-block-range">
-                                    <input type="range" id="encoder_rep_pen_textgenerationwebui" name="volume" min="0.8" max="1.5" step="0.01" />
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        Context Size (tokens)
+                                    </div>
+                                    <div class="range-block-range">
+                                        <input type="range" id="openai_max_context" name="volume" min="512" max="4095" step="1">
+                                    </div>
+                                    <div class="range-block-counter">
+                                        <span id="openai_max_context_counter">select</span>
+                                    </div>
                                 </div>
-                                <div class="range-block-counter">
-                                    <span id="encoder_rep_pen_counter_textgenerationwebui">select</span>
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        Max Response Length (tokens)
+                                    </div>
+                                    <div class="wide100p">
+                                        <input type="number" id="openai_max_tokens" name="openai_max_tokens" class="text_pole" min="50" max="1000">
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="range-block">
-                                <div class="range-block-title">
-                                    No Repeat Ngram Size
-                                </div>
-                                <div class="range-block-range">
-                                    <input type="range" id="no_repeat_ngram_size_textgenerationwebui" name="volume" min="0" max="20" step="1">
-                                </div>
-                                <div class="range-block-counter">
-                                    <span id="no_repeat_ngram_size_counter_textgenerationwebui">select</span>
-                                </div>
-                            </div>
-                            <div class="range-block">
-                                <div class="range-block-title">
-                                    Min Length
-                                </div>
-                                <div class="range-block-range">
-                                    <input type="range" id="min_length_textgenerationwebui" name="volume" min="0" max="2000" step="1" />
-                                </div>
-                                <div class="range-block-counter">
-                                    <span id="min_length_counter_textgenerationwebui">select</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="range_block_openai">
-                            <div class="range-block">
-                                <div class="range-block-title">
-                                    OpenAI Reverse Proxy
-                                </div>
-                                <div class="range-block-counter">
-                                    Alternative server URL (leave empty to use the default value).<br>
-                                    <b class="reverse_proxy_warning">Don't expose your real API keys to reverse proxies!</b>
-                                </div>
-                                <div class="wide100p">
-                                    <input id="openai_reverse_proxy" type="text" class="text_pole" placeholder="https://api.openai.com/v1" />
-                                </div>
-                            </div>
-                            <div class="range-block">
-                                <div class="range-block-title">
-                                    Context Size (tokens)
-                                </div>
-                                <div class="range-block-range">
-                                    <input type="range" id="openai_max_context" name="volume" min="512" max="4095" step="1">
-                                </div>
-                                <div class="range-block-counter">
-                                    <span id="openai_max_context_counter">select</span>
-                                </div>
-                            </div>
-                            <div class="range-block">
-                                <div class="range-block-title">
-                                    Max Response Length (tokens)
-                                </div>
-                                <div class="wide100p">
-                                    <input type="number" id="openai_max_tokens" name="openai_max_tokens" class="text_pole" min="50" max="1000">
-                                </div>
-                            </div>
-                            <div class="range-block">
-                                <div class="range-block-title">
-                                    Temperature
-                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        Temperature
+                                    </div>
 
-                                <div class="range-block-range">
-                                    <input type="range" id="temp_openai" name="volume" min="0" max="2.0" step="0.01">
+                                    <div class="range-block-range">
+                                        <input type="range" id="temp_openai" name="volume" min="0" max="2.0" step="0.01">
+                                    </div>
+                                    <div class="range-block-counter">
+                                        <span id="temp_counter_openai">select</span>
+                                    </div>
                                 </div>
-                                <div class="range-block-counter">
-                                    <span id="temp_counter_openai">select</span>
-                                </div>
-                            </div>
-                            <div class="range-block">
-                                <div class="range-block-title">
-                                    Frequency Penalty
-                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        Frequency Penalty
+                                    </div>
 
-                                <div class="range-block-range">
-                                    <input type="range" id="freq_pen_openai" name="volume" min="-2" max="2" step="0.01">
+                                    <div class="range-block-range">
+                                        <input type="range" id="freq_pen_openai" name="volume" min="-2" max="2" step="0.01">
+                                    </div>
+                                    <div class="range-block-counter">
+                                        <span id="freq_pen_counter_openai">select</span>
+                                    </div>
                                 </div>
-                                <div class="range-block-counter">
-                                    <span id="freq_pen_counter_openai">select</span>
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        Presence Penalty
+                                    </div>
+                                    <div class="range-block-range">
+                                        <input type="range" id="pres_pen_openai" name="volume" min="-2" max="2" step="0.01">
+                                    </div>
+                                    <div class="range-block-counter">
+                                        <span id="pres_pen_counter_openai">select</span>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="range-block">
-                                <div class="range-block-title">
-                                    Presence Penalty
-                                </div>
-                                <div class="range-block-range">
-                                    <input type="range" id="pres_pen_openai" name="volume" min="-2" max="2" step="0.01">
-                                </div>
-                                <div class="range-block-counter">
-                                    <span id="pres_pen_counter_openai">select</span>
-                                </div>
-                            </div>
-                            <div style="display:none" class="range-block">
-                                <div class="range-block-title">
-                                    Logit Bias
-                                </div>
-                                <div class="openai_logit_bias">
-                                    <div class="openai_logit_bias_form">
-                                        <input class="text_pole" id="openai_logit_bias_text" placeholder="text (will be converted to tokens)" />
-                                        <div class="openai_logit_bias_range_block">
-                                            <input id="openai_logit_bias_value" type="range" min="-100" value="0" max="100" />
-                                            <div class="range-block-counter">
-                                                <span id="openai_logit_bias_value_counter">select</span>
+                                <div style="display:none" class="range-block">
+                                    <div class="range-block-title">
+                                        Logit Bias
+                                    </div>
+                                    <div class="openai_logit_bias">
+                                        <div class="openai_logit_bias_form">
+                                            <input class="text_pole" id="openai_logit_bias_text" placeholder="text (will be converted to tokens)" />
+                                            <div class="openai_logit_bias_range_block">
+                                                <input id="openai_logit_bias_value" type="range" min="-100" value="0" max="100" />
+                                                <div class="range-block-counter">
+                                                    <span id="openai_logit_bias_value_counter">select</span>
+                                                </div>
+                                            </div>
+                                            <input class="menu_button" id="openai_logit_bias_add" type="button" value="Add" />
+                                        </div>
+                                        <div class="openai_logit_bias_list">
+                                            <div class="openai_logit_bias_list_item">
+                                                <span class="token_id">666</span>
+                                                <span class="separator">:</span>
+                                                <span class="bias_value">-100</span>
                                             </div>
                                         </div>
-                                        <input class="menu_button" id="openai_logit_bias_add" type="button" value="Add" />
                                     </div>
-                                    <div class="openai_logit_bias_list">
-                                        <div class="openai_logit_bias_list_item">
-                                            <span class="token_id">666</span>
-                                            <span class="separator">:</span>
-                                            <span class="bias_value">-100</span>
+                                </div>
+                            </div>
+                            <div id="range_block_poe">
+                                <div class="range-block">
+                                    <label for="poe_streaming" class="checkbox_label widthFreeExpand">
+                                        <input id="poe_streaming" type="checkbox" />
+                                        Streaming
+                                    </label>
+                                    <div class="range-block-counter justifyLeft">
+                                        Display bot response text chunks as they are generated.
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <label for="poe_auto_purge" class="checkbox_label widthFreeExpand">
+                                        <input id="poe_auto_purge" type="checkbox">
+                                        Auto-purge API context (save JB)
+                                    </label>
+                                    <div class="range-block-counter justifyLeft">
+                                        Delete non-JB messages from Poe context before sending a new prompt. Prevents auto-jailbreak message from being pushed out of context.
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <label for="poe_auto_jailbreak" class="checkbox_label widthFreeExpand">
+                                        <input id="poe_auto_jailbreak" type="checkbox">
+                                        Auto-jailbreak
+                                    </label>
+                                    <div class="range-block-counter justifyLeft">
+                                        Send the jailbreak message before first generation after page refresh.
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <label for="poe_character_nudge" class="checkbox_label widthFreeExpand">
+                                        <input id="poe_character_nudge" type="checkbox" />
+                                        Send character note
+                                    </label>
+                                    <div class="range-block-counter justifyLeft">
+                                        Sent with every prompt to modify bot responses.
+                                    </div>
+                                    <div class="range-block-range">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="advanced-ai-config-block" class="width100p">
+                            <div id="kobold_api-settings">
+                                <div id="kobold-advanced-config">
+                                    <div class="range-block">
+                                        <div class="range-block-title">
+                                            Top P
+                                        </div>
+                                        <div class="range-block-range">
+                                            <input type="range" id="top_p" name="volume" min="0" max="1" step="0.01">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <span id="top_p_counter">select</span>
                                         </div>
                                     </div>
+                                    <div class="range-block">
+                                        <div class="range-block-title">
+                                            Top A
+                                        </div>
+                                        <div class="range-block-range">
+                                            <input type="range" id="top_a" name="volume" min="0" max="1" step="0.01">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <span id="top_a_counter">select</span>
+                                        </div>
+                                    </div>
+                                    <div class="range-block">
+                                        <div class="range-block-title">
+                                            Top K
+                                        </div>
+                                        <div class="range-block-range">
+                                            <input type="range" id="top_k" name="volume" min="0" max="100" step="1">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <span id="top_k_counter">select</span>
+                                        </div>
+                                    </div>
+                                    <div class="range-block">
+                                        <div class="range-block-title">
+                                            Typical Sampling
+                                        </div>
+                                        <div class="range-block-range">
+                                            <input type="range" id="typical" name="volume" min="0" max="1" step="0.01">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <span id="typical_counter">select</span>
+                                        </div>
+                                    </div>
+                                    <div class="range-block">
+                                        <div class="range-block-title">
+                                            Tail Free Sampling
+                                        </div>
+                                        <div class="range-block-range">
+                                            <input type="range" id="tfs" name="volume" min="0" max="1" step="0.01">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <span id="tfs_counter">select</span>
+                                        </div>
+                                    </div>
+                                    <div class="range-block">
+                                        <div class="range-block-title">
+                                            Rep. Pen. Slope
+                                        </div>
+                                        <div class="range-block-range">
+                                            <input type="range" id="rep_pen_slope" name="volume" min="0" max="10" step="0.1">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <span id="rep_pen_slope_counter">select</span>
+                                        </div>
+                                    </div>
+                                    <div class="range-block">
+                                        <label class="checkbox_label" for="single_line">
+                                            <input id="single_line" type="checkbox" />
+                                            Single-line mode
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <div id="range_block_poe">
-                            <div class="range-block">
-                                <label for="poe_streaming" class="checkbox_label widthFreeExpand">
-                                    <input id="poe_streaming" type="checkbox" />
-                                    Streaming
-                                </label>
-                                <div class="range-block-counter justifyLeft">
-                                    Display bot response text chunks as they are generated.
-                                </div>
-                            </div>
-                            <div class="range-block">
-                                <label for="poe_auto_purge" class="checkbox_label widthFreeExpand">
-                                    <input id="poe_auto_purge" type="checkbox">
-                                    Auto-purge API context (save JB)
-                                </label>
-                                <div class="range-block-counter justifyLeft">
-                                    Delete non-JB messages from Poe context before sending a new prompt. Prevents auto-jailbreak message from being pushed out of context.
-                                </div>
-                            </div>
-                            <div class="range-block">
-                                <label for="poe_auto_jailbreak" class="checkbox_label widthFreeExpand">
-                                    <input id="poe_auto_jailbreak" type="checkbox">
-                                    Auto-jailbreak
-                                </label>
-                                <div class="range-block-counter justifyLeft">
-                                    Send the jailbreak message before first generation after page refresh.
-                                </div>
-                            </div>
-                            <div class="range-block">
-                                <label for="poe_character_nudge" class="checkbox_label widthFreeExpand">
-                                    <input id="poe_character_nudge" type="checkbox" />
-                                    Send character note
-                                </label>
-                                <div class="range-block-counter justifyLeft">
-                                    Sent with every prompt to modify bot responses.
-                                </div>
-                                <div class="range-block-range">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div id="advanced-ai-config-block" class="width100p">
-                        <div id="kobold_api-settings">
-                            <div id="kobold-advanced-config">
+                            <div id="novel_api-settings">
+                                <h4>Novel AI Model
+                                    <a href="/notes/8" class="notes-link" target="_blank">
+                                        <span class="note-link-span">?</span>
+                                    </a>
+                                </h4>
+                                <select id="model_novel_select">
+                                    <option value="euterpe-v2">Euterpe</option>
+                                    <option value="krake-v2">Krake</option>
+                                </select>
                                 <div class="range-block">
                                     <div class="range-block-title">
-                                        Top P
+                                        Temperature
                                     </div>
                                     <div class="range-block-range">
-                                        <input type="range" id="top_p" name="volume" min="0" max="1" step="0.01">
+                                        <input type="range" id="temp_novel" name="volume" min="0.1" max="2.0" step="0.01">
                                     </div>
                                     <div class="range-block-counter">
-                                        <span id="top_p_counter">select</span>
+                                        <span id="temp_counter_novel">select</span>
                                     </div>
                                 </div>
                                 <div class="range-block">
                                     <div class="range-block-title">
-                                        Top A
+                                        Rep. Pen.
                                     </div>
                                     <div class="range-block-range">
-                                        <input type="range" id="top_a" name="volume" min="0" max="1" step="0.01">
+                                        <input type="range" id="rep_pen_novel" name="volume" min="1" max="1.5" step="0.01">
                                     </div>
                                     <div class="range-block-counter">
-                                        <span id="top_a_counter">select</span>
+                                        <span id="rep_pen_counter_novel">select</span>
                                     </div>
                                 </div>
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        Rep. Pen. Range (tokens)
+                                    </div>
+                                    <div class="range-block-range">
+                                        <input type="range" id="rep_pen_size_novel" name="volume" min="0" max="2048" step="1">
+                                    </div>
+                                    <div class="range-block-counter">
+                                        <span id="rep_pen_size_counter_novel">select</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="textgenerationwebui_api-settings">
                                 <div class="range-block">
                                     <div class="range-block-title">
                                         Top K
                                     </div>
                                     <div class="range-block-range">
-                                        <input type="range" id="top_k" name="volume" min="0" max="100" step="1">
+                                        <input type="range" id="top_k_textgenerationwebui" name="volume" min="0" max="200" step="1">
                                     </div>
                                     <div class="range-block-counter">
-                                        <span id="top_k_counter">select</span>
+                                        <span id="top_k_counter_textgenerationwebui">select</span>
                                     </div>
                                 </div>
                                 <div class="range-block">
                                     <div class="range-block-title">
-                                        Typical Sampling
+                                        Top P
                                     </div>
                                     <div class="range-block-range">
-                                        <input type="range" id="typical" name="volume" min="0" max="1" step="0.01">
+                                        <input type="range" id="top_p_textgenerationwebui" name="volume" min="0" max="1" step="0.01">
                                     </div>
                                     <div class="range-block-counter">
-                                        <span id="typical_counter">select</span>
+                                        <span id="top_p_counter_textgenerationwebui">select</span>
                                     </div>
                                 </div>
                                 <div class="range-block">
                                     <div class="range-block-title">
-                                        Tail Free Sampling
+                                        Typical P
                                     </div>
                                     <div class="range-block-range">
-                                        <input type="range" id="tfs" name="volume" min="0" max="1" step="0.01">
+                                        <input type="range" id="typical_p_textgenerationwebui" name="volume" min="0" max="1" step="0.01">
                                     </div>
                                     <div class="range-block-counter">
-                                        <span id="tfs_counter">select</span>
+                                        <span id="typical_p_counter_textgenerationwebui">select</span>
                                     </div>
                                 </div>
                                 <div class="range-block">
-                                    <div class="range-block-title">
-                                        Rep. Pen. Slope
-                                    </div>
-                                    <div class="range-block-range">
-                                        <input type="range" id="rep_pen_slope" name="volume" min="0" max="10" step="0.1">
-                                    </div>
-                                    <div class="range-block-counter">
-                                        <span id="rep_pen_slope_counter">select</span>
-                                    </div>
-                                </div>
-                                <div class="range-block">
-                                    <label class="checkbox_label" for="single_line">
-                                        <input id="single_line" type="checkbox" />
-                                        Single-line mode
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="novel_api-settings">
-                            <h4>Novel AI Model
-                                <a href="/notes/8" class="notes-link" target="_blank">
-                                    <span class="note-link-span">?</span>
-                                </a>
-                            </h4>
-                            <select id="model_novel_select">
-                                <option value="euterpe-v2">Euterpe</option>
-                                <option value="krake-v2">Krake</option>
-                            </select>
-                            <div class="range-block">
-                                <div class="range-block-title">
-                                    Temperature
-                                </div>
-                                <div class="range-block-range">
-                                    <input type="range" id="temp_novel" name="volume" min="0.1" max="2.0" step="0.01">
-                                </div>
-                                <div class="range-block-counter">
-                                    <span id="temp_counter_novel">select</span>
-                                </div>
-                            </div>
-                            <div class="range-block">
-                                <div class="range-block-title">
-                                    Rep. Pen.
-                                </div>
-                                <div class="range-block-range">
-                                    <input type="range" id="rep_pen_novel" name="volume" min="1" max="1.5" step="0.01">
-                                </div>
-                                <div class="range-block-counter">
-                                    <span id="rep_pen_counter_novel">select</span>
-                                </div>
-                            </div>
-                            <div class="range-block">
-                                <div class="range-block-title">
-                                    Rep. Pen. Range (tokens)
-                                </div>
-                                <div class="range-block-range">
-                                    <input type="range" id="rep_pen_size_novel" name="volume" min="0" max="2048" step="1">
-                                </div>
-                                <div class="range-block-counter">
-                                    <span id="rep_pen_size_counter_novel">select</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="textgenerationwebui_api-settings">
-                            <div class="range-block">
-                                <div class="range-block-title">
-                                    Top K
-                                </div>
-                                <div class="range-block-range">
-                                    <input type="range" id="top_k_textgenerationwebui" name="volume" min="0" max="200" step="1">
-                                </div>
-                                <div class="range-block-counter">
-                                    <span id="top_k_counter_textgenerationwebui">select</span>
-                                </div>
-                            </div>
-                            <div class="range-block">
-                                <div class="range-block-title">
-                                    Top P
-                                </div>
-                                <div class="range-block-range">
-                                    <input type="range" id="top_p_textgenerationwebui" name="volume" min="0" max="1" step="0.01">
-                                </div>
-                                <div class="range-block-counter">
-                                    <span id="top_p_counter_textgenerationwebui">select</span>
-                                </div>
-                            </div>
-                            <div class="range-block">
-                                <div class="range-block-title">
-                                    Typical P
-                                </div>
-                                <div class="range-block-range">
-                                    <input type="range" id="typical_p_textgenerationwebui" name="volume" min="0" max="1" step="0.01">
-                                </div>
-                                <div class="range-block-counter">
-                                    <span id="typical_p_counter_textgenerationwebui">select</span>
-                                </div>
-                            </div>
-                            <div class="range-block">
-                                <label class="checkbox_label" for="do_sample_textgenerationwebui">
-                                    <input type="checkbox" id="do_sample_textgenerationwebui" />
-                                    Do Sample
-                                </label>
-                            </div>
-                            <div class="range-block">
-                                <label class="checkbox_label" for="add_bos_token_textgenerationwebui">
-                                    <input type="checkbox" id="add_bos_token_textgenerationwebui" />
-                                    Add BOS Token
-                                </label>
-                                <div class="range-block-counter justifyLeft">
-                                    Add the bos_token to the beginning of prompts. Disabling this can make the replies more creative.
-                                </div>
-                            </div>
-                            <div class="range-block">
-                                <label class="checkbox_label" for="ban_eos_token_textgenerationwebui">
-                                    <input type="checkbox" id="ban_eos_token_textgenerationwebui" />
-                                    Ban EOS Token
-                                </label>
-                                <div class="range-block-counter justifyLeft">
-                                    Ban the eos_token. This forces the model to never end the generation prematurely.
-                                </div>
-                            </div>
-                            <div class="range-block">
-                                <label class="checkbox_label" for="skip_special_tokens_textgenerationwebui">
-                                    <input type="checkbox" id="skip_special_tokens_textgenerationwebui" />
-                                    Skip Special Tokens
-                                </label>
-                            </div>
-                            <hr>
-                            <h4>Beam search</h4>
-                            <div class="range-block">
-                                <div class="range-block-title">
-                                    Number of Beams
-                                </div>
-                                <div class="range-block-range">
-                                    <input type="range" id="num_beams_textgenerationwebui" name="volume" min="1" max="20" step="1" />
-                                </div>
-                                <div class="range-block-counter">
-                                    <span id="num_beams_counter_textgenerationwebui">select</span>
-                                </div>
-                            </div>
-                            <div class="range-block">
-                                <div class="range-block-title">
-                                    Length Penalty
-                                </div>
-                                <div class="range-block-range">
-                                    <input type="range" id="length_penalty_textgenerationwebui" name="volume" min="-5" max="5" step="0.1" />
-                                </div>
-                                <div class="range-block-counter">
-                                    <span id="length_penalty_counter_textgenerationwebui">select</span>
-                                </div>
-                            </div>
-                            <div class="range-block">
-                                <label class="checkbox_label" for="early_stopping_textgenerationwebui">
-                                    <input type="checkbox" id="early_stopping_textgenerationwebui" />
-                                    Early Stopping
-                                </label>
-                            </div>
-                            <hr>
-                            <h4>Contrastive search</h4>
-                            <div class="range-block">
-                                <div class="range-block-title">
-                                    Penalty Alpha
-                                </div>
-                                <div class="range-block-range">
-                                    <input type="range" id="penalty_alpha_textgenerationwebui" name="volume" min="0" max="5" step="0.05" />
-                                </div>
-                                <div class="range-block-counter">
-                                    <span id="penalty_alpha_counter_textgenerationwebui">select</span>
-                                </div>
-                            </div>
-                            <div class="range-block">
-                                <div class="range-block-title">
-                                    Seed
-                                </div>
-                                <input type="number" id="seed_textgenerationwebui" class="text_pole" />
-                            </div>
-                            <div class="range-block">
-                                <div class="range-block-title">
-                                    Gradio Streaming Function ID
-                                    <a href="/notes/textgen_streaming" class="notes-link" target="_blank">
-                                        <span class="note-link-span">?</span>
-                                    </a>
-                                </div>
-                                <input type="number" id="fn_index_textgenerationwebui" class="text_pole" />
-                            </div>
-                        </div>
-                        <div id="openai_settings">
-                            <div class="">
-                                <div class="range-block">
-                                    <label class="checkbox_label" for="nsfw_toggle">
-                                        <input id="nsfw_toggle" type="checkbox" checked>
-                                        NSFW Toggle
+                                    <label class="checkbox_label" for="do_sample_textgenerationwebui">
+                                        <input type="checkbox" id="do_sample_textgenerationwebui" />
+                                        Do Sample
                                     </label>
                                 </div>
                                 <div class="range-block">
-                                    <label title="NSFW block goes first in the resulting prompt" class="checkbox_label widthFreeExpand">
-                                        <input id="nsfw_first" type="checkbox" />
-                                        NSFW first
-                                    </label>
-                                    <div class="range-block-counter justifyLeft">NSFW block goes first in the resulting prompt</div>
-                                </div>
-                                <div class="range-block">
-                                    <label title="Inserts jailbreak as a last system message" class="checkbox_label widthFreeExpand">
-                                        <input id="jailbreak_system" type="checkbox" />
-                                        Send Jailbreak
-                                    </label>
-                                    <div class="range-block-counter justifyLeft">Inserts jailbreak as a last system message</div>
-                                </div>
-                                <div class="range-block">
-                                    <label for="stream_toggle" title="Enables OpenAI completion streaming" class="checkbox_label widthFreeExpand">
-                                        <input id="stream_toggle" type="checkbox" />
-                                        Streaming
-                                    </label>
-                                    <div class="range-block-counter justifyLeft">Enables OpenAI completion streaming</div>
-                                </div>
-                                <div class="range-block">
-                                    <label title="Use OAI knowledge base to enhance definitions for public figures and known fictional characters" class="checkbox_label widthFreeExpand">
-                                        <input id="enhance_definitions" type="checkbox" />
-                                        Enhance Definitions
+                                    <label class="checkbox_label" for="add_bos_token_textgenerationwebui">
+                                        <input type="checkbox" id="add_bos_token_textgenerationwebui" />
+                                        Add BOS Token
                                     </label>
                                     <div class="range-block-counter justifyLeft">
-                                        Use OAI knowledge base to enhance definitions for public figures and known fictional characters
+                                        Add the bos_token to the beginning of prompts. Disabling this can make the replies more creative.
                                     </div>
                                 </div>
                                 <div class="range-block">
-                                    <label for="wrap_in_quotes" title="Wrap user messages in quotes before sending" class="checkbox_label widthFreeExpand">
-                                        <input id="wrap_in_quotes" type="checkbox" />
-                                        Wrap in Quotes
+                                    <label class="checkbox_label" for="ban_eos_token_textgenerationwebui">
+                                        <input type="checkbox" id="ban_eos_token_textgenerationwebui" />
+                                        Ban EOS Token
                                     </label>
                                     <div class="range-block-counter justifyLeft">
-                                        Wrap entire user message in quotes before sending.
-                                        Leave off if you use quotes manually for speech.
+                                        Ban the eos_token. This forces the model to never end the generation prematurely.
                                     </div>
                                 </div>
-                            </div>
-                            <br>
-                            <div class="range-block">
-                                <div class="range-block-title openai_restorable">
-                                    <span>Main prompt</span>
-                                    <div id="main_prompt_restore" title="Restore default prompt" class="right_menu_button">
-                                        <div class="fa-solid fa-clock-rotate-left "></div>
+                                <div class="range-block">
+                                    <label class="checkbox_label" for="skip_special_tokens_textgenerationwebui">
+                                        <input type="checkbox" id="skip_special_tokens_textgenerationwebui" />
+                                        Skip Special Tokens
+                                    </label>
+                                </div>
+                                <hr>
+                                <h4>Beam search</h4>
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        Number of Beams
+                                    </div>
+                                    <div class="range-block-range">
+                                        <input type="range" id="num_beams_textgenerationwebui" name="volume" min="1" max="20" step="1" />
+                                    </div>
+                                    <div class="range-block-counter">
+                                        <span id="num_beams_counter_textgenerationwebui">select</span>
                                     </div>
                                 </div>
-                                <div class="range-block-counter">
-                                    The main prompt used to set the model behavior
-                                </div>
-                                <div class="wide100p">
-                                    <textarea id="main_prompt_textarea" class="text_pole textarea_compact" name="main_prompt" rows="6" placeholder=""></textarea>
-                                </div>
-                            </div>
-                            <div class="range-block">
-                                <div class="range-block-title openai_restorable">
-                                    <span>NSFW prompt</span>
-                                    <div id="nsfw_prompt_restore" title="Restore default prompt" class="right_menu_button">
-                                        <div class="fa-solid fa-clock-rotate-left "></div>
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        Length Penalty
+                                    </div>
+                                    <div class="range-block-range">
+                                        <input type="range" id="length_penalty_textgenerationwebui" name="volume" min="-5" max="5" step="0.1" />
+                                    </div>
+                                    <div class="range-block-counter">
+                                        <span id="length_penalty_counter_textgenerationwebui">select</span>
                                     </div>
                                 </div>
-                                <div class="range-block-counter">
-                                    Prompt that is used when the NSFW toggle is on
+                                <div class="range-block">
+                                    <label class="checkbox_label" for="early_stopping_textgenerationwebui">
+                                        <input type="checkbox" id="early_stopping_textgenerationwebui" />
+                                        Early Stopping
+                                    </label>
                                 </div>
-                                <div class="wide100p">
-                                    <textarea id="nsfw_prompt_textarea" class="text_pole textarea_compact" name="nsfw_prompt" rows="6" placeholder=""></textarea>
-                                </div>
-                            </div>
-                            <div class="range-block">
-                                <div class="range-block-title openai_restorable">
-                                    <span>Jailbreak prompt</span>
-                                    <div id="jailbreak_prompt_restore" title="Restore default prompt" class="right_menu_button">
-                                        <div class="fa-solid fa-clock-rotate-left"></div>
+                                <hr>
+                                <h4>Contrastive search</h4>
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        Penalty Alpha
+                                    </div>
+                                    <div class="range-block-range">
+                                        <input type="range" id="penalty_alpha_textgenerationwebui" name="volume" min="0" max="5" step="0.05" />
+                                    </div>
+                                    <div class="range-block-counter">
+                                        <span id="penalty_alpha_counter_textgenerationwebui">select</span>
                                     </div>
                                 </div>
-                                <div class="range-block-counter">
-                                    Prompt that is used when the Jailbreak toggle is on
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        Seed
+                                    </div>
+                                    <input type="number" id="seed_textgenerationwebui" class="text_pole" />
                                 </div>
-                                <div class="wide100p">
-                                    <textarea id="jailbreak_prompt_textarea" class="text_pole textarea_compact" name="jailbreak_prompt" rows="6" placeholder=""></textarea>
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        Gradio Streaming Function ID
+                                        <a href="/notes/textgen_streaming" class="notes-link" target="_blank">
+                                            <span class="note-link-span">?</span>
+                                        </a>
+                                    </div>
+                                    <input type="number" id="fn_index_textgenerationwebui" class="text_pole" />
                                 </div>
                             </div>
-                            <div class="range-block">
-                                <div class="range-block-title openai_restorable">
-                                    <span>Impersonation prompt</span>
-                                    <div id="impersonation_prompt_restore" title="Restore default prompt" class="right_menu_button">
-                                        <div class="fa-solid fa-clock-rotate-left"></div>
+                            <div id="openai_settings">
+                                <div class="">
+                                    <div class="range-block">
+                                        <label class="checkbox_label" for="nsfw_toggle">
+                                            <input id="nsfw_toggle" type="checkbox" checked>
+                                            NSFW Toggle
+                                        </label>
+                                    </div>
+                                    <div class="range-block">
+                                        <label title="NSFW block goes first in the resulting prompt" class="checkbox_label widthFreeExpand">
+                                            <input id="nsfw_first" type="checkbox" />
+                                            NSFW first
+                                        </label>
+                                        <div class="range-block-counter justifyLeft">NSFW block goes first in the resulting prompt</div>
+                                    </div>
+                                    <div class="range-block">
+                                        <label title="Inserts jailbreak as a last system message" class="checkbox_label widthFreeExpand">
+                                            <input id="jailbreak_system" type="checkbox" />
+                                            Send Jailbreak
+                                        </label>
+                                        <div class="range-block-counter justifyLeft">Inserts jailbreak as a last system message</div>
+                                    </div>
+                                    <div class="range-block">
+                                        <label for="stream_toggle" title="Enables OpenAI completion streaming" class="checkbox_label widthFreeExpand">
+                                            <input id="stream_toggle" type="checkbox" />
+                                            Streaming
+                                        </label>
+                                        <div class="range-block-counter justifyLeft">Enables OpenAI completion streaming</div>
+                                    </div>
+                                    <div class="range-block">
+                                        <label title="Use OAI knowledge base to enhance definitions for public figures and known fictional characters" class="checkbox_label widthFreeExpand">
+                                            <input id="enhance_definitions" type="checkbox" />
+                                            Enhance Definitions
+                                        </label>
+                                        <div class="range-block-counter justifyLeft">
+                                            Use OAI knowledge base to enhance definitions for public figures and known fictional characters
+                                        </div>
+                                    </div>
+                                    <div class="range-block">
+                                        <label for="wrap_in_quotes" title="Wrap user messages in quotes before sending" class="checkbox_label widthFreeExpand">
+                                            <input id="wrap_in_quotes" type="checkbox" />
+                                            Wrap in Quotes
+                                        </label>
+                                        <div class="range-block-counter justifyLeft">
+                                            Wrap entire user message in quotes before sending.
+                                            Leave off if you use quotes manually for speech.
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="range-block-counter">
-                                    Prompt that is used for Impersonation function
-                                </div>
-                                <div class="wide100p">
-                                    <textarea id="impersonation_prompt_textarea" class="text_pole textarea_compact" name="impersonation_prompt" rows="6" placeholder=""></textarea>
-                                </div>
-                            </div>
-                            <div class="range-block openai_preset_buttons">
-                                <input id="update_preset" class="menu_button" type="button" value="Update current preset">
-                                <input id="new_preset" class="menu_button" type="button" value="Create new preset">
-                            </div>
-                        </div>
-                        <div id="poe_settings">
-                            <div class="range-block">
-                                <div class="range-block-title justifyLeft poe_restorable">
-                                    <span>Jailbreak activation message</span>
-                                    <div id="poe_activation_message_restore" title="Restore default jailbreak" class="right_menu_button">
-                                        <div class="fa-solid fa-clock-rotate-left"></div>
+                                <br>
+                                <div class="range-block">
+                                    <div class="range-block-title openai_restorable">
+                                        <span>Main prompt</span>
+                                        <div id="main_prompt_restore" title="Restore default prompt" class="right_menu_button">
+                                            <div class="fa-solid fa-clock-rotate-left "></div>
+                                        </div>
+                                    </div>
+                                    <div class="range-block-counter">
+                                        The main prompt used to set the model behavior
+                                    </div>
+                                    <div class="wide100p">
+                                        <textarea id="main_prompt_textarea" class="text_pole textarea_compact" name="main_prompt" rows="6" placeholder=""></textarea>
                                     </div>
                                 </div>
-                                <div class="range-block-counter justifyLeft">
-                                    Message to send when auto-jailbreak is on.
-                                </div>
-                                <div class="wide100p">
-                                    <textarea id="poe_activation_message" class="text_pole textarea_compact" rows="6"></textarea>
-                                </div>
-                            </div>
-                            <div class="range-block">
-                                <div class="range-block-title justifyLeft poe_restorable">
-                                    <span>Jailbreak confirmation reply</span>
-                                    <div id="poe_activation_response_restore" title="Restore default reply" class="right_menu_button">
-                                        <div class="fa-solid fa-clock-rotate-left"></div>
+                                <div class="range-block">
+                                    <div class="range-block-title openai_restorable">
+                                        <span>NSFW prompt</span>
+                                        <div id="nsfw_prompt_restore" title="Restore default prompt" class="right_menu_button">
+                                            <div class="fa-solid fa-clock-rotate-left "></div>
+                                        </div>
+                                    </div>
+                                    <div class="range-block-counter">
+                                        Prompt that is used when the NSFW toggle is on
+                                    </div>
+                                    <div class="wide100p">
+                                        <textarea id="nsfw_prompt_textarea" class="text_pole textarea_compact" name="nsfw_prompt" rows="6" placeholder=""></textarea>
                                     </div>
                                 </div>
-                                <div class="range-block-counter justifyLeft">
-                                    Bot must send this back to confirm jailbreak
-                                </div>
-                                <div class="wide100p">
-                                    <input id="poe_activation_response" class="text_pole textarea_compact" type="text" />
-                                </div>
-                            </div>
-                            <div class="range-block">
-                                <div class="range-block-title justifyLeft poe_restorable">
-                                    <span>Character Note</span>
-                                    <div id="poe_nudge_text_restore" title="Restore default note" class="right_menu_button">
-                                        <div class="fa-solid fa-clock-rotate-left"></div>
+                                <div class="range-block">
+                                    <div class="range-block-title openai_restorable">
+                                        <span>Jailbreak prompt</span>
+                                        <div id="jailbreak_prompt_restore" title="Restore default prompt" class="right_menu_button">
+                                            <div class="fa-solid fa-clock-rotate-left"></div>
+                                        </div>
+                                    </div>
+                                    <div class="range-block-counter">
+                                        Prompt that is used when the Jailbreak toggle is on
+                                    </div>
+                                    <div class="wide100p">
+                                        <textarea id="jailbreak_prompt_textarea" class="text_pole textarea_compact" name="jailbreak_prompt" rows="6" placeholder=""></textarea>
                                     </div>
                                 </div>
-                                <div class="range-block-counter justifyLeft">
-                                    Influences bot behavior in its responses.
-                                </div>
-                                <div class="wide100p">
-                                    <textarea id="poe_nudge_text" class="text_pole textarea_compact" rows="3" maxlength="250"></textarea>
-                                </div>
-                            </div>
-                            <div class="range-block">
-                                <div class="range-block-title justifyLeft poe_restorable">
-                                    <span>Impersonation prompt</span>
-                                    <div id="poe_impersonation_prompt_restore" title="Restore default prompt" class="right_menu_button">
-                                        <div class="fa-solid fa-clock-rotate-left"></div>
+                                <div class="range-block">
+                                    <div class="range-block-title openai_restorable">
+                                        <span>Impersonation prompt</span>
+                                        <div id="impersonation_prompt_restore" title="Restore default prompt" class="right_menu_button">
+                                            <div class="fa-solid fa-clock-rotate-left"></div>
+                                        </div>
+                                    </div>
+                                    <div class="range-block-counter">
+                                        Prompt that is used for Impersonation function
+                                    </div>
+                                    <div class="wide100p">
+                                        <textarea id="impersonation_prompt_textarea" class="text_pole textarea_compact" name="impersonation_prompt" rows="6" placeholder=""></textarea>
                                     </div>
                                 </div>
-                                <div class="range-block-counter justifyLeft">
-                                    Prompt that is used for Impersonation function
+                                <div class="range-block openai_preset_buttons">
+                                    <input id="update_preset" class="menu_button" type="button" value="Update current preset">
+                                    <input id="new_preset" class="menu_button" type="button" value="Create new preset">
                                 </div>
-                                <div class="wide100p">
-                                    <textarea id="poe_impersonation_prompt" class="text_pole textarea_compact" rows="3" maxlength="250"></textarea>
+                            </div>
+                            <div id="poe_settings">
+                                <div class="range-block">
+                                    <div class="range-block-title justifyLeft poe_restorable">
+                                        <span>Jailbreak activation message</span>
+                                        <div id="poe_activation_message_restore" title="Restore default jailbreak" class="right_menu_button">
+                                            <div class="fa-solid fa-clock-rotate-left"></div>
+                                        </div>
+                                    </div>
+                                    <div class="range-block-counter justifyLeft">
+                                        Message to send when auto-jailbreak is on.
+                                    </div>
+                                    <div class="wide100p">
+                                        <textarea id="poe_activation_message" class="text_pole textarea_compact" rows="6"></textarea>
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title justifyLeft poe_restorable">
+                                        <span>Jailbreak confirmation reply</span>
+                                        <div id="poe_activation_response_restore" title="Restore default reply" class="right_menu_button">
+                                            <div class="fa-solid fa-clock-rotate-left"></div>
+                                        </div>
+                                    </div>
+                                    <div class="range-block-counter justifyLeft">
+                                        Bot must send this back to confirm jailbreak
+                                    </div>
+                                    <div class="wide100p">
+                                        <input id="poe_activation_response" class="text_pole textarea_compact" type="text" />
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title justifyLeft poe_restorable">
+                                        <span>Character Note</span>
+                                        <div id="poe_nudge_text_restore" title="Restore default note" class="right_menu_button">
+                                            <div class="fa-solid fa-clock-rotate-left"></div>
+                                        </div>
+                                    </div>
+                                    <div class="range-block-counter justifyLeft">
+                                        Influences bot behavior in its responses.
+                                    </div>
+                                    <div class="wide100p">
+                                        <textarea id="poe_nudge_text" class="text_pole textarea_compact" rows="3" maxlength="250"></textarea>
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title justifyLeft poe_restorable">
+                                        <span>Impersonation prompt</span>
+                                        <div id="poe_impersonation_prompt_restore" title="Restore default prompt" class="right_menu_button">
+                                            <div class="fa-solid fa-clock-rotate-left"></div>
+                                        </div>
+                                    </div>
+                                    <div class="range-block-counter justifyLeft">
+                                        Prompt that is used for Impersonation function
+                                    </div>
+                                    <div class="wide100p">
+                                        <textarea id="poe_impersonation_prompt" class="text_pole textarea_compact" rows="3" maxlength="250"></textarea>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1358,6 +1362,7 @@
                 </div>
             </div>
             <nav id="right-nav-panel" class="drawer-content closedDrawer fillRight">
+                <!-- <div id="right-nav-panelheader" class="fa-solid fa-grip drag-grabber"></div> -->
                 <div id="right-nav-panel-tabs">
                     <div class="right_menu_button fa-solid fa-list-ul" id="rm_button_characters" title="Select/Create Characters"></div>
                     <div class="right_menu_button" id="rm_button_selected_ch">
@@ -1814,7 +1819,7 @@
         <div class="typing_indicator"><span class="typing_indicator_name">CHAR</span> is typing</div>
     </div>
     <div id="sheld">
-        <div id="sheldheader" class="fa-solid fa-grip"></div>
+        <div id="sheldheader" class="fa-solid fa-grip drag-grabber"></div>
         <div class="pull-tab"></div>
         <div id="chat">
         </div>
