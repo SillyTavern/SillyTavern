@@ -211,6 +211,8 @@ code {
     /* margin: 0 auto; */
     z-index: 2;
     resize: both;
+    min-height: 100px;
+    min-width: 100px;
 }
 
 #sheldheader {
