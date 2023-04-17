@@ -326,41 +326,66 @@ function dragElement(elmnt) {
         e = e || window.event;
         e.preventDefault();
         // get the mouse cursor position at startup:
-        pos3 = e.clientX;
-        pos4 = e.clientY;
+        pos3 = e.clientX; //mouse X at click
+        pos4 = e.clientY; //mouse Y at click
         document.onmouseup = closeDragElement;
         // call a function whenever the cursor moves:
         document.onmousemove = elementDrag;
     }
 
     function elementDrag(e) {
+        //disable scrollbars when dragging to prevent jitter
+        $("body").css("overflow", "hidden");
+
+        //get window size
         let winWidth = window.innerWidth;
         let winHeight = window.innerHeight;
+
+        //get necessary data for calculating element footprint
         let draggableHeight = parseInt(getComputedStyle(elmnt).getPropertyValue('height').slice(0, -2));
         let draggableWidth = parseInt(getComputedStyle(elmnt).getPropertyValue('width').slice(0, -2));
         let draggableTop = parseInt(getComputedStyle(elmnt).getPropertyValue('top').slice(0, -2));
         let draggableLeft = parseInt(getComputedStyle(elmnt).getPropertyValue('left').slice(0, -2));
-        e = e || window.event;
-        e.preventDefault();
-        // calculate the new cursor position:
-        pos1 = pos3 - e.clientX;
-        pos2 = pos4 - e.clientY;
-        pos3 = e.clientX;
-        pos4 = e.clientY;
+
+        //set the lowest and most-right pixel the element touches
         let maxX = (draggableWidth + draggableLeft);
         let maxY = (draggableHeight + draggableTop);
-        // set the element's new position:
 
-        elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
-        elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+        // calculate the new cursor position:
+        e = e || window.event;
+        e.preventDefault();
+
+        pos1 = pos3 - e.clientX;    //X change amt
+        pos2 = pos4 - e.clientY;    //Y change amt
+        pos3 = e.clientX;   //new mouse X
+        pos4 = e.clientY;   //new mouse Y
+
+
 
         //fix over/underflows:
-        if (elmnt.offsetTop - pos2 <= 42) { elmnt.style.top = "42px" } //42px barrier for TopBar
-        if (elmnt.offsetLeft - pos1 <= 0) { elmnt.style.left = "0px" }
-        if (maxX >= winWidth - 10) { elmnt.style.left = ((elmnt.offsetLeft - pos2) - 10 + "px") }
-        if (maxY >= winHeight - 10) { elmnt.style.top = ((elmnt.offsetTop - pos1) - 10 + "px") }
 
-        //console.log("left/top: " + (elmnt.offsetLeft - pos1) + "/" + (elmnt.offsetTop - pos2) + ", win: " + winWidth + "/" + winHeight + ", max X/Y: " + maxX + "/" + maxY);
+
+        if (elmnt.offsetTop - pos2 <= 42) {
+            //prevent going out of window top + 42px barrier for TopBar (can hide grabber)
+            elmnt.style.top = "42px";
+        } else if (elmnt.offsetLeft - pos1 <= 0) {
+            //prevent moving out of window left
+            elmnt.style.left = "0px";
+        } else if (maxX >= winWidth) {
+            //bounce off right
+            elmnt.style.left = elmnt.offsetLeft - 20 + "px";
+        } else if (maxY >= winHeight) {
+            //bounce off bottom
+            elmnt.style.top = elmnt.offsetTop - 20 + "px";
+        } else {
+            // if no problems, set element's new position
+            elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+            elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+        }
+
+        /* console.log("left/top: " + (elmnt.offsetLeft - pos1) + "/" + (elmnt.offsetTop - pos2) +
+            ", win: " + winWidth + "/" + winHeight +
+            ", max X / Y: " + maxX + " / " + maxY); */
 
     }
 
@@ -368,6 +393,8 @@ function dragElement(elmnt) {
         // stop moving when mouse button is released:
         document.onmouseup = null;
         document.onmousemove = null;
+        //revert scrolling to normal after drag to allow recovery of vastly misplaced elements
+        $("body").css("overflow", "auto");
     }
 }
 
