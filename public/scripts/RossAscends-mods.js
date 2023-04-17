@@ -364,24 +364,27 @@ function dragElement(elmnt) {
 
         //fix over/underflows:
 
+        setTimeout(function () {
+            if (elmnt.offsetTop - pos2 <= 0) {
+                //prevent going out of window top + 42px barrier for TopBar (can hide grabber)
+                elmnt.style.top = "0px";
+            } else if (elmnt.offsetLeft - pos1 <= 0) {
+                //prevent moving out of window left
+                elmnt.style.left = "0px";
+            } else if (maxX >= winWidth) {
+                //bounce off right
+                elmnt.style.left = elmnt.offsetLeft - 10 + "px";
+            } else if (maxY >= winHeight) {
+                //bounce off bottom
+                elmnt.style.top = elmnt.offsetTop - 10 + "px";
+            } else {
+                // if no problems, set element's new position
 
-        if (elmnt.offsetTop - pos2 <= 42) {
-            //prevent going out of window top + 42px barrier for TopBar (can hide grabber)
-            elmnt.style.top = "42px";
-        } else if (elmnt.offsetLeft - pos1 <= 0) {
-            //prevent moving out of window left
-            elmnt.style.left = "0px";
-        } else if (maxX >= winWidth) {
-            //bounce off right
-            elmnt.style.left = elmnt.offsetLeft - 20 + "px";
-        } else if (maxY >= winHeight) {
-            //bounce off bottom
-            elmnt.style.top = elmnt.offsetTop - 20 + "px";
-        } else {
-            // if no problems, set element's new position
-            elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
-            elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
-        }
+                elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+                elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+
+            }
+        }, 50)
 
         /* console.log("left/top: " + (elmnt.offsetLeft - pos1) + "/" + (elmnt.offsetTop - pos2) +
             ", win: " + winWidth + "/" + winHeight +
