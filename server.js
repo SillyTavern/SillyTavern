@@ -417,7 +417,7 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
 
         try {
             for await (const text of readWebsocket()) {
-                if (text == null) {
+                if (text == null || typeof text !== 'string') {
                     break;
                 }
 
