@@ -3457,9 +3457,14 @@ body.waifuMode #sheld {
     top: 41px;
     margin: 0 auto;
     z-index: 2;
-    align-content: end; */
+    align-content: end;
 
     align-content: end;
+    
+    
+    
+    */
+
     height: 30vh;
     top: unset;
     bottom: 0;
