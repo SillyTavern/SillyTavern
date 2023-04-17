@@ -13,7 +13,7 @@ let ttsJobQueue = []
 let currentMessageNumber = 0
 let voiceMap = {} // {charName:voiceid, charName2:voiceid2}
 let currentTtsJob
-let globalVoiceIds = []
+let elevenlabsTtsVoices = []
 
 
 //############//
@@ -52,9 +52,7 @@ async function fetchTtsVoiceIds() {
         throw new Error(`HTTP ${response.status}: ${await response.json()}`);
     }
     const responseJson = await response.json();
-    const v = responseJson.voices.map(voice => voice.voice_id)
-    console.info(`Fetched voiceIds: ${v}`)
-    return v;
+    return responseJson.voices;
 }
 
 async function fetchTtsVoiceSettings() {
@@ -163,13 +161,24 @@ async function processTtsQueue() {
         if (!voiceMap[char]) {
             throw `${char} not in voicemap. Configure character in extension settings voice map`
         }
-        const voiceId = voiceMap[char]
+        const voice = await getTtsVoice(voiceMap[char])
+        const voiceId = voice.voice_id
+        if (voiceId == null){
+            throw (`Unable to attain voiceId for ${char}`)
+        }
         tts(text, voiceId)
     } catch (error) {
         console.error(error)
+        currentTtsJob = null
     }
 
 }
+async function playFullConversation() {
+    const context = getContext()
+    const chat = context.chat;
+    ttsJobQueue = chat
+}
+window.playFullConversation = playFullConversation
 
 //##################//
 //  Extension Code  //
@@ -177,6 +186,7 @@ async function processTtsQueue() {
 const defaultSettings = {
     elevenlabsApiKey: "",
     elevenlabsVoiceMap: "",
+    elevenlabsEnabed: false
 };
 
 
@@ -192,10 +202,16 @@ function setElevenLabsStatus(status, success) {
 async function updateApiKey() {
     //TODO: Add validation for API key
     const context = getContext();
-    // console.debug("onElevenlabsApiKeyChange");
     const value = $('#elevenlabs_api_key').val();
-    extension_settings.elevenlabstts.elevenlabsApiKey = String(value);
+
+    // Using this call to validate API key
     API_KEY = String(value)
+    await fetchTtsVoiceIds().catch((error => {  
+        API_KEY = null
+        throw `ElevenLabs TTS API key invalid`
+    }))
+
+    extension_settings.elevenlabstts.elevenlabsApiKey = String(value);
     console.debug(`Saved new API_KEY: ${value}`);
     saveSettingsDebounced();
 }
@@ -210,17 +226,27 @@ function parseVoiceMap(voiceMapString) {
     return parsedVoiceMap
 }
 
+async function getTtsVoice(name){
+    // We're caching the list of voice_ids. This might cause trouble.
+    if (elevenlabsTtsVoices.length == 0) {
+        elevenlabsTtsVoices = await fetchTtsVoiceIds();
+    }
+    const match = elevenlabsTtsVoices.filter((elevenVoice) => elevenVoice.name == name)[0] ;
+    if (!match) {
+        throw `TTS Voice name ${name} not found in ElevenLabs account`;
+    }
+    return match;
+}
+
 async function voicemapIsValid(parsedVoiceMap) {
     let valid = true
-    // We're caching the list of voice_ids. This might cause trouble.
-    if (globalVoiceIds.length == 0) {
-        globalVoiceIds = await fetchTtsVoiceIds()
-    }
-    for (const charName in parsedVoiceMap) {
-        const parsedVoiceMapId = parsedVoiceMap[charName]
-        if (!globalVoiceIds.includes(parsedVoiceMapId)) {
-            console.error(`Voice of ${charName} with voice_id ${parsedVoiceMapId} is invalid`);
-            valid = false
+    for (const characterName in parsedVoiceMap) {
+        const parsedVoiceName = parsedVoiceMap[characterName];
+        try{
+            await getTtsVoice(parsedVoiceName);
+        } catch(error) {
+            console.error(error)
+            valid = false;
         }
     }
     return valid
@@ -254,6 +280,11 @@ function onElevenlabsConnectClick() {
         });
 }
 
+function onElevenlabsEnableClick() {
+    extension_settings.elevenlabstts.enabled = $("#elevenlabs_enabled").is(':checked');
+    saveSettingsDebounced();
+}
+
 function loadSettings() {
 
     if (Object.keys(extension_settings.elevenlabstts).length === 0) {
@@ -262,11 +293,16 @@ function loadSettings() {
 
     $('#elevenlabs_api_key').val(extension_settings.elevenlabstts.elevenlabsApiKey);
     $('#elevenlabs_voice_map').val(extension_settings.elevenlabstts.elevenlabsVoiceMap);
+    $('#elevenlabs_enabled').prop('checked', extension_settings.elevenlabstts.enabled);
     onElevenlabsConnectClick()
 }
 
 
 async function moduleWorker() {
+    const enabled = $("#elevenlabs_enabled").is(':checked');
+    if (!enabled){
+        return;
+    }
     const context = getContext()
     const chat = context.chat;
 
@@ -313,7 +349,11 @@ $(document).ready(function () {
                     <input id="elevenlabs_api_key" type="text" class="text_pole" placeholder="<API Key>"/>
                     <textarea id="elevenlabs_voice_map" type="text" class="text_pole" 
                         placeholder="Create a mapping of Character to ElevenLabs Voice ID like so \nAqua:nNreVDVt8CWDzqZ55BWZ,\nYou:TxGEqnHWrfWFTfGW9XjX,"></textarea>
-                    <input id="elevenlabs_connect" class="menu_button" type="submit" value="Connect" />
+                    <input id="elevenlabs_connect" class="menu_button" type="submit" value="Connect" /><br>
+                    <div>
+                        <input type="checkbox" id="elevenlabs_enabled" name="elevenlabs_enabled" checked>
+                        <label for="elevenlabs_enabled">Enabled</label>
+                    </div>
                     <div id="elevenlabs_status">
                     </div>
                 </div>
@@ -322,6 +362,7 @@ $(document).ready(function () {
         `;
         $('#extensions_settings').append(settingsHtml);
         $('#elevenlabs_connect').on('click', onElevenlabsConnectClick);
+        $('#elevenlabs_enabled').on('click', onElevenlabsEnableClick);
     }
 
     addExtensionControls();
