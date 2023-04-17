@@ -9,7 +9,7 @@ export {
     extension_settings,
 };
 
-const extensionNames = ['caption', 'dice', 'expressions', 'floating-prompt', 'memory'];
+const extensionNames = ['caption', 'dice', 'expressions', 'floating-prompt', 'memory', 'backgrounds'];
 const manifests = await getManifests(extensionNames);
 const defaultUrl = "http://localhost:5100";
 

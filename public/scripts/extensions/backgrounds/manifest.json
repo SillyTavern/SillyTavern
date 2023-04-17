@@ -1,0 +1,8 @@
+{
+    "display_name": "Character Backgrounds",
+    "loading_order": 7,
+    "requires": [],
+    "optional": [],
+    "js": "index.js",
+    "css": "style.css"
+}

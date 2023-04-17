@@ -157,26 +157,23 @@ code {
     line-height: var(--mainFontSize);
 }
 
-#bg1 {
-    background: url(backgrounds/tavern1.jpg);
+#bg1, #bg_custom {
     background-repeat: no-repeat;
     background-attachment: fixed;
     background-size: cover;
     position: absolute;
     width: 100%;
     height: 100%;
+    transition: background-image 0.5s ease-in-out;
+}
+
+#bg1 {
+    background-image: url(backgrounds/tavern1.jpg);
     z-index: 0;
 }
 
-#bg2 {
-    background: url(backgrounds/tavern1.jpg);
-    background-repeat: no-repeat;
-    background-attachment: fixed;
-    background-size: cover;
-    opacity: 0.0;
-    position: absolute;
-    width: 100%;
-    height: 100%;
+#bg_custom {
+    background-image: none;
     z-index: 1;
 }
 
@@ -3268,7 +3265,7 @@ toolcool-color-picker {
     }
 
     #bg1,
-    #bg2 {
+    #bg_custom {
         position: fixed;
     }
 
@@ -3429,7 +3426,7 @@ body.no-blur #send_form.no-connection {
 }
 
 body.no-blur #bg1,
-body.no-blur #bg2 {
+body.no-blur #bg_custom {
     filter: unset;
 
 }
