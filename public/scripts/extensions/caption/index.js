@@ -77,7 +77,8 @@ async function onSelectImage(e) {
         if (apiResult.ok) {
             const data = await apiResult.json();
             const caption = data.caption;
-            await sendCaptionedMessage(caption, base64Img);
+            const imageToSave = data.thumbnail ? `data:image/jpeg;base64,${data.thumbnail}` : base64Img;
+            await sendCaptionedMessage(caption, imageToSave);
         }
     }
     catch (error) {
