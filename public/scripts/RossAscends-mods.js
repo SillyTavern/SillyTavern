@@ -305,11 +305,11 @@ function OpenNavPanels() {
     }
 }
 
-// draggable sheld
 
 // Make the DIV element draggable:
 dragElement(document.getElementById("sheld"));
 dragElement(document.getElementById("left-nav-panel"));
+dragElement(document.getElementById("right-nav-panel"));
 
 
 function dragElement(elmnt) {

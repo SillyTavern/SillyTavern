@@ -725,6 +725,8 @@ input[type="file"] {
 #right-nav-panel-tabs {
     margin-top: 5px;
     margin-bottom: 10px;
+    margin-left: 5px;
+    margin-right: 5px;
     width: 100%;
     max-height: 30px;
     display: flex;
@@ -808,7 +810,7 @@ input[type="file"] {
 }
 
 .selected-right-tab {
-    filter: brightness(200%);
+    filter: brightness(150%);
 }
 
 /* ####################################################################### */
@@ -2764,13 +2766,14 @@ a {
 
 #right-nav-panel {
     width: calc((100svw - var(--sheldWidth) - 2px) /2);
-    height: 99.9svh;
+    max-height: calc(100svh - 42px);
+    height: calc(100svh - 42px);
     position: fixed;
     top: 0;
     margin: 0;
     right: 0;
-    left: auto;
-    padding: 0;
+    left: calc(100% - var(--sheldWidth) /2 + var(--sheldWidth) +1px);
+    padding: 5px;
     margin-bottom: 5px;
     backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
     background-color: var(--SmartThemeBlurTintColor);
@@ -2779,7 +2782,7 @@ a {
     border: 0;
     border-left: 1px solid var(--grey30a);
     border-bottom: 1px solid var(--grey30a);
-    max-height: 100svh;
+    /* max-height: 100svh; */
     box-shadow: none;
     border-radius: 0 0 0 20px;
     overflow-y: hidden;
@@ -2798,10 +2801,10 @@ a {
     z-index: 3001;
 }
 
-#right-nav-panel>div:not(#right-nav-panel-tabs) {
+/* #right-nav-panel>div:not(#right-nav-panel-tabs) {
     height: calc(100% - 50px);
     overflow-y: auto;
-}
+} */
 
 #hidden-divs {
     display: none;
@@ -2909,7 +2912,7 @@ label[for="extensions_autoconnect"] {
     padding-top: 5px;
     height: 40px;
     max-width: var(--sheldWidth);
-    color: white;
+    /* color: white; */
     justify-content: center;
     display: grid;
     grid-template-columns: 10% 10% 10% 10% 10% 10% 10% 10%;
@@ -2936,7 +2939,7 @@ label[for="extensions_autoconnect"] {
 
 .drawer-icon.openIcon {
 
-    filter: brightness(200%) drop-shadow(0px 0px 2px black);
+    filter: drop-shadow(0px 0px 2px black);
     ;
     transition: all 0.275s;
 }
@@ -2986,7 +2989,7 @@ label[for="extensions_autoconnect"] {
 
 .drawer-content {
     background-color: var(--SmartThemeBlurTintColor);
-    color: white;
+    color: var(--SmartThemeBodyColor);
     border-radius: 20px;
     padding: 10px;
     border: 1px solid var(--grey30a);
@@ -3014,7 +3017,7 @@ label[for="extensions_autoconnect"] {
 
 .fillLeft {
     width: calc((100svw - var(--sheldWidth) - 2px) /2);
-    /* height: 99.9svh; */
+    height: calc(100svh - 42px);
     max-height: calc(100svh - 42px);
     position: fixed;
     top: 0;
