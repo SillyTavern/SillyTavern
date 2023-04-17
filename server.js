@@ -2117,8 +2117,9 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
                         response_generate_openai.end();
                     });
                 } else {
-                    console.log(response.data);
                     response_generate_openai.send(response.data);
+                    console.log(response.data);
+                    console.log(response.data?.choices[0]?.message);
                 }
             } else if (response.status == 400) {
                 console.log('Validation error');
