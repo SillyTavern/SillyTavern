@@ -73,19 +73,8 @@ function setCustomBackground() {
     $("#custom_bg_preview").css("background-image", file);
 }
 
-function animateBgSet(selector, value) {
-    $(selector).animate({
-        opacity: 0
-    }, 500,
-        function () {
-        $(this).css('background-image', value).animate({
-            opacity: 1
-        }, 500);
-    });
-}
-
 function unsetCustomBackground() {
-    animateBgSet("#bg_custom", 'none');
+    $("#bg_custom").css("background-image", 'none');
     $("#custom_bg_preview").css("background-image", 'none');
 }
 
