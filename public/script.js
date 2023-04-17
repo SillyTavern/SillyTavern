@@ -3283,27 +3283,9 @@ function read_bg_load(input) {
                 processData: false,
                 success: function (html) {
                     setBackground(html);
-                    if (bg1_toggle == true) {
-                        // this is a repeat of the background setting function for when  user uploads a new BG image
-                        bg1_toggle = false; // should make the Bg setting a modular function to be called in both cases
-                        var number_bg = 2;
-                        var target_opacity = 1.0;
-                    } else {
-                        bg1_toggle = true;
-                        var number_bg = 1;
-                        var target_opacity = 0.0;
-                    }
-                    $("#bg2").transition({
-                        opacity: target_opacity,
-                        duration: 1300, //animation_rm_duration,
-                        easing: "linear",
-                        complete: function () {
-                            $("#options").css("display", "none");
-                        },
-                    });
-                    $("#bg" + number_bg).css(
+                    $("#bg1").css(
                         "background-image",
-                        "url(" + e.target.result + ")"
+                        `url(${e.target.result})`
                     );
                     $("#form_bg_download").after(
                         `<div class="bg_example" bgfile="${html}" style="background-image: url('${getThumbnailUrl('bg', html)}');">
@@ -3890,40 +3872,35 @@ $(document).ready(function () {
         $("#form_upload_avatar").trigger("reset");
     });
 
-    $(document).on("click", ".bg_example", function () {
+    $(document).on("click", ".bg_example", async function () {
         //when user clicks on a BG thumbnail...
-        var this_bgfile = $(this).attr("bgfile"); // this_bgfile = whatever they clicked
+        const this_bgfile = $(this).attr("bgfile"); // this_bgfile = whatever they clicked
+
+        const customBg = window.getComputedStyle(document.getElementById('bg_custom')).backgroundImage;
+
+        // custom background is set. Do not override the layer below
+        if (customBg !== 'none') {
+            return;
+        }
 
         // if clicked on upload button
         if (!this_bgfile) {
             return;
         }
 
-        if (bg1_toggle == true) {
-            //if bg1 is toggled true (initially set as true in first JS vars)
-            bg1_toggle = false; // then toggle it false
-            var number_bg = 2; // sets a variable for bg2
-            var target_opacity = 1.0; // target opacity is 100%
-        } else {
-            //if bg1 is FALSE
-            bg1_toggle = true; // make it true
-            var number_bg = 1; // set variable to bg1..
-            var target_opacity = 0.0; // set target opacity to 0
-        }
-        $("#bg2").stop(); // first, stop whatever BG transition was happening before
-        $("#bg2").transition({
-            // start a new BG transition routine
-            opacity: target_opacity, // set opacity to previously set variable
-            duration: 1300, //animation_rm_duration,
-            easing: "linear",
-            complete: function () {
-            },
+        const backgroundUrl = `backgrounds/${this_bgfile}`;
+
+        // fetching to browser memory to reduce flicker
+        fetch(backgroundUrl).then(() => {
+            $("#bg1").css(
+                "background-image",
+                `url("${backgroundUrl}")`
+            );
+            setBackground(this_bgfile);
+        }).catch(() => {
+            console.log('Background could not be set: ' + backgroundUrl);
         });
-        $("#bg" + number_bg).css(
-            "background-image",
-            'url("backgrounds/' + this_bgfile + '")'
-        );
-        setBackground(this_bgfile);
+
     });
     $(document).on("click", ".bg_example_cross", function (e) {
         e.stopPropagation();
