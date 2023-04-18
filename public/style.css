@@ -630,8 +630,8 @@ select {
 
 #send_textarea {
     /*     font-size: 1rem;
-    line-height: 1.5rem;
-    min-height: calc(1.5em + 0.75rem + 2px); */
+    line-height: 1.5rem;*/
+    min-height: 40px;
     max-height: 50svh;
     word-wrap: break-word;
     height: 40px;

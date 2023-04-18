@@ -18,8 +18,8 @@
     transition: 500ms;
     z-index: 3; */
 
-    /* min-width: 100px;
-    min-height: 100px; */
+    min-width: 100px;
+    min-height: 100px;
     max-height: 90vh;
     max-width: 90vh;
     width: calc((100vw - var(--sheldWidth)) /2);
