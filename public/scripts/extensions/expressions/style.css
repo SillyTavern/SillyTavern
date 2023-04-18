@@ -5,7 +5,7 @@
 }
 
 .expression-holder {
-    max-height: 90vh;
+    /*     max-height: 90vh;
     max-width: calc((100vw - 800px)/2);
     width: 100%;
     position: fixed;
@@ -16,14 +16,34 @@
     text-align: center;
     filter: drop-shadow(2px 2px 2px #51515199);
     transition: 500ms;
+    z-index: 3; */
+
+    /* min-width: 100px;
+    min-height: 100px; */
+    max-height: 90vh;
+    max-width: 90vh;
+    width: calc((100vw - var(--sheldWidth)) /2);
+    position: absolute;
+
+    bottom: 1px;
+    padding: 0;
+
+    filter: drop-shadow(2px 2px 2px #51515199);
+
     z-index: 3;
+    resize: both;
+    overflow: hidden;
+    /* border: 1px solid red; */
+
 }
 
 img.expression {
-    max-width: 100%;
-    max-height: 90vh;
+    /*     max-width: 90vw;
+    max-height: 90vh; */
+    width: 100%;
+    height: 100%;
     vertical-align: bottom;
-    object-fit: cover;
+    object-fit: contain;
 }
 
 img.expression.default {

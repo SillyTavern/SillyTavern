@@ -248,7 +248,7 @@ async function setExpression(character, expression, force) {
         img.attr('src', imgUrl);
         img.removeClass('default');
         img.off('error');
-        img.on('error', function() {
+        img.on('error', function () {
             $(this).attr('src', '');
             if (force && extension_settings.expressions.showDefault) {
                 setDefault();
@@ -285,7 +285,11 @@ function onClickExpressionImage() {
 
 (function () {
     function addExpressionImage() {
-        const html = `<div id="expression-holder" class="expression-holder"><img class="expression"></div>`;
+        const html = `
+            <div id="expression-holder" class="expression-holder">
+                <div id="expression-holderheader" class="fa-solid fa-grip drag-grabber"></div>
+                <img class="expression">
+            </div>`;
         $('body').append(html);
     }
     function addSettings() {

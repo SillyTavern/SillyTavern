@@ -315,6 +315,9 @@ function OpenNavPanels() {
 dragElement(document.getElementById("sheld"));
 dragElement(document.getElementById("left-nav-panel"));
 dragElement(document.getElementById("right-nav-panel"));
+setTimeout(function () {
+    dragElement(document.getElementById("expression-holder"))
+}, 2000);
 
 
 function dragElement(elmnt) {
@@ -341,6 +344,7 @@ function dragElement(elmnt) {
     function elementDrag(e) {
         //disable scrollbars when dragging to prevent jitter
         $("body").css("overflow", "hidden");
+
 
         //get window size
         let winWidth = window.innerWidth;
@@ -387,6 +391,9 @@ function dragElement(elmnt) {
 
                 elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
                 elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+                $(elmnt).css("bottom", "unset");
+                $(elmnt).css("right", "unset");
+
 
             }
         }, 50)
@@ -403,6 +410,7 @@ function dragElement(elmnt) {
         document.onmousemove = null;
         //revert scrolling to normal after drag to allow recovery of vastly misplaced elements
         $("body").css("overflow", "auto");
+
     }
 }
 

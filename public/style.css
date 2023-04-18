@@ -3318,7 +3318,7 @@ body.waifuMode #chat {
 }
 
 body.waifuMode .expression-holder {
-    max-height: 90vh;
+    /*     max-height: 90vh;
     max-width: unset;
     width: 100%;
     position: fixed;
@@ -3330,14 +3330,38 @@ body.waifuMode .expression-holder {
     text-align: center;
     filter: drop-shadow(2px 2px 2px #51515199);
     transition: 500ms;
+    z-index: 1; */
+
+    max-height: 90vh;
+    max-width: 90vw;
+    /* width: 100vw; */
+    /* width: min-content; */
+    height: 90vh;
+    width: 90vw;
+    position: absolute;
+    left: 5vw;
+    /* right: calc(100vw / 2); */
+    /* display: flex !important; */
+    /* justify-self: center; */
+    bottom: 0;
+    /* padding-left: 10px; */
+    /* padding-right: 10px; */
+    /* text-align: center; */
+    filter: drop-shadow(2px 2px 2px #51515199);
+    /* transition: 500ms; */
     z-index: 1;
+    resize: both;
 }
 
 body.waifuMode img.expression {
-    height: 90vh;
+    /*     height: 90vh;
     max-width: 100%;
     max-height: 90vh;
-    vertical-align: bottom;
+    vertical-align: bottom; */
+
+    height: 90vh;
+    /* width: 100px; */
+    /* vertical-align: bottom; */
 }
 
 /* ---------- @media queries must always go at the bottom ------------*/
@@ -3430,7 +3454,7 @@ body.waifuMode img.expression {
         resize: none;
 
         left: 0 !important;
-        top: 42px !important;
+        top: 42px;
         width: 100% !important;
         max-width: 100%;
     }
