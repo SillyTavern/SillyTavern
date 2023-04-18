@@ -3319,19 +3319,20 @@ body.waifuMode #chat {
 }
 
 body.waifuMode .expression-holder {
-    max-height: 100svh;
-    max-width: 100svw;
-    height: 100svh;
-    width: 100svw;
+    max-height: 90vh;
+    max-width: 90vw;
+    height: 90vh;
+    width: 90vw;
     position: absolute;
+    left: 5vw;
     bottom: 0;
     filter: drop-shadow(2px 2px 2px #51515199);
     z-index: 1;
-
+    /* resize: both; */
 }
 
 body.waifuMode img.expression {
-    object-fit: cover;
+    /* height: 90vh; */
 }
 
 body.movingUI .drag-grabber {
@@ -3349,6 +3350,24 @@ body.movingUI #expression-holder {
 /*will apply to anything 1000px or less. this catches ipads, horizontal phones, and vertical phones)*/
 
 @media (max-width: 1000px) {
+
+    body.waifuMode .expression-holder {
+        max-height: 100svh;
+        max-width: 100svw;
+        height: 100svh;
+        width: 100svw;
+        position: absolute;
+        bottom: 0;
+        filter: drop-shadow(2px 2px 2px #51515199);
+        z-index: 1;
+
+    }
+
+    body.waifuMode img.expression {
+        /* height: 90vh; */
+        object-fit: cover;
+    }
+
     .mes img.img_extra {
         max-width: 100%;
     }
