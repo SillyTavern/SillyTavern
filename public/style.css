@@ -2822,7 +2822,7 @@ a {
     /* max-height: 100svh; */
     box-shadow: none;
     border-radius: 0 0 0 20px;
-    overflow-y: hidden;
+    overflow-x: hidden;
     scrollbar-width: thin;
 }
 
@@ -3068,8 +3068,8 @@ label[for="extensions_autoconnect"] {
 }
 
 .scrollableInner {
-    overflow: auto;
-    height: 100%;
+    overflow-x: hidden;
+    height: calc(100svh - 90px);
 }
 
 .width100p {
@@ -3454,7 +3454,7 @@ body.movingUI #expression-holder {
         min-width: 100%;
         width: 100%;
         max-width: 100%;
-        overflow-y: auto;
+        overflow-y: hidden;
         border-left: 1px solid var(--grey30);
         border-right: 1px solid var(--grey30);
         border-bottom: 1px solid var(--grey30);
@@ -3553,7 +3553,7 @@ body.movingUI #expression-holder {
     .scrollableInner {
         overflow-y: auto;
         overflow-x: hidden;
-        max-height: 100svh;
+        max-height: calc(100svh - 90px);
     }
 }
 
