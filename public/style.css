@@ -63,7 +63,7 @@
     box-sizing: border-box;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    text-shadow: 0 0 3px black;
+    text-shadow: 0px 0px 3px black;
 }
 
 html {
@@ -1223,8 +1223,6 @@ input[type=search]:focus::-webkit-search-cancel-button {
 }
 
 #result_info {
-    color: var(--white30a);
-    /* display: flex; */
     font-size: calc(var(--mainFontSize) - 0.2rem);
     font-weight: bold;
 }
