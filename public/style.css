@@ -1136,7 +1136,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     display: flex;
     flex: 0 0 100%;
     flex-wrap: wrap;
-    margin-bottom: 10px;
+    margin-bottom: 4px;
 }
 
 #description_div {
@@ -2306,7 +2306,7 @@ h5 {
 
 #rm_group_chats_block {
     display: none;
-    height: 100%;
+    height: calc(100% - 45px);
     flex-direction: column;
     align-items: flex-start;
     padding: 0 5px;
