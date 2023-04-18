@@ -157,7 +157,7 @@ const sliders = [
 ];
 
 function canUseKoboldStopSequence(version) {
-    return version.localeCompare(MIN_STOP_SEQUENCE_VERSION, undefined, { numeric: true, sensitivity: 'base' }) > -1;
+    return (version || '0.0.0').localeCompare(MIN_STOP_SEQUENCE_VERSION, undefined, { numeric: true, sensitivity: 'base' }) > -1;
 }
 
 $(document).ready(function () {
