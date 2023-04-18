@@ -1484,7 +1484,7 @@ async function Generate(type, automatic_trigger, force_name2) {
                     if (!storyString.endsWith('\n')) {
                         storyString += '\n';
                     }
-                    const replaceString = power_user.disable_examples_formatting ? `This is how ${name2} should talk` : '';
+                    const replaceString = power_user.disable_examples_formatting ? '' : `This is how ${name2} should talk`;
                     example = example.replace(/<START>/i, replaceString);
                 }
                 storyString += appendToStoryString(example, '');
