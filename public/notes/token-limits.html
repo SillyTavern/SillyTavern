@@ -13,12 +13,19 @@
 <body>
     <div id="main">
         <div id="content">
-            <h2>Tokens Limits</h2>
-            <br><br>
+            <h2>Character Tokens</h2>
+
+            <p><b>TLDR: If you're working with an AI model with a 2048 context token limit, your 1000 token character definition is cutting the AI's 'memory' in half.</b></p>
+            <p>To put this in perspective, a decent response from a good AI can easily be around 200-300 tokens. In this case, the AI would only be able to 'remember' about 3 exchanges worth of chat history.</p>
+            <hr>
+
+            <h3>Why did my character's token counter turn red?</h3>
+            <p>When we see your character has over 1000 tokens in its definitions, we highlight it for you because this can lower the AI's capabilities to provide an enjoyable conversation.</p>
+
             <h3>What happens if my Character has too many tokens?</h3>
-            <p>Don't Worry - it won't break anything. At worst, if the Character's permanent tokens are too large, it simply means there will be less room left in the context for other things (mentioned above).</p>
-            <p>The negative side effect of this is that the AI will have less 'memory', as it will have less chat history to available to process.</p>
-            <p>Every AI model has a limit to the amount of context it can process at one time.</p>
+            <p>Don't Worry - it won't break anything. At worst, if the Character's permanent tokens are too large, it simply means there will be less room left in the context for other things (see below).</p>
+            <p>The only negative side effect this can have is the AI will have less 'memory', as it will have less chat history available to process.</p>
+            <p>This is because every AI model has a limit to the amount of context it can process at one time.</p>
             <h3>'Context'?</h3>
             <p>This is the information that gets sent to the AI each time you ask it to generate a response:</p>
             <ul>
@@ -47,10 +54,11 @@
 
             <h3>Popular AI Model Context Token Limits</h3>
             <ul>
+                <li>Older models below 6B parameters - 1024</li>
                 <li>Pygmalion 6B - 2048</li>
-                <li>OpenAI ChatGPT - 4000-ish</li>
                 <li>Poe.com (Claude-instant or ChatGPT) - 2048</li>
-                <li>OpenAI GPT-4 - 8000</li>
+                <li>OpenAI ChatGPT - 4000-ish?</li>
+                <li>OpenAI GPT-4 - 8000?</li>
             </ul>
 
         </div>
