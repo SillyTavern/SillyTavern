@@ -3349,7 +3349,7 @@ body.movingUI #expression-holder {
 
 /*will apply to anything 1000px or less. this catches ipads, horizontal phones, and vertical phones)*/
 
-@media (max-width: 1000px) {
+@media screen and (max-width: 1000px) {
 
 
 
@@ -3417,19 +3417,10 @@ body.movingUI #expression-holder {
         height: calc(100svh - 45px);
         width: 100% !important;
         margin: 0 auto;
-    }
-
-    #sheld {
-        resize: none;
-        left: 0 !important;
-        top: 42px;
-        width: 100% !important;
         max-width: 100%;
-    }
-
-    #sheld,
-    #character_popup {
-        /* overflow-y: hidden; */
+        left: 0 !important;
+        resize: none;
+        top: 42px;
     }
 
     #character_popup,
@@ -3454,8 +3445,6 @@ body.movingUI #expression-holder {
         display: none !important;
 
     }
-
-
 
     .mes-text {
         padding-right: 25px;
@@ -3503,7 +3492,6 @@ body.movingUI #expression-holder {
 
 
     #send_textarea {
-
         font-size: calc(var(--mainFontSize) + .25rem);
         line-height: calc(var(--mainFontSize) + .5rem);
         min-height: calc(2rem + 0.75rem + 2px);
@@ -3522,7 +3510,6 @@ body.movingUI #expression-holder {
     }
 
     #rm_ch_create_block textarea {
-
         max-height: 200px;
     }
 
@@ -3547,17 +3534,18 @@ body.movingUI #expression-holder {
 
     body.waifuMode .expression-holder {
         display: inline;
-        max-height: 100svh;
-        max-width: 100svw;
-        height: 100svh;
-        width: 100svw;
+        width: unset;
+        max-height: unset;
+        max-width: unset;
+        bottom: unset;
+        left: unset;
+        top: unset;
+        height: 100vh;
+        width: 100vw;
+        margin: 0 auto;
         position: absolute;
         filter: drop-shadow(2px 2px 2px #51515199);
         z-index: 1;
-        bottom: 0 !important;
-        left: 0 !important;
-        border: 1px solid red;
-
     }
 
     body.waifuMode img.expression {
@@ -3569,18 +3557,18 @@ body.movingUI #expression-holder {
         overflow-x: hidden;
         max-height: 100svh;
     }
-
-    /*for debug purposes*/
-    /* div {border: 1px solid purple;} */
 }
 
-@media (max-width: 450px) {
+@media screen and (max-width: 450px) {
     .drawer25pWidth {
         flex-basis: max(calc(100% / 2 - 10px), 200px);
     }
 }
 
 /*this part only only applies to iOS devices*/
+
+
+
 @supports (-webkit-touch-callout: none) {
     body {
         margin: 0 auto;
@@ -3623,11 +3611,9 @@ body.movingUI #expression-holder {
         top: 0;
         margin: 0 auto;
         height: calc(100svh - 70px);
-        /*  calc(100svh - env(safe-area-inset-bottom)); */
-        width: min(calc(100% - env(safe-area-inset-right) - env(safe-area-inset-left)), calc(100% - 5px));
+        width: calc(100% - 5px);
         max-height: calc(100svh - 70px);
-        /* calc(100svh - env(safe-area-inset-bottom)); */
-        max-width: min(calc(100% - env(safe-area-inset-right) - env(safe-area-inset-left)), calc(100% - 5px));
+        max-width: calc(100% - 5px);
 
     }
 
