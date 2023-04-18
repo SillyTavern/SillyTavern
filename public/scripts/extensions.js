@@ -1,4 +1,4 @@
-import { callPopup, saveSettings, saveSettingsDebounced } from "../script.js";
+import { callPopup, saveSettings, saveSettingsDebounced, token } from "../script.js";
 import { isSubsetOf } from "./utils.js";
 export {
     getContext,
@@ -9,8 +9,8 @@ export {
     extension_settings,
 };
 
-const extensionNames = ['caption', 'dice', 'expressions', 'floating-prompt', 'memory', 'backgrounds'];
-const manifests = await getManifests(extensionNames);
+let extensionNames = [];
+let manifests = [];
 const defaultUrl = "http://localhost:5100";
 
 const extension_settings = {
@@ -33,6 +33,24 @@ const getContext = () => window['TavernAI'].getContext();
 const getApiUrl = () => extension_settings.apiUrl;
 const defaultRequestArgs = { method: 'GET', headers: { 'Bypass-Tunnel-Reminder': 'bypass' } };
 let connectedToApi = false;
+
+async function discoverExtensions() {
+    try {
+        const response = await fetch('/discover_extensions', { headers: { 'X-CSRF-Token': token } });
+
+        if (response.ok) {
+            const extensions = await response.json();
+            return extensions;
+        }
+        else {
+            return [];
+        }
+    }
+    catch (err) {
+        console.error(err);
+        return [];
+    }
+}
 
 function onDisableExtensionClick() {
     const name = $(this).data('name');
@@ -247,7 +265,7 @@ function showExtensionsDetails() {
     callPopup(`<div class="extensions_info">${html}</div>`, 'text');
 }
 
-function loadExtensionSettings(settings) {
+async function loadExtensionSettings(settings) {
     if (settings.extension_settings) {
         Object.assign(extension_settings, settings.extension_settings);
     }
@@ -256,6 +274,8 @@ function loadExtensionSettings(settings) {
     $("#extensions_autoconnect").prop('checked', extension_settings.autoConnect).trigger('input');
 
     // Activate offline extensions
+    extensionNames = await discoverExtensions();
+    manifests = await getManifests(extensionNames)
     activateExtensions();
 }
 
