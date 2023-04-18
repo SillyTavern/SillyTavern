@@ -426,16 +426,16 @@ function dragElement(elmnt) {
             $(elmnt).css("bottom", "unset");
             $(elmnt).css("right", "unset");
 
-            console.log(`
-                            offsetLeft: ${elmnt.offsetLeft}, offsetTop: ${elmnt.offsetTop}
-                            winWidth: ${winWidth}, winHeight: ${winHeight}
-                            sheldWidth: ${sheldWidth}
-                            X: ${elmnt.style.left} 
-                            Y: ${elmnt.style.top} 
-                            MaxX: ${maxX}, MaxY: ${maxY} 
-                            Topbar 1st X: ${((winWidth - sheldWidth) / 2)} 
-                            TopBar lastX: ${((winWidth - sheldWidth) / 2) + sheldWidth}
-                                `);
+            /*             console.log(`
+                                        offsetLeft: ${elmnt.offsetLeft}, offsetTop: ${elmnt.offsetTop}
+                                        winWidth: ${winWidth}, winHeight: ${winHeight}
+                                        sheldWidth: ${sheldWidth}
+                                        X: ${elmnt.style.left} 
+                                        Y: ${elmnt.style.top} 
+                                        MaxX: ${maxX}, MaxY: ${maxY} 
+                                        Topbar 1st X: ${((winWidth - sheldWidth) / 2)} 
+                                        TopBar lastX: ${((winWidth - sheldWidth) / 2) + sheldWidth}
+                                            `); */
 
 
 
