@@ -355,6 +355,9 @@ function dragElement(elmnt) {
         let draggableWidth = parseInt(getComputedStyle(elmnt).getPropertyValue('width').slice(0, -2));
         let draggableTop = parseInt(getComputedStyle(elmnt).getPropertyValue('top').slice(0, -2));
         let draggableLeft = parseInt(getComputedStyle(elmnt).getPropertyValue('left').slice(0, -2));
+        let sheldWidth = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sheldWidth').slice(0, -2));
+        let topBarFirstX = (winWidth - sheldWidth) / 2;
+        let topBarLastX = topBarFirstX + sheldWidth;
 
         //set the lowest and most-right pixel the element touches
         let maxX = (draggableWidth + draggableLeft);
@@ -374,28 +377,62 @@ function dragElement(elmnt) {
         //fix over/underflows:
 
         setTimeout(function () {
+
             if (elmnt.offsetTop - pos2 <= 0) {
+                /* console.log('1'); */
                 //prevent going out of window top + 42px barrier for TopBar (can hide grabber)
                 elmnt.style.top = "0px";
             } else if (elmnt.offsetLeft - pos1 <= 0) {
+                /* console.log('2'); */
                 //prevent moving out of window left
                 elmnt.style.left = "0px";
             } else if (maxX >= winWidth) {
+                /* console.log('3'); */
                 //bounce off right
                 elmnt.style.left = elmnt.offsetLeft - 10 + "px";
             } else if (maxY >= winHeight) {
+                /* console.log('4'); */
                 //bounce off bottom
                 elmnt.style.top = elmnt.offsetTop - 10 + "px";
-            } else {
-                // if no problems, set element's new position
-
-                elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
-                elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
-                $(elmnt).css("bottom", "unset");
-                $(elmnt).css("right", "unset");
-
+                if (elmnt.offsetTop - pos2 <= 40) {
+                    /* console.log('5'); */
+                    //prevent going out of window top + 42px barrier for TopBar (can hide grabber)
+                    /* console.log('caught Y bounce to <40Y top'); */
+                    elmnt.style.top = "40px";
+                }
+            } else if (elmnt.offsetTop < 40) {
+                /* console.log('6'); */
+                if (maxX > topBarFirstX && maxX < topBarLastX) {
+                    /* console.log('maxX inside topBar!'); */
+                    elmnt.style.top = "45px";
+                }
+                if (elmnt.offsetLeft < topBarLastX && elmnt.offsetLeft > topBarFirstX) {
+                    /* console.log('offsetLeft inside TopBar!'); */
+                    elmnt.style.top = "45px";
+                }
 
             }
+            // if no problems, set element's new position
+            /* console.log('7'); */
+
+            elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+            elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+            $(elmnt).css("bottom", "unset");
+            $(elmnt).css("right", "unset");
+
+            /*                 console.log(`
+                            offsetLeft: ${elmnt.offsetLeft}, offsetTop: ${elmnt.offsetTop}
+                            winWidth: ${winWidth}, winHeight: ${winHeight}
+                            sheldWidth: ${sheldWidth}
+                            X: ${elmnt.style.left} 
+                            Y: ${elmnt.style.top} 
+                            MaxX: ${maxX}, MaxY: ${maxY} 
+                            Topbar 1st X: ${((winWidth - sheldWidth) / 2)} 
+                            TopBar lastX: ${((winWidth - sheldWidth) / 2) + sheldWidth}
+                                `); */
+
+
+
         }, 50)
 
         /* console.log("left/top: " + (elmnt.offsetLeft - pos1) + "/" + (elmnt.offsetTop - pos2) +

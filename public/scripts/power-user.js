@@ -447,6 +447,8 @@ $(document).ready(() => {
 
         document.getElementById("expression-holder").style.top = '';
         document.getElementById("expression-holder").style.left = '';
+        document.getElementById("expression-holder").style.right = '';
+        document.getElementById("expression-holder").style.bottom = '';
         document.getElementById("expression-holder").style.height = '';
         document.getElementById("expression-holder").style.width = '';
 
