@@ -27,6 +27,10 @@ img.expression {
     object-fit: contain;
 }
 
+img.expression[src=""] {
+    visibility: hidden;
+}
+
 img.expression.default {
     vertical-align: middle;
 }
