@@ -1223,7 +1223,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 #result_info {
     color: var(--white30a);
-    display: flex;
+    /* display: flex; */
     font-size: calc(var(--mainFontSize) - 0.2rem);
     font-weight: bold;
 }
@@ -1893,6 +1893,27 @@ input[type="range"]::-webkit-slider-thumb {
     -webkit-backdrop-filter: blur(var(--SmartThemeBlurStrength));
     border-radius: 10px;
     padding-top: 30px;
+}
+
+.nice-link {
+    color: var(--SmartThemeBodyColor);
+    opacity: 0.5;
+    font-weight: 400;
+    text-decoration: none;
+    border-bottom: 2px dashed red;
+    transition: 0.3s;
+}
+
+.token-warning-button {
+    white-space: nowrap;
+}
+
+.token-warning-button a {
+    color: var(--SmartThemeBodyColor);
+}
+
+.nice-link:hover {
+    opacity: 1;
 }
 
 #shadow_tips_popup {
