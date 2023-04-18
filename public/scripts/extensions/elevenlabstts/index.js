@@ -14,32 +14,18 @@ let currentMessageNumber = 0
 let voiceMap = {} // {charName:voiceid, charName2:voiceid2}
 let currentTtsJob
 let elevenlabsTtsVoices = []
+let ttsAudioContext = new AudioContext()
 
 
-//############//
-//  TTS Code  //
-//############//
+let lastCharacterId = null;
+let lastGroupId = null;
+let lastChatId = null; 
 
-function completeTtsJob(){
-    console.info(`Current TTS job for ${currentTtsJob.name} completed.`)
-    currentTtsJob = null
-}
 
-async function playAudioFromResponse(response) {
-    const audioContext = new AudioContext();
-    const audioBlob = await response.blob()
-    if (audioBlob.type != "audio/mpeg"){
-        throw `TTS received HTTP response with invalid data format. Expecting audio/mpeg, got ${audioBlob.type}`
-    }
-    const buffer = await audioContext.decodeAudioData(await audioBlob.arrayBuffer())
-     // assuming the audio data is in the 'data' property of the response
-    const source = new AudioBufferSourceNode(audioContext);
-    source.onended = completeTtsJob
-    source.buffer = buffer;
-    source.connect(audioContext.destination);
-    console.debug(`Starting TTS playback`)
-    source.start(0);
-}
+
+//#################//
+//  TTS API Calls  //
+//#################//
 
 async function fetchTtsVoiceIds() {
     const headers = {
@@ -125,14 +111,42 @@ async function findTtsGenerationInHistory(message, voiceId) {
     return ''
 }
 
-/**
- * Plays text as ElevenLabs TTS using voiceId voice. Will check history for
- * previously generated speech just in case.
- * 
- * @param {*} voiceId 
- * @param {*} text 
- * @returns 
- */
+
+//################//
+//  TTS Control   //
+//################//
+
+async function playAudioFromResponse(response) {
+    // Create audio context to hold audio/mpeg arrayBuffer
+    const audioContext = new AudioContext();
+
+    // Extract audio blob. Wondering if this method might cause lag
+    const audioBlob = await response.blob()
+    if (audioBlob.type != "audio/mpeg"){
+        throw `TTS received HTTP response with invalid data format. Expecting audio/mpeg, got ${audioBlob.type}`
+    }
+    const buffer = await audioContext.decodeAudioData(await audioBlob.arrayBuffer())
+     // assuming the audio data is in the 'data' property of the response
+    const source = new AudioBufferSourceNode(audioContext);
+    source.onended = completeTtsJob
+    source.buffer = buffer;
+    source.connect(audioContext.destination);
+    console.debug(`Starting TTS playback`)
+    source.start(0);
+}
+
+function completeTtsJob(){
+    console.info(`Current TTS job for ${currentTtsJob.name} completed.`)
+    currentTtsJob = null
+}
+
+function saveLastValues(){
+    const context = getContext()
+    lastGroupId = context.groupId;
+    lastCharacterId = context.characterId;
+    lastChatId = context.chatId;
+}
+
 async function tts(text, voiceId) {
     const historyId = await findTtsGenerationInHistory(text, voiceId);
 
@@ -148,6 +162,7 @@ async function tts(text, voiceId) {
 }
 
 async function processTtsQueue() {
+    // Called each moduleWorker iteration to pull chat messages from queue
     if (currentTtsJob || ttsJobQueue.length <= 0) {
         return;
     }
@@ -173,6 +188,51 @@ async function processTtsQueue() {
     }
 
 }
+
+async function moduleWorker() {
+    // Primarily determinign when to add new chat to the TTS queue
+    const enabled = $("#elevenlabs_enabled").is(':checked');
+    if (!enabled){
+        return;
+    }
+
+    const context = getContext()
+    const chat = context.chat;
+
+    processTtsQueue();
+
+    // no characters or group selected 
+    if (!context.groupId && !context.characterId) {
+        return;
+    }
+
+    // Chat/character/group changed
+    if ((context.groupId && lastGroupId !== context.groupId) || (context.characterId !== lastCharacterId) || (context.chatId !== lastChatId)) { 
+        currentMessageNumber = context.chat.length ? context.chat.length : 0
+        saveLastValues();
+        return;
+    }
+
+    // take the count of messages
+    let lastMessageNumber = context.chat.length ? context.chat.length : 0;
+
+    console.debug(`lastMessageNumber: ${lastMessageNumber} | currentMessageNumber ${currentMessageNumber}`)
+
+    // There's no new messages
+    let diff = lastMessageNumber - currentMessageNumber;
+    if (diff == 0) {
+        return;
+    }
+
+    // New messages, add new chat to history
+    currentMessageNumber = lastMessageNumber;
+    const message = chat[chat.length - 1]
+
+    console.debug(`Adding message from ${message.name} for TTS processing: "${message.mes}"`);
+    ttsJobQueue.push(message);
+}
+
+// Secret function for now
 async function playFullConversation() {
     const context = getContext()
     const chat = context.chat;
@@ -180,9 +240,9 @@ async function playFullConversation() {
 }
 window.playFullConversation = playFullConversation
 
-//##################//
-//  Extension Code  //
-//##################//
+//######################//
+//  Extension Settings  //
+//######################//
 const defaultSettings = {
     elevenlabsApiKey: "",
     elevenlabsVoiceMap: "",
@@ -227,7 +287,7 @@ function parseVoiceMap(voiceMapString) {
 }
 
 async function getTtsVoice(name){
-    // We're caching the list of voice_ids. This might cause trouble.
+    // We're caching the list of voice_ids. This might cause trouble if the user creates a new voice without restarting
     if (elevenlabsTtsVoices.length == 0) {
         elevenlabsTtsVoices = await fetchTtsVoiceIds();
     }
@@ -270,7 +330,7 @@ async function updateVoiceMap() {
     }
 }
 
-function onElevenlabsConnectClick() {
+function onElevenlabsApplyClick() {
     Promise.all([updateApiKey(), updateVoiceMap()])
         .then(([result1, result2]) => {
             setElevenLabsStatus("Successfully applied settings", true)
@@ -286,7 +346,7 @@ function onElevenlabsEnableClick() {
 }
 
 function loadSettings() {
-
+    const context = getContext()
     if (Object.keys(extension_settings.elevenlabstts).length === 0) {
         Object.assign(extension_settings.elevenlabstts, defaultSettings);
     }
@@ -294,45 +354,7 @@ function loadSettings() {
     $('#elevenlabs_api_key').val(extension_settings.elevenlabstts.elevenlabsApiKey);
     $('#elevenlabs_voice_map').val(extension_settings.elevenlabstts.elevenlabsVoiceMap);
     $('#elevenlabs_enabled').prop('checked', extension_settings.elevenlabstts.enabled);
-    onElevenlabsConnectClick()
-}
-
-
-async function moduleWorker() {
-    const enabled = $("#elevenlabs_enabled").is(':checked');
-    if (!enabled){
-        return;
-    }
-    const context = getContext()
-    const chat = context.chat;
-
-    processTtsQueue();
-
-    // no characters or group selected 
-    if (!context.groupId && !context.characterId) {
-        return;
-    }
-
-    // take the count of messages
-    let lastMessageNumber = Array.isArray(context.chat) && context.chat.length ? context.chat.length : 0;
-
-    // special case for new chat
-    if (Array.isArray(context.chat) && context.chat.length === 1) {
-        lastMessageNumber = 1;
-    }
-
-    // There's no new messages
-    let diff = lastMessageNumber - currentMessageNumber;
-    if (diff == 0) {
-        return;
-    }
-
-    // New messages add to history
-    currentMessageNumber = lastMessageNumber;
-    const message = chat[chat.length - 1]
-
-    console.debug(`Adding message from ${message.name} for TTS processing: "${message.mes}"`);
-    ttsJobQueue.push(message);
+    onElevenlabsApplyClick()
 }
 
 $(document).ready(function () {
@@ -349,7 +371,7 @@ $(document).ready(function () {
                     <input id="elevenlabs_api_key" type="text" class="text_pole" placeholder="<API Key>"/>
                     <textarea id="elevenlabs_voice_map" type="text" class="text_pole" 
                         placeholder="Create a mapping of Character to ElevenLabs Voice ID like so \nAqua:nNreVDVt8CWDzqZ55BWZ,\nYou:TxGEqnHWrfWFTfGW9XjX,"></textarea>
-                    <input id="elevenlabs_connect" class="menu_button" type="submit" value="Connect" /><br>
+                    <input id="elevenlabs_apply" class="menu_button" type="submit" value="Apply" /><br>
                     <div>
                         <input type="checkbox" id="elevenlabs_enabled" name="elevenlabs_enabled" checked>
                         <label for="elevenlabs_enabled">Enabled</label>
@@ -361,10 +383,9 @@ $(document).ready(function () {
         </div>
         `;
         $('#extensions_settings').append(settingsHtml);
-        $('#elevenlabs_connect').on('click', onElevenlabsConnectClick);
+        $('#elevenlabs_apply').on('click', onElevenlabsApplyClick);
         $('#elevenlabs_enabled').on('click', onElevenlabsEnableClick);
     }
-
     addExtensionControls();
     loadSettings();
     setInterval(moduleWorker, UPDATE_INTERVAL);
