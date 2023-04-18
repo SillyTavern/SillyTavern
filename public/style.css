@@ -3360,6 +3360,7 @@ body.movingUI #expression-holder {
         bottom: 0;
         filter: drop-shadow(2px 2px 2px #51515199);
         z-index: 1;
+        left: 0;
 
     }
 
