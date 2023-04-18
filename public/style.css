@@ -3249,6 +3249,97 @@ toolcool-color-picker {
     line-height: 1.2;
 }
 
+
+
+/*bubble chat style*/
+
+
+body.bubblechat .mes {
+    padding: 10px;
+    border-radius: 20px;
+    background-color: var(--SmartThemeBlurTintColor);
+    margin-bottom: 5px;
+    border: 1px solid var(--white30a);
+}
+
+body.w1000px #sheld {
+    max-width: 1000px !important;
+}
+
+/*FastUI blur removal*/
+
+body.no-blur * {
+    backdrop-filter: unset !important;
+}
+
+
+
+body.no-blur #send_form.no-connection {
+    background-color: rgba(100, 0, 0, 0.9) !important;
+}
+
+body.no-blur #bg1,
+body.no-blur #bg_custom {
+    filter: unset;
+
+}
+
+body.no-blur .drawer-content,
+body:not(.bubblechat).no-blur #chat,
+body.bubblechat.no-blur .mes,
+body.no-blur #top-bar,
+body.no-blur #character_popup,
+body.no-blur #world_popup,
+body.no-blur #dialogue_popup,
+body.no-blur #select_chat_popup,
+body.no-blur .options-content,
+body.no-blur #send_form,
+body.no-blur .list-group {
+    background-color: var(--SmartThemeFastUIBGColor) !important;
+}
+
+/* wAIfu mode*/
+
+
+body.waifuMode #top-bar {
+    border-radius: 0 0 20px 20px;
+    border: 1px solid var(--grey30a);
+}
+
+body.waifuMode #sheld {
+    height: 40vh;
+    top: auto !important;
+    bottom: 0;
+}
+
+body.waifuMode #chat {
+    border-top: 1px solid var(--grey30a);
+    border-radius: 20px 20px 0 0;
+}
+
+body.waifuMode .expression-holder {
+    max-height: 90vh;
+    max-width: unset;
+    width: 100%;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding-left: 10px;
+    padding-right: 10px;
+    text-align: center;
+    filter: drop-shadow(2px 2px 2px #51515199);
+    transition: 500ms;
+    z-index: 1;
+}
+
+body.waifuMode img.expression {
+    height: 90vh;
+    max-width: 100%;
+    max-height: 90vh;
+    vertical-align: bottom;
+}
+
 /* ---------- @media queries must always go at the bottom ------------*/
 
 /*will apply to anything 1000px or less. this catches ipads, horizontal phones, and vertical phones)*/
@@ -3315,7 +3406,7 @@ toolcool-color-picker {
     #sheld,
     #character_popup,
     #world_popup {
-        height: calc(100svh - 45px) !important;
+        height: calc(100svh - 45px);
         width: 100% !important;
         margin: 0 auto;
     }
@@ -3340,7 +3431,8 @@ toolcool-color-picker {
 
         left: 0 !important;
         top: 42px !important;
-
+        width: 100% !important;
+        max-width: 100%;
     }
 
     .drag-grabber,
@@ -3439,114 +3531,6 @@ toolcool-color-picker {
     .drawer25pWidth {
         flex-basis: max(calc(100% / 2 - 10px), 200px);
     }
-}
-
-/*bubble chat style*/
-
-
-body.bubblechat .mes {
-    padding: 10px;
-    border-radius: 20px;
-    background-color: var(--SmartThemeBlurTintColor);
-    margin-bottom: 5px;
-    border: 1px solid var(--white30a);
-}
-
-body.w1000px #sheld {
-    max-width: 1000px !important;
-}
-
-/*FastUI blur removal*/
-
-body.no-blur * {
-    backdrop-filter: unset !important;
-}
-
-
-
-body.no-blur #send_form.no-connection {
-    background-color: rgba(100, 0, 0, 0.9) !important;
-}
-
-body.no-blur #bg1,
-body.no-blur #bg_custom {
-    filter: unset;
-
-}
-
-body.no-blur .drawer-content,
-body:not(.bubblechat).no-blur #chat,
-body.bubblechat.no-blur .mes,
-body.no-blur #top-bar,
-body.no-blur #character_popup,
-body.no-blur #world_popup,
-body.no-blur #dialogue_popup,
-body.no-blur #select_chat_popup,
-body.no-blur .options-content,
-body.no-blur #send_form,
-body.no-blur .list-group {
-    background-color: var(--SmartThemeFastUIBGColor) !important;
-}
-
-/* wAIfu mode*/
-
-
-body.waifuMode #top-bar {
-    border-radius: 0 0 20px 20px;
-    border: 1px solid var(--grey30a);
-}
-
-body.waifuMode #sheld {
-    /*     display: grid;
-    grid-template-rows: 30vh min-content;
-    height: calc(100svh - 42px);
-    overflow-x: hidden;
-    max-width: 800px;
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 41px;
-    margin: 0 auto;
-    z-index: 2;
-    align-content: end;
-
-    align-content: end;
-    
-    
-    
-    */
-
-    height: 30vh;
-    top: unset;
-    bottom: 0;
-}
-
-body.waifuMode #chat {
-    border-top: 1px solid var(--grey30a);
-    border-radius: 20px 20px 0 0;
-}
-
-body.waifuMode .expression-holder {
-    max-height: 90vh;
-    max-width: unset;
-    width: 100%;
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    padding-left: 10px;
-    padding-right: 10px;
-    text-align: center;
-    filter: drop-shadow(2px 2px 2px #51515199);
-    transition: 500ms;
-    z-index: 1;
-}
-
-body.waifuMode img.expression {
-    height: 90vh;
-    max-width: 100%;
-    max-height: 90vh;
-    vertical-align: bottom;
 }
 
 /*this part only only applies to iOS devices*/
