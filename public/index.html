@@ -258,7 +258,7 @@
                                         <b class="reverse_proxy_warning">Don't expose your real API keys to reverse proxies!</b>
                                     </div>
                                     <div class="wide100p">
-                                        <input id="openai_reverse_proxy" type="text" class="text_pole" placeholder="https://api.openai.com/v1" />
+                                        <input id="openai_reverse_proxy" type="text" class="text_pole" placeholder="https://api.openai.com/v1" maxlength="100" />
                                     </div>
                                 </div>
                                 <div class="range-block">
@@ -613,7 +613,7 @@
                                     <div class="range-block-title">
                                         Seed
                                     </div>
-                                    <input type="number" id="seed_textgenerationwebui" class="text_pole" />
+                                    <input type="number" id="seed_textgenerationwebui" class="text_pole" maxlength="100" />
                                 </div>
                                 <div class="range-block">
                                     <div class="range-block-title">
@@ -622,7 +622,7 @@
                                             <span class="note-link-span">?</span>
                                         </a>
                                     </div>
-                                    <input type="number" id="fn_index_textgenerationwebui" class="text_pole" />
+                                    <input type="number" id="fn_index_textgenerationwebui" class="text_pole" maxlength="100" />
                                 </div>
                             </div>
                             <div id="openai_settings">
@@ -1382,7 +1382,7 @@
                             <div id="avatar-and-name-block">
                                 <div id="name_div">
                                     <h4>Character Name</h4>
-                                    <input id="character_name_pole" name="ch_name" class="text_pole" placeholder="Name this character" maxlength="120" value="" autocomplete="off">
+                                    <input id="character_name_pole" name="ch_name" class="text_pole" placeholder="Name this character" maxlength="50" value="" autocomplete="off">
                                 </div>
                                 <div id="avatar_div" class="avatar_div">
                                     <div id="avatar_div_div" class="avatar">
@@ -1443,7 +1443,7 @@
                     <div id="rm_group_chats_block" class="right_menu">
                         <div id="rm_group_top_bar">
                             <div id="rm_button_back_from_group" class="menu_button fa-solid fa-left-long"></div>
-                            <input id="rm_group_chat_name" class="text_pole" type="text" name="chat_name" placeholder="Chat Name (Optional)" />
+                            <input id="rm_group_chat_name" class="text_pole" type="text" name="chat_name" placeholder="Chat Name (Optional)" maxlength="100" />
                         </div>
                         <div id="rm_group_buttons">
                             <div class="rm_group_settings">
@@ -1474,7 +1474,7 @@
                         </div>
                         <div id="rm_group_add_members_header">
                             <h3>Add Members</h3>
-                            <input id="rm_group_filter" class="text_pole" type="search" placeholder="Filter..." />
+                            <input id="rm_group_filter" class="text_pole" type="search" placeholder="Filter..." maxlength="100" />
                         </div>
                         <!-- !!!Don't break line after div!!! -->
                         <div id="rm_group_add_members"></div>
@@ -1523,7 +1523,7 @@
                             <div id="rm_button_group_chats" title="Create New Chat Group" class="menu_button fa-solid fa-users-gear "></div>
                         </div>
                         <form id="form_character_search_form" action="javascript:void(null);">
-                            <input id="character_search_bar" class="text_pole" type="search" placeholder="Character search..." />
+                            <input id="character_search_bar" class="text_pole" type="search" placeholder="Character search..." maxlength="50" />
                             <select id="character_sort_order" title="Characters sorting order">
                                 <option data-field="name" data-order="asc">Name, A-Z</option>
                                 <option data-field="name" data-order="desc">Name, Z-A</option>
@@ -1662,14 +1662,14 @@
                                 <h4>Key</h4>
                                 <h5>Comma-separated list of keywords (e.g: foo,bar).</h5>
                             </label>
-                            <textarea class="text_pole" name="key" rows="1" placeholder=""></textarea>
+                            <textarea class="text_pole" name="key" rows="1" placeholder="" maxlength="250"></textarea>
                         </div>
                         <div class="world_entry_form_control keysecondary">
                             <label for="keysecondary">
                                 <h4>Secondary Key</h4>
                                 <h5>Comma-separated list of additional keywords.</h5>
                             </label>
-                            <textarea class="text_pole" name="keysecondary" rows="1" placeholder=""></textarea>
+                            <textarea class="text_pole" name="keysecondary" rows="1" placeholder="" maxlength="250"></textarea>
                         </div>
                     </div>
                     <div class="world_entry_thin_controls">
@@ -1685,7 +1685,7 @@
                                 <h4>Comment</h4>
                                 <h5>Optional comment (doesn't affect the AI).</h5>
                             </label>
-                            <textarea class="text_pole" rows="1" name="comment"></textarea>
+                            <textarea class="text_pole" rows="1" name="comment" maxlength="250"></textarea>
                         </div>
                     </div>
                     <div class="world_entry_form_control">
