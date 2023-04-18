@@ -118,6 +118,7 @@ const directories = {
     thumbnailsBg: 'thumbnails/bg/',
     thumbnailsAvatar: 'thumbnails/avatar/',
     themes: 'public/themes',
+    extensions: 'public/scripts/extensions'
 };
 
 // CSRF Protection //
@@ -1918,6 +1919,14 @@ app.post('/generate_poe', jsonParser, async (request, response) => {
             return response.sendStatus(500);
         }
     }
+});
+
+app.get('/discover_extensions', jsonParser, function (_, response) {
+    const extensions = fs
+        .readdirSync(directories.extensions)
+        .filter(f => fs.statSync(path.join(directories.extensions, f)).isDirectory());
+
+    return response.send(extensions);
 });
 
 function getThumbnailFolder(type) {
