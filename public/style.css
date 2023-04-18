@@ -2822,7 +2822,7 @@ a {
     /* max-height: 100svh; */
     box-shadow: none;
     border-radius: 0 0 0 20px;
-    overflow-x: hidden;
+    overflow: hidden;
     scrollbar-width: thin;
 }
 
@@ -3064,12 +3064,12 @@ label[for="extensions_autoconnect"] {
     padding: 5px;
     border-radius: 0 0 20px 0;
     box-shadow: none;
-    overflow-y: hidden;
+    overflow: hidden;
 }
 
 .scrollableInner {
     overflow-x: hidden;
-    height: calc(100svh - 90px);
+    height: calc(100% - 30px);
 }
 
 .width100p {
