@@ -211,10 +211,12 @@ async function getExpressionsList() {
     console.log('getting expressions list');
     // get something for offline mode (6 default images)
     if (!modules.includes('classify')) {
+        console.log('classify not available, loading default');
         return DEFAULT_EXPRESSIONS;
     }
 
     if (Array.isArray(expressionsList)) {
+        console.log('got array, loading array');
         return expressionsList;
     }
 
@@ -222,12 +224,14 @@ async function getExpressionsList() {
     url.pathname = '/api/classify/labels';
 
     try {
+        console.log('trying for API');
         const apiResult = await fetch(url, {
             method: 'GET',
             headers: { 'Bypass-Tunnel-Reminder': 'bypass' },
         });
 
         if (apiResult.ok) {
+            console.log('API ok, adding labels');
             const data = await apiResult.json();
             expressionsList = data.labels;
             return expressionsList;
