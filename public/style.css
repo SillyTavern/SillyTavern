@@ -208,7 +208,7 @@ code {
     top: 41px;
     /* margin: 0 auto; */
     z-index: 2;
-    resize: both;
+    /* resize: both; */
     min-height: 100px;
     min-width: 100px;
     width: var(--sheldWidth);
@@ -230,6 +230,7 @@ code {
     border: 1px solid var(--white30a);
     cursor: -moz-grab;
     cursor: -webkit-grab;
+    display: none;
 }
 
 #sheldheader:active {
@@ -3044,7 +3045,7 @@ label[for="extensions_autoconnect"] {
     margin: 35px auto 0 auto;
     backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
     -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
-    resize: both;
+    /* resize: both; */
     z-index: 9999 !important;
 }
 
@@ -3327,11 +3328,21 @@ body.waifuMode .expression-holder {
     bottom: 0;
     filter: drop-shadow(2px 2px 2px #51515199);
     z-index: 1;
-    resize: both;
+    /* resize: both; */
 }
 
 body.waifuMode img.expression {
     /* height: 90vh; */
+}
+
+body.movingUI .drag-grabber {
+    display: inline;
+}
+
+body.movingUI #sheld,
+body.movingUI .drawer-content,
+body.movingUI #expression-holder {
+    resize: both;
 }
 
 /* ---------- @media queries must always go at the bottom ------------*/

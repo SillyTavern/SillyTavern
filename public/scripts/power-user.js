@@ -70,6 +70,7 @@ let power_user = {
     blur_tint_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBlurTintColor').trim()}`,
 
     waifuMode: false,
+    movingUI: false,
     theme: 'Default (Dark)',
 };
 
@@ -89,6 +90,7 @@ const storage_keys = {
     blur_strength: "TavernAI_blur_strength",
 
     waifuMode: "TavernAI_waifuMode",
+    movingUI: "TavernAI_movingUI",
 };
 
 const chat = document.getElementById('chat');
@@ -127,6 +129,13 @@ function switchWaifuMode() {
     const waifuMode = localStorage.getItem(storage_keys.waifuMode);
     power_user.waifuMode = waifuMode === null ? false : waifuMode == "true";
     $("body").toggleClass("waifuMode", power_user.waifuMode);
+    scrollChatToBottom();
+}
+
+function switchMovingUI() {
+    const movingUI = localStorage.getItem(storage_keys.movingUI);
+    power_user.movingUI = movingUI === null ? false : movingUI == "true";
+    $("body").toggleClass("movingUI", power_user.movingUI);
     scrollChatToBottom();
 }
 
@@ -255,6 +264,7 @@ applyAvatarStyle();
 applyBlurStrength();
 applyChatDisplay();
 switchWaifuMode()
+switchMovingUI();
 
 function loadPowerUserSettings(settings, data) {
     // Load from settings.json
@@ -269,8 +279,10 @@ function loadPowerUserSettings(settings, data) {
     // These are still local storage
     const fastUi = localStorage.getItem(storage_keys.fast_ui_mode);
     const waifuMode = localStorage.getItem(storage_keys.waifuMode);
+    const movingUI = localStorage.getItem(storage_keys.movingUI);
     power_user.fast_ui_mode = fastUi === null ? true : fastUi == "true";
     power_user.waifuMode = waifuMode === null ? false : waifuMode == "true";
+    power_user.movingUI = movingUI === null ? false : movingUI == "true";
     power_user.avatar_style = Number(localStorage.getItem(storage_keys.avatar_style) ?? avatar_styles.ROUND);
     power_user.chat_display = Number(localStorage.getItem(storage_keys.chat_display) ?? chat_styles.DEFAULT);
     power_user.sheld_width = Number(localStorage.getItem(storage_keys.sheld_width) ?? sheld_width.DEFAULT);
@@ -289,6 +301,7 @@ function loadPowerUserSettings(settings, data) {
     $("#custom_chat_separator").val(power_user.custom_chat_separator);
     $("#fast_ui_mode").prop("checked", power_user.fast_ui_mode);
     $("#waifuMode").prop("checked", power_user.waifuMode);
+    $("#movingUImode").prop("checked", power_user.movingUI);
     $("#multigen").prop("checked", power_user.multigen);
     $("#multigen_first_chunk").val(power_user.multigen_first_chunk);
     $("#multigen_next_chunks").val(power_user.multigen_next_chunks);
@@ -406,6 +419,12 @@ $(document).ready(() => {
         power_user.waifuMode = $(this).prop("checked");
         localStorage.setItem(storage_keys.waifuMode, power_user.waifuMode);
         switchWaifuMode();
+    });
+
+    $("#movingUImode").change(function () {
+        power_user.movingUI = $(this).prop("checked");
+        localStorage.setItem(storage_keys.movingUI, power_user.movingUI);
+        switchMovingUI();
     });
 
     $(`input[name="avatar_style"]`).on('input', function (e) {
