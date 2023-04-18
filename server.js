@@ -1456,47 +1456,51 @@ app.post("/importchat", urlencodedParser, function (request, response) {
                 }
 
                 const jsonData = json5.parse(data);
-                var new_chat = [];
                 if (jsonData.histories !== undefined) {
                     //console.log('/importchat confirms JSON histories are defined');
-                    let i = 0;
-                    new_chat[i] = {};
-                    new_chat[0]['user_name'] = 'You';
-                    new_chat[0]['character_name'] = ch_name;
-                    new_chat[0]['create_date'] = humanizedISO8601DateTime() //Date.now();
-                    i++;
-                    jsonData.histories.histories[0].msgs.forEach(function (item) {
-                        new_chat[i] = {};
-                        if (item.src.is_human == true) {
-                            new_chat[i]['name'] = 'You';
-                        } else {
-                            new_chat[i]['name'] = ch_name;
-                        }
-                        new_chat[i]['is_user'] = item.src.is_human;
-                        new_chat[i]['is_name'] = true;
-                        new_chat[i]['send_date'] = humanizedISO8601DateTime() //Date.now();
-                        new_chat[i]['mes'] = item.text;
-                        i++;
-                    });
-                    const chatJsonlData = new_chat.map(JSON.stringify).join('\n');
-                    //console.log('/importchat saving a file: '+ch_name+' - '+humanizedISO8601DateTime()+' imported.jsonl');
-                    fs.writeFile(chatsPath + avatar_url + '/' + ch_name + ' - ' + humanizedISO8601DateTime() + ' imported.jsonl', chatJsonlData, 'utf8', function (err) { //added ch_name and replaced Date.now() with humanizedISO8601DateTime
+                    const chat = {
+                        from(history) {
+                            return [
+                                {
+                                    user_name: 'You',
+                                    character_name: ch_name,
+                                    create_date: humanizedISO8601DateTime(),
 
-                        if (err) {
-                            response.send(err);
-                            return console.log(err);
-                            //response.send(err);
-                        } else {
-                            //response.redirect("/");
-                            response.send({ res: true });
+                                },
+                                ...history.msgs.map(
+                                    (message) => ({
+                                        name: message.src.is_human ? 'You' : ch_name,
+                                        is_user: message.src.is_human,
+                                        is_name: true,
+                                        send_date: humanizedISO8601DateTime(),
+                                        mes: message.text,
+                                    })
+                                )];
                         }
+                    }
+
+                    const newChats = [];
+                    (jsonData.histories.histories ?? []).forEach((history) => {
+                        newChats.push(chat.from(history));
                     });
 
+                    const errors = [];
+                    newChats.forEach(chat => fs.writeFile(
+                            chatsPath + avatar_url + '/' + ch_name + ' - ' + humanizedISO8601DateTime() + ' imported.jsonl',
+                            chat.map(JSON.stringify).join('\n'),
+                            'utf8',
+                            (err) => err ?? errors.push(err)
+                        )
+                    );
+
+                    if (0 < errors.length) {
+                        response.send('Errors occurred while writing character files. Errors: ' + JSON.stringify(errors));
+                    }
+
+                    response.send({res: true});
                 } else {
                     response.send({ error: true });
-                    return;
                 }
-
             });
         }
         if (format === 'jsonl') {
