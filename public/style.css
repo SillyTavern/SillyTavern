@@ -1905,11 +1905,11 @@ input[type="range"]::-webkit-slider-thumb {
     transition: 0.3s;
 }
 
-.token-warning-button {
+.whitespacenowrap {
     white-space: nowrap;
 }
 
-.token-warning-button a {
+#chartokenwarning a {
     color: var(--SmartThemeBodyColor);
 }
 

@@ -427,6 +427,31 @@ $(document).ready(() => {
         switchMovingUI();
     });
 
+    $("#movingUIreset").on('click', function () {
+
+        document.getElementById("sheld").style.top = '';
+        document.getElementById("sheld").style.left = '';
+        document.getElementById("sheld").style.height = '';
+        document.getElementById("sheld").style.width = '';
+
+        document.getElementById("left-nav-panel").style.top = '';
+        document.getElementById("left-nav-panel").style.left = '';
+        document.getElementById("left-nav-panel").style.height = '';
+        document.getElementById("left-nav-panel").style.width = '';
+
+        document.getElementById("right-nav-panel").style.top = '';
+        document.getElementById("right-nav-panel").style.left = '';
+        document.getElementById("right-nav-panel").style.right = '';
+        document.getElementById("right-nav-panel").style.height = '';
+        document.getElementById("right-nav-panel").style.width = '';
+
+        document.getElementById("expression-holder").style.top = '';
+        document.getElementById("expression-holder").style.left = '';
+        document.getElementById("expression-holder").style.height = '';
+        document.getElementById("expression-holder").style.width = '';
+
+    })
+
     $(`input[name="avatar_style"]`).on('input', function (e) {
         power_user.avatar_style = Number(e.target.value);
         localStorage.setItem(storage_keys.avatar_style, power_user.avatar_style);

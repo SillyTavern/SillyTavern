@@ -170,7 +170,7 @@ function RA_CountCharTokens() {
         $("#result_info").html(`
         <span class="neutral_warning">${count_tokens}</span>&nbsp;Tokens (<span class="neutral_warning">${perm_tokens}</span><span>&nbsp;Permanent Tokens)
         <br>
-        <div class="menu_button token-warning-button"><a href="/notes/token-limits.html" target="_blank">Learn More About Token 'Limits'</a></div>`);
+        <div id="chartokenwarning" class="menu_button whitespacenowrap"><a href="/notes/token-limits.html" target="_blank">Learn More About Token 'Limits'</a></div>`);
     } //warn if either are over 1024
 }
 //Auto Load Last Charcter -- (fires when active_character is defined and auto_load_chat is true)
