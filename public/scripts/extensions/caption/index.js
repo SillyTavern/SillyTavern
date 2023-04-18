@@ -16,8 +16,8 @@ async function moduleWorker() {
 async function setImageIcon() {
     try {
         const sendButton = document.getElementById('send_picture');
-        sendButton.style.backgroundImage = `url('/img/image-solid.svg')`;
-        sendButton.classList.remove('spin');
+        sendButton.classList.add('fa-image');
+        sendButton.classList.remove('fa-hourglass-half', 'fa-fade');
     }
     catch (error) {
         console.log(error);
@@ -27,8 +27,8 @@ async function setImageIcon() {
 async function setSpinnerIcon() {
     try {
         const sendButton = document.getElementById('send_picture');
-        sendButton.style.backgroundImage = `url('/img/spinner-solid.svg')`;
-        sendButton.classList.add('spin');
+        sendButton.classList.remove('fa-image');
+        sendButton.classList.add('fa-hourglass-half', 'fa-fade');
     }
     catch (error) {
         console.log(error);
@@ -77,7 +77,8 @@ async function onSelectImage(e) {
         if (apiResult.ok) {
             const data = await apiResult.json();
             const caption = data.caption;
-            await sendCaptionedMessage(caption, base64Img);
+            const imageToSave = data.thumbnail ? `data:image/jpeg;base64,${data.thumbnail}` : base64Img;
+            await sendCaptionedMessage(caption, imageToSave);
         }
     }
     catch (error) {
@@ -97,9 +98,9 @@ $(document).ready(function () {
         $('#send_form').css('grid-template-columns', columns.join(' '));
     }
     function addSendPictureButton() {
-        const sendButton = document.createElement('input');
-        sendButton.type = 'button';
+        const sendButton = document.createElement('div');
         sendButton.id = 'send_picture';
+        sendButton.classList.add('fa-solid');
         $(sendButton).hide();
         $(sendButton).on('click', () => $('#img_file').click());
         $('#send_but_sheld').prepend(sendButton);

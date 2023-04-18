@@ -1,0 +1,81 @@
+subscription subscriptions_viewerMessageLimitUpdated_Subscription {
+  viewerMessageLimitUpdated {
+    ...SettingsSubscriptionSection_viewer
+    id
+  }
+}
+
+fragment SettingsSubscriptionPaywallModal_viewer on Viewer {
+  ...WebSubscriptionPaywall_viewer
+}
+
+fragment SettingsSubscriptionSectionNonSubscriberView_viewer on Viewer {
+  ...SettingsSubscriptionPaywallModal_viewer
+}
+
+fragment SettingsSubscriptionSectionSubscriberView_viewer on Viewer {
+  subscription {
+    isActive
+    expiresTime
+    purchaseType
+    isAnnualSubscription
+    willCancelAtPeriodEnd
+    id
+  }
+}
+
+fragment SettingsSubscriptionSection_viewer on Viewer {
+  availableBots {
+    displayName
+    messageLimit {
+      canSend
+      numMessagesRemaining
+      resetTime
+      dailyBalance
+      dailyLimit
+      monthlyBalance
+      monthlyLimit
+      monthlyBalanceRefreshTime
+      shouldShowRemainingMessageCount
+    }
+    id
+  }
+  subscription {
+    isActive
+    id
+  }
+  isEligibleForWebSubscriptions
+  ...SettingsSubscriptionSectionNonSubscriberView_viewer
+  ...SettingsSubscriptionSectionSubscriberView_viewer
+  ...WebSubscriptionSuccessMessage_viewer
+}
+
+fragment SubscriptionMessageLimitExplanation_viewer on Viewer {
+  availableBots {
+    displayName
+    messageLimit {
+      monthlyLimit
+    }
+    id
+  }
+}
+
+fragment WebSubscriptionPaywall_viewer on Viewer {
+  ...SubscriptionMessageLimitExplanation_viewer
+  webSubscriptionPriceInfo {
+    monthlyPrice
+    yearlyPrice
+    yearlyPricePerMonth
+    yearlyPercentageSavings
+    id
+  }
+}
+
+fragment WebSubscriptionSuccessMessage_viewer on Viewer {
+  subscription {
+    isActive
+    expiresTime
+    willCancelAtPeriodEnd
+    id
+  }
+}

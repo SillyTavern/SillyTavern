@@ -5,6 +5,7 @@ import {
     delay,
 } from './utils.js';
 import { humanizedDateTime } from "./RossAscends-mods.js";
+import { sortCharactersList } from './power-user.js';
 
 import {
     chat,
@@ -38,6 +39,8 @@ import {
     hideSwipeButtons,
     chat_metadata,
     updateChatMetadata,
+    isStreamingEnabled,
+    getThumbnailUrl,
 } from "../script.js";
 
 export {
@@ -137,7 +140,7 @@ async function getGroupChat(id) {
                         : default_ch_mes;
                     mes["force_avatar"] =
                         character.avatar != "none"
-                            ? `/thumbnail?type=avatar&file=${encodeURIComponent(character.avatar)}&${Date.now()}`
+                            ? getThumbnailUrl('avatar', character.avatar)
                             : default_avatar;
                     chat.push(mes);
                     addOneMessage(mes);
@@ -200,7 +203,6 @@ function printGroups() {
         updateGroupAvatar(group);
     }
 }
-
 function updateGroupAvatar(group) {
     $("#rm_print_characters_block .group_select").each(function () {
         if ($(this).data("id") == group.id) {
@@ -218,7 +220,7 @@ function getGroupAvatar(group) {
         for (const member of group.members) {
             const charIndex = characters.findIndex((x) => x.name === member);
             if (charIndex !== -1 && characters[charIndex].avatar !== "none") {
-                const avatar = `/thumbnail?type=avatar&file=${encodeURIComponent(characters[charIndex].avatar)}&${Date.now()}`;
+                const avatar = getThumbnailUrl('avatar', characters[charIndex].avatar);
                 memberAvatars.push(avatar);
             }
             if (memberAvatars.length === 4) {
@@ -265,7 +267,7 @@ function getGroupAvatar(group) {
 }
 
 
-async function generateGroupWrapper(by_auto_mode, type=null) {
+async function generateGroupWrapper(by_auto_mode, type = null) {
     if (online_status === "no_connection") {
         is_group_generating = false;
         setSendButtonState(false);
@@ -292,7 +294,7 @@ async function generateGroupWrapper(by_auto_mode, type=null) {
 
         let typingIndicator = $("#chat .typing_indicator");
 
-        if (typingIndicator.length === 0) {
+        if (typingIndicator.length === 0 && !isStreamingEnabled()) {
             typingIndicator = $(
                 "#typing_indicator_template .typing_indicator"
             ).clone();
@@ -321,6 +323,11 @@ async function generateGroupWrapper(by_auto_mode, type=null) {
 
         if (type === "swipe") {
             activatedMembers = activateSwipe(group.members);
+
+            if (activatedMembers.length === 0) {
+                callPopup('<h3>Deleted group member swiped. To get a reply, add them back to the group.</h3>', 'text');
+                throw new Error('Deleted group member swiped');
+            }
         }
         else if (activationStrategy === group_activation_strategy.NATURAL) {
             activatedMembers = activateNaturalOrder(group.members, activationText, lastMessage, group.allow_self_responses, isUserInput);
@@ -356,7 +363,7 @@ async function generateGroupWrapper(by_auto_mode, type=null) {
                 // if swipe - see if message changed
                 else if (type === "swipe" && lastMessageText === chat[chat.length - 1].mes) {
                     await delay(100);
-                } 
+                }
                 else {
                     messagesBefore++;
                     break;
@@ -377,7 +384,7 @@ async function generateGroupWrapper(by_auto_mode, type=null) {
 }
 
 function activateSwipe(members) {
-    const name = chat[chat.length -1].name;
+    const name = chat[chat.length - 1].name;
     const activatedNames = members.includes(name) ? [name] : [];
     const memberIds = activatedNames
         .map((x) => characters.findIndex((y) => y.name === x))
@@ -536,22 +543,16 @@ async function groupChatAutoModeWorker() {
     await generateGroupWrapper(true);
 }
 
-async function memberClickHandler(event) {
-    event.stopPropagation();
-    const id = $(this).data("id");
-    const isDelete = !!$(this).closest("#rm_group_members").length;
-    const template = $(this).clone();
-    let _thisGroup = groups.find((x) => x.id == selected_group);
+async function modifyGroupMember(chat_id, groupMember, isDelete) { 
+    const id = groupMember.data("id");
+
+    const template = groupMember.clone();
+    let _thisGroup = groups.find((x) => x.id == chat_id);
     template.data("id", id);
-    template.click(memberClickHandler);
 
     if (isDelete) {
-        template.find(".plus").show();
-        template.find(".minus").hide();
         $("#rm_group_add_members").prepend(template);
     } else {
-        template.find(".plus").hide();
-        template.find(".minus").show();
         $("#rm_group_members").prepend(template);
     }
 
@@ -568,13 +569,54 @@ async function memberClickHandler(event) {
         await editGroup(selected_group);
         updateGroupAvatar(_thisGroup);
     }
+    else {
+        template.css({ 'order': 'unset' });
+    }
 
-    $(this).remove();
+    groupMember.remove();
     const groupHasMembers = !!$("#rm_group_members").children().length;
     $("#rm_group_submit").prop("disabled", !groupHasMembers);
 }
 
-function select_group_chats(chat_id) {
+async function reorderGroupMember(chat_id, groupMember, direction) {
+    const id = groupMember.data("id");
+    const group = groups.find((x) => x.id == chat_id);
+
+    // Existing groups need to modify members list
+    if (group && group.members.length > 1) {
+        const indexOf = group.members.indexOf(id);
+        if (direction == 'down') {
+            const next = group.members[indexOf + 1];
+            if (next) {
+                group.members[indexOf + 1] = group.members[indexOf];
+                group.members[indexOf] = next;
+            }
+        }
+        if (direction == 'up') {
+            const prev = group.members[indexOf - 1];
+            if (prev) {
+                group.members[indexOf - 1] = group.members[indexOf];
+                group.members[indexOf] = prev;
+            }
+        }
+        
+        await editGroup(chat_id);
+        updateGroupAvatar(group);
+        // stupid but lifts the manual reordering
+        select_group_chats(chat_id, true);
+    }
+    // New groups just can't be DOM-ordered
+    else {
+        if (direction == 'down') {
+            groupMember.insertAfter(groupMember.next());
+        }
+        if (direction == 'up') {
+            groupMember.insertBefore(groupMember.prev());
+        }
+    }
+}
+
+function select_group_chats(chat_id, skipAnimation) {
     const group = chat_id && groups.find((x) => x.id == chat_id);
     const groupName = group?.name ?? "";
 
@@ -591,7 +633,7 @@ function select_group_chats(chat_id) {
     $("#rm_group_filter").val("").trigger("input");
 
     $('input[name="rm_group_activation_strategy"]').off();
-    $('input[name="rm_group_activation_strategy"]').on("input", async function(e) {
+    $('input[name="rm_group_activation_strategy"]').on("input", async function (e) {
         if (chat_id) {
             let _thisGroup = groups.find((x) => x.id == chat_id);
             _thisGroup.activation_strategy = Number(e.target.value);
@@ -600,7 +642,9 @@ function select_group_chats(chat_id) {
     });
     $(`input[name="rm_group_activation_strategy"][value="${Number(group?.activation_strategy ?? group_activation_strategy.NATURAL)}"]`).prop('checked', true);
 
-    selectRightMenuWithAnimation('rm_group_chats_block');
+    if (!skipAnimation) {
+        selectRightMenuWithAnimation('rm_group_chats_block');
+    }
 
     // render characters list
     $("#rm_group_add_members").empty();
@@ -608,29 +652,27 @@ function select_group_chats(chat_id) {
     for (let character of characters) {
         const avatar =
             character.avatar != "none"
-                ? `/thumbnail?type=avatar&file=${encodeURIComponent(character.avatar)}&${Date.now()}`
+                ? getThumbnailUrl('avatar', character.avatar)
                 : default_avatar;
         const template = $("#group_member_template .group_member").clone();
         template.data("id", character.name);
         template.find(".avatar img").attr("src", avatar);
         template.find(".ch_name").text(character.name);
-        template.click(memberClickHandler);
+        template.attr("chid", characters.indexOf(character));
 
         if (
             group &&
             Array.isArray(group.members) &&
             group.members.includes(character.name)
         ) {
-            template.find(".plus").hide();
-            template.find(".minus").show();
             template.css({ 'order': group.members.indexOf(character.name) });
             $("#rm_group_members").append(template);
         } else {
-            template.find(".plus").show();
-            template.find(".minus").hide();
             $("#rm_group_add_members").append(template);
         }
     }
+
+    sortCharactersList("#rm_group_add_members .group_member");
 
     const groupHasMembers = !!$("#rm_group_members").children().length;
     $("#rm_group_submit").prop("disabled", !groupHasMembers);
@@ -674,6 +716,27 @@ function select_group_chats(chat_id) {
     else {
         $("#rm_group_automode_label").hide();
     }
+
+    $(document).off("click", ".group_member .right_menu_button");
+    $(document).on("click", ".group_member .right_menu_button", async function (event) {
+        event.stopPropagation();
+        const action = $(this).data('action');
+        const member = $(this).closest('.group_member');
+
+        if (action == 'remove') {
+            await modifyGroupMember(chat_id, member, true);
+        }
+        
+        if (action == 'add') {
+            await modifyGroupMember(chat_id, member, false);
+        }
+        
+        if (action == 'up' || action == 'down') {
+            await reorderGroupMember(chat_id, member, action);
+        }
+
+        sortCharactersList("#rm_group_add_members .group_member");
+    });
 }
 
 $(document).ready(() => {

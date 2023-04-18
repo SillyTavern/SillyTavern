@@ -1,4 +1,4 @@
-import { callPopup, saveSettings, saveSettingsDebounced } from "../script.js";
+import { callPopup, saveSettings, saveSettingsDebounced, token } from "../script.js";
 import { isSubsetOf } from "./utils.js";
 export {
     getContext,
@@ -9,38 +9,13 @@ export {
     extension_settings,
 };
 
-const extensionNames = ['caption', 'dice', 'expressions', 'floating-prompt', 'memory'];
-const manifests = await getManifests(extensionNames);
-
-// TODO: Delete in next release
-function migrateFromLocalStorage() {
-    const extensions_urlKey = 'extensions_url';
-    const extensions_autoConnectKey = 'extensions_autoconnect';
-    const extensions_disabledKey = 'extensions_disabled';
-
-    const apiUrl = localStorage.getItem(extensions_urlKey);
-    const autoConnect = localStorage.getItem(extensions_autoConnectKey);
-    const extensionsDisabled = localStorage.getItem(extensions_disabledKey);
-
-    if (apiUrl !== null) {
-        extension_settings.apiUrl = apiUrl;
-        localStorage.removeItem(extensions_urlKey);
-    }
-
-    if (autoConnect !== null) {
-        extension_settings.autoConnect = autoConnect;
-        localStorage.removeItem(extensions_autoConnectKey);
-    }
-
-    if (extensionsDisabled !== null) {
-        extension_settings.disabledExtensions = JSON.parse(extensionsDisabled);
-        localStorage.removeItem(extensions_disabledKey);
-    }
-}
+let extensionNames = [];
+let manifests = [];
+const defaultUrl = "http://localhost:5100";
 
 const extension_settings = {
-    apiUrl: '',
-    autoConnect: '',
+    apiUrl: defaultUrl,
+    autoConnect: false,
     disabledExtensions: [],
     memory: {},
     note: {
@@ -56,9 +31,26 @@ let activeExtensions = new Set();
 
 const getContext = () => window['TavernAI'].getContext();
 const getApiUrl = () => extension_settings.apiUrl;
-const defaultUrl = "http://localhost:5100";
 const defaultRequestArgs = { method: 'GET', headers: { 'Bypass-Tunnel-Reminder': 'bypass' } };
 let connectedToApi = false;
+
+async function discoverExtensions() {
+    try {
+        const response = await fetch('/discover_extensions', { headers: { 'X-CSRF-Token': token } });
+
+        if (response.ok) {
+            const extensions = await response.json();
+            return extensions;
+        }
+        else {
+            return [];
+        }
+    }
+    catch (err) {
+        console.error(err);
+        return [];
+    }
+}
 
 function onDisableExtensionClick() {
     const name = $(this).data('name');
@@ -273,9 +265,7 @@ function showExtensionsDetails() {
     callPopup(`<div class="extensions_info">${html}</div>`, 'text');
 }
 
-function loadExtensionSettings(settings) {
-    migrateFromLocalStorage();
-
+async function loadExtensionSettings(settings) {
     if (settings.extension_settings) {
         Object.assign(extension_settings, settings.extension_settings);
     }
@@ -284,6 +274,8 @@ function loadExtensionSettings(settings) {
     $("#extensions_autoconnect").prop('checked', extension_settings.autoConnect).trigger('input');
 
     // Activate offline extensions
+    extensionNames = await discoverExtensions();
+    manifests = await getManifests(extensionNames)
     activateExtensions();
 }
 

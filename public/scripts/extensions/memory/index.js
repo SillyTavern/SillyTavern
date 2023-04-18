@@ -26,7 +26,7 @@ const defaultSettings = {
     shortMemoryStep: 16,
     longMemoryStep: 8,
     repetitionPenaltyStep: 0.05,
-    repetitionPenalty: 1.0,
+    repetitionPenalty: 1.2,
     maxRepetitionPenalty: 2.0,
     minRepetitionPenalty: 1.0,
     temperature: 1.0,
@@ -34,28 +34,13 @@ const defaultSettings = {
     maxTemperature: 2.0,
     temperatureStep: 0.05,
     lengthPenalty: 1,
-    minLengthPenalty: 0,
-    maxLengthPenalty: 2,
-    lengthPenaltyStep: 0.05,
+    minLengthPenalty: -4,
+    maxLengthPenalty: 4,
+    lengthPenaltyStep: 0.1,
     memoryFrozen: false,
 };
 
-// TODO Delete in next release
-function migrateFromLocalStorage() {
-    const SETTINGS_KEY = 'extensions_memory_settings';
-    const settings = localStorage.getItem(SETTINGS_KEY);
-
-    if (settings !== null) {
-        const savedSettings = JSON.parse(settings);
-        Object.assign(extension_settings.memory, savedSettings);
-        localStorage.removeItem(SETTINGS_KEY);
-        saveSettingsDebounced();
-    }
-}
-
 function loadSettings() {
-    migrateFromLocalStorage();
-    
     if (Object.keys(extension_settings.memory).length === 0) {
         Object.assign(extension_settings.memory, defaultSettings);
     }
@@ -223,14 +208,14 @@ async function summarizeChat(context) {
         memoryBuffer.push(entry);
 
         // check if token limit was reached
-        if (context.encode(getMemoryString()).length >= extension_settings.memory.shortMemoryLength) {
+        if (context.getTokenCount(getMemoryString()) >= extension_settings.memory.shortMemoryLength) {
             break;
         }
     }
 
     const resultingString = getMemoryString();
 
-    if (context.encode(resultingString).length < extension_settings.memory.shortMemoryLength) {
+    if (context.getTokenCount(resultingString) < extension_settings.memory.shortMemoryLength) {
         return;
     }
 
@@ -249,7 +234,7 @@ async function summarizeChat(context) {
             body: JSON.stringify({
                 text: resultingString,
                 params: {
-                    min_length: extension_settings.memory.longMemoryLength * 0.8,
+                    min_length: extension_settings.memory.longMemoryLength * 0, // testing how it behaves 0 min length
                     max_length: extension_settings.memory.longMemoryLength,
                     repetition_penalty: extension_settings.memory.repetitionPenalty,
                     temperature: extension_settings.memory.temperature,
@@ -322,28 +307,35 @@ $(document).ready(function () {
     function addExtensionControls() {
         const settingsHtml = `
         <div id="memory_settings">
-            <h4>Memory</h4>
-            <label for="memory_contents">Memory contents</label>
-            <textarea id="memory_contents" class="text_pole" rows="8" placeholder="Context will be generated here..."></textarea>
-            <div class="memory_contents_controls">
-                <input id="memory_restore" class="menu_button" type="submit" value="Restore previous state" />
-                <label for="memory_frozen"><input id="memory_frozen" type="checkbox" /> Freeze context</label>
+            <div class="inline-drawer">
+                <div class="inline-drawer-toggle inline-drawer-header">
+                <b>Chat memory</b>
+                <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+            </div>
+            <div class="inline-drawer-content">
+                <label for="memory_contents">Memory contents</label>
+                <textarea id="memory_contents" class="text_pole" rows="8" placeholder="Context will be generated here..."></textarea>
+                <div class="memory_contents_controls">
+                    <input id="memory_restore" class="menu_button" type="submit" value="Restore previous state" />
+                    <label for="memory_frozen"><input id="memory_frozen" type="checkbox" /> Freeze context</label>
+                </div>
+            </div>
             </div>
             <div class="inline-drawer">
                 <div class="inline-drawer-toggle inline-drawer-header">
-                    <b>Summarization settings</b>
-                    <div class="inline-drawer-icon down"></div>
+                    <b>Summarization parameters</b>
+                    <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
                 </div>
                 <div class="inline-drawer-content">
-                    <label for="memory_short_length">Memory summarization [short-term] length (<span id="memory_short_length_tokens"></span> tokens)</label>
+                    <label for="memory_short_length">Buffer <small>[short-term]</small> length (<span id="memory_short_length_tokens"></span> tokens)</label>
                     <input id="memory_short_length" type="range" value="${defaultSettings.shortMemoryLength}" min="${defaultSettings.minShortMemory}" max="${defaultSettings.maxShortMemory}" step="${defaultSettings.shortMemoryStep}" />
-                    <label for="memory_long_length">Memory context [long-term] length (<span id="memory_long_length_tokens"></span> tokens)</label>
+                    <label for="memory_long_length">Summary <small>[long-term]</small> length (<span id="memory_long_length_tokens"></span> tokens)</label>
                     <input id="memory_long_length" type="range" value="${defaultSettings.longMemoryLength}" min="${defaultSettings.minLongMemory}" max="${defaultSettings.maxLongMemory}" step="${defaultSettings.longMemoryStep}" />
-                    <label for="memory_temperature">Summarization temperature (<span id="memory_temperature_value"></span>)</label>
+                    <label for="memory_temperature">Temperature (<span id="memory_temperature_value"></span>)</label>
                     <input id="memory_temperature" type="range" value="${defaultSettings.temperature}" min="${defaultSettings.minTemperature}" max="${defaultSettings.maxTemperature}" step="${defaultSettings.temperatureStep}" />
-                    <label for="memory_repetition_penalty">Summarization repetition penalty (<span id="memory_repetition_penalty_value"></span>)</label>
+                    <label for="memory_repetition_penalty">Repetition penalty (<span id="memory_repetition_penalty_value"></span>)</label>
                     <input id="memory_repetition_penalty" type="range" value="${defaultSettings.repetitionPenalty}" min="${defaultSettings.minRepetitionPenalty}" max="${defaultSettings.maxRepetitionPenalty}" step="${defaultSettings.repetitionPenaltyStep}" />
-                    <label for="memory_length_penalty">Summarization length penalty (<span id="memory_length_penalty_value"></span>)</label>
+                    <label for="memory_length_penalty">Length penalty <small>[higher = longer summaries]</small> (<span id="memory_length_penalty_value"></span>)</label>
                     <input id="memory_length_penalty" type="range" value="${defaultSettings.lengthPenalty}" min="${defaultSettings.minLengthPenalty}" max="${defaultSettings.maxLengthPenalty}" step="${defaultSettings.lengthPenaltyStep}" />
                 </div>
             </div>

@@ -1,4 +1,3 @@
-
 #!/bin/bash
 
 if ! command -v npm &> /dev/null

@@ -1,4 +1,4 @@
-subscription viewerStateUpdated {
+subscription subscriptions_viewerStateUpdated_Subscription {
   viewerStateUpdated {
     id
     ...ChatPageBotSwitcher_viewer
@@ -11,9 +11,19 @@ fragment BotHeader_bot on Bot {
     dailyLimit
   }
   ...BotImage_bot
+  ...BotLink_bot
+  ...IdAnnotation_node
+  ...botHelpers_useViewerCanAccessPrivateBot
+  ...botHelpers_useDeletion_bot
 }
 
 fragment BotImage_bot on Bot {
+  displayName
+  ...botHelpers_useDeletion_bot
+  ...BotImage_useProfileImage_bot
+}
+
+fragment BotImage_useProfileImage_bot on Bot {
   image {
     __typename
     ... on LocalBotImage {
@@ -23,7 +33,7 @@ fragment BotImage_bot on Bot {
       url
     }
   }
-  displayName
+  ...botHelpers_useDeletion_bot
 }
 
 fragment BotLink_bot on Bot {
@@ -33,11 +43,21 @@ fragment BotLink_bot on Bot {
 fragment ChatPageBotSwitcher_viewer on Viewer {
   availableBots {
     id
-    messageLimit {
-      dailyLimit
-    }
-    ...BotLink_bot
+    handle
     ...BotHeader_bot
   }
-  allowUserCreatedBots: booleanGate(gateName: "enable_user_created_bots")
+}
+
+fragment IdAnnotation_node on Node {
+  __isNode: __typename
+  id
+}
+
+fragment botHelpers_useDeletion_bot on Bot {
+  deletionState
+}
+
+fragment botHelpers_useViewerCanAccessPrivateBot on Bot {
+  isPrivateBot
+  viewerIsCreator
 }
