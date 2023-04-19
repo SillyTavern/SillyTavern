@@ -1682,9 +1682,9 @@ async function Generate(type, automatic_trigger, force_name2) {
                         is_add_personality = true;
                         //chatString = chatString.substr(0,chatString.length-1);
                         //anchorAndPersonality = "[Genre: roleplay chat][Tone: very long messages with descriptions]";
-                        if ((anchorTop != "" || charPersonality != "") && !is_pygmalion) {
-                            if (anchorTop != "") charPersonality += ' ';
-                            item += "[" + charPersonality + anchorTop + ']\n';
+                        let personalityAndAnchor = [ charPersonality, anchorTop ].filter(x => x).join(' ');
+                        if (personalityAndAnchor && !is_pygmalion) {
+                            item += "[" + personalityAndAnchor + ']\n';
                         }
                     }
                     if (i >= arrMes.length - 1 && count_view_mes > 8 && $.trim(item).substr(0, (name1 + ":").length) == name1 + ":" && !is_pygmalion) {//For add anchor in end
