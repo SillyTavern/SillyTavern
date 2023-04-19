@@ -3546,14 +3546,16 @@ body.movingUI #expression-holder {
         z-index: 1;
     }
 
-    body.waifuMode img.expression {
-        object-fit: cover;
-    }
-
     .scrollableInner {
         overflow-y: auto;
         overflow-x: hidden;
         max-height: calc(100svh - 90px);
+    }
+}
+
+@media screen and (max-width: 1000px) and (orientation: landscape) {
+    body.waifuMode img.expression {
+        object-fit: contain;
     }
 }
 
