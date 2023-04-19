@@ -9,18 +9,58 @@ const MODULE_NAME = '3_elevenlabs_tts'; // <= Deliberate, for sorting lower than
 const UPDATE_INTERVAL = 1000;
 let API_KEY
 
-let ttsJobQueue = []
-let currentMessageNumber = 0
 let voiceMap = {} // {charName:voiceid, charName2:voiceid2}
-let currentTtsJob
 let elevenlabsTtsVoices = []
-let ttsAudioContext = new AudioContext()
+let audioControl
 
 
 let lastCharacterId = null;
 let lastGroupId = null;
 let lastChatId = null; 
 
+
+async function moduleWorker() {
+    // Primarily determinign when to add new chat to the TTS queue
+    const enabled = $("#elevenlabs_enabled").is(':checked');
+    if (!enabled){
+        return;
+    }
+
+    const context = getContext()
+    const chat = context.chat;
+
+    processTtsQueue();
+    processAudioJobQueue();
+    updateUiPlayState();
+
+    // no characters or group selected 
+    if (!context.groupId && !context.characterId) {
+        return;
+    }
+
+    // Chat/character/group changed
+    if ((context.groupId && lastGroupId !== context.groupId) || (context.characterId !== lastCharacterId) || (context.chatId !== lastChatId)) { 
+        currentMessageNumber = context.chat.length ? context.chat.length : 0
+        saveLastValues();
+        return;
+    }
+
+    // take the count of messages
+    let lastMessageNumber = context.chat.length ? context.chat.length : 0;
+
+    // There's no new messages
+    let diff = lastMessageNumber - currentMessageNumber;
+    if (diff == 0) {
+        return;
+    }
+
+    // New messages, add new chat to history
+    currentMessageNumber = lastMessageNumber;
+    const message = chat[chat.length - 1]
+
+    console.debug(`Adding message from ${message.name} for TTS processing: "${message.mes}"`);
+    ttsJobQueue.push(message);
+}
 
 
 //#################//
@@ -111,29 +151,76 @@ async function findTtsGenerationInHistory(message, voiceId) {
     return ''
 }
 
+//##################//
+//   Audio Control  //
+//##################//
+
+let audioElement = new Audio()
+
+let audioJobQueue = []
+let currentAudioJob
+let audioPaused = false
+let queueProcessorReady = true
+
+let lastAudioPosition = 0
+
+
+async function playAudioData(audioBlob){
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const srcUrl = e.target.result;
+        audioElement.src = srcUrl;
+    };
+    reader.readAsDataURL(audioBlob);
+    audioElement.addEventListener('ended', completeCurrentAudioJob)
+    audioElement.addEventListener('canplay', () => {
+        console.debug(`Starting TTS playback`)
+        audioElement.play()
+    })
+}
+
+function completeCurrentAudioJob() {
+    queueProcessorReady = true
+    lastAudioPosition = 0
+    // updateUiPlayState();
+}
+
+/**
+ * Accepts an HTTP response containing audio/mpeg data, and puts the data as a Blob() on the queue for playback
+ * @param {*} response 
+ */
+async function addAudioJob(response) {
+    const audioData = await response.blob()
+    if (audioData.type != "audio/mpeg"){
+        throw `TTS received HTTP response with invalid data format. Expecting audio/mpeg, got ${audioData.type}`
+    }
+    audioJobQueue.push(audioData)
+    console.debug("Pushed audio job to queue.")
+}
+
+async function processAudioJobQueue(){
+    // Nothing to do, audio not completed, or audio paused - stop processing.
+    if (audioJobQueue.length == 0 || !queueProcessorReady || audioPaused) {
+        return;
+    }
+    try {
+        queueProcessorReady = false
+        currentAudioJob = audioJobQueue.pop()
+        playAudioData(currentAudioJob)
+    } catch(error) {
+        console.error(error)
+        queueProcessorReady = true
+    }
+}
+
 
 //################//
 //  TTS Control   //
 //################//
 
-async function playAudioFromResponse(response) {
-    // Create audio context to hold audio/mpeg arrayBuffer
-    const audioContext = new AudioContext();
-
-    // Extract audio blob. Wondering if this method might cause lag
-    const audioBlob = await response.blob()
-    if (audioBlob.type != "audio/mpeg"){
-        throw `TTS received HTTP response with invalid data format. Expecting audio/mpeg, got ${audioBlob.type}`
-    }
-    const buffer = await audioContext.decodeAudioData(await audioBlob.arrayBuffer())
-     // assuming the audio data is in the 'data' property of the response
-    const source = new AudioBufferSourceNode(audioContext);
-    source.onended = completeTtsJob
-    source.buffer = buffer;
-    source.connect(audioContext.destination);
-    console.debug(`Starting TTS playback`)
-    source.start(0);
-}
+let ttsJobQueue = []
+let currentTtsJob
+let currentMessageNumber = 0
 
 function completeTtsJob(){
     console.info(`Current TTS job for ${currentTtsJob.name} completed.`)
@@ -158,7 +245,8 @@ async function tts(text, voiceId) {
         console.debug(`No existing TTS generation found, requesting new generation`)
         response = await fetchTtsGeneration(text, voiceId);
     }
-    await playAudioFromResponse(response)
+    addAudioJob(response)
+    completeTtsJob()
 }
 
 async function processTtsQueue() {
@@ -189,49 +277,6 @@ async function processTtsQueue() {
 
 }
 
-async function moduleWorker() {
-    // Primarily determinign when to add new chat to the TTS queue
-    const enabled = $("#elevenlabs_enabled").is(':checked');
-    if (!enabled){
-        return;
-    }
-
-    const context = getContext()
-    const chat = context.chat;
-
-    processTtsQueue();
-
-    // no characters or group selected 
-    if (!context.groupId && !context.characterId) {
-        return;
-    }
-
-    // Chat/character/group changed
-    if ((context.groupId && lastGroupId !== context.groupId) || (context.characterId !== lastCharacterId) || (context.chatId !== lastChatId)) { 
-        currentMessageNumber = context.chat.length ? context.chat.length : 0
-        saveLastValues();
-        return;
-    }
-
-    // take the count of messages
-    let lastMessageNumber = context.chat.length ? context.chat.length : 0;
-
-    console.debug(`lastMessageNumber: ${lastMessageNumber} | currentMessageNumber ${currentMessageNumber}`)
-
-    // There's no new messages
-    let diff = lastMessageNumber - currentMessageNumber;
-    if (diff == 0) {
-        return;
-    }
-
-    // New messages, add new chat to history
-    currentMessageNumber = lastMessageNumber;
-    const message = chat[chat.length - 1]
-
-    console.debug(`Adding message from ${message.name} for TTS processing: "${message.mes}"`);
-    ttsJobQueue.push(message);
-}
-
 // Secret function for now
 async function playFullConversation() {
     const context = getContext()
@@ -240,9 +285,22 @@ async function playFullConversation() {
 }
 window.playFullConversation = playFullConversation
 
-//######################//
-//  Extension Settings  //
-//######################//
+//#############################//
+//  Extension UI and Settings  //
+//#############################//
+
+function loadSettings() {
+    const context = getContext()
+    if (Object.keys(extension_settings.elevenlabstts).length === 0) {
+        Object.assign(extension_settings.elevenlabstts, defaultSettings);
+    }
+
+    $('#elevenlabs_api_key').val(extension_settings.elevenlabstts.elevenlabsApiKey);
+    $('#elevenlabs_voice_map').val(extension_settings.elevenlabstts.elevenlabsVoiceMap);
+    $('#elevenlabs_enabled').prop('checked', extension_settings.elevenlabstts.enabled);
+    onElevenlabsApplyClick()
+}
+
 const defaultSettings = {
     elevenlabsApiKey: "",
     elevenlabsVoiceMap: "",
@@ -260,7 +318,6 @@ function setElevenLabsStatus(status, success) {
 }
 
 async function updateApiKey() {
-    //TODO: Add validation for API key
     const context = getContext();
     const value = $('#elevenlabs_api_key').val();
 
@@ -345,16 +402,21 @@ function onElevenlabsEnableClick() {
     saveSettingsDebounced();
 }
 
-function loadSettings() {
-    const context = getContext()
-    if (Object.keys(extension_settings.elevenlabstts).length === 0) {
-        Object.assign(extension_settings.elevenlabstts, defaultSettings);
-    }
+function updateUiPlayState() {
+    const img = !audioElement.paused? `url(/img/circle-pause-solid.svg)`: `url(/img/circle-play-solid.svg)`
+    audioControl.style.backgroundImage = img
+}
 
-    $('#elevenlabs_api_key').val(extension_settings.elevenlabstts.elevenlabsApiKey);
-    $('#elevenlabs_voice_map').val(extension_settings.elevenlabstts.elevenlabsVoiceMap);
-    $('#elevenlabs_enabled').prop('checked', extension_settings.elevenlabstts.enabled);
-    onElevenlabsApplyClick()
+function onAudioControlClicked(){
+    audioElement.paused? audioElement.play(): audioElement.pause()
+    updateUiPlayState()
+}
+
+function addAudioControl() {
+    $('#send_but_sheld').prepend('<input id="tts_media_control" type="button" />')
+    $('#send_but_sheld').on('click',onAudioControlClicked)
+    audioControl = document.getElementById('tts_media_control');
+    audioControl.style.backgroundImage = `url(/img/circle-play-solid.svg)`;
 }
 
 $(document).ready(function () {
@@ -386,6 +448,7 @@ $(document).ready(function () {
         $('#elevenlabs_apply').on('click', onElevenlabsApplyClick);
         $('#elevenlabs_enabled').on('click', onElevenlabsEnableClick);
     }
+    addAudioControl();
     addExtensionControls();
     loadSettings();
     setInterval(moduleWorker, UPDATE_INTERVAL);

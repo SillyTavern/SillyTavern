@@ -1,0 +1,20 @@
+#tts_media_control {
+    order: 100;
+    width: 40px;
+    height: 40px;
+    margin: 0;
+    padding: 1px;
+    background: no-repeat;
+    background-size: 26px auto;
+    background-position: center center;
+    outline: none;
+    border: none;
+    cursor: pointer;
+    transition: 0.3s;
+    filter: invert(1);
+    opacity: 0.5;
+}
+
+#tts_media_control:hover {
+    opacity: 1;
+}
