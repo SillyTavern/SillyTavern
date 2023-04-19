@@ -179,3 +179,4 @@ Contact us on:
 * GraphQL files for poe: https://github.com/muharamdani/poe (ISC License)
 * KoboldAI Presets from KAI Lite: https://lite.koboldai.net/ 
 * Noto Sans font by Google (OFL license)
+* Linux startup script by AlpinDale
