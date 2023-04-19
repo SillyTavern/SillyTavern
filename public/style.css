@@ -3546,6 +3546,10 @@ body.movingUI #expression-holder {
         z-index: 1;
     }
 
+    body.waifuMode img.expression {
+        object-fit: cover;
+    }
+
     .scrollableInner {
         overflow-y: auto;
         overflow-x: hidden;
