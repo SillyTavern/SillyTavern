@@ -51,11 +51,11 @@
     /* base variable for blur strength slider calculations */
     --blurStrength: 10;
 
-
-
     /*styles for the color picker*/
     --tool-cool-color-picker-btn-bg: transparent;
     --tool-cool-color-picker-btn-border-color: transparent;
+
+    color-scheme: only light;
 
 }
 
