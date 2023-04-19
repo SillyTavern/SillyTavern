@@ -14,8 +14,7 @@
     bottom: 1px;
     padding: 0;
     filter: drop-shadow(2px 2px 2px #51515199);
-    z-index: 3;
-    /* resize: both; */
+    z-index: 1;
     overflow: hidden;
 
 }
