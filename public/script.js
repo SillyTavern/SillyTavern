@@ -1021,11 +1021,11 @@ function substituteParams(content, _name1, _name2) {
     return content;
 }
 
-function getStoppingStrings(isImpersonate, wrapInQuotes) {
-    const charString = `\n${name2}: `;
-    const userString = is_pygmalion ? `\nYou: ` : `\n${name1}: `;
+function getStoppingStrings(isImpersonate, addSpace) {
+    const charString = `\n${name2}:`;
+    const userString = is_pygmalion ? `\nYou:` : `\n${name1}:`;
     const result = isImpersonate ? charString : userString;
-    return wrapInQuotes ? `"${result}"` : result;
+    return addSpace ? `${result} ` : result;
 }
 
 function getSlashCommand(message, type) {
@@ -2191,6 +2191,17 @@ function cleanUpMessage(getMessage, isImpersonate) {
 
     if (isImpersonate) {
         getMessage = getMessage.trim();
+    }
+
+    const stoppingString = getStoppingStrings(isImpersonate, false);
+
+    if (stoppingString.length) {
+        for (let j = stoppingString.length - 1; j > 0; j--) {
+            if (getMessage.slice(-j) === stoppingString.slice(0, j)) {
+                getMessage = getMessage.slice(0, -j);
+                break;
+            }
+        }
     }
 
     return getMessage;
