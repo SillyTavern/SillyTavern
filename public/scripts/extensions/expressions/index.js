@@ -297,7 +297,7 @@ function onClickExpressionImage() {
         const html = `
             <div id="expression-holder" class="expression-holder">
                 <div id="expression-holderheader" class="fa-solid fa-grip drag-grabber"></div>
-                <img class="expression">
+                <img id="expression-image" class="expression">
             </div>`;
         $('body').append(html);
     }

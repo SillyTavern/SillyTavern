@@ -60,10 +60,45 @@ const observer = new MutationObserver(function (mutations) {
         } else if (mutation.target.parentNode === SelectedCharacterTab) {
             setTimeout(RA_CountCharTokens, 200);
         }
+
     });
 });
 
 observer.observe(document.documentElement, observerConfig);
+
+/**
+ * Wait for an element before resolving a promise
+ * @param {String} querySelector - Selector of element to wait for
+ * @param {Integer} timeout - Milliseconds to wait before timing out, or 0 for no timeout              
+ */
+function waitForElement(querySelector, timeout) {
+    return new Promise((resolve, reject) => {
+        var timer = false;
+        if (document.querySelectorAll(querySelector).length) return resolve();
+        const observer = new MutationObserver(() => {
+            if (document.querySelectorAll(querySelector).length) {
+                observer.disconnect();
+                if (timer !== false) clearTimeout(timer);
+                return resolve();
+            }
+        });
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+        if (timeout) timer = setTimeout(() => {
+            observer.disconnect();
+            reject();
+        }, timeout);
+    });
+}
+
+waitForElement("#expression-image", 10000).then(function () {
+    console.log("expression image loaded, now draggable.");
+    dragElement(document.getElementById("expression-holder"));
+}).catch(() => {
+    console.log("expression holder not loaded yet");
+});
 
 
 //RossAscends: Added function to format dates used in files and chat timestamps to a humanized format.
@@ -315,9 +350,7 @@ function OpenNavPanels() {
 dragElement(document.getElementById("sheld"));
 dragElement(document.getElementById("left-nav-panel"));
 dragElement(document.getElementById("right-nav-panel"));
-setTimeout(function () {
-    dragElement(document.getElementById("expression-holder"))
-}, 2000);
+
 
 
 function dragElement(elmnt) {
@@ -460,6 +493,7 @@ function dragElement(elmnt) {
 // ---------------------------------------------------
 
 $("document").ready(function () {
+
     // initial status check
     setTimeout(RA_checkOnlineStatus, 100);
 
