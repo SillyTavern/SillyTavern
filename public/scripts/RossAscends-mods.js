@@ -213,11 +213,20 @@ async function RA_autoloadchat() {
     if (document.getElementById('CharID0') !== null) {
         //console.log('char list loaded! clicking activeChar');
         var CharToAutoLoad = document.getElementById('CharID' + LoadLocal('ActiveChar'));
+        //console.log(CharToAutoLoad);
         let autoLoadGroup = document.querySelector(`.group_select[grid="${LoadLocal('ActiveGroup')}"]`);
+        //console.log(autoLoadGroup);
         if (CharToAutoLoad != null) {
+
+
+            // console.log('--ALC - clicking character');
             CharToAutoLoad.click();
+            CharToAutoLoad.click();
+
         }
         else if (autoLoadGroup != null) {
+            //console.log('--ALC - clicking group');
+            autoLoadGroup.click();
             autoLoadGroup.click();
         }
         else {
