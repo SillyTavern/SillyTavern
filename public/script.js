@@ -148,6 +148,7 @@ export {
     count_view_mes,
     max_context,
     chat_metadata,
+    streamingProcessor,
     default_avatar,
     system_message_types,
     talkativeness_default,
@@ -1021,11 +1022,11 @@ function substituteParams(content, _name1, _name2) {
     return content;
 }
 
-function getStoppingStrings(isImpersonate, wrapInQuotes) {
-    const charString = `\n${name2}: `;
-    const userString = is_pygmalion ? `\nYou: ` : `\n${name1}: `;
+function getStoppingStrings(isImpersonate, addSpace) {
+    const charString = `\n${name2}:`;
+    const userString = is_pygmalion ? `\nYou:` : `\n${name1}:`;
     const result = isImpersonate ? charString : userString;
-    return wrapInQuotes ? `"${result}"` : result;
+    return addSpace ? `${result} ` : result;
 }
 
 function getSlashCommand(message, type) {
@@ -1328,7 +1329,7 @@ async function Generate(type, automatic_trigger, force_name2) {
         streamingProcessor = false;
     }
 
-    if (selected_group && !is_group_generating && !isImpersonate) {
+    if (selected_group && !is_group_generating) {
         generateGroupWrapper(false, type = type);
         return;
     }
@@ -2193,6 +2194,17 @@ function cleanUpMessage(getMessage, isImpersonate) {
         getMessage = getMessage.trim();
     }
 
+    const stoppingString = getStoppingStrings(isImpersonate, false);
+
+    if (stoppingString.length) {
+        for (let j = stoppingString.length - 1; j > 0; j--) {
+            if (getMessage.slice(-j) === stoppingString.slice(0, j)) {
+                getMessage = getMessage.slice(0, -j);
+                break;
+            }
+        }
+    }
+
     return getMessage;
 }
 
@@ -2268,6 +2280,7 @@ function activateSendButtons() {
     is_send_press = false;
     $("#send_but").css("display", "flex");
     $("#loading_mes").css("display", "none");
+    $("#send_textarea").attr("disabled", false);
 }
 
 function deactivateSendButtons() {

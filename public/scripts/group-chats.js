@@ -41,6 +41,7 @@ import {
     updateChatMetadata,
     isStreamingEnabled,
     getThumbnailUrl,
+    streamingProcessor,
 } from "../script.js";
 
 export {
@@ -329,6 +330,10 @@ async function generateGroupWrapper(by_auto_mode, type = null) {
                 throw new Error('Deleted group member swiped');
             }
         }
+        else if (type === "impersonate") {
+            $("#send_textarea").attr("disabled", true);
+            activatedMembers = activateImpersonate(group.members);
+        }
         else if (activationStrategy === group_activation_strategy.NATURAL) {
             activatedMembers = activateNaturalOrder(group.members, activationText, lastMessage, group.allow_self_responses, isUserInput);
         }
@@ -338,13 +343,13 @@ async function generateGroupWrapper(by_auto_mode, type = null) {
 
         // now the real generation begins: cycle through every character
         for (const chId of activatedMembers) {
-            const generateType = type !== "swipe" ? "group_chat" : "swipe";
+            const generateType = type == "swipe" || type == "impersonate" ? type : "group_chat";
             setCharacterId(chId);
             setCharacterName(characters[chId].name)
 
             await Generate(generateType, by_auto_mode);
 
-            if (type !== "swipe") {
+            if (type !== "swipe" && type !== "impersonate") {
                 // update indicator and scroll down
                 typingIndicator
                     .find(".typing_indicator_name")
@@ -361,8 +366,41 @@ async function generateGroupWrapper(by_auto_mode, type = null) {
                     await delay(100);
                 }
                 // if swipe - see if message changed
-                else if (type === "swipe" && lastMessageText === chat[chat.length - 1].mes) {
-                    await delay(100);
+                else if (type === "swipe") {
+                    if (isStreamingEnabled()) {
+                        if (streamingProcessor && !streamingProcessor.isFinished) {
+                            await delay(100);
+                        }
+                        else {
+                            break;
+                        }
+                    }
+                    else {
+                        if (lastMessageText === chat[chat.length - 1].mes) {
+                            await delay(100);
+                        }
+                        else {
+                            break;
+                        }
+                    }
+                }
+                else if (type === "impersonate") {
+                    if (isStreamingEnabled()) {
+                        if (streamingProcessor && !streamingProcessor.isFinished) {
+                            await delay(100);
+                        }
+                        else {
+                            break;
+                        }
+                    }
+                    else {
+                        if (!$("#send_textarea").val() || $("#send_textarea").val() == userInput) {
+                            await delay(100);
+                        }
+                        else {
+                            break;
+                        }
+                    }
                 }
                 else {
                     messagesBefore++;
@@ -376,11 +414,21 @@ async function generateGroupWrapper(by_auto_mode, type = null) {
         }
     } finally {
         is_group_generating = false;
+        $("#send_textarea").attr("disabled", false);
         setSendButtonState(false);
         setCharacterId(undefined);
         setCharacterName('');
         showSwipeButtons();
     }
+}
+
+function activateImpersonate(members) {
+    const randomIndex = Math.floor(Math.random() * members.length);
+    const activatedNames = [members[randomIndex]];
+    const memberIds = activatedNames
+        .map((x) => characters.findIndex((y) => y.name === x))
+        .filter((x) => x !== -1);
+    return memberIds;
 }
 
 function activateSwipe(members) {
