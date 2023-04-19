@@ -148,6 +148,7 @@ export {
     count_view_mes,
     max_context,
     chat_metadata,
+    streamingProcessor,
     default_avatar,
     system_message_types,
     talkativeness_default,
@@ -1328,7 +1329,7 @@ async function Generate(type, automatic_trigger, force_name2) {
         streamingProcessor = false;
     }
 
-    if (selected_group && !is_group_generating && !isImpersonate) {
+    if (selected_group && !is_group_generating) {
         generateGroupWrapper(false, type = type);
         return;
     }
@@ -2279,6 +2280,7 @@ function activateSendButtons() {
     is_send_press = false;
     $("#send_but").css("display", "flex");
     $("#loading_mes").css("display", "none");
+    $("#send_textarea").attr("disabled", false);
 }
 
 function deactivateSendButtons() {
