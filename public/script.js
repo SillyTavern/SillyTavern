@@ -3500,8 +3500,8 @@ $(document).ready(function () {
         }
         chat[chat.length - 1]['swipe_id']++;                                      //make new slot in array
         // if message has memory attached - remove it to allow regen
-        if (chat[chat.length -1].extra && chat[chat.length -1].extra.memory) {
-            delete chat[chat.length -1].extra.memory;
+        if (chat[chat.length - 1].extra && chat[chat.length - 1].extra.memory) {
+            delete chat[chat.length - 1].extra.memory;
         }
         //console.log(chat[chat.length-1]['swipes']);
         if (parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length) { //if swipe id of last message is the same as the length of the 'swipes' array
@@ -5073,12 +5073,13 @@ $(document).ready(function () {
     $(document).keyup(function (e) {
         if (e.key === "Escape") {
             closeMessageEditor();
+            $("#send_textarea").focus();
         }
     });
 
-    $("#bg-filter").on("input", function() {
+    $("#bg-filter").on("input", function () {
         const filterValue = $(this).val().toLowerCase();
-        $("#bg_menu_content > div").each(function() {
+        $("#bg_menu_content > div").each(function () {
             const $bgContent = $(this);
             if ($bgContent.attr("title").toLowerCase().includes(filterValue)) {
                 $bgContent.show();

@@ -655,9 +655,21 @@ $("document").ready(function () {
         }
     });
 
+
     function isInputElementInFocus() {
-        return $(document.activeElement).is(":input");
+        //return $(document.activeElement).is(":input");
+        var focused = $(':focus');
+        if (focused.is('input') || focused.is('textarea')) {
+            if (focused.attr('id') === 'send_textarea') {
+                return false;
+            }
+            return true;
+        }
+        return false;
     }
+
+
+
 
 
     //Additional hotkeys CTRL+ENTER and CTRL+UPARROW
