@@ -432,7 +432,7 @@ $(document).ready(function () {
                     <label>ElevenLabs TTS Server Config</label>
                     <input id="elevenlabs_api_key" type="text" class="text_pole" placeholder="<API Key>"/>
                     <textarea id="elevenlabs_voice_map" type="text" class="text_pole" 
-                        placeholder="Create a mapping of Character to ElevenLabs Voice ID like so \nAqua:nNreVDVt8CWDzqZ55BWZ,\nYou:TxGEqnHWrfWFTfGW9XjX,"></textarea>
+                        placeholder="Enter comma separated map of charName:ttsName. Example: \nAqua:Bella,\nYou:Josh,"></textarea>
                     <input id="elevenlabs_apply" class="menu_button" type="submit" value="Apply" /><br>
                     <div>
                         <input type="checkbox" id="elevenlabs_enabled" name="elevenlabs_enabled" checked>
