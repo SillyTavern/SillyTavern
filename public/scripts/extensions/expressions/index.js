@@ -275,6 +275,7 @@ async function setExpression(character, expression, force) {
         img.attr('src', defImgUrl);
         img.addClass('default');
     }
+    document.getElementById("expression-holder").style.display = '';
 }
 
 function onClickExpressionImage() {
@@ -295,9 +296,9 @@ function onClickExpressionImage() {
     function addExpressionImage() {
         console.log('entered addExpressionImage');
         const html = `
-            <div id="expression-holder" class="expression-holder">
+            <div id="expression-holder" class="expression-holder" style="display:none;">
                 <div id="expression-holderheader" class="fa-solid fa-grip drag-grabber"></div>
-                <img class="expression">
+                <img id="expression-image" class="expression">
             </div>`;
         $('body').append(html);
     }
