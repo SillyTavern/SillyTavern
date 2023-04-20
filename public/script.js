@@ -338,9 +338,8 @@ var create_save_mes_example = "";
 var create_save_talkativeness = talkativeness_default;
 
 //animation right menu
-var animation_rm_duration = 500;
-var animation_rm_easing = "";
-
+var animation_duration = 250;
+var animation_easing = "ease-in-out";
 var popup_type = "";
 var bg_file_for_del = "";
 var chat_file_for_del = "";
@@ -3095,8 +3094,8 @@ function selectRightMenuWithAnimation(selectedMenuId) {
             $(menu).css("opacity", 0.0);
             $(menu).transition({
                 opacity: 1.0,
-                duration: animation_rm_duration,
-                easing: animation_rm_easing,
+                duration: animation_duration,
+                easing: animation_easing,
                 complete: function () { },
             });
         }
@@ -3285,8 +3284,8 @@ function callPopup(text, type) {
     }
     $("#shadow_popup").transition({
         opacity: 1.0,
-        duration: animation_rm_duration,
-        easing: animation_rm_easing,
+        duration: animation_duration,
+        easing: animation_easing,
     });
 
     return new Promise((resolve) => {
@@ -3511,7 +3510,7 @@ $(document).ready(function () {
             return;
         }
 
-        const swipe_duration = 120;
+        const swipe_duration = 200;
         const swipe_range = 700;
         //console.log(swipe_range);
         let run_generate = false;
@@ -3553,7 +3552,7 @@ $(document).ready(function () {
             this_mes_div.children('.mes_block').transition({        // this moves the div back and forth
                 x: '-' + swipe_range,
                 duration: swipe_duration,
-                easing: animation_rm_easing,
+                easing: animation_easing,
                 queue: false,
                 complete: function () {
                     /*if (!selected_group) {
@@ -3580,7 +3579,7 @@ $(document).ready(function () {
 
 
                     this_mes_div.animate({ height: new_height + 'px' }, {
-                        duration: 100,
+                        duration: 0, //used to be 100
                         queue: false,
                         progress: function () {
                             // Scroll the chat down as the message expands
@@ -3595,13 +3594,13 @@ $(document).ready(function () {
                     this_mes_div.children('.mes_block').transition({
                         x: swipe_range,
                         duration: 0,
-                        easing: animation_rm_easing,
+                        easing: animation_easing,
                         queue: false,
                         complete: function () {
                             this_mes_div.children('.mes_block').transition({
                                 x: '0px',
                                 duration: swipe_duration,
-                                easing: animation_rm_easing,
+                                easing: animation_easing,
                                 queue: false,
                                 complete: function () {
                                     if (run_generate && !is_send_press && parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length) {
@@ -3624,19 +3623,19 @@ $(document).ready(function () {
             $(this).parent().children('.avatar').transition({ // moves avatar aong with swipe
                 x: '-' + swipe_range,
                 duration: swipe_duration,
-                easing: animation_rm_easing,
+                easing: animation_easing,
                 queue: false,
                 complete: function () {
                     $(this).parent().children('.avatar').transition({
                         x: swipe_range,
                         duration: 0,
-                        easing: animation_rm_easing,
+                        easing: animation_easing,
                         queue: false,
                         complete: function () {
                             $(this).parent().children('.avatar').transition({
                                 x: '0px',
                                 duration: swipe_duration,
-                                easing: animation_rm_easing,
+                                easing: animation_easing,
                                 queue: false,
                                 complete: function () {
 
@@ -3676,7 +3675,7 @@ $(document).ready(function () {
             $(this).parent().children('.mes_block').transition({
                 x: swipe_range,
                 duration: swipe_duration,
-                easing: animation_rm_easing,
+                easing: animation_easing,
                 queue: false,
                 complete: function () {
                     const is_animation_scroll = ($('#chat').scrollTop() >= ($('#chat').prop("scrollHeight") - $('#chat').outerHeight()) - 10);
@@ -3685,7 +3684,7 @@ $(document).ready(function () {
                     let new_height = this_mes_div_height - (this_mes_block_height - this_mes_block[0].scrollHeight);
                     if (new_height < 103) new_height = 103;
                     this_mes_div.animate({ height: new_height + 'px' }, {
-                        duration: 100,
+                        duration: 0, //used to be 100
                         queue: false,
                         progress: function () {
                             // Scroll the chat down as the message expands
@@ -3701,13 +3700,13 @@ $(document).ready(function () {
                     $(this).parent().children('.mes_block').transition({
                         x: '-' + swipe_range,
                         duration: 0,
-                        easing: animation_rm_easing,
+                        easing: animation_easing,
                         queue: false,
                         complete: function () {
                             $(this).parent().children('.mes_block').transition({
                                 x: '0px',
                                 duration: swipe_duration,
-                                easing: animation_rm_easing,
+                                easing: animation_easing,
                                 queue: false,
                                 complete: function () {
                                     saveChatConditional();
@@ -3721,19 +3720,19 @@ $(document).ready(function () {
             $(this).parent().children('.avatar').transition({
                 x: swipe_range,
                 duration: swipe_duration,
-                easing: animation_rm_easing,
+                easing: animation_easing,
                 queue: false,
                 complete: function () {
                     $(this).parent().children('.avatar').transition({
                         x: '-' + swipe_range,
                         duration: 0,
-                        easing: animation_rm_easing,
+                        easing: animation_easing,
                         queue: false,
                         complete: function () {
                             $(this).parent().children('.avatar').transition({
                                 x: '0px',
                                 duration: swipe_duration,
-                                easing: animation_rm_easing,
+                                easing: animation_easing,
                                 queue: false,
                                 complete: function () {
 
@@ -3965,8 +3964,8 @@ $(document).ready(function () {
             $("#character_popup").css("opacity", 0.0);
             $("#character_popup").transition({
                 opacity: 1.0,
-                duration: animation_rm_duration,
-                easing: animation_rm_easing,
+                duration: animation_duration,
+                easing: animation_easing,
             });
         } else {
             is_advanced_char_open = false;
@@ -4346,8 +4345,8 @@ $(document).ready(function () {
         if ($("#options").css("opacity") == 1.0) {
             $("#options").transition({
                 opacity: 0.0,
-                duration: 100, //animation_rm_duration,
-                easing: animation_rm_easing,
+                duration: 100, //animation_duration,
+                easing: animation_easing,
                 complete: function () {
                     $("#options").css("display", "none");
                 },
@@ -4367,7 +4366,7 @@ $(document).ready(function () {
             $("#options").transition({
                 opacity: 1.0, // the manual setting of CSS via JS is what allows the click-away feature to work
                 duration: 100,
-                easing: animation_rm_easing,
+                easing: animation_easing,
                 complete: function () { optionsPopper.update(); },
             });
         }
@@ -4391,8 +4390,8 @@ $(document).ready(function () {
                 $("#shadow_select_chat_popup").css("opacity", 0.0);
                 $("#shadow_select_chat_popup").transition({
                     opacity: 1.0,
-                    duration: animation_rm_duration,
-                    easing: animation_rm_easing,
+                    duration: animation_duration,
+                    easing: animation_easing,
                 });
             }
         }
@@ -4619,7 +4618,7 @@ $(document).ready(function () {
         $("#shadow_tips_popup").transition({
             opacity: 1.0,
             duration: 100,
-            easing: animation_rm_easing,
+            easing: animation_easing,
             complete: function () { },
         });
     });
@@ -4628,7 +4627,7 @@ $(document).ready(function () {
         $("#shadow_tips_popup").transition({
             opacity: 0.0,
             duration: 100,
-            easing: animation_rm_easing,
+            easing: animation_easing,
             complete: function () {
                 $("#shadow_tips_popup").css("display", "none");
             },

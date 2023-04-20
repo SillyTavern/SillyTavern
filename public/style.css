@@ -266,7 +266,7 @@ code {
     -webkit-backdrop-filter: blur(var(--SmartThemeBlurStrength));
     text-shadow: #000 0 0 3px;
     scrollbar-width: thin;
-    transition: all 1s ease-in-out;
+    /* transition: all 1s ease-in-out; */
     flex-direction: column;
     z-index: 3;
 }
@@ -3320,8 +3320,8 @@ body.waifuMode .expression-holder {
     max-width: 90vw;
     height: 90vh;
     width: fit-content;
-    position: absolute;
-    left: calc(100vw / 3);
+    position: unset;
+    margin: 0 auto;
     bottom: 0;
     filter: drop-shadow(2px 2px 2px #51515199);
     z-index: 1;
