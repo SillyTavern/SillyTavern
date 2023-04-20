@@ -260,12 +260,12 @@ async function getExpressionsList() {
     console.log('getting expressions list');
     // get something for offline mode (default images)
     if (!modules.includes('classify')) {
-        console.log('classify not available, loading default');
+
         return DEFAULT_EXPRESSIONS;
     }
 
     if (Array.isArray(expressionsList)) {
-        console.log('got array, loading array');
+
         return expressionsList;
     }
 
@@ -273,21 +273,21 @@ async function getExpressionsList() {
     url.pathname = '/api/classify/labels';
 
     try {
-        console.log('trying for API');
+
         const apiResult = await fetch(url, {
             method: 'GET',
             headers: { 'Bypass-Tunnel-Reminder': 'bypass' },
         });
 
         if (apiResult.ok) {
-            console.log('API ok, adding labels');
+
             const data = await apiResult.json();
             expressionsList = data.labels;
             return expressionsList;
         }
     }
     catch (error) {
-        console.log('got error!');
+
         console.log(error);
         return [];
     }
@@ -313,7 +313,7 @@ async function setExpression(character, expression, force) {
         });
     } else {
         if (extension_settings.expressions.showDefault) {
-            console.log('no character images, trying default expressions');
+
             setDefault();
         }
     }
@@ -344,7 +344,7 @@ function onClickExpressionImage() {
 
 (function () {
     function addExpressionImage() {
-        console.log('entered addExpressionImage');
+
         const html = `
             <div id="expression-holder" class="expression-holder" style="display:none;">
                 <div id="expression-holderheader" class="fa-solid fa-grip drag-grabber"></div>
@@ -353,7 +353,7 @@ function onClickExpressionImage() {
         $('body').append(html);
     }
     function addSettings() {
-        console.log('entered addSettings');
+
         const html = `
         <div class="expression_settings">
             <div class="inline-drawer">

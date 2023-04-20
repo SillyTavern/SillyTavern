@@ -94,7 +94,7 @@ function waitForElement(querySelector, timeout) {
 }
 
 waitForElement("#expression-image", 10000).then(function () {
-    console.log("expression image loaded, now draggable.");
+
     dragElement(document.getElementById("expression-holder"));
 }).catch(() => {
     console.log("expression holder not loaded yet");
@@ -591,13 +591,10 @@ $("document").ready(function () {
     var chatbarInFocus = false;
     $('#send_textarea').focus(function () {
         chatbarInFocus = true;
-        console.log("chatbatInfocus =" + chatbarInFocus);
     });
 
     $('#send_textarea').blur(function () {
-
         chatbarInFocus = false;
-        console.log("chatbatInfocus =" + chatbarInFocus);
     });
 
 
@@ -677,28 +674,11 @@ $("document").ready(function () {
         if (event.ctrlKey && event.key == "Enter") {
             // Ctrl+Enter for Regeneration Last Response
             if (is_send_press == false) {
-
                 $('#option_regenerate').click();
                 $('#options').hide();
-                //setTimeout(function () { $('#chat').click(); }, 50) //needed to remove the options menu popping up..
-                //Generate("regenerate");
             }
         }
-        /*         if (event.ctrlKey && event.key == "ArrowUp") {
-                    //Ctrl+UpArrow for Connect to last server
-                    console.log(main_api);
-                    if (online_status === "no_connection") {
-                        if (main_api == "kobold") {
-                            document.getElementById("api_button").click();
-                        }
-                        if (main_api == "novel") {
-                            document.getElementById("api_button_novel").click();
-                        }
-                        if (main_api == "textgenerationwebui") {
-                            document.getElementById("api_button_textgenerationwebui").click();
-                        }
-                    }
-                } */
+
         if (event.ctrlKey && event.key == "ArrowLeft") {        //for debug, show all local stored vars
             CheckLocal();
         }

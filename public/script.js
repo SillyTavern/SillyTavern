@@ -203,10 +203,12 @@ let dialogueResolve = null;
 let chat_metadata = {};
 let streamingProcessor = null;
 
+
 const durationSaveEdit = 200;
 const saveSettingsDebounced = debounce(() => saveSettings(), durationSaveEdit);
 const saveCharacterDebounced = debounce(() => $("#create_button").click(), durationSaveEdit);
 const getStatusDebounced = debounce(() => getStatus(), 90000);
+const saveChatDebounced = debounce(() => saveChatConditional(), 1000);
 
 const system_message_types = {
     HELP: "help",
@@ -2908,6 +2910,22 @@ function isInt(value) {
     );
 }
 
+function messageEditAuto(div) {
+    let mesBlock = div.closest(".mes_block");
+    var text = mesBlock.find(".edit_textarea").val().trim();
+    const bias = extractMessageBias(text);
+    chat[this_edit_mes_id]["mes"] = text;
+
+    // editing old messages
+    if (!chat[this_edit_mes_id]["extra"]) {
+        chat[this_edit_mes_id]["extra"] = {};
+    }
+    chat[this_edit_mes_id]["extra"]["bias"] = bias ?? null;
+    mesBlock.find(".mes_text").val('');
+    mesBlock.find(".mes_text").val(messageFormating(text));
+    saveChatDebounced();
+}
+
 function messageEditDone(div) {
     let mesBlock = div.closest(".mes_block");
     var text = mesBlock.find(".edit_textarea").val().trim();
@@ -2924,7 +2942,9 @@ function messageEditDone(div) {
     mesBlock.find(".mes_text").empty();
     mesBlock.find(".mes_edit_buttons").css("display", "none");
     mesBlock.find(".mes_edit").css("display", "inline-block");
-    mesBlock.find(".mes_text").append(messageFormating(text, this_edit_mes_chname, chat[this_edit_mes_id].is_system, chat[this_edit_mes_id].force_avatar));
+    mesBlock.find(".mes_text").append(
+        messageFormating(text, this_edit_mes_chname, chat[this_edit_mes_id].is_system, chat[this_edit_mes_id].force_avatar)
+    );
     mesBlock.find(".mes_bias").empty();
     mesBlock.find(".mes_bias").append(messageFormating(bias));
     appendImageToMessage(chat[this_edit_mes_id], div.closest(".mes"));
@@ -4251,6 +4271,7 @@ $(document).ready(function () {
             }
         });
 
+
     $("#talkativeness_slider").on("input", function () {
         if (menu_type == "create") {
             create_save_talkativeness = $("#talkativeness_slider").val();
@@ -4667,9 +4688,7 @@ $(document).ready(function () {
                 .closest(".mes_block")
                 .find(".mes_text")
                 .append(
-                    '<textarea class=edit_textarea style="max-width:auto; ">' +
-                    text +
-                    "</textarea>"
+                    `<textarea id='curEditTextarea' class='edit_textarea' style='max-width:auto; '>${text}</textarea>`
                 );
             let edit_textarea = $(this)
                 .closest(".mes_block")
@@ -4688,6 +4707,13 @@ $(document).ready(function () {
             updateEditArrowClasses();
         }
     });
+
+    $(document).on('input', '#curEditTextarea', function () {
+        if (power_user.auto_save_msg_edits === true) {
+            messageEditAuto($(this));
+        }
+    })
+
     $(document).on("click", ".mes_edit_cancel", function () {
         let text = chat[this_edit_mes_id]["mes"];
 
@@ -5075,8 +5101,15 @@ $(document).ready(function () {
 
     $(document).keyup(function (e) {
         if (e.key === "Escape") {
-            closeMessageEditor();
-            $("#send_textarea").focus();
+            if (power_user.auto_save_msg_edits === false) {
+                closeMessageEditor();
+                $("#send_textarea").focus();
+            }
+            if (power_user.auto_save_msg_edits === true) {
+                $(`#chat .mes[mesid="${this_edit_mes_id}"] .mes_edit_done`).click()
+                $("#send_textarea").focus();
+            }
+
         }
     });
 
