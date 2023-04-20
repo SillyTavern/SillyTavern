@@ -5071,4 +5071,16 @@ $(document).ready(function () {
             closeMessageEditor();
         }
     });
+
+    $("#bg-filter").on("input", function() {
+        const filterValue = $(this).val().toLowerCase();
+        $("#bg_menu_content > div").each(function() {
+            const $bgContent = $(this);
+            if ($bgContent.attr("title").toLowerCase().includes(filterValue)) {
+                $bgContent.show();
+            } else {
+                $bgContent.hide();
+            }
+        });
+    });
 })
