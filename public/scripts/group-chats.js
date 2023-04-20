@@ -48,6 +48,7 @@ export {
     selected_group,
     is_group_automode_enabled,
     is_group_generating,
+    group_generation_id,
     groups,
     saveGroupChat,
     generateGroupWrapper,
@@ -64,6 +65,7 @@ let is_group_generating = false; // Group generation flag
 let is_group_automode_enabled = false;
 let groups = [];
 let selected_group = null;
+let group_generation_id = null;
 
 const group_activation_strategy = {
     NATURAL: 0,
@@ -88,10 +90,18 @@ async function _save(group) {
 
 // Group chats
 async function regenerateGroup() {
+    let generationId = getLastMessageGenerationId();
+
     while (chat.length > 0) {
         const lastMes = chat[chat.length - 1];
+        const this_generationId = lastMes.extra?.gen_id;
 
-        if (lastMes.is_user || lastMes.is_system) {
+        // for new generations after the update
+        if ((generationId && this_generationId) && generationId !== this_generationId) {
+            break;
+        }
+        // legacy for generations before the update
+        else if (lastMes.is_user || lastMes.is_system) {
             break;
         }
 
@@ -130,19 +140,7 @@ async function getGroupChat(id) {
                         continue;
                     }
 
-                    const mes = {};
-                    mes["is_user"] = false;
-                    mes["is_system"] = false;
-                    mes["name"] = character.name;
-                    mes["is_name"] = true;
-                    mes["send_date"] = humanizedDateTime();
-                    mes["mes"] = character.first_mes
-                        ? substituteParams(character.first_mes.trim(), name1, character.name)
-                        : default_ch_mes;
-                    mes["force_avatar"] =
-                        character.avatar != "none"
-                            ? getThumbnailUrl('avatar', character.avatar)
-                            : default_avatar;
+                    const mes = getFirstCharacterMessage(character);
                     chat.push(mes);
                     addOneMessage(mes);
                 }
@@ -154,8 +152,25 @@ async function getGroupChat(id) {
             updateChatMetadata(metadata, true);
         }
 
-        await saveGroupChat(id);
+        await saveGroupChat(id, true);
     }
+}
+
+function getFirstCharacterMessage(character) {
+    const mes = {};
+    mes["is_user"] = false;
+    mes["is_system"] = false;
+    mes["name"] = character.name;
+    mes["is_name"] = true;
+    mes["send_date"] = humanizedDateTime();
+    mes["mes"] = character.first_mes
+        ? substituteParams(character.first_mes.trim(), name1, character.name)
+        : default_ch_mes;
+    mes["force_avatar"] =
+        character.avatar != "none"
+            ? getThumbnailUrl('avatar', character.avatar)
+            : default_avatar;
+    return mes;
 }
 
 function resetSelectedGroup() {
@@ -163,7 +178,7 @@ function resetSelectedGroup() {
     is_group_generating = false;
 }
 
-async function saveGroupChat(id) {
+async function saveGroupChat(id, shouldSaveGroup) {
     const response = await fetch("/savegroupchat", {
         method: "POST",
         headers: {
@@ -173,7 +188,7 @@ async function saveGroupChat(id) {
         body: JSON.stringify({ id: id, chat: [...chat] }),
     });
 
-    if (response.ok) {
+    if (shouldSaveGroup && response.ok) {
         await editGroup(id);
     }
 }
@@ -303,6 +318,8 @@ async function generateGroupWrapper(by_auto_mode, type = null) {
             $("#chat").append(typingIndicator);
         }
 
+        // id of this specific batch for regeneration purposes
+        group_generation_id = Date.now();
         const lastMessage = chat[chat.length - 1];
         let messagesBefore = chat.length;
         let lastMessageText = lastMessage.mes;
@@ -420,6 +437,17 @@ async function generateGroupWrapper(by_auto_mode, type = null) {
         setCharacterName('');
         showSwipeButtons();
     }
+}
+
+function getLastMessageGenerationId() {
+    let generationId = null;
+    if (chat.length > 0) {
+        const lastMes = chat[chat.length - 1];
+        if (!lastMes.is_user && !lastMes.is_system && lastMes.extra) {
+            generationId = lastMes.extra.gen_id;
+        }
+    }
+    return generationId;
 }
 
 function activateImpersonate(members) {
