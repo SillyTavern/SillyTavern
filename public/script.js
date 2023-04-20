@@ -3499,6 +3499,10 @@ $(document).ready(function () {
             chat[chat.length - 1]['swipes'][0] = chat[chat.length - 1]['mes'];  //assign swipe array with last message from chat
         }
         chat[chat.length - 1]['swipe_id']++;                                      //make new slot in array
+        // if message has memory attached - remove it to allow regen
+        if (chat[chat.length -1].extra && chat[chat.length -1].extra.memory) {
+            delete chat[chat.length -1].extra.memory;
+        }
         //console.log(chat[chat.length-1]['swipes']);
         if (parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length) { //if swipe id of last message is the same as the length of the 'swipes' array
 
