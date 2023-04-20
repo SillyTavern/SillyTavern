@@ -183,3 +183,4 @@ Contact us on:
 * Noto Sans font by Google (OFL license)
 * Icon theme by Font Awesome https://fontawesome.com (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License)
 * Linux startup script by AlpinDale
+* Thanks paniphons for providing a FAQ document
