@@ -95,9 +95,6 @@ const storage_keys = {
 };
 
 const chat = document.getElementById('chat');
-const chatTransition = window.getComputedStyle(chat).transition;
-
-//Updated at the bottom of this script document based on 'focus' and 'blur' events
 let browser_has_focus = true;
 
 function playMessageSound() {
@@ -162,66 +159,32 @@ function applySheldWidth() {
 }
 
 async function applyThemeColor(type) {
-    // temporarily unset transition from chat to not make the browser calculate the animation
-    chat.style.transition = 'unset';
-
     if (type === 'main') {
         document.documentElement.style.setProperty('--SmartThemeBodyColor', power_user.main_text_color);
-
     }
-
     if (type === 'italics') {
         document.documentElement.style.setProperty('--SmartThemeEmColor', power_user.italics_text_color);
-
     }
-
     if (type === 'fastUIBG') {
         document.documentElement.style.setProperty('--SmartThemeFastUIBGColor', power_user.fastui_bg_color);
-
     }
-
     if (type === 'blurTint') {
         document.documentElement.style.setProperty('--SmartThemeBlurTintColor', power_user.blur_tint_color);
-
     }
-
-    // a small delay to let the browser do the layout redraw
-    await delay(1);
-    // set transition back to chat
-    chat.style.transition = chatTransition;
 }
 
 async function applyBlurStrength() {
     power_user.blur_strength = Number(localStorage.getItem(storage_keys.blur_strength) ?? 1);
-
-    // temporarily unset transition from chat to not make the browser calculate the animation
-    chat.style.transition = 'unset';
-
-    // now apply the blur strength to the document
     document.documentElement.style.setProperty('--blurStrength', power_user.blur_strength);
     $("#blur_strength_counter").text(power_user.blur_strength);
 
-    // a small delay to let the browser do the layout redraw
-    await delay(1);
-    // set transition back to chat
-    chat.style.transition = chatTransition;
 }
 
 
 async function applyFontScale() {
     power_user.font_scale = Number(localStorage.getItem(storage_keys.font_scale) ?? 1);
-
-    // temporarily unset transition from chat to not make the browser calculate the animation
-    chat.style.transition = 'unset';
-
-    // now apply the font scale to the document
     document.documentElement.style.setProperty('--fontScale', power_user.font_scale);
     $("#font_scale_counter").text(power_user.font_scale);
-
-    // a small delay to let the browser do the layout redraw
-    await delay(1);
-    // set transition back to chat
-    chat.style.transition = chatTransition;
 }
 
 async function applyTheme(name) {
