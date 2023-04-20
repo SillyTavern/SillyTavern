@@ -38,6 +38,7 @@ import {
     resetSelectedGroup,
     select_group_chats,
     regenerateGroup,
+    group_generation_id,
 } from "./scripts/group-chats.js";
 
 import {
@@ -2232,6 +2233,7 @@ function saveReply(type, getMessage, this_mes_is_name) {
     } else {
         console.log('entering chat update routine for non-swipe post');
         chat[chat.length] = {};
+        chat[chat.length - 1]['extra'] = {};
         chat[chat.length - 1]['name'] = name2;
         chat[chat.length - 1]['is_user'] = false;
         chat[chat.length - 1]['is_name'] = this_mes_is_name;
@@ -2247,6 +2249,7 @@ function saveReply(type, getMessage, this_mes_is_name) {
             }
             chat[chat.length - 1]['is_name'] = true;
             chat[chat.length - 1]['force_avatar'] = avatarImg;
+            chat[chat.length - 1]['extra']['gen_id'] = group_generation_id;
         }
 
         saveImageToMessage(img, chat[chat.length - 1]);
