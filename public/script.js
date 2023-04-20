@@ -1344,7 +1344,7 @@ async function Generate(type, automatic_trigger, force_name2) {
         } else {
             //console.log('Regenerate call detected')
             var textareaText = "";
-            if (chat[chat.length - 1]['is_user']) {//If last message from You
+            if (chat.length && chat[chat.length - 1]['is_user']) {//If last message from You
 
             }
             else if (type !== "swipe" && !isImpersonate) {
