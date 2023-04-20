@@ -2,7 +2,7 @@
 ## Based on a fork of TavernAI 1.2.8
 ### Brought to you by Cohee and RossAscends
 
-NOTE: We have added [a FAQ]((faq.md)
+NOTE: We have added [a FAQ](faq.md) to answer moire your questions and help you get started.
 
 ### What is SillyTavern or TavernAI?
 Tavern is a user interface you can install on your computer (and Android phones) that allows you to interact with text generation AIs and chat/roleplay with characters you or the community create.
@@ -10,7 +10,7 @@ Tavern is a user interface you can install on your computer (and Android phones)
 SillyTavern is a fork of TavernAI 1.2.8 which is under more active development and has added many major features. At this point, they can be thought of as completely independent programs.
 
 ### What do I need other than Tavern?
-On its own Tavern is useless, as it's just a user interface. You have to have access to an AI system backend that can act as the roleplay character. There are various supported backends: OpenAPI API (GPT), KoboldAI (either running locally or on Google Colab), and more. You can read more about this in [the FAQ]((faq.md).
+On its own Tavern is useless, as it's just a user interface. You have to have access to an AI system backend that can act as the roleplay character. There are various supported backends: OpenAPI API (GPT), KoboldAI (either running locally or on Google Colab), and more. You can read more about this in [the FAQ](faq.md).
 
 ### Do I need a powerful PC to run Tavern?
 Since Tavern is only a user interface, it has tiny hardware requirements, it will run on anything. It's the AI system backend that needs to be powerful.
