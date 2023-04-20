@@ -588,6 +588,17 @@ $("document").ready(function () {
         } else { SaveLocal('LNavOpened', 'false'); }
     });
 
+    var chatbarInFocus = false;
+    $('#send_textarea').focus(function () {
+        chatbarInFocus = true;
+        console.log("chatbatInfocus =" + chatbarInFocus);
+    });
+
+    $('#send_textarea').blur(function () {
+
+        chatbarInFocus = false;
+        console.log("chatbatInfocus =" + chatbarInFocus);
+    });
 
 
 
@@ -648,6 +659,7 @@ $("document").ready(function () {
         return $(document.activeElement).is(":input");
     }
 
+
     //Additional hotkeys CTRL+ENTER and CTRL+UPARROW
     document.addEventListener("keydown", (event) => {
         if (event.ctrlKey && event.key == "Enter") {
@@ -706,11 +718,13 @@ $("document").ready(function () {
             }
         }
 
+
+
         if (event.key == "ArrowUp") { //edits last message if chatbar is empty and focused
             console.log('got uparrow input');
             if (
                 $("#send_textarea").val() === '' &&
-                isInputElementInFocus("#send_textarea") &&
+                chatbarInFocus === true &&
                 $(".swipe_right:last").css('display') === 'flex' &&
                 $("#character_popup").css("display") === "none" &&
                 $("#shadow_select_chat_popup").css("display") === "none"
@@ -722,11 +736,11 @@ $("document").ready(function () {
                 }
             }
         }
-        if (event.ctrlKey && event.key == "ArrowUp") { //edits last message if chatbar is empty and focused
+        if (event.ctrlKey && event.key == "ArrowUp") { //edits last USER message if chatbar is empty and focused
             console.log('got ctrl+uparrow input');
             if (
                 $("#send_textarea").val() === '' &&
-                isInputElementInFocus("#send_textarea") &&
+                chatbarInFocus === true &&
                 $(".swipe_right:last").css('display') === 'flex' &&
                 $("#character_popup").css("display") === "none" &&
                 $("#shadow_select_chat_popup").css("display") === "none"
