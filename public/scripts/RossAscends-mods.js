@@ -719,23 +719,6 @@ $("document").ready(function () {
         }
 
 
-
-        if (event.key == "ArrowUp") { //edits last message if chatbar is empty and focused
-            console.log('got uparrow input');
-            if (
-                $("#send_textarea").val() === '' &&
-                chatbarInFocus === true &&
-                $(".swipe_right:last").css('display') === 'flex' &&
-                $("#character_popup").css("display") === "none" &&
-                $("#shadow_select_chat_popup").css("display") === "none"
-            ) {
-                const lastMes = document.querySelector('.last_mes');
-                const editMes = lastMes.querySelector('.mes_block .mes_edit');
-                if (editMes !== null) {
-                    $(editMes).click();
-                }
-            }
-        }
         if (event.ctrlKey && event.key == "ArrowUp") { //edits last USER message if chatbar is empty and focused
             console.log('got ctrl+uparrow input');
             if (
@@ -753,5 +736,23 @@ $("document").ready(function () {
                 }
             }
         }
+
+        if (event.key == "ArrowUp") { //edits last message if chatbar is empty and focused
+            console.log('got uparrow input');
+            if (
+                $("#send_textarea").val() === '' &&
+                chatbarInFocus === true &&
+                $(".swipe_right:last").css('display') === 'flex' &&
+                $("#character_popup").css("display") === "none" &&
+                $("#shadow_select_chat_popup").css("display") === "none"
+            ) {
+                const lastMes = document.querySelector('.last_mes');
+                const editMes = lastMes.querySelector('.mes_block .mes_edit');
+                if (editMes !== null) {
+                    $(editMes).click();
+                }
+            }
+        }
+
     });
 });
