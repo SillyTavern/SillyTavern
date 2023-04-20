@@ -878,7 +878,7 @@ function messageFormating(mes, ch_name, isSystem, forceAvatar) {
         mes = mes.replace(/\n/g, "<br/>");
         mes = mes.trim();
 
-        mes = mes.replace(/<code>[\s\S]*?<\/code>/g, function (match) {
+        mes = mes.replace(/<code(.*)>[\s\S]*?<\/code>/g, function (match) {
             return match.replace(/&amp;/g, '&');
         });
     }
@@ -1344,7 +1344,7 @@ async function Generate(type, automatic_trigger, force_name2) {
         } else {
             //console.log('Regenerate call detected')
             var textareaText = "";
-            if (chat[chat.length - 1]['is_user']) {//If last message from You
+            if (chat.length && chat[chat.length - 1]['is_user']) {//If last message from You
 
             }
             else if (type !== "swipe" && !isImpersonate) {
@@ -1485,7 +1485,7 @@ async function Generate(type, automatic_trigger, force_name2) {
                     if (!storyString.endsWith('\n')) {
                         storyString += '\n';
                     }
-                    const replaceString = power_user.disable_examples_formatting ? `This is how ${name2} should talk` : '';
+                    const replaceString = power_user.disable_examples_formatting ? '' : `This is how ${name2} should talk`;
                     example = example.replace(/<START>/i, replaceString);
                 }
                 storyString += appendToStoryString(example, '');
@@ -3499,6 +3499,10 @@ $(document).ready(function () {
             chat[chat.length - 1]['swipes'][0] = chat[chat.length - 1]['mes'];  //assign swipe array with last message from chat
         }
         chat[chat.length - 1]['swipe_id']++;                                      //make new slot in array
+        // if message has memory attached - remove it to allow regen
+        if (chat[chat.length -1].extra && chat[chat.length -1].extra.memory) {
+            delete chat[chat.length -1].extra.memory;
+        }
         //console.log(chat[chat.length-1]['swipes']);
         if (parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length) { //if swipe id of last message is the same as the length of the 'swipes' array
 
@@ -5070,5 +5074,17 @@ $(document).ready(function () {
         if (e.key === "Escape") {
             closeMessageEditor();
         }
+    });
+
+    $("#bg-filter").on("input", function() {
+        const filterValue = $(this).val().toLowerCase();
+        $("#bg_menu_content > div").each(function() {
+            const $bgContent = $(this);
+            if ($bgContent.attr("title").toLowerCase().includes(filterValue)) {
+                $bgContent.show();
+            } else {
+                $bgContent.hide();
+            }
+        });
     });
 })

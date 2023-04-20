@@ -25,4 +25,4 @@ if [ ! -s "/home/node/app/config/settings.json" ]; then
 fi
 
 # Start the server
-node /home/node/app/server.js
+exec node /home/node/app/server.js

@@ -3,6 +3,10 @@ FROM node:19.1.0-alpine3.16
 # Arguments
 ARG APP_HOME=/home/node/app
 
+# Ensure proper handling of kernel signals
+RUN apk add tini
+ENTRYPOINT [ "tini", "--" ]
+
 # Create app directory
 WORKDIR ${APP_HOME}
 
@@ -42,4 +46,4 @@ RUN \
 
 EXPOSE 8000
 
-ENTRYPOINT [ "/bin/sh", "-c", "./docker-entrypoint.sh" ]
+CMD [ "./docker-entrypoint.sh" ]

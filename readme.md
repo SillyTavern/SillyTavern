@@ -134,6 +134,17 @@ Restart your TAI server.
 
 You will now be able to connect from other devices. 
 
+### Managing whitelisted IPs
+
+You can add or remove whitelisted IPs by editing the `whitelist` array in `config.conf`. You can also provide a `whitelist.txt` file in the same directory as `config.conf` with one IP address per line like:
+
+```txt
+192.168.0.1
+192.168.0.2
+```
+
+The `whitelist` array in `config.conf` will be ignored if `whitelist.txt` exists.
+
 ***Disclaimer: Anyone else who knows your IP address and TAI port number will be able to connect as well***
 
 To connect over wifi you'll need your PC's local wifi IP address 
@@ -144,8 +155,24 @@ if you want other people on the internet to connect, check [here](https://whatis
 
 Try enabling the No Blur Effect (Fast UI) mode on the User settings panel.
 
+## I like your project! How do I contribute?
+
+### DO's
+
+1. Send pull requests
+2. Send feature suggestions and issue reports using established templates
+3. Read the readme file and built-in documentation before asking anything
+
+### DONT's
+
+1. Offer monetary donations
+2. Send bug reports without providing any context
+3. Ask the questions that were already answered numerous times
+
 ## Questions or suggestions?
-Contact us on Discord: Cohee#1207 or RossAscends#1779
+Contact us on:
+* Discord: Cohee#1207 or RossAscends#1779
+* Reddit: /u/RossAscends or /u/sillylossy
 
 ## Screenshots
 <img width="400" alt="image" src="https://user-images.githubusercontent.com/18619528/228649245-8061c60f-63dc-488e-9325-f151b7a3ec2d.png">
@@ -162,3 +189,6 @@ Contact us on Discord: Cohee#1207 or RossAscends#1779
 * poe-api client adapted from https://github.com/ading2210/poe-api (GPL v3)
 * GraphQL files for poe: https://github.com/muharamdani/poe (ISC License)
 * KoboldAI Presets from KAI Lite: https://lite.koboldai.net/ 
+* Noto Sans font by Google (OFL license)
+* Icon theme by Font Awesome https://fontawesome.com (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License)
+* Linux startup script by AlpinDale
