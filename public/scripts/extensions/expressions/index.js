@@ -367,7 +367,8 @@ function onClickExpressionImage() {
             <div class="inline-drawer-content">
                 <p class="offline_mode">You are in offline mode. Click on the image below to set the expression.</p>
                 <div id="image_list"></div>
-                <p class="hint"><b>Hint:</b> <i>Create new folder in the <b>public/characters/</b> folder and name it as the name of the character. Put PNG images with expressions there.</i></p>
+                <p class="hint"><b>Hint:</b> <i>Create new folder in the <b>public/characters/</b> folder and name it as the name of the character.
+                Put images with expressions there. File names should follow the pattern: <tt>[expression_label].[image_format]</tt></i></p>
                 <label for="expressions_show_default"><input id="expressions_show_default" type="checkbox">Show default images (emojis) if missing</label>
             </div>
             </div>
