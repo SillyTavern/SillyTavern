@@ -32,11 +32,15 @@ const webp = require('webp-converter');
 const config = require(path.join(process.cwd(), './config.conf'));
 const server_port = process.env.SILLY_TAVERN_PORT || config.port;
 
-let whitelistTxt = null;
-try {
-    whitelistTxt = fs.readFileSync(path.join(process.cwd(), "./whitelist.txt"));
-} catch (e) {}
-const whitelist = whitelistTxt.toString().split("\n").filter(ip => ip) || config.whitelist;
+const whitelistPath = path.join(process.cwd(), "./whitelist.txt");
+let whitelist = config.whitelist;
+
+if (fs.existsSync(whitelistPath)) {
+    try {
+        let whitelistTxt = fs.readFileSync(whitelistPath, 'utf-8');
+        whitelist = whitelistTxt.split("\n").filter(ip => ip).map(ip => ip.trim());
+    } catch (e) { }
+}
 
 const whitelistMode = config.whitelistMode;
 const autorun = config.autorun;
