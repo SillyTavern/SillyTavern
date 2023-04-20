@@ -660,21 +660,21 @@ $("document").ready(function () {
                 //Generate("regenerate");
             }
         }
-        if (event.ctrlKey && event.key == "ArrowUp") {
-            //Ctrl+UpArrow for Connect to last server
-            console.log(main_api);
-            if (online_status === "no_connection") {
-                if (main_api == "kobold") {
-                    document.getElementById("api_button").click();
-                }
-                if (main_api == "novel") {
-                    document.getElementById("api_button_novel").click();
-                }
-                if (main_api == "textgenerationwebui") {
-                    document.getElementById("api_button_textgenerationwebui").click();
-                }
-            }
-        }
+        /*         if (event.ctrlKey && event.key == "ArrowUp") {
+                    //Ctrl+UpArrow for Connect to last server
+                    console.log(main_api);
+                    if (online_status === "no_connection") {
+                        if (main_api == "kobold") {
+                            document.getElementById("api_button").click();
+                        }
+                        if (main_api == "novel") {
+                            document.getElementById("api_button_novel").click();
+                        }
+                        if (main_api == "textgenerationwebui") {
+                            document.getElementById("api_button_textgenerationwebui").click();
+                        }
+                    }
+                } */
         if (event.ctrlKey && event.key == "ArrowLeft") {        //for debug, show all local stored vars
             CheckLocal();
         }
@@ -705,8 +705,25 @@ $("document").ready(function () {
                 $('.swipe_right:last').click();
             }
         }
+
         if (event.key == "ArrowUp") { //edits last message if chatbar is empty and focused
             console.log('got uparrow input');
+            if (
+                $("#send_textarea").val() === '' &&
+                isInputElementInFocus("#send_textarea") &&
+                $(".swipe_right:last").css('display') === 'flex' &&
+                $("#character_popup").css("display") === "none" &&
+                $("#shadow_select_chat_popup").css("display") === "none"
+            ) {
+                const lastMes = document.querySelector('.last_mes');
+                const editMes = lastMes.querySelector('.mes_block .mes_edit');
+                if (editMes !== null) {
+                    $(editMes).click();
+                }
+            }
+        }
+        if (event.ctrlKey && event.key == "ArrowUp") { //edits last message if chatbar is empty and focused
+            console.log('got ctrl+uparrow input');
             if (
                 $("#send_textarea").val() === '' &&
                 isInputElementInFocus("#send_textarea") &&
