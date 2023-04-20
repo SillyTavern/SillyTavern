@@ -1,4 +1,4 @@
-import { saveSettingsDebounced } from "../../../script.js";
+import { saveSettingsDebounced, token } from "../../../script.js";
 import { getContext, getApiUrl, modules, extension_settings } from "../../extensions.js";
 export { MODULE_NAME };
 
@@ -38,7 +38,7 @@ const DEFAULT_EXPRESSIONS = [
 let expressionsList = null;
 let lastCharacter = undefined;
 let lastMessage = null;
-let existingExpressions = [];
+let spriteCache = {};
 let inApiCall = false;
 
 function onExpressionsShowDefaultInput() {
@@ -58,21 +58,25 @@ function onExpressionsShowDefaultInput() {
     }
 }
 
-async function moduleWorker() {
-    function getLastCharacterMessage() {
-        const reversedChat = context.chat.slice().reverse();
+let isWorkerBusy = false;
 
-        for (let mes of reversedChat) {
-            if (mes.is_user || mes.is_system) {
-                continue;
-            }
-
-            return { mes: mes.mes, name: mes.name };
-        }
-
-        return { mes: '', name: null };
+async function moduleWorkerWrapper() {
+    // Don't touch me I'm busy...
+    if (isWorkerBusy) {
+        return;
     }
 
+    // I'm free. Let's update!
+    try {
+        isWorkerBusy = true;
+        await moduleWorker();
+    }
+    finally {
+        isWorkerBusy = false;
+    }
+}
+
+async function moduleWorker() {
     const context = getContext();
 
     // non-characters not supported
@@ -84,27 +88,34 @@ async function moduleWorker() {
     // character changed
     if (context.groupId !== lastCharacter && context.characterId !== lastCharacter) {
         removeExpression();
-        validateImages();
+        spriteCache = {};
+    }
+
+    const currentLastMessage = getLastCharacterMessage();
+
+    // character has no expressions or it is not loaded
+    if (Object.keys(spriteCache).length === 0) {
+        await validateImages(currentLastMessage.name);
+        lastCharacter = context.groupId || context.characterId;
     }
 
     if (!modules.includes('classify')) {
         $('.expression_settings').show();
         $('.expression_settings .offline_mode').css('display', 'block');
-        lastCharacter = context.characterId;
+        lastCharacter = context.groupId || context.characterId;
+
+        if (context.groupId) {
+            await validateImages(currentLastMessage.name, true);
+        }
+
         return;
     }
     else {
         $('.expression_settings .offline_mode').css('display', 'none');
     }
 
-    // character has no expressions or it is not loaded
-    if (!context.groupId && existingExpressions.length === 0) {
-        lastCharacter = context.groupId || context.characterId;
-        return;
-    }
-
+    
     // check if last message changed
-    const currentLastMessage = getLastCharacterMessage();
     if ((lastCharacter === context.characterId || lastCharacter === context.groupId)
         && lastMessage === currentLastMessage.mes) {
         return;
@@ -154,48 +165,67 @@ async function moduleWorker() {
     }
 }
 
+function getLastCharacterMessage() {
+    const context = getContext();
+    const reversedChat = context.chat.slice().reverse();
+
+    for (let mes of reversedChat) {
+        if (mes.is_user || mes.is_system) {
+            continue;
+        }
+
+        return { mes: mes.mes, name: mes.name };
+    }
+
+    return { mes: '', name: null };
+}
+
 function removeExpression() {
     lastMessage = null;
+    $('img.expression').off('error');
     $('img.expression').prop('src', '');
     $('img.expression').removeClass('default');
     $('.expression_settings').hide();
 }
 
-let imagesValidating = false;
-
-async function validateImages() {
-    if (imagesValidating) {
+async function validateImages(character, forceRedrawCached) {
+    if (!character) {
         return;
     }
 
-    imagesValidating = true;
-    existingExpressions = [];
-    const context = getContext();
+    const labels = await getExpressionsList();
+
+    if (spriteCache[character]) {
+        if (forceRedrawCached && $('#image_list').data('name') !== character) {
+            console.log('force redrawing character sprites list')
+            drawSpritesList(character, labels, spriteCache[character]);
+        }
+
+        return;
+    }
+
+    const sprites = await getSpritesList(character);
+    let validExpressions = drawSpritesList(character, labels, sprites);
+    spriteCache[character] = validExpressions;
+}
+
+function drawSpritesList(character, labels, sprites) {
+    let validExpressions = [];
     $('.expression_settings').show();
     $('#image_list').empty();
+    $('#image_list').data('name', character);
+    labels.sort().forEach((item) => {
+        const sprite = sprites.find(x => x.label == item);
 
-    if (!context.characterId) {
-        imagesValidating = false;
-        return;
-    }
-
-    const IMAGE_LIST = (await getExpressionsList()).map(x => ({ name: x, file: `${x}.png` }));
-    IMAGE_LIST.forEach((item) => {
-        const image = document.createElement('img');
-        image.src = `/characters/${context.name2}/${item.file}`;
-        image.classList.add('debug-image');
-        image.width = '0px';
-        image.height = '0px';
-        image.onload = function () {
-            existingExpressions.push(item.name);
-            $('#image_list').append(getListItem(item.file, image.src, 'success'));
+        if (sprite) {
+            validExpressions.push(sprite);
+            $('#image_list').append(getListItem(item, sprite.path, 'success'));
         }
-        image.onerror = function () {
-            $('#image_list').append(getListItem(item.file, '/img/No-Image-Placeholder.svg', 'failure'));
+        else {
+            $('#image_list').append(getListItem(item, '/img/No-Image-Placeholder.svg', 'failure'));
         }
-        $('#image_list').prepend(image);
     });
-    imagesValidating = false;
+    return validExpressions;
 }
 
 function getListItem(item, imageSrc, textClass) {
@@ -207,9 +237,28 @@ function getListItem(item, imageSrc, textClass) {
     `;
 }
 
+async function getSpritesList(name) {
+    console.log('getting sprites list');
+
+    try {
+        const result = await fetch(`/get_sprites?name=${encodeURIComponent(name)}`, {
+            headers: {
+                'X-CSRF-Token': token,
+            }
+        });
+
+        let sprites = result.ok ? (await result.json()) : [];
+        return sprites;
+    }
+    catch (err) {
+        console.log(err);
+        return [];
+    }
+}
+
 async function getExpressionsList() {
     console.log('getting expressions list');
-    // get something for offline mode (6 default images)
+    // get something for offline mode (default images)
     if (!modules.includes('classify')) {
         console.log('classify not available, loading default');
         return DEFAULT_EXPRESSIONS;
@@ -246,13 +295,14 @@ async function getExpressionsList() {
 
 async function setExpression(character, expression, force) {
     console.log('entered setExpressions');
-    const filename = `${expression}.png`;
+    await validateImages(character);
     const img = $('img.expression');
+
+    const sprite = (spriteCache[character] && spriteCache[character].find(x => x.label === expression));
     console.log('checking for expression images to show..');
-    if (force || (existingExpressions.includes(expression))) {
+    if (sprite) {
         console.log('setting expression from character images folder');
-        const imgUrl = `/characters/${character}/${filename}`;
-        img.attr('src', imgUrl);
+        img.attr('src', sprite.path);
         img.removeClass('default');
         img.off('error');
         img.on('error', function () {
@@ -270,7 +320,7 @@ async function setExpression(character, expression, force) {
 
     function setDefault() {
         console.log('setting default');
-        const defImgUrl = `/img/default-expressions/${filename}`;
+        const defImgUrl = `/img/default-expressions/${expression}.png`;
         //console.log(defImgUrl);
         img.attr('src', defImgUrl);
         img.addClass('default');
@@ -284,11 +334,11 @@ function onClickExpressionImage() {
         return;
     }
 
-    const context = getContext();
-    const expression = $(this).attr('id').replace('.png', '');
+    const expression = $(this).attr('id');
+    const name = getLastCharacterMessage().name;
 
     if ($(this).find('.failure').length === 0) {
-        setExpression(context.name2, expression, true);
+        setExpression(name, expression, true);
     }
 }
 
@@ -329,5 +379,5 @@ function onClickExpressionImage() {
 
     addExpressionImage();
     addSettings();
-    setInterval(moduleWorker, UPDATE_INTERVAL);
+    setInterval(moduleWorkerWrapper, UPDATE_INTERVAL);
 })();

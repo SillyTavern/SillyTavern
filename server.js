@@ -1943,6 +1943,35 @@ app.get('/discover_extensions', jsonParser, function (_, response) {
     return response.send(extensions);
 });
 
+app.get('/get_sprites', jsonParser, function (request, response) {
+    const name = request.query.name;
+    const spritesPath = path.join(directories.characters, name);
+    let sprites = [];
+
+    try {
+        if (fs.existsSync(spritesPath) && fs.statSync(spritesPath).isDirectory()) {
+            sprites = fs.readdirSync(spritesPath)
+            .filter(file => {
+                const mimeType = mime.lookup(file);
+                return mimeType && mimeType.startsWith('image/');
+            })
+            .map((file) => {
+                const pathToSprite = path.join(spritesPath, file);
+                return { 
+                    label: path.parse(pathToSprite).name.toLowerCase(),
+                    path: `/characters/${name}/${file}`,
+                };
+            });
+        }
+    }
+    catch (err) {
+        console.log(err);
+    }
+    finally {
+        return response.send(sprites);
+    }
+});
+
 function getThumbnailFolder(type) {
     let thumbnailFolder;
 
