@@ -134,6 +134,17 @@ Restart your TAI server.
 
 You will now be able to connect from other devices. 
 
+### Managing whitelisted IPs
+
+You can add or remove whitelisted IPs by editing the `whitelist` array in `config.conf`. You can also provide a `whitelist.txt` file in the same directory as `config.conf` with one IP address per line like:
+
+```txt
+192.168.0.1
+192.168.0.2
+```
+
+The `whitelist` array in `config.conf` will be ignored if `whitelist.txt` exists.
+
 ***Disclaimer: Anyone else who knows your IP address and TAI port number will be able to connect as well***
 
 To connect over wifi you'll need your PC's local wifi IP address 
