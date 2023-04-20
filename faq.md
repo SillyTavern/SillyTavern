@@ -138,9 +138,9 @@ By using the various 3rd party character sharing websites.
 
 **WARNING: NSFW, NSFL**: these sites are filled to the brim with weird shit. Like, you'll be lucky if half the characters aren't furry, or even alive. You're probably better off not clicking these links, and just write your own characters, without poisoning your soul by exposing it even for a second to the fucked up shit conceived by the Internet. However, I have come to learn that a significant amount of the Tavern user base is not only deep into this stuff, but their fried zoom-zoom brains are unable to write their own fantasies, so these sites seem to be quite popular. Against my better judgement I'm adding this info here.
 
-https://characterhub.org
-https://botprompts.net
-https://booru.plus/+pygmalion
+* https://characterhub.org
+* https://botprompts.net
+* https://booru.plus/+pygmalion
 
 Those websites provide you with an image file (called a character card) that embeds the description as hidden data. Some websites may also allow you to download a JSON file. Tavern is capable of importing all formats. On the Character Management window, click the 2nd button to ```Import Character from file```, and select the PNG, WEBP, or JSON file. The character will be added to your list.
 
