@@ -705,7 +705,7 @@ $("document").ready(function () {
                 $('.swipe_right:last').click();
             }
         }
-        if (event.key == "ArrowUp") { //edits last message if chatbar is empty
+        if (event.key == "ArrowUp") { //edits last message if chatbar is empty and focused
             console.log('got uparrow input');
             if (
                 $("#send_textarea").val() === '' &&
@@ -714,18 +714,12 @@ $("document").ready(function () {
                 $("#character_popup").css("display") === "none" &&
                 $("#shadow_select_chat_popup").css("display") === "none"
             ) {
-                console.log('environment checks passed, seeking div');
                 const isUserMesList = document.querySelectorAll('div[is_user="true"]');
-                console.log(isUserMesList);
                 const lastIsUserMes = isUserMesList[isUserMesList.length - 1];
-                console.log(lastIsUserMes);
                 const editMes = lastIsUserMes.querySelector('.mes_block .mes_edit');
-                console.log(editMes);
                 if (editMes !== null) {
-                    console.log('found the div, clicking');
                     $(editMes).click();
                 }
-                /* $('.mes').find('is_user', 'true').last().children(find('.edit_mes')).click(); */
             }
         }
     });
