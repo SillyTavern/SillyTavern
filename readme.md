@@ -2,7 +2,7 @@
 ## Based on a fork of TavernAI 1.2.8
 ### Brought to you by Cohee and RossAscends
 
-NOTE: We have added [a FAQ](faq.md) to answer moire your questions and help you get started.
+NOTE: We have added [a FAQ](faq.md) to answer most of your questions and help you get started.
 
 ### What is SillyTavern or TavernAI?
 Tavern is a user interface you can install on your computer (and Android phones) that allows you to interact with text generation AIs and chat/roleplay with characters you or the community create.
