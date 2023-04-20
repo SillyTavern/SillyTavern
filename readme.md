@@ -149,7 +149,7 @@ Try enabling the No Blur Effect (Fast UI) mode on the User settings panel.
 ### DO's
 
 1. Send pull requests
-2. Send feature suggestions and issue reports using establised templates
+2. Send feature suggestions and issue reports using established templates
 3. Read the readme file and built-in documentation before asking anything
 
 ### DONT's
@@ -179,4 +179,5 @@ Contact us on:
 * GraphQL files for poe: https://github.com/muharamdani/poe (ISC License)
 * KoboldAI Presets from KAI Lite: https://lite.koboldai.net/ 
 * Noto Sans font by Google (OFL license)
+* Icon theme by Font Awesome https://fontawesome.com (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License)
 * Linux startup script by AlpinDale
