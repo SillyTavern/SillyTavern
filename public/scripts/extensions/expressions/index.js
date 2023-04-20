@@ -99,9 +99,10 @@ async function moduleWorker() {
         lastCharacter = context.groupId || context.characterId;
     }
 
+    const offlineMode = $('.expression_settings .offline_mode');
     if (!modules.includes('classify')) {
         $('.expression_settings').show();
-        $('.expression_settings .offline_mode').css('display', 'block');
+        offlineMode.css('display', 'block');
         lastCharacter = context.groupId || context.characterId;
 
         if (context.groupId) {
@@ -111,7 +112,15 @@ async function moduleWorker() {
         return;
     }
     else {
-        $('.expression_settings .offline_mode').css('display', 'none');
+        // force reload expressions list on connect to API
+        if (offlineMode.is(':visible')) {
+            expressionsList = null;
+            spriteCache = {};
+            expressionsList = await getExpressionsList();
+            await validateImages(currentLastMessage.name, true);
+        }
+
+        offlineMode.css('display', 'none');
     }
 
     
@@ -260,12 +269,10 @@ async function getExpressionsList() {
     console.log('getting expressions list');
     // get something for offline mode (default images)
     if (!modules.includes('classify')) {
-
         return DEFAULT_EXPRESSIONS;
     }
 
     if (Array.isArray(expressionsList)) {
-
         return expressionsList;
     }
 
@@ -273,7 +280,6 @@ async function getExpressionsList() {
     url.pathname = '/api/classify/labels';
 
     try {
-
         const apiResult = await fetch(url, {
             method: 'GET',
             headers: { 'Bypass-Tunnel-Reminder': 'bypass' },
@@ -287,7 +293,6 @@ async function getExpressionsList() {
         }
     }
     catch (error) {
-
         console.log(error);
         return [];
     }
@@ -313,7 +318,6 @@ async function setExpression(character, expression, force) {
         });
     } else {
         if (extension_settings.expressions.showDefault) {
-
             setDefault();
         }
     }
@@ -344,7 +348,6 @@ function onClickExpressionImage() {
 
 (function () {
     function addExpressionImage() {
-
         const html = `
             <div id="expression-holder" class="expression-holder" style="display:none;">
                 <div id="expression-holderheader" class="fa-solid fa-grip drag-grabber"></div>
@@ -364,7 +367,8 @@ function onClickExpressionImage() {
             <div class="inline-drawer-content">
                 <p class="offline_mode">You are in offline mode. Click on the image below to set the expression.</p>
                 <div id="image_list"></div>
-                <p class="hint"><b>Hint:</b> <i>Create new folder in the <b>public/characters/</b> folder and name it as the name of the character. Put PNG images with expressions there.</i></p>
+                <p class="hint"><b>Hint:</b> <i>Create new folder in the <b>public/characters/</b> folder and name it as the name of the character.
+                Put images with expressions there. File names should follow the pattern: <tt>[expression_label].[image_format]</tt></i></p>
                 <label for="expressions_show_default"><input id="expressions_show_default" type="checkbox">Show default images (emojis) if missing</label>
             </div>
             </div>
