@@ -175,6 +175,14 @@ Any relevant information you include can be used. How well it's used depends on 
 
 NOTE: you can go back and edit any of this information once the character is created, except the name.
 
+## Q: Tell me all about GPT prompt editing
+
+You can change the system prompt that Tavern transparently sends to GPT under AI Response Formatting at the left of the top bar. This will result in the bot acting differently.
+
+You can get new Jailbreak / NSFW prompts from this community-maintained list: https://rentry.org/GPTJailbreakPrompting
+
+NOTE: when testing different system prompts, we recommend you use the Create Preset / Update Preset feature below the prompts, instead of modifying the base settings. This will allow you to change prompts easily, and even revert to the default Tavern prompts.
+
 ## Q: The AI is refusing to take the story in the direction I want
 Most AI models were trained to resist writing NSFW content. Why? Long story short, it's because of the high levels of estrogen in the average California male.
 
