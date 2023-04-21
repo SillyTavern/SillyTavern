@@ -3757,9 +3757,11 @@ $(document).ready(function () {
         const selector = ['#rm_print_characters_block .character_select', '#rm_print_characters_block .group_select'].join(',');
         if(filterByFav === true){
             $(selector).each(function () {
-                $(this).children(".ch_fav").val().toLowerCase().includes(1)
-                        ? $(this).show()
-                        : $(this).hide();
+                if($(this).children(".ch_fav").length !== 0){
+                    $(this).children(".ch_fav").val().toLowerCase().includes(1)
+                            ? $(this).show()
+                            : $(this).hide();
+                }
             });
             $("#filter_by_fav").css("color","#FFFF00");
         }else{
