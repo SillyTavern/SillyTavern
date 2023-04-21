@@ -1,0 +1,21 @@
+#tts_media_control {
+    order: 100;
+    width: 40px;
+    height: 40px;
+    margin: 0;
+    padding: 1px;
+    outline: none;
+    border: none;
+    cursor: pointer;
+    transition: 0.3s;
+    opacity: 0.7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+}
+
+#tts_media_control:hover {
+    opacity: 1;
+    filter: brightness(1.2);
+}
