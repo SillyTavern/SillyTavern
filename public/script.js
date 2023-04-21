@@ -250,11 +250,11 @@ const system_messages = {
         mes: [
             'Welcome to SillyTavern! In order to begin chatting:',
             '<ol>',
-            '<li>Connect to one of the supported generation APIs</li>',
-            '<li>Create or pick a character from the list</li>',
+            '<li>Connect to one of the supported generation APIs (the plug icon)</li>',
+            '<li>Create or pick a character from the list (the top-right namecard icon)</li>',
             '</ol>',
             "<h4>Running on Colab and can't get an answer from the AI or getting Out of Memory errors?</h4>",
-            'Set a lower Context Size in AI generation settings.<br>Values in range of 1400-1600 Tokens would be the safest choice.',
+            'Set a lower Context Size in AI generation settings (leftmost icon).<br>Values in range of 1400-1600 Tokens would be the safest choice.',
             '<h4>Still have questions left?</h4>',
             'Check out built-in help or type <tt>/?</tt> in any chat.'
         ].join('')
@@ -1663,7 +1663,7 @@ async function Generate(type, automatic_trigger, force_name2) {
                         is_add_personality = true;
                         //chatString = chatString.substr(0,chatString.length-1);
                         //anchorAndPersonality = "[Genre: roleplay chat][Tone: very long messages with descriptions]";
-                        let personalityAndAnchor = [ charPersonality, anchorTop ].filter(x => x).join(' ');
+                        let personalityAndAnchor = [charPersonality, anchorTop].filter(x => x).join(' ');
                         if (personalityAndAnchor && !is_pygmalion) {
                             item += "[" + personalityAndAnchor + ']\n';
                         }
