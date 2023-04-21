@@ -427,8 +427,8 @@ $(document).ready(function () {
         <div id="eleven_labs_settings">
             <div class="inline-drawer">
                 <div class="inline-drawer-toggle inline-drawer-header">
-                    <h4>ElevenLabs TTS</h4>
-                    <div class="inline-drawer-icon down"></div>
+                    <b>ElevenLabs TTS</b>
+                    <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
                 </div>
                 <div class="inline-drawer-content">
                     <label>ElevenLabs TTS Server Config</label>
