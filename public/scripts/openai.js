@@ -55,6 +55,7 @@ const default_impersonation_prompt = "[Write your next reply from the point of v
 
 const gpt3_max = 4095;
 const gpt4_max = 8191;
+const gpt4_32k_max = 32767;
 
 const tokenCache = {};
 
@@ -435,7 +436,12 @@ function getSystemPrompt(nsfw_toggle_prompt, enhance_definitions_prompt, wiBefor
     return whole_prompt;
 }
 
-async function sendOpenAIRequest(openai_msgs_tosend) {
+async function sendOpenAIRequest(openai_msgs_tosend, signal) {
+    // Provide default abort signal
+    if (!signal) {
+        signal = new AbortController().signal;
+    }
+
     if (oai_settings.reverse_proxy) {
         validateReverseProxy();
     }
@@ -458,7 +464,8 @@ async function sendOpenAIRequest(openai_msgs_tosend) {
         headers: {
             'Content-Type': 'application/json',
             "X-CSRF-Token": token,
-        }
+        },
+        signal: signal,
     });
 
     if (oai_settings.stream_openai) {
@@ -771,6 +778,9 @@ $(document).ready(function () {
 
         if (value == 'gpt-4') {
             $('#openai_max_context').attr('max', gpt4_max);
+        }
+        else if (value == 'gpt-4-32k') {
+            $('#openai_max_context').attr('max', gpt4_32k_max);
         }
         else {
             $('#openai_max_context').attr('max', gpt3_max);

@@ -259,6 +259,7 @@ class Client {
     constructor(auto_reconnect = false, use_cached_bots = false) {
         this.auto_reconnect = auto_reconnect;
         this.use_cached_bots = use_cached_bots;
+        this.abortController = new AbortController();
     }
 
     async init(token, proxy = null) {
@@ -267,6 +268,7 @@ class Client {
             timeout: 60000,
             httpAgent: new http.Agent({ keepAlive: true }),
             httpsAgent: new https.Agent({ keepAlive: true }),
+            signal: this.abortController.signal,
         });
         if (proxy) {
             this.session.defaults.proxy = {
@@ -544,6 +546,8 @@ class Client {
         let messageId;
         while (true) {
             try {
+                this.abortController.signal.throwIfAborted();
+
                 const message = this.message_queues[humanMessageId].shift();
                 if (!message) {
                     await new Promise(resolve => setTimeout(() => resolve(), 1000));

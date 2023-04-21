@@ -367,6 +367,10 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
 
     if (!!request.header('X-Response-Streaming')) {
         const fn_index = Number(request.header('X-Gradio-Streaming-Function'));
+        let isStreamingStopped = false;
+        request.socket.on('close', function() {
+            isStreamingStopped = true;
+        });
 
         response_generate.writeHead(200, {
             'Content-Type': 'text/plain;charset=utf-8',
@@ -404,6 +408,12 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
             });
 
             while (true) {
+                if (isStreamingStopped) {
+                    console.error('Streaming stopped by user. Closing websocket...');
+                    websocket.close();
+                    return null;
+                }
+
                 if (websocket.readyState == 0 || websocket.readyState == 1 || websocket.readyState == 2) {
                     await delay(50);
                     yield text;
@@ -1895,6 +1905,12 @@ app.post('/generate_poe', jsonParser, async (request, response) => {
     }
 
     if (streaming) {
+        let isStreamingStopped = false;
+        request.socket.on('close', function() {
+            isStreamingStopped = true;
+            client.abortController.abort();
+        });
+
         try {
             response.writeHead(200, {
                 'Content-Type': 'text/plain;charset=utf-8',
@@ -1904,6 +1920,11 @@ app.post('/generate_poe', jsonParser, async (request, response) => {
 
             let reply = '';
             for await (const mes of client.send_message(bot, prompt)) {
+                if (isStreamingStopped) {
+                    console.error('Streaming stopped by user. Closing websocket...');
+                    break;
+                }
+
                 let newText = mes.text.substring(reply.length);
                 reply = mes.text;
                 response.write(newText);
@@ -2135,6 +2156,11 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
     if (!request.body) return response_generate_openai.sendStatus(400);
     const api_url = new URL(request.body.reverse_proxy || api_openai).toString();
 
+    const controller = new AbortController();
+    request.socket.on('close', function() {
+        controller.abort();
+    });
+
     console.log(request.body);
     const config = {
         method: 'post',
@@ -2153,7 +2179,8 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
             "frequency_penalty": request.body.frequency_penalty,
             "stop": request.body.stop,
             "logit_bias": request.body.logit_bias
-        }
+        },
+        signal: controller.signal,
     };
 
     if (request.body.stream)

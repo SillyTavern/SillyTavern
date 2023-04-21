@@ -1271,6 +1271,7 @@ class StreamingProcessor {
         this.isStopped = false;
         this.isFinished = false;
         this.generator = this.nullStreamingGeneration;
+        this.abortController = new AbortController();
     }
 
     async generate() {
@@ -1925,7 +1926,7 @@ async function Generate(type, automatic_trigger, force_name2) {
                 let prompt = await prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAfter, afterScenarioAnchor, promptBias, type);
 
                 if (isStreamingEnabled()) {
-                    streamingProcessor.generator = await sendOpenAIRequest(prompt);
+                    streamingProcessor.generator = await sendOpenAIRequest(prompt, streamingProcessor.abortController.signal);
                 }
                 else {
                     sendOpenAIRequest(prompt).then(onSuccess).catch(onError);
@@ -1936,14 +1937,14 @@ async function Generate(type, automatic_trigger, force_name2) {
             }
             else if (main_api == 'poe') {
                 if (isStreamingEnabled()) {
-                    streamingProcessor.generator = await generatePoe(type, finalPromt);
+                    streamingProcessor.generator = await generatePoe(type, finalPromt, streamingProcessor.abortController.signal);
                 }
                 else {
                     generatePoe(type, finalPromt).then(onSuccess).catch(onError);
                 }
             }
             else if (main_api == 'textgenerationwebui' && textgenerationwebui_settings.streaming) {
-                streamingProcessor.generator = await generateTextGenWithStreaming(generate_data);
+                streamingProcessor.generator = await generateTextGenWithStreaming(generate_data, streamingProcessor.abortController.signal);
             }
             else {
                 jQuery.ajax({
@@ -5011,6 +5012,7 @@ $(document).ready(function () {
 
     $(document).on("click", ".mes_stop", function () {
         if (streamingProcessor) {
+            streamingProcessor.abortController.abort();
             streamingProcessor.isStopped = true;
             streamingProcessor.onStopStreaming();
             streamingProcessor = null;
@@ -5103,5 +5105,12 @@ $(document).ready(function () {
                 $bgContent.hide();
             }
         });
+    });
+
+    $(document).on('beforeunload', () => {
+        if (streamingProcessor) {
+            console.log('Page reloaded. Aborting streaming...');
+            streamingProcessor.abortController.abort();
+        }
     });
 })
