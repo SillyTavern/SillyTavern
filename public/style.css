@@ -279,9 +279,8 @@ code {
 }
 
 #send_form {
-    display: grid;
+    display: flex;
     align-items: center;
-    grid-template-columns: 40px auto 40px;
     width: 100%;
     margin: 0 auto 0 auto;
     border: 1px solid var(--grey30a);
@@ -644,6 +643,7 @@ select {
     font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
     margin: 0;
     text-shadow: #000 0 0 3px;
+    flex: 1;
 }
 
 #send_textarea::placeholder,
