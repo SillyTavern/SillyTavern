@@ -19,3 +19,10 @@
     opacity: 1;
     filter: brightness(1.2);
 }
+
+.voice_preview {
+    margin: 0.25rem 0.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}

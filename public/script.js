@@ -3453,6 +3453,7 @@ window["TavernAI"].getContext = function () {
         onlineStatus: online_status,
         maxContext: Number(max_context),
         chatMetadata: chat_metadata,
+        streamingProcessor,
         addOneMessage: addOneMessage,
         generate: Generate,
         getTokenCount: getTokenCount,

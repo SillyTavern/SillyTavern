@@ -1,5 +1,6 @@
-import { saveSettingsDebounced } from "../../../script.js";
+import { callPopup, saveSettingsDebounced } from "../../../script.js";
 import { extension_settings, getContext } from "../../extensions.js";
+import { getStringHash } from "../../utils.js";
 
 const UPDATE_INTERVAL = 1000;
 let API_KEY
@@ -12,6 +13,7 @@ let audioControl
 let lastCharacterId = null;
 let lastGroupId = null;
 let lastChatId = null;
+let lastMessageHash = null;
 
 
 async function moduleWorker() {
@@ -45,13 +47,22 @@ async function moduleWorker() {
 
     // There's no new messages
     let diff = lastMessageNumber - currentMessageNumber;
-    if (diff == 0) {
+    let hashNew = getStringHash((chat.length && chat[chat.length - 1].mes) ?? '');
+
+    if (diff == 0 && hashNew === lastMessageHash) {
+        return;
+    }
+
+    const message = chat[chat.length - 1];
+
+    // We're currently swiping or streaming. Don't generate voice
+    if (message.mes === '...' || (context.streamingProcessor && !context.streamingProcessor.isFinished)) {
         return;
     }
 
     // New messages, add new chat to history
+    lastMessageHash = hashNew;
     currentMessageNumber = lastMessageNumber;
-    const message = chat[chat.length - 1]
 
     console.debug(`Adding message from ${message.name} for TTS processing: "${message.mes}"`);
     ttsJobQueue.push(message);
@@ -174,6 +185,30 @@ async function playAudioData(audioBlob) {
     })
 }
 
+window['elevenlabsPreview'] = function(id) {
+    const audio = document.getElementById(id);
+    audio.play();
+}
+
+async function onElevenlabsVoicesClick() {
+    let popupText = '';
+
+    try {
+        const voiceIds = await fetchTtsVoiceIds();
+
+        for (const voice of voiceIds) {
+            popupText += `<div class="voice_preview"><b>${voice.name}</b> <i onclick="elevenlabsPreview('${voice.voice_id}')" class="fa-solid fa-play"></i></div>`;
+            popupText += `<audio id="${voice.voice_id}" src="${voice.preview_url}"></audio>`;
+        }
+    }
+    catch {
+        popupText = 'Could not load voices list. Check your API key.'
+    }
+
+
+    callPopup(popupText, 'text');
+}
+
 function completeCurrentAudioJob() {
     queueProcessorReady = true
     lastAudioPosition = 0
@@ -227,6 +262,7 @@ function saveLastValues() {
     lastGroupId = context.groupId;
     lastCharacterId = context.characterId;
     lastChatId = context.chatId;
+    lastMessageHash = getStringHash((context.chat.length && context.chat[context.chat.length - 1].mes) ?? '');
 }
 
 async function tts(text, voiceId) {
@@ -431,14 +467,18 @@ $(document).ready(function () {
                     <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
                 </div>
                 <div class="inline-drawer-content">
-                    <label>ElevenLabs TTS Server Config</label>
+                    <label>API Key</label>
                     <input id="elevenlabs_api_key" type="text" class="text_pole" placeholder="<API Key>"/>
+                    <label>Voice Map</label>
                     <textarea id="elevenlabs_voice_map" type="text" class="text_pole textarea_compact" rows="4"
                         placeholder="Enter comma separated map of charName:ttsName. Example: \nAqua:Bella,\nYou:Josh,"></textarea>
-                    <input id="elevenlabs_apply" class="menu_button" type="submit" value="Apply" /><br>
+                    <div class="elevenlabs_buttons">
+                        <input id="elevenlabs_apply" class="menu_button" type="submit" value="Apply" />
+                        <input id="elevenlabs_voices" class="menu_button" type="submit" value="Available voices" />
+                    </div>
                     <div>
                         <label class="checkbox_label" for="elevenlabs_enabled">
-                            <input type="checkbox" id="elevenlabs_enabled" name="elevenlabs_enabled" checked>
+                            <input type="checkbox" id="elevenlabs_enabled" name="elevenlabs_enabled">
                             Enabled
                         </label>
                     </div>
@@ -451,6 +491,7 @@ $(document).ready(function () {
         $('#extensions_settings').append(settingsHtml);
         $('#elevenlabs_apply').on('click', onElevenlabsApplyClick);
         $('#elevenlabs_enabled').on('click', onElevenlabsEnableClick);
+        $('#elevenlabs_voices').on('click', onElevenlabsVoicesClick);
     }
     addAudioControl();
     addExtensionControls();
