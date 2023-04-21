@@ -1,11 +1,6 @@
-import { getStringHash, debounce } from "../../utils.js";
-import { chat_metadata, saveSettingsDebounced } from "../../../script.js";
+import { saveSettingsDebounced } from "../../../script.js";
 import { extension_settings, getContext } from "../../extensions.js";
-export { MODULE_NAME };
 
-const saveChatDebounced = debounce(async () => await getContext().saveChat(), 1000);
-
-const MODULE_NAME = '3_elevenlabs_tts'; // <= Deliberate, for sorting lower than memory
 const UPDATE_INTERVAL = 1000;
 let API_KEY
 
@@ -403,8 +398,8 @@ function onElevenlabsEnableClick() {
 }
 
 function updateUiPlayState() {
-    const img = !audioElement.paused? `url(/img/circle-pause-solid.svg)`: `url(/img/circle-play-solid.svg)`
-    audioControl.style.backgroundImage = img
+    const img = !audioElement.paused? "fa-solid fa-circle-pause": "fa-solid fa-circle-play"
+    audioControl.className = img
 }
 
 function onAudioControlClicked(){
@@ -413,10 +408,10 @@ function onAudioControlClicked(){
 }
 
 function addAudioControl() {
-    $('#send_but_sheld').prepend('<input id="tts_media_control" type="button" />')
+    $('#send_but_sheld').prepend('<div id="tts_media_control"/>')
     $('#send_but_sheld').on('click',onAudioControlClicked)
     audioControl = document.getElementById('tts_media_control');
-    audioControl.style.backgroundImage = `url(/img/circle-play-solid.svg)`;
+    audioControl.className = "fa-solid fa-circle-play";
 }
 
 $(document).ready(function () {
@@ -448,6 +443,7 @@ $(document).ready(function () {
         $('#elevenlabs_apply').on('click', onElevenlabsApplyClick);
         $('#elevenlabs_enabled').on('click', onElevenlabsEnableClick);
     }
+    $('#send_form').css = "grid-template-columns: 40px auto 120px;"
     addAudioControl();
     addExtensionControls();
     loadSettings();
