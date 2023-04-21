@@ -1028,7 +1028,7 @@ function getStoppingStrings(isImpersonate, addSpace) {
     const charString = `\n${name2}:`;
     const userString = is_pygmalion ? `\nYou:` : `\n${name1}:`;
     const result = isImpersonate ? charString : userString;
-    return addSpace ? `${result} ` : result;
+    return [addSpace ? `${result} ` : result];
 }
 
 function getSlashCommand(message, type) {
@@ -1458,21 +1458,8 @@ async function Generate(type, automatic_trigger, force_name2) {
             storyString += appendToStoryString(charPersonality, power_user.disable_personality_formatting ? '' : 'Personality: ');
             storyString += appendToStoryString(Scenario, power_user.disable_scenario_formatting ? '' : 'Scenario: ');
         } else {
-            if (charDescription !== undefined) {
-                if (charPersonality.length > 0 && !power_user.disable_personality_formatting) {
-                    charPersonality = name2 + "'s personality: " + charPersonality;
-                }
-            }
-
             storyString += appendToStoryString(charDescription, '');
-
-            if (storyString.endsWith('\n')) {
-                storyString = storyString.slice(0, -1);
-            }
-
-            if (count_view_mes < topAnchorDepth) {
-                storyString += '\n' + appendToStoryString(charPersonality, '');
-            }
+            storyString += appendToStoryString(charPersonality, power_user.disable_personality_formatting ? '' : name2 + "'s personality: ");
         }
 
         if (power_user.custom_chat_separator && power_user.custom_chat_separator.length) {
@@ -1484,9 +1471,6 @@ async function Generate(type, automatic_trigger, force_name2) {
         if (power_user.pin_examples && main_api !== 'openai') {
             for (let example of mesExamplesArray) {
                 if (!is_pygmalion) {
-                    if (!storyString.endsWith('\n')) {
-                        storyString += '\n';
-                    }
                     const replaceString = power_user.disable_examples_formatting ? '' : `This is how ${name2} should talk`;
                     example = example.replace(/<START>/i, replaceString);
                 }
@@ -1645,9 +1629,6 @@ async function Generate(type, automatic_trigger, force_name2) {
                     }
                 }
                 if (!is_pygmalion && Scenario && Scenario.length > 0) {
-                    if (!storyString.endsWith('\n')) {
-                        storyString += '\n';
-                    }
                     storyString += !power_user.disable_scenario_formatting ? `Circumstances and context of the dialogue: ${Scenario}\n` : `${Scenario}\n`;
                 }
                 console.log('calling runGenerate');
@@ -1682,9 +1663,9 @@ async function Generate(type, automatic_trigger, force_name2) {
                         is_add_personality = true;
                         //chatString = chatString.substr(0,chatString.length-1);
                         //anchorAndPersonality = "[Genre: roleplay chat][Tone: very long messages with descriptions]";
-                        if ((anchorTop != "" || charPersonality != "") && !is_pygmalion) {
-                            if (anchorTop != "") charPersonality += ' ';
-                            item += "[" + charPersonality + anchorTop + ']\n';
+                        let personalityAndAnchor = [ charPersonality, anchorTop ].filter(x => x).join(' ');
+                        if (personalityAndAnchor && !is_pygmalion) {
+                            item += "[" + personalityAndAnchor + ']\n';
                         }
                     }
                     if (i >= arrMes.length - 1 && count_view_mes > 8 && $.trim(item).substr(0, (name1 + ":").length) == name1 + ":" && !is_pygmalion) {//For add anchor in end
@@ -1898,7 +1879,7 @@ async function Generate(type, automatic_trigger, force_name2) {
                         'early_stopping': textgenerationwebui_settings.early_stopping,
                         'seed': textgenerationwebui_settings.seed,
                         'add_bos_token': textgenerationwebui_settings.add_bos_token,
-                        'custom_stopping_strings': JSON.stringify(getStoppingStrings(isImpersonate, false)),
+                        'stopping_strings': getStoppingStrings(isImpersonate, false),
                         'truncation_length': max_context,
                         'ban_eos_token': textgenerationwebui_settings.ban_eos_token,
                         'skip_special_tokens': textgenerationwebui_settings.skip_special_tokens,
@@ -2196,13 +2177,15 @@ function cleanUpMessage(getMessage, isImpersonate) {
         getMessage = getMessage.trim();
     }
 
-    const stoppingString = getStoppingStrings(isImpersonate, false);
+    const stoppingStrings = getStoppingStrings(isImpersonate, false);
 
-    if (stoppingString.length) {
-        for (let j = stoppingString.length - 1; j > 0; j--) {
-            if (getMessage.slice(-j) === stoppingString.slice(0, j)) {
-                getMessage = getMessage.slice(0, -j);
-                break;
+    for (const stoppingString of stoppingStrings) {
+        if (stoppingString.length) {
+            for (let j = stoppingString.length - 1; j > 0; j--) {
+                if (getMessage.slice(-j) === stoppingString.slice(0, j)) {
+                    getMessage = getMessage.slice(0, -j);
+                    break;
+                }
             }
         }
     }
