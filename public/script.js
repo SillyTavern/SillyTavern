@@ -1460,7 +1460,10 @@ async function Generate(type, automatic_trigger, force_name2) {
             storyString += appendToStoryString(Scenario, power_user.disable_scenario_formatting ? '' : 'Scenario: ');
         } else {
             storyString += appendToStoryString(charDescription, '');
-            storyString += appendToStoryString(charPersonality, power_user.disable_personality_formatting ? '' : name2 + "'s personality: ");
+
+            if (count_view_mes < topAnchorDepth) {
+                storyString += appendToStoryString(charPersonality, power_user.disable_personality_formatting ? '' : name2 + "'s personality: ");
+            }
         }
 
         if (power_user.custom_chat_separator && power_user.custom_chat_separator.length) {
