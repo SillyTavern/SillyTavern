@@ -721,7 +721,6 @@ app.post("/editcharacter", urlencodedParser, async function (request, response) 
     char.create_date = request.body.create_date;
     char = JSON.stringify(char);
     let target_img = (request.body.avatar_url).replace('.png', '');
-    console.log(char);
     try {
         if (!filedata) {
 
