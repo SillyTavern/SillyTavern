@@ -637,7 +637,6 @@ function updateSoftPromptsList(soft_prompts) {
 
 function printCharacters() {
     //console.log('printCharacters() entered');
-
     $("#rm_print_characters_block").empty();
     //console.log('printCharacters() -- sees '+characters.length+' characters.');
     characters.forEach(function (item, i, arr) {
@@ -3839,6 +3838,7 @@ $(document).ready(function () {
             select_selected_character(this_chid);
         }
         $("#character_search_bar").val("").trigger("input");
+        $("#filter_by_fav").css("color","#FFFFFF"); //reset the fav to white.
     });
 
 
