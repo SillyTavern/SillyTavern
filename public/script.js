@@ -3837,8 +3837,6 @@ $(document).ready(function () {
             selected_button = "character_edit";
             select_selected_character(this_chid);
         }
-        $("#character_search_bar").val("").trigger("input");
-        $("#filter_by_fav").css("color","#FFFFFF"); //reset the fav to white.
     });
 
 
