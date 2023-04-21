@@ -436,7 +436,12 @@ function getSystemPrompt(nsfw_toggle_prompt, enhance_definitions_prompt, wiBefor
     return whole_prompt;
 }
 
-async function sendOpenAIRequest(openai_msgs_tosend) {
+async function sendOpenAIRequest(openai_msgs_tosend, signal) {
+    // Provide default abort signal
+    if (!signal) {
+        signal = new AbortController().signal;
+    }
+
     if (oai_settings.reverse_proxy) {
         validateReverseProxy();
     }
@@ -459,7 +464,8 @@ async function sendOpenAIRequest(openai_msgs_tosend) {
         headers: {
             'Content-Type': 'application/json',
             "X-CSRF-Token": token,
-        }
+        },
+        signal: signal,
     });
 
     if (oai_settings.stream_openai) {
