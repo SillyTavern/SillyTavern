@@ -16,11 +16,14 @@
     <div id="main">
         <div id="content">
             <h2>Multigen</h2>
-            <p>TavernAI tries to create longer responses by chaining the generation using smaller batches.</p>
+            <p>TavernAI tries to create faster and longer responses by chaining the generation using smaller batches.</p>
+            <h3>Default settings:</h3>
+            <p>First batch = 50 tokens</p>
+            <p>Next batches = 30 tokens</p>
             <h3>Algorithm:</h3>
-            <p>1. If amount of generation is more than 50 tokens, then generate first 50 tokens.</p>
-            <p>2. Generate by 30 tokens until one of the stopping conditions is reached.</p>
-            <p>3. Append the generated batch to the next cycle's prompt.</p>
+            <p>1. Generate the first batch (if amount of generation setting is more than batch length).</p>
+            <p>2. Generate next batch of tokens until one of the stopping conditions is reached.</p>
+            <p>3. Append the generated text to the next cycle's prompt.</p>
             <h3>Stopping conditions:</h3>
             <p>1. Generated enough text.</p>
             <p>2. Character starts speaking for You.</p>

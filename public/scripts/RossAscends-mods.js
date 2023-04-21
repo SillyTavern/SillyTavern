@@ -1,5 +1,4 @@
 esversion: 6
-import { encode } from "../scripts/gpt-2-3-tokenizer/mod.js";
 
 import {
     Generate,
@@ -11,6 +10,8 @@ import {
     nai_settings,
     api_server_textgenerationwebui,
     is_send_press,
+    getTokenCount,
+    max_context,
 
 } from "../script.js";
 
@@ -59,10 +60,45 @@ const observer = new MutationObserver(function (mutations) {
         } else if (mutation.target.parentNode === SelectedCharacterTab) {
             setTimeout(RA_CountCharTokens, 200);
         }
+
     });
 });
 
 observer.observe(document.documentElement, observerConfig);
+
+/**
+ * Wait for an element before resolving a promise
+ * @param {String} querySelector - Selector of element to wait for
+ * @param {Integer} timeout - Milliseconds to wait before timing out, or 0 for no timeout              
+ */
+function waitForElement(querySelector, timeout) {
+    return new Promise((resolve, reject) => {
+        var timer = false;
+        if (document.querySelectorAll(querySelector).length) return resolve();
+        const observer = new MutationObserver(() => {
+            if (document.querySelectorAll(querySelector).length) {
+                observer.disconnect();
+                if (timer !== false) clearTimeout(timer);
+                return resolve();
+            }
+        });
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+        if (timeout) timer = setTimeout(() => {
+            observer.disconnect();
+            reject();
+        }, timeout);
+    });
+}
+
+waitForElement("#expression-image", 10000).then(function () {
+
+    dragElement(document.getElementById("expression-holder"));
+}).catch(() => {
+    console.log("expression holder not loaded yet");
+});
 
 
 //RossAscends: Added function to format dates used in files and chat timestamps to a humanized format.
@@ -121,62 +157,76 @@ function RA_CountCharTokens() {
         });
 
         //count total tokens, including those that will be removed from context once chat history is long
-        count_tokens = encode(JSON.stringify(
+        count_tokens = getTokenCount(JSON.stringify(
             create_save_name +
             create_save_description +
             create_save_personality +
             create_save_scenario +
             create_save_first_message +
             create_save_mes_example
-        )).length;
+        ));
 
         //count permanent tokens that will never get flushed out of context
-        perm_tokens = encode(JSON.stringify(
+        perm_tokens = getTokenCount(JSON.stringify(
             create_save_name +
             create_save_description +
             create_save_personality +
             create_save_scenario
-        )).length;
+        ));
 
     } else {
         if (this_chid !== undefined && this_chid !== "invalid-safety-id") {    // if we are counting a valid pre-saved char
 
             //same as above, all tokens including temporary ones
-            count_tokens = encode(
+            count_tokens = getTokenCount(
                 JSON.stringify(
                     characters[this_chid].description +
                     characters[this_chid].personality +
                     characters[this_chid].scenario +
                     characters[this_chid].first_mes +
                     characters[this_chid].mes_example
-                )).length;
+                ));
 
             //permanent tokens count
-            perm_tokens = encode(
+            perm_tokens = getTokenCount(
                 JSON.stringify(
                     characters[this_chid].name +
                     characters[this_chid].description +
                     characters[this_chid].personality +
                     characters[this_chid].scenario +
                     (power_user.pin_examples ? characters[this_chid].mes_example : '') // add examples to permanent if they are pinned
-                )).length;
+                ));
         } else { console.log("RA_TC -- no valid char found, closing."); }                // if neither, probably safety char or some error in loading
     }
     // display the counted tokens
     if (count_tokens < 1024 && perm_tokens < 1024) {
         $("#result_info").html(count_tokens + " Tokens (" + perm_tokens + " Permanent Tokens)");      //display normal if both counts are under 1024
-    } else { $("#result_info").html("<font color=red>" + count_tokens + " Tokens (" + perm_tokens + " Permanent Tokens)(TOO MANY)</font>"); } //warn if either are over 1024
+    } else {
+        $("#result_info").html(`
+        <span class="neutral_warning">${count_tokens}</span>&nbsp;Tokens (<span class="neutral_warning">${perm_tokens}</span><span>&nbsp;Permanent Tokens)
+        <br>
+        <div id="chartokenwarning" class="menu_button whitespacenowrap"><a href="/notes/token-limits.html" target="_blank">Learn More About Token 'Limits'</a></div>`);
+    } //warn if either are over 1024
 }
 //Auto Load Last Charcter -- (fires when active_character is defined and auto_load_chat is true)
 async function RA_autoloadchat() {
     if (document.getElementById('CharID0') !== null) {
         //console.log('char list loaded! clicking activeChar');
         var CharToAutoLoad = document.getElementById('CharID' + LoadLocal('ActiveChar'));
+        //console.log(CharToAutoLoad);
         let autoLoadGroup = document.querySelector(`.group_select[grid="${LoadLocal('ActiveGroup')}"]`);
+        //console.log(autoLoadGroup);
         if (CharToAutoLoad != null) {
+
+
+            // console.log('--ALC - clicking character');
             CharToAutoLoad.click();
+            CharToAutoLoad.click();
+
         }
         else if (autoLoadGroup != null) {
+            //console.log('--ALC - clicking group');
+            autoLoadGroup.click();
             autoLoadGroup.click();
         }
         else {
@@ -203,22 +253,21 @@ function RA_checkOnlineStatus() {
         $("#send_textarea").attr("placeholder", "Not connected to API!"); //Input bar placeholder tells users they are not connected
         $("#send_form").addClass('no-connection'); //entire input form area is red when not connected
         $("#send_but").css("display", "none"); //send button is hidden when not connected;
-        $("#API-status-top").addClass("redOverlayGlow");
+        $("#API-status-top").removeClass("fa-plug");
+        $("#API-status-top").addClass("fa-plug-circle-exclamation redOverlayGlow");
         connection_made = false;
     } else {
         if (online_status !== undefined && online_status !== "no_connection") {
             $("#send_textarea").attr("placeholder", "Type a message..."); //on connect, placeholder tells user to type message
-            const formColor = power_user.fast_ui_mode ? "var(--black90a)" : "var(--black60a)";
-            /* console.log("RA-AC -- connected, coloring input as " + formColor); */
             $('#send_form').removeClass("no-connection");
-            $("#send_form").css("background-color", formColor); //on connect, form BG changes to transprent black
-            $("#API-status-top").removeClass("redOverlayGlow");
+            $("#API-status-top").removeClass("fa-plug-circle-exclamation redOverlayGlow");
+            $("#API-status-top").addClass("fa-plug");
             connection_made = true;
             retry_delay = 100;
             RA_AC_retries = 1;
 
             if (!is_send_press && !(selected_group && is_group_generating)) {
-                $("#send_but").css("display", "inline"); //on connect, send button shows
+                $("#send_but").css("display", "flex"); //on connect, send button shows
             }
         }
     }
@@ -286,10 +335,10 @@ function OpenNavPanels() {
         console.log("RA -- clicking right nav to open");
         $("#rightNavDrawerIcon").click();
     } else {
-        console.log('didnt see reason to open right nav on load: ' +
-            LoadLocalBool("NavLockOn")
-            + ' nav open pref' +
-            LoadLocalBool("NavOpened" == true));
+        /*         console.log('didnt see reason to open right nav on load: R-nav locked? ' +
+                    LoadLocalBool("NavLockOn")
+                    + ' R-nav was open before? ' +
+                    LoadLocalBool("NavOpened" == true)); */
     }
 
     //auto-open L nav if locked and previously open
@@ -298,14 +347,162 @@ function OpenNavPanels() {
         console.log("RA -- clicking left nav to open");
         $("#leftNavDrawerIcon").click();
     } else {
-        console.log('didnt see reason to open left nav on load: ' +
-            LoadLocalBool("LNavLockOn")
-            + ' L-nav open pref' +
-            LoadLocalBool("LNavOpened" == true));
+        /*         console.log('didnt see reason to open left nav on load: L-Nav Locked? ' +
+                    LoadLocalBool("LNavLockOn")
+                    + ' L-nav was open before? ' +
+                    LoadLocalBool("LNavOpened" == true)); */
     }
 }
 
+
+// Make the DIV element draggable:
+dragElement(document.getElementById("sheld"));
+dragElement(document.getElementById("left-nav-panel"));
+dragElement(document.getElementById("right-nav-panel"));
+
+
+
+function dragElement(elmnt) {
+    var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    if (document.getElementById(elmnt.id + "header")) { //ex: id="sheldheader"
+        // if present, the header is where you move the DIV from, but this overrides everything else:
+        document.getElementById(elmnt.id + "header").onmousedown = dragMouseDown;
+    } else {
+        // otherwise, move the DIV from anywhere inside the DIV, b:
+        elmnt.onmousedown = dragMouseDown;
+    }
+
+    function dragMouseDown(e) {
+        e = e || window.event;
+        e.preventDefault();
+        // get the mouse cursor position at startup:
+        pos3 = e.clientX; //mouse X at click
+        pos4 = e.clientY; //mouse Y at click
+        document.onmouseup = closeDragElement;
+        // call a function whenever the cursor moves:
+        document.onmousemove = elementDrag;
+    }
+
+    function elementDrag(e) {
+        //disable scrollbars when dragging to prevent jitter
+        $("body").css("overflow", "hidden");
+
+
+        //get window size
+        let winWidth = window.innerWidth;
+        let winHeight = window.innerHeight;
+
+        //get necessary data for calculating element footprint
+        let draggableHeight = parseInt(getComputedStyle(elmnt).getPropertyValue('height').slice(0, -2));
+        let draggableWidth = parseInt(getComputedStyle(elmnt).getPropertyValue('width').slice(0, -2));
+        let draggableTop = parseInt(getComputedStyle(elmnt).getPropertyValue('top').slice(0, -2));
+        let draggableLeft = parseInt(getComputedStyle(elmnt).getPropertyValue('left').slice(0, -2));
+        let sheldWidth = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sheldWidth').slice(0, -2));
+        let topBarFirstX = (winWidth - sheldWidth) / 2;
+        let topBarLastX = topBarFirstX + sheldWidth;
+
+        //set the lowest and most-right pixel the element touches
+        let maxX = (draggableWidth + draggableLeft);
+        let maxY = (draggableHeight + draggableTop);
+
+        // calculate the new cursor position:
+        e = e || window.event;
+        e.preventDefault();
+
+        pos1 = pos3 - e.clientX;    //X change amt
+        pos2 = pos4 - e.clientY;    //Y change amt
+        pos3 = e.clientX;   //new mouse X
+        pos4 = e.clientY;   //new mouse Y
+
+
+
+        //fix over/underflows:
+
+        setTimeout(function () {
+            if (elmnt.offsetTop < 40) {
+                /* console.log('6'); */
+                if (maxX > topBarFirstX && maxX < topBarLastX) {
+                    /* console.log('maxX inside topBar!'); */
+                    elmnt.style.top = "42px";
+                }
+                if (elmnt.offsetLeft < topBarLastX && elmnt.offsetLeft > topBarFirstX) {
+                    /* console.log('offsetLeft inside TopBar!'); */
+                    elmnt.style.top = "42px";
+                }
+            }
+
+            if (elmnt.offsetTop - pos2 <= 0) {
+                /* console.log('1'); */
+                //prevent going out of window top + 42px barrier for TopBar (can hide grabber)
+                elmnt.style.top = "0px";
+            }
+
+            if (elmnt.offsetLeft - pos1 <= 0) {
+                /* console.log('2'); */
+                //prevent moving out of window left
+                elmnt.style.left = "0px";
+            }
+
+            if (maxX >= winWidth) {
+                /* console.log('3'); */
+                //bounce off right
+                elmnt.style.left = elmnt.offsetLeft - 10 + "px";
+            }
+
+            if (maxY >= winHeight) {
+                /* console.log('4'); */
+                //bounce off bottom
+                elmnt.style.top = elmnt.offsetTop - 10 + "px";
+                if (elmnt.offsetTop - pos2 <= 40) {
+                    /* console.log('5'); */
+                    //prevent going out of window top + 42px barrier for TopBar (can hide grabber)
+                    /* console.log('caught Y bounce to <40Y top'); */
+                    elmnt.style.top = "20px";
+                }
+            }
+            // if no problems, set element's new position
+            /* console.log('7'); */
+
+            elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+            elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+            $(elmnt).css("bottom", "unset");
+            $(elmnt).css("right", "unset");
+
+            /*             console.log(`
+                                        offsetLeft: ${elmnt.offsetLeft}, offsetTop: ${elmnt.offsetTop}
+                                        winWidth: ${winWidth}, winHeight: ${winHeight}
+                                        sheldWidth: ${sheldWidth}
+                                        X: ${elmnt.style.left} 
+                                        Y: ${elmnt.style.top} 
+                                        MaxX: ${maxX}, MaxY: ${maxY} 
+                                        Topbar 1st X: ${((winWidth - sheldWidth) / 2)} 
+                                        TopBar lastX: ${((winWidth - sheldWidth) / 2) + sheldWidth}
+                                            `); */
+
+
+
+        }, 50)
+
+        /* console.log("left/top: " + (elmnt.offsetLeft - pos1) + "/" + (elmnt.offsetTop - pos2) +
+            ", win: " + winWidth + "/" + winHeight +
+            ", max X / Y: " + maxX + " / " + maxY); */
+
+    }
+
+    function closeDragElement() {
+        // stop moving when mouse button is released:
+        document.onmouseup = null;
+        document.onmousemove = null;
+        //revert scrolling to normal after drag to allow recovery of vastly misplaced elements
+        $("body").css("overflow", "auto");
+
+    }
+}
+
+// ---------------------------------------------------
+
 $("document").ready(function () {
+
     // initial status check
     setTimeout(RA_checkOnlineStatus, 100);
 
@@ -391,6 +588,14 @@ $("document").ready(function () {
         } else { SaveLocal('LNavOpened', 'false'); }
     });
 
+    var chatbarInFocus = false;
+    $('#send_textarea').focus(function () {
+        chatbarInFocus = true;
+    });
+
+    $('#send_textarea').blur(function () {
+        chatbarInFocus = false;
+    });
 
 
 
@@ -447,37 +652,33 @@ $("document").ready(function () {
         }
     });
 
+
     function isInputElementInFocus() {
-        return $(document.activeElement).is(":input");
+        //return $(document.activeElement).is(":input");
+        var focused = $(':focus');
+        if (focused.is('input') || focused.is('textarea')) {
+            if (focused.attr('id') === 'send_textarea') {
+                return false;
+            }
+            return true;
+        }
+        return false;
     }
+
+
+
+
 
     //Additional hotkeys CTRL+ENTER and CTRL+UPARROW
     document.addEventListener("keydown", (event) => {
         if (event.ctrlKey && event.key == "Enter") {
             // Ctrl+Enter for Regeneration Last Response
             if (is_send_press == false) {
-
                 $('#option_regenerate').click();
                 $('#options').hide();
-                //setTimeout(function () { $('#chat').click(); }, 50) //needed to remove the options menu popping up..
-                //Generate("regenerate");
             }
         }
-        if (event.ctrlKey && event.key == "ArrowUp") {
-            //Ctrl+UpArrow for Connect to last server
-            console.log(main_api);
-            if (online_status === "no_connection") {
-                if (main_api == "kobold") {
-                    document.getElementById("api_button").click();
-                }
-                if (main_api == "novel") {
-                    document.getElementById("api_button_novel").click();
-                }
-                if (main_api == "textgenerationwebui") {
-                    document.getElementById("api_button_textgenerationwebui").click();
-                }
-            }
-        }
+
         if (event.ctrlKey && event.key == "ArrowLeft") {        //for debug, show all local stored vars
             CheckLocal();
         }
@@ -508,5 +709,42 @@ $("document").ready(function () {
                 $('.swipe_right:last').click();
             }
         }
+
+
+        if (event.ctrlKey && event.key == "ArrowUp") { //edits last USER message if chatbar is empty and focused
+            console.log('got ctrl+uparrow input');
+            if (
+                $("#send_textarea").val() === '' &&
+                chatbarInFocus === true &&
+                $(".swipe_right:last").css('display') === 'flex' &&
+                $("#character_popup").css("display") === "none" &&
+                $("#shadow_select_chat_popup").css("display") === "none"
+            ) {
+                const isUserMesList = document.querySelectorAll('div[is_user="true"]');
+                const lastIsUserMes = isUserMesList[isUserMesList.length - 1];
+                const editMes = lastIsUserMes.querySelector('.mes_block .mes_edit');
+                if (editMes !== null) {
+                    $(editMes).click();
+                }
+            }
+        }
+
+        if (event.key == "ArrowUp") { //edits last message if chatbar is empty and focused
+            console.log('got uparrow input');
+            if (
+                $("#send_textarea").val() === '' &&
+                chatbarInFocus === true &&
+                $(".swipe_right:last").css('display') === 'flex' &&
+                $("#character_popup").css("display") === "none" &&
+                $("#shadow_select_chat_popup").css("display") === "none"
+            ) {
+                const lastMes = document.querySelector('.last_mes');
+                const editMes = lastMes.querySelector('.mes_block .mes_edit');
+                if (editMes !== null) {
+                    $(editMes).click();
+                }
+            }
+        }
+
     });
 });

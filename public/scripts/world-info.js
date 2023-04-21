@@ -1,6 +1,5 @@
-import { saveSettings, callPopup, token, substituteParams } from "../script.js";
+import { saveSettings, callPopup, token, substituteParams, getTokenCount } from "../script.js";
 import { download, debounce } from "./utils.js";
-import { encode } from "./gpt-2-3-tokenizer/mod.js";
 
 export {
     world_info,
@@ -218,7 +217,7 @@ function appendWorldEntry(entry) {
         saveWorldInfo();
 
         // count tokens
-        const numberOfTokens = encode(value).length;
+        const numberOfTokens = getTokenCount(value);
         $(this)
             .closest(".world_entry")
             .find(".world_entry_form_token_counter")
@@ -526,7 +525,7 @@ function checkWorldInfo(chat) {
             }
 
             if (
-                encode(worldInfoBefore + worldInfoAfter).length >= world_info_budget
+                getTokenCount(worldInfoBefore + worldInfoAfter) >= world_info_budget
             ) {
                 needsToScan = false;
                 break;

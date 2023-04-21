@@ -40,10 +40,10 @@ function loadNovelPreset(preset) {
     $("#rep_pen_counter_novel").html(nai_settings.rep_pen_novel);
 
     $("#rep_pen_size_novel").val(nai_settings.rep_pen_size_novel);
-    $("#rep_pen_size_counter_novel").html(`${nai_settings.rep_pen_size_novel} Tokens`);
+    $("#rep_pen_size_counter_novel").html(`${nai_settings.rep_pen_size_novel}`);
 }
 
-function loadNovelSettings(settings){
+function loadNovelSettings(settings) {
     //load Novel API KEY is exists
     if (settings.api_key_novel != undefined) {
         nai_settings.api_key_novel = settings.api_key_novel;
@@ -65,7 +65,7 @@ function loadNovelSettings(settings){
     $("#rep_pen_counter_novel").text(Number(nai_settings.rep_pen_novel).toFixed(2));
 
     $("#rep_pen_size_novel").val(nai_settings.rep_pen_size_novel);
-    $("#rep_pen_size_counter_novel").text(`${nai_settings.rep_pen_size_novel} Tokens`);
+    $("#rep_pen_size_counter_novel").text(`${nai_settings.rep_pen_size_novel}`);
 }
 
 const sliders = [
@@ -84,7 +84,7 @@ const sliders = [
     {
         sliderId: "#rep_pen_size_novel",
         counterId: "#rep_pen_size_counter_novel",
-        format: (val) => `${val} Tokens`,
+        format: (val) => `${val}`,
         setValue: (val) => { nai_settings.rep_pen_size_novel = Number(val); },
     },
 ];
@@ -100,7 +100,7 @@ $(document).ready(function () {
             saveSettingsDebounced();
         });
     });
-    
+
     $("#model_novel_select").change(function () {
         nai_settings.model_novel = $("#model_novel_select").find(":selected").val();
         saveSettingsDebounced();

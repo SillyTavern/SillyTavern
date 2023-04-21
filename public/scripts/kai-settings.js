@@ -1,5 +1,6 @@
 import {
     saveSettingsDebounced,
+    getStoppingStrings,
 } from "../script.js";
 
 export {
@@ -7,6 +8,7 @@ export {
     loadKoboldSettings,
     formatKoboldUrl,
     getKoboldGenerationData,
+    canUseKoboldStopSequence,
 };
 
 const kai_settings = {
@@ -20,7 +22,10 @@ const kai_settings = {
     tfs: 1,
     rep_pen_slope: 0.9,
     single_line: false,
+    use_stop_sequence: false,
 };
+
+const MIN_STOP_SEQUENCE_VERSION = '1.2.2';
 
 function formatKoboldUrl(value) {
     try {
@@ -55,7 +60,7 @@ function loadKoboldSettings(preset) {
     }
 }
 
-function getKoboldGenerationData(finalPromt, this_settings, this_amount_gen, this_max_context) {
+function getKoboldGenerationData(finalPromt, this_settings, this_amount_gen, this_max_context, isImpersonate) {
     let generate_data = {
         prompt: finalPromt,
         gui_settings: false,
@@ -80,6 +85,7 @@ function getKoboldGenerationData(finalPromt, this_settings, this_amount_gen, thi
         s7: this_settings.sampler_order[6],
         use_world_info: false,
         singleline: kai_settings.single_line,
+        stop_sequence: kai_settings.use_stop_sequence ? getStoppingStrings(isImpersonate, false) : undefined,
     };
     return generate_data;
 }
@@ -103,7 +109,7 @@ const sliders = [
         name: "rep_pen_range",
         sliderId: "#rep_pen_range",
         counterId: "#rep_pen_range_counter",
-        format: (val) => val + " Tokens",
+        format: (val) => val,
         setValue: (val) => { kai_settings.rep_pen_range = Number(val); },
     },
     {
@@ -150,6 +156,10 @@ const sliders = [
     },
 ];
 
+function canUseKoboldStopSequence(version) {
+    return (version || '0.0.0').localeCompare(MIN_STOP_SEQUENCE_VERSION, undefined, { numeric: true, sensitivity: 'base' }) > -1;
+}
+
 $(document).ready(function () {
     sliders.forEach(slider => {
         $(document).on("input", slider.sliderId, function () {
@@ -161,7 +171,7 @@ $(document).ready(function () {
         });
     });
 
-    $('#single_line').on("input", function() {
+    $('#single_line').on("input", function () {
         const value = $(this).prop('checked');
         kai_settings.single_line = value;
         saveSettingsDebounced();

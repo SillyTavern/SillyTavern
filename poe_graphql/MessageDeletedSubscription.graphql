@@ -1,6 +1,8 @@
-subscription MessageDeletedSubscription($chatId: BigInt!) {
-    messageDeleted(chatId: $chatId) {
-        id
-        messageId
-    }
+subscription subscriptions_messageDeleted_Subscription(
+  $chatId: BigInt!
+) {
+  messageDeleted(chatId: $chatId) {
+    id
+    messageId
+  }
 }

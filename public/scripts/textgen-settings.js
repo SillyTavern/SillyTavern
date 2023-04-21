@@ -1,10 +1,12 @@
 import {
     saveSettingsDebounced,
+    token,
 } from "../script.js";
 
 export {
     textgenerationwebui_settings,
     loadTextGenSettings,
+    generateTextGenWithStreaming,
 }
 
 let textgenerationwebui_settings = {
@@ -23,8 +25,13 @@ let textgenerationwebui_settings = {
     early_stopping: false,
     seed: -1,
     preset: 'Default',
-    add_bos_token: true, 
-    custom_stopping_strings: [],
+    add_bos_token: true,
+    stopping_strings: [],
+    truncation_length: 2048,
+    ban_eos_token: false,
+    streaming: false,
+    fn_index: 43,
+    skip_special_tokens: true,
 };
 
 let textgenerationwebui_presets = [];
@@ -46,6 +53,9 @@ const setting_names = [
     "early_stopping",
     "seed",
     "add_bos_token",
+    "ban_eos_token",
+    "fn_index",
+    "skip_special_tokens",
 ];
 
 function selectPreset(name) {
@@ -134,5 +144,50 @@ function setSettingByName(i, value, trigger) {
 
     if (trigger) {
         $(`#${i}_textgenerationwebui`).trigger('input');
+    }
+}
+
+async function generateTextGenWithStreaming(generate_data) {
+    const response = await fetch('/generate_textgenerationwebui', {
+        headers: {
+            'X-CSRF-Token': token,
+            'Content-Type': 'application/json',
+            'X-Response-Streaming': true,
+            'X-Gradio-Streaming-Function': textgenerationwebui_settings.fn_index,
+        },
+        body: JSON.stringify(generate_data),
+        method: 'POST',
+    });
+
+    return async function* streamData() {
+        const decoder = new TextDecoder();
+        const reader = response.body.getReader();
+        let getMessage = '';
+        while (true) {
+            const { done, value } = await reader.read();
+            let response = decoder.decode(value);
+            let delta = '';
+
+            try {
+                delta = response.split('\n').map(x => {
+                    try {
+                        return JSON.parse(x).delta;
+                    } catch { 
+                        return '';
+                    }
+                }).join('');
+            }
+            catch {
+                delta = '';
+            }
+
+            getMessage += delta;
+
+            if (done) {
+                return;
+            }
+
+            yield getMessage;
+        }
     }
 }
