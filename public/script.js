@@ -91,6 +91,7 @@ import {
 
 import { debounce, delay } from "./scripts/utils.js";
 import { extension_settings, loadExtensionSettings } from "./scripts/extensions.js";
+import { executeSlashCommands } from "./scripts/slash-commands.js";
 
 //exporting functions and vars for mods
 export {
@@ -1031,23 +1032,20 @@ function getStoppingStrings(isImpersonate, addSpace) {
     return [addSpace ? `${result} ` : result];
 }
 
-function getSlashCommand(message, type) {
+function processCommands(message, type) {
     if (type == "regenerate" || type == "swipe") {
         return null;
     }
 
-    const commandMap = {
-        "/?": system_message_types.HELP,
-        "/help": system_message_types.HELP
-    };
+    const result = executeSlashCommands(message);
+    $("#send_textarea").val(result.newText).trigger('input');
 
-    const activationText = message.trim().toLowerCase();
-
-    if (Object.keys(commandMap).includes(activationText)) {
-        return commandMap[activationText];
+    // interrupt generation if the input was nothing but a command
+    if (message.length > 0 && result.newText.length === 0) {
+        return true;
     }
 
-    return null;
+    return result.interrupt;
 }
 
 function sendSystemMessage(type, text) {
@@ -1311,11 +1309,11 @@ async function Generate(type, automatic_trigger, force_name2) {
     const isImpersonate = type == "impersonate";
     message_already_generated = isImpersonate ? `${name1}: ` : `${name2}: `;
 
-    const slashCommand = getSlashCommand($("#send_textarea").val(), type);
+    const interruptedByCommand = processCommands($("#send_textarea").val(), type);
 
-    if (slashCommand == system_message_types.HELP) {
-        sendSystemMessage(system_message_types.HELP);
+    if (interruptedByCommand) {
         $("#send_textarea").val('').trigger('input');
+        is_send_press = false;
         return;
     }
 
