@@ -665,7 +665,7 @@ function checkServer() {
 
 //***************** Main functions
 function charaFormatData(data) {
-    var char = { "name": data.ch_name, "description": data.description, "personality": data.personality, "first_mes": data.first_mes, "avatar": 'none', "chat": data.ch_name + ' - ' + humanizedISO8601DateTime(), "mes_example": data.mes_example, "scenario": data.scenario, "create_date": humanizedISO8601DateTime(), "talkativeness": data.talkativeness };
+    var char = { "name": data.ch_name, "description": data.description, "personality": data.personality, "first_mes": data.first_mes, "avatar": 'none', "chat": data.ch_name + ' - ' + humanizedISO8601DateTime(), "mes_example": data.mes_example, "scenario": data.scenario, "create_date": humanizedISO8601DateTime(), "talkativeness": data.talkativeness, "fav": data.fav ? data.fav : "0" };
     return char;
 }
 app.post("/createcharacter", urlencodedParser, function (request, response) {
@@ -719,10 +719,9 @@ app.post("/editcharacter", urlencodedParser, async function (request, response) 
     var char = charaFormatData(request.body);//{"name": request.body.ch_name, "description": request.body.description, "personality": request.body.personality, "first_mes": request.body.first_mes, "avatar": request.body.avatar_url, "chat": request.body.chat, "last_mes": request.body.last_mes, "mes_example": ''};
     char.chat = request.body.chat;
     char.create_date = request.body.create_date;
-
     char = JSON.stringify(char);
     let target_img = (request.body.avatar_url).replace('.png', '');
-
+    console.log(char);
     try {
         if (!filedata) {
 

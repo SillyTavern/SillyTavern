@@ -203,6 +203,7 @@ let dialogueResolve = null;
 let chat_metadata = {};
 let streamingProcessor = null;
 
+let filterByFav = false;
 
 const durationSaveEdit = 200;
 const saveSettingsDebounced = debounce(() => saveSettings(), durationSaveEdit);
@@ -329,6 +330,7 @@ var menu_type = ""; //what is selected in the menu
 var selected_button = ""; //which button pressed
 //create pole save
 var create_save_name = "";
+var create_fav_chara = "0";
 var create_save_description = "";
 var create_save_personality = "";
 var create_save_first_message = "";
@@ -648,6 +650,7 @@ function printCharacters() {
             `<div class=character_select chid=${i} id="CharID${i}">
                 <div class=avatar><img src="${this_avatar}"></div>
                 <div class=ch_name>${item.name}</div>
+                <input class="ch_fav" value=${item.fav} hidden />
             </div>`
         );
         //console.log('printcharacters() -- printing -- ChID '+i+' ('+item.name+')');
@@ -3167,6 +3170,9 @@ function select_selected_character(chid) {
     if (characters[chid].avatar != "none") {
         this_avatar = getThumbnailUrl('avatar', characters[chid].avatar);
     }
+   
+    characters[chid].fav === "1" ? $("#fav_checkbox").prop("checked", true) : $("#fav_checkbox").prop("checked", false);
+    
     $("#avatar_load_preview").attr("src", this_avatar);
     $("#name_div").css("display", "none");
 
@@ -3763,6 +3769,21 @@ $(document).ready(function () {
         }
     });
 
+    $("#filter_by_fav").click(function() {
+        filterByFav === true ? filterByFav = false : filterByFav = true; 
+
+        const selector = ['#rm_print_characters_block .character_select', '#rm_print_characters_block .group_select'].join(',');
+        if(filterByFav === true){
+            $(selector).each(function () {
+                $(this).children(".ch_fav").val().toLowerCase().includes(1)
+                        ? $(this).show()
+                        : $(this).hide();
+            });
+        }else{
+            $(selector).show();
+        }
+    });
+
     $("#send_but").click(function () {
         if (is_send_press == false) {
             is_send_press = true;
@@ -4265,11 +4286,15 @@ $(document).ready(function () {
                 create_save_scenario = $("#scenario_pole").val();
                 create_save_mes_example = $("#mes_example_textarea").val();
                 create_save_first_message = $("#firstmessage_textarea").val();
+                create_fav_chara = $("#fav_checkbox").val();
             } else {
                 saveCharacterDebounced();
             }
         });
 
+    $("#fav_checkbox").change(function(){
+            saveCharacterDebounced();
+    });
 
     $("#talkativeness_slider").on("input", function () {
         if (menu_type == "create") {

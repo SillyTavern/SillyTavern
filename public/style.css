@@ -1138,6 +1138,17 @@ input[type=search]:focus::-webkit-search-cancel-button {
     margin-bottom: 4px;
 }
 
+#fav_chara_wrap{
+    display: flex;
+    margin: 5px 0px;
+}
+
+#fav_chara {
+    border: none;
+    font-size: 14px;
+    display: flex;
+}
+
 #description_div {
     position: relative;
 }
