@@ -424,7 +424,7 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
 
         let result = JSON.parse(request.body.data)[0];
         let prompt = result;
-        let stopping_strings = JSON.parse(request.body.data)[1].custom_stopping_strings;
+        let stopping_strings = JSON.parse(request.body.data)[1].stopping_strings;
 
         try {
             for await (const text of readWebsocket()) {
