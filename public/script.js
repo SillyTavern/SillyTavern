@@ -163,10 +163,10 @@ window["TavernAI"] = {};
 let converter = new showdown.Converter({ emoji: "true" });
 const gpt3 = new GPT3BrowserTokenizer({ type: 'gpt3' });
 /* let bg_menu_toggle = false; */
-const systemUserName = "TavernAI";
+const systemUserName = "SillyTavern System";
 let default_user_name = "You";
 let name1 = default_user_name;
-let name2 = "TavernAI";
+let name2 = "SillyTavern System";
 let chat = [];
 let safetychat = [
     {
@@ -248,11 +248,11 @@ const system_messages = {
         is_user: false,
         is_name: true,
         mes: [
-            'Welcome to TavernAI! In order to begin chatting:',
-            '<ul>',
+            'Welcome to SillyTavern! In order to begin chatting:',
+            '<ol>',
             '<li>Connect to one of the supported generation APIs</li>',
             '<li>Create or pick a character from the list</li>',
-            '</ul>',
+            '</ol>',
             "<h4>Running on Colab and can't get an answer from the AI or getting Out of Memory errors?</h4>",
             'Set a lower Context Size in AI generation settings.<br>Values in range of 1400-1600 Tokens would be the safest choice.',
             '<h4>Still have questions left?</h4>',
