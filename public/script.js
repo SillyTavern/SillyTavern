@@ -649,7 +649,7 @@ function printCharacters() {
 
             `<div class=character_select chid=${i} id="CharID${i}">
                 <div class=avatar><img src="${this_avatar}"></div>
-                <div class=ch_name>${item.name}</div>
+                <div class=ch_name>${item.name} ${item.fav === "1" ? '<i class="fa-solid fa-star fa-2xs"></i>' : ''}</div>
                 <input class="ch_fav" value=${item.fav} hidden />
             </div>`
         );
@@ -3779,8 +3779,10 @@ $(document).ready(function () {
                         ? $(this).show()
                         : $(this).hide();
             });
+            $("#filter_by_fav").css("color","#FFFF00");
         }else{
             $(selector).show();
+            $("#filter_by_fav").css("color","#FFFFFF");
         }
     });
 
