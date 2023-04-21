@@ -3315,6 +3315,10 @@ body.waifuMode #chat {
     border-radius: 20px 20px 0 0;
 }
 
+body.waifuMode #expression-wrapper {
+    justify-content: center;
+}
+
 body.waifuMode .expression-holder {
     max-height: 90vh;
     max-width: 90vw;

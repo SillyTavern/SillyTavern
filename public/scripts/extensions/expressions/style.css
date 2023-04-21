@@ -8,7 +8,6 @@
     display: flex;
     height: calc(100vh - 40px);
     width: 100vw;
-    justify-content: center;
 }
 
 .expression-holder {
