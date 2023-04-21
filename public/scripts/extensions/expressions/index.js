@@ -123,7 +123,7 @@ async function moduleWorker() {
         offlineMode.css('display', 'none');
     }
 
-    
+
     // check if last message changed
     if ((lastCharacter === context.characterId || lastCharacter === context.groupId)
         && lastMessage === currentLastMessage.mes) {
@@ -349,10 +349,12 @@ function onClickExpressionImage() {
 (function () {
     function addExpressionImage() {
         const html = `
+        <div id="expression-wrapper">
             <div id="expression-holder" class="expression-holder" style="display:none;">
                 <div id="expression-holderheader" class="fa-solid fa-grip drag-grabber"></div>
                 <img id="expression-image" class="expression">
-            </div>`;
+            </div>
+        </div>`;
         $('body').append(html);
     }
     function addSettings() {
