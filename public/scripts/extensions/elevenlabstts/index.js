@@ -11,13 +11,13 @@ let audioControl
 
 let lastCharacterId = null;
 let lastGroupId = null;
-let lastChatId = null; 
+let lastChatId = null;
 
 
 async function moduleWorker() {
     // Primarily determinign when to add new chat to the TTS queue
     const enabled = $("#elevenlabs_enabled").is(':checked');
-    if (!enabled){
+    if (!enabled) {
         return;
     }
 
@@ -34,7 +34,7 @@ async function moduleWorker() {
     }
 
     // Chat/character/group changed
-    if ((context.groupId && lastGroupId !== context.groupId) || (context.characterId !== lastCharacterId) || (context.chatId !== lastChatId)) { 
+    if ((context.groupId && lastGroupId !== context.groupId) || (context.characterId !== lastCharacterId) || (context.chatId !== lastChatId)) {
         currentMessageNumber = context.chat.length ? context.chat.length : 0
         saveLastValues();
         return;
@@ -135,7 +135,7 @@ async function fetchTtsHistory() {
 
 async function findTtsGenerationInHistory(message, voiceId) {
     const ttsHistory = await fetchTtsHistory();
-    for (const history of ttsHistory) { 
+    for (const history of ttsHistory) {
         const text = history.text;
         const itemId = history.history_item_id;
         if (message === text && history.voice_id == voiceId) {
@@ -160,9 +160,9 @@ let queueProcessorReady = true
 let lastAudioPosition = 0
 
 
-async function playAudioData(audioBlob){
+async function playAudioData(audioBlob) {
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = function (e) {
         const srcUrl = e.target.result;
         audioElement.src = srcUrl;
     };
@@ -186,14 +186,14 @@ function completeCurrentAudioJob() {
  */
 async function addAudioJob(response) {
     const audioData = await response.blob()
-    if (audioData.type != "audio/mpeg"){
+    if (audioData.type != "audio/mpeg") {
         throw `TTS received HTTP response with invalid data format. Expecting audio/mpeg, got ${audioData.type}`
     }
     audioJobQueue.push(audioData)
     console.debug("Pushed audio job to queue.")
 }
 
-async function processAudioJobQueue(){
+async function processAudioJobQueue() {
     // Nothing to do, audio not completed, or audio paused - stop processing.
     if (audioJobQueue.length == 0 || !queueProcessorReady || audioPaused) {
         return;
@@ -202,7 +202,7 @@ async function processAudioJobQueue(){
         queueProcessorReady = false
         currentAudioJob = audioJobQueue.pop()
         playAudioData(currentAudioJob)
-    } catch(error) {
+    } catch (error) {
         console.error(error)
         queueProcessorReady = true
     }
@@ -217,12 +217,12 @@ let ttsJobQueue = []
 let currentTtsJob
 let currentMessageNumber = 0
 
-function completeTtsJob(){
+function completeTtsJob() {
     console.info(`Current TTS job for ${currentTtsJob.name} completed.`)
     currentTtsJob = null
 }
 
-function saveLastValues(){
+function saveLastValues() {
     const context = getContext()
     lastGroupId = context.groupId;
     lastCharacterId = context.characterId;
@@ -252,7 +252,7 @@ async function processTtsQueue() {
 
     console.debug("New message found, running TTS")
     currentTtsJob = ttsJobQueue.shift()
-    const text = currentTtsJob.mes.replaceAll('*','...'); 
+    const text = currentTtsJob.mes.replaceAll('*', '...');
     const char = currentTtsJob.name
 
     try {
@@ -261,7 +261,7 @@ async function processTtsQueue() {
         }
         const voice = await getTtsVoice(voiceMap[char])
         const voiceId = voice.voice_id
-        if (voiceId == null){
+        if (voiceId == null) {
             throw (`Unable to attain voiceId for ${char}`)
         }
         tts(text, voiceId)
@@ -318,7 +318,7 @@ async function updateApiKey() {
 
     // Using this call to validate API key
     API_KEY = String(value)
-    await fetchTtsVoiceIds().catch((error => {  
+    await fetchTtsVoiceIds().catch((error => {
         API_KEY = null
         throw `ElevenLabs TTS API key invalid`
     }))
@@ -338,12 +338,12 @@ function parseVoiceMap(voiceMapString) {
     return parsedVoiceMap
 }
 
-async function getTtsVoice(name){
+async function getTtsVoice(name) {
     // We're caching the list of voice_ids. This might cause trouble if the user creates a new voice without restarting
     if (elevenlabsTtsVoices.length == 0) {
         elevenlabsTtsVoices = await fetchTtsVoiceIds();
     }
-    const match = elevenlabsTtsVoices.filter((elevenVoice) => elevenVoice.name == name)[0] ;
+    const match = elevenlabsTtsVoices.filter((elevenVoice) => elevenVoice.name == name)[0];
     if (!match) {
         throw `TTS Voice name ${name} not found in ElevenLabs account`;
     }
@@ -354,9 +354,9 @@ async function voicemapIsValid(parsedVoiceMap) {
     let valid = true
     for (const characterName in parsedVoiceMap) {
         const parsedVoiceName = parsedVoiceMap[characterName];
-        try{
+        try {
             await getTtsVoice(parsedVoiceName);
-        } catch(error) {
+        } catch (error) {
             console.error(error)
             valid = false;
         }
@@ -400,23 +400,23 @@ function onElevenlabsEnableClick() {
 }
 
 function updateUiAudioPlayState() {
-    if (extension_settings.elevenlabstts.enabled == true){
+    if (extension_settings.elevenlabstts.enabled == true) {
         audioControl.style.display = 'flex'
-        const img = !audioElement.paused? "fa-solid fa-circle-pause": "fa-solid fa-circle-play"
+        const img = !audioElement.paused ? "fa-solid fa-circle-pause" : "fa-solid fa-circle-play"
         audioControl.className = img
     } else {
         audioControl.style.display = 'none'
     }
 }
 
-function onAudioControlClicked(){
-    audioElement.paused? audioElement.play(): audioElement.pause()
+function onAudioControlClicked() {
+    audioElement.paused ? audioElement.play() : audioElement.pause()
     updateUiAudioPlayState()
 }
 
 function addAudioControl() {
     $('#send_but_sheld').prepend('<div id="tts_media_control"/>')
-    $('#send_but_sheld').on('click',onAudioControlClicked)
+    $('#send_but_sheld').on('click', onAudioControlClicked)
     audioControl = document.getElementById('tts_media_control');
     updateUiAudioPlayState();
 }
