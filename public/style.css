@@ -3525,7 +3525,7 @@ body.movingUI #expression-holder {
     body.waifuMode #sheld {
         height: 40svh;
         top: 60svh;
-        align-items: end;
+        /* align-items: end; */
         bottom: 0 !important;
     }
 
