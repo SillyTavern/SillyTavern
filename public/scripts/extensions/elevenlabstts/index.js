@@ -26,7 +26,7 @@ async function moduleWorker() {
 
     processTtsQueue();
     processAudioJobQueue();
-    updateUiPlayState();
+    updateUiAudioPlayState();
 
     // no characters or group selected 
     if (!context.groupId && !context.characterId) {
@@ -246,7 +246,7 @@ async function tts(text, voiceId) {
 
 async function processTtsQueue() {
     // Called each moduleWorker iteration to pull chat messages from queue
-    if (currentTtsJob || ttsJobQueue.length <= 0) {
+    if (currentTtsJob || ttsJobQueue.length <= 0 || audioPaused) {
         return;
     }
 
@@ -385,6 +385,7 @@ async function updateVoiceMap() {
 function onElevenlabsApplyClick() {
     Promise.all([updateApiKey(), updateVoiceMap()])
         .then(([result1, result2]) => {
+            updateUiAudioPlayState()
             setElevenLabsStatus("Successfully applied settings", true)
         })
         .catch((error) => {
@@ -394,24 +395,30 @@ function onElevenlabsApplyClick() {
 
 function onElevenlabsEnableClick() {
     extension_settings.elevenlabstts.enabled = $("#elevenlabs_enabled").is(':checked');
+    updateUiAudioPlayState()
     saveSettingsDebounced();
 }
 
-function updateUiPlayState() {
-    const img = !audioElement.paused? "fa-solid fa-circle-pause": "fa-solid fa-circle-play"
-    audioControl.className = img
+function updateUiAudioPlayState() {
+    if (extension_settings.elevenlabstts.enabled == true){
+        audioControl.style.display = 'flex'
+        const img = !audioElement.paused? "fa-solid fa-circle-pause": "fa-solid fa-circle-play"
+        audioControl.className = img
+    } else {
+        audioControl.style.display = 'none'
+    }
 }
 
 function onAudioControlClicked(){
     audioElement.paused? audioElement.play(): audioElement.pause()
-    updateUiPlayState()
+    updateUiAudioPlayState()
 }
 
 function addAudioControl() {
     $('#send_but_sheld').prepend('<div id="tts_media_control"/>')
     $('#send_but_sheld').on('click',onAudioControlClicked)
     audioControl = document.getElementById('tts_media_control');
-    audioControl.className = "fa-solid fa-circle-play";
+    updateUiAudioPlayState();
 }
 
 $(document).ready(function () {
@@ -443,7 +450,6 @@ $(document).ready(function () {
         $('#elevenlabs_apply').on('click', onElevenlabsApplyClick);
         $('#elevenlabs_enabled').on('click', onElevenlabsEnableClick);
     }
-    $('#send_form').css = "grid-template-columns: 40px auto 120px;"
     addAudioControl();
     addExtensionControls();
     loadSettings();
