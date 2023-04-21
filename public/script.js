@@ -1028,7 +1028,7 @@ function getStoppingStrings(isImpersonate, addSpace) {
     const charString = `\n${name2}:`;
     const userString = is_pygmalion ? `\nYou:` : `\n${name1}:`;
     const result = isImpersonate ? charString : userString;
-    return addSpace ? `${result} ` : result;
+    return [addSpace ? `${result} ` : result];
 }
 
 function getSlashCommand(message, type) {
@@ -1879,7 +1879,7 @@ async function Generate(type, automatic_trigger, force_name2) {
                         'early_stopping': textgenerationwebui_settings.early_stopping,
                         'seed': textgenerationwebui_settings.seed,
                         'add_bos_token': textgenerationwebui_settings.add_bos_token,
-                        'custom_stopping_strings': JSON.stringify(getStoppingStrings(isImpersonate, false)),
+                        'stopping_strings': getStoppingStrings(isImpersonate, false),
                         'truncation_length': max_context,
                         'ban_eos_token': textgenerationwebui_settings.ban_eos_token,
                         'skip_special_tokens': textgenerationwebui_settings.skip_special_tokens,
@@ -2177,13 +2177,15 @@ function cleanUpMessage(getMessage, isImpersonate) {
         getMessage = getMessage.trim();
     }
 
-    const stoppingString = getStoppingStrings(isImpersonate, false);
+    const stoppingStrings = getStoppingStrings(isImpersonate, false);
 
-    if (stoppingString.length) {
-        for (let j = stoppingString.length - 1; j > 0; j--) {
-            if (getMessage.slice(-j) === stoppingString.slice(0, j)) {
-                getMessage = getMessage.slice(0, -j);
-                break;
+    for (const stoppingString of stoppingStrings) {
+        if (stoppingString.length) {
+            for (let j = stoppingString.length - 1; j > 0; j--) {
+                if (getMessage.slice(-j) === stoppingString.slice(0, j)) {
+                    getMessage = getMessage.slice(0, -j);
+                    break;
+                }
             }
         }
     }

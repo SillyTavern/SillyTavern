@@ -26,11 +26,11 @@ let textgenerationwebui_settings = {
     seed: -1,
     preset: 'Default',
     add_bos_token: true,
-    custom_stopping_strings: [],
+    stopping_strings: [],
     truncation_length: 2048,
     ban_eos_token: false,
     streaming: false,
-    fn_index: 34,
+    fn_index: 43,
     skip_special_tokens: true,
 };
 
