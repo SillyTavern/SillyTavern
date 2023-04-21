@@ -433,12 +433,14 @@ $(document).ready(function () {
                 <div class="inline-drawer-content">
                     <label>ElevenLabs TTS Server Config</label>
                     <input id="elevenlabs_api_key" type="text" class="text_pole" placeholder="<API Key>"/>
-                    <textarea id="elevenlabs_voice_map" type="text" class="text_pole" 
+                    <textarea id="elevenlabs_voice_map" type="text" class="text_pole textarea_compact" rows="4"
                         placeholder="Enter comma separated map of charName:ttsName. Example: \nAqua:Bella,\nYou:Josh,"></textarea>
                     <input id="elevenlabs_apply" class="menu_button" type="submit" value="Apply" /><br>
                     <div>
-                        <input type="checkbox" id="elevenlabs_enabled" name="elevenlabs_enabled" checked>
-                        <label for="elevenlabs_enabled">Enabled</label>
+                        <label class="checkbox_label" for="elevenlabs_enabled">
+                            <input type="checkbox" id="elevenlabs_enabled" name="elevenlabs_enabled" checked>
+                            Enabled
+                        </label>
                     </div>
                     <div id="elevenlabs_status">
                     </div>

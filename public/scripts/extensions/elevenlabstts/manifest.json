@@ -1,6 +1,6 @@
 {
     "display_name": "ElevenLabs TTS",
-    "loading_order": 1,
+    "loading_order": 10,
     "requires": [],
     "optional": [],
     "js": "index.js",
