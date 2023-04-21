@@ -79,13 +79,6 @@ function addDiceScript() {
     }
 }
 
-function patchSendForm() {
-    const columns = $('#send_form').css('grid-template-columns').split(' ');
-    columns[columns.length - 1] = `${parseInt(columns[columns.length - 1]) + 40}px`;
-    columns[1] = 'auto';
-    $('#send_form').css('grid-template-columns', columns.join(' '));
-}
-
 async function moduleWorker() {
     const context = getContext();
 
@@ -97,7 +90,6 @@ async function moduleWorker() {
 $(document).ready(function () {
     addDiceScript();
     addDiceRollButton();
-    patchSendForm();
     setDiceIcon();
     moduleWorker();
     setInterval(moduleWorker, UPDATE_INTERVAL);
