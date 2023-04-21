@@ -138,7 +138,7 @@ async function findTtsGenerationInHistory(message, voiceId) {
     for (const history of ttsHistory) { 
         const text = history.text;
         const itemId = history.history_item_id;
-        if (message === text) {
+        if (message === text && history.voice_id == voiceId) {
             console.info(`Existing TTS history item ${itemId} found: ${text} `)
             return itemId;
         }
