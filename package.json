@@ -23,7 +23,8 @@
         "rimraf": "^3.0.2",
         "sanitize-filename": "^1.6.3",
         "webp-converter": "2.3.2",
-        "ws": "^8.13.0"
+        "ws": "^8.13.0",
+        "yargs": "^17.7.1"
     },
     "overrides": {
         "parse-bmfont-xml": {
