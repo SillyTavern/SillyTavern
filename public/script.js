@@ -203,6 +203,7 @@ let exportPopper = Popper.createPopper(document.getElementById('export_button'),
 let dialogueResolve = null;
 let chat_metadata = {};
 let streamingProcessor = null;
+let ChatBarInFocus = false;
 
 
 const durationSaveEdit = 200;
@@ -3750,7 +3751,10 @@ $(document).ready(function () {
         if (is_send_press == false) {
             is_send_press = true;
             Generate();
-            $('#send_textarea').focus();
+            if (ChatBarInFocus !== false) {
+                console.log("send_but -- refocusing chatbar");
+                $('#send_textarea').focus();
+            }
         }
     });
 
@@ -3760,6 +3764,16 @@ $(document).ready(function () {
             e.preventDefault();
             Generate();
         }
+    });
+
+    $("#send_textarea").on('focus', function () {
+        ChatBarInFocus = true;
+        console.log('chatbar focused');
+    });
+
+    $("#send_textarea").on('blur', function () {
+        ChatBarInFocus = '';
+        console.log('chatbarInFocus set to ambiguous');
     });
 
     //menu buttons setup
@@ -4340,7 +4354,10 @@ $(document).ready(function () {
 
     $("#options_button").click(function () {
         // this is the options button click function, shows the options menu if closed
-        $("#send_textarea").focus();
+        if (ChatBarInFocus !== false) {
+            console.log('options button - refocusing chatbar');
+            $("#send_textarea").focus();
+        }
         if (
             $("#options").css("display") === "none" &&
             $("#options").css("opacity") == 0.0
@@ -4361,7 +4378,10 @@ $(document).ready(function () {
 
     $("#options [id]").on("click", function () {
         var id = $(this).attr("id");
-        $("#send_textarea").focus();
+        if (ChatBarInFocus !== false) {
+            console.log('options item - refocusing chatbar');
+            $("#send_textarea").focus();
+        }
         if (id == "option_select_chat") {
             if (selected_group) {
                 // will open a chat selection screen
