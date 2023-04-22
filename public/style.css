@@ -3377,6 +3377,8 @@ body.movingUI #expression-holder {
     body {
         touch-action: none;
         overflow: hidden;
+        position: fixed;
+
     }
 
     .drawer-content {
