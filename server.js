@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+const process = require('process')
 const yargs = require('yargs/yargs');
 const { hideBin } = require('yargs/helpers');
 
@@ -19,7 +20,6 @@ const cliArguments = yargs(hideBin(process.argv))
     }).argv;
 
 // change all relative paths
-const process = require('process')
 process.chdir(__dirname)
 
 const express = require('express');
