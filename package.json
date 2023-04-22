@@ -32,8 +32,8 @@
     },
     "name": "sillytavern",
     "version": "1.4.1",
-    "bin": {
-        "sillytavern": "server.js"
+    "scripts": {
+        "sillytavern": "node server.js"
     },
     "rules": {
         "no-path-concat": "off",
