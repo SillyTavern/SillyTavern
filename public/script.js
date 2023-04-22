@@ -203,7 +203,6 @@ let exportPopper = Popper.createPopper(document.getElementById('export_button'),
 let dialogueResolve = null;
 let chat_metadata = {};
 let streamingProcessor = null;
-let ChatBarInFocus = false;
 
 
 const durationSaveEdit = 200;
@@ -1504,10 +1503,10 @@ async function Generate(type, automatic_trigger, force_name2) {
         //////////////////////////////////
 
         var count_exm_add = 0;
-        console.log('emptying chat2');
+        //console.log('emptying chat2');
         var chat2 = [];
         var j = 0;
-        console.log('pre-replace chat.length = ' + chat.length);
+        //console.log('pre-replace chat.length = ' + chat.length);
         for (var i = chat.length - 1; i >= 0; i--) {
             let charName = selected_group ? chat[j].name : name2;
             if (j == 0) {
@@ -1538,7 +1537,7 @@ async function Generate(type, automatic_trigger, force_name2) {
             //console.log('replacing chat2 {}s');
             j++;
         }
-        console.log('post replace chat.length = ' + chat.length);
+        //console.log('post replace chat.length = ' + chat.length);
         //chat2 = chat2.reverse();
         var this_max_context = 1487;
         if (main_api == 'kobold' || main_api == 'textgenerationwebui') {
@@ -1583,14 +1582,14 @@ async function Generate(type, automatic_trigger, force_name2) {
 
         /////////////////////// swipecode
         if (type == 'swipe') {
-            console.log('pre swipe shift: ' + chat2.length);
-            console.log('shifting swipe chat2');
+            //console.log('pre swipe shift: ' + chat2.length);
+            //console.log('shifting swipe chat2');
             chat2.shift();
         }
 
         let { worldInfoString, worldInfoBefore, worldInfoAfter } = getWorldInfoPrompt(chat2);
 
-        console.log('post swipe shift:' + chat2.length);
+        //console.log('post swipe shift:' + chat2.length);
         var i = 0;
 
         // hack for regeneration of the first message
@@ -1610,7 +1609,7 @@ async function Generate(type, automatic_trigger, force_name2) {
                 //if (is_pygmalion && i == chat2.length-1) item='<START>\n'+item;
                 arrMes[arrMes.length] = item;
             } else {
-                console.log('reducing chat.length by 1');
+                //console.log('reducing chat.length by 1');
                 i = chat2.length - 1;
             }
 
@@ -1776,7 +1775,7 @@ async function Generate(type, automatic_trigger, force_name2) {
                 //console.log('Generated Prompt Cache length: '+generatedPromtCache.length);
                 checkPromtSize();
             } else {
-                console.log('calling setPromtString')
+                //console.log('calling setPromtString')
                 setPromtString();
             }
 
@@ -2088,7 +2087,7 @@ async function Generate(type, automatic_trigger, force_name2) {
         }
         is_send_press = false;
     }
-    console.log('generate ending');
+    //console.log('generate ending');
 } //generate ends
 
 function shouldContinueMultigen(getMessage) {
@@ -2431,6 +2430,10 @@ async function getChat() {
         }
         getChatResult();
         saveChat();
+        setTimeout(function () {
+            $('#send_textarea').click();
+            $('#send_textarea').focus();
+        }, 200);
     } catch (error) {
         getChatResult();
         console.log(error);
@@ -3484,8 +3487,36 @@ window["TavernAI"].getContext = function () {
 
 $(document).ready(function () {
 
+    //////////INPUT BAR FOCUS-KEEPING LOGIC/////////////
+
+    let S_TAFocused = false;
+    let S_TAPreviouslyFocused = false;
+    $('#send_textarea').on('focusin focus click', () => {
+        S_TAFocused = true;
+        S_TAPreviouslyFocused = true;
+    });
+    $('#send_textarea').on('focusout blur', () => S_TAFocused = false);
+    $('#options_button, #send_but, #option_regenerate').on('click', () => {
+        if (S_TAPreviouslyFocused) {
+            $('#send_textarea').focus();
+            S_TAFocused = true;
+        }
+    });
+    $(document).click(event => {
+        if ($(':focus').attr('id') !== 'send_textarea') {
+            if (!$(event.target.id).is("#options_button, #send_but, #send_textarea, #option_regenerate")) {
+                S_TAFocused = false;
+                S_TAPreviouslyFocused = false;
+            }
+        } else {
+            S_TAFocused = true;
+            S_TAPreviouslyFocused = true;
+        }
+    });
+
+    /////////////////
+
     $('#swipes-checkbox').change(function () {
-        console.log('detected swipes-checkbox changed values')
         swipes = !!$('#swipes-checkbox').prop('checked');
         if (swipes) {
             //console.log('toggle change calling showswipebtns');
@@ -3764,10 +3795,6 @@ $(document).ready(function () {
         if (is_send_press == false) {
             is_send_press = true;
             Generate();
-            if (ChatBarInFocus !== false) {
-                console.log("send_but -- refocusing chatbar");
-                $('#send_textarea').focus();
-            }
         }
     });
 
@@ -3777,16 +3804,6 @@ $(document).ready(function () {
             e.preventDefault();
             Generate();
         }
-    });
-
-    $("#send_textarea").on('focus', function () {
-        ChatBarInFocus = true;
-        console.log('chatbar focused');
-    });
-
-    $("#send_textarea").on('blur', function () {
-        ChatBarInFocus = '';
-        console.log('chatbarInFocus set to ambiguous');
     });
 
     //menu buttons setup
@@ -4072,6 +4089,7 @@ $(document).ready(function () {
             $("#selected_chat_pole").val(characters[this_chid].chat);
             saveCharacterDebounced();
             getChat();
+
         }
 
         if (dialogueResolve) {
@@ -4367,10 +4385,6 @@ $(document).ready(function () {
 
     $("#options_button").click(function () {
         // this is the options button click function, shows the options menu if closed
-        if (ChatBarInFocus !== false) {
-            console.log('options button - refocusing chatbar');
-            $("#send_textarea").focus();
-        }
         if (
             $("#options").css("display") === "none" &&
             $("#options").css("opacity") == 0.0
@@ -4391,10 +4405,6 @@ $(document).ready(function () {
 
     $("#options [id]").on("click", function () {
         var id = $(this).attr("id");
-        if (ChatBarInFocus !== false) {
-            console.log('options item - refocusing chatbar');
-            $("#send_textarea").focus();
-        }
         if (id == "option_select_chat") {
             if (selected_group) {
                 // will open a chat selection screen
