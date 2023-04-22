@@ -452,7 +452,7 @@ function onAudioControlClicked() {
 
 function addAudioControl() {
     $('#send_but_sheld').prepend('<div id="tts_media_control"/>')
-    $('#send_but_sheld').on('click', onAudioControlClicked)
+    $('#tts_media_control').on('click', onAudioControlClicked)
     audioControl = document.getElementById('tts_media_control');
     updateUiAudioPlayState();
 }
