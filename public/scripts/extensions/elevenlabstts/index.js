@@ -398,8 +398,6 @@ $(document).ready(function () {
                     <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
                 </div>
                 <div class="inline-drawer-content">
-                    <label>TTS Provider</label>
-                    <input id="tts_provider_selector" type="dropdown"/>
                     <label>API Key</label>
                     <input id="elevenlabs_api_key" type="text" class="text_pole" placeholder="<API Key>"/>
                     <label>Voice Map</label>
