@@ -33,7 +33,7 @@
     "name": "sillytavern",
     "version": "1.4.2",
     "scripts": {
-        "sillytavern": "node server.js"
+        "start": "node server.js"
     },
     "rules": {
         "no-path-concat": "off",
