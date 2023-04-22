@@ -3750,6 +3750,7 @@ $(document).ready(function () {
         if (is_send_press == false) {
             is_send_press = true;
             Generate();
+            $('#send_textarea').focus();
         }
     });
 
@@ -4339,6 +4340,7 @@ $(document).ready(function () {
 
     $("#options_button").click(function () {
         // this is the options button click function, shows the options menu if closed
+        $("#send_textarea").focus();
         if (
             $("#options").css("display") === "none" &&
             $("#options").css("opacity") == 0.0
@@ -4359,7 +4361,7 @@ $(document).ready(function () {
 
     $("#options [id]").on("click", function () {
         var id = $(this).attr("id");
-
+        $("#send_textarea").focus();
         if (id == "option_select_chat") {
             if (selected_group) {
                 // will open a chat selection screen
