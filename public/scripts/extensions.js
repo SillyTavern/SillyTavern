@@ -29,7 +29,7 @@ const extension_settings = {
 let modules = [];
 let activeExtensions = new Set();
 
-const getContext = () => window['TavernAI'].getContext();
+const getContext = () => window['SillyTavern'].getContext();
 const getApiUrl = () => extension_settings.apiUrl;
 const defaultRequestArgs = { method: 'GET', headers: { 'Bypass-Tunnel-Reminder': 'bypass' } };
 let connectedToApi = false;
