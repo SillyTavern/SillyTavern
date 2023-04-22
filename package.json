@@ -31,7 +31,7 @@
         }
     },
     "name": "sillytavern",
-    "version": "1.4.2",
+    "version": "1.4.3",
     "scripts": {
         "start": "node server.js"
     },
