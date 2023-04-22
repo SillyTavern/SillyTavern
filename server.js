@@ -1,4 +1,9 @@
 #!/usr/bin/env node
+
+// change all relative paths
+const process = require('process')
+process.chdir(__dirname)
+
 const express = require('express');
 const compression = require('compression');
 const app = express();
