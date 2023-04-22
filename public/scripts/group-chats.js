@@ -842,7 +842,6 @@ $(document).ready(() => {
                 await getGroupChat(id);
                 //to avoid the filter being lit up yellow and left at true while the list of character and group reseted.
                 $("#filter_by_fav").removeClass("fav_on");
-                $("#filter_by_fav").addClass("fav_off");
                 filterByFav = false; 
             }
 
