@@ -909,6 +909,9 @@ select option:not(:checked) {
     cursor: not-allowed;
 }
 
+.fav_on {
+    color: #ffff00 !important;
+}
 
 #api_url_text,
 #textgenerationwebui_api_url_text {
@@ -1136,6 +1139,17 @@ input[type=search]:focus::-webkit-search-cancel-button {
     flex: 0 0 100%;
     flex-wrap: wrap;
     margin-bottom: 4px;
+}
+
+#fav_chara_wrap{
+    display: flex;
+    margin: 5px 0px;
+}
+
+#fav_chara {
+    border: none;
+    font-size: var(--mainFontSize);
+    display: flex;
 }
 
 #description_div {
@@ -2484,10 +2498,13 @@ h5 {
 }
 
 .group_select .ch_name {
-    flex-grow: 1;
     max-width: calc(100% - 100px);
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.group_select .group_fav_icon{
+    margin-left: 5px;
 }
 
 #typing_indicator_template {
