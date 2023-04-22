@@ -676,7 +676,7 @@ function checkServer() {
 
 //***************** Main functions
 function charaFormatData(data) {
-    var char = { "name": data.ch_name, "description": data.description, "personality": data.personality, "first_mes": data.first_mes, "avatar": 'none', "chat": data.ch_name + ' - ' + humanizedISO8601DateTime(), "mes_example": data.mes_example, "scenario": data.scenario, "create_date": humanizedISO8601DateTime(), "talkativeness": data.talkativeness, "fav": data.fav ? data.fav : false };
+    var char = { "name": data.ch_name, "description": data.description, "personality": data.personality, "first_mes": data.first_mes, "avatar": 'none', "chat": data.ch_name + ' - ' + humanizedISO8601DateTime(), "mes_example": data.mes_example, "scenario": data.scenario, "create_date": humanizedISO8601DateTime(), "talkativeness": data.talkativeness, "fav": data.fav};
     return char;
 }
 app.post("/createcharacter", urlencodedParser, function (request, response) {

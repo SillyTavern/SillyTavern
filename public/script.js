@@ -648,7 +648,7 @@ function printCharacters() {
 
             `<div class=character_select chid=${i} id="CharID${i}">
                 <div class=avatar><img src="${this_avatar}"></div>
-                <div class=ch_name>${item.name} ${item.fav ? '<i class="fa-solid fa-star fa-2xs"></i>' : ''}</div>
+                <div class=ch_name>${item.name} ${item.fav == "true" ? '<i class="fa-solid fa-star fa-2xs"></i>' : ''}</div>
                 <input class="ch_fav" value=${item.fav} hidden />
             </div>`
         );
@@ -3166,8 +3166,8 @@ function select_selected_character(chid) {
     if (characters[chid].avatar != "none") {
         this_avatar = getThumbnailUrl('avatar', characters[chid].avatar);
     }
-   
-    $("#fav_checkbox").prop("checked", characters[chid].fav);
+
+    $("#fav_checkbox").prop("checked", characters[chid].fav == "true");
     
     $("#avatar_load_preview").attr("src", this_avatar);
     $("#name_div").css("display", "none");
@@ -4123,7 +4123,6 @@ $(document).ready(function () {
         let save_name = create_save_name;
         var formData = new FormData($("#form_create").get(0));
         formData.set('fav', fav_ch_checked);
-        console.log(formData.get('fav'));
         if ($("#form_create").attr("actiontype") == "createcharacter") {
             if ($("#character_name_pole").val().length > 0) {
                 //if the character name text area isn't empty (only posible when creating a new character)
@@ -4298,7 +4297,9 @@ $(document).ready(function () {
 
     $("#fav_checkbox").change(function(){
             fav_ch_checked = $(this).prop("checked");
-            saveCharacterDebounced();
+            if (menu_type != "create") {
+                saveCharacterDebounced();
+            }
     });
 
     $("#talkativeness_slider").on("input", function () {
