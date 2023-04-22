@@ -266,7 +266,6 @@ async function getSpritesList(name) {
 }
 
 async function getExpressionsList() {
-    console.log('getting expressions list');
     // get something for offline mode (default images)
     if (!modules.includes('classify')) {
         return DEFAULT_EXPRESSIONS;
