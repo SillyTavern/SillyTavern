@@ -1,5 +1,23 @@
 #!/usr/bin/env node
 
+const yargs = require('yargs/yargs');
+const { hideBin } = require('yargs/helpers');
+
+const cliArguments = yargs(hideBin(process.argv))
+    .option('ssl', {
+        type: 'boolean',
+        default: 'false',
+        describe: 'Enables SSL'
+    }).option('certPath', {
+        type: 'string',
+        default: 'certs/cert.pem',
+        describe: 'Path to your certificate file.'
+    }).option('keyPath', {
+        type: 'string',
+        default: 'certs/privkey.pem',
+        describe: 'Path to your private key file.'
+    }).argv;
+
 // change all relative paths
 const process = require('process')
 process.chdir(__dirname)
@@ -15,6 +33,7 @@ const open = require('open');
 
 const rimraf = require("rimraf");
 const multer = require("multer");
+const http = require("http");
 const https = require('https');
 //const PNG = require('pngjs').PNG;
 const extract = require('png-chunks-extract');
@@ -49,7 +68,7 @@ if (fs.existsSync(whitelistPath)) {
 }
 
 const whitelistMode = config.whitelistMode;
-const autorun = config.autorun;
+const autorun = config.autorun && !cliArguments.ssl;
 const enableExtensions = config.enableExtensions;
 const listen = config.listen;
 
@@ -2353,23 +2372,46 @@ function getAsync(url, args) {
 }
 // ** END **
 
-app.listen(server_port, (listen ? '0.0.0.0' : '127.0.0.1'), async function () {
+const tavernUrl = new URL(
+    (cliArguments.ssl ? 'https://' : 'http://') +
+    (listen ? '0.0.0.0' : '127.0.0.1') +
+    (':' + server_port)
+);
+
+const setupTasks = async function () {
     ensurePublicDirectoriesExist();
     await ensureThumbnailCache();
 
     // Colab users could run the embedded tool
-    if (!is_colab) {
-        await convertWebp();
-    }
+    if (!is_colab) await convertWebp();
 
     console.log('Launching...');
-    if (autorun) open('http://127.0.0.1:' + server_port);
-    console.log('SillyTavern started: http://127.0.0.1:' + server_port);
+  
+    if (autorun) open(tavernUrl);
+    console.log('SillyTavern started: ' + tavernUrl);
+
     if (fs.existsSync('public/characters/update.txt') && !is_colab) {
         convertStage1();
     }
+}
 
-});
+if (true === cliArguments.ssl)
+    https.createServer(
+        {
+            cert: fs.readFileSync(cliArguments.certPath),
+            key: fs.readFileSync(cliArguments.keyPath)
+        }, app)
+        .listen(
+            tavernUrl.port,
+            tavernUrl.hostname,
+            setupTasks
+        );
+else
+    http.createServer(app).listen(
+        tavernUrl.port,
+        tavernUrl.hostname,
+        setupTasks
+    );
 
 //#####################CONVERTING IN NEW FORMAT########################
 
