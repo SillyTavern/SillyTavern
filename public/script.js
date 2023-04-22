@@ -1395,26 +1395,26 @@ async function Generate(type, automatic_trigger, force_name2) {
 
         let storyString = "";
         let finalPromt = "";
-        let postAnchorChar = "Elaborate speaker";
-        let postAnchorStyle = "Writing style: very long messages";//"[Genre: roleplay chat][Tone: very long messages with descriptions]";
         let anchorTop = '';
         let anchorBottom = '';
         const topAnchorDepth = 8;
 
-        if (character_anchor && !is_pygmalion) {
+        // Compute anchors
+        if (!is_pygmalion) {
             console.log('saw not pyg');
+
+            let postAnchorChar = character_anchor ? name2 + " Elaborate speaker" : "";
+            let postAnchorStyle = style_anchor ? "Writing style: very long messages" : "";
             if (anchor_order === 0) {
-                anchorTop = name2 + " " + postAnchorChar;
-            } else {
-                console.log('saw pyg, adding anchors')
-                anchorBottom = "[" + name2 + " " + postAnchorChar + "]";
-            }
-        }
-        if (style_anchor && !is_pygmalion) {
-            if (anchor_order === 1) {
+                anchorTop = postAnchorChar;
+                anchorBottom = postAnchorStyle;
+            } else { // anchor_order === 1
                 anchorTop = postAnchorStyle;
-            } else {
-                anchorBottom = "[" + postAnchorStyle + "]";
+                anchorBottom = postAnchorChar;
+            }
+
+            if (anchorBottom) {
+                anchorBottom = "[" + anchorBottom + "]";
             }
         }
 
