@@ -1566,8 +1566,6 @@ async function Generate(type, automatic_trigger, force_name2) {
             hordeAmountGen = adjustedParams.maxLength;
         }
 
-        let { worldInfoString, worldInfoBefore, worldInfoAfter } = getWorldInfoPrompt(chat2);
-
         // Extension added strings
         const allAnchors = getAllExtensionPrompts();
         const afterScenarioAnchor = getExtensionPrompt(extension_prompt_types.AFTER_SCENARIO);
@@ -1575,12 +1573,13 @@ async function Generate(type, automatic_trigger, force_name2) {
 
         /////////////////////// swipecode
         if (type == 'swipe') {
-
             console.log('pre swipe shift: ' + chat2.length);
             console.log('shifting swipe chat2');
             chat2.shift();
-
         }
+
+        let { worldInfoString, worldInfoBefore, worldInfoAfter } = getWorldInfoPrompt(chat2);
+
         console.log('post swipe shift:' + chat2.length);
         var i = 0;
 
