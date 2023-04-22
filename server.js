@@ -7,7 +7,7 @@ const { hideBin } = require('yargs/helpers');
 const cliArguments = yargs(hideBin(process.argv))
     .option('ssl', {
         type: 'boolean',
-        default: 'false',
+        default: false,
         describe: 'Enables SSL'
     }).option('certPath', {
         type: 'string',
@@ -2387,7 +2387,7 @@ const setupTasks = async function () {
 
     console.log('Launching...');
   
-    if (autorun) open(tavernUrl);
+    if (autorun) open(tavernUrl.toString());
     console.log('SillyTavern started: ' + tavernUrl);
 
     if (fs.existsSync('public/characters/update.txt') && !is_colab) {
