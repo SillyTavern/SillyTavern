@@ -912,9 +912,6 @@ select option:not(:checked) {
 .fav_on {
     color: #ffff00 !important;
 }
-.fav_off {
-    color: #fff !important;
-}
 
 #api_url_text,
 #textgenerationwebui_api_url_text {

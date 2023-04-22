@@ -331,7 +331,7 @@ var menu_type = ""; //what is selected in the menu
 var selected_button = ""; //which button pressed
 //create pole save
 var create_save_name = "";
-var create_fav_chara = "0";
+var create_fav_chara = "";
 var create_save_description = "";
 var create_save_personality = "";
 var create_save_first_message = "";
@@ -3777,12 +3777,10 @@ $(document).ready(function () {
                             : $(this).hide();
                 }
             });
-            $("#filter_by_fav").removeClass("fav_off");
             $("#filter_by_fav").addClass("fav_on");
         }else{
             $(selector).show();
             $("#filter_by_fav").removeClass("fav_on");
-            $("#filter_by_fav").addClass("fav_off");
         }
     });
 
