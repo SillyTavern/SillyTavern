@@ -30,10 +30,10 @@ const ExifReader = require('exifreader');
 const exif = require('piexifjs');
 const webp = require('webp-converter');
 
-const config = require(path.join(process.cwd(), './config.conf'));
+const config = require(path.join(__dirname, './config.conf'));
 const server_port = process.env.SILLY_TAVERN_PORT || config.port;
 
-const whitelistPath = path.join(process.cwd(), "./whitelist.txt");
+const whitelistPath = path.join(__dirname, "./whitelist.txt");
 let whitelist = config.whitelist;
 
 if (fs.existsSync(whitelistPath)) {
@@ -212,7 +212,7 @@ app.use((req, res, next) => {
 app.use(express.static(__dirname + "/public", { refresh: true }));
 
 app.use('/backgrounds', (req, res) => {
-    const filePath = decodeURIComponent(path.join(process.cwd(), 'public/backgrounds', req.url.replace(/%20/g, ' ')));
+    const filePath = decodeURIComponent(path.join(__dirname, 'public/backgrounds', req.url.replace(/%20/g, ' ')));
     fs.readFile(filePath, (err, data) => {
         if (err) {
             res.status(404).send('File not found');
@@ -224,7 +224,7 @@ app.use('/backgrounds', (req, res) => {
 });
 
 app.use('/characters', (req, res) => {
-    const filePath = decodeURIComponent(path.join(process.cwd(), charactersPath, req.url.replace(/%20/g, ' ')));
+    const filePath = decodeURIComponent(path.join(__dirname, charactersPath, req.url.replace(/%20/g, ' ')));
     fs.readFile(filePath, (err, data) => {
         if (err) {
             res.status(404).send('File not found');
