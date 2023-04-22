@@ -1743,6 +1743,7 @@ app.post('/creategroup', jsonParser, (request, response) => {
         allow_self_responses: !!request.body.allow_self_responses,
         activation_strategy: request.body.activation_strategy ?? 0,
         chat_metadata: request.body.chat_metadata ?? {},
+        fav: request.body.fav,
     };
     const pathToFile = path.join(directories.groups, `${id}.json`);
     const fileData = JSON.stringify(chatMetadata);
@@ -1759,7 +1760,6 @@ app.post('/editgroup', jsonParser, (request, response) => {
     if (!request.body || !request.body.id) {
         return response.sendStatus(400);
     }
-
     const id = request.body.id;
     const pathToFile = path.join(directories.groups, `${id}.json`);
     const fileData = JSON.stringify(request.body);

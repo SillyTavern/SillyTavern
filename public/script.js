@@ -203,7 +203,7 @@ let dialogueResolve = null;
 let chat_metadata = {};
 let streamingProcessor = null;
 
-let filterByFav = false;
+window.filterByFav = false;
 
 const durationSaveEdit = 200;
 const saveSettingsDebounced = debounce(() => saveSettings(), durationSaveEdit);
@@ -636,7 +636,6 @@ function updateSoftPromptsList(soft_prompts) {
 }
 
 function printCharacters() {
-    //console.log('printCharacters() entered');
     $("#rm_print_characters_block").empty();
     //console.log('printCharacters() -- sees '+characters.length+' characters.');
     characters.forEach(function (item, i, arr) {
@@ -1307,7 +1306,7 @@ class StreamingProcessor {
 }
 
 async function Generate(type, automatic_trigger, force_name2) {
-    console.log('Generate entered');
+    //console.log('Generate entered');
     setGenerationProgress(0);
     tokens_already_generated = 0;
     const isImpersonate = type == "impersonate";

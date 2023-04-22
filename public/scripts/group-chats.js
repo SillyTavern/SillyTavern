@@ -211,10 +211,12 @@ async function getGroups() {
 
 function printGroups() {
     for (let group of groups) {
+        const renderStar = group.fav === "1" ? "<i class='fa-solid fa-star fa-2xs'></i>" : ""
         const template = $("#group_list_template .group_select").clone();
         template.data("id", group.id);
         template.attr("grid", group.id);
-        template.find(".ch_name").text(group.name);
+        template.find(".ch_name").html(group.name + " " + renderStar);
+        template.find(".ch_fav").val(group.fav);
         $("#rm_print_characters_block").prepend(template);
         updateGroupAvatar(group);
     }
@@ -695,7 +697,6 @@ async function reorderGroupMember(chat_id, groupMember, direction) {
 function select_group_chats(chat_id, skipAnimation) {
     const group = chat_id && groups.find((x) => x.id == chat_id);
     const groupName = group?.name ?? "";
-
     $("#rm_group_chat_name").val(groupName);
     $("#rm_group_chat_name").off();
     $("#rm_group_chat_name").on("input", async function () {
@@ -753,6 +754,7 @@ function select_group_chats(chat_id, skipAnimation) {
     const groupHasMembers = !!$("#rm_group_members").children().length;
     $("#rm_group_submit").prop("disabled", !groupHasMembers);
     $("#rm_group_allow_self_responses").prop("checked", group && group.allow_self_responses);
+    $("#rm_group_fav").prop("checked", group && group.fav === "1");
 
     // bottom buttons
     if (chat_id) {
@@ -772,6 +774,19 @@ function select_group_chats(chat_id, skipAnimation) {
 
         $("#dialogue_popup").data("group_id", chat_id);
         callPopup("<h3>Delete the group?</h3>", "del_group");
+    });
+
+    $("#rm_group_fav").off();
+    $("#rm_group_fav").on("input", async function(){
+        if (group) {
+            const value = $(this).prop("checked");
+            if(value === true){
+                group.fav = "1";
+            }else{
+                group.fav = "0";
+            }
+            await editGroup(chat_id);
+        }
     });
 
     $("#rm_group_allow_self_responses").off();
@@ -829,6 +844,9 @@ $(document).ready(() => {
                 updateChatMetadata({}, true);
                 chat.length = 0;
                 await getGroupChat(id);
+                //to avoid the filter being lit up yellow and left at true while the list of character and group reseted.
+                $("#filter_by_fav").css("color","#ffffff");
+                filterByFav = false; 
             }
 
             select_group_chats(id);
@@ -852,6 +870,8 @@ $(document).ready(() => {
     $("#rm_group_submit").click(async function () {
         let name = $("#rm_group_chat_name").val();
         let allow_self_responses = !!$("#rm_group_allow_self_responses").prop("checked");
+        let fav = !!$("#rm_group_fav").prop("checked");
+        fav === true ? fav ="1" : fav = "0"
         let activation_strategy = $('input[name="rm_group_activation_strategy"]:checked').val() ?? group_activation_strategy.NATURAL;
         const members = $("#rm_group_members .group_member")
             .map((_, x) => $(x).data("id"))
@@ -877,6 +897,7 @@ $(document).ready(() => {
                 allow_self_responses: allow_self_responses,
                 activation_strategy: activation_strategy,
                 chat_metadata: {},
+                fav: fav,
             }),
         });
 
