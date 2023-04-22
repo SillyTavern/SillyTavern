@@ -2378,6 +2378,12 @@ const tavernUrl = new URL(
     (':' + server_port)
 );
 
+const autorunUrl = new URL(
+    (cliArguments.ssl ? 'https://' : 'http://') +
+    ('127.0.0.1') +
+    (':' + server_port)
+);
+
 const setupTasks = async function () {
     ensurePublicDirectoriesExist();
     await ensureThumbnailCache();
@@ -2387,8 +2393,8 @@ const setupTasks = async function () {
 
     console.log('Launching...');
   
-    if (autorun) open(tavernUrl.toString());
-    console.log('SillyTavern started: ' + tavernUrl);
+    if (autorun) open(autorunUrl.toString());
+    console.log('SillyTavern is listening on: ' + tavernUrl);
 
     if (fs.existsSync('public/characters/update.txt') && !is_colab) {
         convertStage1();
