@@ -1592,11 +1592,9 @@ async function Generate(type, automatic_trigger, force_name2) {
             chat2.push('');
         }
 
+        // Collect enough messages to fill the context
         let chatString = '';
         let arrMes = [];
-        let mesSend = [];
-        let count_exm_add = 0;
-        let i = 0;
         for (let item of chat2) {
             chatString = item + chatString;
             const encodeString = JSON.stringify(
@@ -1609,46 +1607,41 @@ async function Generate(type, automatic_trigger, force_name2) {
                 //if (is_pygmalion && i == chat2.length-1) item='<START>\n'+item;
                 arrMes[arrMes.length] = item;
             } else {
-                console.log('reducing chat.length by 1');
-                i = chat2.length - 1;
+                break;
             }
 
             await delay(1); //For disable slow down (encode gpt-2 need fix)
-            // console.log(i+' '+chat.length);
-
-            count_exm_add = 0;
-
-            if (i === chat2.length - 1) {
-                if (!power_user.pin_examples) {
-                    let mesExmString = '';
-                    for (let iii = 0; iii < mesExamplesArray.length; iii++) {
-                        mesExmString += mesExamplesArray[iii];
-                        const prompt = JSON.stringify(worldInfoString + storyString + mesExmString + chatString + anchorTop + anchorBottom + charPersonality + promptBias + allAnchors);
-                        const tokenCount = getTokenCount(prompt, padding_tokens);
-                        if (tokenCount < this_max_context) {
-                            if (power_user.disable_examples_formatting) {
-                                mesExamplesArray[iii] = mesExamplesArray[iii].replace(/<START>/i, '');
-                            }
-
-                            if (!is_pygmalion) {
-                                mesExamplesArray[iii] = mesExamplesArray[iii].replace(/<START>/i, `This is how ${name2} should talk`);
-                            }
-                            count_exm_add++;
-                            await delay(1);
-                        } else {
-                            iii = mesExamplesArray.length;
-                        }
-                    }
-                }
-                if (!is_pygmalion && Scenario && Scenario.length > 0) {
-                    storyString += !power_user.disable_scenario_formatting ? `Circumstances and context of the dialogue: ${Scenario}\n` : `${Scenario}\n`;
-                }
-                console.log('calling runGenerate');
-                await runGenerate();
-                return;
-            }
-            i++;
         }
+
+        // Prepare unpinned example messages
+        let count_exm_add = 0;
+        if (!power_user.pin_examples) {
+            let mesExmString = '';
+            for (let i = 0; i < mesExamplesArray.length; i++) {
+                mesExmString += mesExamplesArray[i];
+                const prompt = JSON.stringify(worldInfoString + storyString + mesExmString + chatString + anchorTop + anchorBottom + charPersonality + promptBias + allAnchors);
+                const tokenCount = getTokenCount(prompt, padding_tokens);
+                if (tokenCount < this_max_context) {
+                    if (power_user.disable_examples_formatting) {
+                        mesExamplesArray[i] = mesExamplesArray[i].replace(/<START>/i, '');
+                    } else if (!is_pygmalion) {
+                        mesExamplesArray[i] = mesExamplesArray[i].replace(/<START>/i, `This is how ${name2} should talk`);
+                    }
+                    count_exm_add++;
+                    await delay(1);
+                } else {
+                    break;
+                }
+            }
+        }
+
+        if (!is_pygmalion && Scenario && Scenario.length > 0) {
+            storyString += !power_user.disable_scenario_formatting ? `Circumstances and context of the dialogue: ${Scenario}\n` : `${Scenario}\n`;
+        }
+
+        let mesSend = [];
+        console.log('calling runGenerate');
+        await runGenerate();
 
         async function runGenerate(cycleGenerationPromt = '') {
             is_send_press = true;
