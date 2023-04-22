@@ -158,15 +158,15 @@ export {
 }
 
 // API OBJECT FOR EXTERNAL WIRING
-window["TavernAI"] = {};
+window["SillyTavern"] = {};
 
 let converter = new showdown.Converter({ emoji: "true" });
 const gpt3 = new GPT3BrowserTokenizer({ type: 'gpt3' });
 /* let bg_menu_toggle = false; */
-const systemUserName = "TavernAI";
+const systemUserName = "SillyTavern";
 let default_user_name = "You";
 let name1 = default_user_name;
-let name2 = "TavernAI";
+let name2 = "SillyTavern";
 let chat = [];
 let safetychat = [
     {
@@ -248,7 +248,7 @@ const system_messages = {
         is_user: false,
         is_name: true,
         mes: [
-            'Welcome to TavernAI! In order to begin chatting:',
+            'Welcome to SillyTavern! In order to begin chatting:',
             '<ul>',
             '<li>Connect to one of the supported generation APIs</li>',
             '<li>Create or pick a character from the list</li>',
@@ -3454,7 +3454,7 @@ function isHordeGenerationNotAllowed() {
     return false;
 }
 
-window["TavernAI"].getContext = function () {
+window["SillyTavern"].getContext = function () {
     return {
         chat: chat,
         characters: characters,

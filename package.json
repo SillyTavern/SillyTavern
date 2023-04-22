@@ -30,10 +30,10 @@
             "xml2js": "^0.5.0"
         }
     },
-    "name": "TavernAI",
-    "version": "1.3.0",
+    "name": "sillytavern",
+    "version": "1.4.1",
     "bin": {
-        "TavernAI": "server.js"
+        "sillytavern": "server.js"
     },
     "rules": {
         "no-path-concat": "off",
