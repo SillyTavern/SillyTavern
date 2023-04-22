@@ -2945,7 +2945,7 @@ label[for="extensions_autoconnect"] {
 
 #top-settings-holder {
     margin: 0 auto;
-    padding-top: 5px;
+    padding-top: 8px;
     height: 40px;
     max-width: var(--sheldWidth);
     /* color: white; */
@@ -2953,7 +2953,8 @@ label[for="extensions_autoconnect"] {
     display: grid;
     grid-template-columns: 10% 10% 10% 10% 10% 10% 10% 10%;
     z-index: 3000;
-    position: relative;
+    /* position: relative; */
+    position: fixed;
     grid-gap: 2%;
 
 }
