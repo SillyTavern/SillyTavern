@@ -1230,6 +1230,7 @@ class StreamingProcessor {
             let formattedText = messageFormating(processedText, chat[messageId].name, chat[messageId].is_system, chat[messageId].force_avatar);
             const mesText = $(`#chat .mes[mesid="${messageId}"] .mes_text`);
             mesText.html(formattedText);
+            this.setFirstSwipe(messageId);
         }
 
         scrollChatToBottom();
@@ -1256,6 +1257,14 @@ class StreamingProcessor {
         showSwipeButtons();
     }
 
+    setFirstSwipe(messageId) {
+        if (this.type !== 'swipe' && this.type !== 'impersonate') {
+            if (chat[messageId]['swipes'].length === 1 && chat[messageId]['swipe_id'] === 0) {
+                chat[messageId]['swipes'][0] = chat[messageId]['mes'];
+            }
+        }
+    }
+
     onStopStreaming() {
         this.onErrorStreaming();
     }
@@ -1273,11 +1282,12 @@ class StreamingProcessor {
         this.isFinished = false;
         this.generator = this.nullStreamingGeneration;
         this.abortController = new AbortController();
+        this.firstMessageText = '...';
     }
 
     async generate() {
         if (this.messageId == -1) {
-            this.messageId = this.onStartStreaming('...');
+            this.messageId = this.onStartStreaming(this.firstMessageText);
             await delay(1); // delay for message to be rendered
         }
 
@@ -1326,6 +1336,7 @@ async function Generate(type, automatic_trigger, force_name2) {
 
     if (isStreamingEnabled()) {
         streamingProcessor = new StreamingProcessor(type, force_name2);
+        hideSwipeButtons();
     }
     else {
         streamingProcessor = false;
