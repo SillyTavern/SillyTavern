@@ -3406,7 +3406,14 @@ body.movingUI #expression-holder {
 
     #bg1,
     #bg_custom {
-        position: fixed;
+        /* position: fixed; */
+        /*         top: 0 !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important; */
+        height: 100svh !important;
+        width: 100svw !important;
+
     }
 
     #sheld,
