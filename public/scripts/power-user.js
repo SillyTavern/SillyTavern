@@ -62,6 +62,7 @@ let power_user = {
     auto_save_msg_edits: false,
     sort_field: 'name',
     sort_order: 'asc',
+    sort_rule: null,
     font_scale: 1,
     blur_strength: 10,
 
@@ -300,9 +301,16 @@ function loadPowerUserSettings(settings, data) {
 
 function sortCharactersList(selector = '.character_select') {
     const sortFunc = (a, b) => power_user.sort_order == 'asc' ? compareFunc(a, b) : compareFunc(b, a);
-    const compareFunc = (first, second) => typeof first[power_user.sort_field] == "string"
-        ? first[power_user.sort_field].localeCompare(second[power_user.sort_field])
-        : first[power_user.sort_field] - second[power_user.sort_field];
+    const compareFunc = (first, second) => {
+        switch (power_user.sort_rule) {
+            case 'boolean':
+                return Number(first[power_user.sort_field] == "true") -  Number(second[power_user.sort_field] == "true");
+            default:
+                return typeof first[power_user.sort_field] == "string"
+                    ? first[power_user.sort_field].localeCompare(second[power_user.sort_field])
+                    : first[power_user.sort_field] - second[power_user.sort_field];
+        }
+    };
 
     if (power_user.sort_field == undefined || characters.length === 0) {
         return;
@@ -546,6 +554,7 @@ $(document).ready(() => {
     $("#character_sort_order").on('change', function () {
         power_user.sort_field = $(this).find(":selected").data('field');
         power_user.sort_order = $(this).find(":selected").data('order');
+        power_user.sort_rule = $(this).find(":selected").data('rule');
         sortCharactersList();
         saveSettingsDebounced();
     });
