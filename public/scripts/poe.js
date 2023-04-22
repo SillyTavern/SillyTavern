@@ -86,7 +86,7 @@ function onBotChange() {
     saveSettingsDebounced();
 }
 
-async function generatePoe(type, finalPrompt) {
+async function generatePoe(type, finalPrompt, signal) {
     if (poe_settings.auto_purge) {
         let count_to_delete = -1;
 
@@ -136,7 +136,7 @@ async function generatePoe(type, finalPrompt) {
         finalPrompt = sentences.join('');
     }
 
-    const reply = await sendMessage(finalPrompt, true);
+    const reply = await sendMessage(finalPrompt, true, signal);
     got_reply = true;
     return reply;
 }
@@ -160,7 +160,11 @@ async function purgeConversation(count = -1) {
     return response.ok;
 }
 
-async function sendMessage(prompt, withStreaming) {
+async function sendMessage(prompt, withStreaming, signal) {
+    if (!signal) {
+        signal = new AbortController().signal;
+    }
+
     const body = JSON.stringify({
         bot: poe_settings.bot,
         token: poe_settings.token,
@@ -175,6 +179,7 @@ async function sendMessage(prompt, withStreaming) {
         },
         body: body,
         method: 'POST',
+        signal: signal,
     });
 
     if (withStreaming && poe_settings.streaming) {

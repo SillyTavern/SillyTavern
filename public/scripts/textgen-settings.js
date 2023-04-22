@@ -147,7 +147,7 @@ function setSettingByName(i, value, trigger) {
     }
 }
 
-async function generateTextGenWithStreaming(generate_data) {
+async function generateTextGenWithStreaming(generate_data, signal) {
     const response = await fetch('/generate_textgenerationwebui', {
         headers: {
             'X-CSRF-Token': token,
@@ -157,6 +157,7 @@ async function generateTextGenWithStreaming(generate_data) {
         },
         body: JSON.stringify(generate_data),
         method: 'POST',
+        signal: signal,
     });
 
     return async function* streamData() {
