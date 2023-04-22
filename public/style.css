@@ -2458,6 +2458,9 @@ h5 {
     overflow: hidden;
     text-overflow: ellipsis;
     width: calc(100% - 110px);
+    display: flex;
+    align-items: center;
+    gap: 5px;
 }
 
 /* Rules for icon display */
