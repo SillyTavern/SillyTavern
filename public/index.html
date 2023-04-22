@@ -1416,13 +1416,27 @@
                                 <div title="Token counts may be inaccurate and provided just for reference." id="result_info"></div>
                             </div>
                             <hr>
-                            <div id="description_div" class="margin-bot-10px">
-                                Description
-                                <a href="/notes/1" class="notes-link" target="_blank">
-                                    <span class="note-link-span">?</span>
-                                </a>
+                                <div id="fav_chara_wrap">
+                                    <div id="fav_chara_label" class="margin-bot-10px">
+                                        <label for="fav_checkbox" class="checkbox_label">
+                                            <input type="checkbox" id="fav_checkbox" name="fav"/>
+                                            Favorite
+                                            <a href="/notes/15" class="notes-link" target="_blank">
+                                                <span class="note-link-span">?</span>
+                                            </a>
+                                        </label>
+                                    </div>
+                                    <div>
+                                    </div>
+                                </div>
 
-                            </div>
+                                <div id="description_div" class="margin-bot-10px">
+                                    Description
+                                    <a href="/notes/1" class="notes-link" target="_blank">
+                                        <span class="note-link-span">?</span>
+                                    </a>
+
+                                </div>
                             <textarea id="description_textarea" placeholder="Describe your character's physical and mental traits here." class="margin-bot-10px" name="description" placeholder=""></textarea>
 
                             <div id="first_message_div" class="margin-bot-10px">
@@ -1459,6 +1473,10 @@
                         </div>
                         <div id="rm_group_buttons">
                             <div class="rm_group_settings">
+                                <label class="checkbox_label">
+                                    <input id="rm_group_fav" type="checkbox" />
+                                    Favorite
+                                </label>
                                 <label class="checkbox_label">
                                     <input id="rm_group_allow_self_responses" type="checkbox" />
                                     Allow bot responses to self
@@ -1518,6 +1536,8 @@
                                     <div class="fa-solid fa-user-group"></div>
                                 </div>
                                 <div class="ch_name"></div>
+                                <i class='group_fav_icon fa-solid fa-star fa-2xs'></i>
+                                <input class="ch_fav" value="" hidden />
                             </div>
                         </div>
                     </div>
@@ -1533,6 +1553,7 @@
                             <div id="rm_button_create" title="Create New Character" class="menu_button fa-solid fa-user-plus "></div>
                             <div id="character_import_button" title="Import Character from File" class="menu_button fa-solid fa-file-arrow-up "></div>
                             <div id="rm_button_group_chats" title="Create New Chat Group" class="menu_button fa-solid fa-users-gear "></div>
+                            <div id="filter_by_fav" title="Filter By Favorite" class="menu_button fa-solid fa-star"></div>
                         </div>
                         <form id="form_character_search_form" action="javascript:void(null);">
                             <input id="character_search_bar" class="text_pole" type="search" placeholder="Character search..." maxlength="50" />

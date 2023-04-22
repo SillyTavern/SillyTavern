@@ -159,7 +159,7 @@ export {
 }
 
 // API OBJECT FOR EXTERNAL WIRING
-window["TavernAI"] = {};
+window["SillyTavern"] = {};
 
 let converter = new showdown.Converter({ emoji: "true" });
 const gpt3 = new GPT3BrowserTokenizer({ type: 'gpt3' });
@@ -204,6 +204,8 @@ let dialogueResolve = null;
 let chat_metadata = {};
 let streamingProcessor = null;
 
+let fav_ch_checked = false;
+window.filterByFav = false;
 
 const durationSaveEdit = 200;
 const saveSettingsDebounced = debounce(() => saveSettings(), durationSaveEdit);
@@ -330,6 +332,7 @@ var menu_type = ""; //what is selected in the menu
 var selected_button = ""; //which button pressed
 //create pole save
 var create_save_name = "";
+var create_fav_chara = "";
 var create_save_description = "";
 var create_save_personality = "";
 var create_save_first_message = "";
@@ -635,8 +638,6 @@ function updateSoftPromptsList(soft_prompts) {
 }
 
 function printCharacters() {
-    //console.log('printCharacters() entered');
-
     $("#rm_print_characters_block").empty();
     //console.log('printCharacters() -- sees '+characters.length+' characters.');
     characters.forEach(function (item, i, arr) {
@@ -648,7 +649,8 @@ function printCharacters() {
 
             `<div class=character_select chid=${i} id="CharID${i}">
                 <div class=avatar><img src="${this_avatar}"></div>
-                <div class=ch_name>${item.name}</div>
+                <div class=ch_name>${item.name} ${item.fav == "true" ? '<i class="fa-solid fa-star fa-2xs"></i>' : ''}</div>
+                <input class="ch_fav" value=${item.fav} hidden />
             </div>`
         );
         //console.log('printcharacters() -- printing -- ChID '+i+' ('+item.name+')');
@@ -1314,7 +1316,7 @@ class StreamingProcessor {
 }
 
 async function Generate(type, automatic_trigger, force_name2) {
-    console.log('Generate entered');
+    //console.log('Generate entered');
     setGenerationProgress(0);
     tokens_already_generated = 0;
     const isImpersonate = type == "impersonate";
@@ -3166,6 +3168,9 @@ function select_selected_character(chid) {
     if (characters[chid].avatar != "none") {
         this_avatar = getThumbnailUrl('avatar', characters[chid].avatar);
     }
+
+    $("#fav_checkbox").prop("checked", characters[chid].fav == "true");
+    
     $("#avatar_load_preview").attr("src", this_avatar);
     $("#name_div").css("display", "none");
 
@@ -3456,7 +3461,7 @@ function isHordeGenerationNotAllowed() {
     return false;
 }
 
-window["TavernAI"].getContext = function () {
+window["SillyTavern"].getContext = function () {
     return {
         chat: chat,
         characters: characters,
@@ -3791,6 +3796,25 @@ $(document).ready(function () {
         }
     });
 
+    $("#filter_by_fav").click(function() {
+        filterByFav = !filterByFav;
+
+        const selector = ['#rm_print_characters_block .character_select', '#rm_print_characters_block .group_select'].join(',');
+        if(filterByFav){
+            $(selector).each(function () {
+                if($(this).children(".ch_fav").length !== 0){
+                    $(this).children(".ch_fav").val().toLowerCase().includes(true)
+                            ? $(this).show()
+                            : $(this).hide();
+                }
+            });
+            $("#filter_by_fav").addClass("fav_on");
+        }else{
+            $(selector).show();
+            $("#filter_by_fav").removeClass("fav_on");
+        }
+    });
+
     $("#send_but").click(function () {
         if (is_send_press == false) {
             is_send_press = true;
@@ -3833,6 +3857,7 @@ $(document).ready(function () {
             selected_button = "character_edit";
             select_selected_character(this_chid);
         }
+        $("#character_search_bar").val("").trigger("input");
     });
 
     $(document).on("click", ".character_select", function () {
@@ -3860,7 +3885,6 @@ $(document).ready(function () {
             selected_button = "character_edit";
             select_selected_character(this_chid);
         }
-        $("#character_search_bar").val("").trigger("input");
     });
 
 
@@ -4128,6 +4152,7 @@ $(document).ready(function () {
         $("#rm_info_avatar").html("");
         let save_name = create_save_name;
         var formData = new FormData($("#form_create").get(0));
+        formData.set('fav', fav_ch_checked);
         if ($("#form_create").attr("actiontype") == "createcharacter") {
             if ($("#character_name_pole").val().length > 0) {
                 //if the character name text area isn't empty (only posible when creating a new character)
@@ -4294,11 +4319,18 @@ $(document).ready(function () {
                 create_save_scenario = $("#scenario_pole").val();
                 create_save_mes_example = $("#mes_example_textarea").val();
                 create_save_first_message = $("#firstmessage_textarea").val();
+                create_fav_chara = $("#fav_checkbox").val();
             } else {
                 saveCharacterDebounced();
             }
         });
 
+    $("#fav_checkbox").change(function(){
+            fav_ch_checked = $(this).prop("checked");
+            if (menu_type != "create") {
+                saveCharacterDebounced();
+            }
+    });
 
     $("#talkativeness_slider").on("input", function () {
         if (menu_type == "create") {

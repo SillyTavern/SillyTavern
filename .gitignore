@@ -15,3 +15,4 @@ config.conf
 public/settings.json
 /thumbnails
 whitelist.txt
+.vscode
