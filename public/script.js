@@ -1321,11 +1321,11 @@ async function Generate(type, automatic_trigger, force_name2) {
     //console.log('Generate entered');
     setGenerationProgress(0);
     tokens_already_generated = 0;
+
     const isImpersonate = type == "impersonate";
     message_already_generated = isImpersonate ? `${name1}: ` : `${name2}: `;
 
     const slashCommand = getSlashCommand($("#send_textarea").val(), type);
-
     if (slashCommand == system_message_types.HELP) {
         sendSystemMessage(system_message_types.HELP);
         $("#send_textarea").val('').trigger('input');
@@ -1340,8 +1340,7 @@ async function Generate(type, automatic_trigger, force_name2) {
     if (isStreamingEnabled()) {
         streamingProcessor = new StreamingProcessor(type, force_name2);
         hideSwipeButtons();
-    }
-    else {
+    } else {
         streamingProcessor = false;
     }
 
@@ -1390,16 +1389,12 @@ async function Generate(type, automatic_trigger, force_name2) {
         }
 
         // bias from the latest message is top priority//
-
         promptBias = messageBias ?? promptBias ?? '';
 
-        let storyString = "";
-        let finalPromt = "";
+        // Compute anchors
+        const topAnchorDepth = 8;
         let anchorTop = '';
         let anchorBottom = '';
-        const topAnchorDepth = 8;
-
-        // Compute anchors
         if (!is_pygmalion) {
             console.log('saw not pyg');
 
@@ -1438,22 +1433,18 @@ async function Generate(type, automatic_trigger, force_name2) {
             addOneMessage(chat[chat.length - 1]);
         }
         ////////////////////////////////////
-        let chatString = '';
-        let arrMes = [];
-        let mesSend = [];
         let charDescription = baseChatReplace($.trim(characters[this_chid].description), name1, name2);
         let charPersonality = baseChatReplace($.trim(characters[this_chid].personality), name1, name2);
         let Scenario = baseChatReplace($.trim(characters[this_chid].scenario), name1, name2);
         let mesExamples = baseChatReplace($.trim(characters[this_chid].mes_example), name1, name2);
 
+        // Parse example messages
         if (!mesExamples.startsWith('<START>')) {
             mesExamples = '<START>\n' + mesExamples.trim();
         }
-
         if (mesExamples.replace(/<START>/gi, '').trim().length === 0) {
             mesExamples = '';
         }
-
         let mesExamplesArray = mesExamples.split(/<START>/gi).slice(1).map(block => `<START>\n${block.trim()}\n`);
 
         if (main_api === 'openai') {
@@ -1466,6 +1457,8 @@ async function Generate(type, automatic_trigger, force_name2) {
             setOpenAIMessages(oai_chat);
             setOpenAIMessageExamples(mesExamplesArray);
         }
+
+        let storyString = "";
 
         if (is_pygmalion) {
             storyString += appendToStoryString(charDescription, power_user.disable_description_formatting ? '' : name2 + "'s Persona: ");
@@ -1506,12 +1499,10 @@ async function Generate(type, automatic_trigger, force_name2) {
 
         //////////////////////////////////
 
-        let count_exm_add = 0;
         console.log('emptying chat2');
         let chat2 = [];
-        let j = 0;
         console.log('pre-replace chat.length = ' + chat.length);
-        for (let i = chat.length - 1; i >= 0; i--) {
+        for (let i = chat.length - 1, j = 0; i >= 0; i--, j++) {
             let charName = selected_group ? chat[j].name : name2;
             if (j == 0) {
                 chat[j]['mes'] = chat[j]['mes'].replace(/{{user}}/gi, name1);
@@ -1539,10 +1530,11 @@ async function Generate(type, automatic_trigger, force_name2) {
             //chat2[i] = (chat2[i] ?? '').replace(/{.*}/g, '');
             chat2[i] = (chat2[i] ?? '').replace(/{{(\*?.+?\*?)}}/g, '');
             //console.log('replacing chat2 {}s');
-            j++;
         }
         console.log('post replace chat.length = ' + chat.length);
         //chat2 = chat2.reverse();
+
+        // Determine token limit
         let this_max_context = 1487;
         if (main_api == 'kobold' || main_api == 'textgenerationwebui') {
             this_max_context = (max_context - amount_gen);
@@ -1560,11 +1552,11 @@ async function Generate(type, automatic_trigger, force_name2) {
         if (main_api == 'openai') {
             this_max_context = oai_settings.openai_max_context;
         }
-
         if (main_api == 'poe') {
             this_max_context = Number(max_context);
         }
 
+        // Adjust token limit for Horde
         let hordeAmountGen = null;
         if (main_api == 'kobold' && horde_settings.use_horde && horde_settings.auto_adjust) {
             let adjustedParams;
@@ -1594,13 +1586,17 @@ async function Generate(type, automatic_trigger, force_name2) {
         let { worldInfoString, worldInfoBefore, worldInfoAfter } = getWorldInfoPrompt(chat2);
 
         console.log('post swipe shift:' + chat2.length);
-        let i = 0;
 
         // hack for regeneration of the first message
         if (chat2.length == 0) {
             chat2.push('');
         }
 
+        let chatString = '';
+        let arrMes = [];
+        let mesSend = [];
+        let count_exm_add = 0;
+        let i = 0;
         for (let item of chat2) {
             chatString = item + chatString;
             const encodeString = JSON.stringify(
@@ -1675,7 +1671,6 @@ async function Generate(type, automatic_trigger, force_name2) {
                         }
                     }
                     if (i === arrMes.length - topAnchorDepth && count_view_mes >= topAnchorDepth && !is_add_personality) {
-
                         is_add_personality = true;
                         //chatString = chatString.substr(0,chatString.length-1);
                         //anchorAndPersonality = "[Genre: roleplay chat][Tone: very long messages with descriptions]";
@@ -1800,7 +1795,7 @@ async function Generate(type, automatic_trigger, force_name2) {
                 mesSendString = '<START>\n' + mesSendString;
                 //mesSendString = mesSendString; //This edit simply removes the first "<START>" that is prepended to all context prompts
             }
-            finalPromt = worldInfoBefore + storyString + worldInfoAfter + afterScenarioAnchor + mesExmString + mesSendString + generatedPromtCache + promptBias;
+            let finalPromt = worldInfoBefore + storyString + worldInfoAfter + afterScenarioAnchor + mesExmString + mesSendString + generatedPromtCache + promptBias;
 
             if (zeroDepthAnchor && zeroDepthAnchor.length) {
                 if (!isMultigenEnabled() || tokens_already_generated == 0) {
