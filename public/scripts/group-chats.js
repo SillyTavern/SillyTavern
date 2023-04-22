@@ -779,8 +779,9 @@ function select_group_chats(chat_id, skipAnimation) {
     $("#rm_group_fav").off();
     $("#rm_group_fav").on("input", async function(){
         if (group) {
+            let _thisGroup = groups.find((x) => x.id == chat_id);
             const value = $(this).prop("checked");
-            group.fav = value;
+            _thisGroup.fav = value;
             await editGroup(chat_id);
         }
     });
@@ -788,8 +789,9 @@ function select_group_chats(chat_id, skipAnimation) {
     $("#rm_group_allow_self_responses").off();
     $("#rm_group_allow_self_responses").on("input", async function () {
         if (group) {
+            let _thisGroup = groups.find((x) => x.id == chat_id);
             const value = $(this).prop("checked");
-            group.allow_self_responses = value;
+            _thisGroup.allow_self_responses = value;
             await editGroup(chat_id);
         }
     });
