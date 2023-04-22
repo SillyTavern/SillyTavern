@@ -1405,6 +1405,8 @@
                                             <input type="file" id="add_avatar_button" name="avatar" accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp">
                                         </label>
                                         <div id="rm_button_back" class="menu_button fa-solid fa-left-long "></div>
+                                        <div id="favorite_button" class="menu_button fa-solid fa-star" title="Add to Favorites"></div>
+                                        <input type="hidden" id="fav_checkbox" name="fav"/>
                                         <div id="advanced_div" class="menu_button fa-solid fa-book " title="Advanced Definitions"></div>
                                         <div id="export_button" class="menu_button fa-solid fa-file-export " title="Export and Download"></div>
                                         <label for="create_button" id="create_button_label" class="menu_button fa-solid fa-user-check" title="Create Character">
@@ -1416,27 +1418,14 @@
                                 <div title="Token counts may be inaccurate and provided just for reference." id="result_info"></div>
                             </div>
                             <hr>
-                                <div id="fav_chara_wrap">
-                                    <div id="fav_chara_label" class="margin-bot-10px">
-                                        <label for="fav_checkbox" class="checkbox_label">
-                                            <input type="checkbox" id="fav_checkbox" name="fav"/>
-                                            Favorite
-                                            <a href="/notes/15" class="notes-link" target="_blank">
-                                                <span class="note-link-span">?</span>
-                                            </a>
-                                        </label>
-                                    </div>
-                                    <div>
-                                    </div>
-                                </div>
 
-                                <div id="description_div" class="margin-bot-10px">
-                                    Description
-                                    <a href="/notes/1" class="notes-link" target="_blank">
-                                        <span class="note-link-span">?</span>
-                                    </a>
+                            <div id="description_div" class="margin-bot-10px">
+                                Description
+                                <a href="/notes/1" class="notes-link" target="_blank">
+                                    <span class="note-link-span">?</span>
+                                </a>
+                            </div>
 
-                                </div>
                             <textarea id="description_textarea" placeholder="Describe your character's physical and mental traits here." class="margin-bot-10px" name="description" placeholder=""></textarea>
 
                             <div id="first_message_div" class="margin-bot-10px">
