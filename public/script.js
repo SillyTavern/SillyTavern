@@ -1459,7 +1459,10 @@ async function Generate(type, automatic_trigger, force_name2) {
             storyString += appendToStoryString(Scenario, power_user.disable_scenario_formatting ? '' : 'Scenario: ');
         } else {
             storyString += appendToStoryString(charDescription, '');
-            storyString += appendToStoryString(charPersonality, power_user.disable_personality_formatting ? '' : name2 + "'s personality: ");
+
+            if (count_view_mes < topAnchorDepth) {
+                storyString += appendToStoryString(charPersonality, power_user.disable_personality_formatting ? '' : name2 + "'s personality: ");
+            }
         }
 
         if (power_user.custom_chat_separator && power_user.custom_chat_separator.length) {
@@ -1562,8 +1565,6 @@ async function Generate(type, automatic_trigger, force_name2) {
             hordeAmountGen = adjustedParams.maxLength;
         }
 
-        let { worldInfoString, worldInfoBefore, worldInfoAfter } = getWorldInfoPrompt(chat2);
-
         // Extension added strings
         const allAnchors = getAllExtensionPrompts();
         const afterScenarioAnchor = getExtensionPrompt(extension_prompt_types.AFTER_SCENARIO);
@@ -1571,12 +1572,13 @@ async function Generate(type, automatic_trigger, force_name2) {
 
         /////////////////////// swipecode
         if (type == 'swipe') {
-
             console.log('pre swipe shift: ' + chat2.length);
             console.log('shifting swipe chat2');
             chat2.shift();
-
         }
+
+        let { worldInfoString, worldInfoBefore, worldInfoAfter } = getWorldInfoPrompt(chat2);
+
         console.log('post swipe shift:' + chat2.length);
         var i = 0;
 
