@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 const express = require('express');
 const compression = require('compression');
 const app = express();
@@ -29,10 +30,10 @@ const ExifReader = require('exifreader');
 const exif = require('piexifjs');
 const webp = require('webp-converter');
 
-const config = require(path.join(process.cwd(), './config.conf'));
+const config = require(path.join(__dirname, './config.conf'));
 const server_port = process.env.SILLY_TAVERN_PORT || config.port;
 
-const whitelistPath = path.join(process.cwd(), "./whitelist.txt");
+const whitelistPath = path.join(__dirname, "./whitelist.txt");
 let whitelist = config.whitelist;
 
 if (fs.existsSync(whitelistPath)) {
@@ -183,8 +184,8 @@ app.use(function (req, res, next) { //Security
 
     //clientIp = req.connection.remoteAddress.split(':').pop();
     if (whitelistMode === true && !whitelist.includes(clientIp)) {
-        console.log('Forbidden: Connection attempt from ' + clientIp + '. If you are attempting to connect, please add your IP address in whitelist or disable whitelist mode in config.conf in root of TavernAI folder.\n');
-        return res.status(403).send('<b>Forbidden</b>: Connection attempt from <b>' + clientIp + '</b>. If you are attempting to connect, please add your IP address in whitelist or disable whitelist mode in config.conf in root of TavernAI folder.');
+        console.log('Forbidden: Connection attempt from ' + clientIp + '. If you are attempting to connect, please add your IP address in whitelist or disable whitelist mode in config.conf in root of SillyTavern folder.\n');
+        return res.status(403).send('<b>Forbidden</b>: Connection attempt from <b>' + clientIp + '</b>. If you are attempting to connect, please add your IP address in whitelist or disable whitelist mode in config.conf in root of SillyTavern folder.');
     }
     next();
 });
@@ -211,7 +212,7 @@ app.use((req, res, next) => {
 app.use(express.static(__dirname + "/public", { refresh: true }));
 
 app.use('/backgrounds', (req, res) => {
-    const filePath = decodeURIComponent(path.join(process.cwd(), 'public/backgrounds', req.url.replace(/%20/g, ' ')));
+    const filePath = decodeURIComponent(path.join(__dirname, 'public/backgrounds', req.url.replace(/%20/g, ' ')));
     fs.readFile(filePath, (err, data) => {
         if (err) {
             res.status(404).send('File not found');
@@ -223,7 +224,7 @@ app.use('/backgrounds', (req, res) => {
 });
 
 app.use('/characters', (req, res) => {
-    const filePath = decodeURIComponent(path.join(process.cwd(), charactersPath, req.url.replace(/%20/g, ' ')));
+    const filePath = decodeURIComponent(path.join(__dirname, charactersPath, req.url.replace(/%20/g, ' ')));
     fs.readFile(filePath, (err, data) => {
         if (err) {
             res.status(404).send('File not found');
@@ -368,7 +369,7 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
     if (!!request.header('X-Response-Streaming')) {
         const fn_index = Number(request.header('X-Gradio-Streaming-Function'));
         let isStreamingStopped = false;
-        request.socket.on('close', function() {
+        request.socket.on('close', function () {
             isStreamingStopped = true;
         });
 
@@ -1596,18 +1597,18 @@ app.post("/importchat", urlencodedParser, function (request, response) {
 
                     const errors = [];
                     newChats.forEach(chat => fs.writeFile(
-                            chatsPath + avatar_url + '/' + ch_name + ' - ' + humanizedISO8601DateTime() + ' imported.jsonl',
-                            chat.map(JSON.stringify).join('\n'),
-                            'utf8',
-                            (err) => err ?? errors.push(err)
-                        )
+                        chatsPath + avatar_url + '/' + ch_name + ' - ' + humanizedISO8601DateTime() + ' imported.jsonl',
+                        chat.map(JSON.stringify).join('\n'),
+                        'utf8',
+                        (err) => err ?? errors.push(err)
+                    )
                     );
 
                     if (0 < errors.length) {
                         response.send('Errors occurred while writing character files. Errors: ' + JSON.stringify(errors));
                     }
 
-                    response.send({res: true});
+                    response.send({ res: true });
                 } else {
                     response.send({ error: true });
                 }
@@ -1838,7 +1839,7 @@ app.post('/deletegroup', jsonParser, async (request, response) => {
 
 const POE_DEFAULT_BOT = 'a2';
 
-async function getPoeClient(token, useCache=false) {
+async function getPoeClient(token, useCache = false) {
     let client = new poe.Client(false, useCache);
     await client.init(token);
     return client;
@@ -1904,7 +1905,7 @@ app.post('/generate_poe', jsonParser, async (request, response) => {
 
     if (streaming) {
         let isStreamingStopped = false;
-        request.socket.on('close', function() {
+        request.socket.on('close', function () {
             isStreamingStopped = true;
             client.abortController.abort();
         });
@@ -1970,17 +1971,17 @@ app.get('/get_sprites', jsonParser, function (request, response) {
     try {
         if (fs.existsSync(spritesPath) && fs.statSync(spritesPath).isDirectory()) {
             sprites = fs.readdirSync(spritesPath)
-            .filter(file => {
-                const mimeType = mime.lookup(file);
-                return mimeType && mimeType.startsWith('image/');
-            })
-            .map((file) => {
-                const pathToSprite = path.join(spritesPath, file);
-                return { 
-                    label: path.parse(pathToSprite).name.toLowerCase(),
-                    path: `/characters/${name}/${file}`,
-                };
-            });
+                .filter(file => {
+                    const mimeType = mime.lookup(file);
+                    return mimeType && mimeType.startsWith('image/');
+                })
+                .map((file) => {
+                    const pathToSprite = path.join(spritesPath, file);
+                    return {
+                        label: path.parse(pathToSprite).name.toLowerCase(),
+                        path: `/characters/${name}/${file}`,
+                    };
+                });
         }
     }
     catch (err) {
@@ -2150,12 +2151,42 @@ app.post("/getstatus_openai", jsonParser, function (request, response_getstatus_
     });
 });
 
+// Shamelessly stolen from Agnai
+app.post("/openai_usage", jsonParser, async function (_, response) {
+    if (!request.body) return response.sendStatus(400);
+    const key = request.body.key;
+    const api_url = new URL(request.body.reverse_proxy || api_openai).toString();
+
+    const headers = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${key}`,
+    };
+
+    const date = new Date();
+    date.setDate(1);
+    const start_date = date.toISOString().slice(0, 10);
+
+    date.setMonth(date.getMonth() + 1);
+    const end_date = date.toISOString().slice(0, 10);
+
+    try {
+        const res = await getAsync(
+            `${api_url}/dashboard/billing/usage?start_date=${start_date}&end_date=${end_date}`,
+            { headers },
+        );
+        return response.send(res);
+    }
+    catch {
+        return response.sendStatus(400);
+    }
+});
+
 app.post("/generate_openai", jsonParser, function (request, response_generate_openai) {
     if (!request.body) return response_generate_openai.sendStatus(400);
     const api_url = new URL(request.body.reverse_proxy || api_openai).toString();
 
     const controller = new AbortController();
-    request.socket.on('close', function() {
+    request.socket.on('close', function () {
         controller.abort();
     });
 
@@ -2328,7 +2359,7 @@ app.listen(server_port, (listen ? '0.0.0.0' : '127.0.0.1'), async function () {
 
     console.log('Launching...');
     if (autorun) open('http://127.0.0.1:' + server_port);
-    console.log('TavernAI started: http://127.0.0.1:' + server_port);
+    console.log('SillyTavern started: http://127.0.0.1:' + server_port);
     if (fs.existsSync('public/characters/update.txt') && !is_colab) {
         convertStage1();
     }
