@@ -1351,15 +1351,16 @@ async function Generate(type, automatic_trigger, force_name2) {
     }
 
     if (online_status != 'no_connection' && this_chid != undefined && this_chid !== 'invalid-safety-id') {
+        let textareaText;
         if (type !== 'regenerate' && type !== "swipe" && !isImpersonate) {
             is_send_press = true;
-            var textareaText = $("#send_textarea").val();
+            textareaText = $("#send_textarea").val();
             //console.log('Not a Regenerate call, so posting normall with input of: ' +textareaText);
             $("#send_textarea").val('').trigger('input');
 
         } else {
             //console.log('Regenerate call detected')
-            var textareaText = "";
+            textareaText = "";
             if (chat.length && chat[chat.length - 1]['is_user']) {//If last message from You
 
             }
@@ -1392,14 +1393,13 @@ async function Generate(type, automatic_trigger, force_name2) {
 
         promptBias = messageBias ?? promptBias ?? '';
 
-        var storyString = "";
-        var userSendString = "";
-        var finalPromt = "";
-        var postAnchorChar = "Elaborate speaker";
-        var postAnchorStyle = "Writing style: very long messages";//"[Genre: roleplay chat][Tone: very long messages with descriptions]";
-        var anchorTop = '';
-        var anchorBottom = '';
-        var topAnchorDepth = 8;
+        let storyString = "";
+        let finalPromt = "";
+        let postAnchorChar = "Elaborate speaker";
+        let postAnchorStyle = "Writing style: very long messages";//"[Genre: roleplay chat][Tone: very long messages with descriptions]";
+        let anchorTop = '';
+        let anchorBottom = '';
+        const topAnchorDepth = 8;
 
         if (character_anchor && !is_pygmalion) {
             console.log('saw not pyg');
@@ -1506,12 +1506,12 @@ async function Generate(type, automatic_trigger, force_name2) {
 
         //////////////////////////////////
 
-        var count_exm_add = 0;
+        let count_exm_add = 0;
         console.log('emptying chat2');
-        var chat2 = [];
-        var j = 0;
+        let chat2 = [];
+        let j = 0;
         console.log('pre-replace chat.length = ' + chat.length);
-        for (var i = chat.length - 1; i >= 0; i--) {
+        for (let i = chat.length - 1; i >= 0; i--) {
             let charName = selected_group ? chat[j].name : name2;
             if (j == 0) {
                 chat[j]['mes'] = chat[j]['mes'].replace(/{{user}}/gi, name1);
@@ -1543,7 +1543,7 @@ async function Generate(type, automatic_trigger, force_name2) {
         }
         console.log('post replace chat.length = ' + chat.length);
         //chat2 = chat2.reverse();
-        var this_max_context = 1487;
+        let this_max_context = 1487;
         if (main_api == 'kobold' || main_api == 'textgenerationwebui') {
             this_max_context = (max_context - amount_gen);
         }
@@ -1594,14 +1594,14 @@ async function Generate(type, automatic_trigger, force_name2) {
         let { worldInfoString, worldInfoBefore, worldInfoAfter } = getWorldInfoPrompt(chat2);
 
         console.log('post swipe shift:' + chat2.length);
-        var i = 0;
+        let i = 0;
 
         // hack for regeneration of the first message
         if (chat2.length == 0) {
             chat2.push('');
         }
 
-        for (var item of chat2) {
+        for (let item of chat2) {
             chatString = item + chatString;
             const encodeString = JSON.stringify(
                 worldInfoString + storyString + chatString +
@@ -1666,7 +1666,7 @@ async function Generate(type, automatic_trigger, force_name2) {
                 console.log('generating prompt');
                 chatString = "";
                 arrMes = arrMes.reverse();
-                var is_add_personality = false;
+                let is_add_personality = false;
                 arrMes.forEach(function (item, i, arr) {//For added anchors and others
 
                     if (i >= arrMes.length - 1 && $.trim(item).substr(0, (name1 + ":").length) != name1 + ":") {
@@ -1859,9 +1859,9 @@ async function Generate(type, automatic_trigger, force_name2) {
                 this_amount_gen = Math.min(this_amount_gen, hordeAmountGen);
             }
 
-            var generate_data;
+            let generate_data;
             if (main_api == 'kobold') {
-                var generate_data = {
+                generate_data = {
                     prompt: finalPromt,
                     gui_settings: true,
                     max_length: amount_gen,
@@ -1929,7 +1929,7 @@ async function Generate(type, automatic_trigger, force_name2) {
                 };
             }
 
-            var generate_url = '';
+            let generate_url = '';
             if (main_api == 'kobold') {
                 generate_url = '/generate';
             } else if (main_api == 'textgenerationwebui') {
