@@ -203,6 +203,7 @@ let dialogueResolve = null;
 let chat_metadata = {};
 let streamingProcessor = null;
 
+let fav_ch_checked = false;
 window.filterByFav = false;
 
 const durationSaveEdit = 200;
@@ -647,7 +648,7 @@ function printCharacters() {
 
             `<div class=character_select chid=${i} id="CharID${i}">
                 <div class=avatar><img src="${this_avatar}"></div>
-                <div class=ch_name>${item.name} ${item.fav === "1" ? '<i class="fa-solid fa-star fa-2xs"></i>' : ''}</div>
+                <div class=ch_name>${item.name} ${item.fav ? '<i class="fa-solid fa-star fa-2xs"></i>' : ''}</div>
                 <input class="ch_fav" value=${item.fav} hidden />
             </div>`
         );
@@ -3156,7 +3157,7 @@ function select_selected_character(chid) {
         this_avatar = getThumbnailUrl('avatar', characters[chid].avatar);
     }
    
-    characters[chid].fav === "1" ? $("#fav_checkbox").prop("checked", true) : $("#fav_checkbox").prop("checked", false);
+    $("#fav_checkbox").prop("checked", characters[chid].fav);
     
     $("#avatar_load_preview").attr("src", this_avatar);
     $("#name_div").css("display", "none");
@@ -3755,21 +3756,23 @@ $(document).ready(function () {
     });
 
     $("#filter_by_fav").click(function() {
-        filterByFav === true ? filterByFav = false : filterByFav = true; 
+        filterByFav = !filterByFav;
 
         const selector = ['#rm_print_characters_block .character_select', '#rm_print_characters_block .group_select'].join(',');
-        if(filterByFav === true){
+        if(filterByFav){
             $(selector).each(function () {
                 if($(this).children(".ch_fav").length !== 0){
-                    $(this).children(".ch_fav").val().toLowerCase().includes(1)
+                    $(this).children(".ch_fav").val().toLowerCase().includes(true)
                             ? $(this).show()
                             : $(this).hide();
                 }
             });
-            $("#filter_by_fav").css("color","#FFFF00");
+            $("#filter_by_fav").removeClass("fav_off");
+            $("#filter_by_fav").addClass("fav_on");
         }else{
             $(selector).show();
-            $("#filter_by_fav").css("color","#FFFFFF");
+            $("#filter_by_fav").removeClass("fav_on");
+            $("#filter_by_fav").addClass("fav_off");
         }
     });
 
@@ -3815,6 +3818,7 @@ $(document).ready(function () {
             selected_button = "character_edit";
             select_selected_character(this_chid);
         }
+        $("#character_search_bar").val("").trigger("input");
     });
 
     $(document).on("click", ".character_select", function () {
@@ -4108,6 +4112,8 @@ $(document).ready(function () {
         $("#rm_info_avatar").html("");
         let save_name = create_save_name;
         var formData = new FormData($("#form_create").get(0));
+        formData.set('fav', fav_ch_checked);
+        console.log(formData.get('fav'));
         if ($("#form_create").attr("actiontype") == "createcharacter") {
             if ($("#character_name_pole").val().length > 0) {
                 //if the character name text area isn't empty (only posible when creating a new character)
@@ -4281,6 +4287,7 @@ $(document).ready(function () {
         });
 
     $("#fav_checkbox").change(function(){
+            fav_ch_checked = $(this).prop("checked");
             saveCharacterDebounced();
     });
 
