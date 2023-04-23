@@ -199,7 +199,7 @@ function setOpenAIMessageExamples(mesExamplesArray) {
     }
 }
 
-function generateOpenAIPromptCache(charPersonality, topAnchorDepth, anchorTop, anchorBottom) {
+function generateOpenAIPromptCache(charPersonality, topAnchorDepth, anchorTop, bottomAnchorThreshold, anchorBottom) {
     openai_msgs = openai_msgs.reverse();
     openai_msgs.forEach(function (msg, i, arr) {//For added anchors and others
         let item = msg["content"];
@@ -209,7 +209,7 @@ function generateOpenAIPromptCache(charPersonality, topAnchorDepth, anchorTop, a
                 item = `[${name2} is ${personalityAndAnchor}]\n${item}`;
             }
         }
-        if (i >= openai_msgs.length - 1 && count_view_mes > 8 && $.trim(item).substr(0, (name1 + ":").length) == name1 + ":") {//For add anchor in end
+        if (i >= openai_msgs.length - 1 && count_view_mes > bottomAnchorThreshold && $.trim(item).substr(0, (name1 + ":").length) == name1 + ":") {//For add anchor in end
             item = anchorBottom + "\n" + item;
         }
 

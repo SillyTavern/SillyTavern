@@ -1485,6 +1485,7 @@ async function Generate(type, automatic_trigger, force_name2) {
 
         // Compute anchors
         const topAnchorDepth = 8;
+        const bottomAnchorThreshold = 8;
         let anchorTop = '';
         let anchorBottom = '';
         if (!is_pygmalion) {
@@ -1725,7 +1726,7 @@ async function Generate(type, automatic_trigger, force_name2) {
             generatedPromtCache += cycleGenerationPromt;
             if (generatedPromtCache.length == 0) {
                 if (main_api === 'openai') {
-                    generateOpenAIPromptCache(charPersonality, topAnchorDepth, anchorTop, anchorBottom);
+                    generateOpenAIPromptCache(charPersonality, topAnchorDepth, anchorTop, bottomAnchorThreshold, anchorBottom);
                 }
 
                 console.log('generating prompt');
@@ -1746,7 +1747,7 @@ async function Generate(type, automatic_trigger, force_name2) {
                             item += "[" + personalityAndAnchor + ']\n';
                         }
                     }
-                    if (i >= arrMes.length - 1 && count_view_mes > 8 && $.trim(item).substr(0, (name1 + ":").length) == name1 + ":" && !is_pygmalion) {//For add anchor in end
+                    if (i >= arrMes.length - 1 && count_view_mes > bottomAnchorThreshold && $.trim(item).substr(0, (name1 + ":").length) == name1 + ":" && !is_pygmalion) {//For add anchor in end
                         item = item.substr(0, item.length - 1);
                         //chatString+=postAnchor+"\n";//"[Writing style: very long messages]\n";
                         item = item + anchorBottom + "\n";
