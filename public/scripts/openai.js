@@ -741,6 +741,29 @@ async function saveOpenAIPreset(name, settings) {
     }
 }
 
+async function showApiKeyUsage() {
+    const body = JSON.stringify({ key: oai_settings.api_key_openai });
+
+    try {
+        const response = await fetch('/openai_usage', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': token },
+            body: body,
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            const text = `<h3>Total usage this month: $${Number(data.total_usage / 100).toFixed(2)}</h3>
+                          <a href="https://platform.openai.com/account/usage" target="_blank">Learn more (OpenAI platform website)</a>`;
+            callPopup(text, 'text');
+        }
+    }
+    catch (err) {
+        console.error(err);
+        callPopup('Invalid API key', 'text');
+    }
+}
+
 $(document).ready(function () {
     $(document).on('input', '#temp_openai', function () {
         oai_settings.temp_openai = $(this).val();
@@ -970,4 +993,6 @@ $(document).ready(function () {
         oai_settings.reverse_proxy = $(this).val();
         saveSettingsDebounced();
     });
+
+    $("#openai_api_usage").on('click', showApiKeyUsage);
 });

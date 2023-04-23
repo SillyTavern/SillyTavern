@@ -2176,7 +2176,7 @@ app.post("/getstatus_openai", jsonParser, function (request, response_getstatus_
 });
 
 // Shamelessly stolen from Agnai
-app.post("/openai_usage", jsonParser, async function (_, response) {
+app.post("/openai_usage", jsonParser, async function (request, response) {
     if (!request.body) return response.sendStatus(400);
     const key = request.body.key;
     const api_url = new URL(request.body.reverse_proxy || api_openai).toString();
