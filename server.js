@@ -2398,6 +2398,10 @@ const setupTasks = async function () {
   
     if (autorun) open(autorunUrl.toString());
     console.log('SillyTavern is listening on: ' + tavernUrl);
+    if (listen &&
+        !config.whitelistMode &&
+        !config.basicAuthMode)
+        console.log('Your SillyTavern is currently open to the public. To increase security, consider enabling whitelisting or basic authentication.')
 
     if (fs.existsSync('public/characters/update.txt') && !is_colab) {
         convertStage1();
