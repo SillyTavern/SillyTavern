@@ -1435,7 +1435,12 @@ async function Generate(type, automatic_trigger, force_name2) {
         if (mesExamples.replace(/<START>/gi, '').trim().length === 0) {
             mesExamples = '';
         }
-        let mesExamplesArray = mesExamples.split(/<START>/gi).slice(1).map(block => `<START>\n${block.trim()}\n`);
+        const blockHeading =
+            main_api === 'openai' ? '<START>' : // OpenAI handler always expects it
+            power_user.custom_chat_separator ? power_user.custom_chat_separator :
+            power_user.disable_examples_formatting && !(is_pygmalion && power_user.pin_examples) ? '' :
+            is_pygmalion ? '<START>' : `This is how ${name2} should talk`;
+        let mesExamplesArray = mesExamples.split(/<START>/gi).slice(1).map(block => `${blockHeading}\n${block.trim()}\n`);
 
         if (main_api === 'openai') {
             const oai_chat = [...chat].filter(x => !x.is_system);
@@ -1462,18 +1467,8 @@ async function Generate(type, automatic_trigger, force_name2) {
             }
         }
 
-        if (power_user.custom_chat_separator && power_user.custom_chat_separator.length) {
-            for (let i = 0; i < mesExamplesArray.length; i++) {
-                mesExamplesArray[i] = mesExamplesArray[i].replace(/<START>/gi, power_user.custom_chat_separator);
-            }
-        }
-
         if (power_user.pin_examples && main_api !== 'openai') {
             for (let example of mesExamplesArray) {
-                if (!is_pygmalion) {
-                    const replaceString = power_user.disable_examples_formatting ? '' : `This is how ${name2} should talk`;
-                    example = example.replace(/<START>/i, replaceString);
-                }
                 storyString += appendToStoryString(example, '');
             }
         }
@@ -1603,20 +1598,15 @@ async function Generate(type, automatic_trigger, force_name2) {
             await delay(1); //For disable slow down (encode gpt-2 need fix)
         }
 
-        // Prepare unpinned example messages
+        // Estimate how many unpinned example messages fit in the context
         let count_exm_add = 0;
         if (!power_user.pin_examples) {
             let mesExmString = '';
-            for (let i = 0; i < mesExamplesArray.length; i++) {
-                mesExmString += mesExamplesArray[i];
+            for (let example of mesExamplesArray) {
+                mesExmString += example;
                 const prompt = JSON.stringify(worldInfoString + storyString + mesExmString + chatString + anchorTop + anchorBottom + charPersonality + promptBias + allAnchors);
                 const tokenCount = getTokenCount(prompt, padding_tokens);
                 if (tokenCount < this_max_context) {
-                    if (power_user.disable_examples_formatting) {
-                        mesExamplesArray[i] = mesExamplesArray[i].replace(/<START>/i, '');
-                    } else if (!is_pygmalion) {
-                        mesExamplesArray[i] = mesExamplesArray[i].replace(/<START>/i, `This is how ${name2} should talk`);
-                    }
                     count_exm_add++;
                     await delay(1);
                 } else {
