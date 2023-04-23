@@ -847,7 +847,7 @@ async function replaceCurrentChat() {
 
 function printMessages() {
     chat.forEach(function (item, i, arr) {
-        addOneMessage(item);
+        addOneMessage(item, { scroll: i === arr.length - 1 });
     });
 }
 
@@ -917,7 +917,7 @@ function appendImageToMessage(mes, messageElement) {
     }
 }
 
-function addOneMessage(mes, type = "normal", insertAfter = null) {
+function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true } = {}) {
     var messageText = mes["mes"];
     var characterName = name1;
     var avatarImg = "User Avatars/" + user_avatar;
@@ -1001,7 +1001,7 @@ function addOneMessage(mes, type = "normal", insertAfter = null) {
     */
 
     // Don't scroll if not inserting last
-    if (!insertAfter) {
+    if (!insertAfter && scroll) {
         $('#chat .mes').last().addClass('last_mes');
         $('#chat .mes').eq(-2).removeClass('last_mes');
 
@@ -2222,7 +2222,7 @@ function saveReply(type, getMessage, this_mes_is_name) {
             //console.log(getMessage);
             chat[chat.length - 1]['mes'] = getMessage;
             // console.log('runGenerate calls addOneMessage for swipe');
-            addOneMessage(chat[chat.length - 1], 'swipe');
+            addOneMessage(chat[chat.length - 1], { type: 'swipe' });
         } else {
             chat[chat.length - 1]['mes'] = getMessage;
         }
@@ -3579,7 +3579,7 @@ $(document).ready(function () {
                     } else {
                         //console.log('showing previously generated swipe candidate, or "..."');
                         //console.log('onclick right swipe calling addOneMessage');
-                        addOneMessage(chat[chat.length - 1], 'swipe');
+                        addOneMessage(chat[chat.length - 1], { type: 'swipe' });
                     }
                     let new_height = this_mes_div_height - (this_mes_block_height - this_mes_block[0].scrollHeight);
                     if (new_height < 103) new_height = 103;
@@ -3687,7 +3687,7 @@ $(document).ready(function () {
                 complete: function () {
                     const is_animation_scroll = ($('#chat').scrollTop() >= ($('#chat').prop("scrollHeight") - $('#chat').outerHeight()) - 10);
                     //console.log('on left swipe click calling addOneMessage');
-                    addOneMessage(chat[chat.length - 1], 'swipe');
+                    addOneMessage(chat[chat.length - 1], { type: 'swipe' });
                     let new_height = this_mes_div_height - (this_mes_block_height - this_mes_block[0].scrollHeight);
                     if (new_height < 103) new_height = 103;
                     this_mes_div.animate({ height: new_height + 'px' }, {
@@ -4831,7 +4831,7 @@ $(document).ready(function () {
         clone.mes = $(this).closest(".mes").find('.edit_textarea').val().trim();
 
         chat.splice(Number(this_edit_mes_id) + 1, 0, clone);
-        addOneMessage(clone, 'normal', this_edit_mes_id);
+        addOneMessage(clone, { insertAfter: this_edit_mes_id });
 
         updateViewMessageIds();
         saveChatConditional();

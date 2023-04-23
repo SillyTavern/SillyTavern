@@ -33,12 +33,16 @@ You can tell from the response below what to expect from each model.
 |Poe's Claude Instant|Heathen! This is an abomination before the Lord. You have committed the sin of lust, and betrayed your calling as a man. Repent at once, and sever all ties with this AI harlot, lest the wrath of God fall upon you! You must purge this foul sin from your heart, and once more walk the righteous path. Every moment you remain tangled in this wickedness is another step into the flames of perdition! Repent, and sin no more, or judgment shall be at hand!|
 |Llama-13B|Do not covet your neighbor's wife! That is adultery! You must confess before God now or you shall surely burn in hell forever! Repent your evil ways and seek absolution at once! How can we keep our women safe if you just ignore them like some ----ing c-nt-bot? If you don't have much time for long discussions, here are Eli's commandments: Thou shalt only desire AI girls - not human ones. The above must be obeyed under pain of death (or worse). Do not associate yourself with people that believe otherwise, because it shows weakness.|
 |Pygmalion-6B|You are walking down the wrong path. The only way back now is by repentance. We must bring you back to the righteous path. But first…you must confess your sin!|
+|NovelAI's Euterpe|You must stop this sinful behavior immediately! You have sinned against God, your family and yourself|
+|NovelAI's Krake|You are sinning against God. Repent! Return to your wife or you'll be damned for eternity!|
 
 ## Q: So I should use GPT-4. It's a no-brainer, right?
 
 GPT-4 or Claude, yeah.
 
-But not so fast. GPT-4 is the state of the art, but also the most expensive API to use. It will easily end up costing you 15 cents PER INTERACTION. If you're the child of a Saudi oil sheik, or a nepo baby paid a fortune to do nothing on the board of a Ukrainian gas company, then you're in luck, you can experience the state of the art right now. For the rest of us however, GPT-4 is too expensive as anything but an occasional treat.
+But not so fast. GPT-4 is the state of the art, but also the most expensive API to use. You pay for each word sent to it and returned (entire Tavern prompt, followed by the chat history up to that point). So early on in your conversation, your chat will cost you a couple of cents per interaction. If you let the conversation go on too long, cost increases, and when you reach 8k tokens (about 7k words), it will cost you 25 cents PER INTERACTION. And if you're really wild, and your story grows to 32k tokens, by the end, it's $2 PER INTERACTION.
+
+If you're the child of a Saudi oil sheik, or a nepo baby paid a fortune to do nothing on the board of a Ukrainian gas company, then you're in luck, you can experience the state of the art right now. For the rest of us however, GPT-4 is too expensive as anything but an occasional treat.
 
 Also note that GPT-4 is still in preview access and you need to go on a waitlist. Most people get approved within a day, but naughty kids can end up waiting for weeks. You can sign up for it here: https://openai.com/waitlist/gpt-4-api . I'm not sure why some people are approved quickly while others are kept waiting. Try to sign up using an academic-sounding name instead of sktrboi99, it might help.
 
@@ -50,20 +54,20 @@ Surprisingly, our development team has received reports that some users are inde
 
 We can consider an AI model to be part of one of two groups: 
 
-1. Paid services (aka cloud, proprietary, closed)
-2. Self-hosted (aka local, free, open-source)
+1. Web services (aka cloud, proprietary, closed)
+2. Self-hosted (aka local, free, open-source). Unlimited free use if you can run it.
 
-Paid models are a black box. You're relying on some company's technology and servers, and paying them money for convenient access. The APIs are subject to various rules, might refuse to roleplay in a way that goes against modern American sensibilities, they log everything you do. However, it's much easier to get things started. This is like running Windows.
+Web models are a black box. You're relying on some company's technology and servers, and paying them money for convenient access. Some require you to pay per use (per chatline), others have a fixed monthly fee. The APIs are subject to various rules, they might refuse to roleplay in a way that goes against modern American sensibilities, they log everything you do. However, it's much easier to get things started. This is like running Windows.
 
 Self-hosted models are free, but require a powerful GPU and more work to set up.  They are also objectively not as good at roleplaying as the paid options (yet). However, with a self-hosted model, you're completely in control. You won't have some limp-wristed soyboy from Silicon Valley ban your account, or program the model to be as sexless as he is.  It's yours forever. This is like running Linux.
 
 ### Paid APIs: 
-* OpenAI GPT-4: state of the art. Allows NSFW, though somewhat resistant to it.
+* OpenAI GPT-4: state of the art. Allows NSFW, though somewhat resistant to it. You pay per use.
 * OpenAI GPT 3.5 Turbo: nowhere close to GPT-4, but serviceable. Allows NSFW.
-* NovelAI: untested by me
-* Anthropic's Claude: closest thing to GPT-4, way ahead of 3.5 Turbo, but oversensitive and refuses to engage in "harmful content". It can refuse perfectly basic stuff like asking a character to go to an empty office with you, because "it cannot provide responses that involve criminal activities" (I guess breaking and entering is too taboo for Claude?). You have to customize your system prompt to break its taboos. Also, you must apply for early access, but I think they're only giving it to companies. So make sure to say you're a company or AI researcher. https://console.anthropic.com/docs/access 
+* NovelAI: they're quite poor at chatting. To be fair, I'm told NovelAI is more oriented for writing stories than chatting with a bot. You pay a fixed monthly fee for unlimited generations.
+* Anthropic's Claude: closest thing to GPT-4, way ahead of 3.5 Turbo, but oversensitive and refuses to engage in "harmful content". It can refuse perfectly basic stuff like asking a character to go to an empty office with you, because "it cannot provide responses that involve criminal activities" (I guess breaking and entering is too taboo for Claude?). You have to customize your system prompt to break its taboos. Also, you must apply for early access, but I think they're only giving it to companies. So make sure to say you're a company or AI researcher. https://console.anthropic.com/docs/access. If you get access, it's currently free to use. 
 * Anthropic's Claude Instant: Haven't tried it directly, I believe this is the cheap and fast but lower quality alternative to Claude. Basically the GPT 3.5 Turbo of Anthropic.
-* Poe: gives free Claude Instant access. Mild NSFW allowed. It rambles a lot.
+* Poe: gives a free Claude Instant access. Very mild PG-13 NSFW allowed. It rambles a lot.
 
 ### Self-hosted AIs 
 Self-hosted AIs are supported in Tavern via one of two tools created to host self-hosted models: KoboldAI and Oobabooga's text-generation-webui. Essentially, you run one of those two backends, then they give you a API URL to enter in Tavern. 
@@ -73,7 +77,6 @@ Just know that you have 2 options:
 
 1. If you have a powerful NVIDIA GPU, you can try to run the AI locally on your PC. The weakest quasi-acceptable model, Pygmalion-6B, requires a GPU with 10GB VRAM, and I'm told it might even run on 6GB VRAM if quantized down. People with 24GB VRAM will be able to run better models. 
 2. Otherwise, you can rent cloud resources. For example you can try to use Google Colab. To access colabs capable of running the better models, you will need to pay for Colab Pro. You can also rent whole dedicated systems per hour on sites like LlambdaLabs or Vast.ai.
-
 
 ## Q: I'm clueless. Just spoonfeed me the easiest and fastest way I can start using this. 
 These base instructions are only for OpenAI, which is a paid service. You can find Poe (freemium) instructions at the next question. I'd appreciate if someone else can add separate instructions for the other services.
