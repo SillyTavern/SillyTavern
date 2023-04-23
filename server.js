@@ -35,6 +35,7 @@ const rimraf = require("rimraf");
 const multer = require("multer");
 const http = require("http");
 const https = require('https');
+const basicAuthMiddleware = require('./src/middleware/basicAuthMiddleware');
 //const PNG = require('pngjs').PNG;
 const extract = require('png-chunks-extract');
 const encode = require('png-chunks-encode');
@@ -193,6 +194,8 @@ const CORS = cors({
 });
 
 app.use(CORS);
+
+if (listen && config.basicAuthMode) app.use(basicAuthMiddleware);
 
 app.use(function (req, res, next) { //Security
     let clientIp = req.connection.remoteAddress;
@@ -2419,6 +2422,10 @@ const setupTasks = async function () {
   
     if (autorun) open(autorunUrl.toString());
     console.log('SillyTavern is listening on: ' + tavernUrl);
+    if (listen &&
+        !config.whitelistMode &&
+        !config.basicAuthMode)
+        console.log('Your SillyTavern is currently open to the public. To increase security, consider enabling whitelisting or basic authentication.')
 
     if (fs.existsSync('public/characters/update.txt') && !is_colab) {
         convertStage1();
