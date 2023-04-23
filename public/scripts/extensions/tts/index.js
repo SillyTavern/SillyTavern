@@ -6,7 +6,6 @@ import { ElevenLabsTtsProvider } from './elevenlabs.js'
 const UPDATE_INTERVAL = 1000
 
 let voiceMap = {} // {charName:voiceid, charName2:voiceid2}
-let elevenlabsTtsVoices = []
 let audioControl
 
 let lastCharacterId = null
@@ -14,11 +13,16 @@ let lastGroupId = null
 let lastChatId = null
 let lastMessageHash = null
 
-let ttsProvider = new ElevenLabsTtsProvider()
+
+let ttsProviders = {
+    elevenLabs: ElevenLabsTtsProvider
+}
+let ttsProvider
+let ttsProviderName
 
 async function moduleWorker() {
     // Primarily determinign when to add new chat to the TTS queue
-    const enabled = $('#elevenlabs_enabled').is(':checked')
+    const enabled = $('#tts_enabled').is(':checked')
     if (!enabled) {
         return
     }
@@ -104,19 +108,19 @@ async function playAudioData(audioBlob) {
     })
 }
 
-window['elevenlabsPreview'] = function (id) {
+window['tts_preview'] = function (id) {
     const audio = document.getElementById(id)
     audio.play()
 }
 
-async function onElevenlabsVoicesClick() {
+async function onTtsVoicesClick() {
     let popupText = ''
 
     try {
         const voiceIds = await ttsProvider.fetchTtsVoiceIds()
 
         for (const voice of voiceIds) {
-            popupText += `<div class="voice_preview"><b>${voice.name}</b> <i onclick="elevenlabsPreview('${voice.voice_id}')" class="fa-solid fa-play"></i></div>`
+            popupText += `<div class="voice_preview"><b>${voice.name}</b> <i onclick="tts_preview('${voice.voice_id}')" class="fa-solid fa-play"></i></div>`
             popupText += `<audio id="${voice.voice_id}" src="${voice.preview_url}"></audio>`
         }
     } catch {
@@ -213,7 +217,7 @@ async function processTtsQueue() {
         if (!voiceMap[char]) {
             throw `${char} not in voicemap. Configure character in extension settings voice map`
         }
-        const voice = await getTtsVoice(voiceMap[char])
+        const voice = await ttsProvider.getVoice((voiceMap[char]))
         const voiceId = voice.voice_id
         if (voiceId == null) {
             throw `Unable to attain voiceId for ${char}`
@@ -239,50 +243,53 @@ window.playFullConversation = playFullConversation
 
 function loadSettings() {
     const context = getContext()
-    if (Object.keys(extension_settings.elevenlabstts).length === 0) {
-        Object.assign(extension_settings.elevenlabstts, defaultSettings)
+    if (!ttsProviderName in extension_settings.tts){
+        extension_settings.tts[ttsProviderName] = {}
+    }
+    if (Object.keys(extension_settings.tts[ttsProviderName]).length === 0) {
+        Object.assign(extension_settings.tts[ttsProviderName], defaultSettings)
     }
 
-    $('#elevenlabs_api_key').val(
-        extension_settings.elevenlabstts.elevenlabsApiKey
+    $('#tts_api_key').val(
+        extension_settings.tts[ttsProviderName].apiKey
     )
-    $('#elevenlabs_voice_map').val(
-        extension_settings.elevenlabstts.elevenlabsVoiceMap
+    $('#tts_voice_map').val(
+        extension_settings.tts[ttsProviderName].voiceMap
     )
-    $('#elevenlabs_enabled').prop(
+    $('#tts_enabled').prop(
         'checked',
-        extension_settings.elevenlabstts.enabled
+        extension_settings.tts.enabled
     )
-    onElevenlabsApplyClick()
+    ttsProvider.updateSettings(extension_settings.tts[ttsProviderName].settings)
+    onApplyClick()
 }
 
 const defaultSettings = {
-    elevenlabsApiKey: '',
-    elevenlabsVoiceMap: '',
-    elevenlabsEnabed: false
+    apiKey: '',
+    voiceMap: '',
+    ttsEnabled: false
 }
 
-function setElevenLabsStatus(status, success) {
-    $('#elevenlabs_status').text(status)
+function setTtsStatus(status, success) {
+    $('#tts_status').text(status)
     if (success) {
-        $('#elevenlabs_status').removeAttr('style')
+        $('#tts_status').removeAttr('style')
     } else {
-        $('#elevenlabs_status').css('color', 'red')
+        $('#tts_status').css('color', 'red')
     }
 }
 
 async function updateApiKey() {
-    const context = getContext()
-    const value = $('#elevenlabs_api_key').val()
+    const value = $('#tts_api_key').val()
 
     // Using this call to validate API key
     ttsProvider.API_KEY = String(value)
     await ttsProvider.fetchTtsVoiceIds().catch(error => {
         ttsProvider.API_KEY = null
-        throw `ElevenLabs TTS API key invalid`
+        throw `TTS API key invalid`
     })
 
-    extension_settings.elevenlabstts.elevenlabsApiKey = String(value)
+    extension_settings.tts[ttsProviderName].apiKey = String(value)
     console.debug(`Saved new API_KEY: ${value}`)
     saveSettingsDebounced()
 }
@@ -299,26 +306,12 @@ function parseVoiceMap(voiceMapString) {
     return parsedVoiceMap
 }
 
-async function getTtsVoice(name) {
-    // We're caching the list of voice_ids. This might cause trouble if the user creates a new voice without restarting
-    if (elevenlabsTtsVoices.length == 0) {
-        elevenlabsTtsVoices = await ttsProvider.fetchTtsVoiceIds()
-    }
-    const match = elevenlabsTtsVoices.filter(
-        elevenVoice => elevenVoice.name == name
-    )[0]
-    if (!match) {
-        throw `TTS Voice name ${name} not found in ElevenLabs account`
-    }
-    return match
-}
-
 async function voicemapIsValid(parsedVoiceMap) {
     let valid = true
     for (const characterName in parsedVoiceMap) {
         const parsedVoiceName = parsedVoiceMap[characterName]
         try {
-            await getTtsVoice(parsedVoiceName)
+            await ttsProvider.getVoice(parsedVoiceName)
         } catch (error) {
             console.error(error)
             valid = false
@@ -330,13 +323,13 @@ async function voicemapIsValid(parsedVoiceMap) {
 async function updateVoiceMap() {
     let isValidResult = false
     const context = getContext()
-    // console.debug("onElevenlabsVoiceMapSubmit");
-    const value = $('#elevenlabs_voice_map').val()
+    // console.debug("onvoiceMapSubmit");
+    const value = $('#tts_voice_map').val()
     const parsedVoiceMap = parseVoiceMap(value)
     isValidResult = await voicemapIsValid(parsedVoiceMap)
     if (isValidResult) {
-        extension_settings.elevenlabstts.elevenlabsVoiceMap = String(value)
-        context.elevenlabsVoiceMap = String(value)
+        extension_settings.tts[ttsProviderName].voiceMap = String(value)
+        context.voiceMap = String(value)
         voiceMap = parsedVoiceMap
         console.debug(`Saved new voiceMap: ${value}`)
         saveSettingsDebounced()
@@ -345,19 +338,19 @@ async function updateVoiceMap() {
     }
 }
 
-function onElevenlabsApplyClick() {
+function onApplyClick() {
     Promise.all([updateApiKey(), updateVoiceMap()])
         .then(([result1, result2]) => {
             updateUiAudioPlayState()
-            setElevenLabsStatus('Successfully applied settings', true)
+            setTtsStatus('Successfully applied settings', true)
         })
         .catch(error => {
-            setElevenLabsStatus(error, false)
+            setTtsStatus(error, false)
         })
 }
 
-function onElevenlabsEnableClick() {
-    extension_settings.elevenlabstts.enabled = $('#elevenlabs_enabled').is(
+function onEnableClick() {
+    extension_settings.tts.enabled = $('#tts_enabled').is(
         ':checked'
     )
     updateUiAudioPlayState()
@@ -365,7 +358,7 @@ function onElevenlabsEnableClick() {
 }
 
 function updateUiAudioPlayState() {
-    if (extension_settings.elevenlabstts.enabled == true) {
+    if (extension_settings.tts.enabled == true) {
         audioControl.style.display = 'flex'
         const img = !audioElement.paused
             ? 'fa-solid fa-circle-pause'
@@ -388,44 +381,75 @@ function addAudioControl() {
     updateUiAudioPlayState()
 }
 
+function addUiTtsProviderConfig() {
+    $('#tts_provider_settings').append(ttsProvider.settingsHtml)
+    ttsProvider.onSettingsChange()
+}
+
+function loadTtsProvider(provider){
+    // Set up provider references. No init dependencies
+    extension_settings.tts.currentProvider = provider
+    ttsProviderName = provider
+    ttsProvider = new ttsProviders[provider]
+    saveSettingsDebounced()
+}
+
+function onTtsProviderSettingsInput(){
+    ttsProvider.onSettingsChange()
+    extension_settings.tts[ttsProviderName].settings = ttsProvider.settings
+    saveSettingsDebounced()
+}
+
 $(document).ready(function () {
     function addExtensionControls() {
         const settingsHtml = `
-        <div id="eleven_labs_settings">
+        <div id="tts_settings">
             <div class="inline-drawer">
                 <div class="inline-drawer-toggle inline-drawer-header">
-                    <b>ElevenLabs TTS</b>
+                    <b>TTS</b>
                     <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
                 </div>
                 <div class="inline-drawer-content">
                     <label>API Key</label>
-                    <input id="elevenlabs_api_key" type="text" class="text_pole" placeholder="<API Key>"/>
+                    <input id="tts_api_key" type="text" class="text_pole" placeholder="<API Key>"/>
                     <label>Voice Map</label>
-                    <textarea id="elevenlabs_voice_map" type="text" class="text_pole textarea_compact" rows="4"
+                    <textarea id="tts_voice_map" type="text" class="text_pole textarea_compact" rows="4"
                         placeholder="Enter comma separated map of charName:ttsName. Example: \nAqua:Bella,\nYou:Josh,"></textarea>
-                    <div class="elevenlabs_buttons">
-                        <input id="elevenlabs_apply" class="menu_button" type="submit" value="Apply" />
-                        <input id="elevenlabs_voices" class="menu_button" type="submit" value="Available voices" />
+                    <div class="tts_buttons">
+                        <input id="tts_apply" class="menu_button" type="submit" value="Apply" />
+                        <input id="tts_voices" class="menu_button" type="submit" value="Available voices" />
                     </div>
                     <div>
-                        <label class="checkbox_label" for="elevenlabs_enabled">
-                            <input type="checkbox" id="elevenlabs_enabled" name="elevenlabs_enabled">
+                        <label class="checkbox_label" for="tts_enabled">
+                            <input type="checkbox" id="tts_enabled" name="tts_enabled">
                             Enabled
                         </label>
                     </div>
-                    <div id="elevenlabs_status">
+                    <div id="tts_status">
+                    </div>
+                    
+                    <div class="inline-drawer">
+                    <div class="inline-drawer-toggle inline-drawer-header">
+                        <b>TTS Config</b>
+                        <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+                    </div>
+                        <form id="tts_provider_settings" class="inline-drawer-content">
+                        </form>
                     </div>
                 </div>
             </div>
         </div>
         `
         $('#extensions_settings').append(settingsHtml)
-        $('#elevenlabs_apply').on('click', onElevenlabsApplyClick)
-        $('#elevenlabs_enabled').on('click', onElevenlabsEnableClick)
-        $('#elevenlabs_voices').on('click', onElevenlabsVoicesClick)
+        $('#tts_apply').on('click', onApplyClick)
+        $('#tts_enabled').on('click', onEnableClick)
+        $('#tts_voices').on('click', onTtsVoicesClick)
+        $('#tts_provider_settings').on('input', onTtsProviderSettingsInput)
     }
-    addAudioControl()
-    addExtensionControls()
-    loadSettings()
-    setInterval(moduleWorker, UPDATE_INTERVAL)
+    loadTtsProvider("elevenLabs") // No init dependencies
+    addExtensionControls() // No init dependencies
+    addUiTtsProviderConfig() // Depends on ttsProvider being loaded
+    loadSettings() // Depends on Extension Controls and ttsProvider
+    addAudioControl() // Depends on Extension Controls
+    setInterval(moduleWorker, UPDATE_INTERVAL) // Init depends on all the things
 })

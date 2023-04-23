@@ -24,7 +24,7 @@ const extension_settings = {
     caption: {},
     expressions: {},
     dice: {},
-    elevenlabstts: {},
+    tts: {},
 };
 
 let modules = [];
