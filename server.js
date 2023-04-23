@@ -349,44 +349,6 @@ app.post("/generate", jsonParser, async function (request, response_generate = r
     }
 });
 
-function randomHash() {
-    const letters = 'abcdefghijklmnopqrstuvwxyz0123456789';
-    let result = '';
-    for (let i = 0; i < 9; i++) {
-        result += letters.charAt(Math.floor(Math.random() * letters.length));
-    }
-    return result;
-}
-
-function textGenProcessStartedHandler(websocket, content, session, prompt, fn_index) {
-    switch (content.msg) {
-        case "send_hash":
-            const send_hash = JSON.stringify({ "session_hash": session, "fn_index": fn_index });
-            websocket.send(send_hash);
-            break;
-        case "estimation":
-            break;
-        case "send_data":
-            const send_data = JSON.stringify({ "session_hash": session, "fn_index": fn_index, "data": prompt.data });
-            console.log(send_data);
-            websocket.send(send_data);
-            break;
-        case "process_starts":
-            break;
-        case "process_generating":
-            return { text: content.output.data[0], completed: false };
-        case "process_completed":
-            try {
-                return { text: content.output.data[0], completed: true };
-            }
-            catch {
-                return { text: '', completed: true };
-            }
-    }
-
-    return { text: '', completed: false };
-}
-
 //************** Text generation web UI
 app.post("/generate_textgenerationwebui", jsonParser, async function (request, response_generate = response) {
     if (!request.body) return response_generate.sendStatus(400);
@@ -394,7 +356,6 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
     console.log(request.body);
 
     if (!!request.header('X-Response-Streaming')) {
-        const fn_index = Number(request.header('X-Gradio-Streaming-Function'));
         let isStreamingStopped = false;
         request.socket.on('close', function () {
             isStreamingStopped = true;
@@ -407,14 +368,12 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
         });
 
         async function* readWebsocket() {
-            const session = randomHash();
-            const url = new URL(api_server);
-            const websocket = new WebSocket(`ws://${url.host}/queue/join`, { perMessageDeflate: false });
-            let text = '';
-            let completed = false;
+            const streamingUrl = request.header('X-Streaming-URL');
+            const websocket = new WebSocket(streamingUrl); 
 
             websocket.on('open', async function () {
                 console.log('websocket open');
+                websocket.send(JSON.stringify(request.body));
             });
 
             websocket.on('error', (err) => {
@@ -427,69 +386,46 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
                 console.log(reason);
             });
 
-            websocket.on('message', async (message) => {
-                const content = json5.parse(message);
-                console.log(content);
-                let result = textGenProcessStartedHandler(websocket, content, session, request.body, fn_index);
-                text = result.text;
-                completed = result.completed;
-            });
-
             while (true) {
                 if (isStreamingStopped) {
                     console.error('Streaming stopped by user. Closing websocket...');
                     websocket.close();
-                    return null;
+                    return;
                 }
 
-                if (websocket.readyState == 0 || websocket.readyState == 1 || websocket.readyState == 2) {
-                    await delay(50);
-                    yield text;
+                const rawMessage = await new Promise(resolve => websocket.once('message', resolve));
+                const message = json5.parse(rawMessage);
 
-                    if (completed || (!text && typeof text !== 'string')) {
-                        websocket.close();
-                        yield null;
+                switch (message.event) {
+                    case 'text_stream':
+                        yield message.text;
                         break;
-                    }
-                }
-                else {
-                    break;
+                    case 'stream_end':
+                        websocket.close();
+                        return;
                 }
             }
-
-            return null;
         }
 
-        let result = JSON.parse(request.body.data)[0];
-        let prompt = result;
-        let stopping_strings = JSON.parse(request.body.data)[1].stopping_strings;
+        let reply = '';
 
         try {
             for await (const text of readWebsocket()) {
-                if (text == null || typeof text !== 'string') {
+                if (typeof text !== 'string') {
                     break;
                 }
 
-                let newText = text.substring(result.length);
+                let newText = text;
 
                 if (!newText) {
                     continue;
                 }
 
-                result = text;
-
-                const generatedText = result.substring(prompt.length);
-
-                response_generate.write(JSON.stringify({ delta: newText }) + '\n');
-
-                if (generatedText) {
-                    for (const str of stopping_strings) {
-                        if (generatedText.indexOf(str) !== -1) {
-                            break;
-                        }
-                    }
-                }
+                reply += text;
+                response_generate.write(newText);
             }
+
+            console.log(reply);
         }
         finally {
             response_generate.end();
@@ -500,7 +436,7 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
             data: request.body,
             headers: { "Content-Type": "application/json" }
         };
-        client.post(api_server + "/run/textgen", args, function (data, response) {
+        client.post(api_server + "/v1/generate", args, function (data, response) {
             console.log("####", data);
             if (response.statusCode == 200) {
                 console.log(data);
@@ -599,10 +535,6 @@ app.post("/getstatus", jsonParser, async function (request, response_getstatus =
     };
     var url = api_server + "/v1/model";
     let version = '';
-    if (main_api == "textgenerationwebui") {
-        url = api_server;
-        args = {}
-    }
     if (main_api == "kobold") {
         try {
             version = (await getAsync(api_server + "/v1/info/version")).result;
@@ -613,34 +545,16 @@ app.post("/getstatus", jsonParser, async function (request, response_getstatus =
     }
     client.get(url, args, function (data, response) {
         if (response.statusCode == 200) {
-            if (main_api == "textgenerationwebui") {
-                // console.log(body);
-                try {
-                    var body = data.toString();
-                    var response = body.match(/gradio_config[ =]*(\{.*\});/)[1];
-                    if (!response)
-                        throw "no_connection";
-                    let model = json5.parse(response).components.filter((x) => x.props.label == "Model" && x.type == "dropdown")[0].props.value;
-                    data = { result: model, gradio_config: response };
-                    if (!data)
-                        throw "no_connection";
-                } catch {
-                    data = { result: "no_connection" };
-                }
+            data.version = version;
+            if (data.result != "ReadOnly") {
             } else {
-                data.version = version;
-                if (data.result != "ReadOnly") {
-                } else {
-                    data.result = "no_connection";
-                }
+                data.result = "no_connection";
             }
         } else {
             data.result = "no_connection";
         }
         response_getstatus.send(data);
     }).on('error', function (err) {
-        //console.log(url);
-        //console.log('something went wrong on the request', err.request.options);
         response_getstatus.send({ result: "no_connection" });
     });
 });

@@ -530,22 +530,6 @@ async function getStatus() {
                     kai_settings.use_stop_sequence = canUseKoboldStopSequence(data.version);
                 }
 
-                // determine if streaming is enabled for ooba
-                if (main_api == 'textgenerationwebui' && typeof data.gradio_config == 'string') {
-                    try {
-                        let textGenConfig = JSON.parse(data.gradio_config);
-                        let commandLineConfig = textGenConfig.components.filter(x => x.type == "checkboxgroup" && Array.isArray(x.props.choices) && x.props.choices.includes("no_stream"));
-
-                        if (commandLineConfig.length) {
-                            let selectedOptions = commandLineConfig[0].props.value;
-                            textgenerationwebui_settings.streaming = !selectedOptions.includes('no_stream');
-                        }
-                    }
-                    catch {
-                        textgenerationwebui_settings.streaming = false;
-                    }
-                }
-
                 //console.log(online_status);
                 resultCheckStatus();
                 if (online_status !== "no_connection") {
@@ -1332,6 +1316,12 @@ async function Generate(type, automatic_trigger, force_name2) {
         return;
     }
 
+    if (main_api == 'textgenerationwebui' && textgenerationwebui_settings.streaming && !textgenerationwebui_settings.streaming_url) {
+        callPopup('Streaming URL is not set. Look it up in the console window when starting TextGen Web UI', 'text');
+        is_send_press = false;
+        return;
+    }
+
     if (isHordeGenerationNotAllowed()) {
         is_send_press = false;
         return;
@@ -1864,32 +1854,30 @@ async function Generate(type, automatic_trigger, force_name2) {
             }
 
             if (main_api == 'textgenerationwebui') {
-                let data = [
-                    finalPromt,
-                    {
-                        'max_new_tokens': this_amount_gen,
-                        'do_sample': textgenerationwebui_settings.do_sample,
-                        'temperature': textgenerationwebui_settings.temp,
-                        'top_p': textgenerationwebui_settings.top_p,
-                        'typical_p': textgenerationwebui_settings.typical_p,
-                        'repetition_penalty': textgenerationwebui_settings.rep_pen,
-                        'encoder_repetition_penalty': textgenerationwebui_settings.encoder_rep_pen,
-                        'top_k': textgenerationwebui_settings.top_k,
-                        'min_length': textgenerationwebui_settings.min_length,
-                        'no_repeat_ngram_size': textgenerationwebui_settings.no_repeat_ngram_size,
-                        'num_beams': textgenerationwebui_settings.num_beams,
-                        'penalty_alpha': textgenerationwebui_settings.penalty_alpha,
-                        'length_penalty': textgenerationwebui_settings.length_penalty,
-                        'early_stopping': textgenerationwebui_settings.early_stopping,
-                        'seed': textgenerationwebui_settings.seed,
-                        'add_bos_token': textgenerationwebui_settings.add_bos_token,
-                        'stopping_strings': getStoppingStrings(isImpersonate, false),
-                        'truncation_length': max_context,
-                        'ban_eos_token': textgenerationwebui_settings.ban_eos_token,
-                        'skip_special_tokens': textgenerationwebui_settings.skip_special_tokens,
-                    }
-                ];
-                generate_data = { "data": [JSON.stringify(data)] };
+                generate_data =
+                {
+                    'prompt': finalPromt,
+                    'max_new_tokens': this_amount_gen,
+                    'do_sample': textgenerationwebui_settings.do_sample,
+                    'temperature': textgenerationwebui_settings.temp,
+                    'top_p': textgenerationwebui_settings.top_p,
+                    'typical_p': textgenerationwebui_settings.typical_p,
+                    'repetition_penalty': textgenerationwebui_settings.rep_pen,
+                    'encoder_repetition_penalty': textgenerationwebui_settings.encoder_rep_pen,
+                    'top_k': textgenerationwebui_settings.top_k,
+                    'min_length': textgenerationwebui_settings.min_length,
+                    'no_repeat_ngram_size': textgenerationwebui_settings.no_repeat_ngram_size,
+                    'num_beams': textgenerationwebui_settings.num_beams,
+                    'penalty_alpha': textgenerationwebui_settings.penalty_alpha,
+                    'length_penalty': textgenerationwebui_settings.length_penalty,
+                    'early_stopping': textgenerationwebui_settings.early_stopping,
+                    'seed': textgenerationwebui_settings.seed,
+                    'add_bos_token': textgenerationwebui_settings.add_bos_token,
+                    'stopping_strings': getStoppingStrings(isImpersonate, false),
+                    'truncation_length': max_context,
+                    'ban_eos_token': textgenerationwebui_settings.ban_eos_token,
+                    'skip_special_tokens': textgenerationwebui_settings.skip_special_tokens,
+                };
             }
 
             if (main_api == 'novel') {
@@ -2121,7 +2109,7 @@ function throwCircuitBreakerError() {
     throw new Error('Generate circuit breaker interruption');
 }
 
-function extractMessageFromData(data, finalPromt) {
+function extractMessageFromData(data) {
     let getMessage = "";
 
     if (main_api == 'kobold' && !horde_settings.use_horde) {
@@ -2133,13 +2121,12 @@ function extractMessageFromData(data, finalPromt) {
     }
 
     if (main_api == 'textgenerationwebui') {
-        getMessage = data.data[0];
+        getMessage = data.results[0].text;
         if (getMessage == null || data.error) {
             activateSendButtons();
             callPopup('<h3>Got empty response from Text generation web UI. Try restarting the API with recommended options.</h3>', 'text');
             return;
         }
-        getMessage = getMessage.substring(finalPromt.length);
     }
 
     if (main_api == 'novel') {
@@ -4332,24 +4319,17 @@ $(document).ready(function () {
     $("#api_button_textgenerationwebui").click(function (e) {
         e.stopPropagation();
         if ($("#textgenerationwebui_api_url_text").val() != "") {
+            let value = formatKoboldUrl($("#textgenerationwebui_api_url_text").val().trim());
+
+            if (!value) {
+                callPopup('Please enter a valid URL.', 'text');
+                return;
+            }
+
+            $("#textgenerationwebui_api_url_text").val(value);
             $("#api_loading_textgenerationwebui").css("display", "inline-block");
             $("#api_button_textgenerationwebui").css("display", "none");
-            api_server_textgenerationwebui = $(
-                "#textgenerationwebui_api_url_text"
-            ).val();
-            api_server_textgenerationwebui = $.trim(api_server_textgenerationwebui);
-            if (
-                api_server_textgenerationwebui.substr(
-                    api_server_textgenerationwebui.length - 1,
-                    1
-                ) == "/"
-            ) {
-                api_server_textgenerationwebui = api_server_textgenerationwebui.substr(
-                    0,
-                    api_server_textgenerationwebui.length - 1
-                );
-            }
-            //console.log("2: "+api_server_textgenerationwebui);
+            api_server_textgenerationwebui = value;
             main_api = "textgenerationwebui";
             saveSettingsDebounced();
             is_get_status = true;
