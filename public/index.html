@@ -520,6 +520,12 @@
                                     </div>
                                 </div>
                                 <div class="range-block">
+                                    <label class="checkbox_label" for="streaming_textgenerationwebui">
+                                        <input type="checkbox" id="streaming_textgenerationwebui" />
+                                        Streaming
+                                    </label>
+                                </div>
+                                <div class="range-block">
                                     <label class="checkbox_label" for="do_sample_textgenerationwebui">
                                         <input type="checkbox" id="do_sample_textgenerationwebui" />
                                         Do Sample
@@ -597,15 +603,6 @@
                                         Seed
                                     </div>
                                     <input type="number" id="seed_textgenerationwebui" class="text_pole" maxlength="100" />
-                                </div>
-                                <div class="range-block">
-                                    <div class="range-block-title">
-                                        Gradio Streaming Function ID
-                                        <a href="/notes/textgen_streaming" class="notes-link" target="_blank">
-                                            <span class="note-link-span">?</span>
-                                        </a>
-                                    </div>
-                                    <input type="number" id="fn_index_textgenerationwebui" class="text_pole" maxlength="100" />
                                 </div>
                             </div>
                             <div id="openai_settings">
@@ -886,15 +883,16 @@
                             </a>
                         </div>
                         <span>
-                            Make sure you run it in notebook/default mode<br>(not
-                            <pre>--cai-chat</pre> or
-                            <pre>--chat</pre>)
+                            Make sure you run it with <tt>--api</tt> flag
                         </span>
                         <form action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                            <h4>API url</h4>
-                            <h5>Example: http://127.0.0.1:7860/ </h5>
+                            <h4>Blocking API url</h4>
+                            <h5>Example: http://127.0.0.1:5000/</h5>
                             <input id="textgenerationwebui_api_url_text" name="textgenerationwebui_api_url" class="text_pole" maxlength="500" value="" autocomplete="off">
                             <input id="api_button_textgenerationwebui" class="menu_button" type="submit" value="Connect">
+                            <h4>Streaming API url</h4>
+                            <h5>Example: ws://127.0.0.1:5005/api/v1/stream</h5>
+                            <input id="streaming_url_textgenerationwebui" type="text" class="text_pole" maxlength="500" value="" autocomplete="off">
                             <div id="api_loading_textgenerationwebui" class="api-load-icon fa-solid fa-hourglass fa-spin"></div>
                         </form>
                         <div class="online_status4">
