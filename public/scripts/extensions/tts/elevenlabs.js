@@ -102,10 +102,6 @@ class ElevenLabsTtsProvider {
         return responseJson.voices
     }
 
-    /**
-     * 
-     * @returns 
-     */
     async fetchTtsVoiceSettings() {
         const headers = {
             'xi-api-key': this.API_KEY
