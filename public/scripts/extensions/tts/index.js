@@ -242,12 +242,12 @@ window.playFullConversation = playFullConversation
 //#############################//
 
 function loadSettings() {
-    const context = getContext()
-    if (!ttsProviderName in extension_settings.tts){
+    if (!(ttsProviderName in extension_settings.tts)){
         extension_settings.tts[ttsProviderName] = {}
     }
     if (Object.keys(extension_settings.tts[ttsProviderName]).length === 0) {
         Object.assign(extension_settings.tts[ttsProviderName], defaultSettings)
+        extension_settings.tts[ttsProviderName].settings = Object.assign({}, ttsProvider.defaultSettings)
     }
 
     $('#tts_api_key').val(
