@@ -1321,11 +1321,11 @@ async function Generate(type, automatic_trigger, force_name2) {
     //console.log('Generate entered');
     setGenerationProgress(0);
     tokens_already_generated = 0;
+
     const isImpersonate = type == "impersonate";
     message_already_generated = isImpersonate ? `${name1}: ` : `${name2}: `;
 
     const slashCommand = getSlashCommand($("#send_textarea").val(), type);
-
     if (slashCommand == system_message_types.HELP) {
         sendSystemMessage(system_message_types.HELP);
         $("#send_textarea").val('').trigger('input');
@@ -1340,8 +1340,7 @@ async function Generate(type, automatic_trigger, force_name2) {
     if (isStreamingEnabled()) {
         streamingProcessor = new StreamingProcessor(type, force_name2);
         hideSwipeButtons();
-    }
-    else {
+    } else {
         streamingProcessor = false;
     }
 
@@ -1351,15 +1350,16 @@ async function Generate(type, automatic_trigger, force_name2) {
     }
 
     if (online_status != 'no_connection' && this_chid != undefined && this_chid !== 'invalid-safety-id') {
+        let textareaText;
         if (type !== 'regenerate' && type !== "swipe" && !isImpersonate) {
             is_send_press = true;
-            var textareaText = $("#send_textarea").val();
+            textareaText = $("#send_textarea").val();
             //console.log('Not a Regenerate call, so posting normall with input of: ' +textareaText);
             $("#send_textarea").val('').trigger('input');
 
         } else {
             //console.log('Regenerate call detected')
-            var textareaText = "";
+            textareaText = "";
             if (chat.length && chat[chat.length - 1]['is_user']) {//If last message from You
 
             }
@@ -1389,32 +1389,27 @@ async function Generate(type, automatic_trigger, force_name2) {
         }
 
         // bias from the latest message is top priority//
-
         promptBias = messageBias ?? promptBias ?? '';
 
-        var storyString = "";
-        var userSendString = "";
-        var finalPromt = "";
-        var postAnchorChar = "Elaborate speaker";
-        var postAnchorStyle = "Writing style: very long messages";//"[Genre: roleplay chat][Tone: very long messages with descriptions]";
-        var anchorTop = '';
-        var anchorBottom = '';
-        var topAnchorDepth = 8;
-
-        if (character_anchor && !is_pygmalion) {
+        // Compute anchors
+        const topAnchorDepth = 8;
+        let anchorTop = '';
+        let anchorBottom = '';
+        if (!is_pygmalion) {
             console.log('saw not pyg');
+
+            let postAnchorChar = character_anchor ? name2 + " Elaborate speaker" : "";
+            let postAnchorStyle = style_anchor ? "Writing style: very long messages" : "";
             if (anchor_order === 0) {
-                anchorTop = name2 + " " + postAnchorChar;
-            } else {
-                console.log('saw pyg, adding anchors')
-                anchorBottom = "[" + name2 + " " + postAnchorChar + "]";
-            }
-        }
-        if (style_anchor && !is_pygmalion) {
-            if (anchor_order === 1) {
+                anchorTop = postAnchorChar;
+                anchorBottom = postAnchorStyle;
+            } else { // anchor_order === 1
                 anchorTop = postAnchorStyle;
-            } else {
-                anchorBottom = "[" + postAnchorStyle + "]";
+                anchorBottom = postAnchorChar;
+            }
+
+            if (anchorBottom) {
+                anchorBottom = "[" + anchorBottom + "]";
             }
         }
 
@@ -1438,22 +1433,18 @@ async function Generate(type, automatic_trigger, force_name2) {
             addOneMessage(chat[chat.length - 1]);
         }
         ////////////////////////////////////
-        let chatString = '';
-        let arrMes = [];
-        let mesSend = [];
         let charDescription = baseChatReplace($.trim(characters[this_chid].description), name1, name2);
         let charPersonality = baseChatReplace($.trim(characters[this_chid].personality), name1, name2);
         let Scenario = baseChatReplace($.trim(characters[this_chid].scenario), name1, name2);
         let mesExamples = baseChatReplace($.trim(characters[this_chid].mes_example), name1, name2);
 
+        // Parse example messages
         if (!mesExamples.startsWith('<START>')) {
             mesExamples = '<START>\n' + mesExamples.trim();
         }
-
         if (mesExamples.replace(/<START>/gi, '').trim().length === 0) {
             mesExamples = '';
         }
-
         let mesExamplesArray = mesExamples.split(/<START>/gi).slice(1).map(block => `<START>\n${block.trim()}\n`);
 
         if (main_api === 'openai') {
@@ -1466,6 +1457,8 @@ async function Generate(type, automatic_trigger, force_name2) {
             setOpenAIMessages(oai_chat);
             setOpenAIMessageExamples(mesExamplesArray);
         }
+
+        let storyString = "";
 
         if (is_pygmalion) {
             storyString += appendToStoryString(charDescription, power_user.disable_description_formatting ? '' : name2 + "'s Persona: ");
@@ -1506,12 +1499,10 @@ async function Generate(type, automatic_trigger, force_name2) {
 
         //////////////////////////////////
 
-        var count_exm_add = 0;
         console.log('emptying chat2');
-        var chat2 = [];
-        var j = 0;
+        let chat2 = [];
         console.log('pre-replace chat.length = ' + chat.length);
-        for (var i = chat.length - 1; i >= 0; i--) {
+        for (let i = chat.length - 1, j = 0; i >= 0; i--, j++) {
             let charName = selected_group ? chat[j].name : name2;
             if (j == 0) {
                 chat[j]['mes'] = chat[j]['mes'].replace(/{{user}}/gi, name1);
@@ -1539,11 +1530,12 @@ async function Generate(type, automatic_trigger, force_name2) {
             //chat2[i] = (chat2[i] ?? '').replace(/{.*}/g, '');
             chat2[i] = (chat2[i] ?? '').replace(/{{(\*?.+?\*?)}}/g, '');
             //console.log('replacing chat2 {}s');
-            j++;
         }
         console.log('post replace chat.length = ' + chat.length);
         //chat2 = chat2.reverse();
-        var this_max_context = 1487;
+
+        // Determine token limit
+        let this_max_context = 1487;
         if (main_api == 'kobold' || main_api == 'textgenerationwebui') {
             this_max_context = (max_context - amount_gen);
         }
@@ -1560,11 +1552,11 @@ async function Generate(type, automatic_trigger, force_name2) {
         if (main_api == 'openai') {
             this_max_context = oai_settings.openai_max_context;
         }
-
         if (main_api == 'poe') {
             this_max_context = Number(max_context);
         }
 
+        // Adjust token limit for Horde
         let hordeAmountGen = null;
         if (main_api == 'kobold' && horde_settings.use_horde && horde_settings.auto_adjust) {
             let adjustedParams;
@@ -1594,14 +1586,16 @@ async function Generate(type, automatic_trigger, force_name2) {
         let { worldInfoString, worldInfoBefore, worldInfoAfter } = getWorldInfoPrompt(chat2);
 
         console.log('post swipe shift:' + chat2.length);
-        var i = 0;
 
         // hack for regeneration of the first message
         if (chat2.length == 0) {
             chat2.push('');
         }
 
-        for (var item of chat2) {
+        // Collect enough messages to fill the context
+        let chatString = '';
+        let arrMes = [];
+        for (let item of chat2) {
             chatString = item + chatString;
             const encodeString = JSON.stringify(
                 worldInfoString + storyString + chatString +
@@ -1613,46 +1607,41 @@ async function Generate(type, automatic_trigger, force_name2) {
                 //if (is_pygmalion && i == chat2.length-1) item='<START>\n'+item;
                 arrMes[arrMes.length] = item;
             } else {
-                console.log('reducing chat.length by 1');
-                i = chat2.length - 1;
+                break;
             }
 
             await delay(1); //For disable slow down (encode gpt-2 need fix)
-            // console.log(i+' '+chat.length);
-
-            count_exm_add = 0;
-
-            if (i === chat2.length - 1) {
-                if (!power_user.pin_examples) {
-                    let mesExmString = '';
-                    for (let iii = 0; iii < mesExamplesArray.length; iii++) {
-                        mesExmString += mesExamplesArray[iii];
-                        const prompt = JSON.stringify(worldInfoString + storyString + mesExmString + chatString + anchorTop + anchorBottom + charPersonality + promptBias + allAnchors);
-                        const tokenCount = getTokenCount(prompt, padding_tokens);
-                        if (tokenCount < this_max_context) {
-                            if (power_user.disable_examples_formatting) {
-                                mesExamplesArray[iii] = mesExamplesArray[iii].replace(/<START>/i, '');
-                            }
-
-                            if (!is_pygmalion) {
-                                mesExamplesArray[iii] = mesExamplesArray[iii].replace(/<START>/i, `This is how ${name2} should talk`);
-                            }
-                            count_exm_add++;
-                            await delay(1);
-                        } else {
-                            iii = mesExamplesArray.length;
-                        }
-                    }
-                }
-                if (!is_pygmalion && Scenario && Scenario.length > 0) {
-                    storyString += !power_user.disable_scenario_formatting ? `Circumstances and context of the dialogue: ${Scenario}\n` : `${Scenario}\n`;
-                }
-                console.log('calling runGenerate');
-                await runGenerate();
-                return;
-            }
-            i++;
         }
+
+        // Prepare unpinned example messages
+        let count_exm_add = 0;
+        if (!power_user.pin_examples) {
+            let mesExmString = '';
+            for (let i = 0; i < mesExamplesArray.length; i++) {
+                mesExmString += mesExamplesArray[i];
+                const prompt = JSON.stringify(worldInfoString + storyString + mesExmString + chatString + anchorTop + anchorBottom + charPersonality + promptBias + allAnchors);
+                const tokenCount = getTokenCount(prompt, padding_tokens);
+                if (tokenCount < this_max_context) {
+                    if (power_user.disable_examples_formatting) {
+                        mesExamplesArray[i] = mesExamplesArray[i].replace(/<START>/i, '');
+                    } else if (!is_pygmalion) {
+                        mesExamplesArray[i] = mesExamplesArray[i].replace(/<START>/i, `This is how ${name2} should talk`);
+                    }
+                    count_exm_add++;
+                    await delay(1);
+                } else {
+                    break;
+                }
+            }
+        }
+
+        if (!is_pygmalion && Scenario && Scenario.length > 0) {
+            storyString += !power_user.disable_scenario_formatting ? `Circumstances and context of the dialogue: ${Scenario}\n` : `${Scenario}\n`;
+        }
+
+        let mesSend = [];
+        console.log('calling runGenerate');
+        await runGenerate();
 
         async function runGenerate(cycleGenerationPromt = '') {
             is_send_press = true;
@@ -1666,7 +1655,7 @@ async function Generate(type, automatic_trigger, force_name2) {
                 console.log('generating prompt');
                 chatString = "";
                 arrMes = arrMes.reverse();
-                var is_add_personality = false;
+                let is_add_personality = false;
                 arrMes.forEach(function (item, i, arr) {//For added anchors and others
 
                     if (i >= arrMes.length - 1 && $.trim(item).substr(0, (name1 + ":").length) != name1 + ":") {
@@ -1675,7 +1664,6 @@ async function Generate(type, automatic_trigger, force_name2) {
                         }
                     }
                     if (i === arrMes.length - topAnchorDepth && count_view_mes >= topAnchorDepth && !is_add_personality) {
-
                         is_add_personality = true;
                         //chatString = chatString.substr(0,chatString.length-1);
                         //anchorAndPersonality = "[Genre: roleplay chat][Tone: very long messages with descriptions]";
@@ -1800,7 +1788,7 @@ async function Generate(type, automatic_trigger, force_name2) {
                 mesSendString = '<START>\n' + mesSendString;
                 //mesSendString = mesSendString; //This edit simply removes the first "<START>" that is prepended to all context prompts
             }
-            finalPromt = worldInfoBefore + storyString + worldInfoAfter + afterScenarioAnchor + mesExmString + mesSendString + generatedPromtCache + promptBias;
+            let finalPromt = worldInfoBefore + storyString + worldInfoAfter + afterScenarioAnchor + mesExmString + mesSendString + generatedPromtCache + promptBias;
 
             if (zeroDepthAnchor && zeroDepthAnchor.length) {
                 if (!isMultigenEnabled() || tokens_already_generated == 0) {
@@ -1859,9 +1847,9 @@ async function Generate(type, automatic_trigger, force_name2) {
                 this_amount_gen = Math.min(this_amount_gen, hordeAmountGen);
             }
 
-            var generate_data;
+            let generate_data;
             if (main_api == 'kobold') {
-                var generate_data = {
+                generate_data = {
                     prompt: finalPromt,
                     gui_settings: true,
                     max_length: amount_gen,
@@ -1929,7 +1917,7 @@ async function Generate(type, automatic_trigger, force_name2) {
                 };
             }
 
-            var generate_url = '';
+            let generate_url = '';
             if (main_api == 'kobold') {
                 generate_url = '/generate';
             } else if (main_api == 'textgenerationwebui') {
