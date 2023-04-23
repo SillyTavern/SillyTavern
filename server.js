@@ -2175,6 +2175,30 @@ app.post("/getstatus_openai", jsonParser, function (request, response_getstatus_
     });
 });
 
+app.post("/openai_bias", jsonParser, async function (request, response) {
+    if (!request.body || !Array.isArray(request.body))
+        return response.sendStatus(400);
+
+    let result = {};
+
+    const tokenizer = tiktoken.encoding_for_model(request.query.model);
+
+    for (const entry of request.body) {
+        if (!entry || !entry.text) {
+            continue;
+        }
+
+        const tokens = tokenizer.encode(entry.text);
+
+        for (const token of tokens) {
+            result[token] = entry.value;
+        }
+    }
+
+    tokenizer.free();
+    return response.send(result);
+});
+
 // Shamelessly stolen from Agnai
 app.post("/openai_usage", jsonParser, async function (request, response) {
     if (!request.body) return response.sendStatus(400);

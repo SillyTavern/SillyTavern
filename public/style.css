@@ -3195,13 +3195,13 @@ toolcool-color-picker {
     width: 100%;
 }
 
-#openai_logit_bias_text,
-.openai_logit_bias_range_block {
-    flex: 1;
+#openai_logit_bias_template {
+    display: none;
 }
 
-.openai_logit_bias_form .range-block-counter {
-    margin-top: 0px;
+.openai_logit_bias_text,
+.openai_logit_bias_value {
+    flex: 1;
 }
 
 .openai_logit_bias_form {
@@ -3213,29 +3213,41 @@ toolcool-color-picker {
 
 .openai_logit_bias_list {
     display: flex;
-    flex-direction: row;
-    align-items: center;
-    column-gap: 10px;
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 10px;
 }
 
-.openai_logit_bias_list_item .separator {
-    margin: 0 3px;
-    display: block;
-    font-weight: 700;
-    font-size: calc(var(--mainFontSize) + .2rem);
+.openai_logit_bias_list:empty {
+    width: 100%;
+    height: 100%;
 }
 
-.openai_logit_bias_list_item {
+.openai_logit_bias_preset_form {
     display: flex;
     flex-direction: row;
+    width: 100%;
+    gap: 10px;
     align-items: baseline;
-    background-color: var(--ivory);
-    color: var(--black100);
-    font-weight: 500;
-    border-radius: 20px;
-    min-height: fit-content;
-    padding: 3px 5px;
+}
+
+.openai_logit_bias_preset_form select {
+    flex: 1;
+}
+
+.openai_logit_bias_preset_form .menu_button {
+    padding: 7px;
+}
+
+.openai_logit_bias_list:empty::before {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    content: "No items";
+    font-weight: bolder;
+    width: 100%;
+    height: 100%;
+    opacity: 0.8;
+    min-height: 3rem;
 }
 
 .openai_restorable,
@@ -3255,6 +3267,7 @@ toolcool-color-picker {
     justify-content: space-evenly;
     flex-direction: row;
     flex-wrap: wrap;
+    flex-basis: 100% !important;
 }
 
 .reverse_proxy_warning,

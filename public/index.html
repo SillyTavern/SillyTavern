@@ -119,6 +119,10 @@
                                         <option value="gpt-4-32k">gpt-4-32k</option>
                                     </select>
                                 </div>
+                                <div class="range-block openai_preset_buttons">
+                                    <input id="update_preset" class="menu_button" type="button" value="Update current preset">
+                                    <input id="new_preset" class="menu_button" type="button" value="Create new preset">
+                                </div>
                             </div>
                             <div id="textgenerationwebui_api-presets">
                                 <h3>Text Gen WebUI (ooba) presets</h3>
@@ -316,30 +320,6 @@
                                     </div>
                                     <div class="range-block-counter">
                                         <span id="pres_pen_counter_openai">select</span>
-                                    </div>
-                                </div>
-                                <div style="display:none" class="range-block">
-                                    <div class="range-block-title">
-                                        Logit Bias
-                                    </div>
-                                    <div class="openai_logit_bias">
-                                        <div class="openai_logit_bias_form">
-                                            <input class="text_pole" id="openai_logit_bias_text" placeholder="text (will be converted to tokens)" />
-                                            <div class="openai_logit_bias_range_block">
-                                                <input id="openai_logit_bias_value" type="range" min="-100" value="0" max="100" />
-                                                <div class="range-block-counter">
-                                                    <span id="openai_logit_bias_value_counter">select</span>
-                                                </div>
-                                            </div>
-                                            <input class="menu_button" id="openai_logit_bias_add" type="button" value="Add" />
-                                        </div>
-                                        <div class="openai_logit_bias_list">
-                                            <div class="openai_logit_bias_list_item">
-                                                <span class="token_id">666</span>
-                                                <span class="separator">:</span>
-                                                <span class="bias_value">-100</span>
-                                            </div>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -734,9 +714,31 @@
                                         <textarea id="impersonation_prompt_textarea" class="text_pole textarea_compact" name="impersonation_prompt" rows="6" placeholder=""></textarea>
                                     </div>
                                 </div>
-                                <div class="range-block openai_preset_buttons">
-                                    <input id="update_preset" class="menu_button" type="button" value="Update current preset">
-                                    <input id="new_preset" class="menu_button" type="button" value="Create new preset">
+                                <div class="range-block">
+                                    <div class="range-block-title openai_restorable">
+                                        Logit Bias
+                                    </div>
+                                    <div class="range-block-counter">
+                                        Helps to ban or reenforce the usage of certain words
+                                    </div>
+                                    <div class="openai_logit_bias_preset_form">
+                                        <select id="openai_logit_bias_preset">
+                                        </select>
+                                        <i id="openai_logit_bias_new_preset" class="menu_button fa-solid fa-plus"></i>
+                                    </div>
+
+                                    <div class="inline-drawer wide100p">
+                                        <div class="inline-drawer-toggle inline-drawer-header">
+                                            <b>View / Edit bias preset</b>
+                                            <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+                                        </div>
+                                        <div class="inline-drawer-content">
+                                            <div id="openai_logit_bias_new_entry" class="menu_button wide100p flex-container justifyCenter">
+                                                Add bias entry
+                                            </div>
+                                            <div class="openai_logit_bias_list"></div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             <div id="poe_settings">
@@ -1785,6 +1787,15 @@
     </div>
 
     <!-- templates for JS to reuse when needed -->
+
+    <div id="openai_logit_bias_template">
+        <div class="openai_logit_bias_form">
+            <input class="openai_logit_bias_text text_pole" placeholder="type here..." />
+            <input class="openai_logit_bias_value text_pole" type="number" min="-100" value="0" max="100" />
+            <i class="menu_button fa-solid fa-xmark openai_logit_bias_remove"></i>
+        </div>
+    </div>
+
     <div id="message_template">
         <div class="mes" mesid="${count_view_mes}" ch_name="${characterName}" is_user="${mes.is_user}" is_system="${mes.is_system}">
             <div class="for_checkbox"></div><input type="checkbox" class="del_checkbox">
