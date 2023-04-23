@@ -1731,7 +1731,6 @@ async function Generate(type, automatic_trigger, force_name2) {
                 console.log('generating prompt');
                 chatString = "";
                 arrMes = arrMes.reverse();
-                let is_add_personality = false;
                 arrMes.forEach(function (item, i, arr) {//For added anchors and others
 
                     if (i >= arrMes.length - 1 && $.trim(item).substr(0, (name1 + ":").length) != name1 + ":") {
@@ -1739,12 +1738,11 @@ async function Generate(type, automatic_trigger, force_name2) {
                             item = item.substr(0, item.length - 1);
                         }
                     }
-                    if (i === arrMes.length - topAnchorDepth && count_view_mes >= topAnchorDepth && !is_add_personality) {
-                        is_add_personality = true;
+                    if (i === arrMes.length - topAnchorDepth && count_view_mes >= topAnchorDepth && !is_pygmalion) {
                         //chatString = chatString.substr(0,chatString.length-1);
                         //anchorAndPersonality = "[Genre: roleplay chat][Tone: very long messages with descriptions]";
                         let personalityAndAnchor = [charPersonality, anchorTop].filter(x => x).join(' ');
-                        if (personalityAndAnchor && !is_pygmalion) {
+                        if (personalityAndAnchor) {
                             item += "[" + personalityAndAnchor + ']\n';
                         }
                     }

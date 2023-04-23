@@ -201,14 +201,12 @@ function setOpenAIMessageExamples(mesExamplesArray) {
 
 function generateOpenAIPromptCache(charPersonality, topAnchorDepth, anchorTop, anchorBottom) {
     openai_msgs = openai_msgs.reverse();
-    let is_add_personality = false;
     openai_msgs.forEach(function (msg, i, arr) {//For added anchors and others
         let item = msg["content"];
-        if (i === openai_msgs.length - topAnchorDepth && count_view_mes >= topAnchorDepth && !is_add_personality) {
-            is_add_personality = true;
-            if ((anchorTop != "" || charPersonality != "")) {
-                if (anchorTop != "") charPersonality += ' ';
-                item = `[${name2} is ${charPersonality}${anchorTop}]\n${item}`;
+        if (i === openai_msgs.length - topAnchorDepth && count_view_mes >= topAnchorDepth) {
+            let personalityAndAnchor = [charPersonality, anchorTop].filter(x => x).join(' ');
+            if (personalityAndAnchor) {
+                item = `[${name2} is ${personalityAndAnchor}]\n${item}`;
             }
         }
         if (i >= openai_msgs.length - 1 && count_view_mes > 8 && $.trim(item).substr(0, (name1 + ":").length) == name1 + ":") {//For add anchor in end
