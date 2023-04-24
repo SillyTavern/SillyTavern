@@ -264,7 +264,6 @@ const system_messages = {
             '<ol>',
             '<li><a target="_blank" href="https://discord.gg/pygmalionai">Pygmalion AI Discord</a></li>',
             '<li><a target="_blank" href="https://www.characterhub.org/">CharacterHub (NSFW)</a></li>',
-            '<li><a target="_blank" href="https://arca.live/w/characterai/bots#s-2.1">Arca.live (Korean)</a></li>',
             '</ol>',
             '<h3>Where can I get help?</h3>',
             'Before going any further, check out the following resources:',
