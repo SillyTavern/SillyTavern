@@ -2020,7 +2020,21 @@ async function Generate(type, automatic_trigger, force_name2) {
                         message_already_generated += getMessage;
                         promptBias = '';
                         if (shouldContinueMultigen(getMessage)) {
-                            runGenerate(getMessage);
+							let this_mes_is_name;
+							({ this_mes_is_name, getMessage } = extractNameFromMessage(getMessage, force_name2, isImpersonate));
+							if (generate_loop_counter == 0)
+							{
+								console.log("New message");
+								({ type, getMessage } = saveReply(type, getMessage, this_mes_is_name));
+							}
+							else
+							{
+								console.log("Should append message");
+								({ type, getMessage } = saveReply('append', getMessage, this_mes_is_name));
+							}
+							generate_loop_counter++;
+							getMessage = message_already_generated;
+							runGenerate(getMessage);
                             console.log('returning to make generate again');
                             return;
                         }
@@ -2039,7 +2053,14 @@ async function Generate(type, automatic_trigger, force_name2) {
                             $('#send_textarea').val(getMessage).trigger('input');
                         }
                         else {
-                            ({ type, getMessage } = saveReply(type, getMessage, this_mes_is_name));
+							if (!isMultigenEnabled())
+							{
+								({ type, getMessage } = saveReply(type, getMessage, this_mes_is_name));
+							}
+							else
+							{
+								({ type, getMessage } = saveReply('appendFinal', getMessage, this_mes_is_name));
+							}
                         }
                         activateSendButtons();
                         playMessageSound();
@@ -2211,7 +2232,7 @@ function cleanUpMessage(getMessage, isImpersonate) {
 }
 
 function saveReply(type, getMessage, this_mes_is_name) {
-    if (chat.length && (chat[chat.length - 1]['swipe_id'] === undefined ||
+	if (type != 'append' && type != 'appendFinal' && chat.length && (chat[chat.length - 1]['swipe_id'] === undefined ||
         chat[chat.length - 1]['is_user'])) {
         type = 'normal';
     }
@@ -2228,7 +2249,16 @@ function saveReply(type, getMessage, this_mes_is_name) {
             addOneMessage(chat[chat.length - 1], { type: 'swipe' });
         } else {
             chat[chat.length - 1]['mes'] = getMessage;
-        }
+		}
+	} else if (type === 'append') {
+		console.log("Trying to append.")
+		chat[chat.length - 1]['mes'] += getMessage;
+		addOneMessage(chat[chat.length - 1], { type: 'swipe' });
+	} else if (type === 'appendFinal') {
+		console.log("Trying to append.")
+		chat[chat.length - 1]['mes'] = getMessage;
+		addOneMessage(chat[chat.length - 1], { type: 'swipe' });
+
     } else {
         console.log('entering chat update routine for non-swipe post');
         chat[chat.length] = {};
