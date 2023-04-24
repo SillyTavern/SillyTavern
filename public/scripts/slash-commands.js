@@ -5,11 +5,13 @@ import {
 export {
     executeSlashCommands,
     registerSlashCommand,
+    getSlashCommandsHelp,
 }
 
 class SlashCommandParser {
     constructor() {
         this.commands = {};
+        this.helpStrings = [];
     }
 
     addCommand(command, callback, aliases, helpString = '', interruptsGeneration = false, purgeFromMessage = true) {
@@ -21,6 +23,13 @@ class SlashCommandParser {
                 this.commands[alias] = fnObj;
             });
         }
+
+        let stringBuilder = `<span class="monospace">/${command}</span> ${helpString} `;
+        if (Array.isArray(aliases) && aliases.length) {
+            let aliasesString = `(aliases: ${aliases.map(x => `<span class="monospace">/${x}</span>`).join(', ')})`;
+            stringBuilder += aliasesString;
+        }
+        this.helpStrings.push(stringBuilder);
     }
 
     parse(text) {
@@ -53,13 +62,19 @@ class SlashCommandParser {
 
         return false;
     }
+
+    getHelpString() {
+        const listItems = this.helpStrings.map(x => `<li>${x}</li>`).join('\n');
+        return `<p>Slash commands:</p><ol>${listItems}</ol>`;
+    }
 }
 
 const parser = new SlashCommandParser();
 const registerSlashCommand = parser.addCommand.bind(parser);
+const getSlashCommandsHelp = parser.getHelpString.bind(parser);
 
-parser.addCommand('help', helpCommandCallback, ['?'], 'Displays a help information', true, true);
-parser.addCommand('bg', setBackgroundCallback, ['background'], 'Sets a background', false, true);
+parser.addCommand('help', helpCommandCallback, ['?'], ' – displays a help information', true, true);
+parser.addCommand('bg', setBackgroundCallback, ['background'], '<span class="monospace">name</span> – sets a background by file name', false, true);
 
 function helpCommandCallback() {
     sendSystemMessage(system_message_types.HELP);

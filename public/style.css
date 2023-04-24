@@ -2957,6 +2957,10 @@ label[for="extensions_autoconnect"] {
     color: lightgray;
 }
 
+.monospace {
+    font-family: monospace;
+}
+
 .expander {
     flex-grow: 1;
 }

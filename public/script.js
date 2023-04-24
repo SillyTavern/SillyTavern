@@ -91,7 +91,7 @@ import {
 
 import { debounce, delay } from "./scripts/utils.js";
 import { extension_settings, loadExtensionSettings } from "./scripts/extensions.js";
-import { executeSlashCommands } from "./scripts/slash-commands.js";
+import { executeSlashCommands, getSlashCommandsHelp } from "./scripts/slash-commands.js";
 
 //exporting functions and vars for mods
 export {
@@ -1065,6 +1065,10 @@ function sendSystemMessage(type, text) {
 
     if (text) {
         newMessage.mes = text;
+    }
+
+    if (type == system_message_types.HELP) {
+        newMessage.mes += getSlashCommandsHelp();
     }
 
     if (!newMessage.extras) {
