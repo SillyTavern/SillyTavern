@@ -359,6 +359,18 @@ If your subscription tier is Paper, Tablet or Scroll use only Euterpe model othe
 
 _Lost API keys can't be restored! Make sure to keep it safe!_
 
+## Poe
+
+### API key
+
+**How to get your access token / cookie:**
+
+1.  Login to [poe.com](https://poe.com)
+2.  Open browser DevTools (F12) and navigate to "Application" tab
+3.  Find a _p-b_ cookie for poe.com domain and copy its value
+4.  Paste cookie value to the box below and click "Connect"
+5.  Select a character and start chatting
+
 ## Anchors
 
 Anchors are used to increase the length of messages.

@@ -922,29 +922,19 @@
                         <br>
                     </div>
                     <div id="poe_api">
-                        <div class="inline-drawer">
-                            <div class="inline-drawer-toggle inline-drawer-header">
-                                <b>Instructions:</b>
-                                <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
-                            </div>
-                            <div class="inline-drawer-content">
-                                <ol>
-                                    <li>Login to <a href="https://poe.com" target="_blank">poe.com</a></li>
-                                    <li>Open browser DevTools (F12) and navigate to "Application" tab</li>
-                                    <li>Find a <tt>p-b</tt> cookie for poe.com domain and copy its value</li>
-                                    <li>Paste cookie value to the box below and click "Connect"</li>
-                                    <li>Select a character and start chatting</li>
-                                </ol>
-                            </div>
-                        </div>
-                        <div class="range-block">
-                            <div class="range-block-title">
+                            <h4>
                                 poe.com access token (p-b cookie value)
-                            </div>
+                            </h4>
+                            <h5>
+                                Where to get
+                                <a href="/notes#apikey-2" class="notes-link" target="_blank">
+                                    <span class="note-link-span">?</span>
+                                </a>
+                            </h5>
                             <div class="widthFreeExpand">
-                                <input id="poe_token" class="text_pole" type="text" placeholder="Example: nTLG2bNvbOi8qxc-DbaSlw%3D%3D" maxlength="100" />
+                                <input id="poe_token" class="text_pole" type="text" placeholder="Example: nTLG2bNvbOi8qxc-DbaSlw%3D%3D"
+                                    maxlength="100" />
                             </div>
-                        </div>
 
                         <input id="poe_connect" class="menu_button" type="button" value="Connect" />
                         <div id="api_loading_poe" class="api-load-icon fa-solid fa-hourglass fa-spin"></div>
