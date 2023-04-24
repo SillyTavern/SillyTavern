@@ -1762,17 +1762,17 @@ async function Generate(type, automatic_trigger, force_name2) {
                 const prompt = JSON.stringify(worldInfoString + storyString + mesExmString + mesSendString + anchorTop + anchorBottom + charPersonality + generatedPromtCache + promptBias + allAnchors);
                 let thisPromtContextSize = getTokenCount(prompt, padding_tokens);
 
-                if (thisPromtContextSize > this_max_context) {		//if the prepared prompt is larger than the max context size...
+                if (thisPromtContextSize > this_max_context) {        //if the prepared prompt is larger than the max context size...
 
-                    if (count_exm_add > 0) {							// ..and we have example mesages..
+                    if (count_exm_add > 0) {                            // ..and we have example mesages..
                         //console.log('Context size: '+thisPromtContextSize+' -- too big, removing example message');
                         //mesExamplesArray.length = mesExamplesArray.length-1;
-                        count_exm_add--;							// remove the example messages...
-                        checkPromtSize();							// and try agin...
-                    } else if (mesSend.length > 0) {					// if the chat history is longer than 0
+                        count_exm_add--;                            // remove the example messages...
+                        checkPromtSize();                            // and try agin...
+                    } else if (mesSend.length > 0) {                    // if the chat history is longer than 0
                         //console.log('Context size: '+thisPromtContextSize+' -- too big, removing oldest chat message');
-                        mesSend.shift();							// remove the first (oldest) chat entry..
-                        checkPromtSize();							// and check size again..
+                        mesSend.shift();                            // remove the first (oldest) chat entry..
+                        checkPromtSize();                            // and check size again..
                     } else {
                         //end
                     }
@@ -2006,7 +2006,7 @@ async function Generate(type, automatic_trigger, force_name2) {
             }
 
             function onSuccess(data) {
-                tokens_already_generated += this_amount_gen;			// add new gen amt to any prev gen counter..
+                tokens_already_generated += this_amount_gen;            // add new gen amt to any prev gen counter..
 
                 is_send_press = false;
                 if (!data.error) {
@@ -2020,21 +2020,21 @@ async function Generate(type, automatic_trigger, force_name2) {
                         message_already_generated += getMessage;
                         promptBias = '';
                         if (shouldContinueMultigen(getMessage)) {
-							let this_mes_is_name;
-							({ this_mes_is_name, getMessage } = extractNameFromMessage(getMessage, force_name2, isImpersonate));
-							if (generate_loop_counter == 0)
-							{
-								console.log("New message");
-								({ type, getMessage } = saveReply(type, getMessage, this_mes_is_name));
-							}
-							else
-							{
-								console.log("Should append message");
-								({ type, getMessage } = saveReply('append', getMessage, this_mes_is_name));
-							}
-							generate_loop_counter++;
-							getMessage = message_already_generated;
-							runGenerate(getMessage);
+                            let this_mes_is_name;
+                            ({ this_mes_is_name, getMessage } = extractNameFromMessage(getMessage, force_name2, isImpersonate));
+                            if (generate_loop_counter == 0)
+                            {
+                                console.log("New message");
+                                ({ type, getMessage } = saveReply(type, getMessage, this_mes_is_name));
+                            }
+                            else
+                            {
+                                console.log("Should append message");
+                                ({ type, getMessage } = saveReply('append', getMessage, this_mes_is_name));
+                            }
+                            generate_loop_counter++;
+                            getMessage = message_already_generated;
+                            runGenerate(getMessage);
                             console.log('returning to make generate again');
                             return;
                         }
@@ -2053,14 +2053,14 @@ async function Generate(type, automatic_trigger, force_name2) {
                             $('#send_textarea').val(getMessage).trigger('input');
                         }
                         else {
-							if (!isMultigenEnabled())
-							{
-								({ type, getMessage } = saveReply(type, getMessage, this_mes_is_name));
-							}
-							else
-							{
-								({ type, getMessage } = saveReply('appendFinal', getMessage, this_mes_is_name));
-							}
+                            if (!isMultigenEnabled())
+                            {
+                                ({ type, getMessage } = saveReply(type, getMessage, this_mes_is_name));
+                            }
+                            else
+                            {
+                                ({ type, getMessage } = saveReply('appendFinal', getMessage, this_mes_is_name));
+                            }
                         }
                         activateSendButtons();
                         playMessageSound();
@@ -2232,7 +2232,7 @@ function cleanUpMessage(getMessage, isImpersonate) {
 }
 
 function saveReply(type, getMessage, this_mes_is_name) {
-	if (type != 'append' && type != 'appendFinal' && chat.length && (chat[chat.length - 1]['swipe_id'] === undefined ||
+    if (type != 'append' && type != 'appendFinal' && chat.length && (chat[chat.length - 1]['swipe_id'] === undefined ||
         chat[chat.length - 1]['is_user'])) {
         type = 'normal';
     }
@@ -2249,15 +2249,15 @@ function saveReply(type, getMessage, this_mes_is_name) {
             addOneMessage(chat[chat.length - 1], { type: 'swipe' });
         } else {
             chat[chat.length - 1]['mes'] = getMessage;
-		}
-	} else if (type === 'append') {
-		console.log("Trying to append.")
-		chat[chat.length - 1]['mes'] += getMessage;
-		addOneMessage(chat[chat.length - 1], { type: 'swipe' });
-	} else if (type === 'appendFinal') {
-		console.log("Trying to append.")
-		chat[chat.length - 1]['mes'] = getMessage;
-		addOneMessage(chat[chat.length - 1], { type: 'swipe' });
+        }
+    } else if (type === 'append') {
+        console.log("Trying to append.")
+        chat[chat.length - 1]['mes'] += getMessage;
+        addOneMessage(chat[chat.length - 1], { type: 'swipe' });
+    } else if (type === 'appendFinal') {
+        console.log("Trying to append.")
+        chat[chat.length - 1]['mes'] = getMessage;
+        addOneMessage(chat[chat.length - 1], { type: 'swipe' });
 
     } else {
         console.log('entering chat update routine for non-swipe post');
