@@ -1465,12 +1465,8 @@ async function Generate(type, automatic_trigger, force_name2) {
             if (count_view_mes < topAnchorDepth) {
                 storyString += appendToStoryString(charPersonality, power_user.disable_personality_formatting ? '' : name2 + "'s personality: ");
             }
-        }
 
-        if (power_user.pin_examples && main_api !== 'openai') {
-            for (let example of mesExamplesArray) {
-                storyString += appendToStoryString(example, '');
-            }
+            storyString += appendToStoryString(Scenario, power_user.disable_scenario_formatting ? '' : 'Circumstances and context of the dialogue: ');
         }
 
         // Pygmalion does that anyway
@@ -1577,46 +1573,44 @@ async function Generate(type, automatic_trigger, force_name2) {
             chat2.push('');
         }
 
-        // Collect enough messages to fill the context
+        let examplesString = '';
         let chatString = '';
+        function canFitMessages() {
+            const encodeString = JSON.stringify(worldInfoString + storyString + examplesString + chatString + anchorTop + anchorBottom + charPersonality + promptBias + allAnchors);
+            return getTokenCount(encodeString, padding_tokens) < this_max_context;
+        }
+
+        // Force pinned examples into the context
+        let pinExmString;
+        if (power_user.pin_examples) {
+            pinExmString = examplesString = mesExamplesArray.map(example => appendToStoryString(example, '')).join('');
+        }
+
+        // Collect enough messages to fill the context
         let arrMes = [];
         for (let item of chat2) {
             chatString = item + chatString;
-            const encodeString = JSON.stringify(
-                worldInfoString + storyString + chatString +
-                anchorTop + anchorBottom +
-                charPersonality + promptBias + allAnchors
-            );
-            const tokenCount = getTokenCount(encodeString, padding_tokens);
-            if (tokenCount < this_max_context) { //(The number of tokens in the entire promt) need fix, it must count correctly (added +120, so that the description of the character does not hide)
+            if (canFitMessages()) { //(The number of tokens in the entire promt) need fix, it must count correctly (added +120, so that the description of the character does not hide)
                 //if (is_pygmalion && i == chat2.length-1) item='<START>\n'+item;
                 arrMes[arrMes.length] = item;
             } else {
                 break;
             }
-
             await delay(1); //For disable slow down (encode gpt-2 need fix)
         }
 
         // Estimate how many unpinned example messages fit in the context
         let count_exm_add = 0;
         if (!power_user.pin_examples) {
-            let mesExmString = '';
             for (let example of mesExamplesArray) {
-                mesExmString += example;
-                const prompt = JSON.stringify(worldInfoString + storyString + mesExmString + chatString + anchorTop + anchorBottom + charPersonality + promptBias + allAnchors);
-                const tokenCount = getTokenCount(prompt, padding_tokens);
-                if (tokenCount < this_max_context) {
+                examplesString += example;
+                if (canFitMessages()) {
                     count_exm_add++;
-                    await delay(1);
                 } else {
                     break;
                 }
+                await delay(1);
             }
-        }
-
-        if (!is_pygmalion && Scenario && Scenario.length > 0) {
-            storyString += !power_user.disable_scenario_formatting ? `Circumstances and context of the dialogue: ${Scenario}\n` : `${Scenario}\n`;
         }
 
         let mesSend = [];
@@ -1692,15 +1686,12 @@ async function Generate(type, automatic_trigger, force_name2) {
                 });
             }
 
-            let mesSendString = '';
             let mesExmString = '';
+            let mesSendString = '';
 
             function setPromtString() {
+                mesExmString = pinExmString ?? mesExamplesArray.slice(0, count_exm_add).join('');
                 mesSendString = '';
-                mesExmString = '';
-                for (let j = 0; j < count_exm_add; j++) {
-                    mesExmString += mesExamplesArray[j];
-                }
                 for (let j = 0; j < mesSend.length; j++) {
 
                     mesSendString += mesSend[j];
