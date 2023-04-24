@@ -264,7 +264,7 @@ const system_messages = {
             '<ol>',
             '<li><a target="_blank" href="https://discord.gg/pygmalionai">Pygmalion AI Discord</a></li>',
             '<li><a target="_blank" href="https://www.characterhub.org/">CharacterHub (NSFW)</a></li>',
-            '<li><a target="_blank" href="https://arca.live/b/characterai?category=%EC%9E%90%EC%9E%91%EB%B4%87">Arca.live (Korean)</a></li>',
+            '<li><a target="_blank" href="https://arca.live/w/characterai/bots#s-2.1">Arca.live (Korean)</a></li>',
             '</ol>',
             '<h3>Where can I get help?</h3>',
             'Before going any further, check out the following resources:',
@@ -884,7 +884,7 @@ function messageFormating(mes, ch_name, isSystem, forceAvatar) {
         mes = mes.replace(/{{(\*?.+?\*?)}}/g, "");
 
 
-        mes = mes.replace(/(<code[^>]*>[\s\S]*?<\/code>)|\"(.+?)\"/g, function(match, code, quote) {
+        mes = mes.replace(/(<code[^>]*>[\s\S]*?<\/code>)|\"(.+?)\"/g, function (match, code, quote) {
             return code ? code : `<q>${quote}</q>`;
         });
         mes = mes.replace(/\n/g, "<br/>");
@@ -921,6 +921,28 @@ function appendImageToMessage(mes, messageElement) {
         image.title = mes.title;
         image.classList.add("img_extra");
         messageElement.find(".mes_text").prepend(image);
+    }
+}
+
+function addCopyToCodeBlocks(messageElement) {
+    const codeBlocks = $(messageElement).find("pre code");
+    for (let i = 0; i < codeBlocks.length; i++) {
+        const copyButton = document.createElement('i');
+        copyButton.classList.add('fa-solid', 'fa-copy', 'code-copy');
+        copyButton.title = 'Copy code';
+        codeBlocks.get(i).appendChild(copyButton);
+        copyButton.addEventListener('click', function (event) {
+            navigator.clipboard.writeText(codeBlocks.get(i).innerText);
+            const copiedMsg = document.createElement("div");
+            copiedMsg.classList.add('code-copied');
+            copiedMsg.innerText = "Copied!";
+            copiedMsg.style.top = `${event.clientY}px`;
+            copiedMsg.style.left = `${event.clientX}px`;
+            document.body.append(copiedMsg);
+            setTimeout(() => {
+                document.body.removeChild(copiedMsg);
+            }, 2500);
+        });
     }
 }
 
@@ -998,14 +1020,9 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
         $("#chat").children().filter('[mesid="' + count_view_mes + '"]').children('.mes_block').children('.mes_text').append(messageText);
         hideSwipeButtons();
         count_view_mes++;
-
     }
 
-    /*
-    const lastMes = $('#chat .mes').last().get(0);
-    const rect = lastMes.getBoundingClientRect();
-    lastMes.style.containIntrinsicSize = `${rect.width}px ${rect.height}px`;
-    */
+    addCopyToCodeBlocks(newMessage);
 
     // Don't scroll if not inserting last
     if (!insertAfter && scroll) {
@@ -2022,13 +2039,11 @@ async function Generate(type, automatic_trigger, force_name2) {
                         if (shouldContinueMultigen(getMessage)) {
                             let this_mes_is_name;
                             ({ this_mes_is_name, getMessage } = extractNameFromMessage(getMessage, force_name2, isImpersonate));
-                            if (generate_loop_counter == 0)
-                            {
+                            if (generate_loop_counter == 0) {
                                 console.log("New message");
                                 ({ type, getMessage } = saveReply(type, getMessage, this_mes_is_name));
                             }
-                            else
-                            {
+                            else {
                                 console.log("Should append message");
                                 ({ type, getMessage } = saveReply('append', getMessage, this_mes_is_name));
                             }
@@ -2053,12 +2068,10 @@ async function Generate(type, automatic_trigger, force_name2) {
                             $('#send_textarea').val(getMessage).trigger('input');
                         }
                         else {
-                            if (!isMultigenEnabled())
-                            {
+                            if (!isMultigenEnabled()) {
                                 ({ type, getMessage } = saveReply(type, getMessage, this_mes_is_name));
                             }
-                            else
-                            {
+                            else {
                                 ({ type, getMessage } = saveReply('appendFinal', getMessage, this_mes_is_name));
                             }
                         }
@@ -2973,6 +2986,7 @@ function messageEditDone(div) {
     mesBlock.find(".mes_bias").empty();
     mesBlock.find(".mes_bias").append(messageFormating(bias));
     appendImageToMessage(chat[this_edit_mes_id], div.closest(".mes"));
+    addCopyToCodeBlocks(div.closest(".mes"));
     this_edit_mes_id = undefined;
     saveChatConditional();
 }
@@ -3170,7 +3184,7 @@ function select_selected_character(chid) {
     }
 
     updateFavButtonState(characters[chid].fav == "true");
-    
+
     $("#avatar_load_preview").attr("src", this_avatar);
     $("#name_div").css("display", "none");
 
@@ -3804,20 +3818,20 @@ $(document).ready(function () {
         }
     });
 
-    $("#filter_by_fav").click(function() {
+    $("#filter_by_fav").click(function () {
         filterByFav = !filterByFav;
 
         const selector = ['#rm_print_characters_block .character_select', '#rm_print_characters_block .group_select'].join(',');
-        if(filterByFav){
+        if (filterByFav) {
             $(selector).each(function () {
-                if($(this).children(".ch_fav").length !== 0){
+                if ($(this).children(".ch_fav").length !== 0) {
                     $(this).children(".ch_fav").val().toLowerCase().includes(true)
-                            ? $(this).show()
-                            : $(this).hide();
+                        ? $(this).show()
+                        : $(this).hide();
                 }
             });
             $("#filter_by_fav").addClass("fav_on");
-        }else{
+        } else {
             $(selector).show();
             $("#filter_by_fav").removeClass("fav_on");
         }
@@ -4333,7 +4347,7 @@ $(document).ready(function () {
             }
         });
 
-    $("#favorite_button").on('click', function(){
+    $("#favorite_button").on('click', function () {
         updateFavButtonState(!fav_ch_checked);
         if (menu_type != "create") {
             saveCharacterDebounced();
@@ -4785,6 +4799,7 @@ $(document).ready(function () {
             .find(".mes_text")
             .append(messageFormating(text, this_edit_mes_chname));
         appendImageToMessage(chat[this_edit_mes_id], $(this).closest(".mes"));
+        addCopyToCodeBlocks($(this).closest(".mes"));
         this_edit_mes_id = undefined;
     });
 
@@ -5184,6 +5199,10 @@ $(document).ready(function () {
                 $bgContent.hide();
             }
         });
+    });
+
+    $('#chat').on('scroll', () => {
+        $('.code-copied').css({ 'display': 'none' });
     });
 
     $(document).on('beforeunload', () => {

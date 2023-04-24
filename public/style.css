@@ -149,6 +149,11 @@ body {
     font-weight: bold;
 }
 
+.mes_text pre code {
+    position: relative;
+    padding-right: 30px;
+}
+
 code {
     padding: 5px;
     font-family: Consolas, monospace;
@@ -3023,6 +3028,35 @@ label[for="extensions_autoconnect"] {
 
 .inline-drawer {
     padding-bottom: 10px;
+}
+
+.code-copy {
+    cursor: pointer;
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 22px;
+    width: 22px;
+    margin: 4px;
+    opacity: 0.4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.code-copy:hover {
+    opacity: 0.8;
+}
+
+.code-copied {
+    position: absolute;
+    z-index: 99;
+    font-size: var(--mainFontSize);
+    color: var(--SmartThemeBodyColor);
+    background-color: var(--SmartThemeFastUIBGColor);
+    border-radius: 5px;
+    padding: 6px;
+    border: 1px solid var(--grey30a);
 }
 
 .inline-drawer-icon {
