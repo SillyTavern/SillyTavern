@@ -884,6 +884,7 @@ function messageFormating(mes, ch_name, isSystem, forceAvatar) {
         mes = mes.replace(/{{(\*?.+?\*?)}}/g, "");
 
 
+		mes = mes.replace(/\"(.+?)\"/g, "<q>$1</q>")
         mes = mes.replace(/\n/g, "<br/>");
         mes = mes.trim();
 

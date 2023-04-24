@@ -39,6 +39,7 @@
     /*Default Theme, will be changed by ToolCool Color Picker*/
     --SmartThemeBodyColor: rgb(220, 220, 210);
     --SmartThemeEmColor: rgb(175, 175, 175);
+    --SmartThemeQuoteColor: rgb(175, 175, 175);
     --SmartThemeFastUIBGColor: rgba(0, 0, 0, 0.9);
     --SmartThemeBlurTintColor: rgba(0, 0, 0, 0.5);
     --SmartThemeBlurStrength: calc(var(--blurStrength) * 1px);
@@ -133,6 +134,12 @@ body {
 .mes_text i,
 .mes_text em {
     color: var(--SmartThemeEmColor);
+    font-weight: 500;
+}
+
+.mes_text q,
+.mes_text blockquote {
+    color: var(--SmartThemeQuoteColor);
     font-weight: 500;
 }
 

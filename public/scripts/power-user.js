@@ -68,6 +68,7 @@ let power_user = {
 
     main_text_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBodyColor').trim()}`,
     italics_text_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeEmColor').trim()}`,
+    quote_text_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeQuoteColor').trim()}`,
     fastui_bg_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeFastUIBGColor').trim()}`,
     blur_tint_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBlurTintColor').trim()}`,
 
@@ -87,6 +88,7 @@ const storage_keys = {
 
     main_text_color: "TavernAI_main_text_color",
     italics_text_color: "TavernAI_italics_text_color",
+    quote_text_color: "TavernAI_quote_text_color",
     fastui_bg_color: "TavernAI_fastui_bg_color",
     blur_tint_color: "TavernAI_blur_tint_color",
     blur_strength: "TavernAI_blur_strength",
@@ -166,6 +168,9 @@ async function applyThemeColor(type) {
     if (type === 'italics') {
         document.documentElement.style.setProperty('--SmartThemeEmColor', power_user.italics_text_color);
     }
+    if (type === 'quote') {
+        document.documentElement.style.setProperty('--SmartThemeQuoteColor', power_user.quote_text_color);
+    }
     if (type === 'fastUIBG') {
         document.documentElement.style.setProperty('--SmartThemeFastUIBGColor', power_user.fastui_bg_color);
     }
@@ -198,6 +203,7 @@ async function applyTheme(name) {
     const themeProperties = [
         { key: 'main_text_color', selector: '#main-text-color-picker', type: 'main' },
         { key: 'italics_text_color', selector: '#italics-color-picker', type: 'italics' },
+        { key: 'quote_text_color', selector: '#quote-color-picker', type: 'quote' },
         { key: 'fastui_bg_color', selector: '#fastui-bg-color-picker', type: 'fastUIBG' },
         { key: 'blur_tint_color', selector: '#blur-tint-color-picker', type: 'blurTint' },
         {
@@ -284,6 +290,7 @@ function loadPowerUserSettings(settings, data) {
 
     $("#main-text-color-picker").attr('color', power_user.main_text_color);
     $("#italics-color-picker").attr('color', power_user.italics_text_color);
+    $("#quote-color-picker").attr('color', power_user.quote_text_color);
     $("#fastui-bg-color-picker").attr('color', power_user.fastui_bg_color);
     $("#blur-tint-color-picker").attr('color', power_user.blur_tint_color);
 
@@ -471,6 +478,12 @@ $(document).ready(() => {
         applyThemeColor('italics');
         saveSettingsDebounced();
     });
+	
+    $("#quote-color-picker").on('change', (evt) => {
+        power_user.quote_text_color = evt.detail.rgba;
+        applyThemeColor('quote');
+        saveSettingsDebounced();
+    });
 
     $("#fastui-bg-color-picker").on('change', (evt) => {
         power_user.fastui_bg_color = evt.detail.rgba;
@@ -503,6 +516,7 @@ $(document).ready(() => {
             blur_strength: power_user.blur_strength,
             main_text_color: power_user.main_text_color,
             italics_text_color: power_user.italics_text_color,
+            quote_text_color: power_user.quote_text_color,
             fastui_bg_color: power_user.fastui_bg_color,
             blur_tint_color: power_user.blur_tint_color,
         };
