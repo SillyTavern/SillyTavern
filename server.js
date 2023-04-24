@@ -267,6 +267,12 @@ app.get("/", function (request, response) {
 app.get("/notes/*", function (request, response) {
     response.sendFile(__dirname + "/public" + request.url + ".html");
 });
+app.get('/get_faq', function(_, response) {
+    response.sendFile(__dirname + "/faq.md");
+});
+app.get('/get_readme', function(_, response) {
+    response.sendFile(__dirname + "/readme.md");
+});
 
 //**************Kobold api
 app.post("/generate", jsonParser, async function (request, response_generate = response) {

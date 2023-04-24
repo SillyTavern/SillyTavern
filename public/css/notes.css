@@ -39,6 +39,7 @@ code {
     padding: 5px;
     border-radius: 5px;
     display: block;
+    white-space: normal;
 }
 
 a {
@@ -54,4 +55,19 @@ h3 {
 
 hr {
     border: 1px solid #999;
+}
+
+table {
+    width: 100%;
+}
+
+table,
+th,
+td {
+    border: 1px solid;
+    border-collapse: collapse;
+}
+
+table img {
+    max-width: 200px;
 }
