@@ -1,4 +1,5 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 
 <head>
     <title>SillyTavern Guidebook</title>
@@ -10,16 +11,24 @@
     <script src="/scripts/showdown-toc.min.js"></script>
     <script type="module">
         const toc = [];
+        let hash = location.hash;
         let converter = new showdown.Converter({ extensions: [showdownToc({ toc })] } );
         let text = await (await fetch('/notes/content.md')).text();
         let content = document.getElementById('content');
         content.innerHTML = converter.makeHtml(text);
+        const link = document.createElement('a');
+        link.href = hash;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     </script>
 </head>
 
 <body>
     <div id="main">
         <div id="content">
+            <!-- To change the guidebook content edit the content.md file -->
+            <!-- Then it will be dynamically inserted here -->
         </div>
     </div>
 </body>
