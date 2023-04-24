@@ -884,7 +884,14 @@ function messageFormating(mes, ch_name, isSystem, forceAvatar) {
         mes = mes.replace(/{{(\*?.+?\*?)}}/g, "");
 
 
-        mes = mes.replace(/\n/g, "<br/>");
+		mes = mes.replace(/(<code[^>]*>[\s\S]*?<\/code>)|\"(.+?)\"/g, function(match, code, quote) {
+		  if (code) {
+			return code;
+		  } else {
+			return "<q>" + quote + "</q>";
+		  }
+		});
+		mes = mes.replace(/\n/g, "<br/>");
         mes = mes.trim();
 
         mes = mes.replace(/<code(.*)>[\s\S]*?<\/code>/g, function (match) {
