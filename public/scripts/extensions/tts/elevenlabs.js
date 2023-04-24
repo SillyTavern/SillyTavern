@@ -49,7 +49,7 @@ class ElevenLabsTtsProvider {
         let html = `
         <label for="elevenlabs_tts_stability">Stability: <span id="elevenlabs_tts_stability_output"></span></label>
         <input id="elevenlabs_tts_stability" type="range" value="${this.defaultSettings.stability}" min="0" max="1" step="0.05" />
-        <label for="elevenlabs_tts_similarity_boost">Stability: <span id="elevenlabs_tts_similarity_boost_output"></span></label>
+        <label for="elevenlabs_tts_similarity_boost">Similarity Boost: <span id="elevenlabs_tts_similarity_boost_output"></span></label>
         <input id="elevenlabs_tts_similarity_boost" type="range" value="${this.defaultSettings.similarity_boost}" min="0" max="1" step="0.05" />
         `
         return html
