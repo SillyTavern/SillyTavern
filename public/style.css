@@ -3230,8 +3230,12 @@ toolcool-color-picker {
     display: flex;
     flex-direction: row;
     width: 100%;
-    gap: 10px;
+    gap: 5px;
     align-items: baseline;
+}
+
+#openai_logit_bias_new_entry {
+    margin-top: 0.5rem;
 }
 
 .openai_logit_bias_preset_form select {

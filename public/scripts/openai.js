@@ -26,7 +26,9 @@ import {
 } from "./power-user.js";
 
 import {
+    download,
     getStringHash,
+    parseJsonFile,
 } from "./utils.js";
 
 export {
@@ -67,7 +69,7 @@ const gpt3_max = 4095;
 const gpt4_max = 8191;
 const gpt4_32k_max = 32767;
 
-let biasCache = null;
+let biasCache = undefined;
 const tokenCache = {};
 
 const default_settings = {
@@ -888,13 +890,18 @@ async function createNewLogitBiasPreset() {
     }
 
     if (name in oai_settings.bias_presets) {
-        callPopup('Preset name should be unique.', 'input');
+        callPopup('Preset name should be unique.', 'text');
         return;
     }
 
     oai_settings.bias_preset_selected = name;
     oai_settings.bias_presets[name] = [];
 
+    addLogitBiasPresetOption(name);
+    saveSettingsDebounced();
+}
+
+function addLogitBiasPresetOption(name) {
     const option = document.createElement('option');
     option.innerText = name;
     option.value = name;
@@ -902,7 +909,78 @@ async function createNewLogitBiasPreset() {
 
     $('#openai_logit_bias_preset').append(option);
     $('#openai_logit_bias_preset').trigger('change');
+}
 
+function onLogitBiasPresetImportClick() {
+    $('#openai_logit_bias_import_file').click();
+}
+
+async function onLogitBiasPresetImportFileChange(e) {
+    const file = e.target.files[0];
+
+    if (!file || file.type !== "application/json") {
+        return;
+    }
+
+    const name = file.name.replace(/\.[^/.]+$/, "");
+    const importedFile = await parseJsonFile(file);
+    e.target.value = '';
+
+    if (name in oai_settings.bias_presets) {
+        callPopup('Preset name should be unique.', 'text');
+        return;
+    }
+
+    if (!Array.isArray(importedFile)) {
+        callPopup('Invalid logit bias preset file.', 'text');
+        return;
+    }
+
+    for (const entry of importedFile) {
+        if (typeof entry == 'object') {
+            if (entry.hasOwnProperty('text') && entry.hasOwnProperty('value')) {
+                continue;
+            }
+        }
+
+        callPopup('Invalid logit bias preset file.', 'text');
+        return;
+    }
+
+    oai_settings.bias_presets[name] = importedFile;
+    oai_settings.bias_preset_selected = name;
+
+    addLogitBiasPresetOption(name);
+    saveSettingsDebounced();
+}
+
+function onLogitBiasPresetExportClick() {
+    if (!oai_settings.bias_preset_selected || Object.keys(oai_settings.bias_presets).length === 0) {
+        return;
+    }
+
+    const presetJsonString = JSON.stringify(oai_settings.bias_presets[oai_settings.bias_preset_selected]);
+    download(presetJsonString, oai_settings.bias_preset_selected, 'application/json');
+}
+
+async function onLogitBiasPresetDeleteClick() {
+    const value = await callPopup('Delete the preset?', 'confirm');
+
+    if (!value) {
+        return;
+    }
+
+    $(`#openai_logit_bias_preset option[value="${oai_settings.bias_preset_selected}"]`).remove();
+    delete oai_settings.bias_presets[oai_settings.bias_preset_selected];
+    oai_settings.bias_preset_selected = null;
+
+    if (Object.keys(oai_settings.bias_presets).length) {
+        oai_settings.bias_preset_selected = Object.keys(oai_settings.bias_presets)[0];
+        $(`#openai_logit_bias_preset option[value="${oai_settings.bias_preset_selected}"]`).attr('selected', true);
+        $('#openai_logit_bias_preset').trigger('change');
+    }
+
+    biasCache = undefined;
     saveSettingsDebounced();
 }
 
@@ -1137,4 +1215,8 @@ $(document).ready(function () {
     $('#openai_logit_bias_preset').on('change', onLogitBiasPresetChange);
     $('#openai_logit_bias_new_preset').on('click', createNewLogitBiasPreset);
     $('#openai_logit_bias_new_entry').on('click', createNewLogitBiasEntry);
+    $('#openai_logit_bias_import_file').on('input', onLogitBiasPresetImportFileChange);
+    $('#openai_logit_bias_import_preset').on('click', onLogitBiasPresetImportClick);
+    $('#openai_logit_bias_export_preset').on('click', onLogitBiasPresetExportClick);
+    $('#openai_logit_bias_delete_preset').on('click', onLogitBiasPresetDeleteClick);
 });

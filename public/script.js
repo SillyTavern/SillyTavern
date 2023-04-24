@@ -3237,6 +3237,7 @@ function callPopup(text, type) {
             break;
         case "world_imported":
         case "new_chat":
+        case "confirm":
             $("#dialogue_popup_ok").text("Yes");
             break;
         case "del_world":
