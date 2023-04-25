@@ -405,6 +405,7 @@ var message_already_generated = "";
 var cycle_count_generation = 0;
 
 var swipes = false;
+var sendOnEnter = true;
 
 let anchor_order = 0;
 let style_anchor = true;
@@ -878,6 +879,7 @@ function messageFormating(mes, ch_name, isSystem, forceAvatar) {
             .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
             .replace(/\n/g, "<br/>");
     } else if (!isSystem) {
+		
 		mes = mes.replace(/```[\s\S]*?```|``[\s\S]*?``|`[\s\S]*?`|(\".+?\")/gm, function(match, p1) {
 		  if (p1) {
 			return "<q>" + p1.replace(/\"/g, "") + "</q>";
@@ -885,9 +887,13 @@ function messageFormating(mes, ch_name, isSystem, forceAvatar) {
 			return match;
 		  }
 		});
+		
         mes = converter.makeHtml(mes);
+
         //mes = mes.replace(/{.*}/g, "");
         mes = mes.replace(/{{(\*?.+?\*?)}}/g, "");
+
+
 
         mes = mes.replace(/\n/g, "<br/>");
         mes = mes.trim();
@@ -895,6 +901,9 @@ function messageFormating(mes, ch_name, isSystem, forceAvatar) {
         mes = mes.replace(/<code(.*)>[\s\S]*?<\/code>/g, function (match) {
             return match.replace(/&amp;/g, '&');
         });
+	//mes = mes.replace(/(?<!<code>)(\".+?\")(?![^<]*<\/code>)/g, "<q>$1</q>");
+
+	
     }
 
     if (forceAvatar) {
@@ -2800,7 +2809,9 @@ async function getSettings(type) {
 
                 swipes = !!settings.swipes;  //// swipecode
                 $('#swipes-checkbox').prop('checked', swipes); /// swipecode
-                //console.log('getSettings -- swipes = ' + swipes + '. toggling box');
+				sendOnEnter = !!settings.sendOnEnter;
+                $('#sendOnEnter-checkbox').prop('checked', sendOnEnter);
+				//console.log('getSettings -- swipes = ' + swipes + '. toggling box');
                 hideSwipeButtons();
                 //console.log('getsettings calling showswipebtns');
                 showSwipeButtons();
@@ -2915,7 +2926,8 @@ async function saveSettings(type) {
             active_character: active_character,
             textgenerationwebui_settings: textgenerationwebui_settings,
             swipes: swipes,
-            horde_settings: horde_settings,
+            sendOnEnter: sendOnEnter,
+			horde_settings: horde_settings,
             power_user: power_user,
             poe_settings: poe_settings,
             extension_settings: extension_settings,
@@ -3556,6 +3568,12 @@ $(document).ready(function () {
         saveSettingsDebounced();
     });
 
+    $('#sendOnEnter-checkbox').change(function () {
+        sendOnEnter = !!$('#sendOnEnter-checkbox').prop('checked');
+
+        saveSettingsDebounced();
+    });
+
     ///// SWIPE BUTTON CLICKS ///////
 
     $(document).on('click', '.swipe_right', function () {               //when we click swipe right button
@@ -3847,7 +3865,7 @@ $(document).ready(function () {
     });
 
     $("#send_textarea").keydown(function (e) {
-        if (!e.shiftKey && !e.ctrlKey && e.key == "Enter" && is_send_press == false) {
+        if (!e.shiftKey && !e.ctrlKey && e.key == "Enter" && is_send_press == false && !!$('#sendOnEnter-checkbox').prop('checked')) {
             is_send_press = true;
             e.preventDefault();
             Generate();
