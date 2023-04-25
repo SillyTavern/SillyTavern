@@ -168,7 +168,7 @@ function RA_CountCharTokens() {
             create_save_scenario +
             create_save_first_message +
             create_save_mes_example
-        ));
+        ).replace(/\r/gm, ''));
 
         //count permanent tokens that will never get flushed out of context
         perm_tokens = getTokenCount(JSON.stringify(
@@ -176,7 +176,7 @@ function RA_CountCharTokens() {
             create_save_description +
             create_save_personality +
             create_save_scenario
-        ));
+        ).replace(/\r/gm, ''));
 
     } else {
         if (this_chid !== undefined && this_chid !== "invalid-safety-id") {    // if we are counting a valid pre-saved char
