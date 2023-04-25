@@ -878,14 +878,17 @@ function messageFormating(mes, ch_name, isSystem, forceAvatar) {
             .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
             .replace(/\n/g, "<br/>");
     } else if (!isSystem) {
+		mes = mes.replace(/```[\s\S]*?```|``[\s\S]*?``|`[\s\S]*?`|(\".+?\")/gm, function(match, p1) {
+		  if (p1) {
+			return "<q>" + p1.replace(/\"/g, "") + "</q>";
+		  } else {
+			return match;
+		  }
+		});
         mes = converter.makeHtml(mes);
         //mes = mes.replace(/{.*}/g, "");
         mes = mes.replace(/{{(\*?.+?\*?)}}/g, "");
 
-
-        mes = mes.replace(/(<code[^>]*>[\s\S]*?<\/code>)|\"(.+?)\"/g, function (match, code, quote) {
-            return code ? code : `<q>${quote}</q>`;
-        });
         mes = mes.replace(/\n/g, "<br/>");
         mes = mes.trim();
 
