@@ -935,8 +935,8 @@ function addCopyToCodeBlocks(messageElement) {
             const copiedMsg = document.createElement("div");
             copiedMsg.classList.add('code-copied');
             copiedMsg.innerText = "Copied!";
-            copiedMsg.style.top = `${event.clientY}px`;
-            copiedMsg.style.left = `${event.clientX}px`;
+            copiedMsg.style.top = `${event.clientY - 55}px`;
+            copiedMsg.style.left = `${event.clientX - 55}px`;
             document.body.append(copiedMsg);
             setTimeout(() => {
                 document.body.removeChild(copiedMsg);
