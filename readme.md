@@ -66,11 +66,15 @@ https://rentry.org/TAI_Termux
 
 ## UI/CSS/Quality of Life tweaks by RossAscends
 
-* Mobile-friendly page design
+* Mobile UI with optimized for iOS, and supports saving a shortcut to home screen and opening in fullscreen mode.
 * HotKeys
-  * Ctrl+Up = Connect to API 
+  * Up = Edit last message in chat
+  * Ctrl+Up = Edit last USER message in chat
+  * Left = swipe left
+  * Right = swipe right (NOTE: swipes are disabled when chatbar has something typed into it)
   * Ctrl+Left = view locally stored variables (in the browser console window)
-  * Ctrl+Enter = Regenerate the last AI response.
+  * Enter (with chat bar selected) = send your message to AI 
+  * Ctrl+Enter = Regenerate the last AI response
 
 * User Name Changes and Character Deletion no longer force the page to refresh.
 
@@ -83,16 +87,17 @@ https://rentry.org/TAI_Termux
   * Chat preview increased from 40 characters to 300.
   * Multiple options for characters list sorting (by name, creation date, chat sizes).
 
-* Now, by default the settings panel will close when you click away from it.
+* By default the left and right settings panel will close when you click away from it.
 * Clicking the Lock on the nav panel will hold the panel open, and this setting be remembered across sessions.
 * Nav panel status of open or closed will also be saved across sessions.
 
-* Mobile UI optimized for iOS, and supports saving a shortcut to the iOS home screen and opening in fullscreen mode.
 * Customizable chat UI:
     * Play a sound when a new message arrives
     * Switch between round or rectangle avatar styles
     * Have a wider chat window on the desktop
     * Optional semi-transparent glass-like panels
+    * Customizable page colors for 'main text', 'quoted text' 'italics text'.
+    * Customizable UI background color and blur amount
 
 ## Installation
 
