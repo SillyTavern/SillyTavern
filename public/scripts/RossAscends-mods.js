@@ -140,66 +140,75 @@ $("#rm_button_create").on("click", function () {                 //when "+New Ch
     create_save_mes_example = "";
     $("#result_info").html('Type to start counting tokens!');
 });
-$("#rm_ch_create_block").on("input", function () { RA_CountCharTokens(); });                      //when any input is made to the create/edit character form textareas
-$("#character_popup").on("input", function () { RA_CountCharTokens(); });                      //when any input is made to the advanced editing popup textareas
+//when any input is made to the create/edit character form textareas
+$("#rm_ch_create_block").on("input", function () { RA_CountCharTokens(); });
+//when any input is made to the advanced editing popup textareas
+$("#character_popup").on("input", function () { RA_CountCharTokens(); });
 //function:
 function RA_CountCharTokens() {
     $("#result_info").html("");
     //console.log('RA_TC -- starting with this_chid = ' + this_chid);
     if (document.getElementById('name_div').style.display == "block") {            //if new char
-
-        $("#form_create").on("input", function () {                                    //fill temp vars with form_create values
+        function saveFormVariables() {
             create_save_name = $("#character_name_pole").val();
             create_save_description = $("#description_textarea").val();
             create_save_first_message = $("#firstmessage_textarea").val();
-        });
-        $("#character_popup").on("input", function () {                                //fill temp vars with advanced popup values
+        }
+
+        function savePopupVariables() {
             create_save_personality = $("#personality_textarea").val();
             create_save_scenario = $("#scenario_pole").val();
             create_save_mes_example = $("#mes_example_textarea").val();
+        }
 
-        });
+        saveFormVariables();
+        savePopupVariables();
 
         //count total tokens, including those that will be removed from context once chat history is long
-        count_tokens = getTokenCount(JSON.stringify(
-            create_save_name +
-            create_save_description +
-            create_save_personality +
-            create_save_scenario +
-            create_save_first_message +
-            create_save_mes_example
-        ).replace(/\r/gm, ''));
+        let count_string = [
+            create_save_name,
+            create_save_description,
+            create_save_personality,
+            create_save_scenario,
+            create_save_first_message,
+            create_save_mes_example,
+        ].join('\n').replace(/\r/gm, '').trim();
+        count_tokens = getTokenCount(count_string);
 
         //count permanent tokens that will never get flushed out of context
-        perm_tokens = getTokenCount(JSON.stringify(
-            create_save_name +
-            create_save_description +
-            create_save_personality +
-            create_save_scenario
-        ).replace(/\r/gm, ''));
+        let perm_string = [
+            create_save_name,
+            create_save_description,
+            create_save_personality,
+            create_save_scenario,
+            // add examples to permanent if they are pinned
+            (power_user.pin_examples ? create_save_mes_example : ''),
+        ].join('\n').replace(/\r/gm, '').trim();
+        perm_tokens = getTokenCount(perm_string);
 
     } else {
         if (this_chid !== undefined && this_chid !== "invalid-safety-id") {    // if we are counting a valid pre-saved char
 
             //same as above, all tokens including temporary ones
-            count_tokens = getTokenCount(
-                JSON.stringify(
-                    characters[this_chid].description +
-                    characters[this_chid].personality +
-                    characters[this_chid].scenario +
-                    characters[this_chid].first_mes +
-                    characters[this_chid].mes_example
-                ));
+            let count_string = [
+                characters[this_chid].description,
+                characters[this_chid].personality,
+                characters[this_chid].scenario,
+                characters[this_chid].first_mes,
+                characters[this_chid].mes_example,
+            ].join('\n').replace(/\r/gm, '').trim();
+            count_tokens = getTokenCount(count_string);
 
             //permanent tokens count
-            perm_tokens = getTokenCount(
-                JSON.stringify(
-                    characters[this_chid].name +
-                    characters[this_chid].description +
-                    characters[this_chid].personality +
-                    characters[this_chid].scenario +
-                    (power_user.pin_examples ? characters[this_chid].mes_example : '') // add examples to permanent if they are pinned
-                ));
+            let perm_string = [
+                characters[this_chid].name,
+                characters[this_chid].description,
+                characters[this_chid].personality,
+                characters[this_chid].scenario,
+                // add examples to permanent if they are pinned
+                (power_user.pin_examples ? characters[this_chid].mes_example : ''),
+            ].join('\n').replace(/\r/gm, '').trim();
+            perm_tokens = getTokenCount(perm_string);
         } else { console.log("RA_TC -- no valid char found, closing."); }                // if neither, probably safety char or some error in loading
     }
     // display the counted tokens
@@ -209,7 +218,7 @@ function RA_CountCharTokens() {
         $("#result_info").html(`
         <span class="neutral_warning">${count_tokens}</span>&nbsp;Tokens (<span class="neutral_warning">${perm_tokens}</span><span>&nbsp;Permanent Tokens)
         <br>
-        <div id="chartokenwarning" class="menu_button whitespacenowrap"><a href="/notes/token-limits.html" target="_blank">Learn More About Token 'Limits'</a></div>`);
+        <div id="chartokenwarning" class="menu_button whitespacenowrap"><a href="/notes#charactertokens" target="_blank">Learn More About Token 'Limits'</a></div>`);
     } //warn if either are over 1024
 }
 //Auto Load Last Charcter -- (fires when active_character is defined and auto_load_chat is true)

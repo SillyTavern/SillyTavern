@@ -595,6 +595,10 @@ $(document).ready(() => {
         const value = $(this).find(':selected').val();
         power_user.tokenizer = Number(value);
         saveSettingsDebounced();
+        
+        // Trigger character editor re-tokenize
+        $("#rm_ch_create_block").trigger('input');
+        $("#character_popup").trigger('input');
     });
 
     $(window).on('focus', function () {
