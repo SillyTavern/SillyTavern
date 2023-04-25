@@ -164,7 +164,7 @@ code {
     border-radius: 5px;
     background-color: var(--black70a);
     display: inline-block;
-    max-width: 80%;
+    max-width: calc(100svw - 95px);
     line-height: var(--mainFontSize);
 }
 
@@ -596,7 +596,7 @@ body.big-avatars .avatar img {
     padding-left: 0;
     padding-top: 5px;
     padding-bottom: 5px;
-    /*max-width: 720px;*/
+    max-width: 100%;
     word-wrap: break-word;
     /* animation: typing 3.5s steps(40, end), blink-caret .75s step-end infinite; */
 }
@@ -1153,7 +1153,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     margin-bottom: 4px;
 }
 
-#fav_chara_wrap{
+#fav_chara_wrap {
     display: flex;
     margin: 5px 0px;
 }
@@ -2518,7 +2518,7 @@ h5 {
     text-overflow: ellipsis;
 }
 
-.group_select .group_fav_icon{
+.group_select .group_fav_icon {
     margin-left: 5px;
 }
 
