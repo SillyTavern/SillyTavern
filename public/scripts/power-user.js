@@ -6,8 +6,6 @@ import {
     token,
     getStatus,
 } from "../script.js";
-import { delay } from "./utils.js";
-
 
 export {
     loadPowerUserSettings,
@@ -16,6 +14,7 @@ export {
     sortCharactersList,
     power_user,
     pygmalion_options,
+    tokenizers,
 };
 
 const avatar_styles = {
@@ -39,7 +38,15 @@ const pygmalion_options = {
     ENABLED: 1,
 }
 
+const tokenizers = {
+    NONE: 0,
+    GPT3: 1,
+    CLASSIC: 2,
+    LLAMA: 3,
+}
+
 let power_user = {
+    tokenizer: tokenizers.CLASSIC,
     collapse_newlines: false,
     pygmalion_formatting: pygmalion_options.AUTO,
     pin_examples: false,
@@ -97,7 +104,6 @@ const storage_keys = {
     movingUI: "TavernAI_movingUI",
 };
 
-const chat = document.getElementById('chat');
 let browser_has_focus = true;
 
 function playMessageSound() {
@@ -260,6 +266,7 @@ function loadPowerUserSettings(settings, data) {
     power_user.font_scale = Number(localStorage.getItem(storage_keys.font_scale) ?? 1);
     power_user.blur_strength = Number(localStorage.getItem(storage_keys.blur_strength) ?? 10);
 
+    $(`#tokenizer option[value="${power_user.tokenizer}"]`).attr('selected', true);
     $(`#pygmalion_formatting option[value=${power_user.pygmalion_formatting}]`).attr("selected", true);
     $("#collapse-newlines-checkbox").prop("checked", power_user.collapse_newlines);
     $("#pin-examples-checkbox").prop("checked", power_user.pin_examples);
@@ -581,6 +588,12 @@ $(document).ready(() => {
 
     $("#multigen_next_chunks").on('input', function () {
         power_user.multigen_next_chunks = Number($(this).val());
+        saveSettingsDebounced();
+    });
+
+    $("#tokenizer").on('change', function () {
+        const value = $(this).find(':selected').val();
+        power_user.tokenizer = Number(value);
         saveSettingsDebounced();
     });
 

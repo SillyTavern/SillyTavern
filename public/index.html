@@ -1037,6 +1037,15 @@
                     </div>
                     <div name="ContextFormatting">
                         <h4>Context Formatting</h4>
+                        <div>
+                            <h4>Tokenizer</h4>
+                            <select id="tokenizer">
+                                <option value="0">None / Estimated</option>
+                                <option value="1">GPT-3 (OpenAI)</option>
+                                <option value="2">GPT-3 (Alternative / Classic)</option>
+                                <option value="3">Sentencepiece (LLaMA)</option>
+                            </select>
+                        </div>
                         <label class="checkbox_label" for="always-force-name2-checkbox">
                             <input id="always-force-name2-checkbox" type="checkbox" />
                             Always add character's name to prompt

@@ -119,6 +119,16 @@ let api_key_openai;
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 
+const { SentencePieceProcessor, cleanText } = require("./src/sentencepiece/sentencepiece.min.js");
+let spp = new SentencePieceProcessor();
+
+async function countTokensLlama(text) {
+    let cleaned = cleanText(text);
+
+    let ids = spp.encodeIds(cleaned);
+    return ids.length;
+}
+
 function humanizedISO8601DateTime() {
     let baseDate = new Date(Date.now());
     let humanYear = baseDate.getFullYear();
@@ -2273,6 +2283,15 @@ app.post("/savepreset_openai", jsonParser, function (request, response) {
     return response.send({ name });
 });
 
+app.post("/tokenize_llama", jsonParser, async function (request, response) {
+    if (!request.body) {
+        return response.sendStatus(400);
+    }
+
+    const count = await countTokensLlama(request.body.text);
+    return response.send({ count });
+});
+
 // ** REST CLIENT ASYNC WRAPPERS **
 function deleteAsync(url, args) {
     return new Promise((resolve, reject) => {
@@ -2338,6 +2357,8 @@ const setupTasks = async function () {
     // Colab users could run the embedded tool
     if (!is_colab) await convertWebp();
 
+    await spp.load(`./src/sentencepiece/tokenizer.model`);
+
     console.log('Launching...');
   
     if (autorun) open(autorunUrl.toString());
@@ -2346,10 +2367,6 @@ const setupTasks = async function () {
         !config.whitelistMode &&
         !config.basicAuthMode)
         console.log('Your SillyTavern is currently open to the public. To increase security, consider enabling whitelisting or basic authentication.')
-
-    if (fs.existsSync('public/characters/update.txt') && !is_colab) {
-        convertStage1();
-    }
 }
 
 if (true === cliArguments.ssl)
@@ -2369,187 +2386,6 @@ else
         tavernUrl.hostname,
         setupTasks
     );
-
-//#####################CONVERTING IN NEW FORMAT########################
-
-var charactersB = {};//B - Backup
-var character_ib = 0;
-
-var directoriesB = {};
-
-
-function convertStage1() {
-    //if (!fs.existsSync('public/charactersBackup')) {
-    //fs.mkdirSync('public/charactersBackup');
-    //copyFolder('public/characters/', 'public/charactersBackup');
-    //}
-
-    var directories = getDirectories2("public/characters");
-    //console.log(directories[0]);
-    charactersB = {};
-    character_ib = 0;
-    var folderForDel = {};
-    getCharacterFile2(directories, 0);
-}
-function convertStage2() {
-    var mes = true;
-    for (const key in directoriesB) {
-        if (mes) {
-            console.log('***');
-            console.log('The update of the character format has begun...');
-            console.log('***');
-            mes = false;
-        }
-
-        var char = JSON.parse(charactersB[key]);
-        char.create_date = humanizedISO8601DateTime();
-        charactersB[key] = JSON.stringify(char);
-        var avatar = 'public/img/ai4.png';
-        if (char.avatar !== 'none') {
-            avatar = 'public/characters/' + char.name + '/avatars/' + char.avatar;
-        }
-
-        charaWrite(avatar, charactersB[key], directoriesB[key]);
-
-        const files = fs.readdirSync('public/characters/' + directoriesB[key] + '/chats');
-        if (!fs.existsSync(chatsPath + char.name)) {
-            fs.mkdirSync(chatsPath + char.name);
-        }
-        files.forEach(function (file) {
-            // Read the contents of the file
-
-            const fileContents = fs.readFileSync('public/characters/' + directoriesB[key] + '/chats/' + file, 'utf8');
-
-
-            // Iterate through the array of strings and parse each line as JSON
-            let chat_data = JSON.parse(fileContents);
-            let new_chat_data = [];
-            let this_chat_user_name = 'You';
-            let is_pass_0 = false;
-            if (chat_data[0].indexOf('<username-holder>') !== -1) {
-                this_chat_user_name = chat_data[0].substr('<username-holder>'.length, chat_data[0].length);
-                is_pass_0 = true;
-            }
-            let i = 0;
-            let ii = 0;
-            new_chat_data[i] = { user_name: 'You', character_name: char.name, create_date: humanizedISO8601DateTime() };
-            i++;
-            ii++;
-            chat_data.forEach(function (mes) {
-                if (!(i === 1 && is_pass_0)) {
-                    if (mes.indexOf('<username-holder>') === -1 && mes.indexOf('<username-idkey>') === -1) {
-                        new_chat_data[ii] = {};
-                        let is_name = false;
-                        if (mes.trim().indexOf(this_chat_user_name + ':') !== 0) {
-                            if (mes.trim().indexOf(char.name + ':') === 0) {
-                                mes = mes.replace(char.name + ':', '');
-                                is_name = true;
-                            }
-                            new_chat_data[ii]['name'] = char.name;
-                            new_chat_data[ii]['is_user'] = false;
-                            new_chat_data[ii]['is_name'] = is_name;
-                            new_chat_data[ii]['send_date'] = humanizedISO8601DateTime(); //Date.now();
-
-                        } else {
-                            mes = mes.replace(this_chat_user_name + ':', '');
-                            new_chat_data[ii]['name'] = 'You';
-                            new_chat_data[ii]['is_user'] = true;
-                            new_chat_data[ii]['is_name'] = true;
-                            new_chat_data[ii]['send_date'] = humanizedISO8601DateTime(); //Date.now();
-
-                        }
-                        new_chat_data[ii]['mes'] = mes.trim();
-                        ii++;
-                    }
-                }
-                i++;
-
-            });
-            const jsonlData = new_chat_data.map(JSON.stringify).join('\n');
-            // Write the contents to the destination folder
-            //console.log('convertstage2 writing a file: '+chatsPath+char.name+'/' + file+'l');		
-            fs.writeFileSync(chatsPath + char.name + '/' + file + 'l', jsonlData);
-        });
-        //fs.rmSync('public/characters/'+directoriesB[key],{ recursive: true });
-        console.log(char.name + ' update!');
-    }
-    //removeFolders('public/characters');
-    fs.unlinkSync('public/characters/update.txt');
-    if (mes == false) {
-        console.log('***');
-        console.log('Сharacter format update completed successfully!');
-        console.log('***');
-        console.log('Now you can delete these folders, they are no longer used by TavernAI:');
-    }
-    for (const key in directoriesB) {
-        console.log('public/characters/' + directoriesB[key]);
-    }
-}
-function removeFolders(folder) {
-    const files = fs.readdirSync(folder);
-    files.forEach(function (file) {
-        const filePath = folder + '/' + file;
-        const stat = fs.statSync(filePath);
-        if (stat.isDirectory()) {
-            removeFolders(filePath);
-            fs.rmdirSync(filePath);
-        }
-    });
-}
-
-function copyFolder(src, dest) {
-    const files = fs.readdirSync(src);
-    files.forEach(function (file) {
-        const filePath = src + '/' + file;
-        const stat = fs.statSync(filePath);
-        if (stat.isFile()) {
-            fs.copyFileSync(filePath, dest + '/' + file);
-        } else if (stat.isDirectory()) {
-            fs.mkdirSync(dest + '/' + file);
-            copyFolder(filePath, dest + '/' + file);
-        }
-    });
-}
-
-
-function getDirectories2(path) {
-    return fs.readdirSync(path)
-        .filter(function (file) {
-            return fs.statSync(path + '/' + file).isDirectory();
-        })
-        .sort(function (a, b) {
-            return new Date(fs.statSync(path + '/' + a).mtime) - new Date(fs.statSync(path + '/' + b).mtime);
-        })
-        .reverse();
-}
-function getCharacterFile2(directories, i) {
-    if (directories.length > i) {
-        fs.stat('public/characters/' + directories[i] + '/' + directories[i] + ".json", function (err, stat) {
-            if (err == null) {
-                fs.readFile('public/characters/' + directories[i] + '/' + directories[i] + ".json", 'utf8', (err, data) => {
-                    if (err) {
-                        console.error(err);
-                        return;
-                    }
-                    //console.log(data);
-                    if (!fs.existsSync('public/characters/' + directories[i] + '.png')) {
-                        charactersB[character_ib] = {};
-                        charactersB[character_ib] = data;
-                        directoriesB[character_ib] = directories[i];
-                        character_ib++;
-                    }
-                    i++;
-                    getCharacterFile2(directories, i);
-                });
-            } else {
-                i++;
-                getCharacterFile2(directories, i);
-            }
-        });
-    } else {
-        convertStage2();
-    }
-}
 
 async function convertWebp() {
     const files = fs.readdirSync(directories.characters).filter(e => e.endsWith(".webp"));

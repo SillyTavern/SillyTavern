@@ -48,6 +48,7 @@ import {
     sortCharactersList,
     power_user,
     pygmalion_options,
+    tokenizers,
 } from "./scripts/power-user.js";
 
 import {
@@ -335,14 +336,31 @@ $(document).ajaxError(function myErrorHandler(_, xhr) {
 });
 
 function getTokenCount(str, padding = 0) {
-    if (main_api == 'poe' || main_api == 'openai') {
-        return gpt3.encode(str).bpe.length + padding;
-    }
-    else {
-        return encode(str).length + padding;
+    switch (power_user.tokenizer) {
+        case tokenizers.NONE:
+            return Math.ceil(str.length / CHARACTERS_PER_TOKEN_RATIO) + padding;
+        case tokenizers.GPT3:
+            return gpt3.encode(str).bpe.length + padding;
+        case tokenizers.CLASSIC:
+            return encode(str).length + padding;
+        case tokenizers.LLAMA:
+            let tokenCount = 0;
+            jQuery.ajax({
+                async: false,
+                type: 'POST', // 
+                url: `/tokenize_llama`,
+                data: JSON.stringify({ text: str }),
+                dataType: "json",
+                contentType: "application/json",
+                success: function (data) {
+                    tokenCount = data.count;
+                }
+            });
+            return tokenCount + padding;
     }
 }
 
+const CHARACTERS_PER_TOKEN_RATIO = 3.35;
 const talkativeness_default = 0.5;
 
 var is_advanced_char_open = false;
