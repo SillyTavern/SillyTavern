@@ -1438,7 +1438,7 @@ async function Generate(type, automatic_trigger, force_name2) {
         const blockHeading =
             main_api === 'openai' ? '<START>' : // OpenAI handler always expects it
             power_user.custom_chat_separator ? power_user.custom_chat_separator :
-            power_user.disable_examples_formatting && !(is_pygmalion && power_user.pin_examples) ? '' :
+            power_user.disable_examples_formatting ? '' :
             is_pygmalion ? '<START>' : `This is how ${name2} should talk`;
         let mesExamplesArray = mesExamples.split(/<START>/gi).slice(1).map(block => `${blockHeading}\n${block.trim()}\n`);
 
