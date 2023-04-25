@@ -39,6 +39,8 @@ img.expression[src=""] {
 img.expression.default {
     vertical-align: middle;
     max-height: 120px;
+    object-fit: contain !important;
+    margin-top: 50px;
 }
 
 .debug-image {
