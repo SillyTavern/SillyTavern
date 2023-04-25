@@ -49,6 +49,10 @@ var connection_made = false;
 var retry_delay = 100;
 var RA_AC_retries = 1;
 
+let isVirtualKB = false;
+let lastKeyDownTime = 0;
+let lastKeyUpTime = 0;
+
 const observerConfig = { childList: true, subtree: true };
 
 const observer = new MutationObserver(function (mutations) {
@@ -597,9 +601,6 @@ $("document").ready(function () {
         chatbarInFocus = false;
     });
 
-
-
-
     setTimeout(() => {
         OpenNavPanels();
     }, 300);
@@ -665,12 +666,38 @@ $("document").ready(function () {
         return false;
     }
 
+    document.addEventListener("keydown", () => {
+        lastKeyDownTime = new Date().getTime();
+    })
+
+    document.addEventListener('keyup', (event) => {
+        lastKeyUpTime = new Date().getTime();
+        isVirtualKeyboard(event);
+    })
 
 
-
+    function isVirtualKeyboard(event) {
+        var keyTiming = lastKeyUpTime - lastKeyDownTime;                   // array to store times
+        if (keyTiming <= 40) {
+            console.log(`detected VKB (${keyTiming}ms)`);
+            return;
+        }
+        if (keyTiming > 40) {
+            console.log(`detected PhysKB (${keyTiming}ms)`);
+            processHotkeys(event);
+        }
+    }
 
     //Additional hotkeys CTRL+ENTER and CTRL+UPARROW
-    document.addEventListener("keydown", (event) => {
+    function processHotkeys(event) {
+        //Enter to send when send_textarea in focus
+        if ($(':focus').attr('id') === 'send_textarea') {
+            if (!event.shiftKey && !event.ctrlKey && event.key == "Enter" && is_send_press == false) {
+                event.preventDefault();
+                Generate();
+            }
+        }
+
         if (event.ctrlKey && event.key == "Enter") {
             // Ctrl+Enter for Regeneration Last Response
             if (is_send_press == false) {
@@ -682,11 +709,7 @@ $("document").ready(function () {
         if (event.ctrlKey && event.key == "ArrowLeft") {        //for debug, show all local stored vars
             CheckLocal();
         }
-        /*
-        if (event.ctrlKey && event.key == "ArrowRight") {        //for debug, empty local storage state
-            ClearLocal();
-        }
-        */
+
         if (event.key == "ArrowLeft") {        //swipes left
             if (
                 $(".swipe_left:last").css('display') === 'flex' &&
@@ -746,5 +769,6 @@ $("document").ready(function () {
             }
         }
 
-    });
+    }
 });
+

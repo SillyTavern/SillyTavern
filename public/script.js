@@ -3843,14 +3843,6 @@ $(document).ready(function () {
         }
     });
 
-    $("#send_textarea").keydown(function (e) {
-        if (!e.shiftKey && !e.ctrlKey && e.key == "Enter" && is_send_press == false) {
-            is_send_press = true;
-            e.preventDefault();
-            Generate();
-        }
-    });
-
     //menu buttons setup
 
     $("#rm_button_settings").click(function () {
