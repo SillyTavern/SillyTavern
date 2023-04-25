@@ -1583,7 +1583,7 @@ async function Generate(type, automatic_trigger, force_name2) {
         // Force pinned examples into the context
         let pinExmString;
         if (power_user.pin_examples) {
-            pinExmString = examplesString = mesExamplesArray.map(example => appendToStoryString(example, '')).join('');
+            pinExmString = examplesString = mesExamplesArray.join('');
         }
 
         // Collect enough messages to fill the context
