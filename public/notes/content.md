@@ -400,6 +400,17 @@ _When using Pygmalion models these anchors are automatically disabled, since Pyg
 
 To import Character.AI chats, use this tool: [https://github.com/0x000011b/characterai-dumper](https://github.com/0x000011b/characterai-dumper).
 
+## Tokenizer
+
+A tokenizer is a tool that breaks down a piece of text into smaller units called tokens. These tokens can be individual words or even parts of words, such as prefixes, suffixes, or punctuation. A rule of thumb is that one token generally corresponds to 3~4 characters of text. 
+
+SillyTavern can use the following tokenizers while forming a request to the AI backend:
+
+1. None. Each token is estimated to be ~3.3 characters, rounded up to the nearest integer. **Try this if your prompts get cut off on high context lengths.** This approach is used by KoboldAI Lite.
+2. GPT-3 tokenizer. **Use to get more accurate counts on OpenAI character cards.** Can be previewed here: [OpenAI Tokenizer](https://platform.openai.com/tokenizer).
+3. (Legacy) GPT-2/3 tokenizer. Used by original TavernAI. **Pick this if you're unsure.** More info: [gpt-2-3-tokenizer](https://github.com/josephrocca/gpt-2-3-tokenizer).
+4. Sentencepiece tokenizer. Used by LLaMA model family: Alpaca, Vicuna, Koala, etc. **Pick if you use a LLaMA model.**
+
 ## Advanced Formatting
 
 The settings provided in this section allow for more control over the prompt building strategy. Most specifics of the prompt building depend on whether a Pygmalion model is selected or special formatting is force-enabled. The core differences between the formatting schemas are listed below.
