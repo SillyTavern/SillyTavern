@@ -4,5 +4,7 @@
     "main_text_color": "rgb(220, 220, 210)",
     "italics_text_color": "rgb(175, 175, 175)",
     "fastui_bg_color": "rgba(0, 0, 0, 0.9)",
-    "blur_tint_color": "rgba(0, 0, 0, 0.5)"
+    "blur_tint_color": "rgba(0, 0, 0, 0.5)",
+    "shadow_color": "rgba(0, 0, 0, 0.5)",
+    "shadow_width": 2
 }
