@@ -925,6 +925,14 @@ select option:not(:checked) {
     color: #ffff00 !important;
 }
 
+.displayBlock {
+    display: block !important;
+}
+
+.displayNone {
+    display: none !important;
+}
+
 #api_url_text,
 #textgenerationwebui_api_url_text {
     /*margin-right: 4px;*/

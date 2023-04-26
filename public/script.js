@@ -772,7 +772,7 @@ async function setBackground(bg) {
             bg: bg,
         }),
         beforeSend: function () {
-            //$('#create_button').attr('value','Creating...'); //
+
         },
         cache: false,
         dataType: "json",
@@ -896,13 +896,13 @@ function messageFormating(mes, ch_name, isSystem, forceAvatar) {
             .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
             .replace(/\n/g, "<br/>");
     } else if (!isSystem) {
-		mes = mes.replace(/```[\s\S]*?```|``[\s\S]*?``|`[\s\S]*?`|(\".+?\")/gm, function(match, p1) {
-		  if (p1) {
-			return "<q>" + p1.replace(/\"/g, "") + "</q>";
-		  } else {
-			return match;
-		  }
-		});
+        mes = mes.replace(/```[\s\S]*?```|``[\s\S]*?``|`[\s\S]*?`|(\".+?\")/gm, function (match, p1) {
+            if (p1) {
+                return "<q>" + p1.replace(/\"/g, "") + "</q>";
+            } else {
+                return match;
+            }
+        });
         mes = converter.makeHtml(mes);
         //mes = mes.replace(/{.*}/g, "");
         mes = mes.replace(/{{(\*?.+?\*?)}}/g, "");
@@ -2008,7 +2008,7 @@ async function Generate(type, automatic_trigger, force_name2) {
                     url: generate_url, // 
                     data: JSON.stringify(generate_data),
                     beforeSend: function () {
-                        //$('#create_button').attr('value','Creating...'); 
+
                     },
                     cache: false,
                     dataType: "json",
@@ -2427,7 +2427,7 @@ async function saveChat(chat_name, withMetadata) {
             avatar_url: characters[this_chid].avatar,
         }),
         beforeSend: function () {
-            //$('#create_button').attr('value','Creating...');
+
         },
         cache: false,
         dataType: "json",
@@ -3020,7 +3020,7 @@ async function getAllCharaChats() {
         url: "/getallchatsofcharacter",
         data: JSON.stringify({ avatar_url: characters[this_chid].avatar }),
         beforeSend: function () {
-            //$('#create_button').attr('value','Creating...');
+
         },
         cache: false,
         dataType: "json",
@@ -3086,7 +3086,7 @@ async function getStatusNovel() {
             url: "/getstatus_novelai", //
             data: JSON.stringify(data),
             beforeSend: function () {
-                //$('#create_button').attr('value','Creating...');
+
             },
             cache: false,
             dataType: "json",
@@ -3177,7 +3177,7 @@ function select_selected_character(chid) {
     $("#rm_button_back").css("display", "none");
     //$("#character_import_button").css("display", "none");
     $("#create_button").attr("value", "Save");              // what is the use case for this?
-    $("#create_button_label").css("display", "none");
+    //$("#create_button_label").css("display", "none");
 
     $("#rm_button_selected_ch").children("h2").text(display_name);
     $("#add_avatar_button").val("");
@@ -3206,7 +3206,9 @@ function select_selected_character(chid) {
     updateFavButtonState(characters[chid].fav == "true");
 
     $("#avatar_load_preview").attr("src", this_avatar);
-    $("#name_div").css("display", "none");
+    $("#name_div").removeClass('displayBlock');
+    $("#name_div").addClass('displayNone');
+    $("#renameCharButton").css("display", "block");
 
     $("#form_create").attr("actiontype", "editcharacter");
     active_character = chid;
@@ -3254,7 +3256,9 @@ function select_rm_create() {
     }
     $("#avatar_div").css("display", "flex");
     $("#avatar_load_preview").attr("src", default_avatar);
-    $("#name_div").css("display", "block");
+    $("#renameCharButton").css('display', 'none');
+    $("#name_div").removeClass('displayNone');
+    $("#name_div").addClass('displayBlock');
 
     $("#form_create").attr("actiontype", "createcharacter");
 }
@@ -4264,13 +4268,19 @@ $(document).ready(function () {
                 url: "/editcharacter",
                 data: formData,
                 beforeSend: function () {
-                    $("#create_button").attr("disabled", true);
+                    //$("#create_button").attr("disabled", true);
                     $("#create_button").attr("value", "Save");
                 },
                 cache: false,
                 contentType: false,
                 processData: false,
                 success: function (html) {
+
+                    //currently this updates the displayed H2 name regardless of soft errors, doesn't detect actual errors.
+                    let h2text = $("#character_name_pole").val();
+                    console.log('about to change name! in h2');
+                    $("#rm_button_selected_ch").children("h2").text(h2text);
+
                     $(".mes").each(function () {
                         if ($(this).attr("is_system") == 'true') {
                             return;
@@ -4320,6 +4330,8 @@ $(document).ready(function () {
                 error: function (jqXHR, exception) {
                     $("#create_button").removeAttr("disabled");
                     $("#result_info").html("<font color=red>Error: no connection</font>");
+                    console.log('Cant use that name! Invalid or already exists.');
+                    alert('Cant use that name! Invalid or already exists.');
                 },
             });
         }
@@ -4365,6 +4377,10 @@ $(document).ready(function () {
             saveCharacterDebounced();
         }
     });
+
+    $("#renameCharButton").on('click', function () {
+        $("#name_div").toggleClass('displayNone displayBlock');
+    })
 
     $("#talkativeness_slider").on("input", function () {
         if (menu_type == "create") {

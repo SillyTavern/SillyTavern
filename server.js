@@ -277,10 +277,10 @@ app.get("/", function (request, response) {
 app.get("/notes/*", function (request, response) {
     response.sendFile(__dirname + "/public" + request.url + ".html");
 });
-app.get('/get_faq', function(_, response) {
+app.get('/get_faq', function (_, response) {
     response.sendFile(__dirname + "/faq.md");
 });
-app.get('/get_readme', function(_, response) {
+app.get('/get_readme', function (_, response) {
     response.sendFile(__dirname + "/readme.md");
 });
 
@@ -385,7 +385,7 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
 
         async function* readWebsocket() {
             const streamingUrl = request.header('X-Streaming-URL');
-            const websocket = new WebSocket(streamingUrl); 
+            const websocket = new WebSocket(streamingUrl);
 
             websocket.on('open', async function () {
                 console.log('websocket open');
@@ -633,7 +633,7 @@ function checkServer() {
 
 //***************** Main functions
 function charaFormatData(data) {
-    var char = { "name": data.ch_name, "description": data.description, "personality": data.personality, "first_mes": data.first_mes, "avatar": 'none', "chat": data.ch_name + ' - ' + humanizedISO8601DateTime(), "mes_example": data.mes_example, "scenario": data.scenario, "create_date": humanizedISO8601DateTime(), "talkativeness": data.talkativeness, "fav": data.fav};
+    var char = { "name": data.ch_name, "description": data.description, "personality": data.personality, "first_mes": data.first_mes, "avatar": 'none', "chat": data.ch_name + ' - ' + humanizedISO8601DateTime(), "mes_example": data.mes_example, "scenario": data.scenario, "create_date": humanizedISO8601DateTime(), "talkativeness": data.talkativeness, "fav": data.fav };
     return char;
 }
 app.post("/createcharacter", urlencodedParser, function (request, response) {
@@ -677,22 +677,87 @@ app.post("/createcharacter", urlencodedParser, function (request, response) {
 
 
 app.post("/editcharacter", urlencodedParser, async function (request, response) {
-    if (!request.body) return response.sendStatus(400);
+
+    if (!request.body) {
+        console.error('Error: no response body detected');
+        response.send('Error: no response body detected');
+        return;
+        //   return response.sendStatus(400);
+    }
+
+    if (request.body.ch_name === '' || request.body.ch_name === undefined || request.body.ch_name === '.') {
+        console.error('Error: invalid name.');
+        response.send('Error: invalid name.');
+        return;
+    }
     let filedata = request.file;
     //console.log(filedata.mimetype);
     var fileType = ".png";
     var img_file = "ai";
     var img_path = charactersPath;
-
+    var to_del_file = undefined;
     var char = charaFormatData(request.body);//{"name": request.body.ch_name, "description": request.body.description, "personality": request.body.personality, "first_mes": request.body.first_mes, "avatar": request.body.avatar_url, "chat": request.body.chat, "last_mes": request.body.last_mes, "mes_example": ''};
     char.chat = request.body.chat;
     char.create_date = request.body.create_date;
     char = JSON.stringify(char);
     let target_img = (request.body.avatar_url).replace('.png', '');
+    let potentialNewCharCardFile = directories.characters + sanitize(request.body.ch_name) + '.png';
+    let potentialSpritesFolder = directories.characters + sanitize(target_img) + '/';
+    let potentialChatsFolder = directories.chats + sanitize(target_img) + '/';
+    let potentialNewName = request.body.ch_name;
+    //console.log('CurFile: ' + target_img);
+    //console.log('CurChatDir: ' + potentialChatsFolder);
+    //console.log('CurSpritesDir: ' + potentialSpritesFolder);
+    //console.log('NewFile: ' + potentialNewCharCardFile);
+
+    //if name_div has been edited, that means the char is being renamed
+    if (potentialNewName !== undefined && potentialNewName !== '' && potentialNewName !== target_img) {
+        //console.log(potentialNewName + 'is valid and not same as ' + target_img + ', possible rename detected.');
+        if (!fs.existsSync(potentialNewCharCardFile)) {
+            to_del_file = img_path + sanitize(target_img) + '.png';
+            target_img = sanitize(request.body.ch_name);
+            //console.log(potentialNewCharCardFile + ' does not already exist, renaming greenlit.');
+            var renameChatsFolderTo = directories.chats + sanitize(target_img) + "/";
+            var renameSpritesFolderTo = directories.characters + sanitize(target_img) + "/";
+            //console.log('NewFile: ' + target_img);
+            //console.log('NewChatsDir: ' + renameChatsFolderTo);
+            //console.log('NewSpritesDir: ' + renameSpritesFolderTo);
+            //console.log('DelFile: ' + to_del_file);
+
+        } else {
+            console.error(potentialNewCharCardFile + " already existed, so you can't rename to that!");
+            //this needs to send a response back to the HTML to give a visual warning
+            return;
+        }
+    }
+
     try {
         if (!filedata) {
+            if (to_del_file !== undefined) {
+                if (!fs.existsSync(renameChatsFolderTo)) {
+                    if (fs.existsSync(potentialChatsFolder)) {
+                        fs.renameSync(potentialChatsFolder, renameChatsFolderTo);
+                        console.log('RENAMED: Chats folder: ' + potentialChatsFolder + " >> " + renameChatsFolderTo);
+                    } else { console.log("Info: No chat folder to rename."); }
+                } else { console.error('ERROR: same chat folder name already existed. Chats Folder rename aborted.'); }
+
+                if (!fs.existsSync(renameSpritesFolderTo)) {
+                    if (fs.existsSync(potentialSpritesFolder)) {
+                        fs.renameSync(potentialSpritesFolder, renameSpritesFolderTo);
+                        console.log('RENAMED: Sprites folder:' + potentialSpritesFolder + ' >> ' + renameSpritesFolderTo);
+                    } else { console.log("Info: No sprites folder to rename."); }
+                } else { console.error('ERROR: same sprites folder name already existed. Sprites Folder rename aborted.'); }
+
+                console.log('REPLACING: ' + to_del_file + ' with ' + directories.characters + target_img + '.png');
+                await charaWrite(img_path + request.body.avatar_url, char, target_img, response, 'Character saved');
+
+                fs.rmSync(to_del_file);
+                to_del_file = undefined;
+                return;
+            } //else { console.log("No rename detected, updating current card only."); }
 
             await charaWrite(img_path + request.body.avatar_url, char, target_img, response, 'Character saved');
+
         } else {
             //console.log(filedata.filename);
             img_path = "uploads/";
@@ -704,8 +769,10 @@ app.post("/editcharacter", urlencodedParser, async function (request, response) 
         }
     }
     catch {
-        return response.send(400);
+        //return response.send(400);
+        console.error('An error occured, character edit invalidated.');
     }
+
 });
 app.post("/deletecharacter", urlencodedParser, function (request, response) {
     if (!request.body || !request.body.avatar_url) {
@@ -2360,7 +2427,7 @@ const setupTasks = async function () {
     await spp.load(`./src/sentencepiece/tokenizer.model`);
 
     console.log('Launching...');
-  
+
     if (autorun) open(autorunUrl.toString());
     console.log('SillyTavern is listening on: ' + tavernUrl);
     if (listen &&
