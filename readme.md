@@ -120,7 +120,7 @@ const whitelistMode = false;
 Save the file. 
 Restart your TAI server. 
 
-You will now be able to connect from other devices. 
+You will now be able to connect from other devices.
 
 ### Managing whitelisted IPs
 
@@ -138,6 +138,10 @@ The `whitelist` array in `config.conf` will be ignored if `whitelist.txt` exists
 To connect over wifi you'll need your PC's local wifi IP address 
   - (For Windows: windows button > type 'cmd.exe' in the search bar> type 'ipconfig' in the console, hit Enter > "IPv4" listing)
 if you want other people on the internet to connect, check [here](https://whatismyipaddress.com/) for 'IPv4'
+
+### Still Unable To Connect?
+- Create an inbound/outbound firewall rule for the port found in `config.conf`. Do NOT mistake this for portforwarding on your router, otherwise someone could find your chat logs and that's a big no-no.
+- Enable the Private Network profile type in Settings > Network and Internet > Ethernet. This is VERY important for Windows 11, otherwise you would be unable to connect even with the aforementioned firewall rules.
 
 ## Performance issues?
 
