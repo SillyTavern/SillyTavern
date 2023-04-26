@@ -31,6 +31,21 @@ https://rentry.org/TAI_Termux
 
 **.webp character cards import/export is not supported in Termux. Use either JSON or PNG formats instead.**
 
+## Questions or suggestions?
+
+### We now have a community Discord server!
+
+Get support, share favorite characters and prompts:
+
+### [Join](https://discord.gg/RZdyAEUPvj)
+
+***
+
+Get in touch with the developers directly:
+* Discord: Cohee#1207 or RossAscends#1779
+* Reddit: /u/RossAscends or /u/sillylossy
+* [Post a GitHub issue](https://github.com/Cohee1207/SillyTavern/issues)
+
 ## This version includes
 * A heavily modified TavernAI 1.2.8 (more than 50% of code rewritten or optimized)
 * Swipes
@@ -160,11 +175,6 @@ Try enabling the No Blur Effect (Fast UI) mode on the User settings panel.
 1. Offer monetary donations
 2. Send bug reports without providing any context
 3. Ask the questions that were already answered numerous times
-
-## Questions or suggestions?
-Contact us on:
-* Discord: Cohee#1207 or RossAscends#1779
-* Reddit: /u/RossAscends or /u/sillylossy
 
 ## Screenshots
 <img width="400" alt="image" src="https://user-images.githubusercontent.com/18619528/228649245-8061c60f-63dc-488e-9325-f151b7a3ec2d.png">
