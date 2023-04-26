@@ -3425,6 +3425,8 @@ body.waifuMode .expression-holder {
     z-index: 2;
 }
 
+/* movingUI*/
+
 body.movingUI .drag-grabber {
     display: inline;
 }
@@ -3433,6 +3435,11 @@ body.movingUI #sheld,
 body.movingUI .drawer-content,
 body.movingUI #expression-holder {
     resize: both;
+}
+
+/*No Text Shadows Mode*/
+body.noShadows * {
+    text-shadow: none !important;
 }
 
 /* ---------- @media queries must always go at the bottom ------------*/
