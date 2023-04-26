@@ -180,7 +180,7 @@ code {
 }
 
 #bg1 {
-    background-image: url(backgrounds/tavern1.jpg);
+    background-image: url('backgrounds/tavern day.jpg');
     z-index: -2;
 }
 
