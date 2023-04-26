@@ -2316,6 +2316,29 @@ h5 {
     grid-template-columns: 340px auto;
 }
 
+.tag {
+    border-radius: 5px;
+    border-style: solid;
+    border-width: 1px;
+    box-sizing: border-box;
+    border-color: var(--black30a);
+    padding: 0.2rem 0.3rem;
+    font-size: calc(var(--mainFontSize) * 1.1);
+}
+
+#tagList {
+    margin-top: 10px;
+}
+
+body .ui-front {
+    z-index: 10000;
+}
+
+body .ui-widget-content {
+    background-color: var(--SmartThemeFastUIBGColor);
+    color: var(--SmartThemeBodyColor);
+}
+
 /* GROUP CHATS */
 
 #rm_group_top_bar {

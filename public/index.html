@@ -11,7 +11,8 @@
     <!-- fontawesome webfonts-->
     <link href="css/fontawesome.css" rel="stylesheet">
     <link href="css/solid.css" rel="stylesheet">
-
+    <link href="css/jquery-ui.min.css" rel="stylesheet">
+ 
     <link rel="apple-touch-icon" sizes="57x57" href="img/apple-icon-57x57.png" />
     <link rel="apple-touch-icon" sizes="72x72" href="img/apple-icon-72x72.png" />
     <link rel="apple-touch-icon" sizes="114x114" href="img/apple-icon-114x114.png" />
@@ -27,6 +28,7 @@
     </script>
 
     <script src="scripts/jquery-3.5.1.min.js"></script>
+    <script src="scripts/jquery-ui.min.js"></script>
     <script src="scripts/jquery.transit.min.js"></script>
     <script src="scripts/jquery-cookie-1.4.1.min.js"></script>
     <script src="scripts/showdown.min.js"></script>
@@ -49,6 +51,7 @@
     <script type="module" src="scripts/poe.js"></script>
     <script type="module" src="scripts/RossAscends-mods.js"></script>
     <script type="module" src="scripts/slash-commands.js"></script>
+    <script type="module" src="scripts/tags.js"></script>
     <script type="text/javascript" src="scripts/toolcool-color-picker.js"></script>
 
     <title>SillyTavern</title>
@@ -1439,6 +1442,11 @@
                                 <div title="Token counts may be inaccurate and provided just for reference." id="result_info"></div>
                             </div>
                             <hr>
+
+                            <div id="tags_div" class="margin-bot-10px ui-widget">
+                                <input id="tagInput" class="text_pole margin-bot-10px" />
+                                <div id="tagList"></div>
+                            </div>
 
                             <div id="description_div" class="margin-bot-10px">
                                 Description
