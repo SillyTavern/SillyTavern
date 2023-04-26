@@ -959,7 +959,7 @@ app.post("/getuseravatars", jsonParser, function (request, response) {
 
 });
 app.post("/setbackground", jsonParser, function (request, response) {
-    var bg = "#bg1 {background-image: url(../backgrounds/" + request.body.bg + ");}";
+    var bg = "#bg1 {background-image: url('../backgrounds/" + request.body.bg + "');}";
     fs.writeFile('public/css/bg_load.css', bg, 'utf8', function (err) {
         if (err) {
             response.send(err);
