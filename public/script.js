@@ -1458,7 +1458,6 @@ async function Generate(type, automatic_trigger, force_name2) {
             else if (type !== "swipe" && !isImpersonate) {
                 chat.length = chat.length - 1;
                 count_view_mes -= 1;
-                openai_msgs.pop();
                 $('#chat').children().last().hide(500, function () {
                     $(this).remove();
                 });
@@ -1546,7 +1545,7 @@ async function Generate(type, automatic_trigger, force_name2) {
         let mesExamplesArray = mesExamples.split(/<START>/gi).slice(1).map(block => `${blockHeading}\n${block.trim()}\n`);
 
         if (main_api === 'openai') {
-            const oai_chat = [...chat].filter(x => !x.is_system);
+            const oai_chat = chat.filter(x => !x.is_system);
 
             if (type == 'swipe') {
                 oai_chat.pop();
