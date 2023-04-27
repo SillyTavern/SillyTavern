@@ -72,15 +72,18 @@ let power_user = {
     sort_rule: null,
     font_scale: 1,
     blur_strength: 10,
+    shadow_width: 2,
 
     main_text_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBodyColor').trim()}`,
     italics_text_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeEmColor').trim()}`,
     quote_text_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeQuoteColor').trim()}`,
     fastui_bg_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeFastUIBGColor').trim()}`,
     blur_tint_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBlurTintColor').trim()}`,
+    shadow_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeShadowColor').trim()}`,
 
     waifuMode: false,
     movingUI: false,
+    noShadows: false,
     theme: 'Default (Dark)',
 };
 
@@ -99,9 +102,13 @@ const storage_keys = {
     fastui_bg_color: "TavernAI_fastui_bg_color",
     blur_tint_color: "TavernAI_blur_tint_color",
     blur_strength: "TavernAI_blur_strength",
+    shadow_color: "TavernAI_shadow_color",
+    shadow_width: "TavernAI_shadow_width",
+
 
     waifuMode: "TavernAI_waifuMode",
     movingUI: "TavernAI_movingUI",
+    noShadows: "TavernAI_noShadows",
 };
 
 let browser_has_focus = true;
@@ -146,6 +153,13 @@ function switchMovingUI() {
     scrollChatToBottom();
 }
 
+function noShadows() {
+    const noShadows = localStorage.getItem(storage_keys.noShadows);
+    power_user.noShadows = noShadows === null ? false : noShadows == "true";
+    $("body").toggleClass("noShadows", power_user.noShadows);
+    scrollChatToBottom();
+}
+
 function applyAvatarStyle() {
     power_user.avatar_style = Number(localStorage.getItem(storage_keys.avatar_style) ?? avatar_styles.ROUND);
     $("body").toggleClass("big-avatars", power_user.avatar_style === avatar_styles.RECTANGULAR);
@@ -183,6 +197,9 @@ async function applyThemeColor(type) {
     if (type === 'blurTint') {
         document.documentElement.style.setProperty('--SmartThemeBlurTintColor', power_user.blur_tint_color);
     }
+    if (type === 'shadow') {
+        document.documentElement.style.setProperty('--SmartThemeShadowColor', power_user.shadow_color);
+    }
 }
 
 async function applyBlurStrength() {
@@ -192,6 +209,12 @@ async function applyBlurStrength() {
 
 }
 
+async function applyShadowWidth() {
+    power_user.shadow_width = Number(localStorage.getItem(storage_keys.shadow_width) ?? 2);
+    document.documentElement.style.setProperty('--shadowWidth', power_user.shadow_width);
+    $("#shadow_width_counter").text(power_user.shadow_width);
+
+}
 
 async function applyFontScale() {
     power_user.font_scale = Number(localStorage.getItem(storage_keys.font_scale) ?? 1);
@@ -212,11 +235,19 @@ async function applyTheme(name) {
         { key: 'quote_text_color', selector: '#quote-color-picker', type: 'quote' },
         { key: 'fastui_bg_color', selector: '#fastui-bg-color-picker', type: 'fastUIBG' },
         { key: 'blur_tint_color', selector: '#blur-tint-color-picker', type: 'blurTint' },
+        { key: 'shadow_color', selector: '#shadow-color-picker', type: 'shadow' },
         {
             key: 'blur_strength',
             action: async () => {
                 localStorage.setItem(storage_keys.blur_strength, power_user.blur_strength);
                 await applyBlurStrength();
+            }
+        },
+        {
+            key: 'shadow_width',
+            action: async () => {
+                localStorage.setItem(storage_keys.shadow_width, power_user.shadow_width);
+                await applyShadowWidth();
             }
         }
     ];
@@ -239,9 +270,11 @@ applyThemeColor();
 applySheldWidth();
 applyAvatarStyle();
 applyBlurStrength();
+applyShadowWidth();
 applyChatDisplay();
 switchWaifuMode()
 switchMovingUI();
+noShadows();
 
 function loadPowerUserSettings(settings, data) {
     // Load from settings.json
@@ -257,9 +290,11 @@ function loadPowerUserSettings(settings, data) {
     const fastUi = localStorage.getItem(storage_keys.fast_ui_mode);
     const waifuMode = localStorage.getItem(storage_keys.waifuMode);
     const movingUI = localStorage.getItem(storage_keys.movingUI);
+    const noShadows = localStorage.getItem(storage_keys.noShadows);
     power_user.fast_ui_mode = fastUi === null ? true : fastUi == "true";
     power_user.waifuMode = waifuMode === null ? false : waifuMode == "true";
     power_user.movingUI = movingUI === null ? false : movingUI == "true";
+    power_user.noShadows = noShadows === null ? false : noShadows == "true";
     power_user.avatar_style = Number(localStorage.getItem(storage_keys.avatar_style) ?? avatar_styles.ROUND);
     power_user.chat_display = Number(localStorage.getItem(storage_keys.chat_display) ?? chat_styles.DEFAULT);
     power_user.sheld_width = Number(localStorage.getItem(storage_keys.sheld_width) ?? sheld_width.DEFAULT);
@@ -280,6 +315,7 @@ function loadPowerUserSettings(settings, data) {
     $("#fast_ui_mode").prop("checked", power_user.fast_ui_mode);
     $("#waifuMode").prop("checked", power_user.waifuMode);
     $("#movingUImode").prop("checked", power_user.movingUI);
+    $("#noShadowsmode").prop("checked", power_user.noShadows);
     $("#multigen").prop("checked", power_user.multigen);
     $("#multigen_first_chunk").val(power_user.multigen_first_chunk);
     $("#multigen_next_chunks").val(power_user.multigen_next_chunks);
@@ -289,17 +325,22 @@ function loadPowerUserSettings(settings, data) {
     $(`input[name="avatar_style"][value="${power_user.avatar_style}"]`).prop("checked", true);
     $(`input[name="chat_display"][value="${power_user.chat_display}"]`).prop("checked", true);
     $(`input[name="sheld_width"][value="${power_user.sheld_width}"]`).prop("checked", true);
+
     $("#font_scale").val(power_user.font_scale);
     $("#font_scale_counter").text(power_user.font_scale);
 
     $("#blur_strength").val(power_user.blur_strength);
     $("#blur_strength_counter").text(power_user.blur_strength);
 
+    $("#shadow_width").val(power_user.shadow_width);
+    $("#shadow_width_counter").text(power_user.shadow_width);
+
     $("#main-text-color-picker").attr('color', power_user.main_text_color);
     $("#italics-color-picker").attr('color', power_user.italics_text_color);
     $("#quote-color-picker").attr('color', power_user.quote_text_color);
     $("#fastui-bg-color-picker").attr('color', power_user.fastui_bg_color);
     $("#blur-tint-color-picker").attr('color', power_user.blur_tint_color);
+    $("#shadow-color-picker").attr('color', power_user.shadow_color);
 
     for (const theme of themes) {
         const option = document.createElement('option');
@@ -318,7 +359,7 @@ function sortCharactersList(selector = '.character_select') {
     const compareFunc = (first, second) => {
         switch (power_user.sort_rule) {
             case 'boolean':
-                return Number(first[power_user.sort_field] == "true") -  Number(second[power_user.sort_field] == "true");
+                return Number(first[power_user.sort_field] == "true") - Number(second[power_user.sort_field] == "true");
             default:
                 return typeof first[power_user.sort_field] == "string"
                     ? first[power_user.sort_field].localeCompare(second[power_user.sort_field])
@@ -414,6 +455,12 @@ $(document).ready(() => {
         switchMovingUI();
     });
 
+    $("#noShadowsmode").change(function () {
+        power_user.noShadows = $(this).prop("checked");
+        localStorage.setItem(storage_keys.noShadows, power_user.noShadows);
+        noShadows();
+    });
+
     $("#movingUIreset").on('click', function () {
 
         document.getElementById("sheld").style.top = '';
@@ -474,6 +521,13 @@ $(document).ready(() => {
         await applyBlurStrength();
     });
 
+    $(`input[name="shadow_width"]`).on('input', async function (e) {
+        power_user.shadow_width = Number(e.target.value);
+        $("#shadow_width_counter").text(power_user.shadow_width);
+        localStorage.setItem(storage_keys.shadow_width, power_user.shadow_width);
+        await applyShadowWidth();
+    });
+
     $("#main-text-color-picker").on('change', (evt) => {
         power_user.main_text_color = evt.detail.rgba;
         applyThemeColor('main');
@@ -485,7 +539,7 @@ $(document).ready(() => {
         applyThemeColor('italics');
         saveSettingsDebounced();
     });
-	
+
     $("#quote-color-picker").on('change', (evt) => {
         power_user.quote_text_color = evt.detail.rgba;
         applyThemeColor('quote');
@@ -501,6 +555,12 @@ $(document).ready(() => {
     $("#blur-tint-color-picker").on('change', (evt) => {
         power_user.blur_tint_color = evt.detail.rgba;
         applyThemeColor('blurTint');
+        saveSettingsDebounced();
+    });
+
+    $("#shadow-color-picker").on('change', (evt) => {
+        power_user.shadow_color = evt.detail.rgba;
+        applyThemeColor('shadow');
         saveSettingsDebounced();
     });
 
@@ -526,6 +586,8 @@ $(document).ready(() => {
             quote_text_color: power_user.quote_text_color,
             fastui_bg_color: power_user.fastui_bg_color,
             blur_tint_color: power_user.blur_tint_color,
+            shadow_color: power_user.shadow_color,
+            shadow_width: power_user.shadow_width,
         };
 
         const response = await fetch('/savetheme', {
@@ -595,7 +657,7 @@ $(document).ready(() => {
         const value = $(this).find(':selected').val();
         power_user.tokenizer = Number(value);
         saveSettingsDebounced();
-        
+
         // Trigger character editor re-tokenize
         $("#rm_ch_create_block").trigger('input');
         $("#character_popup").trigger('input');

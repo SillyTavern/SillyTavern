@@ -282,7 +282,8 @@ const system_messages = {
             '<br/>',
             '<a target="_blank" href="https://github.com/Cohee1207/SillyTavern/issues">Post a GitHub issue.</a>',
             '<br/>',
-            '<a target="_blank" href="https://github.com/Cohee1207/SillyTavern#questions-or-suggestions">Contact the developers.</a>'
+            '<a target="_blank" href="https://github.com/Cohee1207/SillyTavern#questions-or-suggestions">Contact the developers.</a><br>',
+            '<a target="_blank" href="https://discord.com/channels/@me/1078643480458432602/1100851318593167381">Join the Discord!</a>'
         ].join('')
     },
     group: {

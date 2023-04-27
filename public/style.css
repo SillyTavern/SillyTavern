@@ -43,6 +43,8 @@
     --SmartThemeFastUIBGColor: rgba(0, 0, 0, 0.9);
     --SmartThemeBlurTintColor: rgba(0, 0, 0, 0.5);
     --SmartThemeBlurStrength: calc(var(--blurStrength) * 1px);
+    --SmartThemeShadowColor: rgba(0, 0, 0, 0.5);
+
 
     --sheldWidth: 800px;
     /*base variable calculated in rems*/
@@ -51,6 +53,10 @@
 
     /* base variable for blur strength slider calculations */
     --blurStrength: 10;
+
+    /* base variable for shadow width slider calculations */
+    --shadowWidth: 2;
+
     color-scheme: only light;
 
 
@@ -63,7 +69,7 @@
     box-sizing: border-box;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    text-shadow: 0px 0px 3px black;
+    text-shadow: 0px 0px calc(var(--shadowWidth) * 1px) var(--SmartThemeShadowColor);
 }
 
 html {
@@ -276,7 +282,7 @@ code {
     backdrop-filter: blur(var(--SmartThemeBlurStrength));
     background-color: var(--SmartThemeBlurTintColor);
     -webkit-backdrop-filter: blur(var(--SmartThemeBlurStrength));
-    text-shadow: #000 0 0 3px;
+    text-shadow: 0px 0px calc(var(--shadowWidth) * 1px) var(--SmartThemeShadowColor);
     scrollbar-width: thin;
     /* transition: all 1s ease-in-out; */
     flex-direction: column;
@@ -390,7 +396,7 @@ code {
     border: 1px solid var(--white30a);
     border-radius: 15px;
     box-shadow: 0 0 5px black;
-    text-shadow: 0 0 3px black;
+    text-shadow: 0px 0px calc(var(--shadowWidth) * 1px) var(--SmartThemeShadowColor);
     backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)*2));
     /* min-width: 200px; */
     z-index: 2000;
@@ -649,7 +655,7 @@ select {
     padding: 6px;
     font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
     margin: 0;
-    text-shadow: #000 0 0 3px;
+    text-shadow: 0px 0px calc(var(--shadowWidth) * 1px) var(--SmartThemeShadowColor);
     flex: 1;
 }
 
@@ -1839,7 +1845,7 @@ input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
     width: max-content;
     margin-left: 5px;
     font-size: calc(var(--mainFontSize) - 0.2rem);
-    color: var(--white50a);
+    color: var(--SmartThemeBodyColor);
 }
 
 .range-block-range {
@@ -2576,7 +2582,7 @@ body .ui-widget-content {
     bottom: 10px;
     margin: 10px;
     opacity: 0.85;
-    text-shadow: 2px 2px 2px var(--black60a);
+    text-shadow: 0px 0px calc(var(--shadowWidth) * 1px) var(--SmartThemeShadowColor);
 }
 
 .missing-avatar {
@@ -2853,7 +2859,7 @@ a {
     border: 1px solid var(--white30a);
     border-radius: 15px;
     box-shadow: 0 0 5px black;
-    text-shadow: 0 0 3px black;
+    text-shadow: 0px 0px calc(var(--shadowWidth) * 1px) var(--SmartThemeShadowColor);
 }
 
 .list-group-item:hover {
@@ -3111,8 +3117,9 @@ label[for="extensions_autoconnect"] {
 }
 
 .redOverlayGlow {
-    color: #ad0000;
+    color: rgba(100, 0, 0, 0.5);
     opacity: 0.8 !important;
+    text-shadow: none !important;
     filter: drop-shadow(0px 0px 2px red) !important;
 }
 
@@ -3453,6 +3460,8 @@ body.waifuMode .expression-holder {
     z-index: 2;
 }
 
+/* movingUI*/
+
 body.movingUI .drag-grabber {
     display: inline;
 }
@@ -3461,6 +3470,11 @@ body.movingUI #sheld,
 body.movingUI .drawer-content,
 body.movingUI #expression-holder {
     resize: both;
+}
+
+/*No Text Shadows Mode*/
+body.noShadows * {
+    text-shadow: none !important;
 }
 
 /* ---------- @media queries must always go at the bottom ------------*/
