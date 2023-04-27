@@ -7,7 +7,6 @@
 import {
     saveSettingsDebounced,
     substituteParams,
-    count_view_mes,
     checkOnlineStatus,
     setOnlineStatus,
     getExtensionPrompt,
@@ -156,12 +155,6 @@ function setOpenAIMessages(chat) {
             content = `${chat[j].name}: ${content}`;
         }
 
-        // system messages produce no content
-        if (chat[j]['is_system']) {
-            role = 'system';
-            content = '';
-        }
-
         // replace bias markup
         //content = (content ?? '').replace(/{.*}/g, '');
         content = (content ?? '').replace(/{{(\*?.+?\*?)}}/g, '');
@@ -199,13 +192,13 @@ function generateOpenAIPromptCache(charPersonality, topAnchorDepth, anchorTop, b
     openai_msgs = openai_msgs.reverse();
     openai_msgs.forEach(function (msg, i, arr) {//For added anchors and others
         let item = msg["content"];
-        if (i === openai_msgs.length - topAnchorDepth && count_view_mes >= topAnchorDepth) {
+        if (i === openai_msgs.length - topAnchorDepth) {
             let personalityAndAnchor = [charPersonality, anchorTop].filter(x => x).join(' ');
             if (personalityAndAnchor) {
                 item = `[${name2} is ${personalityAndAnchor}]\n${item}`;
             }
         }
-        if (i >= openai_msgs.length - 1 && count_view_mes > bottomAnchorThreshold && $.trim(item).substr(0, (name1 + ":").length) == name1 + ":") {//For add anchor in end
+        if (i >= openai_msgs.length - 1 && openai_msgs.length > bottomAnchorThreshold && $.trim(item).substr(0, (name1 + ":").length) == name1 + ":") {//For add anchor in end
             item = anchorBottom + "\n" + item;
         }
 

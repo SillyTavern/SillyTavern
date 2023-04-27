@@ -151,7 +151,6 @@ export {
     name2,
     is_send_press,
     api_server_textgenerationwebui,
-    count_view_mes,
     max_context,
     chat_metadata,
     streamingProcessor,
@@ -1542,14 +1541,15 @@ async function Generate(type, automatic_trigger, force_name2) {
             chat[0].mes = substituteParams(chat[0].mes);
         }
 
+        // Collect messages with usable content
+        let coreChat = chat.filter(x => !x.is_system);
+        if (type === 'swipe') {
+            coreChat.pop();
+        }
+        console.log(`Core/all messages: ${coreChat.length}/${chat.length}`);
+
         if (main_api === 'openai') {
-            const oai_chat = chat.filter(x => !x.is_system);
-
-            if (type == 'swipe') {
-                oai_chat.pop();
-            }
-
-            setOpenAIMessages(oai_chat);
+            setOpenAIMessages(coreChat);
             setOpenAIMessageExamples(mesExamplesArray);
         }
 
@@ -1562,7 +1562,7 @@ async function Generate(type, automatic_trigger, force_name2) {
         } else {
             storyString += appendToStoryString(charDescription, '');
 
-            if (count_view_mes < topAnchorDepth) {
+            if (coreChat.length < topAnchorDepth) {
                 storyString += appendToStoryString(charPersonality, power_user.disable_personality_formatting ? '' : name2 + "'s personality: ");
             }
 
@@ -1580,25 +1580,19 @@ async function Generate(type, automatic_trigger, force_name2) {
 
         //////////////////////////////////
 
-        console.log('emptying chat2');
         let chat2 = [];
-        console.log('pre-replace chat.length = ' + chat.length);
-        for (let i = chat.length - 1, j = 0; i >= 0; i--, j++) {
-            let charName = selected_group ? chat[j].name : name2;
+        for (let i = coreChat.length - 1, j = 0; i >= 0; i--, j++) {
+            let charName = selected_group ? coreChat[j].name : name2;
             let this_mes_ch_name = '';
-            if (chat[j]['is_user']) {
+            if (coreChat[j]['is_user']) {
                 this_mes_ch_name = name1;
             } else {
                 this_mes_ch_name = charName;
             }
-            if (chat[j]['is_name']) {
-                chat2[i] = this_mes_ch_name + ': ' + chat[j]['mes'] + '\n';
+            if (coreChat[j]['is_name']) {
+                chat2[i] = this_mes_ch_name + ': ' + coreChat[j]['mes'] + '\n';
             } else {
-                chat2[i] = chat[j]['mes'] + '\n';
-            }
-            // system messages produce no text
-            if (chat[j]['is_system']) {
-                chat2[i] = '';
+                chat2[i] = coreChat[j]['mes'] + '\n';
             }
 
             // replace bias markup
@@ -1606,7 +1600,6 @@ async function Generate(type, automatic_trigger, force_name2) {
             chat2[i] = (chat2[i] ?? '').replace(/{{(\*?.+?\*?)}}/g, '');
             //console.log('replacing chat2 {}s');
         }
-        //console.log('post replace chat.length = ' + chat.length);
         //chat2 = chat2.reverse();
 
         // Determine token limit
@@ -1651,16 +1644,7 @@ async function Generate(type, automatic_trigger, force_name2) {
         const afterScenarioAnchor = getExtensionPrompt(extension_prompt_types.AFTER_SCENARIO);
         const zeroDepthAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, 0, ' ');
 
-        /////////////////////// swipecode
-        if (type == 'swipe') {
-            //console.log('pre swipe shift: ' + chat2.length);
-            //console.log('shifting swipe chat2');
-            chat2.shift();
-        }
-
         let { worldInfoString, worldInfoBefore, worldInfoAfter } = getWorldInfoPrompt(chat2);
-
-        console.log('post swipe shift:' + chat2.length);
 
         // hack for regeneration of the first message
         if (chat2.length == 0) {
@@ -1730,7 +1714,7 @@ async function Generate(type, automatic_trigger, force_name2) {
                             item = item.substr(0, item.length - 1);
                         }
                     }
-                    if (i === arrMes.length - topAnchorDepth && count_view_mes >= topAnchorDepth && !is_pygmalion) {
+                    if (i === arrMes.length - topAnchorDepth && !is_pygmalion) {
                         //chatString = chatString.substr(0,chatString.length-1);
                         //anchorAndPersonality = "[Genre: roleplay chat][Tone: very long messages with descriptions]";
                         let personalityAndAnchor = [charPersonality, anchorTop].filter(x => x).join(' ');
@@ -1738,7 +1722,7 @@ async function Generate(type, automatic_trigger, force_name2) {
                             item += "[" + personalityAndAnchor + ']\n';
                         }
                     }
-                    if (i >= arrMes.length - 1 && count_view_mes > bottomAnchorThreshold && $.trim(item).substr(0, (name1 + ":").length) == name1 + ":" && !is_pygmalion) {//For add anchor in end
+                    if (i >= arrMes.length - 1 && coreChat.length > bottomAnchorThreshold && $.trim(item).substr(0, (name1 + ":").length) == name1 + ":" && !is_pygmalion) {//For add anchor in end
                         item = item.substr(0, item.length - 1);
                         //chatString+=postAnchor+"\n";//"[Writing style: very long messages]\n";
                         item = item + anchorBottom + "\n";
