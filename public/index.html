@@ -54,6 +54,12 @@
     <script type="module" src="scripts/tags.js"></script>
     <script type="text/javascript" src="scripts/toolcool-color-picker.js"></script>
 
+    <link href="highlight/styles/dark.min.css" rel="stylesheet">
+    <script src="highlight/highlight.min.js"></script>
+    <script>
+        hljs.addPlugin({"before:highlightElement": ({ el }) => { el.textContent = el.innerText } });
+    </script>
+
     <title>SillyTavern</title>
 </head>
 

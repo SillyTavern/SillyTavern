@@ -975,6 +975,7 @@ function addCopyToCodeBlocks(messageElement) {
                 document.body.removeChild(copiedMsg);
             }, 2500);
         });
+        hljs.highlightElement(codeBlocks.get(i));
     }
 }
 
