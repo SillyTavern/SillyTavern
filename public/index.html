@@ -830,14 +830,7 @@
                             </label>
 
 
-                            <ul>
-                                <li>
-                                    <a target="_blank" href="https://horde.koboldai.net/register">Register a Horde account for faster queue times</a>
-                                </li>
-                                <li>
-                                    <a target="_blank" href="https://github.com/db0/AI-Horde-Worker#readme">Learn how to contribute your idle GPU cycles to the Horde</a>
-                                </li>
-                            </ul>
+
                             <div id="kobold_api_block">
                                 <h4>API url</h4>
                                 <h5>Example: http://127.0.0.1:5000/api </h5>
@@ -846,6 +839,14 @@
                                 <div id="api_loading" class="api-load-icon fa-solid fa-hourglass fa-spin"></div>
                             </div>
                             <div id="kobold_horde_block">
+                                <ul>
+                                    <li>
+                                        <a target="_blank" href="https://horde.koboldai.net/register">Register a Horde account for faster queue times</a>
+                                    </li>
+                                    <li>
+                                        <a target="_blank" href="https://github.com/db0/AI-Horde-Worker#readme">Learn how to contribute your idle GPU cycles to the Horde</a>
+                                    </li>
+                                </ul>
 
                                 <label for="horde_auto_adjust" class="checkbox_label">
                                     <input id="horde_auto_adjust" type="checkbox" />
@@ -874,12 +875,15 @@
                     <div id="novel_api" style="display: none;position: relative;"> <!-- shows the novel settings -->
                         <form action="javascript:void(null);" method="post" enctype="multipart/form-data">
 
-                            <h4>API key</h4>
-                            <h5>Where to get
-                                <a href="/notes#apikey" class="notes-link" target="_blank">
-                                    <span class="note-link-span">?</span>
-                                </a>
-                            </h5>
+                            <h4>Novel API key</h4>
+                            <span>
+                                <ol>
+                                    <li>
+                                        Follow<a href="/notes#apikey" class="notes-link" target="_blank"> these directions </a> to get your NovelAI API key.
+                                    </li>
+                                    <li>Enter it in the box below:</li>
+                                </ol>
+                            </span>
                             <input id="api_key_novel" name="api_key_novel" class="text_pole" maxlength="500" size="35" value="" autocomplete="off">
                             <input id="api_button_novel" class="menu_button" type="submit" value="Connect">
                             <div id="api_loading_novel" class="api-load-icon fa-solid fa-hourglass fa-spin"></div>
@@ -916,11 +920,14 @@
                     <div id="openai_api" style="display: none;position: relative;">
                         <form action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <h4>API key </h4>
-                            <h5>Where to get
-                                <a href="/notes#apikey-1" class="notes-link" target="_blank">
-                                    <span class="note-link-span">?</span>
-                                </a>
-                            </h5>
+                            <span>
+                                <ol>
+                                    <li>
+                                        Follow<a href="/notes#apikey-1" class="notes-link" target="_blank"> these directions </a> to get your OpenAI API key.
+                                    </li>
+                                    <li>Enter it in the box below:</li>
+                                </ol>
+                            </span>
                             <input id="api_key_openai" name="api_key_openai" class="text_pole" maxlength="500" value="" autocomplete="off">
                             <input id="api_button_openai" class="menu_button" type="submit" value="Connect">
                             <div id="api_loading_openai" class=" api-load-icon fa-solid fa-hourglass fa-spin"></div>
@@ -936,16 +943,19 @@
                     </div>
                     <div id="poe_api">
                         <h4>
-                            poe.com access token (p-b cookie value)
+                            Poe.com Unofficial "API"
                         </h4>
-                        <h5>
-                            Where to get
-                            <a href="/notes#apikey-2" class="notes-link" target="_blank">
-                                <span class="note-link-span">?</span>
-                            </a>
-                        </h5>
+                        <span>
+                            <ol>
+                                <li>
+                                    Follow<a href="/notes#apikey-2" class="notes-link" target="_blank"> these directions </a> to get your 'p-b cookie'
+                                </li>
+                                <li>Enter it in the box below:</li>
+                            </ol>
+                        </span>
                         <div class="widthFreeExpand">
                             <input id="poe_token" class="text_pole" type="text" placeholder="Example: nTLG2bNvbOi8qxc-DbaSlw%3D%3D" maxlength="100" />
+
                         </div>
 
                         <input id="poe_connect" class="menu_button" type="button" value="Connect" />
@@ -1230,7 +1240,7 @@
                                 </label>
                             </div>
                             <div>
-                                <label for="fast_ui_mode" class="checkbox_label" title="Blur can cause browser lag, especially in Bubble Chat mode. To fix: Turn on your browser's Hardware Acceleration, and restart your browser or simply disable the blur effect with this toggle.">
+                                <label for="fast_ui_mode" class="checkbox_label" title="removes blur and uses alternative background color for divs">
                                     <input id="fast_ui_mode" type="checkbox" />
                                     No Blur Effect
                                 </label>
