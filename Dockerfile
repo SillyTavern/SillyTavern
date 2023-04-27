@@ -3,8 +3,10 @@ FROM node:19.1.0-alpine3.16
 # Arguments
 ARG APP_HOME=/home/node/app
 
+# Install system dependencies
+RUN apk add gcompat tini
+
 # Ensure proper handling of kernel signals
-RUN apk add tini
 ENTRYPOINT [ "tini", "--" ]
 
 # Create app directory
@@ -25,8 +27,8 @@ RUN \
   mv "./public/characters"    "./public/characters.default" && \
   mv "./public/chats"         "./public/chats.default" && \
   mv "./public/User Avatars"  "./public/User Avatars.default" && \
-  mv "./public/settings.json"   "./public/settings.json.default" && \
-
+  mv "./public/settings.json" "./public/settings.json.default" && \
+  \
   echo "*** Create symbolic links to config directory ***" && \
   ln -s "${APP_HOME}/config/characters"     "${APP_HOME}/public/characters" && \
   ln -s "${APP_HOME}/config/chats"          "${APP_HOME}/public/chats" && \

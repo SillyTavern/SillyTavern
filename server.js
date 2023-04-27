@@ -748,11 +748,13 @@ async function charaWrite(img_url, data, target_img, response = undefined, mes =
 
         fs.writeFileSync(charactersPath + target_img + '.png', new Buffer.from(encode(chunks)));
         if (response !== undefined) response.send(mes);
+        return true;
 
 
     } catch (err) {
         console.log(err);
-        if (response !== undefined) response.send(err);
+        if (response !== undefined) response.status(500).send(err);
+        return false;
     }
 }
 
@@ -2547,7 +2549,12 @@ async function convertWebp() {
             await webp.dwebp(source, dest, "-o");
 
             console.log(`Write... ${dest}`);
-            await charaWrite(dest, data, path.parse(dest).name);
+            const success = await charaWrite(dest, data, path.parse(dest).name);
+
+            if (!success) {
+                console.log(`Failure on ${source} -> ${dest}`);
+                continue;
+            }
 
             console.log(`Remove... ${source}`);
             fs.rmSync(source);
