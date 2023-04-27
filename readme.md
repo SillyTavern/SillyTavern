@@ -27,7 +27,7 @@ https://colab.research.google.com/github/Cohee1207/SillyTavern/blob/main/colab/G
 
 > **This fork can be run natively on Android phones using Termux. Please refer to this guide by ArroganceComplex#2659:**
 
-https://rentry.org/TAI_Termux
+https://rentry.org/STAI-Termux
 
 **.webp character cards import/export is not supported in Termux. Use either JSON or PNG formats instead.**
 
