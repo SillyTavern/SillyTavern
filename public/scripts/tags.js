@@ -10,33 +10,43 @@ export {
 };
 
 const TAG_COLORS = [
-    "#dd0a36", // Red
-    "#ff6633", // Orange
-    "#5f9ea0", // Teal Green
-    "#1e90ff", // Light Blue
-    "#990066", // Plum
-    "#8c00ff", // Fuchsia
-    "#00ffff", // Aqua
-    "#0f4ecc", // Teal
-    "#2f4b1c", // Green
-    "#3366e5", // Dodger Blue
-    "#36c3a1", // Mint Green
-    "#995511", // Terracotta
-    "#ab47bc", // Plum RGBA
-    "#805451", // Mulberry
-    "#ff8c69", // Salmon
-    "#ba55d3", // Magenta
-    "#b3ffba", // Mint RGBA
-    "#bae7b3", // Sea Green
-    "#b5d6fd", // Light Sky Blue
-    "#d9ecf1", // Mint Green RGBA
-    "#ffe6e6", // Light Pink
-    "#dcd0c8", // Linen
-    "#bed3f3", // Lavender Blush
-    "#ffe9f3", // Sand RGBA
-    "#333366", // Violet
-    "#993333", // Red Violet
-    "#3399ff", // Sky Blue
+
+    "",
+    /*
+    "#990099", //--tag-pink   
+    "#996600", //--tag-orange 
+    "#999900", //--tag-yellow 
+    "#009966", //--tag-green  
+    "#006699", // --tag-blue  
+    "#660099", //--tag-purple 
+
+         "#dd0a36", // Red
+        "#ff6633", // Orange
+        "#5f9ea0", // Teal Green
+        "#1e90ff", // Light Blue
+        "#990066", // Plum
+        "#8c00ff", // Fuchsia
+        "#00ffff", // Aqua
+        "#0f4ecc", // Teal
+        "#2f4b1c", // Green
+        "#3366e5", // Dodger Blue
+        "#36c3a1", // Mint Green
+        "#995511", // Terracotta
+        "#ab47bc", // Plum RGBA
+        "#805451", // Mulberry
+        "#ff8c69", // Salmon
+        "#ba55d3", // Magenta
+        "#b3ffba", // Mint RGBA
+        "#bae7b3", // Sea Green
+        "#b5d6fd", // Light Sky Blue
+        "#d9ecf1", // Mint Green RGBA
+        "#ffe6e6", // Light Pink
+        "#dcd0c8", // Linen
+        "#bed3f3", // Lavender Blush
+        "#ffe9f3", // Sand RGBA
+        "#333366", // Violet
+        "#993333", // Red Violet
+        "#3399ff", // Sky Blue */
 ];
 
 const random_id = () => Math.round(Date.now() * Math.random()).toString();
