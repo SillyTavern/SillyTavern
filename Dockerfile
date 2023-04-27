@@ -40,7 +40,6 @@ RUN \
   echo "*** Cleanup ***" && \
   mv "./docker/docker-entrypoint.sh" "./" && \
   rm -rf "./docker" && \
-  rm -rf "./.git" && \
   echo "*** Make docker-entrypoint.sh executable ***" && \
   chmod +x "./docker-entrypoint.sh" && \
   echo "*** Convert line endings to Unix format ***" && \
