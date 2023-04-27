@@ -1475,7 +1475,7 @@
 
                             <div id="tags_div">
                                 <div class="margin-bot-10px">Tags</div>
-                                <input id="tagInput" class="text_pole" placeholder="Search / Create tags" />
+                                <input id="tagInput" class="text_pole" placeholder="Search / Create tags" maxlength="50" />
                                 <div id="tagList" class="tags"></div>
                             </div>
 
@@ -1819,6 +1819,21 @@
     </div>
 
     <!-- templates for JS to reuse when needed -->
+
+    <div id="character_template" class="template_element">
+        <div class="character_select" chid="" id="">
+            <div class="avatar" title="">
+                <img src="">
+            </div>
+            <div class="ch_name">
+                <span class="name_text"></span>
+                <i class="ch_fav_icon fa-solid fa-star fa-2xs"></i>
+            </div>
+            <input class="ch_fav" value="" hidden />
+            <div class="tags tags_inline">
+            </div>
+        </div>
+    </div>
 
     <div id="tag_template" class="template_element">
         <span id="" class="tag">

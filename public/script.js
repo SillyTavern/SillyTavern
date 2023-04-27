@@ -93,7 +93,7 @@ import {
 import { debounce, delay } from "./scripts/utils.js";
 import { extension_settings, loadExtensionSettings } from "./scripts/extensions.js";
 import { executeSlashCommands, getSlashCommandsHelp } from "./scripts/slash-commands.js";
-import { tag_map, tags, loadTagsSettings, printTags, isElementTagged } from "./scripts/tags.js";
+import { tag_map, tags, loadTagsSettings, printTags, isElementTagged, getTagsList, appendTagToList } from "./scripts/tags.js";
 
 //exporting functions and vars for mods
 export {
@@ -137,6 +137,7 @@ export {
     getStatus,
     chat,
     this_chid,
+    selected_button,
     settings,
     characters,
     online_status,
@@ -664,20 +665,27 @@ function updateSoftPromptsList(soft_prompts) {
 
 function printCharacters() {
     $("#rm_print_characters_block").empty();
-    //console.log('printCharacters() -- sees '+characters.length+' characters.');
     characters.forEach(function (item, i, arr) {
         let this_avatar = default_avatar;
         if (item.avatar != "none") {
             this_avatar = getThumbnailUrl('avatar', item.avatar);
-        } //RossAscends: changed 'prepend' to 'append' to make alphabetical sorting display correctly.
-        $("#rm_print_characters_block").append(
-            `<div class=character_select chid=${i} id="CharID${i}">
-                <div class=avatar title="${item.avatar}"><img src="${this_avatar}"></div>
-                <div class=ch_name>${item.name} ${item.fav == "true" ? '<i class="fa-solid fa-star fa-2xs"></i>' : ''}</div>
-                <input class="ch_fav" value=${item.fav} hidden />
-            </div>`
-        );
-        //console.log('printcharacters() -- printing -- ChID '+i+' ('+item.name+')');
+        }
+        // Populate the template
+        const template = $('#character_template .character_select').clone();
+        template.attr({'chid': i, 'id': `CharID${i}` });
+        template.find('img').attr('src', this_avatar);
+        template.find('.avatar').attr('title', item.avatar);
+        template.find('.ch_name .name_text').text(item.name);
+        template.find('.ch_fav_icon').css("display", !!item.fav ? '' : 'none');
+        template.find('.ch_fav').val(item.fav);
+
+        // Display inline tags
+        const tags = getTagsList(item.avatar);
+        const tagsElement = template.find('.tags');
+        tags.forEach(tag => appendTagToList(tagsElement, tag, {}));
+
+        // Add to the list
+        $("#rm_print_characters_block").append(template);
     });
     $("#rm_print_characters_block").prepend(`<hr>`);
     printTags();

@@ -1,4 +1,4 @@
-import { characters, saveSettingsDebounced, this_chid } from "../script.js";
+import { characters, saveSettingsDebounced, this_chid, selected_button } from "../script.js";
 import { selected_group } from "./group-chats.js";
 
 export {
@@ -7,57 +7,19 @@ export {
     loadTagsSettings,
     printTags,
     isElementTagged,
+    getTagsList,
+    appendTagToList,
 };
-
-const TAG_COLORS = [
-
-    "",
-    /*
-    "#990099", //--tag-pink   
-    "#996600", //--tag-orange 
-    "#999900", //--tag-yellow 
-    "#009966", //--tag-green  
-    "#006699", // --tag-blue  
-    "#660099", //--tag-purple 
-
-         "#dd0a36", // Red
-        "#ff6633", // Orange
-        "#5f9ea0", // Teal Green
-        "#1e90ff", // Light Blue
-        "#990066", // Plum
-        "#8c00ff", // Fuchsia
-        "#00ffff", // Aqua
-        "#0f4ecc", // Teal
-        "#2f4b1c", // Green
-        "#3366e5", // Dodger Blue
-        "#36c3a1", // Mint Green
-        "#995511", // Terracotta
-        "#ab47bc", // Plum RGBA
-        "#805451", // Mulberry
-        "#ff8c69", // Salmon
-        "#ba55d3", // Magenta
-        "#b3ffba", // Mint RGBA
-        "#bae7b3", // Sea Green
-        "#b5d6fd", // Light Sky Blue
-        "#d9ecf1", // Mint Green RGBA
-        "#ffe6e6", // Light Pink
-        "#dcd0c8", // Linen
-        "#bed3f3", // Lavender Blush
-        "#ffe9f3", // Sand RGBA
-        "#333366", // Violet
-        "#993333", // Red Violet
-        "#3399ff", // Sky Blue */
-];
 
 const random_id = () => Math.round(Date.now() * Math.random()).toString();
 
 const DEFAULT_TAGS = [
-    { id: random_id(), name: "Plain Text", color: TAG_COLORS[0] },
-    { id: random_id(), name: "OpenAI", color: TAG_COLORS[1] },
-    { id: random_id(), name: "W++", color: TAG_COLORS[2] },
-    { id: random_id(), name: "Boostyle", color: TAG_COLORS[3] },
-    { id: random_id(), name: "PList", color: TAG_COLORS[4] },
-    { id: random_id(), name: "AliChat", color: TAG_COLORS[5] },
+    { id: random_id(), name: "Plain Text" },
+    { id: random_id(), name: "OpenAI" },
+    { id: random_id(), name: "W++" },
+    { id: random_id(), name: "Boostyle" },
+    { id: random_id(), name: "PList" },
+    { id: random_id(), name: "AliChat" },
 ];
 
 let tags = [];
@@ -77,12 +39,24 @@ function getTagsList(key) {
     return tag_map[key].map(x => tags.find(y => y.id === x)).filter(x => x);
 }
 
+function getInlineListSelector() {
+    if (selected_group) {
+        return `.group_select[grid="${selected_group}"] .tags`;
+    }
+
+    if (this_chid && selected_button !== "create") {
+        return `.character_select[chid="${this_chid}"] .tags`;
+    }
+
+    return null;
+}
+
 function getTagKey() {
     if (selected_group) {
         return selected_group;
     }
 
-    if (this_chid) {
+    if (this_chid && selected_button !== "create") {
         return characters[this_chid].avatar;
     }
 
@@ -142,8 +116,8 @@ function selectTag(event, ui) {
 
     // add tag to the UI and internal map
     appendTagToList("#tagList", tag, { removable: true });
+    appendTagToList(getInlineListSelector(), tag, { removable: false });
     addTagToMap(tag.id);
-    printTags();
     saveSettingsDebounced();
 
     // need to return false to keep the input clear
@@ -154,17 +128,19 @@ function createNewTag(tagName) {
     const tag = {
         id: random_id(),
         name: tagName,
-        color: TAG_COLORS[Math.floor(Math.random() * TAG_COLORS.length)]
     };
     tags.push(tag);
     return tag;
 }
 
-function appendTagToList(listSelector, tag, { removable, editable, selectable }) {
+function appendTagToList(listElement, tag, { removable, editable, selectable }) {
+    if (!listElement) {
+        return;
+    }
+
     let tagElement = $('#tag_template .tag').clone();
     tagElement.attr('id', tag.id);
     tagElement.find('.tag_name').text(tag.name);
-    tagElement.css({ 'background-color': tag.color });
     const removeButton = tagElement.find(".tag_remove");
     removable ? removeButton.show() : removeButton.hide();
 
@@ -172,8 +148,7 @@ function appendTagToList(listSelector, tag, { removable, editable, selectable })
         tagElement.on('click', onTagFilterClick);
     }
 
-    // TODO: handle color change
-    $(listSelector).append(tagElement);
+    $(listElement).append(tagElement);
 }
 
 function onTagFilterClick() {
@@ -239,25 +214,31 @@ function onTagInputFocus() {
     $(this).autocomplete('search', $(this).val());
 }
 
-$(document).on("click", ".character_select", function () {
-    clearTagsFilter();
-    const chid = Number($(this).attr('chid'));
-    const key = characters[chid].avatar;
-    const tags = getTagsList(key);
-
+function onCreateCharacterClick() {
     $("#tagList").empty();
+}
 
-    for (const tag of tags) {
-        appendTagToList("#tagList", tag, { removable: true });
-    }
-});
+function onCharacterSelectClick() {
+        clearTagsFilter();
+        const chid = Number($(this).attr('chid'));
+        const key = characters[chid].avatar;
+        const tags = getTagsList(key);
+    
+        $("#tagList").empty();
+    
+        for (const tag of tags) {
+            appendTagToList("#tagList", tag, { removable: true });
+        }
+}
 
 $(document).ready(() => {
     $("#tagInput")
         .autocomplete({ source: findTag, select: selectTag, minLength: 0, })
         .focus(onTagInputFocus); // <== show tag list on click
 
+    $(document).on("click", "#rm_button_create", onCreateCharacterClick);
     $(document).on("click", ".tag_remove", onTagRemoveClick);
+    $(document).on("click", ".character_select", onCharacterSelectClick);
 
     $("#tagInput").on("input", onTagInput);
 });
