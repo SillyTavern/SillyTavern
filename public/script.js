@@ -93,6 +93,7 @@ import {
 import { debounce, delay } from "./scripts/utils.js";
 import { extension_settings, loadExtensionSettings } from "./scripts/extensions.js";
 import { executeSlashCommands, getSlashCommandsHelp } from "./scripts/slash-commands.js";
+import { tag_map, tags, loadTagsSettings, printTags, isElementTagged } from "./scripts/tags.js";
 
 //exporting functions and vars for mods
 export {
@@ -277,6 +278,8 @@ const system_messages = {
             '</ol>',
             'Type <tt>/?</tt> in any chat to get help on message formatting commands.',
             '<h3>Still have questions or suggestions left?</h3>',
+            '<a target="_blank" href="https://discord.gg/RZdyAEUPvj">SillyTavern Community Discord</a>',
+            '<br/>',
             '<a target="_blank" href="https://github.com/Cohee1207/SillyTavern/issues">Post a GitHub issue.</a>',
             '<br/>',
             '<a target="_blank" href="https://github.com/Cohee1207/SillyTavern#questions-or-suggestions">Contact the developers.</a>'
@@ -667,9 +670,8 @@ function printCharacters() {
             this_avatar = getThumbnailUrl('avatar', item.avatar);
         } //RossAscends: changed 'prepend' to 'append' to make alphabetical sorting display correctly.
         $("#rm_print_characters_block").append(
-
             `<div class=character_select chid=${i} id="CharID${i}">
-                <div class=avatar><img src="${this_avatar}"></div>
+                <div class=avatar title="${item.avatar}"><img src="${this_avatar}"></div>
                 <div class=ch_name>${item.name} ${item.fav == "true" ? '<i class="fa-solid fa-star fa-2xs"></i>' : ''}</div>
                 <input class="ch_fav" value=${item.fav} hidden />
             </div>`
@@ -677,6 +679,7 @@ function printCharacters() {
         //console.log('printcharacters() -- printing -- ChID '+i+' ('+item.name+')');
     });
     $("#rm_print_characters_block").prepend(`<hr>`);
+    printTags();
     printGroups();
     sortCharactersList();
 }
@@ -2825,6 +2828,8 @@ async function getSettings(type) {
                 // Load power user settings
                 loadPowerUserSettings(settings, data);
 
+                // Load- character tags
+                loadTagsSettings(settings);
 
                 //Enable GUI deference settings if GUI is selected for Kobold
                 if (main_api === "kobold") {
@@ -2918,10 +2923,12 @@ async function saveSettings(type) {
             power_user: power_user,
             poe_settings: poe_settings,
             extension_settings: extension_settings,
+            tags: tags,
+            tag_map: tag_map,
             ...nai_settings,
             ...kai_settings,
             ...oai_settings,
-        }),
+        }, null, 4),
         beforeSend: function () {
             //console.log('saveSettings() -- active_character -- '+active_character);
             if (type == "change_name") {
@@ -3811,15 +3818,37 @@ $(document).ready(function () {
     $("#character_search_bar").on("input", function () {
         const selector = ['#rm_print_characters_block .character_select', '#rm_print_characters_block .group_select'].join(',');
         const searchValue = $(this).val().trim().toLowerCase();
+        const selectedTagId = $('#rm_tag_filter .tag.selected').attr('id');
 
         if (!searchValue) {
-            $(selector).show();
+            $(selector).each(function () {
+                if (selectedTagId && !isElementTagged(this, selectedTagId)) {
+                    $(this).hide();
+                }
+                else {
+                    $(this).show();
+                }
+            })
         } else {
             $(selector).each(function () {
-                $(this).children(".ch_name").text().toLowerCase().includes(searchValue)
-                    ? $(this).show()
-                    : $(this).hide();
+                const isValidSearch = $(this).children(".ch_name").text().toLowerCase().includes(searchValue);
+
+                if (isValidSearch) {
+                    if (selectedTagId && !isElementTagged(this, selectedTagId)) {
+                        $(this).hide();
+                    }
+                    else {
+                        $(this).show();
+                    }
+                }
+                else {
+                    $(this).hide();
+                }
             });
+        }
+
+        if (selectedTagId) {
+            applyFilterToList(selectedTagId)
         }
     });
 

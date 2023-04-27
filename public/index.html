@@ -1367,6 +1367,7 @@
                     <input id="extensions_url" type="text" class="text_pole" maxlength="250" />
                     <div class="extensions_url_block">
                         <input id="extensions_connect" class="menu_button" type="submit" value="Connect" />
+                        <input id="extensions_details" class="menu_button" type="button" value="Manage extensions" />
                         <span class="expander"></span>
                         <label for="extensions_autoconnect"><input id="extensions_autoconnect" type="checkbox" />
                             Auto-connect
@@ -1379,8 +1380,6 @@
                         <h4>Active extensions</h4>
                         <ul id="extensions_list">
                         </ul>
-                        <p>Missing something? Press <a id="extensions_details" href="javascript:void(null);">here</a>
-                            for more details!</p>
                     </div>
                     <div id="extensions_settings">
                         <h3>Extension settings</h3>
@@ -1439,13 +1438,14 @@
                                         <div id="delete_button" class="menu_button fa-solid fa-trash-can " title="Delete Character"></div>
                                     </div>
                                 </div>
-                                <div title="Token counts may be inaccurate and provided just for reference." id="result_info"></div>
+                                <div title="Token counts may be inaccurate and provided just for reference." id="result_info">&nbsp;</div>
                             </div>
                             <hr>
 
-                            <div id="tags_div" class="margin-bot-10px ui-widget">
-                                <input id="tagInput" class="text_pole margin-bot-10px" />
-                                <div id="tagList"></div>
+                            <div id="tags_div">
+                                <div class="margin-bot-10px">Tags</div>
+                                <input id="tagInput" class="text_pole" placeholder="Search / Create tags" />
+                                <div id="tagList" class="tags"></div>
                             </div>
 
                             <div id="description_div" class="margin-bot-10px">
@@ -1529,35 +1529,6 @@
                         <h3>Members</h3>
                         <!-- !!!Don't break line after div!!! -->
                         <div id="rm_group_members"></div>
-
-                        <div id="group_member_template">
-                            <div class="group_member">
-                                <div class="avatar">
-                                    <img alt="Avatar" src="" />
-                                </div>
-                                <div class="ch_name"></div>
-                                <div class="group_member_icon">
-                                    <div title="Move up" data-action="up" class="right_menu_button fa-solid fa-xl fa-chevron-up"></div>
-                                    <div title="Move down" data-action="down" class="right_menu_button fa-solid fa-xl fa-chevron-down"></div>
-                                    <div title="Remove from group" data-action="remove" class="right_menu_button fa-solid fa-2xl fa-xmark"></div>
-                                    <div title="Add to group" data-action="add" class="right_menu_button fa-solid fa-2xl fa-plus"></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div id="group_list_template">
-                            <div class="group_select">
-                                <div class="avatar">
-                                    <img src="">
-                                </div>
-                                <div class="group_icon">
-                                    <div class="fa-solid fa-user-group"></div>
-                                </div>
-                                <div class="ch_name"></div>
-                                <i class='group_fav_icon fa-solid fa-star fa-2xs'></i>
-                                <input class="ch_fav" value="" hidden />
-                            </div>
-                        </div>
                     </div>
 
                     <div id="rm_character_import" class="right_menu" style="display: none;">
@@ -1586,6 +1557,9 @@
                                 <option data-field="chat_size" data-order="asc">Least chatted</option>
                             </select>
                         </form>
+                        <div id="rm_tag_filter" class="tags">
+
+                        </div>
                         <div id="rm_print_characters_block"></div>
                     </div>
 
@@ -1815,7 +1789,14 @@
 
     <!-- templates for JS to reuse when needed -->
 
-    <div id="openai_logit_bias_template">
+    <div id="tag_template" class="template_element">
+        <span id="" class="tag">
+            <span class="tag_name"></span>
+            <i class="fa-solid fa-circle-xmark tag_remove"></i>
+        </span>
+    </div>
+
+    <div id="openai_logit_bias_template" class="template_element">
         <div class="openai_logit_bias_form">
             <input class="openai_logit_bias_text text_pole" placeholder="type here..." />
             <input class="openai_logit_bias_value text_pole" type="number" min="-100" value="0" max="100" />
@@ -1823,7 +1804,7 @@
         </div>
     </div>
 
-    <div id="message_template">
+    <div id="message_template" class="template_element">
         <div class="mes" mesid="${count_view_mes}" ch_name="${characterName}" is_user="${mes.is_user}" is_system="${mes.is_system}">
             <div class="for_checkbox"></div><input type="checkbox" class="del_checkbox">
             <div class="avatar"><img src=""></div>
@@ -1856,7 +1837,7 @@
             </div>
         </div>
     </div>
-    <div id="group_avatars_template">
+    <div id="group_avatars_template" class="template_element">
         <div class="avatar avatar_collage collage_1">
             <img alt="img1" class="img_1" src="">
         </div>
@@ -1877,8 +1858,37 @@
         </div>
     </div>
 
+    <div id="group_member_template" class="template_element">
+        <div class="group_member">
+            <div class="avatar">
+                <img alt="Avatar" src="" />
+            </div>
+            <div class="ch_name"></div>
+            <div class="group_member_icon">
+                <div title="Move up" data-action="up" class="right_menu_button fa-solid fa-xl fa-chevron-up"></div>
+                <div title="Move down" data-action="down" class="right_menu_button fa-solid fa-xl fa-chevron-down"></div>
+                <div title="Remove from group" data-action="remove" class="right_menu_button fa-solid fa-2xl fa-xmark"></div>
+                <div title="Add to group" data-action="add" class="right_menu_button fa-solid fa-2xl fa-plus"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="group_list_template" class="template_element">
+        <div class="group_select">
+            <div class="avatar">
+                <img src="">
+            </div>
+            <div class="group_icon">
+                <div class="fa-solid fa-user-group"></div>
+            </div>
+            <div class="ch_name"></div>
+            <i class='group_fav_icon fa-solid fa-star fa-2xs'></i>
+            <input class="ch_fav" value="" hidden />
+        </div>
+    </div>
+
     <!-- chat and input bar -->
-    <div id="typing_indicator_template">
+    <div id="typing_indicator_template" class="template_element">
         <div class="typing_indicator"><span class="typing_indicator_name">CHAR</span> is typing</div>
     </div>
     <div id="sheld">
