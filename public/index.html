@@ -11,7 +11,8 @@
     <!-- fontawesome webfonts-->
     <link href="css/fontawesome.css" rel="stylesheet">
     <link href="css/solid.css" rel="stylesheet">
-
+    <link href="css/jquery-ui.min.css" rel="stylesheet">
+ 
     <link rel="apple-touch-icon" sizes="57x57" href="img/apple-icon-57x57.png" />
     <link rel="apple-touch-icon" sizes="72x72" href="img/apple-icon-72x72.png" />
     <link rel="apple-touch-icon" sizes="114x114" href="img/apple-icon-114x114.png" />
@@ -27,6 +28,7 @@
     </script>
 
     <script src="scripts/jquery-3.5.1.min.js"></script>
+    <script src="scripts/jquery-ui.min.js"></script>
     <script src="scripts/jquery.transit.min.js"></script>
     <script src="scripts/jquery-cookie-1.4.1.min.js"></script>
     <script src="scripts/showdown.min.js"></script>
@@ -49,6 +51,7 @@
     <script type="module" src="scripts/poe.js"></script>
     <script type="module" src="scripts/RossAscends-mods.js"></script>
     <script type="module" src="scripts/slash-commands.js"></script>
+    <script type="module" src="scripts/tags.js"></script>
     <script type="text/javascript" src="scripts/toolcool-color-picker.js"></script>
 
     <title>SillyTavern</title>
@@ -830,14 +833,7 @@
                             </label>
 
 
-                            <ul>
-                                <li>
-                                    <a target="_blank" href="https://horde.koboldai.net/register">Register a Horde account for faster queue times</a>
-                                </li>
-                                <li>
-                                    <a target="_blank" href="https://github.com/db0/AI-Horde-Worker#readme">Learn how to contribute your idle GPU cycles to the Horde</a>
-                                </li>
-                            </ul>
+
                             <div id="kobold_api_block">
                                 <h4>API url</h4>
                                 <h5>Example: http://127.0.0.1:5000/api </h5>
@@ -846,6 +842,14 @@
                                 <div id="api_loading" class="api-load-icon fa-solid fa-hourglass fa-spin"></div>
                             </div>
                             <div id="kobold_horde_block">
+                                <ul>
+                                    <li>
+                                        <a target="_blank" href="https://horde.koboldai.net/register">Register a Horde account for faster queue times</a>
+                                    </li>
+                                    <li>
+                                        <a target="_blank" href="https://github.com/db0/AI-Horde-Worker#readme">Learn how to contribute your idle GPU cycles to the Horde</a>
+                                    </li>
+                                </ul>
 
                                 <label for="horde_auto_adjust" class="checkbox_label">
                                     <input id="horde_auto_adjust" type="checkbox" />
@@ -874,12 +878,15 @@
                     <div id="novel_api" style="display: none;position: relative;"> <!-- shows the novel settings -->
                         <form action="javascript:void(null);" method="post" enctype="multipart/form-data">
 
-                            <h4>API key</h4>
-                            <h5>Where to get
-                                <a href="/notes#apikey" class="notes-link" target="_blank">
-                                    <span class="note-link-span">?</span>
-                                </a>
-                            </h5>
+                            <h4>Novel API key</h4>
+                            <span>
+                                <ol>
+                                    <li>
+                                        Follow<a href="/notes#apikey" class="notes-link" target="_blank"> these directions </a> to get your NovelAI API key.
+                                    </li>
+                                    <li>Enter it in the box below:</li>
+                                </ol>
+                            </span>
                             <input id="api_key_novel" name="api_key_novel" class="text_pole" maxlength="500" size="35" value="" autocomplete="off">
                             <input id="api_button_novel" class="menu_button" type="submit" value="Connect">
                             <div id="api_loading_novel" class="api-load-icon fa-solid fa-hourglass fa-spin"></div>
@@ -916,11 +923,14 @@
                     <div id="openai_api" style="display: none;position: relative;">
                         <form action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <h4>API key </h4>
-                            <h5>Where to get
-                                <a href="/notes#apikey-1" class="notes-link" target="_blank">
-                                    <span class="note-link-span">?</span>
-                                </a>
-                            </h5>
+                            <span>
+                                <ol>
+                                    <li>
+                                        Follow<a href="/notes#apikey-1" class="notes-link" target="_blank"> these directions </a> to get your OpenAI API key.
+                                    </li>
+                                    <li>Enter it in the box below:</li>
+                                </ol>
+                            </span>
                             <input id="api_key_openai" name="api_key_openai" class="text_pole" maxlength="500" value="" autocomplete="off">
                             <input id="api_button_openai" class="menu_button" type="submit" value="Connect">
                             <div id="api_loading_openai" class=" api-load-icon fa-solid fa-hourglass fa-spin"></div>
@@ -936,16 +946,19 @@
                     </div>
                     <div id="poe_api">
                         <h4>
-                            poe.com access token (p-b cookie value)
+                            Poe.com Unofficial "API"
                         </h4>
-                        <h5>
-                            Where to get
-                            <a href="/notes#apikey-2" class="notes-link" target="_blank">
-                                <span class="note-link-span">?</span>
-                            </a>
-                        </h5>
+                        <span>
+                            <ol>
+                                <li>
+                                    Follow<a href="/notes#apikey-2" class="notes-link" target="_blank"> these directions </a> to get your 'p-b cookie'
+                                </li>
+                                <li>Enter it in the box below:</li>
+                            </ol>
+                        </span>
                         <div class="widthFreeExpand">
                             <input id="poe_token" class="text_pole" type="text" placeholder="Example: nTLG2bNvbOi8qxc-DbaSlw%3D%3D" maxlength="100" />
+
                         </div>
 
                         <input id="poe_connect" class="menu_button" type="button" value="Connect" />
@@ -1230,7 +1243,7 @@
                                 </label>
                             </div>
                             <div>
-                                <label for="fast_ui_mode" class="checkbox_label" title="Blur can cause browser lag, especially in Bubble Chat mode. To fix: Turn on your browser's Hardware Acceleration, and restart your browser or simply disable the blur effect with this toggle.">
+                                <label for="fast_ui_mode" class="checkbox_label" title="removes blur and uses alternative background color for divs">
                                     <input id="fast_ui_mode" type="checkbox" />
                                     No Blur Effect
                                 </label>
@@ -1385,6 +1398,7 @@
                     <input id="extensions_url" type="text" class="text_pole" maxlength="250" />
                     <div class="extensions_url_block">
                         <input id="extensions_connect" class="menu_button" type="submit" value="Connect" />
+                        <input id="extensions_details" class="menu_button" type="button" value="Manage extensions" />
                         <span class="expander"></span>
                         <label for="extensions_autoconnect"><input id="extensions_autoconnect" type="checkbox" />
                             Auto-connect
@@ -1397,8 +1411,6 @@
                         <h4>Active extensions</h4>
                         <ul id="extensions_list">
                         </ul>
-                        <p>Missing something? Press <a id="extensions_details" href="javascript:void(null);">here</a>
-                            for more details!</p>
                     </div>
                     <div id="extensions_settings">
                         <h3>Extension settings</h3>
@@ -1457,9 +1469,15 @@
                                         <div id="delete_button" class="menu_button fa-solid fa-trash-can " title="Delete Character"></div>
                                     </div>
                                 </div>
-                                <div title="Token counts may be inaccurate and provided just for reference." id="result_info"></div>
+                                <div title="Token counts may be inaccurate and provided just for reference." id="result_info">&nbsp;</div>
                             </div>
                             <hr>
+
+                            <div id="tags_div">
+                                <div class="margin-bot-10px">Tags</div>
+                                <input id="tagInput" class="text_pole" placeholder="Search / Create tags" maxlength="50" />
+                                <div id="tagList" class="tags"></div>
+                            </div>
 
                             <div id="description_div" class="margin-bot-10px">
                                 Description
@@ -1542,35 +1560,6 @@
                         <h3>Members</h3>
                         <!-- !!!Don't break line after div!!! -->
                         <div id="rm_group_members"></div>
-
-                        <div id="group_member_template">
-                            <div class="group_member">
-                                <div class="avatar">
-                                    <img alt="Avatar" src="" />
-                                </div>
-                                <div class="ch_name"></div>
-                                <div class="group_member_icon">
-                                    <div title="Move up" data-action="up" class="right_menu_button fa-solid fa-xl fa-chevron-up"></div>
-                                    <div title="Move down" data-action="down" class="right_menu_button fa-solid fa-xl fa-chevron-down"></div>
-                                    <div title="Remove from group" data-action="remove" class="right_menu_button fa-solid fa-2xl fa-xmark"></div>
-                                    <div title="Add to group" data-action="add" class="right_menu_button fa-solid fa-2xl fa-plus"></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div id="group_list_template">
-                            <div class="group_select">
-                                <div class="avatar">
-                                    <img src="">
-                                </div>
-                                <div class="group_icon">
-                                    <div class="fa-solid fa-user-group"></div>
-                                </div>
-                                <div class="ch_name"></div>
-                                <i class='group_fav_icon fa-solid fa-star fa-2xs'></i>
-                                <input class="ch_fav" value="" hidden />
-                            </div>
-                        </div>
                     </div>
 
                     <div id="rm_character_import" class="right_menu" style="display: none;">
@@ -1599,6 +1588,9 @@
                                 <option data-field="chat_size" data-order="asc">Least chatted</option>
                             </select>
                         </form>
+                        <div id="rm_tag_filter" class="tags">
+
+                        </div>
                         <div id="rm_print_characters_block"></div>
                     </div>
 
@@ -1828,7 +1820,29 @@
 
     <!-- templates for JS to reuse when needed -->
 
-    <div id="openai_logit_bias_template">
+    <div id="character_template" class="template_element">
+        <div class="character_select" chid="" id="">
+            <div class="avatar" title="">
+                <img src="">
+            </div>
+            <div class="ch_name">
+                <span class="name_text"></span>
+                <i class="ch_fav_icon fa-solid fa-star fa-2xs"></i>
+            </div>
+            <input class="ch_fav" value="" hidden />
+            <div class="tags tags_inline">
+            </div>
+        </div>
+    </div>
+
+    <div id="tag_template" class="template_element">
+        <span id="" class="tag">
+            <span class="tag_name"></span>
+            <i class="fa-solid fa-circle-xmark tag_remove"></i>
+        </span>
+    </div>
+
+    <div id="openai_logit_bias_template" class="template_element">
         <div class="openai_logit_bias_form">
             <input class="openai_logit_bias_text text_pole" placeholder="type here..." />
             <input class="openai_logit_bias_value text_pole" type="number" min="-100" value="0" max="100" />
@@ -1836,7 +1850,7 @@
         </div>
     </div>
 
-    <div id="message_template">
+    <div id="message_template" class="template_element">
         <div class="mes" mesid="${count_view_mes}" ch_name="${characterName}" is_user="${mes.is_user}" is_system="${mes.is_system}">
             <div class="for_checkbox"></div><input type="checkbox" class="del_checkbox">
             <div class="avatar"><img src=""></div>
@@ -1869,7 +1883,7 @@
             </div>
         </div>
     </div>
-    <div id="group_avatars_template">
+    <div id="group_avatars_template" class="template_element">
         <div class="avatar avatar_collage collage_1">
             <img alt="img1" class="img_1" src="">
         </div>
@@ -1890,8 +1904,37 @@
         </div>
     </div>
 
+    <div id="group_member_template" class="template_element">
+        <div class="group_member">
+            <div class="avatar">
+                <img alt="Avatar" src="" />
+            </div>
+            <div class="ch_name"></div>
+            <div class="group_member_icon">
+                <div title="Move up" data-action="up" class="right_menu_button fa-solid fa-xl fa-chevron-up"></div>
+                <div title="Move down" data-action="down" class="right_menu_button fa-solid fa-xl fa-chevron-down"></div>
+                <div title="Remove from group" data-action="remove" class="right_menu_button fa-solid fa-2xl fa-xmark"></div>
+                <div title="Add to group" data-action="add" class="right_menu_button fa-solid fa-2xl fa-plus"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="group_list_template" class="template_element">
+        <div class="group_select">
+            <div class="avatar">
+                <img src="">
+            </div>
+            <div class="group_icon">
+                <div class="fa-solid fa-user-group"></div>
+            </div>
+            <div class="ch_name"></div>
+            <i class='group_fav_icon fa-solid fa-star fa-2xs'></i>
+            <input class="ch_fav" value="" hidden />
+        </div>
+    </div>
+
     <!-- chat and input bar -->
-    <div id="typing_indicator_template">
+    <div id="typing_indicator_template" class="template_element">
         <div class="typing_indicator"><span class="typing_indicator_name">CHAR</span> is typing</div>
     </div>
     <div id="sheld">

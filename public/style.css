@@ -445,11 +445,6 @@ code {
     background-color: var(--SmartThemeEmColor);
 }
 
-
-#message_template {
-    display: none !important;
-}
-
 .auto_hide {
     content-visibility: auto;
 }
@@ -1031,6 +1026,8 @@ input[type=search]:focus::-webkit-search-cancel-button {
     cursor: pointer;
     display: grid;
     grid-template-columns: 67px auto;
+    position: relative;
+    overflow-y: hidden;
 }
 
 .character_select .ch_name {
@@ -1040,6 +1037,9 @@ input[type=search]:focus::-webkit-search-cancel-button {
     overflow: hidden;
     text-overflow: ellipsis;
     align-self: center;
+    display: flex;
+    align-items: center;
+    gap: 5px;
 }
 
 .character_select:hover {
@@ -2322,6 +2322,74 @@ h5 {
     grid-template-columns: 340px auto;
 }
 
+.tag {
+    border-radius: 5px;
+    border-style: solid;
+    border-width: 1px;
+    box-sizing: border-box;
+    color: var(--SmartThemeQuoteColor);
+    background-color: var(--black30a);
+    border-color: var(--white30a);
+    padding: 0.2rem 0.3rem;
+    font-size: calc(var(--mainFontSize) - 5%);
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    width: fit-content;
+    text-shadow: none !important;
+}
+
+.tag.selected {
+    border-color: var(--white70a);
+}
+
+.tag_remove {
+    cursor: pointer;
+}
+
+.tags {
+    margin: 5px 0;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    column-gap: 0.4rem;
+    row-gap: 0.4rem;
+}
+
+.tags.tags_inline {
+    position: absolute;
+    margin: 2px 10px;
+    right: 0;
+    opacity: 0.6;
+    column-gap: 0.2rem;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+}
+
+.tags_inline .tag {
+    font-size: calc(var(--mainFontSize) - 15%);
+    padding: 0 0.15rem;
+}
+
+#rm_tag_filter {
+    justify-content: space-evenly;
+}
+
+#rm_tag_filter .tag {
+    cursor: pointer;
+}
+
+body .ui-front {
+    z-index: 10000;
+}
+
+body .ui-widget-content {
+    background-color: var(--SmartThemeFastUIBGColor);
+    color: var(--SmartThemeBodyColor);
+}
+
 /* GROUP CHATS */
 
 #rm_group_top_bar {
@@ -2502,11 +2570,6 @@ h5 {
     padding: 0px;
 }
 
-#group_member_template,
-#group_list_template {
-    display: none !important;
-}
-
 .group_select {
     display: flex;
     flex-direction: row;
@@ -2534,10 +2597,6 @@ h5 {
 
 .group_select .group_fav_icon {
     margin-left: 5px;
-}
-
-#typing_indicator_template {
-    display: none !important;
 }
 
 .typing_indicator {
@@ -2581,10 +2640,6 @@ h5 {
     75% {
         content: "..."
     }
-}
-
-#group_avatars_template {
-    display: none;
 }
 
 .avatar_collage {
@@ -2933,6 +2988,7 @@ label[for="extensions_autoconnect"] {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 10px;
 }
 
 .extensions_url_block h4 {
@@ -3255,8 +3311,8 @@ toolcool-color-picker {
     width: 100%;
 }
 
-#openai_logit_bias_template {
-    display: none;
+.template_element {
+    display: none !important;
 }
 
 .openai_logit_bias_text,
