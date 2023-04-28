@@ -2098,6 +2098,11 @@ app.get('/thumbnail', jsonParser, async function (request, response) {
         return response.sendStatus(403);
     }
 
+	if (config.disableThumbnails == true) {
+		const pathToOriginalFile = path.join(getOriginalFolder(type), file);
+		return response.sendFile(pathToOriginalFile, { root: __dirname });
+	}
+
     const pathToCachedFile = await generateThumbnail(type, file);
 
     if (!pathToCachedFile) {
