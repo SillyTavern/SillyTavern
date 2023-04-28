@@ -587,9 +587,7 @@ body.big-avatars .avatar img {
     grid-column-start: 3;
 }
 
-.ch_name {
-    font-weight: bolder;
-}
+
 
 .mes_text {
     font-weight: 500;
@@ -1040,18 +1038,14 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 }
 
-.character_select .ch_name {
-    /*
-    margin-left: 5px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    align-self: start;
-    display: flex;
-    gap: 5px;
-    max-height: 90px;
-    white-space: nowrap;
-    */
+/*applies to char list and mes_text char display name*/
 
+.ch_name {
+    font-weight: bolder;
+}
+
+/*applies to both groups and solos chars in the char list*/
+#rm_print_characters_block .ch_name {
     margin-left: 5px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1059,21 +1053,22 @@ input[type=search]:focus::-webkit-search-cancel-button {
     gap: 5px;
     width: 100%;
     white-space: nowrap;
-
-    /*
-    margin-left: 10px;
-    margin-top: 5px;
+    max-width: calc(100% - 29px);
     overflow: hidden;
     text-overflow: ellipsis;
-    align-self: center;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    */
+
 }
 
 .character_select:hover {
     background-color: var(--white30a);
+}
+
+.alignitemsflexstart {
+    align-items: flex-start;
+}
+
+.wide100pLess70px {
+    width: calc(100% - 70px);
 }
 
 #avatar_url_div {
@@ -1199,12 +1194,12 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 
 .ch_fav_icon {
-    /*
-    position: absolute;
-    left: 56px;
-    top: 10px;
-    */
-    filter: drop-shadow(0px 0px 3px px black);
+    filter: drop-shadow(0px 0px 1px black);
+    justify-self: end;
+    flex: 1;
+    text-align: end;
+    align-self: flex-start;
+    margin-top: 5px;
     color: yellow;
     font-size: 12px;
 }
@@ -2413,15 +2408,15 @@ h5 {
     /* position: absolute; */
     margin-right: 5px;
     margin-left: 5px;
-    top: 30px;
-    left: 70px;
+    /*     top: 30px;
+    left: 70px; */
     opacity: 0.6;
     column-gap: 0.2rem;
     row-gap: 0.2rem;
     justify-content: flex-start;
     max-height: 66%;
     overflow: hidden;
-    max-width: calc(100% - 75px);
+    /* max-width: calc(100% - 75px); */
     /*
     position: absolute;
     margin-right: 5px;
@@ -2664,11 +2659,11 @@ body .ui-widget-content {
     margin: 0 10px;
 }
 
-.group_select .ch_name {
+/* .group_select .ch_name {
     max-width: calc(100% - 100px);
     overflow: hidden;
     text-overflow: ellipsis;
-}
+} */
 
 .group_select .group_fav_icon {
     justify-self: end;
