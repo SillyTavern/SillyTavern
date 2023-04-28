@@ -164,8 +164,20 @@ export {
 // API OBJECT FOR EXTERNAL WIRING
 window["SillyTavern"] = {};
 
-let converter = new showdown.Converter({ emoji: "true" });
 const gpt3 = new GPT3BrowserTokenizer({ type: 'gpt3' });
+let converter = new showdown.Converter({
+    emoji: "true",
+    underline: "true",
+    extensions: [
+        showdownKatex(
+            {
+                delimiters: [
+                    { left: '$$', right: '$$', display: true, asciimath: false },
+                    { left: '$', right: '$', display: false, asciimath: true },
+                ]
+            }
+        )],
+});
 /* let bg_menu_toggle = false; */
 const systemUserName = "SillyTavern System";
 let default_user_name = "You";
@@ -901,8 +913,9 @@ function messageFormating(mes, ch_name, isSystem, forceAvatar) {
                 return match;
             }
         });
+        mes = mes.replaceAll('\\begin{align*}', '$$');
+        mes = mes.replaceAll('\\end{align*}', '$$');
         mes = converter.makeHtml(mes);
-        //mes = mes.replace(/{.*}/g, "");
         mes = mes.replace(/{{(\*?.+?\*?)}}/g, "");
 
         mes = mes.replace(/\n/g, "<br/>");
