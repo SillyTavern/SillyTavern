@@ -453,6 +453,8 @@ let novel_tier;
 let novelai_settings;
 let novelai_setting_names;
 
+let scrollChatToBottomAuto = true;
+let autoFixGeneratedTextMarkdown = true;
 //css
 var bg1_toggle = true; // inits the BG as BG1
 var css_mes_bg = $('<div class="mes"></div>').css("background");
@@ -1069,8 +1071,10 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
 }
 
 function scrollChatToBottom() {
-    var $textchat = $("#chat");
-    $textchat.scrollTop(($textchat[0].scrollHeight));
+    if (scrollChatToBottomAuto) {
+        var $textchat = $("#chat");
+        $textchat.scrollTop(($textchat[0].scrollHeight));
+    }
 }
 
 function substituteParams(content, _name1, _name2) {
@@ -2215,6 +2219,38 @@ function extractMessageFromData(data) {
     return getMessage;
 }
 
+
+function fixMarkdown(text) {
+    // fix formatting problems in markdown
+    // e.g.:
+    // "^example * text*\n" -> "^example *text*\n"
+    // "^*example * text\n" -> "^*example* text\n"
+    // "^example *text *\n" -> "^example *text*\n"
+    // "^* example * text\n" -> "^*example* text\n"
+    // take note that the side you move the asterisk depends on where its pairing is
+    // i.e. both of the following strings have the same broken asterisk ' * ', but you move the first to the left and the second to the right, to match the non-broken asterisk "^example * text*\n" "^*example * text\n"
+    // and you HAVE to handle the cases where multiple pairs of asterisks exist in the same line
+    // i.e. "^example * text* * harder problem *\n" -> "^example *text* *harder problem*\n"
+
+    // Find pairs of formatting characters and capture the text in between them
+    const format = /(\*|_|~){1,2}([\s\S]*?)\1{1,2}/gm;
+    let matches = [];
+    let match;
+    while ((match = format.exec(text)) !== null) {
+        matches.push(match);
+    }
+
+    // Iterate through the matches and replace adjacent spaces immediately beside formatting characters
+    let newText = text;
+    for (let i = matches.length - 1; i >= 0; i--) {
+        let matchText = matches[i][0];
+        let replacementText = matchText.replace(/(\*|_|~)(\s+)|(\s+)(\*|_|~)/g, '$1$4');
+        newText = newText.slice(0, matches[i].index) + replacementText + newText.slice(matches[i].index + matchText.length);
+    }
+
+    return newText;
+}
+
 function cleanUpMessage(getMessage, isImpersonate) {
     const nameToTrim = isImpersonate ? name2 : name1;
     if (power_user.collapse_newlines) {
@@ -2222,6 +2258,10 @@ function cleanUpMessage(getMessage, isImpersonate) {
     }
 
     getMessage = $.trim(getMessage);
+    // trailing invisible whitespace before every newlines, on a multiline string
+    // "trailing whitespace on newlines       \nevery line of the string    \n?sample text" ->
+    // "trailing whitespace on newlines\nevery line of the string\nsample text"
+    getMessage = getMessage.replace(/\s+$/gm, "");
     if (is_pygmalion) {
         getMessage = getMessage.replace(/<USER>/g, name1);
         getMessage = getMessage.replace(/<BOT>/g, name2);
@@ -2255,7 +2295,9 @@ function cleanUpMessage(getMessage, isImpersonate) {
             }
         }
     }
-
+    if (autoFixGeneratedTextMarkdown) {
+        getMessage = fixMarkdown(getMessage);
+    }
     return getMessage;
 }
 
@@ -2894,6 +2936,12 @@ async function getSettings(type) {
 
                 // Load- character tags
                 loadTagsSettings(settings);
+
+                // Others, TODO: move to power user settings
+                if (settings.scrollChatToBottomAuto !== undefined)
+                    scrollChatToBottomAuto = !!settings.scrollChatToBottomAuto;
+                if (settings.autoFixGeneratedTextMarkdown !== undefined)
+                    autoFixGeneratedTextMarkdown = !!settings.autoFixGeneratedTextMarkdown;
 
                 //Enable GUI deference settings if GUI is selected for Kobold
                 if (main_api === "kobold") {
