@@ -148,10 +148,6 @@ function setOpenAIMessages(chat) {
     // clean openai msgs
     openai_msgs = [];
     for (let i = chat.length - 1; i >= 0; i--) {
-        // first greeting message
-        if (j == 0) {
-            chat[j]['mes'] = substituteParams(chat[j]['mes']);
-        }
         let role = chat[j]['is_user'] ? 'user' : 'assistant';
         let content = chat[j]['mes'];
 

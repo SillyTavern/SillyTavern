@@ -1214,14 +1214,7 @@ function getExtensionPrompt(position = 0, depth = undefined, separator = "\n") {
 
 function baseChatReplace(value, name1, name2) {
     if (value !== undefined && value.length > 0) {
-        if (is_pygmalion) {
-            value = value.replace(/{{user}}:/gi, "You:");
-            value = value.replace(/<USER>:/gi, "You:");
-        }
-        value = value.replace(/{{user}}/gi, name1);
-        value = value.replace(/{{char}}/gi, name2);
-        value = value.replace(/<USER>/gi, name1);
-        value = value.replace(/<BOT>/gi, name2);
+        value = substituteParams(value, is_pygmalion ? "You:" : name1, name2);
 
         if (power_user.collapse_newlines) {
             value = collapseNewlines(value);
@@ -1544,6 +1537,11 @@ async function Generate(type, automatic_trigger, force_name2) {
                         is_pygmalion ? '<START>' : `This is how ${name2} should talk`;
         let mesExamplesArray = mesExamples.split(/<START>/gi).slice(1).map(block => `${blockHeading}\n${block.trim()}\n`);
 
+        // First message in fresh 1-on-1 chat reacts to user/character settings changes
+        if (chat.length) {
+            chat[0].mes = substituteParams(chat[0].mes);
+        }
+
         if (main_api === 'openai') {
             const oai_chat = chat.filter(x => !x.is_system);
 
@@ -1587,12 +1585,6 @@ async function Generate(type, automatic_trigger, force_name2) {
         console.log('pre-replace chat.length = ' + chat.length);
         for (let i = chat.length - 1, j = 0; i >= 0; i--, j++) {
             let charName = selected_group ? chat[j].name : name2;
-            if (j == 0) {
-                chat[j]['mes'] = chat[j]['mes'].replace(/{{user}}/gi, name1);
-                chat[j]['mes'] = chat[j]['mes'].replace(/{{char}}/gi, charName);
-                chat[j]['mes'] = chat[j]['mes'].replace(/<USER>/gi, name1);
-                chat[j]['mes'] = chat[j]['mes'].replace(/<BOT>/gi, charName);
-            }
             let this_mes_ch_name = '';
             if (chat[j]['is_user']) {
                 this_mes_ch_name = name1;
