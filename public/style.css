@@ -859,6 +859,7 @@ input[type="file"] {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
+    row-gap: 5px;
 }
 
 #rm_ch_create_block {
@@ -988,7 +989,7 @@ select option:not(:checked) {
     display: flex;
     flex-direction: row;
     align-items: center;
-    margin: 10px 5px;
+    margin: 5px;
     column-gap: 10px;
 }
 
@@ -1031,15 +1032,25 @@ input[type=search]:focus::-webkit-search-cancel-button {
 }
 
 .character_select .ch_name {
+    margin-left: 5px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    align-self: start;
+    display: flex;
+    gap: 5px;
+    max-height: 90px;
+    white-space: nowrap;
+
+    /*
     margin-left: 10px;
     margin-top: 5px;
-    /* transform: translateY(25%); */
     overflow: hidden;
     text-overflow: ellipsis;
     align-self: center;
     display: flex;
     align-items: center;
     gap: 5px;
+    */
 }
 
 .character_select:hover {
@@ -1165,6 +1176,16 @@ input[type=search]:focus::-webkit-search-cancel-button {
     flex: 0 0 100%;
     flex-wrap: wrap;
     margin-bottom: 4px;
+}
+
+
+.ch_fav_icon {
+    position: absolute;
+    left: 56px;
+    top: 10px;
+    filter: drop-shadow(0px 0px 3px px black);
+    color: yellow;
+    font-size: 12px;
 }
 
 #fav_chara_wrap {
@@ -2322,6 +2343,10 @@ h5 {
     grid-template-columns: 340px auto;
 }
 
+#tags_div {
+    min-width: 0;
+}
+
 .tag {
     border-radius: 5px;
     border-style: solid;
@@ -2337,6 +2362,7 @@ h5 {
     align-items: center;
     gap: 10px;
     width: fit-content;
+    min-width: 0;
     text-shadow: none !important;
 }
 
@@ -2349,23 +2375,51 @@ h5 {
 }
 
 .tags {
-    margin: 5px 0;
+
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: flex-start;
-    column-gap: 0.4rem;
-    row-gap: 0.4rem;
+    column-gap: 0.2rem;
+    row-gap: 0.2rem;
+}
+
+#tagList.tags {
+    margin: 5px 0;
 }
 
 .tags.tags_inline {
     position: absolute;
-    margin: 2px 10px;
+    margin-right: 5px;
+    margin-left: 5px;
+    top: 30px;
+    left: 70px;
+    opacity: 0.6;
+    column-gap: 0.2rem;
+    row-gap: 0.2rem;
+    justify-content: flex-start;
+    max-height: 66%;
+    overflow: hidden;
+    max-width: calc(100% - 75px);
+    /*
+    position: absolute;
+    margin-right: 5px;
     right: 0;
     opacity: 0.6;
     column-gap: 0.2rem;
-    flex-wrap: nowrap;
+    row-gap: 0.2rem;
     justify-content: flex-end;
+    max-width: 50%;
+    max-height: 100%;
+    overflow: hidden;
+    */
+}
+
+.tag_name {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    text-align: left;
+    white-space: nowrap;
 }
 
 .tags_inline .tag {
@@ -2374,7 +2428,7 @@ h5 {
 }
 
 #rm_tag_filter {
-    justify-content: space-evenly;
+    justify-content: center;
 }
 
 #rm_tag_filter .tag {
