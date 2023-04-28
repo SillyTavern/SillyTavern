@@ -1032,15 +1032,25 @@ input[type=search]:focus::-webkit-search-cancel-button {
 }
 
 .character_select .ch_name {
+    margin-left: 5px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    align-self: start;
+    display: flex;
+    gap: 5px;
+    max-height: 90px;
+    white-space: nowrap;
+
+    /*
     margin-left: 10px;
     margin-top: 5px;
-    /* transform: translateY(25%); */
     overflow: hidden;
     text-overflow: ellipsis;
     align-self: center;
     display: flex;
     align-items: center;
     gap: 5px;
+    */
 }
 
 .character_select:hover {
@@ -1166,6 +1176,16 @@ input[type=search]:focus::-webkit-search-cancel-button {
     flex: 0 0 100%;
     flex-wrap: wrap;
     margin-bottom: 4px;
+}
+
+
+.ch_fav_icon {
+    position: absolute;
+    left: 56px;
+    top: 10px;
+    filter: drop-shadow(0px 0px 3px px black);
+    color: yellow;
+    font-size: 12px;
 }
 
 #fav_chara_wrap {
@@ -2371,6 +2391,19 @@ h5 {
 .tags.tags_inline {
     position: absolute;
     margin-right: 5px;
+    margin-left: 5px;
+    top: 30px;
+    left: 70px;
+    opacity: 0.6;
+    column-gap: 0.2rem;
+    row-gap: 0.2rem;
+    justify-content: flex-start;
+    max-height: 66%;
+    overflow: hidden;
+    max-width: calc(100% - 75px);
+    /*
+    position: absolute;
+    margin-right: 5px;
     right: 0;
     opacity: 0.6;
     column-gap: 0.2rem;
@@ -2379,6 +2412,7 @@ h5 {
     max-width: 50%;
     max-height: 100%;
     overflow: hidden;
+    */
 }
 
 .tag_name {
@@ -2394,7 +2428,7 @@ h5 {
 }
 
 #rm_tag_filter {
-    justify-content: space-evenly;
+    justify-content: center;
 }
 
 #rm_tag_filter .tag {
