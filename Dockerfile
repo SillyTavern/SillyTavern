@@ -16,7 +16,7 @@ WORKDIR ${APP_HOME}
 COPY package*.json ./
 RUN \
   echo "*** Install npm packages ***" && \
-  npm install
+  npm install && npm cache clean --force
 
 # Bundle app source
 COPY . ./
