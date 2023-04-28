@@ -165,6 +165,7 @@ export {
 window["SillyTavern"] = {};
 
 const gpt3 = new GPT3BrowserTokenizer({ type: 'gpt3' });
+hljs.addPlugin({"before:highlightElement": ({ el }) => { el.textContent = el.innerText } });
 let converter = new showdown.Converter({
     emoji: "true",
     underline: "true",
@@ -974,6 +975,7 @@ function addCopyToCodeBlocks(messageElement) {
                 document.body.removeChild(copiedMsg);
             }, 2500);
         });
+        hljs.highlightElement(codeBlocks.get(i));
     }
 }
 
@@ -1299,6 +1301,7 @@ class StreamingProcessor {
     onFinishStreaming(messageId, text) {
         this.hideStopButton(this.messageId);
         this.onProgressStreaming(messageId, text);
+        addCopyToCodeBlocks($(`#chat .mes[mesid="${messageId}"]`));
         playMessageSound();
         saveChatConditional();
         activateSendButtons();
