@@ -226,6 +226,8 @@ function onTagRemoveClick(event) {
     const tagId = tag.attr("id");
     tag.remove();
     removeTagFromMap(tagId);
+    $(`${getInlineListSelector()} .tag[id="${tagId}"]`).remove();
+    
     printTags();
     saveSettingsDebounced();
 }
