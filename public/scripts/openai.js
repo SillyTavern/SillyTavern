@@ -198,7 +198,7 @@ function generateOpenAIPromptCache(charPersonality, topAnchorDepth, anchorTop, b
                 item = `[${name2} is ${personalityAndAnchor}]\n${item}`;
             }
         }
-        if (i >= openai_msgs.length - 1 && openai_msgs.length > bottomAnchorThreshold && $.trim(item).substr(0, (name1 + ":").length) == name1 + ":") {//For add anchor in end
+        if (i === openai_msgs.length - 1 && openai_msgs.length > bottomAnchorThreshold && $.trim(item).substr(0, (name1 + ":").length) == name1 + ":") {//For add anchor in end
             item = anchorBottom + "\n" + item;
         }
 

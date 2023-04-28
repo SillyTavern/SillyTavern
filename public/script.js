@@ -1709,7 +1709,7 @@ async function Generate(type, automatic_trigger, force_name2) {
                 arrMes = arrMes.reverse();
                 arrMes.forEach(function (item, i, arr) {//For added anchors and others
 
-                    if (i >= arrMes.length - 1 && $.trim(item).substr(0, (name1 + ":").length) != name1 + ":") {
+                    if (i === arrMes.length - 1 && $.trim(item).substr(0, (name1 + ":").length) != name1 + ":") {
                         if (textareaText == "") {
                             item = item.substr(0, item.length - 1);
                         }
@@ -1722,16 +1722,16 @@ async function Generate(type, automatic_trigger, force_name2) {
                             item += "[" + personalityAndAnchor + ']\n';
                         }
                     }
-                    if (i >= arrMes.length - 1 && coreChat.length > bottomAnchorThreshold && $.trim(item).substr(0, (name1 + ":").length) == name1 + ":" && !is_pygmalion) {//For add anchor in end
+                    if (i === arrMes.length - 1 && coreChat.length > bottomAnchorThreshold && $.trim(item).substr(0, (name1 + ":").length) == name1 + ":" && !is_pygmalion) {//For add anchor in end
                         item = item.substr(0, item.length - 1);
                         //chatString+=postAnchor+"\n";//"[Writing style: very long messages]\n";
                         item = item + anchorBottom + "\n";
                     }
                     if (is_pygmalion) {
-                        if (i >= arrMes.length - 1 && $.trim(item).substr(0, (name1 + ":").length) == name1 + ":") {//for add name2 when user sent
+                        if (i === arrMes.length - 1 && $.trim(item).substr(0, (name1 + ":").length) == name1 + ":") {//for add name2 when user sent
                             item = item + name2 + ":";
                         }
-                        if (i >= arrMes.length - 1 && $.trim(item).substr(0, (name1 + ":").length) != name1 + ":") {//for add name2 when continue
+                        if (i === arrMes.length - 1 && $.trim(item).substr(0, (name1 + ":").length) != name1 + ":") {//for add name2 when continue
                             if (textareaText == "") {
                                 item = item + '\n' + name2 + ":";
                             }
