@@ -165,7 +165,7 @@ export {
 window["SillyTavern"] = {};
 
 const gpt3 = new GPT3BrowserTokenizer({ type: 'gpt3' });
-hljs.addPlugin({"before:highlightElement": ({ el }) => { el.textContent = el.innerText } });
+hljs.addPlugin({ "before:highlightElement": ({ el }) => { el.textContent = el.innerText } });
 let converter = new showdown.Converter({
     emoji: "true",
     underline: "true",
@@ -3895,7 +3895,7 @@ $(document).ready(function () {
             })
         } else {
             $(selector).each(function () {
-                const isValidSearch = $(this).children(".ch_name").text().toLowerCase().includes(searchValue);
+                const isValidSearch = $(this).children(".flex-container").children(".ch_name").text().toLowerCase().includes(searchValue);
 
                 if (isValidSearch) {
                     if (selectedTagId && !isElementTagged(this, selectedTagId)) {
@@ -3922,8 +3922,8 @@ $(document).ready(function () {
         const selector = ['#rm_print_characters_block .character_select', '#rm_print_characters_block .group_select'].join(',');
         if (filterByFav) {
             $(selector).each(function () {
-                if ($(this).children(".ch_fav").length !== 0) {
-                    $(this).children(".ch_fav").val().toLowerCase().includes(true)
+                if ($(this).children(".flex-container").children(".ch_fav").length !== 0) {
+                    $(this).children(".flex-container").children(".ch_fav").val().toLowerCase().includes(true)
                         ? $(this).show()
                         : $(this).hide();
                 }
