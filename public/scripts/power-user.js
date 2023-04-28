@@ -12,6 +12,7 @@ export {
     collapseNewlines,
     playMessageSound,
     sortCharactersList,
+    fixMarkdown,
     power_user,
     pygmalion_options,
     tokenizers,
@@ -85,6 +86,9 @@ let power_user = {
     movingUI: false,
     noShadows: false,
     theme: 'Default (Dark)',
+
+    auto_scroll_chat_to_bottom: true,
+    auto_fix_generated_markdown: true,
 };
 
 let themes = [];
@@ -131,6 +135,37 @@ function playMessageSound() {
 
 function collapseNewlines(x) {
     return x.replaceAll(/\n+/g, "\n");
+}
+
+function fixMarkdown(text) {
+    // fix formatting problems in markdown
+    // e.g.:
+    // "^example * text*\n" -> "^example *text*\n"
+    // "^*example * text\n" -> "^*example* text\n"
+    // "^example *text *\n" -> "^example *text*\n"
+    // "^* example * text\n" -> "^*example* text\n"
+    // take note that the side you move the asterisk depends on where its pairing is
+    // i.e. both of the following strings have the same broken asterisk ' * ', but you move the first to the left and the second to the right, to match the non-broken asterisk "^example * text*\n" "^*example * text\n"
+    // and you HAVE to handle the cases where multiple pairs of asterisks exist in the same line
+    // i.e. "^example * text* * harder problem *\n" -> "^example *text* *harder problem*\n"
+
+    // Find pairs of formatting characters and capture the text in between them
+    const format = /(\*|_|~){1,2}([\s\S]*?)\1{1,2}/gm;
+    let matches = [];
+    let match;
+    while ((match = format.exec(text)) !== null) {
+        matches.push(match);
+    }
+
+    // Iterate through the matches and replace adjacent spaces immediately beside formatting characters
+    let newText = text;
+    for (let i = matches.length - 1; i >= 0; i--) {
+        let matchText = matches[i][0];
+        let replacementText = matchText.replace(/(\*|_|~)(\s+)|(\s+)(\*|_|~)/g, '$1$4');
+        newText = newText.slice(0, matches[i].index) + replacementText + newText.slice(matches[i].index + matchText.length);
+    }
+
+    return newText;
 }
 
 function switchUiMode() {
@@ -301,6 +336,8 @@ function loadPowerUserSettings(settings, data) {
     power_user.font_scale = Number(localStorage.getItem(storage_keys.font_scale) ?? 1);
     power_user.blur_strength = Number(localStorage.getItem(storage_keys.blur_strength) ?? 10);
 
+    $('#auto_fix_generated_markdown').prop("checked", power_user.auto_fix_generated_markdown);
+    $('#auto_scroll_chat_to_bottom').prop("checked", power_user.auto_scroll_chat_to_bottom);
     $(`#tokenizer option[value="${power_user.tokenizer}"]`).attr('selected', true);
     $(`#pygmalion_formatting option[value=${power_user.pygmalion_formatting}]`).attr("selected", true);
     $("#collapse-newlines-checkbox").prop("checked", power_user.collapse_newlines);
@@ -647,9 +684,18 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
-
     $("#multigen_next_chunks").on('input', function () {
         power_user.multigen_next_chunks = Number($(this).val());
+        saveSettingsDebounced();
+    });
+
+    $('#auto_fix_generated_markdown').on('input', function () {
+         power_user.auto_fix_generated_markdown  = !!$(this).prop('checked');
+         saveSettingsDebounced();
+    });
+
+    $('#auto_scroll_chat_to_bottom').on("input", function () {
+        power_user.auto_scroll_chat_to_bottom = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 
