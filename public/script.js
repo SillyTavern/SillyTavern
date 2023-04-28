@@ -440,6 +440,8 @@ let novel_tier;
 let novelai_settings;
 let novelai_setting_names;
 
+let scrollChatToBottomAuto = true;
+let autoFixGeneratedTextMarkdown = true;
 //css
 var bg1_toggle = true; // inits the BG as BG1
 var css_mes_bg = $('<div class="mes"></div>').css("background");
@@ -1068,8 +1070,10 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
 }
 
 function scrollChatToBottom() {
-    // var $textchat = $("#chat");
-    // $textchat.scrollTop(($textchat[0].scrollHeight));
+    if (scrollChatToBottomAuto) {
+        var $textchat = $("#chat");
+        $textchat.scrollTop(($textchat[0].scrollHeight));
+    }
 }
 
 function substituteParams(content, _name1, _name2) {
@@ -2872,6 +2876,12 @@ async function getSettings(type) {
 
                 // Load- character tags
                 loadTagsSettings(settings);
+
+                // Others, TODO: move to power user settings
+                if (settings.scrollChatToBottomAuto !== undefined)
+                    scrollChatToBottomAuto = !!settings.scrollChatToBottomAuto;
+                if (settings.autoFixGeneratedTextMarkdown !== undefined)
+                    autoFixGeneratedTextMarkdown = !!settings.autoFixGeneratedTextMarkdown;
 
                 //Enable GUI deference settings if GUI is selected for Kobold
                 if (main_api === "kobold") {
