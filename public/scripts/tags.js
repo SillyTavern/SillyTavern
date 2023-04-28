@@ -9,6 +9,8 @@ export {
     isElementTagged,
     getTagsList,
     appendTagToList,
+    createTagMapFromList,
+    renameTagKey,
 };
 
 const random_id = () => Math.round(Date.now() * Math.random()).toString();
@@ -28,6 +30,19 @@ let tag_map = {};
 function loadTagsSettings(settings) {
     tags = settings.tags !== undefined ? settings.tags : DEFAULT_TAGS;
     tag_map = settings.tag_map !== undefined ? settings.tag_map : Object.create(null);
+}
+
+function renameTagKey(oldKey, newKey) {
+    const value = tag_map[oldKey];
+    tag_map[newKey] = value || [];
+    delete tag_map[oldKey];
+    saveSettingsDebounced();
+}
+
+function createTagMapFromList(listElement, key) {
+    const tagIds = [...($(listElement).find(".tag").map((_, el) => $(el).attr("id")))];
+    tag_map[key] = tagIds;
+    saveSettingsDebounced();
 }
 
 function getTagsList(key) {
