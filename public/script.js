@@ -164,8 +164,21 @@ export {
 // API OBJECT FOR EXTERNAL WIRING
 window["SillyTavern"] = {};
 
-let converter = new showdown.Converter({ emoji: "true" });
 const gpt3 = new GPT3BrowserTokenizer({ type: 'gpt3' });
+hljs.addPlugin({"before:highlightElement": ({ el }) => { el.textContent = el.innerText } });
+let converter = new showdown.Converter({
+    emoji: "true",
+    underline: "true",
+    extensions: [
+        showdownKatex(
+            {
+                delimiters: [
+                    { left: '$$', right: '$$', display: true, asciimath: false },
+                    { left: '$', right: '$', display: false, asciimath: true },
+                ]
+            }
+        )],
+});
 /* let bg_menu_toggle = false; */
 const systemUserName = "SillyTavern System";
 let default_user_name = "You";
@@ -901,8 +914,9 @@ function messageFormating(mes, ch_name, isSystem, forceAvatar) {
                 return match;
             }
         });
+        mes = mes.replaceAll('\\begin{align*}', '$$');
+        mes = mes.replaceAll('\\end{align*}', '$$');
         mes = converter.makeHtml(mes);
-        //mes = mes.replace(/{.*}/g, "");
         mes = mes.replace(/{{(\*?.+?\*?)}}/g, "");
 
         mes = mes.replace(/\n/g, "<br/>");
@@ -961,6 +975,7 @@ function addCopyToCodeBlocks(messageElement) {
                 document.body.removeChild(copiedMsg);
             }, 2500);
         });
+        hljs.highlightElement(codeBlocks.get(i));
     }
 }
 
@@ -1286,6 +1301,7 @@ class StreamingProcessor {
     onFinishStreaming(messageId, text) {
         this.hideStopButton(this.messageId);
         this.onProgressStreaming(messageId, text);
+        addCopyToCodeBlocks($(`#chat .mes[mesid="${messageId}"]`));
         playMessageSound();
         saveChatConditional();
         activateSendButtons();

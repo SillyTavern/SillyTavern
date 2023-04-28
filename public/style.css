@@ -3575,6 +3575,10 @@ body.noShadows * {
     text-shadow: none !important;
 }
 
+.katex-html {
+    display: none;
+}
+
 /* ---------- @media queries must always go at the bottom ------------*/
 
 /*will apply to anything 1000px or less. this catches ipads, horizontal phones, and vertical phones)*/
