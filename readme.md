@@ -110,7 +110,7 @@ Get in touch with the developers directly:
 *NOTE: This branch is intended for local install purposes, and has not been thoroughly tested on a colab or other cloud notebook service.*
 
 ### Windows
-  1. install [NodeJS](https://nodejs.org/en)
+  1. install [NodeJS](https://nodejs.org/en) (latest LTS version is recommended)
   2. download the zip from this GitHub repo
   3. unzip it into a folder of your choice
   4. run start.bat via double-clicking or in a command line.
