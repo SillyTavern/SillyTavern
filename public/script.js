@@ -2231,18 +2231,18 @@ function fixMarkdown(text) {
     // i.e. "^example * text* * harder problem *\n" -> "^example *text* *harder problem*\n"
 
     // Find pairs of formatting characters and capture the text in between them
-    const format = /(\*{2}|__|\*|_|~~)(\s*\S.*?\S\s*)(\1)/g;
+    const format = /(\*|_|~){1,2}([\s\S]*?)\1{1,2}/gm;
     let matches = [];
     let match;
     while ((match = format.exec(text)) !== null) {
         matches.push(match);
     }
 
-    // Iterate through the matches and replace consecutive spaces immediately beside formatting characters
+    // Iterate through the matches and replace adjacent spaces immediately beside formatting characters
     let newText = text;
     for (let i = matches.length - 1; i >= 0; i--) {
         let matchText = matches[i][0];
-        let replacementText = matchText.replace(/\s*(?<=\S)(\s+)(?=\S)/g, '');
+        let replacementText = matchText.replace(/(\*|_|~)(\s+)|(\s+)(\*|_|~)/g, '$1$4');
         newText = newText.slice(0, matches[i].index) + replacementText + newText.slice(matches[i].index + matchText.length);
     }
 
