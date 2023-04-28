@@ -36,7 +36,10 @@ function getTagsList(key) {
         return [];
     }
 
-    return tag_map[key].map(x => tags.find(y => y.id === x)).filter(x => x);
+    return tag_map[key]
+        .map(x => tags.find(y => y.id === x))
+        .filter(x => x)
+        .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 function getInlineListSelector() {
@@ -98,8 +101,14 @@ function findTag(request, resolve) {
     const skipIds = [...($("#tagList").find(".tag").map((_, el) => $(el).attr("id")))];
     const haystack = tags.filter(t => !skipIds.includes(t.id)).map(t => t.name).sort();
     const needle = request.term.toLowerCase();
+    const hasExactMatch = haystack.findIndex(x => x.toLowerCase() == needle) !== -1;
     const result = haystack.filter(x => x.toLowerCase().includes(needle));
-    resolve(result.length !== 0 ? result : [request.term]);
+
+    if (request.term && !hasExactMatch) {
+        result.unshift(request.term);
+    }
+
+    resolve(result);
 }
 
 function selectTag(event, ui) {
@@ -187,7 +196,9 @@ function clearTagsFilter() {
 function printTags() {
     $('#rm_tag_filter').empty();
     const characterTagIds = Object.values(tag_map).flat();
-    const tagsToDisplay = tags.filter(x => characterTagIds.includes(x.id));
+    const tagsToDisplay = tags
+        .filter(x => characterTagIds.includes(x.id))
+        .sort((a, b) => a.name.localeCompare(b.name));
 
     for (const tag of tagsToDisplay) {
         appendTagToList('#rm_tag_filter', tag, { removable: false, editable: false, selectable: true, });
