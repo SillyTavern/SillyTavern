@@ -964,6 +964,7 @@ function appendImageToMessage(mes, messageElement) {
 function addCopyToCodeBlocks(messageElement) {
     const codeBlocks = $(messageElement).find("pre code");
     for (let i = 0; i < codeBlocks.length; i++) {
+        hljs.highlightElement(codeBlocks.get(i));
         const copyButton = document.createElement('i');
         copyButton.classList.add('fa-solid', 'fa-copy', 'code-copy');
         copyButton.title = 'Copy code';
@@ -980,7 +981,6 @@ function addCopyToCodeBlocks(messageElement) {
                 document.body.removeChild(copiedMsg);
             }, 2500);
         });
-        hljs.highlightElement(codeBlocks.get(i));
     }
 }
 
