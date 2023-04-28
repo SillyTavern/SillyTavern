@@ -2226,19 +2226,19 @@ function fixMarkdown(text) {
     // and you HAVE to handle the cases where multiple pairs of asterisks exist in the same line
     // i.e. "^example * text* * harder problem *\n" -> "^example *text* *harder problem*\n"
 
-    // Find pairs of asterisks and capture the text in between them
-    const asterisks = /\*{2}|(\*\s*\S.*?\S\s*\*)/g;
+    // Find pairs of formatting characters and capture the text in between them
+    const format = /(\*{2}|__|\*|_|~~)(\s*\S.*?\S\s*)(\1)/g;
     let matches = [];
     let match;
-    while ((match = asterisks.exec(text)) !== null) {
+    while ((match = format.exec(text)) !== null) {
         matches.push(match);
     }
 
-    // Iterate through the matches and replace spaces immediately beside asterisks
+    // Iterate through the matches and replace consecutive spaces immediately beside formatting characters
     let newText = text;
     for (let i = matches.length - 1; i >= 0; i--) {
         let matchText = matches[i][0];
-        let replacementText = matchText.replace(/\s*(?<=\*)\s|\s(?=\*)\s*/g, '');
+        let replacementText = matchText.replace(/\s*(?<=\S)(\s+)(?=\S)/g, '');
         newText = newText.slice(0, matches[i].index) + replacementText + newText.slice(matches[i].index + matchText.length);
     }
 
