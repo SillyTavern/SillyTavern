@@ -93,7 +93,7 @@ import {
 import { debounce, delay } from "./scripts/utils.js";
 import { extension_settings, loadExtensionSettings } from "./scripts/extensions.js";
 import { executeSlashCommands, getSlashCommandsHelp } from "./scripts/slash-commands.js";
-import { tag_map, tags, loadTagsSettings, printTags, isElementTagged, getTagsList, appendTagToList } from "./scripts/tags.js";
+import { tag_map, tags, loadTagsSettings, printTags, isElementTagged, getTagsList, appendTagToList, createTagMapFromList, renameTagKey } from "./scripts/tags.js";
 
 //exporting functions and vars for mods
 export {
@@ -450,6 +450,13 @@ var colab_ini_step = 1;
 
 let token;
 
+function getRequestHeaders() {
+    return {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": token,
+    };
+}
+
 //////////// Is this needed?
 setInterval(function () {
     switch (colab_ini_step) {
@@ -610,10 +617,7 @@ async function getSoftPromptsList() {
 
     const response = await fetch("/getsoftprompts", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-Token": token,
-        },
+        headers: getRequestHeaders(),
         body: JSON.stringify({ api_server: api_server }),
     });
 
@@ -697,10 +701,7 @@ async function getCharacters() {
     await getGroups();
     var response = await fetch("/getcharacters", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-Token": token,
-        },
+        headers: getRequestHeaders(),
         body: JSON.stringify({
             "": "",
         }),
@@ -724,10 +725,7 @@ async function getCharacters() {
 async function getBackgrounds() {
     const response = await fetch("/getbackgrounds", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-Token": token,
-        },
+        headers: getRequestHeaders(),
         body: JSON.stringify({
             "": "",
         }),
@@ -752,10 +750,7 @@ async function isColab() {
     is_checked_colab = true;
     const response = await fetch("/iscolab", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-Token": token,
-        },
+        headers: getRequestHeaders(),
         body: JSON.stringify({
             "": "",
         }),
@@ -801,10 +796,7 @@ async function setBackground(bg) {
 async function delBackground(bg) {
     const response = await fetch("/delbackground", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-Token": token,
-        },
+        headers: getRequestHeaders(),
         body: JSON.stringify({
             bg: bg,
         }),
@@ -817,10 +809,7 @@ async function delBackground(bg) {
 async function delChat(chatfile) {
     const response = await fetch("/delchat", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-Token": token,
-        },
+        headers: getRequestHeaders(),
         body: JSON.stringify({
             chatfile: chatfile,
             id: characters[this_chid].name
@@ -850,10 +839,7 @@ async function replaceCurrentChat() {
 
     const chatsResponse = await fetch("/getallchatsofcharacter", {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            "X-CSRF-Token": token,
-        },
+        headers: getRequestHeaders(),
         body: JSON.stringify({ avatar_url: characters[this_chid].avatar })
     });
 
@@ -2384,6 +2370,62 @@ function resultCheckStatusNovel() {
     $("#api_button_novel").css("display", "inline-block");
 }
 
+async function renameCharacter() {
+    const oldAvatar = characters[this_chid].avatar;
+    const newValue = await callPopup('New name:', 'input', characters[this_chid].name);
+
+    if (newValue && newValue !== characters[this_chid].name) {
+        const body = JSON.stringify({ avatar_url: oldAvatar, new_name: newValue });
+        const response = await fetch('/renamecharacter', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body,
+        });
+
+        try {
+            if (response.ok) {
+                const data = await response.json();
+                const newAvatar = data.avatar;
+
+                // Replace tags list
+                renameTagKey(oldAvatar, newAvatar);
+
+                // Reload characters list
+                await getCharacters();
+
+                // Find newly renamed character
+                const newChId = characters.findIndex(c => c.avatar == data.avatar);
+
+                if (newChId !== -1) {
+                    // Select the character after the renaming
+                    this_chid = -1;
+                    $(`.character_select[chid="${newChId}"]`).click();
+
+                    // Async delay to update UI
+                    await delay(1);
+
+                    if (this_chid == -1) {
+                        throw new Error('New character not selected');
+                    }
+
+                    callPopup('Character renamed! Sprites folder (if any) should be renamed manually.', 'text');
+                }
+                else {
+                    throw new Error('Newly renamed character was lost?');
+                }
+            }
+            else {
+                throw new Error('Could not rename the character');
+            }
+        }
+        catch {
+            // Reloading to prevent data corruption
+            await callPopup('Something went wrong. The page will be reloaded.', 'text');
+            location.reload();
+        }
+    }
+}
+
 async function saveChat(chat_name, withMetadata) {
     const metadata = { ...chat_metadata, ...(withMetadata || {}) };
     let file_name = chat_name ?? characters[this_chid].chat;
@@ -2654,10 +2696,7 @@ async function getUserAvatars() {
     $("#user_avatar_block").append('<div class="avatar_upload">+</div>');
     const response = await fetch("/getuseravatars", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-Token": token,
-        },
+        headers: getRequestHeaders(),
         body: JSON.stringify({
             "": "",
         }),
@@ -3174,7 +3213,7 @@ function select_selected_character(chid) {
     $("#rm_button_back").css("display", "none");
     //$("#character_import_button").css("display", "none");
     $("#create_button").attr("value", "Save");              // what is the use case for this?
-    //$("#create_button_label").css("display", "none");
+    $("#create_button_label").css("display", "none");
 
     $("#rm_button_selected_ch").children("h2").text(display_name);
     $("#add_avatar_button").val("");
@@ -3291,7 +3330,7 @@ function updateFavButtonState(state) {
     $("#favorite_button").toggleClass('fav_off', !fav_ch_checked);
 }
 
-function callPopup(text, type) {
+function callPopup(text, type, inputValue = '') {
     if (type) {
         popup_type = type;
     }
@@ -3315,7 +3354,7 @@ function callPopup(text, type) {
             $("#dialogue_popup_ok").text("Delete");
     }
 
-    $("#dialogue_popup_input").val('');
+    $("#dialogue_popup_input").val(inputValue);
     if (popup_type == 'input') {
         $("#dialogue_popup_input").css("display", "block");
         $("#dialogue_popup_ok").text("Save");
@@ -4253,26 +4292,23 @@ $(document).ready(function () {
                         );
 
                         $("#create_button").attr("value", "✅");
-                        if (true) {
-                            let oldSelectedChar = null;
-                            if (this_chid != undefined && this_chid != "invalid-safety-id") {
-                                oldSelectedChar = characters[this_chid].name;
-                            }
-
-                            await getCharacters();
-
-                            $("#rm_info_block").transition({ opacity: 0, duration: 0 });
-                            var $prev_img = $("#avatar_div_div").clone();
-                            $("#rm_info_avatar").append($prev_img);
-                            select_rm_info(`Character created<br><h4>${DOMPurify.sanitize(save_name)}</h4>`, oldSelectedChar);
-
-                            $("#rm_info_block").transition({ opacity: 1.0, duration: 2000 });
-                        } else {
-                            $("#result_info").html(html);
+                        let oldSelectedChar = null;
+                        if (this_chid != undefined && this_chid != "invalid-safety-id") {
+                            oldSelectedChar = characters[this_chid].name;
                         }
+
+                        console.log(`new avatar id: ${html}`);
+                        createTagMapFromList("#tagList", html);
+                        await getCharacters();
+
+                        $("#rm_info_block").transition({ opacity: 0, duration: 0 });
+                        var $prev_img = $("#avatar_div_div").clone();
+                        $("#rm_info_avatar").append($prev_img);
+                        select_rm_info(`Character created<br><h4>${DOMPurify.sanitize(save_name)}</h4>`, oldSelectedChar);
+
+                        $("#rm_info_block").transition({ opacity: 1.0, duration: 2000 });
                     },
                     error: function (jqXHR, exception) {
-                        //alert('ERROR: '+xhr.status+ ' Status Text: '+xhr.statusText+' '+xhr.responseText);
                         $("#create_button").removeAttr("disabled");
                     },
                 });
@@ -4397,9 +4433,7 @@ $(document).ready(function () {
         }
     });
 
-    $("#renameCharButton").on('click', function () {
-        $("#name_div").toggleClass('displayNone displayBlock');
-    })
+    $("#renameCharButton").on('click', renameCharacter);
 
     $("#talkativeness_slider").on("input", function () {
         if (menu_type == "create") {
@@ -4682,10 +4716,7 @@ $(document).ready(function () {
         const selected = $("#softprompt").find(":selected").val();
         const response = await fetch("/setsoftprompt", {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRF-Token": token,
-            },
+            headers: getRequestHeaders(),
             body: JSON.stringify({ name: selected, api_server: api_server }),
         });
 
@@ -5060,10 +5091,7 @@ $(document).ready(function () {
 
         const response = await fetch('/exportcharacter', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-Token': token,
-            },
+            headers: getRequestHeaders(),
             body: JSON.stringify(body),
         });
 

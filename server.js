@@ -636,144 +636,106 @@ function charaFormatData(data) {
     var char = { "name": data.ch_name, "description": data.description, "personality": data.personality, "first_mes": data.first_mes, "avatar": 'none', "chat": data.ch_name + ' - ' + humanizedISO8601DateTime(), "mes_example": data.mes_example, "scenario": data.scenario, "create_date": humanizedISO8601DateTime(), "talkativeness": data.talkativeness, "fav": data.fav };
     return char;
 }
+
 app.post("/createcharacter", urlencodedParser, function (request, response) {
-    //var sameNameChar = fs.existsSync(charactersPath+request.body.ch_name+'.png');
-    //if (sameNameChar == true) return response.sendStatus(500);
     if (!request.body) return response.sendStatus(400);
 
     request.body.ch_name = sanitize(request.body.ch_name);
 
-    console.log('/createcharacter -- looking for -- ' + (charactersPath + request.body.ch_name + '.png'));
-    console.log('Does this file already exists? ' + fs.existsSync(charactersPath + request.body.ch_name + '.png'));
-    if (!fs.existsSync(charactersPath + request.body.ch_name + '.png')) {
-        if (!fs.existsSync(chatsPath + request.body.ch_name)) fs.mkdirSync(chatsPath + request.body.ch_name);
-        let filedata = request.file;
-        //console.log(filedata.mimetype);
-        var fileType = ".png";
-        var img_file = "ai";
-        var img_path = "public/img/";
-        var char = charaFormatData(request.body);//{"name": request.body.ch_name, "description": request.body.description, "personality": request.body.personality, "first_mes": request.body.first_mes, "avatar": 'none', "chat": Date.now(), "last_mes": '', "mes_example": ''};
-        char = JSON.stringify(char);
-        if (!filedata) {
-            charaWrite('./public/img/ai4.png', char, request.body.ch_name, response);
-        } else {
+    const char = JSON.stringify(charaFormatData(request.body));
+    const internalName = getPngName(request.body.ch_name);
+    const avatarName = `${internalName}.png`;
+    const defaultAvatar = './public/img/ai4.png';
+    const chatsPath = path.join(chatsPath, internalName);
 
-            img_path = "./uploads/";
-            img_file = filedata.filename
-            if (filedata.mimetype == "image/jpeg") fileType = ".jpeg";
-            if (filedata.mimetype == "image/png") fileType = ".png";
-            if (filedata.mimetype == "image/gif") fileType = ".gif";
-            if (filedata.mimetype == "image/bmp") fileType = ".bmp";
-            charaWrite(img_path + img_file, char, request.body.ch_name, response);
-        }
-        //console.log("The file was saved.");
+    if (!fs.existsSync(chatsPath)) fs.mkdirSync(chatsPath);
 
+    if (!request.file) {
+        charaWrite(defaultAvatar, char, internalName, response, avatarName);
     } else {
-        console.error("Error: Cannot save file. A character with that name already exists.");
-        response.send("Error: A character with that name already exists.");
-        //response.send({error: true});
+        const uploadPath = path.join("./uploads/", request.file.filename);
+        charaWrite(uploadPath, char, internalName, response, avatarName);
     }
 });
 
+app.post("/renamecharacter", jsonParser, async function (request, response) {
+    if (!request.body.avatar_url || !request.body.new_name) {
+        return response.sendStatus(400);
+    }
+
+    const oldAvatarName = request.body.avatar_url;
+    const newName = sanitize(request.body.new_name);
+    const oldInternalName = path.parse(request.body.avatar_url).name;
+    const newInternalName = getPngName(newName);
+    const newAvatarName = `${newInternalName}.png`;
+
+    const oldAvatarPath = path.join(charactersPath, oldAvatarName);
+    const newAvatarPath = path.join(charactersPath, newAvatarName);
+
+    const oldChatsPath = path.join(chatsPath, oldInternalName);
+    const newChatsPath = path.join(chatsPath, newInternalName);
+
+    try {
+        // Read old file, replace name int it
+        const rawOldData = await charaRead(oldAvatarPath);
+        const oldData = json5.parse(rawOldData);
+        oldData['name'] = newName;
+        const newData = JSON.stringify(oldData);
+    
+        // Write data to new location
+        await charaWrite(oldAvatarPath, newData, newInternalName);
+
+        // Rename chats folder
+        if (fs.existsSync(oldChatsPath) && !fs.existsSync(newChatsPath)) {
+            fs.renameSync(oldChatsPath, newChatsPath);
+        }
+
+        // Remove the old character file
+        fs.rmSync(oldAvatarPath);
+
+        // Return new avatar name to ST
+        return response.send({ 'avatar': newAvatarName });
+    }
+    catch (err) {
+        console.error(err);
+        return response.sendStatus(500);
+    }
+});
 
 app.post("/editcharacter", urlencodedParser, async function (request, response) {
-
     if (!request.body) {
         console.error('Error: no response body detected');
-        response.send('Error: no response body detected');
+        response.status(400).send('Error: no response body detected');
         return;
-        //   return response.sendStatus(400);
     }
 
     if (request.body.ch_name === '' || request.body.ch_name === undefined || request.body.ch_name === '.') {
         console.error('Error: invalid name.');
-        response.send('Error: invalid name.');
+        response.status(400).send('Error: invalid name.');
         return;
     }
-    let filedata = request.file;
-    //console.log(filedata.mimetype);
-    var fileType = ".png";
-    var img_file = "ai";
-    var img_path = charactersPath;
-    var to_del_file = undefined;
-    var char = charaFormatData(request.body);//{"name": request.body.ch_name, "description": request.body.description, "personality": request.body.personality, "first_mes": request.body.first_mes, "avatar": request.body.avatar_url, "chat": request.body.chat, "last_mes": request.body.last_mes, "mes_example": ''};
+
+    let char = charaFormatData(request.body);
     char.chat = request.body.chat;
     char.create_date = request.body.create_date;
     char = JSON.stringify(char);
     let target_img = (request.body.avatar_url).replace('.png', '');
-    let potentialNewCharCardFile = directories.characters + sanitize(request.body.ch_name) + '.png';
-    let potentialSpritesFolder = directories.characters + sanitize(target_img) + '/';
-    let potentialChatsFolder = directories.chats + sanitize(target_img) + '/';
-    let potentialNewName = request.body.ch_name;
-    //console.log('CurFile: ' + target_img);
-    //console.log('CurChatDir: ' + potentialChatsFolder);
-    //console.log('CurSpritesDir: ' + potentialSpritesFolder);
-    //console.log('NewFile: ' + potentialNewCharCardFile);
-
-    //if name_div has been edited, that means the char is being renamed
-    if (potentialNewName !== undefined && potentialNewName !== '' && potentialNewName !== target_img) {
-        //console.log(potentialNewName + 'is valid and not same as ' + target_img + ', possible rename detected.');
-        if (!fs.existsSync(potentialNewCharCardFile)) {
-            to_del_file = img_path + sanitize(target_img) + '.png';
-            target_img = sanitize(request.body.ch_name);
-            //console.log(potentialNewCharCardFile + ' does not already exist, renaming greenlit.');
-            var renameChatsFolderTo = directories.chats + sanitize(target_img) + "/";
-            var renameSpritesFolderTo = directories.characters + sanitize(target_img) + "/";
-            //console.log('NewFile: ' + target_img);
-            //console.log('NewChatsDir: ' + renameChatsFolderTo);
-            //console.log('NewSpritesDir: ' + renameSpritesFolderTo);
-            //console.log('DelFile: ' + to_del_file);
-
-        } else {
-            console.error(potentialNewCharCardFile + " already existed, so you can't rename to that!");
-            //this needs to send a response back to the HTML to give a visual warning
-            return;
-        }
-    }
 
     try {
-        if (!filedata) {
-            if (to_del_file !== undefined) {
-                if (!fs.existsSync(renameChatsFolderTo)) {
-                    if (fs.existsSync(potentialChatsFolder)) {
-                        fs.renameSync(potentialChatsFolder, renameChatsFolderTo);
-                        console.log('RENAMED: Chats folder: ' + potentialChatsFolder + " >> " + renameChatsFolderTo);
-                    } else { console.log("Info: No chat folder to rename."); }
-                } else { console.error('ERROR: same chat folder name already existed. Chats Folder rename aborted.'); }
-
-                if (!fs.existsSync(renameSpritesFolderTo)) {
-                    if (fs.existsSync(potentialSpritesFolder)) {
-                        fs.renameSync(potentialSpritesFolder, renameSpritesFolderTo);
-                        console.log('RENAMED: Sprites folder:' + potentialSpritesFolder + ' >> ' + renameSpritesFolderTo);
-                    } else { console.log("Info: No sprites folder to rename."); }
-                } else { console.error('ERROR: same sprites folder name already existed. Sprites Folder rename aborted.'); }
-
-                console.log('REPLACING: ' + to_del_file + ' with ' + directories.characters + target_img + '.png');
-                await charaWrite(img_path + request.body.avatar_url, char, target_img, response, 'Character saved');
-
-                fs.rmSync(to_del_file);
-                to_del_file = undefined;
-                return;
-            } //else { console.log("No rename detected, updating current card only."); }
-
-            await charaWrite(img_path + request.body.avatar_url, char, target_img, response, 'Character saved');
-
+        if (!request.file) {
+            const avatarPath = path.join(charactersPath, request.body.avatar_url);
+            await charaWrite(avatarPath, char, target_img, response, 'Character saved');
         } else {
-            //console.log(filedata.filename);
-            img_path = "uploads/";
-            img_file = filedata.filename;
-
+            const newAvatarPath = path.join("./uploads/", request.file.filename);
             invalidateThumbnail('avatar', request.body.avatar_url);
-            await charaWrite(img_path + img_file, char, target_img, response, 'Character saved');
-            //response.send('Character saved');
+            await charaWrite(newAvatarPath, char, target_img, response, 'Character saved');
         }
     }
     catch {
-        //return response.send(400);
         console.error('An error occured, character edit invalidated.');
     }
-
 });
+
 app.post("/deletecharacter", urlencodedParser, function (request, response) {
     if (!request.body || !request.body.avatar_url) {
         return response.sendStatus(400);
