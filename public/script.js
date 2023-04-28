@@ -2256,7 +2256,9 @@ function cleanUpMessage(getMessage, isImpersonate) {
     }
 
     getMessage = $.trim(getMessage);
-    // remove trailing invisible whitespace from lines
+    // trailing invisible whitespace before every newlines, on a multiline string
+    // "trailing whitespace on newlines       \nevery line of the string    \n?sample text" ->
+    // "trailing whitespace on newlines\nevery line of the string\nsample text"
     getMessage = getMessage.replace(/\s+$/gm, "");
     if (is_pygmalion) {
         getMessage = getMessage.replace(/<USER>/g, name1);
