@@ -1037,7 +1037,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     padding: 5px;
     border-radius: 10px;
     cursor: pointer;
-    border: 1px solid red;
+
 }
 
 .character_select .ch_name {
