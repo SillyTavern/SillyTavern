@@ -2256,6 +2256,7 @@ function cleanUpMessage(getMessage, isImpersonate) {
     }
 
     getMessage = $.trim(getMessage);
+    // remove trailing invisible whitespace from lines
     getMessage = getMessage.replace(/\s+$/gm, "");
     if (is_pygmalion) {
         getMessage = getMessage.replace(/<USER>/g, name1);
@@ -2290,7 +2291,9 @@ function cleanUpMessage(getMessage, isImpersonate) {
             }
         }
     }
-    getMessage = fixMarkdown(getMessage);
+    if (autoFixGeneratedTextMarkdown) {
+        getMessage = fixMarkdown(getMessage);
+    }
     return getMessage;
 }
 
