@@ -2287,7 +2287,7 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
             } else if (response.status == 402) {
                 console.log('An active subscription is required to access this endpoint');
                 response_generate_openai.send({ error: true });
-            } else if (response.status == 500 || response.status == 409) {
+            } else if (response.status == 500 || response.status == 409 || response.status == 504) {
                 if (request.body.stream) {
                     response.data.on('data', chunk => {
                         console.log(chunk.toString());
@@ -2308,7 +2308,11 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
                     console.log(error.response.data);
                 }
             }
-            response_generate_openai.send({ error: true });
+            try {
+                response_generate_openai.send({ error: true });
+            } catch (error) {
+                console.error(error);
+            }
         });
 });
 
