@@ -3409,17 +3409,6 @@ toolcool-color-picker {
     width: 100%;
 }
 
-#openai_api-presets {
-    display: flex;
-    flex-direction: row;
-    column-gap: 10px;
-    flex-wrap: wrap;
-}
-
-#openai_api-presets>div {
-    flex: 1;
-}
-
 #openai_api-presets select {
     width: 100%;
 }
@@ -3467,7 +3456,8 @@ toolcool-color-picker {
     flex: 1;
 }
 
-.openai_logit_bias_preset_form .menu_button {
+.openai_logit_bias_preset_form .menu_button,
+.openai_preset_buttons .menu_button {
     padding: 7px;
 }
 
@@ -3495,12 +3485,19 @@ toolcool-color-picker {
     height: 20px;
 }
 
+#openai_api-presets {
+    flex-direction: column;
+}
+
 .openai_preset_buttons {
     display: flex;
-    justify-content: space-evenly;
     flex-direction: row;
-    flex-wrap: wrap;
-    flex-basis: 100% !important;
+    align-items: baseline;
+    gap: 5px;
+}
+
+.openai_preset_buttons select {
+    flex-grow: 1;
 }
 
 .reverse_proxy_warning,

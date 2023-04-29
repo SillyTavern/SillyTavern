@@ -112,9 +112,13 @@
                             <div id="openai_api-presets">
                                 <div>
                                     <h4>OpenAI Presets</h4>
-                                    <select id="settings_perset_openai">
-                                        <option value="gui">Default</option>
-                                    </select>
+                                    <div class="openai_preset_buttons">
+                                        <select id="settings_perset_openai">
+                                            <option value="gui">Default</option>
+                                        </select>
+                                        <i id="update_preset" class="menu_button fa-solid fa-save" title="Update current preset"></i>
+                                        <i id="new_preset" class="menu_button fa-solid fa-plus" title="Create new preset"></i>
+                                    </div>
                                 </div>
                                 <div>
                                     <h4>OpenAI Model</h4>
@@ -124,10 +128,6 @@
                                         <option value="gpt-4">gpt-4</option>
                                         <option value="gpt-4-32k">gpt-4-32k</option>
                                     </select>
-                                </div>
-                                <div class="range-block openai_preset_buttons">
-                                    <input id="update_preset" class="menu_button" type="button" value="Update current preset">
-                                    <input id="new_preset" class="menu_button" type="button" value="Create new preset">
                                 </div>
                             </div>
                             <div id="textgenerationwebui_api-presets">
@@ -1346,6 +1346,16 @@
                                 <input id="auto_scroll_chat_to_bottom" type="checkbox" />
                                 Auto-scroll Chat
                             </label>
+                            <div class="flex-container flexFlowColumn">
+                                <h4>
+                                    Send on Enter
+                                </h4>
+                                <select id="send_on_enter">
+                                    <option value="-1">Always disabled</option>
+                                    <option value="0">Automatic (desktop)</option>
+                                    <option value="1">Always enabled</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
 

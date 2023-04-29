@@ -54,6 +54,7 @@ const json5 = require('json5');
 const ExifReader = require('exifreader');
 const exif = require('piexifjs');
 const webp = require('webp-converter');
+const DeviceDetector = require("device-detector-js");
 
 const config = require(path.join(__dirname, './config.conf'));
 const server_port = process.env.SILLY_TAVERN_PORT || config.port;
@@ -185,8 +186,6 @@ const { invalidCsrfTokenError, generateToken, doubleCsrfProtection } = doubleCsr
     getTokenFromRequest: (req) => req.headers["x-csrf-token"]
 });
 
-
-
 app.get("/csrf-token", (req, res) => {
     res.json({
         "token": generateToken(res)
@@ -282,6 +281,12 @@ app.get('/get_faq', function (_, response) {
 });
 app.get('/get_readme', function (_, response) {
     response.sendFile(__dirname + "/readme.md");
+});
+app.get('/deviceinfo', function(request, response) {
+    const userAgent = request.header('user-agent');
+    const deviceDetector = new DeviceDetector();
+    const deviceInfo = deviceDetector.parse(userAgent);
+    return response.send(deviceInfo);
 });
 
 //**************Kobold api
@@ -793,11 +798,13 @@ async function charaWrite(img_url, data, target_img, response = undefined, mes =
 
         fs.writeFileSync(charactersPath + target_img + '.png', new Buffer.from(encode(chunks)));
         if (response !== undefined) response.send(mes);
+        return true;
 
 
     } catch (err) {
         console.log(err);
-        if (response !== undefined) response.send(err);
+        if (response !== undefined) response.status(500).send(err);
+        return false;
     }
 }
 
@@ -1843,7 +1850,8 @@ app.post('/status_poe', jsonParser, async (request, response) => {
 
         return response.send({ 'bot_names': botNames });
     }
-    catch {
+    catch (err) {
+        console.error(err);
         return response.sendStatus(401);
     }
 });
@@ -1864,7 +1872,8 @@ app.post('/purge_poe', jsonParser, async (request, response) => {
 
         return response.send({ "ok": true });
     }
-    catch {
+    catch (err) {
+        console.error(err);
         return response.sendStatus(500);
     }
 });
@@ -2451,7 +2460,12 @@ async function convertWebp() {
             await webp.dwebp(source, dest, "-o");
 
             console.log(`Write... ${dest}`);
-            await charaWrite(dest, data, path.parse(dest).name);
+            const success = await charaWrite(dest, data, path.parse(dest).name);
+
+            if (!success) {
+                console.log(`Failure on ${source} -> ${dest}`);
+                continue;
+            }
 
             console.log(`Remove... ${source}`);
             fs.rmSync(source);

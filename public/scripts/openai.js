@@ -7,7 +7,6 @@
 import {
     saveSettingsDebounced,
     substituteParams,
-    count_view_mes,
     checkOnlineStatus,
     setOnlineStatus,
     getExtensionPrompt,
@@ -148,22 +147,12 @@ function setOpenAIMessages(chat) {
     // clean openai msgs
     openai_msgs = [];
     for (let i = chat.length - 1; i >= 0; i--) {
-        // first greeting message
-        if (j == 0) {
-            chat[j]['mes'] = substituteParams(chat[j]['mes']);
-        }
         let role = chat[j]['is_user'] ? 'user' : 'assistant';
         let content = chat[j]['mes'];
 
         // for groups - prepend a character's name
         if (selected_group) {
             content = `${chat[j].name}: ${content}`;
-        }
-
-        // system messages produce no content
-        if (chat[j]['is_system']) {
-            role = 'system';
-            content = '';
         }
 
         // replace bias markup
@@ -199,19 +188,17 @@ function setOpenAIMessageExamples(mesExamplesArray) {
     }
 }
 
-function generateOpenAIPromptCache(charPersonality, topAnchorDepth, anchorTop, anchorBottom) {
+function generateOpenAIPromptCache(charPersonality, topAnchorDepth, anchorTop, bottomAnchorThreshold, anchorBottom) {
     openai_msgs = openai_msgs.reverse();
-    let is_add_personality = false;
     openai_msgs.forEach(function (msg, i, arr) {//For added anchors and others
         let item = msg["content"];
-        if (i === openai_msgs.length - topAnchorDepth && count_view_mes >= topAnchorDepth && !is_add_personality) {
-            is_add_personality = true;
-            if ((anchorTop != "" || charPersonality != "")) {
-                if (anchorTop != "") charPersonality += ' ';
-                item = `[${name2} is ${charPersonality}${anchorTop}]\n${item}`;
+        if (i === openai_msgs.length - topAnchorDepth) {
+            let personalityAndAnchor = [charPersonality, anchorTop].filter(x => x).join(' ');
+            if (personalityAndAnchor) {
+                item = `[${name2} is ${personalityAndAnchor}]\n${item}`;
             }
         }
-        if (i >= openai_msgs.length - 1 && count_view_mes > 8 && $.trim(item).substr(0, (name1 + ":").length) == name1 + ":") {//For add anchor in end
+        if (i === openai_msgs.length - 1 && openai_msgs.length > bottomAnchorThreshold && $.trim(item).substr(0, (name1 + ":").length) == name1 + ":") {//For add anchor in end
             item = anchorBottom + "\n" + item;
         }
 

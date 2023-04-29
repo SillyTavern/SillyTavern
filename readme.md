@@ -27,9 +27,24 @@ https://colab.research.google.com/github/Cohee1207/SillyTavern/blob/main/colab/G
 
 > **This fork can be run natively on Android phones using Termux. Please refer to this guide by ArroganceComplex#2659:**
 
-https://rentry.org/TAI_Termux
+https://rentry.org/STAI-Termux
 
 **.webp character cards import/export is not supported in Termux. Use either JSON or PNG formats instead.**
+
+## Questions or suggestions?
+
+### We now have a community Discord server!
+
+Get support, share favorite characters and prompts:
+
+### [Join](https://discord.gg/RZdyAEUPvj)
+
+***
+
+Get in touch with the developers directly:
+* Discord: Cohee#1207 or RossAscends#1779
+* Reddit: /u/RossAscends or /u/sillylossy
+* [Post a GitHub issue](https://github.com/Cohee1207/SillyTavern/issues)
 
 ## This version includes
 * A heavily modified TavernAI 1.2.8 (more than 50% of code rewritten or optimized)
@@ -100,7 +115,7 @@ https://rentry.org/TAI_Termux
 *NOTE: This branch is intended for local install purposes, and has not been thoroughly tested on a colab or other cloud notebook service.*
 
 ### Windows
-  1. install [NodeJS](https://nodejs.org/en)
+  1. install [NodeJS](https://nodejs.org/en) (latest LTS version is recommended)
   2. download the zip from this GitHub repo
   3. unzip it into a folder of your choice
   4. run start.bat via double-clicking or in a command line.
@@ -165,11 +180,6 @@ Try enabling the No Blur Effect (Fast UI) mode on the User settings panel.
 1. Offer monetary donations
 2. Send bug reports without providing any context
 3. Ask the questions that were already answered numerous times
-
-## Questions or suggestions?
-Contact us on:
-* Discord: Cohee#1207 or RossAscends#1779
-* Reddit: /u/RossAscends or /u/sillylossy
 
 ## Screenshots
 <img width="400" alt="image" src="https://user-images.githubusercontent.com/18619528/228649245-8061c60f-63dc-488e-9325-f151b7a3ec2d.png">

@@ -132,7 +132,7 @@ When using Poe, be careful, it's implemented in a hacky way. If you don't get an
 
 iPhones and iPads are not capable of running the whole Tavern app, but since it's just a web interface, you can run it on another computer on your home wifi, and then access in your mobile browser. Refer to https://github.com/Cohee1207/SillyTavern#remote-connections 
 
-For Android users, in addition to the above, you can run the whole Tavern directly on your phone, without needing a PC, using the Termux app. Refer to https://rentry.org/TAI_Termux .
+For Android users, in addition to the above, you can run the whole Tavern directly on your phone, without needing a PC, using the Termux app. Refer to https://rentry.org/STAI-Termux .
 
 ## Q: How can I download pre-made characters to chat with?
 
