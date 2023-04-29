@@ -2744,6 +2744,10 @@ body.big-avatars .avatar_collage {
     overflow: hidden;
 }
 
+body:not(.big-avatars) .avatar {
+    border-radius: 50%;
+}
+
 body:not(.big-avatars) .avatar_collage img {
     border-radius: 0% !important;
 }
