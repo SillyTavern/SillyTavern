@@ -2,6 +2,7 @@ import { callPopup, saveSettingsDebounced } from '../../../script.js'
 import { extension_settings, getContext } from '../../extensions.js'
 import { getStringHash } from '../../utils.js'
 import { ElevenLabsTtsProvider } from './elevenlabs.js'
+import { SileroTtsProvider } from './silerotts.js'
 
 const UPDATE_INTERVAL = 1000
 
@@ -15,7 +16,8 @@ let lastMessageHash = null
 
 
 let ttsProviders = {
-    elevenLabs: ElevenLabsTtsProvider
+    ElevenLabs: ElevenLabsTtsProvider,
+    Silero: SileroTtsProvider
 }
 let ttsProvider
 let ttsProviderName
@@ -130,6 +132,30 @@ async function onTtsVoicesClick() {
     callPopup(popupText, 'text')
 }
 
+function updateUiAudioPlayState() {
+    if (extension_settings.tts.enabled == true) {
+        audioControl.style.display = 'flex'
+        const img = !audioElement.paused
+            ? 'fa-solid fa-circle-pause'
+            : 'fa-solid fa-circle-play'
+        audioControl.className = img
+    } else {
+        audioControl.style.display = 'none'
+    }
+}
+
+function onAudioControlClicked() {
+    audioElement.paused ? audioElement.play() : audioElement.pause()
+    updateUiAudioPlayState()
+}
+
+function addAudioControl() {
+    $('#send_but_sheld').prepend('<div id="tts_media_control"/>')
+    $('#send_but_sheld').on('click', onAudioControlClicked)
+    audioControl = document.getElementById('tts_media_control')
+    updateUiAudioPlayState()
+}
+
 function completeCurrentAudioJob() {
     queueProcessorReady = true
     lastAudioPosition = 0
@@ -142,7 +168,7 @@ function completeCurrentAudioJob() {
  */
 async function addAudioJob(response) {
     const audioData = await response.blob()
-    if (audioData.type != 'audio/mpeg') {
+    if (!audioData.type in ['audio/mpeg', 'audio/wav']) {
         throw `TTS received HTTP response with invalid data format. Expecting audio/mpeg, got ${audioData.type}`
     }
     audioJobQueue.push(audioData)
@@ -188,16 +214,7 @@ function saveLastValues() {
 }
 
 async function tts(text, voiceId) {
-    const historyId = await ttsProvider.findTtsGenerationInHistory(text, voiceId)
-
-    let response
-    if (historyId) {
-        console.debug(`Found existing TTS generation with id ${historyId}`)
-        response = await ttsProvider.fetchTtsFromHistory(historyId)
-    } else {
-        console.debug(`No existing TTS generation found, requesting new generation`)
-        response = await ttsProvider.fetchTtsGeneration(text, voiceId)
-    }
+    const response = await ttsProvider.generateTts(text, voiceId)
     addAudioJob(response)
     completeTtsJob()
 }
@@ -242,32 +259,20 @@ window.playFullConversation = playFullConversation
 //#############################//
 
 function loadSettings() {
-    if (!(ttsProviderName in extension_settings.tts)){
-        extension_settings.tts[ttsProviderName] = {}
+    if (Object.keys(extension_settings.tts).length === 0) {
+        Object.assign(extension_settings.tts, defaultSettings)
     }
-    if (Object.keys(extension_settings.tts[ttsProviderName]).length === 0) {
-        Object.assign(extension_settings.tts[ttsProviderName], defaultSettings)
-        extension_settings.tts[ttsProviderName].settings = Object.assign({}, ttsProvider.defaultSettings)
-    }
-
-    $('#tts_api_key').val(
-        extension_settings.tts[ttsProviderName].apiKey
-    )
-    $('#tts_voice_map').val(
-        extension_settings.tts[ttsProviderName].voiceMap
-    )
     $('#tts_enabled').prop(
         'checked',
         extension_settings.tts.enabled
     )
-    ttsProvider.updateSettings(extension_settings.tts[ttsProviderName].settings)
-    onApplyClick()
 }
 
 const defaultSettings = {
-    apiKey: '',
     voiceMap: '',
-    ttsEnabled: false
+    ttsEnabled: false,
+    currentProvider: "ElevenLabs"
+
 }
 
 function setTtsStatus(status, success) {
@@ -277,21 +282,6 @@ function setTtsStatus(status, success) {
     } else {
         $('#tts_status').css('color', 'red')
     }
-}
-
-async function updateApiKey() {
-    const value = $('#tts_api_key').val()
-
-    // Using this call to validate API key
-    ttsProvider.API_KEY = String(value)
-    await ttsProvider.fetchTtsVoiceIds().catch(error => {
-        ttsProvider.API_KEY = null
-        throw `TTS API key invalid`
-    })
-
-    extension_settings.tts[ttsProviderName].apiKey = String(value)
-    console.debug(`Saved new API_KEY: ${value}`)
-    saveSettingsDebounced()
 }
 
 function parseVoiceMap(voiceMapString) {
@@ -323,13 +313,14 @@ async function voicemapIsValid(parsedVoiceMap) {
 async function updateVoiceMap() {
     let isValidResult = false
     const context = getContext()
-    // console.debug("onvoiceMapSubmit");
+
     const value = $('#tts_voice_map').val()
     const parsedVoiceMap = parseVoiceMap(value)
+
     isValidResult = await voicemapIsValid(parsedVoiceMap)
     if (isValidResult) {
-        extension_settings.tts[ttsProviderName].voiceMap = String(value)
-        context.voiceMap = String(value)
+        ttsProvider.settings.voiceMap = String(value)
+        // console.debug(`ttsProvider.voiceMap: ${ttsProvider.settings.voiceMap}`)
         voiceMap = parsedVoiceMap
         console.debug(`Saved new voiceMap: ${value}`)
         saveSettingsDebounced()
@@ -339,14 +330,18 @@ async function updateVoiceMap() {
 }
 
 function onApplyClick() {
-    Promise.all([updateApiKey(), updateVoiceMap()])
-        .then(([result1, result2]) => {
-            updateUiAudioPlayState()
-            setTtsStatus('Successfully applied settings', true)
-        })
-        .catch(error => {
-            setTtsStatus(error, false)
-        })
+    Promise.all([
+        ttsProvider.onApplyClick(),
+        updateVoiceMap()
+    ]).catch(error => {
+        console.error(error)
+        setTtsStatus(error, false)
+    })
+    
+    extension_settings.tts[ttsProviderName] = ttsProvider.settings
+    saveSettingsDebounced()
+    setTtsStatus('Successfully applied settings', true)
+    console.info(`Saved settings ${ttsProviderName} ${JSON.stringify(ttsProvider.settings)}`)
 }
 
 function onEnableClick() {
@@ -357,48 +352,61 @@ function onEnableClick() {
     saveSettingsDebounced()
 }
 
-function updateUiAudioPlayState() {
-    if (extension_settings.tts.enabled == true) {
-        audioControl.style.display = 'flex'
-        const img = !audioElement.paused
-            ? 'fa-solid fa-circle-pause'
-            : 'fa-solid fa-circle-play'
-        audioControl.className = img
-    } else {
-        audioControl.style.display = 'none'
+
+//##############//
+// TTS Provider //
+//##############//
+
+function loadTtsProvider(provider) {
+    //Clear the current config and add new config
+    $("#tts_provider_settings").html("")
+
+    if (!provider) {
+        provider
     }
-}
-
-function onAudioControlClicked() {
-    audioElement.paused ? audioElement.play() : audioElement.pause()
-    updateUiAudioPlayState()
-}
-
-function addAudioControl() {
-    $('#send_but_sheld').prepend('<div id="tts_media_control"/>')
-    $('#send_but_sheld').on('click', onAudioControlClicked)
-    audioControl = document.getElementById('tts_media_control')
-    updateUiAudioPlayState()
-}
-
-function addUiTtsProviderConfig() {
-    $('#tts_provider_settings').append(ttsProvider.settingsHtml)
-    ttsProvider.onSettingsChange()
-}
-
-function loadTtsProvider(provider){
-    // Set up provider references. No init dependencies
+    // Init provider references
     extension_settings.tts.currentProvider = provider
     ttsProviderName = provider
     ttsProvider = new ttsProviders[provider]
-    saveSettingsDebounced()
+
+    // Init provider settings
+    $('#tts_provider_settings').append(ttsProvider.settingsHtml)
+    if (!(ttsProviderName in extension_settings.tts)) {
+        console.warn(`Provider ${ttsProviderName} not in Extension Settings, initiatilizing provider in settings`)
+        extension_settings.tts[ttsProviderName] = {}
+    }
+
+    // Load voicemap settings
+    let voiceMapFromSettings
+    if ("voiceMap" in extension_settings.tts[ttsProviderName]) {
+        voiceMapFromSettings = extension_settings.tts[ttsProviderName].voiceMap
+        voiceMap = parseVoiceMap(voiceMapFromSettings)
+    } else {
+        voiceMapFromSettings = ""
+        voiceMap = {}
+    }
+    $('#tts_voice_map').val(voiceMapFromSettings)
+    $('#tts_provider').val(ttsProviderName)
+
+    ttsProvider.loadSettings(extension_settings.tts[ttsProviderName])
 }
 
-function onTtsProviderSettingsInput(){
-    ttsProvider.onSettingsChange()
-    extension_settings.tts[ttsProviderName].settings = ttsProvider.settings
-    saveSettingsDebounced()
+function onTtsProviderChange() {
+    const ttsProviderSelection = $('#tts_provider').val()
+    loadTtsProvider(ttsProviderSelection)
 }
+
+function onTtsProviderSettingsInput() {
+    ttsProvider.onSettingsChange()
+
+    // Persist changes to SillyTavern tts extension settings
+    
+    extension_settings.tts[ttsProviderName] = ttsProvider.setttings
+    saveSettingsDebounced()
+    console.info(`Saved settings ${ttsProviderName} ${JSON.stringify(ttsProvider.settings)}`)
+}
+
+
 
 $(document).ready(function () {
     function addExtensionControls() {
@@ -410,14 +418,10 @@ $(document).ready(function () {
                     <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
                 </div>
                 <div class="inline-drawer-content">
-                    <label>API Key</label>
-                    <input id="tts_api_key" type="text" class="text_pole" placeholder="<API Key>"/>
-                    <label>Voice Map</label>
-                    <textarea id="tts_voice_map" type="text" class="text_pole textarea_compact" rows="4"
-                        placeholder="Enter comma separated map of charName:ttsName. Example: \nAqua:Bella,\nYou:Josh,"></textarea>
-                    <div class="tts_buttons">
-                        <input id="tts_apply" class="menu_button" type="submit" value="Apply" />
-                        <input id="tts_voices" class="menu_button" type="submit" value="Available voices" />
+                    <div>
+                        <span>Select TTS Provider</span> </br>
+                        <select id="tts_provider">
+                        </select>
                     </div>
                     <div>
                         <label class="checkbox_label" for="tts_enabled">
@@ -425,16 +429,18 @@ $(document).ready(function () {
                             Enabled
                         </label>
                     </div>
+                    <label>Voice Map</label>
+                    <textarea id="tts_voice_map" type="text" class="text_pole textarea_compact" rows="4"
+                        placeholder="Enter comma separated map of charName:ttsName. Example: \nAqua:Bella,\nYou:Josh,"></textarea>
+
                     <div id="tts_status">
                     </div>
-                    
-                    <div class="inline-drawer">
-                    <div class="inline-drawer-toggle inline-drawer-header">
-                        <b>TTS Config</b>
-                        <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+                    <form id="tts_provider_settings" class="inline-drawer-content">
+                    </form>
+                    <div class="tts_buttons">
+                        <input id="tts_apply" class="menu_button" type="submit" value="Apply" />
+                        <input id="tts_voices" class="menu_button" type="submit" value="Available voices" />
                     </div>
-                        <form id="tts_provider_settings" class="inline-drawer-content">
-                        </form>
                     </div>
                 </div>
             </div>
@@ -445,11 +451,14 @@ $(document).ready(function () {
         $('#tts_enabled').on('click', onEnableClick)
         $('#tts_voices').on('click', onTtsVoicesClick)
         $('#tts_provider_settings').on('input', onTtsProviderSettingsInput)
+        for (const provider in ttsProviders) {
+            $('#tts_provider').append($("<option />").val(provider).text(provider))
+        }
+        $('#tts_provider').on('change', onTtsProviderChange)
     }
-    loadTtsProvider("elevenLabs") // No init dependencies
     addExtensionControls() // No init dependencies
-    addUiTtsProviderConfig() // Depends on ttsProvider being loaded
-    loadSettings() // Depends on Extension Controls and ttsProvider
+    loadSettings() // Depends on Extension Controls and loadTtsProvider
+    loadTtsProvider(extension_settings.tts.currentProvider) // No dependencies
     addAudioControl() // Depends on Extension Controls
     setInterval(moduleWorker, UPDATE_INTERVAL) // Init depends on all the things
 })
