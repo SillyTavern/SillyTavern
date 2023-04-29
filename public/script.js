@@ -2446,7 +2446,7 @@ function resultCheckStatusNovel() {
 
 async function renameCharacter() {
     const oldAvatar = characters[this_chid].avatar;
-    const newValue = await callPopup('New name:', 'input', characters[this_chid].name);
+    const newValue = await callPopup('<h3>New name:</h3>', 'input', characters[this_chid].name);
 
     if (newValue && newValue !== characters[this_chid].name) {
         const body = JSON.stringify({ avatar_url: oldAvatar, new_name: newValue });
