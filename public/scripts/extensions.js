@@ -141,7 +141,7 @@ function autoConnectInputHandler() {
     if (value && !connectedToApi) {
         $("#extensions_connect").trigger('click');
     }
-    
+
     saveSettingsDebounced();
 }
 
@@ -242,7 +242,7 @@ function showExtensionsDetails() {
         const manifest = extension[1];
         html += `<h4>${DOMPurify.sanitize(manifest.display_name)}</h4>`;
         if (activeExtensions.has(name)) {
-            html += `<p class="success">Extension is active. <a href="javascript:void" data-name="${name}" class="disable_extension">Disable</a></p>`;
+            html += `<p class="success">Extension is active. <a href="javascript:void" data-name="${name}" class="disable_extension">Click to Disable</a></p>`;
             if (Array.isArray(manifest.optional)) {
                 const optional = new Set(manifest.optional);
                 modules.forEach(x => optional.delete(x));
@@ -253,7 +253,7 @@ function showExtensionsDetails() {
             }
         }
         else if (extension_settings.disabledExtensions.includes(name)) {
-            html += `<p class="disabled">Extension is disabled. <a href="javascript:void" data-name=${name} class="enable_extension">Enable</a></p>`;
+            html += `<p class="disabled">Extension is disabled. <a href="javascript:void" data-name=${name} class="enable_extension">Click to Enable</a></p>`;
         }
         else {
             const requirements = new Set(manifest.requires);

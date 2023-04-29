@@ -1208,7 +1208,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 .character_select:has(.is_fav) .avatar,
 .group_select:has(.is_fav) .avatar {
-    outline: 3px solid #c5b457;
+    outline: 2px solid #c5b457;
 }
 
 #fav_chara_wrap {
