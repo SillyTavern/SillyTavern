@@ -215,7 +215,9 @@ function printGroups() {
         template.data("id", group.id);
         template.attr("grid", group.id);
         template.find(".ch_name").html(group.name);
-        group.fav ? template.find(".group_fav_icon").show() : template.find(".group_fav_icon").hide();
+        template.find('.group_fav_icon').css("display", 'none');
+        template.find('.group_fav_icon').addClass(group.fav ? 'is_fav' : '');
+        //group.fav ? template.find(".group_fav_icon").show() : template.find(".group_fav_icon").hide();
         template.find(".ch_fav").val(group.fav);
         $("#rm_print_characters_block").prepend(template);
         updateGroupAvatar(group);
@@ -621,7 +623,7 @@ async function groupChatAutoModeWorker() {
     await generateGroupWrapper(true);
 }
 
-async function modifyGroupMember(chat_id, groupMember, isDelete) { 
+async function modifyGroupMember(chat_id, groupMember, isDelete) {
     const id = groupMember.data("id");
 
     const template = groupMember.clone();
@@ -677,7 +679,7 @@ async function reorderGroupMember(chat_id, groupMember, direction) {
                 group.members[indexOf] = prev;
             }
         }
-        
+
         await editGroup(chat_id);
         updateGroupAvatar(group);
         // stupid but lifts the manual reordering
@@ -777,7 +779,7 @@ function select_group_chats(chat_id, skipAnimation) {
     });
 
     $("#rm_group_fav").off();
-    $("#rm_group_fav").on("input", async function(){
+    $("#rm_group_fav").on("input", async function () {
         if (group) {
             let _thisGroup = groups.find((x) => x.id == chat_id);
             const value = $(this).prop("checked");
@@ -815,11 +817,11 @@ function select_group_chats(chat_id, skipAnimation) {
         if (action == 'remove') {
             await modifyGroupMember(chat_id, member, true);
         }
-        
+
         if (action == 'add') {
             await modifyGroupMember(chat_id, member, false);
         }
-        
+
         if (action == 'up' || action == 'down') {
             await reorderGroupMember(chat_id, member, action);
         }
@@ -844,7 +846,7 @@ $(document).ready(() => {
                 await getGroupChat(id);
                 //to avoid the filter being lit up yellow and left at true while the list of character and group reseted.
                 $("#filter_by_fav").removeClass("fav_on");
-                filterByFav = false; 
+                filterByFav = false;
             }
 
             select_group_chats(id);

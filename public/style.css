@@ -922,7 +922,7 @@ select option:not(:checked) {
 }
 
 .fav_on {
-    color: #ffff00 !important;
+    color: #c5b457 !important;
 }
 
 .displayBlock {
@@ -1037,8 +1037,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 /*applies to both groups and solos chars in the char list*/
 #rm_print_characters_block .ch_name {
-    margin-left: 5px;
-    gap: 5px;
+    /* margin-left: 5px; */
     width: 100%;
     white-space: nowrap;
     max-width: calc(100% - 29px);
@@ -1185,12 +1184,31 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 
 .ch_fav_icon {
+    /* on topright corner */
+    /*
     filter: drop-shadow(0px 0px 1px black);
-    color: yellow;
-    font-size: 12px;
+    color: #e9dd4b;
+    font-size: 14px;
     order: -1;
-    margin-left: -18px;
+    margin-left: -16px;
     margin-top: 3px;
+    position: relative;
+    */
+
+    /* on topleft corner*/
+    filter: drop-shadow(1px 1px 2px black);
+    color: #c5b457;
+    font-size: 14px;
+    order: -1;
+    margin-left: -75px;
+    padding-right: 54px;
+    margin-top: 3px;
+    position: relative;
+}
+
+.character_select:has(.is_fav) .avatar,
+.group_select:has(.is_fav) .avatar {
+    outline: 3px solid #c5b457;
 }
 
 #fav_chara_wrap {
@@ -2395,8 +2413,8 @@ h5 {
 
 .tags.tags_inline {
     /* position: absolute; */
-    margin-right: 5px;
-    margin-left: 5px;
+    /* margin-right: 5px;
+    margin-left: 5px; */
     /*     top: 30px;
     left: 70px; */
     opacity: 0.6;
@@ -2656,7 +2674,7 @@ body .ui-widget-content {
 
 .group_select .group_fav_icon {
     filter: drop-shadow(0px 0px 1px black);
-    color: yellow;
+    color: #c5b457;
     font-size: 12px;
     order: -1;
     margin-left: -18px;
