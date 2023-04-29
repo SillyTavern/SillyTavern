@@ -646,7 +646,7 @@ app.post("/createcharacter", urlencodedParser, function (request, response) {
     const internalName = getPngName(request.body.ch_name);
     const avatarName = `${internalName}.png`;
     const defaultAvatar = './public/img/ai4.png';
-    const chatsPath = path.join(chatsPath, internalName);
+    chatsPath = path.join(chatsPath, internalName);
 
     if (!fs.existsSync(chatsPath)) fs.mkdirSync(chatsPath);
 
@@ -681,7 +681,7 @@ app.post("/renamecharacter", jsonParser, async function (request, response) {
         const oldData = json5.parse(rawOldData);
         oldData['name'] = newName;
         const newData = JSON.stringify(oldData);
-    
+
         // Write data to new location
         await charaWrite(oldAvatarPath, newData, newInternalName);
 
