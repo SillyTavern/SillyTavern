@@ -3342,6 +3342,14 @@ toolcool-color-picker {
     flex-wrap: wrap;
 }
 
+.flexNoGap {
+    gap: unset !important;
+}
+
+.flexGrow {
+    flex-grow: 1;
+}
+
 .flexnowrap {
     flex-wrap: nowrap;
 }
