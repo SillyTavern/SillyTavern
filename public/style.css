@@ -955,6 +955,10 @@ select option:not(:checked) {
     display: none;
 }
 
+.overflowYAuto {
+    overflow-y: auto;
+}
+
 #rm_characters_block {
     display: flex;
     overflow-y: auto;
@@ -2566,6 +2570,8 @@ body .ui-widget-content {
     margin-bottom: 0.5rem;
     width: 100%;
     flex: 1;
+    max-height: 40%;
+    min-height: 40%;
     overflow: auto;
     display: flex;
     flex-direction: column;
@@ -3030,6 +3036,7 @@ a {
     border-radius: 0 0 0 20px;
     overflow: hidden;
     scrollbar-width: thin;
+    flex-flow: column;
 }
 
 #nav-toggle {
