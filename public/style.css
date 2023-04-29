@@ -1549,30 +1549,11 @@ input[type=search]:focus::-webkit-search-cancel-button {
     display: none;
 }
 
-#world_info {
-    margin-bottom: 0;
-}
-
-#world_info_block {
+.world_info_select_block {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-#world_import_button,
-#world_create_button {
-    cursor: pointer;
-    display: inline-block;
-    padding: 0;
-    margin: 0;
-}
-
-#world_import_button h4,
-#world_create_button h4 {
-    margin-top: auto;
-    margin-bottom: auto;
-    margin-left: 1rem;
-
+    flex-direction: row;
+    align-items: baseline;
+    gap: 5px;
 }
 
 #world_popup {
@@ -1619,10 +1600,6 @@ input[type=search]:focus::-webkit-search-cancel-button {
     margin-left: 1rem;
 }
 
-#entry_edit_template {
-    display: none !important;
-}
-
 .world_entry:not(:last-child)::after {
     margin-top: 1rem;
     height: 1px;
@@ -1657,6 +1634,10 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 #form_rename_world input[type="submit"] {
     cursor: pointer;
+}
+
+#form_world_import {
+    display: none;
 }
 
 #form_rename_world input:not(:last-child) {
@@ -3471,8 +3452,9 @@ toolcool-color-picker {
 }
 
 .openai_logit_bias_preset_form .menu_button,
-.openai_preset_buttons .menu_button {
-    padding: 7px;
+.openai_preset_buttons .menu_button,
+.world_info_select_block .menu_button {
+    padding: 8px;
 }
 
 .openai_logit_bias_list:empty::before {

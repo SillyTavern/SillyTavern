@@ -1120,27 +1120,24 @@
             </div>
             <div class="drawer-content closedDrawer">
                 <div id="wi-holder">
-                    <div id="world_info_block">
-                        <h3>World Info</h3>
-                        <div id="world_info_buttons">
-                            <div id="world_create_button" class="right_menu_button">
-                                <h4>+Create</h4>
-                            </div>
-                            <div id="world_import_button" class="right_menu_button">
-                                <h4>+Import</h4>
-                            </div>
-                        </div>
+                    <h3>
+                        World Info
+                        <a href="/notes#worldinfo" class="notes-link" target="_blank">
+                            <span class="note-link-span">?</span>
+                        </a>
+                    </h3>
+                    <form id="form_world_import" action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                        <input type="file" id="world_import_file" accept=".json" name="avatar" hidden>
+                    </form>
+                    <div class="world_info_select_block">
+                        <select id="world_info" class="flexGrow">
+                            <option value="None">None</option>
+                        </select>
+                        <div id="world_create_button" class="menu_button fa-solid fa-plus" title="Create"></div>
+                        <div id="world_import_button" class="menu_button fa-solid fa-file-arrow-up" title="Import"></div>
+                        <div id="world_info_edit_button" class="menu_button fa-solid fa-pencil" title="Details"></div>
                     </div>
-                    <h4>How to use <a href="/notes#worldinfo" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h4>
-                    <div id="rm_world_import" class="right_menu" style="display: none;">
-                        <form id="form_world_import" action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                            <input type="file" id="world_import_file" accept=".json" name="avatar">
-                        </form>
-                    </div>
-                    <select id="world_info">
-                        <option value="None">None</option>
-                    </select>
-                    <input id="world_info_edit_button" class="menu_button" type="submit" value="Details">
+
                     <div id="world_info_depth_block">
                         <h4>
                             Scan Depth <a href="/notes#scandepth" class="notes-link" target="_blank"><span class="note-link-span">?</span></a>
@@ -1378,10 +1375,6 @@
                             </form>
                         </div>
                     </div>
-
-
-
-                    <!-- </div> -->
                 </div>
             </div>
         </div>
@@ -1738,86 +1731,6 @@
             <div id="world_popup_export" class="menu_button">Export</div>
             <div id="world_popup_delete" class="menu_button">Delete World</div>
         </div>
-
-        <div id="entry_edit_template">
-            <div class="world_entry">
-                <form class="world_entry_form">
-                    <div class="world_entry_thin_controls">
-                        <div class="world_entry_form_control">
-                            <label for="key">
-                                <h4>Key</h4>
-                                <h5>Comma-separated list of keywords (e.g: foo,bar).</h5>
-                            </label>
-                            <textarea class="text_pole" name="key" rows="1" placeholder="" maxlength="250"></textarea>
-                        </div>
-                        <div class="world_entry_form_control keysecondary">
-                            <label for="keysecondary">
-                                <h4>Secondary Key</h4>
-                                <h5>Comma-separated list of additional keywords.</h5>
-                            </label>
-                            <textarea class="text_pole" name="keysecondary" rows="1" placeholder="" maxlength="250"></textarea>
-                        </div>
-                    </div>
-                    <div class="world_entry_thin_controls">
-                        <div class="world_entry_form_control">
-                            <label for="order">
-                                <h4>Insertion Order</h4>
-                                <h5>Higher order number entries will be inserted first.</h5>
-                            </label>
-                            <input class="text_pole" type="number" name="order" placeholder="" />
-                        </div>
-                        <div class="world_entry_form_control">
-                            <label for="comment">
-                                <h4>Comment</h4>
-                                <h5>Optional comment (doesn't affect the AI).</h5>
-                            </label>
-                            <textarea class="text_pole" rows="1" name="comment" maxlength="250"></textarea>
-                        </div>
-                    </div>
-                    <div class="world_entry_form_control">
-                        <label for="content">
-                            <h4>Content</h4>
-                            <h5>Text that will be inserted to the prompt upon activation.</h5>
-                        </label>
-                        <textarea class="text_pole" name="content" rows="4" placeholder=""></textarea>
-                    </div>
-                    <div class="world_entry_form_control world_entry_form_horizontal">
-                        <label class="checkbox">
-                            <input type="checkbox" name="constant" />
-                            <h4>Constant</h4>
-                        </label>
-                        <label class="checkbox">
-                            <input type="checkbox" name="selective" />
-                            <h4>Selective</h4>
-                        </label>
-                        <div class="world_entry_form_control world_entry_form_radios">
-                            <div>
-                                <label><input type="radio" name="position" value="0">
-                                    <h4>Before Chara</h4>
-                                </label>
-                            </div>
-                            <div>
-                                <label><input type="radio" name="position" value="1">
-                                    <h4>After Chara</h4>
-                                </label>
-                            </div>
-                        </div>
-                        <span class="world_popup_expander">&nbsp;</span>
-                        <h5 class="world_entry_form_uid">
-                            UID:
-                            &nbsp;
-                            <span class="world_entry_form_uid_value"></span>
-                        </h5>
-                        <h5 class="world_entry_form_tokens">
-                            Tokens used:
-                            &nbsp;
-                            <span class="world_entry_form_token_counter">0</span>
-                        </h5>
-                        <input class="menu_button delete_entry_button" type="submit" value="Delete Entry" />
-                    </div>
-                </form>
-            </div>
-        </div>
     </div>
     <div id="shadow_select_chat_popup">
         <div id="select_chat_popup">
@@ -1848,6 +1761,86 @@
     </div>
 
     <!-- templates for JS to reuse when needed -->
+
+    <div id="entry_edit_template" class="template_element">
+        <div class="world_entry">
+            <form class="world_entry_form">
+                <div class="world_entry_thin_controls">
+                    <div class="world_entry_form_control">
+                        <label for="key">
+                            <h4>Key</h4>
+                            <h5>Comma-separated list of keywords (e.g: foo,bar).</h5>
+                        </label>
+                        <textarea class="text_pole" name="key" rows="1" placeholder="" maxlength="250"></textarea>
+                    </div>
+                    <div class="world_entry_form_control keysecondary">
+                        <label for="keysecondary">
+                            <h4>Secondary Key</h4>
+                            <h5>Comma-separated list of additional keywords.</h5>
+                        </label>
+                        <textarea class="text_pole" name="keysecondary" rows="1" placeholder="" maxlength="250"></textarea>
+                    </div>
+                </div>
+                <div class="world_entry_thin_controls">
+                    <div class="world_entry_form_control">
+                        <label for="order">
+                            <h4>Insertion Order</h4>
+                            <h5>Higher order number entries will be inserted first.</h5>
+                        </label>
+                        <input class="text_pole" type="number" name="order" placeholder="" />
+                    </div>
+                    <div class="world_entry_form_control">
+                        <label for="comment">
+                            <h4>Comment</h4>
+                            <h5>Optional comment (doesn't affect the AI).</h5>
+                        </label>
+                        <textarea class="text_pole" rows="1" name="comment" maxlength="250"></textarea>
+                    </div>
+                </div>
+                <div class="world_entry_form_control">
+                    <label for="content">
+                        <h4>Content</h4>
+                        <h5>Text that will be inserted to the prompt upon activation.</h5>
+                    </label>
+                    <textarea class="text_pole" name="content" rows="4" placeholder=""></textarea>
+                </div>
+                <div class="world_entry_form_control world_entry_form_horizontal">
+                    <label class="checkbox">
+                        <input type="checkbox" name="constant" />
+                        <h4>Constant</h4>
+                    </label>
+                    <label class="checkbox">
+                        <input type="checkbox" name="selective" />
+                        <h4>Selective</h4>
+                    </label>
+                    <div class="world_entry_form_control world_entry_form_radios">
+                        <div>
+                            <label><input type="radio" name="position" value="0">
+                                <h4>Before Chara</h4>
+                            </label>
+                        </div>
+                        <div>
+                            <label><input type="radio" name="position" value="1">
+                                <h4>After Chara</h4>
+                            </label>
+                        </div>
+                    </div>
+                    <span class="world_popup_expander">&nbsp;</span>
+                    <h5 class="world_entry_form_uid">
+                        UID:
+                        &nbsp;
+                        <span class="world_entry_form_uid_value"></span>
+                    </h5>
+                    <h5 class="world_entry_form_tokens">
+                        Tokens used:
+                        &nbsp;
+                        <span class="world_entry_form_token_counter">0</span>
+                    </h5>
+                    <input class="menu_button delete_entry_button" type="submit" value="Delete Entry" />
+                </div>
+            </form>
+        </div>
+    </div>
 
     <div id="character_template" class="template_element">
         <div class="character_select flex-container wide100p alignitemsflexstart" chid="" id="">
