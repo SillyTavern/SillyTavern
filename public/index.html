@@ -1358,11 +1358,12 @@
 
                     <div name="NameAndAvatar" class="flex-container flexFlowColumn drawer25pWidth">
                         <div name="NameChanger">
-                            <form id='form_change_name' action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                                <h4>Name</h4>
+                            <h4>Name</h4>
+                            <div class="change_name">
                                 <input id="your_name" name="your_name" class="text_pole" maxlength="50" value="" autocomplete="off">
-                                <input id="your_name_button" class="menu_button" type="submit" title="Click to set a new User Name (reloads page)" value="Update">
-                            </form>
+                                <div id="your_name_button" class="menu_button fa-solid fa-check" title="Click to set a new User Name">
+                                </div>
+                            </div>
                         </div>
                         <div name="AvatarSelector">
                             <h4>Your Avatar</h4>

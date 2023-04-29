@@ -525,6 +525,12 @@ code {
     flex-direction: column;
 }
 
+.change_name {
+    display: flex;
+    flex-direction: row;
+    gap: 5px;
+}
+
 .avatar {
     width: 50px;
     height: 50px;
@@ -1417,7 +1423,6 @@ input[type=search]:focus::-webkit-search-cancel-button {
 }
 
 .menu_button {
-    /* font-weight: bold; */
     color: var(--white70);
     background-color: var(--black50a);
     border: 1px solid var(--white30a);
@@ -1427,6 +1432,8 @@ input[type=search]:focus::-webkit-search-cancel-button {
     cursor: pointer;
     margin: 5px 0;
     transition: 0.3s;
+    display: flex;
+    align-items: center;
 }
 
 .avatar_div .menu_button,
