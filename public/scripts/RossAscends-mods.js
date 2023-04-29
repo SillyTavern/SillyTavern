@@ -24,6 +24,9 @@ import { selected_group, is_group_generating } from "./group-chats.js";
 import { oai_settings } from "./openai.js";
 import { poe_settings } from "./poe.js";
 
+const deviceInfo = await getDeviceInfo();
+console.log("Device type: " + deviceInfo.device.type);
+
 var NavToggle = document.getElementById("nav-toggle");
 var RPanelPin = document.getElementById("rm_button_panel_pin");
 var LPanelPin = document.getElementById("lm_button_panel_pin");
@@ -104,6 +107,9 @@ waitForElement("#expression-image", 10000).then(function () {
     console.log("expression holder not loaded yet");
 });
 
+async function getDeviceInfo() {
+    return await (await fetch('/deviceinfo')).json();
+}
 
 //RossAscends: Added function to format dates used in files and chat timestamps to a humanized format.
 //Mostly I wanted this to be for file names, but couldn't figure out exactly where the filename save code was as everything seemed to be connected.

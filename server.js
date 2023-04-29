@@ -54,6 +54,7 @@ const json5 = require('json5');
 const ExifReader = require('exifreader');
 const exif = require('piexifjs');
 const webp = require('webp-converter');
+const DeviceDetector = require("device-detector-js");
 
 const config = require(path.join(__dirname, './config.conf'));
 const server_port = process.env.SILLY_TAVERN_PORT || config.port;
@@ -185,8 +186,6 @@ const { invalidCsrfTokenError, generateToken, doubleCsrfProtection } = doubleCsr
     getTokenFromRequest: (req) => req.headers["x-csrf-token"]
 });
 
-
-
 app.get("/csrf-token", (req, res) => {
     res.json({
         "token": generateToken(res)
@@ -282,6 +281,12 @@ app.get('/get_faq', function (_, response) {
 });
 app.get('/get_readme', function (_, response) {
     response.sendFile(__dirname + "/readme.md");
+});
+app.get('/deviceinfo', function(request, response) {
+    const userAgent = request.header('user-agent');
+    const deviceDetector = new DeviceDetector();
+    const deviceInfo = deviceDetector.parse(userAgent);
+    return response.send(deviceInfo);
 });
 
 //**************Kobold api
