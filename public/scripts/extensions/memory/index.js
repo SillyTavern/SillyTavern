@@ -1,6 +1,6 @@
 import { getStringHash, debounce } from "../../utils.js";
 import { getContext, getApiUrl, extension_settings } from "../../extensions.js";
-import { extension_prompt_types, saveSettingsDebounced } from "../../../script.js";
+import { extension_prompt_types, is_send_press, saveSettingsDebounced } from "../../../script.js";
 export { MODULE_NAME };
 
 const MODULE_NAME = '1_memory';
@@ -137,6 +137,11 @@ async function moduleWorker() {
         return;
     }
 
+    // Generation is in progress, summary prevented
+    if (is_send_press) {
+        return;
+    }
+
     // Chat/character/group changed
     if ((context.groupId && lastGroupId !== context.groupId) || (context.characterId !== lastCharacterId) || (context.chatId !== lastChatId)) {
         const latestMemory = getLatestMemoryFromChat(chat);
@@ -189,6 +194,7 @@ async function summarizeChat(context) {
     const chat = context.chat;
     const longMemory = getLatestMemoryFromChat(chat);
     const reversedChat = chat.slice().reverse();
+    const preSummaryLastMessage = getStringHash(chat.length ? chat[chat.length - 1] : '');
     let memoryBuffer = [];
 
     for (let mes of reversedChat) {
@@ -248,9 +254,14 @@ async function summarizeChat(context) {
             const summary = data.summary;
 
             const newContext = getContext();
+            const postSummaryLastMessage = getStringHash(newContext.chat.length ? newContext.chat[newContext.chat.length - 1] : '');
 
             // something changed during summarization request
-            if (newContext.groupId !== context.groupId || newContext.chatId !== context.chatId || (!newContext.groupId && (newContext.characterId !== context.characterId))) {
+            if (postSummaryLastMessage !== preSummaryLastMessage
+                || newContext.groupId !== context.groupId
+                || newContext.chatId !== context.chatId
+                || (!newContext.groupId && (newContext.characterId !== context.characterId))) {
+                console.log('Context changed, summary discarded');
                 return;
             }
 
