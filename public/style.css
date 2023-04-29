@@ -2960,7 +2960,7 @@ a {
     flex-direction: column;
     padding-left: 0;
     margin-top: 0;
-    margin-bottom: 3px;
+    /* margin-bottom: 3px; */
     overflow: hidden;
     background-color: var(--SmartThemeBlurTintColor);
     backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)*2));
@@ -2977,7 +2977,7 @@ a {
 .list-group-item {
     color: var(--SmartThemeBodyColor);
     padding: 0.75rem 1.25rem;
-    margin-bottom: -1px;
+    /* margin-bottom: -1px; */
     box-sizing: border-box;
     user-select: none;
     cursor: pointer;

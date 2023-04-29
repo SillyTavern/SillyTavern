@@ -215,7 +215,7 @@ let optionsPopper = Popper.createPopper(document.getElementById('send_form'), do
     placement: 'top-start'
 });
 let exportPopper = Popper.createPopper(document.getElementById('export_button'), document.getElementById('export_format_popup'), {
-    placement: 'left',
+    placement: 'left'
 });
 let dialogueResolve = null;
 let chat_metadata = {};
