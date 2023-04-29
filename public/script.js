@@ -3312,7 +3312,7 @@ function select_selected_character(chid) {
     $("#avatar_load_preview").attr("src", this_avatar);
     $("#name_div").removeClass('displayBlock');
     $("#name_div").addClass('displayNone');
-    $("#renameCharButton").css("display", "block");
+    $("#renameCharButton").css("display", "");
 
     $("#form_create").attr("actiontype", "editcharacter");
     active_character = chid;
@@ -3336,14 +3336,14 @@ function select_rm_create() {
     $("#delete_button_div").css("display", "none");
     $("#delete_button").css("display", "none");
     $("#export_button").css("display", "none");
-    $("#create_button_label").css("display", "block");
+    $("#create_button_label").css("display", "");
     $("#create_button").attr("value", "Create");
     //RossAscends: commented this out as part of the auto-loading token counter
     //$('#result_info').html('&nbsp;');
 
     //create text poles
-    $("#rm_button_back").css("display", "inline-block");
-    $("#character_import_button").css("display", "flex");
+    $("#rm_button_back").css("display", "");
+    $("#character_import_button").css("display", "");
     $("#character_popup_text_h3").text("Create character");
     $("#character_name_pole").val(create_save_name);
     $("#description_textarea").val(create_save_description);
