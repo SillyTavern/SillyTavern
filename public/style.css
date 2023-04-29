@@ -1422,7 +1422,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     background-color: var(--black50a);
     border: 1px solid var(--white30a);
     border-radius: 10px;
-    padding: 10px;
+    padding: 8px;
     width: min-content;
     cursor: pointer;
     margin: 5px 0;
@@ -3492,12 +3492,6 @@ toolcool-color-picker {
 
 .openai_logit_bias_preset_form select {
     flex: 1;
-}
-
-.openai_logit_bias_preset_form .menu_button,
-.openai_preset_buttons .menu_button,
-.world_info_select_block .menu_button {
-    padding: 8px;
 }
 
 .openai_logit_bias_list:empty::before {

@@ -143,6 +143,7 @@ function selectTag(event, ui, listSelector) {
     appendTagToList(getInlineListSelector(), tag, { removable: false });
     addTagToMap(tag.id);
     saveSettingsDebounced();
+    printTags();
 
     // need to return false to keep the input clear
     return false;

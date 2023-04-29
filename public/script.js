@@ -201,7 +201,7 @@ let safetychat = [
         is_user: false,
         is_name: true,
         create_date: 0,
-        mes: "\n*You deleted a character/chat and arrived back here for safety reasons! Pick another character!*\n\n",
+        mes: "\n<i>You deleted a character/chat and arrived back here for safety reasons! Pick another character!</i>\n\n",
     },
 ];
 let chat_create_date = 0;
@@ -917,7 +917,7 @@ function messageFormating(mes, ch_name, isSystem, forceAvatar) {
 
     if (this_chid != undefined && !isSystem)
         mes = mes.replaceAll("<", "&lt;").replaceAll(">", "&gt;"); //for welcome message
-    if (this_chid === undefined && !selected_group) {
+    if ((this_chid === undefined || this_chid == "invalid-safety-id")  && !selected_group) {
         mes = mes
             .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
             .replace(/\n/g, "<br/>");
