@@ -3436,8 +3436,8 @@ function callPopup(text, type, inputValue = '') {
         $("#dialogue_popup_input").focus();
     }
     $("#shadow_popup").transition({
-        opacity: 1.0,
-        duration: animation_duration,
+        opacity: 1,
+        duration: 200,
         easing: animation_easing,
     });
 
@@ -4166,15 +4166,26 @@ $(document).ready(function () {
     });
     $("#character_cross").click(function () {
         is_advanced_char_open = false;
-        $("#character_popup").css("display", "none");
+        $("#character_popup").transition({
+            opacity: 0,
+            duration: 200,
+            easing: animation_easing,
+        });
+        setTimeout(function () { $("#character_popup").css("display", "none"); }, 200);
+        //$("#character_popup").css("display", "none");
     });
     $("#character_popup_ok").click(function () {
         is_advanced_char_open = false;
         $("#character_popup").css("display", "none");
     });
     $("#dialogue_popup_ok").click(function (e) {
-        $("#shadow_popup").css("display", "none");
-        $("#shadow_popup").css("opacity:", 0.0);
+        $("#shadow_popup").transition({
+            opacity: 0,
+            duration: 200,
+            easing: animation_easing,
+        });
+        setTimeout(function () { $("#shadow_popup").css("display", "none"); }, 200);
+        //      $("#shadow_popup").css("opacity:", 0.0);
         if (popup_type == "del_bg") {
             delBackground(bg_file_for_del.attr("bgfile"));
             bg_file_for_del.parent().remove();
@@ -4272,8 +4283,13 @@ $(document).ready(function () {
         }
     });
     $("#dialogue_popup_cancel").click(function (e) {
-        $("#shadow_popup").css("display", "none");
-        $("#shadow_popup").css("opacity:", 0.0);
+        $("#shadow_popup").transition({
+            opacity: 0,
+            duration: 200,
+            easing: animation_easing,
+        });
+        setTimeout(function () { $("#shadow_popup").css("display", "none"); }, 200);
+        //$("#shadow_popup").css("opacity:", 0.0);
         popup_type = "";
 
         if (dialogueResolve) {
@@ -4813,29 +4829,35 @@ $(document).ready(function () {
         saveSettingsDebounced();
     });
 
-    $("#donation").click(function () {
-        $("#shadow_tips_popup").css("display", "block");
-        $("#shadow_tips_popup").transition({
-            opacity: 1.0,
-            duration: 100,
-            easing: animation_easing,
-            complete: function () { },
-        });
-    });
+    /*     $("#donation").click(function () {
+            $("#shadow_tips_popup").css("display", "block");
+            $("#shadow_tips_popup").transition({
+                opacity: 1.0,
+                duration: 100,
+                easing: animation_easing,
+                complete: function () { },
+            });
+        }); */
 
-    $("#tips_cross").click(function () {
-        $("#shadow_tips_popup").transition({
-            opacity: 0.0,
-            duration: 100,
-            easing: animation_easing,
-            complete: function () {
-                $("#shadow_tips_popup").css("display", "none");
-            },
-        });
-    });
+    /*     $("#tips_cross").click(function () {
+            $("#shadow_tips_popup").transition({
+                opacity: 0.0,
+                duration: 100,
+                easing: animation_easing,
+                complete: function () {
+                    $("#shadow_tips_popup").css("display", "none");
+                },
+            });
+        }); */
 
     $("#select_chat_cross").click(function () {
-        $("#shadow_select_chat_popup").css("display", "none");
+        $("#shadow_select_chat_popup").transition({
+            opacity: 0,
+            duration: 200,
+            easing: animation_easing,
+        });
+        setTimeout(function () { $("#shadow_select_chat_popup").css("display", "none"); }, 200);
+        //$("#shadow_select_chat_popup").css("display", "none");
         $("#load_select_chat_div").css("display", "block");
     });
 
