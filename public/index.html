@@ -1491,8 +1491,7 @@
                         <hr>
 
                         <div id="tags_div">
-                            <!-- <div class="margin-bot-10px">Tags</div> -->
-                            <input id="tagInput" class="text_pole" placeholder="Search / Create tags" maxlength="50" />
+                            <input id="tagInput" class="text_pole tag_input" placeholder="Search / Create tags" maxlength="25" />
                             <div id="tagList" class="tags"></div>
                         </div>
 
@@ -1569,6 +1568,10 @@
                                 Auto Mode
                             </label>
                         </div>
+                    </div>
+                    <div id="group_tags_div" class="wide100p">
+                        <input id="groupTagInput" class="text_pole tag_input" placeholder="Search / Create tags" maxlength="25" />
+                        <div id="groupTagList" class="tags"></div>
                     </div>
                     <div id="rm_group_add_members_header">
                         <h3>Add Members</h3>
@@ -1945,13 +1948,11 @@
             <div class="avatar">
                 <img src="">
             </div>
-            <!--             <div class="group_icon">
-                <div class="fa-solid fa-user-group"></div>
-            </div> -->
             <div class="flex-container wide100pLess70px gap5px">
                 <div class="ch_name"></div>
                 <i class='group_fav_icon fa-solid fa-star'></i>
                 <input class="ch_fav" value="" hidden />
+                <div class="tags tags_inline"></div>
             </div>
         </div>
     </div>

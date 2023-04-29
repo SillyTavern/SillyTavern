@@ -43,12 +43,14 @@ import {
     getThumbnailUrl,
     streamingProcessor,
 } from "../script.js";
+import { appendTagToList, createTagMapFromList, getTagsList } from './tags.js';
 
 export {
     selected_group,
     is_group_automode_enabled,
     is_group_generating,
     group_generation_id,
+    group_rm_panel_mode,
     groups,
     saveGroupChat,
     generateGroupWrapper,
@@ -67,6 +69,7 @@ let groups = [];
 let selected_group = null;
 let group_generation_id = null;
 let fav_grp_checked = false;
+let group_rm_panel_mode;
 
 const group_activation_strategy = {
     NATURAL: 0,
@@ -220,6 +223,12 @@ function printGroups() {
         template.find('.group_fav_icon').addClass(group.fav ? 'is_fav' : '');
         //group.fav ? template.find(".group_fav_icon").show() : template.find(".group_fav_icon").hide();
         template.find(".ch_fav").val(group.fav);
+
+        // Display inline tags
+        const tags = getTagsList(group.id);
+        const tagsElement = template.find('.tags');
+        tags.forEach(tag => appendTagToList(tagsElement, tag, {}));
+
         $("#rm_print_characters_block").prepend(template);
         updateGroupAvatar(group);
     }
@@ -700,6 +709,7 @@ async function reorderGroupMember(chat_id, groupMember, direction) {
 function select_group_chats(chat_id, skipAnimation) {
     const group = chat_id && groups.find((x) => x.id == chat_id);
     const groupName = group?.name ?? "";
+    group_rm_panel_mode = !!group ? 'edit' : 'create';
     $("#rm_group_chat_name").val(groupName);
     $("#rm_group_chat_name").off();
     $("#rm_group_chat_name").on("input", async function () {
@@ -910,6 +920,9 @@ $(document).ready(() => {
         });
 
         if (createGroupResponse.ok) {
+            const data = await createGroupResponse.json();
+            createTagMapFromList("#groupTagList", data.id);
+
             await getCharacters();
             $("#rm_info_avatar").html("");
             const avatar = $("#avatar_div_div").clone();
