@@ -3597,6 +3597,13 @@ body.movingUI #expression-holder {
     resize: both;
 }
 
+#expression-image.default,
+#expression-holder:has(.default) {
+    height: 120px;
+    margin-top: 0;
+    top: 50px;
+}
+
 /*No Text Shadows Mode*/
 body.noShadows * {
     text-shadow: none !important;
