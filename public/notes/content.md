@@ -166,9 +166,9 @@ A list of keywords that trigger the activation of a World Info entry.
 
 #### Secondary Key
 
-A list of supplementary keywords that are used in conjunction with the main keywords (see [Selective](#selective)).
+A list of supplementary keywords that are used in conjunction with the main keywords. See [Selective](#selective).
 
-#### Content
+#### Entry Content
 
 The text that is inserted into the prompt upon entry activation.
 

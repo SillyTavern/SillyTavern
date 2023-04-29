@@ -265,7 +265,7 @@ function formatWorldInfo(value) {
     }
 
     // placeholder if we would want to apply some formatting
-    return `[Details of the fictional world the RP set in:\n${value}\n]`;
+    return `[Details of the fictional world the RP is set in:\n${value}]\n`;
 }
 
 async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAfter, extensionPrompt, bias, type) {
