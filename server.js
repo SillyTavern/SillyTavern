@@ -646,7 +646,7 @@ app.post("/createcharacter", urlencodedParser, function (request, response) {
     const internalName = getPngName(request.body.ch_name);
     const avatarName = `${internalName}.png`;
     const defaultAvatar = './public/img/ai4.png';
-    chatsPath = path.join(chatsPath, internalName);
+    const chatsPath = directories.chats + internalName; //path.join(chatsPath, internalName);
 
     if (!fs.existsSync(chatsPath)) fs.mkdirSync(chatsPath);
 
