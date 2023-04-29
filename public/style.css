@@ -663,7 +663,7 @@ select {
 }
 
 #rm_ch_create_block textarea {
-    min-height: 200px;
+    min-height: 175px;
 }
 
 .margin-bot-10px {
@@ -1332,8 +1332,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 }
 
 #dialogue_popup {
-
-    width: 300px;
+    width: 500px;
     position: absolute;
     z-index: 9999;
     margin-left: auto;
@@ -1347,22 +1346,43 @@ input[type=search]:focus::-webkit-search-cancel-button {
     padding: 4px;
     background-color: var(--black70a);
     border-radius: 10px;
+    max-height: 90svh;
+    display: flex;
+    flex-direction: column;
+    overflow-y: hidden;
+}
+
+#dialogue_popup_holder {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow-y: hidden;
+    padding: 0 10px;
+}
+
+#dialogue_popup_text {
+    flex-grow: 1;
+    overflow-y: auto;
+    height: 100%;
+}
+
+#dialogue_popup_controls {
+    display: flex;
+    align-self: center;
+    gap: 20px;
 }
 
 #dialogue_popup_ok {
-    display: inline-block;
-    margin-right: 20px;
     background-color: var(--crimson70a);
     cursor: pointer;
 }
 
 #dialogue_popup_input {
+    margin: 10px 0;
     width: 100%;
 }
 
 #dialogue_popup_cancel {
-    display: inline-block;
-    margin-left: 20px;
     cursor: pointer;
 }
 
@@ -3772,7 +3792,7 @@ body.noShadows * {
     } */
 
     #rm_ch_create_block textarea {
-        max-height: 200px;
+        max-height: 180px;
     }
 
     #talkativeness_hint span {

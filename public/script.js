@@ -94,7 +94,17 @@ import {
 import { debounce, delay } from "./scripts/utils.js";
 import { extension_settings, loadExtensionSettings } from "./scripts/extensions.js";
 import { executeSlashCommands, getSlashCommandsHelp } from "./scripts/slash-commands.js";
-import { tag_map, tags, loadTagsSettings, printTags, isElementTagged, getTagsList, appendTagToList, createTagMapFromList, renameTagKey } from "./scripts/tags.js";
+import { 
+    tag_map,
+    tags,
+    loadTagsSettings,
+    printTags,
+    isElementTagged,
+    getTagsList,
+    appendTagToList,
+    createTagMapFromList,
+    renameTagKey,
+} from "./scripts/tags.js";
 
 //exporting functions and vars for mods
 export {
@@ -1678,7 +1688,17 @@ async function Generate(type, automatic_trigger, force_name2) {
         let examplesString = '';
         let chatString = '';
         function canFitMessages() {
-            const encodeString = JSON.stringify(worldInfoString + storyString + examplesString + chatString + anchorTop + anchorBottom + charPersonality + promptBias + allAnchors);
+            const encodeString = [
+                worldInfoString,
+                storyString,
+                examplesString,
+                chatString,
+                anchorTop,
+                anchorBottom,
+                charPersonality,
+                promptBias,
+                allAnchors
+            ].join('').replace(/\r/gm, '');
             return getTokenCount(encodeString, padding_tokens) < this_max_context;
         }
 
@@ -1816,18 +1836,25 @@ async function Generate(type, automatic_trigger, force_name2) {
 
             function checkPromtSize() {
                 setPromtString();
-                const prompt = JSON.stringify(worldInfoString + storyString + mesExmString + mesSendString + anchorTop + anchorBottom + charPersonality + generatedPromtCache + promptBias + allAnchors);
+                const prompt = [
+                    worldInfoString,
+                    storyString,
+                    mesExmString,
+                    mesSendString,
+                    anchorTop,
+                    anchorBottom,
+                    charPersonality,
+                    generatedPromtCache,
+                    promptBias,
+                    allAnchors
+                ].join('').replace(/\r/gm, '');
                 let thisPromtContextSize = getTokenCount(prompt, padding_tokens);
 
                 if (thisPromtContextSize > this_max_context) {        //if the prepared prompt is larger than the max context size...
-
                     if (count_exm_add > 0) {                            // ..and we have example mesages..
-                        //console.log('Context size: '+thisPromtContextSize+' -- too big, removing example message');
-                        //mesExamplesArray.length = mesExamplesArray.length-1;
                         count_exm_add--;                            // remove the example messages...
                         checkPromtSize();                            // and try agin...
                     } else if (mesSend.length > 0) {                    // if the chat history is longer than 0
-                        //console.log('Context size: '+thisPromtContextSize+' -- too big, removing oldest chat message');
                         mesSend.shift();                            // remove the first (oldest) chat entry..
                         checkPromtSize();                            // and check size again..
                     } else {
@@ -1861,7 +1888,14 @@ async function Generate(type, automatic_trigger, force_name2) {
                 mesSendString = '<START>\n' + mesSendString;
                 //mesSendString = mesSendString; //This edit simply removes the first "<START>" that is prepended to all context prompts
             }
-            let finalPromt = worldInfoBefore + storyString + worldInfoAfter + afterScenarioAnchor + mesExmString + mesSendString + generatedPromtCache + promptBias;
+            let finalPromt = worldInfoBefore +
+                             storyString +
+                             worldInfoAfter +
+                             afterScenarioAnchor +
+                             mesExmString +
+                             mesSendString +
+                             generatedPromtCache +
+                             promptBias;
 
             if (zeroDepthAnchor && zeroDepthAnchor.length) {
                 if (!isMultigenEnabled() || tokens_already_generated == 0) {
@@ -1937,65 +1971,15 @@ async function Generate(type, automatic_trigger, force_name2) {
             }
 
             if (main_api == 'textgenerationwebui') {
-                generate_data =
-                {
-                    'prompt': finalPromt,
-                    'max_new_tokens': this_amount_gen,
-                    'do_sample': textgenerationwebui_settings.do_sample,
-                    'temperature': textgenerationwebui_settings.temp,
-                    'top_p': textgenerationwebui_settings.top_p,
-                    'typical_p': textgenerationwebui_settings.typical_p,
-                    'repetition_penalty': textgenerationwebui_settings.rep_pen,
-                    'encoder_repetition_penalty': textgenerationwebui_settings.encoder_rep_pen,
-                    'top_k': textgenerationwebui_settings.top_k,
-                    'min_length': textgenerationwebui_settings.min_length,
-                    'no_repeat_ngram_size': textgenerationwebui_settings.no_repeat_ngram_size,
-                    'num_beams': textgenerationwebui_settings.num_beams,
-                    'penalty_alpha': textgenerationwebui_settings.penalty_alpha,
-                    'length_penalty': textgenerationwebui_settings.length_penalty,
-                    'early_stopping': textgenerationwebui_settings.early_stopping,
-                    'seed': textgenerationwebui_settings.seed,
-                    'add_bos_token': textgenerationwebui_settings.add_bos_token,
-                    'stopping_strings': getStoppingStrings(isImpersonate, false),
-                    'truncation_length': max_context,
-                    'ban_eos_token': textgenerationwebui_settings.ban_eos_token,
-                    'skip_special_tokens': textgenerationwebui_settings.skip_special_tokens,
-                };
+                generate_data = getTextGenGenerationData(finalPromt, this_amount_gen, isImpersonate);
             }
 
             if (main_api == 'novel') {
                 const this_settings = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
-                generate_data = {
-                    "input": finalPromt,
-                    "model": nai_settings.model_novel,
-                    "use_string": true,
-                    "temperature": parseFloat(nai_settings.temp_novel),
-                    "max_length": this_settings.max_length,
-                    "min_length": this_settings.min_length,
-                    "tail_free_sampling": this_settings.tail_free_sampling,
-                    "repetition_penalty": parseFloat(nai_settings.rep_pen_novel),
-                    "repetition_penalty_range": parseInt(nai_settings.rep_pen_size_novel),
-                    "repetition_penalty_frequency": this_settings.repetition_penalty_frequency,
-                    "repetition_penalty_presence": this_settings.repetition_penalty_presence,
-                    //"stop_sequences": {{187}},
-                    //bad_words_ids = {{50256}, {0}, {1}};
-                    //generate_until_sentence = true;
-                    "use_cache": false,
-                    //use_string = true;
-                    "return_full_text": false,
-                    "prefix": "vanilla",
-                    "order": this_settings.order
-                };
+                generate_data = getNovelGenerationData(finalPromt, this_settings);
             }
 
-            let generate_url = '';
-            if (main_api == 'kobold') {
-                generate_url = '/generate';
-            } else if (main_api == 'textgenerationwebui') {
-                generate_url = '/generate_textgenerationwebui';
-            } else if (main_api == 'novel') {
-                generate_url = '/generate_novelai';
-            }
+            let generate_url = getGenerateUrl();
             console.log('rungenerate calling API');
 
             if (main_api == 'openai') {
@@ -2169,6 +2153,70 @@ async function Generate(type, automatic_trigger, force_name2) {
     }
     //console.log('generate ending');
 } //generate ends
+
+// TODO: move to textgen-settings.js
+function getTextGenGenerationData(finalPromt, this_amount_gen, isImpersonate) {
+    return {
+        'prompt': finalPromt,
+        'max_new_tokens': this_amount_gen,
+        'do_sample': textgenerationwebui_settings.do_sample,
+        'temperature': textgenerationwebui_settings.temp,
+        'top_p': textgenerationwebui_settings.top_p,
+        'typical_p': textgenerationwebui_settings.typical_p,
+        'repetition_penalty': textgenerationwebui_settings.rep_pen,
+        'encoder_repetition_penalty': textgenerationwebui_settings.encoder_rep_pen,
+        'top_k': textgenerationwebui_settings.top_k,
+        'min_length': textgenerationwebui_settings.min_length,
+        'no_repeat_ngram_size': textgenerationwebui_settings.no_repeat_ngram_size,
+        'num_beams': textgenerationwebui_settings.num_beams,
+        'penalty_alpha': textgenerationwebui_settings.penalty_alpha,
+        'length_penalty': textgenerationwebui_settings.length_penalty,
+        'early_stopping': textgenerationwebui_settings.early_stopping,
+        'seed': textgenerationwebui_settings.seed,
+        'add_bos_token': textgenerationwebui_settings.add_bos_token,
+        'stopping_strings': getStoppingStrings(isImpersonate, false),
+        'truncation_length': max_context,
+        'ban_eos_token': textgenerationwebui_settings.ban_eos_token,
+        'skip_special_tokens': textgenerationwebui_settings.skip_special_tokens,
+    };
+}
+
+// TODO: move to nai-settings.js
+function getNovelGenerationData(finalPromt, this_settings) {
+    return {
+        "input": finalPromt,
+        "model": nai_settings.model_novel,
+        "use_string": true,
+        "temperature": parseFloat(nai_settings.temp_novel),
+        "max_length": this_settings.max_length,
+        "min_length": this_settings.min_length,
+        "tail_free_sampling": this_settings.tail_free_sampling,
+        "repetition_penalty": parseFloat(nai_settings.rep_pen_novel),
+        "repetition_penalty_range": parseInt(nai_settings.rep_pen_size_novel),
+        "repetition_penalty_frequency": this_settings.repetition_penalty_frequency,
+        "repetition_penalty_presence": this_settings.repetition_penalty_presence,
+        //"stop_sequences": {{187}},
+        //bad_words_ids = {{50256}, {0}, {1}};
+        //generate_until_sentence = true;
+        "use_cache": false,
+        //use_string = true;
+        "return_full_text": false,
+        "prefix": "vanilla",
+        "order": this_settings.order
+    };
+}
+
+function getGenerateUrl() {
+    let generate_url = '';
+    if (main_api == 'kobold') {
+        generate_url = '/generate';
+    } else if (main_api == 'textgenerationwebui') {
+        generate_url = '/generate_textgenerationwebui';
+    } else if (main_api == 'novel') {
+        generate_url = '/generate_novelai';
+    }
+    return generate_url;
+}
 
 function shouldContinueMultigen(getMessage) {
     const nameString = is_pygmalion ? 'You:' : `${name1}:`;
@@ -2382,12 +2430,18 @@ function deactivateSendButtons() {
 }
 
 function resetChatState() {
-    active_character = "invalid-safety-id"; //unsets the chid in settings (this prevents AutoLoadChat from trying to load the wrong ChID
-    this_chid = "invalid-safety-id"; //unsets expected chid before reloading (related to getCharacters/printCharacters from using old arrays)
-    name2 = systemUserName; // replaces deleted charcter name with system user since it will be displayed next.
-    chat = [...safetychat]; // sets up system user to tell user about having deleted a character
-    chat_metadata = {}; // resets chat metadata
-    characters.length = 0; // resets the characters array, forcing getcharacters to reset
+    //unsets the chid in settings (this prevents AutoLoadChat from trying to load the wrong ChID
+    active_character = "invalid-safety-id";
+    //unsets expected chid before reloading (related to getCharacters/printCharacters from using old arrays)
+    this_chid = "invalid-safety-id";
+    // replaces deleted charcter name with system user since it will be displayed next.
+    name2 = systemUserName;
+    // sets up system user to tell user about having deleted a character
+    chat = [...safetychat];
+    // resets chat metadata
+    chat_metadata = {};
+    // resets the characters array, forcing getcharacters to reset
+    characters.length = 0;
 }
 
 function setCharacterId(value) {
@@ -2455,7 +2509,7 @@ async function renameCharacter() {
                         throw new Error('New character not selected');
                     }
 
-                    callPopup('Character renamed! Sprites folder (if any) should be renamed manually.', 'text');
+                    callPopup('<h3>Character renamed!</h3>Sprites folder (if any) should be renamed manually.', 'text');
                 }
                 else {
                     throw new Error('Newly renamed character was lost?');
@@ -2625,12 +2679,6 @@ async function openCharacterChat(file_name) {
     $("#shadow_select_chat_popup").css("display", "none");
     $("#load_select_chat_div").css("display", "block");
 }
-
-/* function openNavToggle() {
-    if (!$("#nav-toggle").prop("checked")) {
-        $("#nav-toggle").trigger("click");
-    }
-} */
 
 ////////// OPTIMZED MAIN API CHANGE FUNCTION ////////////
 
@@ -3295,9 +3343,7 @@ function select_selected_character(chid) {
 
     $("#form_create").attr("actiontype", "editcharacter");
     active_character = chid;
-    //console.log('select_selected_character() -- active_character -- '+chid+'(ChID of '+display_name+')');
     saveSettingsDebounced();
-    //console.log('select_selected_character() -- called saveSettings() to save -- active_character -- '+active_character+'(ChID of '+display_name+')');
 }
 
 function select_rm_create() {
@@ -3730,7 +3776,12 @@ $(document).ready(function () {
                         //console.log('showing ""..."');
                         /* if (!selected_group) {
                         } else { */
-                        $("#chat").children().filter('[mesid="' + (count_view_mes - 1) + '"]').children('.mes_block').children('.mes_text').html('...');  //shows "..." while generating
+                        $("#chat")
+                            .children()
+                            .filter('[mesid="' + (count_view_mes - 1) + '"]')
+                            .children('.mes_block')
+                            .children('.mes_text')
+                            .html('...');  //shows "..." while generating
                         /* } */
                     } else {
                         //console.log('showing previously generated swipe candidate, or "..."');
@@ -3927,7 +3978,11 @@ $(document).ready(function () {
             })
         } else {
             $(selector).each(function () {
-                const isValidSearch = $(this).children(".flex-container").children(".ch_name").text().toLowerCase().includes(searchValue);
+                const isValidSearch = $(this)
+                    .find(".ch_name")
+                    .text()
+                    .toLowerCase()
+                    .includes(searchValue);
 
                 if (isValidSearch) {
                     if (selectedTagId && !isElementTagged(this, selectedTagId)) {
@@ -4013,8 +4068,6 @@ $(document).ready(function () {
                 chat.length = 0;
                 chat_metadata = {};
                 getChat();
-
-                //console.log('Clicked on '+characters[this_chid].name+' Active_Character set to: '+active_character+' (ChID:'+this_chid+')');
             }
         } else {
             //if clicked on character that was already selected
@@ -4198,12 +4251,17 @@ $(document).ready(function () {
                 data: msg,
                 cache: false,
                 success: function (html) {
-                    //RossAscends: New handling of character deletion that avoids page refreshes and should have fixed char corruption due to cache problems.
-                    //due to how it is handled with 'popup_type', i couldn't find a way to make my method completely modular, so keeping it in TAI-main.js as a new default.
+                    //RossAscends: New handling of character deletion that avoids page refreshes and should have
+                    // fixed char corruption due to cache problems.
+                    //due to how it is handled with 'popup_type', i couldn't find a way to make my method completely
+                    // modular, so keeping it in TAI-main.js as a new default.
                     //this allows for dynamic refresh of character list after deleting a character.
-                    $("#character_cross").click(); // closes advanced editing popup
-                    this_chid = "invalid-safety-id"; // unsets expected chid before reloading (related to getCharacters/printCharacters from using old arrays)
-                    characters.length = 0; // resets the characters array, forcing getcharacters to reset
+                    // closes advanced editing popup
+                    $("#character_cross").click();
+                    // unsets expected chid before reloading (related to getCharacters/printCharacters from using old arrays)
+                    this_chid = "invalid-safety-id";
+                    // resets the characters array, forcing getcharacters to reset
+                    characters.length = 0; 
                     name2 = systemUserName; // replaces deleted charcter name with system user since she will be displayed next.
                     chat = [...safetychat]; // sets up system user to tell user about having deleted a character
                     chat_metadata = {}; // resets chat metadata
@@ -4217,8 +4275,6 @@ $(document).ready(function () {
                     printMessages(); // prints out system user's 'deleted character' message
                     //console.log("#dialogue_popup_ok(del-char) >>>> saving");
                     saveSettingsDebounced(); // saving settings to keep changes to variables
-                    //getCharacters();
-                    //$('#create_button_div').html(html);
                 },
             });
         }
@@ -5258,11 +5314,19 @@ $(document).ready(function () {
     $("html").on('touchstart mousedown', function (e) {
         var clickTarget = $(e.target);
 
-        if ($('#export_format_popup').is(':visible') && clickTarget.closest('#export_button').length == 0 && clickTarget.closest('#export_format_popup').length == 0) {
+        if ($('#export_format_popup').is(':visible')
+            && clickTarget.closest('#export_button').length == 0
+            && clickTarget.closest('#export_format_popup').length == 0) {
             $('#export_format_popup').hide();
         }
 
-        const forbiddenTargets = ['#character_cross', '#avatar-and-name-block', '#shadow_popup', '#world_popup'];
+        const forbiddenTargets = [
+            '#character_cross',
+            '#avatar-and-name-block',
+            '#shadow_popup',
+            '#world_popup',
+            '.ui-widget',
+        ];
         for (const id of forbiddenTargets) {
             if (clickTarget.closest(id).length > 0) {
                 return;
