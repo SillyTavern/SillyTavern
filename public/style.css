@@ -1020,15 +1020,6 @@ input[type=search]:focus::-webkit-search-cancel-button {
 }
 
 .character_select {
-    /*
-    padding: 5px;
-    border-radius: 10px;
-    cursor: pointer;
-    display: grid;
-    grid-template-columns: 67px auto;
-    position: relative;
-    overflow-y: hidden;
-    */
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -1047,16 +1038,12 @@ input[type=search]:focus::-webkit-search-cancel-button {
 /*applies to both groups and solos chars in the char list*/
 #rm_print_characters_block .ch_name {
     margin-left: 5px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    align-self: start;
     gap: 5px;
     width: 100%;
     white-space: nowrap;
     max-width: calc(100% - 29px);
     overflow: hidden;
     text-overflow: ellipsis;
-
 }
 
 .character_select:hover {
@@ -1065,6 +1052,10 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 .alignitemsflexstart {
     align-items: flex-start;
+}
+
+.gap5px {
+    gap: 5px !important;
 }
 
 .wide100pLess70px {
@@ -1195,13 +1186,11 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 .ch_fav_icon {
     filter: drop-shadow(0px 0px 1px black);
-    justify-self: end;
-    flex: 1;
-    text-align: end;
-    align-self: flex-start;
-    margin-top: 5px;
     color: yellow;
     font-size: 12px;
+    order: -1;
+    margin-left: -18px;
+    margin-top: 3px;
 }
 
 #fav_chara_wrap {
@@ -2643,7 +2632,7 @@ body .ui-widget-content {
 .group_select {
     display: flex;
     flex-direction: row;
-    align-items: center;
+    /* align-items: center; */
     padding: 5px;
     border-radius: 10px;
     cursor: pointer;
@@ -2666,13 +2655,12 @@ body .ui-widget-content {
 } */
 
 .group_select .group_fav_icon {
-    justify-self: end;
-    flex: 1;
-    text-align: end;
-    align-self: flex-start;
-    margin-top: 5px;
+    filter: drop-shadow(0px 0px 1px black);
     color: yellow;
     font-size: 12px;
+    order: -1;
+    margin-left: -18px;
+    margin-top: 3px;
 }
 
 .typing_indicator {
