@@ -1250,15 +1250,14 @@ function applyFavFilter(enabled) {
     const selector = ['#rm_print_characters_block .character_select', '#rm_print_characters_block .group_select'].join(',');
     if (enabled) {
         $(selector).each(function () {
-            if ($(this).children(".flex-container").children(".ch_fav").length !== 0) {
-                $(this).children(".flex-container").children(".ch_fav").val().toLowerCase().includes(true)
-                    ? $(this).show()
-                    : $(this).hide();
+            if ($(this).find(".ch_fav").length !== 0) {
+                const shouldBeDisplayed = $(this).find(".ch_fav").val().toLowerCase().includes(true);
+                $(this).toggleClass('hiddenByFav', !shouldBeDisplayed);
             }
         });
     }
     else {
-        $(selector).show();
+        $(selector).removeClass('hiddenByFav');
     }
 }
 
@@ -3939,17 +3938,9 @@ $(document).ready(function () {
     $("#character_search_bar").on("input", function () {
         const selector = ['#rm_print_characters_block .character_select', '#rm_print_characters_block .group_select'].join(',');
         const searchValue = $(this).val().trim().toLowerCase();
-        const selectedTagId = $('#rm_tag_filter .tag.selected').attr('id');
 
         if (!searchValue) {
-            $(selector).each(function () {
-                if (selectedTagId && !isElementTagged(this, selectedTagId)) {
-                    $(this).hide();
-                }
-                else {
-                    $(this).show();
-                }
-            })
+            $(selector).removeClass('hiddenBySearch');
         } else {
             $(selector).each(function () {
                 const isValidSearch = $(this)
@@ -3958,22 +3949,8 @@ $(document).ready(function () {
                     .toLowerCase()
                     .includes(searchValue);
 
-                if (isValidSearch) {
-                    if (selectedTagId && !isElementTagged(this, selectedTagId)) {
-                        $(this).hide();
-                    }
-                    else {
-                        $(this).show();
-                    }
-                }
-                else {
-                    $(this).hide();
-                }
+                $(this).toggleClass('hiddenBySearch', !isValidSearch);
             });
-        }
-
-        if (selectedTagId) {
-            applyFilterToList(selectedTagId)
         }
     });
 

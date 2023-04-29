@@ -3060,7 +3060,7 @@ a {
     display: none;
 }
 
-.hiddenByTag {
+.hiddenByTag, .hiddenByFav, .hiddenBySearch {
     display: none !important;
 }
 
