@@ -5325,7 +5325,7 @@ $(document).ready(function () {
             '#avatar-and-name-block',
             '#shadow_popup',
             '#world_popup',
-            '.ui-widget-content'
+            '.ui-widget',
         ];
         for (const id of forbiddenTargets) {
             if (clickTarget.closest(id).length > 0) {
