@@ -3053,6 +3053,10 @@ a {
     display: none;
 }
 
+.hiddenByTag {
+    display: none !important;
+}
+
 /* Message images */
 .mes img.img_extra {
     max-width: 600px;

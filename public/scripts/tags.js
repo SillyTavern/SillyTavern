@@ -190,7 +190,7 @@ function onTagFilterClick() {
 
 function applyFilterToElement(tagId, element) {
     const isTagged = isElementTagged(element, tagId);
-    $(element).css('display', !isTagged ? 'none' : '');
+    $(element).toggleClass('hiddenByTag', !isTagged);
 }
 
 function isElementTagged(element, tagId) {
@@ -205,7 +205,7 @@ function isElementTagged(element, tagId) {
 
 function clearTagsFilter() {
     $('#rm_tag_filter .tag').removeClass('selected');
-    $('#rm_print_characters_block > div').css('display', '');
+    $('#rm_print_characters_block > div').removeClass('hiddenByTag');
 }
 
 function printTags() {
