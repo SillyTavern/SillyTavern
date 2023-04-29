@@ -1348,7 +1348,9 @@ input[type=search]:focus::-webkit-search-cancel-button {
     top: 50%;
     transform: translateY(-50%);
     text-align: center;
-    box-shadow: 0 0 5px 5px var(--fullred);
+    box-shadow: 0 0 5px black;
+    /* var(--fullred) */
+    border: 1px solid var(--white30a);
     padding: 4px;
     background-color: var(--black70a);
     border-radius: 10px;
@@ -2542,7 +2544,7 @@ body .ui-widget-content {
     padding: 0 5px;
 }
 
-#rm_group_buttons > div {
+#rm_group_buttons>div {
     display: flex;
     flex-direction: column;
 }
@@ -3062,7 +3064,9 @@ a {
     display: none;
 }
 
-.hiddenByTag, .hiddenByFav, .hiddenBySearch {
+.hiddenByTag,
+.hiddenByFav,
+.hiddenBySearch {
     display: none !important;
 }
 
