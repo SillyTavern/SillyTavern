@@ -2379,6 +2379,33 @@ h5 {
     min-width: 0;
 }
 
+.tag_controls {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+}
+
+.tag_view_item {
+    display: flex;
+    flex-direction: row;
+    align-items: baseline;
+    gap: 15px;
+}
+
+.tag_view_name {
+    text-align: left;
+    flex: 2;
+}
+
+.tag_view_counter {
+    text-align: right;
+    flex: 1;
+}
+
+.tag_delete {
+    padding-right: 0;
+}
+
 .tag {
     border-radius: 5px;
     border-style: solid;
@@ -2407,7 +2434,6 @@ h5 {
 }
 
 .tags {
-
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
@@ -2421,30 +2447,12 @@ h5 {
 }
 
 .tags.tags_inline {
-    /* position: absolute; */
-    /* margin-right: 5px;
-    margin-left: 5px; */
-    /*     top: 30px;
-    left: 70px; */
     opacity: 0.6;
     column-gap: 0.2rem;
     row-gap: 0.2rem;
     justify-content: flex-start;
     max-height: 66%;
     overflow: hidden;
-    /* max-width: calc(100% - 75px); */
-    /*
-    position: absolute;
-    margin-right: 5px;
-    right: 0;
-    opacity: 0.6;
-    column-gap: 0.2rem;
-    row-gap: 0.2rem;
-    justify-content: flex-end;
-    max-width: 50%;
-    max-height: 100%;
-    overflow: hidden;
-    */
 }
 
 .tag_name {
@@ -2467,13 +2475,44 @@ h5 {
     cursor: pointer;
 }
 
+body .ui-autocomplete {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
 body .ui-front {
     z-index: 10000;
 }
 
 body .ui-widget-content {
-    background-color: var(--SmartThemeFastUIBGColor);
+    background-color: var(--SmartThemeBlurTintColor);
+    border: 1px solid var(--white30a) !important;
+    border-radius: 15px;
+    box-shadow: 0 0 5px black;
+    text-shadow: 0px 0px calc(var(--shadowWidth) * 1px) var(--SmartThemeShadowColor);
+    backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)*2));
     color: var(--SmartThemeBodyColor);
+}
+
+body .ui-widget-content .ui-state-active {
+    margin: unset !important;
+}
+
+body .ui-widget-content .ui-menu-item-wrapper {
+    background: unset;
+    border: unset;
+}
+
+body .ui-widget-content li {
+    padding: 0.75rem 1.25rem;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+body .ui-widget-content li:hover {
+    background-color: var(--SmartThemeEmColor);
 }
 
 /* GROUP CHATS */
@@ -3555,7 +3594,8 @@ body.no-blur #dialogue_popup,
 body.no-blur #select_chat_popup,
 body.no-blur .options-content,
 body.no-blur #send_form,
-body.no-blur .list-group {
+body.no-blur .list-group,
+body.no-blur .ui-widget-content {
     background-color: var(--SmartThemeFastUIBGColor) !important;
 }
 

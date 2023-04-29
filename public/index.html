@@ -1491,7 +1491,10 @@
                         <hr>
 
                         <div id="tags_div">
-                            <input id="tagInput" class="text_pole tag_input" placeholder="Search / Create tags" maxlength="25" />
+                            <div class="tag_controls">
+                                <input id="tagInput" class="text_pole tag_input" placeholder="Search / Create tags" maxlength="25" />
+                                <div class="tags_view menu_button fa-solid fa-pen-to-square" title="View all tags"></div>
+                            </div>
                             <div id="tagList" class="tags"></div>
                         </div>
 
@@ -1570,7 +1573,10 @@
                         </div>
                     </div>
                     <div id="group_tags_div" class="wide100p">
-                        <input id="groupTagInput" class="text_pole tag_input" placeholder="Search / Create tags" maxlength="25" />
+                        <div class="tag_controls">
+                            <input id="groupTagInput" class="text_pole tag_input flex1" placeholder="Search / Create tags" maxlength="25" />
+                            <div class="tags_view menu_button fa-solid fa-pen-to-square" title="View all tags"></div>
+                        </div>
                         <div id="groupTagList" class="tags"></div>
                     </div>
                     <div id="rm_group_add_members_header">
@@ -1764,6 +1770,14 @@
     </div>
 
     <!-- templates for JS to reuse when needed -->
+
+    <div id="tag_view_template" class="template_element">
+        <div class="tag_view_item">
+            <div class="tag_view_name" contenteditable="true"></div>
+            <div class="tag_view_counter"><span class="tag_view_counter_value"></span>&nbsp;entries</div>
+            <div title="Delete tag" class="tag_delete fa-solid fa-trash-can right_menu_button"></div>
+        </div>
+    </div>
 
     <div id="entry_edit_template" class="template_element">
         <div class="world_entry">

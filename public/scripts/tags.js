@@ -1,4 +1,4 @@
-import { characters, saveSettingsDebounced, this_chid, selected_button } from "../script.js";
+import { characters, saveSettingsDebounced, this_chid, selected_button, callPopup } from "../script.js";
 import { group_rm_panel_mode, selected_group } from "./group-chats.js";
 
 export {
@@ -285,6 +285,46 @@ function createTagInput(inputSelector, listSelector) {
         .focus(onTagInputFocus); // <== show tag list on click
 }
 
+function onViewTagsListClick() {
+    const list = document.createElement('div');
+    const everything = Object.values(tag_map).flat();
+    $(list).append('<h3>Tags</h3><i>Click on the tag name to edit it.</i>')
+
+    for (const tag of tags) {
+        const count = everything.filter(x => x == tag.id).length;
+        const template = $('#tag_view_template .tag_view_item').clone();
+
+        template.attr('id', tag.id);
+        template.find('.tag_view_counter_value').text(count);
+        template.find('.tag_view_name').text(tag.name);
+
+        list.appendChild(template.get(0));
+    }
+
+    callPopup(list.outerHTML, 'text');
+}
+
+function onTagDeleteClick() {
+    const id = $(this).closest('.tag_view_item').attr('id');
+    for (const key of Object.keys(tag_map)) {
+        tag_map[key] = tag_map[key].filter(x => x.id !== id);
+    }
+    const index = tags.findIndex(x => x.id === id);
+    tags.splice(index, 1);
+    $(`.tag[id="${id}"]`).remove();
+    $(`.tag_view_item[id="${id}"]`).remove();
+    saveSettingsDebounced();
+}
+
+function onTagRenameInput() {
+    const id = $(this).closest('.tag_view_item').attr('id');
+    const newName = $(this).text();
+    const tag = tags.find(x => x.id === id);
+    tag.name = newName;
+    $(`.tag[id="${id}"] .tag_name`).text(newName);
+    saveSettingsDebounced();
+}
+
 $(document).ready(() => {
     createTagInput('#tagInput', '#tagList');
     createTagInput('#groupTagInput', '#groupTagList');
@@ -294,5 +334,8 @@ $(document).ready(() => {
     $(document).on("click", ".character_select", onCharacterSelectClick);
     $(document).on("click", ".group_select", onGroupSelectClick);
     $(document).on("click", ".tag_remove", onTagRemoveClick);
-    $(document).on("input", '.tag_input', onTagInput);
+    $(document).on("input", ".tag_input", onTagInput);
+    $(document).on("click", ".tags_view", onViewTagsListClick);
+    $(document).on("click", ".tag_delete", onTagDeleteClick);
+    $(document).on("input", ".tag_view_name", onTagRenameInput);
 });
