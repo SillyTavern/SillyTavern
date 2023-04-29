@@ -440,6 +440,40 @@ function getSystemPrompt(nsfw_toggle_prompt, enhance_definitions_prompt, wiBefor
     return whole_prompt;
 }
 
+function tryParseStreamingError(str) {
+    try {
+        const data = JSON.parse(str);
+
+        if (!data) {
+            return;
+        }
+
+        checkQuotaError(data);
+
+        if (data.error) {
+            throw new Error(data);
+        }
+    }
+    catch {
+        // No JSON. Do nothing.
+    }
+}
+
+function checkQuotaError(data) {
+    const errorText = `<h3>You have no credits left to use with this API key.<br>
+    Check your billing details on the
+    <a href="https://platform.openai.com/account/usage" target="_blank">OpenAI website.</a></h3>`;
+
+    if (!data) {
+        return;
+    }
+
+    if (data.quota_error) {
+        callPopup(errorText, 'text');
+        throw new Error(data);
+    }
+}
+
 async function sendOpenAIRequest(openai_msgs_tosend, signal) {
     // Provide default abort signal
     if (!signal) {
@@ -491,9 +525,7 @@ async function sendOpenAIRequest(openai_msgs_tosend, signal) {
                 const { done, value } = await reader.read();
                 let response = decoder.decode(value);
 
-                if (response == "{\"error\":true}") {
-                    throw new Error('error during streaming');
-                }
+                tryParseStreamingError(response);
 
                 let eventList = response.split("\n");
 
@@ -517,6 +549,8 @@ async function sendOpenAIRequest(openai_msgs_tosend, signal) {
     }
     else {
         const data = await response.json();
+
+        checkQuotaError(data);
 
         if (data.error) {
             throw new Error(data);
