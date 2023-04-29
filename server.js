@@ -1848,7 +1848,8 @@ app.post('/status_poe', jsonParser, async (request, response) => {
 
         return response.send({ 'bot_names': botNames });
     }
-    catch {
+    catch (err) {
+        console.error(err);
         return response.sendStatus(401);
     }
 });
@@ -1869,7 +1870,8 @@ app.post('/purge_poe', jsonParser, async (request, response) => {
 
         return response.send({ "ok": true });
     }
-    catch {
+    catch (err) {
+        console.error(err);
         return response.sendStatus(500);
     }
 });

@@ -17,15 +17,13 @@ import {
 
 import {
     power_user,
+    send_on_enter_options,
 } from "./power-user.js";
 
 import { LoadLocal, SaveLocal, ClearLocal, CheckLocal, LoadLocalBool } from "./f-localStorage.js";
 import { selected_group, is_group_generating } from "./group-chats.js";
 import { oai_settings } from "./openai.js";
 import { poe_settings } from "./poe.js";
-
-const deviceInfo = await getDeviceInfo();
-console.log("Device type: " + deviceInfo.device.type);
 
 var NavToggle = document.getElementById("nav-toggle");
 var RPanelPin = document.getElementById("rm_button_panel_pin");
@@ -51,10 +49,6 @@ var perm_tokens;
 var connection_made = false;
 var retry_delay = 100;
 var RA_AC_retries = 1;
-
-let isVirtualKB = false;
-let lastKeyDownTime = 0;
-let lastKeyUpTime = 0;
 
 const observerConfig = { childList: true, subtree: true };
 
@@ -107,8 +101,35 @@ waitForElement("#expression-image", 10000).then(function () {
     console.log("expression holder not loaded yet");
 });
 
+// Device detection
+const deviceInfo = await getDeviceInfo();
+
 async function getDeviceInfo() {
-    return await (await fetch('/deviceinfo')).json();
+    try {
+        const deviceInfo = await (await fetch('/deviceinfo')).json();
+        console.log("Device type: " + deviceInfo?.device?.type);
+        return deviceInfo;
+    }
+    catch {
+        console.log("Couldn't load device info. Defaulting to desktop");
+        return { device: { type: 'desktop' } };
+    }
+}
+
+function isMobile() {
+    const mobileTypes = ['smartphone', 'tablet', 'phablet', 'feature phone', 'portable media player'];
+    return mobileTypes.includes(deviceInfo?.device?.type);
+}
+
+function shouldSendOnEnter() {
+    switch (power_user.send_on_enter) {
+        case send_on_enter_options.DISABLED:
+            return false;
+        case send_on_enter_options.AUTO:
+            return !isMobile();
+        case send_on_enter_options.ENABLED:
+            return true;
+    }
 }
 
 //RossAscends: Added function to format dates used in files and chat timestamps to a humanized format.
@@ -681,33 +702,17 @@ $("document").ready(function () {
         return false;
     }
 
-    document.addEventListener("keydown", () => {
-        lastKeyDownTime = new Date().getTime();
-    })
-
-    document.addEventListener('keyup', (event) => {
-        lastKeyUpTime = new Date().getTime();
-        isVirtualKeyboard(event);
-    })
-
-
-    function isVirtualKeyboard(event) {
-        var keyTiming = lastKeyUpTime - lastKeyDownTime;                   // array to store times
-        if (keyTiming <= 40) {
-            console.log(`detected VKB (${keyTiming}ms)`);
-            return;
-        }
-        if (keyTiming > 40) {
-            console.log(`detected PhysKB (${keyTiming}ms)`);
-            processHotkeys(event);
-        }
-    }
+    $(document).on('keydown', function (event) {
+        processHotkeys(event);
+    });
 
     //Additional hotkeys CTRL+ENTER and CTRL+UPARROW
     function processHotkeys(event) {
+        const sendOnEnter = shouldSendOnEnter();
+
         //Enter to send when send_textarea in focus
         if ($(':focus').attr('id') === 'send_textarea') {
-            if (!event.shiftKey && !event.ctrlKey && event.key == "Enter" && is_send_press == false) {
+            if (!event.shiftKey && !event.ctrlKey && event.key == "Enter" && is_send_press == false && sendOnEnter) {
                 event.preventDefault();
                 Generate();
             }
@@ -748,7 +753,6 @@ $("document").ready(function () {
             }
         }
 
-
         if (event.ctrlKey && event.key == "ArrowUp") { //edits last USER message if chatbar is empty and focused
             console.log('got ctrl+uparrow input');
             if (
@@ -783,7 +787,5 @@ $("document").ready(function () {
                 }
             }
         }
-
     }
 });
-

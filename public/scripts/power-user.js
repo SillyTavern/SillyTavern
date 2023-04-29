@@ -16,6 +16,7 @@ export {
     power_user,
     pygmalion_options,
     tokenizers,
+    send_on_enter_options,
 };
 
 const avatar_styles = {
@@ -44,6 +45,12 @@ const tokenizers = {
     GPT3: 1,
     CLASSIC: 2,
     LLAMA: 3,
+}
+
+const send_on_enter_options = {
+    DISABLED: -1,
+    AUTO: 0,
+    ENABLED: 1,
 }
 
 let power_user = {
@@ -89,6 +96,7 @@ let power_user = {
 
     auto_scroll_chat_to_bottom: true,
     auto_fix_generated_markdown: true,
+    send_on_enter: send_on_enter_options.AUTO,
 };
 
 let themes = [];
@@ -145,7 +153,8 @@ function fixMarkdown(text) {
     // "^example *text *\n" -> "^example *text*\n"
     // "^* example * text\n" -> "^*example* text\n"
     // take note that the side you move the asterisk depends on where its pairing is
-    // i.e. both of the following strings have the same broken asterisk ' * ', but you move the first to the left and the second to the right, to match the non-broken asterisk "^example * text*\n" "^*example * text\n"
+    // i.e. both of the following strings have the same broken asterisk ' * ',
+    // but you move the first to the left and the second to the right, to match the non-broken asterisk "^example * text*\n" "^*example * text\n"
     // and you HAVE to handle the cases where multiple pairs of asterisks exist in the same line
     // i.e. "^example * text* * harder problem *\n" -> "^example *text* *harder problem*\n"
 
@@ -340,6 +349,7 @@ function loadPowerUserSettings(settings, data) {
     $('#auto_scroll_chat_to_bottom').prop("checked", power_user.auto_scroll_chat_to_bottom);
     $(`#tokenizer option[value="${power_user.tokenizer}"]`).attr('selected', true);
     $(`#pygmalion_formatting option[value=${power_user.pygmalion_formatting}]`).attr("selected", true);
+    $(`#send_on_enter option[value=${power_user.send_on_enter}]`).attr("selected", true);
     $("#collapse-newlines-checkbox").prop("checked", power_user.collapse_newlines);
     $("#pin-examples-checkbox").prop("checked", power_user.pin_examples);
     $("#disable-description-formatting-checkbox").prop("checked", power_user.disable_description_formatting);
@@ -413,6 +423,79 @@ function sortCharactersList(selector = '.character_select') {
     for (let i = 0; i < characters.length; i++) {
         $(`${selector}[chid="${i}"]`).css({ 'order': orderedList.indexOf(characters[i]) });
     }
+}
+
+async function saveTheme() {
+    const name = await callPopup('Enter a theme preset name:', 'input');
+
+    if (!name) {
+        return;
+    }
+
+    const theme = {
+        name,
+        blur_strength: power_user.blur_strength,
+        main_text_color: power_user.main_text_color,
+        italics_text_color: power_user.italics_text_color,
+        quote_text_color: power_user.quote_text_color,
+        fastui_bg_color: power_user.fastui_bg_color,
+        blur_tint_color: power_user.blur_tint_color,
+        shadow_color: power_user.shadow_color,
+        shadow_width: power_user.shadow_width,
+    };
+
+    const response = await fetch('/savetheme', {
+        method: 'POST', headers: {
+            'X-CSRF-Token': token,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(theme)
+    });
+
+    if (response.ok) {
+        const themeIndex = themes.findIndex(x => x.name == name);
+
+        if (themeIndex == -1) {
+            themes.push(theme);
+            const option = document.createElement('option');
+            option.selected = true;
+            option.value = name;
+            option.innerText = name;
+            $('#themes').append(option);
+        }
+        else {
+            themes[themeIndex] = theme;
+            $(`#themes option[value="${name}"]`).attr('selected', true);
+        }
+
+        power_user.theme = name;
+        saveSettingsDebounced();
+    }
+}
+
+function resetMovablePanels() {
+    document.getElementById("sheld").style.top = '';
+    document.getElementById("sheld").style.left = '';
+    document.getElementById("sheld").style.height = '';
+    document.getElementById("sheld").style.width = '';
+
+    document.getElementById("left-nav-panel").style.top = '';
+    document.getElementById("left-nav-panel").style.left = '';
+    document.getElementById("left-nav-panel").style.height = '';
+    document.getElementById("left-nav-panel").style.width = '';
+
+    document.getElementById("right-nav-panel").style.top = '';
+    document.getElementById("right-nav-panel").style.left = '';
+    document.getElementById("right-nav-panel").style.right = '';
+    document.getElementById("right-nav-panel").style.height = '';
+    document.getElementById("right-nav-panel").style.width = '';
+
+    document.getElementById("expression-holder").style.top = '';
+    document.getElementById("expression-holder").style.left = '';
+    document.getElementById("expression-holder").style.right = '';
+    document.getElementById("expression-holder").style.bottom = '';
+    document.getElementById("expression-holder").style.height = '';
+    document.getElementById("expression-holder").style.width = '';
 }
 
 $(document).ready(() => {
@@ -498,32 +581,7 @@ $(document).ready(() => {
         noShadows();
     });
 
-    $("#movingUIreset").on('click', function () {
-
-        document.getElementById("sheld").style.top = '';
-        document.getElementById("sheld").style.left = '';
-        document.getElementById("sheld").style.height = '';
-        document.getElementById("sheld").style.width = '';
-
-        document.getElementById("left-nav-panel").style.top = '';
-        document.getElementById("left-nav-panel").style.left = '';
-        document.getElementById("left-nav-panel").style.height = '';
-        document.getElementById("left-nav-panel").style.width = '';
-
-        document.getElementById("right-nav-panel").style.top = '';
-        document.getElementById("right-nav-panel").style.left = '';
-        document.getElementById("right-nav-panel").style.right = '';
-        document.getElementById("right-nav-panel").style.height = '';
-        document.getElementById("right-nav-panel").style.width = '';
-
-        document.getElementById("expression-holder").style.top = '';
-        document.getElementById("expression-holder").style.left = '';
-        document.getElementById("expression-holder").style.right = '';
-        document.getElementById("expression-holder").style.bottom = '';
-        document.getElementById("expression-holder").style.height = '';
-        document.getElementById("expression-holder").style.width = '';
-
-    })
+    $("#movingUIreset").on('click', resetMovablePanels);
 
     $(`input[name="avatar_style"]`).on('input', function (e) {
         power_user.avatar_style = Number(e.target.value);
@@ -608,53 +666,7 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
-    $("#ui-preset-save-button").on('click', async function () {
-        const name = await callPopup('Enter a theme preset name:', 'input');
-
-        if (!name) {
-            return;
-        }
-
-        const theme = {
-            name,
-            blur_strength: power_user.blur_strength,
-            main_text_color: power_user.main_text_color,
-            italics_text_color: power_user.italics_text_color,
-            quote_text_color: power_user.quote_text_color,
-            fastui_bg_color: power_user.fastui_bg_color,
-            blur_tint_color: power_user.blur_tint_color,
-            shadow_color: power_user.shadow_color,
-            shadow_width: power_user.shadow_width,
-        };
-
-        const response = await fetch('/savetheme', {
-            method: 'POST', headers: {
-                'X-CSRF-Token': token,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(theme)
-        });
-
-        if (response.ok) {
-            const themeIndex = themes.findIndex(x => x.name == name);
-
-            if (themeIndex == -1) {
-                themes.push(theme);
-                const option = document.createElement('option');
-                option.selected = true;
-                option.value = name;
-                option.innerText = name;
-                $('#themes').append(option);
-            }
-            else {
-                themes[themeIndex] = theme;
-                $(`#themes option[value="${name}"]`).attr('selected', true);
-            }
-
-            power_user.theme = name;
-            saveSettingsDebounced();
-        }
-    });
+    $("#ui-preset-save-button").on('click', saveTheme);
 
     $("#play_message_sound").on('input', function () {
         power_user.play_message_sound = !!$(this).prop('checked');
@@ -707,6 +719,12 @@ $(document).ready(() => {
         // Trigger character editor re-tokenize
         $("#rm_ch_create_block").trigger('input');
         $("#character_popup").trigger('input');
+    });
+
+    $("#send_on_enter").on('change', function () {
+        const value = $(this).find(':selected').val();
+        power_user.send_on_enter = Number(value);
+        saveSettingsDebounced();
     });
 
     $(window).on('focus', function () {
