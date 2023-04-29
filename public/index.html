@@ -1621,12 +1621,16 @@
     <!-- various fullscreen popups -->
     <div id="shadow_popup">
         <div id="dialogue_popup">
-            <div id="dialogue_popup_text">
-                <h3>text</h3>
+            <div id="dialogue_popup_holder">
+                <div id="dialogue_popup_text">
+                    <h3>text</h3>
+                </div>
+                <input id="dialogue_popup_input" class="text_pole" type="text" />
+                <div id="dialogue_popup_controls">
+                    <div id="dialogue_popup_ok" class="menu_button">Delete</div>
+                    <div id="dialogue_popup_cancel" class="menu_button">Cancel</div>
+                </div>
             </div>
-            <input id="dialogue_popup_input" class="text_pole" type="text" />
-            <div id="dialogue_popup_ok" class="menu_button">Delete</div>
-            <div id="dialogue_popup_cancel" class="menu_button">Cancel</div>
         </div>
     </div>
     <div id="colab_shadow_popup">
