@@ -1545,37 +1545,38 @@
                     <div id="rm_group_top_bar">
                         <div id="rm_button_back_from_group" class="menu_button fa-solid fa-left-long"></div>
                         <input id="rm_group_chat_name" class="text_pole" type="text" name="chat_name" placeholder="Chat Name (Optional)" maxlength="100" />
+                        <div id="group_favorite_button" class="menu_button fa-solid fa-star" title="Add to Favorites"></div>
+                        <input id="rm_group_fav" type="hidden" />
+                        <div id="rm_group_submit" class="menu_button fa-solid fa-check" title="Create"></div>
+                        <div id="rm_group_delete" class="menu_button fa-solid fa-trash-can" title="Delete"></div>
                     </div>
                     <div id="rm_group_buttons">
-                        <div class="rm_group_settings">
+                        <div class="flex1">
+                            <h5>
+                                Group reply strategy
+                                <a href="/notes#groupreplystrategy" class="notes-link" target="_blank">
+                                    <span class="note-link-span">?</span>
+                                </a>
+                            </h5>
                             <label class="checkbox_label">
-                                <input id="rm_group_fav" type="checkbox" />
-                                Favorite
+                                <input type="radio" name="rm_group_activation_strategy" value="0" />
+                                Natural order
                             </label>
                             <label class="checkbox_label">
+                                <input type="radio" name="rm_group_activation_strategy" value="1" />
+                                List order
+                            </label>
+                        </div>
+                        <div class="flex1">
+                            <label class="checkbox_label">
                                 <input id="rm_group_allow_self_responses" type="checkbox" />
-                                Allow bot responses to self
+                                Allow self responses
                             </label>
                             <label id="rm_group_automode_label" class="checkbox_label">
                                 <input id="rm_group_automode" type="checkbox" />
                                 Auto Mode
                             </label>
-                            <h5>
-                                Group reply strategy
-                                <a href="/notes#groupreplystrategy" class="notes-link" target="_blank"><span class="note-link-span">?</span></a>
-                            </h5>
-                            <label>
-                                <input type="radio" name="rm_group_activation_strategy" value="0" />
-                                Natural order
-                            </label>
-                            <label>
-                                <input type="radio" name="rm_group_activation_strategy" value="1" />
-                                List order
-                            </label>
                         </div>
-                        <div id="rm_group_buttons_expander">&nbsp;</div>
-                        <input id="rm_group_submit" class="menu_button" type="submit" value="Create">
-                        <input id="rm_group_delete" class="menu_button" type="submit" value="Delete">
                     </div>
                     <div id="rm_group_add_members_header">
                         <h3>Add Members</h3>

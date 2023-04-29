@@ -66,6 +66,7 @@ let is_group_automode_enabled = false;
 let groups = [];
 let selected_group = null;
 let group_generation_id = null;
+let fav_grp_checked = false;
 
 const group_activation_strategy = {
     NATURAL: 0,
@@ -719,7 +720,8 @@ function select_group_chats(chat_id, skipAnimation) {
             await editGroup(chat_id);
         }
     });
-    $(`input[name="rm_group_activation_strategy"][value="${Number(group?.activation_strategy ?? group_activation_strategy.NATURAL)}"]`).prop('checked', true);
+    const replyStrategy = Number(group?.activation_strategy ?? group_activation_strategy.NATURAL);
+    $(`input[name="rm_group_activation_strategy"][value="${replyStrategy}"]`).prop('checked', true);
 
     if (!skipAnimation) {
         selectRightMenuWithAnimation('rm_group_chats_block');
@@ -756,7 +758,6 @@ function select_group_chats(chat_id, skipAnimation) {
     const groupHasMembers = !!$("#rm_group_members").children().length;
     $("#rm_group_submit").prop("disabled", !groupHasMembers);
     $("#rm_group_allow_self_responses").prop("checked", group && group.allow_self_responses);
-    $("#rm_group_fav").prop("checked", group && group.fav);
 
     // bottom buttons
     if (chat_id) {
@@ -778,12 +779,14 @@ function select_group_chats(chat_id, skipAnimation) {
         callPopup("<h3>Delete the group?</h3>", "del_group");
     });
 
-    $("#rm_group_fav").off();
-    $("#rm_group_fav").on("input", async function () {
+    updateFavButtonState(group?.fav ?? false);
+
+    $("#group_favorite_button").off('click');
+    $("#group_favorite_button").on('click', async function () {
+        updateFavButtonState(!fav_grp_checked);
         if (group) {
             let _thisGroup = groups.find((x) => x.id == chat_id);
-            const value = $(this).prop("checked");
-            _thisGroup.fav = value;
+            _thisGroup.fav = fav_grp_checked;
             await editGroup(chat_id);
         }
     });
@@ -830,6 +833,13 @@ function select_group_chats(chat_id, skipAnimation) {
     });
 }
 
+function updateFavButtonState(state) {
+    fav_grp_checked = state;
+    $("#rm_group_fav").val(fav_grp_checked);
+    $("#group_favorite_button").toggleClass('fav_on', fav_grp_checked);
+    $("#group_favorite_button").toggleClass('fav_off', !fav_grp_checked);
+}
+
 $(document).ready(() => {
     $(document).on("click", ".group_select", async function () {
         const id = $(this).data("id");
@@ -870,7 +880,6 @@ $(document).ready(() => {
     $("#rm_group_submit").click(async function () {
         let name = $("#rm_group_chat_name").val();
         let allow_self_responses = !!$("#rm_group_allow_self_responses").prop("checked");
-        let fav = $("#rm_group_fav").prop("checked");
         let activation_strategy = $('input[name="rm_group_activation_strategy"]:checked').val() ?? group_activation_strategy.NATURAL;
         const members = $("#rm_group_members .group_member")
             .map((_, x) => $(x).data("id"))
@@ -896,7 +905,7 @@ $(document).ready(() => {
                 allow_self_responses: allow_self_responses,
                 activation_strategy: activation_strategy,
                 chat_metadata: {},
-                fav: fav,
+                fav: fav_grp_checked,
             }),
         });
 

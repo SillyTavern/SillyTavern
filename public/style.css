@@ -2498,7 +2498,7 @@ body .ui-widget-content {
     flex-direction: row;
     align-items: center;
     width: 100%;
-    column-gap: 15px;
+    column-gap: 5px;
 }
 
 #rm_button_group_chats h2 {
@@ -2540,7 +2540,7 @@ body .ui-widget-content {
     padding: 0 5px;
 }
 
-.rm_group_settings {
+#rm_group_buttons > div {
     display: flex;
     flex-direction: column;
 }
