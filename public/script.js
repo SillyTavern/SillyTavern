@@ -94,7 +94,7 @@ import {
 import { debounce, delay } from "./scripts/utils.js";
 import { extension_settings, loadExtensionSettings } from "./scripts/extensions.js";
 import { executeSlashCommands, getSlashCommandsHelp } from "./scripts/slash-commands.js";
-import { 
+import {
     tag_map,
     tags,
     loadTagsSettings,
@@ -1889,13 +1889,13 @@ async function Generate(type, automatic_trigger, force_name2) {
                 //mesSendString = mesSendString; //This edit simply removes the first "<START>" that is prepended to all context prompts
             }
             let finalPromt = worldInfoBefore +
-                             storyString +
-                             worldInfoAfter +
-                             afterScenarioAnchor +
-                             mesExmString +
-                             mesSendString +
-                             generatedPromtCache +
-                             promptBias;
+                storyString +
+                worldInfoAfter +
+                afterScenarioAnchor +
+                mesExmString +
+                mesSendString +
+                generatedPromtCache +
+                promptBias;
 
             if (zeroDepthAnchor && zeroDepthAnchor.length) {
                 if (!isMultigenEnabled() || tokens_already_generated == 0) {
@@ -4261,7 +4261,7 @@ $(document).ready(function () {
                     // unsets expected chid before reloading (related to getCharacters/printCharacters from using old arrays)
                     this_chid = "invalid-safety-id";
                     // resets the characters array, forcing getcharacters to reset
-                    characters.length = 0; 
+                    characters.length = 0;
                     name2 = systemUserName; // replaces deleted charcter name with system user since she will be displayed next.
                     chat = [...safetychat]; // sets up system user to tell user about having deleted a character
                     chat_metadata = {}; // resets chat metadata
@@ -5288,6 +5288,7 @@ $(document).ready(function () {
         var icon = $(this).find('.drawer-icon');
         var drawer = $(this).parent().find('.drawer-content');
         var drawerWasOpenAlready = $(this).parent().find('.drawer-content').hasClass('openDrawer');
+        let targetDrawerID = $(this).parent().find('.drawer-content').attr('id');
         const pinnedDrawerClicked = drawer.hasClass('pinnedOpen');
 
         if (!drawerWasOpenAlready) {
@@ -5296,7 +5297,21 @@ $(document).ready(function () {
             $('.openDrawer').not('.pinnedOpen').toggleClass('closedDrawer openDrawer');
             icon.toggleClass('openIcon closedIcon');
             drawer.toggleClass('openDrawer closedDrawer');
-            $(this).closest('.drawer').find('.drawer-content').slideToggle(200, "swing");
+
+            console.log(targetDrawerID);
+            if (targetDrawerID === 'right-nav-panel') {
+                $(this).closest('.drawer').find('.drawer-content').slideToggle({
+                    duration: 200,
+                    easing: "swing",
+                    start: function () {
+                        jQuery(this).css('display', 'flex');
+                    }
+                })
+            } else {
+                $(this).closest('.drawer').find('.drawer-content').slideToggle(200, "swing");
+            }
+
+
         } else if (drawerWasOpenAlready) {
             icon.toggleClass('closedIcon openIcon');
 
