@@ -33,7 +33,8 @@ RUN \
   ln -s "${APP_HOME}/config/characters"     "${APP_HOME}/public/characters" && \
   ln -s "${APP_HOME}/config/chats"          "${APP_HOME}/public/chats" && \
   ln -s "${APP_HOME}/config/User Avatars"   "${APP_HOME}/public/User Avatars" && \
-  ln -s "${APP_HOME}/config/settings.json"  "${APP_HOME}/public/settings.json"
+  ln -s "${APP_HOME}/config/settings.json"  "${APP_HOME}/public/settings.json" && \
+  mkdir "${APP_HOME}/config"
 
 # Cleanup unnecessary files
 RUN \
