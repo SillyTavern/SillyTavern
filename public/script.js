@@ -732,7 +732,6 @@ function printCharacters() {
 }
 
 async function getCharacters() {
-    await getGroups();
     var response = await fetch("/getcharacters", {
         method: "POST",
         headers: getRequestHeaders(),
@@ -752,6 +751,7 @@ async function getCharacters() {
         if (this_chid != undefined && this_chid != "invalid-safety-id") {
             $("#avatar_url_pole").val(characters[this_chid].avatar);
         }
+        await getGroups();
         printCharacters();
     }
 }
@@ -1212,12 +1212,20 @@ function cleanGroupMessage(getMessage) {
 
     if (group && Array.isArray(group.members) && group.members) {
         for (let member of group.members) {
-            // Skip current speaker.
-            if (member === name2) {
+            const character = characters.find(x => x.avatar == member);
+
+            if (!character) {
                 continue;
             }
 
-            const indexOfMember = getMessage.indexOf(member + ":");
+            const name = character.name;
+
+            // Skip current speaker.
+            if (name === name2) {
+                continue;
+            }
+
+            const indexOfMember = getMessage.indexOf(`${name}:`);
             if (indexOfMember != -1) {
                 getMessage = getMessage.substr(0, indexOfMember);
             }
@@ -2399,6 +2407,7 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
             }
             chat[chat.length - 1]['is_name'] = true;
             chat[chat.length - 1]['force_avatar'] = avatarImg;
+            chat[chat.length - 1]['original_avatar'] = characters[this_chid].avatar;
             chat[chat.length - 1]['extra']['gen_id'] = group_generation_id;
         }
 
