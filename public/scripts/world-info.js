@@ -1,5 +1,5 @@
 import { saveSettings, callPopup, substituteParams, getTokenCount, getRequestHeaders } from "../script.js";
-import { download, debounce } from "./utils.js";
+import { download, debounce, delay } from "./utils.js";
 
 export {
     world_info,
@@ -151,11 +151,14 @@ function appendWorldEntry(entry) {
     // key
     const keyInput = template.find('textarea[name="key"]');
     keyInput.data("uid", entry.uid);
+    keyInput.on("click", function (event) {
+        // Prevent closing the drawer on clicking the input
+        event.stopPropagation();
+    });
     keyInput.on("input", function () {
         const uid = $(this).data("uid");
         const value = $(this).val();
-        $(this).css("height", ""); //reset the height
-        $(this).css("height", $(this).prop("scrollHeight") + "px");
+        resetScrollHeight(this);
         world_info_data.entries[uid].key = value
             .split(",")
             .map((x) => x.trim())
@@ -163,8 +166,6 @@ function appendWorldEntry(entry) {
         saveWorldInfo();
     });
     keyInput.val(entry.key.join(",")).trigger("input");
-    keyInput.css("height", ""); //reset the height
-    keyInput.css("height", $(this).prop("scrollHeight") + "px");
 
     // keysecondary
     const keySecondaryInput = template.find('textarea[name="keysecondary"]');
@@ -172,8 +173,7 @@ function appendWorldEntry(entry) {
     keySecondaryInput.on("input", function () {
         const uid = $(this).data("uid");
         const value = $(this).val();
-        $(this).css("height", ""); //reset the height
-        $(this).css("height", $(this).prop("scrollHeight") + "px");
+        resetScrollHeight(this);
         world_info_data.entries[uid].keysecondary = value
             .split(",")
             .map((x) => x.trim())
@@ -181,8 +181,6 @@ function appendWorldEntry(entry) {
         saveWorldInfo();
     });
     keySecondaryInput.val(entry.keysecondary.join(",")).trigger("input");
-    keySecondaryInput.css("height", ""); //reset the height
-    keySecondaryInput.css("height", $(this).prop("scrollHeight") + "px");
 
     // comment
     const commentInput = template.find('textarea[name="comment"]');
@@ -190,14 +188,10 @@ function appendWorldEntry(entry) {
     commentInput.on("input", function () {
         const uid = $(this).data("uid");
         const value = $(this).val();
-        $(this).css("height", ""); //reset the height
-        $(this).css("height", $(this).prop("scrollHeight") + "px");
         world_info_data.entries[uid].comment = value;
         saveWorldInfo();
     });
     commentInput.val(entry.comment).trigger("input");
-    commentInput.css("height", ""); //reset the height
-    commentInput.css("height", $(this).prop("scrollHeight") + "px");
 
     // content
     const contentInput = template.find('textarea[name="content"]');
@@ -206,8 +200,6 @@ function appendWorldEntry(entry) {
         const uid = $(this).data("uid");
         const value = $(this).val();
         world_info_data.entries[uid].content = value;
-        $(this).css("height", ""); //reset the height
-        $(this).css("height", $(this).prop("scrollHeight") + "px");
         saveWorldInfo();
 
         // count tokens
@@ -218,8 +210,6 @@ function appendWorldEntry(entry) {
             .html(numberOfTokens);
     });
     contentInput.val(entry.content).trigger("input");
-    contentInput.css("height", ""); //reset the height
-    contentInput.css("height", $(this).prop("scrollHeight") + "px");
 
     // selective
     const selectiveInput = template.find('input[name="selective"]');
@@ -285,7 +275,7 @@ function appendWorldEntry(entry) {
         .trigger("input");
 
     // display uid
-    template.find(".world_entry_form_uid_value").html(entry.uid);
+    template.find(".world_entry_form_uid_value").text(entry.uid);
 
     // delete button
     const deleteButton = template.find("input.delete_entry_button");
@@ -299,6 +289,13 @@ function appendWorldEntry(entry) {
 
     template.appendTo("#world_popup_entries_list");
     return template;
+}
+
+async function resetScrollHeight(element) {
+    await delay(1);
+    const height = Number($(element).prop("scrollHeight")) + 1;
+    $(element).css("height", "");
+    $(element).css("height", `${height}px`);
 }
 
 async function deleteWorldInfoEntry(uid) {
