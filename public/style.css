@@ -1200,18 +1200,6 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 
 .ch_fav_icon {
-    /* on topright corner */
-    /*
-    filter: drop-shadow(0px 0px 1px black);
-    color: #e9dd4b;
-    font-size: 14px;
-    order: -1;
-    margin-left: -16px;
-    margin-top: 3px;
-    position: relative;
-    */
-
-    /* on topleft corner*/
     filter: drop-shadow(1px 1px 2px black);
     color: #c5b457;
     font-size: 14px;
@@ -3236,14 +3224,10 @@ label[for="extensions_autoconnect"] {
 }
 
 .drawer-icon.openIcon {
-
-    filter: drop-shadow(0px 0px 2px black);
-    ;
     transition: all 0.275s;
 }
 
 .drawer-icon.closedIcon {
-    filter: drop-shadow(0px 0px 2px black);
     opacity: 0.3;
     transition: all 0.275s;
 }
