@@ -2263,6 +2263,9 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
             } else if (response.status == 402) {
                 console.log('An active subscription is required to access this endpoint');
                 response_generate_openai.send({ error: true });
+            } else if (response.status == 429) {
+                console.log('Out of quota');
+                response_generate_openai.send({ error: true, quota_error: true, });
             } else if (response.status == 500 || response.status == 409 || response.status == 504) {
                 if (request.body.stream) {
                     response.data.on('data', chunk => {
