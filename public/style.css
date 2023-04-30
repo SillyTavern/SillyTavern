@@ -681,7 +681,8 @@ select {
     margin-bottom: 10px;
 }
 
-#description_textarea {
+#description_textarea,
+#firstmessage_textarea {
     height: -webkit-fill-available;
     width: -moz-available;
 }
@@ -703,10 +704,7 @@ select {
     font-size: 24px;
 }
 
-#firstmessage_textarea {
-    height: -webkit-fill-available;
-    width: -moz-available;
-}
+
 
 .text_pole {
     background-color: var(--black30a);
@@ -875,6 +873,7 @@ input[type="file"] {
     display: none;
     overflow-y: auto;
     padding: 0 5px;
+    height: 100%;
 }
 
 #rm_extensions_block {
@@ -1172,7 +1171,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     height: 100%;
     overflow-y: auto;
     grid-template-rows:
-        [avatar] min-content [hr] min-content [descriptionHeader] min-content [description] auto [firstmessageHeader] min-content [firstMessage] auto [hidden] min-content;
+        [avatar] min-content [hr] min-content [search block] min-content [descriptionHeader] min-content [description] auto [firstmessageHeader] min-content [firstMessage] auto [hidden] min-content;
 }
 
 .avatar_div {
