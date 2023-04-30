@@ -952,12 +952,14 @@ function messageFormating(mes, ch_name, isSystem, forceAvatar) {
     return mes;
 }
 
-function getMessageFromTemplate(mesId, characterName, isUser, avatarImg, bias, isSystem) {
+function getMessageFromTemplate(mesId, characterName, isUser, avatarImg, bias, isSystem, title) {
     const mes = $('#message_template .mes').clone();
     mes.attr({ 'mesid': mesId, 'ch_name': characterName, 'is_user': isUser, 'is_system': !!isSystem });
     mes.find('.avatar img').attr('src', avatarImg);
     mes.find('.ch_name .name_text').text(characterName);
     mes.find('.mes_bias').html(bias);
+    title && mes.attr('title', title);
+
     return mes;
 }
 
@@ -965,7 +967,7 @@ function appendImageToMessage(mes, messageElement) {
     if (mes.extra?.image) {
         const image = document.createElement("img");
         image.src = mes.extra?.image;
-        image.title = mes.title;
+        image.title = mes.extra?.title;
         image.classList.add("img_extra");
         messageElement.find(".mes_text").prepend(image);
     }
@@ -999,6 +1001,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     var characterName = name1;
     var avatarImg = "User Avatars/" + user_avatar;
     const isSystem = mes.is_system;
+    const title = mes.title;
     generatedPromtCache = "";
     if (!mes["is_user"]) {
         if (mes.force_avatar) {
@@ -1030,7 +1033,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     );
     const bias = messageFormating(mes.extra?.bias ?? "");
 
-    var HTMLForEachMes = getMessageFromTemplate(count_view_mes, characterName, mes.is_user, avatarImg, bias, isSystem);
+    var HTMLForEachMes = getMessageFromTemplate(count_view_mes, characterName, mes.is_user, avatarImg, bias, isSystem, title);
 
     if (type !== 'swipe') {
         if (!insertAfter) {
@@ -1060,12 +1063,13 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     });
 
     if (type === 'swipe') {
-        $("#chat").children().filter('[mesid="' + (count_view_mes - 1) + '"]').children('.mes_block').children('.mes_text').html('');
-        $("#chat").children().filter('[mesid="' + (count_view_mes - 1) + '"]').children('.mes_block').children('.mes_text').append(messageText);
+        $("#chat").children().filter(`[mesid="${count_view_mes - 1}"]`).children('.mes_block').children('.mes_text').html('');
+        $("#chat").children().filter(`[mesid="${count_view_mes - 1}"]`).children('.mes_block').children('.mes_text').append(messageText);
+        $("#chat").children().filter(`[mesid="${count_view_mes - 1}"]`).attr('title', title);
 
         //console.log(mes);
     } else {
-        $("#chat").children().filter('[mesid="' + count_view_mes + '"]').children('.mes_block').children('.mes_text').append(messageText);
+        $("#chat").children().filter(`[mesid="${count_view_mes}"]`).children('.mes_block').children('.mes_text').append(messageText);
         hideSwipeButtons();
         count_view_mes++;
     }
@@ -2025,7 +2029,8 @@ async function Generate(type, automatic_trigger, force_name2) {
                 is_send_press = false;
                 if (!data.error) {
                     //const getData = await response.json();
-                    let getMessage = extractMessageFromData(data, finalPromt);
+                    let getMessage = extractMessageFromData(data);
+                    let title = extractTitleFromData(data);
 
                     //Pygmalion run again
                     // to make it continue generating so long as it's under max_amount and hasn't signaled
@@ -2038,11 +2043,11 @@ async function Generate(type, automatic_trigger, force_name2) {
                             ({ this_mes_is_name, getMessage } = extractNameFromMessage(getMessage, force_name2, isImpersonate));
                             if (generate_loop_counter == 0) {
                                 console.log("New message");
-                                ({ type, getMessage } = saveReply(type, getMessage, this_mes_is_name));
+                                ({ type, getMessage } = saveReply(type, getMessage, this_mes_is_name, title));
                             }
                             else {
                                 console.log("Should append message");
-                                ({ type, getMessage } = saveReply('append', getMessage, this_mes_is_name));
+                                ({ type, getMessage } = saveReply('append', getMessage, this_mes_is_name, title));
                             }
                             generate_loop_counter++;
                             getMessage = message_already_generated;
@@ -2066,10 +2071,10 @@ async function Generate(type, automatic_trigger, force_name2) {
                         }
                         else {
                             if (!isMultigenEnabled()) {
-                                ({ type, getMessage } = saveReply(type, getMessage, this_mes_is_name));
+                                ({ type, getMessage } = saveReply(type, getMessage, this_mes_is_name, title));
                             }
                             else {
-                                ({ type, getMessage } = saveReply('appendFinal', getMessage, this_mes_is_name));
+                                ({ type, getMessage } = saveReply('appendFinal', getMessage, this_mes_is_name, title));
                             }
                         }
                         activateSendButtons();
@@ -2230,6 +2235,14 @@ function throwCircuitBreakerError() {
     throw new Error('Generate circuit breaker interruption');
 }
 
+function extractTitleFromData(data) {
+    if (main_api == 'kobold' && horde_settings.use_horde) {
+        return data.workerName;
+    }
+
+    return undefined;
+}
+
 function extractMessageFromData(data) {
     let getMessage = "";
 
@@ -2238,7 +2251,7 @@ function extractMessageFromData(data) {
     }
 
     if (main_api == 'kobold' && horde_settings.use_horde) {
-        getMessage = data;
+        getMessage = data.text;
     }
 
     if (main_api == 'textgenerationwebui') {
@@ -2311,7 +2324,7 @@ function cleanUpMessage(getMessage, isImpersonate) {
     return getMessage;
 }
 
-function saveReply(type, getMessage, this_mes_is_name) {
+function saveReply(type, getMessage, this_mes_is_name, title) {
     if (type != 'append' && type != 'appendFinal' && chat.length && (chat[chat.length - 1]['swipe_id'] === undefined ||
         chat[chat.length - 1]['is_user'])) {
         type = 'normal';
@@ -2321,21 +2334,22 @@ function saveReply(type, getMessage, this_mes_is_name) {
     getMessage = img.getMessage;
 
     if (type === 'swipe') {
-        chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipes'].length] = getMessage;
+        chat[chat.length - 1]['swipes'].length++;
         if (chat[chat.length - 1]['swipe_id'] === chat[chat.length - 1]['swipes'].length - 1) {
-            //console.log(getMessage);
+            chat[chat.length - 1]['title'] = title;
             chat[chat.length - 1]['mes'] = getMessage;
-            // console.log('runGenerate calls addOneMessage for swipe');
             addOneMessage(chat[chat.length - 1], { type: 'swipe' });
         } else {
             chat[chat.length - 1]['mes'] = getMessage;
         }
     } else if (type === 'append') {
         console.log("Trying to append.")
+        chat[chat.length - 1]['title'] = title;
         chat[chat.length - 1]['mes'] += getMessage;
         addOneMessage(chat[chat.length - 1], { type: 'swipe' });
     } else if (type === 'appendFinal') {
         console.log("Trying to append.")
+        chat[chat.length - 1]['title'] = title;
         chat[chat.length - 1]['mes'] = getMessage;
         addOneMessage(chat[chat.length - 1], { type: 'swipe' });
 
@@ -2349,6 +2363,7 @@ function saveReply(type, getMessage, this_mes_is_name) {
         chat[chat.length - 1]['send_date'] = humanizedDateTime();
         getMessage = $.trim(getMessage);
         chat[chat.length - 1]['mes'] = getMessage;
+        chat[chat.length - 1]['title'] = title;
 
         if (selected_group) {
             console.log('entering chat update for groups');
@@ -2364,6 +2379,12 @@ function saveReply(type, getMessage, this_mes_is_name) {
         saveImageToMessage(img, chat[chat.length - 1]);
         addOneMessage(chat[chat.length - 1]);
     }
+
+    const item = chat[chat.length - 1];
+    if (item['swipe_id'] !== undefined) {
+        item['swipes'][item['swipes'].length - 1] = item['mes'];
+    }
+
     return { type, getMessage };
 }
 
@@ -2373,7 +2394,7 @@ function saveImageToMessage(img, mes) {
             mes.extra = {};
         }
         mes.extra.image = img.image;
-        mes.title = img.title;
+        mes.extra.title = img.title;
     }
 }
 
@@ -3539,8 +3560,8 @@ function showSwipeButtons() {
 
 function hideSwipeButtons() {
     //console.log('hideswipebuttons entered');
-    $("#chat").children().filter('[mesid="' + (count_view_mes - 1) + '"]').children('.swipe_right').css('display', 'none');
-    $("#chat").children().filter('[mesid="' + (count_view_mes - 1) + '"]').children('.swipe_left').css('display', 'none');
+    $("#chat").children().filter(`[mesid="${count_view_mes - 1}"]`).children('.swipe_right').css('display', 'none');
+    $("#chat").children().filter(`[mesid="${count_view_mes - 1}"]`).children('.swipe_left').css('display', 'none');
 }
 
 function saveChatConditional() {
