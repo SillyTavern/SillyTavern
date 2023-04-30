@@ -305,8 +305,9 @@ function setMemoryContext(value, saveToMessage) {
     context.setExtensionPrompt(MODULE_NAME, formatMemoryValue(value), extension_prompt_types.AFTER_SCENARIO);
     $('#memory_contents').val(value);
 
-    if (saveToMessage && context.chat.length > 1) {
-        const mes = context.chat[context.chat.length - 2];
+    if (saveToMessage && context.chat.length) {
+        const idx = context.chat.length - 2;
+        const mes = context.chat[idx < 0 ? 0 : idx];
 
         if (!mes.extra) {
             mes.extra = {};
