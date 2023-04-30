@@ -44,8 +44,10 @@ async function sendCaptionedMessage(caption, image) {
         is_name: true,
         send_date: Date.now(),
         mes: messageText,
-        extra: { image: image },
-        title: caption
+        extra: {
+            image: image,
+            title: caption,
+        },
     };
     context.chat.push(message);
     context.addOneMessage(message);
