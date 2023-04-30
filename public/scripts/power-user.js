@@ -5,6 +5,8 @@ import {
     callPopup,
     token,
     getStatus,
+    reloadMarkdownProcessor,
+    reloadCurrentChat,
 } from "../script.js";
 
 export {
@@ -97,6 +99,7 @@ let power_user = {
     auto_scroll_chat_to_bottom: true,
     auto_fix_generated_markdown: true,
     send_on_enter: send_on_enter_options.AUTO,
+    render_formulas: false,
 };
 
 let themes = [];
@@ -116,7 +119,6 @@ const storage_keys = {
     blur_strength: "TavernAI_blur_strength",
     shadow_color: "TavernAI_shadow_color",
     shadow_width: "TavernAI_shadow_width",
-
 
     waifuMode: "TavernAI_waifuMode",
     movingUI: "TavernAI_movingUI",
@@ -358,6 +360,7 @@ function loadPowerUserSettings(settings, data) {
     $("#always-force-name2-checkbox").prop("checked", power_user.always_force_name2);
     $("#disable-examples-formatting-checkbox").prop("checked", power_user.disable_examples_formatting);
     $('#disable-start-formatting-checkbox').prop("checked", power_user.disable_start_formatting);
+    $('#render_formulas').prop("checked", power_user.render_formulas);
     $("#custom_chat_separator").val(power_user.custom_chat_separator);
     $("#fast_ui_mode").prop("checked", power_user.fast_ui_mode);
     $("#waifuMode").prop("checked", power_user.waifuMode);
@@ -399,6 +402,7 @@ function loadPowerUserSettings(settings, data) {
 
     $(`#character_sort_order option[data-order="${power_user.sort_order}"][data-field="${power_user.sort_field}"]`).prop("selected", true);
     sortCharactersList();
+    reloadMarkdownProcessor(power_user.render_formulas);
 }
 
 function sortCharactersList(selector = '.character_select') {
@@ -726,6 +730,13 @@ $(document).ready(() => {
         power_user.send_on_enter = Number(value);
         saveSettingsDebounced();
     });
+
+    $("#render_formulas").on("input", function () {
+        power_user.render_formulas = !!$(this).prop('checked');
+        reloadMarkdownProcessor(power_user.render_formulas);
+        reloadCurrentChat();
+        saveSettingsDebounced();
+    })
 
     $(window).on('focus', function () {
         browser_has_focus = true;

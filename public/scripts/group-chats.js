@@ -115,7 +115,7 @@ async function regenerateGroup() {
     generateGroupWrapper();
 }
 
-async function getGroupChat(id) {
+export async function getGroupChat(id) {
     const response = await fetch("/getgroupchat", {
         method: "POST",
         headers: {

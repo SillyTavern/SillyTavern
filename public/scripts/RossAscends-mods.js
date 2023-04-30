@@ -122,6 +122,10 @@ function isMobile() {
 }
 
 function shouldSendOnEnter() {
+    if (!power_user) {
+        return false;
+    }
+
     switch (power_user.send_on_enter) {
         case send_on_enter_options.DISABLED:
             return false;
@@ -708,10 +712,9 @@ $("document").ready(function () {
 
     //Additional hotkeys CTRL+ENTER and CTRL+UPARROW
     function processHotkeys(event) {
-        const sendOnEnter = shouldSendOnEnter();
-
         //Enter to send when send_textarea in focus
         if ($(':focus').attr('id') === 'send_textarea') {
+            const sendOnEnter = shouldSendOnEnter();
             if (!event.shiftKey && !event.ctrlKey && event.key == "Enter" && is_send_press == false && sendOnEnter) {
                 event.preventDefault();
                 Generate();

@@ -39,6 +39,7 @@ import {
     select_group_chats,
     regenerateGroup,
     group_generation_id,
+    getGroupChat,
 } from "./scripts/group-chats.js";
 
 import {
@@ -147,6 +148,7 @@ export {
     getThumbnailUrl,
     getStoppingStrings,
     getStatus,
+    reloadMarkdownProcessor,
     chat,
     this_chid,
     selected_button,
@@ -177,19 +179,11 @@ window["SillyTavern"] = {};
 
 const gpt3 = new GPT3BrowserTokenizer({ type: 'gpt3' });
 hljs.addPlugin({ "before:highlightElement": ({ el }) => { el.textContent = el.innerText } });
-let converter = new showdown.Converter({
-    emoji: "true",
-    underline: "true",
-    extensions: [
-        showdownKatex(
-            {
-                delimiters: [
-                    { left: '$$', right: '$$', display: true, asciimath: false },
-                    { left: '$', right: '$', display: false, asciimath: true },
-                ]
-            }
-        )],
-});
+
+// Markdown converter
+let converter;
+reloadMarkdownProcessor();
+
 /* let bg_menu_toggle = false; */
 const systemUserName = "SillyTavern System";
 let default_user_name = "You";
@@ -389,6 +383,31 @@ function getTokenCount(str, padding = 0) {
     }
 }
 
+function reloadMarkdownProcessor(render_formulas = false) {
+    if (render_formulas) {
+        converter = new showdown.Converter({
+            emoji: "true",
+            underline: "true",
+            extensions: [
+                showdownKatex(
+                    {
+                        delimiters: [
+                            { left: '$$', right: '$$', display: true, asciimath: false },
+                            { left: '$', right: '$', display: false, asciimath: true },
+                        ]
+                    }
+                )],
+        });
+    }
+    else {
+        converter = new showdown.Converter({
+            emoji: "true",
+        });
+    }
+
+    return converter;
+}
+
 const CHARACTERS_PER_TOKEN_RATIO = 3.35;
 const talkativeness_default = 0.5;
 
@@ -517,16 +536,6 @@ $.get("/csrf-token").then((data) => {
     getBackgrounds();
     getUserAvatars();
 });
-
-///////////// UNUSED FUNCTIONS MOVED TO TOP ///////////////
-
-function newMesPattern(name) {
-    //Patern which denotes a new message
-    name = name + ":";
-    return name;
-}
-
-//////////////////////////////////////////
 
 function checkOnlineStatus() {
     ///////// REMOVED LINES THAT DUPLICATE RA_CHeckOnlineStatus FEATURES 
@@ -905,6 +914,22 @@ function deleteLastMessage() {
     count_view_mes--;
     chat.length = chat.length - 1;
     $('#chat').children('.mes').last().remove();
+}
+
+export async function reloadCurrentChat() {
+    clearChat();
+    chat.length = 0;
+
+    if (selected_group) {
+        await getGroupChat(selected_group);
+    }
+    else if (this_chid) {
+        await getChat();
+    }
+    else {
+        resetChatState();
+        printMessages();
+    }
 }
 
 function messageFormating(mes, ch_name, isSystem, forceAvatar) {
