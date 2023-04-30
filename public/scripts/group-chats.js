@@ -781,6 +781,7 @@ function select_group_chats(groupId, skipAnimation) {
         const template = $("#group_member_template .group_member").clone();
         template.data("id", character.avatar);
         template.find(".avatar img").attr("src", avatar);
+        template.find(".avatar img").attr("title", character.avatar);
         template.find(".ch_name").text(character.name);
         template.attr("chid", characters.indexOf(character));
 
