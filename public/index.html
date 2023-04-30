@@ -268,7 +268,11 @@
                                     </div>
                                     <div class="range-block-counter">
                                         Alternative server URL (leave empty to use the default value).<br>
-                                        <b class="reverse_proxy_warning">Don't expose your real API keys to reverse proxies!</b>
+                                        <div id="ReverseProxyWarningMessage" class="reverse_proxy_warning">
+                                            <b>Remove your real OAI API Key from the API panel BEFORE connecting to a reverse proxy.</b>
+                                            <hr>
+                                            <b>We cannot provide suport for problems encountered while using an unofficial OpenAI proxy.</b>
+                                        </div>
                                     </div>
                                     <div class="wide100p">
                                         <input id="openai_reverse_proxy" type="text" class="text_pole" placeholder="https://api.openai.com/v1" maxlength="100" />

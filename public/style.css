@@ -3538,7 +3538,20 @@ toolcool-color-picker {
     flex-grow: 1;
 }
 
-.reverse_proxy_warning,
+#ReverseProxyWarningMessage {
+    display: none;
+}
+
+.reverse_proxy_warning {
+    color: red;
+    background-color: black;
+    text-shadow: none !important;
+    margin-top: 12px !important;
+    border-radius: 5px;
+    padding: 3px;
+    border: 1px solid var(--white30a);
+}
+
 .neutral_warning {
     color: rgba(255, 0, 0, 0.5)
 }

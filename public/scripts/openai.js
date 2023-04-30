@@ -704,6 +704,10 @@ function loadOpenAISettings(data, settings) {
     if (settings.reverse_proxy !== undefined) oai_settings.reverse_proxy = settings.reverse_proxy;
     $('#openai_reverse_proxy').val(oai_settings.reverse_proxy);
 
+    if (oai_settings.reverse_proxy !== '') {
+        $("#ReverseProxyWarningMessage").css('display', 'block');
+    }
+
     $('#openai_logit_bias_preset').empty();
     for (const preset of Object.keys(oai_settings.bias_presets)) {
         const option = document.createElement('option');
@@ -1229,6 +1233,9 @@ $(document).ready(function () {
 
     $("#openai_reverse_proxy").on('input', function () {
         oai_settings.reverse_proxy = $(this).val();
+        if (oai_settings.reverse_proxy == '') {
+            $("#ReverseProxyWarningMessage").css('display', 'none');
+        } else { $("#ReverseProxyWarningMessage").css('display', 'block'); }
         saveSettingsDebounced();
     });
 
