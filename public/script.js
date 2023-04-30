@@ -81,6 +81,7 @@ import {
     checkHordeStatus,
     getHordeModels,
     adjustHordeGenerationParams,
+    MIN_AMOUNT_GEN,
 } from "./scripts/horde.js";
 
 import {
@@ -1434,11 +1435,11 @@ async function Generate(type, automatic_trigger, force_name2) {
         return;
     }
 
-    if (isStreamingEnabled()) {
-        streamingProcessor = new StreamingProcessor(type, force_name2);
+    streamingProcessor = isStreamingEnabled() ? new StreamingProcessor(type, force_name2) : false;
+
+    // Hide swipes on either multigen or real streaming
+    if (isStreamingEnabled() || isMultigenEnabled()) {
         hideSwipeButtons();
-    } else {
-        streamingProcessor = false;
     }
 
     if (selected_group && !is_group_generating) {
@@ -1929,6 +1930,7 @@ async function Generate(type, automatic_trigger, force_name2) {
 
             if (main_api == 'kobold' && horde_settings.use_horde && hordeAmountGen) {
                 this_amount_gen = Math.min(this_amount_gen, hordeAmountGen);
+                this_amount_gen = Math.max(this_amount_gen, MIN_AMOUNT_GEN); // prevent validation errors
             }
 
             let generate_data;
@@ -2024,7 +2026,6 @@ async function Generate(type, automatic_trigger, force_name2) {
             }
 
             function onSuccess(data) {
-                tokens_already_generated += this_amount_gen;            // add new gen amt to any prev gen counter..
 
                 is_send_press = false;
                 if (!data.error) {
@@ -2041,7 +2042,7 @@ async function Generate(type, automatic_trigger, force_name2) {
                         if (shouldContinueMultigen(getMessage)) {
                             let this_mes_is_name;
                             ({ this_mes_is_name, getMessage } = extractNameFromMessage(getMessage, force_name2, isImpersonate));
-                            if (generate_loop_counter == 0) {
+                            if (tokens_already_generated == 0) {
                                 console.log("New message");
                                 ({ type, getMessage } = saveReply(type, getMessage, this_mes_is_name, title));
                             }
@@ -2049,7 +2050,8 @@ async function Generate(type, automatic_trigger, force_name2) {
                                 console.log("Should append message");
                                 ({ type, getMessage } = saveReply('append', getMessage, this_mes_is_name, title));
                             }
-                            generate_loop_counter++;
+                            hideSwipeButtons();
+                            tokens_already_generated += this_amount_gen;            // add new gen amt to any prev gen counter..
                             getMessage = message_already_generated;
                             runGenerate(getMessage);
                             console.log('returning to make generate again');
@@ -2064,7 +2066,6 @@ async function Generate(type, automatic_trigger, force_name2) {
 
                     let this_mes_is_name;
                     ({ this_mes_is_name, getMessage } = extractNameFromMessage(getMessage, force_name2, isImpersonate));
-                    //getMessage = getMessage.replace(/^\s+/g, '');
                     if (getMessage.length > 0) {
                         if (isImpersonate) {
                             $('#send_textarea').val(getMessage).trigger('input');
@@ -2348,7 +2349,7 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         chat[chat.length - 1]['mes'] += getMessage;
         addOneMessage(chat[chat.length - 1], { type: 'swipe' });
     } else if (type === 'appendFinal') {
-        console.log("Trying to append.")
+        console.log("Trying to appendFinal.")
         chat[chat.length - 1]['title'] = title;
         chat[chat.length - 1]['mes'] = getMessage;
         addOneMessage(chat[chat.length - 1], { type: 'swipe' });
