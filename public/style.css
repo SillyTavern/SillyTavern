@@ -3295,10 +3295,9 @@ label[for="extensions_autoconnect"] {
 }
 
 .redOverlayGlow {
-    color: rgba(100, 0, 0, 0.5);
+    color: #800;
     opacity: 0.8 !important;
     text-shadow: none !important;
-    filter: drop-shadow(0px 0px 2px red) !important;
 }
 
 .inline-drawer-header {
