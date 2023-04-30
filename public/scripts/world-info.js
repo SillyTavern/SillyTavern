@@ -240,6 +240,7 @@ function appendWorldEntry(entry) {
         $(this).siblings("input").click();
     });
 
+
     // constant
     const constantInput = template.find('input[name="constant"]');
     constantInput.data("uid", entry.uid);
@@ -287,6 +288,21 @@ function appendWorldEntry(entry) {
     // display uid
     template.find(".world_entry_form_uid_value").html(entry.uid);
 
+    // disable
+    const disableInput = template.find('input[name="disable"]');
+    disableInput.data("uid", entry.uid);
+    disableInput.on("input", function () {
+        const uid = $(this).data("uid");
+        const value = $(this).prop("checked");
+        world_info_data.entries[uid].disable = value;
+        saveWorldInfo();
+        console.log(`WI #${entry.uid} disabled? ${world_info_data.entries[uid].disable}`);
+    });
+    disableInput.prop("checked", entry.disable).trigger("input");
+    disableInput.siblings(".checkbox_fancy").click(function () {
+        $(this).siblings("input").click();
+    });
+
     // delete button
     const deleteButton = template.find("input.delete_entry_button");
     deleteButton.data("uid", entry.uid);
@@ -319,6 +335,7 @@ function createWorldInfoEntry() {
         selective: false,
         order: 100,
         position: 0,
+        disable: false,
     };
     const newUid = getFreeWorldEntryUid();
 
@@ -351,7 +368,7 @@ async function saveWorldInfo(immediately) {
     if (immediately) {
         return await _save();
     }
-    
+
     saveWorldDebounced();
 }
 
@@ -458,19 +475,20 @@ function checkWorldInfo(chat) {
     const sortedEntries = Object.keys(world_info_data.entries)
         .map((x) => world_info_data.entries[x])
         .sort((a, b) => b.order - a.order);
+
     while (needsToScan) {
         let activatedNow = new Set();
 
         for (let entry of sortedEntries) {
-            if (allActivatedEntries.has(entry.uid)) {
+            if (allActivatedEntries.has(entry.uid) && entry.disable == false) {
                 continue;
             }
 
-            if (entry.constant) {
+            if (entry.constant && entry.disable == false) {
                 activatedNow.add(entry.uid);
             }
 
-            if (Array.isArray(entry.key) && entry.key.length) {
+            if (Array.isArray(entry.key) && entry.key.length && entry.disable == false) {
                 primary: for (let key of entry.key) {
                     if (key && textToScan.includes(key.trim().toLowerCase())) {
                         if (
@@ -616,7 +634,7 @@ $(document).ready(() => {
     });
 
     $("#world_popup_delete").click(() => {
-        callPopup("<h3>Delete the World Info?</h3>",  "del_world");
+        callPopup("<h3>Delete the World Info?</h3>", "del_world");
     });
 
     $("#world_popup_new").click(() => {
