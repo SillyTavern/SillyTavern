@@ -402,6 +402,14 @@ code {
     margin-bottom: 3px;
 }
 
+.options-content i {
+    height: 20px;
+    width: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .options-content hr {
     margin: 0;
     padding: 0;

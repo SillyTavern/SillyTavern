@@ -77,22 +77,26 @@ function showBookmarksButtons() {
         if (selected_group || !characters[this_chid].chat) {
             $("#option_back_to_main").hide();
             $("#option_new_bookmark").hide();
+            $("#option_convert_to_group").hide();
         }
         // In main chat
         else if (!chat_metadata['main_chat']) {
             $("#option_back_to_main").hide();
             $("#option_new_bookmark").show();
+            $("#option_convert_to_group").show();
 
         }
         // In bookmark chat
         else {
             $("#option_back_to_main").show();
             $("#option_new_bookmark").show();
+            $("#option_convert_to_group").show();
         }
     }
     catch {
         $("#option_back_to_main").hide();
         $("#option_new_bookmark").hide();
+        $("#option_convert_to_group").hide();
     }
 }
 
