@@ -1903,6 +1903,7 @@ input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
 .range-block-counter {
     width: max-content;
     margin-left: 5px;
+    margin-right: 15px;
     font-size: calc(var(--mainFontSize) - 0.2rem);
     color: var(--SmartThemeBodyColor);
 }
