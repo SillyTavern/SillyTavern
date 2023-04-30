@@ -14,7 +14,6 @@ import {
     substituteParams,
     characters,
     default_avatar,
-    token,
     addOneMessage,
     callPopup,
     clearChat,
@@ -42,6 +41,7 @@ import {
     isStreamingEnabled,
     getThumbnailUrl,
     streamingProcessor,
+    getRequestHeaders,
 } from "../script.js";
 import { appendTagToList, createTagMapFromList, getTagsList } from './tags.js';
 
@@ -82,10 +82,7 @@ const saveGroupDebounced = debounce(async (group) => await _save(group), 500);
 async function _save(group) {
     await fetch("/editgroup", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-Token": token,
-        },
+        headers: getRequestHeaders(),
         body: JSON.stringify(group),
     });
     await getCharacters();
@@ -120,10 +117,7 @@ export async function getGroupChat(groupId) {
     const chat_id = group.chat_id;
     const response = await fetch("/getgroupchat", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-Token": token,
-        },
+        headers: getRequestHeaders(),
         body: JSON.stringify({ id: chat_id }),
     });
 
@@ -139,7 +133,7 @@ export async function getGroupChat(groupId) {
             sendSystemMessage(system_message_types.GROUP);
             if (group && Array.isArray(group.members)) {
                 for (let member of group.members) {
-                    const character = characters.find(x => x.avatar === member ||  x.name === member);
+                    const character = characters.find(x => x.avatar === member || x.name === member);
 
                     if (!character) {
                         continue;
@@ -188,10 +182,7 @@ async function saveGroupChat(groupId, shouldSaveGroup) {
     const chat_id = group.chat_id;
     const response = await fetch("/savegroupchat", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-Token": token,
-        },
+        headers: getRequestHeaders(),
         body: JSON.stringify({ id: chat_id, chat: [...chat] }),
     });
 
@@ -200,13 +191,81 @@ async function saveGroupChat(groupId, shouldSaveGroup) {
     }
 }
 
+export async function renameGroupMember(oldAvatar, newAvatar, newName) {
+    // Scan every group for our renamed character
+    for (const group of groups) {
+        try {
+
+            // Try finding the member by old avatar link
+            const memberIndex = group.members.findIndex(x => x == oldAvatar);
+
+            // Character was not present in the group...
+            if (memberIndex == -1) {
+                continue;
+            }
+
+            // Replace group member avatar id and save the changes
+            group.members[memberIndex] = newAvatar;
+            await editGroup(group.id, true);
+            console.log(`Renamed character ${newName} in group: ${group.name}`)
+
+            // Load all chats from this group
+            for (const chatId of group.chats) {
+                const getChatResponse = await fetch("/getgroupchat", {
+                    method: "POST",
+                    headers: getRequestHeaders(),
+                    body: JSON.stringify({ id: chatId }),
+                });
+
+                if (getChatResponse.ok) {
+                    // Only save the chat if there were any changes to the chat content
+                    let hadChanges = false;
+                    const messages = await getChatResponse.json();
+                    // Chat shouldn't be empty
+                    if (Array.isArray(messages) && messages.length) {
+                        // Iterate over every chat message
+                        for (const message of messages) {
+                            // Only look at character messages
+                            if (message.is_user || message.is_system) {
+                                continue;
+                            }
+
+                            // Message belonged to the old-named character:
+                            // Update name, avatar thumbnail URL and original avatar link
+                            if (message.force_avatar && message.force_avatar.indexOf(encodeURIComponent(oldAvatar)) !== -1) {
+                                message.name = newName;
+                                message.force_avatar = message.force_avatar.replace(encodeURIComponent(oldAvatar), encodeURIComponent(newAvatar));
+                                message.original_avatar = newAvatar;
+                                hadChanges = true;
+                            }
+                        }
+                    }
+
+                    if (hadChanges) {
+                        const saveChatResponse = await fetch("/savegroupchat", {
+                            method: "POST",
+                            headers: getRequestHeaders(),
+                            body: JSON.stringify({ id: chatId, chat: [...messages] }),
+                        });
+
+                        if (saveChatResponse.ok) {
+                            console.log(`Renamed character ${newName} in group chat: ${chatId}`);
+                        }
+                    }
+                }
+            }
+        }
+        catch (error) {
+            console.log(`An error during renaming the character ${newName} in group: ${group.name}`);
+            console.error(error);
+        }
+    }
+}
+
 async function getGroups() {
     const response = await fetch("/getgroups", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-Token": token,
-        },
+        headers: getRequestHeaders()
     });
 
     if (response.ok) {
@@ -219,9 +278,9 @@ async function getGroups() {
                 group.chat_id = group.id;
                 group.chats = [group.id];
                 group.members = group.members
-                                     .map(x => characters.find(y => y.name == x)?.avatar)
-                                     .filter(x => x)
-                                     .filter(onlyUnique)
+                    .map(x => characters.find(y => y.name == x)?.avatar)
+                    .filter(x => x)
+                    .filter(onlyUnique)
             }
         }
     }
@@ -491,7 +550,7 @@ function activateSwipe(members) {
     let activatedNames = [];
 
     // pre-update group chat swipe
-    if (!chat[chat.length -1].original_avatar) {
+    if (!chat[chat.length - 1].original_avatar) {
         const matches = characters.filter(x => x.name == chat[chat.length - 1].name);
 
         for (const match of matches) {
@@ -502,7 +561,7 @@ function activateSwipe(members) {
         }
     }
     else {
-        activatedNames.push(chat[chat.length -1].original_avatar);
+        activatedNames.push(chat[chat.length - 1].original_avatar);
     }
 
     const memberIds = activatedNames
@@ -609,10 +668,7 @@ function extractAllWords(value) {
 async function deleteGroup(id) {
     const response = await fetch("/deletegroup", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-Token": token,
-        },
+        headers: getRequestHeaders(),
         body: JSON.stringify({ id: id }),
     });
 
@@ -930,7 +986,7 @@ $(document).ready(() => {
             .toArray();
 
         const memberNames = characters.filter(x => members.includes(x.avatar)).map(x => x.name).join(", ");
-        
+
         if (!name) {
             name = `Chat with ${memberNames}`;
         }
@@ -943,10 +999,7 @@ $(document).ready(() => {
 
         const createGroupResponse = await fetch("/creategroup", {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRF-Token": token,
-            },
+            headers: getRequestHeaders(),
             body: JSON.stringify({
                 name: name,
                 members: members,

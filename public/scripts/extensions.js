@@ -1,4 +1,4 @@
-import { callPopup, saveSettings, saveSettingsDebounced, token } from "../script.js";
+import { callPopup, saveSettings, saveSettingsDebounced } from "../script.js";
 import { isSubsetOf } from "./utils.js";
 export {
     getContext,
@@ -37,7 +37,7 @@ let connectedToApi = false;
 
 async function discoverExtensions() {
     try {
-        const response = await fetch('/discover_extensions', { headers: { 'X-CSRF-Token': token } });
+        const response = await fetch('/discover_extensions');
 
         if (response.ok) {
             const extensions = await response.json();

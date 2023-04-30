@@ -1,4 +1,4 @@
-import { saveSettings, callPopup, token, substituteParams, getTokenCount } from "../script.js";
+import { saveSettings, callPopup, substituteParams, getTokenCount, getRequestHeaders } from "../script.js";
 import { download, debounce } from "./utils.js";
 
 export {
@@ -92,10 +92,7 @@ async function loadWorldInfoData() {
 
     const response = await fetch("/getworldinfo", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-Token": token,
-        },
+        headers: getRequestHeaders(),
         body: JSON.stringify({ name: world_info }),
     });
 
@@ -107,10 +104,7 @@ async function loadWorldInfoData() {
 async function updateWorldInfoList(importedWorldName) {
     var result = await fetch("/getsettings", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-Token": token,
-        },
+        headers: getRequestHeaders(),
         body: JSON.stringify({}),
     });
 
@@ -343,10 +337,7 @@ function createWorldInfoEntry() {
 async function _save() {
     const response = await fetch("/editworldinfo", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-Token": token,
-        },
+        headers: getRequestHeaders(),
         body: JSON.stringify({ name: world_info, data: world_info_data }),
     });
 }
@@ -384,10 +375,7 @@ async function deleteWorldInfo(worldInfoName, selectWorldName) {
 
     const response = await fetch("/deleteworldinfo", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-Token": token,
-        },
+        headers: getRequestHeaders(),
         body: JSON.stringify({ name: worldInfoName }),
     });
 

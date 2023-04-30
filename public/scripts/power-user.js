@@ -3,10 +3,10 @@ import {
     scrollChatToBottom,
     characters,
     callPopup,
-    token,
     getStatus,
     reloadMarkdownProcessor,
     reloadCurrentChat,
+    getRequestHeaders,
 } from "../script.js";
 
 export {
@@ -449,10 +449,8 @@ async function saveTheme() {
     };
 
     const response = await fetch('/savetheme', {
-        method: 'POST', headers: {
-            'X-CSRF-Token': token,
-            'Content-Type': 'application/json',
-        },
+        method: 'POST',
+        headers: getRequestHeaders(),
         body: JSON.stringify(theme)
     });
 

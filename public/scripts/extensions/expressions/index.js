@@ -1,4 +1,4 @@
-import { saveSettingsDebounced, token } from "../../../script.js";
+import { saveSettingsDebounced } from "../../../script.js";
 import { getContext, getApiUrl, modules, extension_settings } from "../../extensions.js";
 export { MODULE_NAME };
 
@@ -250,11 +250,7 @@ async function getSpritesList(name) {
     console.log('getting sprites list');
 
     try {
-        const result = await fetch(`/get_sprites?name=${encodeURIComponent(name)}`, {
-            headers: {
-                'X-CSRF-Token': token,
-            }
-        });
+        const result = await fetch(`/get_sprites?name=${encodeURIComponent(name)}`);
 
         let sprites = result.ok ? (await result.json()) : [];
         return sprites;

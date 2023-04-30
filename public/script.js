@@ -40,6 +40,7 @@ import {
     regenerateGroup,
     group_generation_id,
     getGroupChat,
+    renameGroupMember,
 } from "./scripts/group-chats.js";
 
 import {
@@ -101,7 +102,6 @@ import {
     tags,
     loadTagsSettings,
     printTags,
-    isElementTagged,
     getTagsList,
     appendTagToList,
     createTagMapFromList,
@@ -196,7 +196,7 @@ let safetychat = [
         is_user: false,
         is_name: true,
         create_date: 0,
-        mes: "\n<i>You deleted a character/chat and arrived back here for safety reasons! Pick another character!</i>\n\n",
+        mes: "You deleted a character/chat and arrived back here for safety reasons! Pick another character!",
     },
 ];
 let chat_create_date = 0;
@@ -493,7 +493,7 @@ var colab_ini_step = 1;
 
 let token;
 
-function getRequestHeaders() {
+export function getRequestHeaders() {
     return {
         "Content-Type": "application/json",
         "X-CSRF-Token": token,
@@ -2538,6 +2538,8 @@ async function renameCharacter() {
                         throw new Error('New character not selected');
                     }
 
+                    // Also rename as a group member
+                    await renameGroupMember(oldAvatar, newAvatar, newValue);
                     callPopup('<h3>Character renamed!</h3>Sprites folder (if any) should be renamed manually.', 'text');
                 }
                 else {
