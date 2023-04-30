@@ -86,7 +86,7 @@ body {
     /*fallback for JS load*/
     height: 100svh;
     /*defaults as 100%, then reassigned via JS as pixels, will work on PC and Android*/
-    height: calc(var(--doc-height) - 1px);
+    height: var(--doc-height);
     background-color: var(--greyCAIbg);
     background-repeat: no-repeat;
     background-attachment: fixed;
@@ -221,9 +221,10 @@ code {
     position: absolute;
     left: calc((100svw - var(--sheldWidth))/2);
     top: 41px;
-    /* margin: 0 auto; */
+    margin: 0 auto;
+    left: 0;
+    right: 0;
     z-index: 3;
-    /* resize: both; */
     min-height: 100px;
     min-width: 100px;
     width: var(--sheldWidth);
