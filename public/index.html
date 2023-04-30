@@ -1780,85 +1780,207 @@
         </div>
     </div>
 
+    <!-- reference code
+    <div class="inline-drawer wide100p">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <b>View / Edit bias preset</b>
+            <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+        </div>
+        <div class="inline-drawer-content">
+            <div id="openai_logit_bias_new_entry" class="menu_button wide100p flex-container justifyCenter">
+                Add bias entry
+            </div>
+            <div class="openai_logit_bias_list"></div>
+        </div>
+    </div>
+-->
+
     <div id="entry_edit_template" class="template_element">
         <div class="world_entry">
             <form class="world_entry_form">
-                <div class="world_entry_thin_controls">
-                    <div class="world_entry_form_control">
-                        <label for="key">
-                            <h4>Key</h4>
-                            <h5>Comma-separated list of keywords (e.g: foo,bar).</h5>
-                        </label>
-                        <textarea class="text_pole" name="key" rows="1" placeholder="" maxlength="250"></textarea>
-                    </div>
-                    <div class="world_entry_form_control keysecondary">
-                        <label for="keysecondary">
-                            <h4>Secondary Key</h4>
-                            <h5>Comma-separated list of additional keywords.</h5>
-                        </label>
-                        <textarea class="text_pole" name="keysecondary" rows="1" placeholder="" maxlength="250"></textarea>
-                    </div>
-                </div>
-                <div class="world_entry_thin_controls">
-                    <div class="world_entry_form_control">
-                        <label for="order">
-                            <h4>Insertion Order</h4>
-                            <h5>Higher order number entries will be inserted first.</h5>
-                        </label>
-                        <input class="text_pole" type="number" name="order" placeholder="" />
-                    </div>
-                    <div class="world_entry_form_control">
-                        <label for="comment">
-                            <h4>Comment</h4>
-                            <h5>Optional comment (doesn't affect the AI).</h5>
-                        </label>
-                        <textarea class="text_pole" rows="1" name="comment" maxlength="250"></textarea>
-                    </div>
-                </div>
-                <div class="world_entry_form_control">
-                    <label for="content">
-                        <h4>Content</h4>
-                        <h5>Text that will be inserted to the prompt upon activation.</h5>
-                    </label>
-                    <textarea class="text_pole" name="content" rows="4" placeholder=""></textarea>
-                </div>
-                <div class="world_entry_form_control world_entry_form_horizontal">
-                    <label class="checkbox">
-                        <input type="checkbox" name="constant" />
-                        <h4>Constant</h4>
-                    </label>
-                    <label class="checkbox">
-                        <input type="checkbox" name="selective" />
-                        <h4>Selective</h4>
-                    </label>
-                    <div class="world_entry_form_control world_entry_form_radios">
-                        <div>
-                            <label><input type="radio" name="position" value="0">
-                                <h4>Before Chara</h4>
-                            </label>
+                <div class="inline-drawer wide100p">
+                    <div class="inline-drawer-toggle inline-drawer-header">
+                        <div class="world_entry_thin_controls wide100p">
+                            <div class="world_entry_form_control">
+                                <label for="key">
+                                    <h4>Keywords</h4>
+                                    <h5>Seperate by commas</h5>
+                                </label>
+                                <textarea class="text_pole" name="key" rows="1" placeholder="" maxlength="250"></textarea>
+                            </div>
+                            <div class="world_entry_form_control keysecondary">
+                                <label for="keysecondary">
+                                    <h4>Secondary Required Keywords</h4>
+                                    <h5>Separate by commas</h5>
+                                </label>
+                                <textarea class="text_pole" name="keysecondary" rows="1" placeholder="" maxlength="250"></textarea>
+                            </div>
                         </div>
-                        <div>
-                            <label><input type="radio" name="position" value="1">
-                                <h4>After Chara</h4>
-                            </label>
+                        <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+                    </div>
+                    <div class="inline-drawer-content">
+                        <div class="world_entry_thin_controls  wide100p">
+                            <div class="world_entry_form_control">
+                                <label for="content ">
+                                    <h4>Content</h4>
+                                    <h5>What this keyword should mean to the AI</h5>
+                                </label>
+                                <textarea class="text_pole" name="content" rows="4" placeholder=""></textarea>
+                            </div>
+                        </div>
+                        <div class="world_entry_thin_controls  wide100p">
+
+                            <div class="world_entry_form_control">
+                                <label for="comment">
+                                    <h4>Memo/Note</h4>
+                                    <h5>Not sent to AI</h5>
+                                </label>
+                                <textarea class="text_pole" rows="1" name="comment" maxlength="250"></textarea>
+                            </div>
+                        </div>
+
+
+                        <div class="world_entry_form_control world_entry_form_horizontal">
+                            <div class="flex-container flexFlowColumn flexNoGap  wi-enter-footer-text ">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="constant" />
+                                    <span>Constant</span>
+                                </label>
+                                <label class="checkbox">
+                                    <input type="checkbox" name="selective" />
+                                    <span>Selective</span>
+                                </label>
+                            </div>
+                            <div class="world_entry_form_control world_entry_form_radios  wi-enter-footer-text">
+                                <div>
+                                    <label><input type="radio" name="position" value="0">
+                                        <span>Before Char</span>
+                                    </label>
+                                </div>
+                                <div>
+                                    <label><input type="radio" name="position" value="1">
+                                        <span>After Char</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="world_entry_form_control wi-enter-footer-text flex-container flexNoGap "> <!-- world_entry_form_control -->
+                                <!-- <label for="order"> -->
+
+                                Insertion Order
+                                <!-- Bigger number = inserted earlier -->
+
+                                <!-- </label> -->
+                                <input class="text_pole wide50px" type="number" name="order" placeholder="" />
+                            </div>
+
+                            <div class="flex-container flexFlowColumn flexNoGap  wi-enter-footer-text">
+                                <div class="world_entry_form_uid">
+                                    UID:
+                                    &nbsp;
+                                    <span class="world_entry_form_uid_value"></span>
+                                </div>
+                                <div class="world_entry_form_tokens">
+                                    Tokens:
+                                    &nbsp;
+                                    <span class="world_entry_form_token_counter">0</span>
+                                </div>
+                            </div>
+                            <span class="world_popup_expander">&nbsp;</span>
+                            <input class="menu_button delete_entry_button" type="submit" value="Delete Entry" />
                         </div>
                     </div>
-                    <span class="world_popup_expander">&nbsp;</span>
-                    <h5 class="world_entry_form_uid">
-                        UID:
-                        &nbsp;
-                        <span class="world_entry_form_uid_value"></span>
-                    </h5>
-                    <h5 class="world_entry_form_tokens">
-                        Tokens used:
-                        &nbsp;
-                        <span class="world_entry_form_token_counter">0</span>
-                    </h5>
-                    <input class="menu_button delete_entry_button" type="submit" value="Delete Entry" />
                 </div>
             </form>
         </div>
     </div>
+
+    <!-- old WI template
+         <div id="entry_edit_template" class="template_element">
+        <div class="world_entry">
+            <form class="world_entry_form">
+                <div class="inline-drawer wide100p">
+                    <div class="inline-drawer-toggle inline-drawer-header">
+                        <div class="world_entry_thin_controls">
+                            <div class="world_entry_form_control">
+                                <label for="key">
+                                    <h4>Key</h4>
+                                    <h5>Comma-separated list of keywords (e.g: foo,bar).</h5>
+                                </label>
+                                <textarea class="text_pole" name="key" rows="1" placeholder="" maxlength="250"></textarea>
+                            </div>
+                            <div class="world_entry_form_control keysecondary">
+                                <label for="keysecondary">
+                                    <h4>Secondary Key</h4>
+                                    <h5>Comma-separated list of additional keywords.</h5>
+                                </label>
+                                <textarea class="text_pole" name="keysecondary" rows="1" placeholder="" maxlength="250"></textarea>
+                            </div>
+                        </div>
+                        <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+                    </div>
+                    <div class="inline-drawer-content">
+                        <div class="world_entry_thin_controls">
+                            <div class="world_entry_form_control">
+                                <label for="order">
+                                    <h4>Insertion Order</h4>
+                                    <h5>Higher order number entries will be inserted first.</h5>
+                                </label>
+                                <input class="text_pole" type="number" name="order" placeholder="" />
+                            </div>
+                            <div class="world_entry_form_control">
+                                <label for="comment">
+                                    <h4>Comment</h4>
+                                    <h5>Optional comment (doesn't affect the AI).</h5>
+                                </label>
+                                <textarea class="text_pole" rows="1" name="comment" maxlength="250"></textarea>
+                            </div>
+                        </div>
+                        <div class="world_entry_form_control">
+                            <label for="content">
+                                <h4>Content</h4>
+                                <h5>Text that will be inserted to the prompt upon activation.</h5>
+                            </label>
+                            <textarea class="text_pole" name="content" rows="4" placeholder=""></textarea>
+                        </div>
+                        <div class="world_entry_form_control world_entry_form_horizontal">
+                            <label class="checkbox">
+                                <input type="checkbox" name="constant" />
+                                <h4>Constant</h4>
+                            </label>
+                            <label class="checkbox">
+                                <input type="checkbox" name="selective" />
+                                <h4>Selective</h4>
+                            </label>
+                            <div class="world_entry_form_control world_entry_form_radios">
+                                <div>
+                                    <label><input type="radio" name="position" value="0">
+                                        <h4>Before Chara</h4>
+                                    </label>
+                                </div>
+                                <div>
+                                    <label><input type="radio" name="position" value="1">
+                                        <h4>After Chara</h4>
+                                    </label>
+                                </div>
+                            </div>
+                            <span class="world_popup_expander">&nbsp;</span>
+                            <h5 class="world_entry_form_uid">
+                                UID:
+                                &nbsp;
+                                <span class="world_entry_form_uid_value"></span>
+                            </h5>
+                            <h5 class="world_entry_form_tokens">
+                                Tokens used:
+                                &nbsp;
+                                <span class="world_entry_form_token_counter">0</span>
+                            </h5>
+                            <input class="menu_button delete_entry_button" type="submit" value="Delete Entry" />
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div> -->
 
     <div id="character_template" class="template_element">
         <div class="character_select flex-container wide100p alignitemsflexstart" chid="" id="">

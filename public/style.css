@@ -1709,7 +1709,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 }
 
 .world_entry_form_control label {
-    margin-left: 10px;
+    /* margin-left: 10px; */
 }
 
 
@@ -1732,7 +1732,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 .world_entry_form_control.world_entry_form_horizontal {
     flex-direction: row;
     align-items: center;
-    margin-top: 10px;
+    margin-top: 5px;
 }
 
 .world_entry_form_control input[type=button] {
@@ -3457,6 +3457,15 @@ toolcool-color-picker {
 
 .wide100p {
     width: 100%;
+}
+
+.wide50px {
+    width: 50px;
+}
+
+.wi-enter-footer-text {
+    font-size: calc(var(--mainFontSize) * 0.8);
+    color: var(--SmartThemeBodyColor);
 }
 
 #openai_api-presets select {
