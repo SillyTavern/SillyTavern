@@ -161,15 +161,13 @@ body {
 }
 
 code {
-    padding: 5px;
     font-family: Consolas, monospace;
-    color: var(--white50a);
     white-space: pre-wrap;
     word-wrap: break-word;
     border: 1px solid var(--white30a);
     border-radius: 5px;
-    background-color: var(--black70a);
-    display: inline-block;
+
+
     max-width: calc(100svw - 95px);
     line-height: var(--mainFontSize);
 }
@@ -497,7 +495,7 @@ code {
 }
 
 .swipes-counter {
-    color: white;
+    color: var(--SmartThemeBodyColor);
     font-size: 12px;
     padding: 0;
     font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
@@ -638,7 +636,7 @@ textarea {
     outline: none;
     border: 1px solid var(--white30a);
     border-radius: 10px;
-    color: var(--white70a);
+    color: var(--SmartThemeBodyColor);
     font-size: var(--mainFontSize);
     font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
     padding: 5px 10px;
@@ -648,6 +646,7 @@ textarea {
 input,
 select {
     font-size: var(--mainFontSize);
+    color: var(--SmartThemeBodyColor);
 }
 
 #send_textarea {
@@ -671,7 +670,7 @@ select {
 
 #send_textarea::placeholder,
 .text_pole::placeholder {
-    color: var(--white70a)
+    color: var(--SmartThemeBodyColor);
 }
 
 #rm_ch_create_block textarea {
@@ -711,7 +710,7 @@ select {
 
 .text_pole {
     background-color: var(--black30a);
-    color: var(--white70a);
+    color: var(--SmartThemeBodyColor);
     border: 1px solid var(--white30a);
     border-radius: 10px;
     font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
@@ -888,7 +887,7 @@ input[type="file"] {
 /*#################################################################*/
 
 select {
-    color: var(--white70a);
+
     padding: 7px;
     background-color: var(--black30a);
     border: 1px solid var(--white30a);
@@ -1417,7 +1416,8 @@ input[type=search]:focus::-webkit-search-cancel-button {
 }
 
 .menu_button {
-    color: var(--white70);
+    color: var(--SmartThemeBodyColor);
+    /* color: var(--white70); */
     background-color: var(--black50a);
     border: 1px solid var(--white30a);
     border-radius: 10px;
