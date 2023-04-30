@@ -86,7 +86,7 @@ body {
     /*fallback for JS load*/
     height: 100svh;
     /*defaults as 100%, then reassigned via JS as pixels, will work on PC and Android*/
-    height: var(--doc-height);
+    height: calc(var(--doc-height) - 1px);
     background-color: var(--greyCAIbg);
     background-repeat: no-repeat;
     background-attachment: fixed;
@@ -204,7 +204,7 @@ code {
     right: 0;
     display: inline-block;
     height: 40px;
-    position: fixed;
+    position: absolute;
     border-bottom: 1px solid var(--grey30a);
     box-shadow: 0 2px 20px 0 var(--black70a);
     backdrop-filter: blur(var(--SmartThemeBlurStrength));
