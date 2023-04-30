@@ -102,7 +102,6 @@ import {
     tags,
     loadTagsSettings,
     printTags,
-    isElementTagged,
     getTagsList,
     appendTagToList,
     createTagMapFromList,
@@ -197,7 +196,7 @@ let safetychat = [
         is_user: false,
         is_name: true,
         create_date: 0,
-        mes: "\n<i>You deleted a character/chat and arrived back here for safety reasons! Pick another character!</i>\n\n",
+        mes: "You deleted a character/chat and arrived back here for safety reasons! Pick another character!",
     },
 ];
 let chat_create_date = 0;
