@@ -458,6 +458,12 @@ code {
     color: var(--SmartThemeBodyColor);
 }
 
+.mes q:before,
+.mes q:after {
+    content: '';
+
+}
+
 .last_mes {
     grid-template-columns: [checkbox] fit-content(60px) [avatar-leftswipe] 50px [name-mestext] auto [edit-rightswipe] 30px !important;
     grid-template-rows: [avatar-NameMesText-edit] 50px [swipes] auto;

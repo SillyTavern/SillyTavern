@@ -917,14 +917,14 @@ function messageFormating(mes, ch_name, isSystem, forceAvatar) {
 
     if (this_chid != undefined && !isSystem)
         mes = mes.replaceAll("<", "&lt;").replaceAll(">", "&gt;"); //for welcome message
-    if ((this_chid === undefined || this_chid == "invalid-safety-id")  && !selected_group) {
+    if ((this_chid === undefined || this_chid == "invalid-safety-id") && !selected_group) {
         mes = mes
             .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
             .replace(/\n/g, "<br/>");
     } else if (!isSystem) {
         mes = mes.replace(/```[\s\S]*?```|``[\s\S]*?``|`[\s\S]*?`|(\".+?\")/gm, function (match, p1) {
             if (p1) {
-                return "<q>" + p1.replace(/\"/g, "") + "</q>";
+                return '<q>"' + p1.replace(/\"/g, "") + '"</q>';
             } else {
                 return match;
             }
