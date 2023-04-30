@@ -40,6 +40,7 @@ import {
     regenerateGroup,
     group_generation_id,
     getGroupChat,
+    renameGroupMember,
 } from "./scripts/group-chats.js";
 
 import {
@@ -493,7 +494,7 @@ var colab_ini_step = 1;
 
 let token;
 
-function getRequestHeaders() {
+export function getRequestHeaders() {
     return {
         "Content-Type": "application/json",
         "X-CSRF-Token": token,
@@ -2538,6 +2539,8 @@ async function renameCharacter() {
                         throw new Error('New character not selected');
                     }
 
+                    // Also rename as a group member
+                    await renameGroupMember(oldAvatar, newAvatar, newValue);
                     callPopup('<h3>Character renamed!</h3>Sprites folder (if any) should be renamed manually.', 'text');
                 }
                 else {

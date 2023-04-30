@@ -10,13 +10,13 @@ import {
     checkOnlineStatus,
     setOnlineStatus,
     getExtensionPrompt,
-    token,
     name1,
     name2,
     extension_prompt_types,
     characters,
     this_chid,
     callPopup,
+    getRequestHeaders,
 } from "../script.js";
 import { groups, selected_group } from "./group-chats.js";
 
@@ -509,10 +509,7 @@ async function sendOpenAIRequest(openai_msgs_tosend, signal) {
     const response = await fetch(generate_url, {
         method: 'POST',
         body: JSON.stringify(generate_data),
-        headers: {
-            'Content-Type': 'application/json',
-            "X-CSRF-Token": token,
-        },
+        headers: getRequestHeaders(),
         signal: signal,
     });
 
@@ -567,10 +564,7 @@ async function calculateLogitBias() {
     try {
         const reply = await fetch(`/openai_bias?model=${oai_settings.openai_model}`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-Token': token,
-            },
+            headers: getRequestHeaders(),
             body,
         });
 
@@ -802,10 +796,7 @@ async function saveOpenAIPreset(name, settings) {
 
     const savePresetSettings = await fetch(`/savepreset_openai?name=${name}`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-Token': token,
-        },
+        headers: getRequestHeaders(),
         body: JSON.stringify(presetBody),
     });
 
@@ -837,7 +828,7 @@ async function showApiKeyUsage() {
     try {
         const response = await fetch('/openai_usage', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': token },
+            headers: getRequestHeaders(),
             body: body,
         });
 

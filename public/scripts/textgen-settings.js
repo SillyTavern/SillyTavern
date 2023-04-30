@@ -1,6 +1,6 @@
 import {
+    getRequestHeaders,
     saveSettingsDebounced,
-    token,
 } from "../script.js";
 
 export {
@@ -160,8 +160,7 @@ function setSettingByName(i, value, trigger) {
 async function generateTextGenWithStreaming(generate_data, signal) {
     const response = await fetch('/generate_textgenerationwebui', {
         headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-Token': token,
+            ...getRequestHeaders(),
             'X-Response-Streaming': true,
             'X-Streaming-URL': textgenerationwebui_settings.streaming_url,
         },

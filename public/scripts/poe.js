@@ -1,11 +1,11 @@
 import {
-    token as csrf_token,
     saveSettingsDebounced,
     setOnlineStatus,
     checkOnlineStatus,
     substituteParams,
     max_context,
     getTokenCount,
+    getRequestHeaders,
 } from "../script.js";
 
 export {
@@ -149,10 +149,7 @@ async function purgeConversation(count = -1) {
     });
 
     const response = await fetch('/purge_poe', {
-        headers: {
-            'X-CSRF-Token': csrf_token,
-            'Content-Type': 'application/json',
-        },
+        headers: getRequestHeaders(),
         body: body,
         method: 'POST',
     });
@@ -173,10 +170,7 @@ async function sendMessage(prompt, withStreaming, signal) {
     });
 
     const response = await fetch('/generate_poe', {
-        headers: {
-            'X-CSRF-Token': csrf_token,
-            'Content-Type': 'application/json',
-        },
+        headers: getRequestHeaders(),
         body: body,
         method: 'POST',
         signal: signal,
@@ -241,10 +235,7 @@ function setButtonState(value) {
 async function checkStatusPoe() {
     const body = JSON.stringify({ token: poe_settings.token });
     const response = await fetch('/status_poe', {
-        headers: {
-            'X-CSRF-Token': csrf_token,
-            'Content-Type': 'application/json',
-        },
+        headers: getRequestHeaders(),
         body: body,
         method: 'POST',
     });

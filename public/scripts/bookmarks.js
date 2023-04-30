@@ -2,13 +2,13 @@ import {
     characters,
     saveChat,
     sendSystemMessage,
-    token,
     system_messages,
     system_message_types,
     this_chid,
     openCharacterChat,
     chat_metadata,
     callPopup,
+    getRequestHeaders,
 } from "../script.js";
 import { selected_group } from "./group-chats.js";
 
@@ -25,10 +25,7 @@ const bookmarkNameToken = 'Bookmark #';
 async function getExistingChatNames() {
     const response = await fetch("/getallchatsofcharacter", {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            "X-CSRF-Token": token,
-        },
+        headers: getRequestHeaders(),
         body: JSON.stringify({ avatar_url: characters[this_chid].avatar })
     });
 
