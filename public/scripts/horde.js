@@ -8,6 +8,7 @@ export {
     loadHordeSettings,
     adjustHordeGenerationParams,
     getHordeModels,
+    MIN_AMOUNT_GEN,
 }
 
 let models = [];
@@ -21,6 +22,7 @@ let horde_settings = {
 
 const MAX_RETRIES = 100;
 const CHECK_INTERVAL = 3000;
+const MIN_AMOUNT_GEN = 16;
 
 async function getWorkers() {
     const response = await fetch('https://horde.koboldai.net/api/v2/workers?type=text');
