@@ -2321,7 +2321,7 @@ function saveReply(type, getMessage, this_mes_is_name) {
     getMessage = img.getMessage;
 
     if (type === 'swipe') {
-        chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipes'].length] = getMessage;
+        chat[chat.length - 1]['swipes'].length++;
         if (chat[chat.length - 1]['swipe_id'] === chat[chat.length - 1]['swipes'].length - 1) {
             //console.log(getMessage);
             chat[chat.length - 1]['mes'] = getMessage;
@@ -2364,6 +2364,12 @@ function saveReply(type, getMessage, this_mes_is_name) {
         saveImageToMessage(img, chat[chat.length - 1]);
         addOneMessage(chat[chat.length - 1]);
     }
+
+    const item = chat[chat.length - 1];
+    if (item['swipe_id'] !== undefined) {
+        item['swipes'][item['swipes'].length - 1] = item['mes'];
+    }
+
     return { type, getMessage };
 }
 
