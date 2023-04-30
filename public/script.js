@@ -5400,6 +5400,10 @@ $(document).ready(function () {
         $(this).closest('.inline-drawer').find('.inline-drawer-content').slideToggle();
     });
 
+    $(document).on('click', '#OpenAllWIEntries', function () {
+        $("#world_popup_entries_list").children().find('.inline-drawer-header').click()
+    });
+
     $(document).keyup(function (e) {
         if (e.key === "Escape") {
             if (power_user.auto_save_msg_edits === false) {
