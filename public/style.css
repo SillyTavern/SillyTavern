@@ -1436,6 +1436,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     transition: 0.3s;
     display: flex;
     align-items: center;
+    justify-content: center;
 }
 
 .avatar_div .menu_button,
