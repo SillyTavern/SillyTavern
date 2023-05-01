@@ -3687,10 +3687,11 @@ body.noShadows * {
 }
 
 #zoomed_avatar {
-    border: 1px solid var(--white30a);
+    border: 1px solid var(--white50a);
     border-radius: 20px;
     max-height: 60svh;
     max-width: 40svh;
+    box-shadow: 0 0 10px black;
 }
 
 /* ---------- @media queries must always go at the bottom ------------*/
