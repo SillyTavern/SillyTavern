@@ -936,6 +936,10 @@ function select_group_chats(groupId, skipAnimation) {
             await reorderGroupMember(groupId, member, action);
         }
 
+        if (action == 'view') {
+            openCharacterDefinition(member);
+        }
+
         sortCharactersList("#rm_group_add_members .group_member");
     });
 }
@@ -969,13 +973,12 @@ async function selectGroup() {
     }
 }
 
-function openCharacterDefinition() {
+function openCharacterDefinition(characterSelect) {
     if (is_group_generating) {
         console.warn("Can't peek a character def while group reply is being generated");
         return;
     }
 
-    const characterSelect = $(this).closest('.group_member');
     const chid = characterSelect.attr('chid');
 
     if (chid === null || chid === undefined) {
@@ -983,7 +986,7 @@ function openCharacterDefinition() {
     }
 
     setCharacterId(chid);
-    select_selected_character(chid, true);
+    select_selected_character(chid);
     // Gentle nudge to recalculate tokens
     RA_CountCharTokens();
     // Do a little tomfoolery to spoof the tag selector
@@ -1056,7 +1059,6 @@ async function createGroup() {
 }
 
 $(document).ready(() => {
-    $(document).on("click", ".group_member .ch_name", openCharacterDefinition);
     $(document).on("click", ".group_select", selectGroup);
     $("#rm_group_filter").on("input", filterGroupMembers);
     $("#rm_group_submit").on("click", createGroup);

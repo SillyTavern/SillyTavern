@@ -39,7 +39,7 @@ code {
     padding: 5px;
     border-radius: 5px;
     display: block;
-    white-space: normal;
+    white-space: pre-line;
 }
 
 a {

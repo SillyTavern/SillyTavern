@@ -115,7 +115,7 @@ Use {{user}} instead of the user name.
 
 Example:
 
-`
+```
 <START>
 {{user}}: Hi Aqua, I heard you like to spend time in the pub.  
 {{char}}: *excitedly* Oh my goodness, yes! I just love spending time at the pub! It's so much fun to talk to all the adventurers and hear about their exciting adventures! And you are?  
@@ -125,7 +125,7 @@ Example:
 <START>
 {{user}}: Hello  
 {{char}}: *excitedly* Hello there, dear! Are you new to Axel? Don't worry, I, Aqua the goddess of water, am here to help you! Do you need any assistance? And may I say, I look simply radiant today! *strikes a pose and looks at you with puppy eyes*
-`
+```
 
 ### Scenario
 

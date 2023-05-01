@@ -1187,8 +1187,8 @@ input[type=search]:focus::-webkit-search-cancel-button {
     display: flex;
     width: 100%;
     flex-wrap: wrap;
-    margin-top: 16px;
-    margin-bottom: 10px;
+    margin-top: 0px;
+    margin-bottom: 6px;
     align-items: center;
 }
 
@@ -2693,7 +2693,7 @@ body .ui-widget-content li:hover {
 /* Rules for icon display */
 #rm_group_members .group_member[order="start"] .fa-chevron-down,
 #rm_group_members .group_member[order="end"] .fa-chevron-up,
-#rm_group_add_members .right_menu_button:not(.fa-plus),
+#rm_group_add_members .right_menu_button:not(.fa-plus,.fa-id-badge),
 #rm_group_members .fa-plus {
     display: none;
 }
