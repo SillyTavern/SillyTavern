@@ -477,15 +477,15 @@ function checkWorldInfo(chat) {
         let activatedNow = new Set();
 
         for (let entry of sortedEntries) {
-            if (allActivatedEntries.has(entry.uid) && entry.disable == false) {
+            if (allActivatedEntries.has(entry.uid) || entry.disable == true) {
                 continue;
             }
 
-            if (entry.constant && entry.disable == false) {
+            if (entry.constant) {
                 activatedNow.add(entry.uid);
             }
 
-            if (Array.isArray(entry.key) && entry.key.length && entry.disable == false) {
+            if (Array.isArray(entry.key) && entry.key.length) {
                 primary: for (let key of entry.key) {
                     if (key && textToScan.includes(key.trim().toLowerCase())) {
                         if (
