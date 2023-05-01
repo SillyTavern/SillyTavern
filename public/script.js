@@ -715,7 +715,7 @@ function printCharacters() {
         template.find('.avatar').attr('title', item.avatar);
         template.find('.ch_name').text(item.name);
         template.find('.ch_fav_icon').css("display", 'none');
-        template.find('.ch_fav_icon').addClass(item.fav == "true" ? 'is_fav' : '');
+        template.addClass(item.fav == "true" ? 'is_fav' : '');
         template.find('.ch_fav').val(item.fav);
 
         // Display inline tags

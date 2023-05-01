@@ -1217,8 +1217,8 @@ input[type=search]:focus::-webkit-search-cancel-button {
     position: relative;
 }
 
-.character_select:has(.is_fav) .avatar,
-.group_select:has(.is_fav) .avatar {
+.character_select.is_fav .avatar,
+.group_select.is_fav .avatar {
     outline: 2px solid #c5b457;
 }
 

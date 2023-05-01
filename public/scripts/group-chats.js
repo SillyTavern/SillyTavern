@@ -294,7 +294,7 @@ function printGroups() {
         template.attr("grid", group.id);
         template.find(".ch_name").html(group.name);
         template.find('.group_fav_icon').css("display", 'none');
-        template.find('.group_fav_icon').addClass(group.fav ? 'is_fav' : '');
+        template.addClass(group.fav ? 'is_fav' : '');
         //group.fav ? template.find(".group_fav_icon").show() : template.find(".group_fav_icon").hide();
         template.find(".ch_fav").val(group.fav);
 
