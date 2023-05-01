@@ -183,13 +183,6 @@ function setOpenAIMessageExamples(mesExamplesArray) {
         // remove <START> {Example Dialogue:} and replace \r\n with just \n
         let replaced = item.replace(/<START>/i, "{Example Dialogue:}").replace(/\r/gm, '');
         let parsed = parseExampleIntoIndividual(replaced);
-
-        // Discard example dialogue if there's not a single bot message in it 
-        if (parsed.findIndex(x => x.name == "example_assistant") === -1) {
-            console.warn('Example dialogue without bot reply discarded:', replaced);
-            parsed = [];
-        }
-
         // add to the example message blocks array
         openai_msgs_example.push(parsed);
     }
@@ -402,23 +395,22 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
 
         console.log(total_count);
 
-        for (const example of openai_msgs_example) {
-            // get the current example block with multiple user/bot messages
-            let example_block = example;
+        // each example block contains multiple user/bot messages
+        for (let example_block of openai_msgs_example) {
+            if (example_block.length == 0) { continue; }
 
-            for (let k = 0; k < example_block.length; k++) {
-                if (example_block.length == 0) { continue; }
-                let example_count = countTokens(example_block[k], true);
-                // add all the messages from the example
-                if ((total_count + example_count + start_chat_count) < (this_max_context - oai_settings.openai_max_tokens)) {
-                    if (k == 0) {
-                        examples_tosend.push(new_chat_msg);
-                        total_count += start_chat_count;
-                    }
-                    examples_tosend.push(example_block[k]);
-                    total_count += example_count;
-                }
-                else { break; }
+            // include the heading
+            example_block = [new_chat_msg, ...example_block];
+
+            // add the block only if there is enough space for all its messages
+            const example_count = countTokens(example_block, true);
+            if ((total_count + example_count) < (this_max_context - oai_settings.openai_max_tokens)) {
+                examples_tosend.push(...example_block)
+                total_count += example_count;
+            }
+            else {
+                // early break since more examples probably won't fit anyway
+                break;
             }
         }
     }
