@@ -403,6 +403,7 @@ function OpenNavPanels() {
 dragElement(document.getElementById("sheld"));
 dragElement(document.getElementById("left-nav-panel"));
 dragElement(document.getElementById("right-nav-panel"));
+dragElement(document.getElementById("avatar_zoom_popup"));
 
 
 

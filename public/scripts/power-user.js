@@ -501,6 +501,13 @@ function resetMovablePanels() {
     document.getElementById("expression-holder").style.bottom = '';
     document.getElementById("expression-holder").style.height = '';
     document.getElementById("expression-holder").style.width = '';
+
+    document.getElementById("avatar_zoom_popup").style.top = '';
+    document.getElementById("avatar_zoom_popup").style.left = '';
+    document.getElementById("avatar_zoom_popup").style.right = '';
+    document.getElementById("avatar_zoom_popup").style.bottom = '';
+    document.getElementById("avatar_zoom_popup").style.height = '';
+    document.getElementById("avatar_zoom_popup").style.width = '';
 }
 
 $(document).ready(() => {

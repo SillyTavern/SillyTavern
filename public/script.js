@@ -5398,19 +5398,7 @@ $(document).ready(function () {
         } else if ($(this).parent().attr('is_user') == 'false') { //handle char avatars
             $("#zoomed_avatar").attr('src', avatarSrc);
         }
-
-        let avatarPopper = Popper.createPopper(document.getElementById('top-bar'), document.getElementById('avatar_zoom_popup'), {
-            placement: 'bottom',
-        });
-
-        setTimeout(function () {
-            avatarPopper.update();
-            $('#avatar_zoom_popup').toggle();
-        }, 100);
-
-
-
-
+        $('#avatar_zoom_popup').toggle();
     });
 
     $(document).on('click', '#OpenAllWIEntries', function () {
