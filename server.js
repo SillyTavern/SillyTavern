@@ -2294,6 +2294,7 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
                 response_generate_openai.send({ error: true, quota_error });
             } catch (error) {
                 console.error(error);
+                return response_generate_openai.send({ error: true });
             }
         });
 });
