@@ -71,6 +71,7 @@ let groups = [];
 let selected_group = null;
 let group_generation_id = null;
 let fav_grp_checked = false;
+let fav_filter_on = false;
 
 export const group_activation_strategy = {
     NATURAL: 0,
@@ -846,6 +847,7 @@ function select_group_chats(groupId, skipAnimation) {
         template.find(".avatar img").attr("title", character.avatar);
         template.find(".ch_name").text(character.name);
         template.attr("chid", characters.indexOf(character));
+        template.addClass(character.fav == 'true' ? 'is_fav' : '');
 
         if (
             group &&
@@ -860,6 +862,7 @@ function select_group_chats(groupId, skipAnimation) {
     }
 
     sortCharactersList("#rm_group_add_members .group_member");
+    filterMembersByFavorites(false);
 
     const groupHasMembers = !!$("#rm_group_members").children().length;
     $("#rm_group_submit").prop("disabled", !groupHasMembers);
@@ -996,12 +999,11 @@ function filterGroupMembers() {
     const searchValue = $(this).val().trim().toLowerCase();
 
     if (!searchValue) {
-        $("#rm_group_add_members .group_member").show();
+        $("#rm_group_add_members .group_member").removeClass('hiddenBySearch');
     } else {
         $("#rm_group_add_members .group_member").each(function () {
-            $(this).children(".ch_name").text().toLowerCase().includes(searchValue)
-                ? $(this).show()
-                : $(this).hide();
+            const isValidSearch = $(this).children(".ch_name").text().toLowerCase().includes(searchValue);
+            $(this).toggleClass('hiddenBySearch', !isValidSearch);
         });
     }
 }
@@ -1057,9 +1059,28 @@ async function createGroup() {
     }
 }
 
+function toggleFilterByFavorites() {
+    filterMembersByFavorites(!fav_filter_on);
+}
+
+function filterMembersByFavorites(value) {
+    fav_filter_on = value;
+    $('#group_fav_filter').toggleClass('fav_on', fav_filter_on);
+
+    if (!fav_filter_on) {
+        $("#rm_group_add_members .group_member").removeClass('hiddenByFav');
+    } else {
+        $("#rm_group_add_members .group_member").each(function () {
+            const isValidSearch = $(this).hasClass("is_fav");
+            $(this).toggleClass('hiddenByFav', !isValidSearch);
+        });
+    }
+}
+
 $(document).ready(() => {
     $(document).on("click", ".group_select", selectGroup);
     $("#rm_group_filter").on("input", filterGroupMembers);
+    $("#group_fav_filter").on("click", toggleFilterByFavorites);
     $("#rm_group_submit").on("click", createGroup);
     $("#rm_group_automode").on("input", function () {
         const value = $(this).prop("checked");
