@@ -1039,7 +1039,7 @@ $(document).ready(function () {
         const value = $(this).val();
         oai_settings.openai_model = value;
 
-        if (value == 'gpt-4') {
+        if (value == 'gpt-4' || value == 'gpt-4-0314') {
             $('#openai_max_context').attr('max', gpt4_max);
         }
         else if (value == 'gpt-4-32k') {

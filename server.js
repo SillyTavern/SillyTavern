@@ -2159,7 +2159,7 @@ app.post("/openai_bias", jsonParser, async function (request, response) {
 
     let result = {};
 
-    const tokenizer = tiktoken.encoding_for_model(request.query.model);
+    const tokenizer = tiktoken.encoding_for_model(request.query.model === 'gpt-4-0314' ? 'gpt-4' : request.query.model);
 
     for (const entry of request.body) {
         if (!entry || !entry.text) {
@@ -2305,7 +2305,7 @@ app.post("/tokenize_openai", jsonParser, function (request, response_tokenize_op
     const tokensPerMessage = request.query.model.includes('gpt-4') ? 3 : 4;
     const tokensPadding = 3;
 
-    const tokenizer = tiktoken.encoding_for_model(request.query.model);
+    const tokenizer = tiktoken.encoding_for_model(request.query.model === 'gpt-4-0314' ? 'gpt-4' : request.query.model);
 
     let num_tokens = 0;
     for (const msg of request.body) {
