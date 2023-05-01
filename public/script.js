@@ -221,6 +221,7 @@ let optionsPopper = Popper.createPopper(document.getElementById('send_form'), do
 let exportPopper = Popper.createPopper(document.getElementById('export_button'), document.getElementById('export_format_popup'), {
     placement: 'left'
 });
+
 let dialogueResolve = null;
 let chat_metadata = {};
 let streamingProcessor = null;
@@ -5398,6 +5399,38 @@ $(document).ready(function () {
         icon.toggleClass('down up');
         icon.toggleClass('fa-circle-chevron-down fa-circle-chevron-up');
         $(this).closest('.inline-drawer').find('.inline-drawer-content').slideToggle();
+    });
+
+    $(document).on('click', '.mes .avatar', function () {
+        let avPopperOrigin = $(this);
+        const avatarPopup = {
+            name: 'offset',
+            options: {
+                offset: [0, 8],
+            },
+        };
+
+        let avatarPopper = Popper.createPopper(document.getElementById('top-settings-holder'), document.getElementById('avatar_zoom_popup'), {
+            modifiers: [avatarPopup],
+        });
+        let thumbURL = $(this).children('img').attr('src');
+        let charsPath = '/characters/'
+        let targetAvatarImg = thumbURL.substring(thumbURL.lastIndexOf("=") + 1);
+        let avatarSrc = charsPath + targetAvatarImg;
+
+        if ($(this).parent().attr('is_user') == 'true') { //handle user avatars
+            $("#zoomed_avatar").attr('src', thumbURL);
+        } else if ($(this).parent().attr('is_system') == 'true') { //handle system avatars
+            $("#zoomed_avatar").attr('src', thumbURL);
+        } else if ($(this).parent().attr('is_user') == 'false') { //handle char avatars
+            $("#zoomed_avatar").attr('src', avatarSrc);
+        }
+
+        $('#avatar_zoom_popup').toggle();
+        avatarPopper.update();
+
+
+
     });
 
     $(document).on('click', '#OpenAllWIEntries', function () {

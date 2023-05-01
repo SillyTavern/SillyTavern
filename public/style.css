@@ -3673,6 +3673,26 @@ body.noShadows * {
     display: none;
 }
 
+#avatar_zoom_popup {
+    /*     height: 600px;
+    width: 400px; */
+    max-height: 60svh;
+    max-width: 40svh;
+    margin: 0 auto;
+    display: block;
+    position: absolute;
+    top: 60px;
+    z-index: 999;
+    display: none;
+}
+
+#zoomed_avatar {
+    border: 1px solid var(--white30a);
+    border-radius: 20px;
+    max-height: 60svh;
+    max-width: 40svh;
+}
+
 /* ---------- @media queries must always go at the bottom ------------*/
 
 /*will apply to anything 1000px or less. this catches ipads, horizontal phones, and vertical phones)*/
@@ -3828,6 +3848,8 @@ body.noShadows * {
         margin-top: 0px;
         height: calc(100% - 40px);
     }
+
+
 
 
     /*     #send_textarea {
