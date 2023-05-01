@@ -183,6 +183,13 @@ function setOpenAIMessageExamples(mesExamplesArray) {
         // remove <START> {Example Dialogue:} and replace \r\n with just \n
         let replaced = item.replace(/<START>/i, "{Example Dialogue:}").replace(/\r/gm, '');
         let parsed = parseExampleIntoIndividual(replaced);
+
+        // Discard example dialogue if there's not a single bot message in it 
+        if (parsed.findIndex(x => x.name == "example_assistant") === -1) {
+            console.warn('Example dialogue without bot reply discarded:', replaced);
+            parsed = [];
+        }
+
         // add to the example message blocks array
         openai_msgs_example.push(parsed);
     }
