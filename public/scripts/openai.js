@@ -311,7 +311,11 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
     if (selected_group) {
         // set "special" group nudging messages
         const groupMembers = groups.find(x => x.id === selected_group)?.members;
-        const names = Array.isArray(groupMembers) ? groupMembers.join(', ') : '';
+        let names = '';
+        if (Array.isArray(groupMembers)) {
+            names = groupMembers.map(member => characters.find(c => c.avatar === member)).map((x) => x.name);
+            names = names.join(', ')
+        }
         new_chat_msg.content = `[Start a new group chat. Group members: ${names}]`;
         let group_nudge = { "role": "system", "content": `[Write the next reply only as ${name2}]` };
         openai_msgs.push(group_nudge);
@@ -1035,7 +1039,7 @@ $(document).ready(function () {
         const value = $(this).val();
         oai_settings.openai_model = value;
 
-        if (value == 'gpt-4') {
+        if (value == 'gpt-4' || value == 'gpt-4-0314') {
             $('#openai_max_context').attr('max', gpt4_max);
         }
         else if (value == 'gpt-4-32k') {

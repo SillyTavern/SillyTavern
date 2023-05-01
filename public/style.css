@@ -86,7 +86,7 @@ body {
     /*fallback for JS load*/
     height: 100svh;
     /*defaults as 100%, then reassigned via JS as pixels, will work on PC and Android*/
-    height: var(--doc-height);
+    height: calc(var(--doc-height) - 1px);
     background-color: var(--greyCAIbg);
     background-repeat: no-repeat;
     background-attachment: fixed;
@@ -1911,6 +1911,7 @@ input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
 .range-block-counter {
     width: max-content;
     margin-left: 5px;
+    margin-right: 15px;
     font-size: calc(var(--mainFontSize) - 0.2rem);
     color: var(--SmartThemeBodyColor);
 }
@@ -3680,6 +3681,27 @@ body.noShadows * {
     display: none;
 }
 
+#avatar_zoom_popup {
+    /*     height: 600px;
+    width: 400px; */
+    max-height: 60svh;
+    max-width: 40svh;
+    margin: 0 auto;
+    display: block;
+    position: absolute;
+    top: 60px;
+    z-index: 999;
+    display: none;
+}
+
+#zoomed_avatar {
+    border: 1px solid var(--white50a);
+    border-radius: 20px;
+    max-height: 60svh;
+    max-width: 40svh;
+    box-shadow: 0 0 10px black;
+}
+
 /* ---------- @media queries must always go at the bottom ------------*/
 
 /*will apply to anything 1000px or less. this catches ipads, horizontal phones, and vertical phones)*/
@@ -3835,6 +3857,8 @@ body.noShadows * {
         margin-top: 0px;
         height: calc(100% - 40px);
     }
+
+
 
 
     /*     #send_textarea {
