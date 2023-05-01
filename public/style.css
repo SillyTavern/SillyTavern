@@ -2530,7 +2530,6 @@ body .ui-widget-content li:hover {
 #rm_group_top_bar {
     display: flex;
     flex-direction: row;
-    align-items: center;
     width: 100%;
     column-gap: 5px;
 }
@@ -2558,10 +2557,6 @@ body .ui-widget-content li:hover {
 #rm_group_chats_block h5 {
     margin-top: 5px;
     margin-bottom: 5px;
-}
-
-#rm_group_chat_name {
-    width: 90%;
 }
 
 #rm_group_buttons {
