@@ -3683,10 +3683,6 @@ body.noShadows * {
 }
 
 #avatar_zoom_popup {
-    min-height: 0px;
-    min-width: 400px;
-    max-height: 60svh;
-    max-width: 40svh;
     z-index: 999;
     display: none;
 
@@ -3696,6 +3692,7 @@ body.noShadows * {
     border: 1px solid var(--white50a);
     border-radius: 20px;
     max-height: calc(60svh - 60px);
+    max-width: 70svh;
     box-shadow: 0 0 10px black;
 }
 

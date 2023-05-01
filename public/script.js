@@ -5385,7 +5385,7 @@ $(document).ready(function () {
 
     $(document).on('click', '.mes .avatar', function () {
 
-
+        $('#avatar_zoom_popup').css('display', 'none');
         let thumbURL = $(this).children('img').attr('src');
         let charsPath = '/characters/'
         let targetAvatarImg = thumbURL.substring(thumbURL.lastIndexOf("=") + 1);
@@ -5402,9 +5402,11 @@ $(document).ready(function () {
         let avatarPopper = Popper.createPopper(document.getElementById('top-bar'), document.getElementById('avatar_zoom_popup'), {
             placement: 'bottom',
         });
-        avatarPopper.update();
 
-        $('#avatar_zoom_popup').toggle();
+        setTimeout(function () {
+            avatarPopper.update();
+            $('#avatar_zoom_popup').toggle();
+        }, 100);
 
 
 
