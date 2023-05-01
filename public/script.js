@@ -5387,17 +5387,8 @@ $(document).ready(function () {
     });
 
     $(document).on('click', '.mes .avatar', function () {
-        let avPopperOrigin = $(this);
-        const avatarPopup = {
-            name: 'offset',
-            options: {
-                offset: [0, 8],
-            },
-        };
 
-        let avatarPopper = Popper.createPopper(document.getElementById('top-settings-holder'), document.getElementById('avatar_zoom_popup'), {
-            modifiers: [avatarPopup],
-        });
+
         let thumbURL = $(this).children('img').attr('src');
         let charsPath = '/characters/'
         let targetAvatarImg = thumbURL.substring(thumbURL.lastIndexOf("=") + 1);
@@ -5411,8 +5402,13 @@ $(document).ready(function () {
             $("#zoomed_avatar").attr('src', avatarSrc);
         }
 
-        $('#avatar_zoom_popup').toggle();
+        let avatarPopper = Popper.createPopper(document.getElementById('top-bar'), document.getElementById('avatar_zoom_popup'), {
+            placement: 'bottom',
+        });
         avatarPopper.update();
+
+        $('#avatar_zoom_popup').toggle();
+
 
 
 
