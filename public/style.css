@@ -1219,7 +1219,8 @@ input[type=search]:focus::-webkit-search-cancel-button {
 }
 
 .character_select.is_fav .avatar,
-.group_select.is_fav .avatar {
+.group_select.is_fav .avatar,
+.group_member.is_fav .avatar {
     outline: 2px solid #c5b457;
 }
 
@@ -2644,7 +2645,7 @@ body .ui-widget-content li:hover {
     flex-direction: row;
     align-items: center;
     width: 100%;
-    column-gap: 1rem;
+    column-gap: 10px;
 }
 
 #rm_group_add_members_header input {
