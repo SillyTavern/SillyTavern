@@ -944,7 +944,7 @@ function messageFormating(mes, ch_name, isSystem, forceAvatar) {
 
     if (this_chid != undefined && !isSystem)
         mes = mes.replaceAll("<", "&lt;").replaceAll(">", "&gt;"); //for welcome message
-    if ((this_chid === undefined || this_chid == "invalid-safety-id") && !selected_group) {
+    if ((this_chid === undefined || this_chid === "invalid-safety-id") && !selected_group) {
         mes = mes
             .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
             .replace(/\n/g, "<br/>");
@@ -1033,7 +1033,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     if (!mes["is_user"]) {
         if (mes.force_avatar) {
             avatarImg = mes.force_avatar;
-        } else if (this_chid == undefined || this_chid == "invalid-safety-id") {
+        } else if (this_chid === undefined || this_chid === "invalid-safety-id") {
             avatarImg = system_avatar;
         } else {
             if (characters[this_chid].avatar != "none") {
@@ -1172,11 +1172,11 @@ function sendSystemMessage(type, text) {
         newMessage.mes += getSlashCommandsHelp();
     }
 
-    if (!newMessage.extras) {
-        newMessage.extras = {};
+    if (!newMessage.extra) {
+        newMessage.extra = {};
     }
 
-    newMessage.extras.type = type;
+    newMessage.extra.type = type;
 
     chat.push(newMessage);
     addOneMessage(newMessage);
@@ -2156,8 +2156,7 @@ async function Generate(type, automatic_trigger, force_name2) {
 
         } //rungenerate ends
     } else {    //generate's primary loop ends, after this is error handling for no-connection or safety-id
-
-        if (this_chid == undefined || this_chid == 'invalid-safety-id') {
+        if (this_chid === undefined || this_chid === 'invalid-safety-id') {
             //send ch sel
             popup_type = 'char_not_selected';
             callPopup('<h3>Сharacter is not selected</h3>');
@@ -2535,7 +2534,7 @@ async function renameCharacter() {
                     // Async delay to update UI
                     await delay(1);
 
-                    if (this_chid == -1) {
+                    if (this_chid === -1) {
                         throw new Error('New character not selected');
                     }
 

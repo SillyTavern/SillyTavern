@@ -71,7 +71,7 @@ let group_generation_id = null;
 let fav_grp_checked = false;
 let group_rm_panel_mode;
 
-const group_activation_strategy = {
+export const group_activation_strategy = {
     NATURAL: 0,
     LIST: 1,
 };

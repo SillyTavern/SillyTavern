@@ -1,24 +1,8 @@
-export {
-    onlyUnique,
-    shuffle,
-    download,
-    urlContentToDataUri,
-    getBase64Async,
-    getStringHash,
-    debounce,
-    delay,
-    isSubsetOf,
-    incrementString,
-    stringFormat,
-    parseJsonFile,
-};
-
-/// UTILS
-function onlyUnique(value, index, array) {
+export function onlyUnique(value, index, array) {
     return array.indexOf(value) === index;
 }
 
-function shuffle(array) {
+export function shuffle(array) {
     let currentIndex = array.length,
         randomIndex;
 
@@ -33,7 +17,7 @@ function shuffle(array) {
     return array;
 }
 
-function download(content, fileName, contentType) {
+export function download(content, fileName, contentType) {
     const a = document.createElement("a");
     const file = new Blob([content], { type: contentType });
     a.href = URL.createObjectURL(file);
@@ -41,7 +25,7 @@ function download(content, fileName, contentType) {
     a.click();
 }
 
-async function urlContentToDataUri(url, params) {
+export async function urlContentToDataUri(url, params) {
     const response = await fetch(url, params);
     const blob = await response.blob();
     return await new Promise(callback => {
@@ -51,7 +35,7 @@ async function urlContentToDataUri(url, params) {
     });
 }
 
-function getBase64Async(file) {
+export function getBase64Async(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
@@ -64,7 +48,7 @@ function getBase64Async(file) {
     });
 }
 
-async function parseJsonFile(file) {
+export async function parseJsonFile(file) {
     return new Promise((resolve, reject) => {
         const fileReader = new FileReader();
         fileReader.onload = event => resolve(JSON.parse(event.target.result));
@@ -73,7 +57,7 @@ async function parseJsonFile(file) {
     });
 }
 
-function getStringHash(str, seed = 0) {
+export function getStringHash(str, seed = 0) {
     let h1 = 0xdeadbeef ^ seed,
         h2 = 0x41c6ce57 ^ seed;
     for (let i = 0, ch; i < str.length; i++) {
@@ -88,7 +72,7 @@ function getStringHash(str, seed = 0) {
     return 4294967296 * (2097151 & h2) + (h1 >>> 0);
 };
 
-function debounce(func, timeout = 300) {
+export function debounce(func, timeout = 300) {
     let timer;
     return (...args) => {
         clearTimeout(timer);
@@ -96,10 +80,20 @@ function debounce(func, timeout = 300) {
     };
 }
 
-const delay = (ms) => new Promise((res) => setTimeout(res, ms));
-const isSubsetOf = (a, b) => (Array.isArray(a) && Array.isArray(b)) ? b.every(val => a.includes(val)) : false;
+export function getUniqueName(name, exists) {
+    let i = 1;
+    let baseName = name;
+    while (exists(name)) {
+        name = `${baseName} (${i})`;
+        i++;
+    }
+    return name;
+}
 
-function incrementString(str) {
+export const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+export const isSubsetOf = (a, b) => (Array.isArray(a) && Array.isArray(b)) ? b.every(val => a.includes(val)) : false;
+
+export function incrementString(str) {
     // Find the trailing number or it will match the empty string
     const count = str.match(/\d*$/);
 
@@ -108,7 +102,7 @@ function incrementString(str) {
     return str.substr(0, count.index) + (++count[0]);
 };
 
-function stringFormat(format) {
+export function stringFormat(format) {
     const args = Array.prototype.slice.call(arguments, 1);
     return format.replace(/{(\d+)}/g, function (match, number) {
         return typeof args[number] != 'undefined'
