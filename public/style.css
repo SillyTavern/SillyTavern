@@ -247,6 +247,7 @@ code {
     cursor: -moz-grab;
     cursor: -webkit-grab;
     display: none;
+    filter: drop-shadow(0px 0px 0px black);
 }
 
 #sheldheader:active {
@@ -3322,7 +3323,6 @@ label[for="extensions_autoconnect"] {
     margin: 35px auto 0 auto;
     backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
     -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
-    /* resize: both; */
     z-index: 9999 !important;
 }
 
@@ -3657,7 +3657,8 @@ body.movingUI .drag-grabber {
 
 body.movingUI #sheld,
 body.movingUI .drawer-content,
-body.movingUI #expression-holder {
+body.movingUI #expression-holder,
+body.movingUI #avatar_zoom_popup {
     resize: both;
 }
 
@@ -3683,24 +3684,31 @@ body.noShadows * {
 }
 
 #avatar_zoom_popup {
-    z-index: 999;
+    min-width: 100px;
+    min-height: 100px;
+    max-height: 90vh;
+    max-width: 90vh;
+    width: calc((100vw - var(--sheldWidth)) /2);
+    position: absolute;
+    padding: 0;
+    filter: drop-shadow(2px 2px 2px #51515199);
+    z-index: 2;
+    overflow: hidden;
     display: none;
     left: 0;
     right: 0;
     margin: 0 auto;
     top: 50px;
-    position: absolute;
-    width: 400px;
-
+    aspect-ratio: 2 / 3;
 }
 
 #zoomed_avatar {
     border: 1px solid var(--white50a);
-
     border-radius: 20px;
-    max-height: calc(60svh - 60px);
-    max-width: 70svh;
-    box-shadow: 0 0 10px black;
+    height: 100%;
+    width: 100%;
+    vertical-align: bottom;
+    object-fit: cover;
 }
 
 /* ---------- @media queries must always go at the bottom ------------*/
@@ -3859,27 +3867,6 @@ body.noShadows * {
         height: calc(100% - 40px);
     }
 
-
-
-
-    /*     #send_textarea {
-                 font-size: calc(var(--mainFontSize));
-        line-height: calc(var(--mainFontSize));
-        min-height: calc(2rem + 0.75rem + 2px); 
-                 max-height: 200px;
-        word-wrap: break-word;
-        height: 40px;
-        resize: vertical;
-        display: block;
-        background-color: rgba(255, 0, 0, 0);
-        border: 0;
-        box-shadow: none;
-        padding: 6px 0 6px 0;
-        font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
-        margin: 0;
-        text-shadow: #000 0 0 3px;
-    } */
-
     #rm_ch_create_block textarea {
         max-height: 180px;
     }
@@ -3921,6 +3908,12 @@ body.noShadows * {
 
     body.waifuMode img.expression {
         object-fit: cover;
+    }
+
+    body.waifuMode #avatar_zoom_popup {
+        width: 80svw;
+        max-height: calc(60svh - 60px);
+        max-width: 90svw;
     }
 
     .scrollableInner {
