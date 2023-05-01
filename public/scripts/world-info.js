@@ -371,9 +371,9 @@ async function saveWorldInfo(immediately) {
 
 async function renameWorldInfo() {
     const oldName = world_info;
-    const newName = $("#world_popup_name").val();
+    const newName = $("#world_popup_name").val().trim();
 
-    if (oldName === newName) {
+    if (oldName === newName || !newName) {
         return;
     }
 
