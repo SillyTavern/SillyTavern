@@ -4,7 +4,7 @@ import {
     debounce,
     delay,
 } from './utils.js';
-import { humanizedDateTime } from "./RossAscends-mods.js";
+import { RA_CountCharTokens, humanizedDateTime } from "./RossAscends-mods.js";
 import { sortCharactersList } from './power-user.js';
 
 import {
@@ -42,15 +42,17 @@ import {
     getThumbnailUrl,
     streamingProcessor,
     getRequestHeaders,
+    setMenuType,
+    menu_type,
+    select_selected_character,
 } from "../script.js";
-import { appendTagToList, createTagMapFromList, getTagsList } from './tags.js';
+import { appendTagToList, createTagMapFromList, getTagsList, applyTagsOnCharacterSelect } from './tags.js';
 
 export {
     selected_group,
     is_group_automode_enabled,
     is_group_generating,
     group_generation_id,
-    group_rm_panel_mode,
     groups,
     saveGroupChat,
     generateGroupWrapper,
@@ -69,7 +71,6 @@ let groups = [];
 let selected_group = null;
 let group_generation_id = null;
 let fav_grp_checked = false;
-let group_rm_panel_mode;
 
 export const group_activation_strategy = {
     NATURAL: 0,
@@ -375,6 +376,12 @@ async function generateGroupWrapper(by_auto_mode, type = null) {
         is_group_generating = false;
         setSendButtonState(false);
         return;
+    }
+
+    // Auto-navigate back to group menu
+    if (menu_type !== "group_edit") {
+        select_group_chats(selected_group);
+        await delay(1);
     }
 
     if (is_group_generating) {
@@ -798,7 +805,7 @@ async function reorderGroupMember(chat_id, groupMember, direction) {
 function select_group_chats(groupId, skipAnimation) {
     const group = groupId && groups.find((x) => x.id == groupId);
     const groupName = group?.name ?? "";
-    group_rm_panel_mode = !!group ? 'edit' : 'create';
+    setMenuType(!!group ? 'group_edit' : 'group_create');
     $("#rm_group_chat_name").val(groupName);
     $("#rm_group_chat_name").off();
     $("#rm_group_chat_name").on("input", async function () {
@@ -940,94 +947,119 @@ function updateFavButtonState(state) {
     $("#group_favorite_button").toggleClass('fav_off', !fav_grp_checked);
 }
 
-$(document).ready(() => {
-    $(document).on("click", ".group_select", async function () {
-        const groupId = $(this).data("id");
+async function selectGroup() {
+    const groupId = $(this).data("id");
 
-        if (!is_send_press && !is_group_generating) {
-            if (selected_group !== groupId) {
-                selected_group = groupId;
-                setCharacterId(undefined);
-                setCharacterName('');
-                setEditedMessageId(undefined);
-                clearChat();
-                updateChatMetadata({}, true);
-                chat.length = 0;
-                await getGroupChat(groupId);
-                //to avoid the filter being lit up yellow and left at true while the list of character and group reseted.
-                $("#filter_by_fav").removeClass("fav_on");
-                filterByFav = false;
-            }
-
-            select_group_chats(groupId);
-        }
-    });
-
-    $("#rm_group_filter").on("input", function () {
-        const searchValue = $(this).val().trim().toLowerCase();
-
-        if (!searchValue) {
-            $("#rm_group_add_members .group_member").show();
-        } else {
-            $("#rm_group_add_members .group_member").each(function () {
-                $(this).children(".ch_name").text().toLowerCase().includes(searchValue)
-                    ? $(this).show()
-                    : $(this).hide();
-            });
-        }
-    });
-
-    $("#rm_group_submit").click(async function () {
-        let name = $("#rm_group_chat_name").val();
-        let allow_self_responses = !!$("#rm_group_allow_self_responses").prop("checked");
-        let activation_strategy = $('input[name="rm_group_activation_strategy"]:checked').val() ?? group_activation_strategy.NATURAL;
-        const members = $("#rm_group_members .group_member")
-            .map((_, x) => $(x).data("id"))
-            .toArray();
-
-        const memberNames = characters.filter(x => members.includes(x.avatar)).map(x => x.name).join(", ");
-
-        if (!name) {
-            name = `Chat with ${memberNames}`;
+    if (!is_send_press && !is_group_generating) {
+        if (selected_group !== groupId) {
+            selected_group = groupId;
+            setCharacterId(undefined);
+            setCharacterName('');
+            setEditedMessageId(undefined);
+            clearChat();
+            updateChatMetadata({}, true);
+            chat.length = 0;
+            await getGroupChat(groupId);
+            //to avoid the filter being lit up yellow and left at true while the list of character and group reseted.
+            $("#filter_by_fav").removeClass("fav_on");
+            filterByFav = false;
         }
 
-        // placeholder
-        const avatar_url = 'img/five.png';
+        select_group_chats(groupId);
+    }
+}
 
-        const chatName = humanizedDateTime();
-        const chats = [chatName];
+function openCharacterDefinition() {
+    if (is_group_generating) {
+        console.warn("Can't peek a character def while group reply is being generated");
+        return;
+    }
 
-        const createGroupResponse = await fetch("/creategroup", {
-            method: "POST",
-            headers: getRequestHeaders(),
-            body: JSON.stringify({
-                name: name,
-                members: members,
-                avatar_url: avatar_url,
-                allow_self_responses: allow_self_responses,
-                activation_strategy: activation_strategy,
-                chat_metadata: {},
-                fav: fav_grp_checked,
-                chat_id: chatName,
-                chats: chats,
-            }),
+    const characterSelect = $(this).closest('.group_member');
+    const chid = characterSelect.attr('chid');
+
+    if (chid === null || chid === undefined) {
+        return;
+    }
+
+    setCharacterId(chid);
+    select_selected_character(chid, true);
+    // Gentle nudge to recalculate tokens
+    RA_CountCharTokens();
+    // Do a little tomfoolery to spoof the tag selector
+    applyTagsOnCharacterSelect.call(characterSelect);
+}
+
+function filterGroupMembers() {
+    const searchValue = $(this).val().trim().toLowerCase();
+
+    if (!searchValue) {
+        $("#rm_group_add_members .group_member").show();
+    } else {
+        $("#rm_group_add_members .group_member").each(function () {
+            $(this).children(".ch_name").text().toLowerCase().includes(searchValue)
+                ? $(this).show()
+                : $(this).hide();
         });
+    }
+}
 
-        if (createGroupResponse.ok) {
-            const data = await createGroupResponse.json();
-            createTagMapFromList("#groupTagList", data.id);
+async function createGroup() {
+    let name = $("#rm_group_chat_name").val();
+    let allow_self_responses = !!$("#rm_group_allow_self_responses").prop("checked");
+    let activation_strategy = $('input[name="rm_group_activation_strategy"]:checked').val() ?? group_activation_strategy.NATURAL;
+    const members = $("#rm_group_members .group_member")
+        .map((_, x) => $(x).data("id"))
+        .toArray();
 
-            await getCharacters();
-            $("#rm_info_avatar").html("");
-            const avatar = $("#avatar_div_div").clone();
-            avatar.find("img").attr("src", avatar_url);
-            $("#rm_info_avatar").append(avatar);
-            $("#rm_info_block").transition({ opacity: 0, duration: 0 });
-            select_rm_info("Group chat created");
-            $("#rm_info_block").transition({ opacity: 1.0, duration: 2000 });
-        }
+    const memberNames = characters.filter(x => members.includes(x.avatar)).map(x => x.name).join(", ");
+
+    if (!name) {
+        name = `Chat with ${memberNames}`;
+    }
+
+    // placeholder
+    const avatar_url = 'img/five.png';
+
+    const chatName = humanizedDateTime();
+    const chats = [chatName];
+
+    const createGroupResponse = await fetch("/creategroup", {
+        method: "POST",
+        headers: getRequestHeaders(),
+        body: JSON.stringify({
+            name: name,
+            members: members,
+            avatar_url: avatar_url,
+            allow_self_responses: allow_self_responses,
+            activation_strategy: activation_strategy,
+            chat_metadata: {},
+            fav: fav_grp_checked,
+            chat_id: chatName,
+            chats: chats,
+        }),
     });
 
+    if (createGroupResponse.ok) {
+        const data = await createGroupResponse.json();
+        createTagMapFromList("#groupTagList", data.id);
+
+        await getCharacters();
+        $("#rm_info_avatar").html("");
+        const avatar = $("#avatar_div_div").clone();
+        avatar.find("img").attr("src", avatar_url);
+        $("#rm_info_avatar").append(avatar);
+        $("#rm_info_block").transition({ opacity: 0, duration: 0 });
+        select_rm_info("Group chat created");
+        $("#rm_info_block").transition({ opacity: 1.0, duration: 2000 });
+    }
+}
+
+$(document).ready(() => {
+    $(document).on("click", ".group_member .ch_name", openCharacterDefinition);
+    $(document).on("click", ".group_select", selectGroup);
+    $("#rm_group_filter").on("input", filterGroupMembers);
+    $("#rm_group_submit").on("click", createGroup);
     $("#rm_group_automode").on("input", function () {
         const value = $(this).prop("checked");
         is_group_automode_enabled = value;

@@ -80,7 +80,7 @@ async function moduleWorker() {
     const context = getContext();
 
     // non-characters not supported
-    if (!context.groupId && !context.characterId) {
+    if (!context.groupId && context.characterId === undefined) {
         removeExpression();
         return;
     }

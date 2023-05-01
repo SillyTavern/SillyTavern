@@ -1,5 +1,5 @@
-import { characters, saveSettingsDebounced, this_chid, selected_button, callPopup } from "../script.js";
-import { group_rm_panel_mode, selected_group } from "./group-chats.js";
+import { characters, saveSettingsDebounced, this_chid, callPopup, menu_type } from "../script.js";
+import { selected_group } from "./group-chats.js";
 
 export {
     tags,
@@ -58,11 +58,11 @@ function getTagsList(key) {
 }
 
 function getInlineListSelector() {
-    if (selected_group && group_rm_panel_mode !== "create") {
+    if (selected_group && menu_type === "group_edit") {
         return `.group_select[grid="${selected_group}"] .tags`;
     }
 
-    if (this_chid && selected_button !== "create") {
+    if (this_chid && menu_type === "character_edit") {
         return `.character_select[chid="${this_chid}"] .tags`;
     }
 
@@ -70,11 +70,11 @@ function getInlineListSelector() {
 }
 
 function getTagKey() {
-    if (selected_group && group_rm_panel_mode !== "create") {
+    if (selected_group && menu_type === "group_edit") {
         return selected_group;
     }
 
-    if (this_chid && selected_button !== "create") {
+    if (this_chid && menu_type === "character_edit") {
         return characters[this_chid].avatar;
     }
 
@@ -251,7 +251,7 @@ function onGroupCreateClick() {
     $("#groupTagList").empty();
 }
 
-function onCharacterSelectClick() {
+export function applyTagsOnCharacterSelect() {
     clearTagsFilter();
     const chid = Number($(this).attr('chid'));
     const key = characters[chid].avatar;
@@ -264,7 +264,7 @@ function onCharacterSelectClick() {
     }
 }
 
-function onGroupSelectClick() {
+function applyTagsOnGroupSelect() {
     clearTagsFilter();
     const key = $(this).attr('grid');
     const tags = getTagsList(key);
@@ -332,8 +332,8 @@ $(document).ready(() => {
 
     $(document).on("click", "#rm_button_create", onCharacterCreateClick);
     $(document).on("click", "#rm_button_group_chats", onGroupCreateClick);
-    $(document).on("click", ".character_select", onCharacterSelectClick);
-    $(document).on("click", ".group_select", onGroupSelectClick);
+    $(document).on("click", ".character_select", applyTagsOnCharacterSelect);
+    $(document).on("click", ".group_select", applyTagsOnGroupSelect);
     $(document).on("click", ".tag_remove", onTagRemoveClick);
     $(document).on("input", ".tag_input", onTagInput);
     $(document).on("click", ".tags_view", onViewTagsListClick);

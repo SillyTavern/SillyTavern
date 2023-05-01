@@ -11,7 +11,7 @@ import {
     api_server_textgenerationwebui,
     is_send_press,
     getTokenCount,
-    selected_button,
+    menu_type,
 
 } from "../script.js";
 
@@ -176,10 +176,10 @@ $("#rm_ch_create_block").on("input", function () { RA_CountCharTokens(); });
 //when any input is made to the advanced editing popup textareas
 $("#character_popup").on("input", function () { RA_CountCharTokens(); });
 //function:
-function RA_CountCharTokens() {
+export function RA_CountCharTokens() {
     $("#result_info").html("");
     //console.log('RA_TC -- starting with this_chid = ' + this_chid);
-    if (selected_button === "create") {            //if new char
+    if (menu_type === "create") {            //if new char
         function saveFormVariables() {
             create_save_name = $("#character_name_pole").val();
             create_save_description = $("#description_textarea").val();

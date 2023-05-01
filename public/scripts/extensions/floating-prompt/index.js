@@ -66,7 +66,7 @@ function loadSettings() {
 async function moduleWorker() {
     const context = getContext();
 
-    if (!context.groupId && !context.characterId) {
+    if (!context.groupId && context.characterId === undefined) {
         return;
     }
 

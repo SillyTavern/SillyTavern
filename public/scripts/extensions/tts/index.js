@@ -37,7 +37,7 @@ async function moduleWorker() {
     updateUiAudioPlayState()
 
     // no characters or group selected
-    if (!context.groupId && !context.characterId) {
+    if (!context.groupId && context.characterId === undefined) {
         return
     }
 

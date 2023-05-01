@@ -133,7 +133,7 @@ async function moduleWorker() {
     const chat = context.chat;
 
     // no characters or group selected 
-    if (!context.groupId && !context.characterId) {
+    if (!context.groupId && context.characterId === undefined) {
         return;
     }
 

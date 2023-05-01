@@ -152,6 +152,7 @@ export {
     chat,
     this_chid,
     selected_button,
+    menu_type,
     settings,
     characters,
     online_status,
@@ -208,7 +209,6 @@ let mesStr = "";
 let generatedPromtCache = "";
 let characters = [];
 let this_chid;
-let active_character;
 let backgrounds = [];
 const default_avatar = "img/ai4.png";
 const system_avatar = "img/five.png";
@@ -2459,8 +2459,6 @@ function deactivateSendButtons() {
 }
 
 function resetChatState() {
-    //unsets the chid in settings (this prevents AutoLoadChat from trying to load the wrong ChID
-    active_character = "invalid-safety-id";
     //unsets expected chid before reloading (related to getCharacters/printCharacters from using old arrays)
     this_chid = "invalid-safety-id";
     // replaces deleted charcter name with system user since it will be displayed next.
@@ -2471,6 +2469,10 @@ function resetChatState() {
     chat_metadata = {};
     // resets the characters array, forcing getcharacters to reset
     characters.length = 0;
+}
+
+export function setMenuType(value) {
+    menu_type = value;
 }
 
 function setCharacterId(value) {
@@ -3039,13 +3041,6 @@ async function getSettings(type) {
                     loadExtensionSettings(settings);
                 }
 
-                //get the character to auto-load
-                if (settings.active_character !== undefined) {
-                    if (settings.active_character !== "") {
-                        active_character = settings.active_character;
-                    }
-                }
-
                 api_server_textgenerationwebui =
                     settings.api_server_textgenerationwebui;
                 $("#textgenerationwebui_api_url_text").val(
@@ -3090,7 +3085,6 @@ async function saveSettings(type) {
             world_info: world_info,
             world_info_depth: world_info_depth,
             world_info_budget: world_info_budget,
-            active_character: active_character,
             textgenerationwebui_settings: textgenerationwebui_settings,
             swipes: swipes,
             horde_settings: horde_settings,
@@ -3104,7 +3098,6 @@ async function saveSettings(type) {
             ...oai_settings,
         }, null, 4),
         beforeSend: function () {
-            //console.log('saveSettings() -- active_character -- '+active_character);
             if (type == "change_name") {
                 name1 = $("#your_name").val();
                 //     console.log('beforeSend name1 = '+name1);
@@ -3325,7 +3318,7 @@ function select_rm_info(text, charId = null) {
     }
 }
 
-function select_selected_character(chid) {
+export function select_selected_character(chid) {
     //character select
     //console.log('select_selected_character() -- starting with input of -- '+chid+' (name:'+characters[chid].name+')');
     select_rm_create();
@@ -3341,7 +3334,11 @@ function select_selected_character(chid) {
     $("#create_button").attr("value", "Save");              // what is the use case for this?
     $("#create_button_label").css("display", "none");
 
-    $("#rm_button_selected_ch").children("h2").text(display_name);
+    // Don't update the navbar name if we're peeking the group member defs
+    if (!selected_group) {
+        $("#rm_button_selected_ch").children("h2").text(display_name);
+    }
+
     $("#add_avatar_button").val("");
 
     $("#character_popup_text_h3").text(characters[chid].name);
@@ -3350,17 +3347,14 @@ function select_selected_character(chid) {
     $("#personality_textarea").val(characters[chid].personality);
     $("#firstmessage_textarea").val(characters[chid].first_mes);
     $("#scenario_pole").val(characters[chid].scenario);
-    $("#talkativeness_slider").val(
-        characters[chid].talkativeness ?? talkativeness_default
-    );
+    $("#talkativeness_slider").val(characters[chid].talkativeness ?? talkativeness_default);
     $("#mes_example_textarea").val(characters[chid].mes_example);
     $("#selected_chat_pole").val(characters[chid].chat);
     $("#create_date_pole").val(characters[chid].create_date);
     $("#avatar_url_pole").val(characters[chid].avatar);
     $("#chat_import_avatar_url").val(characters[chid].avatar);
     $("#chat_import_character_name").val(characters[chid].name);
-    //$("#avatar_div").css("display", "none");
-    var this_avatar = default_avatar;
+    let this_avatar = default_avatar;
     if (characters[chid].avatar != "none") {
         this_avatar = getThumbnailUrl('avatar', characters[chid].avatar);
     }
@@ -3373,7 +3367,6 @@ function select_selected_character(chid) {
     $("#renameCharButton").css("display", "");
 
     $("#form_create").attr("actiontype", "editcharacter");
-    active_character = chid;
     saveSettingsDebounced();
 }
 
@@ -4072,7 +4065,6 @@ $(document).ready(function () {
                 this_edit_mes_id = undefined;
                 selected_button = "character_edit";
                 this_chid = $(this).attr("chid");
-                active_character = this_chid;
                 clearChat();
                 chat.length = 0;
                 chat_metadata = {};
@@ -4451,11 +4443,12 @@ $(document).ready(function () {
                 contentType: false,
                 processData: false,
                 success: function (html) {
-
+                    /* Cohee: Not needed, since the rename routine forcefully reloads the chat
                     //currently this updates the displayed H2 name regardless of soft errors, doesn't detect actual errors.
                     let h2text = $("#character_name_pole").val();
                     console.log('about to change name! in h2');
                     $("#rm_button_selected_ch").children("h2").text(h2text);
+                    */
 
                     $(".mes").each(function () {
                         if ($(this).attr("is_system") == 'true') {
@@ -5292,13 +5285,6 @@ $(document).ready(function () {
     $("#rm_button_back_from_group").click(function () {
         selected_button = "characters";
         select_rm_characters();
-    });
-
-    $("#rm_button_extensions").click(function () {
-        menu_type = 'extennsions';
-        selected_button = 'extensions';
-        setRightTabSelectedClass('rm_button_extensions');
-        selectRightMenuWithAnimation('rm_extensions_block');
     });
 
     $(document).on("click", ".select_chat_block, .bookmark_link", async function () {
