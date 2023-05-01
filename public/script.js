@@ -5385,20 +5385,22 @@ $(document).ready(function () {
 
     $(document).on('click', '.mes .avatar', function () {
 
+        if (window.innerWidth > 1000 || $('body').hasClass('waifuMode')) {
 
-        let thumbURL = $(this).children('img').attr('src');
-        let charsPath = '/characters/'
-        let targetAvatarImg = thumbURL.substring(thumbURL.lastIndexOf("=") + 1);
-        let avatarSrc = charsPath + targetAvatarImg;
+            let thumbURL = $(this).children('img').attr('src');
+            let charsPath = '/characters/'
+            let targetAvatarImg = thumbURL.substring(thumbURL.lastIndexOf("=") + 1);
+            let avatarSrc = charsPath + targetAvatarImg;
+            if ($(this).parent().attr('is_user') == 'true') { //handle user avatars
+                $("#zoomed_avatar").attr('src', thumbURL);
+            } else if ($(this).parent().attr('is_system') == 'true') { //handle system avatars
+                $("#zoomed_avatar").attr('src', thumbURL);
+            } else if ($(this).parent().attr('is_user') == 'false') { //handle char avatars
+                $("#zoomed_avatar").attr('src', avatarSrc);
+            }
+            $('#avatar_zoom_popup').toggle();
 
-        if ($(this).parent().attr('is_user') == 'true') { //handle user avatars
-            $("#zoomed_avatar").attr('src', thumbURL);
-        } else if ($(this).parent().attr('is_system') == 'true') { //handle system avatars
-            $("#zoomed_avatar").attr('src', thumbURL);
-        } else if ($(this).parent().attr('is_user') == 'false') { //handle char avatars
-            $("#zoomed_avatar").attr('src', avatarSrc);
-        }
-        $('#avatar_zoom_popup').toggle();
+        } else { return; }
     });
 
     $(document).on('click', '#OpenAllWIEntries', function () {

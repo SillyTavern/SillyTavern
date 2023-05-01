@@ -3696,6 +3696,22 @@ body.noShadows * {
     z-index: 2;
     overflow: hidden;
     display: none;
+    bottom: 0;
+    aspect-ratio: 2 / 3;
+}
+
+body.waifuMode #avatar_zoom_popup {
+    min-width: 100px;
+    min-height: 100px;
+    max-height: 90vh;
+    max-width: 90vh;
+    width: calc((100vw - var(--sheldWidth)) /2);
+    position: absolute;
+    padding: 0;
+    filter: drop-shadow(2px 2px 2px #51515199);
+    z-index: 2;
+    overflow: hidden;
+    display: none;
     left: 0;
     right: 0;
     margin: 0 auto;
@@ -3718,7 +3734,24 @@ body.noShadows * {
 
 @media screen and (max-width: 1000px) {
 
-
+    #avatar_zoom_popup {
+        min-width: 100px;
+        min-height: 100px;
+        max-height: 90vh;
+        max-width: 90vh;
+        width: calc((100vw - var(--sheldWidth)) /2);
+        position: absolute;
+        padding: 0;
+        filter: drop-shadow(2px 2px 2px #51515199);
+        z-index: 2;
+        overflow: hidden;
+        display: none;
+        left: 0;
+        right: 0;
+        margin: 0 auto;
+        top: 50px;
+        aspect-ratio: 2 / 3;
+    }
 
     .mes img.img_extra {
         max-width: 100%;
@@ -3887,7 +3920,6 @@ body.noShadows * {
     body.waifuMode #sheld {
         height: 40svh;
         top: 60svh;
-        /* align-items: end; */
         bottom: 0 !important;
     }
 
