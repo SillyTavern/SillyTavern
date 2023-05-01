@@ -3944,7 +3944,7 @@ body.waifuMode #avatar_zoom_popup {
     }
 
     body.waifuMode #avatar_zoom_popup {
-        width: 80svw;
+        width: fit-content;
         max-height: calc(60svh - 60px);
         max-width: 90svw;
     }
