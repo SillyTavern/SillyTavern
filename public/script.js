@@ -5385,7 +5385,7 @@ $(document).ready(function () {
 
     $(document).on('click', '.mes .avatar', function () {
 
-        $('#avatar_zoom_popup').css('display', 'none');
+
         let thumbURL = $(this).children('img').attr('src');
         let charsPath = '/characters/'
         let targetAvatarImg = thumbURL.substring(thumbURL.lastIndexOf("=") + 1);
