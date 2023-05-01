@@ -1077,6 +1077,30 @@ function filterMembersByFavorites(value) {
     }
 }
 
+export async function createNewGroupChat() {
+    const group = groups.find(x => x.id === selected_group);
+
+    if (!group) {
+        return;
+    }
+
+    const oldChatName = group.chat_id;
+    const newChatName = humanizedDateTime();
+
+    if (typeof group.past_metadata !== 'object') {
+        group.past_metadata = {};
+    }
+
+    group.past_metadata[oldChatName] = Object.assign({}, chat_metadata);
+    group.chats.push(newChatName);
+    group.chat_id = newChatName;
+    group.chat_metadata = {};
+    updateChatMetadata(group.chat_metadata, true);
+
+    await editGroup(group.id, true);
+    await getGroupChat(group.id);
+}
+
 $(document).ready(() => {
     $(document).on("click", ".group_select", selectGroup);
     $("#rm_group_filter").on("input", filterGroupMembers);

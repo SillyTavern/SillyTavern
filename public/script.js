@@ -41,6 +41,7 @@ import {
     group_generation_id,
     getGroupChat,
     renameGroupMember,
+    createNewGroupChat,
 } from "./scripts/group-chats.js";
 
 import {
@@ -4303,18 +4304,24 @@ $(document).ready(function () {
         //Make a new chat for selected character
         if (
             popup_type == "new_chat" &&
-            this_chid != undefined &&
+            (selected_group || this_chid !== undefined) &&
             menu_type != "create"
         ) {
             //Fix it; New chat doesn't create while open create character menu
             clearChat();
             chat.length = 0;
-            chat_metadata = {};
-            characters[this_chid].chat = name2 + " - " + humanizedDateTime(); //RossAscends: added character name to new chat filenames and replaced Date.now() with humanizedDateTime;
-            $("#selected_chat_pole").val(characters[this_chid].chat);
-            saveCharacterDebounced();
-            getChat();
 
+            if (selected_group) {
+                createNewGroupChat();
+            }
+            else {
+                //RossAscends: added character name to new chat filenames and replaced Date.now() with humanizedDateTime;
+                chat_metadata = {};
+                characters[this_chid].chat = name2 + " - " + humanizedDateTime();
+                $("#selected_chat_pole").val(characters[this_chid].chat);
+                saveCharacterDebounced();
+                getChat();
+            }
         }
 
         if (dialogueResolve) {
@@ -4664,13 +4671,7 @@ $(document).ready(function () {
         }
 
         else if (id == "option_start_new_chat") {
-            if (selected_group) {
-                // will open a group creation screen
-                /* openNavToggle(); */
-                $("#rm_button_group_chats").trigger("click");
-                return;
-            }
-            if (this_chid != undefined && !is_send_press) {
+            if ((selected_group || this_chid !== undefined) && !is_send_press) {
                 popup_type = "new_chat";
                 callPopup("<h3>Start new chat?</h3>");
             }
