@@ -3681,6 +3681,11 @@ body.noShadows * {
     display: none;
 }
 
+#rm_group_add_members a,
+#rm_group_members a {
+    color: var(--SmartThemeBodyColor);
+}
+
 #avatar_zoom_popup {
     /*     height: 600px;
     width: 400px; */
