@@ -969,13 +969,10 @@ function messageFormating(mes, ch_name, isSystem, forceAvatar) {
         });
     }
 
-    if (forceAvatar) {
+    if (ch_name && (forceAvatar || ch_name !== name1)) {
         mes = mes.replaceAll(ch_name + ":", "");
     }
 
-    if (ch_name !== name1) {
-        mes = mes.replaceAll(name2 + ":", "");
-    }
     return mes;
 }
 
@@ -3135,7 +3132,7 @@ function messageEditAuto(div) {
     }
     chat[this_edit_mes_id]["extra"]["bias"] = bias ?? null;
     mesBlock.find(".mes_text").val('');
-    mesBlock.find(".mes_text").val(messageFormating(text));
+    mesBlock.find(".mes_text").val(messageFormating(text, this_edit_mes_chname, chat[this_edit_mes_id].is_system, chat[this_edit_mes_id].force_avatar));
     saveChatDebounced();
 }
 
@@ -4950,7 +4947,7 @@ $(document).ready(function () {
             var text = chat[edit_mes_id]["mes"];
             if (chat[edit_mes_id]["is_user"]) {
                 this_edit_mes_chname = name1;
-            } else if (chat[edit_mes_id]["forced_avatar"]) {
+            } else if (chat[edit_mes_id]["force_avatar"]) {
                 this_edit_mes_chname = chat[edit_mes_id]["name"];
             } else {
                 this_edit_mes_chname = name2;
@@ -4995,7 +4992,7 @@ $(document).ready(function () {
         $(this)
             .closest(".mes_block")
             .find(".mes_text")
-            .append(messageFormating(text, this_edit_mes_chname));
+            .append(messageFormating(text, this_edit_mes_chname, chat[this_edit_mes_id].is_system, chat[this_edit_mes_id].force_avatar));
         appendImageToMessage(chat[this_edit_mes_id], $(this).closest(".mes"));
         addCopyToCodeBlocks($(this).closest(".mes"));
         this_edit_mes_id = undefined;

@@ -708,6 +708,7 @@ $(document).ready(() => {
 
     $('#auto_fix_generated_markdown').on('input', function () {
         power_user.auto_fix_generated_markdown = !!$(this).prop('checked');
+        reloadCurrentChat();
         saveSettingsDebounced();
     });
 
