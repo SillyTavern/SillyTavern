@@ -1401,7 +1401,7 @@ app.post("/getallchatsofcharacter", jsonParser, function (request, response) {
                 const stats = fs.statSync(fullPathAndFile);
                 const fileSizeInKB = (stats.size / 1024).toFixed(2) + "kb";
 
-                console.log(fileSizeInKB);
+                //console.log(fileSizeInKB);
 
                 const rl = readline.createInterface({
                     input: fileStream,
@@ -1409,25 +1409,29 @@ app.post("/getallchatsofcharacter", jsonParser, function (request, response) {
                 });
 
                 let lastLine;
+                let itemCounter = 0;
                 rl.on('line', (line) => {
+                    itemCounter++;
                     lastLine = line;
                 });
                 rl.on('close', () => {
                     ii--;
                     if (lastLine) {
+
                         let jsonData = json5.parse(lastLine);
                         if (jsonData.name !== undefined || jsonData.character_name !== undefined) {
                             chatData[i] = {};
                             chatData[i]['file_name'] = file;
                             chatData[i]['file_size'] = fileSizeInKB;
+                            chatData[i]['chat_items'] = itemCounter - 1;
                             chatData[i]['mes'] = jsonData['mes'] || '[The chat is empty]';
                         }
                     }
                     if (ii === 0) {
-                        console.log('ii count went to zero, responding with chatData');
+                        //console.log('ii count went to zero, responding with chatData');
                         response.send(chatData);
                     }
-                    console.log('successfully closing getallchatsofcharacter');
+                    //console.log('successfully closing getallchatsofcharacter');
                     rl.close();
                 });
             };

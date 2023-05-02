@@ -3210,13 +3210,13 @@ async function displayPastChats() {
             if (mes.length > strlen) {
                 mes = "..." + mes.substring(mes.length - strlen);
             }
-
+            const chat_items = data[key]["chat_items"];
             const file_size = data[key]["file_size"];
             const fileName = data[key]['file_name'];
             const template = $('#past_chat_template .select_chat_block_wrapper').clone();
             template.find('.select_chat_block').attr('file_name', fileName);
             template.find('.avatar img').attr('src', avatarImg);
-            template.find('.select_chat_block_filename').text(fileName + " (" + file_size + ")");
+            template.find('.select_chat_block_filename').text(fileName + " (" + file_size + ") (" + chat_items + " messages)");
             template.find('.select_chat_block_mes').text(mes);
             template.find('.PastChat_cross').attr('file_name', fileName);
 
