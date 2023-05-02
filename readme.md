@@ -23,6 +23,10 @@ Try on Colab (runs KoboldAI backend and TavernAI Extras server alongside):  <a t
 
 https://colab.research.google.com/github/Cohee1207/SillyTavern/blob/main/colab/GPU.ipynb
 
+Run on Repl.it:  
+[![Run on Repl.it](https://replit.com/badge?caption=Run+On+Repl.it)](https://replit.com/new/github/Cohee1207/SillyTavern)
+
+
 ## Mobile support
 
 > **This fork can be run natively on Android phones using Termux. Please refer to this guide by ArroganceComplex#2659:**
