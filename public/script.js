@@ -2800,7 +2800,7 @@ function selectKoboldGuiPreset() {
 
 async function saveSettings(type) {
     //console.log('Entering settings with name1 = '+name1);
-    jQuery.ajax({
+    return jQuery.ajax({
         type: "POST",
         url: "/savesettings",
         data: JSON.stringify({
