@@ -1409,17 +1409,21 @@ app.post("/getallchatsofcharacter", jsonParser, function (request, response) {
                 });
 
                 let lastLine;
+                let itemCounter = 0;
                 rl.on('line', (line) => {
+                    itemCounter++;
                     lastLine = line;
                 });
                 rl.on('close', () => {
                     ii--;
                     if (lastLine) {
+
                         let jsonData = json5.parse(lastLine);
                         if (jsonData.name !== undefined || jsonData.character_name !== undefined) {
                             chatData[i] = {};
                             chatData[i]['file_name'] = file;
                             chatData[i]['file_size'] = fileSizeInKB;
+                            chatData[i]['chat_items'] = itemCounter - 1;
                             chatData[i]['mes'] = jsonData['mes'] || '[The chat is empty]';
                         }
                     }

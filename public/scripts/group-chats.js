@@ -1123,8 +1123,14 @@ export async function getGroupPastChats(groupId) {
         for (const chatId of group.chats) {
             const messages = await loadGroupChat(chatId);
             let this_chat_file_size = (JSON.stringify(messages).length / 1024).toFixed(2) + "kb";
+            let chat_items = messages.length;
             const lastMessage = messages.length ? messages[messages.length - 1].mes : '[The chat is empty]';
-            chats.push({ 'file_name': chatId, 'mes': lastMessage, 'file_size': this_chat_file_size });
+            chats.push({
+                'file_name': chatId,
+                'mes': lastMessage,
+                'file_size': this_chat_file_size,
+                'chat_items': chat_items,
+            });
         }
     } catch (err) {
         console.error(err);
