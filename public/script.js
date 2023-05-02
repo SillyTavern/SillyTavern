@@ -1726,8 +1726,14 @@ async function Generate(type, automatic_trigger, force_name2) {
             if (canFitMessages()) { //(The number of tokens in the entire promt) need fix, it must count correctly (added +120, so that the description of the character does not hide)
                 //if (is_pygmalion && i == chat2.length-1) item='<START>\n'+item;
                 arrMes[arrMes.length] = item;
+
             } else {
+                $("#chat").children().removeClass('lastInContext');
+                console.log(arrMes.length);
+
+                $(`#chat .mes:nth-last-of-type(${arrMes.length + 1})`).addClass('lastInContext');
                 break;
+
             }
             await delay(1); //For disable slow down (encode gpt-2 need fix)
         }
@@ -1821,6 +1827,7 @@ async function Generate(type, automatic_trigger, force_name2) {
             let mesSendString = '';
 
             function setPromtString() {
+                console.log('--setting Prompt string');
                 mesExmString = pinExmString ?? mesExamplesArray.slice(0, count_exm_add).join('');
                 mesSendString = '';
                 for (let j = 0; j < mesSend.length; j++) {
@@ -1844,6 +1851,7 @@ async function Generate(type, automatic_trigger, force_name2) {
             }
 
             function checkPromtSize() {
+                console.log('---checking Prompt size');
                 setPromtString();
                 const prompt = [
                     worldInfoString,
@@ -1868,15 +1876,16 @@ async function Generate(type, automatic_trigger, force_name2) {
                         checkPromtSize();                            // and check size again..
                     } else {
                         //end
+                        console.log(`---mesSend.length = ${mesSend.length}`);
                     }
                 }
             }
 
             if (generatedPromtCache.length > 0) {
-                //console.log('Generated Prompt Cache length: '+generatedPromtCache.length);
+                console.log('---Generated Prompt Cache length: ' + generatedPromtCache.length);
                 checkPromtSize();
             } else {
-                //console.log('calling setPromtString')
+                console.log('---calling setPromtString ' + generatedPromtCache.length)
                 setPromtString();
             }
 

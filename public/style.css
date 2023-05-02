@@ -3956,6 +3956,10 @@ body.waifuMode #avatar_zoom_popup {
     }
 }
 
+.lastInContext {
+    border-top: 5px dashed var(--SmartThemeQuoteColor) !important;
+}
+
 @media screen and (max-width: 1000px) and (orientation: landscape) {
     body.waifuMode img.expression {
         object-fit: contain;
