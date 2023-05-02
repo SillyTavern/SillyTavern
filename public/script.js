@@ -3688,7 +3688,9 @@ window["SillyTavern"].getContext = function () {
         name2: name2,
         characterId: this_chid,
         groupId: selected_group,
-        chatId: this_chid && characters[this_chid] && characters[this_chid].chat,
+        chatId: selected_group
+            ? groups.find(x => x.id == selected_group)?.chat_id
+            : (this_chid && characters[this_chid] && characters[this_chid].chat),
         onlineStatus: online_status,
         maxContext: Number(max_context),
         chatMetadata: chat_metadata,

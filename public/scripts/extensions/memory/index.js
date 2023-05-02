@@ -157,7 +157,7 @@ async function moduleWorker() {
     }
 
     // No new messages - do nothing
-    if (lastMessageId === chat.length && getStringHash(chat[chat.length - 1].mes) === lastMessageHash) {
+    if (chat.length === 0 || (lastMessageId === chat.length && getStringHash(chat[chat.length - 1].mes) === lastMessageHash)) {
         return;
     }
 
@@ -196,7 +196,6 @@ async function summarizeChat(context) {
     const longMemory = getLatestMemoryFromChat(chat);
     const reversedChat = chat.slice().reverse();
     reversedChat.shift();
-    const preSummaryLastMessage = getStringHash(reversedChat.length ? reversedChat[reversedChat.length - 1] : '');
     let memoryBuffer = [];
 
     for (let mes of reversedChat) {
@@ -256,11 +255,9 @@ async function summarizeChat(context) {
             const summary = data.summary;
 
             const newContext = getContext();
-            const postSummaryLastMessage = getStringHash(newContext.chat.length ? newContext.chat[newContext.chat.length - 2] : '');
 
             // something changed during summarization request
-            if (postSummaryLastMessage !== preSummaryLastMessage
-                || newContext.groupId !== context.groupId
+            if (newContext.groupId !== context.groupId
                 || newContext.chatId !== context.chatId
                 || (!newContext.groupId && (newContext.characterId !== context.characterId))) {
                 console.log('Context changed, summary discarded');
