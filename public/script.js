@@ -1725,9 +1725,15 @@ async function Generate(type, automatic_trigger, force_name2) {
 
             } else {
                 $("#chat").children().removeClass('lastInContext');
-                console.log(arrMes.length);
 
-                $(`#chat .mes:nth-last-child(${arrMes.length} of :not([is_system="true"])`).addClass('lastInContext');
+                let lastmsg = arrMes.length;
+
+                if (type === 'swipe') {
+                    lastmsg++;
+                }
+                //console.log(arrMes.length);
+                //console.log(lastmsg);
+                $(`#chat .mes:nth-last-child(${lastmsg} of :not([is_system="true"])`).addClass('lastInContext');
                 break;
 
             }
