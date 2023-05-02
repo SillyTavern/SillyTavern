@@ -55,6 +55,9 @@ const ExifReader = require('exifreader');
 const exif = require('piexifjs');
 const webp = require('webp-converter');
 const DeviceDetector = require("device-detector-js");
+const { TextEncoder, TextDecoder } = require('util');
+const utf8Encode = new TextEncoder();
+const utf8Decode = new TextDecoder('utf-8', { ignoreBOM: true });
 
 const config = require(path.join(__dirname, './config.conf'));
 const server_port = process.env.SILLY_TAVERN_PORT || config.port;
@@ -822,12 +825,34 @@ async function charaRead(img_url, input_format) {
 
     switch (format) {
         case 'webp':
-            const exif_data = await ExifReader.load(fs.readFileSync(img_url));
-            const char_data = exif_data['UserComment']['description'];
-            if (char_data === 'Undefined' && exif_data['UserComment'].value && exif_data['UserComment'].value.length === 1) {
-                return exif_data['UserComment'].value[0];
+            try {
+                const exif_data = await ExifReader.load(fs.readFileSync(img_url));
+                let char_data;
+
+                if (exif_data['UserComment']['description']) {
+                    let description = exif_data['UserComment']['description'];
+                    if (description === 'Undefined' && exif_data['UserComment'].value && exif_data['UserComment'].value.length === 1) {
+                        description = exif_data['UserComment'].value[0];
+                    }
+                    try {
+                        JSON.parse(description);
+                        char_data = description;
+                    } catch {
+                        const byteArr = description.split(",").map(Number);
+                        const uint8Array = new Uint8Array(byteArr);
+                        const char_data_string = utf8Decode.decode(uint8Array);
+                        char_data = char_data_string;
+                    }
+                } else {
+                    console.log('No description found in EXIF data.');
+                    return false;
+                }
+                return char_data;
             }
-            return char_data;
+            catch (err) {
+                console.log(err);
+                return false;
+            }
         case 'png':
             const buffer = fs.readFileSync(img_url);
             const chunks = extract(buffer);
@@ -1506,13 +1531,14 @@ app.post("/exportcharacter", jsonParser, async function (request, response) {
         case 'webp': {
             try {
                 let json = await charaRead(filename);
+                let stringByteArray = utf8Encode.encode(json).toString();
                 let inputWebpPath = `./uploads/${Date.now()}_input.webp`;
                 let outputWebpPath = `./uploads/${Date.now()}_output.webp`;
                 let metadataPath = `./uploads/${Date.now()}_metadata.exif`;
                 let metadata =
                 {
                     "Exif": {
-                        [exif.ExifIFD.UserComment]: json,
+                        [exif.ExifIFD.UserComment]: stringByteArray,
                     },
                 };
                 const exifString = exif.dump(metadata);
@@ -1521,10 +1547,11 @@ app.post("/exportcharacter", jsonParser, async function (request, response) {
                 await webp.cwebp(filename, inputWebpPath, '-q 95');
                 await webp.webpmux_add(inputWebpPath, outputWebpPath, metadataPath, 'exif');
 
-                response.sendFile(outputWebpPath, { root: __dirname });
-
-                fs.rmSync(inputWebpPath);
-                fs.rmSync(metadataPath);
+                response.sendFile(outputWebpPath, { root: __dirname }, () => {
+                    fs.rmSync(inputWebpPath);
+                    fs.rmSync(metadataPath);
+                    fs.rmSync(outputWebpPath);
+                });
 
                 return;
             }
