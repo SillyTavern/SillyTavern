@@ -81,15 +81,16 @@ export const group_activation_strategy = {
 const groupAutoModeInterval = setInterval(groupChatAutoModeWorker, 5000);
 const saveGroupDebounced = debounce(async (group) => await _save(group), 500);
 
-async function _save(group) {
+async function _save(group, reload = true) {
     await fetch("/editgroup", {
         method: "POST",
         headers: getRequestHeaders(),
         body: JSON.stringify(group),
     });
-    await getCharacters();
+    if (reload) {
+        await getCharacters();
+    }
 }
-
 
 // Group chats
 async function regenerateGroup() {
@@ -114,47 +115,55 @@ async function regenerateGroup() {
     generateGroupWrapper();
 }
 
-export async function getGroupChat(groupId) {
-    const group = groups.find((x) => x.id === groupId);
-    const chat_id = group.chat_id;
+async function loadGroupChat(chatId) {
     const response = await fetch("/getgroupchat", {
         method: "POST",
         headers: getRequestHeaders(),
-        body: JSON.stringify({ id: chat_id }),
+        body: JSON.stringify({ id: chatId }),
     });
 
     if (response.ok) {
         const data = await response.json();
-        if (Array.isArray(data) && data.length) {
-            data[0].is_group = true;
-            for (let key of data) {
-                chat.push(key);
-            }
-            printMessages();
-        } else {
-            sendSystemMessage(system_message_types.GROUP);
-            if (group && Array.isArray(group.members)) {
-                for (let member of group.members) {
-                    const character = characters.find(x => x.avatar === member || x.name === member);
-
-                    if (!character) {
-                        continue;
-                    }
-
-                    const mes = getFirstCharacterMessage(character);
-                    chat.push(mes);
-                    addOneMessage(mes);
-                }
-            }
-        }
-
-        if (group) {
-            let metadata = group.chat_metadata ?? {};
-            updateChatMetadata(metadata, true);
-        }
-
-        await saveGroupChat(groupId, true);
+        return data;
     }
+
+    return [];
+}
+
+export async function getGroupChat(groupId) {
+    const group = groups.find((x) => x.id === groupId);
+    const chat_id = group.chat_id;
+    const data = await loadGroupChat(chat_id);
+
+    if (Array.isArray(data) && data.length) {
+        data[0].is_group = true;
+        for (let key of data) {
+            chat.push(key);
+        }
+        printMessages();
+    } else {
+        sendSystemMessage(system_message_types.GROUP);
+        if (group && Array.isArray(group.members)) {
+            for (let member of group.members) {
+                const character = characters.find(x => x.avatar === member || x.name === member);
+
+                if (!character) {
+                    continue;
+                }
+
+                const mes = getFirstCharacterMessage(character);
+                chat.push(mes);
+                addOneMessage(mes);
+            }
+        }
+    }
+
+    if (group) {
+        let metadata = group.chat_metadata ?? {};
+        updateChatMetadata(metadata, true);
+    }
+
+    await saveGroupChat(groupId, true);
 }
 
 function getFirstCharacterMessage(character) {
@@ -197,7 +206,6 @@ export async function renameGroupMember(oldAvatar, newAvatar, newName) {
     // Scan every group for our renamed character
     for (const group of groups) {
         try {
-
             // Try finding the member by old avatar link
             const memberIndex = group.members.findIndex(x => x == oldAvatar);
 
@@ -213,33 +221,26 @@ export async function renameGroupMember(oldAvatar, newAvatar, newName) {
 
             // Load all chats from this group
             for (const chatId of group.chats) {
-                const getChatResponse = await fetch("/getgroupchat", {
-                    method: "POST",
-                    headers: getRequestHeaders(),
-                    body: JSON.stringify({ id: chatId }),
-                });
+                const messages = await loadGroupChat(chatId);
 
-                if (getChatResponse.ok) {
-                    // Only save the chat if there were any changes to the chat content
-                    let hadChanges = false;
-                    const messages = await getChatResponse.json();
-                    // Chat shouldn't be empty
-                    if (Array.isArray(messages) && messages.length) {
-                        // Iterate over every chat message
-                        for (const message of messages) {
-                            // Only look at character messages
-                            if (message.is_user || message.is_system) {
-                                continue;
-                            }
+                // Only save the chat if there were any changes to the chat content
+                let hadChanges = false;
+                // Chat shouldn't be empty
+                if (Array.isArray(messages) && messages.length) {
+                    // Iterate over every chat message
+                    for (const message of messages) {
+                        // Only look at character messages
+                        if (message.is_user || message.is_system) {
+                            continue;
+                        }
 
-                            // Message belonged to the old-named character:
-                            // Update name, avatar thumbnail URL and original avatar link
-                            if (message.force_avatar && message.force_avatar.indexOf(encodeURIComponent(oldAvatar)) !== -1) {
-                                message.name = newName;
-                                message.force_avatar = message.force_avatar.replace(encodeURIComponent(oldAvatar), encodeURIComponent(newAvatar));
-                                message.original_avatar = newAvatar;
-                                hadChanges = true;
-                            }
+                        // Message belonged to the old-named character:
+                        // Update name, avatar thumbnail URL and original avatar link
+                        if (message.force_avatar && message.force_avatar.indexOf(encodeURIComponent(oldAvatar)) !== -1) {
+                            message.name = newName;
+                            message.force_avatar = message.force_avatar.replace(encodeURIComponent(oldAvatar), encodeURIComponent(newAvatar));
+                            message.original_avatar = newAvatar;
+                            hadChanges = true;
                         }
                     }
 
@@ -283,6 +284,9 @@ async function getGroups() {
                     .map(x => characters.find(y => y.name == x)?.avatar)
                     .filter(x => x)
                     .filter(onlyUnique)
+            }
+            if (group.past_metadata == undefined) {
+                group.past_metadata = {};
             }
         }
     }
@@ -696,16 +700,17 @@ async function deleteGroup(id) {
     }
 }
 
-async function editGroup(id, immediately) {
-    let group = groups.find((x) => x.id == id);
-    group = { ...group, chat_metadata };
+export async function editGroup(id, immediately, reload=true) {
+    let group = groups.find((x) => x.id === id);
 
     if (!group) {
         return;
     }
 
+    group['chat_metadata'] = chat_metadata;
+
     if (immediately) {
-        return await _save(group);
+        return await _save(group, reload);
     }
 
     saveGroupDebounced(group);
@@ -1077,8 +1082,8 @@ function filterMembersByFavorites(value) {
     }
 }
 
-export async function createNewGroupChat() {
-    const group = groups.find(x => x.id === selected_group);
+export async function createNewGroupChat(groupId) {
+    const group = groups.find(x => x.id === groupId);
 
     if (!group) {
         return;
@@ -1091,7 +1096,11 @@ export async function createNewGroupChat() {
         group.past_metadata = {};
     }
 
-    group.past_metadata[oldChatName] = Object.assign({}, chat_metadata);
+    clearChat();
+    chat.length = 0;
+    if (oldChatName) {
+        group.past_metadata[oldChatName] = Object.assign({}, chat_metadata);
+    }
     group.chats.push(newChatName);
     group.chat_id = newChatName;
     group.chat_metadata = {};
@@ -1099,6 +1108,76 @@ export async function createNewGroupChat() {
 
     await editGroup(group.id, true);
     await getGroupChat(group.id);
+}
+
+export async function getGroupPastChats(groupId) {
+    const group = groups.find(x => x.id === groupId);
+
+    if (!group) {
+        return [];
+    }
+
+    const chats = [];
+
+    try {
+        for (const chatId of group.chats) {
+            const messages = await loadGroupChat(chatId);
+            const lastMessage = messages.length ? messages[messages.length - 1].mes : '[The chat is empty]';
+            chats.push({ 'file_name': chatId, 'mes': lastMessage });
+        }
+    } catch (err) {
+        console.error(err);
+    }
+    finally {
+        return chats;
+    }
+}
+
+export async function openGroupChat(groupId, chatId) {
+    const group = groups.find(x => x.id === groupId);
+
+    if (!group || !group.chats.includes(chatId)) {
+        return;
+    }
+
+    clearChat();
+    chat.length = 0;
+    const previousChat = group.chat_id;
+    group.past_metadata[previousChat] = Object.assign({}, chat_metadata);
+    group.chat_id = chatId;
+    group.chat_metadata = group.past_metadata[chatId] || {};
+    updateChatMetadata(group.chat_metadata, true);
+
+    await editGroup(groupId, true);
+    await getGroupChat(groupId);
+}
+
+export async function deleteGroupChat(groupId, chatId) {
+    const group = groups.find(x => x.id === groupId);
+
+    if (!group || !group.chats.includes(chatId)) {
+        return;
+    }
+
+    group.chats.splice(group.chats.indexOf(chatId), 1);
+    group.chat_metadata = {};
+    group.chat_id = '';
+    delete group.past_metadata[chatId];
+    updateChatMetadata(group.chat_metadata, true);
+
+    const response = await fetch('/deletegroupchat', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({ id: chatId }),
+    });
+
+    if (response.ok) {
+        if (group.chats.length) {
+            await openGroupChat(groupId, group.chats[0]);
+        } else {
+            await createNewGroupChat(groupId);
+        }
+    }
 }
 
 $(document).ready(() => {

@@ -51,13 +51,13 @@ function hasCustomBackground() {
 function saveBackgroundMetadata(file) {
     const context = getContext();
     context.chatMetadata[METADATA_KEY] = file;
-    context.saveChat();
+    context.saveMetadata();
 }
 
 function removeBackgroundMetadata() {
     const context = getContext();
     delete context.chatMetadata[METADATA_KEY];
-    context.saveChat();
+    context.saveMetadata();
 }
 
 function setCustomBackground() {

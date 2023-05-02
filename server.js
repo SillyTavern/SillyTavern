@@ -1381,21 +1381,18 @@ app.post("/getallchatsofcharacter", jsonParser, function (request, response) {
                     lastLine = line;
                 });
                 rl.on('close', () => {
+                    ii--;
                     if (lastLine) {
                         let jsonData = json5.parse(lastLine);
-                        if (jsonData.name !== undefined) {
+                        if (jsonData.name !== undefined || jsonData.character_name !== undefined) {
                             chatData[i] = {};
                             chatData[i]['file_name'] = file;
-                            chatData[i]['mes'] = jsonData['mes'];
-                            ii--;
-                            if (ii === 0) {
-                                console.log('ii count went to zero, responding with chatData');
-                                response.send(chatData);
-                            }
-                        } else {
-                            console.log('just returning from getallchatsofcharacter');
-                            return;
+                            chatData[i]['mes'] = jsonData['mes'] || '[The chat is empty]';
                         }
+                    }
+                    if (ii === 0) {
+                        console.log('ii count went to zero, responding with chatData');
+                        response.send(chatData);
                     }
                     console.log('successfully closing getallchatsofcharacter');
                     rl.close();
@@ -1792,6 +1789,22 @@ app.post('/getgroupchat', jsonParser, (request, response) => {
     } else {
         return response.send([]);
     }
+});
+
+app.post('/deletegroupchat', jsonParser, (request, response) => {
+    if (!request.body || !request.body.id) {
+        return response.sendStatus(400);
+    }
+
+    const id = request.body.id;
+    const pathToFile = path.join(directories.groupChats, `${id}.jsonl`);
+
+    if (fs.existsSync(pathToFile)) {
+        fs.rmSync(pathToFile);
+        return response.send({ ok: true });
+    }
+
+    return response.send({ error: true });
 });
 
 app.post('/savegroupchat', jsonParser, (request, response) => {

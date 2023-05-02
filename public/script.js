@@ -42,6 +42,11 @@ import {
     getGroupChat,
     renameGroupMember,
     createNewGroupChat,
+    getGroupPastChats,
+    getGroupAvatar,
+    openGroupChat,
+    editGroup,
+    deleteGroupChat,
 } from "./scripts/group-chats.js";
 
 import {
@@ -852,20 +857,10 @@ async function delChat(chatfile) {
         }),
     });
     if (response.ok === true) {
-        //close past chat popup
-        $("#select_chat_cross").click();
-
         // choose another chat if current was deleted
         if (chatfile.replace('.jsonl', '') === characters[this_chid].chat) {
             await replaceCurrentChat();
         }
-
-        //open the history view again after 100ms
-        //hide option popup menu
-        setTimeout(function () {
-            $("#option_select_chat").click();
-            $("#options").hide();
-        }, 100);
     }
 }
 
@@ -2707,8 +2702,6 @@ async function openCharacterChat(file_name) {
     await getChat();
     $("#selected_chat_pole").val(file_name);
     $("#create_button").click();
-    $("#shadow_select_chat_popup").css("display", "none");
-    $("#load_select_chat_div").css("display", "block");
 }
 
 ////////// OPTIMZED MAIN API CHANGE FUNCTION ////////////
@@ -3164,67 +3157,63 @@ function messageEditDone(div) {
     saveChatConditional();
 }
 
-async function getAllCharaChats() {
-    //console.log('getAllCharaChats() pinging server for character chat history.');
-    $("#select_chat_div").html("");
-    //console.log(characters[this_chid].chat);
-    jQuery.ajax({
-        type: "POST",
-        url: "/getallchatsofcharacter",
-        data: JSON.stringify({ avatar_url: characters[this_chid].avatar }),
-        beforeSend: function () {
-
-        },
-        cache: false,
-        dataType: "json",
-        contentType: "application/json",
-        success: function (data) {
-            $("#load_select_chat_div").css("display", "none");
-            let dataArr = Object.values(data);
-            data = dataArr.sort((a, b) =>
-                a["file_name"].localeCompare(b["file_name"])
-            );
-            data = data.reverse();
-            $("#ChatHistoryCharName").html(characters[this_chid].name);
-            for (const key in data) {
-                let strlen = 300;
-                let mes = data[key]["mes"];
-                if (mes !== undefined) {
-                    if (mes.length > strlen) {
-                        mes = "..." + mes.substring(mes.length - strlen);
-                    }
-                    $("#select_chat_div").append(
-                        '<div class="select_chat_block_wrapper">' +
-                        '<div class="select_chat_block" file_name="' + data[key]["file_name"] + '">' +
-                        '<div class=avatar><img src="characters/' + characters[this_chid]["avatar"] + '""></div >' +
-                        '<div class="select_chat_block_filename">' + data[key]["file_name"] + '</div>' +
-                        '<div class="select_chat_block_mes">' +
-                        mes +
-                        "</div>" +
-                        "</div >" +
-                        '<div file_name="' + data[key]["file_name"] + '" class="PastChat_cross fa-solid fa-circle-xmark"></div>' +
-                        '</div>'
-
-
-                    );
-                    if (
-                        characters[this_chid]["chat"] ==
-                        data[key]["file_name"].replace(".jsonl", "")
-                    ) {
-                        //children().last()
-                        $("#select_chat_div")
-                            .find(".select_chat_block:last")
-                            .attr("highlight", true);
-                    }
-                }
-            }
-        },
-        error: function (jqXHR, exception) {
-
-            console.log(exception);
-            console.log(jqXHR);
-        },
+async function getPastCharacterChats() {
+    const response = await fetch("/getallchatsofcharacter", {
+        method: 'POST',
+        body: JSON.stringify({ avatar_url: characters[this_chid].avatar }),
+        headers: getRequestHeaders(),
     });
+
+    if (!response.ok) {
+        return;
+    }
+
+    let data = await response.json();
+    data = Object.values(data);
+    data = data.sort((a, b) => a["file_name"].localeCompare(b["file_name"])).reverse();
+    return data;
+}
+
+async function displayPastChats() {
+    $("#select_chat_div").empty();
+
+    const group = selected_group ? groups.find(x => x.id === selected_group) : null;
+    const data = await (selected_group ? getGroupPastChats(selected_group) : getPastCharacterChats());
+    const currentChat = selected_group ? group?.chat_id : characters[this_chid]["chat"];
+    const displayName = selected_group ? group?.name : characters[this_chid].name;
+    const avatarImg = selected_group ? group?.avatar_url : getThumbnailUrl('avatar', characters[this_chid]['avatar']);
+
+    $("#load_select_chat_div").css("display", "none");
+    $("#ChatHistoryCharName").text(displayName);
+
+    for (const key in data) {
+        let strlen = 300;
+        let mes = data[key]["mes"];
+
+        if (mes !== undefined) {
+            if (mes.length > strlen) {
+                mes = "..." + mes.substring(mes.length - strlen);
+            }
+
+            const fileName = data[key]['file_name'];
+            const template = $('#past_chat_template .select_chat_block_wrapper').clone();
+            template.find('.select_chat_block').attr('file_name', fileName);
+            template.find('.avatar img').attr('src', avatarImg);
+            template.find('.select_chat_block_filename').text(fileName);
+            template.find('.select_chat_block_mes').text(mes);
+            template.find('.PastChat_cross').attr('file_name', fileName);
+
+            if (selected_group) {
+                template.find('.avatar img').replaceWith(getGroupAvatar(group));
+            }
+
+            $("#select_chat_div").append(template);
+
+            if (currentChat === fileName.replace(".jsonl", "")) {
+                $("#select_chat_div").find(".select_chat_block:last").attr("highlight", true);
+            }
+        }
+    }
 }
 
 //************************************************************
@@ -3542,6 +3531,10 @@ function read_bg_load(input) {
 }
 
 function showSwipeButtons() {
+    if (chat.length === 0) {
+        return;
+    }
+
     if (
         chat[chat.length - 1].is_system ||
         !swipes ||
@@ -3592,12 +3585,21 @@ function hideSwipeButtons() {
     $("#chat").children().filter(`[mesid="${count_view_mes - 1}"]`).children('.swipe_left').css('display', 'none');
 }
 
-function saveChatConditional() {
+async function saveMetadata() {
     if (selected_group) {
-        saveGroupChat(selected_group);
+        await editGroup(selected_group, true, false);
     }
     else {
-        saveChat();
+        await saveChat();
+    }
+}
+
+async function saveChatConditional() {
+    if (selected_group) {
+        await saveGroupChat(selected_group, true);
+    }
+    else {
+        await saveChat();
     }
 }
 
@@ -3681,6 +3683,7 @@ window["SillyTavern"].getContext = function () {
         setExtensionPrompt: setExtensionPrompt,
         updateChatMetadata: updateChatMetadata,
         saveChat: saveChatConditional,
+        saveMetadata: saveMetadata,
         sendSystemMessage: sendSystemMessage,
         activateSendButtons,
         deactivateSendButtons,
@@ -4226,7 +4229,7 @@ $(document).ready(function () {
         is_advanced_char_open = false;
         $("#character_popup").css("display", "none");
     });
-    $("#dialogue_popup_ok").click(function (e) {
+    $("#dialogue_popup_ok").click(async function (e) {
         $("#shadow_popup").transition({
             opacity: 0,
             duration: 200,
@@ -4239,9 +4242,21 @@ $(document).ready(function () {
             bg_file_for_del.parent().remove();
         }
         if (popup_type == "del_chat") {
+            //close past chat popup
+            $("#select_chat_cross").click();
 
-            delChat(chat_file_for_del);
+            if (selected_group) {
+                await deleteGroupChat(selected_group, chat_file_for_del);
+            } else {
+                await delChat(chat_file_for_del);
+            }
 
+            //open the history view again after 100ms
+            //hide option popup menu
+            setTimeout(function () {
+                $("#option_select_chat").click();
+                $("#options").hide();
+            }, 100);
         }
         if (popup_type == "del_ch") {
             console.log(
@@ -4312,7 +4327,7 @@ $(document).ready(function () {
             chat.length = 0;
 
             if (selected_group) {
-                createNewGroupChat();
+                createNewGroupChat(selected_group);
             }
             else {
                 //RossAscends: added character name to new chat filenames and replaced Date.now() with humanizedDateTime;
@@ -4652,14 +4667,8 @@ $(document).ready(function () {
     $("#options [id]").on("click", function () {
         var id = $(this).attr("id");
         if (id == "option_select_chat") {
-            if (selected_group) {
-                // will open a chat selection screen
-                /* openNavToggle(); */
-                $("#rm_button_characters").trigger("click");
-                return;
-            }
-            if (this_chid != undefined && !is_send_press) {
-                getAllCharaChats();
+            if ((selected_group && !is_group_generating) || (this_chid !== undefined && !is_send_press)) {
+                displayPastChats();
                 $("#shadow_select_chat_popup").css("display", "block");
                 $("#shadow_select_chat_popup").css("opacity", 0.0);
                 $("#shadow_select_chat_popup").transition({
@@ -5266,7 +5275,7 @@ $(document).ready(function () {
             success: function (data) {
                 //console.log(data);
                 if (data.res) {
-                    getAllCharaChats();
+                    displayPastChats();
                 }
             },
             error: function (jqXHR, exception) {
@@ -5287,7 +5296,15 @@ $(document).ready(function () {
 
     $(document).on("click", ".select_chat_block, .bookmark_link", async function () {
         let file_name = $(this).attr("file_name").replace(".jsonl", "");
-        openCharacterChat(file_name);
+
+        if (selected_group) {
+            await openGroupChat(selected_group, file_name);
+        } else {
+            await openCharacterChat(file_name);
+        }
+
+        $("#shadow_select_chat_popup").css("display", "none");
+        $("#load_select_chat_div").css("display", "block");
     });
 
     $(document).on("click", ".mes_stop", function () {
