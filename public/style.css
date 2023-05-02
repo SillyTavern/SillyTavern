@@ -3967,6 +3967,12 @@ body.waifuMode #avatar_zoom_popup {
         object-fit: cover;
     }
 
+    body:not(.waifuMode) #avatar_zoom_popup {
+        z-index: 999;
+        width: fit-content;
+        max-height: calc(60svh - 60px);
+    }
+
     body.waifuMode #avatar_zoom_popup {
         width: fit-content;
         max-height: calc(60svh - 60px);
