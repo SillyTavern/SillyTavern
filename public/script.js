@@ -2217,7 +2217,7 @@ function setInContextMessages(lastmsg, type) {
         lastmsg++;
     }
 
-    $(`#chat .mes:nth-last-child(${lastmsg} of :not([is_system="true"])`).addClass('lastInContext');
+    $('#chat .mes:not([is_system="true"])').eq(-lastmsg).addClass('lastInContext');
 }
 
 // TODO: move to textgen-settings.js
