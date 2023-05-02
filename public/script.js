@@ -1731,7 +1731,7 @@ async function Generate(type, automatic_trigger, force_name2) {
                 $("#chat").children().removeClass('lastInContext');
                 console.log(arrMes.length);
 
-                $(`#chat .mes:nth-last-of-type(${arrMes.length + 1})`).addClass('lastInContext');
+                $(`#chat .mes:nth-last-child(${arrMes.length})`).addClass('lastInContext');
                 break;
 
             }
@@ -1937,7 +1937,7 @@ async function Generate(type, automatic_trigger, force_name2) {
             if (power_user.collapse_newlines) {
                 finalPromt = collapseNewlines(finalPromt);
             }
-
+            //console.log(`---Calculated Prompt Tokens: ${getTokenCount(finalPromt, padding_tokens)}`);
             let this_amount_gen = parseInt(amount_gen); // how many tokens the AI will be requested to generate
             let this_settings = koboldai_settings[koboldai_setting_names[preset_settings]];
 
