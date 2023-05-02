@@ -1451,7 +1451,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 .avatar_div .menu_button,
 .form_create_bottom_buttons_block .menu_button,
-#select_chat_popup .menu_button {
+#select_chat_import .menu_button {
     font-weight: bold;
     padding: 5px;
     margin: 0;
@@ -1647,11 +1647,21 @@ input[type=search]:focus::-webkit-search-cancel-button {
     margin: 0;
 }
 
-#form_rename_world {
+#form_rename_world,
+#form_rename_chat {
     display: flex;
     align-items: center;
-    margin-right: 50px;
+
     opacity: 0.8;
+    gap: 5px;
+}
+
+#form_rename_world {
+    margin-right: 50px;
+}
+
+#form_rename_chat {
+    flex: 1;
 }
 
 #form_rename_world input[type="submit"] {
@@ -2351,12 +2361,26 @@ h5 {
 }
 
 .select_chat_block .avatar {
-
     grid-row: span 2;
 }
 
-.select_chat_block_filename {
+#select_chat_name_wrapper {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.select_chat_block_filename_item {
     opacity: 0.5;
+    width: fit-content;
+}
+
+.select_chat_block_filename {
+    flex: 1
+}
+
+.renameChatButton {
+    cursor: pointer;
 }
 
 .select_chat_block_mes {
@@ -3949,6 +3973,12 @@ body.waifuMode #avatar_zoom_popup {
 
     body.waifuMode img.expression {
         object-fit: cover;
+    }
+
+    body:not(.waifuMode) #avatar_zoom_popup {
+        z-index: 999;
+        width: fit-content;
+        max-height: calc(60svh - 60px);
     }
 
     body.waifuMode #avatar_zoom_popup {
