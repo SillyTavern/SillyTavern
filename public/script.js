@@ -70,7 +70,7 @@ import {
     generateOpenAIPromptCache,
     oai_settings,
     is_get_status_openai,
-    openai_msgs,
+    openai_messages_count,
 } from "./scripts/openai.js";
 
 import {
@@ -1724,16 +1724,7 @@ async function Generate(type, automatic_trigger, force_name2) {
                 arrMes[arrMes.length] = item;
 
             } else {
-                $("#chat").children().removeClass('lastInContext');
-
-                let lastmsg = arrMes.length;
-
-                if (type === 'swipe') {
-                    lastmsg++;
-                }
-                //console.log(arrMes.length);
-                //console.log(lastmsg);
-                $(`#chat .mes:nth-last-child(${lastmsg} of :not([is_system="true"])`).addClass('lastInContext');
+                setInContextMessages(arrMes.length, type);
                 break;
 
             }
@@ -2005,6 +1996,7 @@ async function Generate(type, automatic_trigger, force_name2) {
 
             if (main_api == 'openai') {
                 let prompt = await prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAfter, afterScenarioAnchor, promptBias, type);
+                setInContextMessages(openai_messages_count, type);
 
                 if (isStreamingEnabled()) {
                     streamingProcessor.generator = await sendOpenAIRequest(prompt, streamingProcessor.abortController.signal);
@@ -2173,6 +2165,16 @@ async function Generate(type, automatic_trigger, force_name2) {
     }
     //console.log('generate ending');
 } //generate ends
+
+function setInContextMessages(lastmsg, type) {
+    $("#chat").children().removeClass('lastInContext');
+
+    if (type === 'swipe') {
+        lastmsg++;
+    }
+
+    $(`#chat .mes:nth-last-child(${lastmsg} of :not([is_system="true"])`).addClass('lastInContext');
+}
 
 // TODO: move to textgen-settings.js
 function getTextGenGenerationData(finalPromt, this_amount_gen, isImpersonate) {
@@ -3073,7 +3075,7 @@ function selectKoboldGuiPreset() {
 
 async function saveSettings(type) {
     //console.log('Entering settings with name1 = '+name1);
-    jQuery.ajax({
+    return jQuery.ajax({
         type: "POST",
         url: "/savesettings",
         data: JSON.stringify({
@@ -3686,7 +3688,9 @@ window["SillyTavern"].getContext = function () {
         name2: name2,
         characterId: this_chid,
         groupId: selected_group,
-        chatId: this_chid && characters[this_chid] && characters[this_chid].chat,
+        chatId: selected_group
+            ? groups.find(x => x.id == selected_group)?.chat_id
+            : (this_chid && characters[this_chid] && characters[this_chid].chat),
         onlineStatus: online_status,
         maxContext: Number(max_context),
         chatMetadata: chat_metadata,

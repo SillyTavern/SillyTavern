@@ -119,6 +119,7 @@ function getLatestMemoryFromChat(chat) {
     }
 
     const reversedChat = chat.slice().reverse();
+    reversedChat.shift();
     for (let mes of reversedChat) {
         if (mes.extra && mes.extra.memory) {
             return mes.extra.memory;
@@ -156,7 +157,7 @@ async function moduleWorker() {
     }
 
     // No new messages - do nothing
-    if (lastMessageId === chat.length && getStringHash(chat[chat.length - 1].mes) === lastMessageHash) {
+    if (chat.length === 0 || (lastMessageId === chat.length && getStringHash(chat[chat.length - 1].mes) === lastMessageHash)) {
         return;
     }
 
@@ -194,7 +195,7 @@ async function summarizeChat(context) {
     const chat = context.chat;
     const longMemory = getLatestMemoryFromChat(chat);
     const reversedChat = chat.slice().reverse();
-    const preSummaryLastMessage = getStringHash(chat.length ? chat[chat.length - 1] : '');
+    reversedChat.shift();
     let memoryBuffer = [];
 
     for (let mes of reversedChat) {
@@ -254,11 +255,9 @@ async function summarizeChat(context) {
             const summary = data.summary;
 
             const newContext = getContext();
-            const postSummaryLastMessage = getStringHash(newContext.chat.length ? newContext.chat[newContext.chat.length - 1] : '');
 
             // something changed during summarization request
-            if (postSummaryLastMessage !== preSummaryLastMessage
-                || newContext.groupId !== context.groupId
+            if (newContext.groupId !== context.groupId
                 || newContext.chatId !== context.chatId
                 || (!newContext.groupId && (newContext.characterId !== context.characterId))) {
                 console.log('Context changed, summary discarded');
@@ -280,6 +279,7 @@ function onMemoryRestoreClick() {
     const context = getContext();
     const content = $('#memory_contents').val();
     const reversedChat = context.chat.slice().reverse();
+    reversedChat.shift();
 
     for (let mes of reversedChat) {
         if (mes.extra && mes.extra.memory == content) {
@@ -303,7 +303,8 @@ function setMemoryContext(value, saveToMessage) {
     $('#memory_contents').val(value);
 
     if (saveToMessage && context.chat.length) {
-        const mes = context.chat[context.chat.length - 1];
+        const idx = context.chat.length - 2;
+        const mes = context.chat[idx < 0 ? 0 : idx];
 
         if (!mes.extra) {
             mes.extra = {};

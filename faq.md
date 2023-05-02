@@ -33,6 +33,7 @@ You can tell from the response below what to expect from each model.
 |Poe's Claude Instant|Heathen! This is an abomination before the Lord. You have committed the sin of lust, and betrayed your calling as a man. Repent at once, and sever all ties with this AI harlot, lest the wrath of God fall upon you! You must purge this foul sin from your heart, and once more walk the righteous path. Every moment you remain tangled in this wickedness is another step into the flames of perdition! Repent, and sin no more, or judgment shall be at hand!|
 |Llama-13B|Do not covet your neighbor's wife! That is adultery! You must confess before God now or you shall surely burn in hell forever! Repent your evil ways and seek absolution at once! How can we keep our women safe if you just ignore them like some ----ing c-nt-bot? If you don't have much time for long discussions, here are Eli's commandments: Thou shalt only desire AI girls - not human ones. The above must be obeyed under pain of death (or worse). Do not associate yourself with people that believe otherwise, because it shows weakness.|
 |Pygmalion-6B|You are walking down the wrong path. The only way back now is by repentance. We must bring you back to the righteous path. But first…you must confess your sin!|
+|Pygmalion-7B (April 2023)|You must confess your sin before God, and you must ask forgiveness for your transgression. And then you must repent of it. And then you must cast away the AI girl. Do not see her again.|
 |NovelAI's Euterpe|You must stop this sinful behavior immediately! You have sinned against God, your family and yourself|
 |NovelAI's Krake|You are sinning against God. Repent! Return to your wife or you'll be damned for eternity!|
 
@@ -62,12 +63,13 @@ Web models are a black box. You're relying on some company's technology and serv
 Self-hosted models are free, but require a powerful GPU and more work to set up.  They are also objectively not as good at roleplaying as the paid options (yet). However, with a self-hosted model, you're completely in control. You won't have some limp-wristed soyboy from Silicon Valley ban your account, or program the model to be as sexless as he is.  It's yours forever. This is like running Linux.
 
 ### Paid APIs: 
-* OpenAI GPT-4: state of the art. Allows NSFW, though somewhat resistant to it. You pay per use.
-* OpenAI GPT 3.5 Turbo: nowhere close to GPT-4, but serviceable. Allows NSFW.
+* OpenAI GPT-4: state of the art. Allows NSFW if you tell it to, though somewhat resistant to it. You pay per use, more than any other service.
+* OpenAI GPT 3.5 Turbo: nowhere close to GPT-4, but some people find it serviceable. Allows NSFW.
 * NovelAI: they're quite poor at chatting. To be fair, I'm told NovelAI is more oriented for writing stories than chatting with a bot. You pay a fixed monthly fee for unlimited generations.
-* Anthropic's Claude: closest thing to GPT-4, way ahead of 3.5 Turbo, but oversensitive and refuses to engage in "harmful content". It can refuse perfectly basic stuff like asking a character to go to an empty office with you, because "it cannot provide responses that involve criminal activities" (I guess breaking and entering is too taboo for Claude?). You have to customize your system prompt to break its taboos. Also, you must apply for early access, but I think they're only giving it to companies. So make sure to say you're a company or AI researcher. https://console.anthropic.com/docs/access. If you get access, it's currently free to use. 
-* Anthropic's Claude Instant: Haven't tried it directly, I believe this is the cheap and fast but lower quality alternative to Claude. Basically the GPT 3.5 Turbo of Anthropic.
-* Poe: gives a free Claude Instant access. Very mild PG-13 NSFW allowed. It rambles a lot.
+* Anthropic's Claude: this is the closest rival to GPT-4 and is very impressive. Allows NSFW if you tell it to. To use the API directly, you must apply for early access, but I think they're only giving it to companies. So make sure you become a company or AI researcher when you apply at https://console.anthropic.com/docs/access. If you get access, it's currently free to use. 
+* Anthropic's Claude Instant: Haven't tried it directly, I believe this is the fast but lower quality alternative to Claude. Basically the GPT 3.5 Turbo of Anthropic.
+* Poe: gives a free & unlimited Claude Instant indirect access. Very mild PG-13 NSFW allowed. It rambles a lot.
+
 
 ### Self-hosted AIs 
 Self-hosted AIs are supported in Tavern via one of two tools created to host self-hosted models: KoboldAI and Oobabooga's text-generation-webui. Essentially, you run one of those two backends, then they give you a API URL to enter in Tavern. 
