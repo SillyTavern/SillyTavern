@@ -3216,7 +3216,9 @@ async function displayPastChats() {
             const template = $('#past_chat_template .select_chat_block_wrapper').clone();
             template.find('.select_chat_block').attr('file_name', fileName);
             template.find('.avatar img').attr('src', avatarImg);
-            template.find('.select_chat_block_filename').text(fileName + " (" + file_size + ") (" + chat_items + " messages)");
+            template.find('.select_chat_block_filename').text(fileName);
+            template.find('.chat_file_size').text(" (" + file_size + ")");
+            template.find('.chat_messages_num').text(" (" + chat_items + " messages)");
             template.find('.select_chat_block_mes').text(mes);
             template.find('.PastChat_cross').attr('file_name', fileName);
 
@@ -3471,6 +3473,7 @@ function callPopup(text, type, inputValue = '') {
             break;
         case "del_world":
         case "del_group":
+        case "rename_chat":
         case "del_chat":
         default:
             $("#dialogue_popup_ok").text("Delete");
@@ -3677,6 +3680,8 @@ function isHordeGenerationNotAllowed() {
 
     return false;
 }
+
+
 
 window["SillyTavern"].getContext = function () {
     return {
@@ -4275,7 +4280,7 @@ $(document).ready(function () {
             setTimeout(function () {
                 $("#option_select_chat").click();
                 $("#options").hide();
-            }, 100);
+            }, 200);
         }
         if (popup_type == "del_ch") {
             console.log(
@@ -4586,6 +4591,37 @@ $(document).ready(function () {
     });
 
     $("#renameCharButton").on('click', renameCharacter);
+
+    $(document).on("click", ".renameChatButton", async function () {
+        var old_filenamefull = $(this).closest('.select_chat_block_wrapper').find('.select_chat_block_filename').text();
+
+        var old_filename = old_filenamefull.substring(0, old_filenamefull.length - 6);
+
+        const popupText = `<h3>Enter the new name for the chat:<h3>
+        <small>!!Using an existing filename will overwrite that file!!<br>
+        No need to add '.jsonl' at the end.<br>
+        </small>`;
+        let newName = await callPopup(popupText, 'input', old_filename);
+
+        if (!newName) {
+            console.log('no new name found, aborting');
+            return;
+        }
+
+        const newMetadata = { main_chat: characters[this_chid].chat };
+        await saveChat(newName, newMetadata);
+        await saveChat(); //is this second save needed?
+        chat_file_for_del = old_filenamefull;
+        popup_type = 'del_chat';
+
+        setTimeout(function () {
+            callPopup('Confirm Delete of Old File After Rename');
+        }, 200);
+
+
+
+
+    });
 
     $("#talkativeness_slider").on("input", function () {
         if (menu_type == "create") {
