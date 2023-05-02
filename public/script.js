@@ -1727,7 +1727,7 @@ async function Generate(type, automatic_trigger, force_name2) {
                 $("#chat").children().removeClass('lastInContext');
                 console.log(arrMes.length);
 
-                $(`#chat .mes:nth-last-child(${arrMes.length})`).addClass('lastInContext');
+                $(`#chat .mes:nth-last-child(${arrMes.length} of :not([is_system="true"])`).addClass('lastInContext');
                 break;
 
             }
