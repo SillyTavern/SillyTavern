@@ -47,7 +47,7 @@ var count_tokens;
 var perm_tokens;
 
 var connection_made = false;
-var retry_delay = 100;
+var retry_delay = 500;
 var RA_AC_retries = 1;
 
 const observerConfig = { childList: true, subtree: true };
