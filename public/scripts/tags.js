@@ -306,6 +306,10 @@ function onViewTagsListClick() {
 }
 
 function onTagDeleteClick() {
+    if (!confirm("Are you sure?")) {
+        return;
+    }
+
     const id = $(this).closest('.tag_view_item').attr('id');
     for (const key of Object.keys(tag_map)) {
         tag_map[key] = tag_map[key].filter(x => x.id !== id);
