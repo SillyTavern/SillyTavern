@@ -2185,8 +2185,9 @@ app.post("/getstatus_openai", jsonParser, function (request, response_getstatus_
     };
     client.get(api_url + "/models", args, function (data, response) {
         if (response.statusCode == 200) {
-            console.log(data);
-            response_getstatus_openai.send(data);//data);
+            response_getstatus_openai.send(data);
+            const modelIds = data?.data?.map(x => x.id)?.sort();
+            console.log('Available OpenAI models:', modelIds);
         }
         if (response.statusCode == 401) {
             console.log('Access Token is incorrect.');
@@ -2257,6 +2258,22 @@ app.post("/openai_usage", jsonParser, async function (request, response) {
     catch {
         return response.sendStatus(400);
     }
+});
+
+app.post("/deletepreset_openai", jsonParser, function (request, response) {
+    if (!request.body || !request.body.name) {
+        return response.sendStatus(400);
+    }
+
+    const name = request.body.name;
+    const pathToFile = path.join(directories.openAI_Settings, `${name}.settings`);
+
+    if (fs.existsSync(pathToFile)) {
+        fs.rmSync(pathToFile);
+        return response.send({ ok: true });
+    }
+
+    return response.send({ error: true });
 });
 
 app.post("/generate_openai", jsonParser, function (request, response_generate_openai) {

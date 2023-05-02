@@ -728,7 +728,7 @@ async function getStatusOpen() {
             reverse_proxy: oai_settings.reverse_proxy,
         };
 
-        jQuery.ajax({
+        return jQuery.ajax({
             type: 'POST', // 
             url: '/getstatus_openai', // 
             data: JSON.stringify(data),
@@ -986,6 +986,39 @@ function onLogitBiasPresetExportClick() {
     download(presetJsonString, oai_settings.bias_preset_selected, 'application/json');
 }
 
+async function onDeletePresetClick() {
+    const confirm = await callPopup('Delete the preset? This action is irreversible and your current settings will be overwritten.', 'confirm');
+
+    if (!confirm) {
+        return;
+    }
+
+    const nameToDelete = oai_settings.preset_settings_openai;
+    const value = openai_setting_names[oai_settings.preset_settings_openai];
+    $(`#settings_perset_openai option[value="${value}"]`).remove();
+    delete openai_setting_names[oai_settings.preset_settings_openai];
+    oai_settings.preset_settings_openai = null;
+
+    if (Object.keys(openai_setting_names).length) {
+        oai_settings.preset_settings_openai = Object.keys(openai_setting_names)[0];
+        const newValue = openai_setting_names[oai_settings.preset_settings_openai];
+        $(`#settings_perset_openai option[value="${newValue}"]`).attr('selected', true);
+        $('#settings_perset_openai').trigger('change');
+    }
+
+    const response = await fetch('/deletepreset_openai', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({name: nameToDelete}),
+    });
+
+    if (!response.ok) {
+        console.warn('Preset was not deleted from server');
+    }
+
+    saveSettingsDebounced();
+}
+
 async function onLogitBiasPresetDeleteClick() {
     const value = await callPopup('Delete the preset?', 'confirm');
 
@@ -1005,6 +1038,101 @@ async function onLogitBiasPresetDeleteClick() {
 
     biasCache = undefined;
     saveSettingsDebounced();
+}
+
+function onSettingsPresetChange() {
+    oai_settings.preset_settings_openai = $('#settings_perset_openai').find(":selected").text();
+    const preset = openai_settings[openai_setting_names[oai_settings.preset_settings_openai]];
+
+    const updateInput = (selector, value) => $(selector).val(value).trigger('input');
+    const updateCheckbox = (selector, value) => $(selector).prop('checked', value).trigger('input');
+
+    const settingsToUpdate = {
+        temperature: ['#temp_openai', 'temp_openai', false],
+        frequency_penalty: ['#freq_pen_openai', 'freq_pen_openai', false],
+        presence_penalty: ['#pres_pen_openai', 'pres_pen_openai', false],
+        openai_model: ['#model_openai_select', 'openai_model', false],
+        openai_max_context: ['#openai_max_context', 'openai_max_context', false],
+        openai_max_tokens: ['#openai_max_tokens', 'openai_max_tokens', false],
+        nsfw_toggle: ['#nsfw_toggle', 'nsfw_toggle', true],
+        enhance_definitions: ['#enhance_definitions', 'enhance_definitions', true],
+        wrap_in_quotes: ['#wrap_in_quotes', 'wrap_in_quotes', true],
+        nsfw_first: ['#nsfw_first', 'nsfw_first', true],
+        jailbreak_system: ['#jailbreak_system', 'jailbreak_system', true],
+        main_prompt: ['#main_prompt_textarea', 'main_prompt', false],
+        nsfw_prompt: ['#nsfw_prompt_textarea', 'nsfw_prompt', false],
+        jailbreak_prompt: ['#jailbreak_prompt_textarea', 'jailbreak_prompt', false],
+        impersonation_prompt: ['#impersonation_prompt_textarea', 'impersonation_prompt', false],
+        bias_preset_selected: ['#openai_logit_bias_preset', 'bias_preset_selected', false],
+    };
+
+    for (const [key, [selector, setting, isCheckbox]] of Object.entries(settingsToUpdate)) {
+        if (preset[key] !== undefined) {
+            if (isCheckbox) {
+                updateCheckbox(selector, preset[key]);
+            } else {
+                updateInput(selector, preset[key]);
+            }
+            oai_settings[setting] = preset[key];
+        }
+    }
+
+    $(`#model_openai_select`).trigger('change');
+    $(`#openai_logit_bias_preset`).trigger('change');
+    saveSettingsDebounced();
+}
+
+function onModelChange() {
+    const value = $(this).val();
+    oai_settings.openai_model = value;
+
+    if (value == 'gpt-4' || value == 'gpt-4-0314') {
+        $('#openai_max_context').attr('max', gpt4_max);
+    }
+    else if (value == 'gpt-4-32k') {
+        $('#openai_max_context').attr('max', gpt4_32k_max);
+    }
+    else {
+        $('#openai_max_context').attr('max', gpt3_max);
+        oai_settings.openai_max_context = Math.max(oai_settings.openai_max_context, gpt3_max);
+        $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
+    }
+
+    saveSettingsDebounced();
+}
+
+async function onNewPresetClick() {
+    const popupText = `
+        <h3>Preset name:</h3>
+        <h4>Hint: Use a character/group name to bind preset to a specific chat.</h4>`;
+    const name = await callPopup(popupText, 'input');
+
+    if (!name) {
+        return;
+    }
+
+    await saveOpenAIPreset(name, oai_settings);
+}
+
+function onReverseProxyInput() {
+    oai_settings.reverse_proxy = $(this).val();
+    if (oai_settings.reverse_proxy == '') {
+        $("#ReverseProxyWarningMessage").css('display', 'none');
+    } else { $("#ReverseProxyWarningMessage").css('display', 'block'); }
+    saveSettingsDebounced();
+}
+
+async function onConnectButtonClick(e) {
+    e.stopPropagation();
+    if ($('#api_key_openai').val() != '') {
+        $("#api_loading_openai").css("display", 'inline-block');
+        $("#api_button_openai").css("display", 'none');
+        oai_settings.api_key_openai = $('#api_key_openai').val().trim();
+        saveSettingsDebounced();
+        is_get_status_openai = true;
+        is_api_button_press_openai = true;
+        await getStatusOpen();
+    }
 }
 
 $(document).ready(function () {
@@ -1038,103 +1166,29 @@ $(document).ready(function () {
         saveSettingsDebounced();
     });
 
-    $("#model_openai_select").change(function () {
-        const value = $(this).val();
-        oai_settings.openai_model = value;
-
-        if (value == 'gpt-4' || value == 'gpt-4-0314') {
-            $('#openai_max_context').attr('max', gpt4_max);
-        }
-        else if (value == 'gpt-4-32k') {
-            $('#openai_max_context').attr('max', gpt4_32k_max);
-        }
-        else {
-            $('#openai_max_context').attr('max', gpt3_max);
-            oai_settings.openai_max_context = Math.max(oai_settings.openai_max_context, gpt3_max);
-            $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
-        }
-
-        saveSettingsDebounced();
-    });
-
-    $('#stream_toggle').change(function () {
+    $('#stream_toggle').on('change', function () {
         oai_settings.stream_openai = !!$('#stream_toggle').prop('checked');
         saveSettingsDebounced();
     });
 
-    $('#nsfw_toggle').change(function () {
+    $('#nsfw_toggle').on('change', function () {
         oai_settings.nsfw_toggle = !!$('#nsfw_toggle').prop('checked');
         saveSettingsDebounced();
     });
 
-    $('#enhance_definitions').change(function () {
+    $('#enhance_definitions').on('change', function () {
         oai_settings.enhance_definitions = !!$('#enhance_definitions').prop('checked');
         saveSettingsDebounced();
     });
 
-    $('#wrap_in_quotes').change(function () {
+    $('#wrap_in_quotes').on('change', function () {
         oai_settings.wrap_in_quotes = !!$('#wrap_in_quotes').prop('checked');
         saveSettingsDebounced();
     });
 
-    $('#nsfw_first').change(function () {
+    $('#nsfw_first').on('change', function () {
         oai_settings.nsfw_first = !!$('#nsfw_first').prop('checked');
         saveSettingsDebounced();
-    });
-
-    $("#settings_perset_openai").change(function () {
-        oai_settings.preset_settings_openai = $('#settings_perset_openai').find(":selected").text();
-        const preset = openai_settings[openai_setting_names[oai_settings.preset_settings_openai]];
-
-        const updateInput = (selector, value) => $(selector).val(value).trigger('input');
-        const updateCheckbox = (selector, value) => $(selector).prop('checked', value).trigger('input');
-
-        const settingsToUpdate = {
-            temperature: ['#temp_openai', 'temp_openai', false],
-            frequency_penalty: ['#freq_pen_openai', 'freq_pen_openai', false],
-            presence_penalty: ['#pres_pen_openai', 'pres_pen_openai', false],
-            openai_model: ['#model_openai_select', 'openai_model', false],
-            openai_max_context: ['#openai_max_context', 'openai_max_context', false],
-            openai_max_tokens: ['#openai_max_tokens', 'openai_max_tokens', false],
-            nsfw_toggle: ['#nsfw_toggle', 'nsfw_toggle', true],
-            enhance_definitions: ['#enhance_definitions', 'enhance_definitions', true],
-            wrap_in_quotes: ['#wrap_in_quotes', 'wrap_in_quotes', true],
-            nsfw_first: ['#nsfw_first', 'nsfw_first', true],
-            jailbreak_system: ['#jailbreak_system', 'jailbreak_system', true],
-            main_prompt: ['#main_prompt_textarea', 'main_prompt', false],
-            nsfw_prompt: ['#nsfw_prompt_textarea', 'nsfw_prompt', false],
-            jailbreak_prompt: ['#jailbreak_prompt_textarea', 'jailbreak_prompt', false],
-            impersonation_prompt: ['#impersonation_prompt_textarea', 'impersonation_prompt', false],
-            bias_preset_selected: ['#openai_logit_bias_preset', 'bias_preset_selected', false],
-        };
-
-        for (const [key, [selector, setting, isCheckbox]] of Object.entries(settingsToUpdate)) {
-            if (preset[key] !== undefined) {
-                if (isCheckbox) {
-                    updateCheckbox(selector, preset[key]);
-                } else {
-                    updateInput(selector, preset[key]);
-                }
-                oai_settings[setting] = preset[key];
-            }
-        }
-
-        $(`#model_openai_select`).trigger('change');
-        $(`#openai_logit_bias_preset`).trigger('change');
-        saveSettingsDebounced();
-    });
-
-    $("#api_button_openai").click(function (e) {
-        e.stopPropagation();
-        if ($('#api_key_openai').val() != '') {
-            $("#api_loading_openai").css("display", 'inline-block');
-            $("#api_button_openai").css("display", 'none');
-            oai_settings.api_key_openai = $.trim($('#api_key_openai').val());
-            saveSettingsDebounced();
-            is_get_status_openai = true;
-            is_api_button_press_openai = true;
-            getStatusOpen();
-        }
     });
 
     $("#jailbreak_prompt_textarea").on('input', function () {
@@ -1157,7 +1211,7 @@ $(document).ready(function () {
         saveSettingsDebounced();
     });
 
-    $("#jailbreak_system").change(function () {
+    $("#jailbreak_system").on('change', function () {
         oai_settings.jailbreak_system = !!$(this).prop("checked");
         saveSettingsDebounced();
     });
@@ -1185,58 +1239,42 @@ $(document).ready(function () {
         trySelectPresetByName(name);
     });
 
-    $("#update_preset").click(async function () {
+    $("#update_oai_preset").on('click', async function () {
         const name = oai_settings.preset_settings_openai;
         await saveOpenAIPreset(name, oai_settings);
         callPopup('Preset updated', 'text');
     });
 
-    $("#new_preset").click(async function () {
-        const popupText = `
-            <h3>Preset name:</h3>
-            <h4>Hint: Use a character/group name to bind preset to a specific chat.</h4>`;
-        $("#save_prompts").click();
-        const name = await callPopup(popupText, 'input');
-
-        if (!name) {
-            return;
-        }
-
-        await saveOpenAIPreset(name, oai_settings);
-    });
-
-    $("#main_prompt_restore").click(function () {
+    $("#main_prompt_restore").on('click', function () {
         oai_settings.main_prompt = default_main_prompt;
         $('#main_prompt_textarea').val(oai_settings.main_prompt);
         saveSettingsDebounced();
     });
 
-    $("#nsfw_prompt_restore").click(function () {
+    $("#nsfw_prompt_restore").on('click', function () {
         oai_settings.nsfw_prompt = default_nsfw_prompt;
         $('#nsfw_prompt_textarea').val(oai_settings.nsfw_prompt);
         saveSettingsDebounced();
     });
 
-    $("#jailbreak_prompt_restore").click(function () {
+    $("#jailbreak_prompt_restore").on('click', function () {
         oai_settings.jailbreak_prompt = default_jailbreak_prompt;
         $('#jailbreak_prompt_textarea').val(oai_settings.jailbreak_prompt);
         saveSettingsDebounced();
     });
 
-    $("#impersonation_prompt_restore").click(function () {
+    $("#impersonation_prompt_restore").on('click', function () {
         oai_settings.impersonation_prompt = default_impersonation_prompt;
         $('#impersonation_prompt_textarea').val(oai_settings.impersonation_prompt);
         saveSettingsDebounced();
     });
 
-    $("#openai_reverse_proxy").on('input', function () {
-        oai_settings.reverse_proxy = $(this).val();
-        if (oai_settings.reverse_proxy == '') {
-            $("#ReverseProxyWarningMessage").css('display', 'none');
-        } else { $("#ReverseProxyWarningMessage").css('display', 'block'); }
-        saveSettingsDebounced();
-    });
-
+    $("#api_button_openai").on('click', onConnectButtonClick);
+    $("#openai_reverse_proxy").on('input', onReverseProxyInput);
+    $("#model_openai_select").on('change', onModelChange);
+    $("#settings_perset_openai").on('change', onSettingsPresetChange);
+    $("#new_oai_preset").on('click', onNewPresetClick);
+    $("#delete_oai_preset").on('click', onDeletePresetClick);
     $("#openai_api_usage").on('click', showApiKeyUsage);
     $('#openai_logit_bias_preset').on('change', onLogitBiasPresetChange);
     $('#openai_logit_bias_new_preset').on('click', createNewLogitBiasPreset);

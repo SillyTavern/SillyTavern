@@ -116,8 +116,9 @@
                                         <select id="settings_perset_openai">
                                             <option value="gui">Default</option>
                                         </select>
-                                        <i id="update_preset" class="menu_button fa-solid fa-save" title="Update current preset"></i>
-                                        <i id="new_preset" class="menu_button fa-solid fa-plus" title="Create new preset"></i>
+                                        <i id="update_oai_preset" class="menu_button fa-solid fa-save" title="Update current preset"></i>
+                                        <i id="new_oai_preset" class="menu_button fa-solid fa-plus" title="Create new preset"></i>
+                                        <i id="delete_oai_preset" class="menu_button fa-solid fa-trash-can" title="Delete the preset"></i>
                                     </div>
                                 </div>
                                 <div>
@@ -1506,7 +1507,7 @@
                         <div id="tags_div">
                             <div class="tag_controls">
                                 <input id="tagInput" class="text_pole tag_input" placeholder="Search / Create tags" maxlength="25" />
-                                <div class="tags_view menu_button fa-solid fa-pen-to-square" title="View all tags"></div>
+                                <div class="tags_view menu_button fa-solid fa-tags" title="View all tags"></div>
                             </div>
                             <div id="tagList" class="tags"></div>
                         </div>
@@ -1588,7 +1589,7 @@
                     <div id="group_tags_div" class="wide100p">
                         <div class="tag_controls">
                             <input id="groupTagInput" class="text_pole tag_input flex1" placeholder="Search / Create tags" maxlength="25" />
-                            <div class="tags_view menu_button fa-solid fa-pen-to-square" title="View all tags"></div>
+                            <div class="tags_view menu_button fa-solid fa-tags" title="View all tags"></div>
                         </div>
                         <div id="groupTagList" class="tags"></div>
                     </div>
@@ -1614,6 +1615,7 @@
                         <div class="form_create_bottom_buttons_block">
                             <div id="rm_button_create" title="Create New Character" class="menu_button fa-solid fa-user-plus "></div>
                             <div id="character_import_button" title="Import Character from File" class="menu_button fa-solid fa-file-arrow-up "></div>
+                            <div class="tags_view menu_button fa-solid fa-tags" title="Manage Tags"></div>
                             <div id="rm_button_group_chats" title="Create New Chat Group" class="menu_button fa-solid fa-users-gear "></div>
                         </div>
                         <form id="form_character_search_form" action="javascript:void(null);">

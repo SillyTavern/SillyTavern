@@ -3614,7 +3614,7 @@ async function saveMetadata() {
     }
 }
 
-async function saveChatConditional() {
+export async function saveChatConditional() {
     if (selected_group) {
         await saveGroupChat(selected_group, true);
     }
