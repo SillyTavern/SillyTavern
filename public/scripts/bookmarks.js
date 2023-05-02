@@ -12,9 +12,17 @@ import {
     getThumbnailUrl,
     getCharacters,
     chat,
+    saveChatConditional,
 } from "../script.js";
 import { humanizedDateTime } from "./RossAscends-mods.js";
-import { group_activation_strategy, groups, selected_group } from "./group-chats.js";
+import {
+    getGroupPastChats,
+    group_activation_strategy,
+    groups,
+    openGroupChat,
+    saveGroupBookmarkChat,
+    selected_group,
+} from "./group-chats.js";
 import { createTagMapFromList } from "./tags.js";
 
 import {
@@ -30,30 +38,34 @@ export {
 const bookmarkNameToken = 'Bookmark #';
 
 async function getExistingChatNames() {
-    const response = await fetch("/getallchatsofcharacter", {
-        method: 'POST',
-        headers: getRequestHeaders(),
-        body: JSON.stringify({ avatar_url: characters[this_chid].avatar })
-    });
+    if (selected_group) {
+        const data = await getGroupPastChats(selected_group);
+        return data.map(x => x.file_name);
+    } else {
+        const response = await fetch("/getallchatsofcharacter", {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ avatar_url: characters[this_chid].avatar })
+        });
 
-    if (response.ok) {
-        const data = await response.json();
-        return Object.values(data).map(x => x.file_name.replace('.jsonl', ''));
+        if (response.ok) {
+            const data = await response.json();
+            return Object.values(data).map(x => x.file_name.replace('.jsonl', ''));
+        }
     }
 }
 
 async function getBookmarkName() {
     const chatNames = await getExistingChatNames();
     const popupText = `<h3>Enter the bookmark name:<h3>
-    <small>Using existing name will overwrite your bookmark chat.
-    <br>Leave empty to auto-generate.</small>`;
+    <small>Leave empty to auto-generate.</small>`;
     let name = await callPopup(popupText, 'input');
 
     if (name === false) {
         return null;
     }
     else if (name === '') {
-        for (let i = 0; i < 1000; i++) {
+        for (let i = chatNames.length; i < 1000; i++) {
             name = bookmarkNameToken + i;
             if (!chatNames.includes(name)) {
                 break;
@@ -61,13 +73,17 @@ async function getBookmarkName() {
         }
     }
 
-    return name;
+    return `${name} - ${humanizedDateTime()}`;
 }
 
 function getMainChatName() {
     if (chat_metadata) {
         if (chat_metadata['main_chat']) {
             return chat_metadata['main_chat'];
+        }
+        // groups didn't support bookmarks before chat metadata was introduced
+        else if (selected_group) {
+            return null;
         }
         else if (characters[this_chid].chat && characters[this_chid].chat.includes(bookmarkNameToken)) {
             const tokenIndex = characters[this_chid].chat.lastIndexOf(bookmarkNameToken);
@@ -80,24 +96,24 @@ function getMainChatName() {
 
 function showBookmarksButtons() {
     try {
-        // In groups or without an active chat
-        if (selected_group || !characters[this_chid].chat) {
-            $("#option_back_to_main").hide();
-            $("#option_new_bookmark").hide();
+        if (selected_group) {
             $("#option_convert_to_group").hide();
-        }
-        // In main chat
-        else if (!chat_metadata['main_chat']) {
-            $("#option_back_to_main").hide();
-            $("#option_new_bookmark").show();
+        } else {
             $("#option_convert_to_group").show();
-
         }
-        // In bookmark chat
-        else {
+
+        if (chat_metadata['main_chat']) {
+            // In bookmark chat
             $("#option_back_to_main").show();
             $("#option_new_bookmark").show();
-            $("#option_convert_to_group").show();
+        } else if (!selected_group && !characters[this_chid].chat) {
+            // No chat recorded on character
+            $("#option_back_to_main").hide();
+            $("#option_new_bookmark").hide();
+        } else {
+            // In main chat
+            $("#option_back_to_main").hide();
+            $("#option_new_bookmark").show();
         }
     }
     catch {
@@ -108,30 +124,36 @@ function showBookmarksButtons() {
 }
 
 async function createNewBookmark() {
-    if (selected_group) {
-        alert('Chat bookmarks unsupported for groups');
-        throw new Error();
-    }
-
-    let name = await getBookmarkName(characters[this_chid].chat);
+    let name = await getBookmarkName();
 
     if (!name) {
         return;
     }
 
-    const newMetadata = { main_chat: characters[this_chid].chat };
-    saveChat(name, newMetadata);
+    const mainChat = selected_group ? groups?.find(x => x.id == selected_group)?.chat_id : characters[this_chid].chat;
+    const newMetadata = { main_chat: mainChat };
+
+    if (selected_group) {
+        await saveGroupBookmarkChat(selected_group, name, newMetadata);
+    } else {
+        await saveChat(name, newMetadata);
+    }
+
     let mainMessage = stringFormat(system_messages[system_message_types.BOOKMARK_CREATED].mes, name, name);
     sendSystemMessage(system_message_types.BOOKMARK_CREATED, mainMessage);
-    saveChat();
+    await saveChatConditional();
 }
 
 async function backToMainChat() {
-    const mainChatName = getMainChatName(characters[this_chid].chat);
+    const mainChatName = getMainChatName();
     const allChats = await getExistingChatNames();
 
     if (allChats.includes(mainChatName)) {
-        openCharacterChat(mainChatName);
+        if (selected_group) {
+            await openGroupChat(selected_group, mainChatName);
+        } else {
+            await openCharacterChat(mainChatName);
+        }
     }
 }
 
@@ -155,9 +177,10 @@ async function convertSoloToGroupChat() {
     const chats = [chatName];
     const members = [character.avatar];
     const activationStrategy = group_activation_strategy.NATURAL;
-    const allowSelfResponses = false; 
+    const allowSelfResponses = false;
     const favChecked = character.fav == 'true';
     const metadata = Object.assign({}, chat_metadata);
+    delete metadata.main_chat;
 
     const createGroupResponse = await fetch("/creategroup", {
         method: "POST",

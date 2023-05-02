@@ -1181,6 +1181,25 @@ export async function deleteGroupChat(groupId, chatId) {
     }
 }
 
+export async function saveGroupBookmarkChat(groupId, name, metadata) {
+    const group = groups.find(x => x.id === groupId);
+
+    if (!group) {
+        return;
+    }
+
+    group.past_metadata[name] = { ...chat_metadata, ...(metadata || {}) };
+    group.chats.push(name);
+
+    await editGroup(groupId, true);
+
+    await fetch("/savegroupchat", {
+        method: "POST",
+        headers: getRequestHeaders(),
+        body: JSON.stringify({ id: name, chat: [...chat] }),
+    });
+}
+
 $(document).ready(() => {
     $(document).on("click", ".group_select", selectGroup);
     $("#rm_group_filter").on("input", filterGroupMembers);

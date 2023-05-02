@@ -3611,7 +3611,7 @@ async function saveMetadata() {
     }
 }
 
-async function saveChatConditional() {
+export async function saveChatConditional() {
     if (selected_group) {
         await saveGroupChat(selected_group, true);
     }
@@ -4272,10 +4272,9 @@ $(document).ready(function () {
 
             //open the history view again after 100ms
             //hide option popup menu
-            setTimeout(function () {
-                $("#option_select_chat").click();
-                $("#options").hide();
-            }, 100);
+            await delay(100);
+            $("#option_select_chat").click();
+            $("#options").hide();
         }
         if (popup_type == "del_ch") {
             console.log(
