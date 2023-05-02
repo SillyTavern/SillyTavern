@@ -1401,7 +1401,7 @@ app.post("/getallchatsofcharacter", jsonParser, function (request, response) {
                 const stats = fs.statSync(fullPathAndFile);
                 const fileSizeInKB = (stats.size / 1024).toFixed(2) + "kb";
 
-                console.log(fileSizeInKB);
+                //console.log(fileSizeInKB);
 
                 const rl = readline.createInterface({
                     input: fileStream,
@@ -1428,10 +1428,10 @@ app.post("/getallchatsofcharacter", jsonParser, function (request, response) {
                         }
                     }
                     if (ii === 0) {
-                        console.log('ii count went to zero, responding with chatData');
+                        //console.log('ii count went to zero, responding with chatData');
                         response.send(chatData);
                     }
-                    console.log('successfully closing getallchatsofcharacter');
+                    //console.log('successfully closing getallchatsofcharacter');
                     rl.close();
                 });
             };
