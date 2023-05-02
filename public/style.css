@@ -574,6 +574,7 @@ body.big-avatars .avatar {
     border-style: none;
     display: flex;
     justify-content: center;
+    flex-direction: column;
     align-items: center;
     overflow: visible;
     border-radius: 10px;
