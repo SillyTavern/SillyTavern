@@ -213,6 +213,7 @@ const default_ch_mes = "Hello";
 let count_view_mes = 0;
 let mesStr = "";
 let generatedPromtCache = "";
+let generation_started = new Date();
 let characters = [];
 let this_chid;
 let backgrounds = [];
@@ -972,13 +973,14 @@ function messageFormating(mes, ch_name, isSystem, forceAvatar) {
     return mes;
 }
 
-function getMessageFromTemplate(mesId, characterName, isUser, avatarImg, bias, isSystem, title) {
+function getMessageFromTemplate({ mesId, characterName, isUser, avatarImg, bias, isSystem, title, timerValue, timerTitle } = {}) {
     const mes = $('#message_template .mes').clone();
     mes.attr({ 'mesid': mesId, 'ch_name': characterName, 'is_user': isUser, 'is_system': !!isSystem });
     mes.find('.avatar img').attr('src', avatarImg);
     mes.find('.ch_name .name_text').text(characterName);
     mes.find('.mes_bias').html(bias);
     title && mes.attr('title', title);
+    timerValue && mes.find('.mes_timer').attr('title', timerTitle).text(timerValue);
 
     return mes;
 }
@@ -1053,7 +1055,18 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     );
     const bias = messageFormating(mes.extra?.bias ?? "");
 
-    var HTMLForEachMes = getMessageFromTemplate(count_view_mes, characterName, mes.is_user, avatarImg, bias, isSystem, title);
+    let params = {
+         mesId: count_view_mes,
+         characterName: characterName,
+         isUser: mes.is_user,
+         avatarImg: avatarImg,
+         bias: bias,
+         isSystem: isSystem,
+         title: title,
+         ...formatGenerationTimer(mes.gen_started, mes.gen_finished),
+    };
+
+    const HTMLForEachMes = getMessageFromTemplate(params);
 
     if (type !== 'swipe') {
         if (!insertAfter) {
@@ -1083,13 +1096,18 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     });
 
     if (type === 'swipe') {
-        $("#chat").children().filter(`[mesid="${count_view_mes - 1}"]`).children('.mes_block').children('.mes_text').html('');
-        $("#chat").children().filter(`[mesid="${count_view_mes - 1}"]`).children('.mes_block').children('.mes_text').append(messageText);
-        $("#chat").children().filter(`[mesid="${count_view_mes - 1}"]`).attr('title', title);
+        $("#chat").find(`[mesid="${count_view_mes - 1}"]`).find('.mes_text').html('');
+        $("#chat").find(`[mesid="${count_view_mes - 1}"]`).find('.mes_text').append(messageText);
+        $("#chat").find(`[mesid="${count_view_mes - 1}"]`).attr('title', title);
 
-        //console.log(mes);
+        if (mes.swipe_id == mes.swipes.length - 1) {
+            $("#chat").find(`[mesid="${count_view_mes - 1}"]`).find('.mes_timer').text(params.timerValue);
+            $("#chat").find(`[mesid="${count_view_mes - 1}"]`).find('.mes_timer').attr('title', params.timerTitle);
+        } else {
+            $("#chat").find(`[mesid="${count_view_mes - 1}"]`).find('.mes_timer').html('');
+        }
     } else {
-        $("#chat").children().filter(`[mesid="${count_view_mes}"]`).children('.mes_block').children('.mes_text').append(messageText);
+        $("#chat").find(`[mesid="${count_view_mes}"]`).find('.mes_text').append(messageText);
         hideSwipeButtons();
         count_view_mes++;
     }
@@ -1105,6 +1123,25 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
         showSwipeButtons();
         scrollChatToBottom();
     }
+}
+
+function formatGenerationTimer(gen_started, gen_finished) {
+    if (!gen_started || !gen_finished) {
+        return {};
+    }
+
+    const dateFormat = 'HH:mm:ss D MMM YYYY';
+    const start = moment(gen_started);
+    const finish = moment(gen_finished);
+    const seconds = finish.diff(start, 'seconds', true);
+    const timerValue = `${seconds.toFixed(1)}s`;
+    const timerTitle = [
+        `Generation queued: ${start.format(dateFormat)}`,
+        `Reply received: ${finish.format(dateFormat)}`,
+        `Time to generate: ${seconds} seconds`,
+    ].join('\n');
+
+    return { timerValue, timerTitle };
 }
 
 function scrollChatToBottom() {
@@ -1340,8 +1377,12 @@ class StreamingProcessor {
             $('#send_textarea').val(processedText).trigger('input');
         }
         else {
+            let currentTime = new Date();
+            const timePassed = formatGenerationTimer(this.timeStarted, currentTime);
             chat[messageId]['is_name'] = isName;
             chat[messageId]['mes'] = processedText;
+            chat[messageId]['gen_started'] = this.timeStarted;
+            chat[messageId]['gen_finished'] = currentTime;
 
             if (this.type == 'swipe' && Array.isArray(chat[messageId]['swipes'])) {
                 chat[messageId]['swipes'][chat[messageId]['swipe_id']] = processedText;
@@ -1350,6 +1391,7 @@ class StreamingProcessor {
             let formattedText = messageFormating(processedText, chat[messageId].name, chat[messageId].is_system, chat[messageId].force_avatar);
             const mesText = $(`#chat .mes[mesid="${messageId}"] .mes_text`);
             mesText.html(formattedText);
+            $(`#chat .mes[mesid="${messageId}"] .mes_timer`).text(timePassed.timerValue).attr('title', timePassed.timerTitle);
             this.setFirstSwipe(messageId);
         }
 
@@ -1404,6 +1446,7 @@ class StreamingProcessor {
         this.generator = this.nullStreamingGeneration;
         this.abortController = new AbortController();
         this.firstMessageText = '...';
+        this.timeStarted = new Date();
     }
 
     async generate() {
@@ -1435,10 +1478,11 @@ class StreamingProcessor {
     }
 }
 
-async function Generate(type, automatic_trigger, force_name2) {
+async function Generate(type, { automatic_trigger, force_name2, quiet, quiet_prompt } = {}) {
     //console.log('Generate entered');
     setGenerationProgress(0);
     tokens_already_generated = 0;
+    generation_started = new Date();
 
     const isImpersonate = type == "impersonate";
     message_already_generated = isImpersonate ? `${name1}: ` : `${name2}: `;
@@ -2128,7 +2172,7 @@ async function Generate(type, automatic_trigger, force_name2) {
                             let newType = type == "swipe" ? "swipe" : "force_name2";
                             newType = isImpersonate ? type : newType;
 
-                            Generate(newType, automatic_trigger = false, force_name2 = true);
+                            Generate(newType, { automatic_trigger: false, force_name2: true });
                         }, generate_loop_counter * 1000);
                     }
                 } else {
@@ -2374,6 +2418,7 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         type = 'normal';
     }
 
+    const generationFinished = new Date();
     const img = extractImageFromMessage(getMessage);
     getMessage = img.getMessage;
 
@@ -2382,6 +2427,8 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         if (chat[chat.length - 1]['swipe_id'] === chat[chat.length - 1]['swipes'].length - 1) {
             chat[chat.length - 1]['title'] = title;
             chat[chat.length - 1]['mes'] = getMessage;
+            chat[chat.length - 1]['gen_started'] = generation_started;
+            chat[chat.length - 1]['gen_finished'] = generationFinished;
             addOneMessage(chat[chat.length - 1], { type: 'swipe' });
         } else {
             chat[chat.length - 1]['mes'] = getMessage;
@@ -2390,11 +2437,15 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         console.log("Trying to append.")
         chat[chat.length - 1]['title'] = title;
         chat[chat.length - 1]['mes'] += getMessage;
+        chat[chat.length - 1]['gen_started'] = generation_started;
+        chat[chat.length - 1]['gen_finished'] = generationFinished;
         addOneMessage(chat[chat.length - 1], { type: 'swipe' });
     } else if (type === 'appendFinal') {
         console.log("Trying to appendFinal.")
         chat[chat.length - 1]['title'] = title;
         chat[chat.length - 1]['mes'] = getMessage;
+        chat[chat.length - 1]['gen_started'] = generation_started;
+        chat[chat.length - 1]['gen_finished'] = generationFinished;
         addOneMessage(chat[chat.length - 1], { type: 'swipe' });
 
     } else {
@@ -2408,6 +2459,8 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         getMessage = $.trim(getMessage);
         chat[chat.length - 1]['mes'] = getMessage;
         chat[chat.length - 1]['title'] = title;
+        chat[chat.length - 1]['gen_started'] = generation_started;
+        chat[chat.length - 1]['gen_finished'] = generationFinished;
 
         if (selected_group) {
             console.log('entering chat update for groups');
@@ -3780,7 +3833,8 @@ $(document).ready(function () {
         }
         //console.log(chat[chat.length-1]['swipes']);
         if (parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length) { //if swipe id of last message is the same as the length of the 'swipes' array
-
+            delete chat[chat.length - 1].gen_started;
+            delete chat[chat.length - 1].gen_finished;
             run_generate = true;
         } else if (parseInt(chat[chat.length - 1]['swipe_id']) < chat[chat.length - 1]['swipes'].length) { //otherwise, if the id is less than the number of swipes
             chat[chat.length - 1]['mes'] = chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipe_id']]; //load the last mes box with the latest generation
@@ -3792,7 +3846,6 @@ $(document).ready(function () {
         }
         if (run_generate) {               //hide swipe arrows while generating
             $(this).css('display', 'none');
-
         }
         if (run_generate || run_swipe_right) {                // handles animated transitions when swipe right, specifically height transitions between messages
 
@@ -3821,11 +3874,13 @@ $(document).ready(function () {
                         /* if (!selected_group) {
                         } else { */
                         $("#chat")
-                            .children()
-                            .filter('[mesid="' + (count_view_mes - 1) + '"]')
-                            .children('.mes_block')
-                            .children('.mes_text')
+                            .find('[mesid="' + (count_view_mes - 1) + '"]')
+                            .find('.mes_text')
                             .html('...');  //shows "..." while generating
+                        $("#chat")
+                            .find('[mesid="' + (count_view_mes - 1) + '"]')
+                            .find('.mes_timer')
+                            .html('');     // resets the timer
                         /* } */
                     } else {
                         //console.log('showing previously generated swipe candidate, or "..."');

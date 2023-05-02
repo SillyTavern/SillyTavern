@@ -160,6 +160,14 @@ body {
     padding-right: 30px;
 }
 
+.mes .mes_timer {
+    cursor: default;
+    opacity: 0.7;
+    font-size: calc(var(--mainFontSize) * 0.9);
+    font-weight: 600;
+    text-align: center;
+}
+
 code {
     font-family: Consolas, monospace;
     white-space: pre-wrap;
@@ -475,10 +483,9 @@ code {
 .last_mes {
     grid-template-columns: [checkbox] fit-content(60px) [avatar-leftswipe] 50px [name-mestext] auto [edit-rightswipe] 30px !important;
     grid-template-rows: [avatar-NameMesText-edit] 50px [swipes] auto;
-    grid-row-gap: 20px;
+    grid-row-gap: 30px;
     margin-bottom: 0 !important;
     /*only affects bubblechat to make it sit nicely at the bottom*/
-
 }
 
 /* SWIPE RELATED STYLES*/

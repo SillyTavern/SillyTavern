@@ -37,6 +37,7 @@
     <script src="scripts/popper.js"></script>
     <script src="scripts/purify.min.js"></script>
     <script src="scripts/highlight.min.js"></script>
+    <script src="scripts/moment.min.js"></script>
     <script type="module" src="scripts/power-user.js"></script>
     <script type="module" src="scripts/swiped-events.js"></script>
     <link rel="stylesheet" type="text/css" href="style.css">
@@ -1946,7 +1947,10 @@
     <div id="message_template" class="template_element">
         <div class="mes" mesid="${count_view_mes}" ch_name="${characterName}" is_user="${mes.is_user}" is_system="${mes.is_system}">
             <div class="for_checkbox"></div><input type="checkbox" class="del_checkbox">
-            <div class="avatar"><img src=""></div>
+            <div class="avatar">
+                <img src="">
+                <div class="mes_timer"></div>
+            </div>
             <div class="swipe_left fa-solid fa-chevron-left"></div>
             <div class="mes_block">
                 <div class="ch_name">
@@ -1969,9 +1973,7 @@
                 <div class="mes_bias"></div>
             </div>
 
-
             <div class="swipe_right fa-solid fa-chevron-right">
-
                 <div class="swipes-counter"></div>
             </div>
         </div>
