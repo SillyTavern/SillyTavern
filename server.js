@@ -285,7 +285,7 @@ app.get('/get_faq', function (_, response) {
 app.get('/get_readme', function (_, response) {
     response.sendFile(__dirname + "/readme.md");
 });
-app.get('/deviceinfo', function(request, response) {
+app.get('/deviceinfo', function (request, response) {
     const userAgent = request.header('user-agent');
     const deviceDetector = new DeviceDetector();
     const deviceInfo = deviceDetector.parse(userAgent);
@@ -1396,6 +1396,13 @@ app.post("/getallchatsofcharacter", jsonParser, function (request, response) {
             for (let i = jsonFiles.length - 1; i >= 0; i--) {
                 const file = jsonFiles[i];
                 const fileStream = fs.createReadStream(chatsPath + char_dir + '/' + file);
+
+                const fullPathAndFile = chatsPath + char_dir + '/' + file
+                const stats = fs.statSync(fullPathAndFile);
+                const fileSizeInKB = (stats.size / 1024).toFixed(2) + "kb";
+
+                console.log(fileSizeInKB);
+
                 const rl = readline.createInterface({
                     input: fileStream,
                     crlfDelay: Infinity
@@ -1412,6 +1419,7 @@ app.post("/getallchatsofcharacter", jsonParser, function (request, response) {
                         if (jsonData.name !== undefined || jsonData.character_name !== undefined) {
                             chatData[i] = {};
                             chatData[i]['file_name'] = file;
+                            chatData[i]['file_size'] = fileSizeInKB;
                             chatData[i]['mes'] = jsonData['mes'] || '[The chat is empty]';
                         }
                     }
@@ -1654,7 +1662,7 @@ app.post("/importchat", urlencodedParser, function (request, response) {
                         }
                     });
                 } else {
-                    response.send({error:true});
+                    response.send({ error: true });
                     return;
                 }
                 rl.close();

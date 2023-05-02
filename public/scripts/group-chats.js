@@ -700,7 +700,7 @@ async function deleteGroup(id) {
     }
 }
 
-export async function editGroup(id, immediately, reload=true) {
+export async function editGroup(id, immediately, reload = true) {
     let group = groups.find((x) => x.id === id);
 
     if (!group) {
@@ -1122,8 +1122,9 @@ export async function getGroupPastChats(groupId) {
     try {
         for (const chatId of group.chats) {
             const messages = await loadGroupChat(chatId);
+            let this_chat_file_size = (JSON.stringify(messages).length / 1024).toFixed(2) + "kb";
             const lastMessage = messages.length ? messages[messages.length - 1].mes : '[The chat is empty]';
-            chats.push({ 'file_name': chatId, 'mes': lastMessage });
+            chats.push({ 'file_name': chatId, 'mes': lastMessage, 'file_size': this_chat_file_size });
         }
     } catch (err) {
         console.error(err);

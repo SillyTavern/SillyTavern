@@ -3200,7 +3200,6 @@ async function displayPastChats() {
 
     $("#load_select_chat_div").css("display", "none");
     $("#ChatHistoryCharName").text(displayName);
-
     for (const key in data) {
         let strlen = 300;
         let mes = data[key]["mes"];
@@ -3210,11 +3209,12 @@ async function displayPastChats() {
                 mes = "..." + mes.substring(mes.length - strlen);
             }
 
+            const file_size = data[key]["file_size"];
             const fileName = data[key]['file_name'];
             const template = $('#past_chat_template .select_chat_block_wrapper').clone();
             template.find('.select_chat_block').attr('file_name', fileName);
             template.find('.avatar img').attr('src', avatarImg);
-            template.find('.select_chat_block_filename').text(fileName);
+            template.find('.select_chat_block_filename').text(fileName + " (" + file_size + ")");
             template.find('.select_chat_block_mes').text(mes);
             template.find('.PastChat_cross').attr('file_name', fileName);
 
