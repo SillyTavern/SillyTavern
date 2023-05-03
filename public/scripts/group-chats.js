@@ -1159,6 +1159,25 @@ export async function openGroupChat(groupId, chatId) {
     await getGroupChat(groupId);
 }
 
+export async function renameGroupChat(groupId, oldChatId, newChatId) {
+    const group = groups.find(x => x.id === groupId);
+
+    if (!group || !group.chats.includes(oldChatId)) {
+        return;
+    }
+
+    if (group.chat_id === oldChatId) {
+        group.chat_id = newChatId;
+    }
+
+    group.chats.splice(group.chats.indexOf(oldChatId), 1);
+    group.chats.push(newChatId);
+    group.past_metadata[newChatId] = (group.past_metadata[oldChatId] || {});
+    delete group.past_metadata[oldChatId];
+
+    await editGroup(groupId, true, true);
+}
+
 export async function deleteGroupChat(groupId, chatId) {
     const group = groups.find(x => x.id === groupId);
 

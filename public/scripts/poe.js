@@ -115,7 +115,8 @@ async function generatePoe(type, finalPrompt, signal) {
         console.log('Could not jailbreak the bot');
     }
 
-    const isImpersonate = type == 'impersonate';
+    const isImpersonate = type === 'impersonate';
+    const isQuiet = type === 'quiet';
 
     if (poe_settings.character_nudge && !isImpersonate) {
         let characterNudge = '\n' + substituteParams(poe_settings.character_nudge_message);
@@ -136,7 +137,7 @@ async function generatePoe(type, finalPrompt, signal) {
         finalPrompt = sentences.join('');
     }
 
-    const reply = await sendMessage(finalPrompt, true, signal);
+    const reply = await sendMessage(finalPrompt, !isQuiet, signal);
     got_reply = true;
     return reply;
 }

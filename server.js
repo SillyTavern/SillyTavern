@@ -666,6 +666,29 @@ app.post("/createcharacter", urlencodedParser, function (request, response) {
     }
 });
 
+app.post('/renamechat', jsonParser, async function (request, response) {
+    if (!request.body || !request.body.original_file || !request.body.renamed_file) {
+        return response.sendStatus(400);
+    }
+
+    const pathToFolder = request.body.is_group
+        ? directories.groupChats
+        : path.join(directories.chats, String(request.body.avatar_url).replace('.png', ''));
+    const pathToOriginalFile = path.join(pathToFolder, request.body.original_file);
+    const pathToRenamedFile = path.join(pathToFolder, request.body.renamed_file);
+    console.log('Old chat name', pathToOriginalFile);
+    console.log('New chat name', pathToRenamedFile);
+
+    if (!fs.existsSync(pathToOriginalFile) || fs.existsSync(pathToRenamedFile)) {
+        console.log('Either Source or Destination files are not available');
+        return response.status(400).send({ error: true });
+    }
+
+    console.log('Successfully renamed.');
+    fs.renameSync(pathToOriginalFile, pathToRenamedFile);
+    return response.send({ ok: true });
+});
+
 app.post("/renamecharacter", jsonParser, async function (request, response) {
     if (!request.body.avatar_url || !request.body.new_name) {
         return response.sendStatus(400);

@@ -47,6 +47,7 @@ import {
     openGroupChat,
     editGroup,
     deleteGroupChat,
+    renameGroupChat,
 } from "./scripts/group-chats.js";
 
 import {
@@ -102,7 +103,7 @@ import {
 
 import { debounce, delay } from "./scripts/utils.js";
 import { extension_settings, loadExtensionSettings } from "./scripts/extensions.js";
-import { executeSlashCommands, getSlashCommandsHelp } from "./scripts/slash-commands.js";
+import { executeSlashCommands, getSlashCommandsHelp, registerSlashCommand } from "./scripts/slash-commands.js";
 import {
     tag_map,
     tags,
@@ -1169,7 +1170,7 @@ function getStoppingStrings(isImpersonate, addSpace) {
 }
 
 function processCommands(message, type) {
-    if (type == "regenerate" || type == "swipe") {
+    if (type == "regenerate" || type == "swipe" || type == 'quiet') {
         return null;
     }
 
@@ -1477,7 +1478,7 @@ class StreamingProcessor {
     }
 }
 
-async function Generate(type, { automatic_trigger, force_name2, quiet, quiet_prompt } = {}) {
+async function Generate(type, { automatic_trigger, force_name2, resolve, reject, quiet_prompt } = {}) {
     //console.log('Generate entered');
     setGenerationProgress(0);
     tokens_already_generated = 0;
@@ -1519,19 +1520,16 @@ async function Generate(type, { automatic_trigger, force_name2, quiet, quiet_pro
 
     if (online_status != 'no_connection' && this_chid != undefined && this_chid !== 'invalid-safety-id') {
         let textareaText;
-        if (type !== 'regenerate' && type !== "swipe" && !isImpersonate) {
+        if (type !== 'regenerate' && type !== "swipe" && type !== 'quiet' && !isImpersonate) {
             is_send_press = true;
             textareaText = $("#send_textarea").val();
-            //console.log('Not a Regenerate call, so posting normall with input of: ' +textareaText);
             $("#send_textarea").val('').trigger('input');
-
         } else {
-            //console.log('Regenerate call detected')
             textareaText = "";
             if (chat.length && chat[chat.length - 1]['is_user']) {//If last message from You
 
             }
-            else if (type !== "swipe" && !isImpersonate) {
+            else if (type !== 'quiet' && type !== "swipe" && !isImpersonate) {
                 chat.length = chat.length - 1;
                 count_view_mes -= 1;
                 $('#chat').children().last().hide(500, function () {
@@ -1584,7 +1582,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet, quiet_pro
         //*********************************
         //PRE FORMATING STRING
         //*********************************
-        if (textareaText != "" && !automatic_trigger) {
+        if (textareaText != "" && !automatic_trigger && type !== 'quiet') {
             chat[chat.length] = {};
             chat[chat.length - 1]['name'] = name1;
             chat[chat.length - 1]['is_user'] = true;
@@ -1633,7 +1631,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet, quiet_pro
         console.log(`Core/all messages: ${coreChat.length}/${chat.length}`);
 
         if (main_api === 'openai') {
-            setOpenAIMessages(coreChat);
+            setOpenAIMessages(coreChat, quiet_prompt);
             setOpenAIMessageExamples(mesExamplesArray);
         }
 
@@ -1726,7 +1724,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet, quiet_pro
         // Extension added strings
         const allAnchors = getAllExtensionPrompts();
         const afterScenarioAnchor = getExtensionPrompt(extension_prompt_types.AFTER_SCENARIO);
-        const zeroDepthAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, 0, ' ');
+        let zeroDepthAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, 0, ' ');
 
         let { worldInfoString, worldInfoBefore, worldInfoAfter } = getWorldInfoPrompt(chat2);
 
@@ -1747,7 +1745,8 @@ async function Generate(type, { automatic_trigger, force_name2, quiet, quiet_pro
                 anchorBottom,
                 charPersonality,
                 promptBias,
-                allAnchors
+                allAnchors,
+                quiet_prompt,
             ].join('').replace(/\r/gm, '');
             return getTokenCount(encodeString, padding_tokens) < this_max_context;
         }
@@ -1899,7 +1898,8 @@ async function Generate(type, { automatic_trigger, force_name2, quiet, quiet_pro
                     charPersonality,
                     generatedPromtCache,
                     promptBias,
-                    allAnchors
+                    allAnchors,
+                    quiet_prompt,
                 ].join('').replace(/\r/gm, '');
                 let thisPromtContextSize = getTokenCount(prompt, padding_tokens);
 
@@ -1968,6 +1968,11 @@ async function Generate(type, { automatic_trigger, force_name2, quiet, quiet_pro
                 }
             }
 
+            // Add quiet generation prompt at depth 0
+            if (quiet_prompt && quiet_prompt.length) {
+                finalPromt += `\n${quiet_prompt}`;
+            }
+
             finalPromt = finalPromt.replace(/\r/gm, '');
 
             if (power_user.collapse_newlines) {
@@ -1977,7 +1982,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet, quiet_pro
             let this_amount_gen = parseInt(amount_gen); // how many tokens the AI will be requested to generate
             let this_settings = koboldai_settings[koboldai_setting_names[preset_settings]];
 
-            if (isMultigenEnabled()) {
+            if (isMultigenEnabled() && type !== 'quiet') {
                 // if nothing has been generated yet..
                 if (tokens_already_generated === 0) {
                     // if the max gen setting is > 50...(
@@ -2041,25 +2046,25 @@ async function Generate(type, { automatic_trigger, force_name2, quiet, quiet_pro
                 let prompt = await prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAfter, afterScenarioAnchor, promptBias, type);
                 setInContextMessages(openai_messages_count, type);
 
-                if (isStreamingEnabled()) {
-                    streamingProcessor.generator = await sendOpenAIRequest(prompt, streamingProcessor.abortController.signal);
+                if (isStreamingEnabled() && type !== 'quiet') {
+                    streamingProcessor.generator = await sendOpenAIRequest(type, prompt, streamingProcessor.abortController.signal);
                 }
                 else {
-                    sendOpenAIRequest(prompt).then(onSuccess).catch(onError);
+                    sendOpenAIRequest(type, prompt).then(onSuccess).catch(onError);
                 }
             }
             else if (main_api == 'kobold' && horde_settings.use_horde) {
                 generateHorde(finalPromt, generate_data).then(onSuccess).catch(onError);
             }
             else if (main_api == 'poe') {
-                if (isStreamingEnabled()) {
+                if (isStreamingEnabled() && type !== 'quiet') {
                     streamingProcessor.generator = await generatePoe(type, finalPromt, streamingProcessor.abortController.signal);
                 }
                 else {
                     generatePoe(type, finalPromt).then(onSuccess).catch(onError);
                 }
             }
-            else if (main_api == 'textgenerationwebui' && textgenerationwebui_settings.streaming) {
+            else if (main_api == 'textgenerationwebui' && textgenerationwebui_settings.streaming && type !== 'quiet') {
                 streamingProcessor.generator = await generateTextGenWithStreaming(generate_data, streamingProcessor.abortController.signal);
             }
             else {
@@ -2078,7 +2083,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet, quiet_pro
                 }); //end of "if not data error"
             }
 
-            if (isStreamingEnabled()) {
+            if (isStreamingEnabled() && type !== 'quiet') {
                 hideSwipeButtons();
                 let getMessage = await streamingProcessor.generate();
 
@@ -2103,7 +2108,6 @@ async function Generate(type, { automatic_trigger, force_name2, quiet, quiet_pro
             }
 
             function onSuccess(data) {
-
                 is_send_press = false;
                 if (!data.error) {
                     //const getData = await response.json();
@@ -2113,7 +2117,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet, quiet_pro
                     //Pygmalion run again
                     // to make it continue generating so long as it's under max_amount and hasn't signaled
                     // an end to the character's response via typing "You:" or adding "<endoftext>"
-                    if (isMultigenEnabled()) {
+                    if (isMultigenEnabled() && type !== 'quiet') {
                         message_already_generated += getMessage;
                         promptBias = '';
                         if (shouldContinueMultigen(getMessage)) {
@@ -2147,6 +2151,9 @@ async function Generate(type, { automatic_trigger, force_name2, quiet, quiet_pro
                         if (isImpersonate) {
                             $('#send_textarea').val(getMessage).trigger('input');
                         }
+                        else if (type == 'quiet') {
+                            resolve(getMessage);
+                        }
                         else {
                             if (!isMultigenEnabled()) {
                                 ({ type, getMessage } = saveReply(type, getMessage, this_mes_is_name, title));
@@ -2156,7 +2163,11 @@ async function Generate(type, { automatic_trigger, force_name2, quiet, quiet_pro
                             }
                         }
                         activateSendButtons();
-                        playMessageSound();
+
+                        if (type !== 'quiet') {
+                            playMessageSound();
+                        } 
+
                         generate_loop_counter = 0;
                     } else {
                         ++generate_loop_counter;
@@ -2189,6 +2200,10 @@ async function Generate(type, { automatic_trigger, force_name2, quiet, quiet_pro
             };
 
             function onError(jqXHR, exception) {
+                if (type == 'quiet') {
+                    reject(exception);
+                }
+
                 $("#send_textarea").removeAttr('disabled');
                 is_send_press = false;
                 activateSendButtons();
@@ -2648,7 +2663,7 @@ async function saveChat(chat_name, withMetadata) {
         },
         ...chat,
     ];
-    jQuery.ajax({
+    return jQuery.ajax({
         type: "POST",
         url: "/savechat",
         data: JSON.stringify({
@@ -3764,6 +3779,7 @@ window["SillyTavern"].getContext = function () {
         activateSendButtons,
         deactivateSendButtons,
         saveReply,
+        registerSlashCommand: registerSlashCommand,
     };
 };
 
@@ -4647,34 +4663,64 @@ $(document).ready(function () {
     $("#renameCharButton").on('click', renameCharacter);
 
     $(document).on("click", ".renameChatButton", async function () {
-        var old_filenamefull = $(this).closest('.select_chat_block_wrapper').find('.select_chat_block_filename').text();
-
-        var old_filename = old_filenamefull.substring(0, old_filenamefull.length - 6);
+        const old_filenamefull = $(this).closest('.select_chat_block_wrapper').find('.select_chat_block_filename').text();
+        const old_filename = old_filenamefull.replace('.jsonl', '');
 
         const popupText = `<h3>Enter the new name for the chat:<h3>
-        <small>!!Using an existing filename will overwrite that file!!<br>
+        <small>!!Using an existing filename will produce an error!!<br>
+        This will break the link between bookmark chats.<br>
         No need to add '.jsonl' at the end.<br>
         </small>`;
-        let newName = await callPopup(popupText, 'input', old_filename);
+        const newName = await callPopup(popupText, 'input', old_filename);
 
-        if (!newName) {
+        if (!newName || newName == old_filename) {
             console.log('no new name found, aborting');
             return;
         }
 
-        const newMetadata = { main_chat: characters[this_chid].chat };
-        await saveChat(newName, newMetadata);
-        await saveChat(); //is this second save needed?
-        chat_file_for_del = old_filenamefull;
-        popup_type = 'del_chat';
+        const body = {
+            is_group: !!selected_group,
+            avatar_url: characters[this_chid]?.avatar,
+            original_file: `${old_filename}.jsonl`,
+            renamed_file: `${newName}.jsonl`,
+        }
 
-        setTimeout(function () {
-            callPopup('Confirm Delete of Old File After Rename');
-        }, 200);
+        try {
+            const response = await fetch('/renamechat', {
+                method: 'POST',
+                body: JSON.stringify(body),
+                headers: getRequestHeaders(),
+            });
 
+            if (!response.ok) {
+                throw new Error('Unsuccessful request.');
+            }
 
+            const data = response.json();
 
+            if (data.error) {
+                throw new Error('Server returned an error.');
+            }
 
+            if (selected_group) {
+                await renameGroupChat(selected_group, old_filename, newName);
+            }
+            else {
+                if (characters[this_chid].chat == old_filename) {
+                    characters[this_chid].chat = newName;
+                    saveCharacterDebounced();
+                }
+            }
+
+            reloadCurrentChat();
+
+            await delay(250);
+            $("#option_select_chat").trigger('click');
+            $("#options").hide();
+        } catch {
+            await delay(500);
+            await callPopup('An error has occurred. Chat was not renamed.', 'text');
+        }
     });
 
     $("#talkativeness_slider").on("input", function () {
