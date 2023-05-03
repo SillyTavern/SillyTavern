@@ -1056,14 +1056,14 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     const bias = messageFormating(mes.extra?.bias ?? "");
 
     let params = {
-         mesId: count_view_mes,
-         characterName: characterName,
-         isUser: mes.is_user,
-         avatarImg: avatarImg,
-         bias: bias,
-         isSystem: isSystem,
-         title: title,
-         ...formatGenerationTimer(mes.gen_started, mes.gen_finished),
+        mesId: count_view_mes,
+        characterName: characterName,
+        isUser: mes.is_user,
+        avatarImg: avatarImg,
+        bias: bias,
+        isSystem: isSystem,
+        title: title,
+        ...formatGenerationTimer(mes.gen_started, mes.gen_finished),
     };
 
     const HTMLForEachMes = getMessageFromTemplate(params);
@@ -4329,7 +4329,11 @@ $(document).ready(function () {
             duration: 200,
             easing: animation_easing,
         });
-        setTimeout(function () { $("#shadow_popup").css("display", "none"); }, 200);
+        setTimeout(function () {
+            $("#shadow_popup").css("display", "none");
+            $("#dialogue_popup").removeClass('large_dialogue_popup');
+        }, 200);
+
         //      $("#shadow_popup").css("opacity:", 0.0);
         if (popup_type == "del_bg") {
             delBackground(bg_file_for_del.attr("bgfile"));
@@ -4437,13 +4441,16 @@ $(document).ready(function () {
             if (popup_type == 'input') {
                 dialogueResolve($("#dialogue_popup_input").val());
                 $("#dialogue_popup_input").val('');
+
             }
             else {
                 dialogueResolve(true);
+
             }
 
             dialogueResolve = null;
         }
+
     });
     $("#dialogue_popup_cancel").click(function (e) {
         $("#shadow_popup").transition({
@@ -4451,7 +4458,11 @@ $(document).ready(function () {
             duration: 200,
             easing: animation_easing,
         });
-        setTimeout(function () { $("#shadow_popup").css("display", "none"); }, 200);
+        setTimeout(function () {
+            $("#shadow_popup").css("display", "none");
+            $("#dialogue_popup").removeClass('large_dialogue_popup');
+        }, 200);
+
         //$("#shadow_popup").css("opacity:", 0.0);
         popup_type = "";
 
@@ -4459,6 +4470,7 @@ $(document).ready(function () {
             dialogueResolve(false);
             dialogueResolve = null;
         }
+
     });
 
     $("#add_bg_button").change(function () {

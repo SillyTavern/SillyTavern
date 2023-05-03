@@ -153,6 +153,7 @@ function createNewTag(tagName) {
     const tag = {
         id: random_id(),
         name: tagName,
+        color: '',
     };
     tags.push(tag);
     return tag;
@@ -165,6 +166,10 @@ function appendTagToList(listElement, tag, { removable, editable, selectable }) 
 
     let tagElement = $('#tag_template .tag').clone();
     tagElement.attr('id', tag.id);
+
+    tagElement.css('color', 'var(--SmartThemeBodyColor)');
+    tagElement.css('background-color', tag.color);
+
     tagElement.find('.tag_name').text(tag.name);
     const removeButton = tagElement.find(".tag_remove");
     removable ? removeButton.show() : removeButton.hide();
@@ -278,7 +283,7 @@ function applyTagsOnGroupSelect() {
 
 function createTagInput(inputSelector, listSelector) {
     $(inputSelector)
-        .autocomplete({ 
+        .autocomplete({
             source: (i, o) => findTag(i, o, listSelector),
             select: (e, u) => selectTag(e, u, listSelector),
             minLength: 0,
@@ -287,21 +292,37 @@ function createTagInput(inputSelector, listSelector) {
 }
 
 function onViewTagsListClick() {
+    $('#dialogue_popup').addClass('large_dialogue_popup');
     const list = document.createElement('div');
     const everything = Object.values(tag_map).flat();
-    $(list).append('<h3>Tags</h3><i>Click on the tag name to edit it.</i>')
+    $(list).append('<h3>Tags</h3><i>Click on the tag name to edit it.</i><br>');
+    $(list).append('<i>Click on color box to assign new color.</i><br><br>');
 
     for (const tag of tags) {
         const count = everything.filter(x => x == tag.id).length;
         const template = $('#tag_view_template .tag_view_item').clone();
-
         template.attr('id', tag.id);
         template.find('.tag_view_counter_value').text(count);
         template.find('.tag_view_name').text(tag.name);
+        template.find('.tag_view_name').addClass('tag');
+        template.find('.tag_view_name').css('background-color', tag.color);
+        const colorPickerId = tag.name + "-tag-color";
+        template.find('.tagColorPickerHolder').html(
+            `<toolcool-color-picker id="${colorPickerId}" color="${tag.color}" class="tag-color"></toolcool-color-picker>`
+        );
 
+        template.find('.tag-color').attr('id', colorPickerId);
         list.appendChild(template.get(0));
-    }
 
+        setTimeout(function () {
+            document.querySelector(`#${colorPickerId}`).addEventListener('change', (evt) => {
+                onTagColorize(evt);
+            });
+        }, 100);
+
+        $(colorPickerId).color = tag.color;
+
+    }
     callPopup(list.outerHTML, 'text');
 }
 
@@ -327,6 +348,18 @@ function onTagRenameInput() {
     const tag = tags.find(x => x.id === id);
     tag.name = newName;
     $(`.tag[id="${id}"] .tag_name`).text(newName);
+    saveSettingsDebounced();
+}
+
+function onTagColorize(evt) {
+    console.log(evt);
+    const id = $(evt.target).closest('.tag_view_item').attr('id');
+    const newColor = evt.detail.rgba;
+    $(evt.target).parent().parent().find('.tag_view_name').css('background-color', newColor);
+    $(`.tag[id="${id}"]`).css('background-color', newColor);
+    const tag = tags.find(x => x.id === id);
+    tag.color = newColor;
+    console.log(tag);
     saveSettingsDebounced();
 }
 

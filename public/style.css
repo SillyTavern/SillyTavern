@@ -1355,6 +1355,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 #dialogue_popup {
     width: 500px;
+    max-width: 90svw;
     position: absolute;
     z-index: 9999;
     margin-left: auto;
@@ -1374,6 +1375,16 @@ input[type=search]:focus::-webkit-search-cancel-button {
     display: flex;
     flex-direction: column;
     overflow-y: hidden;
+}
+
+.large_dialogue_popup {
+    height: 90svh;
+    max-width: 90svw;
+}
+
+.height100pSpaceEvenly {
+    align-content: space-evenly;
+    height: 100%;
 }
 
 #dialogue_popup_holder {
@@ -2438,7 +2449,7 @@ h5 {
 
 .tag_view_name {
     text-align: left;
-    flex: 2;
+    /* flex: 2; */
 }
 
 .tag_view_counter {
@@ -2448,6 +2459,7 @@ h5 {
 
 .tag_delete {
     padding-right: 0;
+    color: var(--SmartThemeBodyColor) !important;
 }
 
 .tag {
@@ -2455,9 +2467,9 @@ h5 {
     border-style: solid;
     border-width: 1px;
     box-sizing: border-box;
-    color: var(--SmartThemeQuoteColor);
+    color: var(--SmartThemeBodyColor);
     background-color: var(--black30a);
-    border-color: var(--white30a);
+    border-color: var(--white50a);
     padding: 0.2rem 0.3rem;
     font-size: calc(var(--mainFontSize) - 5%);
     display: flex;
@@ -2467,11 +2479,10 @@ h5 {
     width: fit-content;
     min-width: 0;
     text-shadow: none !important;
+
 }
 
-.tag.selected {
-    border-color: var(--white70a);
-}
+
 
 .tag_remove {
     cursor: pointer;
@@ -2488,6 +2499,10 @@ h5 {
 
 #tagList.tags {
     margin: 5px 0;
+}
+
+#tagList .tag {
+    opacity: 0.6;
 }
 
 .tags.tags_inline {
@@ -2517,6 +2532,13 @@ h5 {
 
 #rm_tag_filter .tag {
     cursor: pointer;
+    opacity: 0.6;
+    filter: brightness(0.8);
+}
+
+.tag.selected {
+    opacity: 1 !important;
+    filter: none !important;
 }
 
 body .ui-autocomplete {
