@@ -578,7 +578,6 @@ body.big-avatars .avatar {
     align-items: center;
     overflow: visible;
     border-radius: 10px;
-    box-shadow: 0 0 5px var(--black50a);
 }
 
 body.big-avatars #user_avatar_block .avatar,
