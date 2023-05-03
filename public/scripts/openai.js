@@ -205,7 +205,9 @@ function generateOpenAIPromptCache(charPersonality, topAnchorDepth, anchorTop, b
             }
         }
         if (i === openai_msgs.length - 1 && openai_msgs.length > bottomAnchorThreshold && msg.role === "user") {//For add anchor in end
-            item = anchorBottom + "\n" + item;
+            if (anchorBottom) {
+                item = anchorBottom + "\n" + item;
+            }
         }
 
         msg["content"] = item;
