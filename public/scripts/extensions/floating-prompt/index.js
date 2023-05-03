@@ -63,6 +63,24 @@ function loadSettings() {
     $('#extension_floating_default').val(extension_settings.note.default);
 }
 
+let isWorkerBusy = false;
+
+async function moduleWorkerWrapper() {
+    // Don't touch me I'm busy...
+    if (isWorkerBusy) {
+        return;
+    }
+
+    // I'm free. Let's update!
+    try {
+        isWorkerBusy = true;
+        await moduleWorker();
+    }
+    finally {
+        isWorkerBusy = false;
+    }
+}
+
 async function moduleWorker() {
     const context = getContext();
 
@@ -147,5 +165,5 @@ async function moduleWorker() {
     }
 
     addExtensionsSettings();
-    setInterval(moduleWorker, UPDATE_INTERVAL);
+    setInterval(moduleWorkerWrapper, UPDATE_INTERVAL);
 })();

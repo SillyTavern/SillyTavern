@@ -4,7 +4,7 @@ import { extension_prompt_types, is_send_press, saveSettingsDebounced } from "..
 export { MODULE_NAME };
 
 const MODULE_NAME = '1_memory';
-const UPDATE_INTERVAL = 1000;
+const UPDATE_INTERVAL = 5000;
 
 let lastCharacterId = null;
 let lastGroupId = null;
@@ -127,6 +127,24 @@ function getLatestMemoryFromChat(chat) {
     }
 
     return '';
+}
+
+let isWorkerBusy = false;
+
+async function moduleWorkerWrapper() {
+    // Don't touch me I'm busy...
+    if (isWorkerBusy) {
+        return;
+    }
+
+    // I'm free. Let's update!
+    try {
+        isWorkerBusy = true;
+        await moduleWorker();
+    }
+    finally {
+        isWorkerBusy = false;
+    }
 }
 
 async function moduleWorker() {
@@ -366,5 +384,5 @@ $(document).ready(function () {
 
     addExtensionControls();
     loadSettings();
-    setInterval(moduleWorker, UPDATE_INTERVAL);
+    setInterval(moduleWorkerWrapper, UPDATE_INTERVAL);
 });
