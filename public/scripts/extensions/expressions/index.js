@@ -381,4 +381,5 @@ function onClickExpressionImage() {
     addExpressionImage();
     addSettings();
     setInterval(moduleWorkerWrapper, UPDATE_INTERVAL);
+    moduleWorkerWrapper();
 })();
