@@ -1870,13 +1870,15 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         //anchorAndPersonality = "[Genre: roleplay chat][Tone: very long messages with descriptions]";
                         let personalityAndAnchor = [charPersonality, anchorTop].filter(x => x).join(' ');
                         if (personalityAndAnchor) {
-                            item += "[" + personalityAndAnchor + ']\n';
+                            item += "[" + personalityAndAnchor + "]\n";
                         }
                     }
                     if (i === arrMes.length - 1 && coreChat.length > bottomAnchorThreshold && item.trim().startsWith(name1 + ":") && !is_pygmalion) {//For add anchor in end
-                        item = item.substr(0, item.length - 1);
                         //chatString+=postAnchor+"\n";//"[Writing style: very long messages]\n";
-                        item = item + anchorBottom + "\n";
+                        if (anchorBottom) {
+                            item = item.replace(/\n$/, " ");
+                            item += anchorBottom + "\n";
+                        }
                     }
                     if (is_pygmalion) {
                         if (i === arrMes.length - 1 && item.trim().startsWith(name1 + ":")) {//for add name2 when user sent
