@@ -204,7 +204,7 @@ function generateOpenAIPromptCache(charPersonality, topAnchorDepth, anchorTop, b
                 item = `[${name2} is ${personalityAndAnchor}]\n${item}`;
             }
         }
-        if (i === openai_msgs.length - 1 && openai_msgs.length > bottomAnchorThreshold && $.trim(item).substr(0, (name1 + ":").length) == name1 + ":") {//For add anchor in end
+        if (i === openai_msgs.length - 1 && openai_msgs.length > bottomAnchorThreshold && item.trim().startsWith(name1 + ":")) {//For add anchor in end
             item = anchorBottom + "\n" + item;
         }
 
@@ -238,14 +238,14 @@ function parseExampleIntoIndividual(messageExampleString) {
         let cur_str = tmp[i];
         // if it's the user message, switch into user mode and out of bot mode
         // yes, repeated code, but I don't care
-        if (cur_str.indexOf(name1 + ":") === 0) {
+        if (cur_str.startsWith(name1 + ":")) {
             in_user = true;
             // we were in the bot mode previously, add the message
             if (in_bot) {
                 add_msg(name2, "system", "example_assistant");
             }
             in_bot = false;
-        } else if (cur_str.indexOf(name2 + ":") === 0) {
+        } else if (cur_str.startsWith(name2 + ":")) {
             in_bot = true;
             // we were in the user mode previously, add the message
             if (in_user) {
