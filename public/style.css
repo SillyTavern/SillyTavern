@@ -1943,8 +1943,13 @@ input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
     width: max-content;
     margin-left: 5px;
     margin-right: 15px;
-    font-size: calc(var(--mainFontSize) - 0.2rem);
+    font-size: calc(var(--mainFontSize) * 0.95);
     color: var(--SmartThemeBodyColor);
+}
+
+.range-block-counter div[contenteditable="true"] {
+    display: block;
+    cursor: text;
 }
 
 .range-block-range {

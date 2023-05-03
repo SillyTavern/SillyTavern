@@ -101,7 +101,7 @@ import {
     setPoeOnlineStatus,
 } from "./scripts/poe.js";
 
-import { debounce, delay } from "./scripts/utils.js";
+import { debounce, delay, restoreCaretPosition, saveCaretPosition } from "./scripts/utils.js";
 import { extension_settings, loadExtensionSettings } from "./scripts/extensions.js";
 import { executeSlashCommands, getSlashCommandsHelp, registerSlashCommand } from "./scripts/slash-commands.js";
 import {
@@ -5627,5 +5627,46 @@ $(document).ready(function () {
             console.log('Page reloaded. Aborting streaming...');
             streamingProcessor.abortController.abort();
         }
+    });
+
+    $(document).on('input', 'div[contenteditable="true"]', function() {
+        const caretPosition = saveCaretPosition($(this).get(0));
+        const myText = $(this).text().trim();
+        $(this).text(myText); // trim line breaks and spaces
+        const masterSelector = $(this).data('for');
+        const masterElement = document.getElementById(masterSelector);
+        
+        if (masterElement == null) {
+            console.error('Master input element not found for the editable label', masterSelector);
+            return;
+        }
+
+        const myValue = Number(myText);
+
+        if (Number.isNaN(myValue)) {
+            console.warn('Label input is not a valid number. Resetting the value', myText);
+            $(masterElement).trigger('input');
+            restoreCaretPosition($(this).get(0), caretPosition);
+            return;
+        }
+
+        const masterMin = Number($(masterElement).attr('min'));
+        const masterMax = Number($(masterElement).attr('max'));
+
+        if (myValue < masterMin) {
+            console.warn('Label input is less than minimum.', myText, '<', masterMin);
+            restoreCaretPosition($(this).get(0), caretPosition);
+            return;
+        }
+
+        if (myValue > masterMax) {
+            console.warn('Label input is more than maximum.', myText, '>', masterMax);
+            restoreCaretPosition($(this).get(0), caretPosition);
+            return;
+        }
+
+        console.log('Label value OK, setting to the master input control', myText);
+        $(masterElement).val(myValue).trigger('input');
+        restoreCaretPosition($(this).get(0), caretPosition);
     });
 })
