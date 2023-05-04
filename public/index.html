@@ -1257,19 +1257,50 @@
                         <div id="world_info_edit_button" class="menu_button fa-solid fa-pencil" title="Details"></div>
                     </div>
 
-                    <div id="world_info_depth_block">
-                        <h4>
-                            Scan Depth <a href="/notes#scandepth" class="notes-link" target="_blank"><span class="note-link-span">?</span></a>
-                        </h4>
-                        <label for="world_info_depth" id="world_info_depth_counter">depth</label>
-                        <input type="range" id="world_info_depth" name="volume" min="1" max="10" step="1">
-                    </div>
-                    <div id="world_info_budget_block">
-                        <h4>
-                            Token Budget <a href="/notes#budget" class="notes-link" target="_blank"><span class="note-link-span">?</span></a>
-                        </h4>
-                        <label for="world_info_budget" id="world_info_budget_counter">budget</label>
-                        <input type="range" id="world_info_budget" name="volume" min="32" max="2048" step="16">
+                    <div class="flex-container alignitemscenter">
+                        <div class="flex1 range-block">
+                            <div class="range-block-title">
+                                Scan Depth <a href="/notes#scandepth" class="notes-link" target="_blank"><span class="note-link-span">?</span></a>
+                            </div>
+                            <div class="range-block-range-and-counter">
+                                <div class="range-block-range">
+                                    <input type="range" id="world_info_depth" name="volume" min="1" max="10" step="1">
+                                </div>
+                                <div class="range-block-counter">
+                                    <div contenteditable="true" data-for="world_info_depth" id="world_info_depth_counter">
+                                        depth
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+    
+                        <div class="flex1 range-block">
+                            <div class="range-block-title">
+                                Token Budget <a href="/notes#budget" class="notes-link" target="_blank"><span class="note-link-span">?</span></a>
+                            </div>
+                            <div class="range-block-range-and-counter">
+                                <div class="range-block-range">
+                                    <input type="range" id="world_info_budget" name="volume" min="32" max="2048" step="16">
+                                </div>
+                                <div class="range-block-counter">
+                                    <div contenteditable="true" data-for="world_info_budget" id="world_info_budget_counter">
+                                        budget
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex1 range-block">
+                            <label title="Entries can activate other entries by mentioning their keywords" class="checkbox_label">
+                                <input id="world_info_recursive" type="checkbox" />
+                                <span>
+                                    Recursive scanning
+                                    <a href="/notes#recursivescanning" class="notes-link" target="_blank">
+                                        <span class="note-link-span">?</span>
+                                    </a>
+                                </span>
+                            </label>
+                        </div>
                     </div>
                 </div>
                 <div id="softprompt_block">

@@ -24,6 +24,7 @@ import {
     selectImportedWorldInfo,
     setWorldInfoSettings,
     deleteWorldInfo,
+    world_info_recursive,
 } from "./scripts/world-info.js";
 
 import {
@@ -3174,6 +3175,7 @@ async function saveSettings(type) {
             world_info: world_info,
             world_info_depth: world_info_depth,
             world_info_budget: world_info_budget,
+            world_info_recursive: world_info_recursive,
             textgenerationwebui_settings: textgenerationwebui_settings,
             swipes: swipes,
             horde_settings: horde_settings,
