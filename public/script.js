@@ -5646,7 +5646,7 @@ $(document).ready(function () {
         }
     });
 
-    $(document).on('input', 'div[contenteditable="true"]', function () {
+    $(document).on('input', '.range-block-counter div[contenteditable="true"]', function () {
         const caretPosition = saveCaretPosition($(this).get(0));
         const myText = $(this).text().trim();
         $(this).text(myText); // trim line breaks and spaces
