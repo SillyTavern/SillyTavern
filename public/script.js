@@ -1181,7 +1181,7 @@ function getStoppingStrings(isImpersonate, addSpace) {
         }
     }
 
-    return addSpace ? result.map(x => `${result} `) : result;
+    return addSpace ? result.map(x => `${x} `) : result;
 }
 
 function processCommands(message, type) {
