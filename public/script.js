@@ -2400,7 +2400,7 @@ function cleanUpMessage(getMessage, isImpersonate) {
     // trailing invisible whitespace before every newlines, on a multiline string
     // "trailing whitespace on newlines       \nevery line of the string    \n?sample text" ->
     // "trailing whitespace on newlines\nevery line of the string\nsample text"
-    getMessage = getMessage.replace(/\s+$/gm, "");
+    getMessage = getMessage.replace(/[^\S\r\n]+$/gm, "");
     if (is_pygmalion) {
         getMessage = getMessage.replace(/<USER>/g, name1);
         getMessage = getMessage.replace(/<BOT>/g, name2);
