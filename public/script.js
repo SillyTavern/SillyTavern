@@ -2660,9 +2660,9 @@ async function saveChat(chat_name, withMetadata) {
             throw new Error('Group chat saved from saveChat');
         }
         if (item.is_user) {
-            var str = item.mes.replace(`${name1}:`, `${default_user_name}:`);
+            var str = item.mes.replace(`${name1}:`, `${name1}:`);
             chat[i].mes = str;
-            chat[i].name = default_user_name;
+            chat[i].name = name1;
         } else if (i !== chat.length - 1 && chat[i].swipe_id !== undefined) {
             //  delete chat[i].swipes;
             //  delete chat[i].swipe_id;
@@ -2670,7 +2670,7 @@ async function saveChat(chat_name, withMetadata) {
     });
     var save_chat = [
         {
-            user_name: default_user_name,
+            user_name: name1,
             character_name: name2,
             create_date: chat_create_date,
             chat_metadata: metadata,
