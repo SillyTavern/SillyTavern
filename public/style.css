@@ -2792,6 +2792,7 @@ body .ui-widget-content li:hover {
 #rm_group_members .right_menu_button,
 #rm_group_add_members .right_menu_button {
     padding: 0px;
+    height: 20px;
 }
 
 .group_select {
