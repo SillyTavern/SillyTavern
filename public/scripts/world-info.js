@@ -309,7 +309,7 @@ function appendWorldEntry(entry) {
 
 async function resetScrollHeight(element) {
     await delay(1);
-    const height = Number($(element).prop("scrollHeight")) + 1;
+    const height = Number($(element).prop("scrollHeight")) + 3;
     $(element).css("height", "");
     $(element).css("height", `${height}px`);
 }

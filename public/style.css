@@ -546,6 +546,12 @@ code {
     flex-direction: column;
 }
 
+.range-block-range-and-counter {
+    flex: 1;
+    flex-wrap: nowrap;
+    display: flex;
+}
+
 .change_name {
     display: flex;
     flex-direction: row;
@@ -623,7 +629,8 @@ body.big-avatars .avatar img {
     padding-top: 5px;
     padding-bottom: 5px;
     max-width: 100%;
-    word-wrap: break-word;
+    /* word-wrap: break-word; */
+    overflow-wrap: anywhere;
     /* animation: typing 3.5s steps(40, end), blink-caret .75s step-end infinite; */
 }
 
@@ -685,9 +692,15 @@ select {
     flex: 1;
 }
 
-#send_textarea::placeholder,
+
 .text_pole::placeholder {
-    color: var(--SmartThemeBodyColor);
+    color: rgb(92, 90, 90);
+}
+
+#send_textarea::placeholder {
+    color: var(--SmartThemeEmColor);
+    text-align: center;
+    white-space: nowrap;
 }
 
 #rm_ch_create_block textarea {
@@ -1940,21 +1953,39 @@ input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
 }
 
 .range-block-counter {
-    width: max-content;
+    /* width: max-content; */
     margin-left: 5px;
     margin-right: 15px;
     font-size: calc(var(--mainFontSize) * 0.95);
     color: var(--SmartThemeBodyColor);
+    flex: 1;
+    display: flex;
+}
+
+.toggle-description {
+    width: max-content;
+    margin-left: 5px;
+    margin-right: 15px;
+    font-size: calc(var(--mainFontSize) * 0.8);
+    color: var(--SmartThemeEmColor);
+    text-align: center;
 }
 
 .range-block-counter div[contenteditable="true"] {
     display: block;
     cursor: text;
+    background-color: var(--black30a);
+    border: 1px solid var(--white30a);
+    border-radius: 5px;
+    padding: 2px;
+    flex: 1;
+    text-align: center;
 }
 
 .range-block-range {
     margin: 0;
-    width: 80%;
+    /* width: 80%; */
+    flex: 5;
     /* margin-bottom: 10px; */
 }
 
@@ -3440,6 +3471,10 @@ toolcool-color-picker {
     flex-wrap: nowrap;
 }
 
+.flex1 {
+    flex: 1;
+}
+
 .alignitemscenter {
     align-items: center;
 }
@@ -3527,6 +3562,18 @@ toolcool-color-picker {
 .openai_logit_bias_text,
 .openai_logit_bias_value {
     flex: 1;
+}
+
+.editable-slider-notification {
+    position: absolute;
+    right: 0px;
+    left: 0px;
+    margin: 0 auto;
+    width: 70%;
+    top: 5px;
+    padding: 0;
+    display: block;
+    text-align: center;
 }
 
 .openai_logit_bias_form {
