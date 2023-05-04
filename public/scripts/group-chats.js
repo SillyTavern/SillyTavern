@@ -375,7 +375,7 @@ function getGroupAvatar(group) {
 }
 
 
-async function generateGroupWrapper(by_auto_mode, type = null, force_chid = null) {
+async function generateGroupWrapper(by_auto_mode, type = null, force_chid = null, params = {}) {
     if (online_status === "no_connection") {
         is_group_generating = false;
         setSendButtonState(false);
@@ -423,6 +423,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, force_chid = null
         let lastMessageText = lastMessage.mes;
         let activationText = "";
         let isUserInput = false;
+        let isQuietGenDone = false;
 
         if (userInput && userInput.length && !by_auto_mode) {
             isUserInput = true;
@@ -439,6 +440,23 @@ async function generateGroupWrapper(by_auto_mode, type = null, force_chid = null
 
         if (typeof force_chid == 'number') {
             activatedMembers = [force_chid];
+        } else if (type === "quiet") {
+            activatedMembers = activateSwipe(group.members);
+
+            if (activatedMembers.length === 0) {
+                activatedMembers = activateListOrder(group.members.slice(0, 1));
+            }
+
+            const resolveOriginal = params.resolve;
+            const rejectOriginal = params.reject;
+            params.resolve = function() {
+                isQuietGenDone = true;
+                resolveOriginal.apply(this, arguments);
+            };
+            params.reject = function() {
+                isQuietGenDone = true;
+                rejectOriginal.apply(this, arguments);
+            }
         }
         else if (type === "swipe") {
             activatedMembers = activateSwipe(group.members);
@@ -461,11 +479,11 @@ async function generateGroupWrapper(by_auto_mode, type = null, force_chid = null
 
         // now the real generation begins: cycle through every character
         for (const chId of activatedMembers) {
-            const generateType = type == "swipe" || type == "impersonate" ? type : "group_chat";
+            const generateType = type == "swipe" || type == "impersonate" || type == "quiet" ? type : "group_chat";
             setCharacterId(chId);
             setCharacterName(characters[chId].name)
 
-            await Generate(generateType, { automatic_trigger: by_auto_mode });
+            await Generate(generateType, { automatic_trigger: by_auto_mode, ...(params || {}) });
 
             if (type !== "swipe" && type !== "impersonate") {
                 // update indicator and scroll down
@@ -518,6 +536,13 @@ async function generateGroupWrapper(by_auto_mode, type = null, force_chid = null
                         else {
                             break;
                         }
+                    }
+                }
+                else if (type === 'quiet') {
+                    if (isQuietGenDone) {
+                        break;
+                    } else {
+                        await delay(100);
                     }
                 }
                 else {

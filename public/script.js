@@ -193,7 +193,7 @@ let converter;
 reloadMarkdownProcessor();
 
 /* let bg_menu_toggle = false; */
-const systemUserName = "SillyTavern System";
+export const systemUserName = "SillyTavern System";
 let default_user_name = "You";
 let name1 = default_user_name;
 let name2 = "SillyTavern System";
@@ -1528,7 +1528,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     }
 
     if (selected_group && !is_group_generating) {
-        generateGroupWrapper(false, type);
+        generateGroupWrapper(false, type, null, { resolve, reject, quiet_prompt });
         return;
     }
 

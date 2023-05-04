@@ -1,4 +1,10 @@
-import { substituteParams, saveSettingsDebounced } from "../../../script.js";
+import {
+    substituteParams,
+    saveSettingsDebounced,
+    systemUserName,
+    hideSwipeButtons,
+    showSwipeButtons
+} from "../../../script.js";
 import { getApiUrl, getContext, extension_settings, defaultRequestArgs } from "../../extensions.js";
 import { stringFormat } from "../../utils.js";
 
@@ -6,6 +12,8 @@ import { stringFormat } from "../../utils.js";
 const m = x => `<span class="monospace">${x}</span>`;
 // Joins an array of strings with ' / '
 const j = a => a.join(' / ');
+// Wraps a string into paragraph block
+const p = a => `<p>${a}</p>`
 
 const postHeaders = {
 'Content-Type': 'application/json',
@@ -26,10 +34,10 @@ const triggerWords = {
 }
 
 const quietPrompts = {
-    [generationMode.CHARACTER]: "Please provide a detailed description of {{char}}'s appearance",
-    [generationMode.USER]: "Please provide a detailed description of {{user}}'s appearance",
-    [generationMode.SCENARIO]: 'Please provide a detailed description of your surroundings and what you are doing right now',
-    [generationMode.FREE]: 'Please provide a detailed and vivid description of {0}',
+    [generationMode.CHARACTER]: "[Please provide a detailed description of {{char}}'s appearance]",
+    [generationMode.USER]: "[Please provide a detailed description of {{user}}'s appearance]",
+    [generationMode.SCENARIO]: '[Please provide a detailed description of your surroundings and what you are doing right now]',
+    [generationMode.FREE]: '[Please provide a detailed and vivid description of {0}]',
 }
 
 const helpString = [
@@ -234,6 +242,7 @@ async function generatePicture(_, trigger) {
             }));
 
         context.deactivateSendButtons();
+        hideSwipeButtons();
 
         const url = new URL(getApiUrl());
         url.pathname = '/api/image';
@@ -258,11 +267,13 @@ async function generatePicture(_, trigger) {
             const base64Image = `data:image/jpeg;base64,${data.image}`;
             sendMessage(prompt, base64Image);
         }
-    } catch {
+    } catch (err) {
+        console.error(err);
         throw new Error('SD prompt text generation failed.')
     }
     finally {
         context.activateSendButtons();
+        showSwipeButtons();
     }
 }
 
@@ -270,11 +281,12 @@ async function sendMessage(prompt, image) {
     const context = getContext();
     const messageText = `[${context.name2} sends a picture that contains: ${prompt}]`;
     const message = {
-        name: context.name2,
+        name: context.groupId ? systemUserName : context.name2,
+        is_system: context.groupId ? true : false,
         is_user: false,
         is_name: true,
         send_date: Date.now(),
-        mes: messageText,
+        mes: context.groupId ? p(messageText) : messageText,
         extra: {
             image: image,
             title: prompt,
