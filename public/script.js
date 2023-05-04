@@ -24,6 +24,7 @@ import {
     selectImportedWorldInfo,
     setWorldInfoSettings,
     deleteWorldInfo,
+    world_info_recursive,
 } from "./scripts/world-info.js";
 
 import {
@@ -193,7 +194,7 @@ let converter;
 reloadMarkdownProcessor();
 
 /* let bg_menu_toggle = false; */
-const systemUserName = "SillyTavern System";
+export const systemUserName = "SillyTavern System";
 let default_user_name = "You";
 let name1 = default_user_name;
 let name2 = "SillyTavern System";
@@ -1191,8 +1192,7 @@ function getStoppingStrings(isImpersonate, addSpace) {
         }
     }
 
-    return addSpace ? result.map(x => `${result} `) : result;
-
+    return addSpace ? result.map(x => `${x} `) : result;
 }
 
 function processCommands(message, type) {
@@ -1540,7 +1540,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     }
 
     if (selected_group && !is_group_generating) {
-        generateGroupWrapper(false, type);
+        generateGroupWrapper(false, type, null, { resolve, reject, quiet_prompt });
         return;
     }
 
@@ -2415,7 +2415,7 @@ function cleanUpMessage(getMessage, isImpersonate) {
     // trailing invisible whitespace before every newlines, on a multiline string
     // "trailing whitespace on newlines       \nevery line of the string    \n?sample text" ->
     // "trailing whitespace on newlines\nevery line of the string\nsample text"
-    getMessage = getMessage.replace(/\s+$/gm, "");
+    getMessage = getMessage.replace(/[^\S\r\n]+$/gm, "");
     if (is_pygmalion) {
         getMessage = getMessage.replace(/<USER>/g, name1);
         getMessage = getMessage.replace(/<BOT>/g, name2);
@@ -3193,6 +3193,7 @@ async function saveSettings(type) {
             world_info: world_info,
             world_info_depth: world_info_depth,
             world_info_budget: world_info_budget,
+            world_info_recursive: world_info_recursive,
             textgenerationwebui_settings: textgenerationwebui_settings,
             swipes: swipes,
             horde_settings: horde_settings,
