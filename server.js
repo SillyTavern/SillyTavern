@@ -858,7 +858,7 @@ async function charaRead(img_url, input_format) {
                         description = exif_data['UserComment'].value[0];
                     }
                     try {
-                        JSON.parse(description);
+                        json5.parse(description);
                         char_data = description;
                     } catch {
                         const byteArr = description.split(",").map(Number);
