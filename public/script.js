@@ -967,9 +967,9 @@ function messageFormating(mes, ch_name, isSystem, forceAvatar) {
         });
     }
 
-    if (ch_name && (forceAvatar || ch_name !== name1)) {
-        mes = mes.replaceAll(ch_name + ":", "");
-    }
+    /*     if (ch_name && (forceAvatar || ch_name !== name1)) {
+            mes = mes.replaceAll(ch_name + ":", "");
+        } */
 
     return mes;
 }

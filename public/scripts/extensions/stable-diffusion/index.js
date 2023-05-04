@@ -16,8 +16,8 @@ const j = a => a.join(' / ');
 const p = a => `<p>${a}</p>`
 
 const postHeaders = {
-'Content-Type': 'application/json',
-'Bypass-Tunnel-Reminder': 'bypass',
+    'Content-Type': 'application/json',
+    'Bypass-Tunnel-Reminder': 'bypass',
 };
 
 const generationMode = {
@@ -36,8 +36,8 @@ const triggerWords = {
 const quietPrompts = {
     [generationMode.CHARACTER]: "[Please provide a detailed description of {{char}}'s appearance]",
     [generationMode.USER]: "[Please provide a detailed description of {{user}}'s appearance]",
-    [generationMode.SCENARIO]: '[Please provide a detailed description of your surroundings and what you are doing right now]',
-    [generationMode.FREE]: '[Please provide a detailed and vivid description of {0}]',
+    [generationMode.SCENARIO]: "[Provide a detailed description for all of the following: {{char}}'s appearance, {{char}}'s surroundings, a brief recap of recent events in the story.]",
+    [generationMode.FREE]: "[Please provide a detailed and vivid description of {0}]",
 }
 
 const helpString = [
