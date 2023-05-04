@@ -1528,7 +1528,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     }
 
     if (selected_group && !is_group_generating) {
-        generateGroupWrapper(false, type = type);
+        generateGroupWrapper(false, type);
         return;
     }
 
