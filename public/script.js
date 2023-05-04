@@ -1020,11 +1020,17 @@ function addCopyToCodeBlocks(messageElement) {
 
 function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true } = {}) {
     var messageText = mes["mes"];
-    var characterName = name1;
+
+    if (mes.name === name1) {
+        var characterName = name1; //set to user's name by default
+    } else { var characterName = mes.name }
+
     var avatarImg = "User Avatars/" + user_avatar;
     const isSystem = mes.is_system;
     const title = mes.title;
     generatedPromtCache = "";
+
+    //for non-user mesages
     if (!mes["is_user"]) {
         if (mes.force_avatar) {
             avatarImg = mes.force_avatar;
@@ -1040,8 +1046,11 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
                 avatarImg = default_avatar;
             }
         }
+        //old processing: 
+        //if messge is from sytem, use the name provided in the message JSONL to proceed,
+        //if not system message, use name2 (char's name) to proceed
+        //characterName = mes.is_system || mes.force_avatar ? mes.name : name2;
 
-        characterName = mes.is_system || mes.force_avatar ? mes.name : name2;
     }
 
     if (count_view_mes == 0) {
@@ -1090,7 +1099,6 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     }
 
     newMessage.find('.avatar img').on('error', function () {
-        /* $(this).attr("src", "/img/user-slash-solid.svg"); */
         $(this).hide();
         $(this).parent().html(`<div class="missing-avatar fa-solid fa-user-slash"></div>`);
     });
@@ -1164,8 +1172,11 @@ function substituteParams(content, _name1, _name2) {
 
 function getStoppingStrings(isImpersonate, addSpace) {
     const charString = `\n${name2}:`;
-    const userString = is_pygmalion ? `\nYou:` : `\n${name1}:`;
-    const result = isImpersonate ? [charString] : [userString];
+    const youString = `\nYou:`;
+    const userString = `\n${name1}:`;
+    const result = isImpersonate ? [charString] : [youString];
+
+    result.push(userString);
 
     // Add other group members as the stopping strings
     if (selected_group) {
@@ -1181,6 +1192,7 @@ function getStoppingStrings(isImpersonate, addSpace) {
     }
 
     return addSpace ? result.map(x => `${result} `) : result;
+
 }
 
 function processCommands(message, type) {
@@ -1540,8 +1552,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             $("#send_textarea").val('').trigger('input');
         } else {
             textareaText = "";
-            if (chat.length && chat[chat.length - 1]['is_user']) {//If last message from You
-
+            if (chat.length && chat[chat.length - 1]['is_user']) {
+                //do nothing? why does this check exist?
             }
             else if (type !== 'quiet' && type !== "swipe" && !isImpersonate) {
                 chat.length = chat.length - 1;
@@ -1596,6 +1608,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         //*********************************
         //PRE FORMATING STRING
         //*********************************
+
+        //for normal messages sent from user..
         if (textareaText != "" && !automatic_trigger && type !== 'quiet') {
             chat[chat.length] = {};
             chat[chat.length - 1]['name'] = name1;
@@ -1681,7 +1695,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             let charName = selected_group ? coreChat[j].name : name2;
             let this_mes_ch_name = '';
             if (coreChat[j]['is_user']) {
-                this_mes_ch_name = name1;
+                //this_mes_ch_name = name1;
+                this_mes_ch_name = coreChat[j]['name'];
             } else {
                 this_mes_ch_name = charName;
             }
@@ -2423,6 +2438,8 @@ function cleanUpMessage(getMessage, isImpersonate) {
     }
 
     const stoppingStrings = getStoppingStrings(isImpersonate, false);
+    //console.log('stopping on these strings: ');
+    //console.log(stoppingStrings);
 
     for (const stoppingString of stoppingStrings) {
         if (stoppingString.length) {
@@ -2659,14 +2676,16 @@ async function saveChat(chat_name, withMetadata) {
             alert('Trying to save group chat with regular saveChat function. Aborting to prevent corruption.');
             throw new Error('Group chat saved from saveChat');
         }
+        /*
         if (item.is_user) {
-            var str = item.mes.replace(`${name1}:`, `${name1}:`);
-            chat[i].mes = str;
-            chat[i].name = name1;
+            //var str = item.mes.replace(`${name1}:`, `${name1}:`);
+            //chat[i].mes = str;
+            //chat[i].name = name1;
         } else if (i !== chat.length - 1 && chat[i].swipe_id !== undefined) {
             //  delete chat[i].swipes;
             //  delete chat[i].swipe_id;
         }
+        */
     });
     var save_chat = [
         {
@@ -2774,8 +2793,8 @@ function getChatResult() {
         for (let i = 0; i < chat.length; i++) {
             const item = chat[i];
             if (item["is_user"]) {
-                item['mes'] = item['mes'].replace(default_user_name + ':', name1 + ':');
-                item['name'] = name1;
+                //item['mes'] = item['mes'].replace(default_user_name + ':', name1 + ':');
+                //item['name'] = name1;
             }
         }
     } else {
@@ -3188,8 +3207,11 @@ async function saveSettings(type) {
         }, null, 4),
         beforeSend: function () {
             if (type == "change_name") {
+                //let nameBeforeChange = name1;
                 name1 = $("#your_name").val();
-                //     console.log('beforeSend name1 = '+name1);
+                //$(`.mes[ch_name="${nameBeforeChange}"]`).attr('ch_name' === name1);
+                //console.log('beforeSend name1 = ' + nameBeforeChange);
+                //console.log('new name: ' + name1);
             }
         },
         cache: false,
@@ -3199,8 +3221,6 @@ async function saveSettings(type) {
         success: function (data) {
             //online_status = data.result;
             if (type == "change_name") {
-
-
                 clearChat();
                 printMessages();
             }
