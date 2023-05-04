@@ -1,6 +1,6 @@
 # SillyTavern
 ## Based on a fork of TavernAI 1.2.8
-### Brought to you by Cohee and RossAscends
+### Brought to you by Cohee, RossAscends and the SillyTavern community
 
 NOTE: We have added [a FAQ](faq.md) to answer most of your questions and help you get started.
 
