@@ -1165,8 +1165,22 @@ function substituteParams(content, _name1, _name2) {
 function getStoppingStrings(isImpersonate, addSpace) {
     const charString = `\n${name2}:`;
     const userString = is_pygmalion ? `\nYou:` : `\n${name1}:`;
-    const result = isImpersonate ? charString : userString;
-    return [addSpace ? `${result} ` : result];
+    const result = isImpersonate ? [charString] : [userString];
+
+    // Add other group members as the stopping strings
+    if (selected_group) {
+        const group = groups.find(x => x.id === selected_group);
+
+        if (group && Array.isArray(group.members)) {
+            const names = group.members
+                .map(x => characters.find(y => y.avatar == x))
+                .filter(x => x && x.name !== name2)
+                .map(x => `\n${x.name}:`);
+            result.push(...names);
+        }
+    }
+
+    return addSpace ? result.map(x => `${result} `) : result;
 }
 
 function processCommands(message, type) {
