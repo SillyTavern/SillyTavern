@@ -3,6 +3,7 @@ import { extension_settings, getContext } from '../../extensions.js'
 import { getStringHash } from '../../utils.js'
 import { ElevenLabsTtsProvider } from './elevenlabs.js'
 import { SileroTtsProvider } from './silerotts.js'
+import { SystemTtsProvider } from './system.js'
 
 const UPDATE_INTERVAL = 1000
 
@@ -17,7 +18,8 @@ let lastMessageHash = null
 
 let ttsProviders = {
     ElevenLabs: ElevenLabsTtsProvider,
-    Silero: SileroTtsProvider
+    Silero: SileroTtsProvider,
+    System: SystemTtsProvider,
 }
 let ttsProvider
 let ttsProviderName
@@ -112,7 +114,13 @@ async function playAudioData(audioBlob) {
 
 window['tts_preview'] = function (id) {
     const audio = document.getElementById(id)
-    audio.play()
+
+    if (!audio.hidden) {
+        audio.play()
+    }
+    else {
+        ttsProvider.previewTtsVoice(id)
+    }
 }
 
 async function onTtsVoicesClick() {
@@ -123,7 +131,7 @@ async function onTtsVoicesClick() {
 
         for (const voice of voiceIds) {
             popupText += `<div class="voice_preview"><b>${voice.name}</b> <i onclick="tts_preview('${voice.voice_id}')" class="fa-solid fa-play"></i></div>`
-            popupText += `<audio id="${voice.voice_id}" src="${voice.preview_url}"></audio>`
+            popupText += `<audio id="${voice.voice_id}" src="${voice.preview_url}" hidden="${!!voice.preview_url}"></audio>`
         }
     } catch {
         popupText = 'Could not load voices list. Check your API key.'
