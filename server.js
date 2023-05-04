@@ -133,6 +133,20 @@ async function countTokensLlama(text) {
     return ids.length;
 }
 
+const tokenizersCache = {};
+
+function getTiktokenTokenizer(model) {
+    if (tokenizersCache[model]) {
+        console.log('Using the cached tokenizer instance for', model);
+        return tokenizersCache[model];
+    }
+
+    const tokenizer = tiktoken.encoding_for_model(model);
+    console.log('Instantiated the tokenizer for', model);
+    tokenizersCache[model] = tokenizer;
+    return tokenizer;
+}
+
 function humanizedISO8601DateTime() {
     let baseDate = new Date(Date.now());
     let humanYear = baseDate.getFullYear();
@@ -381,6 +395,7 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
 
     if (!!request.header('X-Response-Streaming')) {
         let isStreamingStopped = false;
+        request.socket.removeAllListeners('close');
         request.socket.on('close', function () {
             isStreamingStopped = true;
         });
@@ -1977,6 +1992,7 @@ app.post('/generate_poe', jsonParser, async (request, response) => {
 
     if (streaming) {
         let isStreamingStopped = false;
+        request.socket.removeAllListeners('close');
         request.socket.on('close', function () {
             isStreamingStopped = true;
             client.abortController.abort();
@@ -2235,7 +2251,7 @@ app.post("/openai_bias", jsonParser, async function (request, response) {
 
     let result = {};
 
-    const tokenizer = tiktoken.encoding_for_model(request.query.model === 'gpt-4-0314' ? 'gpt-4' : request.query.model);
+    const tokenizer = getTiktokenTokenizer(request.query.model === 'gpt-4-0314' ? 'gpt-4' : request.query.model);
 
     for (const entry of request.body) {
         if (!entry || !entry.text) {
@@ -2249,7 +2265,8 @@ app.post("/openai_bias", jsonParser, async function (request, response) {
         }
     }
 
-    tokenizer.free();
+    // not needed for cached tokenizers
+    //tokenizer.free();
     return response.send(result);
 });
 
@@ -2304,6 +2321,7 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
     const api_url = new URL(request.body.reverse_proxy || api_openai).toString();
 
     const controller = new AbortController();
+    request.socket.removeAllListeners('close');
     request.socket.on('close', function () {
         controller.abort();
     });
@@ -2398,7 +2416,7 @@ app.post("/tokenize_openai", jsonParser, function (request, response_tokenize_op
     const tokensPerMessage = request.query.model.includes('gpt-4') ? 3 : 4;
     const tokensPadding = 3;
 
-    const tokenizer = tiktoken.encoding_for_model(request.query.model === 'gpt-4-0314' ? 'gpt-4' : request.query.model);
+    const tokenizer = getTiktokenTokenizer(request.query.model === 'gpt-4-0314' ? 'gpt-4' : request.query.model);
 
     let num_tokens = 0;
     for (const msg of request.body) {
@@ -2412,7 +2430,8 @@ app.post("/tokenize_openai", jsonParser, function (request, response_tokenize_op
     }
     num_tokens += tokensPadding;
 
-    tokenizer.free();
+    // not needed for cached tokenizers
+    //tokenizer.free();
 
     response_tokenize_openai.send({ "token_count": num_tokens });
 });
