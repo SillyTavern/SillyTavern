@@ -174,8 +174,8 @@ code {
     word-wrap: break-word;
     border: 1px solid var(--white30a);
     border-radius: 5px;
-
-
+    background-color: var(--black70a);
+    padding: 0 3px;
     max-width: calc(100svw - 95px);
     line-height: var(--mainFontSize);
 }
