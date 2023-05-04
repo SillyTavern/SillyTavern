@@ -80,7 +80,7 @@ async function loadSettings() {
     $('#sd_width').val(extension_settings.sd.width).trigger('input');
     $('#sd_height').val(extension_settings.sd.height).trigger('input');
 
-    await Promise.all([loadSamplers, loadModels]);
+    await Promise.all([loadSamplers(), loadModels()]);
 }
 
 function onScaleInput() {
