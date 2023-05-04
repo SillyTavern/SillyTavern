@@ -130,7 +130,7 @@ async function onTtsVoicesClick() {
         const voiceIds = await ttsProvider.fetchTtsVoiceIds()
 
         for (const voice of voiceIds) {
-            popupText += `<div class="voice_preview"><b>${voice.name}</b> <i onclick="tts_preview('${voice.voice_id}')" class="fa-solid fa-play"></i></div>`
+            popupText += `<div class="voice_preview"><span class="voice_lang">${voice.lang || ''}</span> <b class="voice_name">${voice.name}</b> <i onclick="tts_preview('${voice.voice_id}')" class="fa-solid fa-play"></i></div>`
             popupText += `<audio id="${voice.voice_id}" src="${voice.preview_url}" hidden="${!!voice.preview_url}"></audio>`
         }
     } catch {
