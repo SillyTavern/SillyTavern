@@ -2166,7 +2166,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
                         if (type !== 'quiet') {
                             playMessageSound();
-                        } 
+                        }
 
                         generate_loop_counter = 0;
                     } else {
@@ -5589,7 +5589,10 @@ $(document).ready(function () {
     });
 
     $(document).on('click', '#OpenAllWIEntries', function () {
-        $("#world_popup_entries_list").children().find('.inline-drawer-header').click()
+        $("#world_popup_entries_list").children().find('.down').click()
+    });
+    $(document).on('click', '#CloseAllWIEntries', function () {
+        $("#world_popup_entries_list").children().find('.up').click()
     });
 
     $(document).keyup(function (e) {
@@ -5629,13 +5632,13 @@ $(document).ready(function () {
         }
     });
 
-    $(document).on('input', 'div[contenteditable="true"]', function() {
+    $(document).on('input', 'div[contenteditable="true"]', function () {
         const caretPosition = saveCaretPosition($(this).get(0));
         const myText = $(this).text().trim();
         $(this).text(myText); // trim line breaks and spaces
         const masterSelector = $(this).data('for');
         const masterElement = document.getElementById(masterSelector);
-        
+
         if (masterElement == null) {
             console.error('Master input element not found for the editable label', masterSelector);
             return;
