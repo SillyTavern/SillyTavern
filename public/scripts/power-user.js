@@ -8,11 +8,15 @@ import {
     reloadCurrentChat,
     getRequestHeaders,
 } from "../script.js";
+import {
+    groups,
+} from "./group-chats.js";
 
 export {
     loadPowerUserSettings,
     collapseNewlines,
     playMessageSound,
+    sortGroupMembers,
     sortCharactersList,
     fixMarkdown,
     power_user,
@@ -409,19 +413,46 @@ function loadPowerUserSettings(settings, data) {
     reloadMarkdownProcessor(power_user.render_formulas);
 }
 
-function sortCharactersList(selector = '.character_select') {
-    const sortFunc = (a, b) => power_user.sort_order == 'asc' ? compareFunc(a, b) : compareFunc(b, a);
-    const compareFunc = (first, second) => {
-        switch (power_user.sort_rule) {
-            case 'boolean':
-                return Number(first[power_user.sort_field] == "true") - Number(second[power_user.sort_field] == "true");
-            default:
-                return typeof first[power_user.sort_field] == "string"
-                    ? first[power_user.sort_field].localeCompare(second[power_user.sort_field])
-                    : first[power_user.sort_field] - second[power_user.sort_field];
-        }
-    };
+const sortFunc = (a, b) => power_user.sort_order == 'asc' ? compareFunc(a, b) : compareFunc(b, a);
+const compareFunc = (first, second) => {
+    switch (power_user.sort_rule) {
+        case 'boolean':
+            return Number(first[power_user.sort_field] == "true") - Number(second[power_user.sort_field] == "true");
+        default:
+            return typeof first[power_user.sort_field] == "string"
+                ? first[power_user.sort_field].localeCompare(second[power_user.sort_field])
+                : first[power_user.sort_field] - second[power_user.sort_field];
+    }
+};
 
+function sortCharactersList() {
+    const arr1 = groups.map(x => ({
+        item: x,
+        id: x.id,
+        selector: '.group_select',
+        attribute: 'grid',
+    }))
+    const arr2 = characters.map((x, index) => ({
+        item: x,
+        id: index,
+        selector: '.character_select',
+        attribute: 'chid',
+    }));
+
+    const array = [...arr1, ...arr2];
+
+    if (power_user.sort_field == undefined || array.length === 0) {
+        return;
+    }
+
+    let orderedList = array.slice().sort((a, b) => sortFunc(a.item, b.item));
+
+    for (const item of array) {
+        $(`${item.selector}[${item.attribute}="${item.id}"]`).css({ 'order': orderedList.indexOf(item) });
+    }
+}
+
+function sortGroupMembers(selector) {
     if (power_user.sort_field == undefined || characters.length === 0) {
         return;
     }

@@ -733,13 +733,11 @@ function printCharacters() {
         // Add to the list
         $("#rm_print_characters_block").append(template);
     });
-    $("#rm_print_characters_block").prepend(`<hr>`);
 
     printTags();
     printGroups();
-    sortCharactersList();
     favsToHotswap();
-
+    sortCharactersList();
 }
 
 async function getCharacters() {

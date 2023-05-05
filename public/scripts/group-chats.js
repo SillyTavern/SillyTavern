@@ -5,7 +5,7 @@ import {
     delay,
 } from './utils.js';
 import { RA_CountCharTokens, humanizedDateTime } from "./RossAscends-mods.js";
-import { sortCharactersList } from './power-user.js';
+import { sortCharactersList, sortGroupMembers } from './power-user.js';
 
 import {
     chat,
@@ -201,6 +201,7 @@ async function saveGroupChat(groupId, shouldSaveGroup) {
     if (shouldSaveGroup && response.ok) {
         await editGroup(groupId);
     }
+    sortCharactersList();
 }
 
 export async function renameGroupMember(oldAvatar, newAvatar, newName) {
@@ -899,7 +900,7 @@ function select_group_chats(groupId, skipAnimation) {
         }
     }
 
-    sortCharactersList("#rm_group_add_members .group_member");
+    sortGroupMembers("#rm_group_add_members .group_member");
     filterMembersByFavorites(false);
 
     const groupHasMembers = !!$("#rm_group_members").children().length;
@@ -989,7 +990,7 @@ function select_group_chats(groupId, skipAnimation) {
             }
         }
 
-        sortCharactersList("#rm_group_add_members .group_member");
+        sortGroupMembers("#rm_group_add_members .group_member");
     });
 }
 
@@ -1195,10 +1196,12 @@ export async function openGroupChat(groupId, chatId) {
     group.past_metadata[previousChat] = Object.assign({}, chat_metadata);
     group.chat_id = chatId;
     group.chat_metadata = group.past_metadata[chatId] || {};
+    group['date_last_chat'] = Date.now();
     updateChatMetadata(group.chat_metadata, true);
 
     await editGroup(groupId, true);
     await getGroupChat(groupId);
+    sortCharactersList();
 }
 
 export async function renameGroupChat(groupId, oldChatId, newChatId) {
