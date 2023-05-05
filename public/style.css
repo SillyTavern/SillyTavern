@@ -2704,6 +2704,7 @@ body .ui-widget-content li:hover {
     flex-direction: column;
     align-items: flex-start;
     padding: 0 5px;
+    overflow-y: auto;
 }
 
 #rm_group_chats_block h3,
