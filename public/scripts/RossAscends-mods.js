@@ -21,7 +21,7 @@ import {
 } from "./power-user.js";
 
 import { LoadLocal, SaveLocal, ClearLocal, CheckLocal, LoadLocalBool } from "./f-localStorage.js";
-import { selected_group, is_group_generating } from "./group-chats.js";
+import { selected_group, is_group_generating, getGroupAvatar, groups } from "./group-chats.js";
 import { oai_settings } from "./openai.js";
 import { poe_settings } from "./poe.js";
 
@@ -285,35 +285,49 @@ async function RA_autoloadchat() {
 }
 
 export async function favsToHotswap() {
-
     const selector = ['#rm_print_characters_block .character_select', '#rm_print_characters_block .group_select'].join(',');
+    const container = $('#rm_PinAndTabs .hotswap');
+    const template = $('#hotswap_template .hotswapAvatar');
+    container.empty();
+    const maxCount = 6;
     let count = 0;
+
     $(selector).each(function () {
-        if ($(this).hasClass('is_fav') && count < 6) {
-            //console.log(count + 1);
-            let hotswapChId = $(this).attr('id');
-            let thisHotswapImgURL = $(this).find('.avatar img').attr('src');
-            let thisHotSwapSlot = `#hotswap${count + 1}`
-            $(thisHotSwapSlot).find('img').attr('src', thisHotswapImgURL);
+        if ($(this).hasClass('is_fav') && count < maxCount) {
+            const isCharacter = $(this).hasClass('character_select');
+            const isGroup = $(this).hasClass('group_select');
+            const grid =  Number($(this).attr('grid'));
+            const chid = Number($(this).attr('chid'));
+            let thisHotSwapSlot = template.clone();
+            thisHotSwapSlot.toggleClass('character_select', isCharacter);
+            thisHotSwapSlot.toggleClass('group_select', isGroup);
+            thisHotSwapSlot.attr('grid', isGroup ? grid : '');
+            thisHotSwapSlot.attr('chid', isCharacter ? chid : '');
+            thisHotSwapSlot.data('id', isGroup ? grid : chid);
+
+            if (isGroup) {
+                const group = groups.find(x => x.id === grid);
+                const avatar = getGroupAvatar(group);
+                $(thisHotSwapSlot).find('img').replaceWith(avatar);
+            }
+
+            if (isCharacter) {
+                const avatarUrl = $(this).find('img').attr('src');
+                $(thisHotSwapSlot).find('img').attr('src', avatarUrl);
+            }
+
             $(thisHotSwapSlot).css('cursor', 'pointer');
-            $(thisHotSwapSlot).on('click', function () {
-                $("#rm_button_characters").click();
-                $(`#${hotswapChId}`).click();
-            });
-            count = count + 1;
+            container.append(thisHotSwapSlot);
+            count++;
         }
     });
+
     console.log('about to check for leftover selectors...')
     // there are 6 slots in total,
-    if (count < 6) { //if any are left over
-        let leftOverSlots = 6 - count;
+    if (count < maxCount) { //if any are left over
+        let leftOverSlots = maxCount - count;
         for (let i = 1; i <= leftOverSlots; i++) {
-            let thisLeftOverSlotNumber = 6 - leftOverSlots + i;
-            //console.log(`Not fav for slot ${thisLeftOverSlotNumber}`);
-            let thisLeftOverSlot = `#hotswap${thisLeftOverSlotNumber}`;
-            $(thisLeftOverSlot).off();
-            $(thisLeftOverSlot).css('cursor', 'unset');
-            $(thisLeftOverSlot).find('img').attr('src', 'img/ai4.png'); //replace with blank ai avatar
+            container.append(template.clone());
         }
     } else {
         //console.log(`count was ${count} so no need to knock off any selectors!`);

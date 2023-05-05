@@ -577,6 +577,8 @@ code {
 .hotswapAvatar {
     opacity: 0.5;
     transition: 250ms;
+    overflow: hidden;
+    padding: 0 !important;
 }
 
 .hotswapAvatar:hover {
