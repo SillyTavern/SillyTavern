@@ -34,7 +34,7 @@ const triggerWords = {
 }
 
 const quietPrompts = {
-    [generationMode.CHARACTER]: "[Please provide a detailed description of {{char}}'s appearance]",
+    [generationMode.CHARACTER]: "[Please provide a detailed description of {{char}}'s appearance and attributes in the form of a comma-delimited list of keywords and phrases. Ignore the rest of the story when crafting this description. Do not count this as part of your char responses, and do not attempt to continue the story.]",
     [generationMode.USER]: "[Please provide a detailed description of {{user}}'s appearance]",
     [generationMode.SCENARIO]: "[Provide a detailed description for all of the following: {{char}}'s appearance, {{char}}'s surroundings, a brief recap of recent events in the story.]",
     [generationMode.FREE]: "[Please provide a detailed and vivid description of {0}]",
