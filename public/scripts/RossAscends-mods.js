@@ -277,11 +277,51 @@ async function RA_autoloadchat() {
             console.log(CharToAutoLoad + ' ActiveChar local var - not found: ' + LoadLocal('ActiveChar'));
         }
         RestoreNavTab();
+
     } else {
         //console.log('no char list yet..');
         setTimeout(RA_autoloadchat, 100);            // if the charcter list hadn't been loaded yet, try again. 
     }
 }
+
+export async function favsToHotswap() {
+
+    const selector = ['#rm_print_characters_block .character_select', '#rm_print_characters_block .group_select'].join(',');
+    let count = 0;
+    $(selector).each(function () {
+        if ($(this).hasClass('is_fav') && count < 6) {
+            //console.log(count + 1);
+            let hotswapChId = $(this).attr('id');
+            let thisHotswapImgURL = $(this).find('.avatar img').attr('src');
+            let thisHotSwapSlot = `#hotswap${count + 1}`
+            $(thisHotSwapSlot).find('img').attr('src', thisHotswapImgURL);
+            $(thisHotSwapSlot).css('cursor', 'pointer');
+            $(thisHotSwapSlot).on('click', function () {
+                $("#rm_button_characters").click();
+                $(`#${hotswapChId}`).click();
+            });
+            count = count + 1;
+        }
+    });
+    console.log('about to check for leftover selectors...')
+    // there are 6 slots in total,
+    if (count < 6) { //if any are left over
+        let leftOverSlots = 6 - count;
+        for (let i = 1; i <= leftOverSlots; i++) {
+            let thisLeftOverSlotNumber = 6 - leftOverSlots + i;
+            //console.log(`Not fav for slot ${thisLeftOverSlotNumber}`);
+            let thisLeftOverSlot = `#hotswap${thisLeftOverSlotNumber}`;
+            $(thisLeftOverSlot).off();
+            $(thisLeftOverSlot).css('cursor', 'unset');
+            $(thisLeftOverSlot).find('img').attr('src', 'img/ai4.png'); //replace with blank ai avatar
+        }
+    } else {
+        //console.log(`count was ${count} so no need to knock off any selectors!`);
+    }
+}
+
+
+
 //only triggers when AutoLoadChat is enabled, consider adding this as an independent feature later. 
 function RestoreNavTab() {
     if ($('#rm_button_selected_ch').children("h2").text() !== '') {        //check for a change in the character edit tab name
@@ -550,6 +590,7 @@ $("document").ready(function () {
 
     // initial status check
     setTimeout(RA_checkOnlineStatus, 100);
+    //setTimeout(favsToHotswap, 500);
 
     // read the state of AutoConnect and AutoLoadChat.
     $(AutoConnectCheckbox).prop("checked", LoadLocalBool("AutoConnectEnabled"));
@@ -568,10 +609,10 @@ $("document").ready(function () {
     $(RPanelPin).on("click", function () {
         SaveLocal("NavLockOn", $(RPanelPin).prop("checked"));
         if ($(RPanelPin).prop("checked") == true) {
-            console.log('adding pin class to right nav');
+            //console.log('adding pin class to right nav');
             $(RightNavPanel).addClass('pinnedOpen');
         } else {
-            console.log('removing pin class from right nav');
+            //console.log('removing pin class from right nav');
             $(RightNavPanel).removeClass('pinnedOpen');
 
             if ($(RightNavPanel).hasClass('openDrawer') && $('.openDrawer').length > 1) {
@@ -584,10 +625,10 @@ $("document").ready(function () {
     $(LPanelPin).on("click", function () {
         SaveLocal("LNavLockOn", $(LPanelPin).prop("checked"));
         if ($(LPanelPin).prop("checked") == true) {
-            console.log('adding pin class to Left nav');
+            //console.log('adding pin class to Left nav');
             $(LeftNavPanel).addClass('pinnedOpen');
         } else {
-            console.log('removing pin class from Left nav');
+            //console.log('removing pin class from Left nav');
             $(LeftNavPanel).removeClass('pinnedOpen');
 
             if ($(LeftNavPanel).hasClass('openDrawer') && $('.openDrawer').length > 1) {
