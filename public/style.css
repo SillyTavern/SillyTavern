@@ -587,6 +587,7 @@ code {
     transition: 250ms;
     overflow: hidden;
     padding: 0 !important;
+    order: 100;
 }
 
 .hotswapAvatar:hover {

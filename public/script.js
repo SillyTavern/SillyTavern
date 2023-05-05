@@ -2696,6 +2696,8 @@ async function renameCharacter() {
 async function saveChat(chat_name, withMetadata) {
     const metadata = { ...chat_metadata, ...(withMetadata || {}) };
     let file_name = chat_name ?? characters[this_chid].chat;
+    characters[this_chid]['date_last_chat'] = Date.now();
+    sortCharactersList();
     chat.forEach(function (item, i) {
         if (item["is_group"]) {
             alert('Trying to save group chat with regular saveChat function. Aborting to prevent corruption.');
