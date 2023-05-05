@@ -79,6 +79,7 @@ const default_settings = {
     temp_openai: 0.9,
     freq_pen_openai: 0.7,
     pres_pen_openai: 0.7,
+    top_p_openai: 1.0,
     stream_openai: false,
     openai_max_context: gpt3_max,
     openai_max_tokens: 300,
@@ -103,6 +104,7 @@ const oai_settings = {
     temp_openai: 1.0,
     freq_pen_openai: 0,
     pres_pen_openai: 0,
+    top_p_openai: 1.0,
     stream_openai: false,
     openai_max_context: gpt3_max,
     openai_max_tokens: 300,
@@ -511,6 +513,7 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
         "temperature": parseFloat(oai_settings.temp_openai),
         "frequency_penalty": parseFloat(oai_settings.freq_pen_openai),
         "presence_penalty": parseFloat(oai_settings.pres_pen_openai),
+        "top_p": parseFloat(oai_settings.top_p_openai),
         "max_tokens": oai_settings.openai_max_tokens,
         "stream": stream,
         "reverse_proxy": oai_settings.reverse_proxy,
@@ -660,6 +663,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.temp_openai = settings.temp_openai ?? default_settings.temp_openai;
     oai_settings.freq_pen_openai = settings.freq_pen_openai ?? default_settings.freq_pen_openai;
     oai_settings.pres_pen_openai = settings.pres_pen_openai ?? default_settings.pres_pen_openai;
+    oai_settings.top_p_openai = settings.top_p_openai ?? default_settings.top_p_openai;
     oai_settings.stream_openai = settings.stream_openai ?? default_settings.stream_openai;
     oai_settings.openai_max_context = settings.openai_max_context ?? default_settings.openai_max_context;
     oai_settings.openai_max_tokens = settings.openai_max_tokens ?? default_settings.openai_max_tokens;
@@ -706,6 +710,9 @@ function loadOpenAISettings(data, settings) {
 
     $('#pres_pen_openai').val(oai_settings.pres_pen_openai);
     $('#pres_pen_counter_openai').text(Number(oai_settings.pres_pen_openai).toFixed(2));
+
+    $('#top_p_openai').val(oai_settings.top_p_openai);
+    $('#top_p_counter_openai').text(Number(oai_settings.top_p_openai).toFixed(2));
 
     if (settings.reverse_proxy !== undefined) oai_settings.reverse_proxy = settings.reverse_proxy;
     $('#openai_reverse_proxy').val(oai_settings.reverse_proxy);
@@ -792,6 +799,7 @@ async function saveOpenAIPreset(name, settings) {
         temperature: settings.temp_openai,
         frequency_penalty: settings.freq_pen_openai,
         presence_penalty: settings.pres_pen_openai,
+        top_p: settings.top_p_openai,
         openai_max_context: settings.openai_max_context,
         openai_max_tokens: settings.openai_max_tokens,
         nsfw_toggle: settings.nsfw_toggle,
@@ -1056,6 +1064,7 @@ function onSettingsPresetChange() {
         temperature: ['#temp_openai', 'temp_openai', false],
         frequency_penalty: ['#freq_pen_openai', 'freq_pen_openai', false],
         presence_penalty: ['#pres_pen_openai', 'pres_pen_openai', false],
+        top_p: ['#top_p_openai', 'top_p_openai', false],
         openai_model: ['#model_openai_select', 'openai_model', false],
         openai_max_context: ['#openai_max_context', 'openai_max_context', false],
         openai_max_tokens: ['#openai_max_tokens', 'openai_max_tokens', false],
@@ -1156,6 +1165,13 @@ $(document).ready(function () {
     $(document).on('input', '#pres_pen_openai', function () {
         oai_settings.pres_pen_openai = $(this).val();
         $('#pres_pen_counter_openai').text(Number($(this).val()).toFixed(2));
+        saveSettingsDebounced();
+
+    });
+
+    $(document).on('input', '#top_p_openai', function () {
+        oai_settings.top_p_openai = $(this).val();
+        $('#top_p_counter_openai').text(Number($(this).val()).toFixed(2));
         saveSettingsDebounced();
 
     });
