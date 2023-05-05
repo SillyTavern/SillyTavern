@@ -35,7 +35,7 @@ const triggerWords = {
 
 const quietPrompts = {
     [generationMode.CHARACTER]: "[Please provide a detailed description of {{char}}'s appearance and attributes in the form of a comma-delimited list of keywords and phrases. Ignore the rest of the story when crafting this description. Do not count this as part of your char responses, and do not attempt to continue the story.]",
-    [generationMode.USER]: "[Please provide a detailed description of {{user}}'s appearance]",
+    [generationMode.USER]: "[Please provide a detailed description of {{user}}'s appearance from the perspective of {{char}} in the form of a comma-delimited list of keywords and phrases. Ignore the rest of the story when crafting this description. Do not count this as part of your char responses, and do not attempt to continue the story.]",
     [generationMode.SCENARIO]: "[Provide a detailed description for all of the following: {{char}}'s appearance, {{char}}'s surroundings, a brief recap of recent events in the story.]",
     [generationMode.FREE]: "[Please provide a detailed and vivid description of {0}]",
 }
@@ -254,7 +254,6 @@ async function generatePicture(_, trigger) {
                 sampler: extension_settings.sd.sampler,
                 steps: extension_settings.sd.steps,
                 scale: extension_settings.sd.scale,
-                model: extension_settings.sd.model,
                 width: extension_settings.sd.width,
                 height: extension_settings.sd.height,
                 prompt_prefix: extension_settings.sd.prompt_prefix,
