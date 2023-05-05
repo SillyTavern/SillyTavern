@@ -1391,8 +1391,24 @@ class StreamingProcessor {
         return messageId;
     }
 
+    removePrefix(text) {
+        const name1Marker = `${name1}: `;
+        const name2Marker = `${name2}: `;
+
+        if (text) {
+            if (text.startsWith(name1Marker)) {
+                text = text.replace(name1Marker, '');
+            }
+            if (text.startsWith(name2Marker)) {
+                text = text.replace(name2Marker, '');
+            }
+        }
+        return text;
+    }
+
     onProgressStreaming(messageId, text) {
         const isImpersonate = this.type == "impersonate";
+        text = this.removePrefix(text);
         let processedText = cleanUpMessage(text, isImpersonate);
         let result = extractNameFromMessage(processedText, this.force_name2, isImpersonate);
         let isName = result.this_mes_is_name;
