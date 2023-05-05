@@ -143,7 +143,7 @@ export {
     setRightTabSelectedClass,
     openCharacterChat,
     saveChat,
-    messageFormating,
+    messageFormatting,
     getExtensionPrompt,
     showSwipeButtons,
     hideSwipeButtons,
@@ -931,7 +931,7 @@ export async function reloadCurrentChat() {
     }
 }
 
-function messageFormating(mes, ch_name, isSystem, forceAvatar) {
+function messageFormatting(mes, ch_name, isSystem, isUser) {
     if (!mes) {
         mes = '';
     }
@@ -967,9 +967,9 @@ function messageFormating(mes, ch_name, isSystem, forceAvatar) {
         });
     }
 
-    /*     if (ch_name && (forceAvatar || ch_name !== name1)) {
-            mes = mes.replaceAll(ch_name + ":", "");
-        } */
+    if (!power_user.allow_name2_display && ch_name && !isUser && !isSystem) {
+        mes = mes.replaceAll(`${ch_name}:`, "");
+    }
 
     return mes;
 }
@@ -1057,13 +1057,13 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     if (count_view_mes == 0) {
         messageText = substituteParams(messageText);
     }
-    messageText = messageFormating(
+    messageText = messageFormatting(
         messageText,
         characterName,
         isSystem,
-        mes.force_avatar
+        mes.is_user,
     );
-    const bias = messageFormating(mes.extra?.bias ?? "");
+    const bias = messageFormatting(mes.extra?.bias ?? "");
 
     let params = {
         mesId: count_view_mes,
@@ -1414,7 +1414,12 @@ class StreamingProcessor {
                 chat[messageId]['swipes'][chat[messageId]['swipe_id']] = processedText;
             }
 
-            let formattedText = messageFormating(processedText, chat[messageId].name, chat[messageId].is_system, chat[messageId].force_avatar);
+            let formattedText = messageFormatting(
+                processedText,
+                chat[messageId].name,
+                chat[messageId].is_system,
+                chat[messageId].is_user,
+            );
             const mesText = $(`#chat .mes[mesid="${messageId}"] .mes_text`);
             mesText.html(formattedText);
             $(`#chat .mes[mesid="${messageId}"] .mes_timer`).text(timePassed.timerValue).attr('title', timePassed.timerTitle);
@@ -3245,7 +3250,12 @@ function messageEditAuto(div) {
     }
     chat[this_edit_mes_id]["extra"]["bias"] = bias ?? null;
     mesBlock.find(".mes_text").val('');
-    mesBlock.find(".mes_text").val(messageFormating(text, this_edit_mes_chname, chat[this_edit_mes_id].is_system, chat[this_edit_mes_id].force_avatar));
+    mesBlock.find(".mes_text").val(messageFormatting(
+        text,
+        this_edit_mes_chname,
+        chat[this_edit_mes_id].is_system,
+        chat[this_edit_mes_id].is_user,
+    ));
     saveChatDebounced();
 }
 
@@ -3266,10 +3276,15 @@ function messageEditDone(div) {
     mesBlock.find(".mes_edit_buttons").css("display", "none");
     mesBlock.find(".mes_edit").css("display", "inline-block");
     mesBlock.find(".mes_text").append(
-        messageFormating(text, this_edit_mes_chname, chat[this_edit_mes_id].is_system, chat[this_edit_mes_id].force_avatar)
+        messageFormatting(
+            text,
+            this_edit_mes_chname,
+            chat[this_edit_mes_id].is_system,
+            chat[this_edit_mes_id].is_user,
+        )
     );
     mesBlock.find(".mes_bias").empty();
-    mesBlock.find(".mes_bias").append(messageFormating(bias));
+    mesBlock.find(".mes_bias").append(messageFormatting(bias));
     appendImageToMessage(chat[this_edit_mes_id], div.closest(".mes"));
     addCopyToCodeBlocks(div.closest(".mes"));
     this_edit_mes_id = undefined;
@@ -5204,7 +5219,12 @@ $(document).ready(function () {
         $(this)
             .closest(".mes_block")
             .find(".mes_text")
-            .append(messageFormating(text, this_edit_mes_chname, chat[this_edit_mes_id].is_system, chat[this_edit_mes_id].force_avatar));
+            .append(messageFormatting(
+                text,
+                this_edit_mes_chname,
+                chat[this_edit_mes_id].is_system,
+                chat[this_edit_mes_id].is_user,
+            ));
         appendImageToMessage(chat[this_edit_mes_id], $(this).closest(".mes"));
         addCopyToCodeBlocks($(this).closest(".mes"));
         this_edit_mes_id = undefined;

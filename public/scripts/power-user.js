@@ -100,6 +100,7 @@ let power_user = {
     auto_fix_generated_markdown: true,
     send_on_enter: send_on_enter_options.AUTO,
     render_formulas: false,
+    allow_name2_display: false,
 };
 
 let themes = [];
@@ -372,6 +373,7 @@ function loadPowerUserSettings(settings, data) {
     $("#play_message_sound").prop("checked", power_user.play_message_sound);
     $("#play_sound_unfocused").prop("checked", power_user.play_sound_unfocused);
     $("#auto_save_msg_edits").prop("checked", power_user.auto_save_msg_edits);
+    $("#allow_name2_display").prop("checked", power_user.allow_name2_display);
     $(`input[name="avatar_style"][value="${power_user.avatar_style}"]`).prop("checked", true);
     $(`input[name="chat_display"][value="${power_user.chat_display}"]`).prop("checked", true);
     $(`input[name="sheld_width"][value="${power_user.sheld_width}"]`).prop("checked", true);
@@ -746,6 +748,12 @@ $(document).ready(() => {
         reloadCurrentChat();
         saveSettingsDebounced();
     })
+
+    $("#allow_name2_display").on("input", function () {
+        power_user.allow_name2_display = !!$(this).prop('checked');
+        reloadCurrentChat();
+        saveSettingsDebounced();
+    });
 
     $(window).on('focus', function () {
         browser_has_focus = true;

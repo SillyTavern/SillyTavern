@@ -1857,6 +1857,7 @@ input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin) {
     background-color: white;
     box-shadow: inset 0 0 3px 0 var(--black70a);
     cursor: pointer;
+    flex-shrink: 0;
 }
 
 /* the checkbox starts with a size 0 background of a checkmark */
