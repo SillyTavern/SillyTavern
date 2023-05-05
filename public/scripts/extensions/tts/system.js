@@ -87,7 +87,7 @@ class SystemTtsProvider {
         return speechSynthesis
             .getVoices()
             .sort((a, b) => a.lang.localeCompare(b.lang) || a.name.localeCompare(b.name))
-            .map(x => ({ name: x.name, voice_id: x.voiceURI, preview_url: '', lang: x.lang }));
+            .map(x => ({ name: x.name, voice_id: x.voiceURI, preview_url: false, lang: x.lang }));
     }
 
     previewTtsVoice(voiceId) {
