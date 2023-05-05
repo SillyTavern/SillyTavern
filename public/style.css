@@ -558,12 +558,33 @@ code {
     gap: 5px;
 }
 
+.hotswap {
+    top: -5px;
+}
+
+.hotswapAvatar,
 .avatar {
     width: 50px;
     height: 50px;
     border-style: none;
 }
 
+.mes .avatar {
+    cursor: pointer;
+
+}
+
+.hotswapAvatar {
+    opacity: 0.5;
+    transition: 250ms;
+}
+
+.hotswapAvatar:hover {
+    opacity: 1;
+    cursor: pointer;
+}
+
+.hotswapAvatar img,
 .avatar img {
     width: 50px;
     height: 50px;

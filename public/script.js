@@ -1,4 +1,4 @@
-import { humanizedDateTime } from "./scripts/RossAscends-mods.js";
+import { humanizedDateTime, favsToHotswap } from "./scripts/RossAscends-mods.js";
 import { encode } from "../scripts/gpt-2-3-tokenizer/mod.js";
 import { GPT3BrowserTokenizer } from "../scripts/gpt-3-tokenizer/gpt3-tokenizer.js";
 import {
@@ -735,9 +735,12 @@ function printCharacters() {
         $("#rm_print_characters_block").append(template);
     });
     $("#rm_print_characters_block").prepend(`<hr>`);
+
     printTags();
     printGroups();
     sortCharactersList();
+    favsToHotswap();
+
 }
 
 async function getCharacters() {
@@ -1355,6 +1358,8 @@ function applyFavFilter(enabled) {
         $(selector).removeClass('hiddenByFav');
     }
 }
+
+
 
 class StreamingProcessor {
     showStopButton(messageId) {
@@ -3554,6 +3559,7 @@ function updateFavButtonState(state) {
     $("#fav_checkbox").val(fav_ch_checked);
     $("#favorite_button").toggleClass('fav_on', fav_ch_checked);
     $("#favorite_button").toggleClass('fav_off', !fav_ch_checked);
+
 }
 
 function callPopup(text, type, inputValue = '') {
@@ -3818,7 +3824,10 @@ window["SillyTavern"].getContext = function () {
     };
 };
 
+
+
 $(document).ready(function () {
+
 
     //////////INPUT BAR FOCUS-KEEPING LOGIC/////////////
 
@@ -4704,6 +4713,7 @@ $(document).ready(function () {
         updateFavButtonState(!fav_ch_checked);
         if (menu_type != "create") {
             saveCharacterDebounced();
+
         }
     });
 
