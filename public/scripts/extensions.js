@@ -160,7 +160,7 @@ async function connectToApi(baseUrl) {
         if (getExtensionsResult.ok) {
             const data = await getExtensionsResult.json();
             modules = data.modules;
-            activateExtensions();
+            await activateExtensions();
         }
 
         updateStatus(getExtensionsResult.ok);
@@ -273,12 +273,15 @@ async function loadExtensionSettings(settings) {
     }
 
     $("#extensions_url").val(extension_settings.apiUrl);
-    $("#extensions_autoconnect").prop('checked', extension_settings.autoConnect).trigger('input');
+    $("#extensions_autoconnect").prop('checked', extension_settings.autoConnect);
 
     // Activate offline extensions
     extensionNames = await discoverExtensions();
     manifests = await getManifests(extensionNames)
-    activateExtensions();
+    await activateExtensions();
+    if (extension_settings.autoConnect && extension_settings.apiUrl) {
+        await connectToApi(extension_settings.apiUrl);
+    }
 }
 
 $(document).ready(async function () {

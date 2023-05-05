@@ -143,7 +143,7 @@ export {
     setRightTabSelectedClass,
     openCharacterChat,
     saveChat,
-    messageFormating,
+    messageFormatting,
     getExtensionPrompt,
     showSwipeButtons,
     hideSwipeButtons,
@@ -472,7 +472,6 @@ var preset_settings = "gui";
 var user_avatar = "you.png";
 var amount_gen = 80; //default max length of AI generated responses
 var max_context = 2048;
-let padding_tokens = 64; // reserved tokens to prevent prompt overflow
 
 var is_pygmalion = false;
 var tokens_already_generated = 0;
@@ -934,7 +933,7 @@ export async function reloadCurrentChat() {
     }
 }
 
-function messageFormating(mes, ch_name, isSystem, forceAvatar) {
+function messageFormatting(mes, ch_name, isSystem, isUser) {
     if (!mes) {
         mes = '';
     }
@@ -970,9 +969,9 @@ function messageFormating(mes, ch_name, isSystem, forceAvatar) {
         });
     }
 
-    /*     if (ch_name && (forceAvatar || ch_name !== name1)) {
-            mes = mes.replaceAll(ch_name + ":", "");
-        } */
+    if (!power_user.allow_name2_display && ch_name && !isUser && !isSystem) {
+        mes = mes.replaceAll(`${ch_name}:`, "");
+    }
 
     return mes;
 }
@@ -1060,13 +1059,13 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     if (count_view_mes == 0) {
         messageText = substituteParams(messageText);
     }
-    messageText = messageFormating(
+    messageText = messageFormatting(
         messageText,
         characterName,
         isSystem,
-        mes.force_avatar
+        mes.is_user,
     );
-    const bias = messageFormating(mes.extra?.bias ?? "");
+    const bias = messageFormatting(mes.extra?.bias ?? "");
 
     let params = {
         mesId: count_view_mes,
@@ -1419,7 +1418,12 @@ class StreamingProcessor {
                 chat[messageId]['swipes'][chat[messageId]['swipe_id']] = processedText;
             }
 
-            let formattedText = messageFormating(processedText, chat[messageId].name, chat[messageId].is_system, chat[messageId].force_avatar);
+            let formattedText = messageFormatting(
+                processedText,
+                chat[messageId].name,
+                chat[messageId].is_system,
+                chat[messageId].is_user,
+            );
             const mesText = $(`#chat .mes[mesid="${messageId}"] .mes_text`);
             mesText.html(formattedText);
             $(`#chat .mes[mesid="${messageId}"] .mes_timer`).text(timePassed.timerValue).attr('title', timePassed.timerTitle);
@@ -1632,9 +1636,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             addOneMessage(chat[chat.length - 1]);
         }
         ////////////////////////////////////
+        const scenarioText = chat_metadata['scenario'] || characters[this_chid].scenario;
         let charDescription = baseChatReplace($.trim(characters[this_chid].description), name1, name2);
         let charPersonality = baseChatReplace($.trim(characters[this_chid].personality), name1, name2);
-        let Scenario = baseChatReplace($.trim(characters[this_chid].scenario), name1, name2);
+        let Scenario = baseChatReplace($.trim(scenarioText), name1, name2);
         let mesExamples = baseChatReplace($.trim(characters[this_chid].mes_example), name1, name2);
 
         // Parse example messages
@@ -1782,7 +1787,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 allAnchors,
                 quiet_prompt,
             ].join('').replace(/\r/gm, '');
-            return getTokenCount(encodeString, padding_tokens) < this_max_context;
+            return getTokenCount(encodeString, power_user.token_padding) < this_max_context;
         }
 
         // Force pinned examples into the context
@@ -1935,7 +1940,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     allAnchors,
                     quiet_prompt,
                 ].join('').replace(/\r/gm, '');
-                let thisPromtContextSize = getTokenCount(prompt, padding_tokens);
+                let thisPromtContextSize = getTokenCount(prompt, power_user.token_padding);
 
                 if (thisPromtContextSize > this_max_context) {        //if the prepared prompt is larger than the max context size...
                     if (count_exm_add > 0) {                            // ..and we have example mesages..
@@ -2012,7 +2017,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             if (power_user.collapse_newlines) {
                 finalPromt = collapseNewlines(finalPromt);
             }
-            //console.log(`---Calculated Prompt Tokens: ${getTokenCount(finalPromt, padding_tokens)}`);
             let this_amount_gen = parseInt(amount_gen); // how many tokens the AI will be requested to generate
             let this_settings = koboldai_settings[koboldai_setting_names[preset_settings]];
 
@@ -3250,7 +3254,12 @@ function messageEditAuto(div) {
     }
     chat[this_edit_mes_id]["extra"]["bias"] = bias ?? null;
     mesBlock.find(".mes_text").val('');
-    mesBlock.find(".mes_text").val(messageFormating(text, this_edit_mes_chname, chat[this_edit_mes_id].is_system, chat[this_edit_mes_id].force_avatar));
+    mesBlock.find(".mes_text").val(messageFormatting(
+        text,
+        this_edit_mes_chname,
+        chat[this_edit_mes_id].is_system,
+        chat[this_edit_mes_id].is_user,
+    ));
     saveChatDebounced();
 }
 
@@ -3271,10 +3280,15 @@ function messageEditDone(div) {
     mesBlock.find(".mes_edit_buttons").css("display", "none");
     mesBlock.find(".mes_edit").css("display", "inline-block");
     mesBlock.find(".mes_text").append(
-        messageFormating(text, this_edit_mes_chname, chat[this_edit_mes_id].is_system, chat[this_edit_mes_id].force_avatar)
+        messageFormatting(
+            text,
+            this_edit_mes_chname,
+            chat[this_edit_mes_id].is_system,
+            chat[this_edit_mes_id].is_user,
+        )
     );
     mesBlock.find(".mes_bias").empty();
-    mesBlock.find(".mes_bias").append(messageFormating(bias));
+    mesBlock.find(".mes_bias").append(messageFormatting(bias));
     appendImageToMessage(chat[this_edit_mes_id], div.closest(".mes"));
     addCopyToCodeBlocks(div.closest(".mes"));
     this_edit_mes_id = undefined;
@@ -5214,7 +5228,12 @@ $(document).ready(function () {
         $(this)
             .closest(".mes_block")
             .find(".mes_text")
-            .append(messageFormating(text, this_edit_mes_chname, chat[this_edit_mes_id].is_system, chat[this_edit_mes_id].force_avatar));
+            .append(messageFormatting(
+                text,
+                this_edit_mes_chname,
+                chat[this_edit_mes_id].is_system,
+                chat[this_edit_mes_id].is_user,
+            ));
         appendImageToMessage(chat[this_edit_mes_id], $(this).closest(".mes"));
         addCopyToCodeBlocks($(this).closest(".mes"));
         this_edit_mes_id = undefined;

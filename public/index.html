@@ -1185,6 +1185,15 @@
                                 <option value="3">Sentencepiece (LLaMA)</option>
                             </select>
                         </div>
+                        <div class="range-block">
+                            <div class="range-block-title justifyLeft">
+                                Token Padding
+                                <a href="/notes#tokenpadding" class="notes-link" target="_blank">
+                                    <span class="note-link-span">?</span>
+                                </a>
+                            </div>
+                            <input id="token_padding" class="text_pole" type="number" min="-2048" max="2048" />
+                        </div>
                         <label class="checkbox_label" for="always-force-name2-checkbox">
                             <input id="always-force-name2-checkbox" type="checkbox" />
                             Always add character's name to prompt
@@ -1501,6 +1510,10 @@
                                 <input id="auto_fix_generated_markdown" type="checkbox" />
                                 Auto-fix Markdown
                             </label>
+                            <label class="checkbox_label" for="allow_name2_display">
+                                <input id="allow_name2_display" type="checkbox" />
+                                Allow {{char}}: display in bot messages
+                            </label>
                             <label for="auto_scroll_chat_to_bottom">
                                 <input id="auto_scroll_chat_to_bottom" type="checkbox" />
                                 Auto-scroll Chat
@@ -1728,6 +1741,7 @@
                 <div id="rm_group_chats_block" class="right_menu">
                     <div id="rm_group_top_bar">
                         <div id="rm_button_back_from_group" class="menu_button fa-solid fa-left-long"></div>
+                        <div id="rm_group_scenario" class="menu_button fa-solid fa-scroll" title="Set a group chat scenario"></div>
                         <input id="rm_group_chat_name" class="text_pole" type="text" name="chat_name" placeholder="Chat Name (Optional)" maxlength="100" />
                         <div id="group_favorite_button" class="menu_button fa-solid fa-star" title="Add to Favorites"></div>
                         <input id="rm_group_fav" type="hidden" />
@@ -1964,6 +1978,21 @@
     </div>
 
     <!-- templates for JS to reuse when needed -->
+
+    <div id="group_scenario_template" class="template_element">
+        <div class="group_scenario range-block flexFlowColumn flex-container">
+            <div class="range-block-title title_restorable">
+                <h3>Group Chat Scenario Override</h3>
+                <div title="Remove" class="menu_button fa-solid fa-trash-can remove_scenario_override"></div>
+            </div>
+            <div class="range-block-counter justifyLeft flex-container flexFlowColumn">
+                All group members will use the following scenario text instead of what is specified in their character cards.
+            </div>
+            <div class="range-block-range wide100p">
+                <textarea class="wide100p group_chat_scenario" class="text_pole" rows="5" placeholder="Type here..."></textarea>
+            </div>
+        </div>
+    </div>
 
     <div id="past_chat_template" class="template_element">
         <div class="select_chat_block_wrapper">

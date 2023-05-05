@@ -1,5 +1,6 @@
-import { callPopup, saveSettingsDebounced } from '../../../script.js'
+import { callPopup, is_send_press, saveSettingsDebounced } from '../../../script.js'
 import { extension_settings, getContext } from '../../extensions.js'
+import { is_group_generating } from '../../group-chats.js'
 import { getStringHash } from '../../utils.js'
 import { ElevenLabsTtsProvider } from './elevenlabs.js'
 import { SileroTtsProvider } from './silerotts.js'
@@ -41,6 +42,11 @@ async function moduleWorker() {
     // no characters or group selected
     if (!context.groupId && context.characterId === undefined) {
         return
+    }
+
+    // Message is currently being generated
+    if (is_send_press || is_group_generating) {
+        return;
     }
 
     // Chat/character/group changed
@@ -115,7 +121,7 @@ async function playAudioData(audioBlob) {
 window['tts_preview'] = function (id) {
     const audio = document.getElementById(id)
 
-    if (!audio.hidden) {
+    if (!$(audio).data('disabled')) {
         audio.play()
     }
     else {
@@ -131,7 +137,7 @@ async function onTtsVoicesClick() {
 
         for (const voice of voiceIds) {
             popupText += `<div class="voice_preview"><span class="voice_lang">${voice.lang || ''}</span> <b class="voice_name">${voice.name}</b> <i onclick="tts_preview('${voice.voice_id}')" class="fa-solid fa-play"></i></div>`
-            popupText += `<audio id="${voice.voice_id}" src="${voice.preview_url}" hidden="${!!voice.preview_url}"></audio>`
+            popupText += `<audio id="${voice.voice_id}" src="${voice.preview_url}" data-disabled="${voice.preview_url == false}"></audio>`
         }
     } catch {
         popupText = 'Could not load voices list. Check your API key.'
