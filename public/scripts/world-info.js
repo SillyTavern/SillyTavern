@@ -6,6 +6,7 @@ export {
     world_info_data,
     world_info_budget,
     world_info_depth,
+    world_info_recursive,
     world_names,
     imported_world_name,
     checkWorldInfo,
@@ -21,6 +22,7 @@ let world_info_data = null;
 let world_info_depth = 2;
 let world_info_budget = 128;
 let is_world_edit_open = false;
+let world_info_recursive = false;
 let imported_world_name = "";
 const saveWorldDebounced = debounce(async () => await _save(), 500);
 const saveSettingsDebounced = debounce(() => saveSettings(), 500);
@@ -47,12 +49,16 @@ function setWorldInfoSettings(settings, data) {
         world_info_depth = Number(settings.world_info_depth);
     if (settings.world_info_budget !== undefined)
         world_info_budget = Number(settings.world_info_budget);
+    if (settings.world_info_recursive !== undefined)
+        world_info_recursive = Boolean(settings.world_info_recursive);
 
-    $("#world_info_depth_counter").html(`${world_info_depth} Messages`);
+    $("#world_info_depth_counter").text(world_info_depth);
     $("#world_info_depth").val(world_info_depth);
 
-    $("#world_info_budget_counter").html(`${world_info_budget} Tokens`);
+    $("#world_info_budget_counter").text(world_info_budget);
     $("#world_info_budget").val(world_info_budget);
+
+    $("#world_info_recursive").prop('checked', world_info_recursive);
 
     world_names = data.world_names?.length ? data.world_names : [];
 
@@ -155,6 +161,7 @@ function appendWorldEntry(entry) {
         // Prevent closing the drawer on clicking the input
         event.stopPropagation();
     });
+
     keyInput.on("input", function () {
         const uid = $(this).data("uid");
         const value = $(this).val();
@@ -166,6 +173,7 @@ function appendWorldEntry(entry) {
         saveWorldInfo();
     });
     keyInput.val(entry.key.join(",")).trigger("input");
+    initScrollHeight(keyInput);
 
     // keysecondary
     const keySecondaryInput = template.find('textarea[name="keysecondary"]');
@@ -181,6 +189,7 @@ function appendWorldEntry(entry) {
         saveWorldInfo();
     });
     keySecondaryInput.val(entry.keysecondary.join(",")).trigger("input");
+    initScrollHeight(keySecondaryInput);
 
     // comment
     const commentInput = template.find('textarea[name="comment"]');
@@ -192,6 +201,7 @@ function appendWorldEntry(entry) {
         saveWorldInfo();
     });
     commentInput.val(entry.comment).trigger("input");
+    //initScrollHeight(commentInput);
 
     // content
     const contentInput = template.find('textarea[name="content"]');
@@ -210,6 +220,7 @@ function appendWorldEntry(entry) {
             .html(numberOfTokens);
     });
     contentInput.val(entry.content).trigger("input");
+    //initScrollHeight(contentInput);
 
     // selective
     const selectiveInput = template.find('input[name="selective"]');
@@ -304,12 +315,20 @@ function appendWorldEntry(entry) {
     });
 
     template.appendTo("#world_popup_entries_list");
+
     return template;
 }
 
 async function resetScrollHeight(element) {
+    element.style.height = '';
+    element.style.height = (element.scrollHeight) + 3 + 'px';
+}
+
+async function initScrollHeight(element) {
     await delay(1);
-    const height = Number($(element).prop("scrollHeight")) + 1;
+    const height = Number($(element).prop("scrollHeight") + 3);
+    console.log(height);
+    //console.log(element.style.height);
     $(element).css("height", "");
     $(element).css("height", `${height}px`);
 }
@@ -511,7 +530,7 @@ function checkWorldInfo(chat) {
             }
         }
 
-        needsToScan = activatedNow.size > 0;
+        needsToScan = world_info_recursive && activatedNow.size > 0;
         const newEntries = [...activatedNow]
             .map((x) => world_info_data.entries[x])
             .sort((a, b) => sortedEntries.indexOf(a) - sortedEntries.indexOf(b));
@@ -652,13 +671,18 @@ $(document).ready(() => {
 
     $(document).on("input", "#world_info_depth", function () {
         world_info_depth = Number($(this).val());
-        $("#world_info_depth_counter").html(`${$(this).val()} Messages`);
+        $("#world_info_depth_counter").text($(this).val());
         saveSettingsDebounced();
     });
 
     $(document).on("input", "#world_info_budget", function () {
         world_info_budget = Number($(this).val());
-        $("#world_info_budget_counter").html(`${$(this).val()} Tokens`);
+        $("#world_info_budget_counter").text($(this).val());
         saveSettingsDebounced();
     });
+
+    $(document).on("input", "#world_info_recursive", function () {
+        world_info_recursive = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    })
 });

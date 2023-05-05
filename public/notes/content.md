@@ -213,6 +213,26 @@ Constant entries will be inserted first. Then entries with higher order numbers.
 
 Entries inserted by direct mentioning of their keys have higher priority than those that were mentioned in other entries contents.
 
+### Recursive scanning
+
+**Entries can activate other entries by mentioning their keywords in the content text.**
+
+For example, if your World Info contains two entries: 
+
+```
+Entry #1
+Keyword: Bessie
+Content: Bessie is a cow and is friend with Rufus.
+```
+
+```
+Entry #2
+Keyword: Rufus
+Content: Rufus is a dog.
+```
+
+**Both** of them will be pulled into the context if the message text mentions **just Bessie**.
+
 ## KoboldAI
 
 ### Basic Settings

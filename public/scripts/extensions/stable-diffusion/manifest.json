@@ -1,0 +1,13 @@
+{
+    "display_name": "Stable Diffusion",
+    "loading_order": 10,
+    "requires": [
+        "sd"
+    ],
+    "optional": [],
+    "js": "index.js",
+    "css": "style.css",
+    "author": "Cohee#1207",
+    "version": "1.0.0",
+    "homePage": "https://github.com/Cohee1207/SillyTavern"
+}

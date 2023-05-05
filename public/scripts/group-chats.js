@@ -375,7 +375,7 @@ function getGroupAvatar(group) {
 }
 
 
-async function generateGroupWrapper(by_auto_mode, type = null) {
+async function generateGroupWrapper(by_auto_mode, type = null, force_chid = null, params = {}) {
     if (online_status === "no_connection") {
         is_group_generating = false;
         setSendButtonState(false);
@@ -423,6 +423,7 @@ async function generateGroupWrapper(by_auto_mode, type = null) {
         let lastMessageText = lastMessage.mes;
         let activationText = "";
         let isUserInput = false;
+        let isQuietGenDone = false;
 
         if (userInput && userInput.length && !by_auto_mode) {
             isUserInput = true;
@@ -437,7 +438,27 @@ async function generateGroupWrapper(by_auto_mode, type = null) {
         const activationStrategy = Number(group.activation_strategy ?? group_activation_strategy.NATURAL);
         let activatedMembers = [];
 
-        if (type === "swipe") {
+        if (typeof force_chid == 'number') {
+            activatedMembers = [force_chid];
+        } else if (type === "quiet") {
+            activatedMembers = activateSwipe(group.members);
+
+            if (activatedMembers.length === 0) {
+                activatedMembers = activateListOrder(group.members.slice(0, 1));
+            }
+
+            const resolveOriginal = params.resolve;
+            const rejectOriginal = params.reject;
+            params.resolve = function() {
+                isQuietGenDone = true;
+                resolveOriginal.apply(this, arguments);
+            };
+            params.reject = function() {
+                isQuietGenDone = true;
+                rejectOriginal.apply(this, arguments);
+            }
+        }
+        else if (type === "swipe") {
             activatedMembers = activateSwipe(group.members);
 
             if (activatedMembers.length === 0) {
@@ -458,11 +479,11 @@ async function generateGroupWrapper(by_auto_mode, type = null) {
 
         // now the real generation begins: cycle through every character
         for (const chId of activatedMembers) {
-            const generateType = type == "swipe" || type == "impersonate" ? type : "group_chat";
+            const generateType = type == "swipe" || type == "impersonate" || type == "quiet" ? type : "group_chat";
             setCharacterId(chId);
             setCharacterName(characters[chId].name)
 
-            await Generate(generateType, { automatic_trigger: by_auto_mode });
+            await Generate(generateType, { automatic_trigger: by_auto_mode, ...(params || {}) });
 
             if (type !== "swipe" && type !== "impersonate") {
                 // update indicator and scroll down
@@ -515,6 +536,13 @@ async function generateGroupWrapper(by_auto_mode, type = null) {
                         else {
                             break;
                         }
+                    }
+                }
+                else if (type === 'quiet') {
+                    if (isQuietGenDone) {
+                        break;
+                    } else {
+                        await delay(100);
                     }
                 }
                 else {
@@ -854,6 +882,10 @@ function select_group_chats(groupId, skipAnimation) {
         template.attr("chid", characters.indexOf(character));
         template.addClass(character.fav == 'true' ? 'is_fav' : '');
 
+        if (!group) {
+            template.find('[data-action="speak"]').hide();
+        }
+
         if (
             group &&
             Array.isArray(group.members) &&
@@ -931,20 +963,27 @@ function select_group_chats(groupId, skipAnimation) {
         const action = $(this).data('action');
         const member = $(this).closest('.group_member');
 
-        if (action == 'remove') {
+        if (action === 'remove') {
             await modifyGroupMember(groupId, member, true);
         }
 
-        if (action == 'add') {
+        if (action === 'add') {
             await modifyGroupMember(groupId, member, false);
         }
 
-        if (action == 'up' || action == 'down') {
+        if (action === 'up' || action === 'down') {
             await reorderGroupMember(groupId, member, action);
         }
 
-        if (action == 'view') {
+        if (action === 'view') {
             openCharacterDefinition(member);
+        }
+
+        if (action === 'speak') {
+            const chid = Number(member.attr('chid'));
+            if (Number.isInteger(chid)) {
+                generateGroupWrapper(false, null, chid);
+            }
         }
 
         sortCharactersList("#rm_group_add_members .group_member");
@@ -1159,6 +1198,25 @@ export async function openGroupChat(groupId, chatId) {
     await getGroupChat(groupId);
 }
 
+export async function renameGroupChat(groupId, oldChatId, newChatId) {
+    const group = groups.find(x => x.id === groupId);
+
+    if (!group || !group.chats.includes(oldChatId)) {
+        return;
+    }
+
+    if (group.chat_id === oldChatId) {
+        group.chat_id = newChatId;
+    }
+
+    group.chats.splice(group.chats.indexOf(oldChatId), 1);
+    group.chats.push(newChatId);
+    group.past_metadata[newChatId] = (group.past_metadata[oldChatId] || {});
+    delete group.past_metadata[oldChatId];
+
+    await editGroup(groupId, true, true);
+}
+
 export async function deleteGroupChat(groupId, chatId) {
     const group = groups.find(x => x.id === groupId);
 
@@ -1206,7 +1264,7 @@ export async function saveGroupBookmarkChat(groupId, name, metadata) {
     });
 }
 
-$(document).ready(() => {
+jQuery(() => {
     $(document).on("click", ".group_select", selectGroup);
     $("#rm_group_filter").on("input", filterGroupMembers);
     $("#group_fav_filter").on("click", toggleFilterByFavorites);

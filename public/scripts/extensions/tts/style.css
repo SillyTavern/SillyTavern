@@ -25,4 +25,19 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 0.5rem;
+}
+
+.voice_preview .voice_name {
+    text-align: left;
+    flex: 1;
+}
+
+.voice_preview .voice_lang {
+    width: 4rem;
+    text-align: left;
+}
+
+.voice_preview .fa-play {
+    cursor: pointer;
 }

@@ -144,7 +144,7 @@ function setOpenAIOnlineStatus(value) {
     is_get_status_openai = value;
 }
 
-function setOpenAIMessages(chat) {
+function setOpenAIMessages(chat, quietPrompt) {
     let j = 0;
     // clean openai msgs
     openai_msgs = [];
@@ -175,6 +175,10 @@ function setOpenAIMessages(chat) {
         if (anchor && anchor.length) {
             openai_msgs.splice(i, 0, { "role": 'system', 'content': anchor.trim() })
         }
+    }
+
+    if (quietPrompt) {
+        openai_msgs.splice(0, 0, { role: 'system', content: quietPrompt });
     }
 }
 
@@ -481,7 +485,7 @@ function checkQuotaError(data) {
     }
 }
 
-async function sendOpenAIRequest(openai_msgs_tosend, signal) {
+async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
     // Provide default abort signal
     if (!signal) {
         signal = new AbortController().signal;
@@ -492,6 +496,7 @@ async function sendOpenAIRequest(openai_msgs_tosend, signal) {
     }
 
     let logit_bias = {};
+    const stream = type !== 'quiet' && oai_settings.stream_openai;
 
     if (oai_settings.bias_preset_selected
         && Array.isArray(oai_settings.bias_presets[oai_settings.bias_preset_selected])
@@ -507,7 +512,7 @@ async function sendOpenAIRequest(openai_msgs_tosend, signal) {
         "frequency_penalty": parseFloat(oai_settings.freq_pen_openai),
         "presence_penalty": parseFloat(oai_settings.pres_pen_openai),
         "max_tokens": oai_settings.openai_max_tokens,
-        "stream": oai_settings.stream_openai,
+        "stream": stream,
         "reverse_proxy": oai_settings.reverse_proxy,
         "logit_bias": logit_bias,
     };
@@ -520,7 +525,7 @@ async function sendOpenAIRequest(openai_msgs_tosend, signal) {
         signal: signal,
     });
 
-    if (oai_settings.stream_openai) {
+    if (stream) {
         return async function* streamData() {
             const decoder = new TextDecoder();
             const reader = response.body.getReader();

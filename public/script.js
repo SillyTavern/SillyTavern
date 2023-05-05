@@ -24,6 +24,7 @@ import {
     selectImportedWorldInfo,
     setWorldInfoSettings,
     deleteWorldInfo,
+    world_info_recursive,
 } from "./scripts/world-info.js";
 
 import {
@@ -47,6 +48,7 @@ import {
     openGroupChat,
     editGroup,
     deleteGroupChat,
+    renameGroupChat,
 } from "./scripts/group-chats.js";
 
 import {
@@ -100,9 +102,9 @@ import {
     setPoeOnlineStatus,
 } from "./scripts/poe.js";
 
-import { debounce, delay } from "./scripts/utils.js";
+import { debounce, delay, restoreCaretPosition, saveCaretPosition } from "./scripts/utils.js";
 import { extension_settings, loadExtensionSettings } from "./scripts/extensions.js";
-import { executeSlashCommands, getSlashCommandsHelp } from "./scripts/slash-commands.js";
+import { executeSlashCommands, getSlashCommandsHelp, registerSlashCommand } from "./scripts/slash-commands.js";
 import {
     tag_map,
     tags,
@@ -192,7 +194,7 @@ let converter;
 reloadMarkdownProcessor();
 
 /* let bg_menu_toggle = false; */
-const systemUserName = "SillyTavern System";
+export const systemUserName = "SillyTavern System";
 let default_user_name = "You";
 let name1 = default_user_name;
 let name2 = "SillyTavern System";
@@ -965,9 +967,9 @@ function messageFormating(mes, ch_name, isSystem, forceAvatar) {
         });
     }
 
-    if (ch_name && (forceAvatar || ch_name !== name1)) {
-        mes = mes.replaceAll(ch_name + ":", "");
-    }
+    /*     if (ch_name && (forceAvatar || ch_name !== name1)) {
+            mes = mes.replaceAll(ch_name + ":", "");
+        } */
 
     return mes;
 }
@@ -1019,11 +1021,17 @@ function addCopyToCodeBlocks(messageElement) {
 
 function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true } = {}) {
     var messageText = mes["mes"];
-    var characterName = name1;
+
+    if (mes.name === name1) {
+        var characterName = name1; //set to user's name by default
+    } else { var characterName = mes.name }
+
     var avatarImg = "User Avatars/" + user_avatar;
     const isSystem = mes.is_system;
     const title = mes.title;
     generatedPromtCache = "";
+
+    //for non-user mesages
     if (!mes["is_user"]) {
         if (mes.force_avatar) {
             avatarImg = mes.force_avatar;
@@ -1039,8 +1047,11 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
                 avatarImg = default_avatar;
             }
         }
+        //old processing: 
+        //if messge is from sytem, use the name provided in the message JSONL to proceed,
+        //if not system message, use name2 (char's name) to proceed
+        //characterName = mes.is_system || mes.force_avatar ? mes.name : name2;
 
-        characterName = mes.is_system || mes.force_avatar ? mes.name : name2;
     }
 
     if (count_view_mes == 0) {
@@ -1055,14 +1066,14 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     const bias = messageFormating(mes.extra?.bias ?? "");
 
     let params = {
-         mesId: count_view_mes,
-         characterName: characterName,
-         isUser: mes.is_user,
-         avatarImg: avatarImg,
-         bias: bias,
-         isSystem: isSystem,
-         title: title,
-         ...formatGenerationTimer(mes.gen_started, mes.gen_finished),
+        mesId: count_view_mes,
+        characterName: characterName,
+        isUser: mes.is_user,
+        avatarImg: avatarImg,
+        bias: bias,
+        isSystem: isSystem,
+        title: title,
+        ...formatGenerationTimer(mes.gen_started, mes.gen_finished),
     };
 
     const HTMLForEachMes = getMessageFromTemplate(params);
@@ -1089,7 +1100,6 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     }
 
     newMessage.find('.avatar img').on('error', function () {
-        /* $(this).attr("src", "/img/user-slash-solid.svg"); */
         $(this).hide();
         $(this).parent().html(`<div class="missing-avatar fa-solid fa-user-slash"></div>`);
     });
@@ -1163,13 +1173,30 @@ function substituteParams(content, _name1, _name2) {
 
 function getStoppingStrings(isImpersonate, addSpace) {
     const charString = `\n${name2}:`;
-    const userString = is_pygmalion ? `\nYou:` : `\n${name1}:`;
-    const result = isImpersonate ? charString : userString;
-    return [addSpace ? `${result} ` : result];
+    const youString = `\nYou:`;
+    const userString = `\n${name1}:`;
+    const result = isImpersonate ? [charString] : [youString];
+
+    result.push(userString);
+
+    // Add other group members as the stopping strings
+    if (selected_group) {
+        const group = groups.find(x => x.id === selected_group);
+
+        if (group && Array.isArray(group.members)) {
+            const names = group.members
+                .map(x => characters.find(y => y.avatar == x))
+                .filter(x => x && x.name !== name2)
+                .map(x => `\n${x.name}:`);
+            result.push(...names);
+        }
+    }
+
+    return addSpace ? result.map(x => `${x} `) : result;
 }
 
 function processCommands(message, type) {
-    if (type == "regenerate" || type == "swipe") {
+    if (type == "regenerate" || type == "swipe" || type == 'quiet') {
         return null;
     }
 
@@ -1477,7 +1504,7 @@ class StreamingProcessor {
     }
 }
 
-async function Generate(type, { automatic_trigger, force_name2, quiet, quiet_prompt } = {}) {
+async function Generate(type, { automatic_trigger, force_name2, resolve, reject, quiet_prompt } = {}) {
     //console.log('Generate entered');
     setGenerationProgress(0);
     tokens_already_generated = 0;
@@ -1513,25 +1540,22 @@ async function Generate(type, { automatic_trigger, force_name2, quiet, quiet_pro
     }
 
     if (selected_group && !is_group_generating) {
-        generateGroupWrapper(false, type = type);
+        generateGroupWrapper(false, type, null, { resolve, reject, quiet_prompt });
         return;
     }
 
     if (online_status != 'no_connection' && this_chid != undefined && this_chid !== 'invalid-safety-id') {
         let textareaText;
-        if (type !== 'regenerate' && type !== "swipe" && !isImpersonate) {
+        if (type !== 'regenerate' && type !== "swipe" && type !== 'quiet' && !isImpersonate) {
             is_send_press = true;
             textareaText = $("#send_textarea").val();
-            //console.log('Not a Regenerate call, so posting normall with input of: ' +textareaText);
             $("#send_textarea").val('').trigger('input');
-
         } else {
-            //console.log('Regenerate call detected')
             textareaText = "";
-            if (chat.length && chat[chat.length - 1]['is_user']) {//If last message from You
-
+            if (chat.length && chat[chat.length - 1]['is_user']) {
+                //do nothing? why does this check exist?
             }
-            else if (type !== "swipe" && !isImpersonate) {
+            else if (type !== 'quiet' && type !== "swipe" && !isImpersonate) {
                 chat.length = chat.length - 1;
                 count_view_mes -= 1;
                 $('#chat').children().last().hide(500, function () {
@@ -1584,7 +1608,9 @@ async function Generate(type, { automatic_trigger, force_name2, quiet, quiet_pro
         //*********************************
         //PRE FORMATING STRING
         //*********************************
-        if (textareaText != "" && !automatic_trigger) {
+
+        //for normal messages sent from user..
+        if (textareaText != "" && !automatic_trigger && type !== 'quiet') {
             chat[chat.length] = {};
             chat[chat.length - 1]['name'] = name1;
             chat[chat.length - 1]['is_user'] = true;
@@ -1633,7 +1659,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet, quiet_pro
         console.log(`Core/all messages: ${coreChat.length}/${chat.length}`);
 
         if (main_api === 'openai') {
-            setOpenAIMessages(coreChat);
+            setOpenAIMessages(coreChat, quiet_prompt);
             setOpenAIMessageExamples(mesExamplesArray);
         }
 
@@ -1669,7 +1695,8 @@ async function Generate(type, { automatic_trigger, force_name2, quiet, quiet_pro
             let charName = selected_group ? coreChat[j].name : name2;
             let this_mes_ch_name = '';
             if (coreChat[j]['is_user']) {
-                this_mes_ch_name = name1;
+                //this_mes_ch_name = name1;
+                this_mes_ch_name = coreChat[j]['name'];
             } else {
                 this_mes_ch_name = charName;
             }
@@ -1726,7 +1753,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet, quiet_pro
         // Extension added strings
         const allAnchors = getAllExtensionPrompts();
         const afterScenarioAnchor = getExtensionPrompt(extension_prompt_types.AFTER_SCENARIO);
-        const zeroDepthAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, 0, ' ');
+        let zeroDepthAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, 0, ' ');
 
         let { worldInfoString, worldInfoBefore, worldInfoAfter } = getWorldInfoPrompt(chat2);
 
@@ -1747,7 +1774,8 @@ async function Generate(type, { automatic_trigger, force_name2, quiet, quiet_pro
                 anchorBottom,
                 charPersonality,
                 promptBias,
-                allAnchors
+                allAnchors,
+                quiet_prompt,
             ].join('').replace(/\r/gm, '');
             return getTokenCount(encodeString, padding_tokens) < this_max_context;
         }
@@ -1899,7 +1927,8 @@ async function Generate(type, { automatic_trigger, force_name2, quiet, quiet_pro
                     charPersonality,
                     generatedPromtCache,
                     promptBias,
-                    allAnchors
+                    allAnchors,
+                    quiet_prompt,
                 ].join('').replace(/\r/gm, '');
                 let thisPromtContextSize = getTokenCount(prompt, padding_tokens);
 
@@ -1968,6 +1997,11 @@ async function Generate(type, { automatic_trigger, force_name2, quiet, quiet_pro
                 }
             }
 
+            // Add quiet generation prompt at depth 0
+            if (quiet_prompt && quiet_prompt.length) {
+                finalPromt += `\n${quiet_prompt}`;
+            }
+
             finalPromt = finalPromt.replace(/\r/gm, '');
 
             if (power_user.collapse_newlines) {
@@ -1977,7 +2011,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet, quiet_pro
             let this_amount_gen = parseInt(amount_gen); // how many tokens the AI will be requested to generate
             let this_settings = koboldai_settings[koboldai_setting_names[preset_settings]];
 
-            if (isMultigenEnabled()) {
+            if (isMultigenEnabled() && type !== 'quiet') {
                 // if nothing has been generated yet..
                 if (tokens_already_generated === 0) {
                     // if the max gen setting is > 50...(
@@ -2041,25 +2075,25 @@ async function Generate(type, { automatic_trigger, force_name2, quiet, quiet_pro
                 let prompt = await prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAfter, afterScenarioAnchor, promptBias, type);
                 setInContextMessages(openai_messages_count, type);
 
-                if (isStreamingEnabled()) {
-                    streamingProcessor.generator = await sendOpenAIRequest(prompt, streamingProcessor.abortController.signal);
+                if (isStreamingEnabled() && type !== 'quiet') {
+                    streamingProcessor.generator = await sendOpenAIRequest(type, prompt, streamingProcessor.abortController.signal);
                 }
                 else {
-                    sendOpenAIRequest(prompt).then(onSuccess).catch(onError);
+                    sendOpenAIRequest(type, prompt).then(onSuccess).catch(onError);
                 }
             }
             else if (main_api == 'kobold' && horde_settings.use_horde) {
                 generateHorde(finalPromt, generate_data).then(onSuccess).catch(onError);
             }
             else if (main_api == 'poe') {
-                if (isStreamingEnabled()) {
+                if (isStreamingEnabled() && type !== 'quiet') {
                     streamingProcessor.generator = await generatePoe(type, finalPromt, streamingProcessor.abortController.signal);
                 }
                 else {
                     generatePoe(type, finalPromt).then(onSuccess).catch(onError);
                 }
             }
-            else if (main_api == 'textgenerationwebui' && textgenerationwebui_settings.streaming) {
+            else if (main_api == 'textgenerationwebui' && textgenerationwebui_settings.streaming && type !== 'quiet') {
                 streamingProcessor.generator = await generateTextGenWithStreaming(generate_data, streamingProcessor.abortController.signal);
             }
             else {
@@ -2078,7 +2112,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet, quiet_pro
                 }); //end of "if not data error"
             }
 
-            if (isStreamingEnabled()) {
+            if (isStreamingEnabled() && type !== 'quiet') {
                 hideSwipeButtons();
                 let getMessage = await streamingProcessor.generate();
 
@@ -2103,7 +2137,6 @@ async function Generate(type, { automatic_trigger, force_name2, quiet, quiet_pro
             }
 
             function onSuccess(data) {
-
                 is_send_press = false;
                 if (!data.error) {
                     //const getData = await response.json();
@@ -2113,7 +2146,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet, quiet_pro
                     //Pygmalion run again
                     // to make it continue generating so long as it's under max_amount and hasn't signaled
                     // an end to the character's response via typing "You:" or adding "<endoftext>"
-                    if (isMultigenEnabled()) {
+                    if (isMultigenEnabled() && type !== 'quiet') {
                         message_already_generated += getMessage;
                         promptBias = '';
                         if (shouldContinueMultigen(getMessage)) {
@@ -2147,6 +2180,9 @@ async function Generate(type, { automatic_trigger, force_name2, quiet, quiet_pro
                         if (isImpersonate) {
                             $('#send_textarea').val(getMessage).trigger('input');
                         }
+                        else if (type == 'quiet') {
+                            resolve(getMessage);
+                        }
                         else {
                             if (!isMultigenEnabled()) {
                                 ({ type, getMessage } = saveReply(type, getMessage, this_mes_is_name, title));
@@ -2156,7 +2192,11 @@ async function Generate(type, { automatic_trigger, force_name2, quiet, quiet_pro
                             }
                         }
                         activateSendButtons();
-                        playMessageSound();
+
+                        if (type !== 'quiet') {
+                            playMessageSound();
+                        }
+
                         generate_loop_counter = 0;
                     } else {
                         ++generate_loop_counter;
@@ -2189,6 +2229,10 @@ async function Generate(type, { automatic_trigger, force_name2, quiet, quiet_pro
             };
 
             function onError(jqXHR, exception) {
+                if (type == 'quiet') {
+                    reject(exception);
+                }
+
                 $("#send_textarea").removeAttr('disabled');
                 is_send_press = false;
                 activateSendButtons();
@@ -2371,7 +2415,7 @@ function cleanUpMessage(getMessage, isImpersonate) {
     // trailing invisible whitespace before every newlines, on a multiline string
     // "trailing whitespace on newlines       \nevery line of the string    \n?sample text" ->
     // "trailing whitespace on newlines\nevery line of the string\nsample text"
-    getMessage = getMessage.replace(/\s+$/gm, "");
+    getMessage = getMessage.replace(/[^\S\r\n]+$/gm, "");
     if (is_pygmalion) {
         getMessage = getMessage.replace(/<USER>/g, name1);
         getMessage = getMessage.replace(/<BOT>/g, name2);
@@ -2394,6 +2438,8 @@ function cleanUpMessage(getMessage, isImpersonate) {
     }
 
     const stoppingStrings = getStoppingStrings(isImpersonate, false);
+    //console.log('stopping on these strings: ');
+    //console.log(stoppingStrings);
 
     for (const stoppingString of stoppingStrings) {
         if (stoppingString.length) {
@@ -2630,25 +2676,27 @@ async function saveChat(chat_name, withMetadata) {
             alert('Trying to save group chat with regular saveChat function. Aborting to prevent corruption.');
             throw new Error('Group chat saved from saveChat');
         }
+        /*
         if (item.is_user) {
-            var str = item.mes.replace(`${name1}:`, `${default_user_name}:`);
-            chat[i].mes = str;
-            chat[i].name = default_user_name;
+            //var str = item.mes.replace(`${name1}:`, `${name1}:`);
+            //chat[i].mes = str;
+            //chat[i].name = name1;
         } else if (i !== chat.length - 1 && chat[i].swipe_id !== undefined) {
             //  delete chat[i].swipes;
             //  delete chat[i].swipe_id;
         }
+        */
     });
     var save_chat = [
         {
-            user_name: default_user_name,
+            user_name: name1,
             character_name: name2,
             create_date: chat_create_date,
             chat_metadata: metadata,
         },
         ...chat,
     ];
-    jQuery.ajax({
+    return jQuery.ajax({
         type: "POST",
         url: "/savechat",
         data: JSON.stringify({
@@ -2745,8 +2793,8 @@ function getChatResult() {
         for (let i = 0; i < chat.length; i++) {
             const item = chat[i];
             if (item["is_user"]) {
-                item['mes'] = item['mes'].replace(default_user_name + ':', name1 + ':');
-                item['name'] = name1;
+                //item['mes'] = item['mes'].replace(default_user_name + ':', name1 + ':');
+                //item['name'] = name1;
             }
         }
     } else {
@@ -3145,6 +3193,7 @@ async function saveSettings(type) {
             world_info: world_info,
             world_info_depth: world_info_depth,
             world_info_budget: world_info_budget,
+            world_info_recursive: world_info_recursive,
             textgenerationwebui_settings: textgenerationwebui_settings,
             swipes: swipes,
             horde_settings: horde_settings,
@@ -3159,8 +3208,11 @@ async function saveSettings(type) {
         }, null, 4),
         beforeSend: function () {
             if (type == "change_name") {
+                //let nameBeforeChange = name1;
                 name1 = $("#your_name").val();
-                //     console.log('beforeSend name1 = '+name1);
+                //$(`.mes[ch_name="${nameBeforeChange}"]`).attr('ch_name' === name1);
+                //console.log('beforeSend name1 = ' + nameBeforeChange);
+                //console.log('new name: ' + name1);
             }
         },
         cache: false,
@@ -3170,8 +3222,6 @@ async function saveSettings(type) {
         success: function (data) {
             //online_status = data.result;
             if (type == "change_name") {
-
-
                 clearChat();
                 printMessages();
             }
@@ -3764,6 +3814,7 @@ window["SillyTavern"].getContext = function () {
         activateSendButtons,
         deactivateSendButtons,
         saveReply,
+        registerSlashCommand: registerSlashCommand,
     };
 };
 
@@ -4313,7 +4364,11 @@ $(document).ready(function () {
             duration: 200,
             easing: animation_easing,
         });
-        setTimeout(function () { $("#shadow_popup").css("display", "none"); }, 200);
+        setTimeout(function () {
+            $("#shadow_popup").css("display", "none");
+            $("#dialogue_popup").removeClass('large_dialogue_popup');
+        }, 200);
+
         //      $("#shadow_popup").css("opacity:", 0.0);
         if (popup_type == "del_bg") {
             delBackground(bg_file_for_del.attr("bgfile"));
@@ -4421,13 +4476,16 @@ $(document).ready(function () {
             if (popup_type == 'input') {
                 dialogueResolve($("#dialogue_popup_input").val());
                 $("#dialogue_popup_input").val('');
+
             }
             else {
                 dialogueResolve(true);
+
             }
 
             dialogueResolve = null;
         }
+
     });
     $("#dialogue_popup_cancel").click(function (e) {
         $("#shadow_popup").transition({
@@ -4435,7 +4493,11 @@ $(document).ready(function () {
             duration: 200,
             easing: animation_easing,
         });
-        setTimeout(function () { $("#shadow_popup").css("display", "none"); }, 200);
+        setTimeout(function () {
+            $("#shadow_popup").css("display", "none");
+            $("#dialogue_popup").removeClass('large_dialogue_popup');
+        }, 200);
+
         //$("#shadow_popup").css("opacity:", 0.0);
         popup_type = "";
 
@@ -4443,6 +4505,7 @@ $(document).ready(function () {
             dialogueResolve(false);
             dialogueResolve = null;
         }
+
     });
 
     $("#add_bg_button").change(function () {
@@ -4647,34 +4710,64 @@ $(document).ready(function () {
     $("#renameCharButton").on('click', renameCharacter);
 
     $(document).on("click", ".renameChatButton", async function () {
-        var old_filenamefull = $(this).closest('.select_chat_block_wrapper').find('.select_chat_block_filename').text();
-
-        var old_filename = old_filenamefull.substring(0, old_filenamefull.length - 6);
+        const old_filenamefull = $(this).closest('.select_chat_block_wrapper').find('.select_chat_block_filename').text();
+        const old_filename = old_filenamefull.replace('.jsonl', '');
 
         const popupText = `<h3>Enter the new name for the chat:<h3>
-        <small>!!Using an existing filename will overwrite that file!!<br>
+        <small>!!Using an existing filename will produce an error!!<br>
+        This will break the link between bookmark chats.<br>
         No need to add '.jsonl' at the end.<br>
         </small>`;
-        let newName = await callPopup(popupText, 'input', old_filename);
+        const newName = await callPopup(popupText, 'input', old_filename);
 
-        if (!newName) {
+        if (!newName || newName == old_filename) {
             console.log('no new name found, aborting');
             return;
         }
 
-        const newMetadata = { main_chat: characters[this_chid].chat };
-        await saveChat(newName, newMetadata);
-        await saveChat(); //is this second save needed?
-        chat_file_for_del = old_filenamefull;
-        popup_type = 'del_chat';
+        const body = {
+            is_group: !!selected_group,
+            avatar_url: characters[this_chid]?.avatar,
+            original_file: `${old_filename}.jsonl`,
+            renamed_file: `${newName}.jsonl`,
+        }
 
-        setTimeout(function () {
-            callPopup('Confirm Delete of Old File After Rename');
-        }, 200);
+        try {
+            const response = await fetch('/renamechat', {
+                method: 'POST',
+                body: JSON.stringify(body),
+                headers: getRequestHeaders(),
+            });
 
+            if (!response.ok) {
+                throw new Error('Unsuccessful request.');
+            }
 
+            const data = response.json();
 
+            if (data.error) {
+                throw new Error('Server returned an error.');
+            }
 
+            if (selected_group) {
+                await renameGroupChat(selected_group, old_filename, newName);
+            }
+            else {
+                if (characters[this_chid].chat == old_filename) {
+                    characters[this_chid].chat = newName;
+                    saveCharacterDebounced();
+                }
+            }
+
+            reloadCurrentChat();
+
+            await delay(250);
+            $("#option_select_chat").trigger('click');
+            $("#options").hide();
+        } catch {
+            await delay(500);
+            await callPopup('An error has occurred. Chat was not renamed.', 'text');
+        }
     });
 
     $("#talkativeness_slider").on("input", function () {
@@ -5517,12 +5610,14 @@ $(document).ready(function () {
         let thumbURL = $(this).children('img').attr('src');
         let charsPath = '/characters/'
         let targetAvatarImg = thumbURL.substring(thumbURL.lastIndexOf("=") + 1);
+
         let avatarSrc = charsPath + targetAvatarImg;
-        if ($(this).parent().attr('is_user') == 'true') { //handle user avatars
+        console.log(avatarSrc);
+        if ($(this).parent().parent().attr('is_user') == 'true') { //handle user avatars
             $("#zoomed_avatar").attr('src', thumbURL);
-        } else if ($(this).parent().attr('is_system') == 'true') { //handle system avatars
+        } else if ($(this).parent().parent().attr('is_system') == 'true') { //handle system avatars
             $("#zoomed_avatar").attr('src', thumbURL);
-        } else if ($(this).parent().attr('is_user') == 'false') { //handle char avatars
+        } else if ($(this).parent().parent().attr('is_user') == 'false') { //handle char avatars
             $("#zoomed_avatar").attr('src', avatarSrc);
         }
         $('#avatar_zoom_popup').toggle();
@@ -5531,7 +5626,10 @@ $(document).ready(function () {
     });
 
     $(document).on('click', '#OpenAllWIEntries', function () {
-        $("#world_popup_entries_list").children().find('.inline-drawer-header').click()
+        $("#world_popup_entries_list").children().find('.down').click()
+    });
+    $(document).on('click', '#CloseAllWIEntries', function () {
+        $("#world_popup_entries_list").children().find('.up').click()
     });
 
     $(document).keyup(function (e) {
@@ -5569,5 +5667,46 @@ $(document).ready(function () {
             console.log('Page reloaded. Aborting streaming...');
             streamingProcessor.abortController.abort();
         }
+    });
+
+    $(document).on('input', '.range-block-counter div[contenteditable="true"]', function () {
+        const caretPosition = saveCaretPosition($(this).get(0));
+        const myText = $(this).text().trim();
+        $(this).text(myText); // trim line breaks and spaces
+        const masterSelector = $(this).data('for');
+        const masterElement = document.getElementById(masterSelector);
+
+        if (masterElement == null) {
+            console.error('Master input element not found for the editable label', masterSelector);
+            return;
+        }
+
+        const myValue = Number(myText);
+
+        if (Number.isNaN(myValue)) {
+            console.warn('Label input is not a valid number. Resetting the value', myText);
+            $(masterElement).trigger('input');
+            restoreCaretPosition($(this).get(0), caretPosition);
+            return;
+        }
+
+        const masterMin = Number($(masterElement).attr('min'));
+        const masterMax = Number($(masterElement).attr('max'));
+
+        if (myValue < masterMin) {
+            console.warn('Label input is less than minimum.', myText, '<', masterMin);
+            restoreCaretPosition($(this).get(0), caretPosition);
+            return;
+        }
+
+        if (myValue > masterMax) {
+            console.warn('Label input is more than maximum.', myText, '>', masterMax);
+            restoreCaretPosition($(this).get(0), caretPosition);
+            return;
+        }
+
+        console.log('Label value OK, setting to the master input control', myText);
+        $(masterElement).val(myValue).trigger('input');
+        restoreCaretPosition($(this).get(0), caretPosition);
     });
 })
