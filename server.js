@@ -525,7 +525,7 @@ app.post("/getchat", jsonParser, function (request, response) {
                                 const lines = data.split('\n');
 
                                 // Iterate through the array of strings and parse each line as JSON
-                                const jsonData = lines.map(json5.parse);
+                                const jsonData = lines.map(tryParse).filter(x => x);
                                 response.send(jsonData);
                                 //console.log('read the requested file')
 
@@ -625,6 +625,14 @@ app.post("/setsoftprompt", jsonParser, async function (request, response) {
 
     return response.sendStatus(200);
 });
+
+function tryParse(str) {
+    try {
+        return json5.parse(str);
+    } catch {
+        return undefined;
+    }
+}
 
 function checkServer() {
     api_server = 'http://127.0.0.1:5000';
