@@ -57,6 +57,7 @@ const send_on_enter_options = {
 
 let power_user = {
     tokenizer: tokenizers.CLASSIC,
+    token_padding: 64,
     collapse_newlines: false,
     pygmalion_formatting: pygmalion_options.AUTO,
     pin_examples: false,
@@ -377,6 +378,7 @@ function loadPowerUserSettings(settings, data) {
     $(`input[name="avatar_style"][value="${power_user.avatar_style}"]`).prop("checked", true);
     $(`input[name="chat_display"][value="${power_user.chat_display}"]`).prop("checked", true);
     $(`input[name="sheld_width"][value="${power_user.sheld_width}"]`).prop("checked", true);
+    $("#token_padding").val(power_user.token_padding);
 
     $("#font_scale").val(power_user.font_scale);
     $("#font_scale_counter").text(power_user.font_scale);
@@ -752,6 +754,11 @@ $(document).ready(() => {
     $("#allow_name2_display").on("input", function () {
         power_user.allow_name2_display = !!$(this).prop('checked');
         reloadCurrentChat();
+        saveSettingsDebounced();
+    });
+
+    $("#token_padding").on("input", function () {
+        power_user.token_padding = Number($(this).val());
         saveSettingsDebounced();
     });
 

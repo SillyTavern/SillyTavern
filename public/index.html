@@ -1185,6 +1185,15 @@
                                 <option value="3">Sentencepiece (LLaMA)</option>
                             </select>
                         </div>
+                        <div class="range-block">
+                            <div class="range-block-title justifyLeft">
+                                Token Padding
+                                <a href="/notes#tokenpadding" class="notes-link" target="_blank">
+                                    <span class="note-link-span">?</span>
+                                </a>
+                            </div>
+                            <input id="token_padding" class="text_pole" type="number" min="-2048" max="2048" />
+                        </div>
                         <label class="checkbox_label" for="always-force-name2-checkbox">
                             <input id="always-force-name2-checkbox" type="checkbox" />
                             Always add character's name to prompt

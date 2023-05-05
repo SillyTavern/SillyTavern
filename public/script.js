@@ -472,7 +472,6 @@ var preset_settings = "gui";
 var user_avatar = "you.png";
 var amount_gen = 80; //default max length of AI generated responses
 var max_context = 2048;
-let padding_tokens = 64; // reserved tokens to prevent prompt overflow
 
 var is_pygmalion = false;
 var tokens_already_generated = 0;
@@ -1783,7 +1782,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 allAnchors,
                 quiet_prompt,
             ].join('').replace(/\r/gm, '');
-            return getTokenCount(encodeString, padding_tokens) < this_max_context;
+            return getTokenCount(encodeString, power_user.token_padding) < this_max_context;
         }
 
         // Force pinned examples into the context
@@ -1936,7 +1935,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     allAnchors,
                     quiet_prompt,
                 ].join('').replace(/\r/gm, '');
-                let thisPromtContextSize = getTokenCount(prompt, padding_tokens);
+                let thisPromtContextSize = getTokenCount(prompt, power_user.token_padding);
 
                 if (thisPromtContextSize > this_max_context) {        //if the prepared prompt is larger than the max context size...
                     if (count_exm_add > 0) {                            // ..and we have example mesages..
@@ -2013,7 +2012,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             if (power_user.collapse_newlines) {
                 finalPromt = collapseNewlines(finalPromt);
             }
-            //console.log(`---Calculated Prompt Tokens: ${getTokenCount(finalPromt, padding_tokens)}`);
             let this_amount_gen = parseInt(amount_gen); // how many tokens the AI will be requested to generate
             let this_settings = koboldai_settings[koboldai_setting_names[preset_settings]];
 
