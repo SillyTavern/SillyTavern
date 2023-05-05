@@ -1632,9 +1632,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             addOneMessage(chat[chat.length - 1]);
         }
         ////////////////////////////////////
+        const scenarioText = chat_metadata['scenario'] || characters[this_chid].scenario;
         let charDescription = baseChatReplace($.trim(characters[this_chid].description), name1, name2);
         let charPersonality = baseChatReplace($.trim(characters[this_chid].personality), name1, name2);
-        let Scenario = baseChatReplace($.trim(characters[this_chid].scenario), name1, name2);
+        let Scenario = baseChatReplace($.trim(scenarioText), name1, name2);
         let mesExamples = baseChatReplace($.trim(characters[this_chid].mes_example), name1, name2);
 
         // Parse example messages

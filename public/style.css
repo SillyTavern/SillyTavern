@@ -3632,7 +3632,8 @@ toolcool-color-picker {
 }
 
 .openai_restorable,
-.poe_restorable {
+.poe_restorable,
+.title_restorable {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
