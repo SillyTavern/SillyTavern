@@ -738,7 +738,7 @@ function printCharacters() {
     printTags();
     printGroups();
     sortCharactersList();
-    //favsToHotswap();
+    favsToHotswap();
 
 }
 
