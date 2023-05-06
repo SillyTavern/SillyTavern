@@ -25,6 +25,7 @@ import {
 } from "./power-user.js";
 
 import {
+    delay,
     download,
     getStringHash,
     parseJsonFile,
@@ -308,12 +309,15 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
     // todo: static value, maybe include in the initial context calculation
     let new_chat_msg = { "role": "system", "content": "[Start a new chat]" };
     let start_chat_count = countTokens([new_chat_msg], true);
+    await delay(1);
     let total_count = countTokens([prompt_msg], true) + start_chat_count;
+    await delay(1);
 
     if (bias && bias.trim().length) {
         let bias_msg = { "role": "system", "content": bias.trim() };
         openai_msgs.push(bias_msg);
         total_count += countTokens([bias_msg], true);
+        await delay(1);
     }
 
     if (selected_group) {
@@ -330,11 +334,13 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
 
         // add a group nudge count
         let group_nudge_count = countTokens([group_nudge], true);
+        await delay(1);
         total_count += group_nudge_count;
 
         // recount tokens for new start message
         total_count -= start_chat_count
         start_chat_count = countTokens([new_chat_msg], true);
+        await delay(1);
         total_count += start_chat_count;
     }
 
@@ -343,6 +349,7 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
         openai_msgs.push(jailbreakMessage);
 
         total_count += countTokens([jailbreakMessage], true);
+        await delay(1);
     }
 
     if (isImpersonate) {
@@ -350,6 +357,7 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
         openai_msgs.push(impersonateMessage);
 
         total_count += countTokens([impersonateMessage], true);
+        await delay(1);
     }
 
     // The user wants to always have all example messages in the context
@@ -372,10 +380,12 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
             }
         }
         total_count += countTokens(examples_tosend, true);
+        await delay(1);
         // go from newest message to oldest, because we want to delete the older ones from the context
         for (let j = openai_msgs.length - 1; j >= 0; j--) {
             let item = openai_msgs[j];
             let item_count = countTokens(item, true);
+            await delay(1);
             // If we have enough space for this message, also account for the max assistant reply size
             if ((total_count + item_count) < (this_max_context - oai_settings.openai_max_tokens)) {
                 openai_msgs_tosend.push(item);
@@ -390,6 +400,7 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
         for (let j = openai_msgs.length - 1; j >= 0; j--) {
             let item = openai_msgs[j];
             let item_count = countTokens(item, true);
+            await delay(1);
             // If we have enough space for this message, also account for the max assistant reply size
             if ((total_count + item_count) < (this_max_context - oai_settings.openai_max_tokens)) {
                 openai_msgs_tosend.push(item);
@@ -412,6 +423,7 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
 
             // add the block only if there is enough space for all its messages
             const example_count = countTokens(example_block, true);
+            await delay(1);
             if ((total_count + example_count) < (this_max_context - oai_settings.openai_max_tokens)) {
                 examples_tosend.push(...example_block)
                 total_count += example_count;
