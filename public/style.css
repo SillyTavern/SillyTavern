@@ -4182,6 +4182,10 @@ body.waifuMode #avatar_zoom_popup {
         overflow-x: hidden;
         max-height: calc(100svh - 90px);
     }
+
+    .horde_multiple_hint {
+        display: none;
+    }
 }
 
 .lastInContext {
