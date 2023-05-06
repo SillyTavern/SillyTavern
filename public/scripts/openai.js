@@ -25,6 +25,7 @@ import {
 } from "./power-user.js";
 
 import {
+    delay,
     download,
     getStringHash,
     parseJsonFile,
@@ -79,6 +80,7 @@ const default_settings = {
     temp_openai: 0.9,
     freq_pen_openai: 0.7,
     pres_pen_openai: 0.7,
+    top_p_openai: 1.0,
     stream_openai: false,
     openai_max_context: gpt3_max,
     openai_max_tokens: 300,
@@ -103,6 +105,7 @@ const oai_settings = {
     temp_openai: 1.0,
     freq_pen_openai: 0,
     pres_pen_openai: 0,
+    top_p_openai: 1.0,
     stream_openai: false,
     openai_max_context: gpt3_max,
     openai_max_tokens: 300,
@@ -308,12 +311,15 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
     // todo: static value, maybe include in the initial context calculation
     let new_chat_msg = { "role": "system", "content": "[Start a new chat]" };
     let start_chat_count = countTokens([new_chat_msg], true);
+    await delay(1);
     let total_count = countTokens([prompt_msg], true) + start_chat_count;
+    await delay(1);
 
     if (bias && bias.trim().length) {
         let bias_msg = { "role": "system", "content": bias.trim() };
         openai_msgs.push(bias_msg);
         total_count += countTokens([bias_msg], true);
+        await delay(1);
     }
 
     if (selected_group) {
@@ -330,11 +336,13 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
 
         // add a group nudge count
         let group_nudge_count = countTokens([group_nudge], true);
+        await delay(1);
         total_count += group_nudge_count;
 
         // recount tokens for new start message
         total_count -= start_chat_count
         start_chat_count = countTokens([new_chat_msg], true);
+        await delay(1);
         total_count += start_chat_count;
     }
 
@@ -343,6 +351,7 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
         openai_msgs.push(jailbreakMessage);
 
         total_count += countTokens([jailbreakMessage], true);
+        await delay(1);
     }
 
     if (isImpersonate) {
@@ -350,6 +359,7 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
         openai_msgs.push(impersonateMessage);
 
         total_count += countTokens([impersonateMessage], true);
+        await delay(1);
     }
 
     // The user wants to always have all example messages in the context
@@ -372,10 +382,12 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
             }
         }
         total_count += countTokens(examples_tosend, true);
+        await delay(1);
         // go from newest message to oldest, because we want to delete the older ones from the context
         for (let j = openai_msgs.length - 1; j >= 0; j--) {
             let item = openai_msgs[j];
             let item_count = countTokens(item, true);
+            await delay(1);
             // If we have enough space for this message, also account for the max assistant reply size
             if ((total_count + item_count) < (this_max_context - oai_settings.openai_max_tokens)) {
                 openai_msgs_tosend.push(item);
@@ -390,6 +402,7 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
         for (let j = openai_msgs.length - 1; j >= 0; j--) {
             let item = openai_msgs[j];
             let item_count = countTokens(item, true);
+            await delay(1);
             // If we have enough space for this message, also account for the max assistant reply size
             if ((total_count + item_count) < (this_max_context - oai_settings.openai_max_tokens)) {
                 openai_msgs_tosend.push(item);
@@ -412,6 +425,7 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
 
             // add the block only if there is enough space for all its messages
             const example_count = countTokens(example_block, true);
+            await delay(1);
             if ((total_count + example_count) < (this_max_context - oai_settings.openai_max_tokens)) {
                 examples_tosend.push(...example_block)
                 total_count += example_count;
@@ -513,6 +527,7 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
         "temperature": parseFloat(oai_settings.temp_openai),
         "frequency_penalty": parseFloat(oai_settings.freq_pen_openai),
         "presence_penalty": parseFloat(oai_settings.pres_pen_openai),
+        "top_p": parseFloat(oai_settings.top_p_openai),
         "max_tokens": oai_settings.openai_max_tokens,
         "stream": stream,
         "reverse_proxy": oai_settings.reverse_proxy,
@@ -662,6 +677,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.temp_openai = settings.temp_openai ?? default_settings.temp_openai;
     oai_settings.freq_pen_openai = settings.freq_pen_openai ?? default_settings.freq_pen_openai;
     oai_settings.pres_pen_openai = settings.pres_pen_openai ?? default_settings.pres_pen_openai;
+    oai_settings.top_p_openai = settings.top_p_openai ?? default_settings.top_p_openai;
     oai_settings.stream_openai = settings.stream_openai ?? default_settings.stream_openai;
     oai_settings.openai_max_context = settings.openai_max_context ?? default_settings.openai_max_context;
     oai_settings.openai_max_tokens = settings.openai_max_tokens ?? default_settings.openai_max_tokens;
@@ -708,6 +724,9 @@ function loadOpenAISettings(data, settings) {
 
     $('#pres_pen_openai').val(oai_settings.pres_pen_openai);
     $('#pres_pen_counter_openai').text(Number(oai_settings.pres_pen_openai).toFixed(2));
+
+    $('#top_p_openai').val(oai_settings.top_p_openai);
+    $('#top_p_counter_openai').text(Number(oai_settings.top_p_openai).toFixed(2));
 
     if (settings.reverse_proxy !== undefined) oai_settings.reverse_proxy = settings.reverse_proxy;
     $('#openai_reverse_proxy').val(oai_settings.reverse_proxy);
@@ -794,6 +813,7 @@ async function saveOpenAIPreset(name, settings) {
         temperature: settings.temp_openai,
         frequency_penalty: settings.freq_pen_openai,
         presence_penalty: settings.pres_pen_openai,
+        top_p: settings.top_p_openai,
         openai_max_context: settings.openai_max_context,
         openai_max_tokens: settings.openai_max_tokens,
         nsfw_toggle: settings.nsfw_toggle,
@@ -1058,6 +1078,7 @@ function onSettingsPresetChange() {
         temperature: ['#temp_openai', 'temp_openai', false],
         frequency_penalty: ['#freq_pen_openai', 'freq_pen_openai', false],
         presence_penalty: ['#pres_pen_openai', 'pres_pen_openai', false],
+        top_p: ['#top_p_openai', 'top_p_openai', false],
         openai_model: ['#model_openai_select', 'openai_model', false],
         openai_max_context: ['#openai_max_context', 'openai_max_context', false],
         openai_max_tokens: ['#openai_max_tokens', 'openai_max_tokens', false],
@@ -1158,6 +1179,13 @@ $(document).ready(function () {
     $(document).on('input', '#pres_pen_openai', function () {
         oai_settings.pres_pen_openai = $(this).val();
         $('#pres_pen_counter_openai').text(Number($(this).val()).toFixed(2));
+        saveSettingsDebounced();
+
+    });
+
+    $(document).on('input', '#top_p_openai', function () {
+        oai_settings.top_p_openai = $(this).val();
+        $('#top_p_counter_openai').text(Number($(this).val()).toFixed(2));
         saveSettingsDebounced();
 
     });
