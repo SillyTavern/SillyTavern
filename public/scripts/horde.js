@@ -1,4 +1,4 @@
-import { saveSettingsDebounced, changeMainAPI, callPopup, setGenerationProgress, main_api } from "../script.js";
+import { saveSettingsDebounced, changeMainAPI, callPopup, setGenerationProgress } from "../script.js";
 import { delay } from "./utils.js";
 
 export {
@@ -15,7 +15,7 @@ let models = [];
 
 let horde_settings = {
     api_key: '0000000000',
-    model: null,
+    models: [],
     use_horde: false,
     auto_adjust: true,
 };
@@ -31,14 +31,14 @@ async function getWorkers() {
 }
 
 function validateHordeModel() {
-    let selectedModel = models.find(m => m.name == horde_settings.model);
+    let selectedModels = models.filter(m => horde_settings.models.includes(m.name));
 
-    if (!selectedModel) {
-        callPopup('No Horde model selected or the selected model is no longer available. Please choose another model', 'text');
+    if (selectedModels.length === 0) {
+        callPopup('No Horde model selected or the selected models are no longer available. Please choose another model', 'text');
         throw new Error('No Horde model available');
     }
 
-    return selectedModel;
+    return selectedModels;
 }
 
 async function adjustHordeGenerationParams(max_context_length, max_length) {
@@ -46,15 +46,17 @@ async function adjustHordeGenerationParams(max_context_length, max_length) {
     let maxContextLength = max_context_length;
     let maxLength = max_length;
     let availableWorkers = [];
-    let selectedModel = validateHordeModel();
+    let selectedModels = validateHordeModel();
 
-    if (!selectedModel) {
+    if (selectedModels.length === 0) {
         return { maxContextLength, maxLength };
     }
 
-    for (const worker of workers) {
-        if (selectedModel.cluster == worker.cluster && worker.models.includes(selectedModel.name)) {
-            availableWorkers.push(worker);
+    for (const model of selectedModels) {
+        for (const worker of workers) {
+            if (model.cluster == worker.cluster && worker.models.includes(model.name)) {
+                availableWorkers.push(worker);
+            }
         }
     }
 
@@ -83,7 +85,7 @@ async function generateHorde(prompt, params) {
         "params": params,
         //"trusted_workers": false,
         //"slow_workers": false,
-        "models": [horde_settings.model],
+        "models": horde_settings.models,
     };
 
     const response = await fetch("https://horde.koboldai.net/api/v2/generate/text/async", {
@@ -155,20 +157,21 @@ async function getHordeModels() {
     for (const model of models) {
         const option = document.createElement('option');
         option.value = model.name;
-        option.innerText = `${model.name} (Queue: ${model.queued}, Workers: ${model.count})`;
-        option.selected = horde_settings.model === model.name;
+        option.innerText = `${model.name} (ETA: ${model.eta}s, Queue: ${model.queued}, Workers: ${model.count})`;
+        option.selected = horde_settings.models.includes(model.name);
         $('#horde_model').append(option);
     }
 
     // if previously selected is no longer available
-    if (horde_settings.model && !models.find(m => m.name == horde_settings.model)) {
-        horde_settings.model = null;
+    if (horde_settings.models.length && models.filter(m => horde_settings.models.includes(m.name)).length === 0) {
+        horde_settings.models = [];
     }
 
     // if no models preselected - select a first one in dropdown
-    if (!horde_settings.model) {
-        horde_settings.model = $('#horde_model').find(":selected").val();
-    }
+    /*if (Array.isArray(horde_settings.models) || horde_settings.models.length == 0) {
+        $('#horde_model').first()
+        horde_settings.models = [.find(":selected").val()];
+    }*/
 }
 
 function loadHordeSettings(settings) {
@@ -181,7 +184,7 @@ function loadHordeSettings(settings) {
     $('#horde_auto_adjust').prop("checked", horde_settings.auto_adjust);
 }
 
-$(document).ready(function () {
+jQuery(function () {
     $("#use_horde").on("input", async function () {
         horde_settings.use_horde = !!$(this).prop("checked");
 
@@ -200,7 +203,8 @@ $(document).ready(function () {
     });
 
     $("#horde_model").on("change", function () {
-        horde_settings.model = $(this).val();
+        horde_settings.models = $('#horde_model').val();
+        console.log('Updated Horde models', horde_settings.models);
         saveSettingsDebounced();
     });
 
