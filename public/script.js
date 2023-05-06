@@ -3263,6 +3263,9 @@ function messageEditAuto(div) {
     var text = mesBlock.find(".edit_textarea").val().trim();
     const bias = extractMessageBias(text);
     chat[this_edit_mes_id]["mes"] = text;
+    if (chat[this_edit_mes_id]["swipe_id"] !== undefined) {
+        chat[this_edit_mes_id]["swipes"][chat[this_edit_mes_id]["swipe_id"]] = text;
+    }
 
     // editing old messages
     if (!chat[this_edit_mes_id]["extra"]) {
@@ -3284,6 +3287,9 @@ function messageEditDone(div) {
     var text = mesBlock.find(".edit_textarea").val().trim();
     const bias = extractMessageBias(text);
     chat[this_edit_mes_id]["mes"] = text;
+    if (chat[this_edit_mes_id]["swipe_id"] !== undefined) {
+        chat[this_edit_mes_id]["swipes"][chat[this_edit_mes_id]["swipe_id"]] = text;
+    }
 
     // editing old messages
     if (!chat[this_edit_mes_id]["extra"]) {
