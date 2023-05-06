@@ -164,15 +164,22 @@ export function restoreCaretPosition(element, position) {
 }
 
 export async function resetScrollHeight(element) {
-    element.style.height = '';
-    element.style.height = (element.scrollHeight) + 3 + 'px';
+    $(element).css('height', '0px');
+    $(element).css('height', $(element).prop('scrollHeight') + 3 + 'px');
 }
 
 export async function initScrollHeight(element) {
     await delay(1);
-    const height = Number($(element).prop("scrollHeight") + 3);
-    console.log(`init height to ${height}`);
-    //console.log(element.style.height);
+
+    const curHeight = Number($(element).css("height").replace('px', ''));
+    const curScrollHeight = Number($(element).prop("scrollHeight"));
+    const diff = curScrollHeight - curHeight;
+
+    if (diff < 3) { return } //happens when the div isn't loaded yet
+
+    const newHeight = curHeight + diff + 3; //the +3 here is to account for padding/line-height on text inputs
+    //console.log(`init height to ${newHeight}`);
     $(element).css("height", "");
-    $(element).css("height", `${height}px`);
+    $(element).css("height", `${newHeight}px`);
+    //resetScrollHeight(element);
 }

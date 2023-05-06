@@ -6,7 +6,7 @@ import {
     showSwipeButtons
 } from "../../../script.js";
 import { getApiUrl, getContext, extension_settings, defaultRequestArgs } from "../../extensions.js";
-import { stringFormat } from "../../utils.js";
+import { stringFormat, initScrollHeight, resetScrollHeight } from "../../utils.js";
 
 // Wraps a string into monospace font-face span
 const m = x => `<span class="monospace">${x}</span>`;
@@ -88,7 +88,10 @@ async function loadSettings() {
     $('#sd_width').val(extension_settings.sd.width).trigger('input');
     $('#sd_height').val(extension_settings.sd.height).trigger('input');
 
+
     await Promise.all([loadSamplers(), loadModels()]);
+
+
 }
 
 function onScaleInput() {
@@ -105,11 +108,13 @@ function onStepsInput() {
 
 function onPromptPrefixInput() {
     extension_settings.sd.prompt_prefix = $('#sd_prompt_prefix').val();
+    resetScrollHeight($(this));
     saveSettingsDebounced();
 }
 
 function onNegativePromptInput() {
     extension_settings.sd.negative_prompt = $('#sd_negative_prompt').val();
+    resetScrollHeight($(this));
     saveSettingsDebounced();
 }
 
@@ -321,7 +326,7 @@ jQuery(async () => {
             <label for="sd_sampler">Sampling method</label>
             <select id="sd_sampler"></select>
             <label for="sd_prompt_prefix">Generated prompt prefix</label>
-            <textarea id="sd_prompt_prefix" class="text_pole textarea_compact" rows="1"></textarea>
+            <textarea id="sd_prompt_prefix" class="text_pole textarea_compact" rows="2"></textarea>
             <label for="sd_negative_prompt">Negative prompt</label>
             <textarea id="sd_negative_prompt" class="text_pole textarea_compact" rows="2"></textarea>
         </div>
@@ -336,5 +341,12 @@ jQuery(async () => {
     $('#sd_negative_prompt').on('input', onNegativePromptInput);
     $('#sd_width').on('input', onWidthInput);
     $('#sd_height').on('input', onHeightInput);
+
+    $('.sd_settings .inline-drawer-toggle').on('click', function () {
+        initScrollHeight($("#sd_prompt_prefix"));
+        initScrollHeight($("#sd_negative_prompt"));
+    })
+
     await loadSettings();
+
 });

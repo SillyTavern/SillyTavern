@@ -188,6 +188,7 @@ function appendWorldEntry(entry) {
             .filter((x) => x);
         saveWorldInfo();
     });
+
     keySecondaryInput.val(entry.keysecondary.join(",")).trigger("input");
     initScrollHeight(keySecondaryInput);
 
@@ -235,13 +236,17 @@ function appendWorldEntry(entry) {
             .closest(".world_entry")
             .find(".keysecondary");
 
-        const keyPrimary = $(this)
+        const keysecondarytextpole = $(this)
             .closest(".world_entry")
-            .find(".key");
+            .find(".keysecondarytextpole");
 
-        const keyPrimaryHeight = $(keyPrimary).css('height');
+        const keyprimarytextpole = $(this)
+            .closest(".world_entry")
+            .find(".keyprimarytextpole");
 
-        keysecondary.css('height', keyPrimaryHeight) + 'px';
+        const keyprimaryHeight = keyprimarytextpole.outerHeight();
+        keysecondarytextpole.css('height', keyprimaryHeight + 'px');
+
         value ? keysecondary.show() : keysecondary.hide();
 
     });
