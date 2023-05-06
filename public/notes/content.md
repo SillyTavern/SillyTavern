@@ -109,7 +109,7 @@ For example:
 
 ### Examples of dialogue
 
-Describes how the character speaks. Before each example, you need to add the <START> tag.
+Describes how the character speaks. Before each example, you need to add the &lt;START&gt; tag.
 Use {{char}} instead of the character name.
 Use {{user}} instead of the user name.
 
@@ -562,7 +562,7 @@ Next batches = 30 tokens
 
 1. Generated enough text.
 2. Character starts speaking for You.
-3. <|endoftext|> token reached.
+3. &lt;|endoftext|&gt; token reached.
 4. No text generated.
 
 ## User Settings 
