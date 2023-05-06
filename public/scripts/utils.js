@@ -162,3 +162,17 @@ export function restoreCaretPosition(element, position) {
     selection.removeAllRanges();
     selection.addRange(range);
 }
+
+export async function resetScrollHeight(element) {
+    element.style.height = '';
+    element.style.height = (element.scrollHeight) + 3 + 'px';
+}
+
+export async function initScrollHeight(element) {
+    await delay(1);
+    const height = Number($(element).prop("scrollHeight") + 3);
+    console.log(`init height to ${height}`);
+    //console.log(element.style.height);
+    $(element).css("height", "");
+    $(element).css("height", `${height}px`);
+}

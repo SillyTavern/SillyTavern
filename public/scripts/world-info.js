@@ -1,5 +1,5 @@
 import { saveSettings, callPopup, substituteParams, getTokenCount, getRequestHeaders } from "../script.js";
-import { download, debounce, delay } from "./utils.js";
+import { download, debounce, delay, initScrollHeight, resetScrollHeight } from "./utils.js";
 
 export {
     world_info,
@@ -234,7 +234,16 @@ function appendWorldEntry(entry) {
         const keysecondary = $(this)
             .closest(".world_entry")
             .find(".keysecondary");
+
+        const keyPrimary = $(this)
+            .closest(".world_entry")
+            .find(".key");
+
+        const keyPrimaryHeight = $(keyPrimary).css('height');
+
+        keysecondary.css('height', keyPrimaryHeight) + 'px';
         value ? keysecondary.show() : keysecondary.hide();
+
     });
     selectiveInput.prop("checked", entry.selective).trigger("input");
     selectiveInput.siblings(".checkbox_fancy").click(function () {
@@ -317,20 +326,6 @@ function appendWorldEntry(entry) {
     template.appendTo("#world_popup_entries_list");
 
     return template;
-}
-
-async function resetScrollHeight(element) {
-    element.style.height = '';
-    element.style.height = (element.scrollHeight) + 3 + 'px';
-}
-
-async function initScrollHeight(element) {
-    await delay(1);
-    const height = Number($(element).prop("scrollHeight") + 3);
-    console.log(height);
-    //console.log(element.style.height);
-    $(element).css("height", "");
-    $(element).css("height", `${height}px`);
 }
 
 async function deleteWorldInfoEntry(uid) {
