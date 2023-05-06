@@ -135,8 +135,8 @@ Circumstances and context of the dialogue.
 
 _A list of tags that are replaced when sending to generate:_
 
-1. {{user}} and <USER> are replaced by the User's Name  
-2. {{char}} and <BOT> are replaced by the Character's Name
+1. {{user}} and &lt;USER&gt; are replaced by the User's Name  
+2. {{char}} and &lt;BOT&gt; are replaced by the Character's Name
 
 ### Favorite Character
 
