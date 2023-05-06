@@ -25,19 +25,28 @@ const generationMode = {
     USER: 1,
     SCENARIO: 2,
     FREE: 3,
+    NOW: 4,
+    FACE: 5,
 }
 
 const triggerWords = {
     [generationMode.CHARACTER]: ['yourself', 'you', 'bot', 'AI', 'character'],
     [generationMode.USER]: ['me', 'user', 'myself'],
     [generationMode.SCENARIO]: ['scenario', 'world', 'surroundings', 'scenery'],
+    [generationMode.NOW]: ['now', 'last'],
+    [generationMode.FACE]: ['selfie', 'face'],
+
 }
 
 const quietPrompts = {
-    [generationMode.CHARACTER]: "[Provide a detailed description of {{char}}'s physical appearance in the form of a comma-delimited list of keywords and phrases. Ignore {{char}}'s personality traits, and chat history when crafting this description. Do not roleplay as the character count when writing this description, and do not attempt to continue the story.]",
-    [generationMode.USER]: "[Please provide a detailed description of {{user}}'s appearance from the perspective of {{char}} in the form of a comma-delimited list of keywords and phrases. Ignore the rest of the story when crafting this description. Do not count this as part of your char responses, and do not attempt to continue the story.]",
-    [generationMode.SCENARIO]: "[Provide a detailed description for all of the following: {{char}}'s appearance, {{char}}'s surroundings, a brief recap of recent events in the story.]",
-    [generationMode.FREE]: "[Please provide a detailed and vivid description of {0}]",
+    //face-specific prompt
+    [generationMode.FACE]: "[Provide a description of {{char}}'s face and head in the form of a comma-delimited list of keywords and phrases. Do not describe anything below their neck. Ignore {{char}} personality traits and the chat history when crafting this description. Do not roleplay as {{char}} when writing this description, and do not attempt to continue the story.]",
+    //prompt for only the last message
+    [generationMode.NOW]: "[Pause your roleplay and provide a brief description of the last chat message. Focus on visual details, clothing, actions. Ignore the emotions and thoughts of {{char}} and {{user}} as well as any spoken dialog. Do not roleplay as {{char}} while writing this description. Do not continue the roleplay story.]",
+    [generationMode.CHARACTER]: "[Pause your roleplay and provide comma-delimited list of phrases and keywords which describe {{char}}'s physical appearance and clothing. Ignore {{char}}'s personality traits, and chat history when crafting this description. End your response once the comma-delimited list is complete. Do not roleplay as {{char}}}} when writing this description, and do not attempt to continue the story.]",
+    [generationMode.USER]: "[Pause your roleplay and provide a detailed description of {{user}}'s appearance from the perspective of {{char}} in the form of a comma-delimited list of keywords and phrases. Ignore the rest of the story when crafting this description. Do not roleplay as {{char}}}} when writing this description, and do not attempt to continue the story.]",
+    [generationMode.SCENARIO]: "[Pause your roleplay and provide a detailed description for all of the following: a brief recap of recent events in the story, {{char}}'s appearance, and {{char}}'s surroundings. Do not roleplay while writing this description.]",
+    [generationMode.FREE]: "[Pause your roleplay and provide a detailed and vivid description of {0}]",
 }
 
 const helpString = [
@@ -46,6 +55,8 @@ const helpString = [
     `<li>${m(j(triggerWords[generationMode.CHARACTER]))} – AI character image</li>`,
     `<li>${m(j(triggerWords[generationMode.USER]))} – user character image</li>`,
     `<li>${m(j(triggerWords[generationMode.SCENARIO]))} – world scenario image</li>`,
+    `<li>${m(j(triggerWords[generationMode.FACE]))} – character face-up selfie image</li>`,
+    `<li>${m(j(triggerWords[generationMode.NOW]))} – visual recap of the last chat message</li>`,
     '</ul>',
     `Anything else would trigger a "free mode" with AI describing whatever you prompted.`,
 ].join('<br>');
@@ -263,6 +274,9 @@ async function generatePicture(_, trigger) {
                 height: extension_settings.sd.height,
                 prompt_prefix: extension_settings.sd.prompt_prefix,
                 negative_prompt: extension_settings.sd.negative_prompt,
+                restore_faces: true,
+                face_restoration_model: 'GFPGAN',
+
             }),
         });
 
