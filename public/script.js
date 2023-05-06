@@ -3455,11 +3455,13 @@ function selectRightMenuWithAnimation(selectedMenuId) {
                 easing: animation_easing,
                 complete: function () { },
             });
+
+
+
+            // $(menu).find('#groupCurrentMemberListToggle').click();
+
         }
-        /*         if (selectedMenuId === "rm_group_chats_block") {
-        
-                    $("#groupCurrentMemberListToggle").click();
-                } */
+
     })
 }
 
@@ -5587,7 +5589,7 @@ $(document).ready(function () {
             icon.toggleClass('openIcon closedIcon');
             drawer.toggleClass('openDrawer closedDrawer');
 
-            console.log(targetDrawerID);
+            //console.log(targetDrawerID);
             if (targetDrawerID === 'right-nav-panel') {
                 $(this).closest('.drawer').find('.drawer-content').slideToggle({
                     duration: 200,
