@@ -1730,6 +1730,12 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
         let chat2 = [];
         for (let i = coreChat.length - 1, j = 0; i >= 0; i--, j++) {
+            // For OpenAI it's only used in WI
+            if (main_api == 'openai' && !world_info) {
+                console.log('No WI, skipping chat2 for OAI');
+                break;
+            }
+
             let charName = selected_group ? coreChat[j].name : name2;
             let this_mes_ch_name = '';
             if (coreChat[j]['is_user']) {
@@ -1827,6 +1833,11 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         // Collect enough messages to fill the context
         let arrMes = [];
         for (let item of chat2) {
+            // not needed for OAI prompting
+            if (main_api == 'openai') {
+                break;
+            }
+            
             chatString = item + chatString;
             if (canFitMessages()) { //(The number of tokens in the entire promt) need fix, it must count correctly (added +120, so that the description of the character does not hide)
                 //if (is_pygmalion && i == chat2.length-1) item='<START>\n'+item;
@@ -1871,6 +1882,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 chatString = "";
                 arrMes = arrMes.reverse();
                 arrMes.forEach(function (item, i, arr) {//For added anchors and others
+                    // OAI doesn't need all of this
+                    if (main_api === 'openai') {
+                        return;
+                    }
 
                     if (i === arrMes.length - 1 && !item.trim().startsWith(name1 + ":")) {
                         if (textareaText == "") {
@@ -1931,6 +1946,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             let mesSendString = '';
 
             function setPromtString() {
+                if (main_api == 'openai') {
+                    return;
+                }
+
                 console.log('--setting Prompt string');
                 mesExmString = pinExmString ?? mesExamplesArray.slice(0, count_exm_add).join('');
                 mesSendString = '';
@@ -1986,7 +2005,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 }
             }
 
-            if (generatedPromtCache.length > 0) {
+            if (generatedPromtCache.length > 0 && main_api !== 'openai') {
                 console.log('---Generated Prompt Cache length: ' + generatedPromtCache.length);
                 checkPromtSize();
             } else {
@@ -2094,7 +2113,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 };
 
                 if (preset_settings != 'gui' || horde_settings.use_horde) {
-                    generate_data = getKoboldGenerationData(finalPromt, this_settings, this_amount_gen, this_max_context, isImpersonate);
+                    generate_data = getKoboldGenerationData(finalPromt, this_settings, this_amount_gen, max_context, isImpersonate);
                 }
             }
 
