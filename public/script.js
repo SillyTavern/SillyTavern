@@ -2607,7 +2607,7 @@ function extractImageFromMessage(getMessage) {
     return { getMessage, image, title };
 }
 
-function isMultigenEnabled() {
+export function isMultigenEnabled() {
     return power_user.multigen && (main_api == 'textgenerationwebui' || main_api == 'kobold' || main_api == 'novel');
 }
 
