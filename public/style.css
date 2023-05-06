@@ -2685,6 +2685,7 @@ body .ui-widget-content li:hover {
     flex-direction: row;
     width: 100%;
     column-gap: 5px;
+    justify-content: space-evenly;
 }
 
 #rm_button_group_chats h2 {
@@ -2700,8 +2701,8 @@ body .ui-widget-content li:hover {
 
 #rm_group_chats_block {
     display: none;
-    height: calc(100% - 45px);
-    flex-direction: column;
+    /*     height: calc(100% - 45px);
+    flex-direction: column; */
     align-items: flex-start;
     padding: 0 5px;
     overflow-y: auto;
@@ -2714,13 +2715,13 @@ body .ui-widget-content li:hover {
 }
 
 #rm_group_buttons {
-    display: flex;
+    /*     display: flex;
     flex-direction: row;
     width: 100%;
     align-items: center;
     column-gap: 10px;
     flex-wrap: wrap;
-    padding: 0 5px;
+    padding: 0 5px; */
 }
 
 #rm_group_buttons>div {
@@ -2751,13 +2752,6 @@ body .ui-widget-content li:hover {
 #rm_group_add_members {
     margin-top: 0.25rem;
     margin-bottom: 0.5rem;
-    width: 100%;
-    flex: 1;
-    max-height: 40%;
-    min-height: 40%;
-    overflow: auto;
-    display: flex;
-    flex-direction: column;
     border: 1px solid grey;
     border-radius: 10px;
     background-color: var(--black30a);
@@ -2817,10 +2811,11 @@ body .ui-widget-content li:hover {
 }
 
 .group_member_icon {
-    margin: 0 10px;
     display: flex;
     column-gap: 10px;
     align-items: center;
+    justify-content: end;
+    flex-grow: 1;
 }
 
 .group_member {
@@ -3403,7 +3398,7 @@ label[for="extensions_autoconnect"] {
 }
 
 .inline-drawer {
-    padding-bottom: 10px;
+    /* padding-bottom: 10px; */
 }
 
 .code-copy {
@@ -3454,6 +3449,7 @@ label[for="extensions_autoconnect"] {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding: 5px 0;
 }
 
 .inline-drawer-content {
@@ -3479,7 +3475,7 @@ label[for="extensions_autoconnect"] {
     position: absolute;
     left: 0;
     right: 0;
-    max-width: var(--sheldWidth);
+    /* max-width: var(--sheldWidth); */
     margin: 35px auto 0 auto;
     backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
     -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
@@ -3539,10 +3535,6 @@ toolcool-color-picker {
 
 .flexnowrap {
     flex-wrap: nowrap;
-}
-
-.flex1 {
-    flex: 1;
 }
 
 .alignitemscenter {
@@ -3903,6 +3895,51 @@ body.waifuMode #avatar_zoom_popup {
     vertical-align: bottom;
     object-fit: cover;
 }
+
+.debug-red {
+    border: 1px solid red !important;
+}
+
+.debug-yellow {
+    border: 1px solid yellow !important;
+}
+
+.debug-green {
+    border: 1px solid green !important;
+}
+
+.debug-blue {
+    border: 1px solid blue !important;
+}
+
+.debug-purple {
+    border: 1px solid purple !important;
+}
+
+.fontsize80p {
+    font-size: calc(var(--mainFontSize) * 0.8) !important;
+}
+
+.fontsize60p {
+    font-size: calc(var(--mainFontSize) * 0.6) !important;
+}
+
+.paddingTopBot5 {
+    padding: 5px 0;
+}
+
+.paddingLeftRight5 {
+    padding: 0 5px;
+}
+
+.heightFitContent {
+    height: fit-content;
+}
+
+.flexGap5 {
+    gap: 5px;
+}
+
 
 /* ---------- @media queries must always go at the bottom ------------*/
 

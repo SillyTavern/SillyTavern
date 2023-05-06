@@ -3432,6 +3432,10 @@ function selectRightMenuWithAnimation(selectedMenuId) {
                 complete: function () { },
             });
         }
+        /*         if (selectedMenuId === "rm_group_chats_block") {
+        
+                    $("#groupCurrentMemberListToggle").click();
+                } */
     })
 }
 
