@@ -1780,18 +1780,16 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         }
 
         // Adjust token limit for Horde
-        let hordeAmountGen = null;
+        let adjustedParams;
         if (main_api == 'kobold' && horde_settings.use_horde && horde_settings.auto_adjust) {
-            let adjustedParams;
             try {
-                adjustedParams = await adjustHordeGenerationParams(this_max_context, amount_gen);
+                adjustedParams = await adjustHordeGenerationParams(max_context, amount_gen);
             }
             catch {
                 activateSendButtons();
                 return;
             }
-            this_max_context = adjustedParams.maxContextLength;
-            hordeAmountGen = adjustedParams.maxLength;
+            this_max_context = (adjustedParams.maxContextLength - adjustedParams.maxLength);
         }
 
         // Extension added strings
@@ -2096,8 +2094,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 }
             }
 
-            if (main_api == 'kobold' && horde_settings.use_horde && hordeAmountGen) {
-                this_amount_gen = Math.min(this_amount_gen, hordeAmountGen);
+            if (main_api == 'kobold' && horde_settings.use_horde && adjustedParams) {
+                this_amount_gen = Math.min(this_amount_gen, adjustedParams.maxLength);
                 this_amount_gen = Math.max(this_amount_gen, MIN_AMOUNT_GEN); // prevent validation errors
             }
 
@@ -2113,7 +2111,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 };
 
                 if (preset_settings != 'gui' || horde_settings.use_horde) {
-                    generate_data = getKoboldGenerationData(finalPromt, this_settings, this_amount_gen, max_context, isImpersonate);
+                    const maxContext = horde_settings.use_horde && adjustedParams ? adjustedParams.maxContextLength : max_context;
+                    generate_data = getKoboldGenerationData(finalPromt, this_settings, this_amount_gen, maxContext, isImpersonate);
                 }
             }
 
