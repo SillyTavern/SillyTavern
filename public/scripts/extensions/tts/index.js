@@ -241,7 +241,7 @@ async function processTtsQueue() {
 
     console.debug('New message found, running TTS')
     currentTtsJob = ttsJobQueue.shift()
-    const text = currentTtsJob.mes.replaceAll('*', '...')
+    const text = currentTtsJob.mes.replaceAll('*', '')
     const char = currentTtsJob.name
 
     try {
