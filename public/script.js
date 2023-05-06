@@ -240,7 +240,7 @@ window.filterByFav = false;
 
 const durationSaveEdit = 200;
 const saveSettingsDebounced = debounce(() => saveSettings(), durationSaveEdit);
-const saveCharacterDebounced = debounce(() => $("#create_button").click(), durationSaveEdit);
+const saveCharacterDebounced = debounce(() => $("#create_button").trigger('click'), durationSaveEdit);
 const getStatusDebounced = debounce(() => getStatus(), 90000);
 const saveChatDebounced = debounce(() => saveChatConditional(), 1000);
 
@@ -1651,10 +1651,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         }
         ////////////////////////////////////
         const scenarioText = chat_metadata['scenario'] || characters[this_chid].scenario;
-        let charDescription = baseChatReplace($.trim(characters[this_chid].description), name1, name2);
-        let charPersonality = baseChatReplace($.trim(characters[this_chid].personality), name1, name2);
-        let Scenario = baseChatReplace($.trim(scenarioText), name1, name2);
-        let mesExamples = baseChatReplace($.trim(characters[this_chid].mes_example), name1, name2);
+        let charDescription = baseChatReplace(characters[this_chid].description.trim(), name1, name2);
+        let charPersonality = baseChatReplace(characters[this_chid].personality.trim(), name1, name2);
+        let Scenario = baseChatReplace(scenarioText.trim(), name1, name2);
+        let mesExamples = baseChatReplace(characters[this_chid].mes_example.trim(), name1, name2);
 
         // Parse example messages
         if (!mesExamples.startsWith('<START>')) {
@@ -2746,33 +2746,49 @@ async function saveChat(chat_name, withMetadata) {
     });
 }
 
-function read_avatar_load(input) {
+async function read_avatar_load(input) {
     if (input.files && input.files[0]) {
         const reader = new FileReader();
         if (selected_button == "create") {
             create_save_avatar = input.files;
         }
-        reader.onload = function (e) {
-            if (selected_button == "character_edit") {
-                saveCharacterDebounced();
-            }
+        reader.onload = async function (e) {
             $("#avatar_load_preview").attr("src", e.target.result);
-            //.width(103)
-            //.height(83);
-            //console.log(e.target.result.name);
+
+            if (menu_type != "create") {
+                $("#create_button").trigger('click');
+
+                const formData = new FormData($("#form_create").get(0));
+
+                $(".mes").each(async function () {
+                    if ($(this).attr("is_system") == 'true') {
+                        return;
+                    }
+                    if ($(this).attr("is_user") == 'true') {
+                        return;
+                    }
+                    if ($(this).attr("ch_name") == formData.get('ch_name')) {
+                        const previewSrc = $("#avatar_load_preview").attr("src");
+                        const avatar = $(this).find(".avatar img");
+                        avatar.attr('src', default_avatar);
+                        await delay(1);
+                        avatar.attr('src', previewSrc);
+                    }
+                });
+
+                await delay(durationSaveEdit);
+                await fetch(getThumbnailUrl('avatar', formData.get('avatar_url')), {
+                    method: 'GET',
+                    headers: {
+                        'pragma': 'no-cache',
+                        'cache-control': 'no-cache',
+                    }
+                });
+                console.log('Avatar refreshed');
+            }
         };
 
         reader.readAsDataURL(input.files[0]);
-
-        if (this_chid) {
-            fetch(getThumbnailUrl('avatar', characters[this_chid].avatar), {
-                method: 'GET',
-                headers: {
-                    'pragma': 'no-cache',
-                    'cache-control': 'no-cache',
-                }
-            }).then(() => console.log('Avatar refreshed'));
-        }
     }
 }
 
@@ -4653,25 +4669,7 @@ $(document).ready(function () {
                 cache: false,
                 contentType: false,
                 processData: false,
-                success: function (html) {
-                    /* Cohee: Not needed, since the rename routine forcefully reloads the chat
-                    //currently this updates the displayed H2 name regardless of soft errors, doesn't detect actual errors.
-                    let h2text = $("#character_name_pole").val();
-                    console.log('about to change name! in h2');
-                    $("#rm_button_selected_ch").children("h2").text(h2text);
-                    */
-
-                    $(".mes").each(function () {
-                        if ($(this).attr("is_system") == 'true') {
-                            return;
-                        }
-                        if ($(this).attr("ch_name") != name1) {
-                            $(this)
-                                .children(".avatar")
-                                .children("img")
-                                .attr("src", $("#avatar_load_preview").attr("src"));
-                        }
-                    });
+                success: async function (html) {
                     if (chat.length === 1) {
                         var this_ch_mes = default_ch_mes;
                         if ($("#firstmessage_textarea").val() != "") {
@@ -4700,7 +4698,7 @@ $(document).ready(function () {
                         }
                     }
                     $("#create_button").removeAttr("disabled");
-                    getCharacters();
+                    await getCharacters();
 
                     $("#add_avatar_button").replaceWith(
                         $("#add_avatar_button").val("").clone(true)
