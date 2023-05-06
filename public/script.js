@@ -1,4 +1,4 @@
-import { humanizedDateTime } from "./scripts/RossAscends-mods.js";
+import { humanizedDateTime, favsToHotswap } from "./scripts/RossAscends-mods.js";
 import { encode } from "../scripts/gpt-2-3-tokenizer/mod.js";
 import { GPT3BrowserTokenizer } from "../scripts/gpt-3-tokenizer/gpt3-tokenizer.js";
 import {
@@ -143,7 +143,7 @@ export {
     setRightTabSelectedClass,
     openCharacterChat,
     saveChat,
-    messageFormating,
+    messageFormatting,
     getExtensionPrompt,
     showSwipeButtons,
     hideSwipeButtons,
@@ -240,7 +240,7 @@ window.filterByFav = false;
 
 const durationSaveEdit = 200;
 const saveSettingsDebounced = debounce(() => saveSettings(), durationSaveEdit);
-const saveCharacterDebounced = debounce(() => $("#create_button").click(), durationSaveEdit);
+const saveCharacterDebounced = debounce(() => $("#create_button").trigger('click'), durationSaveEdit);
 const getStatusDebounced = debounce(() => getStatus(), 90000);
 const saveChatDebounced = debounce(() => saveChatConditional(), 1000);
 
@@ -472,7 +472,6 @@ var preset_settings = "gui";
 var user_avatar = "you.png";
 var amount_gen = 80; //default max length of AI generated responses
 var max_context = 2048;
-let padding_tokens = 64; // reserved tokens to prevent prompt overflow
 
 var is_pygmalion = false;
 var tokens_already_generated = 0;
@@ -734,9 +733,10 @@ function printCharacters() {
         // Add to the list
         $("#rm_print_characters_block").append(template);
     });
-    $("#rm_print_characters_block").prepend(`<hr>`);
+
     printTags();
     printGroups();
+    favsToHotswap();
     sortCharactersList();
 }
 
@@ -931,7 +931,7 @@ export async function reloadCurrentChat() {
     }
 }
 
-function messageFormating(mes, ch_name, isSystem, forceAvatar) {
+function messageFormatting(mes, ch_name, isSystem, isUser) {
     if (!mes) {
         mes = '';
     }
@@ -967,9 +967,9 @@ function messageFormating(mes, ch_name, isSystem, forceAvatar) {
         });
     }
 
-    /*     if (ch_name && (forceAvatar || ch_name !== name1)) {
-            mes = mes.replaceAll(ch_name + ":", "");
-        } */
+    if (!power_user.allow_name2_display && ch_name && !isUser && !isSystem) {
+        mes = mes.replaceAll(`${ch_name}:`, "");
+    }
 
     return mes;
 }
@@ -1057,13 +1057,13 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     if (count_view_mes == 0) {
         messageText = substituteParams(messageText);
     }
-    messageText = messageFormating(
+    messageText = messageFormatting(
         messageText,
         characterName,
         isSystem,
-        mes.force_avatar
+        mes.is_user,
     );
-    const bias = messageFormating(mes.extra?.bias ?? "");
+    const bias = messageFormatting(mes.extra?.bias ?? "");
 
     let params = {
         mesId: count_view_mes,
@@ -1356,6 +1356,8 @@ function applyFavFilter(enabled) {
     }
 }
 
+
+
 class StreamingProcessor {
     showStopButton(messageId) {
         if (messageId == -1) {
@@ -1392,8 +1394,24 @@ class StreamingProcessor {
         return messageId;
     }
 
+    removePrefix(text) {
+        const name1Marker = `${name1}: `;
+        const name2Marker = `${name2}: `;
+
+        if (text) {
+            if (text.startsWith(name1Marker)) {
+                text = text.replace(name1Marker, '');
+            }
+            if (text.startsWith(name2Marker)) {
+                text = text.replace(name2Marker, '');
+            }
+        }
+        return text;
+    }
+
     onProgressStreaming(messageId, text) {
         const isImpersonate = this.type == "impersonate";
+        text = this.removePrefix(text);
         let processedText = cleanUpMessage(text, isImpersonate);
         let result = extractNameFromMessage(processedText, this.force_name2, isImpersonate);
         let isName = result.this_mes_is_name;
@@ -1414,7 +1432,12 @@ class StreamingProcessor {
                 chat[messageId]['swipes'][chat[messageId]['swipe_id']] = processedText;
             }
 
-            let formattedText = messageFormating(processedText, chat[messageId].name, chat[messageId].is_system, chat[messageId].force_avatar);
+            let formattedText = messageFormatting(
+                processedText,
+                chat[messageId].name,
+                chat[messageId].is_system,
+                chat[messageId].is_user,
+            );
             const mesText = $(`#chat .mes[mesid="${messageId}"] .mes_text`);
             mesText.html(formattedText);
             $(`#chat .mes[mesid="${messageId}"] .mes_timer`).text(timePassed.timerValue).attr('title', timePassed.timerTitle);
@@ -1627,10 +1650,11 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             addOneMessage(chat[chat.length - 1]);
         }
         ////////////////////////////////////
-        let charDescription = baseChatReplace($.trim(characters[this_chid].description), name1, name2);
-        let charPersonality = baseChatReplace($.trim(characters[this_chid].personality), name1, name2);
-        let Scenario = baseChatReplace($.trim(characters[this_chid].scenario), name1, name2);
-        let mesExamples = baseChatReplace($.trim(characters[this_chid].mes_example), name1, name2);
+        const scenarioText = chat_metadata['scenario'] || characters[this_chid].scenario;
+        let charDescription = baseChatReplace(characters[this_chid].description.trim(), name1, name2);
+        let charPersonality = baseChatReplace(characters[this_chid].personality.trim(), name1, name2);
+        let Scenario = baseChatReplace(scenarioText.trim(), name1, name2);
+        let mesExamples = baseChatReplace(characters[this_chid].mes_example.trim(), name1, name2);
 
         // Parse example messages
         if (!mesExamples.startsWith('<START>')) {
@@ -1777,7 +1801,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 allAnchors,
                 quiet_prompt,
             ].join('').replace(/\r/gm, '');
-            return getTokenCount(encodeString, padding_tokens) < this_max_context;
+            return getTokenCount(encodeString, power_user.token_padding) < this_max_context;
         }
 
         // Force pinned examples into the context
@@ -1834,7 +1858,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 arrMes = arrMes.reverse();
                 arrMes.forEach(function (item, i, arr) {//For added anchors and others
 
-                    if (i === arrMes.length - 1 && $.trim(item).substr(0, (name1 + ":").length) != name1 + ":") {
+                    if (i === arrMes.length - 1 && !item.trim().startsWith(name1 + ":")) {
                         if (textareaText == "") {
                             item = item.substr(0, item.length - 1);
                         }
@@ -1844,24 +1868,26 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         //anchorAndPersonality = "[Genre: roleplay chat][Tone: very long messages with descriptions]";
                         let personalityAndAnchor = [charPersonality, anchorTop].filter(x => x).join(' ');
                         if (personalityAndAnchor) {
-                            item += "[" + personalityAndAnchor + ']\n';
+                            item += "[" + personalityAndAnchor + "]\n";
                         }
                     }
-                    if (i === arrMes.length - 1 && coreChat.length > bottomAnchorThreshold && $.trim(item).substr(0, (name1 + ":").length) == name1 + ":" && !is_pygmalion) {//For add anchor in end
-                        item = item.substr(0, item.length - 1);
+                    if (i === arrMes.length - 1 && coreChat.length > bottomAnchorThreshold && item.trim().startsWith(name1 + ":") && !is_pygmalion) {//For add anchor in end
                         //chatString+=postAnchor+"\n";//"[Writing style: very long messages]\n";
-                        item = item + anchorBottom + "\n";
+                        if (anchorBottom) {
+                            item = item.replace(/\n$/, " ");
+                            item += anchorBottom + "\n";
+                        }
                     }
                     if (is_pygmalion) {
-                        if (i === arrMes.length - 1 && $.trim(item).substr(0, (name1 + ":").length) == name1 + ":") {//for add name2 when user sent
+                        if (i === arrMes.length - 1 && item.trim().startsWith(name1 + ":")) {//for add name2 when user sent
                             item = item + name2 + ":";
                         }
-                        if (i === arrMes.length - 1 && $.trim(item).substr(0, (name1 + ":").length) != name1 + ":") {//for add name2 when continue
+                        if (i === arrMes.length - 1 && !item.trim().startsWith(name1 + ":")) {//for add name2 when continue
                             if (textareaText == "") {
                                 item = item + '\n' + name2 + ":";
                             }
                         }
-                        if ($.trim(item).indexOf(name1) === 0) {
+                        if (item.trim().startsWith(name1)) {
                             item = item.replace(name1 + ':', 'You:');
                         }
                     }
@@ -1930,7 +1956,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     allAnchors,
                     quiet_prompt,
                 ].join('').replace(/\r/gm, '');
-                let thisPromtContextSize = getTokenCount(prompt, padding_tokens);
+                let thisPromtContextSize = getTokenCount(prompt, power_user.token_padding);
 
                 if (thisPromtContextSize > this_max_context) {        //if the prepared prompt is larger than the max context size...
                     if (count_exm_add > 0) {                            // ..and we have example mesages..
@@ -2007,7 +2033,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             if (power_user.collapse_newlines) {
                 finalPromt = collapseNewlines(finalPromt);
             }
-            //console.log(`---Calculated Prompt Tokens: ${getTokenCount(finalPromt, padding_tokens)}`);
             let this_amount_gen = parseInt(amount_gen); // how many tokens the AI will be requested to generate
             let this_settings = koboldai_settings[koboldai_setting_names[preset_settings]];
 
@@ -2338,7 +2363,7 @@ function shouldContinueMultigen(getMessage) {
 function extractNameFromMessage(getMessage, force_name2, isImpersonate) {
     const nameToTrim = isImpersonate ? name1 : name2;
     let this_mes_is_name = true;
-    if (getMessage.indexOf(nameToTrim + ":") === 0) {
+    if (getMessage.startsWith(nameToTrim + ":")) {
         getMessage = getMessage.replace(nameToTrim + ':', '');
         getMessage = getMessage.trimStart();
     } else {
@@ -2671,6 +2696,8 @@ async function renameCharacter() {
 async function saveChat(chat_name, withMetadata) {
     const metadata = { ...chat_metadata, ...(withMetadata || {}) };
     let file_name = chat_name ?? characters[this_chid].chat;
+    characters[this_chid]['date_last_chat'] = Date.now();
+    sortCharactersList();
     chat.forEach(function (item, i) {
         if (item["is_group"]) {
             alert('Trying to save group chat with regular saveChat function. Aborting to prevent corruption.');
@@ -2719,33 +2746,49 @@ async function saveChat(chat_name, withMetadata) {
     });
 }
 
-function read_avatar_load(input) {
+async function read_avatar_load(input) {
     if (input.files && input.files[0]) {
         const reader = new FileReader();
         if (selected_button == "create") {
             create_save_avatar = input.files;
         }
-        reader.onload = function (e) {
-            if (selected_button == "character_edit") {
-                saveCharacterDebounced();
-            }
+        reader.onload = async function (e) {
             $("#avatar_load_preview").attr("src", e.target.result);
-            //.width(103)
-            //.height(83);
-            //console.log(e.target.result.name);
+
+            if (menu_type != "create") {
+                $("#create_button").trigger('click');
+
+                const formData = new FormData($("#form_create").get(0));
+
+                $(".mes").each(async function () {
+                    if ($(this).attr("is_system") == 'true') {
+                        return;
+                    }
+                    if ($(this).attr("is_user") == 'true') {
+                        return;
+                    }
+                    if ($(this).attr("ch_name") == formData.get('ch_name')) {
+                        const previewSrc = $("#avatar_load_preview").attr("src");
+                        const avatar = $(this).find(".avatar img");
+                        avatar.attr('src', default_avatar);
+                        await delay(1);
+                        avatar.attr('src', previewSrc);
+                    }
+                });
+
+                await delay(durationSaveEdit);
+                await fetch(getThumbnailUrl('avatar', formData.get('avatar_url')), {
+                    method: 'GET',
+                    headers: {
+                        'pragma': 'no-cache',
+                        'cache-control': 'no-cache',
+                    }
+                });
+                console.log('Avatar refreshed');
+            }
         };
 
         reader.readAsDataURL(input.files[0]);
-
-        if (this_chid) {
-            fetch(getThumbnailUrl('avatar', characters[this_chid].avatar), {
-                method: 'GET',
-                headers: {
-                    'pragma': 'no-cache',
-                    'cache-control': 'no-cache',
-                }
-            }).then(() => console.log('Avatar refreshed'));
-        }
     }
 }
 
@@ -3238,6 +3281,9 @@ function messageEditAuto(div) {
     var text = mesBlock.find(".edit_textarea").val().trim();
     const bias = extractMessageBias(text);
     chat[this_edit_mes_id]["mes"] = text;
+    if (chat[this_edit_mes_id]["swipe_id"] !== undefined) {
+        chat[this_edit_mes_id]["swipes"][chat[this_edit_mes_id]["swipe_id"]] = text;
+    }
 
     // editing old messages
     if (!chat[this_edit_mes_id]["extra"]) {
@@ -3245,7 +3291,12 @@ function messageEditAuto(div) {
     }
     chat[this_edit_mes_id]["extra"]["bias"] = bias ?? null;
     mesBlock.find(".mes_text").val('');
-    mesBlock.find(".mes_text").val(messageFormating(text, this_edit_mes_chname, chat[this_edit_mes_id].is_system, chat[this_edit_mes_id].force_avatar));
+    mesBlock.find(".mes_text").val(messageFormatting(
+        text,
+        this_edit_mes_chname,
+        chat[this_edit_mes_id].is_system,
+        chat[this_edit_mes_id].is_user,
+    ));
     saveChatDebounced();
 }
 
@@ -3254,6 +3305,9 @@ function messageEditDone(div) {
     var text = mesBlock.find(".edit_textarea").val().trim();
     const bias = extractMessageBias(text);
     chat[this_edit_mes_id]["mes"] = text;
+    if (chat[this_edit_mes_id]["swipe_id"] !== undefined) {
+        chat[this_edit_mes_id]["swipes"][chat[this_edit_mes_id]["swipe_id"]] = text;
+    }
 
     // editing old messages
     if (!chat[this_edit_mes_id]["extra"]) {
@@ -3266,10 +3320,15 @@ function messageEditDone(div) {
     mesBlock.find(".mes_edit_buttons").css("display", "none");
     mesBlock.find(".mes_edit").css("display", "inline-block");
     mesBlock.find(".mes_text").append(
-        messageFormating(text, this_edit_mes_chname, chat[this_edit_mes_id].is_system, chat[this_edit_mes_id].force_avatar)
+        messageFormatting(
+            text,
+            this_edit_mes_chname,
+            chat[this_edit_mes_id].is_system,
+            chat[this_edit_mes_id].is_user,
+        )
     );
     mesBlock.find(".mes_bias").empty();
-    mesBlock.find(".mes_bias").append(messageFormating(bias));
+    mesBlock.find(".mes_bias").append(messageFormatting(bias));
     appendImageToMessage(chat[this_edit_mes_id], div.closest(".mes"));
     addCopyToCodeBlocks(div.closest(".mes"));
     this_edit_mes_id = undefined;
@@ -3396,7 +3455,13 @@ function selectRightMenuWithAnimation(selectedMenuId) {
                 easing: animation_easing,
                 complete: function () { },
             });
+
+
+
+            // $(menu).find('#groupCurrentMemberListToggle').click();
+
         }
+
     })
 }
 
@@ -3554,6 +3619,7 @@ function updateFavButtonState(state) {
     $("#fav_checkbox").val(fav_ch_checked);
     $("#favorite_button").toggleClass('fav_on', fav_ch_checked);
     $("#favorite_button").toggleClass('fav_off', !fav_ch_checked);
+
 }
 
 function callPopup(text, type, inputValue = '') {
@@ -3818,7 +3884,10 @@ window["SillyTavern"].getContext = function () {
     };
 };
 
+
+
 $(document).ready(function () {
+
 
     //////////INPUT BAR FOCUS-KEEPING LOGIC/////////////
 
@@ -4602,25 +4671,7 @@ $(document).ready(function () {
                 cache: false,
                 contentType: false,
                 processData: false,
-                success: function (html) {
-                    /* Cohee: Not needed, since the rename routine forcefully reloads the chat
-                    //currently this updates the displayed H2 name regardless of soft errors, doesn't detect actual errors.
-                    let h2text = $("#character_name_pole").val();
-                    console.log('about to change name! in h2');
-                    $("#rm_button_selected_ch").children("h2").text(h2text);
-                    */
-
-                    $(".mes").each(function () {
-                        if ($(this).attr("is_system") == 'true') {
-                            return;
-                        }
-                        if ($(this).attr("ch_name") != name1) {
-                            $(this)
-                                .children(".avatar")
-                                .children("img")
-                                .attr("src", $("#avatar_load_preview").attr("src"));
-                        }
-                    });
+                success: async function (html) {
                     if (chat.length === 1) {
                         var this_ch_mes = default_ch_mes;
                         if ($("#firstmessage_textarea").val() != "") {
@@ -4649,7 +4700,7 @@ $(document).ready(function () {
                         }
                     }
                     $("#create_button").removeAttr("disabled");
-                    getCharacters();
+                    await getCharacters();
 
                     $("#add_avatar_button").replaceWith(
                         $("#add_avatar_button").val("").clone(true)
@@ -4704,6 +4755,7 @@ $(document).ready(function () {
         updateFavButtonState(!fav_ch_checked);
         if (menu_type != "create") {
             saveCharacterDebounced();
+
         }
     });
 
@@ -5204,7 +5256,12 @@ $(document).ready(function () {
         $(this)
             .closest(".mes_block")
             .find(".mes_text")
-            .append(messageFormating(text, this_edit_mes_chname, chat[this_edit_mes_id].is_system, chat[this_edit_mes_id].force_avatar));
+            .append(messageFormatting(
+                text,
+                this_edit_mes_chname,
+                chat[this_edit_mes_id].is_system,
+                chat[this_edit_mes_id].is_user,
+            ));
         appendImageToMessage(chat[this_edit_mes_id], $(this).closest(".mes"));
         addCopyToCodeBlocks($(this).closest(".mes"));
         this_edit_mes_id = undefined;
@@ -5532,7 +5589,7 @@ $(document).ready(function () {
             icon.toggleClass('openIcon closedIcon');
             drawer.toggleClass('openDrawer closedDrawer');
 
-            console.log(targetDrawerID);
+            //console.log(targetDrawerID);
             if (targetDrawerID === 'right-nav-panel') {
                 $(this).closest('.drawer').find('.drawer-content').slideToggle({
                     duration: 200,

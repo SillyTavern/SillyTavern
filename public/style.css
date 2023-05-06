@@ -558,12 +558,72 @@ code {
     gap: 5px;
 }
 
+
+
 .avatar {
     width: 50px;
     height: 50px;
     border-style: none;
 }
 
+.mes .avatar {
+    cursor: pointer;
+
+}
+
+.hotswap {
+    top: -5px;
+}
+
+.hotswapAvatar,
+.hotswapAvatar .avatar {
+    width: 50px !important;
+    height: 50px !important;
+    border-style: none;
+}
+
+.hotswapAvatar {
+    opacity: 0.5;
+    transition: 250ms;
+    overflow: hidden;
+    padding: 0 !important;
+    order: 100;
+}
+
+.hotswapAvatar:hover {
+    opacity: 1;
+    background-color: transparent !important;
+    cursor: pointer;
+}
+
+.hotswapAvatar .avatar_collage,
+.hotswapAvatar.group_select {
+    border-radius: 50% !important;
+    position: relative;
+    overflow: hidden;
+    min-width: 50px !important;
+}
+
+.hotswapAvatar.group_select .avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    border: 1px solid var(--black30a);
+    /* border-radius: 10px; */
+}
+
+.hotswapAvatar .avatar {
+    width: 50px !important;
+    height: 50px !important;
+    object-fit: cover;
+    object-position: center center;
+    border-radius: 50% !important;
+    /* border: 1px solid var(--black30a); */
+    box-shadow: 0 0 5px var(--black50a);
+}
+
+.hotswapAvatar img,
 .avatar img {
     width: 50px;
     height: 50px;
@@ -572,6 +632,14 @@ code {
     border-radius: 50%;
     border: 1px solid var(--black30a);
     box-shadow: 0 0 5px var(--black50a);
+}
+
+body.no-hotswap .hotswap {
+    display: none !important;
+}
+
+body.no-timer .mes_timer {
+    display: none !important;
 }
 
 body.big-avatars .avatar {
@@ -1857,6 +1925,7 @@ input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin) {
     background-color: white;
     box-shadow: inset 0 0 3px 0 var(--black70a);
     cursor: pointer;
+    flex-shrink: 0;
 }
 
 /* the checkbox starts with a size 0 background of a checkmark */
@@ -2620,10 +2689,11 @@ body .ui-widget-content li:hover {
 /* GROUP CHATS */
 
 #rm_group_top_bar {
-    display: flex;
+    /*     display: flex;
     flex-direction: row;
     width: 100%;
     column-gap: 5px;
+    justify-content: space-evenly; */
 }
 
 #rm_button_group_chats h2 {
@@ -2639,10 +2709,11 @@ body .ui-widget-content li:hover {
 
 #rm_group_chats_block {
     display: none;
-    height: calc(100% - 45px);
-    flex-direction: column;
+    /*     height: calc(100% - 45px);
+    flex-direction: column; */
     align-items: flex-start;
     padding: 0 5px;
+    overflow-y: auto;
 }
 
 #rm_group_chats_block h3,
@@ -2652,13 +2723,13 @@ body .ui-widget-content li:hover {
 }
 
 #rm_group_buttons {
-    display: flex;
+    /*     display: flex;
     flex-direction: row;
     width: 100%;
     align-items: center;
     column-gap: 10px;
     flex-wrap: wrap;
-    padding: 0 5px;
+    padding: 0 5px; */
 }
 
 #rm_group_buttons>div {
@@ -2689,13 +2760,6 @@ body .ui-widget-content li:hover {
 #rm_group_add_members {
     margin-top: 0.25rem;
     margin-bottom: 0.5rem;
-    width: 100%;
-    flex: 1;
-    max-height: 40%;
-    min-height: 40%;
-    overflow: auto;
-    display: flex;
-    flex-direction: column;
     border: 1px solid grey;
     border-radius: 10px;
     background-color: var(--black30a);
@@ -2755,10 +2819,11 @@ body .ui-widget-content li:hover {
 }
 
 .group_member_icon {
-    margin: 0 10px;
     display: flex;
     column-gap: 10px;
     align-items: center;
+    justify-content: end;
+    flex-grow: 1;
 }
 
 .group_member {
@@ -3341,7 +3406,7 @@ label[for="extensions_autoconnect"] {
 }
 
 .inline-drawer {
-    padding-bottom: 10px;
+    /* padding-bottom: 10px; */
 }
 
 .code-copy {
@@ -3392,6 +3457,7 @@ label[for="extensions_autoconnect"] {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding: 5px 0;
 }
 
 .inline-drawer-content {
@@ -3417,7 +3483,7 @@ label[for="extensions_autoconnect"] {
     position: absolute;
     left: 0;
     right: 0;
-    max-width: var(--sheldWidth);
+    /* max-width: var(--sheldWidth); */
     margin: 35px auto 0 auto;
     backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
     -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
@@ -3477,10 +3543,6 @@ toolcool-color-picker {
 
 .flexnowrap {
     flex-wrap: nowrap;
-}
-
-.flex1 {
-    flex: 1;
 }
 
 .alignitemscenter {
@@ -3631,7 +3693,8 @@ toolcool-color-picker {
 }
 
 .openai_restorable,
-.poe_restorable {
+.poe_restorable,
+.title_restorable {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
@@ -3840,6 +3903,51 @@ body.waifuMode #avatar_zoom_popup {
     vertical-align: bottom;
     object-fit: cover;
 }
+
+.debug-red {
+    border: 1px solid red !important;
+}
+
+.debug-yellow {
+    border: 1px solid yellow !important;
+}
+
+.debug-green {
+    border: 1px solid green !important;
+}
+
+.debug-blue {
+    border: 1px solid blue !important;
+}
+
+.debug-purple {
+    border: 1px solid purple !important;
+}
+
+.fontsize80p {
+    font-size: calc(var(--mainFontSize) * 0.8) !important;
+}
+
+.fontsize60p {
+    font-size: calc(var(--mainFontSize) * 0.6) !important;
+}
+
+.paddingTopBot5 {
+    padding: 5px 0;
+}
+
+.paddingLeftRight5 {
+    padding: 0 5px;
+}
+
+.heightFitContent {
+    height: fit-content;
+}
+
+.flexGap5 {
+    gap: 5px;
+}
+
 
 /* ---------- @media queries must always go at the bottom ------------*/
 

@@ -1806,10 +1806,36 @@ app.post('/getgroups', jsonParser, (_, response) => {
     }
 
     const files = fs.readdirSync(directories.groups);
+    const chats = fs.readdirSync(directories.groupChats);
+
     files.forEach(function (file) {
-        const fileContents = fs.readFileSync(path.join(directories.groups, file), 'utf8');
-        const group = json5.parse(fileContents);
-        groups.push(group);
+        try {
+            const filePath = path.join(directories.groups, file);
+            const fileContents = fs.readFileSync(filePath, 'utf8');
+            const group = json5.parse(fileContents);
+            const groupStat = fs.statSync(filePath);
+            group['date_added'] = groupStat.birthtimeMs;
+
+            let chat_size = 0;
+            let date_last_chat = 0;
+
+            if (Array.isArray(group.chats) && Array.isArray(chats)) {
+                for (const chat of chats) {
+                    if (group.chats.includes(path.parse(chat).name)) {
+                        const chatStat = fs.statSync(path.join(directories.groupChats, chat));
+                        chat_size += chatStat.size;
+                        date_last_chat = Math.max(date_last_chat, chatStat.mtimeMs);
+                    }
+                }
+            }
+
+            group['date_last_chat'] = date_last_chat;
+            group['chat_size'] = chat_size;
+            groups.push(group);
+        }
+        catch (error) {
+            console.error(error);
+        }
     });
 
     return response.send(groups);
@@ -2350,6 +2376,7 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
             "stream": request.body.stream,
             "presence_penalty": request.body.presence_penalty,
             "frequency_penalty": request.body.frequency_penalty,
+            "top_p": request.body.top_p,
             "stop": request.body.stop,
             "logit_bias": request.body.logit_bias
         },

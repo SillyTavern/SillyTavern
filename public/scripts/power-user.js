@@ -8,11 +8,15 @@ import {
     reloadCurrentChat,
     getRequestHeaders,
 } from "../script.js";
+import {
+    groups,
+} from "./group-chats.js";
 
 export {
     loadPowerUserSettings,
     collapseNewlines,
     playMessageSound,
+    sortGroupMembers,
     sortCharactersList,
     fixMarkdown,
     power_user,
@@ -57,6 +61,7 @@ const send_on_enter_options = {
 
 let power_user = {
     tokenizer: tokenizers.CLASSIC,
+    token_padding: 64,
     collapse_newlines: false,
     pygmalion_formatting: pygmalion_options.AUTO,
     pin_examples: false,
@@ -100,6 +105,9 @@ let power_user = {
     auto_fix_generated_markdown: true,
     send_on_enter: send_on_enter_options.AUTO,
     render_formulas: false,
+    allow_name2_display: false,
+    hotswap_enabled: true,
+    timer_enabled: true,
 };
 
 let themes = [];
@@ -123,6 +131,9 @@ const storage_keys = {
     waifuMode: "TavernAI_waifuMode",
     movingUI: "TavernAI_movingUI",
     noShadows: "TavernAI_noShadows",
+
+    hotswap_enabled: 'HotswapEnabled',
+    timer_enabled: 'TimerEnabled',
 };
 
 let browser_has_focus = true;
@@ -177,6 +188,18 @@ function fixMarkdown(text) {
     }
 
     return newText;
+}
+
+function switchHotswap() {
+    const value = localStorage.getItem(storage_keys.hotswap_enabled);
+    power_user.hotswap_enabled = value === null ? true : value == "true";
+    $("body").toggleClass("no-hotswap", !power_user.hotswap_enabled);
+}
+
+function switchTimer() {
+    const value = localStorage.getItem(storage_keys.timer_enabled);
+    power_user.timer_enabled = value === null ? true : value == "true";
+    $("body").toggleClass("no-timer", !power_user.timer_enabled);
 }
 
 function switchUiMode() {
@@ -321,6 +344,8 @@ applyChatDisplay();
 switchWaifuMode()
 switchMovingUI();
 noShadows();
+switchHotswap();
+switchTimer();
 
 function loadPowerUserSettings(settings, data) {
     // Load from settings.json
@@ -337,10 +362,14 @@ function loadPowerUserSettings(settings, data) {
     const waifuMode = localStorage.getItem(storage_keys.waifuMode);
     const movingUI = localStorage.getItem(storage_keys.movingUI);
     const noShadows = localStorage.getItem(storage_keys.noShadows);
+    const hotswap = localStorage.getItem(storage_keys.hotswap_enabled);
+    const timer = localStorage.getItem(storage_keys.timer_enabled);
     power_user.fast_ui_mode = fastUi === null ? true : fastUi == "true";
     power_user.waifuMode = waifuMode === null ? false : waifuMode == "true";
     power_user.movingUI = movingUI === null ? false : movingUI == "true";
     power_user.noShadows = noShadows === null ? false : noShadows == "true";
+    power_user.hotswap_enabled = hotswap === null ? true : hotswap == "true";
+    power_user.timer_enabled = timer === null ? true : timer == "true";
     power_user.avatar_style = Number(localStorage.getItem(storage_keys.avatar_style) ?? avatar_styles.ROUND);
     power_user.chat_display = Number(localStorage.getItem(storage_keys.chat_display) ?? chat_styles.DEFAULT);
     power_user.sheld_width = Number(localStorage.getItem(storage_keys.sheld_width) ?? sheld_width.DEFAULT);
@@ -372,9 +401,13 @@ function loadPowerUserSettings(settings, data) {
     $("#play_message_sound").prop("checked", power_user.play_message_sound);
     $("#play_sound_unfocused").prop("checked", power_user.play_sound_unfocused);
     $("#auto_save_msg_edits").prop("checked", power_user.auto_save_msg_edits);
+    $("#allow_name2_display").prop("checked", power_user.allow_name2_display);
+    $("#hotswapEnabled").prop("checked", power_user.hotswap_enabled);
+    $("#messageTimerEnabled").prop("checked", power_user.timer_enabled);
     $(`input[name="avatar_style"][value="${power_user.avatar_style}"]`).prop("checked", true);
     $(`input[name="chat_display"][value="${power_user.chat_display}"]`).prop("checked", true);
     $(`input[name="sheld_width"][value="${power_user.sheld_width}"]`).prop("checked", true);
+    $("#token_padding").val(power_user.token_padding);
 
     $("#font_scale").val(power_user.font_scale);
     $("#font_scale_counter").text(power_user.font_scale);
@@ -405,19 +438,46 @@ function loadPowerUserSettings(settings, data) {
     reloadMarkdownProcessor(power_user.render_formulas);
 }
 
-function sortCharactersList(selector = '.character_select') {
-    const sortFunc = (a, b) => power_user.sort_order == 'asc' ? compareFunc(a, b) : compareFunc(b, a);
-    const compareFunc = (first, second) => {
-        switch (power_user.sort_rule) {
-            case 'boolean':
-                return Number(first[power_user.sort_field] == "true") - Number(second[power_user.sort_field] == "true");
-            default:
-                return typeof first[power_user.sort_field] == "string"
-                    ? first[power_user.sort_field].localeCompare(second[power_user.sort_field])
-                    : first[power_user.sort_field] - second[power_user.sort_field];
-        }
-    };
+const sortFunc = (a, b) => power_user.sort_order == 'asc' ? compareFunc(a, b) : compareFunc(b, a);
+const compareFunc = (first, second) => {
+    switch (power_user.sort_rule) {
+        case 'boolean':
+            return Number(first[power_user.sort_field] == "true") - Number(second[power_user.sort_field] == "true");
+        default:
+            return typeof first[power_user.sort_field] == "string"
+                ? first[power_user.sort_field].localeCompare(second[power_user.sort_field])
+                : first[power_user.sort_field] - second[power_user.sort_field];
+    }
+};
 
+function sortCharactersList() {
+    const arr1 = groups.map(x => ({
+        item: x,
+        id: x.id,
+        selector: '.group_select',
+        attribute: 'grid',
+    }))
+    const arr2 = characters.map((x, index) => ({
+        item: x,
+        id: index,
+        selector: '.character_select',
+        attribute: 'chid',
+    }));
+
+    const array = [...arr1, ...arr2];
+
+    if (power_user.sort_field == undefined || array.length === 0) {
+        return;
+    }
+
+    let orderedList = array.slice().sort((a, b) => sortFunc(a.item, b.item));
+
+    for (const item of array) {
+        $(`${item.selector}[${item.attribute}="${item.id}"]`).css({ 'order': orderedList.indexOf(item) });
+    }
+}
+
+function sortGroupMembers(selector) {
     if (power_user.sort_field == undefined || characters.length === 0) {
         return;
     }
@@ -746,6 +806,31 @@ $(document).ready(() => {
         reloadCurrentChat();
         saveSettingsDebounced();
     })
+
+    $("#allow_name2_display").on("input", function () {
+        power_user.allow_name2_display = !!$(this).prop('checked');
+        reloadCurrentChat();
+        saveSettingsDebounced();
+    });
+
+    $("#token_padding").on("input", function () {
+        power_user.token_padding = Number($(this).val());
+        saveSettingsDebounced();
+    });
+
+    $("#messageTimerEnabled").on("input", function () {
+        const value = !!$(this).prop('checked');
+        power_user.timer_enabled = value;
+        localStorage.setItem(storage_keys.timer_enabled, power_user.timer_enabled);
+        switchTimer();
+    });
+
+    $("#hotswapEnabled").on("input", function () {
+        const value = !!$(this).prop('checked');
+        power_user.hotswap_enabled = value;
+        localStorage.setItem(storage_keys.hotswap_enabled, power_user.hotswap_enabled);
+        switchHotswap();
+    });
 
     $(window).on('focus', function () {
         browser_has_focus = true;
