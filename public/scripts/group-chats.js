@@ -377,7 +377,7 @@ function getGroupAvatar(group) {
 }
 
 
-async function generateGroupWrapper(by_auto_mode, type = null, force_chid = null, params = {}) {
+async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
     if (online_status === "no_connection") {
         is_group_generating = false;
         setSendButtonState(false);
@@ -440,8 +440,8 @@ async function generateGroupWrapper(by_auto_mode, type = null, force_chid = null
         const activationStrategy = Number(group.activation_strategy ?? group_activation_strategy.NATURAL);
         let activatedMembers = [];
 
-        if (typeof force_chid == 'number') {
-            activatedMembers = [force_chid];
+        if (params && typeof params.force_chid == 'number') {
+            activatedMembers = [params.force_chid];
         } else if (type === "quiet") {
             activatedMembers = activateSwipe(group.members);
 
@@ -986,7 +986,7 @@ function select_group_chats(groupId, skipAnimation) {
         if (action === 'speak') {
             const chid = Number(member.attr('chid'));
             if (Number.isInteger(chid)) {
-                generateGroupWrapper(false, null, chid);
+                Generate('normal', { force_chid: chid });
             }
         }
 
