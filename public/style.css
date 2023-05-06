@@ -2681,11 +2681,11 @@ body .ui-widget-content li:hover {
 /* GROUP CHATS */
 
 #rm_group_top_bar {
-    display: flex;
+    /*     display: flex;
     flex-direction: row;
     width: 100%;
     column-gap: 5px;
-    justify-content: space-evenly;
+    justify-content: space-evenly; */
 }
 
 #rm_button_group_chats h2 {

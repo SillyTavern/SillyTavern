@@ -12,8 +12,16 @@ import {
     is_send_press,
     getTokenCount,
     menu_type,
+    selectRightMenuWithAnimation,
+    select_selected_character,
+    setCharacterId,
+
 
 } from "../script.js";
+
+import {
+    select_group_chats,
+} from "./group-chats.js";
 
 import {
     power_user,
@@ -255,33 +263,13 @@ export function RA_CountCharTokens() {
 //Auto Load Last Charcter -- (fires when active_character is defined and auto_load_chat is true)
 async function RA_autoloadchat() {
     if (document.getElementById('CharID0') !== null) {
-        //console.log('char list loaded! clicking activeChar');
-        var CharToAutoLoad = document.getElementById('CharID' + LoadLocal('ActiveChar'));
-        //console.log(CharToAutoLoad);
-        let autoLoadGroup = document.querySelector(`.group_select[grid="${LoadLocal('ActiveGroup')}"]`);
-        //console.log(autoLoadGroup);
-        if (CharToAutoLoad != null) {
+        var charToAutoLoad = document.getElementById('CharID' + LoadLocal('ActiveChar'));
+        let groupToAutoLoad = document.querySelector(`.group_select[grid="${LoadLocal('ActiveGroup')}"]`);
+        if (charToAutoLoad != null) { $(charToAutoLoad).click(); }
+        else if (groupToAutoLoad != null) { $(groupToAutoLoad).click(); }
 
-
-            // console.log('--ALC - clicking character');
-            CharToAutoLoad.click();
-            CharToAutoLoad.click();
-
-        }
-        else if (autoLoadGroup != null) {
-            //console.log('--ALC - clicking group');
-            autoLoadGroup.click();
-            autoLoadGroup.click();
-        }
-        else {
-            console.log(CharToAutoLoad + ' ActiveChar local var - not found: ' + LoadLocal('ActiveChar'));
-        }
-        RestoreNavTab();
-
-    } else {
-        //console.log('no char list yet..');
-        setTimeout(RA_autoloadchat, 100);            // if the charcter list hadn't been loaded yet, try again. 
-    }
+        // if the charcter list hadn't been loaded yet, try again. 
+    } else { setTimeout(RA_autoloadchat, 100); }
 }
 
 export async function favsToHotswap() {
@@ -296,7 +284,7 @@ export async function favsToHotswap() {
         if ($(this).hasClass('is_fav') && count < maxCount) {
             const isCharacter = $(this).hasClass('character_select');
             const isGroup = $(this).hasClass('group_select');
-            const grid =  Number($(this).attr('grid'));
+            const grid = Number($(this).attr('grid'));
             const chid = Number($(this).attr('chid'));
             let thisHotSwapSlot = template.clone();
             thisHotSwapSlot.toggleClass('character_select', isCharacter);
@@ -322,7 +310,7 @@ export async function favsToHotswap() {
         }
     });
 
-    console.log('about to check for leftover selectors...')
+    //console.log('about to check for leftover selectors...')
     // there are 6 slots in total,
     if (count < maxCount) { //if any are left over
         let leftOverSlots = maxCount - count;
@@ -334,17 +322,15 @@ export async function favsToHotswap() {
     }
 }
 
+/* function RestoreNavTab() {
+    if ($('#rm_button_selected_ch').children("h2").text() !== '') {
 
-
-//only triggers when AutoLoadChat is enabled, consider adding this as an independent feature later. 
-function RestoreNavTab() {
-    if ($('#rm_button_selected_ch').children("h2").text() !== '') {        //check for a change in the character edit tab name
-        //console.log('detected ALC char finished loaded, proceeding to restore tab.');
-        $(SelectedNavTab).click();                                     //click to restore saved tab when name has changed (signalling char load is done)
+        $(SelectedNavTab).click();                                 
     } else {
-        setTimeout(RestoreNavTab, 100);                                //if not changed yet, check again after 100ms
+        setTimeout(RestoreNavTab, 100);                            
     }
-}
+} */
+
 //changes input bar and send button display depending on connection status
 function RA_checkOnlineStatus() {
     if (online_status == "no_connection") {
@@ -430,7 +416,7 @@ function isUrlOrAPIKey(string) {
 function OpenNavPanels() {
     //auto-open R nav if locked and previously open
     if (LoadLocalBool("NavLockOn") == true && LoadLocalBool("NavOpened") == true) {
-        console.log("RA -- clicking right nav to open");
+        //console.log("RA -- clicking right nav to open");
         $("#rightNavDrawerIcon").click();
     } else {
         /*         console.log('didnt see reason to open right nav on load: R-nav locked? ' +
@@ -604,13 +590,16 @@ $("document").ready(function () {
 
     // initial status check
     setTimeout(RA_checkOnlineStatus, 100);
-    //setTimeout(favsToHotswap, 500);
 
     // read the state of AutoConnect and AutoLoadChat.
     $(AutoConnectCheckbox).prop("checked", LoadLocalBool("AutoConnectEnabled"));
     $(AutoLoadChatCheckbox).prop("checked", LoadLocalBool("AutoLoadChatEnabled"));
 
-    if (LoadLocalBool('AutoLoadChatEnabled') == true) { RA_autoloadchat(); }
+    setTimeout(function () {
+        if (LoadLocalBool('AutoLoadChatEnabled') == true) { RA_autoloadchat(); }
+    }, 200);
+
+
     //Autoconnect on page load if enabled, or when api type is changed
     if (LoadLocalBool("AutoConnectEnabled") == true) { RA_autoconnect(); }
     $("#main_api").change(function () {
@@ -706,10 +695,7 @@ $("document").ready(function () {
     $(AutoLoadChatCheckbox).on("change", function () { SaveLocal("AutoLoadChatEnabled", $(AutoLoadChatCheckbox).prop("checked")); });
 
     $(SelectedCharacterTab).click(function () { SaveLocal('SelectedNavTab', 'rm_button_selected_ch'); });
-    $("#rm_button_characters").click(function () {            //if char list is clicked, in addition to saving it...
-        SaveLocal('SelectedNavTab', 'rm_button_characters');
-        characters.sort(Intl.Collator().compare);            // we sort the list    
-    });
+    $("#rm_button_characters").click(function () { SaveLocal('SelectedNavTab', 'rm_button_characters'); });
 
     // when a char is selected from the list, save them as the auto-load character for next page load
     $(document).on("click", ".character_select", function () {
