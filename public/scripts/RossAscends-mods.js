@@ -817,7 +817,7 @@ $("document").ready(function () {
         }
 
         if (event.key == "ArrowUp") { //edits last message if chatbar is empty and focused
-            console.log('got uparrow input');
+            //console.log('got uparrow input');
             if (
                 $("#send_textarea").val() === '' &&
                 chatbarInFocus === true &&
