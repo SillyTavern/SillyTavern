@@ -106,6 +106,8 @@ let power_user = {
     send_on_enter: send_on_enter_options.AUTO,
     render_formulas: false,
     allow_name2_display: false,
+    hotswap_enabled: true,
+    timer_enabled: true,
 };
 
 let themes = [];
@@ -129,6 +131,9 @@ const storage_keys = {
     waifuMode: "TavernAI_waifuMode",
     movingUI: "TavernAI_movingUI",
     noShadows: "TavernAI_noShadows",
+
+    hotswap_enabled: 'HotswapEnabled',
+    timer_enabled: 'TimerEnabled',
 };
 
 let browser_has_focus = true;
@@ -183,6 +188,18 @@ function fixMarkdown(text) {
     }
 
     return newText;
+}
+
+function switchHotswap() {
+    const value = localStorage.getItem(storage_keys.hotswap_enabled);
+    power_user.hotswap_enabled = value === null ? true : value == "true";
+    $("body").toggleClass("no-hotswap", !power_user.hotswap_enabled);
+}
+
+function switchTimer() {
+    const value = localStorage.getItem(storage_keys.timer_enabled);
+    power_user.timer_enabled = value === null ? true : value == "true";
+    $("body").toggleClass("no-timer", !power_user.timer_enabled);
 }
 
 function switchUiMode() {
@@ -327,6 +344,8 @@ applyChatDisplay();
 switchWaifuMode()
 switchMovingUI();
 noShadows();
+switchHotswap();
+switchTimer();
 
 function loadPowerUserSettings(settings, data) {
     // Load from settings.json
@@ -343,10 +362,14 @@ function loadPowerUserSettings(settings, data) {
     const waifuMode = localStorage.getItem(storage_keys.waifuMode);
     const movingUI = localStorage.getItem(storage_keys.movingUI);
     const noShadows = localStorage.getItem(storage_keys.noShadows);
+    const hotswap = localStorage.getItem(storage_keys.hotswap_enabled);
+    const timer = localStorage.getItem(storage_keys.timer_enabled);
     power_user.fast_ui_mode = fastUi === null ? true : fastUi == "true";
     power_user.waifuMode = waifuMode === null ? false : waifuMode == "true";
     power_user.movingUI = movingUI === null ? false : movingUI == "true";
     power_user.noShadows = noShadows === null ? false : noShadows == "true";
+    power_user.hotswap_enabled = hotswap === null ? true : hotswap == "true";
+    power_user.timer_enabled = timer === null ? true : timer == "true";
     power_user.avatar_style = Number(localStorage.getItem(storage_keys.avatar_style) ?? avatar_styles.ROUND);
     power_user.chat_display = Number(localStorage.getItem(storage_keys.chat_display) ?? chat_styles.DEFAULT);
     power_user.sheld_width = Number(localStorage.getItem(storage_keys.sheld_width) ?? sheld_width.DEFAULT);
@@ -379,6 +402,8 @@ function loadPowerUserSettings(settings, data) {
     $("#play_sound_unfocused").prop("checked", power_user.play_sound_unfocused);
     $("#auto_save_msg_edits").prop("checked", power_user.auto_save_msg_edits);
     $("#allow_name2_display").prop("checked", power_user.allow_name2_display);
+    $("#hotswapEnabled").prop("checked", power_user.hotswap_enabled);
+    $("#messageTimerEnabled").prop("checked", power_user.timer_enabled);
     $(`input[name="avatar_style"][value="${power_user.avatar_style}"]`).prop("checked", true);
     $(`input[name="chat_display"][value="${power_user.chat_display}"]`).prop("checked", true);
     $(`input[name="sheld_width"][value="${power_user.sheld_width}"]`).prop("checked", true);
@@ -791,6 +816,20 @@ $(document).ready(() => {
     $("#token_padding").on("input", function () {
         power_user.token_padding = Number($(this).val());
         saveSettingsDebounced();
+    });
+
+    $("#messageTimerEnabled").on("input", function () {
+        const value = !!$(this).prop('checked');
+        power_user.timer_enabled = value;
+        localStorage.setItem(storage_keys.timer_enabled, power_user.timer_enabled);
+        switchTimer();
+    });
+
+    $("#hotswapEnabled").on("input", function () {
+        const value = !!$(this).prop('checked');
+        power_user.hotswap_enabled = value;
+        localStorage.setItem(storage_keys.hotswap_enabled, power_user.hotswap_enabled);
+        switchHotswap();
     });
 
     $(window).on('focus', function () {

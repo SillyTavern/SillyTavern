@@ -634,6 +634,14 @@ code {
     box-shadow: 0 0 5px var(--black50a);
 }
 
+body.no-hotswap .hotswap {
+    display: none !important;
+}
+
+body.no-timer .mes_timer {
+    display: none !important;
+}
+
 body.big-avatars .avatar {
     width: 60px;
     height: 90px;
