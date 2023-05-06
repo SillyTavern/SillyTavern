@@ -73,6 +73,7 @@ import {
     oai_settings,
     is_get_status_openai,
     openai_messages_count,
+    getTokenCountOpenAI,
 } from "./scripts/openai.js";
 
 import {
@@ -368,7 +369,20 @@ $(document).ajaxError(function myErrorHandler(_, xhr) {
 });
 
 function getTokenCount(str, padding = 0) {
-    switch (power_user.tokenizer) {
+    let tokenizerType = power_user.tokenizer; 
+
+    if (main_api === 'openai') {
+        // For main prompt building
+        if (padding == power_user.token_padding) {
+            tokenizerType = tokenizers.NONE;
+        // For extensions and WI
+        } else {
+            return getTokenCountOpenAI(str);
+        }
+        
+    }
+
+    switch (tokenizerType) {
         case tokenizers.NONE:
             return Math.ceil(str.length / CHARACTERS_PER_TOKEN_RATIO) + padding;
         case tokenizers.GPT3:

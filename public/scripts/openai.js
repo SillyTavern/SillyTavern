@@ -127,6 +127,11 @@ const oai_settings = {
 let openai_setting_names;
 let openai_settings;
 
+export function getTokenCountOpenAI(text) {
+    const message = { role: 'system', content: text };
+    return countTokens(message, true);
+}
+
 function validateReverseProxy() {
     if (!oai_settings.reverse_proxy) {
         return;
