@@ -614,7 +614,18 @@ async function calculateLogitBias() {
 }
 
 function countTokens(messages, full = false) {
-    let chatId = selected_group ? selected_group : characters[this_chid].chat;
+    let chatId = 'undefined';
+    
+    try {
+        if (selected_group) {
+            chatId = groups.find(x => x.id == selected_group)?.chat_id;
+        }
+        else if (this_chid) {
+            chatId = characters[this_chid].chat;
+        }
+    } catch {
+        console.log('No character / group selected. Using default cache item');
+    }
 
     if (typeof tokenCache[chatId] !== 'object') {
         tokenCache[chatId] = {};
