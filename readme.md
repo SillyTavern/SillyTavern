@@ -29,6 +29,8 @@ Run on Repl.it:
 
 ## Mobile support
 
+> **Note**
+
 > **This fork can be run natively on Android phones using Termux. Please refer to this guide by ArroganceComplex#2659:**
 
 https://rentry.org/STAI-Termux
@@ -111,7 +113,13 @@ Get in touch with the developers directly:
 
 ## Installation
 
-*NOTE: This branch is intended for local install purposes, and has not been thoroughly tested on a colab or other cloud notebook service.*
+*NOTE: This software is intended for local install purposes, and has not been thoroughly tested on a colab or other cloud notebook service.*
+
+> **Warning**
+
+> DO NOT INSTALL INTO ANY WINDOWS CONTROLLED FOLDER (Program Files, System32, etc).
+
+> DO NOT RUN START.BAT WITH ADMIN PERMISSIONS
 
 ### Windows
   1. install [NodeJS](https://nodejs.org/en) (latest LTS version is recommended)
