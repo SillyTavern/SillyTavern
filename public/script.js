@@ -1120,8 +1120,6 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     const newMessage = $(`#chat [mesid="${count_view_mes}"]`);
     newMessage.data("isSystem", isSystem);
 
-    appendImageToMessage(mes, newMessage);
-
     if (isSystem) {
         newMessage.find(".mes_edit").hide();
     }
@@ -1134,6 +1132,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     if (type === 'swipe') {
         $("#chat").find(`[mesid="${count_view_mes - 1}"]`).find('.mes_text').html('');
         $("#chat").find(`[mesid="${count_view_mes - 1}"]`).find('.mes_text').append(messageText);
+        appendImageToMessage(mes, $("#chat").find(`[mesid="${count_view_mes - 1}"]`));
         $("#chat").find(`[mesid="${count_view_mes - 1}"]`).attr('title', title);
 
         if (mes.swipe_id == mes.swipes.length - 1) {
@@ -1144,6 +1143,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
         }
     } else {
         $("#chat").find(`[mesid="${count_view_mes}"]`).find('.mes_text').append(messageText);
+        appendImageToMessage(mes, newMessage);
         hideSwipeButtons();
         count_view_mes++;
     }
@@ -3773,6 +3773,7 @@ function showSwipeButtons() {
         !swipes ||
         $('.mes:last').attr('mesid') <= 0 ||
         chat[chat.length - 1].is_user ||
+        chat[chat.length - 1].extra?.image ||
         count_view_mes <= 1 ||
         (selected_group && is_group_generating)
     ) { return; }
@@ -3894,7 +3895,11 @@ function isHordeGenerationNotAllowed() {
     return false;
 }
 
-
+export function cancelTtsPlay() {
+    if (speechSynthesis) {
+        speechSynthesis.cancel();
+    }
+}
 
 window["SillyTavern"].getContext = function () {
     return {
@@ -4305,6 +4310,7 @@ $(document).ready(function () {
         if (this_chid !== $(this).attr("chid")) {
             //if clicked on a different character from what was currently selected
             if (!is_send_press) {
+                cancelTtsPlay();
                 resetSelectedGroup();
                 this_edit_mes_id = undefined;
                 selected_button = "character_edit";
@@ -5764,7 +5770,8 @@ $(document).ready(function () {
         $('.code-copied').css({ 'display': 'none' });
     });
 
-    $(document).on('beforeunload', () => {
+    $(window).on('beforeunload', () => {
+        cancelTtsPlay();
         if (streamingProcessor) {
             console.log('Page reloaded. Aborting streaming...');
             streamingProcessor.abortController.abort();

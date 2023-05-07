@@ -185,6 +185,14 @@ Try enabling the No Blur Effect (Fast UI) mode on the User settings panel.
 2. Send bug reports without providing any context
 3. Ask the questions that were already answered numerous times
 
+## Where can I find the old backgrounds?
+
+We're moving to 100% original content only policy, so old background images have been removed from this repository.
+
+You can find them archived here:
+
+https://files.catbox.moe/1xevnc.zip
+
 ## Screenshots
 <img width="400" alt="image" src="https://user-images.githubusercontent.com/18619528/228649245-8061c60f-63dc-488e-9325-f151b7a3ec2d.png">
 <img width="400" alt="image" src="https://user-images.githubusercontent.com/18619528/228649856-fbdeef05-d727-4d5a-be80-266cbbc6b811.png">

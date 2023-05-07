@@ -45,6 +45,7 @@ import {
     setMenuType,
     menu_type,
     select_selected_character,
+    cancelTtsPlay,
 } from "../script.js";
 import { appendTagToList, createTagMapFromList, getTagsList, applyTagsOnCharacterSelect } from './tags.js';
 
@@ -1006,6 +1007,7 @@ async function selectGroup() {
 
     if (!is_send_press && !is_group_generating) {
         if (selected_group !== groupId) {
+            cancelTtsPlay();
             selected_group = groupId;
             setCharacterId(undefined);
             setCharacterName('');
