@@ -2324,9 +2324,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 } //generate ends
 
 function setInContextMessages(lastmsg, type) {
-    $("#chat").children().removeClass('lastInContext');
+    $("#chat .mes").removeClass('lastInContext');
 
-    if (type === 'swipe') {
+    if (type === 'swipe' || type === 'regenerate') {
         lastmsg++;
     }
 
