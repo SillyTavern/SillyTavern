@@ -312,7 +312,7 @@ function onViewTagsListClick() {
         template.find('.tag_view_name').text(tag.name);
         template.find('.tag_view_name').addClass('tag');
         template.find('.tag_view_name').css('background-color', tag.color);
-        const colorPickerId = tag.name + "-tag-color";
+        const colorPickerId = tag.id + "-tag-color";
         template.find('.tagColorPickerHolder').html(
             `<toolcool-color-picker id="${colorPickerId}" color="${tag.color}" class="tag-color"></toolcool-color-picker>`
         );
@@ -321,7 +321,7 @@ function onViewTagsListClick() {
         list.appendChild(template.get(0));
 
         setTimeout(function () {
-            document.querySelector(`#${colorPickerId}`).addEventListener('change', (evt) => {
+            document.querySelector(`.tag-color[id="${colorPickerId}"`).addEventListener('change', (evt) => {
                 onTagColorize(evt);
             });
         }, 100);
