@@ -961,13 +961,15 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
             .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
             .replace(/\n/g, "<br/>");
     } else if (!isSystem) {
-        mes = mes.replace(/```[\s\S]*?```|``[\s\S]*?``|`[\s\S]*?`|(\".+?\")/gm, function (match, p1) {
-            if (p1) {
-                return '<q>"' + p1.replace(/\"/g, "") + '"</q>';
-            } else {
-                return match;
-            }
-        });
+		mes = mes.replace(/```[\s\S]*?```|``[\s\S]*?``|`[\s\S]*?`|(\".+?\")|(\u201C.+?\u201D)/gm, function (match, p1, p2) {
+			if (p1) {
+				return '<q>"' + p1.replace(/\"/g, "") + '"</q>';
+			} else if (p2) {
+				return '<q>“' + p2.replace(/\u201C|\u201D/g, "") + '”</q>';
+			} else {
+				return match;
+			}
+		});
         mes = mes.replaceAll('\\begin{align*}', '$$');
         mes = mes.replaceAll('\\end{align*}', '$$');
         mes = converter.makeHtml(mes);
