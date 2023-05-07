@@ -7,6 +7,7 @@ import {
 } from "../../../script.js";
 import { getApiUrl, getContext, extension_settings, defaultRequestArgs } from "../../extensions.js";
 import { stringFormat, initScrollHeight, resetScrollHeight } from "../../utils.js";
+export { MODULE_NAME };
 
 // Wraps a string into monospace font-face span
 const m = x => `<span class="monospace">${x}</span>`;
@@ -14,6 +15,9 @@ const m = x => `<span class="monospace">${x}</span>`;
 const j = a => a.join(' / ');
 // Wraps a string into paragraph block
 const p = a => `<p>${a}</p>`
+
+const MODULE_NAME = 'sd';
+const UPDATE_INTERVAL = 1000;
 
 const postHeaders = {
     'Content-Type': 'application/json',
@@ -314,6 +318,104 @@ async function sendMessage(prompt, image) {
     context.addOneMessage(message);
     context.saveChat();
 }
+
+function addSDGenButtons() {
+    const buttonHtml = `
+        <div id="sd_gen" class="fa-solid fa-paintbrush" /></div>
+        `;
+
+    const waitButtonHtml = `
+        <div id="sd_gen_wait" class="fa-solid fa-hourglass-half" /></div>
+    `
+    const dropdownHtml = `
+    <div id="sd_dropdown">
+    <span>Send me a picture of:</span>
+        <ul class="list-group">
+            <li class="list-group-item" id="sd_you" data-value="you">Yourself</li>
+            <li class="list-group-item" id="sd_face" data-value="face">Your Face</li>
+            <li class="list-group-item" id="sd_me" data-value="me">Me</li>
+            <li class="list-group-item" id="sd_world" data-value="world">The Whole Story</li>
+            <li class="list-group-item" id="sd_last" data-value="last">The Last Message</li>
+        </ul>
+    </div>`;
+
+    $('#send_but_sheld').prepend(buttonHtml);
+    $('#send_but_sheld').prepend(waitButtonHtml);
+    $(document.body).append(dropdownHtml)
+
+    const button = $('#sd_gen');
+    const waitButton = $("#sd_gen_wait");
+    const dropdown = $('#sd_dropdown');
+    waitButton.hide();
+    dropdown.hide();
+    button.hide();
+
+    let popper = Popper.createPopper(button.get(0), dropdown.get(0), {
+        placement: 'top-start',
+    });
+
+    $(document).on('click touchend', function (e) {
+        const target = $(e.target);
+        if (target.is(dropdown)) return;
+        if (target.is(button) && !dropdown.is(":visible") && $("#send_but").css('display') === 'flex') {
+            e.preventDefault();
+
+            dropdown.show(200);
+            popper.update();
+        } else {
+            dropdown.hide(200);
+        }
+    });
+}
+
+async function moduleWorker() {
+    const context = getContext();
+
+    /*     if (context.onlineStatus === 'no_connection') {
+            $('#sd_gen').hide(200);
+        } else if ($("#send_but").css('display') === 'flex') {
+            $('#sd_gen').show(200);
+            $("#sd_gen_wait").hide(200);
+        } else {
+            $('#sd_gen').hide(200);
+            $("#sd_gen_wait").show(200);
+        } */
+
+    context.onlineStatus === 'no_connection'
+        ? $('#sd_gen').hide(200)
+        : $('#sd_gen').show(200)
+}
+
+addSDGenButtons();
+setInterval(moduleWorker, UPDATE_INTERVAL);
+
+$("#sd_dropdown [id]").on("click", function () {
+    var id = $(this).attr("id");
+    if (id == "sd_you") {
+        console.log("doing /sd you");
+        generatePicture('sd', 'you');
+    }
+
+    else if (id == "sd_face") {
+        console.log("doing /sd face");
+        generatePicture('sd', 'face');
+    }
+
+    else if (id == "sd_me") {
+        console.log("doing /sd me");
+        generatePicture('sd', 'me');
+    }
+
+    else if (id == "sd_world") {
+        console.log("doing /sd world");
+        generatePicture('sd', 'world');
+    }
+
+    else if (id == "sd_last") {
+        console.log("doing /sd last");
+        generatePicture('sd', 'last');
+    }
+});
 
 jQuery(async () => {
     getContext().registerSlashCommand('sd', generatePicture, ['picture', 'image'], helpString, true, true);
