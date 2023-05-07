@@ -984,7 +984,7 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
         mes = mes.replaceAll('\\begin{align*}', '$$');
         mes = mes.replaceAll('\\end{align*}', '$$');
         mes = converter.makeHtml(mes);
-        mes = mes.replace(/{{(\*?.+?\*?)}}/g, "");
+        mes = mes.replace(/{{(\*?.*\*?)}}/g, "");
 
         mes = mes.replace(/\n/g, "<br/>");
         mes = mes.trim();
@@ -1272,7 +1272,7 @@ function extractMessageBias(message) {
     }
 
     const found = [];
-    const rxp = /{{(\*?.+?\*?)}}/g;
+    const rxp = /{{(\*?.+\*?)}}/g;
     //const rxp = /{([^}]+)}/g;
     let curMatch;
 
@@ -1282,7 +1282,7 @@ function extractMessageBias(message) {
 
     if (!found.length) {
         // cancels a bias
-        if (message.includes('{') && message.includes('}')) {
+        if (message.includes('{{') && message.includes('}}')) {
             return '';
         }
         return null;
@@ -1765,7 +1765,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
             // replace bias markup
             //chat2[i] = (chat2[i] ?? '').replace(/{.*}/g, '');
-            chat2[i] = (chat2[i] ?? '').replace(/{{(\*?.+?\*?)}}/g, '');
+            chat2[i] = (chat2[i] ?? '').replace(/{{(\*?.*\*?)}}/g, '');
             //console.log('replacing chat2 {}s');
         }
         //chat2 = chat2.reverse();

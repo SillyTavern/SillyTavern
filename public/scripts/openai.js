@@ -167,7 +167,7 @@ function setOpenAIMessages(chat, quietPrompt) {
 
         // replace bias markup
         //content = (content ?? '').replace(/{.*}/g, '');
-        content = (content ?? '').replace(/{{(\*?.+?\*?)}}/g, '');
+        content = (content ?? '').replace(/{{(\*?.*\*?)}}/g, '');
 
         content = content.replace(/\r/gm, '');
 
