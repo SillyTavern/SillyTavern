@@ -1,6 +1,6 @@
 # SillyTavern
 ## Based on a fork of TavernAI 1.2.8
-### Brought to you by Cohee and RossAscends
+### Brought to you by Cohee, RossAscends and the SillyTavern community
 
 NOTE: We have added [a FAQ](faq.md) to answer most of your questions and help you get started.
 
@@ -190,9 +190,15 @@ Try enabling the No Blur Effect (Fast UI) mode on the User settings panel.
 <img width="400" alt="image" src="https://user-images.githubusercontent.com/18619528/228649856-fbdeef05-d727-4d5a-be80-266cbbc6b811.png">
 
 ## License and credits
+
+**This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.**
+
 * TAI Base by Humi: Unknown license
-* Cohee's TAI mod: Public domain
-* RossAscends' additions: Public domain
+* Cohee's modifications and derived code: AGPL v3
+* RossAscends' additions: AGPL v3
 * Portions of CncAnon's TavernAITurbo mod: Unknown license
 * Waifu mode inspired by the work of PepperTaco (https://github.com/peppertaco/Tavern/)
 * Thanks Pygmalion University for being awesome testers and suggesting cool features! 

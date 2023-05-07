@@ -23,6 +23,10 @@ A clear and concise description of what you expected to happen.
 **Screenshots**
 If applicable, add screenshots to help explain your problem.
 
+**Logs**
+
+Providing the logs from the browser DevTools console (opened by pressing the F12 key) or SillyTavern command line window will be highly appreciated.
+
 **Desktop (please complete the following information):**
  - OS/Device: [e.g. Windows 11]
  - Environment: [cloud, local]
