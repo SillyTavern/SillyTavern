@@ -3155,6 +3155,7 @@ a {
 
 .hiddenByTag,
 .hiddenByFav,
+.hiddenByGroup,
 .hiddenBySearch {
     display: none !important;
 }

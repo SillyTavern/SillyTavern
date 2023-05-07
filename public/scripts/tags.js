@@ -14,7 +14,11 @@ export {
 };
 
 const random_id = () => Math.round(Date.now() * Math.random()).toString();
-const TAG_LOGIC_AND = true;
+const TAG_LOGIC_AND = true; // switch to false to use OR logic for combining tags
+
+const ACTIONABLE_TAGS = {
+    GROUP: { id: 0, name: 'Groups', color: 'rgba(100, 100, 100, 0.4)', action: filterByGroups },
+}
 
 const DEFAULT_TAGS = [
     { id: random_id(), name: "Plain Text" },
@@ -27,6 +31,17 @@ const DEFAULT_TAGS = [
 
 let tags = [];
 let tag_map = {};
+
+function filterByGroups() {
+    const isSelected = $(this).hasClass('selected');
+    const displayGroupsOnly = !isSelected;
+    $(this).toggleClass('selected', displayGroupsOnly);
+    $('#rm_print_characters_block > div').removeClass('hiddenByGroup');
+
+    $('#rm_print_characters_block > div').each((_, element) => {
+        $(element).toggleClass('hiddenByGroup', displayGroupsOnly && !$(element).hasClass('group_select'));
+    });
+}
 
 function loadTagsSettings(settings) {
     tags = settings.tags !== undefined ? settings.tags : DEFAULT_TAGS;
@@ -160,7 +175,7 @@ function createNewTag(tagName) {
     return tag;
 }
 
-function appendTagToList(listElement, tag, { removable, editable, selectable }) {
+function appendTagToList(listElement, tag, { removable, selectable, action }) {
     if (!listElement) {
         return;
     }
@@ -179,6 +194,11 @@ function appendTagToList(listElement, tag, { removable, editable, selectable }) 
         tagElement.on('click', () => onTagFilterClick.bind(tagElement)(listElement));
     }
 
+    if (action) {
+        tagElement.on('click', () => action.bind(tagElement)(listElement));
+        tagElement.addClass('actionable');
+    }
+
     $(listElement).append(tagElement);
 }
 
@@ -188,7 +208,7 @@ function onTagFilterClick(listElement) {
 
     $(this).toggleClass('selected', !wasSelected);
 
-    const tagIds = [...($(listElement).find(".tag.selected").map((_, el) => $(el).attr("id")))];
+    const tagIds = [...($(listElement).find(".tag.selected:not(.actionable)").map((_, el) => $(el).attr("id")))];
     $('#rm_print_characters_block > div').each((_, element) => applyFilterToElement(tagIds, element));
 }
 
@@ -227,8 +247,12 @@ function printTags() {
         .filter(x => characterTagIds.includes(x.id))
         .sort((a, b) => a.name.localeCompare(b.name));
 
+    for (const tag of Object.values(ACTIONABLE_TAGS)) {
+        appendTagToList('#rm_tag_filter', tag, { removable: false, selectable: false, action: tag.action });
+    }
+
     for (const tag of tagsToDisplay) {
-        appendTagToList('#rm_tag_filter', tag, { removable: false, editable: false, selectable: true, });
+        appendTagToList('#rm_tag_filter', tag, { removable: false, selectable: true, });
     }
 }
 
