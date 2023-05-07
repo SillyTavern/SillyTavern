@@ -1794,7 +1794,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
         // Adjust token limit for Horde
         let adjustedParams;
-        if (main_api == 'kobold' && horde_settings.use_horde && horde_settings.auto_adjust) {
+        if (main_api == 'kobold' && horde_settings.use_horde && (horde_settings.auto_adjust_context_length || horde_settings.auto_adjust_response_length)) {
             try {
                 adjustedParams = await adjustHordeGenerationParams(max_context, amount_gen);
             }
@@ -1802,7 +1802,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 activateSendButtons();
                 return;
             }
-            this_max_context = (adjustedParams.maxContextLength - adjustedParams.maxLength);
+            if (horde_settings.auto_adjust_context_length) {
+                this_max_context = (adjustedParams.maxContextLength - adjustedParams.maxLength);
+            }
         }
 
         // Extension added strings
@@ -2107,7 +2109,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 }
             }
 
-            if (main_api == 'kobold' && horde_settings.use_horde && adjustedParams) {
+            if (main_api == 'kobold' && horde_settings.use_horde && horde_settings.auto_adjust_response_length) {
                 this_amount_gen = Math.min(this_amount_gen, adjustedParams.maxLength);
                 this_amount_gen = Math.max(this_amount_gen, MIN_AMOUNT_GEN); // prevent validation errors
             }
@@ -2124,7 +2126,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 };
 
                 if (preset_settings != 'gui' || horde_settings.use_horde) {
-                    const maxContext = horde_settings.use_horde && adjustedParams ? adjustedParams.maxContextLength : max_context;
+                    const maxContext = horde_settings.use_horde && horde_settings.auto_adjust_context_length ? adjustedParams.maxContextLength : max_context;
                     generate_data = getKoboldGenerationData(finalPromt, this_settings, this_amount_gen, maxContext, isImpersonate);
                 }
             }

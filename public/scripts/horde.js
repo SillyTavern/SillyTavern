@@ -17,7 +17,8 @@ let horde_settings = {
     api_key: '0000000000',
     models: [],
     use_horde: false,
-    auto_adjust: true,
+    auto_adjust_response_length: true,
+    auto_adjust_context_length: false,
 };
 
 const MAX_RETRIES = 100;
@@ -76,8 +77,12 @@ async function adjustHordeGenerationParams(max_context_length, max_length) {
 
     //get the minimum requires parameters, lowest common value for all selected
     for (const worker of availableWorkers) {
-        maxContextLength = Math.min(worker.max_context_length, maxContextLength);
-        maxLength = Math.min(worker.max_length, maxLength);
+        if (horde_settings.auto_adjust_context_length) {
+            maxContextLength = Math.min(worker.max_context_length, maxContextLength);
+        }
+        if (horde_settings.auto_adjust_response_length) {
+            maxLength = Math.min(worker.max_length, maxLength);
+        }
     }
 
     return { maxContextLength, maxLength };
@@ -186,7 +191,8 @@ function loadHordeSettings(settings) {
 
     $('#use_horde').prop("checked", horde_settings.use_horde).trigger('input');
     $('#horde_api_key').val(horde_settings.api_key);
-    $('#horde_auto_adjust').prop("checked", horde_settings.auto_adjust);
+    $('#horde_auto_adjust_response_length').prop("checked", horde_settings.auto_adjust_response_length);
+    $('#horde_auto_adjust_context_length').prop("checked", horde_settings.auto_adjust_context_length);
 }
 
 jQuery(function () {
@@ -218,8 +224,13 @@ jQuery(function () {
         saveSettingsDebounced();
     });
 
-    $("#horde_auto_adjust").on("input", function () {
-        horde_settings.auto_adjust = !!$(this).prop("checked");
+    $("#horde_auto_adjust_response_length").on("input", function () {
+        horde_settings.auto_adjust_response_length = !!$(this).prop("checked");
+        saveSettingsDebounced();
+    });
+
+    $("#horde_auto_adjust_context_length").on("input", function () {
+        horde_settings.auto_adjust_context_length = !!$(this).prop("checked");
         saveSettingsDebounced();
     });
 
