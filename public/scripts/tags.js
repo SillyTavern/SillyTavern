@@ -14,6 +14,7 @@ export {
 };
 
 const random_id = () => Math.round(Date.now() * Math.random()).toString();
+const TAG_LOGIC_AND = true;
 
 const DEFAULT_TAGS = [
     { id: random_id(), name: "Plain Text" },
@@ -175,27 +176,32 @@ function appendTagToList(listElement, tag, { removable, editable, selectable }) 
     removable ? removeButton.show() : removeButton.hide();
 
     if (selectable) {
-        tagElement.on('click', onTagFilterClick);
+        tagElement.on('click', () => onTagFilterClick.bind(tagElement)(listElement));
     }
 
     $(listElement).append(tagElement);
 }
 
-function onTagFilterClick() {
+function onTagFilterClick(listElement) {
     const wasSelected = $(this).hasClass('selected');
-    clearTagsFilter();
+    $('#rm_print_characters_block > div').removeClass('hiddenByTag');
 
-    if (wasSelected) {
+    $(this).toggleClass('selected', !wasSelected);
+
+    const tagIds = [...($(listElement).find(".tag.selected").map((_, el) => $(el).attr("id")))];
+    $('#rm_print_characters_block > div').each((_, element) => applyFilterToElement(tagIds, element));
+}
+
+function applyFilterToElement(tagIds, element) {
+    if (tagIds.length === 0) {
+        $(element).removeClass('hiddenByTag');
         return;
     }
 
-    const tagId = $(this).attr('id');
-    $(this).addClass('selected');
-    $('#rm_print_characters_block > div').each((_, element) => applyFilterToElement(tagId, element));
-}
+    const tagFlags = tagIds.map(tagId => isElementTagged(element, tagId));
+    const trueFlags = tagFlags.filter(x => x);
+    const isTagged = TAG_LOGIC_AND ? tagFlags.length === trueFlags.length : trueFlags.length > 0;
 
-function applyFilterToElement(tagId, element) {
-    const isTagged = isElementTagged(element, tagId);
     $(element).toggleClass('hiddenByTag', !isTagged);
 }
 
