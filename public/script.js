@@ -502,7 +502,7 @@ var tokens_already_generated = 0;
 var message_already_generated = "";
 var cycle_count_generation = 0;
 
-var swipes = false;
+var swipes = true;
 
 let anchor_order = 0;
 let style_anchor = true;
@@ -3172,7 +3172,7 @@ async function getSettings(type) {
                 $("#amount_gen").val(amount_gen);
                 $("#amount_gen_counter").text(`${amount_gen}`);
 
-                swipes = !!settings.swipes;  //// swipecode
+                swipes = settings.swipes !== undefined ? !!settings.swipes : true;  // enable swipes by default
                 $('#swipes-checkbox').prop('checked', swipes); /// swipecode
                 //console.log('getSettings -- swipes = ' + swipes + '. toggling box');
                 hideSwipeButtons();
