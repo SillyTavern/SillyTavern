@@ -1,4 +1,4 @@
-import { saveSettingsDebounced, changeMainAPI, callPopup, setGenerationProgress } from "../script.js";
+import { saveSettingsDebounced, changeMainAPI, callPopup, setGenerationProgress, CLIENT_VERSION } from "../script.js";
 import { delay } from "./utils.js";
 
 export {
@@ -23,9 +23,23 @@ let horde_settings = {
 const MAX_RETRIES = 100;
 const CHECK_INTERVAL = 3000;
 const MIN_AMOUNT_GEN = 16;
+const getRequestArgs = () => ({
+    method: "GET",
+    headers: {
+        "Client-Agent": CLIENT_VERSION,
+    }
+});
+const postRequestArgs = () => ({
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json",
+        "apikey": horde_settings.api_key,
+        "Client-Agent": CLIENT_VERSION,
+    }
+});
 
 async function getWorkers() {
-    const response = await fetch('https://horde.koboldai.net/api/v2/workers?type=text');
+    const response = await fetch('https://horde.koboldai.net/api/v2/workers?type=text', getRequestArgs());
     const data = await response.json();
     return data;
 }
@@ -89,11 +103,7 @@ async function generateHorde(prompt, params) {
     };
 
     const response = await fetch("https://horde.koboldai.net/api/v2/generate/text/async", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "apikey": horde_settings.api_key,
-        },
+        ...postRequestArgs(),
         body: JSON.stringify(payload)
     });
 
@@ -109,12 +119,7 @@ async function generateHorde(prompt, params) {
     console.log(`Horde task id = ${task_id}`);
 
     for (let retryNumber = 0; retryNumber < MAX_RETRIES; retryNumber++) {
-        const statusCheckResponse = await fetch(`https://horde.koboldai.net/api/v2/generate/text/status/${task_id}`, {
-            headers: {
-                "Content-Type": "application/json",
-                "apikey": horde_settings.api_key,
-            }
-        });
+        const statusCheckResponse = await fetch(`https://horde.koboldai.net/api/v2/generate/text/status/${task_id}`, getRequestArgs());
 
         const statusCheckJson = await statusCheckResponse.json();
         console.log(statusCheckJson);
@@ -145,13 +150,13 @@ async function generateHorde(prompt, params) {
 }
 
 async function checkHordeStatus() {
-    const response = await fetch('https://horde.koboldai.net/api/v2/status/heartbeat');
+    const response = await fetch('https://horde.koboldai.net/api/v2/status/heartbeat', getRequestArgs());
     return response.ok;
 }
 
 async function getHordeModels() {
     $('#horde_model').empty();
-    const response = await fetch('https://horde.koboldai.net/api/v2/status/models?type=text');
+    const response = await fetch('https://horde.koboldai.net/api/v2/status/models?type=text', getRequestArgs());
     models = await response.json();
 
     for (const model of models) {

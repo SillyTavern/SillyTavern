@@ -305,6 +305,19 @@ app.get('/deviceinfo', function (request, response) {
     const deviceInfo = deviceDetector.parse(userAgent);
     return response.send(deviceInfo);
 });
+app.get('/version', function (_, response) {
+    let pkgVersion, gitRevision;
+    try {
+        const pkgJson = require('./package.json');
+        pkgVersion = pkgJson.version;
+        gitRevision = require('child_process')
+            .execSync('git rev-parse --short HEAD', { cwd: __dirname })
+            .toString().trim();
+    }
+    finally {
+        response.send(`SillyTavern:${gitRevision || pkgVersion}:Cohee#1207`)
+    }
+})
 
 //**************Kobold api
 app.post("/generate", jsonParser, async function (request, response_generate = response) {

@@ -222,6 +222,7 @@ let this_chid;
 let backgrounds = [];
 const default_avatar = "img/ai4.png";
 const system_avatar = "img/five.png";
+export let CLIENT_VERSION = 'SillyTavern:UNKNOWN:Cohee#1207'; // For Horde header
 let is_colab = false;
 let is_checked_colab = false;
 let is_mes_reload_avatar = false;
@@ -367,6 +368,15 @@ $(document).ajaxError(function myErrorHandler(_, xhr) {
         });
     }
 });
+
+async function getClientVersion() {
+    try {
+        const response = await fetch('/version');
+        CLIENT_VERSION = await response.text();
+    } catch (err) {
+        console.log("Couldn't get client version", err);
+    }
+}
 
 function getTokenCount(str, padding = 0) {
     let tokenizerType = power_user.tokenizer; 
@@ -552,6 +562,7 @@ $.ajaxPrefilter((options, originalOptions, xhr) => {
 ///// initialization protocol ////////
 $.get("/csrf-token").then((data) => {
     token = data.token;
+    getClientVersion();
     getCharacters();
     getSettings("def");
     sendSystemMessage(system_message_types.WELCOME);
