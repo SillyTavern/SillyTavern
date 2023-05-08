@@ -518,7 +518,14 @@ const sortFunc = (a, b) => power_user.sort_order == 'asc' ? compareFunc(a, b) : 
 const compareFunc = (first, second) => {
     switch (power_user.sort_rule) {
         case 'boolean':
-            return Number(first[power_user.sort_field] == "true") - Number(second[power_user.sort_field] == "true");
+            const a = first[power_user.sort_field];
+            const b = second[power_user.sort_field];
+            if (a === true || a === 'true') return 1;  // Prioritize 'true' or true
+            if (b === true || b === 'true') return -1; // Prioritize 'true' or true
+            if (a && !b) return -1;        // Move truthy values to the end
+            if (!a && b) return 1;         // Move falsy values to the beginning
+            if (a === b) return 0;         // Sort equal values normally
+            return a < b ? -1 : 1;         // Sort non-boolean values normally
         default:
             return typeof first[power_user.sort_field] == "string"
                 ? first[power_user.sort_field].localeCompare(second[power_user.sort_field])
