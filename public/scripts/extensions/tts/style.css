@@ -1,0 +1,43 @@
+#tts_media_control {
+    order: 100;
+    width: 40px;
+    height: 40px;
+    margin: 0;
+    padding: 1px;
+    outline: none;
+    border: none;
+    cursor: pointer;
+    transition: 0.3s;
+    opacity: 0.7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+}
+
+#tts_media_control:hover {
+    opacity: 1;
+    filter: brightness(1.2);
+}
+
+.voice_preview {
+    margin: 0.25rem 0.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.voice_preview .voice_name {
+    text-align: left;
+    flex: 1;
+}
+
+.voice_preview .voice_lang {
+    width: 4rem;
+    text-align: left;
+}
+
+.voice_preview .fa-play {
+    cursor: pointer;
+}

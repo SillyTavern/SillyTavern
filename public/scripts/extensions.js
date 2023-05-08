@@ -1,4 +1,4 @@
-import { callPopup, saveSettings, saveSettingsDebounced, token } from "../script.js";
+import { callPopup, saveSettings, saveSettingsDebounced } from "../script.js";
 import { isSubsetOf } from "./utils.js";
 export {
     getContext,
@@ -24,6 +24,8 @@ const extension_settings = {
     caption: {},
     expressions: {},
     dice: {},
+    tts: {},
+    sd: {},
 };
 
 let modules = [];
@@ -36,7 +38,7 @@ let connectedToApi = false;
 
 async function discoverExtensions() {
     try {
-        const response = await fetch('/discover_extensions', { headers: { 'X-CSRF-Token': token } });
+        const response = await fetch('/discover_extensions');
 
         if (response.ok) {
             const extensions = await response.json();
@@ -140,7 +142,7 @@ function autoConnectInputHandler() {
     if (value && !connectedToApi) {
         $("#extensions_connect").trigger('click');
     }
-    
+
     saveSettingsDebounced();
 }
 
@@ -158,7 +160,7 @@ async function connectToApi(baseUrl) {
         if (getExtensionsResult.ok) {
             const data = await getExtensionsResult.json();
             modules = data.modules;
-            activateExtensions();
+            await activateExtensions();
         }
 
         updateStatus(getExtensionsResult.ok);
@@ -241,7 +243,7 @@ function showExtensionsDetails() {
         const manifest = extension[1];
         html += `<h4>${DOMPurify.sanitize(manifest.display_name)}</h4>`;
         if (activeExtensions.has(name)) {
-            html += `<p class="success">Extension is active. <a href="javascript:void" data-name="${name}" class="disable_extension">Disable</a></p>`;
+            html += `<p class="success">Extension is active. <a href="javascript:void" data-name="${name}" class="disable_extension">Click to Disable</a></p>`;
             if (Array.isArray(manifest.optional)) {
                 const optional = new Set(manifest.optional);
                 modules.forEach(x => optional.delete(x));
@@ -252,7 +254,7 @@ function showExtensionsDetails() {
             }
         }
         else if (extension_settings.disabledExtensions.includes(name)) {
-            html += `<p class="disabled">Extension is disabled. <a href="javascript:void" data-name=${name} class="enable_extension">Enable</a></p>`;
+            html += `<p class="disabled">Extension is disabled. <a href="javascript:void" data-name=${name} class="enable_extension">Click to Enable</a></p>`;
         }
         else {
             const requirements = new Set(manifest.requires);
@@ -271,12 +273,15 @@ async function loadExtensionSettings(settings) {
     }
 
     $("#extensions_url").val(extension_settings.apiUrl);
-    $("#extensions_autoconnect").prop('checked', extension_settings.autoConnect).trigger('input');
+    $("#extensions_autoconnect").prop('checked', extension_settings.autoConnect);
 
     // Activate offline extensions
     extensionNames = await discoverExtensions();
     manifests = await getManifests(extensionNames)
-    activateExtensions();
+    await activateExtensions();
+    if (extension_settings.autoConnect && extension_settings.apiUrl) {
+        await connectToApi(extension_settings.apiUrl);
+    }
 }
 
 $(document).ready(async function () {

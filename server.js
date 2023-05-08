@@ -54,6 +54,10 @@ const json5 = require('json5');
 const ExifReader = require('exifreader');
 const exif = require('piexifjs');
 const webp = require('webp-converter');
+const DeviceDetector = require("device-detector-js");
+const { TextEncoder, TextDecoder } = require('util');
+const utf8Encode = new TextEncoder();
+const utf8Decode = new TextDecoder('utf-8', { ignoreBOM: true });
 
 const config = require(path.join(__dirname, './config.conf'));
 const server_port = process.env.SILLY_TAVERN_PORT || config.port;
@@ -119,6 +123,30 @@ let api_key_openai;
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 
+const { SentencePieceProcessor, cleanText } = require("./src/sentencepiece/sentencepiece.min.js");
+let spp = new SentencePieceProcessor();
+
+async function countTokensLlama(text) {
+    let cleaned = cleanText(text);
+
+    let ids = spp.encodeIds(cleaned);
+    return ids.length;
+}
+
+const tokenizersCache = {};
+
+function getTiktokenTokenizer(model) {
+    if (tokenizersCache[model]) {
+        console.log('Using the cached tokenizer instance for', model);
+        return tokenizersCache[model];
+    }
+
+    const tokenizer = tiktoken.encoding_for_model(model);
+    console.log('Instantiated the tokenizer for', model);
+    tokenizersCache[model] = tokenizer;
+    return tokenizer;
+}
+
 function humanizedISO8601DateTime() {
     let baseDate = new Date(Date.now());
     let humanYear = baseDate.getFullYear();
@@ -174,8 +202,6 @@ const { invalidCsrfTokenError, generateToken, doubleCsrfProtection } = doubleCsr
     size: 64,
     getTokenFromRequest: (req) => req.headers["x-csrf-token"]
 });
-
-
 
 app.get("/csrf-token", (req, res) => {
     res.json({
@@ -267,6 +293,31 @@ app.get("/", function (request, response) {
 app.get("/notes/*", function (request, response) {
     response.sendFile(__dirname + "/public" + request.url + ".html");
 });
+app.get('/get_faq', function (_, response) {
+    response.sendFile(__dirname + "/faq.md");
+});
+app.get('/get_readme', function (_, response) {
+    response.sendFile(__dirname + "/readme.md");
+});
+app.get('/deviceinfo', function (request, response) {
+    const userAgent = request.header('user-agent');
+    const deviceDetector = new DeviceDetector();
+    const deviceInfo = deviceDetector.parse(userAgent);
+    return response.send(deviceInfo);
+});
+app.get('/version', function (_, response) {
+    let pkgVersion, gitRevision;
+    try {
+        const pkgJson = require('./package.json');
+        pkgVersion = pkgJson.version;
+        gitRevision = require('child_process')
+            .execSync('git rev-parse --short HEAD', { cwd: __dirname })
+            .toString().trim();
+    }
+    finally {
+        response.send(`SillyTavern:${gitRevision || pkgVersion}:Cohee#1207`)
+    }
+})
 
 //**************Kobold api
 app.post("/generate", jsonParser, async function (request, response_generate = response) {
@@ -357,6 +408,7 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
 
     if (!!request.header('X-Response-Streaming')) {
         let isStreamingStopped = false;
+        request.socket.removeAllListeners('close');
         request.socket.on('close', function () {
             isStreamingStopped = true;
         });
@@ -369,7 +421,7 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
 
         async function* readWebsocket() {
             const streamingUrl = request.header('X-Streaming-URL');
-            const websocket = new WebSocket(streamingUrl); 
+            const websocket = new WebSocket(streamingUrl);
 
             websocket.on('open', async function () {
                 console.log('websocket open');
@@ -501,7 +553,7 @@ app.post("/getchat", jsonParser, function (request, response) {
                                 const lines = data.split('\n');
 
                                 // Iterate through the array of strings and parse each line as JSON
-                                const jsonData = lines.map(json5.parse);
+                                const jsonData = lines.map(tryParse).filter(x => x);
                                 response.send(jsonData);
                                 //console.log('read the requested file')
 
@@ -602,6 +654,14 @@ app.post("/setsoftprompt", jsonParser, async function (request, response) {
     return response.sendStatus(200);
 });
 
+function tryParse(str) {
+    try {
+        return json5.parse(str);
+    } catch {
+        return undefined;
+    }
+}
+
 function checkServer() {
     api_server = 'http://127.0.0.1:5000';
     var args = {
@@ -617,80 +677,132 @@ function checkServer() {
 
 //***************** Main functions
 function charaFormatData(data) {
-    var char = { "name": data.ch_name, "description": data.description, "personality": data.personality, "first_mes": data.first_mes, "avatar": 'none', "chat": data.ch_name + ' - ' + humanizedISO8601DateTime(), "mes_example": data.mes_example, "scenario": data.scenario, "create_date": humanizedISO8601DateTime(), "talkativeness": data.talkativeness, "fav": data.fav};
+    var char = { "name": data.ch_name, "description": data.description, "personality": data.personality, "first_mes": data.first_mes, "avatar": 'none', "chat": data.ch_name + ' - ' + humanizedISO8601DateTime(), "mes_example": data.mes_example, "scenario": data.scenario, "create_date": humanizedISO8601DateTime(), "talkativeness": data.talkativeness, "fav": data.fav };
     return char;
 }
+
 app.post("/createcharacter", urlencodedParser, function (request, response) {
-    //var sameNameChar = fs.existsSync(charactersPath+request.body.ch_name+'.png');
-    //if (sameNameChar == true) return response.sendStatus(500);
     if (!request.body) return response.sendStatus(400);
 
     request.body.ch_name = sanitize(request.body.ch_name);
 
-    console.log('/createcharacter -- looking for -- ' + (charactersPath + request.body.ch_name + '.png'));
-    console.log('Does this file already exists? ' + fs.existsSync(charactersPath + request.body.ch_name + '.png'));
-    if (!fs.existsSync(charactersPath + request.body.ch_name + '.png')) {
-        if (!fs.existsSync(chatsPath + request.body.ch_name)) fs.mkdirSync(chatsPath + request.body.ch_name);
-        let filedata = request.file;
-        //console.log(filedata.mimetype);
-        var fileType = ".png";
-        var img_file = "ai";
-        var img_path = "public/img/";
-        var char = charaFormatData(request.body);//{"name": request.body.ch_name, "description": request.body.description, "personality": request.body.personality, "first_mes": request.body.first_mes, "avatar": 'none', "chat": Date.now(), "last_mes": '', "mes_example": ''};
-        char = JSON.stringify(char);
-        if (!filedata) {
-            charaWrite('./public/img/ai4.png', char, request.body.ch_name, response);
-        } else {
+    const char = JSON.stringify(charaFormatData(request.body));
+    const internalName = getPngName(request.body.ch_name);
+    const avatarName = `${internalName}.png`;
+    const defaultAvatar = './public/img/ai4.png';
+    const chatsPath = directories.chats + internalName; //path.join(chatsPath, internalName);
 
-            img_path = "./uploads/";
-            img_file = filedata.filename
-            if (filedata.mimetype == "image/jpeg") fileType = ".jpeg";
-            if (filedata.mimetype == "image/png") fileType = ".png";
-            if (filedata.mimetype == "image/gif") fileType = ".gif";
-            if (filedata.mimetype == "image/bmp") fileType = ".bmp";
-            charaWrite(img_path + img_file, char, request.body.ch_name, response);
-        }
-        //console.log("The file was saved.");
+    if (!fs.existsSync(chatsPath)) fs.mkdirSync(chatsPath);
 
+    if (!request.file) {
+        charaWrite(defaultAvatar, char, internalName, response, avatarName);
     } else {
-        console.error("Error: Cannot save file. A character with that name already exists.");
-        response.send("Error: A character with that name already exists.");
-        //response.send({error: true});
+        const uploadPath = path.join("./uploads/", request.file.filename);
+        charaWrite(uploadPath, char, internalName, response, avatarName);
     }
 });
 
+app.post('/renamechat', jsonParser, async function (request, response) {
+    if (!request.body || !request.body.original_file || !request.body.renamed_file) {
+        return response.sendStatus(400);
+    }
+
+    const pathToFolder = request.body.is_group
+        ? directories.groupChats
+        : path.join(directories.chats, String(request.body.avatar_url).replace('.png', ''));
+    const pathToOriginalFile = path.join(pathToFolder, request.body.original_file);
+    const pathToRenamedFile = path.join(pathToFolder, request.body.renamed_file);
+    console.log('Old chat name', pathToOriginalFile);
+    console.log('New chat name', pathToRenamedFile);
+
+    if (!fs.existsSync(pathToOriginalFile) || fs.existsSync(pathToRenamedFile)) {
+        console.log('Either Source or Destination files are not available');
+        return response.status(400).send({ error: true });
+    }
+
+    console.log('Successfully renamed.');
+    fs.renameSync(pathToOriginalFile, pathToRenamedFile);
+    return response.send({ ok: true });
+});
+
+app.post("/renamecharacter", jsonParser, async function (request, response) {
+    if (!request.body.avatar_url || !request.body.new_name) {
+        return response.sendStatus(400);
+    }
+
+    const oldAvatarName = request.body.avatar_url;
+    const newName = sanitize(request.body.new_name);
+    const oldInternalName = path.parse(request.body.avatar_url).name;
+    const newInternalName = getPngName(newName);
+    const newAvatarName = `${newInternalName}.png`;
+
+    const oldAvatarPath = path.join(charactersPath, oldAvatarName);
+    const newAvatarPath = path.join(charactersPath, newAvatarName);
+
+    const oldChatsPath = path.join(chatsPath, oldInternalName);
+    const newChatsPath = path.join(chatsPath, newInternalName);
+
+    try {
+        // Read old file, replace name int it
+        const rawOldData = await charaRead(oldAvatarPath);
+        const oldData = json5.parse(rawOldData);
+        oldData['name'] = newName;
+        const newData = JSON.stringify(oldData);
+
+        // Write data to new location
+        await charaWrite(oldAvatarPath, newData, newInternalName);
+
+        // Rename chats folder
+        if (fs.existsSync(oldChatsPath) && !fs.existsSync(newChatsPath)) {
+            fs.renameSync(oldChatsPath, newChatsPath);
+        }
+
+        // Remove the old character file
+        fs.rmSync(oldAvatarPath);
+
+        // Return new avatar name to ST
+        return response.send({ 'avatar': newAvatarName });
+    }
+    catch (err) {
+        console.error(err);
+        return response.sendStatus(500);
+    }
+});
 
 app.post("/editcharacter", urlencodedParser, async function (request, response) {
-    if (!request.body) return response.sendStatus(400);
-    let filedata = request.file;
-    //console.log(filedata.mimetype);
-    var fileType = ".png";
-    var img_file = "ai";
-    var img_path = charactersPath;
+    if (!request.body) {
+        console.error('Error: no response body detected');
+        response.status(400).send('Error: no response body detected');
+        return;
+    }
 
-    var char = charaFormatData(request.body);//{"name": request.body.ch_name, "description": request.body.description, "personality": request.body.personality, "first_mes": request.body.first_mes, "avatar": request.body.avatar_url, "chat": request.body.chat, "last_mes": request.body.last_mes, "mes_example": ''};
+    if (request.body.ch_name === '' || request.body.ch_name === undefined || request.body.ch_name === '.') {
+        console.error('Error: invalid name.');
+        response.status(400).send('Error: invalid name.');
+        return;
+    }
+
+    let char = charaFormatData(request.body);
     char.chat = request.body.chat;
     char.create_date = request.body.create_date;
     char = JSON.stringify(char);
     let target_img = (request.body.avatar_url).replace('.png', '');
+
     try {
-        if (!filedata) {
-
-            await charaWrite(img_path + request.body.avatar_url, char, target_img, response, 'Character saved');
+        if (!request.file) {
+            const avatarPath = path.join(charactersPath, request.body.avatar_url);
+            await charaWrite(avatarPath, char, target_img, response, 'Character saved');
         } else {
-            //console.log(filedata.filename);
-            img_path = "uploads/";
-            img_file = filedata.filename;
-
+            const newAvatarPath = path.join("./uploads/", request.file.filename);
             invalidateThumbnail('avatar', request.body.avatar_url);
-            await charaWrite(img_path + img_file, char, target_img, response, 'Character saved');
-            //response.send('Character saved');
+            await charaWrite(newAvatarPath, char, target_img, response, 'Character saved');
         }
     }
     catch {
-        return response.send(400);
+        console.error('An error occured, character edit invalidated.');
     }
 });
+
 app.post("/deletecharacter", urlencodedParser, function (request, response) {
     if (!request.body || !request.body.avatar_url) {
         return response.sendStatus(400);
@@ -772,12 +884,34 @@ async function charaRead(img_url, input_format) {
 
     switch (format) {
         case 'webp':
-            const exif_data = await ExifReader.load(fs.readFileSync(img_url));
-            const char_data = exif_data['UserComment']['description'];
-            if (char_data === 'Undefined' && exif_data['UserComment'].value && exif_data['UserComment'].value.length === 1) {
-                return exif_data['UserComment'].value[0];
+            try {
+                const exif_data = await ExifReader.load(fs.readFileSync(img_url));
+                let char_data;
+
+                if (exif_data['UserComment']['description']) {
+                    let description = exif_data['UserComment']['description'];
+                    if (description === 'Undefined' && exif_data['UserComment'].value && exif_data['UserComment'].value.length === 1) {
+                        description = exif_data['UserComment'].value[0];
+                    }
+                    try {
+                        json5.parse(description);
+                        char_data = description;
+                    } catch {
+                        const byteArr = description.split(",").map(Number);
+                        const uint8Array = new Uint8Array(byteArr);
+                        const char_data_string = utf8Decode.decode(uint8Array);
+                        char_data = char_data_string;
+                    }
+                } else {
+                    console.log('No description found in EXIF data.');
+                    return false;
+                }
+                return char_data;
             }
-            return char_data;
+            catch (err) {
+                console.log(err);
+                return false;
+            }
         case 'png':
             const buffer = fs.readFileSync(img_url);
             const chunks = extract(buffer);
@@ -878,7 +1012,7 @@ app.post("/getuseravatars", jsonParser, function (request, response) {
 
 });
 app.post("/setbackground", jsonParser, function (request, response) {
-    var bg = "#bg1 {background-image: url(../backgrounds/" + request.body.bg + ");}";
+    var bg = "#bg1 {background-image: url('../backgrounds/" + request.body.bg + "');}";
     fs.writeFile('public/css/bg_load.css', bg, 'utf8', function (err) {
         if (err) {
             response.send(err);
@@ -1321,33 +1455,42 @@ app.post("/getallchatsofcharacter", jsonParser, function (request, response) {
             for (let i = jsonFiles.length - 1; i >= 0; i--) {
                 const file = jsonFiles[i];
                 const fileStream = fs.createReadStream(chatsPath + char_dir + '/' + file);
+
+                const fullPathAndFile = chatsPath + char_dir + '/' + file
+                const stats = fs.statSync(fullPathAndFile);
+                const fileSizeInKB = (stats.size / 1024).toFixed(2) + "kb";
+
+                //console.log(fileSizeInKB);
+
                 const rl = readline.createInterface({
                     input: fileStream,
                     crlfDelay: Infinity
                 });
 
                 let lastLine;
+                let itemCounter = 0;
                 rl.on('line', (line) => {
+                    itemCounter++;
                     lastLine = line;
                 });
                 rl.on('close', () => {
+                    ii--;
                     if (lastLine) {
+
                         let jsonData = json5.parse(lastLine);
-                        if (jsonData.name !== undefined) {
+                        if (jsonData.name !== undefined || jsonData.character_name !== undefined) {
                             chatData[i] = {};
                             chatData[i]['file_name'] = file;
-                            chatData[i]['mes'] = jsonData['mes'];
-                            ii--;
-                            if (ii === 0) {
-                                console.log('ii count went to zero, responding with chatData');
-                                response.send(chatData);
-                            }
-                        } else {
-                            console.log('just returning from getallchatsofcharacter');
-                            return;
+                            chatData[i]['file_size'] = fileSizeInKB;
+                            chatData[i]['chat_items'] = itemCounter - 1;
+                            chatData[i]['mes'] = jsonData['mes'] || '[The chat is empty]';
                         }
                     }
-                    console.log('successfully closing getallchatsofcharacter');
+                    if (ii === 0) {
+                        //console.log('ii count went to zero, responding with chatData');
+                        response.send(chatData);
+                    }
+                    //console.log('successfully closing getallchatsofcharacter');
                     rl.close();
                 });
             };
@@ -1390,14 +1533,14 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                     jsonData.name = sanitize(jsonData.name);
 
                     png_name = getPngName(jsonData.name);
-                    let char = { "name": jsonData.name, "description": jsonData.description ?? '', "personality": jsonData.personality ?? '', "first_mes": jsonData.first_mes ?? '', "avatar": 'none', "chat": humanizedISO8601DateTime(), "mes_example": jsonData.mes_example ?? '', "scenario": jsonData.scenario ?? '', "create_date": humanizedISO8601DateTime(), "talkativeness": jsonData.talkativeness ?? 0.5 };
+                    let char = { "name": jsonData.name, "description": jsonData.description ?? '', "personality": jsonData.personality ?? '', "first_mes": jsonData.first_mes ?? '', "avatar": 'none', "chat": jsonData.name + " - " + humanizedISO8601DateTime(), "mes_example": jsonData.mes_example ?? '', "scenario": jsonData.scenario ?? '', "create_date": humanizedISO8601DateTime(), "talkativeness": jsonData.talkativeness ?? 0.5 };
                     char = JSON.stringify(char);
                     charaWrite('./public/img/ai4.png', char, png_name, response, { file_name: png_name });
                 } else if (jsonData.char_name !== undefined) {//json Pygmalion notepad
                     jsonData.char_name = sanitize(jsonData.char_name);
 
                     png_name = getPngName(jsonData.char_name);
-                    let char = { "name": jsonData.char_name, "description": jsonData.char_persona ?? '', "personality": '', "first_mes": jsonData.char_greeting ?? '', "avatar": 'none', "chat": humanizedISO8601DateTime(), "mes_example": jsonData.example_dialogue ?? '', "scenario": jsonData.world_scenario ?? '', "create_date": humanizedISO8601DateTime(), "talkativeness": jsonData.talkativeness ?? 0.5 };
+                    let char = { "name": jsonData.char_name, "description": jsonData.char_persona ?? '', "personality": '', "first_mes": jsonData.char_greeting ?? '', "avatar": 'none', "chat": jsonData.name + " - " + humanizedISO8601DateTime(), "mes_example": jsonData.example_dialogue ?? '', "scenario": jsonData.world_scenario ?? '', "create_date": humanizedISO8601DateTime(), "talkativeness": jsonData.talkativeness ?? 0.5 };
                     char = JSON.stringify(char);
                     charaWrite('./public/img/ai4.png', char, png_name, response, { file_name: png_name });
                 } else {
@@ -1420,7 +1563,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                 png_name = getPngName(jsonData.name);
 
                 if (jsonData.name !== undefined) {
-                    let char = { "name": jsonData.name, "description": jsonData.description ?? '', "personality": jsonData.personality ?? '', "first_mes": jsonData.first_mes ?? '', "avatar": 'none', "chat": humanizedISO8601DateTime(), "mes_example": jsonData.mes_example ?? '', "scenario": jsonData.scenario ?? '', "create_date": humanizedISO8601DateTime(), "talkativeness": jsonData.talkativeness ?? 0.5 };
+                    let char = { "name": jsonData.name, "description": jsonData.description ?? '', "personality": jsonData.personality ?? '', "first_mes": jsonData.first_mes ?? '', "avatar": 'none', "chat": jsonData.name + " - " + humanizedISO8601DateTime(), "mes_example": jsonData.mes_example ?? '', "scenario": jsonData.scenario ?? '', "create_date": humanizedISO8601DateTime(), "talkativeness": jsonData.talkativeness ?? 0.5 };
                     char = JSON.stringify(char);
                     await charaWrite(uploadPath, char, png_name, response, { file_name: png_name });
                 }
@@ -1459,13 +1602,14 @@ app.post("/exportcharacter", jsonParser, async function (request, response) {
         case 'webp': {
             try {
                 let json = await charaRead(filename);
+                let stringByteArray = utf8Encode.encode(json).toString();
                 let inputWebpPath = `./uploads/${Date.now()}_input.webp`;
                 let outputWebpPath = `./uploads/${Date.now()}_output.webp`;
                 let metadataPath = `./uploads/${Date.now()}_metadata.exif`;
                 let metadata =
                 {
                     "Exif": {
-                        [exif.ExifIFD.UserComment]: json,
+                        [exif.ExifIFD.UserComment]: stringByteArray,
                     },
                 };
                 const exifString = exif.dump(metadata);
@@ -1474,10 +1618,11 @@ app.post("/exportcharacter", jsonParser, async function (request, response) {
                 await webp.cwebp(filename, inputWebpPath, '-q 95');
                 await webp.webpmux_add(inputWebpPath, outputWebpPath, metadataPath, 'exif');
 
-                response.sendFile(outputWebpPath, { root: __dirname });
-
-                fs.rmSync(inputWebpPath);
-                fs.rmSync(metadataPath);
+                response.sendFile(outputWebpPath, { root: __dirname }, () => {
+                    fs.rmSync(inputWebpPath);
+                    fs.rmSync(metadataPath);
+                    fs.rmSync(outputWebpPath);
+                });
 
                 return;
             }
@@ -1568,7 +1713,7 @@ app.post("/importchat", urlencodedParser, function (request, response) {
             rl.once('line', (line) => {
                 let jsonData = json5.parse(line);
 
-                if (jsonData.user_name !== undefined) {
+                if (jsonData.user_name !== undefined || jsonData.name !== undefined) {
                     //console.log(humanizedISO8601DateTime()+':/importchat copying chat as '+ch_name+' - '+humanizedISO8601DateTime()+'.jsonl');
                     fs.copyFile('./uploads/' + filedata.filename, chatsPath + avatar_url + '/' + ch_name + ' - ' + humanizedISO8601DateTime() + '.jsonl', (err) => { //added character name and replaced Date.now() with humanizedISO8601DateTime
                         if (err) {
@@ -1580,7 +1725,7 @@ app.post("/importchat", urlencodedParser, function (request, response) {
                         }
                     });
                 } else {
-                    //response.send({error:true});
+                    response.send({ error: true });
                     return;
                 }
                 rl.close();
@@ -1674,10 +1819,36 @@ app.post('/getgroups', jsonParser, (_, response) => {
     }
 
     const files = fs.readdirSync(directories.groups);
+    const chats = fs.readdirSync(directories.groupChats);
+
     files.forEach(function (file) {
-        const fileContents = fs.readFileSync(path.join(directories.groups, file), 'utf8');
-        const group = json5.parse(fileContents);
-        groups.push(group);
+        try {
+            const filePath = path.join(directories.groups, file);
+            const fileContents = fs.readFileSync(filePath, 'utf8');
+            const group = json5.parse(fileContents);
+            const groupStat = fs.statSync(filePath);
+            group['date_added'] = groupStat.birthtimeMs;
+
+            let chat_size = 0;
+            let date_last_chat = 0;
+
+            if (Array.isArray(group.chats) && Array.isArray(chats)) {
+                for (const chat of chats) {
+                    if (group.chats.includes(path.parse(chat).name)) {
+                        const chatStat = fs.statSync(path.join(directories.groupChats, chat));
+                        chat_size += chatStat.size;
+                        date_last_chat = Math.max(date_last_chat, chatStat.mtimeMs);
+                    }
+                }
+            }
+
+            group['date_last_chat'] = date_last_chat;
+            group['chat_size'] = chat_size;
+            groups.push(group);
+        }
+        catch (error) {
+            console.error(error);
+        }
     });
 
     return response.send(groups);
@@ -1689,7 +1860,7 @@ app.post('/creategroup', jsonParser, (request, response) => {
     }
 
     const id = Date.now();
-    const chatMetadata = {
+    const groupMetadata = {
         id: id,
         name: request.body.name ?? 'New Group',
         members: request.body.members ?? [],
@@ -1698,16 +1869,18 @@ app.post('/creategroup', jsonParser, (request, response) => {
         activation_strategy: request.body.activation_strategy ?? 0,
         chat_metadata: request.body.chat_metadata ?? {},
         fav: request.body.fav,
+        chat_id: request.body.chat_id ?? id,
+        chats: request.body.chats ?? [id],
     };
     const pathToFile = path.join(directories.groups, `${id}.json`);
-    const fileData = JSON.stringify(chatMetadata);
+    const fileData = JSON.stringify(groupMetadata);
 
     if (!fs.existsSync(directories.groups)) {
         fs.mkdirSync(directories.groups);
     }
 
     fs.writeFileSync(pathToFile, fileData);
-    return response.send(chatMetadata);
+    return response.send(groupMetadata);
 });
 
 app.post('/editgroup', jsonParser, (request, response) => {
@@ -1740,6 +1913,22 @@ app.post('/getgroupchat', jsonParser, (request, response) => {
     } else {
         return response.send([]);
     }
+});
+
+app.post('/deletegroupchat', jsonParser, (request, response) => {
+    if (!request.body || !request.body.id) {
+        return response.sendStatus(400);
+    }
+
+    const id = request.body.id;
+    const pathToFile = path.join(directories.groupChats, `${id}.jsonl`);
+
+    if (fs.existsSync(pathToFile)) {
+        fs.rmSync(pathToFile);
+        return response.send({ ok: true });
+    }
+
+    return response.send({ error: true });
 });
 
 app.post('/savegroupchat', jsonParser, (request, response) => {
@@ -1800,7 +1989,8 @@ app.post('/status_poe', jsonParser, async (request, response) => {
 
         return response.send({ 'bot_names': botNames });
     }
-    catch {
+    catch (err) {
+        console.error(err);
         return response.sendStatus(401);
     }
 });
@@ -1821,7 +2011,8 @@ app.post('/purge_poe', jsonParser, async (request, response) => {
 
         return response.send({ "ok": true });
     }
-    catch {
+    catch (err) {
+        console.error(err);
         return response.sendStatus(500);
     }
 });
@@ -1848,6 +2039,7 @@ app.post('/generate_poe', jsonParser, async (request, response) => {
 
     if (streaming) {
         let isStreamingStopped = false;
+        request.socket.removeAllListeners('close');
         request.socket.on('close', function () {
             isStreamingStopped = true;
             client.abortController.abort();
@@ -2055,6 +2247,11 @@ app.get('/thumbnail', jsonParser, async function (request, response) {
         return response.sendStatus(403);
     }
 
+    if (config.disableThumbnails == true) {
+        const pathToOriginalFile = path.join(getOriginalFolder(type), file);
+        return response.sendFile(pathToOriginalFile, { root: __dirname });
+    }
+
     const pathToCachedFile = await generateThumbnail(type, file);
 
     if (!pathToCachedFile) {
@@ -2074,8 +2271,9 @@ app.post("/getstatus_openai", jsonParser, function (request, response_getstatus_
     };
     client.get(api_url + "/models", args, function (data, response) {
         if (response.statusCode == 200) {
-            console.log(data);
-            response_getstatus_openai.send(data);//data);
+            response_getstatus_openai.send(data);
+            const modelIds = data?.data?.map(x => x.id)?.sort();
+            console.log('Available OpenAI models:', modelIds);
         }
         if (response.statusCode == 401) {
             console.log('Access Token is incorrect.');
@@ -2094,8 +2292,33 @@ app.post("/getstatus_openai", jsonParser, function (request, response_getstatus_
     });
 });
 
+app.post("/openai_bias", jsonParser, async function (request, response) {
+    if (!request.body || !Array.isArray(request.body))
+        return response.sendStatus(400);
+
+    let result = {};
+
+    const tokenizer = getTiktokenTokenizer(request.query.model === 'gpt-4-0314' ? 'gpt-4' : request.query.model);
+
+    for (const entry of request.body) {
+        if (!entry || !entry.text) {
+            continue;
+        }
+
+        const tokens = tokenizer.encode(entry.text);
+
+        for (const token of tokens) {
+            result[token] = entry.value;
+        }
+    }
+
+    // not needed for cached tokenizers
+    //tokenizer.free();
+    return response.send(result);
+});
+
 // Shamelessly stolen from Agnai
-app.post("/openai_usage", jsonParser, async function (_, response) {
+app.post("/openai_usage", jsonParser, async function (request, response) {
     if (!request.body) return response.sendStatus(400);
     const key = request.body.key;
     const api_url = new URL(request.body.reverse_proxy || api_openai).toString();
@@ -2124,11 +2347,28 @@ app.post("/openai_usage", jsonParser, async function (_, response) {
     }
 });
 
+app.post("/deletepreset_openai", jsonParser, function (request, response) {
+    if (!request.body || !request.body.name) {
+        return response.sendStatus(400);
+    }
+
+    const name = request.body.name;
+    const pathToFile = path.join(directories.openAI_Settings, `${name}.settings`);
+
+    if (fs.existsSync(pathToFile)) {
+        fs.rmSync(pathToFile);
+        return response.send({ ok: true });
+    }
+
+    return response.send({ error: true });
+});
+
 app.post("/generate_openai", jsonParser, function (request, response_generate_openai) {
     if (!request.body) return response_generate_openai.sendStatus(400);
     const api_url = new URL(request.body.reverse_proxy || api_openai).toString();
 
     const controller = new AbortController();
+    request.socket.removeAllListeners('close');
     request.socket.on('close', function () {
         controller.abort();
     });
@@ -2149,6 +2389,7 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
             "stream": request.body.stream,
             "presence_penalty": request.body.presence_penalty,
             "frequency_penalty": request.body.frequency_penalty,
+            "top_p": request.body.top_p,
             "stop": request.body.stop,
             "logit_bias": request.body.logit_bias
         },
@@ -2182,7 +2423,10 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
             } else if (response.status == 402) {
                 console.log('An active subscription is required to access this endpoint');
                 response_generate_openai.send({ error: true });
-            } else if (response.status == 500 || response.status == 409) {
+            } else if (response.status == 429) {
+                console.log('Out of quota');
+                response_generate_openai.send({ error: true, quota_error: true, });
+            } else if (response.status == 500 || response.status == 409 || response.status == 504) {
                 if (request.body.stream) {
                     response.data.on('data', chunk => {
                         console.log(chunk.toString());
@@ -2203,7 +2447,13 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
                     console.log(error.response.data);
                 }
             }
-            response_generate_openai.send({ error: true });
+            try {
+                const quota_error = error.response.status == 429;
+                response_generate_openai.send({ error: true, quota_error });
+            } catch (error) {
+                console.error(error);
+                return response_generate_openai.send({ error: true });
+            }
         });
 });
 
@@ -2214,7 +2464,7 @@ app.post("/tokenize_openai", jsonParser, function (request, response_tokenize_op
     const tokensPerMessage = request.query.model.includes('gpt-4') ? 3 : 4;
     const tokensPadding = 3;
 
-    const tokenizer = tiktoken.encoding_for_model(request.query.model);
+    const tokenizer = getTiktokenTokenizer(request.query.model === 'gpt-4-0314' ? 'gpt-4' : request.query.model);
 
     let num_tokens = 0;
     for (const msg of request.body) {
@@ -2228,7 +2478,8 @@ app.post("/tokenize_openai", jsonParser, function (request, response_tokenize_op
     }
     num_tokens += tokensPadding;
 
-    tokenizer.free();
+    // not needed for cached tokenizers
+    //tokenizer.free();
 
     response_tokenize_openai.send({ "token_count": num_tokens });
 });
@@ -2243,6 +2494,15 @@ app.post("/savepreset_openai", jsonParser, function (request, response) {
     const fullpath = path.join(directories.openAI_Settings, filename);
     fs.writeFileSync(fullpath, JSON.stringify(request.body), 'utf-8');
     return response.send({ name });
+});
+
+app.post("/tokenize_llama", jsonParser, async function (request, response) {
+    if (!request.body) {
+        return response.sendStatus(400);
+    }
+
+    const count = await countTokensLlama(request.body.text);
+    return response.send({ count });
 });
 
 // ** REST CLIENT ASYNC WRAPPERS **
@@ -2310,18 +2570,16 @@ const setupTasks = async function () {
     // Colab users could run the embedded tool
     if (!is_colab) await convertWebp();
 
+    await spp.load(`./src/sentencepiece/tokenizer.model`);
+
     console.log('Launching...');
-  
+
     if (autorun) open(autorunUrl.toString());
     console.log('SillyTavern is listening on: ' + tavernUrl);
     if (listen &&
         !config.whitelistMode &&
         !config.basicAuthMode)
         console.log('Your SillyTavern is currently open to the public. To increase security, consider enabling whitelisting or basic authentication.')
-
-    if (fs.existsSync('public/characters/update.txt') && !is_colab) {
-        convertStage1();
-    }
 }
 
 if (true === cliArguments.ssl)
@@ -2341,187 +2599,6 @@ else
         tavernUrl.hostname,
         setupTasks
     );
-
-//#####################CONVERTING IN NEW FORMAT########################
-
-var charactersB = {};//B - Backup
-var character_ib = 0;
-
-var directoriesB = {};
-
-
-function convertStage1() {
-    //if (!fs.existsSync('public/charactersBackup')) {
-    //fs.mkdirSync('public/charactersBackup');
-    //copyFolder('public/characters/', 'public/charactersBackup');
-    //}
-
-    var directories = getDirectories2("public/characters");
-    //console.log(directories[0]);
-    charactersB = {};
-    character_ib = 0;
-    var folderForDel = {};
-    getCharacterFile2(directories, 0);
-}
-function convertStage2() {
-    var mes = true;
-    for (const key in directoriesB) {
-        if (mes) {
-            console.log('***');
-            console.log('The update of the character format has begun...');
-            console.log('***');
-            mes = false;
-        }
-
-        var char = JSON.parse(charactersB[key]);
-        char.create_date = humanizedISO8601DateTime();
-        charactersB[key] = JSON.stringify(char);
-        var avatar = 'public/img/ai4.png';
-        if (char.avatar !== 'none') {
-            avatar = 'public/characters/' + char.name + '/avatars/' + char.avatar;
-        }
-
-        charaWrite(avatar, charactersB[key], directoriesB[key]);
-
-        const files = fs.readdirSync('public/characters/' + directoriesB[key] + '/chats');
-        if (!fs.existsSync(chatsPath + char.name)) {
-            fs.mkdirSync(chatsPath + char.name);
-        }
-        files.forEach(function (file) {
-            // Read the contents of the file
-
-            const fileContents = fs.readFileSync('public/characters/' + directoriesB[key] + '/chats/' + file, 'utf8');
-
-
-            // Iterate through the array of strings and parse each line as JSON
-            let chat_data = JSON.parse(fileContents);
-            let new_chat_data = [];
-            let this_chat_user_name = 'You';
-            let is_pass_0 = false;
-            if (chat_data[0].indexOf('<username-holder>') !== -1) {
-                this_chat_user_name = chat_data[0].substr('<username-holder>'.length, chat_data[0].length);
-                is_pass_0 = true;
-            }
-            let i = 0;
-            let ii = 0;
-            new_chat_data[i] = { user_name: 'You', character_name: char.name, create_date: humanizedISO8601DateTime() };
-            i++;
-            ii++;
-            chat_data.forEach(function (mes) {
-                if (!(i === 1 && is_pass_0)) {
-                    if (mes.indexOf('<username-holder>') === -1 && mes.indexOf('<username-idkey>') === -1) {
-                        new_chat_data[ii] = {};
-                        let is_name = false;
-                        if (mes.trim().indexOf(this_chat_user_name + ':') !== 0) {
-                            if (mes.trim().indexOf(char.name + ':') === 0) {
-                                mes = mes.replace(char.name + ':', '');
-                                is_name = true;
-                            }
-                            new_chat_data[ii]['name'] = char.name;
-                            new_chat_data[ii]['is_user'] = false;
-                            new_chat_data[ii]['is_name'] = is_name;
-                            new_chat_data[ii]['send_date'] = humanizedISO8601DateTime(); //Date.now();
-
-                        } else {
-                            mes = mes.replace(this_chat_user_name + ':', '');
-                            new_chat_data[ii]['name'] = 'You';
-                            new_chat_data[ii]['is_user'] = true;
-                            new_chat_data[ii]['is_name'] = true;
-                            new_chat_data[ii]['send_date'] = humanizedISO8601DateTime(); //Date.now();
-
-                        }
-                        new_chat_data[ii]['mes'] = mes.trim();
-                        ii++;
-                    }
-                }
-                i++;
-
-            });
-            const jsonlData = new_chat_data.map(JSON.stringify).join('\n');
-            // Write the contents to the destination folder
-            //console.log('convertstage2 writing a file: '+chatsPath+char.name+'/' + file+'l');		
-            fs.writeFileSync(chatsPath + char.name + '/' + file + 'l', jsonlData);
-        });
-        //fs.rmSync('public/characters/'+directoriesB[key],{ recursive: true });
-        console.log(char.name + ' update!');
-    }
-    //removeFolders('public/characters');
-    fs.unlinkSync('public/characters/update.txt');
-    if (mes == false) {
-        console.log('***');
-        console.log('Сharacter format update completed successfully!');
-        console.log('***');
-        console.log('Now you can delete these folders, they are no longer used by TavernAI:');
-    }
-    for (const key in directoriesB) {
-        console.log('public/characters/' + directoriesB[key]);
-    }
-}
-function removeFolders(folder) {
-    const files = fs.readdirSync(folder);
-    files.forEach(function (file) {
-        const filePath = folder + '/' + file;
-        const stat = fs.statSync(filePath);
-        if (stat.isDirectory()) {
-            removeFolders(filePath);
-            fs.rmdirSync(filePath);
-        }
-    });
-}
-
-function copyFolder(src, dest) {
-    const files = fs.readdirSync(src);
-    files.forEach(function (file) {
-        const filePath = src + '/' + file;
-        const stat = fs.statSync(filePath);
-        if (stat.isFile()) {
-            fs.copyFileSync(filePath, dest + '/' + file);
-        } else if (stat.isDirectory()) {
-            fs.mkdirSync(dest + '/' + file);
-            copyFolder(filePath, dest + '/' + file);
-        }
-    });
-}
-
-
-function getDirectories2(path) {
-    return fs.readdirSync(path)
-        .filter(function (file) {
-            return fs.statSync(path + '/' + file).isDirectory();
-        })
-        .sort(function (a, b) {
-            return new Date(fs.statSync(path + '/' + a).mtime) - new Date(fs.statSync(path + '/' + b).mtime);
-        })
-        .reverse();
-}
-function getCharacterFile2(directories, i) {
-    if (directories.length > i) {
-        fs.stat('public/characters/' + directories[i] + '/' + directories[i] + ".json", function (err, stat) {
-            if (err == null) {
-                fs.readFile('public/characters/' + directories[i] + '/' + directories[i] + ".json", 'utf8', (err, data) => {
-                    if (err) {
-                        console.error(err);
-                        return;
-                    }
-                    //console.log(data);
-                    if (!fs.existsSync('public/characters/' + directories[i] + '.png')) {
-                        charactersB[character_ib] = {};
-                        charactersB[character_ib] = data;
-                        directoriesB[character_ib] = directories[i];
-                        character_ib++;
-                    }
-                    i++;
-                    getCharacterFile2(directories, i);
-                });
-            } else {
-                i++;
-                getCharacterFile2(directories, i);
-            }
-        });
-    } else {
-        convertStage2();
-    }
-}
 
 async function convertWebp() {
     const files = fs.readdirSync(directories.characters).filter(e => e.endsWith(".webp"));

@@ -4,8 +4,8 @@ import {
     debounce,
     delay,
 } from './utils.js';
-import { humanizedDateTime } from "./RossAscends-mods.js";
-import { sortCharactersList } from './power-user.js';
+import { RA_CountCharTokens, humanizedDateTime } from "./RossAscends-mods.js";
+import { sortCharactersList, sortGroupMembers } from './power-user.js';
 
 import {
     chat,
@@ -14,7 +14,6 @@ import {
     substituteParams,
     characters,
     default_avatar,
-    token,
     addOneMessage,
     callPopup,
     clearChat,
@@ -42,7 +41,13 @@ import {
     isStreamingEnabled,
     getThumbnailUrl,
     streamingProcessor,
+    getRequestHeaders,
+    setMenuType,
+    menu_type,
+    select_selected_character,
+    cancelTtsPlay,
 } from "../script.js";
+import { appendTagToList, createTagMapFromList, getTagsList, applyTagsOnCharacterSelect } from './tags.js';
 
 export {
     selected_group,
@@ -66,8 +71,10 @@ let is_group_automode_enabled = false;
 let groups = [];
 let selected_group = null;
 let group_generation_id = null;
+let fav_grp_checked = false;
+let fav_filter_on = false;
 
-const group_activation_strategy = {
+export const group_activation_strategy = {
     NATURAL: 0,
     LIST: 1,
 };
@@ -75,18 +82,16 @@ const group_activation_strategy = {
 const groupAutoModeInterval = setInterval(groupChatAutoModeWorker, 5000);
 const saveGroupDebounced = debounce(async (group) => await _save(group), 500);
 
-async function _save(group) {
+async function _save(group, reload = true) {
     await fetch("/editgroup", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-Token": token,
-        },
+        headers: getRequestHeaders(),
         body: JSON.stringify(group),
     });
-    await getCharacters();
+    if (reload) {
+        await getCharacters();
+    }
 }
-
 
 // Group chats
 async function regenerateGroup() {
@@ -111,49 +116,55 @@ async function regenerateGroup() {
     generateGroupWrapper();
 }
 
-async function getGroupChat(id) {
+async function loadGroupChat(chatId) {
     const response = await fetch("/getgroupchat", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-Token": token,
-        },
-        body: JSON.stringify({ id: id }),
+        headers: getRequestHeaders(),
+        body: JSON.stringify({ id: chatId }),
     });
 
     if (response.ok) {
         const data = await response.json();
-        const group = groups.find((x) => x.id === id);
-        if (Array.isArray(data) && data.length) {
-            data[0].is_group = true;
-            for (let key of data) {
-                chat.push(key);
-            }
-            printMessages();
-        } else {
-            sendSystemMessage(system_message_types.GROUP);
-            if (group && Array.isArray(group.members)) {
-                for (let name of group.members) {
-                    const character = characters.find((x) => x.name === name);
-
-                    if (!character) {
-                        continue;
-                    }
-
-                    const mes = getFirstCharacterMessage(character);
-                    chat.push(mes);
-                    addOneMessage(mes);
-                }
-            }
-        }
-
-        if (group) {
-            let metadata = group.chat_metadata ?? {};
-            updateChatMetadata(metadata, true);
-        }
-
-        await saveGroupChat(id, true);
+        return data;
     }
+
+    return [];
+}
+
+export async function getGroupChat(groupId) {
+    const group = groups.find((x) => x.id === groupId);
+    const chat_id = group.chat_id;
+    const data = await loadGroupChat(chat_id);
+
+    if (Array.isArray(data) && data.length) {
+        data[0].is_group = true;
+        for (let key of data) {
+            chat.push(key);
+        }
+        printMessages();
+    } else {
+        sendSystemMessage(system_message_types.GROUP);
+        if (group && Array.isArray(group.members)) {
+            for (let member of group.members) {
+                const character = characters.find(x => x.avatar === member || x.name === member);
+
+                if (!character) {
+                    continue;
+                }
+
+                const mes = getFirstCharacterMessage(character);
+                chat.push(mes);
+                addOneMessage(mes);
+            }
+        }
+    }
+
+    if (group) {
+        let metadata = group.chat_metadata ?? {};
+        updateChatMetadata(metadata, true);
+    }
+
+    await saveGroupChat(groupId, true);
 }
 
 function getFirstCharacterMessage(character) {
@@ -178,36 +189,111 @@ function resetSelectedGroup() {
     is_group_generating = false;
 }
 
-async function saveGroupChat(id, shouldSaveGroup) {
+async function saveGroupChat(groupId, shouldSaveGroup) {
+    const group = groups.find(x => x.id == groupId);
+    const chat_id = group.chat_id;
+    group['date_last_chat'] = Date.now();
     const response = await fetch("/savegroupchat", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-Token": token,
-        },
-        body: JSON.stringify({ id: id, chat: [...chat] }),
+        headers: getRequestHeaders(),
+        body: JSON.stringify({ id: chat_id, chat: [...chat] }),
     });
 
     if (shouldSaveGroup && response.ok) {
-        await editGroup(id);
+        await editGroup(groupId);
+    }
+    sortCharactersList();
+}
+
+export async function renameGroupMember(oldAvatar, newAvatar, newName) {
+    // Scan every group for our renamed character
+    for (const group of groups) {
+        try {
+            // Try finding the member by old avatar link
+            const memberIndex = group.members.findIndex(x => x == oldAvatar);
+
+            // Character was not present in the group...
+            if (memberIndex == -1) {
+                continue;
+            }
+
+            // Replace group member avatar id and save the changes
+            group.members[memberIndex] = newAvatar;
+            await editGroup(group.id, true);
+            console.log(`Renamed character ${newName} in group: ${group.name}`)
+
+            // Load all chats from this group
+            for (const chatId of group.chats) {
+                const messages = await loadGroupChat(chatId);
+
+                // Only save the chat if there were any changes to the chat content
+                let hadChanges = false;
+                // Chat shouldn't be empty
+                if (Array.isArray(messages) && messages.length) {
+                    // Iterate over every chat message
+                    for (const message of messages) {
+                        // Only look at character messages
+                        if (message.is_user || message.is_system) {
+                            continue;
+                        }
+
+                        // Message belonged to the old-named character:
+                        // Update name, avatar thumbnail URL and original avatar link
+                        if (message.force_avatar && message.force_avatar.indexOf(encodeURIComponent(oldAvatar)) !== -1) {
+                            message.name = newName;
+                            message.force_avatar = message.force_avatar.replace(encodeURIComponent(oldAvatar), encodeURIComponent(newAvatar));
+                            message.original_avatar = newAvatar;
+                            hadChanges = true;
+                        }
+                    }
+
+                    if (hadChanges) {
+                        const saveChatResponse = await fetch("/savegroupchat", {
+                            method: "POST",
+                            headers: getRequestHeaders(),
+                            body: JSON.stringify({ id: chatId, chat: [...messages] }),
+                        });
+
+                        if (saveChatResponse.ok) {
+                            console.log(`Renamed character ${newName} in group chat: ${chatId}`);
+                        }
+                    }
+                }
+            }
+        }
+        catch (error) {
+            console.log(`An error during renaming the character ${newName} in group: ${group.name}`);
+            console.error(error);
+        }
     }
 }
 
 async function getGroups() {
     const response = await fetch("/getgroups", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-Token": token,
-        },
+        headers: getRequestHeaders()
     });
 
     if (response.ok) {
         const data = await response.json();
         groups = data.sort((a, b) => a.id - b.id);
+
+        // Convert groups to new format
+        for (const group of groups) {
+            if (group.chat_id == undefined) {
+                group.chat_id = group.id;
+                group.chats = [group.id];
+                group.members = group.members
+                    .map(x => characters.find(y => y.name == x)?.avatar)
+                    .filter(x => x)
+                    .filter(onlyUnique)
+            }
+            if (group.past_metadata == undefined) {
+                group.past_metadata = {};
+            }
+        }
     }
 }
-
 
 function printGroups() {
     for (let group of groups) {
@@ -215,8 +301,15 @@ function printGroups() {
         template.data("id", group.id);
         template.attr("grid", group.id);
         template.find(".ch_name").html(group.name);
-        group.fav ? template.find(".group_fav_icon").show() : template.find(".group_fav_icon").hide();
+        template.find('.group_fav_icon').css("display", 'none');
+        template.addClass(group.fav ? 'is_fav' : '');
         template.find(".ch_fav").val(group.fav);
+
+        // Display inline tags
+        const tags = getTagsList(group.id);
+        const tagsElement = template.find('.tags');
+        tags.forEach(tag => appendTagToList(tagsElement, tag, {}));
+
         $("#rm_print_characters_block").prepend(template);
         updateGroupAvatar(group);
     }
@@ -236,7 +329,7 @@ function getGroupAvatar(group) {
     const memberAvatars = [];
     if (group && Array.isArray(group.members) && group.members.length) {
         for (const member of group.members) {
-            const charIndex = characters.findIndex((x) => x.name === member);
+            const charIndex = characters.findIndex(x => x.avatar === member);
             if (charIndex !== -1 && characters[charIndex].avatar !== "none") {
                 const avatar = getThumbnailUrl('avatar', characters[charIndex].avatar);
                 memberAvatars.push(avatar);
@@ -285,11 +378,17 @@ function getGroupAvatar(group) {
 }
 
 
-async function generateGroupWrapper(by_auto_mode, type = null) {
+async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
     if (online_status === "no_connection") {
         is_group_generating = false;
         setSendButtonState(false);
         return;
+    }
+
+    // Auto-navigate back to group menu
+    if (menu_type !== "group_edit") {
+        select_group_chats(selected_group);
+        await delay(1);
     }
 
     if (is_group_generating) {
@@ -327,6 +426,7 @@ async function generateGroupWrapper(by_auto_mode, type = null) {
         let lastMessageText = lastMessage.mes;
         let activationText = "";
         let isUserInput = false;
+        let isQuietGenDone = false;
 
         if (userInput && userInput.length && !by_auto_mode) {
             isUserInput = true;
@@ -341,7 +441,27 @@ async function generateGroupWrapper(by_auto_mode, type = null) {
         const activationStrategy = Number(group.activation_strategy ?? group_activation_strategy.NATURAL);
         let activatedMembers = [];
 
-        if (type === "swipe") {
+        if (params && typeof params.force_chid == 'number') {
+            activatedMembers = [params.force_chid];
+        } else if (type === "quiet") {
+            activatedMembers = activateSwipe(group.members);
+
+            if (activatedMembers.length === 0) {
+                activatedMembers = activateListOrder(group.members.slice(0, 1));
+            }
+
+            const resolveOriginal = params.resolve;
+            const rejectOriginal = params.reject;
+            params.resolve = function () {
+                isQuietGenDone = true;
+                resolveOriginal.apply(this, arguments);
+            };
+            params.reject = function () {
+                isQuietGenDone = true;
+                rejectOriginal.apply(this, arguments);
+            }
+        }
+        else if (type === "swipe") {
             activatedMembers = activateSwipe(group.members);
 
             if (activatedMembers.length === 0) {
@@ -362,11 +482,11 @@ async function generateGroupWrapper(by_auto_mode, type = null) {
 
         // now the real generation begins: cycle through every character
         for (const chId of activatedMembers) {
-            const generateType = type == "swipe" || type == "impersonate" ? type : "group_chat";
+            const generateType = type == "swipe" || type == "impersonate" || type == "quiet" ? type : "group_chat";
             setCharacterId(chId);
             setCharacterName(characters[chId].name)
 
-            await Generate(generateType, by_auto_mode);
+            await Generate(generateType, { automatic_trigger: by_auto_mode, ...(params || {}) });
 
             if (type !== "swipe" && type !== "impersonate") {
                 // update indicator and scroll down
@@ -421,6 +541,13 @@ async function generateGroupWrapper(by_auto_mode, type = null) {
                         }
                     }
                 }
+                else if (type === 'quiet') {
+                    if (isQuietGenDone) {
+                        break;
+                    } else {
+                        await delay(100);
+                    }
+                }
                 else {
                     messagesBefore++;
                     break;
@@ -454,34 +581,49 @@ function getLastMessageGenerationId() {
 
 function activateImpersonate(members) {
     const randomIndex = Math.floor(Math.random() * members.length);
-    const activatedNames = [members[randomIndex]];
-    const memberIds = activatedNames
-        .map((x) => characters.findIndex((y) => y.name === x))
+    const activatedMembers = [members[randomIndex]];
+    const memberIds = activatedMembers
+        .map((x) => characters.findIndex((y) => y.avatar === x))
         .filter((x) => x !== -1);
     return memberIds;
 }
 
 function activateSwipe(members) {
-    const name = chat[chat.length - 1].name;
-    const activatedNames = members.includes(name) ? [name] : [];
+    let activatedNames = [];
+
+    // pre-update group chat swipe
+    if (!chat[chat.length - 1].original_avatar) {
+        const matches = characters.filter(x => x.name == chat[chat.length - 1].name);
+
+        for (const match of matches) {
+            if (members.includes(match.avatar)) {
+                activatedNames.push(match.avatar);
+                break;
+            }
+        }
+    }
+    else {
+        activatedNames.push(chat[chat.length - 1].original_avatar);
+    }
+
     const memberIds = activatedNames
-        .map((x) => characters.findIndex((y) => y.name === x))
+        .map((x) => characters.findIndex((y) => y.avatar === x))
         .filter((x) => x !== -1);
     return memberIds;
 }
 
 function activateListOrder(members) {
-    let activatedNames = members.filter(onlyUnique);
+    let activatedMembers = members.filter(onlyUnique);
 
     // map to character ids
-    const memberIds = activatedNames
-        .map((x) => characters.findIndex((y) => y.name === x))
+    const memberIds = activatedMembers
+        .map((x) => characters.findIndex((y) => y.avatar === x))
         .filter((x) => x !== -1);
     return memberIds;
 }
 
 function activateNaturalOrder(members, input, lastMessage, allowSelfResponses, isUserInput) {
-    let activatedNames = [];
+    let activatedMembers = [];
 
     // prevents the same character from speaking twice
     let bannedUser = !isUserInput && lastMessage && !lastMessage.is_user && lastMessage.name;
@@ -495,12 +637,14 @@ function activateNaturalOrder(members, input, lastMessage, allowSelfResponses, i
     if (input && input.length) {
         for (let inputWord of extractAllWords(input)) {
             for (let member of members) {
-                if (member === bannedUser) {
+                const character = characters.find(x => x.avatar === member)
+
+                if (!character || character.name === bannedUser) {
                     continue;
                 }
 
-                if (extractAllWords(member).includes(inputWord)) {
-                    activatedNames.push(member);
+                if (extractAllWords(character.name).includes(inputWord)) {
+                    activatedMembers.push(member);
                     break;
                 }
             }
@@ -510,13 +654,9 @@ function activateNaturalOrder(members, input, lastMessage, allowSelfResponses, i
     // activation by talkativeness (in shuffled order, except banned)
     const shuffledMembers = shuffle([...members]);
     for (let member of shuffledMembers) {
-        if (member === bannedUser) {
-            continue;
-        }
+        const character = characters.find((x) => x.avatar === member);
 
-        const character = characters.find((x) => x.name === member);
-
-        if (!character) {
+        if (!character || character.name === bannedUser) {
             continue;
         }
 
@@ -526,22 +666,28 @@ function activateNaturalOrder(members, input, lastMessage, allowSelfResponses, i
             ? talkativeness_default
             : talkativeness;
         if (talkativeness >= rollValue) {
-            activatedNames.push(member);
+            activatedMembers.push(member);
         }
     }
 
     // pick 1 at random if no one was activated
-    if (activatedNames.length === 0) {
+    while (activatedMembers.length === 0) {
         const randomIndex = Math.floor(Math.random() * members.length);
-        activatedNames.push(members[randomIndex]);
+        const character = characters.find((x) => x.avatar === members[randomIndex]);
+
+        if (!character) {
+            continue;
+        }
+
+        activatedMembers.push(members[randomIndex]);
     }
 
-    // de-duplicate array of names
-    activatedNames = activatedNames.filter(onlyUnique);
+    // de-duplicate array of character avatars
+    activatedMembers = activatedMembers.filter(onlyUnique);
 
     // map to character ids
-    const memberIds = activatedNames
-        .map((x) => characters.findIndex((y) => y.name === x))
+    const memberIds = activatedMembers
+        .map((x) => characters.findIndex((y) => y.avatar === x))
         .filter((x) => x !== -1);
     return memberIds;
 }
@@ -564,10 +710,7 @@ function extractAllWords(value) {
 async function deleteGroup(id) {
     const response = await fetch("/deletegroup", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-Token": token,
-        },
+        headers: getRequestHeaders(),
         body: JSON.stringify({ id: id }),
     });
 
@@ -588,16 +731,17 @@ async function deleteGroup(id) {
     }
 }
 
-async function editGroup(id, immediately) {
-    let group = groups.find((x) => x.id == id);
-    group = { ...group, chat_metadata };
+export async function editGroup(id, immediately, reload = true) {
+    let group = groups.find((x) => x.id === id);
 
     if (!group) {
         return;
     }
 
+    group['chat_metadata'] = chat_metadata;
+
     if (immediately) {
-        return await _save(group);
+        return await _save(group, reload);
     }
 
     saveGroupDebounced(group);
@@ -621,7 +765,7 @@ async function groupChatAutoModeWorker() {
     await generateGroupWrapper(true);
 }
 
-async function modifyGroupMember(chat_id, groupMember, isDelete) { 
+async function modifyGroupMember(chat_id, groupMember, isDelete) {
     const id = groupMember.data("id");
 
     const template = groupMember.clone();
@@ -677,7 +821,7 @@ async function reorderGroupMember(chat_id, groupMember, direction) {
                 group.members[indexOf] = prev;
             }
         }
-        
+
         await editGroup(chat_id);
         updateGroupAvatar(group);
         // stupid but lifts the manual reordering
@@ -694,30 +838,32 @@ async function reorderGroupMember(chat_id, groupMember, direction) {
     }
 }
 
-function select_group_chats(chat_id, skipAnimation) {
-    const group = chat_id && groups.find((x) => x.id == chat_id);
+function select_group_chats(groupId, skipAnimation) {
+    const group = groupId && groups.find((x) => x.id == groupId);
     const groupName = group?.name ?? "";
+    setMenuType(!!group ? 'group_edit' : 'group_create');
     $("#rm_group_chat_name").val(groupName);
     $("#rm_group_chat_name").off();
     $("#rm_group_chat_name").on("input", async function () {
-        if (chat_id) {
-            let _thisGroup = groups.find((x) => x.id == chat_id);
+        if (groupId) {
+            let _thisGroup = groups.find((x) => x.id == groupId);
             _thisGroup.name = $(this).val();
             $("#rm_button_selected_ch").children("h2").text(_thisGroup.name);
-            await editGroup(chat_id);
+            await editGroup(groupId);
         }
     });
     $("#rm_group_filter").val("").trigger("input");
 
     $('input[name="rm_group_activation_strategy"]').off();
     $('input[name="rm_group_activation_strategy"]').on("input", async function (e) {
-        if (chat_id) {
-            let _thisGroup = groups.find((x) => x.id == chat_id);
+        if (groupId) {
+            let _thisGroup = groups.find((x) => x.id == groupId);
             _thisGroup.activation_strategy = Number(e.target.value);
-            await editGroup(chat_id);
+            await editGroup(groupId);
         }
     });
-    $(`input[name="rm_group_activation_strategy"][value="${Number(group?.activation_strategy ?? group_activation_strategy.NATURAL)}"]`).prop('checked', true);
+    const replyStrategy = Number(group?.activation_strategy ?? group_activation_strategy.NATURAL);
+    $(`input[name="rm_group_activation_strategy"][value="${replyStrategy}"]`).prop('checked', true);
 
     if (!skipAnimation) {
         selectRightMenuWithAnimation('rm_group_chats_block');
@@ -732,37 +878,45 @@ function select_group_chats(chat_id, skipAnimation) {
                 ? getThumbnailUrl('avatar', character.avatar)
                 : default_avatar;
         const template = $("#group_member_template .group_member").clone();
-        template.data("id", character.name);
+        template.data("id", character.avatar);
         template.find(".avatar img").attr("src", avatar);
+        template.find(".avatar img").attr("title", character.avatar);
         template.find(".ch_name").text(character.name);
         template.attr("chid", characters.indexOf(character));
+        template.addClass(character.fav == 'true' ? 'is_fav' : '');
+
+        if (!group) {
+            template.find('[data-action="speak"]').hide();
+        }
 
         if (
             group &&
             Array.isArray(group.members) &&
-            group.members.includes(character.name)
+            group.members.includes(character.avatar)
         ) {
-            template.css({ 'order': group.members.indexOf(character.name) });
+            template.css({ 'order': group.members.indexOf(character.avatar) });
             $("#rm_group_members").append(template);
         } else {
             $("#rm_group_add_members").append(template);
         }
     }
 
-    sortCharactersList("#rm_group_add_members .group_member");
+    sortGroupMembers("#rm_group_add_members .group_member");
+    filterMembersByFavorites(false);
 
     const groupHasMembers = !!$("#rm_group_members").children().length;
     $("#rm_group_submit").prop("disabled", !groupHasMembers);
     $("#rm_group_allow_self_responses").prop("checked", group && group.allow_self_responses);
-    $("#rm_group_fav").prop("checked", group && group.fav);
 
     // bottom buttons
-    if (chat_id) {
+    if (groupId) {
         $("#rm_group_submit").hide();
         $("#rm_group_delete").show();
+        $("#rm_group_scenario").show();
     } else {
         $("#rm_group_submit").show();
         $("#rm_group_delete").hide();
+        $("#rm_group_scenario").hide();
     }
 
     $("#rm_group_delete").off();
@@ -772,27 +926,29 @@ function select_group_chats(chat_id, skipAnimation) {
             return;
         }
 
-        $("#dialogue_popup").data("group_id", chat_id);
+        $("#dialogue_popup").data("group_id", groupId);
         callPopup("<h3>Delete the group?</h3>", "del_group");
     });
 
-    $("#rm_group_fav").off();
-    $("#rm_group_fav").on("input", async function(){
+    updateFavButtonState(group?.fav ?? false);
+
+    $("#group_favorite_button").off('click');
+    $("#group_favorite_button").on('click', async function () {
+        updateFavButtonState(!fav_grp_checked);
         if (group) {
-            let _thisGroup = groups.find((x) => x.id == chat_id);
-            const value = $(this).prop("checked");
-            _thisGroup.fav = value;
-            await editGroup(chat_id);
+            let _thisGroup = groups.find((x) => x.id == groupId);
+            _thisGroup.fav = fav_grp_checked;
+            await editGroup(groupId);
         }
     });
 
     $("#rm_group_allow_self_responses").off();
     $("#rm_group_allow_self_responses").on("input", async function () {
         if (group) {
-            let _thisGroup = groups.find((x) => x.id == chat_id);
+            let _thisGroup = groups.find((x) => x.id == groupId);
             const value = $(this).prop("checked");
             _thisGroup.allow_self_responses = value;
-            await editGroup(chat_id);
+            await editGroup(groupId);
         }
     });
 
@@ -812,104 +968,336 @@ function select_group_chats(chat_id, skipAnimation) {
         const action = $(this).data('action');
         const member = $(this).closest('.group_member');
 
-        if (action == 'remove') {
-            await modifyGroupMember(chat_id, member, true);
-        }
-        
-        if (action == 'add') {
-            await modifyGroupMember(chat_id, member, false);
-        }
-        
-        if (action == 'up' || action == 'down') {
-            await reorderGroupMember(chat_id, member, action);
+        if (action === 'remove') {
+            await modifyGroupMember(groupId, member, true);
         }
 
-        sortCharactersList("#rm_group_add_members .group_member");
+        if (action === 'add') {
+            await modifyGroupMember(groupId, member, false);
+        }
+
+        if (action === 'up' || action === 'down') {
+            await reorderGroupMember(groupId, member, action);
+        }
+
+        if (action === 'view') {
+            openCharacterDefinition(member);
+        }
+
+        if (action === 'speak') {
+            const chid = Number(member.attr('chid'));
+            if (Number.isInteger(chid)) {
+                Generate('normal', { force_chid: chid });
+            }
+        }
+
+        sortGroupMembers("#rm_group_add_members .group_member");
     });
 }
 
-$(document).ready(() => {
-    $(document).on("click", ".group_select", async function () {
-        const id = $(this).data("id");
+function updateFavButtonState(state) {
+    fav_grp_checked = state;
+    $("#rm_group_fav").val(fav_grp_checked);
+    $("#group_favorite_button").toggleClass('fav_on', fav_grp_checked);
+    $("#group_favorite_button").toggleClass('fav_off', !fav_grp_checked);
+}
 
-        if (!is_send_press && !is_group_generating) {
-            if (selected_group !== id) {
-                selected_group = id;
-                setCharacterId(undefined);
-                setCharacterName('');
-                setEditedMessageId(undefined);
-                clearChat();
-                updateChatMetadata({}, true);
-                chat.length = 0;
-                await getGroupChat(id);
-                //to avoid the filter being lit up yellow and left at true while the list of character and group reseted.
-                $("#filter_by_fav").removeClass("fav_on");
-                filterByFav = false; 
-            }
+async function selectGroup() {
+    const groupId = $(this).data("id");
 
-            select_group_chats(id);
+    if (!is_send_press && !is_group_generating) {
+        if (selected_group !== groupId) {
+            cancelTtsPlay();
+            selected_group = groupId;
+            setCharacterId(undefined);
+            setCharacterName('');
+            setEditedMessageId(undefined);
+            clearChat();
+            updateChatMetadata({}, true);
+            chat.length = 0;
+            await getGroupChat(groupId);
         }
+
+        select_group_chats(groupId);
+    }
+}
+
+function openCharacterDefinition(characterSelect) {
+    if (is_group_generating) {
+        console.warn("Can't peek a character def while group reply is being generated");
+        return;
+    }
+
+    const chid = characterSelect.attr('chid');
+
+    if (chid === null || chid === undefined) {
+        return;
+    }
+
+    setCharacterId(chid);
+    select_selected_character(chid);
+    // Gentle nudge to recalculate tokens
+    RA_CountCharTokens();
+    // Do a little tomfoolery to spoof the tag selector
+    applyTagsOnCharacterSelect.call(characterSelect);
+}
+
+function filterGroupMembers() {
+    const searchValue = $(this).val().trim().toLowerCase();
+
+    if (!searchValue) {
+        $("#rm_group_add_members .group_member").removeClass('hiddenBySearch');
+    } else {
+        $("#rm_group_add_members .group_member").each(function () {
+            const isValidSearch = $(this).children(".ch_name").text().toLowerCase().includes(searchValue);
+            $(this).toggleClass('hiddenBySearch', !isValidSearch);
+        });
+    }
+}
+
+async function createGroup() {
+    let name = $("#rm_group_chat_name").val();
+    let allow_self_responses = !!$("#rm_group_allow_self_responses").prop("checked");
+    let activation_strategy = $('input[name="rm_group_activation_strategy"]:checked').val() ?? group_activation_strategy.NATURAL;
+    const members = $("#rm_group_members .group_member")
+        .map((_, x) => $(x).data("id"))
+        .toArray();
+
+    const memberNames = characters.filter(x => members.includes(x.avatar)).map(x => x.name).join(", ");
+
+    if (!name) {
+        name = `Group: ${memberNames}`;
+    }
+
+    // placeholder
+    const avatar_url = 'img/five.png';
+
+    const chatName = humanizedDateTime();
+    const chats = [chatName];
+
+    const createGroupResponse = await fetch("/creategroup", {
+        method: "POST",
+        headers: getRequestHeaders(),
+        body: JSON.stringify({
+            name: name,
+            members: members,
+            avatar_url: avatar_url,
+            allow_self_responses: allow_self_responses,
+            activation_strategy: activation_strategy,
+            chat_metadata: {},
+            fav: fav_grp_checked,
+            chat_id: chatName,
+            chats: chats,
+        }),
     });
 
-    $("#rm_group_filter").on("input", function () {
-        const searchValue = $(this).val().trim().toLowerCase();
+    if (createGroupResponse.ok) {
+        const data = await createGroupResponse.json();
+        createTagMapFromList("#groupTagList", data.id);
 
-        if (!searchValue) {
-            $("#rm_group_add_members .group_member").show();
-        } else {
-            $("#rm_group_add_members .group_member").each(function () {
-                $(this).children(".ch_name").text().toLowerCase().includes(searchValue)
-                    ? $(this).show()
-                    : $(this).hide();
+        await getCharacters();
+        $("#rm_info_avatar").html("");
+        const avatar = $("#avatar_div_div").clone();
+        avatar.find("img").attr("src", avatar_url);
+        $("#rm_info_avatar").append(avatar);
+        $("#rm_info_block").transition({ opacity: 0, duration: 0 });
+        select_rm_info("Group chat created");
+        $("#rm_info_block").transition({ opacity: 1.0, duration: 2000 });
+    }
+}
+
+function toggleFilterByFavorites() {
+    filterMembersByFavorites(!fav_filter_on);
+}
+
+function filterMembersByFavorites(value) {
+    fav_filter_on = value;
+    $('#group_fav_filter').toggleClass('fav_on', fav_filter_on);
+
+    if (!fav_filter_on) {
+        $("#rm_group_add_members .group_member").removeClass('hiddenByFav');
+    } else {
+        $("#rm_group_add_members .group_member").each(function () {
+            const isValidSearch = $(this).hasClass("is_fav");
+            $(this).toggleClass('hiddenByFav', !isValidSearch);
+        });
+    }
+}
+
+export async function createNewGroupChat(groupId) {
+    const group = groups.find(x => x.id === groupId);
+
+    if (!group) {
+        return;
+    }
+
+    const oldChatName = group.chat_id;
+    const newChatName = humanizedDateTime();
+
+    if (typeof group.past_metadata !== 'object') {
+        group.past_metadata = {};
+    }
+
+    clearChat();
+    chat.length = 0;
+    if (oldChatName) {
+        group.past_metadata[oldChatName] = Object.assign({}, chat_metadata);
+    }
+    group.chats.push(newChatName);
+    group.chat_id = newChatName;
+    group.chat_metadata = {};
+    updateChatMetadata(group.chat_metadata, true);
+
+    await editGroup(group.id, true);
+    await getGroupChat(group.id);
+}
+
+export async function getGroupPastChats(groupId) {
+    const group = groups.find(x => x.id === groupId);
+
+    if (!group) {
+        return [];
+    }
+
+    const chats = [];
+
+    try {
+        for (const chatId of group.chats) {
+            const messages = await loadGroupChat(chatId);
+            let this_chat_file_size = (JSON.stringify(messages).length / 1024).toFixed(2) + "kb";
+            let chat_items = messages.length;
+            const lastMessage = messages.length ? messages[messages.length - 1].mes : '[The chat is empty]';
+            chats.push({
+                'file_name': chatId,
+                'mes': lastMessage,
+                'file_size': this_chat_file_size,
+                'chat_items': chat_items,
             });
         }
+    } catch (err) {
+        console.error(err);
+    }
+    finally {
+        return chats;
+    }
+}
+
+export async function openGroupChat(groupId, chatId) {
+    const group = groups.find(x => x.id === groupId);
+
+    if (!group || !group.chats.includes(chatId)) {
+        return;
+    }
+
+    clearChat();
+    chat.length = 0;
+    const previousChat = group.chat_id;
+    group.past_metadata[previousChat] = Object.assign({}, chat_metadata);
+    group.chat_id = chatId;
+    group.chat_metadata = group.past_metadata[chatId] || {};
+    group['date_last_chat'] = Date.now();
+    updateChatMetadata(group.chat_metadata, true);
+
+    await editGroup(groupId, true);
+    await getGroupChat(groupId);
+    sortCharactersList();
+}
+
+export async function renameGroupChat(groupId, oldChatId, newChatId) {
+    const group = groups.find(x => x.id === groupId);
+
+    if (!group || !group.chats.includes(oldChatId)) {
+        return;
+    }
+
+    if (group.chat_id === oldChatId) {
+        group.chat_id = newChatId;
+    }
+
+    group.chats.splice(group.chats.indexOf(oldChatId), 1);
+    group.chats.push(newChatId);
+    group.past_metadata[newChatId] = (group.past_metadata[oldChatId] || {});
+    delete group.past_metadata[oldChatId];
+
+    await editGroup(groupId, true, true);
+}
+
+export async function deleteGroupChat(groupId, chatId) {
+    const group = groups.find(x => x.id === groupId);
+
+    if (!group || !group.chats.includes(chatId)) {
+        return;
+    }
+
+    group.chats.splice(group.chats.indexOf(chatId), 1);
+    group.chat_metadata = {};
+    group.chat_id = '';
+    delete group.past_metadata[chatId];
+    updateChatMetadata(group.chat_metadata, true);
+
+    const response = await fetch('/deletegroupchat', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({ id: chatId }),
     });
 
-    $("#rm_group_submit").click(async function () {
-        let name = $("#rm_group_chat_name").val();
-        let allow_self_responses = !!$("#rm_group_allow_self_responses").prop("checked");
-        let fav = $("#rm_group_fav").prop("checked");
-        let activation_strategy = $('input[name="rm_group_activation_strategy"]:checked').val() ?? group_activation_strategy.NATURAL;
-        const members = $("#rm_group_members .group_member")
-            .map((_, x) => $(x).data("id"))
-            .toArray();
-
-        if (!name) {
-            name = `Chat with ${members.join(", ")}`;
+    if (response.ok) {
+        if (group.chats.length) {
+            await openGroupChat(groupId, group.chats[0]);
+        } else {
+            await createNewGroupChat(groupId);
         }
+    }
+}
 
-        // placeholder
-        const avatar_url = 'img/five.png';
+export async function saveGroupBookmarkChat(groupId, name, metadata) {
+    const group = groups.find(x => x.id === groupId);
 
-        const createGroupResponse = await fetch("/creategroup", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRF-Token": token,
-            },
-            body: JSON.stringify({
-                name: name,
-                members: members,
-                avatar_url: avatar_url,
-                allow_self_responses: allow_self_responses,
-                activation_strategy: activation_strategy,
-                chat_metadata: {},
-                fav: fav,
-            }),
-        });
+    if (!group) {
+        return;
+    }
 
-        if (createGroupResponse.ok) {
-            await getCharacters();
-            $("#rm_info_avatar").html("");
-            const avatar = $("#avatar_div_div").clone();
-            avatar.find("img").attr("src", avatar_url);
-            $("#rm_info_avatar").append(avatar);
-            $("#rm_info_block").transition({ opacity: 0, duration: 0 });
-            select_rm_info("Group chat created");
-            $("#rm_info_block").transition({ opacity: 1.0, duration: 2000 });
-        }
+    group.past_metadata[name] = { ...chat_metadata, ...(metadata || {}) };
+    group.chats.push(name);
+
+    await editGroup(groupId, true);
+
+    await fetch("/savegroupchat", {
+        method: "POST",
+        headers: getRequestHeaders(),
+        body: JSON.stringify({ id: name, chat: [...chat] }),
     });
+}
 
+function setGroupScenario() {
+    if (!selected_group) {
+        return;
+    }
+
+    const template = $('#group_scenario_template .group_scenario').clone();
+    const metadataValue = chat_metadata['scenario'] || '';
+    template.find('.group_chat_scenario').text(metadataValue);
+    callPopup(template.get(0).outerHTML, 'text');
+}
+
+function onGroupScenarioInput() {
+    const value = $(this).val();
+    const metadata = { scenario: value, };
+    updateChatMetadata(metadata, false);
+}
+
+function onGroupScenarioRemoveClick() {
+    $(this).closest('.group_scenario').find('.group_chat_scenario').val('').trigger('input');
+}
+
+jQuery(() => {
+    $(document).on("click", ".group_select", selectGroup);
+    $(document).on("input", ".group_chat_scenario", onGroupScenarioInput);
+    $(document).on("click", ".remove_scenario_override", onGroupScenarioRemoveClick);
+    $("#rm_group_filter").on("input", filterGroupMembers);
+    $("#group_fav_filter").on("click", toggleFilterByFavorites);
+    $("#rm_group_submit").on("click", createGroup);
+    $("#rm_group_scenario").on("click", setGroupScenario);
     $("#rm_group_automode").on("input", function () {
         const value = $(this).prop("checked");
         is_group_automode_enabled = value;

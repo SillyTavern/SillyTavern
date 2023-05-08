@@ -1,10 +1,10 @@
 import { getStringHash, debounce } from "../../utils.js";
 import { getContext, getApiUrl, extension_settings } from "../../extensions.js";
-import { extension_prompt_types, saveSettingsDebounced } from "../../../script.js";
+import { extension_prompt_types, is_send_press, saveSettingsDebounced } from "../../../script.js";
 export { MODULE_NAME };
 
 const MODULE_NAME = '1_memory';
-const UPDATE_INTERVAL = 1000;
+const UPDATE_INTERVAL = 5000;
 
 let lastCharacterId = null;
 let lastGroupId = null;
@@ -119,6 +119,7 @@ function getLatestMemoryFromChat(chat) {
     }
 
     const reversedChat = chat.slice().reverse();
+    reversedChat.shift();
     for (let mes of reversedChat) {
         if (mes.extra && mes.extra.memory) {
             return mes.extra.memory;
@@ -128,12 +129,35 @@ function getLatestMemoryFromChat(chat) {
     return '';
 }
 
+let isWorkerBusy = false;
+
+async function moduleWorkerWrapper() {
+    // Don't touch me I'm busy...
+    if (isWorkerBusy) {
+        return;
+    }
+
+    // I'm free. Let's update!
+    try {
+        isWorkerBusy = true;
+        await moduleWorker();
+    }
+    finally {
+        isWorkerBusy = false;
+    }
+}
+
 async function moduleWorker() {
     const context = getContext();
     const chat = context.chat;
 
     // no characters or group selected 
-    if (!context.groupId && !context.characterId) {
+    if (!context.groupId && context.characterId === undefined) {
+        return;
+    }
+
+    // Generation is in progress, summary prevented
+    if (is_send_press) {
         return;
     }
 
@@ -151,7 +175,7 @@ async function moduleWorker() {
     }
 
     // No new messages - do nothing
-    if (lastMessageId === chat.length && getStringHash(chat[chat.length - 1].mes) === lastMessageHash) {
+    if (chat.length === 0 || (lastMessageId === chat.length && getStringHash(chat[chat.length - 1].mes) === lastMessageHash)) {
         return;
     }
 
@@ -189,6 +213,7 @@ async function summarizeChat(context) {
     const chat = context.chat;
     const longMemory = getLatestMemoryFromChat(chat);
     const reversedChat = chat.slice().reverse();
+    reversedChat.shift();
     let memoryBuffer = [];
 
     for (let mes of reversedChat) {
@@ -250,7 +275,10 @@ async function summarizeChat(context) {
             const newContext = getContext();
 
             // something changed during summarization request
-            if (newContext.groupId !== context.groupId || newContext.chatId !== context.chatId || (!newContext.groupId && (newContext.characterId !== context.characterId))) {
+            if (newContext.groupId !== context.groupId
+                || newContext.chatId !== context.chatId
+                || (!newContext.groupId && (newContext.characterId !== context.characterId))) {
+                console.log('Context changed, summary discarded');
                 return;
             }
 
@@ -269,6 +297,7 @@ function onMemoryRestoreClick() {
     const context = getContext();
     const content = $('#memory_contents').val();
     const reversedChat = context.chat.slice().reverse();
+    reversedChat.shift();
 
     for (let mes of reversedChat) {
         if (mes.extra && mes.extra.memory == content) {
@@ -292,7 +321,8 @@ function setMemoryContext(value, saveToMessage) {
     $('#memory_contents').val(value);
 
     if (saveToMessage && context.chat.length) {
-        const mes = context.chat[context.chat.length - 1];
+        const idx = context.chat.length - 2;
+        const mes = context.chat[idx < 0 ? 0 : idx];
 
         if (!mes.extra) {
             mes.extra = {};
@@ -354,5 +384,5 @@ $(document).ready(function () {
 
     addExtensionControls();
     loadSettings();
-    setInterval(moduleWorker, UPDATE_INTERVAL);
+    setInterval(moduleWorkerWrapper, UPDATE_INTERVAL);
 });

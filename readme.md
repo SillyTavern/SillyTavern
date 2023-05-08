@@ -83,11 +83,15 @@ Get in touch with the developers directly:
 
 ## UI/CSS/Quality of Life tweaks by RossAscends
 
-* Mobile-friendly page design
+* Mobile UI with optimized for iOS, and supports saving a shortcut to home screen and opening in fullscreen mode.
 * HotKeys
-  * Ctrl+Up = Connect to API 
+  * Up = Edit last message in chat
+  * Ctrl+Up = Edit last USER message in chat
+  * Left = swipe left
+  * Right = swipe right (NOTE: swipe hotkeys are disabled when chatbar has something typed into it)
   * Ctrl+Left = view locally stored variables (in the browser console window)
-  * Ctrl+Enter = Regenerate the last AI response.
+  * Enter (with chat bar selected) = send your message to AI 
+  * Ctrl+Enter = Regenerate the last AI response
 
 * User Name Changes and Character Deletion no longer force the page to refresh.
 
@@ -100,16 +104,17 @@ Get in touch with the developers directly:
   * Chat preview increased from 40 characters to 300.
   * Multiple options for characters list sorting (by name, creation date, chat sizes).
 
-* Now, by default the settings panel will close when you click away from it.
+* By default the left and right settings panel will close when you click away from it.
 * Clicking the Lock on the nav panel will hold the panel open, and this setting be remembered across sessions.
 * Nav panel status of open or closed will also be saved across sessions.
 
-* Mobile UI optimized for iOS, and supports saving a shortcut to the iOS home screen and opening in fullscreen mode.
 * Customizable chat UI:
     * Play a sound when a new message arrives
     * Switch between round or rectangle avatar styles
     * Have a wider chat window on the desktop
     * Optional semi-transparent glass-like panels
+    * Customizable page colors for 'main text', 'quoted text' 'italics text'.
+    * Customizable UI background color and blur amount
 
 ## Installation
 
@@ -187,6 +192,14 @@ Try enabling the No Blur Effect (Fast UI) mode on the User settings panel.
 1. Offer monetary donations
 2. Send bug reports without providing any context
 3. Ask the questions that were already answered numerous times
+
+## Where can I find the old backgrounds?
+
+We're moving to 100% original content only policy, so old background images have been removed from this repository.
+
+You can find them archived here:
+
+https://files.catbox.moe/1xevnc.zip
 
 ## Screenshots
 <img width="400" alt="image" src="https://user-images.githubusercontent.com/18619528/228649245-8061c60f-63dc-488e-9325-f151b7a3ec2d.png">

@@ -11,16 +11,25 @@ import {
     api_server_textgenerationwebui,
     is_send_press,
     getTokenCount,
-    max_context,
+    menu_type,
+    selectRightMenuWithAnimation,
+    select_selected_character,
+    setCharacterId,
+
 
 } from "../script.js";
 
 import {
+    select_group_chats,
+} from "./group-chats.js";
+
+import {
     power_user,
+    send_on_enter_options,
 } from "./power-user.js";
 
 import { LoadLocal, SaveLocal, ClearLocal, CheckLocal, LoadLocalBool } from "./f-localStorage.js";
-import { selected_group, is_group_generating } from "./group-chats.js";
+import { selected_group, is_group_generating, getGroupAvatar, groups } from "./group-chats.js";
 import { oai_settings } from "./openai.js";
 import { poe_settings } from "./poe.js";
 
@@ -46,7 +55,7 @@ var count_tokens;
 var perm_tokens;
 
 var connection_made = false;
-var retry_delay = 100;
+var retry_delay = 500;
 var RA_AC_retries = 1;
 
 const observerConfig = { childList: true, subtree: true };
@@ -100,6 +109,40 @@ waitForElement("#expression-image", 10000).then(function () {
     console.log("expression holder not loaded yet");
 });
 
+// Device detection
+const deviceInfo = await getDeviceInfo();
+
+async function getDeviceInfo() {
+    try {
+        const deviceInfo = await (await fetch('/deviceinfo')).json();
+        console.log("Device type: " + deviceInfo?.device?.type);
+        return deviceInfo;
+    }
+    catch {
+        console.log("Couldn't load device info. Defaulting to desktop");
+        return { device: { type: 'desktop' } };
+    }
+}
+
+function isMobile() {
+    const mobileTypes = ['smartphone', 'tablet', 'phablet', 'feature phone', 'portable media player'];
+    return mobileTypes.includes(deviceInfo?.device?.type);
+}
+
+function shouldSendOnEnter() {
+    if (!power_user) {
+        return false;
+    }
+
+    switch (power_user.send_on_enter) {
+        case send_on_enter_options.DISABLED:
+            return false;
+        case send_on_enter_options.AUTO:
+            return !isMobile();
+        case send_on_enter_options.ENABLED:
+            return true;
+    }
+}
 
 //RossAscends: Added function to format dates used in files and chat timestamps to a humanized format.
 //Mostly I wanted this to be for file names, but couldn't figure out exactly where the filename save code was as everything seemed to be connected.
@@ -136,66 +179,75 @@ $("#rm_button_create").on("click", function () {                 //when "+New Ch
     create_save_mes_example = "";
     $("#result_info").html('Type to start counting tokens!');
 });
-$("#rm_ch_create_block").on("input", function () { RA_CountCharTokens(); });                      //when any input is made to the create/edit character form textareas
-$("#character_popup").on("input", function () { RA_CountCharTokens(); });                      //when any input is made to the advanced editing popup textareas
+//when any input is made to the create/edit character form textareas
+$("#rm_ch_create_block").on("input", function () { RA_CountCharTokens(); });
+//when any input is made to the advanced editing popup textareas
+$("#character_popup").on("input", function () { RA_CountCharTokens(); });
 //function:
-function RA_CountCharTokens() {
+export function RA_CountCharTokens() {
     $("#result_info").html("");
     //console.log('RA_TC -- starting with this_chid = ' + this_chid);
-    if (document.getElementById('name_div').style.display == "block") {            //if new char
-
-        $("#form_create").on("input", function () {                                    //fill temp vars with form_create values
+    if (menu_type === "create") {            //if new char
+        function saveFormVariables() {
             create_save_name = $("#character_name_pole").val();
             create_save_description = $("#description_textarea").val();
             create_save_first_message = $("#firstmessage_textarea").val();
-        });
-        $("#character_popup").on("input", function () {                                //fill temp vars with advanced popup values
+        }
+
+        function savePopupVariables() {
             create_save_personality = $("#personality_textarea").val();
             create_save_scenario = $("#scenario_pole").val();
             create_save_mes_example = $("#mes_example_textarea").val();
+        }
 
-        });
+        saveFormVariables();
+        savePopupVariables();
 
         //count total tokens, including those that will be removed from context once chat history is long
-        count_tokens = getTokenCount(JSON.stringify(
-            create_save_name +
-            create_save_description +
-            create_save_personality +
-            create_save_scenario +
-            create_save_first_message +
-            create_save_mes_example
-        ));
+        let count_string = [
+            create_save_name,
+            create_save_description,
+            create_save_personality,
+            create_save_scenario,
+            create_save_first_message,
+            create_save_mes_example,
+        ].join('\n').replace(/\r/gm, '').trim();
+        count_tokens = getTokenCount(count_string);
 
         //count permanent tokens that will never get flushed out of context
-        perm_tokens = getTokenCount(JSON.stringify(
-            create_save_name +
-            create_save_description +
-            create_save_personality +
-            create_save_scenario
-        ));
+        let perm_string = [
+            create_save_name,
+            create_save_description,
+            create_save_personality,
+            create_save_scenario,
+            // add examples to permanent if they are pinned
+            (power_user.pin_examples ? create_save_mes_example : ''),
+        ].join('\n').replace(/\r/gm, '').trim();
+        perm_tokens = getTokenCount(perm_string);
 
     } else {
         if (this_chid !== undefined && this_chid !== "invalid-safety-id") {    // if we are counting a valid pre-saved char
 
             //same as above, all tokens including temporary ones
-            count_tokens = getTokenCount(
-                JSON.stringify(
-                    characters[this_chid].description +
-                    characters[this_chid].personality +
-                    characters[this_chid].scenario +
-                    characters[this_chid].first_mes +
-                    characters[this_chid].mes_example
-                ));
+            let count_string = [
+                characters[this_chid].description,
+                characters[this_chid].personality,
+                characters[this_chid].scenario,
+                characters[this_chid].first_mes,
+                characters[this_chid].mes_example,
+            ].join('\n').replace(/\r/gm, '').trim();
+            count_tokens = getTokenCount(count_string);
 
             //permanent tokens count
-            perm_tokens = getTokenCount(
-                JSON.stringify(
-                    characters[this_chid].name +
-                    characters[this_chid].description +
-                    characters[this_chid].personality +
-                    characters[this_chid].scenario +
-                    (power_user.pin_examples ? characters[this_chid].mes_example : '') // add examples to permanent if they are pinned
-                ));
+            let perm_string = [
+                characters[this_chid].name,
+                characters[this_chid].description,
+                characters[this_chid].personality,
+                characters[this_chid].scenario,
+                // add examples to permanent if they are pinned
+                (power_user.pin_examples ? characters[this_chid].mes_example : ''),
+            ].join('\n').replace(/\r/gm, '').trim();
+            perm_tokens = getTokenCount(perm_string);
         } else { console.log("RA_TC -- no valid char found, closing."); }                // if neither, probably safety char or some error in loading
     }
     // display the counted tokens
@@ -205,48 +257,80 @@ function RA_CountCharTokens() {
         $("#result_info").html(`
         <span class="neutral_warning">${count_tokens}</span>&nbsp;Tokens (<span class="neutral_warning">${perm_tokens}</span><span>&nbsp;Permanent Tokens)
         <br>
-        <div id="chartokenwarning" class="menu_button whitespacenowrap"><a href="/notes/token-limits.html" target="_blank">Learn More About Token 'Limits'</a></div>`);
+        <div id="chartokenwarning" class="menu_button whitespacenowrap"><a href="/notes#charactertokens" target="_blank">Learn More About Token 'Limits'</a></div>`);
     } //warn if either are over 1024
 }
 //Auto Load Last Charcter -- (fires when active_character is defined and auto_load_chat is true)
 async function RA_autoloadchat() {
     if (document.getElementById('CharID0') !== null) {
-        //console.log('char list loaded! clicking activeChar');
-        var CharToAutoLoad = document.getElementById('CharID' + LoadLocal('ActiveChar'));
-        //console.log(CharToAutoLoad);
-        let autoLoadGroup = document.querySelector(`.group_select[grid="${LoadLocal('ActiveGroup')}"]`);
-        //console.log(autoLoadGroup);
-        if (CharToAutoLoad != null) {
+        var charToAutoLoad = document.getElementById('CharID' + LoadLocal('ActiveChar'));
+        let groupToAutoLoad = document.querySelector(`.group_select[grid="${LoadLocal('ActiveGroup')}"]`);
+        if (charToAutoLoad != null) { $(charToAutoLoad).click(); }
+        else if (groupToAutoLoad != null) { $(groupToAutoLoad).click(); }
 
+        // if the charcter list hadn't been loaded yet, try again. 
+    } else { setTimeout(RA_autoloadchat, 100); }
+}
 
-            // console.log('--ALC - clicking character');
-            CharToAutoLoad.click();
-            CharToAutoLoad.click();
+export async function favsToHotswap() {
+    const selector = ['#rm_print_characters_block .character_select', '#rm_print_characters_block .group_select'].join(',');
+    const container = $('#right-nav-panel .hotswap');
+    const template = $('#hotswap_template .hotswapAvatar');
+    container.empty();
+    const maxCount = 6;
+    let count = 0;
 
+    $(selector).each(function () {
+        if ($(this).hasClass('is_fav') && count < maxCount) {
+            const isCharacter = $(this).hasClass('character_select');
+            const isGroup = $(this).hasClass('group_select');
+            const grid = Number($(this).attr('grid'));
+            const chid = Number($(this).attr('chid'));
+            let thisHotSwapSlot = template.clone();
+            thisHotSwapSlot.toggleClass('character_select', isCharacter);
+            thisHotSwapSlot.toggleClass('group_select', isGroup);
+            thisHotSwapSlot.attr('grid', isGroup ? grid : '');
+            thisHotSwapSlot.attr('chid', isCharacter ? chid : '');
+            thisHotSwapSlot.data('id', isGroup ? grid : chid);
+
+            if (isGroup) {
+                const group = groups.find(x => x.id === grid);
+                const avatar = getGroupAvatar(group);
+                $(thisHotSwapSlot).find('img').replaceWith(avatar);
+            }
+
+            if (isCharacter) {
+                const avatarUrl = $(this).find('img').attr('src');
+                $(thisHotSwapSlot).find('img').attr('src', avatarUrl);
+            }
+
+            $(thisHotSwapSlot).css('cursor', 'pointer');
+            container.append(thisHotSwapSlot);
+            count++;
         }
-        else if (autoLoadGroup != null) {
-            //console.log('--ALC - clicking group');
-            autoLoadGroup.click();
-            autoLoadGroup.click();
+    });
+
+    //console.log('about to check for leftover selectors...')
+    // there are 6 slots in total,
+    if (count < maxCount) { //if any are left over
+        let leftOverSlots = maxCount - count;
+        for (let i = 1; i <= leftOverSlots; i++) {
+            container.append(template.clone());
         }
-        else {
-            console.log(CharToAutoLoad + ' ActiveChar local var - not found: ' + LoadLocal('ActiveChar'));
-        }
-        RestoreNavTab();
     } else {
-        //console.log('no char list yet..');
-        setTimeout(RA_autoloadchat, 100);            // if the charcter list hadn't been loaded yet, try again. 
+        //console.log(`count was ${count} so no need to knock off any selectors!`);
     }
 }
-//only triggers when AutoLoadChat is enabled, consider adding this as an independent feature later. 
-function RestoreNavTab() {
-    if ($('#rm_button_selected_ch').children("h2").text() !== '') {        //check for a change in the character edit tab name
-        //console.log('detected ALC char finished loaded, proceeding to restore tab.');
-        $(SelectedNavTab).click();                                     //click to restore saved tab when name has changed (signalling char load is done)
+
+/* function RestoreNavTab() {
+    if ($('#rm_button_selected_ch').children("h2").text() !== '') {
+
+        $(SelectedNavTab).click();                                 
     } else {
-        setTimeout(RestoreNavTab, 100);                                //if not changed yet, check again after 100ms
+        setTimeout(RestoreNavTab, 100);                            
     }
-}
+} */
+
 //changes input bar and send button display depending on connection status
 function RA_checkOnlineStatus() {
     if (online_status == "no_connection") {
@@ -332,7 +416,7 @@ function isUrlOrAPIKey(string) {
 function OpenNavPanels() {
     //auto-open R nav if locked and previously open
     if (LoadLocalBool("NavLockOn") == true && LoadLocalBool("NavOpened") == true) {
-        console.log("RA -- clicking right nav to open");
+        //console.log("RA -- clicking right nav to open");
         $("#rightNavDrawerIcon").click();
     } else {
         /*         console.log('didnt see reason to open right nav on load: R-nav locked? ' +
@@ -359,6 +443,7 @@ function OpenNavPanels() {
 dragElement(document.getElementById("sheld"));
 dragElement(document.getElementById("left-nav-panel"));
 dragElement(document.getElementById("right-nav-panel"));
+dragElement(document.getElementById("avatar_zoom_popup"));
 
 
 
@@ -510,7 +595,11 @@ $("document").ready(function () {
     $(AutoConnectCheckbox).prop("checked", LoadLocalBool("AutoConnectEnabled"));
     $(AutoLoadChatCheckbox).prop("checked", LoadLocalBool("AutoLoadChatEnabled"));
 
-    if (LoadLocalBool('AutoLoadChatEnabled') == true) { RA_autoloadchat(); }
+    setTimeout(function () {
+        if (LoadLocalBool('AutoLoadChatEnabled') == true) { RA_autoloadchat(); }
+    }, 200);
+
+
     //Autoconnect on page load if enabled, or when api type is changed
     if (LoadLocalBool("AutoConnectEnabled") == true) { RA_autoconnect(); }
     $("#main_api").change(function () {
@@ -523,10 +612,10 @@ $("document").ready(function () {
     $(RPanelPin).on("click", function () {
         SaveLocal("NavLockOn", $(RPanelPin).prop("checked"));
         if ($(RPanelPin).prop("checked") == true) {
-            console.log('adding pin class to right nav');
+            //console.log('adding pin class to right nav');
             $(RightNavPanel).addClass('pinnedOpen');
         } else {
-            console.log('removing pin class from right nav');
+            //console.log('removing pin class from right nav');
             $(RightNavPanel).removeClass('pinnedOpen');
 
             if ($(RightNavPanel).hasClass('openDrawer') && $('.openDrawer').length > 1) {
@@ -539,10 +628,10 @@ $("document").ready(function () {
     $(LPanelPin).on("click", function () {
         SaveLocal("LNavLockOn", $(LPanelPin).prop("checked"));
         if ($(LPanelPin).prop("checked") == true) {
-            console.log('adding pin class to Left nav');
+            //console.log('adding pin class to Left nav');
             $(LeftNavPanel).addClass('pinnedOpen');
         } else {
-            console.log('removing pin class from Left nav');
+            //console.log('removing pin class from Left nav');
             $(LeftNavPanel).removeClass('pinnedOpen');
 
             if ($(LeftNavPanel).hasClass('openDrawer') && $('.openDrawer').length > 1) {
@@ -597,9 +686,6 @@ $("document").ready(function () {
         chatbarInFocus = false;
     });
 
-
-
-
     setTimeout(() => {
         OpenNavPanels();
     }, 300);
@@ -609,10 +695,7 @@ $("document").ready(function () {
     $(AutoLoadChatCheckbox).on("change", function () { SaveLocal("AutoLoadChatEnabled", $(AutoLoadChatCheckbox).prop("checked")); });
 
     $(SelectedCharacterTab).click(function () { SaveLocal('SelectedNavTab', 'rm_button_selected_ch'); });
-    $("#rm_button_characters").click(function () {            //if char list is clicked, in addition to saving it...
-        SaveLocal('SelectedNavTab', 'rm_button_characters');
-        characters.sort(Intl.Collator().compare);            // we sort the list    
-    });
+    $("#rm_button_characters").click(function () { SaveLocal('SelectedNavTab', 'rm_button_characters'); });
 
     // when a char is selected from the list, save them as the auto-load character for next page load
     $(document).on("click", ".character_select", function () {
@@ -656,7 +739,7 @@ $("document").ready(function () {
     function isInputElementInFocus() {
         //return $(document.activeElement).is(":input");
         var focused = $(':focus');
-        if (focused.is('input') || focused.is('textarea')) {
+        if (focused.is('input') || focused.is('textarea') || focused.attr('contenteditable') == 'true') {
             if (focused.attr('id') === 'send_textarea') {
                 return false;
             }
@@ -665,12 +748,21 @@ $("document").ready(function () {
         return false;
     }
 
-
-
-
+    $(document).on('keydown', function (event) {
+        processHotkeys(event);
+    });
 
     //Additional hotkeys CTRL+ENTER and CTRL+UPARROW
-    document.addEventListener("keydown", (event) => {
+    function processHotkeys(event) {
+        //Enter to send when send_textarea in focus
+        if ($(':focus').attr('id') === 'send_textarea') {
+            const sendOnEnter = shouldSendOnEnter();
+            if (!event.shiftKey && !event.ctrlKey && event.key == "Enter" && is_send_press == false && sendOnEnter) {
+                event.preventDefault();
+                Generate();
+            }
+        }
+
         if (event.ctrlKey && event.key == "Enter") {
             // Ctrl+Enter for Regeneration Last Response
             if (is_send_press == false) {
@@ -682,11 +774,7 @@ $("document").ready(function () {
         if (event.ctrlKey && event.key == "ArrowLeft") {        //for debug, show all local stored vars
             CheckLocal();
         }
-        /*
-        if (event.ctrlKey && event.key == "ArrowRight") {        //for debug, empty local storage state
-            ClearLocal();
-        }
-        */
+
         if (event.key == "ArrowLeft") {        //swipes left
             if (
                 $(".swipe_left:last").css('display') === 'flex' &&
@@ -710,7 +798,6 @@ $("document").ready(function () {
             }
         }
 
-
         if (event.ctrlKey && event.key == "ArrowUp") { //edits last USER message if chatbar is empty and focused
             console.log('got ctrl+uparrow input');
             if (
@@ -730,7 +817,7 @@ $("document").ready(function () {
         }
 
         if (event.key == "ArrowUp") { //edits last message if chatbar is empty and focused
-            console.log('got uparrow input');
+            //console.log('got uparrow input');
             if (
                 $("#send_textarea").val() === '' &&
                 chatbarInFocus === true &&
@@ -745,6 +832,5 @@ $("document").ready(function () {
                 }
             }
         }
-
-    });
+    }
 });

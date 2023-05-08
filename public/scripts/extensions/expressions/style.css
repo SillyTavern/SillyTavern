@@ -4,6 +4,12 @@
     vertical-align: middle;
 }
 
+#expression-wrapper {
+    display: flex;
+    height: calc(100vh - 40px);
+    width: 100vw;
+}
+
 .expression-holder {
     min-width: 100px;
     min-height: 100px;
@@ -14,7 +20,7 @@
     bottom: 1px;
     padding: 0;
     filter: drop-shadow(2px 2px 2px #51515199);
-    z-index: 1;
+    z-index: 2;
     overflow: hidden;
 
 }
@@ -32,6 +38,9 @@ img.expression[src=""] {
 
 img.expression.default {
     vertical-align: middle;
+    max-height: 120px;
+    object-fit: contain !important;
+    margin-top: 50px;
 }
 
 .debug-image {
