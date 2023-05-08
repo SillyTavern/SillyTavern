@@ -1066,7 +1066,7 @@ async function createGroup() {
     const memberNames = characters.filter(x => members.includes(x.avatar)).map(x => x.name).join(", ");
 
     if (!name) {
-        name = `Chat with ${memberNames}`;
+        name = `Group: ${memberNames}`;
     }
 
     // placeholder

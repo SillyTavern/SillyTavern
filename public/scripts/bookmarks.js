@@ -171,7 +171,7 @@ async function convertSoloToGroupChat() {
     const character = characters[this_chid];
 
     // Populate group required fields
-    const name = getUniqueName(`Chat with ${character.name}`, y => groups.findIndex(x => x.name === y) !== -1);
+    const name = getUniqueName(`Group: ${character.name}`, y => groups.findIndex(x => x.name === y) !== -1);
     const avatar = getThumbnailUrl('avatar', character.avatar);
     const chatName = humanizedDateTime();
     const chats = [chatName];

@@ -274,7 +274,7 @@ async function RA_autoloadchat() {
 
 export async function favsToHotswap() {
     const selector = ['#rm_print_characters_block .character_select', '#rm_print_characters_block .group_select'].join(',');
-    const container = $('#rm_PinAndTabs .hotswap');
+    const container = $('#right-nav-panel .hotswap');
     const template = $('#hotswap_template .hotswapAvatar');
     container.empty();
     const maxCount = 6;
