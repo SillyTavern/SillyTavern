@@ -105,6 +105,7 @@ let power_user = {
     auto_fix_generated_markdown: true,
     send_on_enter: send_on_enter_options.AUTO,
     render_formulas: false,
+    allow_name1_display: false,
     allow_name2_display: false,
     hotswap_enabled: true,
     timer_enabled: true,
@@ -477,6 +478,7 @@ function loadPowerUserSettings(settings, data) {
     $("#play_message_sound").prop("checked", power_user.play_message_sound);
     $("#play_sound_unfocused").prop("checked", power_user.play_sound_unfocused);
     $("#auto_save_msg_edits").prop("checked", power_user.auto_save_msg_edits);
+    $("#allow_name1_display").prop("checked", power_user.allow_name1_display);
     $("#allow_name2_display").prop("checked", power_user.allow_name2_display);
     $("#hotswapEnabled").prop("checked", power_user.hotswap_enabled);
     $("#messageTimerEnabled").prop("checked", power_user.timer_enabled);
@@ -896,6 +898,12 @@ $(document).ready(() => {
     $("#render_formulas").on("input", function () {
         power_user.render_formulas = !!$(this).prop('checked');
         reloadMarkdownProcessor(power_user.render_formulas);
+        reloadCurrentChat();
+        saveSettingsDebounced();
+    });
+
+    $("#allow_name1_display").on("input", function () {
+        power_user.allow_name1_display = !!$(this).prop('checked');
         reloadCurrentChat();
         saveSettingsDebounced();
     })

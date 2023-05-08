@@ -1838,11 +1838,14 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 arrMes[arrMes.length] = item;
 
             } else {
-                setInContextMessages(arrMes.length, type);
                 break;
 
             }
             await delay(1); //For disable slow down (encode gpt-2 need fix)
+        }
+
+        if (main_api !== 'openai') {
+            setInContextMessages(arrMes.length, type);
         }
 
         // Estimate how many unpinned example messages fit in the context
@@ -2459,7 +2462,6 @@ function extractMessageFromData(data) {
 }
 
 function cleanUpMessage(getMessage, isImpersonate) {
-    const nameToTrim = isImpersonate ? name2 : name1;
     if (power_user.collapse_newlines) {
         getMessage = collapseNewlines(getMessage);
     }
@@ -2474,8 +2476,21 @@ function cleanUpMessage(getMessage, isImpersonate) {
         getMessage = getMessage.replace(/<BOT>/g, name2);
         getMessage = getMessage.replace(/You:/g, name1 + ':');
     }
-    if (getMessage.indexOf(nameToTrim + ":") != -1) {
-        getMessage = getMessage.substr(0, getMessage.indexOf(nameToTrim + ":"));
+
+    let nameToTrim = isImpersonate ?  name2 : name1;
+
+    if (isImpersonate) {
+        nameToTrim = power_user.allow_name2_display ? '' : name2;
+    }
+    else {
+        nameToTrim = power_user.allow_name1_display ? '' : name1;
+    }
+
+    if (nameToTrim && getMessage.indexOf(`${nameToTrim}:`) == 0) {
+        getMessage = getMessage.substr(0, getMessage.indexOf(`${nameToTrim}:`));
+    }
+    if (nameToTrim && getMessage.indexOf(`\n${nameToTrim}:`) > 0) {
+        getMessage = getMessage.substr(0, getMessage.indexOf(`\n${nameToTrim}:`));
     }
     if (getMessage.indexOf('<|endoftext|>') != -1) {
         getMessage = getMessage.substr(0, getMessage.indexOf('<|endoftext|>'));
