@@ -2583,14 +2583,22 @@ h5 {
     padding: 0 0.15rem;
 }
 
-#rm_tag_filter {
-    justify-content: center;
+.rm_tag_controls {
+    display: flex;
+    column-gap: 10px;
+    flex-direction: row;
+    align-items: flex-start;
+    margin: 5px;
 }
 
 #rm_tag_filter .tag {
     cursor: pointer;
     opacity: 0.6;
     filter: brightness(0.8);
+}
+
+.tags_view {
+    margin: 0;
 }
 
 .tag.selected {
