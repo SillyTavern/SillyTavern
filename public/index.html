@@ -1857,27 +1857,24 @@
 
                 <div name="Character List Panel" id="rm_characters_block" class="right_menu">
                     <div id="charListFixedTop">
-                        <div class="form_create_bottom_buttons_block">
+                        <form id="form_character_search_form" action="javascript:void(null);">
                             <div id="rm_button_create" title="Create New Character" class="menu_button fa-solid fa-user-plus "></div>
                             <div id="character_import_button" title="Import Character from File" class="menu_button fa-solid fa-file-arrow-up "></div>
                             <div id="rm_button_group_chats" title="Create New Chat Group" class="menu_button fa-solid fa-users-gear "></div>
-                        </div>
-                        <form id="form_character_search_form" action="javascript:void(null);">
-                            <input id="character_search_bar" class="text_pole" type="search" placeholder="Character search..." maxlength="50" />
+                            <input id="character_search_bar" class="text_pole" type="search" placeholder="Search..." maxlength="50" />
                             <select id="character_sort_order" title="Characters sorting order">
-                                <option data-field="name" data-order="asc">Name, A-Z</option>
-                                <option data-field="name" data-order="desc">Name, Z-A</option>
-                                <option data-field="date_added" data-order="desc">Date added, newer first</option>
-                                <option data-field="date_added" data-order="asc">Date added, older first</option>
-                                <option data-field="fav" data-order="desc" data-rule="boolean">Favorites first</option>
-                                <option data-field="date_last_chat" data-order="desc">Recently chatted</option>
-                                <option data-field="chat_size" data-order="desc">Most chatted</option>
-                                <option data-field="chat_size" data-order="asc">Least chatted</option>
+                                <option data-field="name" data-order="asc">A-Z</option>
+                                <option data-field="name" data-order="desc">Z-A</option>
+                                <option data-field="date_added" data-order="desc">Newest</option>
+                                <option data-field="date_added" data-order="asc">Oldest</option>
+                                <option data-field="fav" data-order="desc" data-rule="boolean">Favorites</option>
+                                <option data-field="date_last_chat" data-order="desc">Recent</option>
+                                <option data-field="chat_size" data-order="desc">Most chats</option>
+                                <option data-field="chat_size" data-order="asc">Least chats</option>
                             </select>
                         </form>
                         <div class="rm_tag_controls">
                             <div id="rm_tag_filter" class="tags"></div>
-                            <div class="tags_view menu_button fa-solid fa-tags" title="Manage Tags"></div>
                         </div>
                     </div>
                     <div id="rm_print_characters_block"></div>

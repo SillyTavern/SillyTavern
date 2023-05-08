@@ -18,6 +18,7 @@ const TAG_LOGIC_AND = true; // switch to false to use OR logic for combining tag
 const CHARACTER_SELECTOR = '#rm_print_characters_block > div';
 
 const ACTIONABLE_TAGS = {
+    VIEW: { id: 2, name: 'Manage tags', color: 'rgba(150, 100, 100, 0.5)', action: onViewTagsListClick, icon: 'fa-solid fa-tags' },
     FAV: { id: 1, name: 'Show only favorites', color: 'rgba(255, 255, 0, 0.5)', action: applyFavFilter, icon: 'fa-solid fa-star' },
     GROUP: { id: 0, name: 'Show only groups', color: 'rgba(100, 100, 100, 0.5)', action: filterByGroups, icon: 'fa-solid fa-users' },
 }

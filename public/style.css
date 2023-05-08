@@ -1059,20 +1059,25 @@ select option:not(:checked) {
 #form_character_search_form {
     display: flex;
     flex-direction: row;
-    align-items: center;
+    align-items: stretch;
     margin: 5px;
-    column-gap: 10px;
+    column-gap: 5px;
+}
+
+#form_character_search_form .menu_button {
+    margin: 0;
 }
 
 #character_sort_order {
     margin: 0;
     flex: 1;
+    height: auto;
 }
 
 #character_search_bar {
+    margin: 0;
     flex: 1;
     padding-left: 0.75em;
-    margin: 0;
 }
 
 input[type=search]::-webkit-search-cancel-button {
