@@ -190,6 +190,11 @@ function appendTagToList(listElement, tag, { removable, selectable, action }) {
     const removeButton = tagElement.find(".tag_remove");
     removable ? removeButton.show() : removeButton.hide();
 
+    if (tag.name === 'Groups') {
+        tagElement.find('.tag_name').addClass('fa-solid fa-users');
+        tagElement.find('.tag_name').text('');
+    }
+
     if (selectable) {
         tagElement.on('click', () => onTagFilterClick.bind(tagElement)(listElement));
     }
@@ -249,6 +254,7 @@ function printTags() {
 
     for (const tag of Object.values(ACTIONABLE_TAGS)) {
         appendTagToList('#rm_tag_filter', tag, { removable: false, selectable: false, action: tag.action });
+
     }
 
     for (const tag of tagsToDisplay) {

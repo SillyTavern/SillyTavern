@@ -2525,6 +2525,17 @@ h5 {
 
 }
 
+.tag.actionable {
+    border-style: dotted;
+    margin-right: 10px;
+}
+
+/* .tag.actionable::after {
+    font-size: calc(var(--mainFontSize) - 5%);
+    content: "|";
+    position: absolute;
+    right: -12px;
+} */
 
 
 .tag_remove {
