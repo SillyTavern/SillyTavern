@@ -2205,17 +2205,19 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     if (isMultigenEnabled() && type !== 'quiet') {
                         message_already_generated += getMessage;
                         promptBias = '';
+
+                        let this_mes_is_name;
+                        ({ this_mes_is_name, getMessage } = extractNameFromMessage(getMessage, force_name2, isImpersonate));
+                        if (tokens_already_generated == 0) {
+                            console.log("New message");
+                            ({ type, getMessage } = saveReply(type, getMessage, this_mes_is_name, title));
+                        }
+                        else {
+                            console.log("Should append message");
+                            ({ type, getMessage } = saveReply('append', getMessage, this_mes_is_name, title));
+                        }
+
                         if (shouldContinueMultigen(getMessage)) {
-                            let this_mes_is_name;
-                            ({ this_mes_is_name, getMessage } = extractNameFromMessage(getMessage, force_name2, isImpersonate));
-                            if (tokens_already_generated == 0) {
-                                console.log("New message");
-                                ({ type, getMessage } = saveReply(type, getMessage, this_mes_is_name, title));
-                            }
-                            else {
-                                console.log("Should append message");
-                                ({ type, getMessage } = saveReply('append', getMessage, this_mes_is_name, title));
-                            }
                             hideSwipeButtons();
                             tokens_already_generated += this_amount_gen;            // add new gen amt to any prev gen counter..
                             getMessage = message_already_generated;
