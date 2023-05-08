@@ -3045,15 +3045,24 @@ function highlightSelectedAvatar() {
 }
 
 function appendUserAvatar(name) {
-    const block = $("#user_avatar_block").append(
-        '<div imgfile="' +
-        name +
-        '" class="avatar"><img src="User Avatars/' +
-        name +
-        '"</div>'
+    $("#user_avatar_block").append(
+        `<div imgfile="${name}" class="avatar">
+            <img src="User Avatars/${name}"
+        </div>`
     );
     highlightSelectedAvatar();
 }
+
+function reloadUserAvatar() {
+    $(".mes").each(function () {
+        if ($(this).attr("is_user") == 'true') {
+            $(this)
+                .find(".avatar img")
+                .attr("src", `User Avatars/${user_avatar}`);
+        }
+    });
+}
+
 //***************SETTINGS****************//
 ///////////////////////////////////////////
 async function getSettings(type) {
@@ -3208,14 +3217,7 @@ async function getSettings(type) {
                 //Load User's Name and Avatar
 
                 user_avatar = settings.user_avatar;
-                $(".mes").each(function () {
-                    if ($(this).attr("ch_name") == name1) {
-                        $(this)
-                            .children(".avatar")
-                            .children("img")
-                            .attr("src", "User Avatars/" + user_avatar);
-                    }
-                });
+                reloadUserAvatar();
                 highlightSelectedAvatar();
 
                 //Load the API server URL from settings
@@ -4346,14 +4348,7 @@ $(document).ready(function () {
     });
     $(document).on("click", "#user_avatar_block .avatar", function () {
         user_avatar = $(this).attr("imgfile");
-        $(".mes").each(function () {
-            if ($(this).attr("ch_name") == name1) {
-                $(this)
-                    .children(".avatar")
-                    .children("img")
-                    .attr("src", "User Avatars/" + user_avatar);
-            }
-        });
+        reloadUserAvatar();
         saveSettingsDebounced();
         highlightSelectedAvatar();
     });
