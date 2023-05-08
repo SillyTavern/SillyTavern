@@ -2526,7 +2526,10 @@ h5 {
 }
 
 .tag.actionable {
-    border-style: dotted;
+    border-radius: 50%;
+}
+
+.margin-right-10px {
     margin-right: 10px;
 }
 

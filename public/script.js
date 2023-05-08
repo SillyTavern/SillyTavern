@@ -238,7 +238,6 @@ let chat_metadata = {};
 let streamingProcessor = null;
 
 let fav_ch_checked = false;
-window.filterByFav = false;
 
 const durationSaveEdit = 200;
 const saveSettingsDebounced = debounce(() => saveSettings(), durationSaveEdit);
@@ -1366,24 +1365,6 @@ function isStreamingEnabled() {
         || (main_api == 'poe' && poe_settings.streaming)
         || (main_api == 'textgenerationwebui' && textgenerationwebui_settings.streaming);
 }
-
-
-function applyFavFilter(enabled) {
-    const selector = ['#rm_print_characters_block .character_select', '#rm_print_characters_block .group_select'].join(',');
-    if (enabled) {
-        $(selector).each(function () {
-            if ($(this).find(".ch_fav").length !== 0) {
-                const shouldBeDisplayed = $(this).find(".ch_fav").val().toLowerCase().includes(true);
-                $(this).toggleClass('hiddenByFav', !shouldBeDisplayed);
-            }
-        });
-    }
-    else {
-        $(selector).removeClass('hiddenByFav');
-    }
-}
-
-
 
 class StreamingProcessor {
     showStopButton(messageId) {
@@ -3642,7 +3623,6 @@ function select_rm_characters() {
     menu_type = "characters";
     selectRightMenuWithAnimation('rm_characters_block');
     setRightTabSelectedClass('rm_button_characters');
-    applyFavFilter(window.filterByFav);
 }
 
 function restoreSelectedCharacter() {
@@ -4253,17 +4233,6 @@ $(document).ready(function () {
 
                 $(this).toggleClass('hiddenBySearch', !isValidSearch);
             });
-        }
-    });
-
-    $("#filter_by_fav").click(function () {
-        filterByFav = !filterByFav;
-        if (filterByFav) {
-            applyFavFilter(true);
-            $("#filter_by_fav").addClass("fav_on");
-        } else {
-            applyFavFilter(false);
-            $("#filter_by_fav").removeClass("fav_on");
         }
     });
 

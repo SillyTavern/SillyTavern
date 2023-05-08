@@ -15,9 +15,11 @@ export {
 
 const random_id = () => Math.round(Date.now() * Math.random()).toString();
 const TAG_LOGIC_AND = true; // switch to false to use OR logic for combining tags
+const CHARACTER_SELECTOR = '#rm_print_characters_block > div';
 
 const ACTIONABLE_TAGS = {
-    GROUP: { id: 0, name: 'Groups', color: 'rgba(100, 100, 100, 0.4)', action: filterByGroups },
+    FAV: { id: 1, name: 'Show only favorites', color: 'rgba(255, 255, 0, 0.5)', action: applyFavFilter, icon: 'fa-solid fa-star' },
+    GROUP: { id: 0, name: 'Show only groups', color: 'rgba(100, 100, 100, 0.5)', action: filterByGroups, icon: 'fa-solid fa-users' },
 }
 
 const DEFAULT_TAGS = [
@@ -32,13 +34,30 @@ const DEFAULT_TAGS = [
 let tags = [];
 let tag_map = {};
 
+function applyFavFilter() {
+    const isSelected = $(this).hasClass('selected');
+    const displayFavoritesOnly = !isSelected;
+
+    $(this).toggleClass('selected', displayFavoritesOnly);
+    $(CHARACTER_SELECTOR).removeClass('hiddenByFav');
+
+    $(CHARACTER_SELECTOR).each(function () {
+        if (displayFavoritesOnly) {
+            if ($(this).find(".ch_fav").length !== 0) {
+                const shouldBeDisplayed = $(this).find(".ch_fav").val().toLowerCase().includes(true);
+                $(this).toggleClass('hiddenByFav', !shouldBeDisplayed);
+            }
+        }
+    });
+}
+
 function filterByGroups() {
     const isSelected = $(this).hasClass('selected');
     const displayGroupsOnly = !isSelected;
     $(this).toggleClass('selected', displayGroupsOnly);
-    $('#rm_print_characters_block > div').removeClass('hiddenByGroup');
+    $(CHARACTER_SELECTOR).removeClass('hiddenByGroup');
 
-    $('#rm_print_characters_block > div').each((_, element) => {
+    $(CHARACTER_SELECTOR).each((_, element) => {
         $(element).toggleClass('hiddenByGroup', displayGroupsOnly && !$(element).hasClass('group_select'));
     });
 }
@@ -152,7 +171,7 @@ function selectTag(event, ui, listSelector) {
     }
 
     // unfocus and clear the input
-    $(event.target).val("").blur();
+    $(event.target).val("").trigger('blur');
 
     // add tag to the UI and internal map
     appendTagToList(listSelector, tag, { removable: true });
@@ -190,9 +209,8 @@ function appendTagToList(listElement, tag, { removable, selectable, action }) {
     const removeButton = tagElement.find(".tag_remove");
     removable ? removeButton.show() : removeButton.hide();
 
-    if (tag.name === 'Groups') {
-        tagElement.find('.tag_name').addClass('fa-solid fa-users');
-        tagElement.find('.tag_name').text('');
+    if (tag.icon) {
+        tagElement.find('.tag_name').text('').attr('title', tag.name).addClass(tag.icon);
     }
 
     if (selectable) {
@@ -200,7 +218,7 @@ function appendTagToList(listElement, tag, { removable, selectable, action }) {
     }
 
     if (action) {
-        tagElement.on('click', () => action.bind(tagElement)(listElement));
+        tagElement.on('click', () => action.bind(tagElement)());
         tagElement.addClass('actionable');
     }
 
@@ -209,12 +227,12 @@ function appendTagToList(listElement, tag, { removable, selectable, action }) {
 
 function onTagFilterClick(listElement) {
     const wasSelected = $(this).hasClass('selected');
-    $('#rm_print_characters_block > div').removeClass('hiddenByTag');
+    $(CHARACTER_SELECTOR).removeClass('hiddenByTag');
 
     $(this).toggleClass('selected', !wasSelected);
 
     const tagIds = [...($(listElement).find(".tag.selected:not(.actionable)").map((_, el) => $(el).attr("id")))];
-    $('#rm_print_characters_block > div').each((_, element) => applyFilterToElement(tagIds, element));
+    $(CHARACTER_SELECTOR).each((_, element) => applyFilterToElement(tagIds, element));
 }
 
 function applyFilterToElement(tagIds, element) {
@@ -242,23 +260,30 @@ function isElementTagged(element, tagId) {
 
 function clearTagsFilter() {
     $('#rm_tag_filter .tag').removeClass('selected');
-    $('#rm_print_characters_block > div').removeClass('hiddenByTag');
+    $(CHARACTER_SELECTOR).removeClass('hiddenByTag');
 }
 
 function printTags() {
-    $('#rm_tag_filter').empty();
+    const FILTER_SELECTOR = '#rm_tag_filter';
+    const selectedTagIds = [...($(FILTER_SELECTOR).find(".tag.selected").map((_, el) => $(el).attr("id")))];
+    $(FILTER_SELECTOR).empty();
     const characterTagIds = Object.values(tag_map).flat();
     const tagsToDisplay = tags
         .filter(x => characterTagIds.includes(x.id))
         .sort((a, b) => a.name.localeCompare(b.name));
 
     for (const tag of Object.values(ACTIONABLE_TAGS)) {
-        appendTagToList('#rm_tag_filter', tag, { removable: false, selectable: false, action: tag.action });
-
+        appendTagToList(FILTER_SELECTOR, tag, { removable: false, selectable: false, action: tag.action });
     }
 
+    $(FILTER_SELECTOR).find('.actionable').last().addClass('margin-right-10px');
+
     for (const tag of tagsToDisplay) {
-        appendTagToList('#rm_tag_filter', tag, { removable: false, selectable: true, });
+        appendTagToList(FILTER_SELECTOR, tag, { removable: false, selectable: true, });
+    }
+
+    for (const tagId of selectedTagIds) {
+        $(`${FILTER_SELECTOR} .tag[id="${tagId}"]`).trigger('click');
     }
 }
 
@@ -293,7 +318,7 @@ function onGroupCreateClick() {
 }
 
 export function applyTagsOnCharacterSelect() {
-    clearTagsFilter();
+    //clearTagsFilter();
     const chid = Number($(this).attr('chid'));
     const key = characters[chid].avatar;
     const tags = getTagsList(key);
@@ -306,7 +331,7 @@ export function applyTagsOnCharacterSelect() {
 }
 
 function applyTagsOnGroupSelect() {
-    clearTagsFilter();
+    //clearTagsFilter();
     const key = $(this).attr('grid');
     const tags = getTagsList(key);
 

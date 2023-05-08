@@ -1016,9 +1016,6 @@ async function selectGroup() {
             updateChatMetadata({}, true);
             chat.length = 0;
             await getGroupChat(groupId);
-            //to avoid the filter being lit up yellow and left at true while the list of character and group reseted.
-            $("#filter_by_fav").removeClass("fav_on");
-            filterByFav = false;
         }
 
         select_group_chats(groupId);
