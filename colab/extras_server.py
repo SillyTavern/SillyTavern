@@ -7,7 +7,7 @@ def runServer():
     cmd = f"python server.py {' '.join(globals.params)}"
     print(cmd)
     extras_process = subprocess.Popen(
-        cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd='/TavernAI-extras', shell=True)
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd='/SillyTavern-extras', shell=True)
     print('processId:', extras_process.pid)
     while True:
         line = extras_process.stdout.readline().decode().strip()
@@ -30,7 +30,7 @@ def extractUrl():
                 lines = f.readlines()
             for x in range(len(lines)):
                 if ('your url is: ' in lines[x]):
-                    print('TavernAI Extensions URL:')
+                    print('SillyTavern Extensions URL:')
                     globals.extras_url = lines[x].split('your url is: ')[1]
                     print(globals.extras_url)
             break
