@@ -2449,10 +2449,16 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
             }
             try {
                 const quota_error = error?.response?.status === 429;
-                response_generate_openai.send({ error: true, quota_error });
+                if (!response_generate_openai.headersSent) {
+                    response_generate_openai.send({ error: true, quota_error });
+                }
             } catch (error) {
                 console.error(error);
-                return response_generate_openai.send({ error: true });
+                if (!response_generate_openai.headersSent) {
+                    return response_generate_openai.send({ error: true });
+                }
+            } finally {
+                response_generate_openai.end();
             }
         });
 });
