@@ -458,15 +458,15 @@ function getSystemPrompt(nsfw_toggle_prompt, enhance_definitions_prompt, wiBefor
     let whole_prompt = [];
 
     if (isImpersonate) {
-        whole_prompt = [nsfw_toggle_prompt, enhance_definitions_prompt, "\n\n" + wiBefore, storyString, wiAfter, extensionPrompt];
+        whole_prompt = [nsfw_toggle_prompt, enhance_definitions_prompt + "\n\n" + wiBefore, storyString, wiAfter, extensionPrompt];
     }
     else {
         // If it's toggled, NSFW prompt goes first.
         if (oai_settings.nsfw_first) {
-            whole_prompt = [nsfw_toggle_prompt, oai_settings.main_prompt, enhance_definitions_prompt, "\n\n" + wiBefore, storyString, wiAfter, extensionPrompt];
+            whole_prompt = [nsfw_toggle_prompt, oai_settings.main_prompt, enhance_definitions_prompt + "\n\n" + wiBefore, storyString, wiAfter, extensionPrompt];
         }
         else {
-            whole_prompt = [oai_settings.main_prompt, nsfw_toggle_prompt, enhance_definitions_prompt, "\n\n" + wiBefore, storyString, wiAfter, extensionPrompt];
+            whole_prompt = [oai_settings.main_prompt, nsfw_toggle_prompt, enhance_definitions_prompt + "\n\n" + wiBefore, storyString, wiAfter, extensionPrompt];
         }
     }
     return whole_prompt;
