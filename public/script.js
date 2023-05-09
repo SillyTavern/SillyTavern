@@ -287,6 +287,8 @@ const system_messages = {
         is_name: true,
         mes: [
             '<h2>Welcome to SillyTavern!</h2>',
+            '<h3>Want to Update to the latest version?</h3>',
+            "Read the <a href='/notes/update.html' target='_blank'>instructions here</a>. Also located in your installation's base folder",
             '<h3>In order to begin chatting:</h3>',
             '<ol>',
             '<li>Connect to one of the supported generation APIs (the plug icon)</li>',
@@ -381,17 +383,17 @@ async function getClientVersion() {
 }
 
 function getTokenCount(str, padding = 0) {
-    let tokenizerType = power_user.tokenizer; 
+    let tokenizerType = power_user.tokenizer;
 
     if (main_api === 'openai') {
         // For main prompt building
         if (padding == power_user.token_padding) {
             tokenizerType = tokenizers.NONE;
-        // For extensions and WI
+            // For extensions and WI
         } else {
             return getTokenCountOpenAI(str);
         }
-        
+
     }
 
     switch (tokenizerType) {
@@ -974,15 +976,15 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
             .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
             .replace(/\n/g, "<br/>");
     } else if (!isSystem) {
-		mes = mes.replace(/```[\s\S]*?```|``[\s\S]*?``|`[\s\S]*?`|(\".+?\")|(\u201C.+?\u201D)/gm, function (match, p1, p2) {
-			if (p1) {
-				return '<q>"' + p1.replace(/\"/g, "") + '"</q>';
-			} else if (p2) {
-				return '<q>“' + p2.replace(/\u201C|\u201D/g, "") + '”</q>';
-			} else {
-				return match;
-			}
-		});
+        mes = mes.replace(/```[\s\S]*?```|``[\s\S]*?``|`[\s\S]*?`|(\".+?\")|(\u201C.+?\u201D)/gm, function (match, p1, p2) {
+            if (p1) {
+                return '<q>"' + p1.replace(/\"/g, "") + '"</q>';
+            } else if (p2) {
+                return '<q>“' + p2.replace(/\u201C|\u201D/g, "") + '”</q>';
+            } else {
+                return match;
+            }
+        });
         mes = mes.replaceAll('\\begin{align*}', '$$');
         mes = mes.replaceAll('\\end{align*}', '$$');
         mes = converter.makeHtml(mes);
@@ -1849,7 +1851,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             if (main_api == 'openai') {
                 break;
             }
-            
+
             chatString = item + chatString;
             if (canFitMessages()) { //(The number of tokens in the entire promt) need fix, it must count correctly (added +120, so that the description of the character does not hide)
                 //if (is_pygmalion && i == chat2.length-1) item='<START>\n'+item;
@@ -2502,7 +2504,7 @@ function cleanUpMessage(getMessage, isImpersonate) {
         getMessage = getMessage.replace(/You:/g, name1 + ':');
     }
 
-    let nameToTrim = isImpersonate ?  name2 : name1;
+    let nameToTrim = isImpersonate ? name2 : name1;
 
     if (isImpersonate) {
         nameToTrim = power_user.allow_name2_display ? '' : name2;
