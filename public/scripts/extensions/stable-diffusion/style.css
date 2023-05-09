@@ -25,6 +25,6 @@
 }
 
 #sd_dropdown {
-    z-index: 100;
+    z-index: 3000;
     backdrop-filter: blur(--SmartThemeBlurStrength);
 }
