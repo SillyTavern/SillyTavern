@@ -58,6 +58,7 @@ const DeviceDetector = require("device-detector-js");
 const { TextEncoder, TextDecoder } = require('util');
 const utf8Encode = new TextEncoder();
 const utf8Decode = new TextDecoder('utf-8', { ignoreBOM: true });
+const commandExistsSync = require('command-exists').sync;
 
 const config = require(path.join(__dirname, './config.conf'));
 const server_port = process.env.SILLY_TAVERN_PORT || config.port;
@@ -310,9 +311,14 @@ app.get('/version', function (_, response) {
     try {
         const pkgJson = require('./package.json');
         pkgVersion = pkgJson.version;
-        gitRevision = require('child_process')
-            .execSync('git rev-parse --short HEAD', { cwd: __dirname })
-            .toString().trim();
+        if (commandExistsSync('git')) {
+            gitRevision = require('child_process')
+                .execSync('git rev-parse --short HEAD', { cwd: __dirname })
+                .toString().trim();
+        }
+    }
+    catch {
+        // suppress exception
     }
     finally {
         response.send(`SillyTavern:${gitRevision || pkgVersion}:Cohee#1207`)
