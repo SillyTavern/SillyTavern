@@ -1,7 +1,11 @@
 # How to Update SillyTavern
 
+This is not an installation guide. If you need installation instructions, look here:
+<https://docs.alpindale.dev/pygmalion-extras/sillytavern/#installation>
+
 (This guide assumes you have already installed SillyTavern once and know how to run it on your OS.)
-(This file is also present in plain text form inside SillyTavern's base install folder)
+
+(A plain text copy of this file is also present inside SillyTavern's base install folder.)
 
 ----
 
