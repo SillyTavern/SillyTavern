@@ -2448,7 +2448,7 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
                 }
             }
             try {
-                const quota_error = error.response.status == 429;
+                const quota_error = error?.response?.status === 429;
                 response_generate_openai.send({ error: true, quota_error });
             } catch (error) {
                 console.error(error);
