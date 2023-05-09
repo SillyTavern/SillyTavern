@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Create a report to help us improve
+about: Create a report to help us improve. PAY ATTENTION: Support requests for extenal programs (reverse proxies, 3rd party servers, other peoples' forks) will be refused!
 title: "[BUG]"
 labels: ''
 assignees: ''
