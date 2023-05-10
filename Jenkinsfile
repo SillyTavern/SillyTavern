@@ -5,7 +5,7 @@ pipeline {
         stage('Hello') {
             steps {
                 echo 'Hello World!'
-                sh 'ls'
+                sh ```
                 sh 'npm i'
             }
         }
