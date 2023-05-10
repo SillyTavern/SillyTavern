@@ -19,8 +19,10 @@ pipeline {
         }
         stage('one') {
             steps {
-                sh '''
+                sh '''#!/bin/bash
                 npm i -g yarn
+                '''
+                sh '''#!/bin/bash
                 yarn
                 '''
             }
