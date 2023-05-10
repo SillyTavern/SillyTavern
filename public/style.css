@@ -2617,7 +2617,7 @@ h5 {
 }
 
 #avatarCropWrap {
-    margin: 10px;
+    margin: 10px auto;
     max-height: 90%;
     max-width: 90%;
 }
