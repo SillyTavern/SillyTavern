@@ -1923,6 +1923,7 @@ input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
     display: flex;
     grid-gap: 10px;
     flex-wrap: wrap;
+    justify-content: space-evenly;
 }
 
 #user_avatar_block .avatar {
@@ -3671,6 +3672,18 @@ toolcool-color-picker {
 
 .neutral_warning {
     color: rgba(255, 0, 0, 0.5)
+}
+
+.max_context_unlocked_block .checkbox_label {
+    flex-wrap: wrap;
+}
+
+#max_context_unlocked_warning {
+    flex-basis: 100%;
+}
+
+#max_context_unlocked:not(:checked) + div {
+    display: none;
 }
 
 .textarea_compact {

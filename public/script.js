@@ -3235,12 +3235,6 @@ async function getSettings(type) {
                     "true"
                 );
 
-                $("#max_context").val(max_context);
-                $("#max_context_counter").text(`${max_context}`);
-
-                $("#amount_gen").val(amount_gen);
-                $("#amount_gen_counter").text(`${amount_gen}`);
-
                 swipes = settings.swipes !== undefined ? !!settings.swipes : true;  // enable swipes by default
                 $('#swipes-checkbox').prop('checked', swipes); /// swipecode
                 //console.log('getSettings -- swipes = ' + swipes + '. toggling box');
@@ -3271,6 +3265,13 @@ async function getSettings(type) {
 
                 // Load- character tags
                 loadTagsSettings(settings);
+
+                // Set context size after loading power user (may override the max value)
+                $("#max_context").val(max_context);
+                $("#max_context_counter").text(`${max_context}`);
+
+                $("#amount_gen").val(amount_gen);
+                $("#amount_gen_counter").text(`${amount_gen}`);
 
                 //Enable GUI deference settings if GUI is selected for Kobold
                 if (main_api === "kobold") {

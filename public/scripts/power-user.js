@@ -27,6 +27,9 @@ export {
     send_on_enter_options,
 };
 
+const MAX_CONTEXT_DEFAULT = 2048;
+const MAX_CONTEXT_UNLOCKED = 65536;
+
 const avatar_styles = {
     ROUND: 0,
     RECTANGULAR: 1,
@@ -111,6 +114,7 @@ let power_user = {
     allow_name2_display: false,
     hotswap_enabled: true,
     timer_enabled: true,
+    max_context_unlocked: false,
 
     instruct: {
         enabled: false,
@@ -534,6 +538,28 @@ function loadPowerUserSettings(settings, data) {
     sortCharactersList();
     reloadMarkdownProcessor(power_user.render_formulas);
     loadInstructMode();
+    loadMaxContextUnlocked();
+}
+
+function loadMaxContextUnlocked() {
+    $('#max_context_unlocked').prop('checked', power_user.max_context_unlocked);
+    $('#max_context_unlocked').on('change', function() {
+        power_user.max_context_unlocked = !!$(this).prop('checked');
+        switchMaxContextSize();
+        saveSettingsDebounced();
+    });
+    switchMaxContextSize();
+}
+
+function switchMaxContextSize() {
+    const element = $('#max_context');
+    const maxValue = power_user.max_context_unlocked ? MAX_CONTEXT_UNLOCKED : MAX_CONTEXT_DEFAULT;
+    element.attr('max', maxValue);
+    const value = Number(element.val());
+
+    if (value >= maxValue) {
+        element.val(maxValue).trigger('input');
+    }
 }
 
 function loadInstructMode() {
