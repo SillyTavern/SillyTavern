@@ -4,7 +4,7 @@ pipeline {
     stages {
         stage('zero') {
             steps {
-                echo 'Hello World!'
+                echo 'Hello World!!s'
                 sh 'bash -l -c ". $HOME/.nvm/nvm.sh ; nvm use || nvm install && nvm use"'
             }
         }
