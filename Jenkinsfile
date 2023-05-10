@@ -2,7 +2,7 @@
 pipeline {
     agent any
     stages {
-        stage('Install') {
+        stage('zero') {
             steps {
                 echo 'Hello World!'
                 sh '''
@@ -10,8 +10,8 @@ pipeline {
                 '''
             }
         }
-        stage(''){
-            
+        stage('one'){
+
         }
     }
 }
