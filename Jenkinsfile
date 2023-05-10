@@ -15,9 +15,11 @@ pipeline {
             }
         }
         stage('one'){
+             steps {
             sh '''
                 yarn
             '''
+            }
         }
     }
 }
