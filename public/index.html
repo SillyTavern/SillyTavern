@@ -1184,33 +1184,15 @@
                             </div>
                         </div>
                         <div>
-                            <h4>Instruct mode</h4>
+                            <h4>Instruct mode
+                                <a href="/notes#instructmode" class="notes-link" target="_blank">
+                                    <span class="note-link-span">?</span>
+                                </a>
+                            </h4>
                             <label for="instruct_enabled" class="checkbox_label">
                                 <input id="instruct_enabled" type="checkbox" />
                                 Enabled
                             </label>
-                            <label>
-                                System Prompt
-                            </label>
-                            <textarea id="instruct_system_prompt" class="text_pole textarea_compact"></textarea>
-                            <label for="instruct_system_sequence">
-                                System Sequence
-                            </label>
-                            <div>
-                                <input id="instruct_system_sequence" class="text_pole textarea_compact" type="text" maxlength="100" />
-                            </div>
-                            <label for="instruct_input_sequence">
-                                Input Sequence
-                            </label>
-                            <div>
-                                <input id="instruct_input_sequence" class="text_pole textarea_compact" type="text" maxlength="100" />
-                            </div>
-                            <label for="instruct_output_sequence">
-                                Output Sequence
-                            </label>
-                            <div>
-                                <input id="instruct_output_sequence" class="text_pole textarea_compact" type="text" maxlength="100" />
-                            </div>
                             <label for="instruct_wrap" class="checkbox_label">
                                 <input id="instruct_wrap" type="checkbox" />
                                 Wrap Sequences with Newline
@@ -1219,6 +1201,50 @@
                                 <input id="instruct_names" type="checkbox" />
                                 Include Names
                             </label>
+                            <label for="instruct_presets">Presets</label>
+                            <select id="instruct_presets">
+                                <option>--- UNDER CONSTRUCTION ---</option>
+                            </select>
+                            <label>
+                                System Prompt
+                            </label>
+                            <textarea id="instruct_system_prompt" class="text_pole textarea_compact"></textarea>
+                            <div class="flex-container">
+                                <div class="flex1">
+                                    <label for="instruct_input_sequence">
+                                        Input Sequence
+                                    </label>
+                                    <div>
+                                        <input id="instruct_input_sequence" class="text_pole textarea_compact" type="text" maxlength="100" />
+                                    </div>
+                                </div>
+                                <div class="flex1">
+                                    <label for="instruct_output_sequence">
+                                        Output Sequence
+                                    </label>
+                                    <div>
+                                        <input id="instruct_output_sequence" class="text_pole textarea_compact" type="text" maxlength="100" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex-container">
+                                <div class="flex1">
+                                    <label for="instruct_system_sequence">
+                                        System Sequence
+                                    </label>
+                                    <div>
+                                        <input id="instruct_system_sequence" class="text_pole textarea_compact" type="text" maxlength="100" />
+                                    </div>
+                                </div>
+                                <div class="flex1">
+                                    <label for="instruct_stop_sequence">
+                                        Stop Sequence
+                                    </label>
+                                    <div>
+                                        <input id="instruct_stop_sequence" class="text_pole textarea_compact" type="text" maxlength="100" />
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div name="ContextFormatting" class="flex1">

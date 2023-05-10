@@ -1228,6 +1228,9 @@ function getStoppingStrings(isImpersonate, addSpace) {
     }
 
     if (power_user.instruct.enabled) {
+        // Cohee: This was borrowed from oobabooga's textgen. But..
+        // What if a model doesn't use newlines to chain sequences?
+        // Who knows.
         if (power_user.instruct.input_sequence) {
             result.push(`\n${power_user.instruct.input_sequence}`);
         }
@@ -1910,7 +1913,13 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
                     if (i === arrMes.length - 1 && !item.trim().startsWith(name1 + ":")) {
                         if (textareaText == "") {
-                            item = item.substr(0, item.length - 1);
+                            // Cohee: I think this was added to allow the model to continue
+                            // where it left off by removing the trailing newline at the end
+                            // that was added by chat2 generator. This causes problems with
+                            // instruct mode that could not have a trailing newline. So we're
+                            // removing a newline ONLY at the end of the string if it exists. 
+                            item = item.replace(/\n?$/, '');
+                            //item = item.substr(0, item.length - 1);
                         }
                     }
                     if (i === arrMes.length - topAnchorDepth && !is_pygmalion) {
@@ -2526,6 +2535,11 @@ function cleanUpMessage(getMessage, isImpersonate) {
     if (getMessage.indexOf('<|endoftext|>') != -1) {
         getMessage = getMessage.substr(0, getMessage.indexOf('<|endoftext|>'));
 
+    }
+    if (power_user.instruct.enabled && power_user.instruct.stop_sequence) {
+        if (getMessage.indexOf(power_user.instruct.stop_sequence) != -1) {
+            getMessage = getMessage.substring(0, getMessage.indexOf(power_user.instruct.stop_sequence));
+        }
     }
     // clean-up group message from excessive generations
     if (selected_group) {
