@@ -13,11 +13,11 @@ pipeline {
                     npm i -g yarn
                 '''
             }
-        }
-        stage('one'){
-            sh '''
-                yarn
-            '''
+            steps('one'){
+                sh '''
+                    yarn
+                '''
+            }
         }
     }
 }
