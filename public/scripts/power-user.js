@@ -121,10 +121,12 @@ let power_user = {
         stop_sequence: '',
         input_sequence: '### Instruction:',
         output_sequence: '### Response:',
+        preset: 'Alpaca',
     }
 };
 
 let themes = [];
+let instruct_presets = [];
 
 const storage_keys = {
     fast_ui_mode: "TavernAI_fast_ui_mode",
@@ -447,6 +449,10 @@ function loadPowerUserSettings(settings, data) {
         themes = data.themes;
     }
 
+    if (data.instruct !== undefined) {
+        instruct_presets = data.instruct;
+    }
+
     // These are still local storage
     const fastUi = localStorage.getItem(storage_keys.fast_ui_mode);
     const waifuMode = localStorage.getItem(storage_keys.waifuMode);
@@ -554,6 +560,38 @@ function loadInstructMode() {
         $element.on('input', function () {
             power_user.instruct[control.property] = control.isCheckbox ? $(this).prop('checked') : $(this).val();
             saveSettingsDebounced();
+        });
+    });
+
+    instruct_presets.forEach((preset) => {
+        const name = preset.name;
+        const option = document.createElement('option');
+        option.value = name;
+        option.innerText = name;
+        option.selected = name === power_user.instruct.preset;
+        $('#instruct_presets').append(option);
+    });
+
+    $('#instruct_presets').on('change', function () {
+        const name = $(this).find(':selected').val();
+        const preset = instruct_presets.find(x => x.name === name);
+
+        if (!preset) {
+            return;
+        }
+
+        power_user.instruct.preset = name;
+        controls.forEach(control => {
+            if (preset[control.property] !== undefined) {
+                power_user.instruct[control.property] = preset[control.property];
+                const $element = $(`#${control.id}`);
+
+                if (control.isCheckbox) {
+                    $element.prop('checked', power_user.instruct[control.property]).trigger('input');
+                } else {
+                    $element.val(power_user.instruct[control.property]).trigger('input');
+                }
+            }
         });
     });
 }
