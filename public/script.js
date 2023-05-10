@@ -2826,17 +2826,17 @@ async function read_avatar_load(input) {
             create_save_avatar = input.files;
         }
         reader.onload = async function (e) {
-            $('#dialogue_popup').addClass('large_dialogue_popup');
-            $('#dialogue_popup').addClass('wide_dialogue_popup');
+            /*             $('#dialogue_popup').addClass('large_dialogue_popup');
+                        $('#dialogue_popup').addClass('wide_dialogue_popup');
+            
+                        await callPopup(`
+                        <h3>Click image to start cropping. Click Ok to finalize</h3>
+                        <div id='avatarCropWrap'>
+                        <img id='avatarToCrop' src='${e.target.result}'>
+                        </div>
+                        `, 'avatarToCrop'); */
 
-            await callPopup(`
-            <h3>Click image to start cropping. Click Ok to finalize</h3>
-            <div id='avatarCropWrap'>
-            <img id='avatarToCrop' src='${e.target.result}'>
-            </div>
-            `, 'avatarToCrop');
-
-            $("#avatar_load_preview").attr("src", currentCroppedAvatar);
+            $("#avatar_load_preview").attr("src", e.target.result);
 
             if (menu_type != "create") {
                 $("#create_button").trigger('click');
