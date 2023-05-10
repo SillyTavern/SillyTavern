@@ -10,6 +10,8 @@ pipeline {
                 '''
             }
         }
-        stage('')
+        stage(''){
+            
+        }
     }
 }
