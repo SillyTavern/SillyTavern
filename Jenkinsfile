@@ -12,13 +12,13 @@ pipeline {
                 export NVM_DIR="$HOME/.nvm"
                 [ -s "$NVM_DIR/nvm.sh" ] && \\. "$NVM_DIR/nvm.sh"
                 '''
-                sh '''#!/bin/bash
-                nvm install node
-                '''
             }
         }
         stage('one') {
             steps {
+                sh '''#!/bin/bash
+                nvm install node
+                '''
                 sh '''#!/bin/bash
                 npm i -g yarn
                 '''
