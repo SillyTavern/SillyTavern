@@ -1,22 +1,24 @@
 /* groovylint-disable-next-line CompileStatic */
 pipeline {
     agent any
-    tools {nodejs "latest"}
+    tools { nodejs 'latest' }
     stages {
-        stage('zero') {
+        stage('preflight') {
             steps {
-                echo 'Hello World!!s'
-                sh 'bash -l -c ". $HOME/.nvm/nvm.sh ; nvm use || nvm install && nvm use"'
+                echo sh(returnStdout: true, script: 'env')
+                sh 'node -v'
             }
         }
-        stage('one') {
+        stage('build') {
             steps {
-                sh '''#!/bin/bash
-                npm i -g yarn
-                '''
-                sh '''#!/bin/bash
-                yarn
-                '''
+                sh 'npm --version'
+                sh 'git log --reverse -1'
+                sh 'npm install'
+            }
+        }
+        stage('test') {
+            steps {
+                sh 'npm test'
             }
         }
     }
