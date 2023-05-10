@@ -1,7 +1,7 @@
 /* groovylint-disable-next-line CompileStatic */
 pipeline {
     agent any
-    tools { nodejs '20.1.0' }
+    tools { nodejs 'nodejs' }
     stages {
         stage('preflight') {
             steps {
