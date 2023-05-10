@@ -5,7 +5,7 @@ pipeline {
         stage('zero') {
             steps {
                 echo 'Hello World!'
-                sh 'bash -l -c ". $HOME/.nvm/nvm.sh ; nvm use || nvm install && nvm use"' 
+                sh 'bash -l -c ". $HOME/.nvm/nvm.sh ; nvm use || nvm install && nvm use"'
             }
         }
         stage('one') {
