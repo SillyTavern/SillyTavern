@@ -1,4 +1,3 @@
-/* groovylint-disable CompileStatic */
 pipeline {
     agent any
     stages {
