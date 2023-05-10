@@ -14,9 +14,9 @@ pipeline {
                 '''
             }
         }
-        stage('one'){
-             steps {
-            sh '''
+        stage('one') {
+            steps {
+                sh '''
                 yarn
             '''
             }
