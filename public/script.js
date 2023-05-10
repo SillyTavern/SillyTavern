@@ -1035,24 +1035,27 @@ function addCopyToCodeBlocks(messageElement) {
     const codeBlocks = $(messageElement).find("pre code");
     for (let i = 0; i < codeBlocks.length; i++) {
         hljs.highlightElement(codeBlocks.get(i));
-        const copyButton = document.createElement('i');
-        copyButton.classList.add('fa-solid', 'fa-copy', 'code-copy');
-        copyButton.title = 'Copy code';
-        codeBlocks.get(i).appendChild(copyButton);
-        copyButton.addEventListener('click', function (event) {
-            navigator.clipboard.writeText(codeBlocks.get(i).innerText);
-            const copiedMsg = document.createElement("div");
-            copiedMsg.classList.add('code-copied');
-            copiedMsg.innerText = "Copied!";
-            copiedMsg.style.top = `${event.clientY - 55}px`;
-            copiedMsg.style.left = `${event.clientX - 55}px`;
-            document.body.append(copiedMsg);
-            setTimeout(() => {
-                document.body.removeChild(copiedMsg);
-            }, 2500);
-        });
+        if (navigator.clipboard !== undefined) {
+            const copyButton = document.createElement('i');
+            copyButton.classList.add('fa-solid', 'fa-copy', 'code-copy');
+            copyButton.title = 'Copy code';
+            codeBlocks.get(i).appendChild(copyButton);
+            copyButton.addEventListener('pointerup', function (event) {
+                navigator.clipboard.writeText(codeBlocks.get(i).innerText);
+                const copiedMsg = document.createElement("div");
+                copiedMsg.classList.add('code-copied');
+                copiedMsg.innerText = "Copied!";
+                copiedMsg.style.top = `${event.clientY - 55}px`;
+                copiedMsg.style.left = `${event.clientX - 55}px`;
+                document.body.append(copiedMsg);
+                setTimeout(() => {
+                    document.body.removeChild(copiedMsg);
+                }, 1000);
+            });
+        }
     }
 }
+
 
 function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true } = {}) {
     var messageText = mes["mes"];
@@ -1394,7 +1397,7 @@ class StreamingProcessor {
         }
 
         $(`#chat .mes[mesid="${messageId}"] .mes_stop`).css({ 'display': 'block' });
-        $(`#chat .mes[mesid="${messageId}"] .mes_edit`).css({ 'display': 'none' });
+        $(`#chat .mes[mesid="${messageId}"] .mes_buttons`).css({ 'display': 'none' });
     }
 
     hideStopButton(messageId) {
@@ -1403,7 +1406,7 @@ class StreamingProcessor {
         }
 
         $(`#chat .mes[mesid="${messageId}"] .mes_stop`).css({ 'display': 'none' });
-        $(`#chat .mes[mesid="${messageId}"] .mes_edit`).css({ 'display': 'block' });
+        $(`#chat .mes[mesid="${messageId}"] .mes_buttons`).css({ 'display': 'block' });
     }
 
     onStartStreaming(text) {
@@ -1485,7 +1488,7 @@ class StreamingProcessor {
         activateSendButtons();
         showSwipeButtons();
         setGenerationProgress(0);
-        $('.mes_edit:last').show();
+        $('.mes_buttons:last').show();
         generatedPromtCache = '';
     }
 
@@ -2321,7 +2324,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 activateSendButtons();
                 showSwipeButtons();
                 setGenerationProgress(0);
-                $('.mes_edit:last').show();
+                $('.mes_buttons:last').show();
             };
 
             function onError(jqXHR, exception) {
@@ -2458,7 +2461,7 @@ function throwCircuitBreakerError() {
     activateSendButtons();
     setGenerationProgress(0);
     showSwipeButtons();
-    $('.mes_edit:last').show();
+    $('.mes_buttons:last').show();
     throw new Error('Generate circuit breaker interruption');
 }
 
@@ -3425,7 +3428,7 @@ function messageEditDone(div) {
 
     mesBlock.find(".mes_text").empty();
     mesBlock.find(".mes_edit_buttons").css("display", "none");
-    mesBlock.find(".mes_edit").css("display", "inline-block");
+    mesBlock.find(".mes_buttons").css("display", "inline-block");
     mesBlock.find(".mes_text").append(
         messageFormatting(
             text,
@@ -4171,7 +4174,7 @@ $(document).ready(function () {
                                     if (run_generate && !is_send_press && parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length) {
                                         console.log('caught here 2');
                                         is_send_press = true;
-                                        $('.mes_edit:last').hide();
+                                        $('.mes_buttons:last').hide();
                                         Generate('swipe');
                                     } else {
                                         if (parseInt(chat[chat.length - 1]['swipe_id']) !== chat[chat.length - 1]['swipes'].length) {
@@ -5318,6 +5321,39 @@ $(document).ready(function () {
         $("#load_select_chat_div").css("display", "block");
     });
 
+    if (navigator.clipboard === undefined) {
+        // No clipboard support
+        $(".mes_copy").remove();
+    }
+    else {
+        $(document).on("pointerup", ".mes_copy", function () {
+            if (this_chid !== undefined || selected_group) {
+                const message = $(this).closest(".mes");
+
+                if (message.data("isSystem")) {
+                    return;
+                }
+                try {
+                    var edit_mes_id = $(this).closest(".mes").attr("mesid");
+                    var text = chat[edit_mes_id]["mes"];
+                        navigator.clipboard.writeText(text);
+                        const copiedMsg = document.createElement("div");
+                        copiedMsg.classList.add('code-copied');
+                        copiedMsg.innerText = "Copied!";
+                        copiedMsg.style.top = `${event.clientY - 55}px`;
+                        copiedMsg.style.left = `${event.clientX - 55}px`;
+                        document.body.append(copiedMsg);
+                        setTimeout(() => {
+                            document.body.removeChild(copiedMsg);
+                        }, 1000);
+                } catch (err) {
+                    console.error('Failed to copy: ', err);
+                }
+            }
+        });
+    }
+
+
     //********************
     //***Message Editor***
     $(document).on("click", ".mes_edit", function () {
@@ -5348,7 +5384,7 @@ $(document).ready(function () {
                 messageEditDone(mes_edited);
             }
             $(this).closest(".mes_block").find(".mes_text").empty();
-            $(this).css("display", "none");
+            $(this).closest(".mes_block").find(".mes_buttons").css("display", "none");
             $(this).closest(".mes_block").find(".mes_edit_buttons").css("display", "inline-flex");
             var edit_mes_id = $(this).closest(".mes").attr("mesid");
             this_edit_mes_id = edit_mes_id;
@@ -5397,7 +5433,7 @@ $(document).ready(function () {
 
         $(this).closest(".mes_block").find(".mes_text").empty();
         $(this).closest(".mes_edit_buttons").css("display", "none");
-        $(this).closest(".mes_block").find(".mes_edit").css("display", "inline-block");
+        $(this).closest(".mes_block").find(".mes_buttons").css("display", "inline-block");
         $(this)
             .closest(".mes_block")
             .find(".mes_text")
