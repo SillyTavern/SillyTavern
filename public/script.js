@@ -242,6 +242,9 @@ let streamingProcessor = null;
 
 let fav_ch_checked = false;
 
+//initialize global var for future cropped blobs
+let currentCroppedAvatar = '';
+
 const durationSaveEdit = 200;
 const saveSettingsDebounced = debounce(() => saveSettings(), durationSaveEdit);
 const saveCharacterDebounced = debounce(() => $("#create_button").trigger('click'), durationSaveEdit);
@@ -2823,7 +2826,17 @@ async function read_avatar_load(input) {
             create_save_avatar = input.files;
         }
         reader.onload = async function (e) {
-            $("#avatar_load_preview").attr("src", e.target.result);
+            $('#dialogue_popup').addClass('large_dialogue_popup');
+            $('#dialogue_popup').addClass('wide_dialogue_popup');
+
+            await callPopup(`
+            <h3>Click image to start cropping. Click Ok to finalize</h3>
+            <div id='avatarCropWrap'>
+            <img id='avatarToCrop' src='${e.target.result}'>
+            </div>
+            `, 'avatarToCrop');
+
+            $("#avatar_load_preview").attr("src", currentCroppedAvatar);
 
             if (menu_type != "create") {
                 $("#create_button").trigger('click');
@@ -3700,6 +3713,9 @@ function callPopup(text, type, inputValue = '') {
 
     $("#dialogue_popup_cancel").css("display", "inline-block");
     switch (popup_type) {
+        case "avatarToCrop":
+            $("#dialogue_popup_ok").text("Ok");
+            $("#dialogue_popup_cancel").css("display", "none");
         case "text":
         case "char_not_selected":
             $("#dialogue_popup_ok").text("Ok");
@@ -3719,6 +3735,11 @@ function callPopup(text, type, inputValue = '') {
     }
 
     $("#dialogue_popup_input").val(inputValue);
+
+    if (popup_type == 'avatarToCrop') {
+
+    }
+
     if (popup_type == 'input') {
         $("#dialogue_popup_input").css("display", "block");
         $("#dialogue_popup_ok").text("Save");
@@ -4495,9 +4516,40 @@ $(document).ready(function () {
         setTimeout(function () {
             $("#shadow_popup").css("display", "none");
             $("#dialogue_popup").removeClass('large_dialogue_popup');
+            $("#dialogue_popup").removeClass('wide_dialogue_popup');
         }, 200);
 
         //      $("#shadow_popup").css("opacity:", 0.0);
+
+        if (popup_type == 'avatarToCrop') {
+
+            //ideally this is where we would grab the crop coordinates
+            //and send back to read_avatar_load() to be sent to server for actual file resizing/cropping.
+            //the code below does not work 'cropper not defined'.
+
+            $("#avatarToCrop").cropper.getCroppedCanvas();
+
+            $("#avatarToCrop").cropper.getCroppedCanvas({
+                width: 160,
+                height: 90,
+                minWidth: 400,
+                minHeight: 600,
+                maxWidth: 4096,
+                maxHeight: 4096,
+                fillColor: 'transparent',
+                imageSmoothingEnabled: false,
+                imageSmoothingQuality: 'high',
+            });
+
+            $("#avatarToCrop").cropper.getCroppedCanvas().toBlob((blob) => {
+                currentCroppedAvatar = new FormData();
+                currentCroppedAvatar.append('croppedImage', blob/*, 'example.png' */);
+            });
+
+            return currentCroppedAvatar;
+
+        };
+
         if (popup_type == "del_bg") {
             delBackground(bg_file_for_del.attr("bgfile"));
             bg_file_for_del.parent().remove();
@@ -5826,4 +5878,28 @@ $(document).ready(function () {
         $(masterElement).val(myValue).trigger('input');
         restoreCaretPosition($(this).get(0), caretPosition);
     });
+
+    /*     $("#dialogue_popup_text").on('click', '#avatarToCrop', function () {
+    
+            var $image = $('#avatarToCrop');
+    
+            $image.cropper({
+                aspectRatio: 3 / 4,
+                crop: function (event) {
+                    console.log(event.detail.x);
+                    console.log(event.detail.y);
+                    console.log(event.detail.width);
+                    console.log(event.detail.height);
+                    console.log(event.detail.rotate);
+                    console.log(event.detail.scaleX);
+                    console.log(event.detail.scaleY);
+                }
+            });
+    
+            // Get the Cropper.js instance after initialized
+            var cropper = $image.data('cropper');
+    
+    
+        }); */
+
 })
