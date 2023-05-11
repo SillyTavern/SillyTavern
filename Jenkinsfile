@@ -5,7 +5,7 @@ pipeline {
     stages {
         stage('preflight') {
             steps {
-                echo 'Hello World~!!'
+                echo 'Hello World~!!!'
                 sh 'kubectl cluster-info'
                 echo sh(returnStdout: true, script: 'env')
                 sh 'node -v'
