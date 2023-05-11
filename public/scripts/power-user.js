@@ -118,6 +118,7 @@ let power_user = {
         names: false,
         system_prompt: "Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\nWrite {{char}}'s next reply in a fictional roleplay chat between {{user}} and {{char}}. Write 1 reply only.",
         system_sequence: '',
+        stop_sequence: '',
         input_sequence: '### Instruction:',
         output_sequence: '### Response:',
     }
@@ -537,6 +538,7 @@ function loadInstructMode() {
         { id: "instruct_system_sequence", property: "system_sequence", isCheckbox: false },
         { id: "instruct_input_sequence", property: "input_sequence", isCheckbox: false },
         { id: "instruct_output_sequence", property: "output_sequence", isCheckbox: false },
+        { id: "instruct_stop_sequence", property: "stop_sequence", isCheckbox: false },
         { id: "instruct_names", property: "names", isCheckbox: true },
     ];
 
