@@ -60,6 +60,9 @@ import {
     power_user,
     pygmalion_options,
     tokenizers,
+    formatInstructModeChat,
+    formatInstructStoryString,
+    formatInstructModePrompt,
 } from "./scripts/power-user.js";
 
 import {
@@ -1218,6 +1221,15 @@ function getStoppingStrings(isImpersonate, addSpace) {
         }
     }
 
+    if (power_user.instruct.enabled) {
+        if (power_user.instruct.input_sequence) {
+            result.push(`\n${power_user.instruct.input_sequence}`);
+        }
+        if (power_user.instruct.output_sequence) {
+            result.push(`\n${power_user.instruct.output_sequence}`);
+        }
+    }
+
     return addSpace ? result.map(x => `${x} `) : result;
 }
 
@@ -1542,6 +1554,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     generation_started = new Date();
 
     const isImpersonate = type == "impersonate";
+    const isInstruct = power_user.instruct.enabled;
     message_already_generated = isImpersonate ? `${name1}: ` : `${name2}: `;
 
     const interruptedByCommand = processCommands($("#send_textarea").val(), type);
@@ -1720,6 +1733,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             force_name2 = false;
         }
 
+        if (isInstruct) {
+            storyString = formatInstructStoryString(storyString);
+        }
+
         //////////////////////////////////
 
         let chat2 = [];
@@ -1733,7 +1750,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             let charName = selected_group ? coreChat[j].name : name2;
             let this_mes_ch_name = '';
             if (coreChat[j]['is_user']) {
-                //this_mes_ch_name = name1;
                 this_mes_ch_name = coreChat[j]['name'];
             } else {
                 this_mes_ch_name = charName;
@@ -1744,10 +1760,12 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 chat2[i] = coreChat[j]['mes'] + '\n';
             }
 
+            if (isInstruct) {
+                chat2[i] = formatInstructModeChat(this_mes_ch_name, coreChat[j]['mes'], coreChat[j]['is_user']);
+            }
+
             // replace bias markup
-            //chat2[i] = (chat2[i] ?? '').replace(/{.*}/g, '');
             chat2[i] = (chat2[i] ?? '').replace(/{{(\*?.*\*?)}}/g, '');
-            //console.log('replacing chat2 {}s');
         }
         //chat2 = chat2.reverse();
 
@@ -1904,7 +1922,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                             item += anchorBottom + "\n";
                         }
                     }
-                    if (is_pygmalion) {
+                    if (is_pygmalion && !isInstruct) {
                         if (i === arrMes.length - 1 && item.trim().startsWith(name1 + ":")) {//for add name2 when user sent
                             item = item + name2 + ":";
                         }
@@ -1951,9 +1969,14 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 mesExmString = pinExmString ?? mesExamplesArray.slice(0, count_exm_add).join('');
                 mesSendString = '';
                 for (let j = 0; j < mesSend.length; j++) {
-
+                    const isBottom = j === mesSend.length - 1;
                     mesSendString += mesSend[j];
-                    if (isImpersonate && j === mesSend.length - 1 && tokens_already_generated === 0) {
+
+                    if (isInstruct && isBottom && tokens_already_generated === 0) {
+                        mesSendString += formatInstructModePrompt(isImpersonate);
+                    }
+
+                    if (!isInstruct && isImpersonate && isBottom && tokens_already_generated === 0) {
                         const name = is_pygmalion ? 'You' : name1;
                         if (!mesSendString.endsWith('\n')) {
                             mesSendString += '\n';
@@ -1961,7 +1984,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         mesSendString += name + ':';
                     }
 
-                    if (force_name2 && j === mesSend.length - 1 && tokens_already_generated === 0) {
+                    if (force_name2 && isBottom && tokens_already_generated === 0) {
                         if (!mesSendString.endsWith('\n')) {
                             mesSendString += '\n';
                         }

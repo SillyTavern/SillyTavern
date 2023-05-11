@@ -1150,7 +1150,7 @@
                     </a>
                 </h3>
                 <div class="flex-container">
-                    <div name="PygOverrides">
+                    <div name="PygOverrides" class="flex1">
                         <h4>AutoFormat Overrides</h4>
                         <label class="checkbox_label" for="disable-description-formatting-checkbox">
                             <input id="disable-description-formatting-checkbox" type="checkbox" />
@@ -1180,28 +1180,45 @@
                                 <input id="custom_chat_separator" class="text_pole" type="text" placeholder="&lt;START&gt;" maxlength="100" />
                             </div>
                         </div>
-                        <div id="anchors-block">
-                            <h4>
-                                Anchors Order
-                                <a href="/notes#anchors" class="notes-link" target="_blank">
-                                    <span class="note-link-span">?</span>
-                                </a>
-                            </h4>
-                            <select id="anchor_order">
-                                <option value="0">Character then Style</option>
-                                <option value="1">Style then Character</option>
-                            </select>
-                            <div id="anchor_checkbox">
-                                <label for="character_anchor"><input id="character_anchor" type="checkbox" />
-                                    Character Anchor
-                                </label>
-                                <label for="style_anchor"><input id="style_anchor" type="checkbox" />
-                                    Style Anchor
-                                </label>
+                        <div>
+                            <h4>Instruct mode</h4>
+                            <label for="instruct_enabled" class="checkbox_label">
+                                <input id="instruct_enabled" type="checkbox" />
+                                Enabled
+                            </label>
+                            <label>
+                                System Prompt
+                            </label>
+                            <textarea id="instruct_system_prompt" class="text_pole textarea_compact"></textarea>
+                            <label for="instruct_system_sequence">
+                                System Sequence
+                            </label>
+                            <div>
+                                <input id="instruct_system_sequence" class="text_pole textarea_compact" type="text" maxlength="100" />
                             </div>
+                            <label for="instruct_input_sequence">
+                                Input Sequence
+                            </label>
+                            <div>
+                                <input id="instruct_input_sequence" class="text_pole textarea_compact" type="text" maxlength="100" />
+                            </div>
+                            <label for="instruct_output_sequence">
+                                Output Sequence
+                            </label>
+                            <div>
+                                <input id="instruct_output_sequence" class="text_pole textarea_compact" type="text" maxlength="100" />
+                            </div>
+                            <label for="instruct_wrap" class="checkbox_label">
+                                <input id="instruct_wrap" type="checkbox" />
+                                Wrap Sequences with Newline
+                            </label>
+                            <label for="instruct_names" class="checkbox_label">
+                                <input id="instruct_names" type="checkbox" />
+                                Include Names
+                            </label>
                         </div>
                     </div>
-                    <div name="ContextFormatting">
+                    <div name="ContextFormatting" class="flex1">
                         <h4>Context Formatting</h4>
                         <div>
                             <h4>Tokenizer
@@ -1265,6 +1282,26 @@
                                 <label for="multigen_next_chunk">
                                     <small>Next chunks (tokens)</small>
                                     <input id="multigen_next_chunks" type="number" class="text_pole" min="1" max="512" />
+                                </label>
+                            </div>
+                        </div>
+                        <div id="anchors-block">
+                            <h4>
+                                Anchors Order
+                                <a href="/notes#anchors" class="notes-link" target="_blank">
+                                    <span class="note-link-span">?</span>
+                                </a>
+                            </h4>
+                            <select id="anchor_order">
+                                <option value="0">Character then Style</option>
+                                <option value="1">Style then Character</option>
+                            </select>
+                            <div id="anchor_checkbox">
+                                <label for="character_anchor"><input id="character_anchor" type="checkbox" />
+                                    Character Anchor
+                                </label>
+                                <label for="style_anchor"><input id="style_anchor" type="checkbox" />
+                                    Style Anchor
                                 </label>
                             </div>
                         </div>
