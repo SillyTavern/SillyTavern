@@ -119,6 +119,12 @@ import {
     createTagMapFromList,
     renameTagKey,
 } from "./scripts/tags.js";
+import {
+    SECRET_KEYS,
+    readSecretState,
+    secret_state,
+    writeSecret
+} from "./scripts/secrets.js";
 
 //exporting functions and vars for mods
 export {
@@ -543,14 +549,15 @@ $.ajaxPrefilter((options, originalOptions, xhr) => {
 });
 
 ///// initialization protocol ////////
-$.get("/csrf-token").then((data) => {
+$.get("/csrf-token").then(async (data) => {
     token = data.token;
-    getClientVersion();
-    getCharacters();
-    getSettings("def");
+    await readSecretState();
+    await getClientVersion();
+    await getSettings("def");
+    await getCharacters();
+    await getBackgrounds();
+    await getUserAvatars();
     sendSystemMessage(system_message_types.WELCOME);
-    getBackgrounds();
-    getUserAvatars();
 });
 
 function checkOnlineStatus() {
@@ -3490,7 +3497,7 @@ async function displayPastChats() {
 //************************************************************
 async function getStatusNovel() {
     if (is_get_status_novel) {
-        const data = { key: nai_settings.api_key_novel };
+        const data = {};
 
         jQuery.ajax({
             type: "POST", //
@@ -5542,17 +5549,25 @@ $(document).ready(function () {
     });
     //Select chat
 
-    $("#api_button_novel").click(function (e) {
+    $("#api_button_novel").on('click', async function (e) {
         e.stopPropagation();
-        if ($("#api_key_novel").val() != "") {
-            $("#api_loading_novel").css("display", "inline-block");
-            $("#api_button_novel").css("display", "none");
-            nai_settings.api_key_novel = $.trim($("#api_key_novel").val());
-            saveSettingsDebounced();
-            is_get_status_novel = true;
-            is_api_button_press_novel = true;
+        const api_key_novel = $("#api_key_novel").val().trim();
+
+        if (api_key_novel.length) {
+            await writeSecret(SECRET_KEYS.NOVEL, api_key_novel);
         }
+
+        if (!secret_state[SECRET_KEYS.NOVEL]) {
+            console.log('No secret key saved for NovelAI');
+            return;
+        }
+        
+        $("#api_loading_novel").css("display", "inline-block");
+        $("#api_button_novel").css("display", "none");
+        is_get_status_novel = true;
+        is_api_button_press_novel = true;
     });
+
     $("#anchor_order").change(function () {
         anchor_order = parseInt($("#anchor_order").find(":selected").val());
         saveSettingsDebounced();

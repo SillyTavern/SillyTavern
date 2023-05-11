@@ -23,6 +23,11 @@ import { groups, selected_group } from "./group-chats.js";
 import {
     power_user,
 } from "./power-user.js";
+import {
+    SECRET_KEYS,
+    secret_state,
+    writeSecret,
+} from "./secrets.js";
 
 import {
     delay,
@@ -76,7 +81,6 @@ const tokenCache = {};
 
 const default_settings = {
     preset_settings_openai: 'Default',
-    api_key_openai: '',
     temp_openai: 0.9,
     freq_pen_openai: 0.7,
     pres_pen_openai: 0.7,
@@ -101,7 +105,6 @@ const default_settings = {
 
 const oai_settings = {
     preset_settings_openai: 'Default',
-    api_key_openai: '',
     temp_openai: 1.0,
     freq_pen_openai: 0,
     pres_pen_openai: 0,
@@ -666,11 +669,6 @@ function countTokens(messages, full = false) {
 }
 
 function loadOpenAISettings(data, settings) {
-    if (settings.api_key_openai != undefined) {
-        oai_settings.api_key_openai = settings.api_key_openai;
-        $("#api_key_openai").val(oai_settings.api_key_openai);
-    }
-
     openai_setting_names = data.openai_setting_names;
     openai_settings = data.openai_settings;
     openai_settings = data.openai_settings;
@@ -766,7 +764,6 @@ async function getStatusOpen() {
     if (is_get_status_openai) {
 
         let data = {
-            key: oai_settings.api_key_openai,
             reverse_proxy: oai_settings.reverse_proxy,
         };
 
@@ -873,13 +870,10 @@ async function saveOpenAIPreset(name, settings) {
 }
 
 async function showApiKeyUsage() {
-    const body = JSON.stringify({ key: oai_settings.api_key_openai });
-
     try {
         const response = await fetch('/openai_usage', {
             method: 'POST',
             headers: getRequestHeaders(),
-            body: body,
         });
 
         if (response.ok) {
@@ -1168,15 +1162,23 @@ function onReverseProxyInput() {
 
 async function onConnectButtonClick(e) {
     e.stopPropagation();
-    if ($('#api_key_openai').val() != '') {
-        $("#api_loading_openai").css("display", 'inline-block');
-        $("#api_button_openai").css("display", 'none');
-        oai_settings.api_key_openai = $('#api_key_openai').val().trim();
-        saveSettingsDebounced();
-        is_get_status_openai = true;
-        is_api_button_press_openai = true;
-        await getStatusOpen();
+    const api_key_openai = $('#api_key_openai').val().trim();
+    
+    if (api_key_openai.length) {
+        await writeSecret(SECRET_KEYS.OPENAI, api_key_openai);
     }
+
+    if (!secret_state[SECRET_KEYS.OPENAI]) {
+        console.log('No secret key saved for OpenAI');
+        return;
+    }
+
+    $("#api_loading_openai").css("display", 'inline-block');
+    $("#api_button_openai").css("display", 'none');
+    saveSettingsDebounced();
+    is_get_status_openai = true;
+    is_api_button_press_openai = true;
+    await getStatusOpen();
 }
 
 $(document).ready(function () {

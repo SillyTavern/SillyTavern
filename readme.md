@@ -15,18 +15,6 @@ On its own Tavern is useless, as it's just a user interface. You have to have ac
 ### Do I need a powerful PC to run Tavern?
 Since Tavern is only a user interface, it has tiny hardware requirements, it will run on anything. It's the AI system backend that needs to be powerful.
 
-### I want to try self-hosted easily. Got a Google Colab?
-
-Try on Colab (runs KoboldAI backend and TavernAI Extras server alongside):  <a target="_blank" href="https://colab.research.google.com/github/Cohee1207/SillyTavern/blob/main/colab/GPU.ipynb">
-  <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
-</a>
-
-https://colab.research.google.com/github/Cohee1207/SillyTavern/blob/main/colab/GPU.ipynb
-
-Run on Repl.it:  
-[![Run on Repl.it](https://replit.com/badge?caption=Run+On+Repl.it)](https://replit.com/new/github/Cohee1207/SillyTavern)
-
-
 ## Mobile support
 
 > **Note**
