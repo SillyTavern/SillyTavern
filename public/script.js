@@ -60,9 +60,6 @@ import {
     power_user,
     pygmalion_options,
     tokenizers,
-    formatInstructModeChat,
-    formatInstructStoryString,
-    formatInstructModePrompt,
 } from "./scripts/power-user.js";
 
 import {
@@ -239,12 +236,8 @@ let exportPopper = Popper.createPopper(document.getElementById('export_button'),
 let dialogueResolve = null;
 let chat_metadata = {};
 let streamingProcessor = null;
-let crop_data = undefined;
 
 let fav_ch_checked = false;
-
-//initialize global var for future cropped blobs
-let currentCroppedAvatar = '';
 
 const durationSaveEdit = 200;
 const saveSettingsDebounced = debounce(() => saveSettings(), durationSaveEdit);
@@ -291,8 +284,6 @@ const system_messages = {
         is_name: true,
         mes: [
             '<h2>Welcome to SillyTavern!</h2>',
-            '<h3>Want to Update to the latest version?</h3>',
-            "Read the <a href='/notes/update.html' target='_blank'>instructions here</a>. Also located in your installation's base folder",
             '<h3>In order to begin chatting:</h3>',
             '<ol>',
             '<li>Connect to one of the supported generation APIs (the plug icon)</li>',
@@ -387,17 +378,17 @@ async function getClientVersion() {
 }
 
 function getTokenCount(str, padding = 0) {
-    let tokenizerType = power_user.tokenizer;
+    let tokenizerType = power_user.tokenizer; 
 
     if (main_api === 'openai') {
         // For main prompt building
         if (padding == power_user.token_padding) {
             tokenizerType = tokenizers.NONE;
-            // For extensions and WI
+        // For extensions and WI
         } else {
             return getTokenCountOpenAI(str);
         }
-
+        
     }
 
     switch (tokenizerType) {
@@ -980,15 +971,15 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
             .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
             .replace(/\n/g, "<br/>");
     } else if (!isSystem) {
-        mes = mes.replace(/```[\s\S]*?```|``[\s\S]*?``|`[\s\S]*?`|(\".+?\")|(\u201C.+?\u201D)/gm, function (match, p1, p2) {
-            if (p1) {
-                return '<q>"' + p1.replace(/\"/g, "") + '"</q>';
-            } else if (p2) {
-                return '<q>“' + p2.replace(/\u201C|\u201D/g, "") + '”</q>';
-            } else {
-                return match;
-            }
-        });
+		mes = mes.replace(/```[\s\S]*?```|``[\s\S]*?``|`[\s\S]*?`|(\".+?\")|(\u201C.+?\u201D)/gm, function (match, p1, p2) {
+			if (p1) {
+				return '<q>"' + p1.replace(/\"/g, "") + '"</q>';
+			} else if (p2) {
+				return '<q>“' + p2.replace(/\u201C|\u201D/g, "") + '”</q>';
+			} else {
+				return match;
+			}
+		});
         mes = mes.replaceAll('\\begin{align*}', '$$');
         mes = mes.replaceAll('\\end{align*}', '$$');
         mes = converter.makeHtml(mes);
@@ -1224,18 +1215,6 @@ function getStoppingStrings(isImpersonate, addSpace) {
                 .filter(x => x && x.name !== name2)
                 .map(x => `\n${x.name}:`);
             result.push(...names);
-        }
-    }
-
-    if (power_user.instruct.enabled) {
-        // Cohee: This was borrowed from oobabooga's textgen. But..
-        // What if a model doesn't use newlines to chain sequences?
-        // Who knows.
-        if (power_user.instruct.input_sequence) {
-            result.push(`\n${power_user.instruct.input_sequence}`);
-        }
-        if (power_user.instruct.output_sequence) {
-            result.push(`\n${power_user.instruct.output_sequence}`);
         }
     }
 
@@ -1563,7 +1542,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     generation_started = new Date();
 
     const isImpersonate = type == "impersonate";
-    const isInstruct = power_user.instruct.enabled;
     message_already_generated = isImpersonate ? `${name1}: ` : `${name2}: `;
 
     const interruptedByCommand = processCommands($("#send_textarea").val(), type);
@@ -1742,10 +1720,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             force_name2 = false;
         }
 
-        if (isInstruct) {
-            storyString = formatInstructStoryString(storyString);
-        }
-
         //////////////////////////////////
 
         let chat2 = [];
@@ -1759,6 +1733,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             let charName = selected_group ? coreChat[j].name : name2;
             let this_mes_ch_name = '';
             if (coreChat[j]['is_user']) {
+                //this_mes_ch_name = name1;
                 this_mes_ch_name = coreChat[j]['name'];
             } else {
                 this_mes_ch_name = charName;
@@ -1769,12 +1744,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 chat2[i] = coreChat[j]['mes'] + '\n';
             }
 
-            if (isInstruct) {
-                chat2[i] = formatInstructModeChat(this_mes_ch_name, coreChat[j]['mes'], coreChat[j]['is_user']);
-            }
-
             // replace bias markup
+            //chat2[i] = (chat2[i] ?? '').replace(/{.*}/g, '');
             chat2[i] = (chat2[i] ?? '').replace(/{{(\*?.*\*?)}}/g, '');
+            //console.log('replacing chat2 {}s');
         }
         //chat2 = chat2.reverse();
 
@@ -1858,7 +1831,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             if (main_api == 'openai') {
                 break;
             }
-
+            
             chatString = item + chatString;
             if (canFitMessages()) { //(The number of tokens in the entire promt) need fix, it must count correctly (added +120, so that the description of the character does not hide)
                 //if (is_pygmalion && i == chat2.length-1) item='<START>\n'+item;
@@ -1913,13 +1886,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
                     if (i === arrMes.length - 1 && !item.trim().startsWith(name1 + ":")) {
                         if (textareaText == "") {
-                            // Cohee: I think this was added to allow the model to continue
-                            // where it left off by removing the trailing newline at the end
-                            // that was added by chat2 generator. This causes problems with
-                            // instruct mode that could not have a trailing newline. So we're
-                            // removing a newline ONLY at the end of the string if it exists. 
-                            item = item.replace(/\n?$/, '');
-                            //item = item.substr(0, item.length - 1);
+                            item = item.substr(0, item.length - 1);
                         }
                     }
                     if (i === arrMes.length - topAnchorDepth && !is_pygmalion) {
@@ -1937,7 +1904,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                             item += anchorBottom + "\n";
                         }
                     }
-                    if (is_pygmalion && !isInstruct) {
+                    if (is_pygmalion) {
                         if (i === arrMes.length - 1 && item.trim().startsWith(name1 + ":")) {//for add name2 when user sent
                             item = item + name2 + ":";
                         }
@@ -1984,14 +1951,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 mesExmString = pinExmString ?? mesExamplesArray.slice(0, count_exm_add).join('');
                 mesSendString = '';
                 for (let j = 0; j < mesSend.length; j++) {
-                    const isBottom = j === mesSend.length - 1;
+
                     mesSendString += mesSend[j];
-
-                    if (isInstruct && isBottom && tokens_already_generated === 0) {
-                        mesSendString += formatInstructModePrompt(isImpersonate);
-                    }
-
-                    if (!isInstruct && isImpersonate && isBottom && tokens_already_generated === 0) {
+                    if (isImpersonate && j === mesSend.length - 1 && tokens_already_generated === 0) {
                         const name = is_pygmalion ? 'You' : name1;
                         if (!mesSendString.endsWith('\n')) {
                             mesSendString += '\n';
@@ -1999,7 +1961,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         mesSendString += name + ':';
                     }
 
-                    if (force_name2 && isBottom && tokens_already_generated === 0) {
+                    if (force_name2 && j === mesSend.length - 1 && tokens_already_generated === 0) {
                         if (!mesSendString.endsWith('\n')) {
                             mesSendString += '\n';
                         }
@@ -2517,7 +2479,7 @@ function cleanUpMessage(getMessage, isImpersonate) {
         getMessage = getMessage.replace(/You:/g, name1 + ':');
     }
 
-    let nameToTrim = isImpersonate ? name2 : name1;
+    let nameToTrim = isImpersonate ?  name2 : name1;
 
     if (isImpersonate) {
         nameToTrim = power_user.allow_name2_display ? '' : name2;
@@ -2535,11 +2497,6 @@ function cleanUpMessage(getMessage, isImpersonate) {
     if (getMessage.indexOf('<|endoftext|>') != -1) {
         getMessage = getMessage.substr(0, getMessage.indexOf('<|endoftext|>'));
 
-    }
-    if (power_user.instruct.enabled && power_user.instruct.stop_sequence) {
-        if (getMessage.indexOf(power_user.instruct.stop_sequence) != -1) {
-            getMessage = getMessage.substring(0, getMessage.indexOf(power_user.instruct.stop_sequence));
-        }
     }
     // clean-up group message from excessive generations
     if (selected_group) {
@@ -2836,65 +2793,48 @@ async function saveChat(chat_name, withMetadata) {
 
 async function read_avatar_load(input) {
     if (input.files && input.files[0]) {
+        const reader = new FileReader();
         if (selected_button == "create") {
             create_save_avatar = input.files;
         }
+        reader.onload = async function (e) {
+            $("#avatar_load_preview").attr("src", e.target.result);
 
-        const e = await new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = resolve;
-            reader.onerror = reject;
-            reader.readAsDataURL(input.files[0]);
-        })
+            if (menu_type != "create") {
+                $("#create_button").trigger('click');
 
-        $('#dialogue_popup').addClass('large_dialogue_popup wide_dialogue_popup');
+                const formData = new FormData($("#form_create").get(0));
 
-        const croppedImage = await callPopup(getCropPopup(e.target.result), 'avatarToCrop');
+                $(".mes").each(async function () {
+                    if ($(this).attr("is_system") == 'true') {
+                        return;
+                    }
+                    if ($(this).attr("is_user") == 'true') {
+                        return;
+                    }
+                    if ($(this).attr("ch_name") == formData.get('ch_name')) {
+                        const previewSrc = $("#avatar_load_preview").attr("src");
+                        const avatar = $(this).find(".avatar img");
+                        avatar.attr('src', default_avatar);
+                        await delay(1);
+                        avatar.attr('src', previewSrc);
+                    }
+                });
 
-        $("#avatar_load_preview").attr("src", croppedImage || e.target.result);
-
-        if (menu_type == "create") {
-            return;
-        }
-
-        $("#create_button").trigger('click');
-
-        const formData = new FormData($("#form_create").get(0));
-
-        $(".mes").each(async function () {
-            if ($(this).attr("is_system") == 'true') {
-                return;
+                await delay(durationSaveEdit);
+                await fetch(getThumbnailUrl('avatar', formData.get('avatar_url')), {
+                    method: 'GET',
+                    headers: {
+                        'pragma': 'no-cache',
+                        'cache-control': 'no-cache',
+                    }
+                });
+                console.log('Avatar refreshed');
             }
-            if ($(this).attr("is_user") == 'true') {
-                return;
-            }
-            if ($(this).attr("ch_name") == formData.get('ch_name')) {
-                const previewSrc = $("#avatar_load_preview").attr("src");
-                const avatar = $(this).find(".avatar img");
-                avatar.attr('src', default_avatar);
-                await delay(1);
-                avatar.attr('src', previewSrc);
-            }
-        });
+        };
 
-        await delay(durationSaveEdit);
-        await fetch(getThumbnailUrl('avatar', formData.get('avatar_url')), {
-            method: 'GET',
-            headers: {
-                'pragma': 'no-cache',
-                'cache-control': 'no-cache',
-            }
-        });
-        console.log('Avatar refreshed');
-
+        reader.readAsDataURL(input.files[0]);
     }
-}
-
-function getCropPopup(src) {
-    return `<h3>Set the crop position of the avatar image and click Ok to confirm.</h3>
-            <div id='avatarCropWrap'>
-                <img id='avatarToCrop' src='${src}'>
-            </div>`;
 }
 
 function getThumbnailUrl(type, file) {
@@ -3235,6 +3175,12 @@ async function getSettings(type) {
                     "true"
                 );
 
+                $("#max_context").val(max_context);
+                $("#max_context_counter").text(`${max_context}`);
+
+                $("#amount_gen").val(amount_gen);
+                $("#amount_gen_counter").text(`${amount_gen}`);
+
                 swipes = settings.swipes !== undefined ? !!settings.swipes : true;  // enable swipes by default
                 $('#swipes-checkbox').prop('checked', swipes); /// swipecode
                 //console.log('getSettings -- swipes = ' + swipes + '. toggling box');
@@ -3265,13 +3211,6 @@ async function getSettings(type) {
 
                 // Load- character tags
                 loadTagsSettings(settings);
-
-                // Set context size after loading power user (may override the max value)
-                $("#max_context").val(max_context);
-                $("#max_context_counter").text(`${max_context}`);
-
-                $("#amount_gen").val(amount_gen);
-                $("#amount_gen_counter").text(`${amount_gen}`);
 
                 //Enable GUI deference settings if GUI is selected for Kobold
                 if (main_api === "kobold") {
@@ -3736,9 +3675,6 @@ function callPopup(text, type, inputValue = '') {
 
     $("#dialogue_popup_cancel").css("display", "inline-block");
     switch (popup_type) {
-        case "avatarToCrop":
-            $("#dialogue_popup_ok").text("Ok");
-            $("#dialogue_popup_cancel").css("display", "none");
         case "text":
         case "char_not_selected":
             $("#dialogue_popup_ok").text("Ok");
@@ -3758,7 +3694,6 @@ function callPopup(text, type, inputValue = '') {
     }
 
     $("#dialogue_popup_input").val(inputValue);
-
     if (popup_type == 'input') {
         $("#dialogue_popup_input").css("display", "block");
         $("#dialogue_popup_ok").text("Save");
@@ -3771,19 +3706,6 @@ function callPopup(text, type, inputValue = '') {
     $("#shadow_popup").css("display", "block");
     if (popup_type == 'input') {
         $("#dialogue_popup_input").focus();
-    }
-    if (popup_type == 'avatarToCrop') {
-        // unset existing data
-        crop_data = undefined;
-
-        $('#avatarToCrop').cropper({
-            aspectRatio: 2 / 3,
-            autoCropArea: 1,
-            rotatable: false,
-            crop: function (event) {
-                crop_data = event.detail;
-            }
-        });
     }
     $("#shadow_popup").transition({
         opacity: 1,
@@ -4435,7 +4357,7 @@ $(document).ready(function () {
     $(document).on("click", "#user_avatar_block .avatar_upload", function () {
         $("#avatar_upload_file").click();
     });
-    $("#avatar_upload_file").on("change", async function (e) {
+    $("#avatar_upload_file").on("change", function (e) {
         const file = e.target.files[0];
 
         if (!file) {
@@ -4444,25 +4366,9 @@ $(document).ready(function () {
 
         const formData = new FormData($("#form_upload_avatar").get(0));
 
-        const dataUrl = await new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = resolve;
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-        });
-
-        $('#dialogue_popup').addClass('large_dialogue_popup wide_dialogue_popup');
-        await callPopup(getCropPopup(dataUrl.target.result), 'avatarToCrop');
-
-        let url = "/uploaduseravatar";
-
-        if (crop_data !== undefined) {
-            url += `?crop=${encodeURIComponent(JSON.stringify(crop_data))}`;
-        }
-
         jQuery.ajax({
             type: "POST",
-            url: url,
+            url: "/uploaduseravatar",
             data: formData,
             beforeSend: () => { },
             cache: false,
@@ -4472,7 +4378,6 @@ $(document).ready(function () {
                 if (data.path) {
                     appendUserAvatar(data.path);
                 }
-                crop_data = undefined;
             },
             error: (jqXHR, exception) => { },
         });
@@ -4565,15 +4470,9 @@ $(document).ready(function () {
         setTimeout(function () {
             $("#shadow_popup").css("display", "none");
             $("#dialogue_popup").removeClass('large_dialogue_popup');
-            $("#dialogue_popup").removeClass('wide_dialogue_popup');
         }, 200);
 
         //      $("#shadow_popup").css("opacity:", 0.0);
-
-        if (popup_type == 'avatarToCrop') {
-            dialogueResolve($("#avatarToCrop").data('cropper').getCroppedCanvas().toDataURL('image/jpeg'));
-        };
-
         if (popup_type == "del_bg") {
             delBackground(bg_file_for_del.attr("bgfile"));
             bg_file_for_del.parent().remove();
@@ -4729,15 +4628,10 @@ $(document).ready(function () {
         if ($("#form_create").attr("actiontype") == "createcharacter") {
             if ($("#character_name_pole").val().length > 0) {
                 //if the character name text area isn't empty (only posible when creating a new character)
-                let url = "/createcharacter";
-
-                if (crop_data != undefined) {
-                    url += `?crop=${encodeURIComponent(JSON.stringify(crop_data))}`;
-                }
-
+                //console.log('/createcharacter entered');
                 jQuery.ajax({
                     type: "POST",
-                    url: url,
+                    url: "/createcharacter",
                     data: formData,
                     beforeSend: function () {
                         $("#create_button").attr("disabled", true);
@@ -4789,7 +4683,6 @@ $(document).ready(function () {
                         select_rm_info(`Character created<br><h4>${DOMPurify.sanitize(save_name)}</h4>`, oldSelectedChar);
 
                         $("#rm_info_block").transition({ opacity: 1.0, duration: 2000 });
-                        crop_data = undefined;
                     },
                     error: function (jqXHR, exception) {
                         $("#create_button").removeAttr("disabled");
@@ -4799,15 +4692,11 @@ $(document).ready(function () {
                 $("#result_info").html("Name not entered");
             }
         } else {
-            let url = '/editcharacter';
-
-            if (crop_data != undefined) {
-                url += `?crop=${encodeURIComponent(JSON.stringify(crop_data))}`;
-            }
-
+            //console.log('/editcharacter -- entered.');
+            //console.log('Avatar Button Value:'+$("#add_avatar_button").val());
             jQuery.ajax({
                 type: "POST",
-                url: url,
+                url: "/editcharacter",
                 data: formData,
                 beforeSend: function () {
                     //$("#create_button").attr("disabled", true);
@@ -4851,7 +4740,6 @@ $(document).ready(function () {
                         $("#add_avatar_button").val("").clone(true)
                     );
                     $("#create_button").attr("value", "Save");
-                    crop_data = undefined;
                 },
                 error: function (jqXHR, exception) {
                     $("#create_button").removeAttr("disabled");

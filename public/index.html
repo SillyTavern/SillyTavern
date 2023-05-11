@@ -13,7 +13,6 @@
     <link href="css/solid.css" rel="stylesheet">
     <link href="css/jquery-ui.min.css" rel="stylesheet">
     <link href="css/bright.min.css" rel="stylesheet">
-    <link href="css/cropper.min.css" rel="stylesheet">
 
     <link rel="apple-touch-icon" sizes="57x57" href="img/apple-icon-57x57.png" />
     <link rel="apple-touch-icon" sizes="72x72" href="img/apple-icon-72x72.png" />
@@ -39,8 +38,6 @@
     <script src="scripts/purify.min.js"></script>
     <script src="scripts/highlight.min.js"></script>
     <script src="scripts/moment.min.js"></script>
-    <script src="scripts/cropper.min.js"></script>
-    <script src="scripts/jquery-cropper.min.js"></script>
     <script type="module" src="scripts/power-user.js"></script>
     <script type="module" src="scripts/swiped-events.js"></script>
     <link rel="stylesheet" type="text/css" href="style.css">
@@ -174,18 +171,6 @@
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                                
-                                <div class="max_context_unlocked_block">
-                                    <label class="checkbox_label">
-                                        <input id="max_context_unlocked" type="checkbox" />
-                                        Unlocked
-                                        <div id="max_context_unlocked_warning">
-                                            <b class="neutral_warning">ATTENTION!</b>
-                                            Only select models support context sizes greater than 2048 tokens.
-                                            Proceed only if you know what you're doing.
-                                        </div> 
-                                    </label>
                                 </div>
                             </div>
                             <hr>
@@ -1165,7 +1150,7 @@
                     </a>
                 </h3>
                 <div class="flex-container">
-                    <div name="PygOverrides" class="flex1">
+                    <div name="PygOverrides">
                         <h4>AutoFormat Overrides</h4>
                         <label class="checkbox_label" for="disable-description-formatting-checkbox">
                             <input id="disable-description-formatting-checkbox" type="checkbox" />
@@ -1192,74 +1177,31 @@
                                 Custom Chat Separator
                             </h4>
                             <div>
-                                <input id="custom_chat_separator" class="text_pole textarea_compact" type="text" placeholder="&lt;START&gt;" maxlength="100" />
+                                <input id="custom_chat_separator" class="text_pole" type="text" placeholder="&lt;START&gt;" maxlength="100" />
                             </div>
                         </div>
-                        <div>
-                            <h4>Instruct mode
-                                <a href="/notes#instructmode" class="notes-link" target="_blank">
+                        <div id="anchors-block">
+                            <h4>
+                                Anchors Order
+                                <a href="/notes#anchors" class="notes-link" target="_blank">
                                     <span class="note-link-span">?</span>
                                 </a>
                             </h4>
-                            <div>
-                                <label for="instruct_enabled" class="checkbox_label">
-                                    <input id="instruct_enabled" type="checkbox" />
-                                    Enabled
+                            <select id="anchor_order">
+                                <option value="0">Character then Style</option>
+                                <option value="1">Style then Character</option>
+                            </select>
+                            <div id="anchor_checkbox">
+                                <label for="character_anchor"><input id="character_anchor" type="checkbox" />
+                                    Character Anchor
                                 </label>
-                                <label for="instruct_wrap" class="checkbox_label">
-                                    <input id="instruct_wrap" type="checkbox" />
-                                    Wrap Sequences with Newline
+                                <label for="style_anchor"><input id="style_anchor" type="checkbox" />
+                                    Style Anchor
                                 </label>
-                                <label for="instruct_names" class="checkbox_label">
-                                    <input id="instruct_names" type="checkbox" />
-                                    Include Names
-                                </label>
-                            </div>
-                            <label for="instruct_presets">Presets</label>
-                            <select id="instruct_presets"></select>
-                            <label>
-                                System Prompt
-                            </label>
-                            <textarea id="instruct_system_prompt" class="text_pole textarea_compact"></textarea>
-                            <div class="flex-container">
-                                <div class="flex1">
-                                    <label for="instruct_input_sequence">
-                                        Input Sequence
-                                    </label>
-                                    <div>
-                                        <input id="instruct_input_sequence" class="text_pole textarea_compact" type="text" maxlength="100" />
-                                    </div>
-                                </div>
-                                <div class="flex1">
-                                    <label for="instruct_output_sequence">
-                                        Output Sequence
-                                    </label>
-                                    <div>
-                                        <input id="instruct_output_sequence" class="text_pole textarea_compact" type="text" maxlength="100" />
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="flex-container">
-                                <div class="flex1">
-                                    <label for="instruct_system_sequence">
-                                        System Sequence
-                                    </label>
-                                    <div>
-                                        <input id="instruct_system_sequence" class="text_pole textarea_compact" type="text" maxlength="100" />
-                                    </div>
-                                </div>
-                                <div class="flex1">
-                                    <label for="instruct_stop_sequence">
-                                        Stop Sequence
-                                    </label>
-                                    <div>
-                                        <input id="instruct_stop_sequence" class="text_pole textarea_compact" type="text" maxlength="100" />
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </div>
-                    <div name="ContextFormatting" class="flex1">
+                    <div name="ContextFormatting">
                         <h4>Context Formatting</h4>
                         <div>
                             <h4>Tokenizer
@@ -1281,7 +1223,7 @@
                                     <span class="note-link-span">?</span>
                                 </a>
                             </div>
-                            <input id="token_padding" class="text_pole textarea_compact" type="number" min="-2048" max="2048" />
+                            <input id="token_padding" class="text_pole" type="number" min="-2048" max="2048" />
                         </div>
                         <label class="checkbox_label" for="always-force-name2-checkbox">
                             <input id="always-force-name2-checkbox" type="checkbox" />
@@ -1318,31 +1260,11 @@
                             <div class="multigen_settings_block">
                                 <label for="multigen_1st_chunk">
                                     <small>First chunk (tokens)</small>
-                                    <input id="multigen_first_chunk" type="number" class="text_pole textarea_compact" min="1" max="512" />
+                                    <input id="multigen_first_chunk" type="number" class="text_pole" min="1" max="512" />
                                 </label>
                                 <label for="multigen_next_chunk">
                                     <small>Next chunks (tokens)</small>
-                                    <input id="multigen_next_chunks" type="number" class="text_pole textarea_compact" min="1" max="512" />
-                                </label>
-                            </div>
-                        </div>
-                        <div id="anchors-block">
-                            <h4>
-                                Anchors Order
-                                <a href="/notes#anchors" class="notes-link" target="_blank">
-                                    <span class="note-link-span">?</span>
-                                </a>
-                            </h4>
-                            <select id="anchor_order">
-                                <option value="0">Character then Style</option>
-                                <option value="1">Style then Character</option>
-                            </select>
-                            <div id="anchor_checkbox">
-                                <label for="character_anchor"><input id="character_anchor" type="checkbox" />
-                                    Character Anchor
-                                </label>
-                                <label for="style_anchor"><input id="style_anchor" type="checkbox" />
-                                    Style Anchor
+                                    <input id="multigen_next_chunks" type="number" class="text_pole" min="1" max="512" />
                                 </label>
                             </div>
                         </div>

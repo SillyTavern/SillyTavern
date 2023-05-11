@@ -414,10 +414,6 @@ Sometimes an AI model may not perceive anchors correctly or the AI model already
 
 _When using Pygmalion models these anchors are automatically disabled, since Pygmalion already generates long enough messages._
 
-## Instruct Mode
-
-_This section is under construction. Please check later._
-
 ## Chat import
 
 **Import chats into SillyTavern**
