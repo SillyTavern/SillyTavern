@@ -1424,8 +1424,12 @@ input[type=search]:focus::-webkit-search-cancel-button {
 }
 
 .large_dialogue_popup {
-    height: 90svh;
-    max-width: 90svw;
+    height: 90svh !important;
+    max-width: 90svw !important;
+}
+
+.wide_dialogue_popup {
+    width: 90svh !important;
 }
 
 .height100pSpaceEvenly {
@@ -2610,6 +2614,17 @@ h5 {
 .tag.selected {
     opacity: 1 !important;
     filter: none !important;
+}
+
+#avatarCropWrap {
+    margin: 10px;
+    max-height: 90%;
+    max-width: 90%;
+}
+
+#avatarToCrop {
+    max-width: 100%;
+    /* This rule is very important, please do not ignore this! */
 }
 
 body .ui-autocomplete {
