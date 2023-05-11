@@ -164,6 +164,8 @@ function humanizedISO8601DateTime() {
 var is_colab = process.env.colaburl !== undefined;
 var charactersPath = 'public/characters/';
 var chatsPath = 'public/chats/';
+const AVATAR_WIDTH = 400;
+const AVATAR_HEIGHT = 600;
 const jsonParser = express.json({ limit: '100mb' });
 const urlencodedParser = express.urlencoded({ extended: true, limit: '100mb' });
 const baseRequestArgs = { headers: { "Content-Type": "application/json" } };
@@ -703,8 +705,9 @@ app.post("/createcharacter", urlencodedParser, function (request, response) {
     if (!request.file) {
         charaWrite(defaultAvatar, char, internalName, response, avatarName);
     } else {
+        const crop = tryParse(request.query.crop);
         const uploadPath = path.join("./uploads/", request.file.filename);
-        charaWrite(uploadPath, char, internalName, response, avatarName);
+        charaWrite(uploadPath, char, internalName, response, avatarName, crop);
     }
 });
 
@@ -799,9 +802,10 @@ app.post("/editcharacter", urlencodedParser, async function (request, response) 
             const avatarPath = path.join(charactersPath, request.body.avatar_url);
             await charaWrite(avatarPath, char, target_img, response, 'Character saved');
         } else {
+            const crop = tryParse(request.query.crop);
             const newAvatarPath = path.join("./uploads/", request.file.filename);
             invalidateThumbnail('avatar', request.body.avatar_url);
-            await charaWrite(newAvatarPath, char, target_img, response, 'Character saved');
+            await charaWrite(newAvatarPath, char, target_img, response, 'Character saved', crop);
         }
     }
     catch {
@@ -845,11 +849,17 @@ app.post("/deletecharacter", urlencodedParser, function (request, response) {
     });
 });
 
-async function charaWrite(img_url, data, target_img, response = undefined, mes = 'ok') {
+async function charaWrite(img_url, data, target_img, response = undefined, mes = 'ok', crop = undefined) {
     try {
         // Read the image, resize, and save it as a PNG into the buffer
-        const rawImg = await jimp.read(img_url);
-        const image = await rawImg.cover(400, 600).getBufferAsync(jimp.MIME_PNG);
+        let rawImg = await jimp.read(img_url);
+
+        // Apply crop if defined
+        if (typeof crop == 'object') {
+            rawImg = rawImg.crop(crop.x, crop.y, crop.width, crop.height);
+        }
+
+        const image = await rawImg.cover(AVATAR_WIDTH, AVATAR_HEIGHT).getBufferAsync(jimp.MIME_PNG);
 
         // Get the chunks
         const chunks = extract(image);
@@ -1525,6 +1535,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
     let filedata = request.file;
     let uploadPath = path.join('./uploads', filedata.filename);
     var format = request.body.file_type;
+    const defaultAvatarPath = './public/img/ai4.png';
     //console.log(format);
     if (filedata) {
         if (format == 'json') {
@@ -1539,16 +1550,37 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                     jsonData.name = sanitize(jsonData.name);
 
                     png_name = getPngName(jsonData.name);
-                    let char = { "name": jsonData.name, "description": jsonData.description ?? '', "personality": jsonData.personality ?? '', "first_mes": jsonData.first_mes ?? '', "avatar": 'none', "chat": jsonData.name + " - " + humanizedISO8601DateTime(), "mes_example": jsonData.mes_example ?? '', "scenario": jsonData.scenario ?? '', "create_date": humanizedISO8601DateTime(), "talkativeness": jsonData.talkativeness ?? 0.5 };
+                    let char = {
+                        "name": jsonData.name,
+                        "description": jsonData.description ?? '',
+                        "personality": jsonData.personality ?? '',
+                        "first_mes": jsonData.first_mes ?? '',
+                        "avatar": 'none', "chat": jsonData.name + " - " + humanizedISO8601DateTime(),
+                        "mes_example": jsonData.mes_example ?? '',
+                        "scenario": jsonData.scenario ?? '',
+                        "create_date": humanizedISO8601DateTime(),
+                        "talkativeness": jsonData.talkativeness ?? 0.5
+                    };
                     char = JSON.stringify(char);
-                    charaWrite('./public/img/ai4.png', char, png_name, response, { file_name: png_name });
+                    charaWrite(defaultAvatarPath, char, png_name, response, { file_name: png_name });
                 } else if (jsonData.char_name !== undefined) {//json Pygmalion notepad
                     jsonData.char_name = sanitize(jsonData.char_name);
 
                     png_name = getPngName(jsonData.char_name);
-                    let char = { "name": jsonData.char_name, "description": jsonData.char_persona ?? '', "personality": '', "first_mes": jsonData.char_greeting ?? '', "avatar": 'none', "chat": jsonData.name + " - " + humanizedISO8601DateTime(), "mes_example": jsonData.example_dialogue ?? '', "scenario": jsonData.world_scenario ?? '', "create_date": humanizedISO8601DateTime(), "talkativeness": jsonData.talkativeness ?? 0.5 };
+                    let char = {
+                        "name": jsonData.char_name,
+                        "description": jsonData.char_persona ?? '',
+                        "personality": '',
+                        "first_mes": jsonData.char_greeting ?? '',
+                        "avatar": 'none',
+                        "chat": jsonData.name + " - " + humanizedISO8601DateTime(),
+                        "mes_example": jsonData.example_dialogue ?? '',
+                        "scenario": jsonData.world_scenario ?? '',
+                        "create_date": humanizedISO8601DateTime(),
+                        "talkativeness": jsonData.talkativeness ?? 0.5
+                    };
                     char = JSON.stringify(char);
-                    charaWrite('./public/img/ai4.png', char, png_name, response, { file_name: png_name });
+                    charaWrite(defaultAvatarPath, char, png_name, response, { file_name: png_name });
                 } else {
                     console.log('Incorrect character format .json');
                     response.send({ error: true });
@@ -1561,15 +1593,32 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                 jsonData.name = sanitize(jsonData.name);
 
                 if (format == 'webp') {
-                    let convertedPath = path.join('./uploads', path.basename(uploadPath, ".webp") + ".png")
-                    await webp.dwebp(uploadPath, convertedPath, "-o");
-                    uploadPath = convertedPath;
+                    try {
+                        let convertedPath = path.join('./uploads', path.basename(uploadPath, ".webp") + ".png")
+                        await webp.dwebp(uploadPath, convertedPath, "-o");
+                        uploadPath = convertedPath;
+                    }
+                    catch {
+                        console.error('WEBP image conversion failed. Using the default character image.');
+                        uploadPath = defaultAvatarPath; 
+                    }
                 }
 
                 png_name = getPngName(jsonData.name);
 
                 if (jsonData.name !== undefined) {
-                    let char = { "name": jsonData.name, "description": jsonData.description ?? '', "personality": jsonData.personality ?? '', "first_mes": jsonData.first_mes ?? '', "avatar": 'none', "chat": jsonData.name + " - " + humanizedISO8601DateTime(), "mes_example": jsonData.mes_example ?? '', "scenario": jsonData.scenario ?? '', "create_date": humanizedISO8601DateTime(), "talkativeness": jsonData.talkativeness ?? 0.5 };
+                    let char = {
+                        "name": jsonData.name,
+                        "description": jsonData.description ?? '',
+                        "personality": jsonData.personality ?? '',
+                        "first_mes": jsonData.first_mes ?? '',
+                        "avatar": 'none',
+                        "chat": jsonData.name + " - " + humanizedISO8601DateTime(),
+                        "mes_example": jsonData.mes_example ?? '',
+                        "scenario": jsonData.scenario ?? '',
+                        "create_date": humanizedISO8601DateTime(),
+                        "talkativeness": jsonData.talkativeness ?? 0.5
+                    };
                     char = JSON.stringify(char);
                     await charaWrite(uploadPath, char, png_name, response, { file_name: png_name });
                 }
@@ -1804,8 +1853,14 @@ app.post('/uploaduseravatar', urlencodedParser, async (request, response) => {
 
     try {
         const pathToUpload = path.join('./uploads/' + request.file.filename);
-        const rawImg = await jimp.read(pathToUpload);
-        const image = await rawImg.cover(400, 400).getBufferAsync(jimp.MIME_PNG);
+        const crop = tryParse(request.query.crop);
+        let rawImg = await jimp.read(pathToUpload);
+
+        if (typeof crop == 'object') {
+            rawImg = rawImg.crop(crop.x, crop.y, crop.width, crop.height);
+        }
+
+        const image = await rawImg.cover(AVATAR_WIDTH, AVATAR_HEIGHT).getBufferAsync(jimp.MIME_PNG);
 
         const filename = `${Date.now()}.png`;
         const pathToNewFile = path.join(directories.avatars, filename);

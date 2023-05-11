@@ -239,6 +239,7 @@ let exportPopper = Popper.createPopper(document.getElementById('export_button'),
 let dialogueResolve = null;
 let chat_metadata = {};
 let streamingProcessor = null;
+let crop_data = undefined;
 
 let fav_ch_checked = false;
 
@@ -2821,58 +2822,65 @@ async function saveChat(chat_name, withMetadata) {
 
 async function read_avatar_load(input) {
     if (input.files && input.files[0]) {
-        const reader = new FileReader();
         if (selected_button == "create") {
             create_save_avatar = input.files;
         }
-        reader.onload = async function (e) {
-            /*             $('#dialogue_popup').addClass('large_dialogue_popup');
-                        $('#dialogue_popup').addClass('wide_dialogue_popup');
-            
-                        await callPopup(`
-                        <h3>Click image to start cropping. Click Ok to finalize</h3>
-                        <div id='avatarCropWrap'>
-                        <img id='avatarToCrop' src='${e.target.result}'>
-                        </div>
-                        `, 'avatarToCrop'); */
 
-            $("#avatar_load_preview").attr("src", e.target.result);
+        const e = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = resolve;
+            reader.onerror = reject;
+            reader.readAsDataURL(input.files[0]);
+        })
 
-            if (menu_type != "create") {
-                $("#create_button").trigger('click');
+        $('#dialogue_popup').addClass('large_dialogue_popup wide_dialogue_popup');
 
-                const formData = new FormData($("#form_create").get(0));
+        const croppedImage = await callPopup(getCropPopup(e.target.result), 'avatarToCrop');
 
-                $(".mes").each(async function () {
-                    if ($(this).attr("is_system") == 'true') {
-                        return;
-                    }
-                    if ($(this).attr("is_user") == 'true') {
-                        return;
-                    }
-                    if ($(this).attr("ch_name") == formData.get('ch_name')) {
-                        const previewSrc = $("#avatar_load_preview").attr("src");
-                        const avatar = $(this).find(".avatar img");
-                        avatar.attr('src', default_avatar);
-                        await delay(1);
-                        avatar.attr('src', previewSrc);
-                    }
-                });
+        $("#avatar_load_preview").attr("src", croppedImage || e.target.result);
 
-                await delay(durationSaveEdit);
-                await fetch(getThumbnailUrl('avatar', formData.get('avatar_url')), {
-                    method: 'GET',
-                    headers: {
-                        'pragma': 'no-cache',
-                        'cache-control': 'no-cache',
-                    }
-                });
-                console.log('Avatar refreshed');
+        if (menu_type == "create") {
+            return;
+        }
+
+        $("#create_button").trigger('click');
+
+        const formData = new FormData($("#form_create").get(0));
+
+        $(".mes").each(async function () {
+            if ($(this).attr("is_system") == 'true') {
+                return;
             }
-        };
+            if ($(this).attr("is_user") == 'true') {
+                return;
+            }
+            if ($(this).attr("ch_name") == formData.get('ch_name')) {
+                const previewSrc = $("#avatar_load_preview").attr("src");
+                const avatar = $(this).find(".avatar img");
+                avatar.attr('src', default_avatar);
+                await delay(1);
+                avatar.attr('src', previewSrc);
+            }
+        });
 
-        reader.readAsDataURL(input.files[0]);
+        await delay(durationSaveEdit);
+        await fetch(getThumbnailUrl('avatar', formData.get('avatar_url')), {
+            method: 'GET',
+            headers: {
+                'pragma': 'no-cache',
+                'cache-control': 'no-cache',
+            }
+        });
+        console.log('Avatar refreshed');
+
     }
+}
+
+function getCropPopup(src) {
+    return `<h3>Set the crop position of the avatar image and click Ok to confirm.</h3>
+            <div id='avatarCropWrap'>
+                <img id='avatarToCrop' src='${src}'>
+            </div>`;
 }
 
 function getThumbnailUrl(type, file) {
@@ -3736,10 +3744,6 @@ function callPopup(text, type, inputValue = '') {
 
     $("#dialogue_popup_input").val(inputValue);
 
-    if (popup_type == 'avatarToCrop') {
-
-    }
-
     if (popup_type == 'input') {
         $("#dialogue_popup_input").css("display", "block");
         $("#dialogue_popup_ok").text("Save");
@@ -3752,6 +3756,17 @@ function callPopup(text, type, inputValue = '') {
     $("#shadow_popup").css("display", "block");
     if (popup_type == 'input') {
         $("#dialogue_popup_input").focus();
+    }
+    if (popup_type == 'avatarToCrop') {
+        // unset existing data
+        crop_data = undefined;
+
+        $('#avatarToCrop').cropper({
+            aspectRatio: 2 / 3,
+            crop: function (event) {
+                crop_data = event.detail;
+            }
+        });
     }
     $("#shadow_popup").transition({
         opacity: 1,
@@ -4403,7 +4418,7 @@ $(document).ready(function () {
     $(document).on("click", "#user_avatar_block .avatar_upload", function () {
         $("#avatar_upload_file").click();
     });
-    $("#avatar_upload_file").on("change", function (e) {
+    $("#avatar_upload_file").on("change", async function (e) {
         const file = e.target.files[0];
 
         if (!file) {
@@ -4412,9 +4427,25 @@ $(document).ready(function () {
 
         const formData = new FormData($("#form_upload_avatar").get(0));
 
+        const dataUrl = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = resolve;
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+
+        $('#dialogue_popup').addClass('large_dialogue_popup wide_dialogue_popup');
+        await callPopup(getCropPopup(dataUrl.target.result), 'avatarToCrop');
+
+        let url = "/uploaduseravatar";
+
+        if (crop_data !== undefined) {
+            url += `?crop=${encodeURIComponent(JSON.stringify(crop_data))}`;
+        }
+
         jQuery.ajax({
             type: "POST",
-            url: "/uploaduseravatar",
+            url: url,
             data: formData,
             beforeSend: () => { },
             cache: false,
@@ -4424,6 +4455,7 @@ $(document).ready(function () {
                 if (data.path) {
                     appendUserAvatar(data.path);
                 }
+                crop_data = undefined;
             },
             error: (jqXHR, exception) => { },
         });
@@ -4522,32 +4554,7 @@ $(document).ready(function () {
         //      $("#shadow_popup").css("opacity:", 0.0);
 
         if (popup_type == 'avatarToCrop') {
-
-            //ideally this is where we would grab the crop coordinates
-            //and send back to read_avatar_load() to be sent to server for actual file resizing/cropping.
-            //the code below does not work 'cropper not defined'.
-
-            $("#avatarToCrop").cropper.getCroppedCanvas();
-
-            $("#avatarToCrop").cropper.getCroppedCanvas({
-                width: 160,
-                height: 90,
-                minWidth: 400,
-                minHeight: 600,
-                maxWidth: 4096,
-                maxHeight: 4096,
-                fillColor: 'transparent',
-                imageSmoothingEnabled: false,
-                imageSmoothingQuality: 'high',
-            });
-
-            $("#avatarToCrop").cropper.getCroppedCanvas().toBlob((blob) => {
-                currentCroppedAvatar = new FormData();
-                currentCroppedAvatar.append('croppedImage', blob/*, 'example.png' */);
-            });
-
-            return currentCroppedAvatar;
-
+            dialogueResolve($("#avatarToCrop").data('cropper').getCroppedCanvas().toDataURL('image/jpeg'));
         };
 
         if (popup_type == "del_bg") {
@@ -4705,10 +4712,15 @@ $(document).ready(function () {
         if ($("#form_create").attr("actiontype") == "createcharacter") {
             if ($("#character_name_pole").val().length > 0) {
                 //if the character name text area isn't empty (only posible when creating a new character)
-                //console.log('/createcharacter entered');
+                let url = "/createcharacter";
+
+                if (crop_data != undefined) {
+                    url += `?crop=${encodeURIComponent(JSON.stringify(crop_data))}`;
+                }
+
                 jQuery.ajax({
                     type: "POST",
-                    url: "/createcharacter",
+                    url: url,
                     data: formData,
                     beforeSend: function () {
                         $("#create_button").attr("disabled", true);
@@ -4760,6 +4772,7 @@ $(document).ready(function () {
                         select_rm_info(`Character created<br><h4>${DOMPurify.sanitize(save_name)}</h4>`, oldSelectedChar);
 
                         $("#rm_info_block").transition({ opacity: 1.0, duration: 2000 });
+                        crop_data = undefined;
                     },
                     error: function (jqXHR, exception) {
                         $("#create_button").removeAttr("disabled");
@@ -4769,11 +4782,15 @@ $(document).ready(function () {
                 $("#result_info").html("Name not entered");
             }
         } else {
-            //console.log('/editcharacter -- entered.');
-            //console.log('Avatar Button Value:'+$("#add_avatar_button").val());
+            let url = '/editcharacter';
+
+            if (crop_data != undefined) {
+                url += `?crop=${encodeURIComponent(JSON.stringify(crop_data))}`;
+            }
+
             jQuery.ajax({
                 type: "POST",
-                url: "/editcharacter",
+                url: url,
                 data: formData,
                 beforeSend: function () {
                     //$("#create_button").attr("disabled", true);
@@ -4817,6 +4834,7 @@ $(document).ready(function () {
                         $("#add_avatar_button").val("").clone(true)
                     );
                     $("#create_button").attr("value", "Save");
+                    crop_data = undefined;
                 },
                 error: function (jqXHR, exception) {
                     $("#create_button").removeAttr("disabled");
@@ -5878,28 +5896,4 @@ $(document).ready(function () {
         $(masterElement).val(myValue).trigger('input');
         restoreCaretPosition($(this).get(0), caretPosition);
     });
-
-    /*     $("#dialogue_popup_text").on('click', '#avatarToCrop', function () {
-    
-            var $image = $('#avatarToCrop');
-    
-            $image.cropper({
-                aspectRatio: 3 / 4,
-                crop: function (event) {
-                    console.log(event.detail.x);
-                    console.log(event.detail.y);
-                    console.log(event.detail.width);
-                    console.log(event.detail.height);
-                    console.log(event.detail.rotate);
-                    console.log(event.detail.scaleX);
-                    console.log(event.detail.scaleY);
-                }
-            });
-    
-            // Get the Cropper.js instance after initialized
-            var cropper = $image.data('cropper');
-    
-    
-        }); */
-
 })
