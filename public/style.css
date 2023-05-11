@@ -2093,9 +2093,16 @@ input[type="range"]::-webkit-slider-thumb {
     width: 20px;
     opacity: 0.5;
 }
-
-.mes_edit {
+.mes_buttons {
     float: right;
+    height: 20px;
+    grid-row-start: 1;
+    position: relative;
+    right: 0px;
+}
+
+.mes_copy,
+.mes_edit {
     cursor: pointer;
     transition: 0.3s ease-in-out;
     height: 20px;
@@ -2105,9 +2112,17 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .mes_edit:hover,
+.mes_copy:hover,
 .mes_stop:hover {
     opacity: 1;
 }
+
+.last_mes .mes_copy {
+    grid-row-start: 1;
+    position: relative;
+    right: -30px;
+}
+
 
 .last_mes .mes_edit,
 .last_mes .mes_edit_buttons,
