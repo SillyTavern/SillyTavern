@@ -1180,7 +1180,7 @@
                                 Custom Chat Separator
                             </h4>
                             <div>
-                                <input id="custom_chat_separator" class="text_pole" type="text" placeholder="&lt;START&gt;" maxlength="100" />
+                                <input id="custom_chat_separator" class="text_pole textarea_compact" type="text" placeholder="&lt;START&gt;" maxlength="100" />
                             </div>
                         </div>
                         <div>
@@ -1189,22 +1189,22 @@
                                     <span class="note-link-span">?</span>
                                 </a>
                             </h4>
-                            <label for="instruct_enabled" class="checkbox_label">
-                                <input id="instruct_enabled" type="checkbox" />
-                                Enabled
-                            </label>
-                            <label for="instruct_wrap" class="checkbox_label">
-                                <input id="instruct_wrap" type="checkbox" />
-                                Wrap Sequences with Newline
-                            </label>
-                            <label for="instruct_names" class="checkbox_label">
-                                <input id="instruct_names" type="checkbox" />
-                                Include Names
-                            </label>
+                            <div>
+                                <label for="instruct_enabled" class="checkbox_label">
+                                    <input id="instruct_enabled" type="checkbox" />
+                                    Enabled
+                                </label>
+                                <label for="instruct_wrap" class="checkbox_label">
+                                    <input id="instruct_wrap" type="checkbox" />
+                                    Wrap Sequences with Newline
+                                </label>
+                                <label for="instruct_names" class="checkbox_label">
+                                    <input id="instruct_names" type="checkbox" />
+                                    Include Names
+                                </label>
+                            </div>
                             <label for="instruct_presets">Presets</label>
-                            <select id="instruct_presets">
-                                <option>--- UNDER CONSTRUCTION ---</option>
-                            </select>
+                            <select id="instruct_presets"></select>
                             <label>
                                 System Prompt
                             </label>
@@ -1269,7 +1269,7 @@
                                     <span class="note-link-span">?</span>
                                 </a>
                             </div>
-                            <input id="token_padding" class="text_pole" type="number" min="-2048" max="2048" />
+                            <input id="token_padding" class="text_pole textarea_compact" type="number" min="-2048" max="2048" />
                         </div>
                         <label class="checkbox_label" for="always-force-name2-checkbox">
                             <input id="always-force-name2-checkbox" type="checkbox" />
@@ -1306,11 +1306,11 @@
                             <div class="multigen_settings_block">
                                 <label for="multigen_1st_chunk">
                                     <small>First chunk (tokens)</small>
-                                    <input id="multigen_first_chunk" type="number" class="text_pole" min="1" max="512" />
+                                    <input id="multigen_first_chunk" type="number" class="text_pole textarea_compact" min="1" max="512" />
                                 </label>
                                 <label for="multigen_next_chunk">
                                     <small>Next chunks (tokens)</small>
-                                    <input id="multigen_next_chunks" type="number" class="text_pole" min="1" max="512" />
+                                    <input id="multigen_next_chunks" type="number" class="text_pole textarea_compact" min="1" max="512" />
                                 </label>
                             </div>
                         </div>

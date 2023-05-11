@@ -1,0 +1,9 @@
+{
+    "name": "Metharme",
+    "system_prompt": "Write {{char}}'s next reply in a fictional roleplay chat between {{user}} and {{char}}.",
+    "system_sequence": "<|system|>",
+    "stop_sequence": "</s>",
+    "input_sequence": "<|user|>",
+    "output_sequence": "<|model|>",
+    "wrap": false
+}

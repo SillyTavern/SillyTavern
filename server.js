@@ -185,7 +185,8 @@ const directories = {
     thumbnailsBg: 'thumbnails/bg/',
     thumbnailsAvatar: 'thumbnails/avatar/',
     themes: 'public/themes',
-    extensions: 'public/scripts/extensions'
+    extensions: 'public/scripts/extensions',
+    instruct: 'public/instruct',
 };
 
 // CSRF Protection //
@@ -1143,6 +1144,7 @@ app.post('/getsettings', jsonParser, (request, response) => { //Wintermute's cod
     const textgenerationwebui_presets = [];
     const textgenerationwebui_preset_names = [];
     const themes = [];
+    const instruct = [];
     const settings = fs.readFileSync('public/settings.json', 'utf8', (err, data) => {
         if (err) return response.sendStatus(500);
 
@@ -1269,6 +1271,30 @@ app.post('/getsettings', jsonParser, (request, response) => { //Wintermute's cod
         }
     })
 
+    // Instruct files
+    const instructFiles = fs
+        .readdirSync(directories.instruct)
+        .filter(x => path.parse(x).ext == '.json')
+        .sort();
+
+        instructFiles.forEach(item => {
+        const file = fs.readFileSync(
+            path.join(directories.instruct, item),
+            'utf-8',
+            (err, data) => {
+                if (err) return response.sendStatus(500);
+                return data;
+            }
+        );
+
+        try {
+            instruct.push(json5.parse(file));
+        }
+        catch {
+            // skip
+        }
+    });
+
     response.send({
         settings,
         koboldai_settings,
@@ -1281,6 +1307,7 @@ app.post('/getsettings', jsonParser, (request, response) => { //Wintermute's cod
         textgenerationwebui_presets,
         textgenerationwebui_preset_names,
         themes,
+        instruct,
         enable_extensions: enableExtensions,
     });
 });
