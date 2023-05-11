@@ -1,4 +1,4 @@
-# Dan SillyTavern - A baby of SillyTavern
+# Dan SillyTavern - A Baby Fork of SillyTavern
 ## Based on a fork of TavernAI 1.2.8
 ### Brought to you by Cohee, RossAscends and the SillyTavern community
 
