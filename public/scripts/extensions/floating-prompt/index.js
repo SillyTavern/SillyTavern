@@ -123,6 +123,10 @@ async function moduleWorker() {
                     <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
             </div>
             <div class="inline-drawer-content">
+                <small>
+                    Your notes are saved <b>PER CHAT</b>. When you start a new chat, you'll see the default / empty note.<br>
+                    Saving a bookmark will copy your note to a bookmark chat. Making changes to it won't update the note in a parent chat.<br>
+                </small>
                 <label for="extension_floating_prompt">Append the following text:</label>
                 <textarea id="extension_floating_prompt" class="text_pole" rows="8"></textarea>
                 <div class="floating_prompt_radio_group">
