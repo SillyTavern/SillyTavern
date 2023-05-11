@@ -7,6 +7,11 @@ import {
     getTokenCount,
     getRequestHeaders,
 } from "../script.js";
+import {
+    SECRET_KEYS,
+    secret_state,
+    writeSecret,
+} from "./secrets.js";
 
 export {
     is_get_status_poe,
@@ -38,7 +43,6 @@ const DEFAULT_CHARACTER_NUDGE_MESSAGE = "[Your the next response shall only be w
 const DEFAULT_IMPERSONATION_PROMPT = "[Write 1 reply only in internet RP style from the point of view of {{user}}, using the chat history so far as a guideline for the writing style of {{user}}. Don't write as {{char}} or system.]";
 
 const poe_settings = {
-    token: '',
     bot: 'a2',
     jailbreak_response: DEFAULT_JAILBREAK_RESPONSE,
     jailbreak_message: DEFAULT_JAILBREAK_MESSAGE,
@@ -67,7 +71,6 @@ function loadPoeSettings(settings) {
     $('#poe_auto_jailbreak').prop('checked', poe_settings.auto_jailbreak);
     $('#poe_auto_purge').prop('checked', poe_settings.auto_purge);
     $('#poe_streaming').prop('checked', poe_settings.streaming);
-    $('#poe_token').val(poe_settings.token ?? '');
     $('#poe_impersonation_prompt').val(poe_settings.impersonation_prompt);
     selectBot();
 }
@@ -76,11 +79,6 @@ function selectBot() {
     if (poe_settings.bot) {
         $('#poe_bots').find(`option[value="${poe_settings.bot}"]`).attr('selected', true);
     }
-}
-
-function onTokenInput() {
-    poe_settings.token = $('#poe_token').val();
-    saveSettingsDebounced();
 }
 
 function onBotChange() {
@@ -147,7 +145,6 @@ async function generatePoe(type, finalPrompt, signal) {
 async function purgeConversation(count = -1) {
     const body = JSON.stringify({
         bot: poe_settings.bot,
-        token: poe_settings.token,
         count,
     });
 
@@ -167,7 +164,6 @@ async function sendMessage(prompt, withStreaming, signal) {
 
     const body = JSON.stringify({
         bot: poe_settings.bot,
-        token: poe_settings.token,
         streaming: withStreaming && poe_settings.streaming,
         prompt,
     });
@@ -213,7 +209,19 @@ async function sendMessage(prompt, withStreaming, signal) {
 }
 
 async function onConnectClick() {
-    if (!poe_settings.token || is_poe_button_press) {
+    const api_key_poe = $('#poe_token').val().trim();
+    
+    if (api_key_poe.length) {
+        await writeSecret(SECRET_KEYS.POE, api_key_poe);
+    }
+
+    if (!secret_state[SECRET_KEYS.POE]) {
+        console.error('No secret key saved for Poe');
+        return;
+    }
+
+    if ( is_poe_button_press) {
+        console.log('Poe API button is pressed');
         return;
     }
 
@@ -236,7 +244,7 @@ function setButtonState(value) {
 }
 
 async function checkStatusPoe() {
-    const body = JSON.stringify({ token: poe_settings.token });
+    const body = JSON.stringify();
     const response = await fetch('/status_poe', {
         headers: getRequestHeaders(),
         body: body,
@@ -336,7 +344,6 @@ function onMessageRestoreClick() {
 }
 
 $('document').ready(function () {
-    $('#poe_token').on('input', onTokenInput);
     $('#poe_bots').on('change', onBotChange);
     $('#poe_connect').on('click', onConnectClick);
     $('#poe_activation_response').on('input', onResponseInput);

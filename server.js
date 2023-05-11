@@ -109,11 +109,9 @@ var response_dw_bg;
 var response_getstatus;
 var response_getstatus_novel;
 var response_getlastversion;
-var api_key_novel;
 
 let response_generate_openai;
 let response_getstatus_openai;
-let api_key_openai;
 
 //RossAscends: Added function to format dates used in files and chat timestamps to a humanized format.
 //Mostly I wanted this to be for file names, but couldn't figure out exactly where the filename save code was as everything seemed to be connected. 
@@ -1384,7 +1382,12 @@ function getImages(path) {
 app.post("/getstatus_novelai", jsonParser, function (request, response_getstatus_novel = response) {
 
     if (!request.body) return response_getstatus_novel.sendStatus(400);
-    api_key_novel = request.body.key;
+    const api_key_novel = readSecret(SECRET_KEYS.NOVEL);
+
+    if (!api_key_novel) {
+        return response_generate_novel.sendStatus(401);
+    }
+
     var data = {};
     var args = {
         data: data,
@@ -1413,6 +1416,12 @@ app.post("/getstatus_novelai", jsonParser, function (request, response_getstatus
 
 app.post("/generate_novelai", jsonParser, function (request, response_generate_novel = response) {
     if (!request.body) return response_generate_novel.sendStatus(400);
+
+    const api_key_novel = readSecret(SECRET_KEYS.NOVEL);
+
+    if (!api_key_novel) {
+        return response_generate_novel.sendStatus(401);
+    }
 
     console.log(request.body);
     var data = {
@@ -2066,12 +2075,14 @@ async function getPoeClient(token, useCache = false) {
 }
 
 app.post('/status_poe', jsonParser, async (request, response) => {
-    if (!request.body.token) {
-        return response.sendStatus(400);
+    const token = readSecret(SECRET_KEYS.POE);
+
+    if (!token) {
+        return response.sendStatus(401);
     }
 
     try {
-        const client = await getPoeClient(request.body.token);
+        const client = await getPoeClient(token);
         const botNames = client.get_bot_names();
         client.disconnect_ws();
 
@@ -2084,11 +2095,12 @@ app.post('/status_poe', jsonParser, async (request, response) => {
 });
 
 app.post('/purge_poe', jsonParser, async (request, response) => {
-    if (!request.body.token) {
-        return response.sendStatus(400);
+    const token = readSecret(SECRET_KEYS.POE);
+
+    if (!token) {
+        return response.sendStatus(401);
     }
 
-    const token = request.body.token;
     const bot = request.body.bot ?? POE_DEFAULT_BOT;
     const count = request.body.count ?? -1;
 
@@ -2106,11 +2118,16 @@ app.post('/purge_poe', jsonParser, async (request, response) => {
 });
 
 app.post('/generate_poe', jsonParser, async (request, response) => {
-    if (!request.body.token || !request.body.prompt) {
+    if (!request.body.prompt) {
         return response.sendStatus(400);
     }
 
-    const token = request.body.token;
+    const token = readSecret(SECRET_KEYS.POE);
+
+    if (!token) {
+        return response.sendStatus(401);
+    }
+
     const prompt = request.body.prompt;
     const bot = request.body.bot ?? POE_DEFAULT_BOT;
     const streaming = request.body.streaming ?? false;
@@ -2352,7 +2369,13 @@ app.get('/thumbnail', jsonParser, async function (request, response) {
 /* OpenAI */
 app.post("/getstatus_openai", jsonParser, function (request, response_getstatus_openai = response) {
     if (!request.body) return response_getstatus_openai.sendStatus(400);
-    api_key_openai = request.body.key;
+
+    const api_key_openai = readSecret(SECRET_KEYS.OPENAI);
+
+    if (!api_key_openai) {
+        return response_getstatus_openai.sendStatus(401);
+    }
+
     const api_url = new URL(request.body.reverse_proxy || api_openai).toString();
     const args = {
         headers: { "Authorization": "Bearer " + api_key_openai }
@@ -2454,6 +2477,12 @@ app.post("/deletepreset_openai", jsonParser, function (request, response) {
 app.post("/generate_openai", jsonParser, function (request, response_generate_openai) {
     if (!request.body) return response_generate_openai.sendStatus(400);
     const api_url = new URL(request.body.reverse_proxy || api_openai).toString();
+
+    const api_key_openai = readSecret(SECRET_KEYS.OPENAI);
+
+    if (!api_key_openai) {
+        return response_generate_openai.sendStatus(401);
+    }
 
     const controller = new AbortController();
     request.socket.removeAllListeners('close');
@@ -2658,6 +2687,7 @@ const autorunUrl = new URL(
 );
 
 const setupTasks = async function () {
+    migrateSecrets();
     ensurePublicDirectoriesExist();
     await ensureThumbnailCache();
 
@@ -2670,10 +2700,11 @@ const setupTasks = async function () {
 
     if (autorun) open(autorunUrl.toString());
     console.log('SillyTavern is listening on: ' + tavernUrl);
-    if (listen &&
-        !config.whitelistMode &&
-        !config.basicAuthMode)
-        console.log('Your SillyTavern is currently open to the public. To increase security, consider enabling whitelisting or basic authentication.')
+}
+
+if (listen && !config.whitelistMode && !config.basicAuthMode) {
+    console.error('Your SillyTavern is currently unsecurely open to the public. Enable whitelisting or basic authentication.');
+    process.exit(1);
 }
 
 if (true === cliArguments.ssl)
@@ -2741,4 +2772,140 @@ function ensurePublicDirectoriesExist() {
             fs.mkdirSync(dir, { recursive: true });
         }
     }
+}
+
+const SECRETS_FILE = './secrets.json';
+const SETTINGS_FILE = './public/settings.json';
+const SECRET_KEYS = {
+    HORDE: 'api_key_horde',
+    OPENAI: 'api_key_openai',
+    POE: 'api_key_poe',
+    NOVEL: 'api_key_novel',
+}
+
+function migrateSecrets() {
+    if (!fs.existsSync(SETTINGS_FILE)) {
+        console.log('Settings file does not exist');
+        return;
+    }
+
+    try {
+        let modified = false;
+        const fileContents = fs.readFileSync(SETTINGS_FILE);
+        const settings = JSON.parse(fileContents);
+        const oaiKey = settings?.api_key_openai;
+        const hordeKey = settings?.horde_settings?.api_key;
+        const poeKey = settings?.poe_settings?.token;
+        const novelKey = settings?.api_key_novel;
+
+        if (typeof oaiKey === 'string') {
+            console.log('Migrating OpenAI key...');
+            writeSecret(SECRET_KEYS.OPENAI, oaiKey);
+            delete settings.api_key_openai;
+            modified = true;
+        }
+
+        if (typeof hordeKey === 'string') {
+            console.log('Migrating Horde key...');
+            writeSecret(SECRET_KEYS.HORDE, hordeKey);
+            delete settings.hordeKey;
+            modified = true;
+        }
+
+        if (typeof poeKey === 'string') {
+            console.log('Migrating Poe key...');
+            writeSecret(SECRET_KEYS.POE, poeKey);
+            delete settings.poe_settings.token;
+            modified = true;
+        }
+
+        if (typeof novelKey === 'string') {
+            console.log('Migrating Novel key...');
+            writeSecret(SECRET_KEYS.NOVEL, novelKey);
+            delete settings.api_key_novel;
+            modified = true;
+        }
+
+        if (modified) {
+            console.log('Writing updated settings.json...');
+            const settingsContent = JSON.stringify(settings);
+            fs.writeFileSync(SETTINGS_FILE, settingsContent, "utf-8");
+        }
+    }
+    catch (error) {
+        console.error('Could not migrate secrets file. Proceed with caution.');
+    }
+}
+
+app.post('/writesecret', jsonParser, (request, response) => {
+    const key = request.body.key;
+    const value = request.body.value;
+
+    writeSecret(key,value);
+    return response.send('ok');
+});
+
+app.post('/readsecretstate', jsonParser, (_, response) => {
+    if (!fs.existsSync(SECRETS_FILE)) {
+        return response.send({});
+    }
+
+    try {
+        const fileContents = fs.readFileSync(SECRETS_FILE);
+        const secrets = JSON.parse(fileContents);
+        const state = {};
+
+        for (const key of Object.values(SECRET_KEYS)) {
+            state[key] = !!secrets[key]; // convert to boolean
+        }
+
+        return response.send(state);
+    } catch (error) {
+        console.error(error);
+        return response.send({});
+    }
+});
+
+app.post('/generate_horde', jsonParser, async (request, response) => {
+    const ANONYMOUS_KEY = "0000000000";
+    const api_key_horde = readSecret(SECRET_KEYS.HORDE) || ANONYMOUS_KEY;
+    const url = 'https://horde.koboldai.net/api/v2/generate/text/async';
+
+    const args = {
+        data: request.body,
+        headers: {
+            "Content-Type": "application/json",
+            "Client-Agent": request.header('Client-Agent'),
+            "apikey": api_key_horde,
+        }
+    };
+
+    try {
+        const data = await postAsync(url, args);
+        return response.send(data);
+    } catch {
+        return response.sendStatus(500);
+    }
+});
+
+function writeSecret(key, value) {
+    if (!fs.existsSync(SECRETS_FILE)) {
+        const emptyFile = JSON.stringify({});
+        fs.writeFileSync(SECRETS_FILE, emptyFile, "utf-8");
+    }
+
+    const fileContents = fs.readFileSync(SECRETS_FILE);
+    const secrets = JSON.parse(fileContents);
+    secrets[key] = value;
+    fs.writeFileSync(SECRETS_FILE, JSON.stringify(secrets), "utf-8");
+}
+
+function readSecret(key) {
+    if (!fs.existsSync(SECRETS_FILE)) {
+        return undefined;
+    }
+
+    const fileContents = fs.readFileSync(SECRETS_FILE);
+    const secrets = JSON.parse(fileContents);
+    return secrets[key];
 }

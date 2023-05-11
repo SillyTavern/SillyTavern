@@ -7,21 +7,14 @@ import {
     online_status,
     main_api,
     api_server,
-    nai_settings,
     api_server_textgenerationwebui,
     is_send_press,
     getTokenCount,
     menu_type,
-    selectRightMenuWithAnimation,
-    select_selected_character,
-    setCharacterId,
 
 
 } from "../script.js";
 
-import {
-    select_group_chats,
-} from "./group-chats.js";
 
 import {
     power_user,
@@ -30,8 +23,10 @@ import {
 
 import { LoadLocal, SaveLocal, ClearLocal, CheckLocal, LoadLocalBool } from "./f-localStorage.js";
 import { selected_group, is_group_generating, getGroupAvatar, groups } from "./group-chats.js";
-import { oai_settings } from "./openai.js";
-import { poe_settings } from "./poe.js";
+import {
+    SECRET_KEYS,
+    secret_state,
+} from "./secrets.js";
 
 var NavToggle = document.getElementById("nav-toggle");
 var RPanelPin = document.getElementById("rm_button_panel_pin");
@@ -368,13 +363,11 @@ function RA_autoconnect(PrevApi) {
             case 'kobold':
                 if (api_server && isUrlOrAPIKey(api_server)) {
                     $("#api_button").click();
-
                 }
                 break;
             case 'novel':
-                if (nai_settings.api_key_novel) {
+                if (secret_state[SECRET_KEYS.NOVEL]) {
                     $("#api_button_novel").click();
-
                 }
                 break;
             case 'textgenerationwebui':
@@ -383,12 +376,12 @@ function RA_autoconnect(PrevApi) {
                 }
                 break;
             case 'openai':
-                if (oai_settings.api_key_openai) {
+                if (secret_state[SECRET_KEYS.OPENAI]) {
                     $("#api_button_openai").click();
                 }
                 break;
             case 'poe':
-                if (poe_settings.token) {
+                if (secret_state[SECRET_KEYS.POE]) {
                     $("#poe_connect").click();
                 }
                 break;

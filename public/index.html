@@ -59,6 +59,7 @@
     <script type="module" src="scripts/RossAscends-mods.js"></script>
     <script type="module" src="scripts/slash-commands.js"></script>
     <script type="module" src="scripts/tags.js"></script>
+    <script type="module" src="scripts/secrets.js"></script>
     <script type="text/javascript" src="scripts/toolcool-color-picker.js"></script>
 
     <title>SillyTavern</title>
@@ -1006,7 +1007,8 @@
                                 <h4>API key</h4>
                                 <h5>Get it here: <a target="_blank" href="https://horde.koboldai.net/register">Register</a>
                                 </h5>
-                                <input id="horde_api_key" name="horde_api_key" class="text_pole" maxlength="500" value="0000000000" autocomplete="off">
+                                <input id="horde_api_key" name="horde_api_key" class="text_pole" maxlength="500" type="text" placeholder="0000000000">
+                                <div class="neutral_warning">Your API key will removed from here after you click "Connect" for privacy reasons.</div>
                                 <h4 class="horde_model_title">
                                     Model
                                     <div id="horde_refresh" title="Refresh models" class="right_menu_button">
@@ -1036,7 +1038,8 @@
                                     <li>Enter it in the box below:</li>
                                 </ol>
                             </span>
-                            <input id="api_key_novel" name="api_key_novel" class="text_pole" maxlength="500" size="35" value="" autocomplete="off">
+                            <input id="api_key_novel" name="api_key_novel" class="text_pole" maxlength="500" size="35" type="text">
+                            <div class="neutral_warning">Your API key will removed from here after you click "Connect" for privacy reasons.</div>
                             <input id="api_button_novel" class="menu_button" type="submit" value="Connect">
                             <div id="api_loading_novel" class="api-load-icon fa-solid fa-hourglass fa-spin"></div>
                             <h4>Novel AI Model
@@ -1089,7 +1092,8 @@
                                     <li>Enter it in the box below:</li>
                                 </ol>
                             </span>
-                            <input id="api_key_openai" name="api_key_openai" class="text_pole" maxlength="500" value="" autocomplete="off">
+                            <input id="api_key_openai" name="api_key_openai" class="text_pole" maxlength="500" value="" type="text">
+                            <div class="neutral_warning">Your API key will removed from here after you click "Connect" for privacy reasons.</div>
                             <input id="api_button_openai" class="menu_button" type="submit" value="Connect">
                             <div id="api_loading_openai" class=" api-load-icon fa-solid fa-hourglass fa-spin"></div>
                         </form>
@@ -1125,8 +1129,8 @@
                             </ol>
                         </span>
                         <div class="widthFreeExpand">
-                            <input id="poe_token" class="text_pole" type="text" placeholder="Example: nTLG2bNvbOi8qxc-DbaSlw%3D%3D" maxlength="100" />
-
+                            <input id="poe_token" class="text_pole" type="text" maxlength="100" />
+                            <div class="neutral_warning">Your API key will removed from here after you click "Connect" for privacy reasons.</div>
                         </div>
 
                         <input id="poe_connect" class="menu_button" type="button" value="Connect" />

@@ -14,7 +14,6 @@ const nai_settings = {
     rep_pen_novel: 1,
     rep_pen_size_novel: 100,
     model_novel: "euterpe-v2",
-    api_key_novel: "",
     preset_settings_novel: "Classic-Euterpe",
 };
 
@@ -44,12 +43,6 @@ function loadNovelPreset(preset) {
 }
 
 function loadNovelSettings(settings) {
-    //load Novel API KEY is exists
-    if (settings.api_key_novel != undefined) {
-        nai_settings.api_key_novel = settings.api_key_novel;
-        $("#api_key_novel").val(nai_settings.api_key_novel);
-    }
-
     //load the rest of the Novel settings without any checks
     nai_settings.model_novel = settings.model_novel;
     $(`#model_novel_select option[value=${nai_settings.model_novel}]`).attr("selected", true);
