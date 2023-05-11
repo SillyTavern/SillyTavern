@@ -2418,7 +2418,10 @@ function extractNameFromMessage(getMessage, force_name2, isImpersonate) {
     } else {
         this_mes_is_name = false;
     }
-    if (force_name2)
+    // Like OAI, Poe is very unlikely to send you an incomplete message.
+    // But it doesn't send "name:" either, so we assume that we always have a name
+    // prepend to have clearer logs when building up a prompt context.
+    if (force_name2 || main_api == 'poe')
         this_mes_is_name = true;
 
     if (isImpersonate) {
