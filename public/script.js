@@ -3763,6 +3763,8 @@ function callPopup(text, type, inputValue = '') {
 
         $('#avatarToCrop').cropper({
             aspectRatio: 2 / 3,
+            autoCropArea: 1,
+            rotatable: false,
             crop: function (event) {
                 crop_data = event.detail;
             }
