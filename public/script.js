@@ -524,12 +524,10 @@ let novelai_settings;
 let novelai_setting_names;
 
 //css
-var bg1_toggle = true; // inits the BG as BG1
 var css_mes_bg = $('<div class="mes"></div>').css("background");
 var css_send_form_display = $("<div id=send_form></div>").css("display");
 let generate_loop_counter = 0;
 const MAX_GENERATION_LOOPS = 5;
-var colab_ini_step = 1;
 
 let token;
 
@@ -539,29 +537,6 @@ export function getRequestHeaders() {
         "X-CSRF-Token": token,
     };
 }
-
-//////////// Is this needed?
-setInterval(function () {
-    switch (colab_ini_step) {
-        case 0:
-            $("#colab_popup_text").html("<h3>Initialization</h3>");
-            colab_ini_step = 1;
-            break;
-        case 1:
-            $("#colab_popup_text").html("<h3>Initialization.</h3>");
-            colab_ini_step = 2;
-            break;
-        case 2:
-            $("#colab_popup_text").html("<h3>Initialization..</h3>");
-            colab_ini_step = 3;
-            break;
-        case 3:
-            $("#colab_popup_text").html("<h3>Initialization...</h3>");
-            colab_ini_step = 0;
-            break;
-    }
-}, 500);
-/////////////
 
 $.ajaxPrefilter((options, originalOptions, xhr) => {
     xhr.setRequestHeader("X-CSRF-Token", token);
