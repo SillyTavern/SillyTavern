@@ -1,5 +1,6 @@
 # How to Update SillyTavern
 
+(This guide assumes you have already installed SillyTavern once and know how to run it on your OS.)
 (This file is also present in plain text form inside SillyTavern's base install folder)
 
 ----
@@ -25,7 +26,7 @@ If you insist on installing via a zip, here is the tedious process for doing the
 
 1. Download the new release zip.
 2. Unzip it into a folder OUTSIDE of your current ST installation.
-3. Do the usual setup procedure with start.bat to install NodeJS requirements.
+3. Do the usual setup procedure for your OS to install NodeJS requirements.
 
 4. Copy the following files/folders as necessary(*) from your old ST installation:
 
@@ -54,6 +55,6 @@ settings.json
   
 5. Once those folders/files are copied, Paste them into the /Public/ folder of the new install.
 
-6. Run start.bat once again, and pray you got it right.
+6. Start SillyTavern once again with the method appropriate to your OS, and pray you got it right.
 
 7. If everything shows up, you can safely delete the old ST folder.
