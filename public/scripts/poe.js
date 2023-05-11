@@ -99,7 +99,7 @@ async function generatePoe(type, finalPrompt, signal) {
 
     if (poe_settings.auto_jailbreak && !auto_jailbroken) {
         for (let retryNumber = 0; retryNumber < MAX_RETRIES_FOR_ACTIVATION; retryNumber++) {
-            const reply = await sendMessage(poe_settings.jailbreak_message, false);
+            const reply = await sendMessage(substituteParams(poe_settings.jailbreak_message), false);
 
             if (reply.toLowerCase().includes(poe_settings.jailbreak_response.toLowerCase())) {
                 auto_jailbroken = true;
