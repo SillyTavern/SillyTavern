@@ -295,7 +295,7 @@ const system_messages = {
         is_user: false,
         is_name: true,
         mes: [
-            '<h2>Welcome to <span id="version_display_welcome">Welcome to </span>!</h2>',
+            '<h2>Welcome to <span id="version_display_welcome">SillyTavern</span>!</h2>',
             '<div id="version_display_welcome"></div>',
             '<h3>Want to Update to the latest version?</h3>',
             "Read the <a href='/notes/update.html' target='_blank'>instructions here</a>. Also located in your installation's base folder",
