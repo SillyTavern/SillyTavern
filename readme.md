@@ -15,18 +15,6 @@ On its own Tavern is useless, as it's just a user interface. You have to have ac
 ### Do I need a powerful PC to run Tavern?
 Since Tavern is only a user interface, it has tiny hardware requirements, it will run on anything. It's the AI system backend that needs to be powerful.
 
-### I want to try self-hosted easily. Got a Google Colab?
-
-Try on Colab (runs KoboldAI backend and TavernAI Extras server alongside):  <a target="_blank" href="https://colab.research.google.com/github/Cohee1207/SillyTavern/blob/main/colab/GPU.ipynb">
-  <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
-</a>
-
-https://colab.research.google.com/github/Cohee1207/SillyTavern/blob/main/colab/GPU.ipynb
-
-Run on Repl.it:  
-[![Run on Repl.it](https://replit.com/badge?caption=Run+On+Repl.it)](https://replit.com/new/github/Cohee1207/SillyTavern)
-
-
 ## Mobile support
 
 > **Note**
@@ -136,6 +124,17 @@ Get in touch with the developers directly:
 ### Linux
   1. Run the `start.sh` script.
   2. Enjoy.
+
+## API keys management
+
+SillyTavern saves your API keys to a `secrets.json` file in the server directory.
+
+By default they will not be exposed to a frontend after you enter them and reload the page.
+
+In order to enable viewing your keys by clicking a button in the API block:
+
+1. Set the value of `allowKeysExposure` to `true` in `config.conf` file.
+2. Restart the SillyTavern server.
 
 ## Remote connections
 

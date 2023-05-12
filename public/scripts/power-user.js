@@ -7,9 +7,12 @@ import {
     reloadMarkdownProcessor,
     reloadCurrentChat,
     getRequestHeaders,
+    substituteParams,
 } from "../script.js";
+import { favsToHotswap } from "./RossAscends-mods.js";
 import {
     groups,
+    selected_group,
 } from "./group-chats.js";
 
 export {
@@ -24,6 +27,9 @@ export {
     tokenizers,
     send_on_enter_options,
 };
+
+const MAX_CONTEXT_DEFAULT = 2048;
+const MAX_CONTEXT_UNLOCKED = 65536;
 
 const avatar_styles = {
     ROUND: 0,
@@ -109,9 +115,23 @@ let power_user = {
     allow_name2_display: false,
     hotswap_enabled: true,
     timer_enabled: true,
+    max_context_unlocked: false,
+
+    instruct: {
+        enabled: false,
+        wrap: true,
+        names: false,
+        system_prompt: "Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\nWrite {{char}}'s next reply in a fictional roleplay chat between {{user}} and {{char}}. Write 1 reply only.",
+        system_sequence: '',
+        stop_sequence: '',
+        input_sequence: '### Instruction:',
+        output_sequence: '### Response:',
+        preset: 'Alpaca',
+    }
 };
 
 let themes = [];
+let instruct_presets = [];
 
 const storage_keys = {
     fast_ui_mode: "TavernAI_fast_ui_mode",
@@ -434,6 +454,10 @@ function loadPowerUserSettings(settings, data) {
         themes = data.themes;
     }
 
+    if (data.instruct !== undefined) {
+        instruct_presets = data.instruct;
+    }
+
     // These are still local storage
     const fastUi = localStorage.getItem(storage_keys.fast_ui_mode);
     const waifuMode = localStorage.getItem(storage_keys.waifuMode);
@@ -514,6 +538,114 @@ function loadPowerUserSettings(settings, data) {
     $(`#character_sort_order option[data-order="${power_user.sort_order}"][data-field="${power_user.sort_field}"]`).prop("selected", true);
     sortCharactersList();
     reloadMarkdownProcessor(power_user.render_formulas);
+    loadInstructMode();
+    loadMaxContextUnlocked();
+}
+
+function loadMaxContextUnlocked() {
+    $('#max_context_unlocked').prop('checked', power_user.max_context_unlocked);
+    $('#max_context_unlocked').on('change', function() {
+        power_user.max_context_unlocked = !!$(this).prop('checked');
+        switchMaxContextSize();
+        saveSettingsDebounced();
+    });
+    switchMaxContextSize();
+}
+
+function switchMaxContextSize() {
+    const element = $('#max_context');
+    const maxValue = power_user.max_context_unlocked ? MAX_CONTEXT_UNLOCKED : MAX_CONTEXT_DEFAULT;
+    element.attr('max', maxValue);
+    const value = Number(element.val());
+
+    if (value >= maxValue) {
+        element.val(maxValue).trigger('input');
+    }
+}
+
+function loadInstructMode() {
+    const controls = [
+        { id: "instruct_enabled", property: "enabled", isCheckbox: true },
+        { id: "instruct_wrap", property: "wrap", isCheckbox: true },
+        { id: "instruct_system_prompt", property: "system_prompt", isCheckbox: false },
+        { id: "instruct_system_sequence", property: "system_sequence", isCheckbox: false },
+        { id: "instruct_input_sequence", property: "input_sequence", isCheckbox: false },
+        { id: "instruct_output_sequence", property: "output_sequence", isCheckbox: false },
+        { id: "instruct_stop_sequence", property: "stop_sequence", isCheckbox: false },
+        { id: "instruct_names", property: "names", isCheckbox: true },
+    ];
+
+    controls.forEach(control => {
+        const $element = $(`#${control.id}`);
+
+        if (control.isCheckbox) {
+            $element.prop('checked', power_user.instruct[control.property]);
+        } else {
+            $element.val(power_user.instruct[control.property]);
+        }
+
+        $element.on('input', function () {
+            power_user.instruct[control.property] = control.isCheckbox ? $(this).prop('checked') : $(this).val();
+            saveSettingsDebounced();
+        });
+    });
+
+    instruct_presets.forEach((preset) => {
+        const name = preset.name;
+        const option = document.createElement('option');
+        option.value = name;
+        option.innerText = name;
+        option.selected = name === power_user.instruct.preset;
+        $('#instruct_presets').append(option);
+    });
+
+    $('#instruct_presets').on('change', function () {
+        const name = $(this).find(':selected').val();
+        const preset = instruct_presets.find(x => x.name === name);
+
+        if (!preset) {
+            return;
+        }
+
+        power_user.instruct.preset = name;
+        controls.forEach(control => {
+            if (preset[control.property] !== undefined) {
+                power_user.instruct[control.property] = preset[control.property];
+                const $element = $(`#${control.id}`);
+
+                if (control.isCheckbox) {
+                    $element.prop('checked', power_user.instruct[control.property]).trigger('input');
+                } else {
+                    $element.val(power_user.instruct[control.property]).trigger('input');
+                }
+            }
+        });
+    });
+}
+
+export function formatInstructModeChat(name, mes, isUser) {
+    const includeNames = power_user.instruct.names || (selected_group && !isUser);
+    const sequence = isUser ? power_user.instruct.input_sequence : power_user.instruct.output_sequence;
+    const separator = power_user.instruct.wrap ? '\n' : '';
+    const textArray = includeNames ? [sequence, name, ': ', mes, separator] : [sequence, mes, separator];
+    const text = textArray.filter(x => x).join(separator);
+    return text;
+}
+
+export function formatInstructStoryString(story) {
+    const sequence = power_user.instruct.system_sequence || '';
+    const prompt = substituteParams(power_user.instruct.system_prompt) || '';
+    const separator = power_user.instruct.wrap ? '\n' : '';
+    const textArray = [sequence, prompt, story, separator];
+    const text = textArray.filter(x => x).join(separator);
+    return text;
+}
+
+export function formatInstructModePrompt(isImpersonate) {
+    const sequence = isImpersonate ? power_user.instruct.input_sequence : power_user.instruct.output_sequence;
+    const separator = power_user.instruct.wrap ? '\n' : '';
+    const text = separator + sequence;
+    return text;
 }
 
 const sortFunc = (a, b) => power_user.sort_order == 'asc' ? compareFunc(a, b) : compareFunc(b, a);
@@ -855,6 +987,7 @@ $(document).ready(() => {
         power_user.sort_order = $(this).find(":selected").data('order');
         power_user.sort_rule = $(this).find(":selected").data('rule');
         sortCharactersList();
+        favsToHotswap();
         saveSettingsDebounced();
     });
 

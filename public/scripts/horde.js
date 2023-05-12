@@ -1,4 +1,5 @@
-import { saveSettingsDebounced, changeMainAPI, callPopup, setGenerationProgress, CLIENT_VERSION } from "../script.js";
+import { saveSettingsDebounced, changeMainAPI, callPopup, setGenerationProgress, CLIENT_VERSION, getRequestHeaders } from "../script.js";
+import { SECRET_KEYS, writeSecret } from "./secrets.js";
 import { delay } from "./utils.js";
 
 export {
@@ -14,7 +15,6 @@ export {
 let models = [];
 
 let horde_settings = {
-    api_key: '0000000000',
     models: [],
     use_horde: false,
     auto_adjust_response_length: true,
@@ -27,14 +27,6 @@ const MIN_AMOUNT_GEN = 16;
 const getRequestArgs = () => ({
     method: "GET",
     headers: {
-        "Client-Agent": CLIENT_VERSION,
-    }
-});
-const postRequestArgs = () => ({
-    method: "POST",
-    headers: {
-        "Content-Type": "application/json",
-        "apikey": horde_settings.api_key,
         "Client-Agent": CLIENT_VERSION,
     }
 });
@@ -107,8 +99,12 @@ async function generateHorde(prompt, params) {
         "models": horde_settings.models,
     };
 
-    const response = await fetch("https://horde.koboldai.net/api/v2/generate/text/async", {
-        ...postRequestArgs(),
+    const response = await fetch("/generate_horde", {
+        method: 'POST',
+        headers: {
+            ...getRequestHeaders(), 
+            "Client-Agent": CLIENT_VERSION,
+        },
         body: JSON.stringify(payload)
     });
 
@@ -176,12 +172,6 @@ async function getHordeModels() {
     if (horde_settings.models.length && models.filter(m => horde_settings.models.includes(m.name)).length === 0) {
         horde_settings.models = [];
     }
-
-    // if no models preselected - select a first one in dropdown
-    /*if (Array.isArray(horde_settings.models) || horde_settings.models.length == 0) {
-        $('#horde_model').first()
-        horde_settings.models = [.find(":selected").val()];
-    }*/
 }
 
 function loadHordeSettings(settings) {
@@ -190,7 +180,6 @@ function loadHordeSettings(settings) {
     }
 
     $('#use_horde').prop("checked", horde_settings.use_horde).trigger('input');
-    $('#horde_api_key').val(horde_settings.api_key);
     $('#horde_auto_adjust_response_length').prop("checked", horde_settings.auto_adjust_response_length);
     $('#horde_auto_adjust_context_length').prop("checked", horde_settings.auto_adjust_context_length);
 }
@@ -219,11 +208,6 @@ jQuery(function () {
         saveSettingsDebounced();
     });
 
-    $("#horde_api_key").on("input", function () {
-        horde_settings.api_key = $(this).val();
-        saveSettingsDebounced();
-    });
-
     $("#horde_auto_adjust_response_length").on("input", function () {
         horde_settings.auto_adjust_response_length = !!$(this).prop("checked");
         saveSettingsDebounced();
@@ -232,6 +216,11 @@ jQuery(function () {
     $("#horde_auto_adjust_context_length").on("input", function () {
         horde_settings.auto_adjust_context_length = !!$(this).prop("checked");
         saveSettingsDebounced();
+    });
+
+    $("#horde_api_key").on("input", async function () {
+        const key = $(this).val().trim();
+        await writeSecret(SECRET_KEYS.HORDE, key);
     });
 
     $("#horde_refresh").on("click", getHordeModels);

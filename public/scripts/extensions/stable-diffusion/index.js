@@ -34,39 +34,40 @@ const generationMode = {
 }
 
 const triggerWords = {
-    [generationMode.CHARACTER]: ['yourself', 'you', 'bot', 'AI', 'character'],
-    [generationMode.USER]: ['me', 'user', 'myself'],
-    [generationMode.SCENARIO]: ['scenario', 'world', 'surroundings', 'scenery'],
-    [generationMode.NOW]: ['now', 'last'],
-    [generationMode.FACE]: ['selfie', 'face'],
+    [generationMode.CHARACTER]: ['you'],
+    [generationMode.USER]: ['me'],
+    [generationMode.SCENARIO]: ['scene'],
+    [generationMode.NOW]: ['last'],
+    [generationMode.FACE]: ['face'],
 
 }
 
 const quietPrompts = {
     //face-specific prompt
-    [generationMode.FACE]: "In the next response I want you to provide only a detailed comma-delimited list of keywords and phrases which describe {{char}}. The list must include all of the following items in this order: species and race, gender, facial features, hair and hair accessories (if any). Do not describe anything below their neck. Do not include descriptions of non-visual qualities such as personality, movements, scents, mental traits, or anything which could not be seen in a still photograph. Do not write in full sentences. Prefix your description with the phrase 'close up facial portrait:'",
+    [generationMode.FACE]: "[In the next response I want you to provide only a detailed comma-delimited list of keywords and phrases which describe {{char}}. The list must include all of the following items in this order: name, species and race, gender, age, facial features and expressions, occupation, hair and hair accessories (if any), what they are wearing on their upper body (if anything). Do not describe anything below their neck. Do not include descriptions of non-visual qualities such as personality, movements, scents, mental traits, or anything which could not be seen in a still photograph. Do not write in full sentences. Prefix your description with the phrase 'close up facial portrait:']",
     //prompt for only the last message
-    [generationMode.NOW]: "Pause your roleplay and provide a brief description of the last chat message. Focus on visual details, clothing, actions. Ignore the emotions and thoughts of {{char}} and {{user}} as well as any spoken dialog. Do not roleplay as {{char}} while writing this description. Do not continue the roleplay story.",
+    [generationMode.NOW]: "[Pause your roleplay and provide a brief description of the last chat message. Focus on visual details, clothing, actions. Ignore the emotions and thoughts of {{char}} and {{user}} as well as any spoken dialog. Do not roleplay as {{char}} while writing this description. Do not continue the roleplay story.]",
 
-    [generationMode.CHARACTER]: "In the next response I want you to provide only a detailed comma-delimited list of keywords and phrases which describe {{char}}. The list must include all of the following items in this order: gender, clothing, physical appearance. Do not include descriptions of non-visual qualities such as personality, movements, scents, mental traits, or anything which could not be seen in a still photograph. Do not write in full sentences. Prefix your description with the phrase 'full body portrait:'",
+    [generationMode.CHARACTER]: "[In the next response I want you to provide only a detailed comma-delimited list of keywords and phrases which describe {{char}}. The list must include all of the following items in this order: name, species and race, gender, age, clothing, occupation, physical features and appearances. Do not include descriptions of non-visual qualities such as personality, movements, scents, mental traits, or anything which could not be seen in a still photograph. Do not write in full sentences. Prefix your description with the phrase 'full body portrait:']",
 
     /*OLD:     [generationMode.CHARACTER]: "Pause your roleplay and provide comma-delimited list of phrases and keywords which describe {{char}}'s physical appearance and clothing. Ignore {{char}}'s personality traits, and chat history when crafting this description. End your response once the comma-delimited list is complete. Do not roleplay when writing this description, and do not attempt to continue the story.", */
 
-    [generationMode.USER]: "Pause your roleplay and provide a detailed description of {{user}}'s appearance from the perspective of {{char}} in the form of a comma-delimited list of keywords and phrases. Ignore the rest of the story when crafting this description. Do not roleplay as {{char}}}} when writing this description, and do not attempt to continue the story.",
-    [generationMode.SCENARIO]: "Pause your roleplay and provide a detailed description for all of the following: a brief recap of recent events in the story, {{char}}'s appearance, and {{char}}'s surroundings. Do not roleplay while writing this description.",
-    [generationMode.FREE]: "Pause your roleplay and provide a detailed and vivid description of {0}]",
+    [generationMode.USER]: "[Pause your roleplay and provide a detailed description of {{user}}'s appearance from the perspective of {{char}} in the form of a comma-delimited list of keywords and phrases. Ignore the rest of the story when crafting this description. Do not roleplay as {{char}}}} when writing this description, and do not attempt to continue the story.]",
+    [generationMode.SCENARIO]: "[Pause your roleplay and provide a detailed description for all of the following: a brief recap of recent events in the story, {{char}}'s appearance, and {{char}}'s surroundings. Do not roleplay while writing this description.]",
+    [generationMode.FREE]: "[Pause your roleplay and provide ONLY an echo this string back to me verbatim: {0}. Do not write anything after the string. Do not roleplay at all in your response.]",
 }
 
 const helpString = [
-    `${m('what')} – requests an SD generation. Supported "what" arguments:`,
+    `${m('(argument)')} – requests SD to make an image. Supported arguments:`,
     '<ul>',
-    `<li>${m(j(triggerWords[generationMode.CHARACTER]))} – AI character image</li>`,
-    `<li>${m(j(triggerWords[generationMode.USER]))} – user character image</li>`,
-    `<li>${m(j(triggerWords[generationMode.SCENARIO]))} – world scenario image</li>`,
-    `<li>${m(j(triggerWords[generationMode.FACE]))} – character face-up selfie image</li>`,
+    `<li>${m(j(triggerWords[generationMode.CHARACTER]))} – AI character full body selfie</li>`,
+    `<li>${m(j(triggerWords[generationMode.FACE]))} – AI character face-only selfie</li>`,
+    `<li>${m(j(triggerWords[generationMode.USER]))} – user character full body selfie</li>`,
+    `<li>${m(j(triggerWords[generationMode.SCENARIO]))} – visual recap of the whole chat scenario</li>`,
     `<li>${m(j(triggerWords[generationMode.NOW]))} – visual recap of the last chat message</li>`,
     '</ul>',
-    `Anything else would trigger a "free mode" with AI describing whatever you prompted.`,
+    `Anything else would trigger a "free mode" to make SD generate whatever you prompted.<Br> 
+    example: '/sd apple tree' would generate a picture of an apple tree.`,
 ].join('<br>');
 
 const defaultSettings = {
@@ -411,8 +412,8 @@ $("#sd_dropdown [id]").on("click", function () {
     }
 
     else if (id == "sd_world") {
-        console.log("doing /sd world");
-        generatePicture('sd', 'world');
+        console.log("doing /sd scene");
+        generatePicture('sd', 'scene');
     }
 
     else if (id == "sd_last") {
@@ -422,7 +423,7 @@ $("#sd_dropdown [id]").on("click", function () {
 });
 
 jQuery(async () => {
-    getContext().registerSlashCommand('sd', generatePicture, ['picture', 'image'], helpString, true, true);
+    getContext().registerSlashCommand('sd', generatePicture, [], helpString, true, true);
 
     const settingsHtml = `
     <div class="sd_settings">

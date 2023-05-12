@@ -77,6 +77,7 @@ const whitelistMode = config.whitelistMode;
 const autorun = config.autorun && !cliArguments.ssl;
 const enableExtensions = config.enableExtensions;
 const listen = config.listen;
+const allowKeysExposure = config.allowKeysExposure;
 
 const axios = require('axios');
 const tiktoken = require('@dqbd/tiktoken');
@@ -109,11 +110,9 @@ var response_dw_bg;
 var response_getstatus;
 var response_getstatus_novel;
 var response_getlastversion;
-var api_key_novel;
 
 let response_generate_openai;
 let response_getstatus_openai;
-let api_key_openai;
 
 //RossAscends: Added function to format dates used in files and chat timestamps to a humanized format.
 //Mostly I wanted this to be for file names, but couldn't figure out exactly where the filename save code was as everything seemed to be connected. 
@@ -164,6 +163,8 @@ function humanizedISO8601DateTime() {
 var is_colab = process.env.colaburl !== undefined;
 var charactersPath = 'public/characters/';
 var chatsPath = 'public/chats/';
+const AVATAR_WIDTH = 400;
+const AVATAR_HEIGHT = 600;
 const jsonParser = express.json({ limit: '100mb' });
 const urlencodedParser = express.urlencoded({ extended: true, limit: '100mb' });
 const baseRequestArgs = { headers: { "Content-Type": "application/json" } };
@@ -183,7 +184,8 @@ const directories = {
     thumbnailsBg: 'thumbnails/bg/',
     thumbnailsAvatar: 'thumbnails/avatar/',
     themes: 'public/themes',
-    extensions: 'public/scripts/extensions'
+    extensions: 'public/scripts/extensions',
+    instruct: 'public/instruct',
 };
 
 // CSRF Protection //
@@ -307,7 +309,7 @@ app.get('/deviceinfo', function (request, response) {
     return response.send(deviceInfo);
 });
 app.get('/version', function (_, response) {
-    let pkgVersion, gitRevision;
+    let pkgVersion, gitRevision, gitBranch;
     try {
         const pkgJson = require('./package.json');
         pkgVersion = pkgJson.version;
@@ -315,13 +317,18 @@ app.get('/version', function (_, response) {
             gitRevision = require('child_process')
                 .execSync('git rev-parse --short HEAD', { cwd: __dirname })
                 .toString().trim();
+
+            gitBranch = require('child_process')
+                .execSync('git rev-parse --abbrev-ref HEAD', { cwd: __dirname })
+                .toString().trim();
         }
     }
     catch {
         // suppress exception
     }
     finally {
-        response.send(`SillyTavern:${gitRevision || pkgVersion}:Cohee#1207`)
+        const agent = `SillyTavern:${gitRevision || pkgVersion}:Cohee#1207`;
+        response.send({ agent, pkgVersion, gitRevision, gitBranch });
     }
 })
 
@@ -703,8 +710,9 @@ app.post("/createcharacter", urlencodedParser, function (request, response) {
     if (!request.file) {
         charaWrite(defaultAvatar, char, internalName, response, avatarName);
     } else {
+        const crop = tryParse(request.query.crop);
         const uploadPath = path.join("./uploads/", request.file.filename);
-        charaWrite(uploadPath, char, internalName, response, avatarName);
+        charaWrite(uploadPath, char, internalName, response, avatarName, crop);
     }
 });
 
@@ -799,9 +807,10 @@ app.post("/editcharacter", urlencodedParser, async function (request, response) 
             const avatarPath = path.join(charactersPath, request.body.avatar_url);
             await charaWrite(avatarPath, char, target_img, response, 'Character saved');
         } else {
+            const crop = tryParse(request.query.crop);
             const newAvatarPath = path.join("./uploads/", request.file.filename);
             invalidateThumbnail('avatar', request.body.avatar_url);
-            await charaWrite(newAvatarPath, char, target_img, response, 'Character saved');
+            await charaWrite(newAvatarPath, char, target_img, response, 'Character saved', crop);
         }
     }
     catch {
@@ -845,11 +854,17 @@ app.post("/deletecharacter", urlencodedParser, function (request, response) {
     });
 });
 
-async function charaWrite(img_url, data, target_img, response = undefined, mes = 'ok') {
+async function charaWrite(img_url, data, target_img, response = undefined, mes = 'ok', crop = undefined) {
     try {
         // Read the image, resize, and save it as a PNG into the buffer
-        const rawImg = await jimp.read(img_url);
-        const image = await rawImg.cover(400, 600).getBufferAsync(jimp.MIME_PNG);
+        let rawImg = await jimp.read(img_url);
+
+        // Apply crop if defined
+        if (typeof crop == 'object') {
+            rawImg = rawImg.crop(crop.x, crop.y, crop.width, crop.height);
+        }
+
+        const image = await rawImg.cover(AVATAR_WIDTH, AVATAR_HEIGHT).getBufferAsync(jimp.MIME_PNG);
 
         // Get the chunks
         const chunks = extract(image);
@@ -1133,6 +1148,7 @@ app.post('/getsettings', jsonParser, (request, response) => { //Wintermute's cod
     const textgenerationwebui_presets = [];
     const textgenerationwebui_preset_names = [];
     const themes = [];
+    const instruct = [];
     const settings = fs.readFileSync('public/settings.json', 'utf8', (err, data) => {
         if (err) return response.sendStatus(500);
 
@@ -1259,6 +1275,30 @@ app.post('/getsettings', jsonParser, (request, response) => { //Wintermute's cod
         }
     })
 
+    // Instruct files
+    const instructFiles = fs
+        .readdirSync(directories.instruct)
+        .filter(x => path.parse(x).ext == '.json')
+        .sort();
+
+        instructFiles.forEach(item => {
+        const file = fs.readFileSync(
+            path.join(directories.instruct, item),
+            'utf-8',
+            (err, data) => {
+                if (err) return response.sendStatus(500);
+                return data;
+            }
+        );
+
+        try {
+            instruct.push(json5.parse(file));
+        }
+        catch {
+            // skip
+        }
+    });
+
     response.send({
         settings,
         koboldai_settings,
@@ -1271,6 +1311,7 @@ app.post('/getsettings', jsonParser, (request, response) => { //Wintermute's cod
         textgenerationwebui_presets,
         textgenerationwebui_preset_names,
         themes,
+        instruct,
         enable_extensions: enableExtensions,
     });
 });
@@ -1347,7 +1388,12 @@ function getImages(path) {
 app.post("/getstatus_novelai", jsonParser, function (request, response_getstatus_novel = response) {
 
     if (!request.body) return response_getstatus_novel.sendStatus(400);
-    api_key_novel = request.body.key;
+    const api_key_novel = readSecret(SECRET_KEYS.NOVEL);
+
+    if (!api_key_novel) {
+        return response_generate_novel.sendStatus(401);
+    }
+
     var data = {};
     var args = {
         data: data,
@@ -1376,6 +1422,12 @@ app.post("/getstatus_novelai", jsonParser, function (request, response_getstatus
 
 app.post("/generate_novelai", jsonParser, function (request, response_generate_novel = response) {
     if (!request.body) return response_generate_novel.sendStatus(400);
+
+    const api_key_novel = readSecret(SECRET_KEYS.NOVEL);
+
+    if (!api_key_novel) {
+        return response_generate_novel.sendStatus(401);
+    }
 
     console.log(request.body);
     var data = {
@@ -1525,6 +1577,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
     let filedata = request.file;
     let uploadPath = path.join('./uploads', filedata.filename);
     var format = request.body.file_type;
+    const defaultAvatarPath = './public/img/ai4.png';
     //console.log(format);
     if (filedata) {
         if (format == 'json') {
@@ -1539,16 +1592,37 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                     jsonData.name = sanitize(jsonData.name);
 
                     png_name = getPngName(jsonData.name);
-                    let char = { "name": jsonData.name, "description": jsonData.description ?? '', "personality": jsonData.personality ?? '', "first_mes": jsonData.first_mes ?? '', "avatar": 'none', "chat": jsonData.name + " - " + humanizedISO8601DateTime(), "mes_example": jsonData.mes_example ?? '', "scenario": jsonData.scenario ?? '', "create_date": humanizedISO8601DateTime(), "talkativeness": jsonData.talkativeness ?? 0.5 };
+                    let char = {
+                        "name": jsonData.name,
+                        "description": jsonData.description ?? '',
+                        "personality": jsonData.personality ?? '',
+                        "first_mes": jsonData.first_mes ?? '',
+                        "avatar": 'none', "chat": jsonData.name + " - " + humanizedISO8601DateTime(),
+                        "mes_example": jsonData.mes_example ?? '',
+                        "scenario": jsonData.scenario ?? '',
+                        "create_date": humanizedISO8601DateTime(),
+                        "talkativeness": jsonData.talkativeness ?? 0.5
+                    };
                     char = JSON.stringify(char);
-                    charaWrite('./public/img/ai4.png', char, png_name, response, { file_name: png_name });
+                    charaWrite(defaultAvatarPath, char, png_name, response, { file_name: png_name });
                 } else if (jsonData.char_name !== undefined) {//json Pygmalion notepad
                     jsonData.char_name = sanitize(jsonData.char_name);
 
                     png_name = getPngName(jsonData.char_name);
-                    let char = { "name": jsonData.char_name, "description": jsonData.char_persona ?? '', "personality": '', "first_mes": jsonData.char_greeting ?? '', "avatar": 'none', "chat": jsonData.name + " - " + humanizedISO8601DateTime(), "mes_example": jsonData.example_dialogue ?? '', "scenario": jsonData.world_scenario ?? '', "create_date": humanizedISO8601DateTime(), "talkativeness": jsonData.talkativeness ?? 0.5 };
+                    let char = {
+                        "name": jsonData.char_name,
+                        "description": jsonData.char_persona ?? '',
+                        "personality": '',
+                        "first_mes": jsonData.char_greeting ?? '',
+                        "avatar": 'none',
+                        "chat": jsonData.name + " - " + humanizedISO8601DateTime(),
+                        "mes_example": jsonData.example_dialogue ?? '',
+                        "scenario": jsonData.world_scenario ?? '',
+                        "create_date": humanizedISO8601DateTime(),
+                        "talkativeness": jsonData.talkativeness ?? 0.5
+                    };
                     char = JSON.stringify(char);
-                    charaWrite('./public/img/ai4.png', char, png_name, response, { file_name: png_name });
+                    charaWrite(defaultAvatarPath, char, png_name, response, { file_name: png_name });
                 } else {
                     console.log('Incorrect character format .json');
                     response.send({ error: true });
@@ -1561,15 +1635,32 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                 jsonData.name = sanitize(jsonData.name);
 
                 if (format == 'webp') {
-                    let convertedPath = path.join('./uploads', path.basename(uploadPath, ".webp") + ".png")
-                    await webp.dwebp(uploadPath, convertedPath, "-o");
-                    uploadPath = convertedPath;
+                    try {
+                        let convertedPath = path.join('./uploads', path.basename(uploadPath, ".webp") + ".png")
+                        await webp.dwebp(uploadPath, convertedPath, "-o");
+                        uploadPath = convertedPath;
+                    }
+                    catch {
+                        console.error('WEBP image conversion failed. Using the default character image.');
+                        uploadPath = defaultAvatarPath; 
+                    }
                 }
 
                 png_name = getPngName(jsonData.name);
 
                 if (jsonData.name !== undefined) {
-                    let char = { "name": jsonData.name, "description": jsonData.description ?? '', "personality": jsonData.personality ?? '', "first_mes": jsonData.first_mes ?? '', "avatar": 'none', "chat": jsonData.name + " - " + humanizedISO8601DateTime(), "mes_example": jsonData.mes_example ?? '', "scenario": jsonData.scenario ?? '', "create_date": humanizedISO8601DateTime(), "talkativeness": jsonData.talkativeness ?? 0.5 };
+                    let char = {
+                        "name": jsonData.name,
+                        "description": jsonData.description ?? '',
+                        "personality": jsonData.personality ?? '',
+                        "first_mes": jsonData.first_mes ?? '',
+                        "avatar": 'none',
+                        "chat": jsonData.name + " - " + humanizedISO8601DateTime(),
+                        "mes_example": jsonData.mes_example ?? '',
+                        "scenario": jsonData.scenario ?? '',
+                        "create_date": humanizedISO8601DateTime(),
+                        "talkativeness": jsonData.talkativeness ?? 0.5
+                    };
                     char = JSON.stringify(char);
                     await charaWrite(uploadPath, char, png_name, response, { file_name: png_name });
                 }
@@ -1804,8 +1895,14 @@ app.post('/uploaduseravatar', urlencodedParser, async (request, response) => {
 
     try {
         const pathToUpload = path.join('./uploads/' + request.file.filename);
-        const rawImg = await jimp.read(pathToUpload);
-        const image = await rawImg.cover(400, 400).getBufferAsync(jimp.MIME_PNG);
+        const crop = tryParse(request.query.crop);
+        let rawImg = await jimp.read(pathToUpload);
+
+        if (typeof crop == 'object') {
+            rawImg = rawImg.crop(crop.x, crop.y, crop.width, crop.height);
+        }
+
+        const image = await rawImg.cover(AVATAR_WIDTH, AVATAR_HEIGHT).getBufferAsync(jimp.MIME_PNG);
 
         const filename = `${Date.now()}.png`;
         const pathToNewFile = path.join(directories.avatars, filename);
@@ -1984,12 +2081,14 @@ async function getPoeClient(token, useCache = false) {
 }
 
 app.post('/status_poe', jsonParser, async (request, response) => {
-    if (!request.body.token) {
-        return response.sendStatus(400);
+    const token = readSecret(SECRET_KEYS.POE);
+
+    if (!token) {
+        return response.sendStatus(401);
     }
 
     try {
-        const client = await getPoeClient(request.body.token);
+        const client = await getPoeClient(token);
         const botNames = client.get_bot_names();
         client.disconnect_ws();
 
@@ -2002,11 +2101,12 @@ app.post('/status_poe', jsonParser, async (request, response) => {
 });
 
 app.post('/purge_poe', jsonParser, async (request, response) => {
-    if (!request.body.token) {
-        return response.sendStatus(400);
+    const token = readSecret(SECRET_KEYS.POE);
+
+    if (!token) {
+        return response.sendStatus(401);
     }
 
-    const token = request.body.token;
     const bot = request.body.bot ?? POE_DEFAULT_BOT;
     const count = request.body.count ?? -1;
 
@@ -2024,11 +2124,16 @@ app.post('/purge_poe', jsonParser, async (request, response) => {
 });
 
 app.post('/generate_poe', jsonParser, async (request, response) => {
-    if (!request.body.token || !request.body.prompt) {
+    if (!request.body.prompt) {
         return response.sendStatus(400);
     }
 
-    const token = request.body.token;
+    const token = readSecret(SECRET_KEYS.POE);
+
+    if (!token) {
+        return response.sendStatus(401);
+    }
+
     const prompt = request.body.prompt;
     const bot = request.body.bot ?? POE_DEFAULT_BOT;
     const streaming = request.body.streaming ?? false;
@@ -2270,7 +2375,13 @@ app.get('/thumbnail', jsonParser, async function (request, response) {
 /* OpenAI */
 app.post("/getstatus_openai", jsonParser, function (request, response_getstatus_openai = response) {
     if (!request.body) return response_getstatus_openai.sendStatus(400);
-    api_key_openai = request.body.key;
+
+    const api_key_openai = readSecret(SECRET_KEYS.OPENAI);
+
+    if (!api_key_openai) {
+        return response_getstatus_openai.sendStatus(401);
+    }
+
     const api_url = new URL(request.body.reverse_proxy || api_openai).toString();
     const args = {
         headers: { "Authorization": "Bearer " + api_key_openai }
@@ -2372,6 +2483,12 @@ app.post("/deletepreset_openai", jsonParser, function (request, response) {
 app.post("/generate_openai", jsonParser, function (request, response_generate_openai) {
     if (!request.body) return response_generate_openai.sendStatus(400);
     const api_url = new URL(request.body.reverse_proxy || api_openai).toString();
+
+    const api_key_openai = readSecret(SECRET_KEYS.OPENAI);
+
+    if (!api_key_openai) {
+        return response_generate_openai.sendStatus(401);
+    }
 
     const controller = new AbortController();
     request.socket.removeAllListeners('close');
@@ -2576,6 +2693,7 @@ const autorunUrl = new URL(
 );
 
 const setupTasks = async function () {
+    migrateSecrets();
     ensurePublicDirectoriesExist();
     await ensureThumbnailCache();
 
@@ -2588,10 +2706,11 @@ const setupTasks = async function () {
 
     if (autorun) open(autorunUrl.toString());
     console.log('SillyTavern is listening on: ' + tavernUrl);
-    if (listen &&
-        !config.whitelistMode &&
-        !config.basicAuthMode)
-        console.log('Your SillyTavern is currently open to the public. To increase security, consider enabling whitelisting or basic authentication.')
+}
+
+if (listen && !config.whitelistMode && !config.basicAuthMode) {
+    console.error('Your SillyTavern is currently unsecurely open to the public. Enable whitelisting or basic authentication.');
+    process.exit(1);
 }
 
 if (true === cliArguments.ssl)
@@ -2659,4 +2778,162 @@ function ensurePublicDirectoriesExist() {
             fs.mkdirSync(dir, { recursive: true });
         }
     }
+}
+
+const SECRETS_FILE = './secrets.json';
+const SETTINGS_FILE = './public/settings.json';
+const SECRET_KEYS = {
+    HORDE: 'api_key_horde',
+    OPENAI: 'api_key_openai',
+    POE: 'api_key_poe',
+    NOVEL: 'api_key_novel',
+}
+
+function migrateSecrets() {
+    if (!fs.existsSync(SETTINGS_FILE)) {
+        console.log('Settings file does not exist');
+        return;
+    }
+
+    try {
+        let modified = false;
+        const fileContents = fs.readFileSync(SETTINGS_FILE);
+        const settings = JSON.parse(fileContents);
+        const oaiKey = settings?.api_key_openai;
+        const hordeKey = settings?.horde_settings?.api_key;
+        const poeKey = settings?.poe_settings?.token;
+        const novelKey = settings?.api_key_novel;
+
+        if (typeof oaiKey === 'string') {
+            console.log('Migrating OpenAI key...');
+            writeSecret(SECRET_KEYS.OPENAI, oaiKey);
+            delete settings.api_key_openai;
+            modified = true;
+        }
+
+        if (typeof hordeKey === 'string') {
+            console.log('Migrating Horde key...');
+            writeSecret(SECRET_KEYS.HORDE, hordeKey);
+            delete settings.horde_settings.api_key;
+            modified = true;
+        }
+
+        if (typeof poeKey === 'string') {
+            console.log('Migrating Poe key...');
+            writeSecret(SECRET_KEYS.POE, poeKey);
+            delete settings.poe_settings.token;
+            modified = true;
+        }
+
+        if (typeof novelKey === 'string') {
+            console.log('Migrating Novel key...');
+            writeSecret(SECRET_KEYS.NOVEL, novelKey);
+            delete settings.api_key_novel;
+            modified = true;
+        }
+
+        if (modified) {
+            console.log('Writing updated settings.json...');
+            const settingsContent = JSON.stringify(settings);
+            fs.writeFileSync(SETTINGS_FILE, settingsContent, "utf-8");
+        }
+    }
+    catch (error) {
+        console.error('Could not migrate secrets file. Proceed with caution.');
+    }
+}
+
+app.post('/writesecret', jsonParser, (request, response) => {
+    const key = request.body.key;
+    const value = request.body.value;
+
+    writeSecret(key,value);
+    return response.send('ok');
+});
+
+app.post('/readsecretstate', jsonParser, (_, response) => {
+    if (!fs.existsSync(SECRETS_FILE)) {
+        return response.send({});
+    }
+
+    try {
+        const fileContents = fs.readFileSync(SECRETS_FILE);
+        const secrets = JSON.parse(fileContents);
+        const state = {};
+
+        for (const key of Object.values(SECRET_KEYS)) {
+            state[key] = !!secrets[key]; // convert to boolean
+        }
+
+        return response.send(state);
+    } catch (error) {
+        console.error(error);
+        return response.send({});
+    }
+});
+
+app.post('/generate_horde', jsonParser, async (request, response) => {
+    const ANONYMOUS_KEY = "0000000000";
+    const api_key_horde = readSecret(SECRET_KEYS.HORDE) || ANONYMOUS_KEY;
+    const url = 'https://horde.koboldai.net/api/v2/generate/text/async';
+
+    const args = {
+        data: request.body,
+        headers: {
+            "Content-Type": "application/json",
+            "Client-Agent": request.header('Client-Agent'),
+            "apikey": api_key_horde,
+        }
+    };
+
+    console.log(args.data);
+    try {
+        const data = await postAsync(url, args);
+        return response.send(data);
+    } catch {
+        return response.sendStatus(500);
+    }
+});
+
+app.post('/viewsecrets', jsonParser, async (_, response) => {
+    if (!allowKeysExposure) {
+        console.error('secrets.json could not be viewed unless the value of allowKeysExposure in config.conf is set to true');
+        return response.sendStatus(403);
+    }
+
+    if (!fs.existsSync(SECRETS_FILE)) {
+        console.error('secrets.json does not exist');
+        return response.sendStatus(404);
+    }
+
+    try {
+        const fileContents = fs.readFileSync(SECRETS_FILE);
+        const secrets = JSON.parse(fileContents);
+        return response.send(secrets);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
+function writeSecret(key, value) {
+    if (!fs.existsSync(SECRETS_FILE)) {
+        const emptyFile = JSON.stringify({});
+        fs.writeFileSync(SECRETS_FILE, emptyFile, "utf-8");
+    }
+
+    const fileContents = fs.readFileSync(SECRETS_FILE);
+    const secrets = JSON.parse(fileContents);
+    secrets[key] = value;
+    fs.writeFileSync(SECRETS_FILE, JSON.stringify(secrets), "utf-8");
+}
+
+function readSecret(key) {
+    if (!fs.existsSync(SECRETS_FILE)) {
+        return undefined;
+    }
+
+    const fileContents = fs.readFileSync(SECRETS_FILE);
+    const secrets = JSON.parse(fileContents);
+    return secrets[key];
 }
