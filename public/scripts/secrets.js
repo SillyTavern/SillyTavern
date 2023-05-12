@@ -14,6 +14,14 @@ const INPUT_MAP = {
     [SECRET_KEYS.NOVEL]: '#api_key_novel',
 }
 
+async function clearSecret() {
+    const key = $(this).data('key');
+    await writeSecret(key, '');
+    secret_state[key] = false;
+    updateSecretDisplay();
+    $(INPUT_MAP[key]).val('');
+}
+
 function updateSecretDisplay() {
     for (const [secret_key, input_selector] of Object.entries(INPUT_MAP)) {
         const validSecret = !!secret_state[secret_key];
@@ -91,4 +99,5 @@ export async function readSecretState() {
 
 jQuery(() => {
     $('#viewSecrets').on('click', viewSecrets);
+    $(document).on('click', '.clear-api-key', clearSecret);
 });
