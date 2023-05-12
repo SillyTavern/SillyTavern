@@ -95,8 +95,9 @@ async function activateExtensions() {
     for (let entry of extensions) {
         const name = entry[0];
         const manifest = entry[1];
+        const elementExists = document.getElementById(name) !== null;
 
-        if (activeExtensions.has(name)) {
+        if (elementExists || activeExtensions.has(name)) {
             continue;
         }
 

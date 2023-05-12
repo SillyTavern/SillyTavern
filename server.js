@@ -2813,7 +2813,7 @@ function migrateSecrets() {
         if (typeof hordeKey === 'string') {
             console.log('Migrating Horde key...');
             writeSecret(SECRET_KEYS.HORDE, hordeKey);
-            delete settings.hordeKey;
+            delete settings.horde_settings.api_key;
             modified = true;
         }
 
@@ -2885,6 +2885,7 @@ app.post('/generate_horde', jsonParser, async (request, response) => {
         }
     };
 
+    console.log(args.data);
     try {
         const data = await postAsync(url, args);
         return response.send(data);

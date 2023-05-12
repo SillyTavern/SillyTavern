@@ -1,0 +1,9 @@
+{
+    "name": "Vicuna 1.1",
+    "system_prompt": "A chat between a curious user and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the user's questions.\n\nWrite {{char}}'s next reply in a fictional roleplay chat between {{user}} and {{char}}.\n",
+    "system_sequence": "BEGINNING OF CONVERSATION:",
+    "stop_sequence": "",
+    "input_sequence": "USER: ",
+    "output_sequence": "ASSISTANT: ",
+    "wrap": true
+}
