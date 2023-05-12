@@ -73,8 +73,8 @@ const parser = new SlashCommandParser();
 const registerSlashCommand = parser.addCommand.bind(parser);
 const getSlashCommandsHelp = parser.getHelpString.bind(parser);
 
-parser.addCommand('help', helpCommandCallback, ['?'], ' – displays a help information', true, true);
-parser.addCommand('bg', setBackgroundCallback, ['background'], '<span class="monospace">name</span> – sets a background by file name', false, true);
+parser.addCommand('help', helpCommandCallback, ['?'], ' – displays this help message', true, true);
+parser.addCommand('bg', setBackgroundCallback, ['background'], '<span class="monospace">(filename)</span> – sets a background according to filename, partial names allowed, will set the first one alphebetically if multiple files begin with the provided argument string', false, true);
 
 function helpCommandCallback() {
     sendSystemMessage(system_message_types.HELP);
@@ -86,7 +86,7 @@ function setBackgroundCallback(_, bg) {
     }
     console.log('Set background to ' + bg);
     const bgElement = $(`.bg_example[bgfile^="${bg.trim()}"`);
-    
+
     if (bgElement.length) {
         bgElement.get(0).click();
     }
