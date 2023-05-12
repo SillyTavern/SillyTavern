@@ -412,8 +412,8 @@ $("#sd_dropdown [id]").on("click", function () {
     }
 
     else if (id == "sd_world") {
-        console.log("doing /sd world");
-        generatePicture('sd', 'world');
+        console.log("doing /sd scene");
+        generatePicture('sd', 'scene');
     }
 
     else if (id == "sd_last") {
