@@ -1800,6 +1800,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             this_max_context = Number(max_context);
         }
 
+
+
         // Adjust token limit for Horde
         let adjustedParams;
         if (main_api == 'kobold' && horde_settings.use_horde && (horde_settings.auto_adjust_context_length || horde_settings.auto_adjust_response_length)) {
@@ -1815,11 +1817,12 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             }
         }
 
+        console.log();
+
         // Extension added strings
         const allAnchors = getAllExtensionPrompts();
         const afterScenarioAnchor = getExtensionPrompt(extension_prompt_types.AFTER_SCENARIO);
         let zeroDepthAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, 0, ' ');
-
         let { worldInfoString, worldInfoBefore, worldInfoAfter } = getWorldInfoPrompt(chat2);
 
         // hack for regeneration of the first message
@@ -2073,6 +2076,56 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 mesSendString +
                 generatedPromtCache +
                 promptBias;
+
+            /*             let finalPromptTokens = getTokenCount(finalPromt);
+                        let allAnchorsTokens = getTokenCount(allAnchors);
+                        let afterScenarioAnchorTokens = getTokenCount(afterScenarioAnchor);
+                        let zeroDepthAnchorTokens = getTokenCount(afterScenarioAnchor);
+                        let worldInfoStringTokens = getTokenCount(worldInfoString);
+                        let storyStringTokens = getTokenCount(storyString);
+                        let examplesStringTokens = getTokenCount(examplesString);
+                        let charPersonalityTokens = getTokenCount(charPersonality);
+                        let charDescriptionTokens = getTokenCount(charDescription);
+                        let scenarioTextTokens = getTokenCount(scenarioText);
+                        let promptBiasTokens = getTokenCount(promptBias);
+                        let mesSendStringTokens = getTokenCount(mesSendString)
+                        let ActualChatHistoryTokens = mesSendStringTokens - allAnchorsTokens + power_user.token_padding;
+            
+                        let totalTokensInPrompt =
+                            allAnchorsTokens +      // AN and/or legacy anchors
+                            //afterScenarioAnchorTokens +       //only counts if AN is set to 'after scenario'
+                            //zeroDepthAnchorTokens +           //same as above, even if AN not on 0 depth
+                            worldInfoStringTokens +
+                            storyStringTokens +     //chardefs total
+                            promptBiasTokens +      //{{}}
+                            ActualChatHistoryTokens +   //chat history
+                            power_user.token_padding;
+            
+                        console.log(
+                            `
+                Prompt Itemization
+                -------------------
+                Extension Add-ins AN: ${allAnchorsTokens}
+                
+                World Info: ${worldInfoStringTokens}
+            
+                Character Definitions: ${storyStringTokens}
+                -- Description: ${charDescriptionTokens}
+                -- Example Messages: ${examplesStringTokens}
+                -- Character Personality: ${charPersonalityTokens}
+                -- Character Scenario: ${scenarioTextTokens}
+            
+                Chat History: ${ActualChatHistoryTokens}
+                {{}} Bias: ${promptBiasTokens}
+                Padding: ${power_user.token_padding}
+                -------------------
+                Total Tokens in Prompt: ${totalTokensInPrompt}
+                vs
+                finalPrompt: ${finalPromptTokens}
+                Max Context: ${this_max_context}
+            
+                `
+                        ); */
 
             if (zeroDepthAnchor && zeroDepthAnchor.length) {
                 if (!isMultigenEnabled() || tokens_already_generated == 0) {
