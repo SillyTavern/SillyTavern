@@ -51,11 +51,14 @@
         "no-path-concat": "off",
         "no-var": "off"
     },
+	"main": "server.js",
     "pkg": {
-        "assets": [
-            "node_modules/open/xdg-open/",
-            "public",
-            "uploads"
-        ]
-    }
+		"assets": [
+		  "node_modules/**/*",
+		  "poe_graphql/**/*"
+		],
+		"scripts": [
+		  "server.js"
+		]
+	 }
 }
