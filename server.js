@@ -20,8 +20,6 @@ const cliArguments = yargs(hideBin(process.argv))
     }).argv;
 
 // change all relative paths
-// process.chdir(__dirname)
-//console.log('cwd is: ',process.cwd()) //correct external project path
 const path = require('path');
 process.chdir(path.dirname(process.execPath));
 
@@ -322,7 +320,7 @@ app.get('/version', function (_, response) {
                 .toString().trim();
 
             gitBranch = require('child_process')
-                .execSync('git rev-parse --abbrev-ref HEAD', { cwd: __dirname })
+                .execSync('git rev-parse --abbrev-ref HEAD', { cwd: process.cwd() })
                 .toString().trim();
         }
     }
