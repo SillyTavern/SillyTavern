@@ -130,15 +130,17 @@ Easy to follow guide with pretty pictures:
 <https://docs.alpindale.dev/pygmalion-extras/sillytavern/#windows-installation>
 
   1. Install [NodeJS](https://nodejs.org/en) (latest LTS version is recommended)
-  3. Install [GitHub Desktop](https://central.github.com/deployments/desktop/desktop/latest/win32)
-  4. Open Windows Explorer (Win+E)
-  5. Browse to or Create a folder that is not controlled or monitored by Windows. (ex: C:\MySpecialFolder\)
-  6. Open a Command Prompt inside that folder by clicking in the 'Address Bar' at the top, typing 'cmd', and pressing Enter.
-  7. Once the black box (Command Prompt) pops up, type ONE of the following into it and press Enter:
-    - for Main Branch: git clone <https://github.com/Cohee1207/SillyTavern> -b main
-    - for Dev Branch: git clone <https://github.com/Cohee1207/SillyTavern> -b dev
-  8. Once everything is cloned, double click Start.bat to make NodeJS install its requirements.
-  9. The server will then start, and SillyTavern will popup in your browser.
+  2. Install [GitHub Desktop](https://central.github.com/deployments/desktop/desktop/latest/win32)
+  3. Open Windows Explorer (`Win+E`)
+  4. Browse to or Create a folder that is not controlled or monitored by Windows. (ex: C:\MySpecialFolder\)
+  5. Open a Command Prompt inside that folder by clicking in the 'Address Bar' at the top, typing `cmd`, and pressing Enter.
+  6. Once the black box (Command Prompt) pops up, type ONE of the following into it and press Enter:
+  
+  * for Main Branch: `git clone <https://github.com/Cohee1207/SillyTavern> -b main`
+  * for Dev Branch: `git clone <https://github.com/Cohee1207/SillyTavern> -b dev`
+  
+  7. Once everything is cloned, double click `Start.bat` to make NodeJS install its requirements.
+  8. The server will then start, and SillyTavern will popup in your browser.
 
 Installing via zip download
 
