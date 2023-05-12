@@ -27,6 +27,7 @@ import {
     SECRET_KEYS,
     secret_state,
 } from "./secrets.js";
+import { sortByCssOrder } from "./utils.js";
 
 var NavToggle = document.getElementById("nav-toggle");
 var RPanelPin = document.getElementById("rm_button_panel_pin");
@@ -275,7 +276,7 @@ export async function favsToHotswap() {
     const maxCount = 6;
     let count = 0;
 
-    $(selector).each(function () {
+    $(selector).sort(sortByCssOrder).each(function () {
         if ($(this).hasClass('is_fav') && count < maxCount) {
             const isCharacter = $(this).hasClass('character_select');
             const isGroup = $(this).hasClass('group_select');

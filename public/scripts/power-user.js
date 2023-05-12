@@ -9,6 +9,7 @@ import {
     getRequestHeaders,
     substituteParams,
 } from "../script.js";
+import { favsToHotswap } from "./RossAscends-mods.js";
 import {
     groups,
     selected_group,
@@ -986,6 +987,7 @@ $(document).ready(() => {
         power_user.sort_order = $(this).find(":selected").data('order');
         power_user.sort_rule = $(this).find(":selected").data('rule');
         sortCharactersList();
+        favsToHotswap();
         saveSettingsDebounced();
     });
 

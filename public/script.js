@@ -762,8 +762,8 @@ function printCharacters() {
 
     printTags();
     printGroups();
-    favsToHotswap();
     sortCharactersList();
+    favsToHotswap();
 }
 
 async function getCharacters() {
