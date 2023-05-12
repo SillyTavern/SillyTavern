@@ -1,4 +1,4 @@
-import { getRequestHeaders } from "../script.js";
+import { callPopup, getRequestHeaders } from "../script.js";
 
 export const SECRET_KEYS = {
     HORDE: 'api_key_horde',
@@ -19,12 +19,35 @@ function updateSecretDisplay() {
         const validSecret = !!secret_state[secret_key];
         const placeholder = validSecret ? '✔️ Key saved' : '❌ Missing key'; 
         $(input_selector).attr('placeholder', placeholder);
-
-        // Horde doesn't have a connect button
-        if (secret_key !== SECRET_KEYS.HORDE) {
-            $(input_selector).val('');
-        }
     }
+}
+
+async function viewSecrets() {
+    const response = await fetch('/viewsecrets', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+    });
+
+    if (response.status == 403) {
+        callPopup('<h3>Forbidden</h3><p>To view your API keys here, set the value of allowKeysExposure to true in config.conf file and restart the SillyTavern server.</p>', 'text');
+        return;
+    }
+
+    if (!response.ok) {
+        return;
+    }
+
+    $('#dialogue_popup').addClass('wide_dialogue_popup');
+    const data = await response.json();
+    const table = document.createElement('table');
+    table.classList.add('responsiveTable');
+    $(table).append('<thead><th>Key</th><th>Value</th></thead>');
+    
+    for (const [key,value] of Object.entries(data)) {
+        $(table).append(`<tr><td>${DOMPurify.sanitize(key)}</td><td>${DOMPurify.sanitize(value)}</td></tr>`);
+    }
+
+    callPopup(table.outerHTML, 'text');
 }
 
 export let secret_state = {};
@@ -65,3 +88,7 @@ export async function readSecretState() {
         console.error('Could not read secrets file');
     }
 }
+
+jQuery(() => {
+    $('#viewSecrets').on('click', viewSecrets);
+});
