@@ -34,11 +34,11 @@ const generationMode = {
 }
 
 const triggerWords = {
-    [generationMode.CHARACTER]: ['yourself', 'you', 'bot', 'AI', 'character'],
-    [generationMode.USER]: ['me', 'user', 'myself'],
-    [generationMode.SCENARIO]: ['scenario', 'world', 'surroundings', 'scenery'],
-    [generationMode.NOW]: ['now', 'last'],
-    [generationMode.FACE]: ['selfie', 'face'],
+    [generationMode.CHARACTER]: ['you'],
+    [generationMode.USER]: ['me'],
+    [generationMode.SCENARIO]: ['scene'],
+    [generationMode.NOW]: ['last'],
+    [generationMode.FACE]: ['face'],
 
 }
 
@@ -58,15 +58,16 @@ const quietPrompts = {
 }
 
 const helpString = [
-    `${m('what')} – requests an SD generation. Supported "what" arguments:`,
+    `${m('(argument)')} – requests SD to make an image. Supported arguments:`,
     '<ul>',
-    `<li>${m(j(triggerWords[generationMode.CHARACTER]))} – AI character image</li>`,
-    `<li>${m(j(triggerWords[generationMode.USER]))} – user character image</li>`,
-    `<li>${m(j(triggerWords[generationMode.SCENARIO]))} – world scenario image</li>`,
-    `<li>${m(j(triggerWords[generationMode.FACE]))} – character face-up selfie image</li>`,
+    `<li>${m(j(triggerWords[generationMode.CHARACTER]))} – AI character full body selfie</li>`,
+    `<li>${m(j(triggerWords[generationMode.FACE]))} – AI character face-only selfie</li>`,
+    `<li>${m(j(triggerWords[generationMode.USER]))} – user character full body selfie</li>`,
+    `<li>${m(j(triggerWords[generationMode.SCENARIO]))} – visual recap of the whole chat scenario</li>`,
     `<li>${m(j(triggerWords[generationMode.NOW]))} – visual recap of the last chat message</li>`,
     '</ul>',
-    `Anything else would trigger a "free mode" with AI describing whatever you prompted.`,
+    `Anything else would trigger a "free mode" to make SD generate whatever you prompted.<Br> 
+    example: '/sd apple tree' would generate a picture of an apple tree.`,
 ].join('<br>');
 
 const defaultSettings = {
@@ -422,7 +423,7 @@ $("#sd_dropdown [id]").on("click", function () {
 });
 
 jQuery(async () => {
-    getContext().registerSlashCommand('sd', generatePicture, ['picture', 'image'], helpString, true, true);
+    getContext().registerSlashCommand('sd', generatePicture, [], helpString, true, true);
 
     const settingsHtml = `
     <div class="sd_settings">
