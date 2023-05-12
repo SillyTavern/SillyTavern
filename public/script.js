@@ -1183,6 +1183,10 @@ function scrollChatToBottom() {
 function substituteParams(content, _name1, _name2) {
     _name1 = _name1 ?? name1;
     _name2 = _name2 ?? name2;
+    if (!content) {
+        console.warn("No content on substituteParams")
+        return ''
+    }
 
     content = content.replace(/{{user}}/gi, _name1);
     content = content.replace(/{{char}}/gi, _name2);
