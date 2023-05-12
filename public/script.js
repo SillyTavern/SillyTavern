@@ -3696,6 +3696,7 @@ function select_rm_create() {
     $("#renameCharButton").css('display', 'none');
     $("#name_div").removeClass('displayNone');
     $("#name_div").addClass('displayBlock');
+    updateFavButtonState(false);
 
     $("#form_create").attr("actiontype", "createcharacter");
 }
@@ -3729,7 +3730,6 @@ function updateFavButtonState(state) {
     $("#fav_checkbox").val(fav_ch_checked);
     $("#favorite_button").toggleClass('fav_on', fav_ch_checked);
     $("#favorite_button").toggleClass('fav_off', !fav_ch_checked);
-
 }
 
 function callPopup(text, type, inputValue = '') {
