@@ -551,13 +551,13 @@ $.ajaxPrefilter((options, originalOptions, xhr) => {
 ///// initialization protocol ////////
 $.get("/csrf-token").then(async (data) => {
     token = data.token;
+    sendSystemMessage(system_message_types.WELCOME);
     await readSecretState();
     await getClientVersion();
     await getSettings("def");
+    await getUserAvatars();
     await getCharacters();
     await getBackgrounds();
-    await getUserAvatars();
-    sendSystemMessage(system_message_types.WELCOME);
 });
 
 function checkOnlineStatus() {
