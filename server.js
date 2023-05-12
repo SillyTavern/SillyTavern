@@ -77,6 +77,7 @@ const whitelistMode = config.whitelistMode;
 const autorun = config.autorun && !cliArguments.ssl;
 const enableExtensions = config.enableExtensions;
 const listen = config.listen;
+const allowKeysExposure = config.allowKeysExposure;
 
 const axios = require('axios');
 const tiktoken = require('@dqbd/tiktoken');
@@ -2890,6 +2891,27 @@ app.post('/generate_horde', jsonParser, async (request, response) => {
         const data = await postAsync(url, args);
         return response.send(data);
     } catch {
+        return response.sendStatus(500);
+    }
+});
+
+app.post('/viewsecrets', jsonParser, async (_, response) => {
+    if (!allowKeysExposure) {
+        console.error('secrets.json could not be viewed unless the value of allowKeysExposure in config.conf is set to true');
+        return response.sendStatus(403);
+    }
+
+    if (!fs.existsSync(SECRETS_FILE)) {
+        console.error('secrets.json does not exist');
+        return response.sendStatus(404);
+    }
+
+    try {
+        const fileContents = fs.readFileSync(SECRETS_FILE);
+        const secrets = JSON.parse(fileContents);
+        return response.send(secrets);
+    } catch (error) {
+        console.error(error);
         return response.sendStatus(500);
     }
 });

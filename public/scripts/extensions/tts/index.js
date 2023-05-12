@@ -75,6 +75,7 @@ async function moduleWorker() {
     // We're currently swiping or streaming. Don't generate voice
     if (
         message.mes === '...' ||
+        message.mes === '' ||
         (context.streamingProcessor && !context.streamingProcessor.isFinished)
     ) {
         return
@@ -164,7 +165,7 @@ function onAudioControlClicked() {
 
 function addAudioControl() {
     $('#send_but_sheld').prepend('<div id="tts_media_control"/>')
-    $('#send_but_sheld').on('click', onAudioControlClicked)
+    $('#tts_media_control').on('click', onAudioControlClicked)
     audioControl = document.getElementById('tts_media_control')
     updateUiAudioPlayState()
 }
@@ -181,7 +182,7 @@ function completeCurrentAudioJob() {
  */
 async function addAudioJob(response) {
     const audioData = await response.blob()
-    if (!audioData.type in ['audio/mpeg', 'audio/wav']) {
+    if (!audioData.type in ['audio/mpeg', 'audio/wav', 'audio/x-wav', 'audio/wave']) {
         throw `TTS received HTTP response with invalid data format. Expecting audio/mpeg, got ${audioData.type}`
     }
     audioJobQueue.push(audioData)
@@ -241,11 +242,16 @@ async function processTtsQueue() {
     console.debug('New message found, running TTS')
     currentTtsJob = ttsJobQueue.shift()
     const text = extension_settings.tts.narrate_dialogues_only
-        ? currentTtsJob.mes.replace(/\*[^\*]*?(\*|$)/g, '') // remove asterisks content
-        : currentTtsJob.mes.replaceAll('*', '') // remove just the asterisks
+        ? currentTtsJob.mes.replace(/\*[^\*]*?(\*|$)/g, '').trim() // remove asterisks content
+        : currentTtsJob.mes.replaceAll('*', '').trim() // remove just the asterisks
     const char = currentTtsJob.name
 
     try {
+        if (!text) {
+            console.warn('Got empty text in TTS queue job.');
+            return;
+        }
+
         if (!voiceMap[char]) {
             throw `${char} not in voicemap. Configure character in extension settings voice map`
         }

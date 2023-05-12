@@ -109,6 +109,24 @@ body {
     background-clip: content-box;
 }
 
+table.responsiveTable {
+    width: 100%;
+    margin: 10px 0;
+}
+
+.responsiveTable tr {
+    display: flex;
+}
+
+.responsiveTable,
+.responsiveTable th,
+.responsiveTable td {
+    flex: 1;
+    border: 1px solid;
+    border-collapse: collapse;
+    word-break: break-all;
+    padding: 5px;
+}
 
 .sysHR {
     border-top: 2px solid grey;

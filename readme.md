@@ -125,6 +125,17 @@ Get in touch with the developers directly:
   1. Run the `start.sh` script.
   2. Enjoy.
 
+## API keys management
+
+SillyTavern saves your API keys to a `secrets.json` file in the server directory.
+
+By default they will not be exposed to a frontend after you enter them and reload the page.
+
+In order to enable viewing your keys by clicking a button in the API block:
+
+1. Set the value of `allowKeysExposure` to `true` in `config.conf` file.
+2. Restart the SillyTavern server.
+
 ## Remote connections
 
 Most often this is for people who want to use SillyTavern on their mobile phones while at home.
