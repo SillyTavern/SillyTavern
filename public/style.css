@@ -2093,6 +2093,7 @@ input[type="range"]::-webkit-slider-thumb {
     width: 20px;
     opacity: 0.5;
 }
+
 .mes_buttons {
     float: right;
     height: 20px;
@@ -3665,7 +3666,7 @@ toolcool-color-picker {
     flex-basis: 100%;
 }
 
-#max_context_unlocked:not(:checked) + div {
+#max_context_unlocked:not(:checked)+div {
     display: none;
 }
 
@@ -3971,6 +3972,11 @@ body.waifuMode #avatar_zoom_popup {
         left: 0 !important;
         resize: none;
         top: 42px;
+    }
+
+    #character_popup,
+    #world_popup {
+        overflow-y: auto;
     }
 
     #character_popup,
