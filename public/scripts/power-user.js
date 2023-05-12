@@ -641,10 +641,11 @@ export function formatInstructStoryString(story) {
     return text;
 }
 
-export function formatInstructModePrompt(isImpersonate) {
+export function formatInstructModePrompt(name, isImpersonate) {
+    const includeNames = power_user.instruct.names || !!selected_group;
     const sequence = isImpersonate ? power_user.instruct.input_sequence : power_user.instruct.output_sequence;
     const separator = power_user.instruct.wrap ? '\n' : '';
-    const text = separator + sequence;
+    const text = includeNames ? (separator + sequence + separator + `${name}:`) : (separator + sequence);
     return text;
 }
 

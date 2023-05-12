@@ -1995,7 +1995,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     mesSendString += mesSend[j];
 
                     if (isInstruct && isBottom && tokens_already_generated === 0) {
-                        mesSendString += formatInstructModePrompt(isImpersonate);
+                        const name = isImpersonate ? (is_pygmalion ? 'You' : name1) : name2;
+                        mesSendString += formatInstructModePrompt(name, isImpersonate);
                     }
 
                     if (!isInstruct && isImpersonate && isBottom && tokens_already_generated === 0) {
