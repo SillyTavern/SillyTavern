@@ -386,7 +386,15 @@ $(document).ajaxError(function myErrorHandler(_, xhr) {
 async function getClientVersion() {
     try {
         const response = await fetch('/version');
-        CLIENT_VERSION = await response.text();
+        const data = await response.json();
+        CLIENT_VERSION = data.agent;
+        let displayVersion = `SillyTavern ${data.pkgVersion}`;
+
+        if (data.gitRevision && data.gitBranch) {
+            displayVersion += ` '${data.gitBranch}' (${data.gitRevision})`;
+        }
+
+        $('#version_display').text(displayVersion);
     } catch (err) {
         console.log("Couldn't get client version", err);
     }

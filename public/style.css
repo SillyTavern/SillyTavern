@@ -191,6 +191,11 @@ code {
     transition: background-image 0.5s ease-in-out;
 }
 
+#version_display {
+    padding: 5px;
+    opacity: 0.8;
+}
+
 #bg1 {
     background-image: url('backgrounds/tavern day.jpg');
     z-index: -2;
@@ -3515,6 +3520,10 @@ toolcool-color-picker {
 
 .spaceEvenly {
     justify-content: space-evenly;
+}
+
+.spaceBetween {
+    justify-content: space-between;
 }
 
 .widthNatural {

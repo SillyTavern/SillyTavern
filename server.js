@@ -308,7 +308,7 @@ app.get('/deviceinfo', function (request, response) {
     return response.send(deviceInfo);
 });
 app.get('/version', function (_, response) {
-    let pkgVersion, gitRevision;
+    let pkgVersion, gitRevision, gitBranch;
     try {
         const pkgJson = require('./package.json');
         pkgVersion = pkgJson.version;
@@ -316,13 +316,18 @@ app.get('/version', function (_, response) {
             gitRevision = require('child_process')
                 .execSync('git rev-parse --short HEAD', { cwd: __dirname })
                 .toString().trim();
+
+            gitBranch = require('child_process')
+                .execSync('git rev-parse --abbrev-ref HEAD', { cwd: __dirname })
+                .toString().trim();
         }
     }
     catch {
         // suppress exception
     }
     finally {
-        response.send(`SillyTavern:${gitRevision || pkgVersion}:Cohee#1207`)
+        const agent = `SillyTavern:${gitRevision || pkgVersion}:Cohee#1207`;
+        response.send({ agent, pkgVersion, gitRevision, gitBranch });
     }
 })
 
