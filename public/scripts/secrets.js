@@ -18,7 +18,12 @@ function updateSecretDisplay() {
     for (const [secret_key, input_selector] of Object.entries(INPUT_MAP)) {
         const validSecret = !!secret_state[secret_key];
         const placeholder = validSecret ? '✔️ Key saved' : '❌ Missing key'; 
-        $(input_selector).attr('placeholder', placeholder).val('');
+        $(input_selector).attr('placeholder', placeholder);
+
+        // Horde doesn't have a connect button
+        if (secret_key !== SECRET_KEYS.HORDE) {
+            $(input_selector).val('');
+        }
     }
 }
 
