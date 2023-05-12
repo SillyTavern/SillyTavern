@@ -109,6 +109,11 @@ body {
     background-clip: content-box;
 }
 
+
+.sysHR {
+    border-top: 2px solid grey;
+}
+
 .fa-solid::before,
 .fa-regular::before {
     vertical-align: middle;
@@ -3970,6 +3975,7 @@ body.waifuMode #avatar_zoom_popup {
         width: 100svw !important;
 
     }
+
 
     #sheld,
     #character_popup,

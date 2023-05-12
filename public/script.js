@@ -295,22 +295,24 @@ const system_messages = {
         is_user: false,
         is_name: true,
         mes: [
-            '<h2>Welcome to SillyTavern!</h2>',
+            '<h2>Welcome to <span id="version_display_welcome">Welcome to </span>!</h2>',
+            '<div id="version_display_welcome"></div>',
             '<h3>Want to Update to the latest version?</h3>',
             "Read the <a href='/notes/update.html' target='_blank'>instructions here</a>. Also located in your installation's base folder",
+            '<hr class="sysHR">',
             '<h3>In order to begin chatting:</h3>',
             '<ol>',
             '<li>Connect to one of the supported generation APIs (the plug icon)</li>',
             '<li>Create or pick a character from the list (the top-right namecard icon)</li>',
             '</ol>',
-            "<h3>Running on Colab and can't get an answer from the AI or getting Out of Memory errors?</h3>",
-            'Set a lower Context Size in AI generation settings (leftmost icon).<br>Values in range of 1400-1600 Tokens would be the safest choice.',
+            '<hr class="sysHR">',
             '<h3>Where to download more characters?</h3>',
             '<i>(Not endorsed, your discretion is advised)</i>',
             '<ol>',
             '<li><a target="_blank" href="https://discord.gg/pygmalionai">Pygmalion AI Discord</a></li>',
             '<li><a target="_blank" href="https://www.characterhub.org/">CharacterHub (NSFW)</a></li>',
             '</ol>',
+            '<hr class="sysHR">',
             '<h3>Where can I get help?</h3>',
             'Before going any further, check out the following resources:',
             '<ol>',
@@ -321,6 +323,7 @@ const system_messages = {
             '<li><a target="_blank" href="https://docs.alpindale.dev/">Pygmalion AI Docs</a></li>',
             '</ol>',
             'Type <tt>/?</tt> in any chat to get help on message formatting commands.',
+            '<hr class="sysHR">',
             '<h3>Still have questions or suggestions left?</h3>',
             '<a target="_blank" href="https://discord.gg/RZdyAEUPvj">SillyTavern Community Discord</a>',
             '<br/>',
@@ -394,6 +397,7 @@ async function getClientVersion() {
         }
 
         $('#version_display').text(displayVersion);
+        $('#version_display_welcome').text(displayVersion);
     } catch (err) {
         console.log("Couldn't get client version", err);
     }
