@@ -283,9 +283,8 @@ const system_messages = {
         mes: [
             'Hi there! The following chat formatting commands are supported:',
             '<ol>',
-            '<li><tt>*text*</tt> – format the actions that your character does</li>',
-            '<li><tt>{{text}}</tt> – set the behavioral bias for the AI character</li>',
-            '<li><tt>{{}}</tt> – cancel a previously set bias</li>',
+            '<li><tt>{{text}}</tt> – sets a permanent behavioral bias for the AI</li>',
+            '<li><tt>{{}}</tt> – removes any active character bias</li>',
             '</ol>',
         ].join('')
     },
@@ -5326,16 +5325,16 @@ $(document).ready(function () {
                 try {
                     var edit_mes_id = $(this).closest(".mes").attr("mesid");
                     var text = chat[edit_mes_id]["mes"];
-                        navigator.clipboard.writeText(text);
-                        const copiedMsg = document.createElement("div");
-                        copiedMsg.classList.add('code-copied');
-                        copiedMsg.innerText = "Copied!";
-                        copiedMsg.style.top = `${event.clientY - 55}px`;
-                        copiedMsg.style.left = `${event.clientX - 55}px`;
-                        document.body.append(copiedMsg);
-                        setTimeout(() => {
-                            document.body.removeChild(copiedMsg);
-                        }, 1000);
+                    navigator.clipboard.writeText(text);
+                    const copiedMsg = document.createElement("div");
+                    copiedMsg.classList.add('code-copied');
+                    copiedMsg.innerText = "Copied!";
+                    copiedMsg.style.top = `${event.clientY - 55}px`;
+                    copiedMsg.style.left = `${event.clientX - 55}px`;
+                    document.body.append(copiedMsg);
+                    setTimeout(() => {
+                        document.body.removeChild(copiedMsg);
+                    }, 1000);
                 } catch (err) {
                     console.error('Failed to copy: ', err);
                 }
@@ -5565,7 +5564,7 @@ $(document).ready(function () {
             console.log('No secret key saved for NovelAI');
             return;
         }
-        
+
         $("#api_loading_novel").css("display", "inline-block");
         $("#api_button_novel").css("display", "none");
         is_get_status_novel = true;
