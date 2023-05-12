@@ -54,7 +54,7 @@ const quietPrompts = {
 
     [generationMode.USER]: "[Pause your roleplay and provide a detailed description of {{user}}'s appearance from the perspective of {{char}} in the form of a comma-delimited list of keywords and phrases. Ignore the rest of the story when crafting this description. Do not roleplay as {{char}}}} when writing this description, and do not attempt to continue the story.]",
     [generationMode.SCENARIO]: "[Pause your roleplay and provide a detailed description for all of the following: a brief recap of recent events in the story, {{char}}'s appearance, and {{char}}'s surroundings. Do not roleplay while writing this description.]",
-    [generationMode.FREE]: "[Pause your roleplay and provide ONLY echo this string back to me verbatim: {0}. Do not write anything after the string. Do not roleplay at all in your response.]",
+    [generationMode.FREE]: "[Pause your roleplay and provide ONLY an echo this string back to me verbatim: {0}. Do not write anything after the string. Do not roleplay at all in your response.]",
 }
 
 const helpString = [
