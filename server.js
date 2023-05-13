@@ -528,7 +528,7 @@ app.post("/savechat", jsonParser, function (request, response) {
     var dir_name = String(request.body.avatar_url).replace('.png', '');
     let chat_data = request.body.chat;
     let jsonlData = chat_data.map(JSON.stringify).join('\n');
-    fs.writeFile(chatsPath + dir_name + "/" + request.body.file_name + '.jsonl', jsonlData, 'utf8', function (err) {
+    fs.writeFile(`${chatsPath + dir_name}/${sanitize(request.body.file_name)}.jsonl`, jsonlData, 'utf8', function (err) {
         if (err) {
             response.send(err);
             return console.log(err);
@@ -552,11 +552,10 @@ app.post("/getchat", jsonParser, function (request, response) {
 
             if (err === null) { //if there is a dir, then read the requested file from the JSON call
 
-                fs.stat(chatsPath + dir_name + "/" + request.body.file_name + ".jsonl", function (err, stat) {
-
+                fs.stat(`${chatsPath + dir_name}/${sanitize(request.body.file_name)}.jsonl`, function (err, stat) {
                     if (err === null) { //if no error (the file exists), read the file
                         if (stat !== undefined) {
-                            fs.readFile(chatsPath + dir_name + "/" + request.body.file_name + ".jsonl", 'utf8', (err, data) => {
+                            fs.readFile(`${chatsPath + dir_name}/${sanitize(request.body.file_name)}.jsonl`, 'utf8', (err, data) => {
                                 if (err) {
                                     console.error(err);
                                     response.send(err);
@@ -585,9 +584,8 @@ app.post("/getchat", jsonParser, function (request, response) {
             }
         }
     });
-
-
 });
+
 app.post("/getstatus", jsonParser, async function (request, response_getstatus = response) {
     if (!request.body) return response_getstatus.sendStatus(400);
     api_server = request.body.api_server;
@@ -1281,7 +1279,7 @@ app.post('/getsettings', jsonParser, (request, response) => { //Wintermute's cod
         .filter(x => path.parse(x).ext == '.json')
         .sort();
 
-        instructFiles.forEach(item => {
+    instructFiles.forEach(item => {
         const file = fs.readFileSync(
             path.join(directories.instruct, item),
             'utf-8',
@@ -1642,7 +1640,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                     }
                     catch {
                         console.error('WEBP image conversion failed. Using the default character image.');
-                        uploadPath = defaultAvatarPath; 
+                        uploadPath = defaultAvatarPath;
                     }
                 }
 
@@ -2847,7 +2845,7 @@ app.post('/writesecret', jsonParser, (request, response) => {
     const key = request.body.key;
     const value = request.body.value;
 
-    writeSecret(key,value);
+    writeSecret(key, value);
     return response.send('ok');
 });
 
