@@ -326,7 +326,7 @@ async function sendMessage(prompt, image) {
 
 function addSDGenButtons() {
     const buttonHtml = `
-        <div id="sd_gen" class="fa-solid fa-paintbrush" /></div>
+        <div id="sd_gen" class="fa-solid fa-paintbrush" title="Trigger Stable Diffusion" /></div>
         `;
 
     const waitButtonHtml = `
