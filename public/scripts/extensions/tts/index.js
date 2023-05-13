@@ -247,7 +247,8 @@ async function processTtsQueue() {
         const special_quotes = /[“”]/g; // Extend this regex to include other special quotes
         text = text.replace(special_quotes, '"');
         const matches = text.match(/".*?"/g); // Matches text inside double quotes, non-greedily
-        text = matches ? matches.join(' ... ... ... ') : text;
+        const partJoiner = (ttsProvider?.separator || ' ... ');
+        text = matches ? matches.join(partJoiner) : text;
     }
     console.log(`TTS: ${text}`)
     const char = currentTtsJob.name

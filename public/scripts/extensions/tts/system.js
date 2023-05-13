@@ -21,6 +21,7 @@ class SystemTtsProvider {
     fallbackPreview = 'Neque porro quisquam est qui dolorem ipsum quia dolor sit amet'
     settings
     voices = []
+    separator = ' ... '
 
     defaultSettings = {
         voiceMap: {},
