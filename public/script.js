@@ -249,7 +249,6 @@ let streamingProcessor = null;
 let crop_data = undefined;
 
 let fav_ch_checked = false;
-let token_breakdown = false;
 
 //initialize global var for future cropped blobs
 let currentCroppedAvatar = '';
@@ -3141,8 +3140,10 @@ function changeMainAPI() {
         // Hide common settings for OpenAI
         if (selectedVal == "openai") {
             $("#common-gen-settings-block").css("display", "none");
+            $("#token_breakdown").css("display", "flex");
         } else {
             $("#common-gen-settings-block").css("display", "block");
+            $("#token_breakdown").css("display", "none");
         }
         // Hide amount gen for poe
         if (selectedVal == "poe") {
