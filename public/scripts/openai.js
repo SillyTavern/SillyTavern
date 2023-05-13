@@ -463,7 +463,10 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
     console.log(openai_msgs_tosend);
     console.log(`Calculated the total context to be ${total_count} tokens`);
     handler_instance.log();
-    return [openai_msgs_tosend, handler_instance.counts];
+    return [
+        openai_msgs_tosend,
+        oai_settings.oai_breakdown ? handler_instance.counts : false,
+    ];
 }
 
 function getSystemPrompt(nsfw_toggle_prompt, enhance_definitions_prompt, wiBefore, storyString, wiAfter, extensionPrompt, isImpersonate) {
@@ -1316,6 +1319,11 @@ $(document).ready(function () {
 
     $("#oai_breakdown").on('change', function () {
         oai_settings.oai_breakdown = !!$(this).prop("checked");
+        if (!oai_settings.oai_breakdown) {
+            $("#token_breakdown").css('display', 'none');
+        } else {
+            $("#token_breakdown").css('display', 'flex');
+        }
         saveSettingsDebounced();
     });
 

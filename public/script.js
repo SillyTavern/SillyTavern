@@ -2228,25 +2228,31 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             if (main_api == 'openai') {
                 let [prompt, counts] = await prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAfter, afterScenarioAnchor, promptBias, type);
 
-                // better put this in a function
-                const breakdown_bar = $('#token_breakdown div:first-child');
-                const total = Object.values(counts).reduce((acc, val) => acc + val, 0);
-                Object.entries(counts).forEach(([type, value]) => {
-                    if (value === 0) {
-                        return;
-                    }
-                    const percent_value = (value / total) * 100;
-                    const color = uniqolor(type, {saturation: 50, lightness: 75,}).color;
-                    const bar = document.createElement('div');
-                    bar.style.width = `${percent_value}%`;
-                    bar.classList.add('token_breakdown_segment');
-                    bar.style.backgroundColor = color + 'AA';
-                    bar.style.borderColor = color + 'FF';
-                    bar.innerText = value;
-                    bar.title = `${type}: ${percent_value.toFixed(2)}%`;
-                    breakdown_bar.append(bar);
-                });
 
+                // counts will return false if the user has not enabled the token breakdown feature
+                if (counts) {
+                    $('#token_breakdown').css('display', 'flex');
+                    const breakdown_bar = $('#token_breakdown div:first-child');
+                    breakdown_bar.empty();
+
+                    const total = Object.values(counts).reduce((acc, val) => acc + val, 0);
+
+                    Object.entries(counts).forEach(([type, value]) => {
+                        if (value === 0) {
+                            return;
+                        }
+                        const percent_value = (value / total) * 100;
+                        const color = uniqolor(type, {saturation: 50, lightness: 75,}).color;
+                        const bar = document.createElement('div');
+                        bar.style.width = `${percent_value}%`;
+                        bar.classList.add('token_breakdown_segment');
+                        bar.style.backgroundColor = color + 'AA';
+                        bar.style.borderColor = color + 'FF';
+                        bar.innerText = value;
+                        bar.title = `${type}: ${percent_value.toFixed(2)}%`;
+                        breakdown_bar.append(bar);
+                    });
+                }
 
                 setInContextMessages(openai_messages_count, type);
 
@@ -3135,10 +3141,8 @@ function changeMainAPI() {
         // Hide common settings for OpenAI
         if (selectedVal == "openai") {
             $("#common-gen-settings-block").css("display", "none");
-            $("#token_breakdown_toggle").css("display", "flex");
         } else {
             $("#common-gen-settings-block").css("display", "block");
-            $("#token_breakdown_toggle").css("display", "none");
         }
         // Hide amount gen for poe
         if (selectedVal == "poe") {
@@ -4423,16 +4427,6 @@ $(document).ready(function () {
         if (is_send_press == false) {
             is_send_press = true;
             Generate();
-        }
-    });
-
-    $("#token_breakdown_toggle").click(function () {
-        if (token_breakdown == false) {
-            token_breakdown = true;
-            $("#token_breakdown").css('display', 'flex');
-        } else {
-            token_breakdown = false;
-            $("#token_breakdown").css('display', 'none');
         }
     });
 
