@@ -317,7 +317,7 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
     let openai_msgs_tosend = [];
 
     // todo: static value, maybe include in the initial context calculation
-    const handler_instance = new TokenHandler();
+    const handler_instance = new TokenHandler(countTokens);
 
     let new_chat_msg = { "role": "system", "content": "[Start a new chat]" };
     let start_chat_count = handler_instance.count([new_chat_msg], true, 'start_chat');
@@ -624,7 +624,8 @@ async function calculateLogitBias() {
 }
 
 class TokenHandler {
-    constructor() {
+    constructor(countTokenFn) {
+        this.countTokenFn = countTokenFn;
         this.counts = {
             'start_chat': 0,
             'prompt': 0,
@@ -646,7 +647,7 @@ class TokenHandler {
     }
 
     count(messages, full, type) {
-        const token_count = countTokens(messages, full);
+        const token_count = this.countTokenFn(messages, full);
         console.log(`Counted ${token_count} tokens for ${type}`);
         this.counts[type] += token_count;
 
@@ -1365,18 +1366,18 @@ $(document).ready(function () {
         saveSettingsDebounced();
     });
 
-    $("#api_button_openai").on('click', onConnectButtonClick);
-    $("#openai_reverse_proxy").on('input', onReverseProxyInput);
-    $("#model_openai_select").on('change', onModelChange);
-    $("#settings_perset_openai").on('change', onSettingsPresetChange);
-    $("#new_oai_preset").on('click', onNewPresetClick);
-    $("#delete_oai_preset").on('click', onDeletePresetClick);
-    $("#openai_api_usage").on('click', showApiKeyUsage);
-    $('#openai_logit_bias_preset').on('change', onLogitBiasPresetChange);
-    $('#openai_logit_bias_new_preset').on('click', createNewLogitBiasPreset);
-    $('#openai_logit_bias_new_entry').on('click', createNewLogitBiasEntry);
-    $('#openai_logit_bias_import_file').on('input', onLogitBiasPresetImportFileChange);
-    $('#openai_logit_bias_import_preset').on('click', onLogitBiasPresetImportClick);
-    $('#openai_logit_bias_export_preset').on('click', onLogitBiasPresetExportClick);
-    $('#openai_logit_bias_delete_preset').on('click', onLogitBiasPresetDeleteClick);
+    $("#api_button_openai").on("click", onConnectButtonClick);
+    $("#openai_reverse_proxy").on("input", onReverseProxyInput);
+    $("#model_openai_select").on("change", onModelChange);
+    $("#settings_perset_openai").on("change", onSettingsPresetChange);
+    $("#new_oai_preset").on("click", onNewPresetClick);
+    $("#delete_oai_preset").on("click", onDeletePresetClick);
+    $("#openai_api_usage").on("click", showApiKeyUsage);
+    $("#openai_logit_bias_preset").on("change", onLogitBiasPresetChange);
+    $("#openai_logit_bias_new_preset").on("click", createNewLogitBiasPreset);
+    $("#openai_logit_bias_new_entry").on("click", createNewLogitBiasEntry);
+    $("#openai_logit_bias_import_file").on("input", onLogitBiasPresetImportFileChange);
+    $("#openai_logit_bias_import_preset").on("click", onLogitBiasPresetImportClick);
+    $("#openai_logit_bias_export_preset").on("click", onLogitBiasPresetExportClick);
+    $("#openai_logit_bias_delete_preset").on("click", onLogitBiasPresetDeleteClick);
 });
