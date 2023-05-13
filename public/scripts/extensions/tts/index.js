@@ -48,10 +48,8 @@ async function moduleWorker() {
         return;
     }
 
-    // Chat/character/group changed
+    // Chat changed
     if (
-        (context.groupId && lastGroupId !== context.groupId) ||
-        context.characterId !== lastCharacterId ||
         context.chatId !== lastChatId
     ) {
         currentMessageNumber = context.chat.length ? context.chat.length : 0
