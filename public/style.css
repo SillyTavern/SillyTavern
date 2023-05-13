@@ -395,6 +395,12 @@ code {
     justify-content: center;
 }
 
+.token_breakdown_segment {
+    min-width: 40px !important;
+    border: solid 2px;
+    border-radius: 5px;
+}
+
 
 #loading_mes {
     display: none;

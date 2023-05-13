@@ -2236,14 +2236,12 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         return;
                     }
                     const percent_value = (value / total) * 100;
-                    const color = uniqolor(type, {
-                        saturation: [35, 70],
-                        lightness: 25,
-                    }).color;
+                    const color = uniqolor(type, {saturation: 50, lightness: 75,}).color;
                     const bar = document.createElement('div');
                     bar.style.width = `${percent_value}%`;
                     bar.classList.add('token_breakdown_segment');
-                    bar.style.backgroundColor = color;
+                    bar.style.backgroundColor = color + 'AA';
+                    bar.style.borderColor = color + 'FF';
                     bar.innerText = value;
                     bar.title = `${type}: ${percent_value.toFixed(2)}%`;
                     breakdown_bar.append(bar);
