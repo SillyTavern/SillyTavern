@@ -237,8 +237,16 @@ function getQuietPrompt(mode, trigger) {
 function processReply(str) {
     str = str.replaceAll('"', '')
     str = str.replaceAll('“', '')
-    str = str.replaceAll('\n', ' ')
+    str = str.replaceAll('\n', ', ')
+    str = str.replace(/[^a-zA-Z0-9,:]+/g, ' ') // Replace everything except alphanumeric characters and commas with spaces
+    str = str.replace(/\s+/g, ' '); // Collapse multiple whitespaces into one
     str = str.trim();
+
+    str = str
+        .split(',') // list split by commas
+        .map(x => x.trim()) // trim each entry
+        .filter(x => x) // remove empty entries
+        .join(', '); // join it back with proper spacing
 
     return str;
 }
@@ -259,7 +267,7 @@ async function generatePicture(_, trigger) {
         const prompt = processReply(await new Promise(
             async function promptPromise(resolve, reject) {
                 try {
-                    await context.generate('quiet', { resolve, reject, quiet_prompt });
+                    await context.generate('quiet', { resolve, reject, quiet_prompt, force_name2: true, });
                 }
                 catch {
                     reject();
@@ -268,6 +276,8 @@ async function generatePicture(_, trigger) {
 
         context.deactivateSendButtons();
         hideSwipeButtons();
+
+        console.log('Processed Stable Diffusion prompt:', prompt);
 
         const url = new URL(getApiUrl());
         url.pathname = '/api/image';
@@ -295,7 +305,7 @@ async function generatePicture(_, trigger) {
             sendMessage(prompt, base64Image);
         }
     } catch (err) {
-        console.error(err);
+        console.trace(err);
         throw new Error('SD prompt text generation failed.')
     }
     finally {
