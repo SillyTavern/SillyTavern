@@ -107,7 +107,7 @@ import {
 } from "./scripts/poe.js";
 
 import { debounce, delay, restoreCaretPosition, saveCaretPosition } from "./scripts/utils.js";
-import { extension_settings, loadExtensionSettings } from "./scripts/extensions.js";
+import { extension_settings, getContext, loadExtensionSettings } from "./scripts/extensions.js";
 import { executeSlashCommands, getSlashCommandsHelp, registerSlashCommand } from "./scripts/slash-commands.js";
 import {
     tag_map,
@@ -2112,6 +2112,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 mesId: count_view_mes,
                 worldInfoBefore: worldInfoBefore,
                 allAnchors: allAnchors,
+                summarizeString: extension_prompts['1_memory'].value,
+                authorsNoteString: extension_prompts['2_floating_prompt'].value,
                 worldInfoString: worldInfoString,
                 storyString: storyString,
                 worldInfoAfter: worldInfoAfter,
@@ -2425,6 +2427,8 @@ function promptItemize(itemizedPrompts, requestedMesId) {
 
     let finalPromptTokens = getTokenCount(itemizedPrompts[thisPromptSet].finalPromt);
     let allAnchorsTokens = getTokenCount(itemizedPrompts[thisPromptSet].allAnchors);
+    let summarizeStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].summarizeString);
+    let authorsNoteStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].authorsNoteString);
     let afterScenarioAnchorTokens = getTokenCount(itemizedPrompts[thisPromptSet].afterScenarioAnchor);
     let zeroDepthAnchorTokens = getTokenCount(itemizedPrompts[thisPromptSet].afterScenarioAnchor);
     let worldInfoStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].worldInfoString);
@@ -2458,7 +2462,11 @@ function promptItemize(itemizedPrompts, requestedMesId) {
     callPopup(
         `
         <h3>Prompt Itemization</h3>
-        Tokenizer: ${selectedTokenizer}
+        Tokenizer: ${selectedTokenizer}<br>
+        <span class="tokenItemizingSubclass">
+            Only the white numbers really matter. All numbers are estimates.
+            Grey color items may not have been included in the context due to certain prompt format settings.
+        </span>
         <hr class="sysHR">
         <div class="justifyLeft">
             <div class="flex-container">
@@ -2472,29 +2480,47 @@ function promptItemize(itemizedPrompts, requestedMesId) {
                 <div class="flex-container wide50p">
                     <div class="wide100p flex-container flexNoGap flexFlowColumn">
                         <div class="flex-container wide100p">
-                            <div class="flex1" style="color: indianred;"> Character Definitions:</div><div  class=""> ${storyStringTokens}</div>
+                            <div class="flex1" style="color: indianred;"> Character Definitions:</div>
+                            <div  class=""> ${storyStringTokens}</div>
                         </div>
-                        <div class="flex-container wide50p">
-                            <div  class=" flex1 tokenItemizingSubclass">-- Description: </div><div  class="tokenItemizingSubclass">${charDescriptionTokens}</div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Description: </div>
+                            <div  class="tokenItemizingSubclass">${charDescriptionTokens}</div>
                         </div>
-                        <div class="flex-container wide50p">
-                            <div  class=" flex1 tokenItemizingSubclass">-- Personality:</div><div  class="tokenItemizingSubclass"> ${charPersonalityTokens}</div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Personality:</div>
+                            <div  class="tokenItemizingSubclass"> ${charPersonalityTokens}</div>
                         </div>
-                        <div class="flex-container wide50p">
-                            <div  class=" flex1 tokenItemizingSubclass">-- Scenario: </div><div  class="tokenItemizingSubclass">${scenarioTextTokens}</div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Scenario: </div>
+                            <div  class="tokenItemizingSubclass">${scenarioTextTokens}</div>
                         </div>
-                        <div class="flex-container wide50p">
-                            <div  class=" flex1 tokenItemizingSubclass">-- Examples:</div><div  class="tokenItemizingSubclass"> ${examplesStringTokens}</div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Examples:</div>
+                            <div  class="tokenItemizingSubclass"> ${examplesStringTokens}</div>
                         </div>
                     </div>
                     <div class="wide100p flex-container">
-                        <div  class="flex1" style="color: gold;">World Info:</div><div  class="">${worldInfoStringTokens}</div>
+                        <div  class="flex1" style="color: gold;">World Info:</div>
+                        <div  class="">${worldInfoStringTokens}</div>
                     </div>
                     <div class="wide100p flex-container">        
-                        <div  class="flex1" style="color: palegreen;">Chat History:</div><div  class=""> ${ActualChatHistoryTokens}</div>
+                        <div  class="flex1" style="color: palegreen;">Chat History:</div>
+                        <div  class=""> ${ActualChatHistoryTokens}</div>
                     </div>
-                    <div class="wide100p flex-container">
-                        <div  class="flex1" style="color: cornflowerblue;">Author's Note:</div><div  class="">${allAnchorsTokens}</div>
+                    <div class="wide100p flex-container flexNoGap flexFlowColumn">
+                        <div class="wide100p flex-container">
+                            <div  class="flex1" style="color: cornflowerblue;">Extensions:</div>
+                            <div  class="">${allAnchorsTokens}</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Summarize: </div>
+                            <div  class="tokenItemizingSubclass">${summarizeStringTokens}</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Author's Note:</div>
+                            <div  class="tokenItemizingSubclass"> ${authorsNoteStringTokens}</div>
+                        </div>
                     </div>
                     <div class="wide100p flex-container">
                         <div  class="flex1" style="color: mediumpurple;">{{}} Bias:</div><div  class="">${promptBiasTokens}</div>
