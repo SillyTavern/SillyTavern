@@ -638,10 +638,6 @@ class TokenHandler {
         };
     }
 
-    get total() {
-        return this.start_chat + this.prompt + this.bias + this.nudge + this.jailbreak + this.impersonate + this.examples + this.conversation;
-    }
-
     uncount(value, type) {
         this.counts[type] -= value;
     }
