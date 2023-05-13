@@ -48,10 +48,8 @@ async function moduleWorker() {
         return;
     }
 
-    // Chat/character/group changed
+    // Chat changed
     if (
-        (context.groupId && lastGroupId !== context.groupId) ||
-        context.characterId !== lastCharacterId ||
         context.chatId !== lastChatId
     ) {
         currentMessageNumber = context.chat.length ? context.chat.length : 0
@@ -241,9 +239,17 @@ async function processTtsQueue() {
 
     console.debug('New message found, running TTS')
     currentTtsJob = ttsJobQueue.shift()
-    const text = extension_settings.tts.narrate_dialogues_only
+    let text = extension_settings.tts.narrate_dialogues_only
         ? currentTtsJob.mes.replace(/\*[^\*]*?(\*|$)/g, '').trim() // remove asterisks content
         : currentTtsJob.mes.replaceAll('*', '').trim() // remove just the asterisks
+
+    if (extension_settings.tts.narrate_quoted_only) {
+        const special_quotes = /[“”]/g; // Extend this regex to include other special quotes
+        text = text.replace(special_quotes, '"');
+        const matches = text.match(/".*?"/g); // Matches text inside double quotes, non-greedily
+        text = matches ? matches.join(' ... ... ... ') : text;
+    }
+    console.log(`TTS: ${text}`)
     const char = currentTtsJob.name
 
     try {
@@ -288,6 +294,7 @@ function loadSettings() {
         extension_settings.tts.enabled
     )
     $('#tts_narrate_dialogues').prop('checked', extension_settings.tts.narrate_dialogues_only)
+    $('#tts_narrate_quoted').prop('checked', extension_settings.tts.narrate_quoted_only)
 }
 
 const defaultSettings = {
@@ -380,6 +387,13 @@ function onNarrateDialoguesClick() {
     saveSettingsDebounced()
 }
 
+
+function onNarrateQuotedClick() {
+    extension_settings.tts.narrate_quoted_only = $('#tts_narrate_quoted').prop('checked');
+    saveSettingsDebounced()
+}
+
+
 //##############//
 // TTS Provider //
 //##############//
@@ -459,6 +473,10 @@ $(document).ready(function () {
                             <input type="checkbox" id="tts_narrate_dialogues">
                             Narrate dialogues only
                         </label>
+                        <label class="checkbox_label" for="tts_narrate_quoted">
+                            <input type="checkbox" id="tts_narrate_quoted">
+                            Narrate quoted only
+                        </label>
                     </div>
                     <label>Voice Map</label>
                     <textarea id="tts_voice_map" type="text" class="text_pole textarea_compact" rows="4"
@@ -481,6 +499,7 @@ $(document).ready(function () {
         $('#tts_apply').on('click', onApplyClick)
         $('#tts_enabled').on('click', onEnableClick)
         $('#tts_narrate_dialogues').on('click', onNarrateDialoguesClick);
+        $('#tts_narrate_quoted').on('click', onNarrateQuotedClick);
         $('#tts_voices').on('click', onTtsVoicesClick)
         $('#tts_provider_settings').on('input', onTtsProviderSettingsInput)
         for (const provider in ttsProviders) {

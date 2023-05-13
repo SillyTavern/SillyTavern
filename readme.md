@@ -124,7 +124,7 @@ Get in touch with the developers directly:
 
 ### Windows
 
-Installing via Git (reccomended for easy updating)
+Installing via Git (recommended for easy updating)
 
 Easy to follow guide with pretty pictures:
 <https://docs.alpindale.dev/pygmalion-extras/sillytavern/#windows-installation>
