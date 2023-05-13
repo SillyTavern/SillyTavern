@@ -242,6 +242,12 @@ function processReply(str) {
     str = str.replace(/\s+/g, ' '); // Collapse multiple whitespaces into one
     str = str.trim();
 
+    str = str
+        .split(',') // list split by commas
+        .map(x => x.trim()) // trim each entry
+        .filter(x => x) // remove empty entries
+        .join(', '); // join it back with proper spacing
+
     return str;
 }
 
