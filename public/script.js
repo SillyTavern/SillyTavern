@@ -125,6 +125,7 @@ import {
     secret_state,
     writeSecret
 } from "./scripts/secrets.js";
+import uniqolor from "./scripts/uniqolor.js";
 
 //exporting functions and vars for mods
 export {
@@ -248,6 +249,7 @@ let streamingProcessor = null;
 let crop_data = undefined;
 
 let fav_ch_checked = false;
+let token_breakdown = false;
 
 //initialize global var for future cropped blobs
 let currentCroppedAvatar = '';
@@ -2224,7 +2226,30 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             console.log('rungenerate calling API');
 
             if (main_api == 'openai') {
-                let prompt = await prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAfter, afterScenarioAnchor, promptBias, type);
+                let [prompt, counts] = await prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAfter, afterScenarioAnchor, promptBias, type);
+
+                // better put this in a function
+                const breakdown_bar = $('#token_breakdown div:first-child');
+                const total = Object.values(counts).reduce((acc, val) => acc + val, 0);
+                Object.entries(counts).forEach(([type, value]) => {
+                    if (value === 0) {
+                        return;
+                    }
+                    const percent_value = (value / total) * 100;
+                    const color = uniqolor(type, {
+                        saturation: [35, 70],
+                        lightness: 25,
+                    }).color;
+                    const bar = document.createElement('div');
+                    bar.style.width = `${percent_value}%`;
+                    bar.classList.add('token_breakdown_segment');
+                    bar.style.backgroundColor = color;
+                    bar.innerText = value;
+                    bar.title = `${type}: ${percent_value.toFixed(2)}%`;
+                    breakdown_bar.append(bar);
+                });
+
+
                 setInContextMessages(openai_messages_count, type);
 
                 if (isStreamingEnabled() && type !== 'quiet') {
@@ -3112,8 +3137,10 @@ function changeMainAPI() {
         // Hide common settings for OpenAI
         if (selectedVal == "openai") {
             $("#common-gen-settings-block").css("display", "none");
+            $("#token_breakdown_toggle").css("display", "flex");
         } else {
             $("#common-gen-settings-block").css("display", "block");
+            $("#token_breakdown_toggle").css("display", "none");
         }
         // Hide amount gen for poe
         if (selectedVal == "poe") {
@@ -4398,6 +4425,16 @@ $(document).ready(function () {
         if (is_send_press == false) {
             is_send_press = true;
             Generate();
+        }
+    });
+
+    $("#token_breakdown_toggle").click(function () {
+        if (token_breakdown == false) {
+            token_breakdown = true;
+            $("#token_breakdown").css('display', 'flex');
+        } else {
+            token_breakdown = false;
+            $("#token_breakdown").css('display', 'none');
         }
     });
 

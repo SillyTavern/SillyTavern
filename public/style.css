@@ -373,6 +373,28 @@ code {
     justify-content: center;
 }
 
+#token_breakdown_toggle {
+    width: 40px;
+    height: 40px;
+    margin: 0;
+    padding: 1px;
+    outline: none;
+    border: none;
+    cursor: pointer;
+    transition: 0.3s;
+    opacity: 0.7;
+    order: 50;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+#token_breakdown div {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+}
+
 
 #loading_mes {
     display: none;

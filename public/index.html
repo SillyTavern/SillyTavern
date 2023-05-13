@@ -1176,7 +1176,7 @@
 
         <div id="advanced-formatting-button" class="drawer">
             <div class="drawer-toggle">
-                <div class="drawer-icon fa-solid fa-font  closedIcon" title="AI Reponse Formatting"></div>
+                <div class="drawer-icon fa-solid fa-font  closedIcon" title="AI Response Formatting"></div>
             </div>
             <div class="drawer-content">
                 <h3>Advanced Formatting
@@ -2022,7 +2022,7 @@
             </div>
 
             <div>
-                <h3 id="character_popup_text_h3"></h3> - Advanced Defininitions
+                <h3 id="character_popup_text_h3"></h3> - Advanced Definitions
             </div>
 
         </div>
@@ -2047,7 +2047,7 @@
 
         <div id="talkativeness_div">
             <h4>Talkativeness</h4>
-            <h5>How often the chracter speaks in &nbsp;<span class="warning">group chats!</span>
+            <h5>How often the character speaks in &nbsp;<span class="warning">group chats!</span>
             </h5>
             <input id="talkativeness_slider" name="talkativeness" type="range" min="0" max="1" step="0.05" value="0.5" form="form_create">
             <div id="talkativeness_hint">
@@ -2421,6 +2421,11 @@
         <div id="chat">
         </div>
         <div id="form_sheld">
+            <div id="token_breakdown" style="display:none;">
+                <div>
+                    <!-- Token Breakdown Goes Here -->
+                </div>
+            </div>
             <div id="dialogue_del_mes">
                 <div id="dialogue_del_mes_ok" class="menu_button">Delete</div>
                 <div id="dialogue_del_mes_cancel" class="menu_button">Cancel</div>
@@ -2429,6 +2434,9 @@
                 <div id="options_button" class="fa-solid fa-bars"></div>
                 <textarea id="send_textarea" placeholder="Not connected to API!" name="text"></textarea>
                 <div id="send_but_sheld">
+                    <div>
+                        <div id="token_breakdown_toggle" class="fa-solid fa-chart-simple"></div>
+                    </div>
                     <div id="loading_mes">
                         <div alt="" class="fa-solid fa-hourglass-half"></div>
                     </div>

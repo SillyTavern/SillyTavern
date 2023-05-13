@@ -461,7 +461,7 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
     console.log(openai_msgs_tosend);
     console.log(`Calculated the total context to be ${total_count} tokens`);
     handler_instance.log();
-    return openai_msgs_tosend;
+    return [openai_msgs_tosend, handler_instance.counts];
 }
 
 function getSystemPrompt(nsfw_toggle_prompt, enhance_definitions_prompt, wiBefore, storyString, wiAfter, extensionPrompt, isImpersonate) {
