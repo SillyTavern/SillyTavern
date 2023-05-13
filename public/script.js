@@ -1994,6 +1994,13 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     const isBottom = j === mesSend.length - 1;
                     mesSendString += mesSend[j];
 
+                    // Add quiet generation prompt at depth 0
+                    if (isBottom && quiet_prompt && quiet_prompt.length) {
+                        const name = is_pygmalion ? 'You' : name1;
+                        const quietAppend = isInstruct ? formatInstructModeChat(name, quiet_prompt, true) : `\n${name}: ${quiet_prompt}`;
+                        mesSendString += quietAppend;
+                    }
+
                     if (isInstruct && isBottom && tokens_already_generated === 0) {
                         const name = isImpersonate ? (is_pygmalion ? 'You' : name1) : name2;
                         mesSendString += formatInstructModePrompt(name, isImpersonate);
@@ -2147,11 +2154,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         finalPromt += ' ';
                     }
                 }
-            }
-
-            // Add quiet generation prompt at depth 0
-            if (quiet_prompt && quiet_prompt.length) {
-                finalPromt += `\n${quiet_prompt}`;
             }
 
             finalPromt = finalPromt.replace(/\r/gm, '');
