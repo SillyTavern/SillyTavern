@@ -2454,10 +2454,11 @@ function promptItemize(itemizedPrompts, requestedMesId) {
     let promptBiasTokensPercentage = ((promptBiasTokens / (totalTokensInPrompt + thisPrompt_padding)) * 100).toFixed(2);
     let worldInfoStringTokensPercentage = ((worldInfoStringTokens / (totalTokensInPrompt + thisPrompt_padding)) * 100).toFixed(2);
     let allAnchorsTokensPercentage = ((allAnchorsTokens / (totalTokensInPrompt + thisPrompt_padding)) * 100).toFixed(2);
-
+    let selectedTokenizer = $("#tokenizer").find(':selected').text();
     callPopup(
         `
         <h3>Prompt Itemization</h3>
+        Tokenizer: ${selectedTokenizer}
         <hr class="sysHR">
         <div class="justifyLeft">
             <div class="flex-container">
