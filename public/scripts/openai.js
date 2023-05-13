@@ -639,7 +639,7 @@ class TokenHandler {
     }
 
     get total() {
-        return this.start_chat + this.prompt + this.bias + this.nudge + this.jailbreak + this.impersonate + this.examples;
+        return this.start_chat + this.prompt + this.bias + this.nudge + this.jailbreak + this.impersonate + this.examples + this.conversation;
     }
 
     uncount(value, type) {
@@ -648,7 +648,6 @@ class TokenHandler {
 
     count(messages, full, type) {
         const token_count = this.countTokenFn(messages, full);
-        console.log(`Counted ${token_count} tokens for ${type}`);
         this.counts[type] += token_count;
 
         return token_count;
@@ -656,7 +655,7 @@ class TokenHandler {
 
     log() {
         const total = Object.values(this.counts).reduce((a, b) => a + b);
-        console.table({...this.counts, 'Total': total});
+        console.table({...this.counts, 'total': total});
     }
 }
 
