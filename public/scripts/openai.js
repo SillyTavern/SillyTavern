@@ -317,16 +317,18 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
     let openai_msgs_tosend = [];
 
     // todo: static value, maybe include in the initial context calculation
+    const handler_instance = new TokenHandler();
+
     let new_chat_msg = { "role": "system", "content": "[Start a new chat]" };
-    let start_chat_count = countTokens([new_chat_msg], true);
+    let start_chat_count = handler_instance.count([new_chat_msg], true, 'start_chat');
     await delay(1);
-    let total_count = countTokens([prompt_msg], true) + start_chat_count;
+    let total_count = handler_instance.count([prompt_msg], true, 'prompt') + start_chat_count;
     await delay(1);
 
     if (bias && bias.trim().length) {
         let bias_msg = { "role": "system", "content": bias.trim() };
         openai_msgs.push(bias_msg);
-        total_count += countTokens([bias_msg], true);
+        total_count += handler_instance.count([bias_msg], true, 'bias');
         await delay(1);
     }
 
@@ -343,13 +345,14 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
         openai_msgs.push(group_nudge);
 
         // add a group nudge count
-        let group_nudge_count = countTokens([group_nudge], true);
+        let group_nudge_count = handler_instance.count([group_nudge], true, 'nudge');
         await delay(1);
         total_count += group_nudge_count;
 
         // recount tokens for new start message
         total_count -= start_chat_count
-        start_chat_count = countTokens([new_chat_msg], true);
+        handler_instance.uncount(start_chat_count, 'start_chat');
+        start_chat_count = handler_instance.count([new_chat_msg], true);
         await delay(1);
         total_count += start_chat_count;
     }
@@ -358,7 +361,7 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
         const jailbreakMessage = { "role": "system", "content": substituteParams(oai_settings.jailbreak_prompt) };
         openai_msgs.push(jailbreakMessage);
 
-        total_count += countTokens([jailbreakMessage], true);
+        total_count += handler_instance.count([jailbreakMessage], true, 'jailbreak');
         await delay(1);
     }
 
@@ -366,7 +369,7 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
         const impersonateMessage = { "role": "system", "content": substituteParams(oai_settings.impersonation_prompt) };
         openai_msgs.push(impersonateMessage);
 
-        total_count += countTokens([impersonateMessage], true);
+        total_count += handler_instance.count([impersonateMessage], true, 'impersonate');
         await delay(1);
     }
 
@@ -389,12 +392,12 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
                 examples_tosend.push(example);
             }
         }
-        total_count += countTokens(examples_tosend, true);
+        total_count += handler_instance.count(examples_tosend, true, 'examples');
         await delay(1);
         // go from newest message to oldest, because we want to delete the older ones from the context
         for (let j = openai_msgs.length - 1; j >= 0; j--) {
             let item = openai_msgs[j];
-            let item_count = countTokens(item, true);
+            let item_count = handler_instance.count(item, true, 'conversation');
             await delay(1);
             // If we have enough space for this message, also account for the max assistant reply size
             if ((total_count + item_count) < (this_max_context - oai_settings.openai_max_tokens)) {
@@ -403,13 +406,14 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
             }
             else {
                 // early break since if we still have more messages, they just won't fit anyway
+                handler_instance.uncount(item_count, 'conversation');
                 break;
             }
         }
     } else {
         for (let j = openai_msgs.length - 1; j >= 0; j--) {
             let item = openai_msgs[j];
-            let item_count = countTokens(item, true);
+            let item_count = handler_instance.count(item, true, 'conversation');
             await delay(1);
             // If we have enough space for this message, also account for the max assistant reply size
             if ((total_count + item_count) < (this_max_context - oai_settings.openai_max_tokens)) {
@@ -418,6 +422,7 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
             }
             else {
                 // early break since if we still have more messages, they just won't fit anyway
+                handler_instance.uncount(item_count, 'conversation');
                 break;
             }
         }
@@ -432,7 +437,7 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
             example_block = [new_chat_msg, ...example_block];
 
             // add the block only if there is enough space for all its messages
-            const example_count = countTokens(example_block, true);
+            const example_count = handler_instance.count(example_block, true, 'examples');
             await delay(1);
             if ((total_count + example_count) < (this_max_context - oai_settings.openai_max_tokens)) {
                 examples_tosend.push(...example_block)
@@ -440,6 +445,7 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
             }
             else {
                 // early break since more examples probably won't fit anyway
+                handler_instance.uncount(example_count, 'examples');
                 break;
             }
         }
@@ -454,6 +460,7 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
     console.log("We're sending this:")
     console.log(openai_msgs_tosend);
     console.log(`Calculated the total context to be ${total_count} tokens`);
+    handler_instance.log();
     return openai_msgs_tosend;
 }
 
@@ -613,6 +620,42 @@ async function calculateLogitBias() {
     }
     finally {
         return result;
+    }
+}
+
+class TokenHandler {
+    constructor() {
+        this.counts = {
+            'start_chat': 0,
+            'prompt': 0,
+            'bias': 0,
+            'nudge': 0,
+            'jailbreak': 0,
+            'impersonate': 0,
+            'examples': 0,
+            'conversation': 0,
+        };
+    }
+
+    get total() {
+        return this.start_chat + this.prompt + this.bias + this.nudge + this.jailbreak + this.impersonate + this.examples;
+    }
+
+    uncount(value, type) {
+        this.counts[type] -= value;
+    }
+
+    count(messages, full, type) {
+        const token_count = countTokens(messages, full);
+        console.log(`Counted ${token_count} tokens for ${type}`);
+        this.counts[type] += token_count;
+
+        return token_count;
+    }
+
+    log() {
+        const total = Object.values(this.counts).reduce((a, b) => a + b);
+        console.table({...this.counts, 'Total': total});
     }
 }
 
