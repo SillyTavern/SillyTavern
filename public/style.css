@@ -132,6 +132,18 @@ table.responsiveTable {
     border-top: 2px solid grey;
 }
 
+.tokenItemizingSubclass {
+    font-size: calc(var(--mainFontSize) * 0.8);
+    color: var(--SmartThemeEmColor);
+}
+
+.tokenGraph {
+    border-radius: 10px;
+    border: 1px solid var(--white30a);
+    max-height: 100%;
+    overflow: hidden;
+}
+
 .fa-solid::before,
 .fa-regular::before {
     vertical-align: middle;
@@ -2130,6 +2142,7 @@ input[type="range"]::-webkit-slider-thumb {
     right: 0px;
 }
 
+.mes_prompt,
 .mes_copy,
 .mes_edit {
     cursor: pointer;
@@ -2146,7 +2159,8 @@ input[type="range"]::-webkit-slider-thumb {
     opacity: 1;
 }
 
-.last_mes .mes_copy {
+.last_mes .mes_copy,
+.last_mes .mes_prompt {
     grid-row-start: 1;
     position: relative;
     right: -30px;

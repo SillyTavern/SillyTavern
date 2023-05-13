@@ -203,6 +203,9 @@ hljs.addPlugin({ "before:highlightElement": ({ el }) => { el.textContent = el.in
 let converter;
 reloadMarkdownProcessor();
 
+// array for prompt token calculations
+let itemizedPrompts = [];
+
 /* let bg_menu_toggle = false; */
 export const systemUserName = "SillyTavern System";
 let default_user_name = "You";
@@ -1126,6 +1129,27 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
 
     if (isSystem) {
         newMessage.find(".mes_edit").hide();
+        newMessage.find(".mes_prompt").hide(); //dont'd need prompt display for sys messages
+    }
+
+    // don't need prompt butons for user messages
+    if (params.isUser === true) {
+        newMessage.find(".mes_prompt").hide();
+    }
+
+    //shows or hides the Prompt display button
+    let mesIdToFind = Number(newMessage.attr('mesId'));
+    if (itemizedPrompts.length !== 0) {
+        for (var i = 0; i < itemizedPrompts.length; i++) {
+            if (itemizedPrompts[i].mesId === mesIdToFind) {
+                newMessage.find(".mes_prompt").show();
+            } else {
+                console.log('no cache found for mesID, hiding prompt button and continuing search');
+                newMessage.find(".mes_prompt").hide();
+            }
+        }
+    } else { //hide all when prompt cache is empty
+        $(".mes_prompt").hide();
     }
 
     newMessage.find('.avatar img').on('error', function () {
@@ -2073,7 +2097,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 mesSendString = '<START>\n' + mesSendString;
                 //mesSendString = mesSendString; //This edit simply removes the first "<START>" that is prepended to all context prompts
             }
-            let finalPromt = worldInfoBefore +
+            let finalPromt =
+                worldInfoBefore +
                 storyString +
                 worldInfoAfter +
                 afterScenarioAnchor +
@@ -2082,55 +2107,30 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 generatedPromtCache +
                 promptBias;
 
-            /*             let finalPromptTokens = getTokenCount(finalPromt);
-                        let allAnchorsTokens = getTokenCount(allAnchors);
-                        let afterScenarioAnchorTokens = getTokenCount(afterScenarioAnchor);
-                        let zeroDepthAnchorTokens = getTokenCount(afterScenarioAnchor);
-                        let worldInfoStringTokens = getTokenCount(worldInfoString);
-                        let storyStringTokens = getTokenCount(storyString);
-                        let examplesStringTokens = getTokenCount(examplesString);
-                        let charPersonalityTokens = getTokenCount(charPersonality);
-                        let charDescriptionTokens = getTokenCount(charDescription);
-                        let scenarioTextTokens = getTokenCount(scenarioText);
-                        let promptBiasTokens = getTokenCount(promptBias);
-                        let mesSendStringTokens = getTokenCount(mesSendString)
-                        let ActualChatHistoryTokens = mesSendStringTokens - allAnchorsTokens + power_user.token_padding;
-            
-                        let totalTokensInPrompt =
-                            allAnchorsTokens +      // AN and/or legacy anchors
-                            //afterScenarioAnchorTokens +       //only counts if AN is set to 'after scenario'
-                            //zeroDepthAnchorTokens +           //same as above, even if AN not on 0 depth
-                            worldInfoStringTokens +
-                            storyStringTokens +     //chardefs total
-                            promptBiasTokens +      //{{}}
-                            ActualChatHistoryTokens +   //chat history
-                            power_user.token_padding;
-            
-                        console.log(
-                            `
-                Prompt Itemization
-                -------------------
-                Extension Add-ins AN: ${allAnchorsTokens}
-                
-                World Info: ${worldInfoStringTokens}
-            
-                Character Definitions: ${storyStringTokens}
-                -- Description: ${charDescriptionTokens}
-                -- Example Messages: ${examplesStringTokens}
-                -- Character Personality: ${charPersonalityTokens}
-                -- Character Scenario: ${scenarioTextTokens}
-            
-                Chat History: ${ActualChatHistoryTokens}
-                {{}} Bias: ${promptBiasTokens}
-                Padding: ${power_user.token_padding}
-                -------------------
-                Total Tokens in Prompt: ${totalTokensInPrompt}
-                vs
-                finalPrompt: ${finalPromptTokens}
-                Max Context: ${this_max_context}
-            
-                `
-                        ); */
+            //set array object for prompt token itemization of this message
+            let thisPromptBits = {
+                mesId: count_view_mes,
+                worldInfoBefore: worldInfoBefore,
+                allAnchors: allAnchors,
+                worldInfoString: worldInfoString,
+                storyString: storyString,
+                worldInfoAfter: worldInfoAfter,
+                afterScenarioAnchor: afterScenarioAnchor,
+                examplesString: examplesString,
+                mesSendString: mesSendString,
+                generatedPromtCache: generatedPromtCache,
+                promptBias: promptBias,
+                finalPromt: finalPromt,
+                charDescription: charDescription,
+                charPersonality: charPersonality,
+                scenarioText: scenarioText,
+                promptBias: promptBias,
+                storyString: storyString,
+                this_max_context: this_max_context,
+                padding: power_user.token_padding
+            }
+
+            itemizedPrompts.push(thisPromptBits);
 
             if (zeroDepthAnchor && zeroDepthAnchor.length) {
                 if (!isMultigenEnabled() || tokens_already_generated == 0) {
@@ -2406,6 +2406,122 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     }
     //console.log('generate ending');
 } //generate ends
+
+function promptItemize(itemizedPrompts, requestedMesId) {
+    let incomingMesId = Number(requestedMesId);
+    let thisPromptSet = undefined;
+
+    for (var i = 0; i < itemizedPrompts.length; i++) {
+        if (itemizedPrompts[i].mesId === incomingMesId) {
+            thisPromptSet = i;
+        }
+    }
+
+    if (thisPromptSet === undefined) {
+        console.log(`couldnt find the right mesId. looked for ${incomingMesId}`);
+        console.log(itemizedPrompts);
+        return null;
+    }
+
+    let finalPromptTokens = getTokenCount(itemizedPrompts[thisPromptSet].finalPromt);
+    let allAnchorsTokens = getTokenCount(itemizedPrompts[thisPromptSet].allAnchors);
+    let afterScenarioAnchorTokens = getTokenCount(itemizedPrompts[thisPromptSet].afterScenarioAnchor);
+    let zeroDepthAnchorTokens = getTokenCount(itemizedPrompts[thisPromptSet].afterScenarioAnchor);
+    let worldInfoStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].worldInfoString);
+    let storyStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].storyString);
+    let examplesStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].examplesString);
+    let charPersonalityTokens = getTokenCount(itemizedPrompts[thisPromptSet].charPersonality);
+    let charDescriptionTokens = getTokenCount(itemizedPrompts[thisPromptSet].charDescription);
+    let scenarioTextTokens = getTokenCount(itemizedPrompts[thisPromptSet].scenarioText);
+    let promptBiasTokens = getTokenCount(itemizedPrompts[thisPromptSet].promptBias);
+    let mesSendStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].mesSendString)
+    let ActualChatHistoryTokens = mesSendStringTokens - allAnchorsTokens + power_user.token_padding;
+    let thisPrompt_max_context = itemizedPrompts[thisPromptSet].this_max_context;
+    let thisPrompt_padding = itemizedPrompts[thisPromptSet].padding;
+
+    let totalTokensInPrompt =
+        storyStringTokens +     //chardefs total
+        worldInfoStringTokens +
+        ActualChatHistoryTokens +  //chat history
+        allAnchorsTokens +      // AN and/or legacy anchors
+        //afterScenarioAnchorTokens +       //only counts if AN is set to 'after scenario'
+        //zeroDepthAnchorTokens +           //same as above, even if AN not on 0 depth
+        promptBiasTokens +      //{{}}
+        - thisPrompt_padding;  //not sure this way of calculating is correct, but the math results in same value as 'finalPromt'
+
+    let storyStringTokensPercentage = ((storyStringTokens / (totalTokensInPrompt + thisPrompt_padding)) * 100).toFixed(2);
+    let ActualChatHistoryTokensPercentage = ((ActualChatHistoryTokens / (totalTokensInPrompt + thisPrompt_padding)) * 100).toFixed(2);
+    let promptBiasTokensPercentage = ((promptBiasTokens / (totalTokensInPrompt + thisPrompt_padding)) * 100).toFixed(2);
+    let worldInfoStringTokensPercentage = ((worldInfoStringTokens / (totalTokensInPrompt + thisPrompt_padding)) * 100).toFixed(2);
+    let allAnchorsTokensPercentage = ((allAnchorsTokens / (totalTokensInPrompt + thisPrompt_padding)) * 100).toFixed(2);
+
+    callPopup(
+        `
+        <h3>Prompt Itemization</h3>
+        <hr class="sysHR">
+        <div class="justifyLeft">
+            <div class="flex-container">
+                <div class="flex-container flex1 flexFlowColumns flexNoGap wide50p tokenGraph">
+                    <div class="wide100p" style="background-color: indianred; height: ${storyStringTokensPercentage}%;"></div>
+                    <div class="wide100p" style="background-color: gold; height: ${worldInfoStringTokensPercentage}%;"></div>
+                    <div class="wide100p" style="background-color: palegreen; height: ${ActualChatHistoryTokensPercentage}%;"></div>
+                    <div class="wide100p" style="background-color: cornflowerblue; height: ${allAnchorsTokensPercentage}%;"></div>
+                    <div class="wide100p" style="background-color: mediumpurple; height: ${promptBiasTokensPercentage}%;"></div>
+                </div>
+                <div class="flex-container wide50p">
+                    <div class="wide100p flex-container flexNoGap flexFlowColumn">
+                        <div class="flex-container wide100p">
+                            <div class="flex1" style="color: indianred;"> Character Definitions:</div><div  class=""> ${storyStringTokens}</div>
+                        </div>
+                        <div class="flex-container wide50p">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Description: </div><div  class="tokenItemizingSubclass">${charDescriptionTokens}</div>
+                        </div>
+                        <div class="flex-container wide50p">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Personality:</div><div  class="tokenItemizingSubclass"> ${charPersonalityTokens}</div>
+                        </div>
+                        <div class="flex-container wide50p">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Scenario: </div><div  class="tokenItemizingSubclass">${scenarioTextTokens}</div>
+                        </div>
+                        <div class="flex-container wide50p">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Examples:</div><div  class="tokenItemizingSubclass"> ${examplesStringTokens}</div>
+                        </div>
+                    </div>
+                    <div class="wide100p flex-container">
+                        <div  class="flex1" style="color: gold;">World Info:</div><div  class="">${worldInfoStringTokens}</div>
+                    </div>
+                    <div class="wide100p flex-container">        
+                        <div  class="flex1" style="color: palegreen;">Chat History:</div><div  class=""> ${ActualChatHistoryTokens}</div>
+                    </div>
+                    <div class="wide100p flex-container">
+                        <div  class="flex1" style="color: cornflowerblue;">Author's Note:</div><div  class="">${allAnchorsTokens}</div>
+                    </div>
+                    <div class="wide100p flex-container">
+                        <div  class="flex1" style="color: mediumpurple;">{{}} Bias:</div><div  class="">${promptBiasTokens}</div>
+                    </div>
+                </div>
+
+            </div>
+            <hr class="sysHR">
+            <div class="wide100p flex-container flexFlowColumns">
+                <div class="flex-container wide100p">
+                    <div  class="flex1">Total Tokens in Prompt:</div><div  class=""> ${totalTokensInPrompt}</div>
+                </div>
+                    <!-- <div  class="flex1">finalPromt:</div><div  class=""> ${finalPromptTokens}</div> -->
+                <div class="flex-container wide100p">
+                    <div  class="flex1">Max Context:</div><div  class="">${thisPrompt_max_context}</div>
+                </div>
+                <div class="flex-container wide100p">
+                    <div  class="flex1">- Padding:</div><div  class=""> ${thisPrompt_padding}</div>
+                </div>
+                <div class="flex-container wide100p">
+                    <div  class="flex1">Actual Max Context Allowed:</div><div  class="">${thisPrompt_max_context - thisPrompt_padding}</div>
+                </div>
+            </div>
+        </div>
+        <hr class="sysHR">
+        `, 'text'
+    );
+}
 
 function setInContextMessages(lastmsg, type) {
     $("#chat .mes").removeClass('lastInContext');
@@ -5348,27 +5464,6 @@ $(document).ready(function () {
         saveSettingsDebounced();
     });
 
-    /*     $("#donation").click(function () {
-            $("#shadow_tips_popup").css("display", "block");
-            $("#shadow_tips_popup").transition({
-                opacity: 1.0,
-                duration: 100,
-                easing: animation_easing,
-                complete: function () { },
-            });
-        }); */
-
-    /*     $("#tips_cross").click(function () {
-            $("#shadow_tips_popup").transition({
-                opacity: 0.0,
-                duration: 100,
-                easing: animation_easing,
-                complete: function () {
-                    $("#shadow_tips_popup").css("display", "none");
-                },
-            });
-        }); */
-
     $("#select_chat_cross").click(function () {
         $("#shadow_select_chat_popup").transition({
             opacity: 0,
@@ -5411,6 +5506,13 @@ $(document).ready(function () {
             }
         });
     }
+
+    $(document).on("pointerup", ".mes_prompt", function () {
+        let mesIdForItemization = $(this).closest('.mes').attr('mesId');
+        if (itemizedPrompts.length !== undefined && itemizedPrompts.length !== 0) {
+            promptItemize(itemizedPrompts, mesIdForItemization);
+        }
+    })
 
 
     //********************
