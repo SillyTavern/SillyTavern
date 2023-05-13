@@ -246,7 +246,8 @@ async function processTtsQueue() {
         : currentTtsJob.mes.replaceAll('*', '').trim() // remove just the asterisks
 
     if (extension_settings.tts.narrate_quoted_only) {
-        // narrate only the text inside double quotes
+        const special_quotes = /[“”]/g; // Extend this regex to include other special quotes
+        text = text.replace(special_quotes, '"');
         const matches = text.match(/".*?"/g); // Matches text inside double quotes, non-greedily
         text = matches ? matches.join(' ... ... ... ') : text;
     }
