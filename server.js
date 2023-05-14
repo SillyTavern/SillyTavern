@@ -77,6 +77,7 @@ const whitelistMode = config.whitelistMode;
 const autorun = config.autorun && !cliArguments.ssl;
 const enableExtensions = config.enableExtensions;
 const listen = config.listen;
+const allowKeysExposure = config.allowKeysExposure;
 
 const axios = require('axios');
 const tiktoken = require('@dqbd/tiktoken');
@@ -308,7 +309,7 @@ app.get('/deviceinfo', function (request, response) {
     return response.send(deviceInfo);
 });
 app.get('/version', function (_, response) {
-    let pkgVersion, gitRevision;
+    let pkgVersion, gitRevision, gitBranch;
     try {
         const pkgJson = require('./package.json');
         pkgVersion = pkgJson.version;
@@ -316,13 +317,18 @@ app.get('/version', function (_, response) {
             gitRevision = require('child_process')
                 .execSync('git rev-parse --short HEAD', { cwd: __dirname })
                 .toString().trim();
+
+            gitBranch = require('child_process')
+                .execSync('git rev-parse --abbrev-ref HEAD', { cwd: __dirname })
+                .toString().trim();
         }
     }
     catch {
         // suppress exception
     }
     finally {
-        response.send(`SillyTavern:${gitRevision || pkgVersion}:Cohee#1207`)
+        const agent = `SillyTavern:${gitRevision || pkgVersion}:Cohee#1207`;
+        response.send({ agent, pkgVersion, gitRevision, gitBranch });
     }
 })
 
@@ -522,7 +528,7 @@ app.post("/savechat", jsonParser, function (request, response) {
     var dir_name = String(request.body.avatar_url).replace('.png', '');
     let chat_data = request.body.chat;
     let jsonlData = chat_data.map(JSON.stringify).join('\n');
-    fs.writeFile(chatsPath + dir_name + "/" + request.body.file_name + '.jsonl', jsonlData, 'utf8', function (err) {
+    fs.writeFile(`${chatsPath + dir_name}/${sanitize(request.body.file_name)}.jsonl`, jsonlData, 'utf8', function (err) {
         if (err) {
             response.send(err);
             return console.log(err);
@@ -546,11 +552,10 @@ app.post("/getchat", jsonParser, function (request, response) {
 
             if (err === null) { //if there is a dir, then read the requested file from the JSON call
 
-                fs.stat(chatsPath + dir_name + "/" + request.body.file_name + ".jsonl", function (err, stat) {
-
+                fs.stat(`${chatsPath + dir_name}/${sanitize(request.body.file_name)}.jsonl`, function (err, stat) {
                     if (err === null) { //if no error (the file exists), read the file
                         if (stat !== undefined) {
-                            fs.readFile(chatsPath + dir_name + "/" + request.body.file_name + ".jsonl", 'utf8', (err, data) => {
+                            fs.readFile(`${chatsPath + dir_name}/${sanitize(request.body.file_name)}.jsonl`, 'utf8', (err, data) => {
                                 if (err) {
                                     console.error(err);
                                     response.send(err);
@@ -579,9 +584,8 @@ app.post("/getchat", jsonParser, function (request, response) {
             }
         }
     });
-
-
 });
+
 app.post("/getstatus", jsonParser, async function (request, response_getstatus = response) {
     if (!request.body) return response_getstatus.sendStatus(400);
     api_server = request.body.api_server;
@@ -1275,7 +1279,7 @@ app.post('/getsettings', jsonParser, (request, response) => { //Wintermute's cod
         .filter(x => path.parse(x).ext == '.json')
         .sort();
 
-        instructFiles.forEach(item => {
+    instructFiles.forEach(item => {
         const file = fs.readFileSync(
             path.join(directories.instruct, item),
             'utf-8',
@@ -1636,7 +1640,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                     }
                     catch {
                         console.error('WEBP image conversion failed. Using the default character image.');
-                        uploadPath = defaultAvatarPath; 
+                        uploadPath = defaultAvatarPath;
                     }
                 }
 
@@ -2808,7 +2812,7 @@ function migrateSecrets() {
         if (typeof hordeKey === 'string') {
             console.log('Migrating Horde key...');
             writeSecret(SECRET_KEYS.HORDE, hordeKey);
-            delete settings.hordeKey;
+            delete settings.horde_settings.api_key;
             modified = true;
         }
 
@@ -2841,7 +2845,7 @@ app.post('/writesecret', jsonParser, (request, response) => {
     const key = request.body.key;
     const value = request.body.value;
 
-    writeSecret(key,value);
+    writeSecret(key, value);
     return response.send('ok');
 });
 
@@ -2880,10 +2884,32 @@ app.post('/generate_horde', jsonParser, async (request, response) => {
         }
     };
 
+    console.log(args.data);
     try {
         const data = await postAsync(url, args);
         return response.send(data);
     } catch {
+        return response.sendStatus(500);
+    }
+});
+
+app.post('/viewsecrets', jsonParser, async (_, response) => {
+    if (!allowKeysExposure) {
+        console.error('secrets.json could not be viewed unless the value of allowKeysExposure in config.conf is set to true');
+        return response.sendStatus(403);
+    }
+
+    if (!fs.existsSync(SECRETS_FILE)) {
+        console.error('secrets.json does not exist');
+        return response.sendStatus(404);
+    }
+
+    try {
+        const fileContents = fs.readFileSync(SECRETS_FILE);
+        const secrets = JSON.parse(fileContents);
+        return response.send(secrets);
+    } catch (error) {
+        console.error(error);
         return response.sendStatus(500);
     }
 });

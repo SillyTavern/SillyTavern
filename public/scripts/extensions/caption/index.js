@@ -96,6 +96,7 @@ $(document).ready(function () {
     function addSendPictureButton() {
         const sendButton = document.createElement('div');
         sendButton.id = 'send_picture';
+        sendButton.title = 'Send a picture to chat';
         sendButton.classList.add('fa-solid');
         $(sendButton).hide();
         $(sendButton).on('click', () => $('#img_file').click());

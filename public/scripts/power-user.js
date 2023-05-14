@@ -9,6 +9,7 @@ import {
     getRequestHeaders,
     substituteParams,
 } from "../script.js";
+import { favsToHotswap } from "./RossAscends-mods.js";
 import {
     groups,
     selected_group,
@@ -632,10 +633,10 @@ function loadInstructMode() {
 }
 
 export function formatInstructModeChat(name, mes, isUser) {
-    const includeNames = power_user.instruct.names || (selected_group && !isUser);
+    const includeNames = power_user.instruct.names || !!selected_group;
     const sequence = isUser ? power_user.instruct.input_sequence : power_user.instruct.output_sequence;
     const separator = power_user.instruct.wrap ? '\n' : '';
-    const textArray = includeNames ? [sequence, name, ': ', mes, separator] : [sequence, mes, separator];
+    const textArray = includeNames ? [sequence, `${name}: ${mes}`, separator] : [sequence, mes, separator];
     const text = textArray.filter(x => x).join(separator);
     return text;
 }
@@ -649,10 +650,11 @@ export function formatInstructStoryString(story) {
     return text;
 }
 
-export function formatInstructModePrompt(isImpersonate) {
+export function formatInstructModePrompt(name, isImpersonate) {
+    const includeNames = power_user.instruct.names || !!selected_group;
     const sequence = isImpersonate ? power_user.instruct.input_sequence : power_user.instruct.output_sequence;
     const separator = power_user.instruct.wrap ? '\n' : '';
-    const text = separator + sequence;
+    const text = includeNames ? (separator + sequence + separator + `${name}:`) : (separator + sequence);
     return text;
 }
 
@@ -995,6 +997,7 @@ $(document).ready(() => {
         power_user.sort_order = $(this).find(":selected").data('order');
         power_user.sort_rule = $(this).find(":selected").data('rule');
         sortCharactersList();
+        favsToHotswap();
         saveSettingsDebounced();
     });
 

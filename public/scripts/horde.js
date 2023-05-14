@@ -1,4 +1,5 @@
 import { saveSettingsDebounced, changeMainAPI, callPopup, setGenerationProgress, CLIENT_VERSION, getRequestHeaders } from "../script.js";
+import { SECRET_KEYS, writeSecret } from "./secrets.js";
 import { delay } from "./utils.js";
 
 export {
@@ -215,6 +216,11 @@ jQuery(function () {
     $("#horde_auto_adjust_context_length").on("input", function () {
         horde_settings.auto_adjust_context_length = !!$(this).prop("checked");
         saveSettingsDebounced();
+    });
+
+    $("#horde_api_key").on("input", async function () {
+        const key = $(this).val().trim();
+        await writeSecret(SECRET_KEYS.HORDE, key);
     });
 
     $("#horde_refresh").on("click", getHordeModels);

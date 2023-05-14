@@ -183,3 +183,9 @@ export async function initScrollHeight(element) {
     $(element).css("height", `${newHeight}px`);
     //resetScrollHeight(element);
 }
+
+export function sortByCssOrder(a, b) {
+    const _a = Number($(a).css('order'));
+    const _b = Number($(b).css('order'));
+    return _a - _b;
+}

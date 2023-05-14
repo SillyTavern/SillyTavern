@@ -176,7 +176,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <div class="max_context_unlocked_block">
                                     <label class="checkbox_label">
                                         <input id="max_context_unlocked" type="checkbox" />
@@ -185,7 +185,7 @@
                                             <b class="neutral_warning">ATTENTION!</b>
                                             Only select models support context sizes greater than 2048 tokens.
                                             Proceed only if you know what you're doing.
-                                        </div> 
+                                        </div>
                                     </label>
                                 </div>
                             </div>
@@ -1005,10 +1005,14 @@
                                     Adjust response length to worker capabilities
                                 </label>
                                 <h4>API key</h4>
-                                <h5>Get it here: <a target="_blank" href="https://horde.koboldai.net/register">Register</a>
+                                <h5>Get it here: <a target="_blank" href="https://horde.koboldai.net/register">Register</a><br>
+                                    Enter <span class="monospace">0000000000</span> to use anonymous mode.
                                 </h5>
-                                <input id="horde_api_key" name="horde_api_key" class="text_pole" maxlength="500" type="text" placeholder="0000000000">
-                                <div class="neutral_warning">Your API key will removed from here after you click "Connect" for privacy reasons.</div>
+                                <div class="flex-container">
+                                    <input id="horde_api_key" name="horde_api_key" class="text_pole flex1" maxlength="500" type="text" placeholder="0000000000">
+                                    <div title="Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_horde"></div>
+                                </div>
+                                <div class="neutral_warning">For privacy reasons, your API key will be hidden after you reload the page.</div>
                                 <h4 class="horde_model_title">
                                     Model
                                     <div id="horde_refresh" title="Refresh models" class="right_menu_button">
@@ -1038,8 +1042,11 @@
                                     <li>Enter it in the box below:</li>
                                 </ol>
                             </span>
-                            <input id="api_key_novel" name="api_key_novel" class="text_pole" maxlength="500" size="35" type="text">
-                            <div class="neutral_warning">Your API key will removed from here after you click "Connect" for privacy reasons.</div>
+                            <div class="flex-container">
+                                <input id="api_key_novel" name="api_key_novel" class="text_pole flex1" maxlength="500" size="35" type="text">
+                                <div title="Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_novel"></div>
+                            </div>
+                            <div class="neutral_warning">For privacy reasons, your API key will be hidden after you reload the page.</div>
                             <input id="api_button_novel" class="menu_button" type="submit" value="Connect">
                             <div id="api_loading_novel" class="api-load-icon fa-solid fa-hourglass fa-spin"></div>
                             <h4>Novel AI Model
@@ -1092,8 +1099,11 @@
                                     <li>Enter it in the box below:</li>
                                 </ol>
                             </span>
-                            <input id="api_key_openai" name="api_key_openai" class="text_pole" maxlength="500" value="" type="text">
-                            <div class="neutral_warning">Your API key will removed from here after you click "Connect" for privacy reasons.</div>
+                            <div class="flex-container">
+                                <input id="api_key_openai" name="api_key_openai" class="text_pole flex1" maxlength="500" value="" type="text">
+                                <div title="Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_openai"></div>
+                            </div>
+                            <div class="neutral_warning">For privacy reasons, your API key will be hidden after you reload the page.</div>
                             <input id="api_button_openai" class="menu_button" type="submit" value="Connect">
                             <div id="api_loading_openai" class=" api-load-icon fa-solid fa-hourglass fa-spin"></div>
                         </form>
@@ -1129,8 +1139,11 @@
                             </ol>
                         </span>
                         <div class="widthFreeExpand">
-                            <input id="poe_token" class="text_pole" type="text" maxlength="100" />
-                            <div class="neutral_warning">Your API key will removed from here after you click "Connect" for privacy reasons.</div>
+                            <div class="flex-container">
+                                <input id="poe_token" class="text_pole flex1" type="text" maxlength="100" />
+                                <div title="Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_poe"></div>
+                            </div>
+                            <div class="neutral_warning">For privacy reasons, your API key will be hidden after you reload the page.</div>
                         </div>
 
                         <input id="poe_connect" class="menu_button" type="button" value="Connect" />
@@ -1152,9 +1165,12 @@
                         </div>
                     </div>
                 </div>
-                <label for="auto-connect-checkbox" class="checkbox_label"><input id="auto-connect-checkbox" type="checkbox" />
-                    Auto-connect to Last Server
-                </label>
+                <div class="flex-container alignitemscenter spaceBetween wide100p">
+                    <label for="auto-connect-checkbox" class="checkbox_label"><input id="auto-connect-checkbox" type="checkbox" />
+                        Auto-connect to Last Server
+                    </label>
+                    <a id="viewSecrets" href="javascript:void(0);">View hidden API keys</a>
+                </div>
             </div>
         </div>
 
@@ -1440,7 +1456,10 @@
                 <div class="drawer-icon fa-solid fa-face-smile closedIcon" title="User Settings"></div>
             </div>
             <div id="user-settings-block" class="drawer-content closedDrawer">
-                <h3>User Settings</h3>
+                <div class="flex-container wide100p alignitemscenter spaceBetween">
+                    <h3>User Settings</h3>
+                    <div id="version_display"></div>
+                </div>
                 <div class="flex-container spaceEvenly">
                     <div name="UI Customization" class="flex-container drawer25pWidth">
                         <div class="ui-settings">
@@ -2027,7 +2046,7 @@
             <hr>
             <h4>Personality summary</h4>
             <h5>A brief description of the personality <a href="/notes#personalitysummary" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
-            <textarea id="personality_textarea" name="personality" placeholder="" form="form_create" class="text_pole" autocomplete="off" rows="2"></textarea>
+            <textarea id="personality_textarea" name="personality" placeholder="" form="form_create" class="text_pole" autocomplete="off" rows="2" maxlength="20000"></textarea>
         </div>
 
         <div id="scenario_div">
@@ -2037,7 +2056,7 @@
                     <span class="note-link-span">?</span>
                 </a>
             </h5>
-            <textarea id="scenario_pole" name="scenario" class="text_pole" maxlength="9999" value="" autocomplete="off" form="form_create" rows="2"></textarea>
+            <textarea id="scenario_pole" name="scenario" class="text_pole" maxlength="20000" value="" autocomplete="off" form="form_create" rows="2"></textarea>
         </div>
 
         <div id="talkativeness_div">
@@ -2057,7 +2076,7 @@
                 <h4>Examples of dialogue</h4>
                 <h5>Forms a personality more clearly <a href="/notes#examplesofdialogue" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
             </div>
-            <textarea id="mes_example_textarea" name="mes_example" placeholder="" form="form_create"></textarea>
+            <textarea id="mes_example_textarea" name="mes_example" placeholder="" form="form_create" maxlength="20000"></textarea>
         </div>
         <div id="character_popup_ok" class="menu_button">Save</div>
 
@@ -2322,6 +2341,7 @@
                     <span class="name_text">${characterName}</span>
 
                     <div class="mes_buttons">
+                        <div title="Prompt" class="mes_prompt fa-solid fa-square-poll-horizontal "></div>
                         <div title="Copy" class="mes_copy fa-solid fa-copy "></div>
                         <div title="Edit" class="mes_edit fa-solid fa-pencil "></div>
                     </div>
@@ -2427,7 +2447,7 @@
                     <div id="loading_mes">
                         <div alt="" class="fa-solid fa-hourglass-half"></div>
                     </div>
-                    <div id="send_but" class="fa-solid fa-feather-pointed"></div>
+                    <div id="send_but" class="fa-solid fa-feather-pointed" title="Send a message"></div>
                 </div>
             </form>
         </div>

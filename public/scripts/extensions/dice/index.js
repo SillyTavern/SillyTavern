@@ -29,7 +29,7 @@ async function doDiceRoll() {
 
 function addDiceRollButton() {
     const buttonHtml = `
-        <div id="roll_dice" class="fa-solid fa-dice" /></div>
+        <div id="roll_dice" class="fa-solid fa-dice" title="Roll the dice" /></div>
         `;
     const dropdownHtml = `
     <div id="dice_dropdown">
