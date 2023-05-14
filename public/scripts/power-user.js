@@ -109,7 +109,7 @@ let power_user = {
 
     auto_swipe: false,
     auto_swipe_minimum_length: 0,
-    auto_swipe_blacklist: ["ethical", "guidelines", "harmful", "illegal", "comfortable", "generating"],
+    auto_swipe_blacklist: [],
     auto_swipe_blacklist_threshold: 2,
     auto_scroll_chat_to_bottom: true,
     auto_fix_generated_markdown: true,
