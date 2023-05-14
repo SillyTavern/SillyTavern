@@ -408,18 +408,21 @@ async function getClientVersion() {
     }
 }
 
-function getTokenCount(str, padding = 0) {
+function getTokenCount(str, padding = undefined) {
     let tokenizerType = power_user.tokenizer;
 
     if (main_api === 'openai') {
-        // For main prompt building
-        if (padding == power_user.token_padding) {
+        if (padding === power_user.token_padding) {
+            // For main "shadow" prompt building
             tokenizerType = tokenizers.NONE;
-            // For extensions and WI
         } else {
+            // For extensions and WI
             return getTokenCountOpenAI(str);
         }
+    }
 
+    if (padding === undefined) {
+        padding = 0;
     }
 
     switch (tokenizerType) {
@@ -2190,7 +2193,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             if (main_api == 'openai') {
                 let [prompt, counts] = await prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAfter, afterScenarioAnchor, promptBias, type);
 
-
                 // counts will return false if the user has not enabled the token breakdown feature
                 if (counts) {
 
@@ -2198,7 +2200,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     const breakdown_bar = $('#token_breakdown div:first-child');
                     breakdown_bar.empty();
 
-                    const total = Object.values(counts).reduce((acc, val) => acc + val, 0);
+                    const total = Object.values(counts).filter(x => !Number.isNaN(x)).reduce((acc, val) => acc + val, 0);
                     console.log(`oai start tokens: ${Object.entries(counts)[0][1]}`);
 
                     thisPromptBits.push({
@@ -2519,8 +2521,10 @@ function promptItemize(itemizedPrompts, requestedMesId) {
             allAnchorsTokens +
             worldInfoStringTokens +
             examplesStringTokens;
-
-
+        // OAI doesn't use padding
+        thisPrompt_padding = 0;
+        // Max context size - max completion tokens
+        thisPrompt_max_context = (oai_settings.openai_max_context - oai_settings.openai_max_tokens);
     } else {
         //for non-OAI APIs
         //console.log('-- Counting non-OAI Tokens');
@@ -2549,9 +2553,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
         var promptBiasTokensPercentage = ((oaiBiasTokens / (finalPromptTokens)) * 100).toFixed(2);
         var worldInfoStringTokensPercentage = ((worldInfoStringTokens / (finalPromptTokens)) * 100).toFixed(2);
         var allAnchorsTokensPercentage = ((allAnchorsTokens / (finalPromptTokens)) * 100).toFixed(2);
-        var selectedTokenizer = $("#tokenizer").find(':selected').text();
-        var oaiSystemTokens = oaiStartTokens + oaiImpersonateTokens + oaiNudgeTokens + oaiJailbreakTokens;
-        var oaiSystemTokensPercentage = ((oaiSystemTokens / (finalPromptTokens)) * 100).toFixed(2);
+        var selectedTokenizer = `tiktoken (${oai_settings.openai_model})`;
 
     } else {
         //console.log('-- applying % on non-OAI tokens');
@@ -2668,7 +2670,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
                     <div  class="flex1">Total Tokens in Prompt:</div><div  class=""> ${finalPromptTokens}</div>
                 </div>
                 <div class="flex-container wide100p">
-                    <div  class="flex1">Max Context:</div><div  class="">${thisPrompt_max_context}</div>
+                    <div  class="flex1">Max Context (Context Size - Response Length):</div><div  class="">${thisPrompt_max_context}</div>
                 </div>
             </div>
         </div>
