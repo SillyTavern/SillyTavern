@@ -544,7 +544,7 @@ function loadPowerUserSettings(settings, data) {
 
 function loadMaxContextUnlocked() {
     $('#max_context_unlocked').prop('checked', power_user.max_context_unlocked);
-    $('#max_context_unlocked').on('change', function() {
+    $('#max_context_unlocked').on('change', function () {
         power_user.max_context_unlocked = !!$(this).prop('checked');
         switchMaxContextSize();
         saveSettingsDebounced();
@@ -796,6 +796,13 @@ function resetMovablePanels() {
     document.getElementById("avatar_zoom_popup").style.bottom = '';
     document.getElementById("avatar_zoom_popup").style.height = '';
     document.getElementById("avatar_zoom_popup").style.width = '';
+
+    document.getElementById("world_popup").style.top = '';
+    document.getElementById("world_popup").style.left = '';
+    document.getElementById("world_popup").style.right = '';
+    document.getElementById("world_popup").style.bottom = '';
+    document.getElementById("world_popup").style.height = '';
+    document.getElementById("world_popup").style.width = '';
 }
 
 $(document).ready(() => {

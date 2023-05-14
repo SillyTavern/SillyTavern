@@ -1687,7 +1687,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     flex-direction: column;
     z-index: 3010;
     border-radius: 0 0 20px 20px;
-    overflow-y: auto;
+    overflow-y: hidden;
 }
 
 #world_popup_bottom_holder {
@@ -1712,6 +1712,10 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 #world_info_buttons {
     margin-left: 1rem;
+}
+
+.world_entry {
+    padding: 0 5px;
 }
 
 .world_entry:not(:last-child)::after {
@@ -1778,7 +1782,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 #world_popup_entries_list {
     flex-grow: 1;
-    overflow-y: scroll;
+    overflow-y: auto;
 }
 
 #world_popup_entries_list:empty {
