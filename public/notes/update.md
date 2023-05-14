@@ -22,6 +22,7 @@ You definitely installed via git, so just 'git pull' inside the SillyTavern dire
 We always recommend users install using 'git'. Here's why:
 
 When you have installed via 'git clone', all you have to do to update is type 'git pull' in a command line in the ST folder.
+Alternatively, if the command prompt gives you problems (and you have GitHub Desktop installed), you can use the 'Repository' menu and select 'Pull'.
 The updates are applied automatically and safely.
 
 ### Method 2 - ZIP

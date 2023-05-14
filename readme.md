@@ -124,7 +124,7 @@ Get in touch with the developers directly:
 
 ### Windows
 
-Installing via Git (reccomended for easy updating)
+Installing via Git (recommended for easy updating)
 
 Easy to follow guide with pretty pictures:
 <https://docs.alpindale.dev/pygmalion-extras/sillytavern/#windows-installation>
@@ -168,45 +168,58 @@ In order to enable viewing your keys by clicking a button in the API block:
 
 ## Remote connections
 
-Most often this is for people who want to use SillyTavern on their mobile phones while at home.
-If you want to enable other devices to connect to your TAI server, open 'config.conf' in a text editor, and change:
+Most often this is for people who want to use SillyTavern on their mobile phones while their PC runs the ST server on the same wifi network.
 
-```
-const whitelistMode = true;
-```
+However, it can be used to allow remote connections from anywhere as well.
 
-to
+**IMPORTANT: SillyTavern is a single-user program, so anyone who logs in will be able to see all characters and chats, and be able to change any settings inside the UI.**
 
-```
-const whitelistMode = false;
-```
+### 1. Managing whitelisted IPs
 
-Save the file.
-Restart your TAI server.
+* Create a new text file inside your SillyTavern base install folder called `whitelist.txt`.
+* Open the file in a text editor, add a list of IPs you want to be allowed to connect.
 
-You will now be able to connect from other devices.
-
-### Managing whitelisted IPs
-
-You can add or remove whitelisted IPs by editing the `whitelist` array in `config.conf`. You can also provide a `whitelist.txt` file in the same directory as `config.conf` with one IP address per line like:
-
+*IP ranges are not accepted. Each IP must be listed individually like this:*
 ```txt
 192.168.0.1
 192.168.0.2
+192.168.0.3
+192.168.0.4
 ```
+* Save the `whitelist.txt` file.
+* Restart your TAI server.
 
-The `whitelist` array in `config.conf` will be ignored if `whitelist.txt` exists.
+Now devices which have the IP specified in the file will be able to connect.
 
-***Disclaimer: Anyone else who knows your IP address and TAI port number will be able to connect as well***
+*Note: `config.conf` also has a `whitelist` array, which you can use in the same way, but this array will be ignored if `whitelist.txt` exists.*
 
-To connect over wifi you'll need your PC's local wifi IP address
+### 2. Connecting to ST from a remote device
 
-* (For Windows: windows button > type 'cmd.exe' in the search bar> type 'ipconfig' in the console, hit Enter > "IPv4" listing)
-if you want other people on the internet to connect, check [here](https://whatismyipaddress.com/) for 'IPv4'
+After the whitelist has been setup, to connect over wifi you'll need the IP of the ST-hosting device. 
+
+If the ST-hosting device is on the same wifi network, you will point your remote device's browser to the ST-host's internal wifi IP: 
+
+* For Windows: windows button > type `cmd.exe` in the search bar > type `ipconfig` in the console, hit Enter > look for `IPv4` listing.
+
+If you (or someone else) wants to connect to your hosted ST while not being on the same network, you will need the public IP of your ST-hosting device.
+
+While using the ST-hosting device, access [this page](https://whatismyipaddress.com/) and look for for `IPv4`. This is what you would use to connect from the remote device.
+
+### Opening your ST to all IPs
+
+We do not reccomend doing this, but you can open `config.conf` and change `whitelist` to `false`.
+
+You must remove (or rename) `whitelist.txt` in the SillyTavern base install folder, if it exists. 
+
+This is usually an insecure practice, so we require you to set a username and password when you do this. 
+
+The username and password are set in `config.conf`.
+
+After restarting your ST server, any device will be able to connect to it, regardless of their IP as long as they know the username and password.
 
 ### Still Unable To Connect?
 
-- Create an inbound/outbound firewall rule for the port found in `config.conf`. Do NOT mistake this for portforwarding on your router, otherwise someone could find your chat logs and that's a big no-no.
+* Create an inbound/outbound firewall rule for the port found in `config.conf`. Do NOT mistake this for portforwarding on your router, otherwise someone could find your chat logs and that's a big no-no.
 * Enable the Private Network profile type in Settings > Network and Internet > Ethernet. This is VERY important for Windows 11, otherwise you would be unable to connect even with the aforementioned firewall rules.
 
 ## Performance issues?

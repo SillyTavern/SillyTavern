@@ -1369,7 +1369,7 @@ function getExtensionPrompt(position = 0, depth = undefined, separator = "\n") {
 
 function baseChatReplace(value, name1, name2) {
     if (value !== undefined && value.length > 0) {
-        value = substituteParams(value, is_pygmalion ? "You:" : name1, name2);
+        value = substituteParams(value, is_pygmalion ? "You" : name1, name2);
 
         if (power_user.collapse_newlines) {
             value = collapseNewlines(value);
@@ -1386,9 +1386,10 @@ function appendToStoryString(value, prefix) {
 }
 
 function isStreamingEnabled() {
-    return (main_api == 'openai' && oai_settings.stream_openai)
+    return ((main_api == 'openai' && oai_settings.stream_openai)
         || (main_api == 'poe' && poe_settings.streaming)
-        || (main_api == 'textgenerationwebui' && textgenerationwebui_settings.streaming);
+        || (main_api == 'textgenerationwebui' && textgenerationwebui_settings.streaming))
+        && !isMultigenEnabled(); // Multigen has a quasi-streaming mode which breaks the real streaming
 }
 
 class StreamingProcessor {
@@ -1568,7 +1569,18 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
     const isImpersonate = type == "impersonate";
     const isInstruct = power_user.instruct.enabled;
-    message_already_generated = isImpersonate ? `${name1}: ` : `${name2}: `;
+
+    // Name for the multigen prefix
+    const magName = isImpersonate ? (is_pygmalion ? 'You' : name1) : name2;
+
+    if (isInstruct) {
+        message_already_generated = formatInstructModePrompt(magName, isImpersonate);
+    } else {
+        message_already_generated = `${magName}: `;
+    }
+
+    // To trim after multigen ended
+    const magFirst = message_already_generated;
 
     const interruptedByCommand = processCommands($("#send_textarea").val(), type);
 
@@ -1594,6 +1606,14 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     // Hide swipes on either multigen or real streaming
     if (isStreamingEnabled() || isMultigenEnabled()) {
         hideSwipeButtons();
+    }
+
+    // Set empty promise resolution functions
+    if (typeof resolve !== 'function') {
+        resolve = () => {};
+    }
+    if (typeof reject !== 'function') {
+        reject = () => {};
     }
 
     if (selected_group && !is_group_generating) {
@@ -1994,8 +2014,16 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     const isBottom = j === mesSend.length - 1;
                     mesSendString += mesSend[j];
 
+                    // Add quiet generation prompt at depth 0
+                    if (isBottom && quiet_prompt && quiet_prompt.length) {
+                        const name = is_pygmalion ? 'You' : name1;
+                        const quietAppend = isInstruct ? formatInstructModeChat(name, quiet_prompt, true) : `\n${name}: ${quiet_prompt}`;
+                        mesSendString += quietAppend;
+                    }
+
                     if (isInstruct && isBottom && tokens_already_generated === 0) {
-                        mesSendString += formatInstructModePrompt(isImpersonate);
+                        const name = isImpersonate ? (is_pygmalion ? 'You' : name1) : name2;
+                        mesSendString += formatInstructModePrompt(name, isImpersonate);
                     }
 
                     if (!isInstruct && isImpersonate && isBottom && tokens_already_generated === 0) {
@@ -2148,11 +2176,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 }
             }
 
-            // Add quiet generation prompt at depth 0
-            if (quiet_prompt && quiet_prompt.length) {
-                finalPromt += `\n${quiet_prompt}`;
-            }
-
             finalPromt = finalPromt.replace(/\r/gm, '');
 
             if (power_user.collapse_newlines) {
@@ -2267,20 +2290,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 hideSwipeButtons();
                 let getMessage = await streamingProcessor.generate();
 
-                if (isMultigenEnabled()) {
-                    tokens_already_generated += this_amount_gen;    // add new gen amt to any prev gen counter..
-                    message_already_generated += getMessage;
-                    promptBias = '';
-                    if (!streamingProcessor.isStopped && shouldContinueMultigen(getMessage)) {
-                        streamingProcessor.isFinished = false;
-                        runGenerate(getMessage);
-                        console.log('returning to make generate again');
-                        return;
-                    }
-
-                    getMessage = message_already_generated;
-                }
-
                 if (streamingProcessor && !streamingProcessor.isStopped && streamingProcessor.isFinished) {
                     streamingProcessor.onFinishStreaming(streamingProcessor.messageId, getMessage);
                     streamingProcessor = null;
@@ -2303,16 +2312,23 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
                         let this_mes_is_name;
                         ({ this_mes_is_name, getMessage } = extractNameFromMessage(getMessage, force_name2, isImpersonate));
-                        if (tokens_already_generated == 0) {
-                            console.log("New message");
-                            ({ type, getMessage } = saveReply(type, getMessage, this_mes_is_name, title));
-                        }
-                        else {
-                            console.log("Should append message");
-                            ({ type, getMessage } = saveReply('append', getMessage, this_mes_is_name, title));
+
+                        if (!isImpersonate) {
+                            if (tokens_already_generated == 0) {
+                                console.log("New message");
+                                ({ type, getMessage } = saveReply(type, getMessage, this_mes_is_name, title));
+                            }
+                            else {
+                                console.log("Should append message");
+                                ({ type, getMessage } = saveReply('append', getMessage, this_mes_is_name, title));
+                            }
+                        } else {
+                            let chunk = cleanUpMessage(message_already_generated, true);
+                            let extract = extractNameFromMessage(chunk, force_name2, isImpersonate);
+                            $('#send_textarea').val(extract.getMessage).trigger('input');
                         }
 
-                        if (shouldContinueMultigen(getMessage)) {
+                        if (shouldContinueMultigen(getMessage, isImpersonate)) {
                             hideSwipeButtons();
                             tokens_already_generated += this_amount_gen;            // add new gen amt to any prev gen counter..
                             getMessage = message_already_generated;
@@ -2321,7 +2337,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                             return;
                         }
 
-                        getMessage = message_already_generated;
+                        getMessage = message_already_generated.substring(magFirst.length);
                     }
 
                     //Formating
@@ -2332,6 +2348,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     if (getMessage.length > 0) {
                         if (isImpersonate) {
                             $('#send_textarea').val(getMessage).trigger('input');
+                            generatedPromtCache = "";
                         }
                         else if (type == 'quiet') {
                             resolve(getMessage);
@@ -2379,13 +2396,14 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 showSwipeButtons();
                 setGenerationProgress(0);
                 $('.mes_buttons:last').show();
+
+                if (type !== 'quiet') {
+                    resolve();
+                }
             };
 
             function onError(jqXHR, exception) {
-                if (type == 'quiet') {
-                    reject(exception);
-                }
-
+                reject(exception);
                 $("#send_textarea").removeAttr('disabled');
                 is_send_press = false;
                 activateSendButtons();
@@ -2480,12 +2498,24 @@ function getGenerateUrl() {
     return generate_url;
 }
 
-function shouldContinueMultigen(getMessage) {
-    const nameString = is_pygmalion ? 'You:' : `${name1}:`;
-    return message_already_generated.indexOf(nameString) === -1 && //if there is no 'You:' in the response msg
-        message_already_generated.indexOf('<|endoftext|>') === -1 && //if there is no <endoftext> stamp in the response msg
-        tokens_already_generated < parseInt(amount_gen) && //if the gen'd msg is less than the max response length..
-        getMessage.length > 0;     //if we actually have gen'd text at all...
+function shouldContinueMultigen(getMessage, isImpersonate) {
+    if (power_user.instruct.enabled && power_user.instruct.stop_sequence) {
+        if (message_already_generated.indexOf(power_user.instruct.stop_sequence) !== -1) {
+            return false;
+        }
+    }
+
+    // stopping name string
+    const nameString = isImpersonate ? `${name2}:` : (is_pygmalion ? 'You:' : `${name1}:`);
+    // if there is no 'You:' in the response msg
+    const doesNotContainName = message_already_generated.indexOf(nameString) === -1;
+    //if there is no <endoftext> stamp in the response msg
+    const isNotEndOfText = message_already_generated.indexOf('<|endoftext|>') === -1;
+    //if the gen'd msg is less than the max response length..
+    const notReachedMax = tokens_already_generated < parseInt(amount_gen);
+    //if we actually have gen'd text at all...
+    const msgHasText = getMessage.length > 0;
+    return doesNotContainName && isNotEndOfText && notReachedMax && msgHasText;
 }
 
 function extractNameFromMessage(getMessage, force_name2, isImpersonate) {
@@ -2601,6 +2631,12 @@ function cleanUpMessage(getMessage, isImpersonate) {
             getMessage = getMessage.substring(0, getMessage.indexOf(power_user.instruct.stop_sequence));
         }
     }
+    if (power_user.instruct.enabled && power_user.instruct.input_sequence && isImpersonate) {
+        getMessage = getMessage.replaceAll(power_user.instruct.input_sequence, '');
+    }
+    if (power_user.instruct.enabled && power_user.instruct.output_sequence && !isImpersonate) {
+        getMessage = getMessage.replaceAll(power_user.instruct.output_sequence, '');
+    }
     // clean-up group message from excessive generations
     if (selected_group) {
         getMessage = cleanGroupMessage(getMessage);
@@ -2699,6 +2735,10 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
     const item = chat[chat.length - 1];
     if (item['swipe_id'] !== undefined) {
         item['swipes'][item['swipes'].length - 1] = item['mes'];
+    } else {
+        item['swipe_id'] = 0;
+        item['swipes'] = [];
+        item['swipes'][0] = chat[chat.length - 1]['mes']; 
     }
 
     return { type, getMessage };
