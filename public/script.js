@@ -1612,6 +1612,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         message_already_generated = `${magName}: `;
     }
 
+    // To trim after multigen ended
+    const magFirst = message_already_generated;
+
     const interruptedByCommand = processCommands($("#send_textarea").val(), type);
 
     if (interruptedByCommand) {
@@ -1636,6 +1639,14 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     // Hide swipes on either multigen or real streaming
     if (isStreamingEnabled() || isMultigenEnabled()) {
         hideSwipeButtons();
+    }
+
+    // Set empty promise resolution functions
+    if (typeof resolve !== 'function') {
+        resolve = () => { };
+    }
+    if (typeof reject !== 'function') {
+        reject = () => { };
     }
 
     if (selected_group && !is_group_generating) {
@@ -2350,23 +2361,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 hideSwipeButtons();
                 let getMessage = await streamingProcessor.generate();
 
-                // Cohee: Basically a dead-end code... (disabled by isStreamingEnabled)
-                // I wasn't able to get multigen working with real streaming
-                // consistently without screwing the interim prompting
-                if (isMultigenEnabled()) {
-                    tokens_already_generated += this_amount_gen;    // add new gen amt to any prev gen counter..
-                    message_already_generated += getMessage;
-                    promptBias = '';
-                    if (!streamingProcessor.isStopped && shouldContinueMultigen(getMessage, isImpersonate)) {
-                        streamingProcessor.isFinished = false;
-                        runGenerate(getMessage);
-                        console.log('returning to make generate again');
-                        return;
-                    }
-
-                    getMessage = message_already_generated;
-                }
-
                 if (streamingProcessor && !streamingProcessor.isStopped && streamingProcessor.isFinished) {
                     streamingProcessor.onFinishStreaming(streamingProcessor.messageId, getMessage);
                     streamingProcessor = null;
@@ -2414,7 +2408,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                             return;
                         }
 
-                        getMessage = message_already_generated;
+                        getMessage = message_already_generated.substring(magFirst.length);
                     }
 
                     //Formating
@@ -2473,13 +2467,14 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 showSwipeButtons();
                 setGenerationProgress(0);
                 $('.mes_buttons:last').show();
+
+                if (type !== 'quiet') {
+                    resolve();
+                }
             };
 
             function onError(jqXHR, exception) {
-                if (type == 'quiet') {
-                    reject(exception);
-                }
-
+                reject(exception);
                 $("#send_textarea").removeAttr('disabled');
                 is_send_press = false;
                 activateSendButtons();
@@ -3093,6 +3088,10 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
     const item = chat[chat.length - 1];
     if (item['swipe_id'] !== undefined) {
         item['swipes'][item['swipes'].length - 1] = item['mes'];
+    } else {
+        item['swipe_id'] = 0;
+        item['swipes'] = [];
+        item['swipes'][0] = chat[chat.length - 1]['mes'];
     }
 
     return { type, getMessage };
