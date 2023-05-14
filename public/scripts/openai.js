@@ -648,7 +648,7 @@ class TokenHandler {
     }
 
     count(messages, full, type) {
-        console.log(messages);
+        //console.log(messages);
         const token_count = this.countTokenFn(messages, full);
         this.counts[type] += token_count;
 

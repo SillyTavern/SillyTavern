@@ -1157,7 +1157,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     } else if (params.isUser !== true) { //hide all when prompt cache is empty
         console.log('saw empty prompt cache, hiding all prompt buttons');
         $(".mes_prompt").hide();
-        console.log(itemizedPrompts);
+        //console.log(itemizedPrompts);
     } else { console.log('skipping prompt data for User Message'); }
 
     newMessage.find('.avatar img').on('error', function () {
@@ -2250,6 +2250,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     breakdown_bar.empty();
 
                     const total = Object.values(counts).reduce((acc, val) => acc + val, 0);
+                    console.log(`oai start tokens: ${Object.entries(counts)[0][1]}`);
 
                     thisPromptBits.push({
                         oaiStartTokens: Object.entries(counts)[0][1],
@@ -2350,7 +2351,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
             thisPromptBits = additionalPromptStuff;
 
-            //console.log(thisPromptBits);
+            console.log(thisPromptBits);
 
             itemizedPrompts.push(thisPromptBits);
             //console.log(`pushed prompt bits to itemizedPrompts array. Length is now: ${itemizedPrompts.length}`);
@@ -2360,6 +2361,23 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             if (isStreamingEnabled() && type !== 'quiet') {
                 hideSwipeButtons();
                 let getMessage = await streamingProcessor.generate();
+
+                // Cohee: Basically a dead-end code... (disabled by isStreamingEnabled)
+                // I wasn't able to get multigen working with real streaming
+                // consistently without screwing the interim prompting
+                if (isMultigenEnabled()) {
+                    tokens_already_generated += this_amount_gen;    // add new gen amt to any prev gen counter..
+                    message_already_generated += getMessage;
+                    promptBias = '';
+                    if (!streamingProcessor.isStopped && shouldContinueMultigen(getMessage, isImpersonate)) {
+                        streamingProcessor.isFinished = false;
+                        runGenerate(getMessage);
+                        console.log('returning to make generate again');
+                        return;
+                    }
+
+                    getMessage = message_already_generated;
+                }
 
                 if (streamingProcessor && !streamingProcessor.isStopped && streamingProcessor.isFinished) {
                     streamingProcessor.onFinishStreaming(streamingProcessor.messageId, getMessage);
@@ -2524,7 +2542,6 @@ function promptItemize(itemizedPrompts, requestedMesId) {
     var worldInfoStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].worldInfoString);
     var thisPrompt_max_context = itemizedPrompts[thisPromptSet].this_max_context;
     var thisPrompt_padding = itemizedPrompts[thisPromptSet].padding;
-    console.log(`"${itemizedPrompts[thisPromptSet].promptBias}"`);
     var promptBiasTokens = getTokenCount(itemizedPrompts[thisPromptSet].promptBias);
     var this_main_api = itemizedPrompts[thisPromptSet].main_api;
 
@@ -2533,12 +2550,12 @@ function promptItemize(itemizedPrompts, requestedMesId) {
         //console.log('-- Counting OAI Tokens');
         var finalPromptTokens = itemizedPrompts[thisPromptSet].oaiTotalTokens;
         var oaiStartTokens = itemizedPrompts[thisPromptSet].oaiStartTokens;
+        console.log(oaiStartTokens);
         var oaiPromptTokens = itemizedPrompts[thisPromptSet].oaiPromptTokens;
         var ActualChatHistoryTokens = itemizedPrompts[thisPromptSet].oaiConversationTokens;
         var examplesStringTokens = itemizedPrompts[thisPromptSet].oaiExamplesTokens;
         var oaiBiasTokens = itemizedPrompts[thisPromptSet].oaiBiasTokens;
         var oaiJailbreakTokens = itemizedPrompts[thisPromptSet].oaiJailbreakTokens;
-        var oaiStartTokens = itemizedPrompts[thisPromptSet].oaiStartTokens;
         var oaiNudgeTokens = itemizedPrompts[thisPromptSet].oaiNudgeTokens;
         var oaiImpersonateTokens = itemizedPrompts[thisPromptSet].oaiImpersonateTokens;
 
@@ -2566,6 +2583,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
     if (this_main_api == 'openai') {
         //console.log('-- applying % on OAI tokens');
         var oaiStartTokensPercentage = ((oaiStartTokens / (finalPromptTokens)) * 100).toFixed(2);
+        console.log(oaiStartTokensPercentage);
         var storyStringTokensPercentage = ((oaiPromptTokens / (finalPromptTokens)) * 100).toFixed(2);
         var ActualChatHistoryTokensPercentage = ((ActualChatHistoryTokens / (finalPromptTokens)) * 100).toFixed(2);
         var promptBiasTokensPercentage = ((oaiBiasTokens / (finalPromptTokens)) * 100).toFixed(2);
@@ -3504,10 +3522,10 @@ function changeMainAPI() {
         // Hide common settings for OpenAI
         if (selectedVal == "openai") {
             $("#common-gen-settings-block").css("display", "none");
-            $("#token_breakdown").css("display", "flex");
+            //$("#token_breakdown").css("display", "flex");
         } else {
             $("#common-gen-settings-block").css("display", "block");
-            $("#token_breakdown").css("display", "none");
+            //$("#token_breakdown").css("display", "none");
         }
         // Hide amount gen for poe
         if (selectedVal == "poe") {
