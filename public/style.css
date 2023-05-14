@@ -1549,6 +1549,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     display: flex;
     align-items: center;
     justify-content: center;
+    text-align: center;
 }
 
 .avatar_div .menu_button,
@@ -1672,7 +1673,9 @@ input[type=search]:focus::-webkit-search-cancel-button {
     background-color: var(--SmartThemeBlurTintColor);
     backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
     max-width: var(--sheldWidth);
-    height: calc(100% - 40px);
+    max-height: calc(100% - 100px);
+    min-height: 100px;
+    min-width: 100px;
     position: absolute;
     margin-left: auto;
     margin-right: auto;
@@ -1680,18 +1683,19 @@ input[type=search]:focus::-webkit-search-cancel-button {
     right: 0;
     top: 40px;
     box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
-    padding: 4px;
+    padding: 10px;
     flex-direction: column;
     z-index: 3010;
     border-radius: 0 0 20px 20px;
+    overflow-y: auto;
 }
 
 #world_popup_bottom_holder {
-    padding: 0.5rem 0;
-    margin: 0 18px;
+    /*     padding: 0.5rem 0;
+    margin: 0 18px; */
     display: flex;
     flex-direction: row;
-    justify-content: flex-end;
+    justify-content: space-evenly;
     align-items: center;
 }
 
@@ -1728,7 +1732,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     display: flex;
     flex-direction: row;
     align-items: center;
-    margin-left: 18px;
+    /* margin-left: 18px; */
 }
 
 #world_popup_header h3 {
@@ -1825,7 +1829,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 .world_entry_form_control textarea {
     height: auto;
-    width: auto;
+    /* width: auto; */
     margin-top: 0;
 }
 
@@ -1833,6 +1837,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     flex-direction: row;
     align-items: center;
     margin-top: 5px;
+    flex-wrap: wrap;
 }
 
 .world_entry_form_control input[type=button] {
@@ -2294,8 +2299,10 @@ input[type="range"]::-webkit-slider-thumb {
     -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)*2));
     grid-template-rows: 50px 1fr 1fr 1fr 5fr;
     grid-gap: 10px;
+    min-height: 100px;
+    min-width: 100px;
     max-width: var(--sheldWidth);
-    height: calc(100svh - 40px);
+    max-height: calc(100svh - 100px);
     position: absolute;
     z-index: 3002;
     margin-left: auto;
@@ -2310,6 +2317,7 @@ input[type="range"]::-webkit-slider-thumb {
     padding-bottom: 30px;
     border: 1px solid var(--black30a);
     border-radius: 0 0 20px 20px;
+    overflow-y: auto;
 }
 
 #character_popup h3 {
@@ -3834,7 +3842,8 @@ body.movingUI .drag-grabber {
 body.movingUI #sheld,
 body.movingUI .drawer-content,
 body.movingUI #expression-holder,
-body.movingUI #avatar_zoom_popup {
+body.movingUI #avatar_zoom_popup,
+body.movingUI #world_popup {
     resize: both;
 }
 

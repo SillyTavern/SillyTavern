@@ -2066,9 +2066,11 @@
 
     </div>
     <div id="world_popup">
+
+        <div id="world_popupheader" class="fa-solid fa-grip drag-grabber"></div>
         <div id="world_popup_text">
             <div id="world_cross" class="fa-solid fa-circle-xmark"></div>
-            <div id="world_popup_header">
+            <div id="world_popup_header" class="flex-container flexGap5">
                 <!-- Consider changing logo to something else -->
                 <div class="world_popup_logo_block">
                     <img src="img/book2.png" id="world_logo">
@@ -2092,10 +2094,11 @@
 
         <div id="world_popup_bottom_holder">
             <div id="world_popup_new" class="menu_button">New Entry</div>
-            <span class="world_popup_expander">&nbsp;</span>
+            <!-- <span class="world_popup_expander">&nbsp;</span> -->
             <div id="world_popup_export" class="menu_button">Export</div>
             <div id="world_popup_delete" class="menu_button">Delete World</div>
         </div>
+
     </div>
     <div id="shadow_select_chat_popup">
         <div id="select_chat_popup">
@@ -2184,14 +2187,14 @@
                             <div class="world_entry_form_control">
                                 <label for="key">
                                     <h4>Keywords</h4>
-                                    <h5>Separate with commas</h5>
+                                    <h5>Split by commas</h5>
                                 </label>
                                 <textarea class="text_pole keyprimarytextpole" name="key" rows="1" placeholder="" maxlength="250"></textarea>
                             </div>
                             <div class="world_entry_form_control keysecondary">
                                 <label for="keysecondary">
-                                    <h4>Secondary Required Keywords</h4>
-                                    <h5>Separate with commas</h5>
+                                    <h4>2nd Keywords</h4>
+                                    <h5>Split by commas</h5>
                                 </label>
                                 <textarea class="text_pole keysecondarytextpole" name="keysecondary" rows="1" placeholder="(secondary keywords here)" maxlength="250"></textarea>
                             </div>
