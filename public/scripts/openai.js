@@ -205,22 +205,10 @@ function setOpenAIMessageExamples(mesExamplesArray) {
     }
 }
 
-function generateOpenAIPromptCache(charPersonality, topAnchorDepth, anchorTop, bottomAnchorThreshold, anchorBottom) {
+function generateOpenAIPromptCache() {
     openai_msgs = openai_msgs.reverse();
-    openai_msgs.forEach(function (msg, i, arr) {//For added anchors and others
+    openai_msgs.forEach(function (msg, i, arr) {
         let item = msg["content"];
-        if (i === openai_msgs.length - topAnchorDepth) {
-            let personalityAndAnchor = [charPersonality, anchorTop].filter(x => x).join(' ');
-            if (personalityAndAnchor) {
-                item = `[${name2} is ${personalityAndAnchor}]\n${item}`;
-            }
-        }
-        if (i === openai_msgs.length - 1 && openai_msgs.length > bottomAnchorThreshold && msg.role === "user") {//For add anchor in end
-            if (anchorBottom) {
-                item = anchorBottom + "\n" + item;
-            }
-        }
-
         msg["content"] = item;
         openai_msgs[i] = msg;
     });

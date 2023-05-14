@@ -531,10 +531,6 @@ var message_already_generated = "";
 var cycle_count_generation = 0;
 
 var swipes = true;
-
-let anchor_order = 0;
-let style_anchor = true;
-let character_anchor = true;
 let extension_prompts = {};
 
 var main_api;// = "kobold";
@@ -1683,29 +1679,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         // bias from the latest message is top priority//
         promptBias = messageBias ?? promptBias ?? '';
 
-        // Compute anchors
-        const topAnchorDepth = 8;
-        const bottomAnchorThreshold = 8;
-        let anchorTop = '';
-        let anchorBottom = '';
-        if (!is_pygmalion) {
-            console.log('saw not pyg');
-
-            let postAnchorChar = character_anchor ? name2 + " Elaborate speaker" : "";
-            let postAnchorStyle = style_anchor ? "Writing style: very long messages" : "";
-            if (anchor_order === 0) {
-                anchorTop = postAnchorChar;
-                anchorBottom = postAnchorStyle;
-            } else { // anchor_order === 1
-                anchorTop = postAnchorStyle;
-                anchorBottom = postAnchorChar;
-            }
-
-            if (anchorBottom) {
-                anchorBottom = "[" + anchorBottom + "]";
-            }
-        }
-
         //*********************************
         //PRE FORMATING STRING
         //*********************************
@@ -1761,6 +1734,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         console.log(`Core/all messages: ${coreChat.length}/${chat.length}`);
 
         if (main_api === 'openai') {
+            message_already_generated = ''; // OpenAI doesn't have multigen
             setOpenAIMessages(coreChat, quiet_prompt);
             setOpenAIMessageExamples(mesExamplesArray);
         }
@@ -1773,11 +1747,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             storyString += appendToStoryString(Scenario, power_user.disable_scenario_formatting ? '' : 'Scenario: ');
         } else {
             storyString += appendToStoryString(charDescription, '');
-
-            if (coreChat.length < topAnchorDepth) {
-                storyString += appendToStoryString(charPersonality, power_user.disable_personality_formatting ? '' : name2 + "'s personality: ");
-            }
-
+            storyString += appendToStoryString(charPersonality, power_user.disable_personality_formatting ? '' : name2 + "'s personality: ");
             storyString += appendToStoryString(Scenario, power_user.disable_scenario_formatting ? '' : 'Circumstances and context of the dialogue: ');
         }
 
@@ -1886,9 +1856,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 storyString,
                 examplesString,
                 chatString,
-                anchorTop,
-                anchorBottom,
-                charPersonality,
                 promptBias,
                 allAnchors,
                 quiet_prompt,
@@ -1950,7 +1917,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             generatedPromtCache += cycleGenerationPromt;
             if (generatedPromtCache.length == 0) {
                 if (main_api === 'openai') {
-                    generateOpenAIPromptCache(charPersonality, topAnchorDepth, anchorTop, bottomAnchorThreshold, anchorBottom);
+                    generateOpenAIPromptCache();
                 }
 
                 console.log('generating prompt');
@@ -1971,21 +1938,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                             // removing a newline ONLY at the end of the string if it exists. 
                             item = item.replace(/\n?$/, '');
                             //item = item.substr(0, item.length - 1);
-                        }
-                    }
-                    if (i === arrMes.length - topAnchorDepth && !is_pygmalion) {
-                        //chatString = chatString.substr(0,chatString.length-1);
-                        //anchorAndPersonality = "[Genre: roleplay chat][Tone: very long messages with descriptions]";
-                        let personalityAndAnchor = [charPersonality, anchorTop].filter(x => x).join(' ');
-                        if (personalityAndAnchor) {
-                            item += "[" + personalityAndAnchor + "]\n";
-                        }
-                    }
-                    if (i === arrMes.length - 1 && coreChat.length > bottomAnchorThreshold && item.trim().startsWith(name1 + ":") && !is_pygmalion) {//For add anchor in end
-                        //chatString+=postAnchor+"\n";//"[Writing style: very long messages]\n";
-                        if (anchorBottom) {
-                            item = item.replace(/\n$/, " ");
-                            item += anchorBottom + "\n";
                         }
                     }
                     if (is_pygmalion && !isInstruct) {
@@ -2075,9 +2027,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     storyString,
                     mesExmString,
                     mesSendString,
-                    anchorTop,
-                    anchorBottom,
-                    charPersonality,
                     generatedPromtCache,
                     promptBias,
                     allAnchors,
@@ -3459,30 +3408,15 @@ async function getSettings(type) {
                     `#settings_perset_novel option[value=${novelai_setting_names[nai_settings.preset_settings_novel]}]`
                 ).attr("selected", "true");
 
-                //Load AI model config settings (temp, context length, anchors, and anchor order)
+                //Load AI model config settings
 
                 amount_gen = settings.amount_gen;
                 if (settings.max_context !== undefined)
                     max_context = parseInt(settings.max_context);
-                if (settings.anchor_order !== undefined)
-                    anchor_order = parseInt(settings.anchor_order);
-                if (settings.style_anchor !== undefined)
-                    style_anchor = !!settings.style_anchor;
-                if (settings.character_anchor !== undefined)
-                    character_anchor = !!settings.character_anchor;
-
-                $("#style_anchor").prop("checked", style_anchor);
-                $("#character_anchor").prop("checked", character_anchor);
-                $("#anchor_order option[value=" + anchor_order + "]").attr(
-                    "selected",
-                    "true"
-                );
 
                 swipes = settings.swipes !== undefined ? !!settings.swipes : true;  // enable swipes by default
                 $('#swipes-checkbox').prop('checked', swipes); /// swipecode
-                //console.log('getSettings -- swipes = ' + swipes + '. toggling box');
                 hideSwipeButtons();
-                //console.log('getsettings calling showswipebtns');
                 showSwipeButtons();
 
                 // Kobold
@@ -3580,9 +3514,6 @@ async function saveSettings(type) {
             user_avatar: user_avatar,
             amount_gen: amount_gen,
             max_context: max_context,
-            anchor_order: anchor_order,
-            style_anchor: style_anchor,
-            character_anchor: character_anchor,
             main_api: main_api,
             world_info: world_info,
             world_info_depth: world_info_depth,
@@ -5519,17 +5450,6 @@ $(document).ready(function () {
 
     //////////////////////////////////////////////////////////////
 
-
-    $("#style_anchor").change(function () {
-        style_anchor = !!$("#style_anchor").prop("checked");
-        saveSettingsDebounced();
-    });
-
-    $("#character_anchor").change(function () {
-        character_anchor = !!$("#character_anchor").prop("checked");
-        saveSettingsDebounced();
-    });
-
     $("#select_chat_cross").click(function () {
         $("#shadow_select_chat_popup").transition({
             opacity: 0,
@@ -5807,11 +5727,6 @@ $(document).ready(function () {
         $("#api_button_novel").css("display", "none");
         is_get_status_novel = true;
         is_api_button_press_novel = true;
-    });
-
-    $("#anchor_order").change(function () {
-        anchor_order = parseInt($("#anchor_order").find(":selected").val());
-        saveSettingsDebounced();
     });
 
     //**************************CHARACTER IMPORT EXPORT*************************//

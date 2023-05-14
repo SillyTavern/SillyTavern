@@ -393,26 +393,9 @@ _Lost API keys can't be restored! Make sure to keep it safe!_
 
 ## Anchors
 
-Anchors are used to increase the length of messages.
-There are two types of anchors: _Character Anchor_ and _Style Anchor_.
+This feature is considered obsolete and has been removed.
 
-_Character Anchor_ - affects the character played by the AI by motivating it to write longer messages.
-
-Looks like: `[Elaborate speaker]`
-
-_Style Anchor_ - affects the entire AI model, motivating the AI to write longer messages even when it is not acting as the character.
-
-Looks like: `[Writing style: very long messages]`
-
-***
-
-Anchors Order sets the location of anchors in the prompt, the first anchor in the order is much further back in the context and thus has less influence than second.
-
-The second anchor is only turned on after 8-12 messages, because when the chat still only has a few messages, the first anchor creates enough effect on its own.
-
-Sometimes an AI model may not perceive anchors correctly or the AI model already generates sufficiently long messages. For these cases, you can disable the anchors by unchecking their respective boxes.
-
-_When using Pygmalion models these anchors are automatically disabled, since Pygmalion already generates long enough messages._
+The use of the Author's Note extension is now a preferred way to add prompt injections of variable depth.
 
 ## Instruct Mode
 
@@ -594,6 +577,8 @@ Characters are drafted based on the order they are presented in group members li
 
 ## Multigen
 
+*This feature provides a pseudo-streaming functionality which conflicts with token streaming. When Multigen is enabled and generation API supports streaming, only Multigen streaming will be used.*
+
 SillyTavern tries to create faster and longer responses by chaining the generation using smaller batches.
 
 ### Default settings:
@@ -614,6 +599,7 @@ Next batches = 30 tokens
 2. Character starts speaking for You.
 3. &lt;|endoftext|&gt; token reached.
 4. No text generated.
+5. Stop sequence generated. (Instruct mode only) 
 
 ## User Settings 
 
