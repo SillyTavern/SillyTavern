@@ -2201,7 +2201,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     breakdown_bar.empty();
 
                     const total = Object.values(counts).filter(x => !Number.isNaN(x)).reduce((acc, val) => acc + val, 0);
-                    console.log(`oai start tokens: ${Object.entries(counts)[0][1]}`);
 
                     thisPromptBits.push({
                         oaiStartTokens: Object.entries(counts)[0][1],
@@ -2214,9 +2213,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         oaiConversationTokens: Object.entries(counts)[7][1],
                         oaiTotalTokens: total,
                     })
-
-
-                    console.log(`added OAI prompt bits to array`);
 
                     Object.entries(counts).forEach(([type, value]) => {
                         if (value === 0) {
@@ -2554,6 +2550,8 @@ function promptItemize(itemizedPrompts, requestedMesId) {
         var worldInfoStringTokensPercentage = ((worldInfoStringTokens / (finalPromptTokens)) * 100).toFixed(2);
         var allAnchorsTokensPercentage = ((allAnchorsTokens / (finalPromptTokens)) * 100).toFixed(2);
         var selectedTokenizer = `tiktoken (${oai_settings.openai_model})`;
+        var oaiSystemTokens = oaiImpersonateTokens + oaiJailbreakTokens + oaiNudgeTokens + oaiStartTokens;
+        var oaiSystemTokensPercentage = ((oaiSystemTokens / (finalPromptTokens)) * 100).toFixed(2);
 
     } else {
         //console.log('-- applying % on non-OAI tokens');
@@ -2603,7 +2601,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
                         </div>
                         <div class="flex-container ">
                             <div  class=" flex1 tokenItemizingSubclass">-- NSFW: </div>
-                            <div  class="tokenItemizingSubclass">${oaiSystemTokens}</div>
+                            <div  class="tokenItemizingSubclass">??</div>
                         </div>
                         <div class="flex-container ">
                             <div  class=" flex1 tokenItemizingSubclass">-- Nudge: </div>
