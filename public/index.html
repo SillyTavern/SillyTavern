@@ -1661,6 +1661,20 @@
                                     <option value="1">Always enabled</option>
                                 </select>
                             </div>
+                            
+                            <h4>Auto-swipe</h4>
+                            <label for="auto_swipe">
+                                <input id="auto_swipe" type="checkbox" />
+                                Auto-swipe enabled
+                            </label>
+                            <div>Minimum generated message length</div>
+                            <input id="auto_swipe_minimum_length" name="auto_swipe_minimum_length" type="number" min="0" step="1" value="0" class="text_pole">
+                            <div>Blacklisted words</div>
+                            <div class="auto_swipe">
+                                <input id="auto_swipe_blacklist" name="auto_swipe_blacklist" placeholder="ethical, guidelines, harmful, illegal, comfortable, generating" class="text_pole" maxlength="500" value="" autocomplete="off">
+                                <div>Blacklisted word count to swipe</div>
+                                <input id="auto_swipe_blacklist_threshold" name="auto_swipe_blacklist_threshold" type="number" min="0" step="1" value="1" class="text_pole">
+                            </div>
                         </div>
                     </div>
 
