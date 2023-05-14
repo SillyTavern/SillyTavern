@@ -1139,7 +1139,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     //shows or hides the Prompt display button
     let mesIdToFind = Number(newMessage.attr('mesId'));
     if (itemizedPrompts.length !== 0) {
-        console.log(`itemizedPrompt.length = ${itemizedPrompts.length}`)
+        //console.log(`itemizedPrompt.length = ${itemizedPrompts.length}`)
         for (var i = 0; i < itemizedPrompts.length; i++) {
             if (itemizedPrompts[i].mesId === mesIdToFind) {
                 newMessage.find(".mes_prompt").show();
@@ -2300,7 +2300,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
             thisPromptBits = additionalPromptStuff;
 
-            console.log(thisPromptBits);
+            //console.log(thisPromptBits);
 
             itemizedPrompts.push(thisPromptBits);
             //console.log(`pushed prompt bits to itemizedPrompts array. Length is now: ${itemizedPrompts.length}`);
@@ -2497,9 +2497,9 @@ function promptItemize(itemizedPrompts, requestedMesId) {
     if (this_main_api == 'openai') {
         //for OAI API
         //console.log('-- Counting OAI Tokens');
-        var finalPromptTokens = itemizedPrompts[thisPromptSet].oaiTotalTokens;
+
+        //var finalPromptTokens = itemizedPrompts[thisPromptSet].oaiTotalTokens;
         var oaiStartTokens = itemizedPrompts[thisPromptSet].oaiStartTokens;
-        console.log(oaiStartTokens);
         var oaiPromptTokens = itemizedPrompts[thisPromptSet].oaiPromptTokens;
         var ActualChatHistoryTokens = itemizedPrompts[thisPromptSet].oaiConversationTokens;
         var examplesStringTokens = itemizedPrompts[thisPromptSet].oaiExamplesTokens;
@@ -2507,6 +2507,18 @@ function promptItemize(itemizedPrompts, requestedMesId) {
         var oaiJailbreakTokens = itemizedPrompts[thisPromptSet].oaiJailbreakTokens;
         var oaiNudgeTokens = itemizedPrompts[thisPromptSet].oaiNudgeTokens;
         var oaiImpersonateTokens = itemizedPrompts[thisPromptSet].oaiImpersonateTokens;
+        var finalPromptTokens =
+            oaiBiasTokens +
+            oaiImpersonateTokens +
+            oaiJailbreakTokens +
+            oaiNudgeTokens +
+            oaiPromptTokens +
+            ActualChatHistoryTokens +
+            charDescriptionTokens +
+            charPersonalityTokens +
+            allAnchorsTokens +
+            worldInfoStringTokens +
+            examplesStringTokens;
 
 
     } else {
@@ -2532,13 +2544,14 @@ function promptItemize(itemizedPrompts, requestedMesId) {
     if (this_main_api == 'openai') {
         //console.log('-- applying % on OAI tokens');
         var oaiStartTokensPercentage = ((oaiStartTokens / (finalPromptTokens)) * 100).toFixed(2);
-        console.log(oaiStartTokensPercentage);
         var storyStringTokensPercentage = ((oaiPromptTokens / (finalPromptTokens)) * 100).toFixed(2);
         var ActualChatHistoryTokensPercentage = ((ActualChatHistoryTokens / (finalPromptTokens)) * 100).toFixed(2);
         var promptBiasTokensPercentage = ((oaiBiasTokens / (finalPromptTokens)) * 100).toFixed(2);
         var worldInfoStringTokensPercentage = ((worldInfoStringTokens / (finalPromptTokens)) * 100).toFixed(2);
         var allAnchorsTokensPercentage = ((allAnchorsTokens / (finalPromptTokens)) * 100).toFixed(2);
         var selectedTokenizer = $("#tokenizer").find(':selected').text();
+        var oaiSystemTokens = oaiStartTokens + oaiImpersonateTokens + oaiNudgeTokens + oaiJailbreakTokens;
+        var oaiSystemTokensPercentage = ((oaiSystemTokens / (finalPromptTokens)) * 100).toFixed(2);
 
     } else {
         //console.log('-- applying % on non-OAI tokens');
@@ -2555,7 +2568,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
         callPopup(
             `
         <h3>Prompt Itemization</h3>
-        Tokenizer: ${selectedTokenizer}<br>
+        Tokenizer: TikToken<br>
         API Used: ${this_main_api}<br>
         <span class="tokenItemizingSubclass">
             Only the white numbers really matter. All numbers are estimates.
@@ -2565,7 +2578,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
         <div class="justifyLeft">
             <div class="flex-container">
                 <div class="flex-container flex1 flexFlowColumns flexNoGap wide50p tokenGraph">
-                <div class="wide100p" style="background-color: grey; height: ${oaiStartTokensPercentage}%;"></div>
+                <div class="wide100p" style="background-color: grey; height: ${oaiSystemTokensPercentage}%;"></div>
                     <div class="wide100p" style="background-color: indianred; height: ${storyStringTokensPercentage}%;"></div>
                     <div class="wide100p" style="background-color: gold; height: ${worldInfoStringTokensPercentage}%;"></div>
                     <div class="wide100p" style="background-color: palegreen; height: ${ActualChatHistoryTokensPercentage}%;"></div>
@@ -2575,8 +2588,28 @@ function promptItemize(itemizedPrompts, requestedMesId) {
                 <div class="flex-container wide50p">
                     <div class="wide100p flex-container flexNoGap flexFlowColumn">
                         <div class="flex-container wide100p">
-                            <div class="flex1" style="color: grey;">Chat Startup:</div>
-                            <div  class=""> ${oaiStartTokens}</div>
+                            <div class="flex1" style="color: grey;">System Info:</div>
+                            <div  class=""> ${oaiSystemTokens}</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Chat Start: </div>
+                            <div  class="tokenItemizingSubclass"> ${oaiStartTokens}</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Jailbreak: </div>
+                            <div  class="tokenItemizingSubclass">${oaiJailbreakTokens}</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- NSFW: </div>
+                            <div  class="tokenItemizingSubclass">${oaiSystemTokens}</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Nudge: </div>
+                            <div  class="tokenItemizingSubclass">${oaiNudgeTokens}</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Impersonate: </div>
+                            <div  class="tokenItemizingSubclass">${oaiImpersonateTokens}</div>
                         </div>
                     </div>
                     <div class="wide100p flex-container flexNoGap flexFlowColumn">
@@ -2636,12 +2669,6 @@ function promptItemize(itemizedPrompts, requestedMesId) {
                 </div>
                 <div class="flex-container wide100p">
                     <div  class="flex1">Max Context:</div><div  class="">${thisPrompt_max_context}</div>
-                </div>
-                <div class="flex-container wide100p">
-                    <div  class="flex1">- Padding:</div><div  class=""> ${thisPrompt_padding}</div>
-                </div>
-                <div class="flex-container wide100p">
-                    <div  class="flex1">Actual Max Context Allowed:</div><div  class="">${thisPrompt_max_context - thisPrompt_padding}</div>
                 </div>
             </div>
         </div>
