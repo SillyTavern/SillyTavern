@@ -203,6 +203,16 @@ table.responsiveTable {
     text-align: center;
 }
 
+.mes_narrate,
+body.tts .mes[is_user="true"] .mes_narrate,
+body.tts .mes[is_system="true"] .mes_narrate {
+    display: none;
+}
+
+body.tts .mes_narrate {
+    display: inline-block;
+}
+
 code {
     font-family: Consolas, monospace;
     white-space: pre-wrap;
@@ -2155,6 +2165,7 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .mes_prompt,
+.mes_narrate,
 .mes_copy,
 .mes_edit {
     cursor: pointer;
@@ -2167,11 +2178,13 @@ input[type="range"]::-webkit-slider-thumb {
 
 .mes_edit:hover,
 .mes_copy:hover,
+.mes_narrate:hover,
 .mes_stop:hover {
     opacity: 1;
 }
 
 .last_mes .mes_copy,
+.last_mes .mes_narrate,
 .last_mes .mes_prompt {
     grid-row-start: 1;
     position: relative;
