@@ -109,6 +109,10 @@ let power_user = {
     noShadows: false,
     theme: 'Default (Dark)',
 
+    auto_swipe: false,
+    auto_swipe_minimum_length: 0,
+    auto_swipe_blacklist: [],
+    auto_swipe_blacklist_threshold: 2,
     auto_scroll_chat_to_bottom: true,
     auto_fix_generated_markdown: true,
     send_on_enter: send_on_enter_options.AUTO,
@@ -479,6 +483,11 @@ function loadPowerUserSettings(settings, data) {
     power_user.sheld_width = Number(localStorage.getItem(storage_keys.sheld_width) ?? sheld_width.DEFAULT);
     power_user.font_scale = Number(localStorage.getItem(storage_keys.font_scale) ?? 1);
     power_user.blur_strength = Number(localStorage.getItem(storage_keys.blur_strength) ?? 10);
+
+    $('#auto_swipe').prop("checked", power_user.auto_swipe);
+    $('#auto_swipe_minimum_length').val(power_user.auto_swipe_minimum_length);
+    $('#auto_swipe_blacklist').val(power_user.auto_swipe_blacklist.join(", "));
+    $('#auto_swipe_blacklist_threshold').val(power_user.auto_swipe_blacklist_threshold);
 
     $("#console_log_prompts").prop("checked", power_user.console_log_prompts);
     $('#auto_fix_generated_markdown').prop("checked", power_user.auto_fix_generated_markdown);
@@ -1040,6 +1049,36 @@ $(document).ready(() => {
     $("#multigen_next_chunks").on('input', function () {
         power_user.multigen_next_chunks = Number($(this).val());
         saveSettingsDebounced();
+    });
+
+    $('#auto_swipe').on('input', function () {
+        power_user.auto_swipe = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $('#auto_swipe_blacklist').on('input', function () {
+        power_user.auto_swipe_blacklist = $(this).val()
+            .split(",")
+            .map(str => str.trim())
+            .filter(str => str);
+        console.log("power_user.auto_swipe_blacklist", power_user.auto_swipe_blacklist)
+        saveSettingsDebounced();
+    });
+
+    $('#auto_swipe_minimum_length').on('input', function () {
+        const number = parseInt($(this).val());
+        if (!isNaN(number)) {
+            power_user.auto_swipe_minimum_length = number;
+            saveSettingsDebounced();
+        }
+    });
+
+    $('#auto_swipe_blacklist_threshold').on('input', function () {
+        const number = parseInt($(this).val());
+        if (!isNaN(number)) {
+            power_user.auto_swipe_blacklist_threshold = number;
+            saveSettingsDebounced();
+        }
     });
 
     $('#auto_fix_generated_markdown').on('input', function () {
