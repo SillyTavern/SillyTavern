@@ -110,6 +110,7 @@ let power_user = {
     auto_scroll_chat_to_bottom: true,
     auto_fix_generated_markdown: true,
     send_on_enter: send_on_enter_options.AUTO,
+    console_log_prompts: false,
     render_formulas: false,
     allow_name1_display: false,
     allow_name2_display: false,
@@ -477,6 +478,7 @@ function loadPowerUserSettings(settings, data) {
     power_user.font_scale = Number(localStorage.getItem(storage_keys.font_scale) ?? 1);
     power_user.blur_strength = Number(localStorage.getItem(storage_keys.blur_strength) ?? 10);
 
+    $("#console_log_prompts").prop("checked", power_user.console_log_prompts);
     $('#auto_fix_generated_markdown').prop("checked", power_user.auto_fix_generated_markdown);
     $('#auto_scroll_chat_to_bottom').prop("checked", power_user.auto_scroll_chat_to_bottom);
     $(`#tokenizer option[value="${power_user.tokenizer}"]`).attr('selected', true);
@@ -1018,6 +1020,11 @@ $(document).ready(() => {
     $('#auto_fix_generated_markdown').on('input', function () {
         power_user.auto_fix_generated_markdown = !!$(this).prop('checked');
         reloadCurrentChat();
+        saveSettingsDebounced();
+    });
+
+    $("#console_log_prompts").on('input', function () {
+        power_user.console_log_prompts = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 
