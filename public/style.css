@@ -527,6 +527,7 @@ code {
     grid-column-start: 4;
     flex-flow: column;
     font-size: 30px;
+    cursor: pointer;
 }
 
 .swipe_right img,
