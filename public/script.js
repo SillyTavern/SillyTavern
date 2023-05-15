@@ -1261,15 +1261,16 @@ function getStoppingStrings(isImpersonate, addSpace) {
         }
     }
 
+    // Cohee: oobabooga's textgen always appends newline before the sequence as a stopping string
+    // But it's a problem for Metharme which doesn't use newlines to separate them.
+    const wrap = (s) => power_user.instruct.wrap ? '\n' + s : s;
+
     if (power_user.instruct.enabled) {
-        // Cohee: This was borrowed from oobabooga's textgen. But..
-        // What if a model doesn't use newlines to chain sequences?
-        // Who knows.
         if (power_user.instruct.input_sequence) {
-            result.push(`\n${power_user.instruct.input_sequence}`);
+            result.push(wrap(power_user.instruct.input_sequence));
         }
         if (power_user.instruct.output_sequence) {
-            result.push(`\n${power_user.instruct.output_sequence}`);
+            result.push(wrap(power_user.instruct.output_sequence));
         }
     }
 
