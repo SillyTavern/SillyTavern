@@ -1053,7 +1053,6 @@ $(document).ready(() => {
 
     $('#auto_swipe').on('input', function () {
         power_user.auto_swipe = !!$(this).prop('checked');
-        console.log("power_user.auto_swipe", power_user.auto_swipe)
         saveSettingsDebounced();
     });
 
@@ -1070,7 +1069,6 @@ $(document).ready(() => {
         const number = parseInt($(this).val());
         if (!isNaN(number)) {
             power_user.auto_swipe_minimum_length = number;
-            console.log("power_user.auto_swipe_minimum_length", power_user.auto_swipe_minimum_length)
             saveSettingsDebounced();
         }
     });
@@ -1079,7 +1077,6 @@ $(document).ready(() => {
         const number = parseInt($(this).val());
         if (!isNaN(number)) {
             power_user.auto_swipe_blacklist_threshold = number;
-            console.log("power_user.auto_swipe_blacklist_threshold", power_user.auto_swipe_blacklist_threshold)
             saveSettingsDebounced();
         }
     });
