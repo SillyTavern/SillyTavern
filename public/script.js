@@ -1793,7 +1793,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             } else {
                 this_mes_ch_name = charName;
             }
-            if (coreChat[j]['is_name'] || selected_group) {
+            if (coreChat[j]['is_name']) {
                 chat2[i] = this_mes_ch_name + ': ' + coreChat[j]['mes'] + '\n';
             } else {
                 chat2[i] = coreChat[j]['mes'] + '\n';
@@ -2177,21 +2177,16 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     generate_data = getKoboldGenerationData(finalPromt, this_settings, this_amount_gen, maxContext, isImpersonate);
                 }
             }
-
-            if (main_api == 'textgenerationwebui') {
+            else if (main_api == 'textgenerationwebui') {
                 generate_data = getTextGenGenerationData(finalPromt, this_amount_gen, isImpersonate);
             }
-
-            if (main_api == 'novel') {
+            else if (main_api == 'novel') {
                 const this_settings = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
                 generate_data = getNovelGenerationData(finalPromt, this_settings);
             }
-
-            let generate_url = getGenerateUrl();
-            console.log('rungenerate calling API');
-
-            if (main_api == 'openai') {
+            else if (main_api == 'openai') {
                 let [prompt, counts] = await prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAfter, afterScenarioAnchor, promptBias, type);
+                generate_data = { prompt : prompt };
 
                 // counts will return false if the user has not enabled the token breakdown feature
                 if (counts) {
@@ -2232,12 +2227,23 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 }
 
                 setInContextMessages(openai_messages_count, type);
+            } else if (main_api == 'poe') {
+                generate_data = { prompt : finalPromt };
+            }
 
+            if (power_user.console_log_prompts) {
+                console.log(generate_data.prompt);
+            }
+
+            let generate_url = getGenerateUrl();
+            console.log('rungenerate calling API');
+
+            if (main_api == 'openai') {
                 if (isStreamingEnabled() && type !== 'quiet') {
-                    streamingProcessor.generator = await sendOpenAIRequest(type, prompt, streamingProcessor.abortController.signal);
+                    streamingProcessor.generator = await sendOpenAIRequest(type, generate_data.prompt, streamingProcessor.abortController.signal);
                 }
                 else {
-                    sendOpenAIRequest(type, prompt).then(onSuccess).catch(onError);
+                    sendOpenAIRequest(type, generate_data.prompt).then(onSuccess).catch(onError);
                 }
             }
             else if (main_api == 'kobold' && horde_settings.use_horde) {
@@ -6220,6 +6226,7 @@ $(document).ready(function () {
             '#shadow_popup',
             '#world_popup',
             '.ui-widget',
+            '.text_pole',
         ];
         for (const id of forbiddenTargets) {
             if (clickTarget.closest(id).length > 0) {
@@ -6241,7 +6248,10 @@ $(document).ready(function () {
         }
     });
 
-    $(document).on('click', '.inline-drawer-toggle', function () {
+    $(document).on('click', '.inline-drawer-toggle', function (e) {
+        if ($(e.target).hasClass('text_pole')) {
+            return;
+        };
         var icon = $(this).find('.inline-drawer-icon');
         icon.toggleClass('down up');
         icon.toggleClass('fa-circle-chevron-down fa-circle-chevron-up');
