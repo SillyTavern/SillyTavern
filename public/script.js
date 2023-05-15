@@ -1478,10 +1478,10 @@ class StreamingProcessor {
         return text;
     }
 
-    onProgressStreaming(messageId, text) {
+    onProgressStreaming(messageId, text, isFinal) {
         const isImpersonate = this.type == "impersonate";
         text = this.removePrefix(text);
-        let processedText = cleanUpMessage(text, isImpersonate);
+        let processedText = cleanUpMessage(text, isImpersonate, !isFinal);
         let result = extractNameFromMessage(processedText, this.force_name2, isImpersonate);
         let isName = result.this_mes_is_name;
         processedText = result.getMessage;
@@ -1518,7 +1518,7 @@ class StreamingProcessor {
 
     onFinishStreaming(messageId, text) {
         this.hideStopButton(this.messageId);
-        this.onProgressStreaming(messageId, text);
+        this.onProgressStreaming(messageId, text, true);
         addCopyToCodeBlocks($(`#chat .mes[mesid="${messageId}"]`));
         playMessageSound();
         saveChatConditional();
@@ -2146,7 +2146,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     generatePoe(type, finalPromt).then(onSuccess).catch(onError);
                 }
             }
-            else if (main_api == 'textgenerationwebui' && textgenerationwebui_settings.streaming && type !== 'quiet') {
+            else if (main_api == 'textgenerationwebui' && isStreamingEnabled() && type !== 'quiet') {
                 streamingProcessor.generator = await generateTextGenWithStreaming(generate_data, streamingProcessor.abortController.signal);
             }
             else {
@@ -2236,7 +2236,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                                 ({ type, getMessage } = saveReply('append', getMessage, this_mes_is_name, title));
                             }
                         } else {
-                            let chunk = cleanUpMessage(message_already_generated, true);
+                            let chunk = cleanUpMessage(message_already_generated, true, true);
                             let extract = extractNameFromMessage(chunk, force_name2, isImpersonate);
                             $('#send_textarea').val(extract.getMessage).trigger('input');
                         }
@@ -2960,8 +2960,8 @@ function extractMessageFromData(data) {
     return getMessage;
 }
 
-function cleanUpMessage(getMessage, isImpersonate) {
-    if (power_user.trim_sentences) {
+function cleanUpMessage(getMessage, isImpersonate, displayIncompleteSentences = false) {
+    if (!displayIncompleteSentences && power_user.trim_sentences) {
         getMessage = end_trim_to_sentence(getMessage, power_user.include_newline);
     }
 
