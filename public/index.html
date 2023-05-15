@@ -1355,14 +1355,23 @@
                                 </label>
                             </div>
                         </div>
-                        <div id="anchors-block">
+                        <div id="context-templates-block" style="display:none">
                             <h4>
-                                Anchors
+                                Context Templates
                             </h4>
-                            <p>
-                                This feature is obsolete and has been removed.
-                                Something else is coming soon in its place!
-                            </p>
+                            <div>
+                                <label>Presets:</label>
+                                <div class="flex-container flexGap5">
+                                    <select id="prompt_template" class="flex1 margin0">
+                                        <option value="None">None</option>
+                                        <option value="Classic">Classic</option>
+                                        <option value="Pygmalion">Pygmalion</option>
+                                    </select>
+                                    <div id="context_template_edit" class="menu_button fa-solid fa-pencil margin0" title="Edit"></div>
+                                    <div id="context_template_new" class="menu_button fa-solid fa-plus margin0" title="Add new"></div>
+                                    <div id="context_template_delete" class="menu_button fa-solid fa-trash-can margin0" title="Delete"></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
