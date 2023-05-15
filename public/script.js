@@ -1796,7 +1796,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             } else {
                 this_mes_ch_name = charName;
             }
-            if (coreChat[j]['is_name']) {
+            if (coreChat[j]['is_name'] || selected_group) {
                 chat2[i] = this_mes_ch_name + ': ' + coreChat[j]['mes'] + '\n';
             } else {
                 chat2[i] = coreChat[j]['mes'] + '\n';
