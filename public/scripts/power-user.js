@@ -770,18 +770,21 @@ function resetMovablePanels() {
     document.getElementById("sheld").style.right = '';
     document.getElementById("sheld").style.height = '';
     document.getElementById("sheld").style.width = '';
+    document.getElementById("sheld").style.margin = '';
 
 
     document.getElementById("left-nav-panel").style.top = '';
     document.getElementById("left-nav-panel").style.left = '';
     document.getElementById("left-nav-panel").style.height = '';
     document.getElementById("left-nav-panel").style.width = '';
+    document.getElementById("left-nav-panel").style.margin = '';
 
     document.getElementById("right-nav-panel").style.top = '';
     document.getElementById("right-nav-panel").style.left = '';
     document.getElementById("right-nav-panel").style.right = '';
     document.getElementById("right-nav-panel").style.height = '';
     document.getElementById("right-nav-panel").style.width = '';
+    document.getElementById("right-nav-panel").style.margin = '';
 
     document.getElementById("expression-holder").style.top = '';
     document.getElementById("expression-holder").style.left = '';
@@ -789,6 +792,7 @@ function resetMovablePanels() {
     document.getElementById("expression-holder").style.bottom = '';
     document.getElementById("expression-holder").style.height = '';
     document.getElementById("expression-holder").style.width = '';
+    document.getElementById("expression-holder").style.margin = '';
 
     document.getElementById("avatar_zoom_popup").style.top = '';
     document.getElementById("avatar_zoom_popup").style.left = '';
@@ -796,6 +800,7 @@ function resetMovablePanels() {
     document.getElementById("avatar_zoom_popup").style.bottom = '';
     document.getElementById("avatar_zoom_popup").style.height = '';
     document.getElementById("avatar_zoom_popup").style.width = '';
+    document.getElementById("avatar_zoom_popup").style.margin = '';
 
     document.getElementById("WorldInfo").style.top = '';
     document.getElementById("WorldInfo").style.left = '';
@@ -803,6 +808,7 @@ function resetMovablePanels() {
     document.getElementById("WorldInfo").style.bottom = '';
     document.getElementById("WorldInfo").style.height = '';
     document.getElementById("WorldInfo").style.width = '';
+    document.getElementById("WorldInfo").style.margin = '';
 }
 
 $(document).ready(() => {
