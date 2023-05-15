@@ -1371,12 +1371,20 @@
 
         <div id="WI-SP-button" class="drawer">
             <div class="drawer-toggle drawer-header">
-                <div class="drawer-icon fa-solid fa-book-atlas closedIcon " title="World Info & Soft Prompts"></div>
+                <div id="WIDrawerIcon" class="drawer-icon fa-solid fa-book-atlas closedIcon " title="World Info & Soft Prompts"></div>
             </div>
-            <div class="drawer-content closedDrawer">
+            <div id="WorldInfo" class="drawer-content closedDrawer">
+                <div id="WorldInfoheader" class="fa-solid fa-grip drag-grabber"></div>
+                <div id="WI_panel_pin_div" title="Locked = World Editor will stay open">
+                    <input type="checkbox" id="WI_panel_pin">
+                    <label for="WI_panel_pin">
+                        <div class="unchecked fa-solid fa-lock-open "></div>
+                        <div class="checked fa-solid fa-lock "></div>
+                    </label>
+                </div>
                 <div id="wi-holder">
                     <h3>
-                        World Info
+                        World Selector
                         <a href="/notes#worldinfo" class="notes-link" target="_blank">
                             <span class="note-link-span">?</span>
                         </a>
@@ -1437,6 +1445,41 @@
                                 </span>
                             </label>
                         </div>
+                    </div>
+
+                    <div id="world_popup">
+                        <hr>
+                        <div id="world_popup_text">
+                            <!-- <div id="world_cross" class="fa-solid fa-circle-xmark"></div> -->
+                            <div id="world_popup_header" class="flex-container flexGap5">
+                                <!-- Consider changing logo to something else -->
+                                <div class="world_popup_logo_block">
+                                    <!-- <img src="img/book2.png" id="world_logo"> -->
+                                    <h3>
+                                        World Info Editor
+                                        <a href="/notes#worldinfoentry" class="notes-link" target="_blank"><span class="note-link-span">?</span></a>
+                                    </h3>
+                                </div>
+                                <div id="OpenAllWIEntries" class="menu_button fa-solid fa-expand"></div>
+                                <div id="CloseAllWIEntries" class="menu_button fa-solid fa-compress"></div>
+                                <!-- <div class="world_popup_expander">&nbsp;</div> -->
+                                <form id="form_rename_world" action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                                    <input id="world_popup_name" name="world_popup_name" class="text_pole" maxlength="99" size="32" value="" autocomplete="off">
+                                    <input id="world_popup_name_button" class="menu_button" type="submit" value="Rename">
+                                </form>
+                            </div>
+                        </div>
+
+                        <div id="world_popup_entries_list">
+                        </div>
+
+                        <div id="world_popup_bottom_holder">
+                            <div id="world_popup_new" class="menu_button">New Entry</div>
+                            <!-- <span class="world_popup_expander">&nbsp;</span> -->
+                            <div id="world_popup_export" class="menu_button">Export</div>
+                            <div id="world_popup_delete" class="menu_button">Delete World</div>
+                        </div>
+
                     </div>
                 </div>
                 <div id="softprompt_block">
@@ -2065,41 +2108,7 @@
         <div id="character_popup_ok" class="menu_button">Save</div>
 
     </div>
-    <div id="world_popup">
 
-        <div id="world_popupheader" class="fa-solid fa-grip drag-grabber"></div>
-        <div id="world_popup_text">
-            <div id="world_cross" class="fa-solid fa-circle-xmark"></div>
-            <div id="world_popup_header" class="flex-container flexGap5">
-                <!-- Consider changing logo to something else -->
-                <div class="world_popup_logo_block">
-                    <img src="img/book2.png" id="world_logo">
-                    <h3>
-                        World Info Editor
-                        <a href="/notes#worldinfoentry" class="notes-link" target="_blank"><span class="note-link-span">?</span></a>
-                    </h3>
-                </div>
-                <div id="OpenAllWIEntries" class="menu_button fa-solid fa-expand"></div>
-                <div id="CloseAllWIEntries" class="menu_button fa-solid fa-compress"></div>
-                <div class="world_popup_expander">&nbsp;</div>
-                <form id="form_rename_world" action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                    <input id="world_popup_name" name="world_popup_name" class="text_pole" maxlength="99" size="32" value="" autocomplete="off">
-                    <input id="world_popup_name_button" class="menu_button" type="submit" value="Rename">
-                </form>
-            </div>
-        </div>
-
-        <div id="world_popup_entries_list">
-        </div>
-
-        <div id="world_popup_bottom_holder">
-            <div id="world_popup_new" class="menu_button">New Entry</div>
-            <!-- <span class="world_popup_expander">&nbsp;</span> -->
-            <div id="world_popup_export" class="menu_button">Export</div>
-            <div id="world_popup_delete" class="menu_button">Delete World</div>
-        </div>
-
-    </div>
     <div id="shadow_select_chat_popup">
         <div id="select_chat_popup">
             <div id="select_chat_import"> <!-- import chat popup header -->
@@ -2177,6 +2186,7 @@
             <div title="Delete tag" class="tag_delete fa-solid fa-trash-can right_menu_button"></div>
         </div>
     </div>
+
 
     <div id="entry_edit_template" class="template_element">
         <div class="world_entry">

@@ -797,12 +797,12 @@ function resetMovablePanels() {
     document.getElementById("avatar_zoom_popup").style.height = '';
     document.getElementById("avatar_zoom_popup").style.width = '';
 
-    document.getElementById("world_popup").style.top = '';
-    document.getElementById("world_popup").style.left = '';
-    document.getElementById("world_popup").style.right = '';
-    document.getElementById("world_popup").style.bottom = '';
-    document.getElementById("world_popup").style.height = '';
-    document.getElementById("world_popup").style.width = '';
+    document.getElementById("WorldInfo").style.top = '';
+    document.getElementById("WorldInfo").style.left = '';
+    document.getElementById("WorldInfo").style.right = '';
+    document.getElementById("WorldInfo").style.bottom = '';
+    document.getElementById("WorldInfo").style.height = '';
+    document.getElementById("WorldInfo").style.width = '';
 }
 
 $(document).ready(() => {

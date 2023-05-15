@@ -911,19 +911,22 @@ input[type="file"] {
 
 #rm_button_characters,
 #rm_button_panel_pin_div,
-#lm_button_panel_pin_div {
+#lm_button_panel_pin_div,
+#WI_button_panel_pin_div {
     font-size: 24px;
     display: inline;
 }
 
 #rm_button_panel_pin_div,
-#lm_button_panel_pin_div {
+#lm_button_panel_pin_div,
+#WI_button_panel_pin_div {
     opacity: 0.5;
     transition: 0.3s;
 }
 
 #rm_button_panel_pin_div:hover,
-#lm_button_panel_pin_div:hover {
+#lm_button_panel_pin_div:hover,
+#WI_button_panel_pin_div:hover {
     opacity: 1;
 }
 
@@ -932,32 +935,38 @@ input[type="file"] {
 }
 
 #rm_button_panel_pin,
-#lm_button_panel_pin {
+#lm_button_panel_pin,
+#WI_panel_pin {
     display: none;
 }
 
 #rm_button_panel_pin:checked+label,
-#lm_button_panel_pin:checked+label {
+#lm_button_panel_pin:checked+label,
+#WI_panel_pin:checked+label {
     display: inline;
 }
 
 #rm_button_panel_pin:checked+label .checked,
-#lm_button_panel_pin:checked+label .checked {
+#lm_button_panel_pin:checked+label .checked,
+#WI_panel_pin:checked+label .checked {
     display: inline;
 }
 
 #rm_button_panel_pin:checked+label .unchecked,
-#lm_button_panel_pin:checked+label .unchecked {
+#lm_button_panel_pin:checked+label .unchecked,
+#WI_panel_pin:checked+label .unchecked {
     display: none;
 }
 
 #rm_button_panel_pin:not(:checked)+label .checked,
-#lm_button_panel_pin:not(:checked)+label .checked {
+#lm_button_panel_pin:not(:checked)+label .checked,
+#WI_panel_pin:not(:checked)+label .checked {
     display: none;
 }
 
 #rm_button_panel_pin:not(:checked)+label .unchecked,
-#lm_button_panel_pin:not(:checked)+label .unchecked {
+#lm_button_panel_pin:not(:checked)+label .unchecked,
+#WI_panel_pin:not(:checked)+label .unchecked {
     display: inline;
 }
 
@@ -1670,20 +1679,20 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 #world_popup {
     display: none;
-    background-color: var(--SmartThemeBlurTintColor);
-    backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
-    max-width: var(--sheldWidth);
-    max-height: calc(100% - 100px);
+    /*     background-color: var(--SmartThemeBlurTintColor);
+    backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2)); */
+    /* max-width: var(--sheldWidth); */
+    /* max-height: calc(100% - 100px); */
     min-height: 100px;
     min-width: 100px;
-    position: absolute;
-    margin-left: auto;
-    margin-right: auto;
+    /* position: absolute; */
+    /*     margin-left: auto;
+    margin-right: auto; */
     left: 0;
     right: 0;
-    top: 40px;
-    box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
-    padding: 10px;
+    /* top: 40px; */
+    /* box-shadow: 0 0 2px rgba(0, 0, 0, 0.5); */
+    /* padding: 10px; */
     flex-direction: column;
     z-index: 3010;
     border-radius: 0 0 20px 20px;
@@ -1753,7 +1762,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 }
 
 #form_rename_world {
-    margin-right: 50px;
+    /* margin-right: 50px; */
 }
 
 #form_rename_chat {
@@ -3490,8 +3499,10 @@ label[for="extensions_autoconnect"] {
 }
 
 .fillRight,
-.fillLeft {
+.fillLeft,
+#WorldInfo {
     min-width: unset;
+    position: fixed;
 }
 
 .fillLeft {
@@ -3846,8 +3857,7 @@ body.movingUI .drag-grabber {
 body.movingUI #sheld,
 body.movingUI .drawer-content,
 body.movingUI #expression-holder,
-body.movingUI #avatar_zoom_popup,
-body.movingUI #world_popup {
+body.movingUI #avatar_zoom_popup {
     resize: both;
 }
 
@@ -4000,10 +4010,10 @@ body.waifuMode #avatar_zoom_popup {
         display: none;
     }
 
-    #world_popup_header {
+    /*     #world_popup_header {
         flex-direction: column;
         align-items: flex-start;
-    }
+    } */
 
     #world_popup_header .world_popup_expander {
         display: none;
@@ -4049,14 +4059,18 @@ body.waifuMode #avatar_zoom_popup {
 
     #sheld,
     #character_popup,
-    #world_popup {
-        height: calc(100svh - 45px);
+    .drawer-content
+
+    /* ,
+    #world_popup  */
+        {
+        max-height: calc(100svh - 45px);
         width: 100% !important;
         margin: 0 auto;
         max-width: 100%;
         left: 0 !important;
-        resize: none;
-        top: 42px;
+        resize: none !important;
+        top: 40px;
     }
 
     #character_popup,
@@ -4065,7 +4079,6 @@ body.waifuMode #avatar_zoom_popup {
     }
 
     #character_popup,
-    #world_popup,
     #send_form {
         border: 1px solid var(--grey30);
         backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
