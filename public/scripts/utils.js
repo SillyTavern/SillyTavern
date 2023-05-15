@@ -191,10 +191,27 @@ export function sortByCssOrder(a, b) {
 }
 
 export function end_trim_to_sentence(input, keep_newlines = false) {
-    if (!keep_newlines) {
-        return input.trimEnd();
-    } else {
-        // trim all whitespace at the end of the string, except for newlines
-        return input.replace(/([^\S\r\n])+(?=\n*$)/g, "");
+    // inspired from https://github.com/kaihordewebui/kaihordewebui.github.io/blob/06b95e6b7720eb85177fbaf1a7f52955d7cdbc02/index.html#L4853-L4867
+    
+    const punctuation = new Set(['.', '!', '?']); // extend this as you see fit
+
+    for (let i = input.length - 1; i >= 0; i--) {
+        const char = input[i];
+        
+        if (punctuation.has(char)) {
+            last = i;
+            break;
+        }
+        
+        if (include_newline && char === '\n') {
+            last = i;
+            break;
+        }
+
+        if (last === -1) {
+            return input.trimEnd();
+        }
+
+        return input.substring(0, last + 1).trimEnd();
     }
 }
