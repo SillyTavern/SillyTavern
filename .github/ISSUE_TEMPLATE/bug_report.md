@@ -30,6 +30,7 @@ Providing the logs from the browser DevTools console (opened by pressing the F12
 **Desktop (please complete the following information):**
  - OS/Device: [e.g. Windows 11]
  - Environment: [cloud, local]
+ - Node.js version (if applicable): [run `node --version` in cmd]
  - Browser [e.g. chrome, safari]
  - Generation API [e.g. KoboldAI, OpenAI] 
  - Branch [main, dev]
