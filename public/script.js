@@ -5170,6 +5170,9 @@ $(document).ready(function () {
             }
         }
 
+        rawPromptPopper.update();
+        $('#rawPromptPopup').hide();
+
         if (dialogueResolve) {
             if (popup_type == 'input') {
                 dialogueResolve($("#dialogue_popup_input").val());
@@ -5825,10 +5828,14 @@ $(document).ready(function () {
         console.log(itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt);
 
         let rawPrompt = itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt;
-        let rawPromptValues = Object.values(rawPrompt);
+        let rawPromptValues = rawPrompt;
+
+        if (Array.isArray(rawPrompt)) {
+            rawPromptValues = rawPrompt.map(x => x.content).join('\n');
+        }
 
         //let DisplayStringifiedPrompt = JSON.stringify(itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt).replace(/\n+/g, '<br>');
-        $("#rawPromptWrapper").html(rawPromptValues);
+        $("#rawPromptWrapper").text(rawPromptValues);
         rawPromptPopper.update();
         $('#rawPromptPopup').toggle();
     })
