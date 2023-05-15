@@ -3193,9 +3193,37 @@ a {
     text-decoration: none;
 }
 
-#export_format_popup {
+#export_format_popup,
+#rawPromptPopup {
     display: none;
     z-index: 9999;
+}
+
+#rawPromptPopup {
+    inset: 0px auto auto 0px;
+    margin: 0px;
+    transform: translate(909px, 47px);
+    display: block;
+    overflow-wrap: break-word;
+    white-space: normal;
+    max-width: calc(((100svw - 500px) / 2) - 10px);
+    position: absolute;
+    z-index: 9999;
+    max-height: 90svh;
+    /*unsure why, but this prevents scrollbars*/
+    height: 49svh;
+
+    padding: 5px;
+    overflow-y: auto;
+    display: none;
+}
+
+#rawPopupWrapper {
+    word-wrap: break-word;
+    width: 100%;
+    text-align: start;
+    overflow-y: auto;
+    max-height: 100%;
 }
 
 .list-group {
@@ -4098,6 +4126,10 @@ body.waifuMode #avatar_zoom_popup {
     .pull-tab {
         display: none !important;
 
+    }
+
+    #showRawPrompt {
+        display: none;
     }
 
     .mes-text {

@@ -246,6 +246,9 @@ let optionsPopper = Popper.createPopper(document.getElementById('send_form'), do
 let exportPopper = Popper.createPopper(document.getElementById('export_button'), document.getElementById('export_format_popup'), {
     placement: 'left'
 });
+let rawPromptPopper = Popper.createPopper(document.getElementById('dialogue_popup'), document.getElementById('rawPromptPopup'), {
+    placement: 'right'
+});
 
 let dialogueResolve = null;
 let chat_metadata = {};
@@ -2186,7 +2189,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             }
             else if (main_api == 'openai') {
                 let [prompt, counts] = await prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAfter, afterScenarioAnchor, promptBias, type);
-                generate_data = { prompt : prompt };
+                generate_data = { prompt: prompt };
 
                 // counts will return false if the user has not enabled the token breakdown feature
                 if (counts) {
@@ -2228,10 +2231,11 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
                 setInContextMessages(openai_messages_count, type);
             } else if (main_api == 'poe') {
-                generate_data = { prompt : finalPromt };
+                generate_data = { prompt: finalPromt };
             }
 
             if (power_user.console_log_prompts) {
+
                 console.log(generate_data.prompt);
             }
 
@@ -2280,6 +2284,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             let currentArrayEntry = Number(thisPromptBits.length - 1);
             let additionalPromptStuff = {
                 ...thisPromptBits[currentArrayEntry],
+                rawPrompt: generate_data.prompt,
                 mesId: Number(count_view_mes),
                 worldInfoBefore: worldInfoBefore,
                 allAnchors: allAnchors,
@@ -2580,6 +2585,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
             Only the white numbers really matter. All numbers are estimates.
             Grey color items may not have been included in the context due to certain prompt format settings.
         </span>
+        <div id="showRawPrompt" class="fa-solid fa-square-poll-horizontal menu_button"></div>
         <hr class="sysHR">
         <div class="justifyLeft">
             <div class="flex-container">
@@ -2693,6 +2699,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
             Only the white numbers really matter. All numbers are estimates.
             Grey color items may not have been included in the context due to certain prompt format settings.
         </span>
+        <div id="showRawPrompt" class="fa-solid fa-square-poll-horizontal menu_button"></div>
         <hr class="sysHR">
         <div class="justifyLeft">
             <div class="flex-container">
@@ -5761,6 +5768,18 @@ $(document).ready(function () {
         if (itemizedPrompts.length !== undefined && itemizedPrompts.length !== 0) {
             promptItemize(itemizedPrompts, mesIdForItemization);
         }
+    })
+
+    $(document).on("pointerup", "#showRawPrompt", function () {
+        //let mesIdForItemization = $(this).closest('.mes').attr('mesId');
+        //console.log(generate_data.prompt);
+        console.log(itemizedPrompts[0].rawPrompt);
+        $("#rawPromptWrapper").html(itemizedPrompts[0].rawPrompt.replace(/\n/g, '<br>'));
+        rawPromptPopper.update();
+        $('#rawPromptPopup').toggle();
+
+        //Popper(itemizedPrompts, mesIdForItemization);
+
     })
 
 
