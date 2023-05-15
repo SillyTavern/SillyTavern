@@ -190,19 +190,19 @@ export function sortByCssOrder(a, b) {
     return _a - _b;
 }
 
-export function end_trim_to_sentence(input, keep_newlines = false) {
+export function end_trim_to_sentence(input, include_newline = false) {
     // inspired from https://github.com/kaihordewebui/kaihordewebui.github.io/blob/06b95e6b7720eb85177fbaf1a7f52955d7cdbc02/index.html#L4853-L4867
-    
+
     const punctuation = new Set(['.', '!', '?']); // extend this as you see fit
 
     for (let i = input.length - 1; i >= 0; i--) {
         const char = input[i];
-        
+
         if (punctuation.has(char)) {
             last = i;
             break;
         }
-        
+
         if (include_newline && char === '\n') {
             last = i;
             break;

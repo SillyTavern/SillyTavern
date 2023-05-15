@@ -1664,7 +1664,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             $("#send_textarea").val('').trigger('input');
 
             if (power_user.trim_sentences) {
-                textareaText = end_trim_to_sentence(textareaText, power_user.keep_newlines);
+                textareaText = end_trim_to_sentence(textareaText, power_user.include_newline);
             }
         } else {
             textareaText = "";

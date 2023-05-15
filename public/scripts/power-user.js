@@ -77,7 +77,7 @@ let power_user = {
     disable_examples_formatting: false,
     disable_start_formatting: false,
     trim_sentences: false,
-    keep_newlines: false,
+    include_newline: false,
     always_force_name2: false,
     multigen: false,
     multigen_first_chunk: 50,
@@ -495,7 +495,7 @@ function loadPowerUserSettings(settings, data) {
     $("#disable-examples-formatting-checkbox").prop("checked", power_user.disable_examples_formatting);
     $('#disable-start-formatting-checkbox').prop("checked", power_user.disable_start_formatting);
     $("#trim_sentences_checkbox").prop("checked", power_user.trim_sentences);
-    $("#keep_newlines_checkbox").prop("checked", power_user.keep_newlines);
+    $("#include_newline_checkbox").prop("checked", power_user.include_newline);
     $('#render_formulas').prop("checked", power_user.render_formulas);
     $("#custom_chat_separator").val(power_user.custom_chat_separator);
     $("#fast_ui_mode").prop("checked", power_user.fast_ui_mode);
@@ -860,20 +860,20 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
-    // keep newlines is the child of trim sentences
-    // if keep newlines is checked, trim sentences must be checked
-    // if trim sentences is unchecked, keep newlines must be unchecked
+    // include newline is the child of trim sentences
+    // if include newline is checked, trim sentences must be checked
+    // if trim sentences is unchecked, include newline must be unchecked
     $("#trim_sentences_checkbox").change(function() {
         power_user.trim_sentences = !!$(this).prop("checked");
         if (!$(this).prop("checked")) {
-            $("#keep_newlines_checkbox").prop("checked", false);
-            power_user.keep_newlines = false;
+            $("#include_newline_checkbox").prop("checked", false);
+            power_user.include_newline = false;
         }
         saveSettingsDebounced();
     });
 
-    $("#keep_newlines_checkbox").change(function() {
-        power_user.keep_newlines = !!$(this).prop("checked");
+    $("#include_newline_checkbox").change(function() {
+        power_user.include_newline = !!$(this).prop("checked");
         if ($(this).prop("checked")) {
             $("#trim_sentences_checkbox").prop("checked", true);
             power_user.trim_sentences = true;
