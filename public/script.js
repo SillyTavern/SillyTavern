@@ -246,7 +246,7 @@ let dialogueResolve = null;
 let chat_metadata = {};
 let streamingProcessor = null;
 let crop_data = undefined;
-
+let is_delete_mode = false;
 let fav_ch_checked = false;
 
 //initialize global var for future cropped blobs
@@ -4512,14 +4512,19 @@ $(document).ready(function () {
             is_use_scroll_holder = false;
         }
     });
-    $(document).on("click", ".del_checkbox", function () {
-        //when a 'delete message' checkbox is clicked
-        $(".del_checkbox").each(function () {
+
+    $(document).on("click", ".mes", function () {
+        //when a 'delete message' parent div is clicked
+        // and we are in delete mode
+        if (!is_delete_mode) {
+            return;
+        }
+        $(".mes").children(".del_checkbox").each(function () {
             $(this).prop("checked", false);
             $(this).parent().css("background", css_mes_bg);
         });
-        $(this).parent().css("background", "#600"); //sets the bg of the mes selected for deletion
-        var i = $(this).parent().attr("mesid"); //checks the message ID in the chat
+        $(this).css("background", "#600"); //sets the bg of the mes selected for deletion
+        var i = $(this).attr("mesid"); //checks the message ID in the chat
         this_del_mes = i;
         while (i < chat.length) {
             //as long as the current message ID is less than the total chat length
@@ -4531,6 +4536,7 @@ $(document).ready(function () {
             //console.log(i);
         }
     });
+
     $(document).on("click", "#user_avatar_block .avatar", function () {
         user_avatar = $(this).attr("imgfile");
         reloadUserAvatar();
@@ -5225,6 +5231,7 @@ $(document).ready(function () {
                     }
                 });
             }
+            is_delete_mode = true;
         }
     });
 
@@ -5243,6 +5250,7 @@ $(document).ready(function () {
         this_del_mes = 0;
         console.log('canceled del msgs, calling showswipesbtns');
         showSwipeButtons();
+        is_delete_mode = false;
     });
 
     //confirms message delation with the "ok" button
@@ -5271,6 +5279,7 @@ $(document).ready(function () {
         $('#chat .mes').eq(-2).removeClass('last_mes');
         console.log('confirmed del msgs, calling showswipesbtns');
         showSwipeButtons();
+        is_delete_mode = false;
     });
 
     $("#settings_perset").change(function () {
