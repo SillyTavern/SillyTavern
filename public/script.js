@@ -1261,15 +1261,16 @@ function getStoppingStrings(isImpersonate, addSpace) {
         }
     }
 
+    // Cohee: oobabooga's textgen always appends newline before the sequence as a stopping string
+    // But it's a problem for Metharme which doesn't use newlines to separate them.
+    const wrap = (s) => power_user.instruct.wrap ? '\n' + s : s;
+
     if (power_user.instruct.enabled) {
-        // Cohee: This was borrowed from oobabooga's textgen. But..
-        // What if a model doesn't use newlines to chain sequences?
-        // Who knows.
         if (power_user.instruct.input_sequence) {
-            result.push(`\n${power_user.instruct.input_sequence}`);
+            result.push(wrap(power_user.instruct.input_sequence));
         }
         if (power_user.instruct.output_sequence) {
-            result.push(`\n${power_user.instruct.output_sequence}`);
+            result.push(wrap(power_user.instruct.output_sequence));
         }
     }
 
@@ -1700,20 +1701,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
         //for normal messages sent from user..
         if (textareaText != "" && !automatic_trigger && type !== 'quiet') {
-            chat[chat.length] = {};
-            chat[chat.length - 1]['name'] = name1;
-            chat[chat.length - 1]['is_user'] = true;
-            chat[chat.length - 1]['is_name'] = true;
-            chat[chat.length - 1]['send_date'] = humanizedDateTime();
-            chat[chat.length - 1]['mes'] = textareaText;
-            chat[chat.length - 1]['extra'] = {};
-
-            if (messageBias) {
-                console.log('checking bias');
-                chat[chat.length - 1]['extra']['bias'] = messageBias;
-            }
-            //console.log('Generate calls addOneMessage');
-            addOneMessage(chat[chat.length - 1]);
+            sendMessageAsUser(textareaText, messageBias);
         }
         ////////////////////////////////////
         const scenarioText = chat_metadata['scenario'] || characters[this_chid].scenario;
@@ -1812,28 +1800,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         //chat2 = chat2.reverse();
 
         // Determine token limit
-        let this_max_context = 1487;
-        if (main_api == 'kobold' || main_api == 'textgenerationwebui') {
-            this_max_context = (max_context - amount_gen);
-        }
-        if (main_api == 'novel') {
-            if (novel_tier === 1) {
-                this_max_context = 1024;
-            } else {
-                this_max_context = 2048 - 60;//fix for fat tokens 
-                if (nai_settings.model_novel == 'krake-v2') {
-                    this_max_context -= 160;
-                }
-            }
-        }
-        if (main_api == 'openai') {
-            this_max_context = oai_settings.openai_max_context;
-        }
-        if (main_api == 'poe') {
-            this_max_context = Number(max_context);
-        }
-
-
+        let this_max_context = getMaxContextSize();
 
         // Adjust token limit for Horde
         let adjustedParams;
@@ -2072,22 +2039,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             }
 
             // add a custom dingus (if defined)
-            if (power_user.custom_chat_separator && power_user.custom_chat_separator.length) {
-                mesSendString = power_user.custom_chat_separator + '\n' + mesSendString;
-            }
-            // if chat start formatting is disabled
-            else if (power_user.disable_start_formatting) {
-                mesSendString = mesSendString;
-            }
-            // add non-pygma dingus
-            else if (!is_pygmalion) {
-                mesSendString = '\nThen the roleplay chat between ' + name1 + ' and ' + name2 + ' begins.\n' + mesSendString;
-            }
-            // add pygma <START>
-            else {
-                mesSendString = '<START>\n' + mesSendString;
-                //mesSendString = mesSendString; //This edit simply removes the first "<START>" that is prepended to all context prompts
-            }
+            mesSendString = adjustChatsSeparator(mesSendString);
+
             let finalPromt =
                 worldInfoBefore +
                 storyString +
@@ -2098,22 +2051,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 generatedPromtCache +
                 promptBias;
 
-
-
             if (zeroDepthAnchor && zeroDepthAnchor.length) {
                 if (!isMultigenEnabled() || tokens_already_generated == 0) {
-                    const trimBothEnds = !force_name2 && !is_pygmalion;
-                    let trimmedPrompt = (trimBothEnds ? zeroDepthAnchor.trim() : zeroDepthAnchor.trimEnd());
-
-                    if (trimBothEnds && !finalPromt.endsWith('\n')) {
-                        finalPromt += '\n';
-                    }
-
-                    finalPromt += trimmedPrompt;
-
-                    if (force_name2 || is_pygmalion) {
-                        finalPromt += ' ';
-                    }
+                    finalPromt = appendZeroDepthAnchor(force_name2, zeroDepthAnchor, finalPromt);
                 }
             }
 
@@ -2132,29 +2072,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
             if (isMultigenEnabled() && type !== 'quiet') {
                 // if nothing has been generated yet..
-                if (tokens_already_generated === 0) {
-                    // if the max gen setting is > 50...(
-                    if (parseInt(amount_gen) >= power_user.multigen_first_chunk) {
-                        // then only try to make 50 this cycle..
-                        this_amount_gen = power_user.multigen_first_chunk;
-                    }
-                    else {
-                        // otherwise, make as much as the max amount request.
-                        this_amount_gen = parseInt(amount_gen);
-                    }
-                }
-                // if we already received some generated text...
-                else {
-                    // if the remaining tokens to be made is less than next potential cycle count
-                    if (parseInt(amount_gen) - tokens_already_generated < power_user.multigen_next_chunks) {
-                        // subtract already generated amount from the desired max gen amount
-                        this_amount_gen = parseInt(amount_gen) - tokens_already_generated;
-                    }
-                    else {
-                        // otherwise make the standard cycle amount (first 50, and 30 after that)
-                        this_amount_gen = power_user.multigen_next_chunks;
-                    }
-                }
+                this_amount_gen = getMultigenAmount();
             }
 
             let thisPromptBits = [];
@@ -2193,40 +2111,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
                 // counts will return false if the user has not enabled the token breakdown feature
                 if (counts) {
-
-                    //$('#token_breakdown').css('display', 'flex');
-                    const breakdown_bar = $('#token_breakdown div:first-child');
-                    breakdown_bar.empty();
-
-                    const total = Object.values(counts).filter(x => !Number.isNaN(x)).reduce((acc, val) => acc + val, 0);
-
-                    thisPromptBits.push({
-                        oaiStartTokens: Object.entries(counts)[0][1],
-                        oaiPromptTokens: Object.entries(counts)[1][1],
-                        oaiBiasTokens: Object.entries(counts)[2][1],
-                        oaiNudgeTokens: Object.entries(counts)[3][1],
-                        oaiJailbreakTokens: Object.entries(counts)[4][1],
-                        oaiImpersonateTokens: Object.entries(counts)[5][1],
-                        oaiExamplesTokens: Object.entries(counts)[6][1],
-                        oaiConversationTokens: Object.entries(counts)[7][1],
-                        oaiTotalTokens: total,
-                    })
-
-                    Object.entries(counts).forEach(([type, value]) => {
-                        if (value === 0) {
-                            return;
-                        }
-                        const percent_value = (value / total) * 100;
-                        const color = uniqolor(type, { saturation: 50, lightness: 75, }).color;
-                        const bar = document.createElement('div');
-                        bar.style.width = `${percent_value}%`;
-                        bar.classList.add('token_breakdown_segment');
-                        bar.style.backgroundColor = color + 'AA';
-                        bar.style.borderColor = color + 'FF';
-                        bar.innerText = value;
-                        bar.title = `${type}: ${percent_value.toFixed(2)}%`;
-                        breakdown_bar.append(bar);
-                    });
+                    parseTokenCounts(counts, thisPromptBits);
                 }
 
                 setInContextMessages(openai_messages_count, type);
@@ -2314,28 +2199,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             itemizedPrompts.push(thisPromptBits);
             //console.log(`pushed prompt bits to itemizedPrompts array. Length is now: ${itemizedPrompts.length}`);
 
-
-
             if (isStreamingEnabled() && type !== 'quiet') {
                 hideSwipeButtons();
                 let getMessage = await streamingProcessor.generate();
-
-                // Cohee: Basically a dead-end code... (disabled by isStreamingEnabled)
-                // I wasn't able to get multigen working with real streaming
-                // consistently without screwing the interim prompting
-                if (isMultigenEnabled()) {
-                    tokens_already_generated += this_amount_gen;    // add new gen amt to any prev gen counter..
-                    message_already_generated += getMessage;
-                    promptBias = '';
-                    if (!streamingProcessor.isStopped && shouldContinueMultigen(getMessage, isImpersonate)) {
-                        streamingProcessor.isFinished = false;
-                        runGenerate(getMessage);
-                        console.log('returning to make generate again');
-                        return;
-                    }
-
-                    getMessage = message_already_generated;
-                }
 
                 if (streamingProcessor && !streamingProcessor.isStopped && streamingProcessor.isFinished) {
                     streamingProcessor.onFinishStreaming(streamingProcessor.messageId, getMessage);
@@ -2425,10 +2291,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         // regenerate with character speech reenforced
                         // to make sure we leave on swipe type while also adding the name2 appendage
                         setTimeout(() => {
-                            let newType = type == "swipe" ? "swipe" : "force_name2";
-                            newType = isImpersonate ? type : newType;
-
-                            Generate(newType, { automatic_trigger: false, force_name2: true });
+                            Generate(type, { automatic_trigger, force_name2: true, resolve, reject, quiet_prompt, force_chid });
                         }, generate_loop_counter * 1000);
                     }
                 } else {
@@ -2470,6 +2333,152 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     }
     //console.log('generate ending');
 } //generate ends
+
+function sendMessageAsUser(textareaText, messageBias) {
+    chat[chat.length] = {};
+    chat[chat.length - 1]['name'] = name1;
+    chat[chat.length - 1]['is_user'] = true;
+    chat[chat.length - 1]['is_name'] = true;
+    chat[chat.length - 1]['send_date'] = humanizedDateTime();
+    chat[chat.length - 1]['mes'] = textareaText;
+    chat[chat.length - 1]['extra'] = {};
+
+    if (messageBias) {
+        console.log('checking bias');
+        chat[chat.length - 1]['extra']['bias'] = messageBias;
+    }
+    //console.log('Generate calls addOneMessage');
+    addOneMessage(chat[chat.length - 1]);
+}
+
+function getMaxContextSize() {
+    let this_max_context = 1487;
+    if (main_api == 'kobold' || main_api == 'textgenerationwebui') {
+        this_max_context = (max_context - amount_gen);
+    }
+    if (main_api == 'novel') {
+        if (novel_tier === 1) {
+            this_max_context = 1024;
+        } else {
+            this_max_context = 2048 - 60; //fix for fat tokens 
+            if (nai_settings.model_novel == 'krake-v2') {
+                this_max_context -= 160;
+            }
+        }
+    }
+    if (main_api == 'openai') {
+        this_max_context = oai_settings.openai_max_context;
+    }
+    if (main_api == 'poe') {
+        this_max_context = Number(max_context);
+    }
+    return this_max_context;
+}
+
+function parseTokenCounts(counts, thisPromptBits) {
+    const breakdown_bar = $('#token_breakdown div:first-child');
+    breakdown_bar.empty();
+
+    const total = Object.values(counts).filter(x => !Number.isNaN(x)).reduce((acc, val) => acc + val, 0);
+
+    thisPromptBits.push({
+        oaiStartTokens: Object.entries(counts)[0][1],
+        oaiPromptTokens: Object.entries(counts)[1][1],
+        oaiBiasTokens: Object.entries(counts)[2][1],
+        oaiNudgeTokens: Object.entries(counts)[3][1],
+        oaiJailbreakTokens: Object.entries(counts)[4][1],
+        oaiImpersonateTokens: Object.entries(counts)[5][1],
+        oaiExamplesTokens: Object.entries(counts)[6][1],
+        oaiConversationTokens: Object.entries(counts)[7][1],
+        oaiTotalTokens: total,
+    });
+
+    Object.entries(counts).forEach(([type, value]) => {
+        if (value === 0) {
+            return;
+        }
+        const percent_value = (value / total) * 100;
+        const color = uniqolor(type, { saturation: 50, lightness: 75, }).color;
+        const bar = document.createElement('div');
+        bar.style.width = `${percent_value}%`;
+        bar.classList.add('token_breakdown_segment');
+        bar.style.backgroundColor = color + 'AA';
+        bar.style.borderColor = color + 'FF';
+        bar.innerText = value;
+        bar.title = `${type}: ${percent_value.toFixed(2)}%`;
+        breakdown_bar.append(bar);
+    });
+}
+
+function adjustChatsSeparator(mesSendString) {
+    if (power_user.custom_chat_separator && power_user.custom_chat_separator.length) {
+        mesSendString = power_user.custom_chat_separator + '\n' + mesSendString;
+    }
+
+    // if chat start formatting is disabled
+    else if (power_user.disable_start_formatting) {
+        mesSendString = mesSendString;
+    }
+
+    // add non-pygma dingus
+    else if (!is_pygmalion) {
+        mesSendString = '\nThen the roleplay chat between ' + name1 + ' and ' + name2 + ' begins.\n' + mesSendString;
+    }
+
+    // add pygma <START>
+    else {
+        mesSendString = '<START>\n' + mesSendString;
+        //mesSendString = mesSendString; //This edit simply removes the first "<START>" that is prepended to all context prompts
+    }
+
+    return mesSendString;
+}
+
+function appendZeroDepthAnchor(force_name2, zeroDepthAnchor, finalPromt) {
+    const trimBothEnds = !force_name2 && !is_pygmalion;
+    let trimmedPrompt = (trimBothEnds ? zeroDepthAnchor.trim() : zeroDepthAnchor.trimEnd());
+
+    if (trimBothEnds && !finalPromt.endsWith('\n')) {
+        finalPromt += '\n';
+    }
+
+    finalPromt += trimmedPrompt;
+
+    if (force_name2 || is_pygmalion) {
+        finalPromt += ' ';
+    }
+
+    return finalPromt;
+}
+
+function getMultigenAmount() {
+    let this_amount_gen = parseInt(amount_gen);
+
+    if (tokens_already_generated === 0) {
+        // if the max gen setting is > 50...(
+        if (parseInt(amount_gen) >= power_user.multigen_first_chunk) {
+            // then only try to make 50 this cycle..
+            this_amount_gen = power_user.multigen_first_chunk;
+        }
+        else {
+            // otherwise, make as much as the max amount request.
+            this_amount_gen = parseInt(amount_gen);
+        }
+    }
+    // if we already received some generated text...
+    else {
+        // if the remaining tokens to be made is less than next potential cycle count
+        if (parseInt(amount_gen) - tokens_already_generated < power_user.multigen_next_chunks) {
+            // subtract already generated amount from the desired max gen amount
+            this_amount_gen = parseInt(amount_gen) - tokens_already_generated;
+        }
+        else {
+            // otherwise make the standard cycle amount (first 50, and 30 after that)
+            this_amount_gen = power_user.multigen_next_chunks;
+        }
+    }
+    return this_amount_gen;
+}
 
 function promptItemize(itemizedPrompts, requestedMesId) {
     var incomingMesId = Number(requestedMesId);
