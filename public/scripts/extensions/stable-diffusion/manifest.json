@@ -1,10 +1,10 @@
 {
     "display_name": "Stable Diffusion",
     "loading_order": 10,
-    "requires": [
+    "requires": [],
+    "optional": [
         "sd"
     ],
-    "optional": [],
     "js": "index.js",
     "css": "style.css",
     "author": "Cohee#1207",

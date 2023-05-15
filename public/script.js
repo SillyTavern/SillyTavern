@@ -106,7 +106,7 @@ import {
     setPoeOnlineStatus,
 } from "./scripts/poe.js";
 
-import { debounce, delay, restoreCaretPosition, saveCaretPosition } from "./scripts/utils.js";
+import { debounce, delay, restoreCaretPosition, saveCaretPosition, end_trim_to_sentence } from "./scripts/utils.js";
 import { extension_settings, getContext, loadExtensionSettings } from "./scripts/extensions.js";
 import { executeSlashCommands, getSlashCommandsHelp, registerSlashCommand } from "./scripts/slash-commands.js";
 import {
@@ -125,6 +125,7 @@ import {
     secret_state,
     writeSecret
 } from "./scripts/secrets.js";
+import uniqolor from "./scripts/uniqolor.js";
 
 //exporting functions and vars for mods
 export {
@@ -204,6 +205,7 @@ let converter;
 reloadMarkdownProcessor();
 
 // array for prompt token calculations
+console.log('initializing Prompt Itemization Array on Startup');
 let itemizedPrompts = [];
 
 /* let bg_menu_toggle = false; */
@@ -243,6 +245,9 @@ let optionsPopper = Popper.createPopper(document.getElementById('send_form'), do
 });
 let exportPopper = Popper.createPopper(document.getElementById('export_button'), document.getElementById('export_format_popup'), {
     placement: 'left'
+});
+let rawPromptPopper = Popper.createPopper(document.getElementById('dialogue_popup'), document.getElementById('rawPromptPopup'), {
+    placement: 'right'
 });
 
 let dialogueResolve = null;
@@ -406,18 +411,21 @@ async function getClientVersion() {
     }
 }
 
-function getTokenCount(str, padding = 0) {
+function getTokenCount(str, padding = undefined) {
     let tokenizerType = power_user.tokenizer;
 
     if (main_api === 'openai') {
-        // For main prompt building
-        if (padding == power_user.token_padding) {
+        if (padding === power_user.token_padding) {
+            // For main "shadow" prompt building
             tokenizerType = tokenizers.NONE;
-            // For extensions and WI
         } else {
+            // For extensions and WI
             return getTokenCountOpenAI(str);
         }
+    }
 
+    if (padding === undefined) {
+        padding = 0;
     }
 
     switch (tokenizerType) {
@@ -531,10 +539,6 @@ var message_already_generated = "";
 var cycle_count_generation = 0;
 
 var swipes = true;
-
-let anchor_order = 0;
-let style_anchor = true;
-let character_anchor = true;
 let extension_prompts = {};
 
 var main_api;// = "kobold";
@@ -1129,28 +1133,34 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
 
     if (isSystem) {
         newMessage.find(".mes_edit").hide();
-        newMessage.find(".mes_prompt").hide(); //dont'd need prompt display for sys messages
+        newMessage.find(".mes_prompt").hide(); //don't need prompt button for sys
     }
 
-    // don't need prompt butons for user messages
+    // don't need prompt button for user
     if (params.isUser === true) {
         newMessage.find(".mes_prompt").hide();
+        console.log(`hiding prompt for user mesID ${params.mesId}`);
     }
 
     //shows or hides the Prompt display button
     let mesIdToFind = Number(newMessage.attr('mesId'));
     if (itemizedPrompts.length !== 0) {
+        //console.log(`itemizedPrompt.length = ${itemizedPrompts.length}`)
         for (var i = 0; i < itemizedPrompts.length; i++) {
             if (itemizedPrompts[i].mesId === mesIdToFind) {
                 newMessage.find(".mes_prompt").show();
+                console.log(`showing prompt for mesID ${params.mesId} from ${params.characterName}`);
             } else {
-                console.log('no cache found for mesID, hiding prompt button and continuing search');
+                console.log(`no cache obj for mesID ${mesIdToFind}, hiding prompt button and continuing search`);
                 newMessage.find(".mes_prompt").hide();
+                console.log(itemizedPrompts);
             }
         }
-    } else { //hide all when prompt cache is empty
+    } else if (params.isUser !== true) { //hide all when prompt cache is empty
+        console.log('saw empty prompt cache, hiding all prompt buttons');
         $(".mes_prompt").hide();
-    }
+        //console.log(itemizedPrompts);
+    } else { console.log('skipping prompt data for User Message'); }
 
     newMessage.find('.avatar img').on('error', function () {
         $(this).hide();
@@ -1250,15 +1260,16 @@ function getStoppingStrings(isImpersonate, addSpace) {
         }
     }
 
+    // Cohee: oobabooga's textgen always appends newline before the sequence as a stopping string
+    // But it's a problem for Metharme which doesn't use newlines to separate them.
+    const wrap = (s) => power_user.instruct.wrap ? '\n' + s : s;
+
     if (power_user.instruct.enabled) {
-        // Cohee: This was borrowed from oobabooga's textgen. But..
-        // What if a model doesn't use newlines to chain sequences?
-        // Who knows.
         if (power_user.instruct.input_sequence) {
-            result.push(`\n${power_user.instruct.input_sequence}`);
+            result.push(wrap(power_user.instruct.input_sequence));
         }
         if (power_user.instruct.output_sequence) {
-            result.push(`\n${power_user.instruct.output_sequence}`);
+            result.push(wrap(power_user.instruct.output_sequence));
         }
     }
 
@@ -1466,10 +1477,10 @@ class StreamingProcessor {
         return text;
     }
 
-    onProgressStreaming(messageId, text) {
+    onProgressStreaming(messageId, text, isFinal) {
         const isImpersonate = this.type == "impersonate";
         text = this.removePrefix(text);
-        let processedText = cleanUpMessage(text, isImpersonate);
+        let processedText = cleanUpMessage(text, isImpersonate, !isFinal);
         let result = extractNameFromMessage(processedText, this.force_name2, isImpersonate);
         let isName = result.this_mes_is_name;
         processedText = result.getMessage;
@@ -1506,7 +1517,7 @@ class StreamingProcessor {
 
     onFinishStreaming(messageId, text) {
         this.hideStopButton(this.messageId);
-        this.onProgressStreaming(messageId, text);
+        this.onProgressStreaming(messageId, text, true);
         addCopyToCodeBlocks($(`#chat .mes[mesid="${messageId}"]`));
         saveChatConditional();
         activateSendButtons();
@@ -1626,6 +1637,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     const isImpersonate = type == "impersonate";
     const isInstruct = power_user.instruct.enabled;
 
+    message_already_generated = isImpersonate ? `${name1}: ` : `${name2}: `;
     // Name for the multigen prefix
     const magName = isImpersonate ? (is_pygmalion ? 'You' : name1) : name2;
 
@@ -1634,6 +1646,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     } else {
         message_already_generated = `${magName}: `;
     }
+
+    // To trim after multigen ended
+    const magFirst = message_already_generated;
 
     const interruptedByCommand = processCommands($("#send_textarea").val(), type);
 
@@ -1659,6 +1674,14 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     // Hide swipes on either multigen or real streaming
     if (isStreamingEnabled() || isMultigenEnabled()) {
         hideSwipeButtons();
+    }
+
+    // Set empty promise resolution functions
+    if (typeof resolve !== 'function') {
+        resolve = () => { };
+    }
+    if (typeof reject !== 'function') {
+        reject = () => { };
     }
 
     if (selected_group && !is_group_generating) {
@@ -1704,47 +1727,13 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         // bias from the latest message is top priority//
         promptBias = messageBias ?? promptBias ?? '';
 
-        // Compute anchors
-        const topAnchorDepth = 8;
-        const bottomAnchorThreshold = 8;
-        let anchorTop = '';
-        let anchorBottom = '';
-        if (!is_pygmalion) {
-            let postAnchorChar = character_anchor ? name2 + " Elaborate speaker" : "";
-            let postAnchorStyle = style_anchor ? "Writing style: very long messages" : "";
-            if (anchor_order === 0) {
-                anchorTop = postAnchorChar;
-                anchorBottom = postAnchorStyle;
-            } else { // anchor_order === 1
-                anchorTop = postAnchorStyle;
-                anchorBottom = postAnchorChar;
-            }
-
-            if (anchorBottom) {
-                anchorBottom = "[" + anchorBottom + "]";
-            }
-        }
-
         //*********************************
         //PRE FORMATING STRING
         //*********************************
 
         //for normal messages sent from user..
         if (textareaText != "" && !automatic_trigger && type !== 'quiet') {
-            chat[chat.length] = {};
-            chat[chat.length - 1]['name'] = name1;
-            chat[chat.length - 1]['is_user'] = true;
-            chat[chat.length - 1]['is_name'] = true;
-            chat[chat.length - 1]['send_date'] = humanizedDateTime();
-            chat[chat.length - 1]['mes'] = textareaText;
-            chat[chat.length - 1]['extra'] = {};
-
-            if (messageBias) {
-                console.log('checking bias');
-                chat[chat.length - 1]['extra']['bias'] = messageBias;
-            }
-            //console.log('Generate calls addOneMessage');
-            addOneMessage(chat[chat.length - 1]);
+            sendMessageAsUser(textareaText, messageBias);
         }
         ////////////////////////////////////
         const scenarioText = chat_metadata['scenario'] || characters[this_chid].scenario;
@@ -1780,6 +1769,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         console.log(`Core/all messages: ${coreChat.length}/${chat.length}`);
 
         if (main_api === 'openai') {
+            message_already_generated = ''; // OpenAI doesn't have multigen
             setOpenAIMessages(coreChat, quiet_prompt);
             setOpenAIMessageExamples(mesExamplesArray);
         }
@@ -1792,11 +1782,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             storyString += appendToStoryString(Scenario, power_user.disable_scenario_formatting ? '' : 'Scenario: ');
         } else {
             storyString += appendToStoryString(charDescription, '');
-
-            if (coreChat.length < topAnchorDepth) {
-                storyString += appendToStoryString(charPersonality, power_user.disable_personality_formatting ? '' : name2 + "'s personality: ");
-            }
-
+            storyString += appendToStoryString(charPersonality, power_user.disable_personality_formatting ? '' : name2 + "'s personality: ");
             storyString += appendToStoryString(Scenario, power_user.disable_scenario_formatting ? '' : 'Circumstances and context of the dialogue: ');
         }
 
@@ -1830,7 +1816,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             } else {
                 this_mes_ch_name = charName;
             }
-            if (coreChat[j]['is_name']) {
+            if (coreChat[j]['is_name'] || selected_group) {
                 chat2[i] = this_mes_ch_name + ': ' + coreChat[j]['mes'] + '\n';
             } else {
                 chat2[i] = coreChat[j]['mes'] + '\n';
@@ -1846,28 +1832,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         //chat2 = chat2.reverse();
 
         // Determine token limit
-        let this_max_context = 1487;
-        if (main_api == 'kobold' || main_api == 'textgenerationwebui') {
-            this_max_context = (max_context - amount_gen);
-        }
-        if (main_api == 'novel') {
-            if (novel_tier === 1) {
-                this_max_context = 1024;
-            } else {
-                this_max_context = 2048 - 60;//fix for fat tokens 
-                if (nai_settings.model_novel == 'krake-v2') {
-                    this_max_context -= 160;
-                }
-            }
-        }
-        if (main_api == 'openai') {
-            this_max_context = oai_settings.openai_max_context;
-        }
-        if (main_api == 'poe') {
-            this_max_context = Number(max_context);
-        }
-
-
+        let this_max_context = getMaxContextSize();
 
         // Adjust token limit for Horde
         let adjustedParams;
@@ -1905,9 +1870,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 storyString,
                 examplesString,
                 chatString,
-                anchorTop,
-                anchorBottom,
-                charPersonality,
                 promptBias,
                 allAnchors,
                 quiet_prompt,
@@ -1969,7 +1931,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             generatedPromtCache += cycleGenerationPromt;
             if (generatedPromtCache.length == 0) {
                 if (main_api === 'openai') {
-                    generateOpenAIPromptCache(charPersonality, topAnchorDepth, anchorTop, bottomAnchorThreshold, anchorBottom);
+                    generateOpenAIPromptCache();
                 }
 
                 console.log('generating prompt');
@@ -1990,21 +1952,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                             // removing a newline ONLY at the end of the string if it exists. 
                             item = item.replace(/\n?$/, '');
                             //item = item.substr(0, item.length - 1);
-                        }
-                    }
-                    if (i === arrMes.length - topAnchorDepth && !is_pygmalion) {
-                        //chatString = chatString.substr(0,chatString.length-1);
-                        //anchorAndPersonality = "[Genre: roleplay chat][Tone: very long messages with descriptions]";
-                        let personalityAndAnchor = [charPersonality, anchorTop].filter(x => x).join(' ');
-                        if (personalityAndAnchor) {
-                            item += "[" + personalityAndAnchor + "]\n";
-                        }
-                    }
-                    if (i === arrMes.length - 1 && coreChat.length > bottomAnchorThreshold && item.trim().startsWith(name1 + ":") && !is_pygmalion) {//For add anchor in end
-                        //chatString+=postAnchor+"\n";//"[Writing style: very long messages]\n";
-                        if (anchorBottom) {
-                            item = item.replace(/\n$/, " ");
-                            item += anchorBottom + "\n";
                         }
                     }
                     if (is_pygmalion && !isInstruct) {
@@ -2094,9 +2041,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     storyString,
                     mesExmString,
                     mesSendString,
-                    anchorTop,
-                    anchorBottom,
-                    charPersonality,
                     generatedPromtCache,
                     promptBias,
                     allAnchors,
@@ -2127,22 +2071,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             }
 
             // add a custom dingus (if defined)
-            if (power_user.custom_chat_separator && power_user.custom_chat_separator.length) {
-                mesSendString = power_user.custom_chat_separator + '\n' + mesSendString;
-            }
-            // if chat start formatting is disabled
-            else if (power_user.disable_start_formatting) {
-                mesSendString = mesSendString;
-            }
-            // add non-pygma dingus
-            else if (!is_pygmalion) {
-                mesSendString = '\nThen the roleplay chat between ' + name1 + ' and ' + name2 + ' begins.\n' + mesSendString;
-            }
-            // add pygma <START>
-            else {
-                mesSendString = '<START>\n' + mesSendString;
-                //mesSendString = mesSendString; //This edit simply removes the first "<START>" that is prepended to all context prompts
-            }
+            mesSendString = adjustChatsSeparator(mesSendString);
+
             let finalPromt =
                 worldInfoBefore +
                 storyString +
@@ -2153,48 +2083,15 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 generatedPromtCache +
                 promptBias;
 
-            //set array object for prompt token itemization of this message
-            let thisPromptBits = {
-                mesId: count_view_mes,
-                worldInfoBefore: worldInfoBefore,
-                allAnchors: allAnchors,
-                summarizeString: (extension_prompts['1_memory']?.value || ''),
-                authorsNoteString: (extension_prompts['2_floating_prompt']?.value || ''),
-                worldInfoString: worldInfoString,
-                storyString: storyString,
-                worldInfoAfter: worldInfoAfter,
-                afterScenarioAnchor: afterScenarioAnchor,
-                examplesString: examplesString,
-                mesSendString: mesSendString,
-                generatedPromtCache: generatedPromtCache,
-                promptBias: promptBias,
-                finalPromt: finalPromt,
-                charDescription: charDescription,
-                charPersonality: charPersonality,
-                scenarioText: scenarioText,
-                promptBias: promptBias,
-                storyString: storyString,
-                this_max_context: this_max_context,
-                padding: power_user.token_padding
-            }
-
-            itemizedPrompts.push(thisPromptBits);
-
             if (zeroDepthAnchor && zeroDepthAnchor.length) {
                 if (!isMultigenEnabled() || tokens_already_generated == 0) {
-                    const trimBothEnds = !force_name2 && !is_pygmalion;
-                    let trimmedPrompt = (trimBothEnds ? zeroDepthAnchor.trim() : zeroDepthAnchor.trimEnd());
-
-                    if (trimBothEnds && !finalPromt.endsWith('\n')) {
-                        finalPromt += '\n';
-                    }
-
-                    finalPromt += trimmedPrompt;
-
-                    if (force_name2 || is_pygmalion) {
-                        finalPromt += ' ';
-                    }
+                    finalPromt = appendZeroDepthAnchor(force_name2, zeroDepthAnchor, finalPromt);
                 }
+            }
+
+            // Add quiet generation prompt at depth 0
+            if (quiet_prompt && quiet_prompt.length) {
+                finalPromt += `\n${quiet_prompt}`;
             }
 
             finalPromt = finalPromt.replace(/\r/gm, '');
@@ -2207,30 +2104,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
             if (isMultigenEnabled() && type !== 'quiet') {
                 // if nothing has been generated yet..
-                if (tokens_already_generated === 0) {
-                    // if the max gen setting is > 50...(
-                    if (parseInt(amount_gen) >= power_user.multigen_first_chunk) {
-                        // then only try to make 50 this cycle..
-                        this_amount_gen = power_user.multigen_first_chunk;
-                    }
-                    else {
-                        // otherwise, make as much as the max amount request.
-                        this_amount_gen = parseInt(amount_gen);
-                    }
-                }
-                // if we already received some generated text...
-                else {
-                    // if the remaining tokens to be made is less than next potential cycle count
-                    if (parseInt(amount_gen) - tokens_already_generated < power_user.multigen_next_chunks) {
-                        // subtract already generated amount from the desired max gen amount
-                        this_amount_gen = parseInt(amount_gen) - tokens_already_generated;
-                    }
-                    else {
-                        // otherwise make the standard cycle amount (first 50, and 30 after that)
-                        this_amount_gen = power_user.multigen_next_chunks;
-                    }
-                }
+                this_amount_gen = getMultigenAmount();
             }
+
+            let thisPromptBits = [];
 
             if (main_api == 'kobold' && horde_settings.use_horde && horde_settings.auto_adjust_response_length) {
                 this_amount_gen = Math.min(this_amount_gen, adjustedParams.maxLength);
@@ -2253,28 +2130,41 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     generate_data = getKoboldGenerationData(finalPromt, this_settings, this_amount_gen, maxContext, isImpersonate);
                 }
             }
-
-            if (main_api == 'textgenerationwebui') {
+            else if (main_api == 'textgenerationwebui') {
                 generate_data = getTextGenGenerationData(finalPromt, this_amount_gen, isImpersonate);
             }
-
-            if (main_api == 'novel') {
+            else if (main_api == 'novel') {
                 const this_settings = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
                 generate_data = getNovelGenerationData(finalPromt, this_settings);
+            }
+            else if (main_api == 'openai') {
+                let [prompt, counts] = await prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAfter, afterScenarioAnchor, promptBias, type);
+                generate_data = { prompt: prompt };
+
+                // counts will return false if the user has not enabled the token breakdown feature
+                if (counts) {
+                    parseTokenCounts(counts, thisPromptBits);
+                }
+
+                setInContextMessages(openai_messages_count, type);
+            } else if (main_api == 'poe') {
+                generate_data = { prompt: finalPromt };
+            }
+
+            if (power_user.console_log_prompts) {
+
+                console.log(generate_data.prompt);
             }
 
             let generate_url = getGenerateUrl();
             console.log('rungenerate calling API');
 
             if (main_api == 'openai') {
-                let prompt = await prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAfter, afterScenarioAnchor, promptBias, type);
-                setInContextMessages(openai_messages_count, type);
-
                 if (isStreamingEnabled() && type !== 'quiet') {
-                    streamingProcessor.generator = await sendOpenAIRequest(type, prompt, streamingProcessor.abortController.signal);
+                    streamingProcessor.generator = await sendOpenAIRequest(type, generate_data.prompt, streamingProcessor.abortController.signal);
                 }
                 else {
-                    sendOpenAIRequest(type, prompt).then(onSuccess).catch(onError);
+                    sendOpenAIRequest(type, generate_data.prompt).then(onSuccess).catch(onError);
                 }
             }
             else if (main_api == 'kobold' && horde_settings.use_horde) {
@@ -2288,7 +2178,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     generatePoe(type, finalPromt).then(onSuccess).catch(onError);
                 }
             }
-            else if (main_api == 'textgenerationwebui' && textgenerationwebui_settings.streaming && type !== 'quiet') {
+            else if (main_api == 'textgenerationwebui' && isStreamingEnabled() && type !== 'quiet') {
                 streamingProcessor.generator = await generateTextGenWithStreaming(generate_data, streamingProcessor.abortController.signal);
             }
             else {
@@ -2307,26 +2197,43 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 }); //end of "if not data error"
             }
 
+            //set array object for prompt token itemization of this message
+            let currentArrayEntry = Number(thisPromptBits.length - 1);
+            let additionalPromptStuff = {
+                ...thisPromptBits[currentArrayEntry],
+                rawPrompt: generate_data.prompt,
+                mesId: Number(count_view_mes),
+                worldInfoBefore: worldInfoBefore,
+                allAnchors: allAnchors,
+                summarizeString: (extension_prompts['1_memory']?.value || ''),
+                authorsNoteString: (extension_prompts['2_floating_prompt']?.value || ''),
+                worldInfoString: worldInfoString,
+                storyString: storyString,
+                worldInfoAfter: worldInfoAfter,
+                afterScenarioAnchor: afterScenarioAnchor,
+                examplesString: examplesString,
+                mesSendString: mesSendString,
+                generatedPromtCache: generatedPromtCache,
+                promptBias: promptBias,
+                finalPromt: finalPromt,
+                charDescription: charDescription,
+                charPersonality: charPersonality,
+                scenarioText: scenarioText,
+                this_max_context: this_max_context,
+                padding: power_user.token_padding,
+                main_api: main_api,
+            };
+
+            thisPromptBits = additionalPromptStuff;
+
+            //console.log(thisPromptBits);
+
+            itemizedPrompts.push(thisPromptBits);
+            //console.log(`pushed prompt bits to itemizedPrompts array. Length is now: ${itemizedPrompts.length}`);
+
             if (isStreamingEnabled() && type !== 'quiet') {
                 hideSwipeButtons();
                 let getMessage = await streamingProcessor.generate();
-
-                // Cohee: Basically a dead-end code... (disabled by isStreamingEnabled)
-                // I wasn't able to get multigen working with real streaming
-                // consistently without screwing the interim prompting
-                if (isMultigenEnabled()) {
-                    tokens_already_generated += this_amount_gen;
-                    message_already_generated += getMessage;
-                    promptBias = '';
-                    if (!streamingProcessor.isStopped && shouldContinueMultigen(getMessage, isImpersonate)) {
-                        streamingProcessor.isFinished = false;
-                        runGenerate(getMessage);
-                        console.log('returning to make generate again');
-                        return;
-                    }
-
-                    getMessage = message_already_generated;
-                }
 
                 if (streamingProcessor && !streamingProcessor.isStopped && streamingProcessor.isFinished) {
                     streamingProcessor.onFinishStreaming(streamingProcessor.messageId, getMessage);
@@ -2361,7 +2268,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                                 ({ type, getMessage } = saveReply('append', getMessage, this_mes_is_name, title));
                             }
                         } else {
-                            let chunk = cleanUpMessage(message_already_generated, true);
+                            let chunk = cleanUpMessage(message_already_generated, true, true);
                             let extract = extractNameFromMessage(chunk, force_name2, isImpersonate);
                             $('#send_textarea').val(extract.getMessage).trigger('input');
                         }
@@ -2375,7 +2282,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                             return;
                         }
 
-                        getMessage = message_already_generated;
+                        getMessage = message_already_generated.substring(magFirst.length);
                     }
 
                     //Formating
@@ -2416,10 +2323,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         // regenerate with character speech reenforced
                         // to make sure we leave on swipe type while also adding the name2 appendage
                         setTimeout(() => {
-                            let newType = type == "swipe" ? "swipe" : "force_name2";
-                            newType = isImpersonate ? type : newType;
-
-                            Generate(newType, { automatic_trigger: false, force_name2: true });
+                            Generate(type, { automatic_trigger, force_name2: true, resolve, reject, quiet_prompt, force_chid });
                         }, generate_loop_counter * 1000);
                     }
                 } else {
@@ -2434,13 +2338,14 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 showSwipeButtons();
                 setGenerationProgress(0);
                 $('.mes_buttons:last').show();
+
+                if (type !== 'quiet') {
+                    resolve();
+                }
             };
 
             function onError(jqXHR, exception) {
-                if (type == 'quiet') {
-                    reject(exception);
-                }
-
+                reject(exception);
                 $("#send_textarea").removeAttr('disabled');
                 is_send_press = false;
                 activateSendButtons();
@@ -2461,9 +2366,156 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     //console.log('generate ending');
 } //generate ends
 
+function sendMessageAsUser(textareaText, messageBias) {
+    chat[chat.length] = {};
+    chat[chat.length - 1]['name'] = name1;
+    chat[chat.length - 1]['is_user'] = true;
+    chat[chat.length - 1]['is_name'] = true;
+    chat[chat.length - 1]['send_date'] = humanizedDateTime();
+    chat[chat.length - 1]['mes'] = textareaText;
+    chat[chat.length - 1]['extra'] = {};
+
+    if (messageBias) {
+        console.log('checking bias');
+        chat[chat.length - 1]['extra']['bias'] = messageBias;
+    }
+    //console.log('Generate calls addOneMessage');
+    addOneMessage(chat[chat.length - 1]);
+}
+
+function getMaxContextSize() {
+    let this_max_context = 1487;
+    if (main_api == 'kobold' || main_api == 'textgenerationwebui') {
+        this_max_context = (max_context - amount_gen);
+    }
+    if (main_api == 'novel') {
+        if (novel_tier === 1) {
+            this_max_context = 1024;
+        } else {
+            this_max_context = 2048 - 60; //fix for fat tokens 
+            if (nai_settings.model_novel == 'krake-v2') {
+                this_max_context -= 160;
+            }
+        }
+    }
+    if (main_api == 'openai') {
+        this_max_context = oai_settings.openai_max_context;
+    }
+    if (main_api == 'poe') {
+        this_max_context = Number(max_context);
+    }
+    return this_max_context;
+}
+
+function parseTokenCounts(counts, thisPromptBits) {
+    const breakdown_bar = $('#token_breakdown div:first-child');
+    breakdown_bar.empty();
+
+    const total = Object.values(counts).filter(x => !Number.isNaN(x)).reduce((acc, val) => acc + val, 0);
+
+    thisPromptBits.push({
+        oaiStartTokens: Object.entries(counts)[0][1],
+        oaiPromptTokens: Object.entries(counts)[1][1],
+        oaiBiasTokens: Object.entries(counts)[2][1],
+        oaiNudgeTokens: Object.entries(counts)[3][1],
+        oaiJailbreakTokens: Object.entries(counts)[4][1],
+        oaiImpersonateTokens: Object.entries(counts)[5][1],
+        oaiExamplesTokens: Object.entries(counts)[6][1],
+        oaiConversationTokens: Object.entries(counts)[7][1],
+        oaiTotalTokens: total,
+    });
+
+    Object.entries(counts).forEach(([type, value]) => {
+        if (value === 0) {
+            return;
+        }
+        const percent_value = (value / total) * 100;
+        const color = uniqolor(type, { saturation: 50, lightness: 75, }).color;
+        const bar = document.createElement('div');
+        bar.style.width = `${percent_value}%`;
+        bar.classList.add('token_breakdown_segment');
+        bar.style.backgroundColor = color + 'AA';
+        bar.style.borderColor = color + 'FF';
+        bar.innerText = value;
+        bar.title = `${type}: ${percent_value.toFixed(2)}%`;
+        breakdown_bar.append(bar);
+    });
+}
+
+function adjustChatsSeparator(mesSendString) {
+    if (power_user.custom_chat_separator && power_user.custom_chat_separator.length) {
+        mesSendString = power_user.custom_chat_separator + '\n' + mesSendString;
+    }
+
+    // if chat start formatting is disabled
+    else if (power_user.disable_start_formatting) {
+        mesSendString = mesSendString;
+    }
+
+    // add non-pygma dingus
+    else if (!is_pygmalion) {
+        mesSendString = '\nThen the roleplay chat between ' + name1 + ' and ' + name2 + ' begins.\n' + mesSendString;
+    }
+
+    // add pygma <START>
+    else {
+        mesSendString = '<START>\n' + mesSendString;
+        //mesSendString = mesSendString; //This edit simply removes the first "<START>" that is prepended to all context prompts
+    }
+
+    return mesSendString;
+}
+
+function appendZeroDepthAnchor(force_name2, zeroDepthAnchor, finalPromt) {
+    const trimBothEnds = !force_name2 && !is_pygmalion;
+    let trimmedPrompt = (trimBothEnds ? zeroDepthAnchor.trim() : zeroDepthAnchor.trimEnd());
+
+    if (trimBothEnds && !finalPromt.endsWith('\n')) {
+        finalPromt += '\n';
+    }
+
+    finalPromt += trimmedPrompt;
+
+    if (force_name2 || is_pygmalion) {
+        finalPromt += ' ';
+    }
+
+    return finalPromt;
+}
+
+function getMultigenAmount() {
+    let this_amount_gen = parseInt(amount_gen);
+
+    if (tokens_already_generated === 0) {
+        // if the max gen setting is > 50...(
+        if (parseInt(amount_gen) >= power_user.multigen_first_chunk) {
+            // then only try to make 50 this cycle..
+            this_amount_gen = power_user.multigen_first_chunk;
+        }
+        else {
+            // otherwise, make as much as the max amount request.
+            this_amount_gen = parseInt(amount_gen);
+        }
+    }
+    // if we already received some generated text...
+    else {
+        // if the remaining tokens to be made is less than next potential cycle count
+        if (parseInt(amount_gen) - tokens_already_generated < power_user.multigen_next_chunks) {
+            // subtract already generated amount from the desired max gen amount
+            this_amount_gen = parseInt(amount_gen) - tokens_already_generated;
+        }
+        else {
+            // otherwise make the standard cycle amount (first 50, and 30 after that)
+            this_amount_gen = power_user.multigen_next_chunks;
+        }
+    }
+    return this_amount_gen;
+}
+
 function promptItemize(itemizedPrompts, requestedMesId) {
-    let incomingMesId = Number(requestedMesId);
-    let thisPromptSet = undefined;
+    var incomingMesId = Number(requestedMesId);
+    console.log(`looking for MesId ${incomingMesId}`);
+    var thisPromptSet = undefined;
 
     for (var i = 0; i < itemizedPrompts.length; i++) {
         if (itemizedPrompts[i].mesId === incomingMesId) {
@@ -2477,48 +2529,218 @@ function promptItemize(itemizedPrompts, requestedMesId) {
         return null;
     }
 
-    let finalPromptTokens = getTokenCount(itemizedPrompts[thisPromptSet].finalPromt);
-    let allAnchorsTokens = getTokenCount(itemizedPrompts[thisPromptSet].allAnchors);
-    let summarizeStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].summarizeString);
-    let authorsNoteStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].authorsNoteString);
-    let afterScenarioAnchorTokens = getTokenCount(itemizedPrompts[thisPromptSet].afterScenarioAnchor);
-    let zeroDepthAnchorTokens = getTokenCount(itemizedPrompts[thisPromptSet].afterScenarioAnchor);
-    let worldInfoStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].worldInfoString);
-    let storyStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].storyString);
-    let examplesStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].examplesString);
-    let charPersonalityTokens = getTokenCount(itemizedPrompts[thisPromptSet].charPersonality);
-    let charDescriptionTokens = getTokenCount(itemizedPrompts[thisPromptSet].charDescription);
-    let scenarioTextTokens = getTokenCount(itemizedPrompts[thisPromptSet].scenarioText);
-    let promptBiasTokens = getTokenCount(itemizedPrompts[thisPromptSet].promptBias);
-    let mesSendStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].mesSendString)
-    let ActualChatHistoryTokens = mesSendStringTokens - allAnchorsTokens + power_user.token_padding;
-    let thisPrompt_max_context = itemizedPrompts[thisPromptSet].this_max_context;
-    let thisPrompt_padding = itemizedPrompts[thisPromptSet].padding;
+    //these happen regardless of API
+    var charPersonalityTokens = getTokenCount(itemizedPrompts[thisPromptSet].charPersonality);
+    var charDescriptionTokens = getTokenCount(itemizedPrompts[thisPromptSet].charDescription);
+    var scenarioTextTokens = getTokenCount(itemizedPrompts[thisPromptSet].scenarioText);
+    var allAnchorsTokens = getTokenCount(itemizedPrompts[thisPromptSet].allAnchors);
+    var summarizeStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].summarizeString);
+    var authorsNoteStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].authorsNoteString);
+    var afterScenarioAnchorTokens = getTokenCount(itemizedPrompts[thisPromptSet].afterScenarioAnchor);
+    var zeroDepthAnchorTokens = getTokenCount(itemizedPrompts[thisPromptSet].afterScenarioAnchor);
+    var worldInfoStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].worldInfoString);
+    var thisPrompt_max_context = itemizedPrompts[thisPromptSet].this_max_context;
+    var thisPrompt_padding = itemizedPrompts[thisPromptSet].padding;
+    var promptBiasTokens = getTokenCount(itemizedPrompts[thisPromptSet].promptBias);
+    var this_main_api = itemizedPrompts[thisPromptSet].main_api;
 
-    let totalTokensInPrompt =
-        storyStringTokens +     //chardefs total
-        worldInfoStringTokens +
-        ActualChatHistoryTokens +  //chat history
-        allAnchorsTokens +      // AN and/or legacy anchors
-        //afterScenarioAnchorTokens +       //only counts if AN is set to 'after scenario'
-        //zeroDepthAnchorTokens +           //same as above, even if AN not on 0 depth
-        promptBiasTokens +      //{{}}
-        - thisPrompt_padding;  //not sure this way of calculating is correct, but the math results in same value as 'finalPromt'
+    if (this_main_api == 'openai') {
+        //for OAI API
+        //console.log('-- Counting OAI Tokens');
 
-    let storyStringTokensPercentage = ((storyStringTokens / (totalTokensInPrompt + thisPrompt_padding)) * 100).toFixed(2);
-    let ActualChatHistoryTokensPercentage = ((ActualChatHistoryTokens / (totalTokensInPrompt + thisPrompt_padding)) * 100).toFixed(2);
-    let promptBiasTokensPercentage = ((promptBiasTokens / (totalTokensInPrompt + thisPrompt_padding)) * 100).toFixed(2);
-    let worldInfoStringTokensPercentage = ((worldInfoStringTokens / (totalTokensInPrompt + thisPrompt_padding)) * 100).toFixed(2);
-    let allAnchorsTokensPercentage = ((allAnchorsTokens / (totalTokensInPrompt + thisPrompt_padding)) * 100).toFixed(2);
-    let selectedTokenizer = $("#tokenizer").find(':selected').text();
-    callPopup(
-        `
+        //var finalPromptTokens = itemizedPrompts[thisPromptSet].oaiTotalTokens;
+        var oaiStartTokens = itemizedPrompts[thisPromptSet].oaiStartTokens;
+        var oaiPromptTokens = itemizedPrompts[thisPromptSet].oaiPromptTokens;
+        var ActualChatHistoryTokens = itemizedPrompts[thisPromptSet].oaiConversationTokens;
+        var examplesStringTokens = itemizedPrompts[thisPromptSet].oaiExamplesTokens;
+        var oaiBiasTokens = itemizedPrompts[thisPromptSet].oaiBiasTokens;
+        var oaiJailbreakTokens = itemizedPrompts[thisPromptSet].oaiJailbreakTokens;
+        var oaiNudgeTokens = itemizedPrompts[thisPromptSet].oaiNudgeTokens;
+        var oaiImpersonateTokens = itemizedPrompts[thisPromptSet].oaiImpersonateTokens;
+        var finalPromptTokens =
+            oaiBiasTokens +
+            oaiImpersonateTokens +
+            oaiJailbreakTokens +
+            oaiNudgeTokens +
+            oaiPromptTokens +
+            ActualChatHistoryTokens +
+            charDescriptionTokens +
+            charPersonalityTokens +
+            allAnchorsTokens +
+            worldInfoStringTokens +
+            examplesStringTokens;
+        // OAI doesn't use padding
+        thisPrompt_padding = 0;
+        // Max context size - max completion tokens
+        thisPrompt_max_context = (oai_settings.openai_max_context - oai_settings.openai_max_tokens);
+    } else {
+        //for non-OAI APIs
+        //console.log('-- Counting non-OAI Tokens');
+        var finalPromptTokens = getTokenCount(itemizedPrompts[thisPromptSet].finalPromt);
+        var storyStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].storyString);
+        var examplesStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].examplesString);
+        var mesSendStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].mesSendString)
+        var ActualChatHistoryTokens = mesSendStringTokens - allAnchorsTokens + power_user.token_padding;
+
+        var totalTokensInPrompt =
+            storyStringTokens +     //chardefs total
+            worldInfoStringTokens +
+            ActualChatHistoryTokens +  //chat history
+            allAnchorsTokens +      // AN and/or legacy anchors
+            //afterScenarioAnchorTokens +       //only counts if AN is set to 'after scenario'
+            //zeroDepthAnchorTokens +           //same as above, even if AN not on 0 depth
+            promptBiasTokens;       //{{}}
+        //- thisPrompt_padding;  //not sure this way of calculating is correct, but the math results in same value as 'finalPromt'
+    }
+
+    if (this_main_api == 'openai') {
+        //console.log('-- applying % on OAI tokens');
+        var oaiStartTokensPercentage = ((oaiStartTokens / (finalPromptTokens)) * 100).toFixed(2);
+        var storyStringTokensPercentage = ((oaiPromptTokens / (finalPromptTokens)) * 100).toFixed(2);
+        var ActualChatHistoryTokensPercentage = ((ActualChatHistoryTokens / (finalPromptTokens)) * 100).toFixed(2);
+        var promptBiasTokensPercentage = ((oaiBiasTokens / (finalPromptTokens)) * 100).toFixed(2);
+        var worldInfoStringTokensPercentage = ((worldInfoStringTokens / (finalPromptTokens)) * 100).toFixed(2);
+        var allAnchorsTokensPercentage = ((allAnchorsTokens / (finalPromptTokens)) * 100).toFixed(2);
+        var selectedTokenizer = `tiktoken (${oai_settings.openai_model})`;
+        var oaiSystemTokens = oaiImpersonateTokens + oaiJailbreakTokens + oaiNudgeTokens + oaiStartTokens;
+        var oaiSystemTokensPercentage = ((oaiSystemTokens / (finalPromptTokens)) * 100).toFixed(2);
+
+    } else {
+        //console.log('-- applying % on non-OAI tokens');
+        var storyStringTokensPercentage = ((storyStringTokens / (totalTokensInPrompt)) * 100).toFixed(2);
+        var ActualChatHistoryTokensPercentage = ((ActualChatHistoryTokens / (totalTokensInPrompt)) * 100).toFixed(2);
+        var promptBiasTokensPercentage = ((promptBiasTokens / (totalTokensInPrompt)) * 100).toFixed(2);
+        var worldInfoStringTokensPercentage = ((worldInfoStringTokens / (totalTokensInPrompt)) * 100).toFixed(2);
+        var allAnchorsTokensPercentage = ((allAnchorsTokens / (totalTokensInPrompt)) * 100).toFixed(2);
+        var selectedTokenizer = $("#tokenizer").find(':selected').text();
+    }
+
+    if (this_main_api == 'openai') {
+        //console.log('-- calling popup for OAI tokens');
+        callPopup(
+            `
         <h3>Prompt Itemization</h3>
-        Tokenizer: ${selectedTokenizer}<br>
+        Tokenizer: TikToken<br>
+        API Used: ${this_main_api}<br>
         <span class="tokenItemizingSubclass">
             Only the white numbers really matter. All numbers are estimates.
             Grey color items may not have been included in the context due to certain prompt format settings.
         </span>
+        <div id="showRawPrompt" class="fa-solid fa-square-poll-horizontal menu_button"></div>
+        <hr class="sysHR">
+        <div class="justifyLeft">
+            <div class="flex-container">
+                <div class="flex-container flex1 flexFlowColumns flexNoGap wide50p tokenGraph">
+                <div class="wide100p" style="background-color: grey; height: ${oaiSystemTokensPercentage}%;"></div>
+                    <div class="wide100p" style="background-color: indianred; height: ${storyStringTokensPercentage}%;"></div>
+                    <div class="wide100p" style="background-color: gold; height: ${worldInfoStringTokensPercentage}%;"></div>
+                    <div class="wide100p" style="background-color: palegreen; height: ${ActualChatHistoryTokensPercentage}%;"></div>
+                    <div class="wide100p" style="background-color: cornflowerblue; height: ${allAnchorsTokensPercentage}%;"></div>
+                    <div class="wide100p" style="background-color: mediumpurple; height: ${promptBiasTokensPercentage}%;"></div>
+                </div>
+                <div class="flex-container wide50p">
+                    <div class="wide100p flex-container flexNoGap flexFlowColumn">
+                        <div class="flex-container wide100p">
+                            <div class="flex1" style="color: grey;">System Info:</div>
+                            <div  class=""> ${oaiSystemTokens}</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Chat Start: </div>
+                            <div  class="tokenItemizingSubclass"> ${oaiStartTokens}</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Jailbreak: </div>
+                            <div  class="tokenItemizingSubclass">${oaiJailbreakTokens}</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- NSFW: </div>
+                            <div  class="tokenItemizingSubclass">??</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Nudge: </div>
+                            <div  class="tokenItemizingSubclass">${oaiNudgeTokens}</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Impersonate: </div>
+                            <div  class="tokenItemizingSubclass">${oaiImpersonateTokens}</div>
+                        </div>
+                    </div>
+                    <div class="wide100p flex-container flexNoGap flexFlowColumn">
+                        <div class="flex-container wide100p">
+                            <div class="flex1" style="color: indianred;">Prompt Tokens:</div>
+                            <div  class=""> ${oaiPromptTokens}</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Description: </div>
+                            <div  class="tokenItemizingSubclass">${charDescriptionTokens}</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Personality:</div>
+                            <div  class="tokenItemizingSubclass"> ${charPersonalityTokens}</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Scenario: </div>
+                            <div  class="tokenItemizingSubclass">${scenarioTextTokens}</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Examples:</div>
+                            <div  class="tokenItemizingSubclass"> ${examplesStringTokens}</div>
+                        </div>
+                    </div>
+                    <div class="wide100p flex-container">
+                        <div  class="flex1" style="color: gold;">World Info:</div>
+                        <div  class="">${worldInfoStringTokens}</div>
+                    </div>
+                    <div class="wide100p flex-container">        
+                        <div  class="flex1" style="color: palegreen;">Chat History:</div>
+                        <div  class=""> ${ActualChatHistoryTokens}</div>
+                    </div>
+                    <div class="wide100p flex-container flexNoGap flexFlowColumn">
+                        <div class="wide100p flex-container">
+                            <div  class="flex1" style="color: cornflowerblue;">Extensions:</div>
+                            <div  class="">${allAnchorsTokens}</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Summarize: </div>
+                            <div  class="tokenItemizingSubclass">${summarizeStringTokens}</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Author's Note:</div>
+                            <div  class="tokenItemizingSubclass"> ${authorsNoteStringTokens}</div>
+                        </div>
+                    </div>
+                    <div class="wide100p flex-container">
+                        <div  class="flex1" style="color: mediumpurple;">{{}} Bias:</div><div  class="">${oaiBiasTokens}</div>
+                    </div>
+                </div>
+
+            </div>
+            <hr class="sysHR">
+            <div class="wide100p flex-container flexFlowColumns">
+                <div class="flex-container wide100p">
+                    <div  class="flex1">Total Tokens in Prompt:</div><div  class=""> ${finalPromptTokens}</div>
+                </div>
+                <div class="flex-container wide100p">
+                    <div  class="flex1">Max Context (Context Size - Response Length):</div><div  class="">${thisPrompt_max_context}</div>
+                </div>
+            </div>
+        </div>
+        <hr class="sysHR">
+        `, 'text'
+        );
+
+    } else {
+        //console.log('-- calling popup for non-OAI tokens');
+        callPopup(
+            `
+        <h3>Prompt Itemization</h3>
+        Tokenizer: ${selectedTokenizer}<br>
+        API Used: ${this_main_api}<br>
+        <span class="tokenItemizingSubclass">
+            Only the white numbers really matter. All numbers are estimates.
+            Grey color items may not have been included in the context due to certain prompt format settings.
+        </span>
+        <div id="showRawPrompt" class="fa-solid fa-square-poll-horizontal menu_button"></div>
         <hr class="sysHR">
         <div class="justifyLeft">
             <div class="flex-container">
@@ -2599,7 +2821,8 @@ function promptItemize(itemizedPrompts, requestedMesId) {
         </div>
         <hr class="sysHR">
         `, 'text'
-    );
+        );
+    }
 }
 
 function setInContextMessages(lastmsg, type) {
@@ -2769,7 +2992,11 @@ function extractMessageFromData(data) {
     return getMessage;
 }
 
-function cleanUpMessage(getMessage, isImpersonate) {
+function cleanUpMessage(getMessage, isImpersonate, displayIncompleteSentences = false) {
+    if (!displayIncompleteSentences && power_user.trim_sentences) {
+        getMessage = end_trim_to_sentence(getMessage, power_user.include_newline);
+    }
+
     if (power_user.collapse_newlines) {
         getMessage = collapseNewlines(getMessage);
     }
@@ -2913,6 +3140,10 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
     const item = chat[chat.length - 1];
     if (item['swipe_id'] !== undefined) {
         item['swipes'][item['swipes'].length - 1] = item['mes'];
+    } else {
+        item['swipe_id'] = 0;
+        item['swipes'] = [];
+        item['swipes'][0] = chat[chat.length - 1]['mes'];
     }
 
     return { type, getMessage };
@@ -3325,8 +3556,10 @@ function changeMainAPI() {
         // Hide common settings for OpenAI
         if (selectedVal == "openai") {
             $("#common-gen-settings-block").css("display", "none");
+            //$("#token_breakdown").css("display", "flex");
         } else {
             $("#common-gen-settings-block").css("display", "block");
+            //$("#token_breakdown").css("display", "none");
         }
         // Hide amount gen for poe
         if (selectedVal == "poe") {
@@ -3490,30 +3723,15 @@ async function getSettings(type) {
                     `#settings_perset_novel option[value=${novelai_setting_names[nai_settings.preset_settings_novel]}]`
                 ).attr("selected", "true");
 
-                //Load AI model config settings (temp, context length, anchors, and anchor order)
+                //Load AI model config settings
 
                 amount_gen = settings.amount_gen;
                 if (settings.max_context !== undefined)
                     max_context = parseInt(settings.max_context);
-                if (settings.anchor_order !== undefined)
-                    anchor_order = parseInt(settings.anchor_order);
-                if (settings.style_anchor !== undefined)
-                    style_anchor = !!settings.style_anchor;
-                if (settings.character_anchor !== undefined)
-                    character_anchor = !!settings.character_anchor;
-
-                $("#style_anchor").prop("checked", style_anchor);
-                $("#character_anchor").prop("checked", character_anchor);
-                $("#anchor_order option[value=" + anchor_order + "]").attr(
-                    "selected",
-                    "true"
-                );
 
                 swipes = settings.swipes !== undefined ? !!settings.swipes : true;  // enable swipes by default
                 $('#swipes-checkbox').prop('checked', swipes); /// swipecode
-                //console.log('getSettings -- swipes = ' + swipes + '. toggling box');
                 hideSwipeButtons();
-                //console.log('getsettings calling showswipebtns');
                 showSwipeButtons();
 
                 // Kobold
@@ -3611,9 +3829,6 @@ async function saveSettings(type) {
             user_avatar: user_avatar,
             amount_gen: amount_gen,
             max_context: max_context,
-            anchor_order: anchor_order,
-            style_anchor: style_anchor,
-            character_anchor: character_anchor,
             main_api: main_api,
             world_info: world_info,
             world_info_depth: world_info_depth,
@@ -5552,17 +5767,6 @@ $(document).ready(function () {
 
     //////////////////////////////////////////////////////////////
 
-
-    $("#style_anchor").change(function () {
-        style_anchor = !!$("#style_anchor").prop("checked");
-        saveSettingsDebounced();
-    });
-
-    $("#character_anchor").change(function () {
-        character_anchor = !!$("#character_anchor").prop("checked");
-        saveSettingsDebounced();
-    });
-
     $("#select_chat_cross").click(function () {
         $("#shadow_select_chat_popup").transition({
             opacity: 0,
@@ -5611,6 +5815,18 @@ $(document).ready(function () {
         if (itemizedPrompts.length !== undefined && itemizedPrompts.length !== 0) {
             promptItemize(itemizedPrompts, mesIdForItemization);
         }
+    })
+
+    $(document).on("pointerup", "#showRawPrompt", function () {
+        //let mesIdForItemization = $(this).closest('.mes').attr('mesId');
+        //console.log(generate_data.prompt);
+        console.log(itemizedPrompts[0].rawPrompt);
+        $("#rawPromptWrapper").html(itemizedPrompts[0].rawPrompt.replace(/\n/g, '<br>'));
+        rawPromptPopper.update();
+        $('#rawPromptPopup').toggle();
+
+        //Popper(itemizedPrompts, mesIdForItemization);
+
     })
 
 
@@ -5840,11 +6056,6 @@ $(document).ready(function () {
         $("#api_button_novel").css("display", "none");
         is_get_status_novel = true;
         is_api_button_press_novel = true;
-    });
-
-    $("#anchor_order").change(function () {
-        anchor_order = parseInt($("#anchor_order").find(":selected").val());
-        saveSettingsDebounced();
     });
 
     //**************************CHARACTER IMPORT EXPORT*************************//
@@ -6081,6 +6292,7 @@ $(document).ready(function () {
             '#shadow_popup',
             '#world_popup',
             '.ui-widget',
+            '.text_pole',
         ];
         for (const id of forbiddenTargets) {
             if (clickTarget.closest(id).length > 0) {
@@ -6102,7 +6314,10 @@ $(document).ready(function () {
         }
     });
 
-    $(document).on('click', '.inline-drawer-toggle', function () {
+    $(document).on('click', '.inline-drawer-toggle', function (e) {
+        if ($(e.target).hasClass('text_pole')) {
+            return;
+        };
         var icon = $(this).find('.inline-drawer-icon');
         icon.toggleClass('down up');
         icon.toggleClass('fa-circle-chevron-down fa-circle-chevron-up');

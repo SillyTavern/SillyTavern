@@ -82,6 +82,10 @@ const allowKeysExposure = config.allowKeysExposure;
 const axios = require('axios');
 const tiktoken = require('@dqbd/tiktoken');
 const WebSocket = require('ws');
+const AIHorde = require("@zeldafan0225/ai_horde");
+const ai_horde = new AIHorde({
+    client_agent: getVersion()?.agent || 'SillyTavern:UNKNOWN:Cohee#1207',
+});
 
 var Client = require('node-rest-client').Client;
 var client = new Client();
@@ -309,27 +313,8 @@ app.get('/deviceinfo', function (request, response) {
     return response.send(deviceInfo);
 });
 app.get('/version', function (_, response) {
-    let pkgVersion, gitRevision, gitBranch;
-    try {
-        const pkgJson = require('./package.json');
-        pkgVersion = pkgJson.version;
-        if (commandExistsSync('git')) {
-            gitRevision = require('child_process')
-                .execSync('git rev-parse --short HEAD', { cwd: __dirname })
-                .toString().trim();
-
-            gitBranch = require('child_process')
-                .execSync('git rev-parse --abbrev-ref HEAD', { cwd: __dirname })
-                .toString().trim();
-        }
-    }
-    catch {
-        // suppress exception
-    }
-    finally {
-        const agent = `SillyTavern:${gitRevision || pkgVersion}:Cohee#1207`;
-        response.send({ agent, pkgVersion, gitRevision, gitBranch });
-    }
+    const data = getVersion();
+    response.send(data);
 })
 
 //**************Kobold api
@@ -664,6 +649,31 @@ app.post("/setsoftprompt", jsonParser, async function (request, response) {
 
     return response.sendStatus(200);
 });
+
+function getVersion() {
+    let pkgVersion = 'UNKNOWN';
+    let gitRevision = null;
+    let gitBranch = null;
+    try {
+        const pkgJson = require('./package.json');
+        pkgVersion = pkgJson.version;
+        if (commandExistsSync('git')) {
+            gitRevision = require('child_process')
+                .execSync('git rev-parse --short HEAD', { cwd: __dirname })
+                .toString().trim();
+
+            gitBranch = require('child_process')
+                .execSync('git rev-parse --abbrev-ref HEAD', { cwd: __dirname })
+                .toString().trim();
+        }
+    }
+    catch {
+        // suppress exception
+    }
+
+    const agent = `SillyTavern:${pkgVersion}:Cohee#1207`;
+    return { agent, pkgVersion, gitRevision, gitBranch };
+}
 
 function tryParse(str) {
     try {
@@ -2870,8 +2880,9 @@ app.post('/readsecretstate', jsonParser, (_, response) => {
     }
 });
 
+const ANONYMOUS_KEY = "0000000000";
+
 app.post('/generate_horde', jsonParser, async (request, response) => {
-    const ANONYMOUS_KEY = "0000000000";
     const api_key_horde = readSecret(SECRET_KEYS.HORDE) || ANONYMOUS_KEY;
     const url = 'https://horde.koboldai.net/api/v2/generate/text/async';
 
@@ -2912,6 +2923,45 @@ app.post('/viewsecrets', jsonParser, async (_, response) => {
         console.error(error);
         return response.sendStatus(500);
     }
+});
+
+app.post('/horde_generateimage', async (request, response) => {
+    const MAX_ATTEMPTS = 100;
+    const CHECK_INTERVAL = 3000;
+    const api_key_horde = readSecret(SECRET_KEYS.HORDE) || ANONYMOUS_KEY;
+    const generation = await ai_horde.postAsyncImageGenerate(
+        {
+            prompt: `${request.body.prompt_prefix} ${request.body.prompt} ### ${request.body.negative_prompt}`,
+            params:
+            {
+                sampler_name: request.body.sampler,
+                cfg_scale: request.body.scale,
+                steps: request.body.steps,
+                width: request.body.width,
+                height: request.body.height,
+                n: 1,
+            },
+            r2: false,
+            nsfw: request.body.nfsw,
+            models: [request.body.model],
+        },
+        { token: api_key_horde });
+
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+        await delay(CHECK_INTERVAL);
+        const check = await ai_horde.getImageGenerationCheck(generation.id);
+    
+        if (check.done) {
+            const result = await ai_horde.getImageGenerationStatus(generation.id);
+            return response.send(result.generations[0].img);
+        }
+
+        if (check.faulted) {
+            return response.sendStatus(500);
+        }
+    }
+    
+    return response.sendStatus(504);
 });
 
 function writeSecret(key, value) {

@@ -203,6 +203,16 @@ table.responsiveTable {
     text-align: center;
 }
 
+.mes_narrate,
+body.tts .mes[is_user="true"] .mes_narrate,
+body.tts .mes[is_system="true"] .mes_narrate {
+    display: none;
+}
+
+body.tts .mes_narrate {
+    display: inline-block;
+}
+
 code {
     font-family: Consolas, monospace;
     white-space: pre-wrap;
@@ -383,6 +393,18 @@ code {
     order: 99999;
     align-items: center;
     justify-content: center;
+}
+
+#token_breakdown div {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+}
+
+.token_breakdown_segment {
+    min-width: 40px !important;
+    border: solid 2px;
+    border-radius: 5px;
 }
 
 
@@ -889,19 +911,22 @@ input[type="file"] {
 
 #rm_button_characters,
 #rm_button_panel_pin_div,
-#lm_button_panel_pin_div {
+#lm_button_panel_pin_div,
+#WI_button_panel_pin_div {
     font-size: 24px;
     display: inline;
 }
 
 #rm_button_panel_pin_div,
-#lm_button_panel_pin_div {
+#lm_button_panel_pin_div,
+#WI_button_panel_pin_div {
     opacity: 0.5;
     transition: 0.3s;
 }
 
 #rm_button_panel_pin_div:hover,
-#lm_button_panel_pin_div:hover {
+#lm_button_panel_pin_div:hover,
+#WI_button_panel_pin_div:hover {
     opacity: 1;
 }
 
@@ -910,32 +935,38 @@ input[type="file"] {
 }
 
 #rm_button_panel_pin,
-#lm_button_panel_pin {
+#lm_button_panel_pin,
+#WI_panel_pin {
     display: none;
 }
 
 #rm_button_panel_pin:checked+label,
-#lm_button_panel_pin:checked+label {
+#lm_button_panel_pin:checked+label,
+#WI_panel_pin:checked+label {
     display: inline;
 }
 
 #rm_button_panel_pin:checked+label .checked,
-#lm_button_panel_pin:checked+label .checked {
+#lm_button_panel_pin:checked+label .checked,
+#WI_panel_pin:checked+label .checked {
     display: inline;
 }
 
 #rm_button_panel_pin:checked+label .unchecked,
-#lm_button_panel_pin:checked+label .unchecked {
+#lm_button_panel_pin:checked+label .unchecked,
+#WI_panel_pin:checked+label .unchecked {
     display: none;
 }
 
 #rm_button_panel_pin:not(:checked)+label .checked,
-#lm_button_panel_pin:not(:checked)+label .checked {
+#lm_button_panel_pin:not(:checked)+label .checked,
+#WI_panel_pin:not(:checked)+label .checked {
     display: none;
 }
 
 #rm_button_panel_pin:not(:checked)+label .unchecked,
-#lm_button_panel_pin:not(:checked)+label .unchecked {
+#lm_button_panel_pin:not(:checked)+label .unchecked,
+#WI_panel_pin:not(:checked)+label .unchecked {
     display: inline;
 }
 
@@ -1527,6 +1558,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     display: flex;
     align-items: center;
     justify-content: center;
+    text-align: center;
 }
 
 .avatar_div .menu_button,
@@ -1647,29 +1679,32 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 #world_popup {
     display: none;
-    background-color: var(--SmartThemeBlurTintColor);
-    backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
-    max-width: var(--sheldWidth);
-    height: calc(100% - 40px);
-    position: absolute;
-    margin-left: auto;
-    margin-right: auto;
+    /*     background-color: var(--SmartThemeBlurTintColor);
+    backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2)); */
+    /* max-width: var(--sheldWidth); */
+    /* max-height: calc(100% - 100px); */
+    min-height: 100px;
+    min-width: 100px;
+    /* position: absolute; */
+    /*     margin-left: auto;
+    margin-right: auto; */
     left: 0;
     right: 0;
-    top: 40px;
-    box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
-    padding: 4px;
+    /* top: 40px; */
+    /* box-shadow: 0 0 2px rgba(0, 0, 0, 0.5); */
+    /* padding: 10px; */
     flex-direction: column;
     z-index: 3010;
     border-radius: 0 0 20px 20px;
+    overflow-y: hidden;
 }
 
 #world_popup_bottom_holder {
-    padding: 0.5rem 0;
-    margin: 0 18px;
+    /*     padding: 0.5rem 0;
+    margin: 0 18px; */
     display: flex;
     flex-direction: row;
-    justify-content: flex-end;
+    justify-content: space-evenly;
     align-items: center;
 }
 
@@ -1686,6 +1721,10 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 #world_info_buttons {
     margin-left: 1rem;
+}
+
+.world_entry {
+    padding: 0 5px;
 }
 
 .world_entry:not(:last-child)::after {
@@ -1706,7 +1745,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     display: flex;
     flex-direction: row;
     align-items: center;
-    margin-left: 18px;
+    /* margin-left: 18px; */
 }
 
 #world_popup_header h3 {
@@ -1723,7 +1762,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 }
 
 #form_rename_world {
-    margin-right: 50px;
+    /* margin-right: 50px; */
 }
 
 #form_rename_chat {
@@ -1752,7 +1791,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 #world_popup_entries_list {
     flex-grow: 1;
-    overflow-y: scroll;
+    overflow-y: auto;
 }
 
 #world_popup_entries_list:empty {
@@ -1803,7 +1842,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 .world_entry_form_control textarea {
     height: auto;
-    width: auto;
+    /* width: auto; */
     margin-top: 0;
 }
 
@@ -1811,6 +1850,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     flex-direction: row;
     align-items: center;
     margin-top: 5px;
+    flex-wrap: wrap;
 }
 
 .world_entry_form_control input[type=button] {
@@ -2143,6 +2183,7 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .mes_prompt,
+.mes_narrate,
 .mes_copy,
 .mes_edit {
     cursor: pointer;
@@ -2155,11 +2196,13 @@ input[type="range"]::-webkit-slider-thumb {
 
 .mes_edit:hover,
 .mes_copy:hover,
+.mes_narrate:hover,
 .mes_stop:hover {
     opacity: 1;
 }
 
 .last_mes .mes_copy,
+.last_mes .mes_narrate,
 .last_mes .mes_prompt {
     grid-row-start: 1;
     position: relative;
@@ -2269,8 +2312,10 @@ input[type="range"]::-webkit-slider-thumb {
     -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)*2));
     grid-template-rows: 50px 1fr 1fr 1fr 5fr;
     grid-gap: 10px;
+    min-height: 100px;
+    min-width: 100px;
     max-width: var(--sheldWidth);
-    height: calc(100svh - 40px);
+    max-height: calc(100svh - 100px);
     position: absolute;
     z-index: 3002;
     margin-left: auto;
@@ -2285,6 +2330,7 @@ input[type="range"]::-webkit-slider-thumb {
     padding-bottom: 30px;
     border: 1px solid var(--black30a);
     border-radius: 0 0 20px 20px;
+    overflow-y: auto;
 }
 
 #character_popup h3 {
@@ -3147,9 +3193,37 @@ a {
     text-decoration: none;
 }
 
-#export_format_popup {
+#export_format_popup,
+#rawPromptPopup {
     display: none;
     z-index: 9999;
+}
+
+#rawPromptPopup {
+    inset: 0px auto auto 0px;
+    margin: 0px;
+    transform: translate(909px, 47px);
+    display: block;
+    overflow-wrap: break-word;
+    white-space: normal;
+    max-width: calc(((100svw - 500px) / 2) - 10px);
+    position: absolute;
+    z-index: 9999;
+    max-height: 90svh;
+    /*unsure why, but this prevents scrollbars*/
+    height: 49svh;
+
+    padding: 5px;
+    overflow-y: auto;
+    display: none;
+}
+
+#rawPopupWrapper {
+    word-wrap: break-word;
+    width: 100%;
+    text-align: start;
+    overflow-y: auto;
+    max-height: 100%;
 }
 
 .list-group {
@@ -3453,8 +3527,10 @@ label[for="extensions_autoconnect"] {
 }
 
 .fillRight,
-.fillLeft {
+.fillLeft,
+#WorldInfo {
     min-width: unset;
+    position: fixed;
 }
 
 .fillLeft {
@@ -3962,10 +4038,10 @@ body.waifuMode #avatar_zoom_popup {
         display: none;
     }
 
-    #world_popup_header {
+    /*     #world_popup_header {
         flex-direction: column;
         align-items: flex-start;
-    }
+    } */
 
     #world_popup_header .world_popup_expander {
         display: none;
@@ -4011,14 +4087,18 @@ body.waifuMode #avatar_zoom_popup {
 
     #sheld,
     #character_popup,
-    #world_popup {
-        height: calc(100svh - 45px);
+    .drawer-content
+
+    /* ,
+    #world_popup  */
+        {
+        max-height: calc(100svh - 45px);
         width: 100% !important;
         margin: 0 auto;
         max-width: 100%;
         left: 0 !important;
-        resize: none;
-        top: 42px;
+        resize: none !important;
+        top: 40px;
     }
 
     #character_popup,
@@ -4027,7 +4107,6 @@ body.waifuMode #avatar_zoom_popup {
     }
 
     #character_popup,
-    #world_popup,
     #send_form {
         border: 1px solid var(--grey30);
         backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
@@ -4047,6 +4126,10 @@ body.waifuMode #avatar_zoom_popup {
     .pull-tab {
         display: none !important;
 
+    }
+
+    #showRawPrompt {
+        display: none;
     }
 
     .mes-text {

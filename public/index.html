@@ -367,6 +367,15 @@
                                     </div>
                                 </div>
                                 <div class="range-block">
+                                    <label for="oai_breakdown" class="checkbox_label widthFreeExpand">
+                                        <input id="oai_breakdown" type="checkbox" />
+                                        Token Breakdown
+                                    </label>
+                                    <div class="toggle-description justifyLeft">
+                                        Display a breakdown of the tokens used in the request.
+                                    </div>
+                                </div>
+                                <div class="range-block">
                                     <div class="range-block-title">
                                         Context Size (tokens)
                                     </div>
@@ -1176,7 +1185,7 @@
 
         <div id="advanced-formatting-button" class="drawer">
             <div class="drawer-toggle">
-                <div class="drawer-icon fa-solid fa-font  closedIcon" title="AI Reponse Formatting"></div>
+                <div class="drawer-icon fa-solid fa-font  closedIcon" title="AI Response Formatting"></div>
             </div>
             <div class="drawer-content">
                 <h3>Advanced Formatting
@@ -1206,6 +1215,15 @@
                         <label class="checkbox_label" for="disable-start-formatting-checkbox">
                             <input id="disable-start-formatting-checkbox" type="checkbox" />
                             Disable chat start formatting
+                        </label>
+                        <label class="checkbox_label" for="trim_sentences_checkbox">
+                            <input id="trim_sentences_checkbox" type="checkbox" />
+                            Trim Incomplete Sentences
+                        </label>
+                        <!-- Add margin since this is a child of above -->
+                        <label style="margin-left: 1em;"  class="checkbox_label" for="include_newline_checkbox">
+                            <input id="include_newline_checkbox" type="checkbox" />
+                            Include Newline
                         </label>
                         <div>
                             <h4>
@@ -1346,24 +1364,22 @@
                                 </label>
                             </div>
                         </div>
-                        <div id="anchors-block">
+                        <div id="context-templates-block" style="display:none">
                             <h4>
-                                Anchors Order
-                                <a href="/notes#anchors" class="notes-link" target="_blank">
-                                    <span class="note-link-span">?</span>
-                                </a>
+                                Context Templates
                             </h4>
-                            <select id="anchor_order">
-                                <option value="0">Character then Style</option>
-                                <option value="1">Style then Character</option>
-                            </select>
-                            <div id="anchor_checkbox">
-                                <label for="character_anchor"><input id="character_anchor" type="checkbox" />
-                                    Character Anchor
-                                </label>
-                                <label for="style_anchor"><input id="style_anchor" type="checkbox" />
-                                    Style Anchor
-                                </label>
+                            <div>
+                                <label>Presets:</label>
+                                <div class="flex-container flexGap5">
+                                    <select id="prompt_template" class="flex1 margin0">
+                                        <option value="None">None</option>
+                                        <option value="Classic">Classic</option>
+                                        <option value="Pygmalion">Pygmalion</option>
+                                    </select>
+                                    <div id="context_template_edit" class="menu_button fa-solid fa-pencil margin0" title="Edit"></div>
+                                    <div id="context_template_new" class="menu_button fa-solid fa-plus margin0" title="Add new"></div>
+                                    <div id="context_template_delete" class="menu_button fa-solid fa-trash-can margin0" title="Delete"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1373,12 +1389,20 @@
 
         <div id="WI-SP-button" class="drawer">
             <div class="drawer-toggle drawer-header">
-                <div class="drawer-icon fa-solid fa-book-atlas closedIcon " title="World Info & Soft Prompts"></div>
+                <div id="WIDrawerIcon" class="drawer-icon fa-solid fa-book-atlas closedIcon " title="World Info & Soft Prompts"></div>
             </div>
-            <div class="drawer-content closedDrawer">
+            <div id="WorldInfo" class="drawer-content closedDrawer">
+                <div id="WorldInfoheader" class="fa-solid fa-grip drag-grabber"></div>
+                <div id="WI_panel_pin_div" title="Locked = World Editor will stay open">
+                    <input type="checkbox" id="WI_panel_pin">
+                    <label for="WI_panel_pin">
+                        <div class="unchecked fa-solid fa-lock-open "></div>
+                        <div class="checked fa-solid fa-lock "></div>
+                    </label>
+                </div>
                 <div id="wi-holder">
                     <h3>
-                        World Info
+                        World Selector
                         <a href="/notes#worldinfo" class="notes-link" target="_blank">
                             <span class="note-link-span">?</span>
                         </a>
@@ -1439,6 +1463,41 @@
                                 </span>
                             </label>
                         </div>
+                    </div>
+
+                    <div id="world_popup">
+                        <hr>
+                        <div id="world_popup_text">
+                            <!-- <div id="world_cross" class="fa-solid fa-circle-xmark"></div> -->
+                            <div id="world_popup_header" class="flex-container flexGap5">
+                                <!-- Consider changing logo to something else -->
+                                <div class="world_popup_logo_block">
+                                    <!-- <img src="img/book2.png" id="world_logo"> -->
+                                    <h3>
+                                        World Info Editor
+                                        <a href="/notes#worldinfoentry" class="notes-link" target="_blank"><span class="note-link-span">?</span></a>
+                                    </h3>
+                                </div>
+                                <div id="OpenAllWIEntries" class="menu_button fa-solid fa-expand"></div>
+                                <div id="CloseAllWIEntries" class="menu_button fa-solid fa-compress"></div>
+                                <!-- <div class="world_popup_expander">&nbsp;</div> -->
+                                <form id="form_rename_world" action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                                    <input id="world_popup_name" name="world_popup_name" class="text_pole" maxlength="99" size="32" value="" autocomplete="off">
+                                    <input id="world_popup_name_button" class="menu_button" type="submit" value="Rename">
+                                </form>
+                            </div>
+                        </div>
+
+                        <div id="world_popup_entries_list">
+                        </div>
+
+                        <div id="world_popup_bottom_holder">
+                            <div id="world_popup_new" class="menu_button">New Entry</div>
+                            <!-- <span class="world_popup_expander">&nbsp;</span> -->
+                            <div id="world_popup_export" class="menu_button">Export</div>
+                            <div id="world_popup_delete" class="menu_button">Delete World</div>
+                        </div>
+
                     </div>
                 </div>
                 <div id="softprompt_block">
@@ -1662,6 +1721,10 @@
                             <label for="auto_scroll_chat_to_bottom">
                                 <input id="auto_scroll_chat_to_bottom" type="checkbox" />
                                 Auto-scroll Chat
+                            </label>
+                            <label for="console_log_prompts">
+                                <input id="console_log_prompts" type="checkbox" />
+                                Log prompts to console
                             </label>
                             <label for="render_formulas">
                                 <input id="render_formulas" type="checkbox" />
@@ -1940,6 +2003,17 @@
                         </div>
                     </div>
                     <div class="inline-drawer wide100p flexFlowColumn">
+                        <div id="groupCurrentMemberListToggle" class="inline-drawer-toggle inline-drawer-header">
+                            Current Members
+                            <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+                        </div>
+                        <div class="inline-drawer-content">
+                            <div name="Current Group Members" class="flex-container flexFlowColumn overflowYAuto flex1">
+                                <div id="rm_group_members" class="overflowYAuto flex-container"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="inline-drawer wide100p flexFlowColumn">
                         <div id="groupAddMemberListToggle" class="inline-drawer-toggle inline-drawer-header">
                             Add Members
                             <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
@@ -1951,17 +2025,6 @@
                                     <div id="group_fav_filter" class="menu_button fa-solid fa-ranking-star" title="Show only favorites"></div>
                                 </div>
                                 <div id="rm_group_add_members" class="overflowYAuto flex-container"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="inline-drawer wide100p flexFlowColumn">
-                        <div id="groupCurrentMemberListToggle" class="inline-drawer-toggle inline-drawer-header">
-                            Current Members
-                            <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
-                        </div>
-                        <div class="inline-drawer-content">
-                            <div name="Current Group Members" class="flex-container flexFlowColumn overflowYAuto flex1">
-                                <div id="rm_group_members" class="overflowYAuto flex-container"></div>
                             </div>
                         </div>
                     </div>
@@ -2036,7 +2099,7 @@
             </div>
 
             <div>
-                <h3 id="character_popup_text_h3"></h3> - Advanced Defininitions
+                <h3 id="character_popup_text_h3"></h3> - Advanced Definitions
             </div>
 
         </div>
@@ -2061,7 +2124,7 @@
 
         <div id="talkativeness_div">
             <h4>Talkativeness</h4>
-            <h5>How often the chracter speaks in &nbsp;<span class="warning">group chats!</span>
+            <h5>How often the character speaks in &nbsp;<span class="warning">group chats!</span>
             </h5>
             <input id="talkativeness_slider" name="talkativeness" type="range" min="0" max="1" step="0.05" value="0.5" form="form_create">
             <div id="talkativeness_hint">
@@ -2081,38 +2144,7 @@
         <div id="character_popup_ok" class="menu_button">Save</div>
 
     </div>
-    <div id="world_popup">
-        <div id="world_popup_text">
-            <div id="world_cross" class="fa-solid fa-circle-xmark"></div>
-            <div id="world_popup_header">
-                <!-- Consider changing logo to something else -->
-                <div class="world_popup_logo_block">
-                    <img src="img/book2.png" id="world_logo">
-                    <h3>
-                        World Info Editor
-                        <a href="/notes#worldinfoentry" class="notes-link" target="_blank"><span class="note-link-span">?</span></a>
-                    </h3>
-                </div>
-                <div id="OpenAllWIEntries" class="menu_button fa-solid fa-expand"></div>
-                <div id="CloseAllWIEntries" class="menu_button fa-solid fa-compress"></div>
-                <div class="world_popup_expander">&nbsp;</div>
-                <form id="form_rename_world" action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                    <input id="world_popup_name" name="world_popup_name" class="text_pole" maxlength="99" size="32" value="" autocomplete="off">
-                    <input id="world_popup_name_button" class="menu_button" type="submit" value="Rename">
-                </form>
-            </div>
-        </div>
 
-        <div id="world_popup_entries_list">
-        </div>
-
-        <div id="world_popup_bottom_holder">
-            <div id="world_popup_new" class="menu_button">New Entry</div>
-            <span class="world_popup_expander">&nbsp;</span>
-            <div id="world_popup_export" class="menu_button">Export</div>
-            <div id="world_popup_delete" class="menu_button">Delete World</div>
-        </div>
-    </div>
     <div id="shadow_select_chat_popup">
         <div id="select_chat_popup">
             <div id="select_chat_import"> <!-- import chat popup header -->
@@ -2191,6 +2223,7 @@
         </div>
     </div>
 
+
     <div id="entry_edit_template" class="template_element">
         <div class="world_entry">
             <form class="world_entry_form">
@@ -2200,14 +2233,14 @@
                             <div class="world_entry_form_control">
                                 <label for="key">
                                     <h4>Keywords</h4>
-                                    <h5>Separate with commas</h5>
+                                    <h5>Split by commas</h5>
                                 </label>
                                 <textarea class="text_pole keyprimarytextpole" name="key" rows="1" placeholder="" maxlength="250"></textarea>
                             </div>
                             <div class="world_entry_form_control keysecondary">
                                 <label for="keysecondary">
-                                    <h4>Secondary Required Keywords</h4>
-                                    <h5>Separate with commas</h5>
+                                    <h4>2nd Keywords</h4>
+                                    <h5>Split by commas</h5>
                                 </label>
                                 <textarea class="text_pole keysecondarytextpole" name="keysecondary" rows="1" placeholder="(secondary keywords here)" maxlength="250"></textarea>
                             </div>
@@ -2341,6 +2374,7 @@
                     <span class="name_text">${characterName}</span>
 
                     <div class="mes_buttons">
+                        <div title="Narrate" class="mes_narrate fa-solid fa-bullhorn"></div>
                         <div title="Prompt" class="mes_prompt fa-solid fa-square-poll-horizontal "></div>
                         <div title="Copy" class="mes_copy fa-solid fa-copy "></div>
                         <div title="Edit" class="mes_edit fa-solid fa-pencil "></div>
@@ -2436,6 +2470,11 @@
         <div id="chat">
         </div>
         <div id="form_sheld">
+            <div id="token_breakdown" style="display:none;">
+                <div>
+                    <!-- Token Breakdown Goes Here -->
+                </div>
+            </div>
             <div id="dialogue_del_mes">
                 <div id="dialogue_del_mes_ok" class="menu_button">Delete</div>
                 <div id="dialogue_del_mes_cancel" class="menu_button">Cancel</div>
@@ -2445,7 +2484,7 @@
                 <textarea id="send_textarea" placeholder="Not connected to API!" name="text"></textarea>
                 <div id="send_but_sheld">
                     <div id="loading_mes">
-                        <div alt="" class="fa-solid fa-hourglass-half"></div>
+                        <div title="Loading" class="fa-solid fa-hourglass-half"></div>
                     </div>
                     <div id="send_but" class="fa-solid fa-feather-pointed" title="Send a message"></div>
                 </div>
@@ -2501,6 +2540,9 @@
     <div id="avatar_zoom_popup">
         <div id="avatar_zoom_popupheader" class="fa-solid fa-grip drag-grabber"></div>
         <img id="zoomed_avatar" src="">
+    </div>
+    <div id="rawPromptPopup" class="list-group">
+        <div id="rawPromptWrapper" class="tokenItemizingSubclass"></div>
     </div>
 </body>
 
