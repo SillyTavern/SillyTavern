@@ -300,7 +300,7 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
     let whole_prompt = getSystemPrompt(nsfw_toggle_prompt, enhance_definitions_prompt, wiBefore, storyString, wiAfter, extensionPrompt, isImpersonate);
 
     // Join by a space and replace placeholders with real user/char names
-    storyString = substituteParams(whole_prompt.join(" ")).replace(/\r/gm, '').trim();
+    storyString = substituteParams(whole_prompt.join("\n")).replace(/\r/gm, '').trim();
 
     let prompt_msg = { "role": "system", "content": storyString }
     let examples_tosend = [];
@@ -469,7 +469,7 @@ function getSystemPrompt(nsfw_toggle_prompt, enhance_definitions_prompt, wiBefor
             whole_prompt = [nsfw_toggle_prompt, oai_settings.main_prompt, enhance_definitions_prompt + "\n\n" + wiBefore, storyString, wiAfter, extensionPrompt];
         }
         else {
-            whole_prompt = [oai_settings.main_prompt, nsfw_toggle_prompt, enhance_definitions_prompt + "\n\n" + wiBefore, storyString, wiAfter, extensionPrompt];
+            whole_prompt = [oai_settings.main_prompt, nsfw_toggle_prompt, enhance_definitions_prompt, "\n", wiBefore, storyString, wiAfter, extensionPrompt].filter(elem => elem);
         }
     }
     return whole_prompt;

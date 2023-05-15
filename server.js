@@ -2925,10 +2925,21 @@ app.post('/viewsecrets', jsonParser, async (_, response) => {
     }
 });
 
-app.post('/horde_generateimage', async (request, response) => {
+app.post('/horde_samplers', jsonParser, async (_, response) => {
+    const samplers = Object.values(ai_horde.ModelGenerationInputStableSamplers);
+    response.send(samplers);
+});
+
+app.post('/horde_models', jsonParser, async (_, response) => {
+    const models = await ai_horde.getModels();
+    response.send(models);
+});
+
+app.post('/horde_generateimage', jsonParser, async (request, response) => {
     const MAX_ATTEMPTS = 100;
     const CHECK_INTERVAL = 3000;
     const api_key_horde = readSecret(SECRET_KEYS.HORDE) || ANONYMOUS_KEY;
+    console.log('Stable Horde request:', request.body);
     const generation = await ai_horde.postAsyncImageGenerate(
         {
             prompt: `${request.body.prompt_prefix} ${request.body.prompt} ### ${request.body.negative_prompt}`,
@@ -2950,10 +2961,15 @@ app.post('/horde_generateimage', async (request, response) => {
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
         await delay(CHECK_INTERVAL);
         const check = await ai_horde.getImageGenerationCheck(generation.id);
+        console.log(check);
     
         if (check.done) {
             const result = await ai_horde.getImageGenerationStatus(generation.id);
             return response.send(result.generations[0].img);
+        }
+
+        if (!check.is_possible) {
+            return response.sendStatus(503);
         }
 
         if (check.faulted) {

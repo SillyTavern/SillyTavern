@@ -1733,20 +1733,46 @@
                                     <span class="note-link-span">?</span>
                                 </a>
                             </label>
-                            <div class="flex-container flexFlowColumn">
-                                <h4>
-                                    Send on Enter
-                                </h4>
-                                <select id="send_on_enter">
-                                    <option value="-1">Always disabled</option>
-                                    <option value="0">Automatic (desktop)</option>
-                                    <option value="1">Always enabled</option>
-                                </select>
-                            </div>
                         </div>
                     </div>
 
                     <div name="NameAndAvatar" class="flex-container flexFlowColumn drawer25pWidth">
+
+
+                    <div class="inline-drawer wide100p flexFlowColumn">
+
+                        <div class="flex-container flexFlowColumn">
+                            <h4>
+                                Send on Enter
+                            </h4>
+                            <select id="send_on_enter">
+                                <option value="-1">Always disabled</option>
+                                <option value="0">Automatic (desktop)</option>
+                                <option value="1">Always enabled</option>
+                            </select>
+                        </div>
+
+                        <div id="groupCurrentMemberListToggle" class="inline-drawer-toggle inline-drawer-header">
+                            <b>Auto-swipe</b>
+                            <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+                        </div>
+                        <div class="inline-drawer-content">
+
+                        <label class="checkbox_label" for="auto_swipe">
+                            <input id="auto_swipe" type="checkbox" />
+                            Enabled
+                        </label>
+                            <div>Minimum generated message length</div>
+                            <input id="auto_swipe_minimum_length" name="auto_swipe_minimum_length" type="number" min="0" step="1" value="0" class="text_pole">
+                            <div>Blacklisted words</div>
+                            <div class="auto_swipe">
+                                <input id="auto_swipe_blacklist" name="auto_swipe_blacklist" placeholder="words you dont want generated separated by comma ','" class="text_pole" maxlength="500" value="" autocomplete="off">
+                                <div>Blacklisted word count to swipe</div>
+                                <input id="auto_swipe_blacklist_threshold" name="auto_swipe_blacklist_threshold" type="number" min="0" step="1" value="1" class="text_pole">
+                            </div>
+                        </div>
+                    </div>
+
                         <div name="NameChanger">
                             <h4>Name</h4>
                             <div class="change_name">

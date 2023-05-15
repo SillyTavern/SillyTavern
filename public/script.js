@@ -1231,7 +1231,6 @@ function substituteParams(content, _name1, _name2) {
     _name1 = _name1 ?? name1;
     _name2 = _name2 ?? name2;
     if (!content) {
-        console.warn("No content on substituteParams")
         return ''
     }
 
@@ -1522,13 +1521,46 @@ class StreamingProcessor {
         this.hideStopButton(this.messageId);
         this.onProgressStreaming(messageId, text, true);
         addCopyToCodeBlocks($(`#chat .mes[mesid="${messageId}"]`));
-        playMessageSound();
         saveChatConditional();
         activateSendButtons();
         showSwipeButtons();
         setGenerationProgress(0);
         $('.mes_buttons:last').show();
         generatedPromtCache = '';
+        
+        console.log("Generated text size:", text.length, text)
+
+        if (power_user.auto_swipe) {
+            function containsBlacklistedWords(str, blacklist, threshold) {
+                const regex = new RegExp(`\\b(${blacklist.join('|')})\\b`, 'gi');
+                const matches = str.match(regex) || [];
+                return matches.length >= threshold;
+            }
+
+            const generatedTextFiltered = (text) => {
+                if (text) {
+                    if (power_user.auto_swipe_minimum_length) {
+                        if (text.length < power_user.auto_swipe_minimum_length && text.length !== 0) {
+                            console.log("Generated text size too small")
+                            return true
+                        }
+                    }
+                    if (power_user.auto_swipe_blacklist_threshold) {
+                        if (containsBlacklistedWords(text, power_user.auto_swipe_blacklist, power_user.auto_swipe_blacklist_threshold)) {
+                            console.log("Generated text has blacklisted words")
+                            return true
+                        }
+                    }
+                }
+                return false
+            }
+
+            if (generatedTextFiltered(text)) {
+                swipe_right()
+                return
+            }
+        }
+        playMessageSound();
     }
 
     onErrorStreaming() {
@@ -4473,7 +4505,162 @@ window["SillyTavern"].getContext = function () {
     };
 };
 
+// when we click swipe right button
+const swipe_right = () => {
+    if (chat.length - 1 === Number(this_edit_mes_id)) {
+        closeMessageEditor();
+    }
 
+    if (isHordeGenerationNotAllowed()) {
+        return;
+    }
+
+    const swipe_duration = 200;
+    const swipe_range = 700;
+    //console.log(swipe_range);
+    let run_generate = false;
+    let run_swipe_right = false;
+    if (chat[chat.length - 1]['swipe_id'] === undefined) {              // if there is no swipe-message in the last spot of the chat array
+        chat[chat.length - 1]['swipe_id'] = 0;                        // set it to id 0
+        chat[chat.length - 1]['swipes'] = [];                         // empty the array
+        chat[chat.length - 1]['swipes'][0] = chat[chat.length - 1]['mes'];  //assign swipe array with last message from chat
+    }
+    chat[chat.length - 1]['swipe_id']++;                                      //make new slot in array
+    // if message has memory attached - remove it to allow regen
+    if (chat[chat.length - 1].extra && chat[chat.length - 1].extra.memory) {
+        delete chat[chat.length - 1].extra.memory;
+    }
+    //console.log(chat[chat.length-1]['swipes']);
+    if (parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length) { //if swipe id of last message is the same as the length of the 'swipes' array
+        delete chat[chat.length - 1].gen_started;
+        delete chat[chat.length - 1].gen_finished;
+        run_generate = true;
+    } else if (parseInt(chat[chat.length - 1]['swipe_id']) < chat[chat.length - 1]['swipes'].length) { //otherwise, if the id is less than the number of swipes
+        chat[chat.length - 1]['mes'] = chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipe_id']]; //load the last mes box with the latest generation
+        run_swipe_right = true; //then prepare to do normal right swipe to show next message
+    }
+
+    const currentMessage = $("#chat").children().filter(`[mesid="${count_view_mes - 1}"]`);
+    let this_div = currentMessage.children('.swipe_right');
+    let this_mes_div = this_div.parent();
+
+    if (chat[chat.length - 1]['swipe_id'] > chat[chat.length - 1]['swipes'].length) { //if we swipe right while generating (the swipe ID is greater than what we are viewing now)
+        chat[chat.length - 1]['swipe_id'] = chat[chat.length - 1]['swipes'].length; //show that message slot (will be '...' while generating)
+    }
+    if (run_generate) {               //hide swipe arrows while generating
+        this_div.css('display', 'none');
+    }
+    // handles animated transitions when swipe right, specifically height transitions between messages
+    if (run_generate || run_swipe_right) {
+        let this_mes_block = this_mes_div.children('.mes_block').children('.mes_text');
+        const this_mes_div_height = this_mes_div[0].scrollHeight;
+        const this_mes_block_height = this_mes_block[0].scrollHeight;
+
+        this_mes_div.children('.swipe_left').css('display', 'flex');
+        this_mes_div.children('.mes_block').transition({        // this moves the div back and forth
+            x: '-' + swipe_range,
+            duration: swipe_duration,
+            easing: animation_easing,
+            queue: false,
+            complete: function () {
+                /*if (!selected_group) {
+                    var typingIndicator = $("#typing_indicator_template .typing_indicator").clone();
+                    typingIndicator.find(".typing_indicator_name").text(characters[this_chid].name);
+                } */
+                /* $("#chat").append(typingIndicator); */
+                const is_animation_scroll = ($('#chat').scrollTop() >= ($('#chat').prop("scrollHeight") - $('#chat').outerHeight()) - 10);
+                //console.log(parseInt(chat[chat.length-1]['swipe_id']));
+                //console.log(chat[chat.length-1]['swipes'].length);
+                if (run_generate && parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length) {
+                    //console.log('showing ""..."');
+                    /* if (!selected_group) {
+                    } else { */
+                    $("#chat")
+                        .find('[mesid="' + (count_view_mes - 1) + '"]')
+                        .find('.mes_text')
+                        .html('...');  //shows "..." while generating
+                    $("#chat")
+                        .find('[mesid="' + (count_view_mes - 1) + '"]')
+                        .find('.mes_timer')
+                        .html('');     // resets the timer
+                    /* } */
+                } else {
+                    //console.log('showing previously generated swipe candidate, or "..."');
+                    //console.log('onclick right swipe calling addOneMessage');
+                    addOneMessage(chat[chat.length - 1], { type: 'swipe' });
+                }
+                let new_height = this_mes_div_height - (this_mes_block_height - this_mes_block[0].scrollHeight);
+                if (new_height < 103) new_height = 103;
+
+
+                this_mes_div.animate({ height: new_height + 'px' }, {
+                    duration: 0, //used to be 100
+                    queue: false,
+                    progress: function () {
+                        // Scroll the chat down as the message expands
+                        if (is_animation_scroll) $("#chat").scrollTop($("#chat")[0].scrollHeight);
+                    },
+                    complete: function () {
+                        this_mes_div.css('height', 'auto');
+                        // Scroll the chat down to the bottom once the animation is complete
+                        if (is_animation_scroll) $("#chat").scrollTop($("#chat")[0].scrollHeight);
+                    }
+                });
+                this_mes_div.children('.mes_block').transition({
+                    x: swipe_range,
+                    duration: 0,
+                    easing: animation_easing,
+                    queue: false,
+                    complete: function () {
+                        this_mes_div.children('.mes_block').transition({
+                            x: '0px',
+                            duration: swipe_duration,
+                            easing: animation_easing,
+                            queue: false,
+                            complete: function () {
+                                if (run_generate && !is_send_press && parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length) {
+                                    console.log('caught here 2');
+                                    is_send_press = true;
+                                    $('.mes_buttons:last').hide();
+                                    Generate('swipe');
+                                } else {
+                                    if (parseInt(chat[chat.length - 1]['swipe_id']) !== chat[chat.length - 1]['swipes'].length) {
+                                        saveChatConditional();
+                                    }
+                                }
+                            }
+                        });
+                    }
+                });
+            }
+        });
+        this_mes_div.children('.avatar').transition({ // moves avatar along with swipe
+            x: '-' + swipe_range,
+            duration: swipe_duration,
+            easing: animation_easing,
+            queue: false,
+            complete: function () {
+                this_mes_div.children('.avatar').transition({
+                    x: swipe_range,
+                    duration: 0,
+                    easing: animation_easing,
+                    queue: false,
+                    complete: function () {
+                        this_mes_div.children('.avatar').transition({
+                            x: '0px',
+                            duration: swipe_duration,
+                            easing: animation_easing,
+                            queue: false,
+                            complete: function () {
+
+                            }
+                        });
+                    }
+                });
+            }
+        });
+    }
+}
 
 $(document).ready(function () {
 
@@ -4520,160 +4707,7 @@ $(document).ready(function () {
 
     ///// SWIPE BUTTON CLICKS ///////
 
-    $(document).on('click', '.swipe_right', function () {               //when we click swipe right button
-        if (chat.length - 1 === Number(this_edit_mes_id)) {
-            closeMessageEditor();
-        }
-
-        if (isHordeGenerationNotAllowed()) {
-            return;
-        }
-
-        const swipe_duration = 200;
-        const swipe_range = 700;
-        //console.log(swipe_range);
-        let run_generate = false;
-        let run_swipe_right = false;
-        if (chat[chat.length - 1]['swipe_id'] === undefined) {              // if there is no swipe-message in the last spot of the chat array
-            chat[chat.length - 1]['swipe_id'] = 0;                        // set it to id 0
-            chat[chat.length - 1]['swipes'] = [];                         // empty the array
-            chat[chat.length - 1]['swipes'][0] = chat[chat.length - 1]['mes'];  //assign swipe array with last message from chat
-        }
-        chat[chat.length - 1]['swipe_id']++;                                      //make new slot in array
-        // if message has memory attached - remove it to allow regen
-        if (chat[chat.length - 1].extra && chat[chat.length - 1].extra.memory) {
-            delete chat[chat.length - 1].extra.memory;
-        }
-        //console.log(chat[chat.length-1]['swipes']);
-        if (parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length) { //if swipe id of last message is the same as the length of the 'swipes' array
-            delete chat[chat.length - 1].gen_started;
-            delete chat[chat.length - 1].gen_finished;
-            run_generate = true;
-        } else if (parseInt(chat[chat.length - 1]['swipe_id']) < chat[chat.length - 1]['swipes'].length) { //otherwise, if the id is less than the number of swipes
-            chat[chat.length - 1]['mes'] = chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipe_id']]; //load the last mes box with the latest generation
-            run_swipe_right = true; //then prepare to do normal right swipe to show next message
-        }
-
-        if (chat[chat.length - 1]['swipe_id'] > chat[chat.length - 1]['swipes'].length) { //if we swipe right while generating (the swipe ID is greater than what we are viewing now)
-            chat[chat.length - 1]['swipe_id'] = chat[chat.length - 1]['swipes'].length; //show that message slot (will be '...' while generating)
-        }
-        if (run_generate) {               //hide swipe arrows while generating
-            $(this).css('display', 'none');
-        }
-        if (run_generate || run_swipe_right) {                // handles animated transitions when swipe right, specifically height transitions between messages
-
-            let this_mes_div = $(this).parent();
-            let this_mes_block = $(this).parent().children('.mes_block').children('.mes_text');
-            const this_mes_div_height = this_mes_div[0].scrollHeight;
-            const this_mes_block_height = this_mes_block[0].scrollHeight;
-
-            this_mes_div.children('.swipe_left').css('display', 'flex');
-            this_mes_div.children('.mes_block').transition({        // this moves the div back and forth
-                x: '-' + swipe_range,
-                duration: swipe_duration,
-                easing: animation_easing,
-                queue: false,
-                complete: function () {
-                    /*if (!selected_group) {
-                        var typingIndicator = $("#typing_indicator_template .typing_indicator").clone();
-                        typingIndicator.find(".typing_indicator_name").text(characters[this_chid].name);
-                    } */
-                    /* $("#chat").append(typingIndicator); */
-                    const is_animation_scroll = ($('#chat').scrollTop() >= ($('#chat').prop("scrollHeight") - $('#chat').outerHeight()) - 10);
-                    //console.log(parseInt(chat[chat.length-1]['swipe_id']));
-                    //console.log(chat[chat.length-1]['swipes'].length);
-                    if (run_generate && parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length) {
-                        //console.log('showing ""..."');
-                        /* if (!selected_group) {
-                        } else { */
-                        $("#chat")
-                            .find('[mesid="' + (count_view_mes - 1) + '"]')
-                            .find('.mes_text')
-                            .html('...');  //shows "..." while generating
-                        $("#chat")
-                            .find('[mesid="' + (count_view_mes - 1) + '"]')
-                            .find('.mes_timer')
-                            .html('');     // resets the timer
-                        /* } */
-                    } else {
-                        //console.log('showing previously generated swipe candidate, or "..."');
-                        //console.log('onclick right swipe calling addOneMessage');
-                        addOneMessage(chat[chat.length - 1], { type: 'swipe' });
-                    }
-                    let new_height = this_mes_div_height - (this_mes_block_height - this_mes_block[0].scrollHeight);
-                    if (new_height < 103) new_height = 103;
-
-
-                    this_mes_div.animate({ height: new_height + 'px' }, {
-                        duration: 0, //used to be 100
-                        queue: false,
-                        progress: function () {
-                            // Scroll the chat down as the message expands
-                            if (is_animation_scroll) $("#chat").scrollTop($("#chat")[0].scrollHeight);
-                        },
-                        complete: function () {
-                            this_mes_div.css('height', 'auto');
-                            // Scroll the chat down to the bottom once the animation is complete
-                            if (is_animation_scroll) $("#chat").scrollTop($("#chat")[0].scrollHeight);
-                        }
-                    });
-                    this_mes_div.children('.mes_block').transition({
-                        x: swipe_range,
-                        duration: 0,
-                        easing: animation_easing,
-                        queue: false,
-                        complete: function () {
-                            this_mes_div.children('.mes_block').transition({
-                                x: '0px',
-                                duration: swipe_duration,
-                                easing: animation_easing,
-                                queue: false,
-                                complete: function () {
-                                    if (run_generate && !is_send_press && parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length) {
-                                        console.log('caught here 2');
-                                        is_send_press = true;
-                                        $('.mes_buttons:last').hide();
-                                        Generate('swipe');
-                                    } else {
-                                        if (parseInt(chat[chat.length - 1]['swipe_id']) !== chat[chat.length - 1]['swipes'].length) {
-                                            saveChatConditional();
-                                        }
-                                    }
-                                }
-                            });
-                        }
-                    });
-                }
-            });
-
-            $(this).parent().children('.avatar').transition({ // moves avatar aong with swipe
-                x: '-' + swipe_range,
-                duration: swipe_duration,
-                easing: animation_easing,
-                queue: false,
-                complete: function () {
-                    $(this).parent().children('.avatar').transition({
-                        x: swipe_range,
-                        duration: 0,
-                        easing: animation_easing,
-                        queue: false,
-                        complete: function () {
-                            $(this).parent().children('.avatar').transition({
-                                x: '0px',
-                                duration: swipe_duration,
-                                easing: animation_easing,
-                                queue: false,
-                                complete: function () {
-
-                                }
-                            });
-                        }
-                    });
-                }
-            });
-        }
-
-    });
+    $(document).on('click', '.swipe_right', swipe_right);
 
     $(document).on('click', '.swipe_left', function () {      // when we swipe left..but no generation.
         if (chat.length - 1 === Number(this_edit_mes_id)) {
