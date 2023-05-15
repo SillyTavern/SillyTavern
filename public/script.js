@@ -555,6 +555,8 @@ const MAX_GENERATION_LOOPS = 5;
 
 let token;
 
+var PromptArrayItemForRawPromptDisplay;
+
 export function getRequestHeaders() {
     return {
         "Content-Type": "application/json",
@@ -2488,6 +2490,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
     for (var i = 0; i < itemizedPrompts.length; i++) {
         if (itemizedPrompts[i].mesId === incomingMesId) {
             thisPromptSet = i;
+            PromptArrayItemForRawPromptDisplay = Number(i);
         }
     }
 
@@ -5784,15 +5787,16 @@ $(document).ready(function () {
     })
 
     $(document).on("pointerup", "#showRawPrompt", function () {
-        //let mesIdForItemization = $(this).closest('.mes').attr('mesId');
-        //console.log(generate_data.prompt);
-        console.log(itemizedPrompts[0].rawPrompt);
-        $("#rawPromptWrapper").html(itemizedPrompts[0].rawPrompt.replace(/\n/g, '<br>'));
+        //console.log(itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt);
+        console.log(itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt);
+
+        let rawPrompt = itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt;
+        let rawPromptValues = Object.values(rawPrompt);
+
+        //let DisplayStringifiedPrompt = JSON.stringify(itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt).replace(/\n+/g, '<br>');
+        $("#rawPromptWrapper").html(rawPromptValues);
         rawPromptPopper.update();
         $('#rawPromptPopup').toggle();
-
-        //Popper(itemizedPrompts, mesIdForItemization);
-
     })
 
 
