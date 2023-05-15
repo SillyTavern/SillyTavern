@@ -76,6 +76,8 @@ let power_user = {
     disable_personality_formatting: false,
     disable_examples_formatting: false,
     disable_start_formatting: false,
+    trim_sentences: false,
+    include_newline: false,
     always_force_name2: false,
     multigen: false,
     multigen_first_chunk: 50,
@@ -492,6 +494,8 @@ function loadPowerUserSettings(settings, data) {
     $("#always-force-name2-checkbox").prop("checked", power_user.always_force_name2);
     $("#disable-examples-formatting-checkbox").prop("checked", power_user.disable_examples_formatting);
     $('#disable-start-formatting-checkbox').prop("checked", power_user.disable_start_formatting);
+    $("#trim_sentences_checkbox").prop("checked", power_user.trim_sentences);
+    $("#include_newline_checkbox").prop("checked", power_user.include_newline);
     $('#render_formulas').prop("checked", power_user.render_formulas);
     $("#custom_chat_separator").val(power_user.custom_chat_separator);
     $("#fast_ui_mode").prop("checked", power_user.fast_ui_mode);
@@ -853,6 +857,27 @@ $(document).ready(() => {
 
     $("#disable-start-formatting-checkbox").change(function () {
         power_user.disable_start_formatting = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    // include newline is the child of trim sentences
+    // if include newline is checked, trim sentences must be checked
+    // if trim sentences is unchecked, include newline must be unchecked
+    $("#trim_sentences_checkbox").change(function() {
+        power_user.trim_sentences = !!$(this).prop("checked");
+        if (!$(this).prop("checked")) {
+            $("#include_newline_checkbox").prop("checked", false);
+            power_user.include_newline = false;
+        }
+        saveSettingsDebounced();
+    });
+
+    $("#include_newline_checkbox").change(function() {
+        power_user.include_newline = !!$(this).prop("checked");
+        if ($(this).prop("checked")) {
+            $("#trim_sentences_checkbox").prop("checked", true);
+            power_user.trim_sentences = true;
+        }
         saveSettingsDebounced();
     });
 
