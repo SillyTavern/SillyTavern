@@ -2425,10 +2425,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         // regenerate with character speech reenforced
                         // to make sure we leave on swipe type while also adding the name2 appendage
                         setTimeout(() => {
-                            let newType = type == "swipe" ? "swipe" : "force_name2";
-                            newType = isImpersonate ? type : newType;
-
-                            Generate(newType, { automatic_trigger: false, force_name2: true });
+                            Generate(type, { automatic_trigger, force_name2: true, resolve, reject, quiet_prompt, force_chid });
                         }, generate_loop_counter * 1000);
                     }
                 } else {
