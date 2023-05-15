@@ -193,7 +193,9 @@ export function sortByCssOrder(a, b) {
 export function end_trim_to_sentence(input, include_newline = false) {
     // inspired from https://github.com/kaihordewebui/kaihordewebui.github.io/blob/06b95e6b7720eb85177fbaf1a7f52955d7cdbc02/index.html#L4853-L4867
 
+    console.log(input, include_newline);
     const punctuation = new Set(['.', '!', '?']); // extend this as you see fit
+    let last = -1;
 
     for (let i = input.length - 1; i >= 0; i--) {
         const char = input[i];
@@ -207,11 +209,11 @@ export function end_trim_to_sentence(input, include_newline = false) {
             last = i;
             break;
         }
-
-        if (last === -1) {
-            return input.trimEnd();
-        }
-
-        return input.substring(0, last + 1).trimEnd();
     }
+
+    if (last === -1) {
+        return input.trimEnd();
+    }
+
+    return input.substring(0, last + 1).trimEnd();
 }

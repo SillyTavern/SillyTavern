@@ -1662,10 +1662,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             is_send_press = true;
             textareaText = $("#send_textarea").val();
             $("#send_textarea").val('').trigger('input');
-
-            if (power_user.trim_sentences) {
-                textareaText = end_trim_to_sentence(textareaText, power_user.include_newline);
-            }
         } else {
             textareaText = "";
             if (chat.length && chat[chat.length - 1]['is_user']) {
@@ -2956,6 +2952,10 @@ function extractMessageFromData(data) {
 }
 
 function cleanUpMessage(getMessage, isImpersonate) {
+    if (power_user.trim_sentences) {
+        getMessage = end_trim_to_sentence(getMessage, power_user.include_newline);
+    }
+
     if (power_user.collapse_newlines) {
         getMessage = collapseNewlines(getMessage);
     }
