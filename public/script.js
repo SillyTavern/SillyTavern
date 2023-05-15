@@ -106,7 +106,7 @@ import {
     setPoeOnlineStatus,
 } from "./scripts/poe.js";
 
-import { debounce, delay, restoreCaretPosition, saveCaretPosition } from "./scripts/utils.js";
+import { debounce, delay, restoreCaretPosition, saveCaretPosition, end_trim_to_sentence } from "./scripts/utils.js";
 import { extension_settings, getContext, loadExtensionSettings } from "./scripts/extensions.js";
 import { executeSlashCommands, getSlashCommandsHelp, registerSlashCommand } from "./scripts/slash-commands.js";
 import {
@@ -2961,6 +2961,10 @@ function extractMessageFromData(data) {
 }
 
 function cleanUpMessage(getMessage, isImpersonate) {
+    if (power_user.trim_sentences) {
+        getMessage = end_trim_to_sentence(getMessage, power_user.include_newline);
+    }
+
     if (power_user.collapse_newlines) {
         getMessage = collapseNewlines(getMessage);
     }
