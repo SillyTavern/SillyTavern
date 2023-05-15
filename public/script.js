@@ -1369,7 +1369,12 @@ function getExtensionPrompt(position = 0, depth = undefined, separator = "\n") {
 
 function baseChatReplace(value, name1, name2) {
     if (value !== undefined && value.length > 0) {
-        value = substituteParams(value, is_pygmalion ? "You" : name1, name2);
+        if (is_pygmalion) {
+            value = value.replace(/{{user}}:/gi, 'You:');
+            value = value.replace(/<USER>:/gi, 'You:');
+        }
+
+        value = substituteParams(value, name1, name2);
 
         if (power_user.collapse_newlines) {
             value = collapseNewlines(value);
