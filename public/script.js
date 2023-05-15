@@ -106,7 +106,7 @@ import {
     setPoeOnlineStatus,
 } from "./scripts/poe.js";
 
-import { debounce, delay, restoreCaretPosition, saveCaretPosition } from "./scripts/utils.js";
+import { debounce, delay, restoreCaretPosition, saveCaretPosition, end_trim_to_sentence } from "./scripts/utils.js";
 import { extension_settings, getContext, loadExtensionSettings } from "./scripts/extensions.js";
 import { executeSlashCommands, getSlashCommandsHelp, registerSlashCommand } from "./scripts/slash-commands.js";
 import {
@@ -1662,6 +1662,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             is_send_press = true;
             textareaText = $("#send_textarea").val();
             $("#send_textarea").val('').trigger('input');
+
+            if (power_user.trim_sentences) {
+                textareaText = end_trim_to_sentence(textareaText, power_user.keep_newlines);
+            }
         } else {
             textareaText = "";
             if (chat.length && chat[chat.length - 1]['is_user']) {

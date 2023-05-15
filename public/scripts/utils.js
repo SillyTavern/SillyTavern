@@ -189,3 +189,12 @@ export function sortByCssOrder(a, b) {
     const _b = Number($(b).css('order'));
     return _a - _b;
 }
+
+export function end_trim_to_sentence(input, keep_newlines = false) {
+    if (!keep_newlines) {
+        return input.trimEnd();
+    } else {
+        // trim all whitespace at the end of the string, except for newlines
+        return input.replace(/([^\S\r\n])+(?=\n*$)/g, "");
+    }
+}

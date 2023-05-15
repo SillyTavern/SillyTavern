@@ -76,6 +76,8 @@ let power_user = {
     disable_personality_formatting: false,
     disable_examples_formatting: false,
     disable_start_formatting: false,
+    trim_sentences: false,
+    keep_newlines: false,
     always_force_name2: false,
     multigen: false,
     multigen_first_chunk: 50,
@@ -492,6 +494,8 @@ function loadPowerUserSettings(settings, data) {
     $("#always-force-name2-checkbox").prop("checked", power_user.always_force_name2);
     $("#disable-examples-formatting-checkbox").prop("checked", power_user.disable_examples_formatting);
     $('#disable-start-formatting-checkbox').prop("checked", power_user.disable_start_formatting);
+    $("#trim_sentences_checkbox").prop("checked", power_user.trim_sentences);
+    $("#keep_newlines_checkbox").prop("checked", power_user.keep_newlines);
     $('#render_formulas').prop("checked", power_user.render_formulas);
     $("#custom_chat_separator").val(power_user.custom_chat_separator);
     $("#fast_ui_mode").prop("checked", power_user.fast_ui_mode);
@@ -853,6 +857,27 @@ $(document).ready(() => {
 
     $("#disable-start-formatting-checkbox").change(function () {
         power_user.disable_start_formatting = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    // keep newlines is the child of trim sentences
+    // if keep newlines is checked, trim sentences must be checked
+    // if trim sentences is unchecked, keep newlines must be unchecked
+    $("#trim_sentences_checkbox").change(function() {
+        power_user.trim_sentences = !!$(this).prop("checked");
+        if (!$(this).prop("checked")) {
+            $("#keep_newlines_checkbox").prop("checked", false);
+            power_user.keep_newlines = false;
+        }
+        saveSettingsDebounced();
+    });
+
+    $("#keep_newlines_checkbox").change(function() {
+        power_user.keep_newlines = !!$(this).prop("checked");
+        if ($(this).prop("checked")) {
+            $("#trim_sentences_checkbox").prop("checked", true);
+            power_user.trim_sentences = true;
+        }
         saveSettingsDebounced();
     });
 
