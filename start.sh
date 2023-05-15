@@ -30,4 +30,4 @@ echo "Installing Node Modules..."
 npm i
 
 echo "Entering SillyTavern..."
-node server.js
+node "$(dirname "$0")/server.js"
