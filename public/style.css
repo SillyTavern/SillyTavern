@@ -1078,13 +1078,8 @@ select option:not(:checked) {
     display: none !important;
 }
 
-#api_url_text,
-#textgenerationwebui_api_url_text {
+#api_url_text {
     display: block;
-}
-
-#textgenerationwebui_api pre {
-    display: inline;
 }
 
 #api_button:hover,
@@ -2832,7 +2827,6 @@ body .ui-widget-content li:hover {
 #rm_group_add_members_header {
     display: flex;
     flex-direction: row;
-    align-items: center;
     width: 100%;
     column-gap: 10px;
 }

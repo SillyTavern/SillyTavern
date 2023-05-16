@@ -748,7 +748,7 @@
                                     <div class="range-block-title">
                                         Seed
                                     </div>
-                                    <input type="number" id="seed_textgenerationwebui" class="text_pole" maxlength="100" />
+                                    <input type="number" id="seed_textgenerationwebui" class="text_pole wide100p" maxlength="100" />
                                 </div>
                             </div>
                             <div id="openai_settings">
@@ -971,7 +971,7 @@
             </div>
             <div id="rm_api_block" class="drawer-content closedDrawer">
                 <h3 id="title_api">API</h3>
-                <div class="flex-container">
+                <div class="flex-container flexFlowColumn">
                     <div id="main-API-selector-block">
                         <select id="main_api">
                             <option value="kobold">KoboldAI</option>
@@ -1053,7 +1053,7 @@
                                 </ol>
                             </span>
                             <div class="flex-container">
-                                <input id="api_key_novel" name="api_key_novel" class="text_pole flex1" maxlength="500" size="35" type="text">
+                                <input id="api_key_novel" name="api_key_novel" class="text_pole flex1 wide100p" maxlength="500" size="35" type="text">
                                 <div title="Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_novel"></div>
                             </div>
                             <div class="neutral_warning">For privacy reasons, your API key will be hidden after you reload the page.</div>
@@ -1075,24 +1075,31 @@
                         </div>
                     </div>
                     <div id="textgenerationwebui_api" style="display: none;position: relative;">
-                        <div class="oobabooga_logo">
+                        <div class="oobabooga_logo flex-container">
                             <a href="https://github.com/oobabooga/text-generation-webui" target="_blank">
                                 oobabooga/text-generation-webui
                             </a>
+                            <span>
+                                Make sure you run it with <tt>--api</tt> flag
+                            </span>
                         </div>
-                        <span>
-                            Make sure you run it with <tt>--api</tt> flag
-                        </span>
-                        <form action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                            <h4>Blocking API url</h4>
-                            <h5>Example: http://127.0.0.1:5000/</h5>
-                            <input id="textgenerationwebui_api_url_text" name="textgenerationwebui_api_url" class="text_pole" maxlength="500" value="" autocomplete="off">
+                        <div>
+                            <div class="flex-container">
+                                <div class="flex1">
+                                    <h4>Blocking API url</h4>
+                                    <h5>Example: http://127.0.0.1:5000/</h5>
+                                    <input id="textgenerationwebui_api_url_text" name="textgenerationwebui_api_url" class="text_pole wide100p"
+                                        maxlength="500" value="">
+                                </div>
+                                <div class="flex1">
+                                    <h4>Streaming API url</h4>
+                                    <h5>Example: ws://127.0.0.1:5005/api/v1/stream</h5>
+                                    <input id="streaming_url_textgenerationwebui" type="text" class="text_pole wide100p" maxlength="500" value="">
+                                </div>
+                            </div>
                             <input id="api_button_textgenerationwebui" class="menu_button" type="submit" value="Connect">
-                            <h4>Streaming API url</h4>
-                            <h5>Example: ws://127.0.0.1:5005/api/v1/stream</h5>
-                            <input id="streaming_url_textgenerationwebui" type="text" class="text_pole" maxlength="500" value="" autocomplete="off">
                             <div id="api_loading_textgenerationwebui" class="api-load-icon fa-solid fa-hourglass fa-spin"></div>
-                        </form>
+                        </div>
                         <div class="online_status4">
                             <div class="online_status_indicator4"></div>
                             <div class="online_status_text4">Not connected</div>
@@ -1266,7 +1273,7 @@
                                         Input Sequence
                                     </label>
                                     <div>
-                                        <input id="instruct_input_sequence" class="text_pole textarea_compact" type="text" maxlength="100" />
+                                        <input id="instruct_input_sequence" class="text_pole wide100p textarea_compact" type="text" maxlength="100" />
                                     </div>
                                 </div>
                                 <div class="flex1">
@@ -1274,7 +1281,7 @@
                                         Output Sequence
                                     </label>
                                     <div>
-                                        <input id="instruct_output_sequence" class="text_pole textarea_compact" type="text" maxlength="100" />
+                                        <input id="instruct_output_sequence" class="text_pole wide100p textarea_compact" type="text" maxlength="100" />
                                     </div>
                                 </div>
                             </div>
@@ -1284,7 +1291,7 @@
                                         System Sequence
                                     </label>
                                     <div>
-                                        <input id="instruct_system_sequence" class="text_pole textarea_compact" type="text" maxlength="100" />
+                                        <input id="instruct_system_sequence" class="text_pole wide100p textarea_compact" type="text" maxlength="100" />
                                     </div>
                                 </div>
                                 <div class="flex1">
@@ -1292,7 +1299,7 @@
                                         Stop Sequence
                                     </label>
                                     <div>
-                                        <input id="instruct_stop_sequence" class="text_pole textarea_compact" type="text" maxlength="100" />
+                                        <input id="instruct_stop_sequence" class="text_pole wide100p textarea_compact" type="text" maxlength="100" />
                                     </div>
                                 </div>
                             </div>
@@ -1777,7 +1784,7 @@
                         <div name="NameChanger">
                             <h4>Name</h4>
                             <div class="change_name">
-                                <input id="your_name" name="your_name" placeholder="Enter your name" class="text_pole" maxlength="50" value="" autocomplete="off">
+                                <input id="your_name" name="your_name" placeholder="Enter your name" class="text_pole wide100p" maxlength="50" value="" autocomplete="off">
                                 <div id="your_name_button" class="menu_button fa-solid fa-check" title="Click to set a new User Name">
                                 </div>
                             </div>
@@ -1912,7 +1919,7 @@
 
                         <div id="tags_div">
                             <div class="tag_controls">
-                                <input id="tagInput" class="text_pole tag_input" placeholder="Search / Create tags" maxlength="25" />
+                                <input id="tagInput" class="text_pole tag_input wide100p margin0" placeholder="Search / Create tags" maxlength="25" />
                                 <div class="tags_view menu_button fa-solid fa-tags" title="View all tags"></div>
                             </div>
                             <div id="tagList" class="tags"></div>
@@ -1965,15 +1972,15 @@
                         </div>
                         <div class="inline-drawer-content">
                             <div name="group-metadata-controls" class="marginTopBot5">
-                                <input id="rm_group_chat_name" class="text_pole" type="text" name="chat_name" placeholder="Chat Name (Optional)" maxlength="100" />
+                                <input id="rm_group_chat_name" class="text_pole wide100p" type="text" name="chat_name" placeholder="Chat Name (Optional)" maxlength="100" />
                                 <div id="group_tags_div" class="wide100p">
                                     <div class="tag_controls">
-                                        <input id="groupTagInput" class="text_pole tag_input flex1" placeholder="Search / Create tags" maxlength="25" />
-                                        <div class="tags_view menu_button fa-solid fa-tags" title="View all tags"></div>
+                                        <input id="groupTagInput" class="text_pole tag_input flex1 margin0" placeholder="Search / Create tags" maxlength="25" />
+                                        <div class="tags_view menu_button fa-solid fa-tags margin0" title="View all tags"></div>
                                     </div>
                                     <div id="groupTagList" class="tags paddingTopBot5"></div>
                                 </div>
-                                <div id="rm_group_top_bar" class="flex-container spaceEvenly width100p">
+                                <div id="rm_group_top_bar" class="flex-container spaceBetween width100p">
                                     <div name="GroupStragegyAndOrder" id="rm_group_buttons" class="fontsize80p flex-container paddingLeftRight5">
                                         <div class="">
                                             <div class="flex-container flexnowrap width100p whitespacenowrap">
@@ -2034,8 +2041,8 @@
                         <div class="inline-drawer-content">
                             <div name="Unadded Char List" class="flex-container flexFlowColumn overflowYAuto flex1">
                                 <div id="rm_group_add_members_header">
-                                    <input id="rm_group_filter" class="text_pole" type="search" placeholder="Filter..." maxlength="100" />
-                                    <div id="group_fav_filter" class="menu_button fa-solid fa-ranking-star" title="Show only favorites"></div>
+                                    <input id="rm_group_filter" class="text_pole margin0" type="search" placeholder="Filter..." maxlength="100" />
+                                    <div id="group_fav_filter" class="menu_button fa-solid fa-ranking-star margin0" title="Show only favorites"></div>
                                 </div>
                                 <div id="rm_group_add_members" class="overflowYAuto flex-container"></div>
                             </div>
@@ -2057,7 +2064,7 @@
                             <div id="rm_button_create" title="Create New Character" class="menu_button fa-solid fa-user-plus "></div>
                             <div id="character_import_button" title="Import Character from File" class="menu_button fa-solid fa-file-arrow-up "></div>
                             <div id="rm_button_group_chats" title="Create New Chat Group" class="menu_button fa-solid fa-users-gear "></div>
-                            <input id="character_search_bar" class="text_pole" type="search" placeholder="Search..." maxlength="50" />
+                            <input id="character_search_bar" class="text_pole width100p" type="search" placeholder="Search..." maxlength="50" />
                             <select id="character_sort_order" title="Characters sorting order">
                                 <option data-field="name" data-order="asc">A-Z</option>
                                 <option data-field="name" data-order="desc">Z-A</option>
