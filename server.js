@@ -20,7 +20,10 @@ const cliArguments = yargs(hideBin(process.argv))
     }).argv;
 
 // change all relative paths
-process.chdir(__dirname)
+const path = require('path');
+const directory = process.pkg ? path.dirname(process.execPath) : __dirname;
+console.log(process.pkg ? 'Running from binary' : 'Running from source');
+process.chdir(directory);
 
 const express = require('express');
 const compression = require('compression');
@@ -42,7 +45,7 @@ const encode = require('png-chunks-encode');
 const PNGtext = require('png-chunk-text');
 
 const jimp = require('jimp');
-const path = require('path');
+//const path = require('path');
 const sanitize = require('sanitize-filename');
 const mime = require('mime-types');
 
@@ -60,10 +63,10 @@ const utf8Encode = new TextEncoder();
 const utf8Decode = new TextDecoder('utf-8', { ignoreBOM: true });
 const commandExistsSync = require('command-exists').sync;
 
-const config = require(path.join(__dirname, './config.conf'));
+const config = require(path.join(process.cwd(), './config.conf'));
 const server_port = process.env.SILLY_TAVERN_PORT || config.port;
 
-const whitelistPath = path.join(__dirname, "./whitelist.txt");
+const whitelistPath = path.join(process.cwd(), "./whitelist.txt");
 let whitelist = config.whitelist;
 
 if (fs.existsSync(whitelistPath)) {
@@ -259,7 +262,7 @@ app.use((req, res, next) => {
         console.log(filePath);
         fs.access(filePath, fs.constants.R_OK, (err) => {
             if (!err) {
-                res.sendFile(filePath, { root: __dirname });
+                res.sendFile(filePath, { root: process.cwd() });
             } else {
                 res.send('Character not found: ' + filePath);
                 //next();
@@ -270,10 +273,10 @@ app.use((req, res, next) => {
     }
 });
 
-app.use(express.static(__dirname + "/public", { refresh: true }));
+app.use(express.static(process.cwd() + "/public", { refresh: true }));
 
 app.use('/backgrounds', (req, res) => {
-    const filePath = decodeURIComponent(path.join(__dirname, 'public/backgrounds', req.url.replace(/%20/g, ' ')));
+    const filePath = decodeURIComponent(path.join(process.cwd(), 'public/backgrounds', req.url.replace(/%20/g, ' ')));
     fs.readFile(filePath, (err, data) => {
         if (err) {
             res.status(404).send('File not found');
@@ -285,7 +288,7 @@ app.use('/backgrounds', (req, res) => {
 });
 
 app.use('/characters', (req, res) => {
-    const filePath = decodeURIComponent(path.join(__dirname, charactersPath, req.url.replace(/%20/g, ' ')));
+    const filePath = decodeURIComponent(path.join(process.cwd(), charactersPath, req.url.replace(/%20/g, ' ')));
     fs.readFile(filePath, (err, data) => {
         if (err) {
             res.status(404).send('File not found');
@@ -296,16 +299,16 @@ app.use('/characters', (req, res) => {
 });
 app.use(multer({ dest: "uploads" }).single("avatar"));
 app.get("/", function (request, response) {
-    response.sendFile(__dirname + "/public/index.html");
+    response.sendFile(process.cwd() + "/public/index.html");
 });
 app.get("/notes/*", function (request, response) {
-    response.sendFile(__dirname + "/public" + request.url + ".html");
+    response.sendFile(process.cwd() + "/public" + request.url + ".html");
 });
 app.get('/get_faq', function (_, response) {
-    response.sendFile(__dirname + "/faq.md");
+    response.sendFile(process.cwd() + "/faq.md");
 });
 app.get('/get_readme', function (_, response) {
-    response.sendFile(__dirname + "/readme.md");
+    response.sendFile(process.cwd() + "/readme.md");
 });
 app.get('/deviceinfo', function (request, response) {
     const userAgent = request.header('user-agent');
@@ -658,13 +661,13 @@ function getVersion() {
     try {
         const pkgJson = require('./package.json');
         pkgVersion = pkgJson.version;
-        if (commandExistsSync('git')) {
+        if (!process.pkg && commandExistsSync('git')) {
             gitRevision = require('child_process')
-                .execSync('git rev-parse --short HEAD', { cwd: __dirname })
+                .execSync('git rev-parse --short HEAD', { cwd: process.cwd() })
                 .toString().trim();
 
             gitBranch = require('child_process')
-                .execSync('git rev-parse --abbrev-ref HEAD', { cwd: __dirname })
+                .execSync('git rev-parse --abbrev-ref HEAD', { cwd: process.cwd() })
                 .toString().trim();
         }
     }
@@ -1694,7 +1697,7 @@ app.post("/exportcharacter", jsonParser, async function (request, response) {
 
     switch (request.body.format) {
         case 'png':
-            return response.sendFile(filename, { root: __dirname });
+            return response.sendFile(filename, { root: process.cwd() });
         case 'json': {
             try {
                 let json = await charaRead(filename);
@@ -1724,7 +1727,7 @@ app.post("/exportcharacter", jsonParser, async function (request, response) {
                 await webp.cwebp(filename, inputWebpPath, '-q 95');
                 await webp.webpmux_add(inputWebpPath, outputWebpPath, metadataPath, 'exif');
 
-                response.sendFile(outputWebpPath, { root: __dirname }, () => {
+                response.sendFile(outputWebpPath, { root: process.cwd() }, () => {
                     fs.rmSync(inputWebpPath);
                     fs.rmSync(metadataPath);
                     fs.rmSync(outputWebpPath);
@@ -2369,7 +2372,7 @@ app.get('/thumbnail', jsonParser, async function (request, response) {
 
     if (config.disableThumbnails == true) {
         const pathToOriginalFile = path.join(getOriginalFolder(type), file);
-        return response.sendFile(pathToOriginalFile, { root: __dirname });
+        return response.sendFile(pathToOriginalFile, { root: process.cwd() });
     }
 
     const pathToCachedFile = await generateThumbnail(type, file);
@@ -2378,7 +2381,7 @@ app.get('/thumbnail', jsonParser, async function (request, response) {
         return response.sendStatus(404);
     }
 
-    return response.sendFile(pathToCachedFile, { root: __dirname });
+    return response.sendFile(pathToCachedFile, { root: process.cwd() });
 });
 
 /* OpenAI */
