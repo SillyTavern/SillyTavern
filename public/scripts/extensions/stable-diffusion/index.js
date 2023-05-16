@@ -371,7 +371,6 @@ function addSDGenButtons() {
     $('#send_but_sheld').prepend(buttonHtml);
     $('#send_but_sheld').prepend(waitButtonHtml);
     $(document.body).append(dropdownHtml);
-    $(document.body).append(dropdownHtml);
 
     const messageButton = $('.sd_message_gen');
     const button = $('#sd_gen');
