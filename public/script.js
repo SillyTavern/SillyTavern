@@ -107,7 +107,7 @@ import {
 } from "./scripts/poe.js";
 
 import { debounce, delay, restoreCaretPosition, saveCaretPosition, end_trim_to_sentence } from "./scripts/utils.js";
-import { extension_settings, getContext, loadExtensionSettings } from "./scripts/extensions.js";
+import { extension_settings, loadExtensionSettings } from "./scripts/extensions.js";
 import { executeSlashCommands, getSlashCommandsHelp, registerSlashCommand } from "./scripts/slash-commands.js";
 import {
     tag_map,
@@ -126,6 +126,7 @@ import {
     writeSecret
 } from "./scripts/secrets.js";
 import uniqolor from "./scripts/uniqolor.js";
+import { EventEmitter } from './scripts/eventemitter.js';
 
 //exporting functions and vars for mods
 export {
@@ -382,6 +383,12 @@ const system_messages = {
         mes: `Click here to return to the previous chat: <a class="bookmark_link" file_name="{0}" href="javascript:void(null);">Return</a>`,
     },
 };
+
+export const event_types = {
+    EXTRAS_CONNECTED: 'extras_connected',
+}
+
+export const eventSource = new EventEmitter();
 
 // refresh token
 $(document).ajaxError(function myErrorHandler(_, xhr) {
@@ -4489,6 +4496,8 @@ window["SillyTavern"].getContext = function () {
         maxContext: Number(max_context),
         chatMetadata: chat_metadata,
         streamingProcessor,
+        eventSource: eventSource,
+        event_types: event_types,
         addOneMessage: addOneMessage,
         generate: Generate,
         getTokenCount: getTokenCount,
