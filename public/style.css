@@ -3314,7 +3314,6 @@ a {
 /* Message images */
 .mes .mes_img_container {
     max-width: 100%;
-    max-height: 60svh;
     /*to fit inside single window height of mobile landscape*/
     display: none;
     position: relative;
