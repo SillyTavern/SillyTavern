@@ -21,7 +21,9 @@ const cliArguments = yargs(hideBin(process.argv))
 
 // change all relative paths
 const path = require('path');
-process.chdir(path.dirname(process.execPath));
+const directory = process.pkg ? path.dirname(process.execPath) : __dirname;
+console.log(process.pkg ? 'Running from binary' : 'Running from source');
+process.chdir(directory);
 
 const express = require('express');
 const compression = require('compression');
