@@ -136,8 +136,8 @@ Easy to follow guide with pretty pictures:
   5. Open a Command Prompt inside that folder by clicking in the 'Address Bar' at the top, typing `cmd`, and pressing Enter.
   6. Once the black box (Command Prompt) pops up, type ONE of the following into it and press Enter:
   
-  * for Main Branch: `git clone https://github.com/Cohee1207/SillyTavern -b main`
-  * for Dev Branch: `git clone https://github.com/Cohee1207/SillyTavern -b dev`
+* for Main Branch: `git clone https://github.com/Cohee1207/SillyTavern -b main`
+* for Dev Branch: `git clone https://github.com/Cohee1207/SillyTavern -b dev`
   
   7. Once everything is cloned, double click `Start.bat` to make NodeJS install its requirements.
   8. The server will then start, and SillyTavern will popup in your browser.
@@ -179,13 +179,23 @@ However, it can be used to allow remote connections from anywhere as well.
 * Create a new text file inside your SillyTavern base install folder called `whitelist.txt`.
 * Open the file in a text editor, add a list of IPs you want to be allowed to connect.
 
-*IP ranges are not accepted. Each IP must be listed individually like this:*
+*Both indidivual IPs, and wildcard IP ranges are accepted. Examples:*
+
 ```txt
 192.168.0.1
-192.168.0.2
-192.168.0.3
-192.168.0.4
+192.168.0.20
 ```
+
+or
+
+```txt
+192.168.0.*
+```
+
+(the above wildcard IP range will allow any device on the local network to connect)
+
+CIDR masks are also accepted (eg. 10.0.0.0/24).
+
 * Save the `whitelist.txt` file.
 * Restart your TAI server.
 
@@ -195,9 +205,9 @@ Now devices which have the IP specified in the file will be able to connect.
 
 ### 2. Connecting to ST from a remote device
 
-After the whitelist has been setup, to connect over wifi you'll need the IP of the ST-hosting device. 
+After the whitelist has been setup, to connect over wifi you'll need the IP of the ST-hosting device.
 
-If the ST-hosting device is on the same wifi network, you will point your remote device's browser to the ST-host's internal wifi IP: 
+If the ST-hosting device is on the same wifi network, you will point your remote device's browser to the ST-host's internal wifi IP:
 
 * For Windows: windows button > type `cmd.exe` in the search bar > type `ipconfig` in the console, hit Enter > look for `IPv4` listing.
 
@@ -209,9 +219,9 @@ While using the ST-hosting device, access [this page](https://whatismyipaddress.
 
 We do not reccomend doing this, but you can open `config.conf` and change `whitelist` to `false`.
 
-You must remove (or rename) `whitelist.txt` in the SillyTavern base install folder, if it exists. 
+You must remove (or rename) `whitelist.txt` in the SillyTavern base install folder, if it exists.
 
-This is usually an insecure practice, so we require you to set a username and password when you do this. 
+This is usually an insecure practice, so we require you to set a username and password when you do this.
 
 The username and password are set in `config.conf`.
 
