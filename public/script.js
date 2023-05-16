@@ -2743,7 +2743,7 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
     } else {
         item['swipe_id'] = 0;
         item['swipes'] = [];
-        item['swipes'][0] = chat[chat.length - 1]['mes']; 
+        item['swipes'][0] = chat[chat.length - 1]['mes'];
     }
 
     return { type, getMessage };
