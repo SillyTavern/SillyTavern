@@ -4909,8 +4909,8 @@ $(document).ready(function () {
 
     $(document).on("click", ".mes", function () {
         //when a 'delete message' parent div is clicked
-        // and we are in delete mode
-        if (!is_delete_mode) {
+        // and we are in delete mode and del_checkbox is visible
+        if (!is_delete_mode || !$(this).children('.del_checkbox').is(':visible')) {
             return;
         }
         $(".mes").children(".del_checkbox").each(function () {
