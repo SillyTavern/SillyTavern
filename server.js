@@ -2437,7 +2437,13 @@ app.post("/openai_bias", jsonParser, async function (request, response) {
 // Shamelessly stolen from Agnai
 app.post("/openai_usage", jsonParser, async function (request, response) {
     if (!request.body) return response.sendStatus(400);
-    const key = request.body.key;
+    const key = readSecret(SECRET_KEYS.OPENAI);
+
+    if (!key) {
+        console.warn('Get key usage failed: Missing OpenAI API key.');
+        return response.sendStatus(401);
+    }
+
     const api_url = new URL(request.body.reverse_proxy || api_openai).toString();
 
     const headers = {
