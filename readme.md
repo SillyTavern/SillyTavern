@@ -65,6 +65,8 @@ Get in touch with the developers directly:
   * Character emotional expressions
   * Auto-Summary of the chat history
   * Sending images to chat, and the AI interpreting the content.
+  * Stable Diffusion image generation (5 chat-related presets plus 'free mode')
+  * Text-to-speech for AI response messages (via ElevenLabs, Silero, or the OS's System TTS)
 
 ## UI Extensions 🚀
 
@@ -76,6 +78,8 @@ Get in touch with the developers directly:
 | D&D Dice | A set of 7 classic D&D dice for all your dice rolling needs.<br><br>*I used to roll the dice.<br>Feel the fear in my enemies' eyes* | None | <img style="max-width:200px" alt="image" src="https://user-images.githubusercontent.com/18619528/226199925-a066c6fc-745e-4a2b-9203-1cbffa481b14.png"> |
 | Author's Note | Built-in extension that allows you to append notes that will be added to the context and steer the story and character in a specific direction. Because it's sent after the character description, it has a lot of weight. Thanks Ali឵#2222 for pitching the idea! | None | ![image](https://user-images.githubusercontent.com/128647114/230311637-d809cd9b-af66-4dd1-a310-7a27e847c011.png) |
 | Character Backgrounds | Built-in extension to assign unique backgrounds to specific chats or groups. | None | <img style="max-width:200px" alt="image" src="https://user-images.githubusercontent.com/18619528/233494454-bfa7c9c7-4faa-4d97-9c69-628fd96edd92.png"> |
+| Stable Diffusion | Use local of cloud-based Stable Diffusion webUI API to generate images. 5 presets included ('you', 'your face', 'me', 'the story', and 'the last message'. Free mode also supported via `/sd (anything_here_)` command in the chat input bar. Most common StableDiffusion generation settings are customizable within the SillyTavern UI. | None | <img style="max-width:200px" alt="image" src> |
+| Text-to-Speech | AI-generated voice will read back character messages on demand, or automatically read new messages they arrive. Supports ElevenLabs, Silero, and your device's TTS service. | None | <img style="max-width:200px" alt="image" src=> |
 
 ## UI/CSS/Quality of Life tweaks by RossAscends
 
