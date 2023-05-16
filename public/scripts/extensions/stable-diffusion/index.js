@@ -229,6 +229,10 @@ async function loadHordeSamplers() {
 }
 
 async function loadExtrasSamplers() {
+    if (!modules.includes('sd')) {
+        return [];
+    }
+
     const url = new URL(getApiUrl());
     url.pathname = '/api/image/samplers';
     const result = await fetch(url, defaultRequestArgs);
@@ -276,6 +280,10 @@ async function loadHordeModels() {
 }
 
 async function loadExtrasModels() {
+    if (!modules.includes('sd')) {
+        return [];
+    }
+
     const url = new URL(getApiUrl());
     url.pathname = '/api/image/model';
     const getCurrentModelResult = await fetch(url, defaultRequestArgs);
