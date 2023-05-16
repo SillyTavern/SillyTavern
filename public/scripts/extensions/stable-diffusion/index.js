@@ -7,7 +7,8 @@ import {
     callPopup,
     getRequestHeaders,
     event_types,
-    eventSource
+    eventSource,
+    appendImageToMessage
 } from "../../../script.js";
 import { getApiUrl, getContext, extension_settings, defaultRequestArgs, modules } from "../../extensions.js";
 import { stringFormat, initScrollHeight, resetScrollHeight } from "../../utils.js";
@@ -477,9 +478,6 @@ async function sendMessage(prompt, image) {
 }
 
 function addSDGenButtons() {
-    const messageButtonHtml = `
-        <div title="Generate Image" onclick="sdMessageButton(event)" class="sd_message_gen fa-solid fa-paintbrush"></div>
-        `;
 
     const buttonHtml = `
         <div id="sd_gen" class="fa-solid fa-paintbrush" title="Trigger Stable Diffusion" /></div>
@@ -501,7 +499,6 @@ function addSDGenButtons() {
         </ul>
     </div>`;
 
-    $('.mes_buttons').prepend(messageButtonHtml);
     $('#send_but_sheld').prepend(buttonHtml);
     $('#send_but_sheld').prepend(waitButtonHtml);
     $(document.body).append(dropdownHtml);
@@ -518,6 +515,8 @@ function addSDGenButtons() {
     let popper = Popper.createPopper(button.get(0), dropdown.get(0), {
         placement: 'top-start',
     });
+
+    $(document).on('click', '.sd_message_gen', sdMessageButton);
 
     $(document).on('click touchend', function (e) {
         const target = $(e.target);
@@ -538,11 +537,11 @@ async function moduleWorker() {
 
     if (context.onlineStatus === 'no_connection'){
         $('#sd_gen').hide(200);
-        $('.sd_message_gen').hide(200);
+        $('.sd_message_gen').hide();
     }
     else{
         $('#sd_gen').show(200);
-        $('.sd_message_gen').show(200);
+        $('.sd_message_gen').show();
     }
 }
 
@@ -551,30 +550,31 @@ addSDGenButtons();
 setInterval(moduleWorker, UPDATE_INTERVAL);
 
 function sdMessageButton (e) {
-    const character = $(e.currentTarget).parents('div.mes_block').children('div.ch_name').children('span.name_text').text(),
-    message = $(e.currentTarget).parents('div.mes_block').children('div.mes_text').text();
+    const $mes =  $(e.currentTarget).closest('.mes');
+    const character = $mes.find('.name_text').text(),
+    message = $mes.find('.mes_text').text();
 
     console.log("doing /sd raw last");
-    generatePicture('sd', 'raw_last', `${character} said: ${message}`, appendImageToMessage);
+    generatePicture('sd', 'raw_last', `${character} said: ${message}`, saveGeneratedImage);
 
-    function appendImageToMessage(prompt, image){
-        const sd_image = document.createElement("img"),
-            context = getContext(),
-            message_id = $(e.target).parents('div.mes').attr('mesid');
-        sd_image.src = image;
-        sd_image.title = prompt;
-        sd_image.classList.add("img_extra");
-        $(e.target).parents('div.mes_block').children('div.mes_text').append(sd_image);
+    function saveGeneratedImage(prompt, image){
+        const context = getContext();
+        const message_id = $mes.attr('mesid');
+        const message = context.chat[message_id];
 
-        context.chat[message_id].extra.inline_image = true;
-        context.chat[message_id].extra.image = image;
-        context.chat[message_id].extra.title = prompt;
+        // Some message sources may not create the extra object
+        if (typeof message.extra !== 'object') {
+            message.extra = {};
+        }
+
+        message.extra.inline_image = true;
+        message.extra.image = image;
+        message.extra.title = prompt;
+        appendImageToMessage(message, $mes);
 
         context.saveChat();
     }
 };
-
-window.sdMessageButton = sdMessageButton;
 
 $("#sd_dropdown [id]").on("click", function () {
     var id = $(this).attr("id");
@@ -672,4 +672,5 @@ jQuery(async () => {
     });
 
     await loadSettings();
+    $('body').addClass('sd');
 });

@@ -1030,13 +1030,14 @@ function getMessageFromTemplate({ mesId, characterName, isUser, avatarImg, bias,
     return mes;
 }
 
-function appendImageToMessage(mes, messageElement) {
+export function appendImageToMessage(mes, messageElement) {
     if (mes.extra?.image) {
-        const image = document.createElement("img");
-        image.src = mes.extra?.image;
-        image.title = mes.extra?.title || mes.title;
-        image.classList.add("img_extra");
-        mes.extra?.inline_image?messageElement.find(".mes_text").append(image):messageElement.find(".mes_text").prepend(image);
+        const image = messageElement.find('.mes_img');
+        const isInline = !!mes.extra?.inline_image;
+        image.attr('src', mes.extra?.image);
+        image.attr('title', mes.extra?.title || mes.title);
+        messageElement.find(".mes_img_container").addClass("img_extra");
+        image.toggleClass("img_inline", isInline);
     }
 }
 
@@ -4479,6 +4480,40 @@ export function cancelTtsPlay() {
     }
 }
 
+async function deleteMessageImage() {
+    const value = await callPopup("<h3>Delete image from message?<br>This action can't be undone.</h3>", 'confirm');
+
+    if (!value) {
+        return;
+    }
+
+    const mesBlock = $(this).closest('.mes');
+    const mesId = mesBlock.attr('mesid');
+    const message = chat[mesId];
+    delete message.extra.image;
+    delete message.extra.inline_image;
+    mesBlock.find('.mes_img_container').removeClass('img_extra');
+    mesBlock.find('.mes_img').attr('src', '');
+    saveChatConditional();
+}
+
+function enlargeMessageImage() {
+    const mesBlock = $(this).closest('.mes');
+    const mesId = mesBlock.attr('mesid');
+    const message = chat[mesId];
+    const imgSrc = message?.extra?.image;
+
+    if (!imgSrc) {
+        return;
+    }
+
+    const img = document.createElement('img');
+    img.classList.add('img_enlarged');
+    img.src = imgSrc;
+    $('#dialogue_popup').addClass('wide_dialogue_popup');
+    callPopup(img.outerHTML, 'text');
+}
+
 window["SillyTavern"].getContext = function () {
     return {
         chat: chat,
@@ -6432,6 +6467,9 @@ $(document).ready(function () {
     $('#chat').on('scroll', () => {
         $('.code-copied').css({ 'display': 'none' });
     });
+
+    $(document).on('click', '.mes_img_enlarge', enlargeMessageImage);
+    $(document).on('click', '.mes_img_delete', deleteMessageImage);
 
     $(window).on('beforeunload', () => {
         cancelTtsPlay();
