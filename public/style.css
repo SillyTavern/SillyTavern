@@ -845,9 +845,11 @@ select {
     font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
 
     padding: 7px;
-    /* width: 100%; */
+    width: 100%;
     margin: 5px 0;
 }
+
+
 
 h3 {
     margin: 10px 0;
@@ -1210,6 +1212,10 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 .wide100pLess70px {
     width: calc(100% - 70px);
+}
+
+.widthUnset {
+    width: unset;
 }
 
 #avatar_url_div {

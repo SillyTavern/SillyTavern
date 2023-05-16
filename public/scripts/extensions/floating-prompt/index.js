@@ -130,7 +130,7 @@ async function moduleWorker() {
                         Bookmarks inherit the Note from their parent, and can be changed individually after that.<br>
                     </small>
                     
-                    <textarea id="extension_floating_prompt" class="text_pole" rows="8"></textarea>
+                    <textarea id="extension_floating_prompt" class="text_pole widthUnset" rows="8"></textarea>
                     
                     <div class="floating_prompt_radio_group">
                         <label>
@@ -139,14 +139,14 @@ async function moduleWorker() {
                         </label>
                         <label>
                             <input type="radio" name="extension_floating_position" value="1" />
-                            In-chat @ Depth <input id="extension_floating_depth" class="text_pole" type="number" min="0" max="99" />
+                            In-chat @ Depth <input id="extension_floating_depth" class="text_pole widthUnset" type="number" min="0" max="99" />
                         </label>
                     </div>
                     <!--<label for="extension_floating_interval">In-Chat Insertion Depth</label>-->
                     
                     <label for="extension_floating_interval">Insertion Frequency</label>                    
                     
-                    <input id="extension_floating_interval" class="text_pole" type="number" min="0" max="999" /><small> (0 = Disable)</small>
+                    <input id="extension_floating_interval" class="text_pole widthUnset" type="number" min="0" max="999" /><small> (0 = Disable)</small>
                     <br>
 
                     <span>User inputs until next insertion: <span id="extension_floating_counter">(disabled)</span></span>
@@ -162,7 +162,7 @@ async function moduleWorker() {
                     <div class="inline-drawer-content">
                     <small>Will be automatically added as the Author's Note for all new chats.</small>
                         
-                        <textarea id="extension_floating_default" class="text_pole" rows="8"
+                        <textarea id="extension_floating_default" class="text_pole widthUnset" rows="8"
                         placeholder="Example:\n[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
                     </div>
                 </div>
