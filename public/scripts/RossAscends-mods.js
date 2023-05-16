@@ -370,7 +370,8 @@ function RA_checkOnlineStatus() {
 //Auto-connect to API (when set to kobold, API URL exists, and auto_connect is true)
 
 function RA_autoconnect(PrevApi) {
-    if (online_status === undefined) {
+    // secrets.js or script.js not loaded
+    if (SECRET_KEYS === undefined || online_status === undefined) {
         setTimeout(RA_autoconnect, 100);
         return;
     }
@@ -404,7 +405,6 @@ function RA_autoconnect(PrevApi) {
         }
 
         if (!connection_made) {
-
             RA_AC_retries++;
             retry_delay = Math.min(retry_delay * 2, 30000); // double retry delay up to to 30 secs
             //console.log('connection attempts: ' + RA_AC_retries + ' delay: ' + (retry_delay / 1000) + 's');
