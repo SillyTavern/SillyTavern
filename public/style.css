@@ -845,7 +845,7 @@ select {
     font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
 
     padding: 7px;
-    width: 100%;
+    /* width: 100%; */
     margin: 5px 0;
 }
 
@@ -3526,11 +3526,13 @@ label[for="extensions_autoconnect"] {
     backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
     -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
     z-index: 9999 !important;
+    border: 1px solid var(--white30a);
 }
 
 .fillRight,
 .fillLeft,
-#WorldInfo {
+#WorldInfo,
+#floatingPrompt {
     min-width: unset;
     position: fixed;
 }
@@ -3887,7 +3889,8 @@ body.movingUI .drag-grabber {
 body.movingUI #sheld,
 body.movingUI .drawer-content,
 body.movingUI #expression-holder,
-body.movingUI #avatar_zoom_popup {
+body.movingUI #avatar_zoom_popup,
+body.movingUI #floatingPrompt {
     resize: both;
 }
 

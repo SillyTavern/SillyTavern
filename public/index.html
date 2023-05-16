@@ -1221,7 +1221,7 @@
                             Trim Incomplete Sentences
                         </label>
                         <!-- Add margin since this is a child of above -->
-                        <label style="margin-left: 1em;"  class="checkbox_label" for="include_newline_checkbox">
+                        <label style="margin-left: 1em;" class="checkbox_label" for="include_newline_checkbox">
                             <input id="include_newline_checkbox" type="checkbox" />
                             Include Newline
                         </label>
@@ -1739,39 +1739,39 @@
                     <div name="NameAndAvatar" class="flex-container flexFlowColumn drawer25pWidth">
 
 
-                    <div class="inline-drawer wide100p flexFlowColumn">
+                        <div class="inline-drawer wide100p flexFlowColumn">
 
-                        <div class="flex-container flexFlowColumn">
-                            <h4>
-                                Send on Enter
-                            </h4>
-                            <select id="send_on_enter">
-                                <option value="-1">Always disabled</option>
-                                <option value="0">Automatic (desktop)</option>
-                                <option value="1">Always enabled</option>
-                            </select>
-                        </div>
+                            <div class="flex-container flexFlowColumn">
+                                <h4>
+                                    Send on Enter
+                                </h4>
+                                <select id="send_on_enter">
+                                    <option value="-1">Always disabled</option>
+                                    <option value="0">Automatic (desktop)</option>
+                                    <option value="1">Always enabled</option>
+                                </select>
+                            </div>
 
-                        <div id="groupCurrentMemberListToggle" class="inline-drawer-toggle inline-drawer-header">
-                            <b>Auto-swipe</b>
-                            <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
-                        </div>
-                        <div class="inline-drawer-content">
+                            <div id="groupCurrentMemberListToggle" class="inline-drawer-toggle inline-drawer-header">
+                                <b>Auto-swipe</b>
+                                <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+                            </div>
+                            <div class="inline-drawer-content">
 
-                        <label class="checkbox_label" for="auto_swipe">
-                            <input id="auto_swipe" type="checkbox" />
-                            Enabled
-                        </label>
-                            <div>Minimum generated message length</div>
-                            <input id="auto_swipe_minimum_length" name="auto_swipe_minimum_length" type="number" min="0" step="1" value="0" class="text_pole">
-                            <div>Blacklisted words</div>
-                            <div class="auto_swipe">
-                                <input id="auto_swipe_blacklist" name="auto_swipe_blacklist" placeholder="words you dont want generated separated by comma ','" class="text_pole" maxlength="500" value="" autocomplete="off">
-                                <div>Blacklisted word count to swipe</div>
-                                <input id="auto_swipe_blacklist_threshold" name="auto_swipe_blacklist_threshold" type="number" min="0" step="1" value="1" class="text_pole">
+                                <label class="checkbox_label" for="auto_swipe">
+                                    <input id="auto_swipe" type="checkbox" />
+                                    Enabled
+                                </label>
+                                <div>Minimum generated message length</div>
+                                <input id="auto_swipe_minimum_length" name="auto_swipe_minimum_length" type="number" min="0" step="1" value="0" class="text_pole">
+                                <div>Blacklisted words</div>
+                                <div class="auto_swipe">
+                                    <input id="auto_swipe_blacklist" name="auto_swipe_blacklist" placeholder="words you dont want generated separated by comma ','" class="text_pole" maxlength="500" value="" autocomplete="off">
+                                    <div>Blacklisted word count to swipe</div>
+                                    <input id="auto_swipe_blacklist_threshold" name="auto_swipe_blacklist_threshold" type="number" min="0" step="1" value="1" class="text_pole">
+                                </div>
                             </div>
                         </div>
-                    </div>
 
                         <div name="NameChanger">
                             <h4>Name</h4>
@@ -2476,6 +2476,7 @@
     <div id="typing_indicator_template" class="template_element">
         <div class="typing_indicator"><span class="typing_indicator_name">CHAR</span> is typing</div>
     </div>
+    <div id="movingDivs"></div>
     <div id="sheld">
         <div id="sheldheader" class="fa-solid fa-grip drag-grabber"></div>
         <!-- <div class="pull-tab"></div> -->
@@ -2514,6 +2515,10 @@
             <a id="option_new_bookmark">
                 <i class="fa-lg fa-solid fa-bookmark"></i>
                 <span>Save bookmark</span>
+            </a>
+            <a id="option_toggle_AN">
+                <i class="fa-lg fa-solid fa-note-sticky"></i>
+                <span>Open Author's Note</span>
             </a>
             <a id="option_convert_to_group">
                 <i class="fa-lg fa-solid fa-people-arrows"></i>

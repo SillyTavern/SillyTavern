@@ -106,8 +106,18 @@ function waitForElement(querySelector, timeout) {
 waitForElement("#expression-image", 10000).then(function () {
 
     dragElement(document.getElementById("expression-holder"));
+    dragElement(document.getElementById("floatingPrompt"));
+
 }).catch(() => {
     console.log("expression holder not loaded yet");
+});
+
+waitForElement("#floatingPrompt", 10000).then(function () {
+
+    dragElement(document.getElementById("floatingPrompt"));
+
+}).catch(() => {
+    console.log("floating prompt box not loaded yet");
 });
 
 // Device detection
@@ -443,6 +453,7 @@ dragElement(document.getElementById("WorldInfo"));
 
 
 function dragElement(elmnt) {
+
     var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     if (document.getElementById(elmnt.id + "header")) { //ex: id="sheldheader"
         // if present, the header is where you move the DIV from, but this overrides everything else:
@@ -453,6 +464,7 @@ function dragElement(elmnt) {
     }
 
     function dragMouseDown(e) {
+        //console.log(e);
         e = e || window.event;
         e.preventDefault();
         // get the mouse cursor position at startup:
