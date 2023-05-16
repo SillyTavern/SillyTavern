@@ -2974,9 +2974,11 @@ app.post('/horde_generateimage', jsonParser, async (request, response) => {
             return response.send(result.generations[0].img);
         }
 
+        /*
         if (!check.is_possible) {
             return response.sendStatus(503);
         }
+        */
 
         if (check.faulted) {
             return response.sendStatus(500);
