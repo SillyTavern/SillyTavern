@@ -5,7 +5,9 @@ import {
     hideSwipeButtons,
     showSwipeButtons,
     callPopup,
-    getRequestHeaders
+    getRequestHeaders,
+    event_types,
+    eventSource
 } from "../../../script.js";
 import { getApiUrl, getContext, extension_settings, defaultRequestArgs, modules } from "../../extensions.js";
 import { stringFormat, initScrollHeight, resetScrollHeight } from "../../utils.js";
@@ -611,6 +613,9 @@ jQuery(async () => {
         initScrollHeight($("#sd_negative_prompt"));
     })
 
-    await loadSettings();
+    eventSource.on(event_types.EXTRAS_CONNECTED, async () => {
+        await Promise.all([loadSamplers(), loadModels()]);
+    });
 
+    await loadSettings();
 });
