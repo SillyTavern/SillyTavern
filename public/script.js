@@ -106,7 +106,7 @@ import {
     setPoeOnlineStatus,
 } from "./scripts/poe.js";
 
-import { debounce, delay, restoreCaretPosition, saveCaretPosition } from "./scripts/utils.js";
+import { debounce, delay, restoreCaretPosition, saveCaretPosition, end_trim_to_sentence } from "./scripts/utils.js";
 import { extension_settings, loadExtensionSettings } from "./scripts/extensions.js";
 import { executeSlashCommands, getSlashCommandsHelp, registerSlashCommand } from "./scripts/slash-commands.js";
 import {
@@ -125,6 +125,8 @@ import {
     secret_state,
     writeSecret
 } from "./scripts/secrets.js";
+import uniqolor from "./scripts/uniqolor.js";
+import { EventEmitter } from './scripts/eventemitter.js';
 
 //exporting functions and vars for mods
 export {
@@ -203,6 +205,10 @@ hljs.addPlugin({ "before:highlightElement": ({ el }) => { el.textContent = el.in
 let converter;
 reloadMarkdownProcessor();
 
+// array for prompt token calculations
+console.log('initializing Prompt Itemization Array on Startup');
+let itemizedPrompts = [];
+
 /* let bg_menu_toggle = false; */
 export const systemUserName = "SillyTavern System";
 let default_user_name = "You";
@@ -241,12 +247,15 @@ let optionsPopper = Popper.createPopper(document.getElementById('send_form'), do
 let exportPopper = Popper.createPopper(document.getElementById('export_button'), document.getElementById('export_format_popup'), {
     placement: 'left'
 });
+let rawPromptPopper = Popper.createPopper(document.getElementById('dialogue_popup'), document.getElementById('rawPromptPopup'), {
+    placement: 'right'
+});
 
 let dialogueResolve = null;
 let chat_metadata = {};
 let streamingProcessor = null;
 let crop_data = undefined;
-
+let is_delete_mode = false;
 let fav_ch_checked = false;
 
 //initialize global var for future cropped blobs
@@ -375,6 +384,12 @@ const system_messages = {
     },
 };
 
+export const event_types = {
+    EXTRAS_CONNECTED: 'extras_connected',
+}
+
+export const eventSource = new EventEmitter();
+
 // refresh token
 $(document).ajaxError(function myErrorHandler(_, xhr) {
     if (xhr.status == 403) {
@@ -403,18 +418,21 @@ async function getClientVersion() {
     }
 }
 
-function getTokenCount(str, padding = 0) {
+function getTokenCount(str, padding = undefined) {
     let tokenizerType = power_user.tokenizer;
 
     if (main_api === 'openai') {
-        // For main prompt building
-        if (padding == power_user.token_padding) {
+        if (padding === power_user.token_padding) {
+            // For main "shadow" prompt building
             tokenizerType = tokenizers.NONE;
-            // For extensions and WI
         } else {
+            // For extensions and WI
             return getTokenCountOpenAI(str);
         }
+    }
 
+    if (padding === undefined) {
+        padding = 0;
     }
 
     switch (tokenizerType) {
@@ -528,10 +546,6 @@ var message_already_generated = "";
 var cycle_count_generation = 0;
 
 var swipes = true;
-
-let anchor_order = 0;
-let style_anchor = true;
-let character_anchor = true;
 let extension_prompts = {};
 
 var main_api;// = "kobold";
@@ -547,6 +561,8 @@ let generate_loop_counter = 0;
 const MAX_GENERATION_LOOPS = 5;
 
 let token;
+
+var PromptArrayItemForRawPromptDisplay;
 
 export function getRequestHeaders() {
     return {
@@ -1126,7 +1142,34 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
 
     if (isSystem) {
         newMessage.find(".mes_edit").hide();
+        newMessage.find(".mes_prompt").hide(); //don't need prompt button for sys
     }
+
+    // don't need prompt button for user
+    if (params.isUser === true) {
+        newMessage.find(".mes_prompt").hide();
+        console.log(`hiding prompt for user mesID ${params.mesId}`);
+    }
+
+    //shows or hides the Prompt display button
+    let mesIdToFind = Number(newMessage.attr('mesId'));
+    if (itemizedPrompts.length !== 0) {
+        //console.log(`itemizedPrompt.length = ${itemizedPrompts.length}`)
+        for (var i = 0; i < itemizedPrompts.length; i++) {
+            if (itemizedPrompts[i].mesId === mesIdToFind) {
+                newMessage.find(".mes_prompt").show();
+                console.log(`showing prompt for mesID ${params.mesId} from ${params.characterName}`);
+            } else {
+                console.log(`no cache obj for mesID ${mesIdToFind}, hiding prompt button and continuing search`);
+                newMessage.find(".mes_prompt").hide();
+                console.log(itemizedPrompts);
+            }
+        }
+    } else if (params.isUser !== true) { //hide all when prompt cache is empty
+        console.log('saw empty prompt cache, hiding all prompt buttons');
+        $(".mes_prompt").hide();
+        //console.log(itemizedPrompts);
+    } else { console.log('skipping prompt data for User Message'); }
 
     newMessage.find('.avatar img').on('error', function () {
         $(this).hide();
@@ -1195,7 +1238,6 @@ function substituteParams(content, _name1, _name2) {
     _name1 = _name1 ?? name1;
     _name2 = _name2 ?? name2;
     if (!content) {
-        console.warn("No content on substituteParams")
         return ''
     }
 
@@ -1227,15 +1269,16 @@ function getStoppingStrings(isImpersonate, addSpace) {
         }
     }
 
+    // Cohee: oobabooga's textgen always appends newline before the sequence as a stopping string
+    // But it's a problem for Metharme which doesn't use newlines to separate them.
+    const wrap = (s) => power_user.instruct.wrap ? '\n' + s : s;
+
     if (power_user.instruct.enabled) {
-        // Cohee: This was borrowed from oobabooga's textgen. But..
-        // What if a model doesn't use newlines to chain sequences?
-        // Who knows.
         if (power_user.instruct.input_sequence) {
-            result.push(`\n${power_user.instruct.input_sequence}`);
+            result.push(wrap(power_user.instruct.input_sequence));
         }
         if (power_user.instruct.output_sequence) {
-            result.push(`\n${power_user.instruct.output_sequence}`);
+            result.push(wrap(power_user.instruct.output_sequence));
         }
     }
 
@@ -1448,10 +1491,10 @@ class StreamingProcessor {
         return text;
     }
 
-    onProgressStreaming(messageId, text) {
+    onProgressStreaming(messageId, text, isFinal) {
         const isImpersonate = this.type == "impersonate";
         text = this.removePrefix(text);
-        let processedText = cleanUpMessage(text, isImpersonate);
+        let processedText = cleanUpMessage(text, isImpersonate, !isFinal);
         let result = extractNameFromMessage(processedText, this.force_name2, isImpersonate);
         let isName = result.this_mes_is_name;
         processedText = result.getMessage;
@@ -1488,15 +1531,48 @@ class StreamingProcessor {
 
     onFinishStreaming(messageId, text) {
         this.hideStopButton(this.messageId);
-        this.onProgressStreaming(messageId, text);
+        this.onProgressStreaming(messageId, text, true);
         addCopyToCodeBlocks($(`#chat .mes[mesid="${messageId}"]`));
-        playMessageSound();
         saveChatConditional();
         activateSendButtons();
         showSwipeButtons();
         setGenerationProgress(0);
         $('.mes_buttons:last').show();
         generatedPromtCache = '';
+
+        console.log("Generated text size:", text.length, text)
+
+        if (power_user.auto_swipe) {
+            function containsBlacklistedWords(str, blacklist, threshold) {
+                const regex = new RegExp(`\\b(${blacklist.join('|')})\\b`, 'gi');
+                const matches = str.match(regex) || [];
+                return matches.length >= threshold;
+            }
+
+            const generatedTextFiltered = (text) => {
+                if (text) {
+                    if (power_user.auto_swipe_minimum_length) {
+                        if (text.length < power_user.auto_swipe_minimum_length && text.length !== 0) {
+                            console.log("Generated text size too small")
+                            return true
+                        }
+                    }
+                    if (power_user.auto_swipe_blacklist_threshold) {
+                        if (containsBlacklistedWords(text, power_user.auto_swipe_blacklist, power_user.auto_swipe_blacklist_threshold)) {
+                            console.log("Generated text has blacklisted words")
+                            return true
+                        }
+                    }
+                }
+                return false
+            }
+
+            if (generatedTextFiltered(text)) {
+                swipe_right()
+                return
+            }
+        }
+        playMessageSound();
     }
 
     onErrorStreaming() {
@@ -1575,6 +1651,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     const isImpersonate = type == "impersonate";
     const isInstruct = power_user.instruct.enabled;
 
+    message_already_generated = isImpersonate ? `${name1}: ` : `${name2}: `;
     // Name for the multigen prefix
     const magName = isImpersonate ? (is_pygmalion ? 'You' : name1) : name2;
 
@@ -1615,10 +1692,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
     // Set empty promise resolution functions
     if (typeof resolve !== 'function') {
-        resolve = () => {};
+        resolve = () => { };
     }
     if (typeof reject !== 'function') {
-        reject = () => {};
+        reject = () => { };
     }
 
     if (selected_group && !is_group_generating) {
@@ -1664,49 +1741,13 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         // bias from the latest message is top priority//
         promptBias = messageBias ?? promptBias ?? '';
 
-        // Compute anchors
-        const topAnchorDepth = 8;
-        const bottomAnchorThreshold = 8;
-        let anchorTop = '';
-        let anchorBottom = '';
-        if (!is_pygmalion) {
-            console.log('saw not pyg');
-
-            let postAnchorChar = character_anchor ? name2 + " Elaborate speaker" : "";
-            let postAnchorStyle = style_anchor ? "Writing style: very long messages" : "";
-            if (anchor_order === 0) {
-                anchorTop = postAnchorChar;
-                anchorBottom = postAnchorStyle;
-            } else { // anchor_order === 1
-                anchorTop = postAnchorStyle;
-                anchorBottom = postAnchorChar;
-            }
-
-            if (anchorBottom) {
-                anchorBottom = "[" + anchorBottom + "]";
-            }
-        }
-
         //*********************************
         //PRE FORMATING STRING
         //*********************************
 
         //for normal messages sent from user..
         if (textareaText != "" && !automatic_trigger && type !== 'quiet') {
-            chat[chat.length] = {};
-            chat[chat.length - 1]['name'] = name1;
-            chat[chat.length - 1]['is_user'] = true;
-            chat[chat.length - 1]['is_name'] = true;
-            chat[chat.length - 1]['send_date'] = humanizedDateTime();
-            chat[chat.length - 1]['mes'] = textareaText;
-            chat[chat.length - 1]['extra'] = {};
-
-            if (messageBias) {
-                console.log('checking bias');
-                chat[chat.length - 1]['extra']['bias'] = messageBias;
-            }
-            //console.log('Generate calls addOneMessage');
-            addOneMessage(chat[chat.length - 1]);
+            sendMessageAsUser(textareaText, messageBias);
         }
         ////////////////////////////////////
         const scenarioText = chat_metadata['scenario'] || characters[this_chid].scenario;
@@ -1742,6 +1783,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         console.log(`Core/all messages: ${coreChat.length}/${chat.length}`);
 
         if (main_api === 'openai') {
+            message_already_generated = ''; // OpenAI doesn't have multigen
             setOpenAIMessages(coreChat, quiet_prompt);
             setOpenAIMessageExamples(mesExamplesArray);
         }
@@ -1754,11 +1796,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             storyString += appendToStoryString(Scenario, power_user.disable_scenario_formatting ? '' : 'Scenario: ');
         } else {
             storyString += appendToStoryString(charDescription, '');
-
-            if (coreChat.length < topAnchorDepth) {
-                storyString += appendToStoryString(charPersonality, power_user.disable_personality_formatting ? '' : name2 + "'s personality: ");
-            }
-
+            storyString += appendToStoryString(charPersonality, power_user.disable_personality_formatting ? '' : name2 + "'s personality: ");
             storyString += appendToStoryString(Scenario, power_user.disable_scenario_formatting ? '' : 'Circumstances and context of the dialogue: ');
         }
 
@@ -1792,7 +1830,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             } else {
                 this_mes_ch_name = charName;
             }
-            if (coreChat[j]['is_name']) {
+            if (coreChat[j]['is_name'] || selected_group) {
                 chat2[i] = this_mes_ch_name + ': ' + coreChat[j]['mes'] + '\n';
             } else {
                 chat2[i] = coreChat[j]['mes'] + '\n';
@@ -1808,28 +1846,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         //chat2 = chat2.reverse();
 
         // Determine token limit
-        let this_max_context = 1487;
-        if (main_api == 'kobold' || main_api == 'textgenerationwebui') {
-            this_max_context = (max_context - amount_gen);
-        }
-        if (main_api == 'novel') {
-            if (novel_tier === 1) {
-                this_max_context = 1024;
-            } else {
-                this_max_context = 2048 - 60;//fix for fat tokens 
-                if (nai_settings.model_novel == 'krake-v2') {
-                    this_max_context -= 160;
-                }
-            }
-        }
-        if (main_api == 'openai') {
-            this_max_context = oai_settings.openai_max_context;
-        }
-        if (main_api == 'poe') {
-            this_max_context = Number(max_context);
-        }
-
-
+        let this_max_context = getMaxContextSize();
 
         // Adjust token limit for Horde
         let adjustedParams;
@@ -1867,9 +1884,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 storyString,
                 examplesString,
                 chatString,
-                anchorTop,
-                anchorBottom,
-                charPersonality,
                 promptBias,
                 allAnchors,
                 quiet_prompt,
@@ -1931,7 +1945,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             generatedPromtCache += cycleGenerationPromt;
             if (generatedPromtCache.length == 0) {
                 if (main_api === 'openai') {
-                    generateOpenAIPromptCache(charPersonality, topAnchorDepth, anchorTop, bottomAnchorThreshold, anchorBottom);
+                    generateOpenAIPromptCache();
                 }
 
                 console.log('generating prompt');
@@ -1952,21 +1966,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                             // removing a newline ONLY at the end of the string if it exists. 
                             item = item.replace(/\n?$/, '');
                             //item = item.substr(0, item.length - 1);
-                        }
-                    }
-                    if (i === arrMes.length - topAnchorDepth && !is_pygmalion) {
-                        //chatString = chatString.substr(0,chatString.length-1);
-                        //anchorAndPersonality = "[Genre: roleplay chat][Tone: very long messages with descriptions]";
-                        let personalityAndAnchor = [charPersonality, anchorTop].filter(x => x).join(' ');
-                        if (personalityAndAnchor) {
-                            item += "[" + personalityAndAnchor + "]\n";
-                        }
-                    }
-                    if (i === arrMes.length - 1 && coreChat.length > bottomAnchorThreshold && item.trim().startsWith(name1 + ":") && !is_pygmalion) {//For add anchor in end
-                        //chatString+=postAnchor+"\n";//"[Writing style: very long messages]\n";
-                        if (anchorBottom) {
-                            item = item.replace(/\n$/, " ");
-                            item += anchorBottom + "\n";
                         }
                     }
                     if (is_pygmalion && !isInstruct) {
@@ -2056,9 +2055,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     storyString,
                     mesExmString,
                     mesSendString,
-                    anchorTop,
-                    anchorBottom,
-                    charPersonality,
                     generatedPromtCache,
                     promptBias,
                     allAnchors,
@@ -2089,23 +2085,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             }
 
             // add a custom dingus (if defined)
-            if (power_user.custom_chat_separator && power_user.custom_chat_separator.length) {
-                mesSendString = power_user.custom_chat_separator + '\n' + mesSendString;
-            }
-            // if chat start formatting is disabled
-            else if (power_user.disable_start_formatting) {
-                mesSendString = mesSendString;
-            }
-            // add non-pygma dingus
-            else if (!is_pygmalion) {
-                mesSendString = '\nThen the roleplay chat between ' + name1 + ' and ' + name2 + ' begins.\n' + mesSendString;
-            }
-            // add pygma <START>
-            else {
-                mesSendString = '<START>\n' + mesSendString;
-                //mesSendString = mesSendString; //This edit simply removes the first "<START>" that is prepended to all context prompts
-            }
-            let finalPromt = worldInfoBefore +
+            mesSendString = adjustChatsSeparator(mesSendString);
+
+            let finalPromt =
+                worldInfoBefore +
                 storyString +
                 worldInfoAfter +
                 afterScenarioAnchor +
@@ -2114,70 +2097,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 generatedPromtCache +
                 promptBias;
 
-            /*             let finalPromptTokens = getTokenCount(finalPromt);
-                        let allAnchorsTokens = getTokenCount(allAnchors);
-                        let afterScenarioAnchorTokens = getTokenCount(afterScenarioAnchor);
-                        let zeroDepthAnchorTokens = getTokenCount(afterScenarioAnchor);
-                        let worldInfoStringTokens = getTokenCount(worldInfoString);
-                        let storyStringTokens = getTokenCount(storyString);
-                        let examplesStringTokens = getTokenCount(examplesString);
-                        let charPersonalityTokens = getTokenCount(charPersonality);
-                        let charDescriptionTokens = getTokenCount(charDescription);
-                        let scenarioTextTokens = getTokenCount(scenarioText);
-                        let promptBiasTokens = getTokenCount(promptBias);
-                        let mesSendStringTokens = getTokenCount(mesSendString)
-                        let ActualChatHistoryTokens = mesSendStringTokens - allAnchorsTokens + power_user.token_padding;
-            
-                        let totalTokensInPrompt =
-                            allAnchorsTokens +      // AN and/or legacy anchors
-                            //afterScenarioAnchorTokens +       //only counts if AN is set to 'after scenario'
-                            //zeroDepthAnchorTokens +           //same as above, even if AN not on 0 depth
-                            worldInfoStringTokens +
-                            storyStringTokens +     //chardefs total
-                            promptBiasTokens +      //{{}}
-                            ActualChatHistoryTokens +   //chat history
-                            power_user.token_padding;
-            
-                        console.log(
-                            `
-                Prompt Itemization
-                -------------------
-                Extension Add-ins AN: ${allAnchorsTokens}
-                
-                World Info: ${worldInfoStringTokens}
-            
-                Character Definitions: ${storyStringTokens}
-                -- Description: ${charDescriptionTokens}
-                -- Example Messages: ${examplesStringTokens}
-                -- Character Personality: ${charPersonalityTokens}
-                -- Character Scenario: ${scenarioTextTokens}
-            
-                Chat History: ${ActualChatHistoryTokens}
-                {{}} Bias: ${promptBiasTokens}
-                Padding: ${power_user.token_padding}
-                -------------------
-                Total Tokens in Prompt: ${totalTokensInPrompt}
-                vs
-                finalPrompt: ${finalPromptTokens}
-                Max Context: ${this_max_context}
-            
-                `
-                        ); */
-
             if (zeroDepthAnchor && zeroDepthAnchor.length) {
                 if (!isMultigenEnabled() || tokens_already_generated == 0) {
-                    const trimBothEnds = !force_name2 && !is_pygmalion;
-                    let trimmedPrompt = (trimBothEnds ? zeroDepthAnchor.trim() : zeroDepthAnchor.trimEnd());
-
-                    if (trimBothEnds && !finalPromt.endsWith('\n')) {
-                        finalPromt += '\n';
-                    }
-
-                    finalPromt += trimmedPrompt;
-
-                    if (force_name2 || is_pygmalion) {
-                        finalPromt += ' ';
-                    }
+                    finalPromt = appendZeroDepthAnchor(force_name2, zeroDepthAnchor, finalPromt);
                 }
             }
 
@@ -2191,30 +2113,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
             if (isMultigenEnabled() && type !== 'quiet') {
                 // if nothing has been generated yet..
-                if (tokens_already_generated === 0) {
-                    // if the max gen setting is > 50...(
-                    if (parseInt(amount_gen) >= power_user.multigen_first_chunk) {
-                        // then only try to make 50 this cycle..
-                        this_amount_gen = power_user.multigen_first_chunk;
-                    }
-                    else {
-                        // otherwise, make as much as the max amount request.
-                        this_amount_gen = parseInt(amount_gen);
-                    }
-                }
-                // if we already received some generated text...
-                else {
-                    // if the remaining tokens to be made is less than next potential cycle count
-                    if (parseInt(amount_gen) - tokens_already_generated < power_user.multigen_next_chunks) {
-                        // subtract already generated amount from the desired max gen amount
-                        this_amount_gen = parseInt(amount_gen) - tokens_already_generated;
-                    }
-                    else {
-                        // otherwise make the standard cycle amount (first 50, and 30 after that)
-                        this_amount_gen = power_user.multigen_next_chunks;
-                    }
-                }
+                this_amount_gen = getMultigenAmount();
             }
+
+            let thisPromptBits = [];
 
             if (main_api == 'kobold' && horde_settings.use_horde && horde_settings.auto_adjust_response_length) {
                 this_amount_gen = Math.min(this_amount_gen, adjustedParams.maxLength);
@@ -2237,28 +2139,41 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     generate_data = getKoboldGenerationData(finalPromt, this_settings, this_amount_gen, maxContext, isImpersonate);
                 }
             }
-
-            if (main_api == 'textgenerationwebui') {
+            else if (main_api == 'textgenerationwebui') {
                 generate_data = getTextGenGenerationData(finalPromt, this_amount_gen, isImpersonate);
             }
-
-            if (main_api == 'novel') {
+            else if (main_api == 'novel') {
                 const this_settings = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
                 generate_data = getNovelGenerationData(finalPromt, this_settings);
+            }
+            else if (main_api == 'openai') {
+                let [prompt, counts] = await prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAfter, afterScenarioAnchor, promptBias, type);
+                generate_data = { prompt: prompt };
+
+                // counts will return false if the user has not enabled the token breakdown feature
+                if (counts) {
+                    parseTokenCounts(counts, thisPromptBits);
+                }
+
+                setInContextMessages(openai_messages_count, type);
+            } else if (main_api == 'poe') {
+                generate_data = { prompt: finalPromt };
+            }
+
+            if (power_user.console_log_prompts) {
+
+                console.log(generate_data.prompt);
             }
 
             let generate_url = getGenerateUrl();
             console.log('rungenerate calling API');
 
             if (main_api == 'openai') {
-                let prompt = await prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAfter, afterScenarioAnchor, promptBias, type);
-                setInContextMessages(openai_messages_count, type);
-
                 if (isStreamingEnabled() && type !== 'quiet') {
-                    streamingProcessor.generator = await sendOpenAIRequest(type, prompt, streamingProcessor.abortController.signal);
+                    streamingProcessor.generator = await sendOpenAIRequest(type, generate_data.prompt, streamingProcessor.abortController.signal);
                 }
                 else {
-                    sendOpenAIRequest(type, prompt).then(onSuccess).catch(onError);
+                    sendOpenAIRequest(type, generate_data.prompt).then(onSuccess).catch(onError);
                 }
             }
             else if (main_api == 'kobold' && horde_settings.use_horde) {
@@ -2272,7 +2187,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     generatePoe(type, finalPromt).then(onSuccess).catch(onError);
                 }
             }
-            else if (main_api == 'textgenerationwebui' && textgenerationwebui_settings.streaming && type !== 'quiet') {
+            else if (main_api == 'textgenerationwebui' && isStreamingEnabled() && type !== 'quiet') {
                 streamingProcessor.generator = await generateTextGenWithStreaming(generate_data, streamingProcessor.abortController.signal);
             }
             else {
@@ -2290,6 +2205,40 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     error: onError
                 }); //end of "if not data error"
             }
+
+            //set array object for prompt token itemization of this message
+            let currentArrayEntry = Number(thisPromptBits.length - 1);
+            let additionalPromptStuff = {
+                ...thisPromptBits[currentArrayEntry],
+                rawPrompt: generate_data.prompt,
+                mesId: Number(count_view_mes),
+                worldInfoBefore: worldInfoBefore,
+                allAnchors: allAnchors,
+                summarizeString: (extension_prompts['1_memory']?.value || ''),
+                authorsNoteString: (extension_prompts['2_floating_prompt']?.value || ''),
+                worldInfoString: worldInfoString,
+                storyString: storyString,
+                worldInfoAfter: worldInfoAfter,
+                afterScenarioAnchor: afterScenarioAnchor,
+                examplesString: examplesString,
+                mesSendString: mesSendString,
+                generatedPromtCache: generatedPromtCache,
+                promptBias: promptBias,
+                finalPromt: finalPromt,
+                charDescription: charDescription,
+                charPersonality: charPersonality,
+                scenarioText: scenarioText,
+                this_max_context: this_max_context,
+                padding: power_user.token_padding,
+                main_api: main_api,
+            };
+
+            thisPromptBits = additionalPromptStuff;
+
+            //console.log(thisPromptBits);
+
+            itemizedPrompts.push(thisPromptBits);
+            //console.log(`pushed prompt bits to itemizedPrompts array. Length is now: ${itemizedPrompts.length}`);
 
             if (isStreamingEnabled() && type !== 'quiet') {
                 hideSwipeButtons();
@@ -2328,7 +2277,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                                 ({ type, getMessage } = saveReply('append', getMessage, this_mes_is_name, title));
                             }
                         } else {
-                            let chunk = cleanUpMessage(message_already_generated, true);
+                            let chunk = cleanUpMessage(message_already_generated, true, true);
                             let extract = extractNameFromMessage(chunk, force_name2, isImpersonate);
                             $('#send_textarea').val(extract.getMessage).trigger('input');
                         }
@@ -2383,10 +2332,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         // regenerate with character speech reenforced
                         // to make sure we leave on swipe type while also adding the name2 appendage
                         setTimeout(() => {
-                            let newType = type == "swipe" ? "swipe" : "force_name2";
-                            newType = isImpersonate ? type : newType;
-
-                            Generate(newType, { automatic_trigger: false, force_name2: true });
+                            Generate(type, { automatic_trigger, force_name2: true, resolve, reject, quiet_prompt, force_chid });
                         }, generate_loop_counter * 1000);
                     }
                 } else {
@@ -2428,6 +2374,466 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     }
     //console.log('generate ending');
 } //generate ends
+
+function sendMessageAsUser(textareaText, messageBias) {
+    chat[chat.length] = {};
+    chat[chat.length - 1]['name'] = name1;
+    chat[chat.length - 1]['is_user'] = true;
+    chat[chat.length - 1]['is_name'] = true;
+    chat[chat.length - 1]['send_date'] = humanizedDateTime();
+    chat[chat.length - 1]['mes'] = textareaText;
+    chat[chat.length - 1]['extra'] = {};
+
+    if (messageBias) {
+        console.log('checking bias');
+        chat[chat.length - 1]['extra']['bias'] = messageBias;
+    }
+    //console.log('Generate calls addOneMessage');
+    addOneMessage(chat[chat.length - 1]);
+}
+
+function getMaxContextSize() {
+    let this_max_context = 1487;
+    if (main_api == 'kobold' || main_api == 'textgenerationwebui') {
+        this_max_context = (max_context - amount_gen);
+    }
+    if (main_api == 'novel') {
+        if (novel_tier === 1) {
+            this_max_context = 1024;
+        } else {
+            this_max_context = 2048 - 60; //fix for fat tokens 
+            if (nai_settings.model_novel == 'krake-v2') {
+                this_max_context -= 160;
+            }
+        }
+    }
+    if (main_api == 'openai') {
+        this_max_context = oai_settings.openai_max_context;
+    }
+    if (main_api == 'poe') {
+        this_max_context = Number(max_context);
+    }
+    return this_max_context;
+}
+
+function parseTokenCounts(counts, thisPromptBits) {
+    const breakdown_bar = $('#token_breakdown div:first-child');
+    breakdown_bar.empty();
+
+    const total = Object.values(counts).filter(x => !Number.isNaN(x)).reduce((acc, val) => acc + val, 0);
+
+    thisPromptBits.push({
+        oaiStartTokens: Object.entries(counts)[0][1],
+        oaiPromptTokens: Object.entries(counts)[1][1],
+        oaiBiasTokens: Object.entries(counts)[2][1],
+        oaiNudgeTokens: Object.entries(counts)[3][1],
+        oaiJailbreakTokens: Object.entries(counts)[4][1],
+        oaiImpersonateTokens: Object.entries(counts)[5][1],
+        oaiExamplesTokens: Object.entries(counts)[6][1],
+        oaiConversationTokens: Object.entries(counts)[7][1],
+        oaiTotalTokens: total,
+    });
+
+    Object.entries(counts).forEach(([type, value]) => {
+        if (value === 0) {
+            return;
+        }
+        const percent_value = (value / total) * 100;
+        const color = uniqolor(type, { saturation: 50, lightness: 75, }).color;
+        const bar = document.createElement('div');
+        bar.style.width = `${percent_value}%`;
+        bar.classList.add('token_breakdown_segment');
+        bar.style.backgroundColor = color + 'AA';
+        bar.style.borderColor = color + 'FF';
+        bar.innerText = value;
+        bar.title = `${type}: ${percent_value.toFixed(2)}%`;
+        breakdown_bar.append(bar);
+    });
+}
+
+function adjustChatsSeparator(mesSendString) {
+    if (power_user.custom_chat_separator && power_user.custom_chat_separator.length) {
+        mesSendString = power_user.custom_chat_separator + '\n' + mesSendString;
+    }
+
+    // if chat start formatting is disabled
+    else if (power_user.disable_start_formatting) {
+        mesSendString = mesSendString;
+    }
+
+    // add non-pygma dingus
+    else if (!is_pygmalion) {
+        mesSendString = '\nThen the roleplay chat between ' + name1 + ' and ' + name2 + ' begins.\n' + mesSendString;
+    }
+
+    // add pygma <START>
+    else {
+        mesSendString = '<START>\n' + mesSendString;
+        //mesSendString = mesSendString; //This edit simply removes the first "<START>" that is prepended to all context prompts
+    }
+
+    return mesSendString;
+}
+
+function appendZeroDepthAnchor(force_name2, zeroDepthAnchor, finalPromt) {
+    const trimBothEnds = !force_name2 && !is_pygmalion;
+    let trimmedPrompt = (trimBothEnds ? zeroDepthAnchor.trim() : zeroDepthAnchor.trimEnd());
+
+    if (trimBothEnds && !finalPromt.endsWith('\n')) {
+        finalPromt += '\n';
+    }
+
+    finalPromt += trimmedPrompt;
+
+    if (force_name2 || is_pygmalion) {
+        finalPromt += ' ';
+    }
+
+    return finalPromt;
+}
+
+function getMultigenAmount() {
+    let this_amount_gen = parseInt(amount_gen);
+
+    if (tokens_already_generated === 0) {
+        // if the max gen setting is > 50...(
+        if (parseInt(amount_gen) >= power_user.multigen_first_chunk) {
+            // then only try to make 50 this cycle..
+            this_amount_gen = power_user.multigen_first_chunk;
+        }
+        else {
+            // otherwise, make as much as the max amount request.
+            this_amount_gen = parseInt(amount_gen);
+        }
+    }
+    // if we already received some generated text...
+    else {
+        // if the remaining tokens to be made is less than next potential cycle count
+        if (parseInt(amount_gen) - tokens_already_generated < power_user.multigen_next_chunks) {
+            // subtract already generated amount from the desired max gen amount
+            this_amount_gen = parseInt(amount_gen) - tokens_already_generated;
+        }
+        else {
+            // otherwise make the standard cycle amount (first 50, and 30 after that)
+            this_amount_gen = power_user.multigen_next_chunks;
+        }
+    }
+    return this_amount_gen;
+}
+
+function promptItemize(itemizedPrompts, requestedMesId) {
+    var incomingMesId = Number(requestedMesId);
+    console.log(`looking for MesId ${incomingMesId}`);
+    var thisPromptSet = undefined;
+
+    for (var i = 0; i < itemizedPrompts.length; i++) {
+        if (itemizedPrompts[i].mesId === incomingMesId) {
+            thisPromptSet = i;
+            PromptArrayItemForRawPromptDisplay = Number(i);
+        }
+    }
+
+    if (thisPromptSet === undefined) {
+        console.log(`couldnt find the right mesId. looked for ${incomingMesId}`);
+        console.log(itemizedPrompts);
+        return null;
+    }
+
+    //these happen regardless of API
+    var charPersonalityTokens = getTokenCount(itemizedPrompts[thisPromptSet].charPersonality);
+    var charDescriptionTokens = getTokenCount(itemizedPrompts[thisPromptSet].charDescription);
+    var scenarioTextTokens = getTokenCount(itemizedPrompts[thisPromptSet].scenarioText);
+    var allAnchorsTokens = getTokenCount(itemizedPrompts[thisPromptSet].allAnchors);
+    var summarizeStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].summarizeString);
+    var authorsNoteStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].authorsNoteString);
+    var afterScenarioAnchorTokens = getTokenCount(itemizedPrompts[thisPromptSet].afterScenarioAnchor);
+    var zeroDepthAnchorTokens = getTokenCount(itemizedPrompts[thisPromptSet].afterScenarioAnchor);
+    var worldInfoStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].worldInfoString);
+    var thisPrompt_max_context = itemizedPrompts[thisPromptSet].this_max_context;
+    var thisPrompt_padding = itemizedPrompts[thisPromptSet].padding;
+    var promptBiasTokens = getTokenCount(itemizedPrompts[thisPromptSet].promptBias);
+    var this_main_api = itemizedPrompts[thisPromptSet].main_api;
+
+    if (this_main_api == 'openai') {
+        //for OAI API
+        //console.log('-- Counting OAI Tokens');
+
+        //var finalPromptTokens = itemizedPrompts[thisPromptSet].oaiTotalTokens;
+        var oaiStartTokens = itemizedPrompts[thisPromptSet].oaiStartTokens;
+        var oaiPromptTokens = itemizedPrompts[thisPromptSet].oaiPromptTokens;
+        var ActualChatHistoryTokens = itemizedPrompts[thisPromptSet].oaiConversationTokens;
+        var examplesStringTokens = itemizedPrompts[thisPromptSet].oaiExamplesTokens;
+        var oaiBiasTokens = itemizedPrompts[thisPromptSet].oaiBiasTokens;
+        var oaiJailbreakTokens = itemizedPrompts[thisPromptSet].oaiJailbreakTokens;
+        var oaiNudgeTokens = itemizedPrompts[thisPromptSet].oaiNudgeTokens;
+        var oaiImpersonateTokens = itemizedPrompts[thisPromptSet].oaiImpersonateTokens;
+        var finalPromptTokens =
+            oaiBiasTokens +
+            oaiImpersonateTokens +
+            oaiJailbreakTokens +
+            oaiNudgeTokens +
+            oaiPromptTokens +
+            ActualChatHistoryTokens +
+            charDescriptionTokens +
+            charPersonalityTokens +
+            allAnchorsTokens +
+            worldInfoStringTokens +
+            examplesStringTokens;
+        // OAI doesn't use padding
+        thisPrompt_padding = 0;
+        // Max context size - max completion tokens
+        thisPrompt_max_context = (oai_settings.openai_max_context - oai_settings.openai_max_tokens);
+    } else {
+        //for non-OAI APIs
+        //console.log('-- Counting non-OAI Tokens');
+        var finalPromptTokens = getTokenCount(itemizedPrompts[thisPromptSet].finalPromt);
+        var storyStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].storyString);
+        var examplesStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].examplesString);
+        var mesSendStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].mesSendString)
+        var ActualChatHistoryTokens = mesSendStringTokens - allAnchorsTokens + power_user.token_padding;
+
+        var totalTokensInPrompt =
+            storyStringTokens +     //chardefs total
+            worldInfoStringTokens +
+            ActualChatHistoryTokens +  //chat history
+            allAnchorsTokens +      // AN and/or legacy anchors
+            //afterScenarioAnchorTokens +       //only counts if AN is set to 'after scenario'
+            //zeroDepthAnchorTokens +           //same as above, even if AN not on 0 depth
+            promptBiasTokens;       //{{}}
+        //- thisPrompt_padding;  //not sure this way of calculating is correct, but the math results in same value as 'finalPromt'
+    }
+
+    if (this_main_api == 'openai') {
+        //console.log('-- applying % on OAI tokens');
+        var oaiStartTokensPercentage = ((oaiStartTokens / (finalPromptTokens)) * 100).toFixed(2);
+        var storyStringTokensPercentage = ((oaiPromptTokens / (finalPromptTokens)) * 100).toFixed(2);
+        var ActualChatHistoryTokensPercentage = ((ActualChatHistoryTokens / (finalPromptTokens)) * 100).toFixed(2);
+        var promptBiasTokensPercentage = ((oaiBiasTokens / (finalPromptTokens)) * 100).toFixed(2);
+        var worldInfoStringTokensPercentage = ((worldInfoStringTokens / (finalPromptTokens)) * 100).toFixed(2);
+        var allAnchorsTokensPercentage = ((allAnchorsTokens / (finalPromptTokens)) * 100).toFixed(2);
+        var selectedTokenizer = `tiktoken (${oai_settings.openai_model})`;
+        var oaiSystemTokens = oaiImpersonateTokens + oaiJailbreakTokens + oaiNudgeTokens + oaiStartTokens;
+        var oaiSystemTokensPercentage = ((oaiSystemTokens / (finalPromptTokens)) * 100).toFixed(2);
+
+    } else {
+        //console.log('-- applying % on non-OAI tokens');
+        var storyStringTokensPercentage = ((storyStringTokens / (totalTokensInPrompt)) * 100).toFixed(2);
+        var ActualChatHistoryTokensPercentage = ((ActualChatHistoryTokens / (totalTokensInPrompt)) * 100).toFixed(2);
+        var promptBiasTokensPercentage = ((promptBiasTokens / (totalTokensInPrompt)) * 100).toFixed(2);
+        var worldInfoStringTokensPercentage = ((worldInfoStringTokens / (totalTokensInPrompt)) * 100).toFixed(2);
+        var allAnchorsTokensPercentage = ((allAnchorsTokens / (totalTokensInPrompt)) * 100).toFixed(2);
+        var selectedTokenizer = $("#tokenizer").find(':selected').text();
+    }
+
+    if (this_main_api == 'openai') {
+        //console.log('-- calling popup for OAI tokens');
+        callPopup(
+            `
+        <h3>Prompt Itemization</h3>
+        Tokenizer: TikToken<br>
+        API Used: ${this_main_api}<br>
+        <span class="tokenItemizingSubclass">
+            Only the white numbers really matter. All numbers are estimates.
+            Grey color items may not have been included in the context due to certain prompt format settings.
+        </span>
+        <div id="showRawPrompt" class="fa-solid fa-square-poll-horizontal menu_button"></div>
+        <hr class="sysHR">
+        <div class="justifyLeft">
+            <div class="flex-container">
+                <div class="flex-container flex1 flexFlowColumns flexNoGap wide50p tokenGraph">
+                <div class="wide100p" style="background-color: grey; height: ${oaiSystemTokensPercentage}%;"></div>
+                    <div class="wide100p" style="background-color: indianred; height: ${storyStringTokensPercentage}%;"></div>
+                    <div class="wide100p" style="background-color: gold; height: ${worldInfoStringTokensPercentage}%;"></div>
+                    <div class="wide100p" style="background-color: palegreen; height: ${ActualChatHistoryTokensPercentage}%;"></div>
+                    <div class="wide100p" style="background-color: cornflowerblue; height: ${allAnchorsTokensPercentage}%;"></div>
+                    <div class="wide100p" style="background-color: mediumpurple; height: ${promptBiasTokensPercentage}%;"></div>
+                </div>
+                <div class="flex-container wide50p">
+                    <div class="wide100p flex-container flexNoGap flexFlowColumn">
+                        <div class="flex-container wide100p">
+                            <div class="flex1" style="color: grey;">System Info:</div>
+                            <div  class=""> ${oaiSystemTokens}</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Chat Start: </div>
+                            <div  class="tokenItemizingSubclass"> ${oaiStartTokens}</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Jailbreak: </div>
+                            <div  class="tokenItemizingSubclass">${oaiJailbreakTokens}</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- NSFW: </div>
+                            <div  class="tokenItemizingSubclass">??</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Nudge: </div>
+                            <div  class="tokenItemizingSubclass">${oaiNudgeTokens}</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Impersonate: </div>
+                            <div  class="tokenItemizingSubclass">${oaiImpersonateTokens}</div>
+                        </div>
+                    </div>
+                    <div class="wide100p flex-container flexNoGap flexFlowColumn">
+                        <div class="flex-container wide100p">
+                            <div class="flex1" style="color: indianred;">Prompt Tokens:</div>
+                            <div  class=""> ${oaiPromptTokens}</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Description: </div>
+                            <div  class="tokenItemizingSubclass">${charDescriptionTokens}</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Personality:</div>
+                            <div  class="tokenItemizingSubclass"> ${charPersonalityTokens}</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Scenario: </div>
+                            <div  class="tokenItemizingSubclass">${scenarioTextTokens}</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Examples:</div>
+                            <div  class="tokenItemizingSubclass"> ${examplesStringTokens}</div>
+                        </div>
+                    </div>
+                    <div class="wide100p flex-container">
+                        <div  class="flex1" style="color: gold;">World Info:</div>
+                        <div  class="">${worldInfoStringTokens}</div>
+                    </div>
+                    <div class="wide100p flex-container">        
+                        <div  class="flex1" style="color: palegreen;">Chat History:</div>
+                        <div  class=""> ${ActualChatHistoryTokens}</div>
+                    </div>
+                    <div class="wide100p flex-container flexNoGap flexFlowColumn">
+                        <div class="wide100p flex-container">
+                            <div  class="flex1" style="color: cornflowerblue;">Extensions:</div>
+                            <div  class="">${allAnchorsTokens}</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Summarize: </div>
+                            <div  class="tokenItemizingSubclass">${summarizeStringTokens}</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Author's Note:</div>
+                            <div  class="tokenItemizingSubclass"> ${authorsNoteStringTokens}</div>
+                        </div>
+                    </div>
+                    <div class="wide100p flex-container">
+                        <div  class="flex1" style="color: mediumpurple;">{{}} Bias:</div><div  class="">${oaiBiasTokens}</div>
+                    </div>
+                </div>
+
+            </div>
+            <hr class="sysHR">
+            <div class="wide100p flex-container flexFlowColumns">
+                <div class="flex-container wide100p">
+                    <div  class="flex1">Total Tokens in Prompt:</div><div  class=""> ${finalPromptTokens}</div>
+                </div>
+                <div class="flex-container wide100p">
+                    <div  class="flex1">Max Context (Context Size - Response Length):</div><div  class="">${thisPrompt_max_context}</div>
+                </div>
+            </div>
+        </div>
+        <hr class="sysHR">
+        `, 'text'
+        );
+
+    } else {
+        //console.log('-- calling popup for non-OAI tokens');
+        callPopup(
+            `
+        <h3>Prompt Itemization</h3>
+        Tokenizer: ${selectedTokenizer}<br>
+        API Used: ${this_main_api}<br>
+        <span class="tokenItemizingSubclass">
+            Only the white numbers really matter. All numbers are estimates.
+            Grey color items may not have been included in the context due to certain prompt format settings.
+        </span>
+        <div id="showRawPrompt" class="fa-solid fa-square-poll-horizontal menu_button"></div>
+        <hr class="sysHR">
+        <div class="justifyLeft">
+            <div class="flex-container">
+                <div class="flex-container flex1 flexFlowColumns flexNoGap wide50p tokenGraph">
+                    <div class="wide100p" style="background-color: indianred; height: ${storyStringTokensPercentage}%;"></div>
+                    <div class="wide100p" style="background-color: gold; height: ${worldInfoStringTokensPercentage}%;"></div>
+                    <div class="wide100p" style="background-color: palegreen; height: ${ActualChatHistoryTokensPercentage}%;"></div>
+                    <div class="wide100p" style="background-color: cornflowerblue; height: ${allAnchorsTokensPercentage}%;"></div>
+                    <div class="wide100p" style="background-color: mediumpurple; height: ${promptBiasTokensPercentage}%;"></div>
+                </div>
+                <div class="flex-container wide50p">
+                    <div class="wide100p flex-container flexNoGap flexFlowColumn">
+                        <div class="flex-container wide100p">
+                            <div class="flex1" style="color: indianred;"> Character Definitions:</div>
+                            <div  class=""> ${storyStringTokens}</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Description: </div>
+                            <div  class="tokenItemizingSubclass">${charDescriptionTokens}</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Personality:</div>
+                            <div  class="tokenItemizingSubclass"> ${charPersonalityTokens}</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Scenario: </div>
+                            <div  class="tokenItemizingSubclass">${scenarioTextTokens}</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Examples:</div>
+                            <div  class="tokenItemizingSubclass"> ${examplesStringTokens}</div>
+                        </div>
+                    </div>
+                    <div class="wide100p flex-container">
+                        <div  class="flex1" style="color: gold;">World Info:</div>
+                        <div  class="">${worldInfoStringTokens}</div>
+                    </div>
+                    <div class="wide100p flex-container">        
+                        <div  class="flex1" style="color: palegreen;">Chat History:</div>
+                        <div  class=""> ${ActualChatHistoryTokens}</div>
+                    </div>
+                    <div class="wide100p flex-container flexNoGap flexFlowColumn">
+                        <div class="wide100p flex-container">
+                            <div  class="flex1" style="color: cornflowerblue;">Extensions:</div>
+                            <div  class="">${allAnchorsTokens}</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Summarize: </div>
+                            <div  class="tokenItemizingSubclass">${summarizeStringTokens}</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Author's Note:</div>
+                            <div  class="tokenItemizingSubclass"> ${authorsNoteStringTokens}</div>
+                        </div>
+                    </div>
+                    <div class="wide100p flex-container">
+                        <div  class="flex1" style="color: mediumpurple;">{{}} Bias:</div><div  class="">${promptBiasTokens}</div>
+                    </div>
+                </div>
+
+            </div>
+            <hr class="sysHR">
+            <div class="wide100p flex-container flexFlowColumns">
+                <div class="flex-container wide100p">
+                    <div  class="flex1">Total Tokens in Prompt:</div><div  class=""> ${totalTokensInPrompt}</div>
+                </div>
+                    <!-- <div  class="flex1">finalPromt:</div><div  class=""> ${finalPromptTokens}</div> -->
+                <div class="flex-container wide100p">
+                    <div  class="flex1">Max Context:</div><div  class="">${thisPrompt_max_context}</div>
+                </div>
+                <div class="flex-container wide100p">
+                    <div  class="flex1">- Padding:</div><div  class=""> ${thisPrompt_padding}</div>
+                </div>
+                <div class="flex-container wide100p">
+                    <div  class="flex1">Actual Max Context Allowed:</div><div  class="">${thisPrompt_max_context - thisPrompt_padding}</div>
+                </div>
+            </div>
+        </div>
+        <hr class="sysHR">
+        `, 'text'
+        );
+    }
+}
 
 function setInContextMessages(lastmsg, type) {
     $("#chat .mes").removeClass('lastInContext');
@@ -2596,7 +3002,11 @@ function extractMessageFromData(data) {
     return getMessage;
 }
 
-function cleanUpMessage(getMessage, isImpersonate) {
+function cleanUpMessage(getMessage, isImpersonate, displayIncompleteSentences = false) {
+    if (!displayIncompleteSentences && power_user.trim_sentences) {
+        getMessage = end_trim_to_sentence(getMessage, power_user.include_newline);
+    }
+
     if (power_user.collapse_newlines) {
         getMessage = collapseNewlines(getMessage);
     }
@@ -3156,8 +3566,10 @@ function changeMainAPI() {
         // Hide common settings for OpenAI
         if (selectedVal == "openai") {
             $("#common-gen-settings-block").css("display", "none");
+            //$("#token_breakdown").css("display", "flex");
         } else {
             $("#common-gen-settings-block").css("display", "block");
+            //$("#token_breakdown").css("display", "none");
         }
         // Hide amount gen for poe
         if (selectedVal == "poe") {
@@ -3321,30 +3733,15 @@ async function getSettings(type) {
                     `#settings_perset_novel option[value=${novelai_setting_names[nai_settings.preset_settings_novel]}]`
                 ).attr("selected", "true");
 
-                //Load AI model config settings (temp, context length, anchors, and anchor order)
+                //Load AI model config settings
 
                 amount_gen = settings.amount_gen;
                 if (settings.max_context !== undefined)
                     max_context = parseInt(settings.max_context);
-                if (settings.anchor_order !== undefined)
-                    anchor_order = parseInt(settings.anchor_order);
-                if (settings.style_anchor !== undefined)
-                    style_anchor = !!settings.style_anchor;
-                if (settings.character_anchor !== undefined)
-                    character_anchor = !!settings.character_anchor;
-
-                $("#style_anchor").prop("checked", style_anchor);
-                $("#character_anchor").prop("checked", character_anchor);
-                $("#anchor_order option[value=" + anchor_order + "]").attr(
-                    "selected",
-                    "true"
-                );
 
                 swipes = settings.swipes !== undefined ? !!settings.swipes : true;  // enable swipes by default
                 $('#swipes-checkbox').prop('checked', swipes); /// swipecode
-                //console.log('getSettings -- swipes = ' + swipes + '. toggling box');
                 hideSwipeButtons();
-                //console.log('getsettings calling showswipebtns');
                 showSwipeButtons();
 
                 // Kobold
@@ -3442,9 +3839,6 @@ async function saveSettings(type) {
             user_avatar: user_avatar,
             amount_gen: amount_gen,
             max_context: max_context,
-            anchor_order: anchor_order,
-            style_anchor: style_anchor,
-            character_anchor: character_anchor,
             main_api: main_api,
             world_info: world_info,
             world_info_depth: world_info_depth,
@@ -4102,6 +4496,8 @@ window["SillyTavern"].getContext = function () {
         maxContext: Number(max_context),
         chatMetadata: chat_metadata,
         streamingProcessor,
+        eventSource: eventSource,
+        event_types: event_types,
         addOneMessage: addOneMessage,
         generate: Generate,
         getTokenCount: getTokenCount,
@@ -4118,7 +4514,162 @@ window["SillyTavern"].getContext = function () {
     };
 };
 
+// when we click swipe right button
+const swipe_right = () => {
+    if (chat.length - 1 === Number(this_edit_mes_id)) {
+        closeMessageEditor();
+    }
 
+    if (isHordeGenerationNotAllowed()) {
+        return;
+    }
+
+    const swipe_duration = 200;
+    const swipe_range = 700;
+    //console.log(swipe_range);
+    let run_generate = false;
+    let run_swipe_right = false;
+    if (chat[chat.length - 1]['swipe_id'] === undefined) {              // if there is no swipe-message in the last spot of the chat array
+        chat[chat.length - 1]['swipe_id'] = 0;                        // set it to id 0
+        chat[chat.length - 1]['swipes'] = [];                         // empty the array
+        chat[chat.length - 1]['swipes'][0] = chat[chat.length - 1]['mes'];  //assign swipe array with last message from chat
+    }
+    chat[chat.length - 1]['swipe_id']++;                                      //make new slot in array
+    // if message has memory attached - remove it to allow regen
+    if (chat[chat.length - 1].extra && chat[chat.length - 1].extra.memory) {
+        delete chat[chat.length - 1].extra.memory;
+    }
+    //console.log(chat[chat.length-1]['swipes']);
+    if (parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length) { //if swipe id of last message is the same as the length of the 'swipes' array
+        delete chat[chat.length - 1].gen_started;
+        delete chat[chat.length - 1].gen_finished;
+        run_generate = true;
+    } else if (parseInt(chat[chat.length - 1]['swipe_id']) < chat[chat.length - 1]['swipes'].length) { //otherwise, if the id is less than the number of swipes
+        chat[chat.length - 1]['mes'] = chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipe_id']]; //load the last mes box with the latest generation
+        run_swipe_right = true; //then prepare to do normal right swipe to show next message
+    }
+
+    const currentMessage = $("#chat").children().filter(`[mesid="${count_view_mes - 1}"]`);
+    let this_div = currentMessage.children('.swipe_right');
+    let this_mes_div = this_div.parent();
+
+    if (chat[chat.length - 1]['swipe_id'] > chat[chat.length - 1]['swipes'].length) { //if we swipe right while generating (the swipe ID is greater than what we are viewing now)
+        chat[chat.length - 1]['swipe_id'] = chat[chat.length - 1]['swipes'].length; //show that message slot (will be '...' while generating)
+    }
+    if (run_generate) {               //hide swipe arrows while generating
+        this_div.css('display', 'none');
+    }
+    // handles animated transitions when swipe right, specifically height transitions between messages
+    if (run_generate || run_swipe_right) {
+        let this_mes_block = this_mes_div.children('.mes_block').children('.mes_text');
+        const this_mes_div_height = this_mes_div[0].scrollHeight;
+        const this_mes_block_height = this_mes_block[0].scrollHeight;
+
+        this_mes_div.children('.swipe_left').css('display', 'flex');
+        this_mes_div.children('.mes_block').transition({        // this moves the div back and forth
+            x: '-' + swipe_range,
+            duration: swipe_duration,
+            easing: animation_easing,
+            queue: false,
+            complete: function () {
+                /*if (!selected_group) {
+                    var typingIndicator = $("#typing_indicator_template .typing_indicator").clone();
+                    typingIndicator.find(".typing_indicator_name").text(characters[this_chid].name);
+                } */
+                /* $("#chat").append(typingIndicator); */
+                const is_animation_scroll = ($('#chat').scrollTop() >= ($('#chat').prop("scrollHeight") - $('#chat').outerHeight()) - 10);
+                //console.log(parseInt(chat[chat.length-1]['swipe_id']));
+                //console.log(chat[chat.length-1]['swipes'].length);
+                if (run_generate && parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length) {
+                    //console.log('showing ""..."');
+                    /* if (!selected_group) {
+                    } else { */
+                    $("#chat")
+                        .find('[mesid="' + (count_view_mes - 1) + '"]')
+                        .find('.mes_text')
+                        .html('...');  //shows "..." while generating
+                    $("#chat")
+                        .find('[mesid="' + (count_view_mes - 1) + '"]')
+                        .find('.mes_timer')
+                        .html('');     // resets the timer
+                    /* } */
+                } else {
+                    //console.log('showing previously generated swipe candidate, or "..."');
+                    //console.log('onclick right swipe calling addOneMessage');
+                    addOneMessage(chat[chat.length - 1], { type: 'swipe' });
+                }
+                let new_height = this_mes_div_height - (this_mes_block_height - this_mes_block[0].scrollHeight);
+                if (new_height < 103) new_height = 103;
+
+
+                this_mes_div.animate({ height: new_height + 'px' }, {
+                    duration: 0, //used to be 100
+                    queue: false,
+                    progress: function () {
+                        // Scroll the chat down as the message expands
+                        if (is_animation_scroll) $("#chat").scrollTop($("#chat")[0].scrollHeight);
+                    },
+                    complete: function () {
+                        this_mes_div.css('height', 'auto');
+                        // Scroll the chat down to the bottom once the animation is complete
+                        if (is_animation_scroll) $("#chat").scrollTop($("#chat")[0].scrollHeight);
+                    }
+                });
+                this_mes_div.children('.mes_block').transition({
+                    x: swipe_range,
+                    duration: 0,
+                    easing: animation_easing,
+                    queue: false,
+                    complete: function () {
+                        this_mes_div.children('.mes_block').transition({
+                            x: '0px',
+                            duration: swipe_duration,
+                            easing: animation_easing,
+                            queue: false,
+                            complete: function () {
+                                if (run_generate && !is_send_press && parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length) {
+                                    console.log('caught here 2');
+                                    is_send_press = true;
+                                    $('.mes_buttons:last').hide();
+                                    Generate('swipe');
+                                } else {
+                                    if (parseInt(chat[chat.length - 1]['swipe_id']) !== chat[chat.length - 1]['swipes'].length) {
+                                        saveChatConditional();
+                                    }
+                                }
+                            }
+                        });
+                    }
+                });
+            }
+        });
+        this_mes_div.children('.avatar').transition({ // moves avatar along with swipe
+            x: '-' + swipe_range,
+            duration: swipe_duration,
+            easing: animation_easing,
+            queue: false,
+            complete: function () {
+                this_mes_div.children('.avatar').transition({
+                    x: swipe_range,
+                    duration: 0,
+                    easing: animation_easing,
+                    queue: false,
+                    complete: function () {
+                        this_mes_div.children('.avatar').transition({
+                            x: '0px',
+                            duration: swipe_duration,
+                            easing: animation_easing,
+                            queue: false,
+                            complete: function () {
+
+                            }
+                        });
+                    }
+                });
+            }
+        });
+    }
+}
 
 $(document).ready(function () {
 
@@ -4165,160 +4716,7 @@ $(document).ready(function () {
 
     ///// SWIPE BUTTON CLICKS ///////
 
-    $(document).on('click', '.swipe_right', function () {               //when we click swipe right button
-        if (chat.length - 1 === Number(this_edit_mes_id)) {
-            closeMessageEditor();
-        }
-
-        if (isHordeGenerationNotAllowed()) {
-            return;
-        }
-
-        const swipe_duration = 200;
-        const swipe_range = 700;
-        //console.log(swipe_range);
-        let run_generate = false;
-        let run_swipe_right = false;
-        if (chat[chat.length - 1]['swipe_id'] === undefined) {              // if there is no swipe-message in the last spot of the chat array
-            chat[chat.length - 1]['swipe_id'] = 0;                        // set it to id 0
-            chat[chat.length - 1]['swipes'] = [];                         // empty the array
-            chat[chat.length - 1]['swipes'][0] = chat[chat.length - 1]['mes'];  //assign swipe array with last message from chat
-        }
-        chat[chat.length - 1]['swipe_id']++;                                      //make new slot in array
-        // if message has memory attached - remove it to allow regen
-        if (chat[chat.length - 1].extra && chat[chat.length - 1].extra.memory) {
-            delete chat[chat.length - 1].extra.memory;
-        }
-        //console.log(chat[chat.length-1]['swipes']);
-        if (parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length) { //if swipe id of last message is the same as the length of the 'swipes' array
-            delete chat[chat.length - 1].gen_started;
-            delete chat[chat.length - 1].gen_finished;
-            run_generate = true;
-        } else if (parseInt(chat[chat.length - 1]['swipe_id']) < chat[chat.length - 1]['swipes'].length) { //otherwise, if the id is less than the number of swipes
-            chat[chat.length - 1]['mes'] = chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipe_id']]; //load the last mes box with the latest generation
-            run_swipe_right = true; //then prepare to do normal right swipe to show next message
-        }
-
-        if (chat[chat.length - 1]['swipe_id'] > chat[chat.length - 1]['swipes'].length) { //if we swipe right while generating (the swipe ID is greater than what we are viewing now)
-            chat[chat.length - 1]['swipe_id'] = chat[chat.length - 1]['swipes'].length; //show that message slot (will be '...' while generating)
-        }
-        if (run_generate) {               //hide swipe arrows while generating
-            $(this).css('display', 'none');
-        }
-        if (run_generate || run_swipe_right) {                // handles animated transitions when swipe right, specifically height transitions between messages
-
-            let this_mes_div = $(this).parent();
-            let this_mes_block = $(this).parent().children('.mes_block').children('.mes_text');
-            const this_mes_div_height = this_mes_div[0].scrollHeight;
-            const this_mes_block_height = this_mes_block[0].scrollHeight;
-
-            this_mes_div.children('.swipe_left').css('display', 'flex');
-            this_mes_div.children('.mes_block').transition({        // this moves the div back and forth
-                x: '-' + swipe_range,
-                duration: swipe_duration,
-                easing: animation_easing,
-                queue: false,
-                complete: function () {
-                    /*if (!selected_group) {
-                        var typingIndicator = $("#typing_indicator_template .typing_indicator").clone();
-                        typingIndicator.find(".typing_indicator_name").text(characters[this_chid].name);
-                    } */
-                    /* $("#chat").append(typingIndicator); */
-                    const is_animation_scroll = ($('#chat').scrollTop() >= ($('#chat').prop("scrollHeight") - $('#chat').outerHeight()) - 10);
-                    //console.log(parseInt(chat[chat.length-1]['swipe_id']));
-                    //console.log(chat[chat.length-1]['swipes'].length);
-                    if (run_generate && parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length) {
-                        //console.log('showing ""..."');
-                        /* if (!selected_group) {
-                        } else { */
-                        $("#chat")
-                            .find('[mesid="' + (count_view_mes - 1) + '"]')
-                            .find('.mes_text')
-                            .html('...');  //shows "..." while generating
-                        $("#chat")
-                            .find('[mesid="' + (count_view_mes - 1) + '"]')
-                            .find('.mes_timer')
-                            .html('');     // resets the timer
-                        /* } */
-                    } else {
-                        //console.log('showing previously generated swipe candidate, or "..."');
-                        //console.log('onclick right swipe calling addOneMessage');
-                        addOneMessage(chat[chat.length - 1], { type: 'swipe' });
-                    }
-                    let new_height = this_mes_div_height - (this_mes_block_height - this_mes_block[0].scrollHeight);
-                    if (new_height < 103) new_height = 103;
-
-
-                    this_mes_div.animate({ height: new_height + 'px' }, {
-                        duration: 0, //used to be 100
-                        queue: false,
-                        progress: function () {
-                            // Scroll the chat down as the message expands
-                            if (is_animation_scroll) $("#chat").scrollTop($("#chat")[0].scrollHeight);
-                        },
-                        complete: function () {
-                            this_mes_div.css('height', 'auto');
-                            // Scroll the chat down to the bottom once the animation is complete
-                            if (is_animation_scroll) $("#chat").scrollTop($("#chat")[0].scrollHeight);
-                        }
-                    });
-                    this_mes_div.children('.mes_block').transition({
-                        x: swipe_range,
-                        duration: 0,
-                        easing: animation_easing,
-                        queue: false,
-                        complete: function () {
-                            this_mes_div.children('.mes_block').transition({
-                                x: '0px',
-                                duration: swipe_duration,
-                                easing: animation_easing,
-                                queue: false,
-                                complete: function () {
-                                    if (run_generate && !is_send_press && parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length) {
-                                        console.log('caught here 2');
-                                        is_send_press = true;
-                                        $('.mes_buttons:last').hide();
-                                        Generate('swipe');
-                                    } else {
-                                        if (parseInt(chat[chat.length - 1]['swipe_id']) !== chat[chat.length - 1]['swipes'].length) {
-                                            saveChatConditional();
-                                        }
-                                    }
-                                }
-                            });
-                        }
-                    });
-                }
-            });
-
-            $(this).parent().children('.avatar').transition({ // moves avatar aong with swipe
-                x: '-' + swipe_range,
-                duration: swipe_duration,
-                easing: animation_easing,
-                queue: false,
-                complete: function () {
-                    $(this).parent().children('.avatar').transition({
-                        x: swipe_range,
-                        duration: 0,
-                        easing: animation_easing,
-                        queue: false,
-                        complete: function () {
-                            $(this).parent().children('.avatar').transition({
-                                x: '0px',
-                                duration: swipe_duration,
-                                easing: animation_easing,
-                                queue: false,
-                                complete: function () {
-
-                                }
-                            });
-                        }
-                    });
-                }
-            });
-        }
-
-    });
+    $(document).on('click', '.swipe_right', swipe_right);
 
     $(document).on('click', '.swipe_left', function () {      // when we swipe left..but no generation.
         if (chat.length - 1 === Number(this_edit_mes_id)) {
@@ -4512,14 +4910,19 @@ $(document).ready(function () {
             is_use_scroll_holder = false;
         }
     });
-    $(document).on("click", ".del_checkbox", function () {
-        //when a 'delete message' checkbox is clicked
-        $(".del_checkbox").each(function () {
+
+    $(document).on("click", ".mes", function () {
+        //when a 'delete message' parent div is clicked
+        // and we are in delete mode and del_checkbox is visible
+        if (!is_delete_mode || !$(this).children('.del_checkbox').is(':visible')) {
+            return;
+        }
+        $(".mes").children(".del_checkbox").each(function () {
             $(this).prop("checked", false);
             $(this).parent().css("background", css_mes_bg);
         });
-        $(this).parent().css("background", "#600"); //sets the bg of the mes selected for deletion
-        var i = $(this).parent().attr("mesid"); //checks the message ID in the chat
+        $(this).css("background", "#600"); //sets the bg of the mes selected for deletion
+        var i = $(this).attr("mesid"); //checks the message ID in the chat
         this_del_mes = i;
         while (i < chat.length) {
             //as long as the current message ID is less than the total chat length
@@ -4531,6 +4934,7 @@ $(document).ready(function () {
             //console.log(i);
         }
     });
+
     $(document).on("click", "#user_avatar_block .avatar", function () {
         user_avatar = $(this).attr("imgfile");
         reloadUserAvatar();
@@ -4780,6 +5184,9 @@ $(document).ready(function () {
                 getChat();
             }
         }
+
+        rawPromptPopper.update();
+        $('#rawPromptPopup').hide();
 
         if (dialogueResolve) {
             if (popup_type == 'input') {
@@ -5171,6 +5578,27 @@ $(document).ready(function () {
 
     $("#options [id]").on("click", function () {
         var id = $(this).attr("id");
+
+        if (id == "option_toggle_AN") {
+            if (selected_group || this_chid !== undefined && $("#floatingPrompt").css("display") === 'none') {
+                $("#floatingPrompt").css("display", "flex");
+                $("#floatingPrompt").css("opacity", 0.0);
+                $("#floatingPrompt").transition({
+                    opacity: 1.0,
+                    duration: animation_duration,
+                    easing: animation_easing,
+                });
+                $("#ANBlockToggle").click();
+            } else {
+                $("#floatingPrompt").transition({
+                    opacity: 0.0,
+                    duration: 250,
+                    easing: animation_easing,
+                });
+                setTimeout(function () { $("#floatingPrompt").hide(); }, 250);
+            }
+        }
+
         if (id == "option_select_chat") {
             if ((selected_group && !is_group_generating) || (this_chid !== undefined && !is_send_press)) {
                 displayPastChats();
@@ -5225,6 +5653,7 @@ $(document).ready(function () {
                     }
                 });
             }
+            is_delete_mode = true;
         }
     });
 
@@ -5243,6 +5672,7 @@ $(document).ready(function () {
         this_del_mes = 0;
         console.log('canceled del msgs, calling showswipesbtns');
         showSwipeButtons();
+        is_delete_mode = false;
     });
 
     //confirms message delation with the "ok" button
@@ -5271,6 +5701,7 @@ $(document).ready(function () {
         $('#chat .mes').eq(-2).removeClass('last_mes');
         console.log('confirmed del msgs, calling showswipesbtns');
         showSwipeButtons();
+        is_delete_mode = false;
     });
 
     $("#settings_perset").change(function () {
@@ -5381,38 +5812,6 @@ $(document).ready(function () {
 
     //////////////////////////////////////////////////////////////
 
-
-    $("#style_anchor").change(function () {
-        style_anchor = !!$("#style_anchor").prop("checked");
-        saveSettingsDebounced();
-    });
-
-    $("#character_anchor").change(function () {
-        character_anchor = !!$("#character_anchor").prop("checked");
-        saveSettingsDebounced();
-    });
-
-    /*     $("#donation").click(function () {
-            $("#shadow_tips_popup").css("display", "block");
-            $("#shadow_tips_popup").transition({
-                opacity: 1.0,
-                duration: 100,
-                easing: animation_easing,
-                complete: function () { },
-            });
-        }); */
-
-    /*     $("#tips_cross").click(function () {
-            $("#shadow_tips_popup").transition({
-                opacity: 0.0,
-                duration: 100,
-                easing: animation_easing,
-                complete: function () {
-                    $("#shadow_tips_popup").css("display", "none");
-                },
-            });
-        }); */
-
     $("#select_chat_cross").click(function () {
         $("#shadow_select_chat_popup").transition({
             opacity: 0,
@@ -5455,6 +5854,30 @@ $(document).ready(function () {
             }
         });
     }
+
+    $(document).on("pointerup", ".mes_prompt", function () {
+        let mesIdForItemization = $(this).closest('.mes').attr('mesId');
+        if (itemizedPrompts.length !== undefined && itemizedPrompts.length !== 0) {
+            promptItemize(itemizedPrompts, mesIdForItemization);
+        }
+    })
+
+    $(document).on("pointerup", "#showRawPrompt", function () {
+        //console.log(itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt);
+        console.log(itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt);
+
+        let rawPrompt = itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt;
+        let rawPromptValues = rawPrompt;
+
+        if (Array.isArray(rawPrompt)) {
+            rawPromptValues = rawPrompt.map(x => x.content).join('\n');
+        }
+
+        //let DisplayStringifiedPrompt = JSON.stringify(itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt).replace(/\n+/g, '<br>');
+        $("#rawPromptWrapper").text(rawPromptValues);
+        rawPromptPopper.update();
+        $('#rawPromptPopup').toggle();
+    })
 
 
     //********************
@@ -5683,11 +6106,6 @@ $(document).ready(function () {
         $("#api_button_novel").css("display", "none");
         is_get_status_novel = true;
         is_api_button_press_novel = true;
-    });
-
-    $("#anchor_order").change(function () {
-        anchor_order = parseInt($("#anchor_order").find(":selected").val());
-        saveSettingsDebounced();
     });
 
     //**************************CHARACTER IMPORT EXPORT*************************//
@@ -5924,6 +6342,7 @@ $(document).ready(function () {
             '#shadow_popup',
             '#world_popup',
             '.ui-widget',
+            '.text_pole',
         ];
         for (const id of forbiddenTargets) {
             if (clickTarget.closest(id).length > 0) {
@@ -5945,7 +6364,10 @@ $(document).ready(function () {
         }
     });
 
-    $(document).on('click', '.inline-drawer-toggle', function () {
+    $(document).on('click', '.inline-drawer-toggle', function (e) {
+        if ($(e.target).hasClass('text_pole')) {
+            return;
+        };
         var icon = $(this).find('.inline-drawer-icon');
         icon.toggleClass('down up');
         icon.toggleClass('fa-circle-chevron-down fa-circle-chevron-up');

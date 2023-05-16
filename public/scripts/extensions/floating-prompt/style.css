@@ -1,4 +1,26 @@
-.floating_prompt_settings {
+#floatingPrompt {
+    overflow-y: auto;
+    max-width: 90svw;
+    max-height: 90svh;
+    min-width: 100px;
+    min-height: 100px;
+    border-radius: 10px;
+    border: 1px solid var(--white30a);
+    position: fixed;
+    padding: 10px;
+    display: none;
+    flex-direction: column;
+    box-shadow: 0 0 10px var(--black70a);
+    z-index: 3000;
+    left: 0;
+    top: 0;
+    margin: 0;
+    right: unset;
+    width: calc(((100svw - var(--sheldWidth)) / 2) - 1px);
+
+}
+
+.floating_prompt_radio_group {
     display: flex;
     flex-direction: column;
 }
@@ -11,9 +33,4 @@
 .floating_prompt_settings textarea {
     font-size: calc(var(--mainFontSize) * 0.9);
     line-height: 1.2;
-}
-
-.floating_prompt_radio_group {
-    display: flex;
-    flex-direction: column;
 }

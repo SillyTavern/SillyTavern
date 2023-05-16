@@ -311,7 +311,7 @@ function appendWorldEntry(entry) {
         const value = $(this).prop("checked");
         world_info_data.entries[uid].disable = value;
         saveWorldInfo();
-        console.log(`WI #${entry.uid} disabled? ${world_info_data.entries[uid].disable}`);
+        //console.log(`WI #${entry.uid} disabled? ${world_info_data.entries[uid].disable}`);
     });
     disableInput.prop("checked", entry.disable).trigger("input");
     disableInput.siblings(".checkbox_fancy").click(function () {
@@ -593,7 +593,8 @@ $(document).ready(() => {
             await loadWorldInfoData();
         }
 
-        hideWorldEditor();
+        if (selectedWorld === "None") { hideWorldEditor(); }
+        if (is_world_edit_open && selectedWorld !== "None") { showWorldEditor() };
         saveSettingsDebounced();
     });
 

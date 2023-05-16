@@ -1,4 +1,4 @@
-import { callPopup, saveSettings, saveSettingsDebounced } from "../script.js";
+import { callPopup, eventSource, event_types, saveSettings, saveSettingsDebounced } from "../script.js";
 import { isSubsetOf } from "./utils.js";
 export {
     getContext,
@@ -162,6 +162,7 @@ async function connectToApi(baseUrl) {
             const data = await getExtensionsResult.json();
             modules = data.modules;
             await activateExtensions();
+            eventSource.emit(event_types.EXTRAS_CONNECTED, modules);
         }
 
         updateStatus(getExtensionsResult.ok);

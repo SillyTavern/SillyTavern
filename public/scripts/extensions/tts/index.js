@@ -1,4 +1,4 @@
-import { callPopup, isMultigenEnabled, is_send_press, saveSettingsDebounced } from '../../../script.js'
+import { callPopup, cancelTtsPlay, isMultigenEnabled, is_send_press, saveSettingsDebounced } from '../../../script.js'
 import { extension_settings, getContext } from '../../extensions.js'
 import { getStringHash } from '../../utils.js'
 import { ElevenLabsTtsProvider } from './elevenlabs.js'
@@ -24,9 +24,47 @@ let ttsProviders = {
 let ttsProvider
 let ttsProviderName
 
+async function onNarrateOneMessage() {
+    cancelTtsPlay();
+    const context = getContext();
+    const id = $(this).closest('.mes').attr('mesid');
+    const message = context.chat[id];
+
+    if (!message) {
+        return;
+    }
+
+    currentTtsJob = null;
+    audioElement.pause();
+    audioElement.currentTime = 0;
+    ttsJobQueue.splice(0, ttsJobQueue.length);
+    audioJobQueue.splice(0, audioJobQueue.length);
+    ttsJobQueue.push(message);
+    moduleWorker();
+}
+
+let isWorkerBusy = false;
+
+async function moduleWorkerWrapper() {
+    // Don't touch me I'm busy...
+    if (isWorkerBusy) {
+        return;
+    }
+
+    // I'm free. Let's update!
+    try {
+        isWorkerBusy = true;
+        await moduleWorker();
+    }
+    finally {
+        isWorkerBusy = false;
+    }
+}
+
 async function moduleWorker() {
     // Primarily determinign when to add new chat to the TTS queue
     const enabled = $('#tts_enabled').is(':checked')
+    $('body').toggleClass('tts', enabled);
     if (!enabled) {
         return
     }
@@ -163,7 +201,7 @@ function onAudioControlClicked() {
 
 function addAudioControl() {
     $('#send_but_sheld').prepend('<div id="tts_media_control"/>')
-    $('#tts_media_control').on('click', onAudioControlClicked)
+    $('#tts_media_control').attr('title', 'TTS play/pause').on('click', onAudioControlClicked)
     audioControl = document.getElementById('tts_media_control')
     updateUiAudioPlayState()
 }
@@ -247,7 +285,8 @@ async function processTtsQueue() {
         const special_quotes = /[“”]/g; // Extend this regex to include other special quotes
         text = text.replace(special_quotes, '"');
         const matches = text.match(/".*?"/g); // Matches text inside double quotes, non-greedily
-        text = matches ? matches.join(' ... ... ... ') : text;
+        const partJoiner = (ttsProvider?.separator || ' ... ');
+        text = matches ? matches.join(partJoiner) : text;
     }
     console.log(`TTS: ${text}`)
     const char = currentTtsJob.name
@@ -295,6 +334,7 @@ function loadSettings() {
     )
     $('#tts_narrate_dialogues').prop('checked', extension_settings.tts.narrate_dialogues_only)
     $('#tts_narrate_quoted').prop('checked', extension_settings.tts.narrate_quoted_only)
+    $('body').toggleClass('tts', extension_settings.tts.enabled);
 }
 
 const defaultSettings = {
@@ -506,10 +546,11 @@ $(document).ready(function () {
             $('#tts_provider').append($("<option />").val(provider).text(provider))
         }
         $('#tts_provider').on('change', onTtsProviderChange)
+        $(document).on('click', '.mes_narrate', onNarrateOneMessage);
     }
     addExtensionControls() // No init dependencies
     loadSettings() // Depends on Extension Controls and loadTtsProvider
     loadTtsProvider(extension_settings.tts.currentProvider) // No dependencies
     addAudioControl() // Depends on Extension Controls
-    setInterval(moduleWorker, UPDATE_INTERVAL) // Init depends on all the things
+    setInterval(moduleWorkerWrapper, UPDATE_INTERVAL) // Init depends on all the things
 })

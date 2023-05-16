@@ -3,9 +3,13 @@ import {
     saveSettingsDebounced,
     systemUserName,
     hideSwipeButtons,
-    showSwipeButtons
+    showSwipeButtons,
+    callPopup,
+    getRequestHeaders,
+    event_types,
+    eventSource
 } from "../../../script.js";
-import { getApiUrl, getContext, extension_settings, defaultRequestArgs } from "../../extensions.js";
+import { getApiUrl, getContext, extension_settings, defaultRequestArgs, modules } from "../../extensions.js";
 import { stringFormat, initScrollHeight, resetScrollHeight } from "../../utils.js";
 export { MODULE_NAME };
 
@@ -94,6 +98,9 @@ const defaultSettings = {
     negative_prompt: 'lowres, bad anatomy, bad hands, text, error, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry',
     sampler: 'DDIM',
     model: '',
+
+    horde: false,
+    horde_nsfw: false,
 }
 
 async function loadSettings() {
@@ -107,11 +114,10 @@ async function loadSettings() {
     $('#sd_negative_prompt').val(extension_settings.sd.negative_prompt).trigger('input');
     $('#sd_width').val(extension_settings.sd.width).trigger('input');
     $('#sd_height').val(extension_settings.sd.height).trigger('input');
-
+    $('#sd_horde').prop('checked', extension_settings.sd.horde);
+    $('#sd_horde_nsfw').prop('checked', extension_settings.sd.horde_nsfw);
 
     await Promise.all([loadSamplers(), loadModels()]);
-
-
 }
 
 function onScaleInput() {
@@ -155,10 +161,29 @@ function onHeightInput() {
     saveSettingsDebounced();
 }
 
+async function onHordeInput() {
+    extension_settings.sd.model = null;
+    extension_settings.sd.sampler = null;
+    extension_settings.sd.horde = !!$(this).prop('checked');
+    saveSettingsDebounced();
+    await Promise.all([loadModels(), loadSamplers()]);
+}
+
+async function onHordeNsfwInput() {
+    extension_settings.sd.horde_nsfw = !!$(this).prop('checked');
+    saveSettingsDebounced();
+}
+
 async function onModelChange() {
     extension_settings.sd.model = $('#sd_model').find(':selected').val();
     saveSettingsDebounced();
 
+    if (extension_settings.sd.horde == false) {
+        await updateExtrasRemoteModel();
+    }
+}
+
+async function updateExtrasRemoteModel() {
     const url = new URL(getApiUrl());
     url.pathname = '/api/image/model';
     const getCurrentModelResult = await fetch(url, {
@@ -173,25 +198,94 @@ async function onModelChange() {
 }
 
 async function loadSamplers() {
+    $('#sd_sampler').empty();
+    let samplers = [];
+
+    if (extension_settings.sd.horde) {
+        samplers = await loadHordeSamplers();
+    } else {
+        samplers = await loadExtrasSamplers();
+    }
+
+    for (const sampler of samplers) {
+        const option = document.createElement('option');
+        option.innerText = sampler;
+        option.value = sampler;
+        option.selected = sampler === extension_settings.sd.sampler;
+        $('#sd_sampler').append(option);
+    }
+}
+
+async function loadHordeSamplers() {
+    const result = await fetch('/horde_samplers', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+    });
+
+    if (result.ok) {
+        const data = await result.json();
+        return data;
+    }
+
+    return [];
+}
+
+async function loadExtrasSamplers() {
+    if (!modules.includes('sd')) {
+        return [];
+    }
+
     const url = new URL(getApiUrl());
     url.pathname = '/api/image/samplers';
     const result = await fetch(url, defaultRequestArgs);
 
     if (result.ok) {
         const data = await result.json();
-        const samplers = data.samplers;
-
-        for (const sampler of samplers) {
-            const option = document.createElement('option');
-            option.innerText = sampler;
-            option.value = sampler;
-            option.selected = sampler === extension_settings.sd.sampler;
-            $('#sd_sampler').append(option);
-        }
+        return data.samplers;
     }
+
+    return [];
 }
 
 async function loadModels() {
+    $('#sd_model').empty();
+    let models = [];
+
+    if (extension_settings.sd.horde) {
+        models = await loadHordeModels();
+    } else {
+        models = await loadExtrasModels();
+    }
+
+    for (const model of models) {
+        const option = document.createElement('option');
+        option.innerText = model.text;
+        option.value = model.value;
+        option.selected = model.value === extension_settings.sd.model;
+        $('#sd_model').append(option);
+    }
+}
+
+async function loadHordeModels() {
+    const result = await fetch('/horde_models', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+    });
+
+    if (result.ok) {
+        const data = await result.json();
+        const models = data.map(x => ({ value: x.name, text: `${x.name} (ETA: ${x.eta}s, Queue: ${x.queued}, Workers: ${x.count})` }));
+        return models;
+    }
+
+    return [];
+}
+
+async function loadExtrasModels() {
+    if (!modules.includes('sd')) {
+        return [];
+    }
+
     const url = new URL(getApiUrl());
     url.pathname = '/api/image/model';
     const getCurrentModelResult = await fetch(url, defaultRequestArgs);
@@ -206,16 +300,11 @@ async function loadModels() {
 
     if (getModelsResult.ok) {
         const data = await getModelsResult.json();
-        const models = data.models;
-
-        for (const model of models) {
-            const option = document.createElement('option');
-            option.innerText = model;
-            option.value = model;
-            option.selected = model === extension_settings.sd.model;
-            $('#sd_model').append(option);
-        }
+        const view_models = data.models.map(x => ({ value: x, text: x }));
+        return view_models;
     }
+
+    return [];
 }
 
 function getGenerationType(prompt) {
@@ -257,6 +346,14 @@ async function generatePicture(_, trigger) {
         return;
     }
 
+    if (!modules.includes('sd') && !extension_settings.sd.horde) {
+        callPopup("Extensions API is not connected or doesn't provide SD module. Enable Stable Horde to generate images.", 'text');
+        return;
+    }
+
+    extension_settings.sd.sampler = $('#sd_sampler').find(':selected').val();
+    extension_settings.sd.model = $('#sd_model').find(':selected').val();
+
     trigger = trigger.trim();
     const generationMode = getGenerationType(trigger);
     console.log('Generation mode', generationMode, 'triggered with', trigger);
@@ -279,30 +376,10 @@ async function generatePicture(_, trigger) {
 
         console.log('Processed Stable Diffusion prompt:', prompt);
 
-        const url = new URL(getApiUrl());
-        url.pathname = '/api/image';
-        const result = await fetch(url, {
-            method: 'POST',
-            headers: postHeaders,
-            body: JSON.stringify({
-                prompt: prompt,
-                sampler: extension_settings.sd.sampler,
-                steps: extension_settings.sd.steps,
-                scale: extension_settings.sd.scale,
-                width: extension_settings.sd.width,
-                height: extension_settings.sd.height,
-                prompt_prefix: extension_settings.sd.prompt_prefix,
-                negative_prompt: extension_settings.sd.negative_prompt,
-                restore_faces: true,
-                face_restoration_model: 'GFPGAN',
-
-            }),
-        });
-
-        if (result.ok) {
-            const data = await result.json();
-            const base64Image = `data:image/jpeg;base64,${data.image}`;
-            sendMessage(prompt, base64Image);
+        if (extension_settings.sd.horde) {
+            await generateHordeImage(prompt);
+        } else {
+            await generateExtrasImage(prompt);
         }
     } catch (err) {
         console.trace(err);
@@ -311,6 +388,62 @@ async function generatePicture(_, trigger) {
     finally {
         context.activateSendButtons();
         showSwipeButtons();
+    }
+}
+
+async function generateExtrasImage(prompt) {
+    const url = new URL(getApiUrl());
+    url.pathname = '/api/image';
+    const result = await fetch(url, {
+        method: 'POST',
+        headers: postHeaders,
+        body: JSON.stringify({
+            prompt: prompt,
+            sampler: extension_settings.sd.sampler,
+            steps: extension_settings.sd.steps,
+            scale: extension_settings.sd.scale,
+            width: extension_settings.sd.width,
+            height: extension_settings.sd.height,
+            prompt_prefix: extension_settings.sd.prompt_prefix,
+            negative_prompt: extension_settings.sd.negative_prompt,
+            restore_faces: true,
+            face_restoration_model: 'GFPGAN',
+        }),
+    });
+
+    if (result.ok) {
+        const data = await result.json();
+        const base64Image = `data:image/jpeg;base64,${data.image}`;
+        sendMessage(prompt, base64Image);
+    } else {
+        callPopup('Image generation has failed. Please try again.', 'text');
+    }
+}
+
+async function generateHordeImage(prompt) {
+    const result = await fetch('/horde_generateimage', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({
+            prompt: prompt,
+            sampler: extension_settings.sd.sampler,
+            steps: extension_settings.sd.steps,
+            scale: extension_settings.sd.scale,
+            width: extension_settings.sd.width,
+            height: extension_settings.sd.height,
+            prompt_prefix: extension_settings.sd.prompt_prefix,
+            negative_prompt: extension_settings.sd.negative_prompt,
+            model: extension_settings.sd.model,
+            nsfw: extension_settings.sd.horde_nsfw,
+        }),
+    });
+
+    if (result.ok) {
+        const data = await result.text();
+        const base64Image = `data:image/webp;base64,${data}`;
+        sendMessage(prompt, base64Image);
+    } else {
+        callPopup('Image generation has failed. Please try again.', 'text');
     }
 }
 
@@ -336,7 +469,7 @@ async function sendMessage(prompt, image) {
 
 function addSDGenButtons() {
     const buttonHtml = `
-        <div id="sd_gen" class="fa-solid fa-paintbrush" /></div>
+        <div id="sd_gen" class="fa-solid fa-paintbrush" title="Trigger Stable Diffusion" /></div>
         `;
 
     const waitButtonHtml = `
@@ -386,16 +519,6 @@ function addSDGenButtons() {
 async function moduleWorker() {
     const context = getContext();
 
-    /*     if (context.onlineStatus === 'no_connection') {
-            $('#sd_gen').hide(200);
-        } else if ($("#send_but").css('display') === 'flex') {
-            $('#sd_gen').show(200);
-            $("#sd_gen_wait").hide(200);
-        } else {
-            $('#sd_gen').hide(200);
-            $("#sd_gen_wait").show(200);
-        } */
-
     context.onlineStatus === 'no_connection'
         ? $('#sd_gen').hide(200)
         : $('#sd_gen').show(200)
@@ -444,6 +567,16 @@ jQuery(async () => {
         </div>
         <div class="inline-drawer-content">
             <small><i>Use slash commands to generate images. Type <span class="monospace">/help</span> in chat for more details</i></small>
+            <br>
+            <small><i>Hint: Save an API key in Horde KoboldAI API settings to use it here.</i></small>
+            <label class="checkbox_label">
+                <input id="sd_horde" type="checkbox" />
+                Use Stable Horde
+            </label>
+            <label style="margin-left:1em;" class="checkbox_label">
+                <input id="sd_horde_nsfw" type="checkbox" />
+                Allow NSFW images
+            </label>
             <label for="sd_scale">CFG Scale (<span id="sd_scale_value"></span>)</label>
             <input id="sd_scale" type="range" min="${defaultSettings.scale_min}" max="${defaultSettings.scale_max}" step="${defaultSettings.scale_step}" value="${defaultSettings.scale}" />
             <label for="sd_steps">Sampling steps (<span id="sd_steps_value"></span>)</label>
@@ -472,12 +605,17 @@ jQuery(async () => {
     $('#sd_negative_prompt').on('input', onNegativePromptInput);
     $('#sd_width').on('input', onWidthInput);
     $('#sd_height').on('input', onHeightInput);
+    $('#sd_horde').on('input', onHordeInput);
+    $('#sd_horde_nsfw').on('input', onHordeNsfwInput);
 
     $('.sd_settings .inline-drawer-toggle').on('click', function () {
         initScrollHeight($("#sd_prompt_prefix"));
         initScrollHeight($("#sd_negative_prompt"));
     })
 
-    await loadSettings();
+    eventSource.on(event_types.EXTRAS_CONNECTED, async () => {
+        await Promise.all([loadSamplers(), loadModels()]);
+    });
 
+    await loadSettings();
 });

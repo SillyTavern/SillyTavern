@@ -41,6 +41,7 @@
     <script src="scripts/moment.min.js"></script>
     <script src="scripts/cropper.min.js"></script>
     <script src="scripts/jquery-cropper.min.js"></script>
+    <script type="module" src="scripts/eventemitter.js"></script>
     <script type="module" src="scripts/power-user.js"></script>
     <script type="module" src="scripts/swiped-events.js"></script>
     <link rel="stylesheet" type="text/css" href="style.css">
@@ -364,6 +365,15 @@
                                     </div>
                                     <div class="wide100p">
                                         <input id="openai_reverse_proxy" type="text" class="text_pole" placeholder="https://api.openai.com/v1" maxlength="100" />
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <label for="oai_breakdown" class="checkbox_label widthFreeExpand">
+                                        <input id="oai_breakdown" type="checkbox" />
+                                        Token Breakdown
+                                    </label>
+                                    <div class="toggle-description justifyLeft">
+                                        Display a breakdown of the tokens used in the request.
                                     </div>
                                 </div>
                                 <div class="range-block">
@@ -738,7 +748,7 @@
                                     <div class="range-block-title">
                                         Seed
                                     </div>
-                                    <input type="number" id="seed_textgenerationwebui" class="text_pole" maxlength="100" />
+                                    <input type="number" id="seed_textgenerationwebui" class="text_pole wide100p" maxlength="100" />
                                 </div>
                             </div>
                             <div id="openai_settings">
@@ -961,7 +971,7 @@
             </div>
             <div id="rm_api_block" class="drawer-content closedDrawer">
                 <h3 id="title_api">API</h3>
-                <div class="flex-container">
+                <div class="flex-container flexFlowColumn">
                     <div id="main-API-selector-block">
                         <select id="main_api">
                             <option value="kobold">KoboldAI</option>
@@ -1043,7 +1053,7 @@
                                 </ol>
                             </span>
                             <div class="flex-container">
-                                <input id="api_key_novel" name="api_key_novel" class="text_pole flex1" maxlength="500" size="35" type="text">
+                                <input id="api_key_novel" name="api_key_novel" class="text_pole flex1 wide100p" maxlength="500" size="35" type="text">
                                 <div title="Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_novel"></div>
                             </div>
                             <div class="neutral_warning">For privacy reasons, your API key will be hidden after you reload the page.</div>
@@ -1065,24 +1075,31 @@
                         </div>
                     </div>
                     <div id="textgenerationwebui_api" style="display: none;position: relative;">
-                        <div class="oobabooga_logo">
+                        <div class="oobabooga_logo flex-container">
                             <a href="https://github.com/oobabooga/text-generation-webui" target="_blank">
                                 oobabooga/text-generation-webui
                             </a>
+                            <span>
+                                Make sure you run it with <tt>--api</tt> flag
+                            </span>
                         </div>
-                        <span>
-                            Make sure you run it with <tt>--api</tt> flag
-                        </span>
-                        <form action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                            <h4>Blocking API url</h4>
-                            <h5>Example: http://127.0.0.1:5000/</h5>
-                            <input id="textgenerationwebui_api_url_text" name="textgenerationwebui_api_url" class="text_pole" maxlength="500" value="" autocomplete="off">
+                        <div>
+                            <div class="flex-container">
+                                <div class="flex1">
+                                    <h4>Blocking API url</h4>
+                                    <h5>Example: http://127.0.0.1:5000/</h5>
+                                    <input id="textgenerationwebui_api_url_text" name="textgenerationwebui_api_url" class="text_pole wide100p"
+                                        maxlength="500" value="">
+                                </div>
+                                <div class="flex1">
+                                    <h4>Streaming API url</h4>
+                                    <h5>Example: ws://127.0.0.1:5005/api/v1/stream</h5>
+                                    <input id="streaming_url_textgenerationwebui" type="text" class="text_pole wide100p" maxlength="500" value="">
+                                </div>
+                            </div>
                             <input id="api_button_textgenerationwebui" class="menu_button" type="submit" value="Connect">
-                            <h4>Streaming API url</h4>
-                            <h5>Example: ws://127.0.0.1:5005/api/v1/stream</h5>
-                            <input id="streaming_url_textgenerationwebui" type="text" class="text_pole" maxlength="500" value="" autocomplete="off">
                             <div id="api_loading_textgenerationwebui" class="api-load-icon fa-solid fa-hourglass fa-spin"></div>
-                        </form>
+                        </div>
                         <div class="online_status4">
                             <div class="online_status_indicator4"></div>
                             <div class="online_status_text4">Not connected</div>
@@ -1176,7 +1193,7 @@
 
         <div id="advanced-formatting-button" class="drawer">
             <div class="drawer-toggle">
-                <div class="drawer-icon fa-solid fa-font  closedIcon" title="AI Reponse Formatting"></div>
+                <div class="drawer-icon fa-solid fa-font  closedIcon" title="AI Response Formatting"></div>
             </div>
             <div class="drawer-content">
                 <h3>Advanced Formatting
@@ -1206,6 +1223,15 @@
                         <label class="checkbox_label" for="disable-start-formatting-checkbox">
                             <input id="disable-start-formatting-checkbox" type="checkbox" />
                             Disable chat start formatting
+                        </label>
+                        <label class="checkbox_label" for="trim_sentences_checkbox">
+                            <input id="trim_sentences_checkbox" type="checkbox" />
+                            Trim Incomplete Sentences
+                        </label>
+                        <!-- Add margin since this is a child of above -->
+                        <label style="margin-left: 1em;" class="checkbox_label" for="include_newline_checkbox">
+                            <input id="include_newline_checkbox" type="checkbox" />
+                            Include Newline
                         </label>
                         <div>
                             <h4>
@@ -1247,7 +1273,7 @@
                                         Input Sequence
                                     </label>
                                     <div>
-                                        <input id="instruct_input_sequence" class="text_pole textarea_compact" type="text" maxlength="100" />
+                                        <input id="instruct_input_sequence" class="text_pole wide100p textarea_compact" type="text" maxlength="100" />
                                     </div>
                                 </div>
                                 <div class="flex1">
@@ -1255,7 +1281,7 @@
                                         Output Sequence
                                     </label>
                                     <div>
-                                        <input id="instruct_output_sequence" class="text_pole textarea_compact" type="text" maxlength="100" />
+                                        <input id="instruct_output_sequence" class="text_pole wide100p textarea_compact" type="text" maxlength="100" />
                                     </div>
                                 </div>
                             </div>
@@ -1265,7 +1291,7 @@
                                         System Sequence
                                     </label>
                                     <div>
-                                        <input id="instruct_system_sequence" class="text_pole textarea_compact" type="text" maxlength="100" />
+                                        <input id="instruct_system_sequence" class="text_pole wide100p textarea_compact" type="text" maxlength="100" />
                                     </div>
                                 </div>
                                 <div class="flex1">
@@ -1273,7 +1299,7 @@
                                         Stop Sequence
                                     </label>
                                     <div>
-                                        <input id="instruct_stop_sequence" class="text_pole textarea_compact" type="text" maxlength="100" />
+                                        <input id="instruct_stop_sequence" class="text_pole wide100p textarea_compact" type="text" maxlength="100" />
                                     </div>
                                 </div>
                             </div>
@@ -1346,24 +1372,22 @@
                                 </label>
                             </div>
                         </div>
-                        <div id="anchors-block">
+                        <div id="context-templates-block" style="display:none">
                             <h4>
-                                Anchors Order
-                                <a href="/notes#anchors" class="notes-link" target="_blank">
-                                    <span class="note-link-span">?</span>
-                                </a>
+                                Context Templates
                             </h4>
-                            <select id="anchor_order">
-                                <option value="0">Character then Style</option>
-                                <option value="1">Style then Character</option>
-                            </select>
-                            <div id="anchor_checkbox">
-                                <label for="character_anchor"><input id="character_anchor" type="checkbox" />
-                                    Character Anchor
-                                </label>
-                                <label for="style_anchor"><input id="style_anchor" type="checkbox" />
-                                    Style Anchor
-                                </label>
+                            <div>
+                                <label>Presets:</label>
+                                <div class="flex-container flexGap5">
+                                    <select id="prompt_template" class="flex1 margin0">
+                                        <option value="None">None</option>
+                                        <option value="Classic">Classic</option>
+                                        <option value="Pygmalion">Pygmalion</option>
+                                    </select>
+                                    <div id="context_template_edit" class="menu_button fa-solid fa-pencil margin0" title="Edit"></div>
+                                    <div id="context_template_new" class="menu_button fa-solid fa-plus margin0" title="Add new"></div>
+                                    <div id="context_template_delete" class="menu_button fa-solid fa-trash-can margin0" title="Delete"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1373,12 +1397,20 @@
 
         <div id="WI-SP-button" class="drawer">
             <div class="drawer-toggle drawer-header">
-                <div class="drawer-icon fa-solid fa-book-atlas closedIcon " title="World Info & Soft Prompts"></div>
+                <div id="WIDrawerIcon" class="drawer-icon fa-solid fa-book-atlas closedIcon " title="World Info & Soft Prompts"></div>
             </div>
-            <div class="drawer-content closedDrawer">
+            <div id="WorldInfo" class="drawer-content closedDrawer">
+                <div id="WorldInfoheader" class="fa-solid fa-grip drag-grabber"></div>
+                <div id="WI_panel_pin_div" title="Locked = World Editor will stay open">
+                    <input type="checkbox" id="WI_panel_pin">
+                    <label for="WI_panel_pin">
+                        <div class="unchecked fa-solid fa-lock-open "></div>
+                        <div class="checked fa-solid fa-lock "></div>
+                    </label>
+                </div>
                 <div id="wi-holder">
                     <h3>
-                        World Info
+                        World Selector
                         <a href="/notes#worldinfo" class="notes-link" target="_blank">
                             <span class="note-link-span">?</span>
                         </a>
@@ -1439,6 +1471,41 @@
                                 </span>
                             </label>
                         </div>
+                    </div>
+
+                    <div id="world_popup">
+                        <hr>
+                        <div id="world_popup_text">
+                            <!-- <div id="world_cross" class="fa-solid fa-circle-xmark"></div> -->
+                            <div id="world_popup_header" class="flex-container flexGap5">
+                                <!-- Consider changing logo to something else -->
+                                <div class="world_popup_logo_block">
+                                    <!-- <img src="img/book2.png" id="world_logo"> -->
+                                    <h3>
+                                        World Info Editor
+                                        <a href="/notes#worldinfoentry" class="notes-link" target="_blank"><span class="note-link-span">?</span></a>
+                                    </h3>
+                                </div>
+                                <div id="OpenAllWIEntries" class="menu_button fa-solid fa-expand"></div>
+                                <div id="CloseAllWIEntries" class="menu_button fa-solid fa-compress"></div>
+                                <!-- <div class="world_popup_expander">&nbsp;</div> -->
+                                <form id="form_rename_world" action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                                    <input id="world_popup_name" name="world_popup_name" class="text_pole" maxlength="99" size="32" value="" autocomplete="off">
+                                    <input id="world_popup_name_button" class="menu_button" type="submit" value="Rename">
+                                </form>
+                            </div>
+                        </div>
+
+                        <div id="world_popup_entries_list">
+                        </div>
+
+                        <div id="world_popup_bottom_holder">
+                            <div id="world_popup_new" class="menu_button">New Entry</div>
+                            <!-- <span class="world_popup_expander">&nbsp;</span> -->
+                            <div id="world_popup_export" class="menu_button">Export</div>
+                            <div id="world_popup_delete" class="menu_button">Delete World</div>
+                        </div>
+
                     </div>
                 </div>
                 <div id="softprompt_block">
@@ -1663,6 +1730,10 @@
                                 <input id="auto_scroll_chat_to_bottom" type="checkbox" />
                                 Auto-scroll Chat
                             </label>
+                            <label for="console_log_prompts">
+                                <input id="console_log_prompts" type="checkbox" />
+                                Log prompts to console
+                            </label>
                             <label for="render_formulas">
                                 <input id="render_formulas" type="checkbox" />
                                 Render Formulas
@@ -1670,6 +1741,14 @@
                                     <span class="note-link-span">?</span>
                                 </a>
                             </label>
+                        </div>
+                    </div>
+
+                    <div name="NameAndAvatar" class="flex-container flexFlowColumn drawer25pWidth">
+
+
+                        <div class="inline-drawer wide100p flexFlowColumn">
+
                             <div class="flex-container flexFlowColumn">
                                 <h4>
                                     Send on Enter
@@ -1680,14 +1759,32 @@
                                     <option value="1">Always enabled</option>
                                 </select>
                             </div>
-                        </div>
-                    </div>
 
-                    <div name="NameAndAvatar" class="flex-container flexFlowColumn drawer25pWidth">
+                            <div id="groupCurrentMemberListToggle" class="inline-drawer-toggle inline-drawer-header">
+                                <b>Auto-swipe</b>
+                                <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+                            </div>
+                            <div class="inline-drawer-content">
+
+                                <label class="checkbox_label" for="auto_swipe">
+                                    <input id="auto_swipe" type="checkbox" />
+                                    Enabled
+                                </label>
+                                <div>Minimum generated message length</div>
+                                <input id="auto_swipe_minimum_length" name="auto_swipe_minimum_length" type="number" min="0" step="1" value="0" class="text_pole">
+                                <div>Blacklisted words</div>
+                                <div class="auto_swipe">
+                                    <input id="auto_swipe_blacklist" name="auto_swipe_blacklist" placeholder="words you dont want generated separated by comma ','" class="text_pole" maxlength="500" value="" autocomplete="off">
+                                    <div>Blacklisted word count to swipe</div>
+                                    <input id="auto_swipe_blacklist_threshold" name="auto_swipe_blacklist_threshold" type="number" min="0" step="1" value="1" class="text_pole">
+                                </div>
+                            </div>
+                        </div>
+
                         <div name="NameChanger">
                             <h4>Name</h4>
                             <div class="change_name">
-                                <input id="your_name" name="your_name" placeholder="Enter your name" class="text_pole" maxlength="50" value="" autocomplete="off">
+                                <input id="your_name" name="your_name" placeholder="Enter your name" class="text_pole wide100p" maxlength="50" value="" autocomplete="off">
                                 <div id="your_name_button" class="menu_button fa-solid fa-check" title="Click to set a new User Name">
                                 </div>
                             </div>
@@ -1822,7 +1919,7 @@
 
                         <div id="tags_div">
                             <div class="tag_controls">
-                                <input id="tagInput" class="text_pole tag_input" placeholder="Search / Create tags" maxlength="25" />
+                                <input id="tagInput" class="text_pole tag_input wide100p margin0" placeholder="Search / Create tags" maxlength="25" />
                                 <div class="tags_view menu_button fa-solid fa-tags" title="View all tags"></div>
                             </div>
                             <div id="tagList" class="tags"></div>
@@ -1875,15 +1972,15 @@
                         </div>
                         <div class="inline-drawer-content">
                             <div name="group-metadata-controls" class="marginTopBot5">
-                                <input id="rm_group_chat_name" class="text_pole" type="text" name="chat_name" placeholder="Chat Name (Optional)" maxlength="100" />
+                                <input id="rm_group_chat_name" class="text_pole wide100p" type="text" name="chat_name" placeholder="Chat Name (Optional)" maxlength="100" />
                                 <div id="group_tags_div" class="wide100p">
                                     <div class="tag_controls">
-                                        <input id="groupTagInput" class="text_pole tag_input flex1" placeholder="Search / Create tags" maxlength="25" />
-                                        <div class="tags_view menu_button fa-solid fa-tags" title="View all tags"></div>
+                                        <input id="groupTagInput" class="text_pole tag_input flex1 margin0" placeholder="Search / Create tags" maxlength="25" />
+                                        <div class="tags_view menu_button fa-solid fa-tags margin0" title="View all tags"></div>
                                     </div>
                                     <div id="groupTagList" class="tags paddingTopBot5"></div>
                                 </div>
-                                <div id="rm_group_top_bar" class="flex-container spaceEvenly width100p">
+                                <div id="rm_group_top_bar" class="flex-container spaceBetween width100p">
                                     <div name="GroupStragegyAndOrder" id="rm_group_buttons" class="fontsize80p flex-container paddingLeftRight5">
                                         <div class="">
                                             <div class="flex-container flexnowrap width100p whitespacenowrap">
@@ -1926,21 +2023,6 @@
                         </div>
                     </div>
                     <div class="inline-drawer wide100p flexFlowColumn">
-                        <div id="groupAddMemberListToggle" class="inline-drawer-toggle inline-drawer-header">
-                            Add Members
-                            <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
-                        </div>
-                        <div class="inline-drawer-content">
-                            <div name="Unadded Char List" class="flex-container flexFlowColumn overflowYAuto flex1">
-                                <div id="rm_group_add_members_header">
-                                    <input id="rm_group_filter" class="text_pole" type="search" placeholder="Filter..." maxlength="100" />
-                                    <div id="group_fav_filter" class="menu_button fa-solid fa-ranking-star" title="Show only favorites"></div>
-                                </div>
-                                <div id="rm_group_add_members" class="overflowYAuto flex-container"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="inline-drawer wide100p flexFlowColumn">
                         <div id="groupCurrentMemberListToggle" class="inline-drawer-toggle inline-drawer-header">
                             Current Members
                             <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
@@ -1948,6 +2030,21 @@
                         <div class="inline-drawer-content">
                             <div name="Current Group Members" class="flex-container flexFlowColumn overflowYAuto flex1">
                                 <div id="rm_group_members" class="overflowYAuto flex-container"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="inline-drawer wide100p flexFlowColumn">
+                        <div id="groupAddMemberListToggle" class="inline-drawer-toggle inline-drawer-header">
+                            Add Members
+                            <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+                        </div>
+                        <div class="inline-drawer-content">
+                            <div name="Unadded Char List" class="flex-container flexFlowColumn overflowYAuto flex1">
+                                <div id="rm_group_add_members_header">
+                                    <input id="rm_group_filter" class="text_pole margin0" type="search" placeholder="Filter..." maxlength="100" />
+                                    <div id="group_fav_filter" class="menu_button fa-solid fa-ranking-star margin0" title="Show only favorites"></div>
+                                </div>
+                                <div id="rm_group_add_members" class="overflowYAuto flex-container"></div>
                             </div>
                         </div>
                     </div>
@@ -1967,7 +2064,7 @@
                             <div id="rm_button_create" title="Create New Character" class="menu_button fa-solid fa-user-plus "></div>
                             <div id="character_import_button" title="Import Character from File" class="menu_button fa-solid fa-file-arrow-up "></div>
                             <div id="rm_button_group_chats" title="Create New Chat Group" class="menu_button fa-solid fa-users-gear "></div>
-                            <input id="character_search_bar" class="text_pole" type="search" placeholder="Search..." maxlength="50" />
+                            <input id="character_search_bar" class="text_pole width100p" type="search" placeholder="Search..." maxlength="50" />
                             <select id="character_sort_order" title="Characters sorting order">
                                 <option data-field="name" data-order="asc">A-Z</option>
                                 <option data-field="name" data-order="desc">Z-A</option>
@@ -2022,7 +2119,7 @@
             </div>
 
             <div>
-                <h3 id="character_popup_text_h3"></h3> - Advanced Defininitions
+                <h3 id="character_popup_text_h3"></h3> - Advanced Definitions
             </div>
 
         </div>
@@ -2047,7 +2144,7 @@
 
         <div id="talkativeness_div">
             <h4>Talkativeness</h4>
-            <h5>How often the chracter speaks in &nbsp;<span class="warning">group chats!</span>
+            <h5>How often the character speaks in &nbsp;<span class="warning">group chats!</span>
             </h5>
             <input id="talkativeness_slider" name="talkativeness" type="range" min="0" max="1" step="0.05" value="0.5" form="form_create">
             <div id="talkativeness_hint">
@@ -2067,38 +2164,7 @@
         <div id="character_popup_ok" class="menu_button">Save</div>
 
     </div>
-    <div id="world_popup">
-        <div id="world_popup_text">
-            <div id="world_cross" class="fa-solid fa-circle-xmark"></div>
-            <div id="world_popup_header">
-                <!-- Consider changing logo to something else -->
-                <div class="world_popup_logo_block">
-                    <img src="img/book2.png" id="world_logo">
-                    <h3>
-                        World Info Editor
-                        <a href="/notes#worldinfoentry" class="notes-link" target="_blank"><span class="note-link-span">?</span></a>
-                    </h3>
-                </div>
-                <div id="OpenAllWIEntries" class="menu_button fa-solid fa-expand"></div>
-                <div id="CloseAllWIEntries" class="menu_button fa-solid fa-compress"></div>
-                <div class="world_popup_expander">&nbsp;</div>
-                <form id="form_rename_world" action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                    <input id="world_popup_name" name="world_popup_name" class="text_pole" maxlength="99" size="32" value="" autocomplete="off">
-                    <input id="world_popup_name_button" class="menu_button" type="submit" value="Rename">
-                </form>
-            </div>
-        </div>
 
-        <div id="world_popup_entries_list">
-        </div>
-
-        <div id="world_popup_bottom_holder">
-            <div id="world_popup_new" class="menu_button">New Entry</div>
-            <span class="world_popup_expander">&nbsp;</span>
-            <div id="world_popup_export" class="menu_button">Export</div>
-            <div id="world_popup_delete" class="menu_button">Delete World</div>
-        </div>
-    </div>
     <div id="shadow_select_chat_popup">
         <div id="select_chat_popup">
             <div id="select_chat_import"> <!-- import chat popup header -->
@@ -2177,6 +2243,7 @@
         </div>
     </div>
 
+
     <div id="entry_edit_template" class="template_element">
         <div class="world_entry">
             <form class="world_entry_form">
@@ -2186,14 +2253,14 @@
                             <div class="world_entry_form_control">
                                 <label for="key">
                                     <h4>Keywords</h4>
-                                    <h5>Separate with commas</h5>
+                                    <h5>Split by commas</h5>
                                 </label>
                                 <textarea class="text_pole keyprimarytextpole" name="key" rows="1" placeholder="" maxlength="250"></textarea>
                             </div>
                             <div class="world_entry_form_control keysecondary">
                                 <label for="keysecondary">
-                                    <h4>Secondary Required Keywords</h4>
-                                    <h5>Separate with commas</h5>
+                                    <h4>2nd Keywords</h4>
+                                    <h5>Split by commas</h5>
                                 </label>
                                 <textarea class="text_pole keysecondarytextpole" name="keysecondary" rows="1" placeholder="(secondary keywords here)" maxlength="250"></textarea>
                             </div>
@@ -2327,6 +2394,8 @@
                     <span class="name_text">${characterName}</span>
 
                     <div class="mes_buttons">
+                        <div title="Narrate" class="mes_narrate fa-solid fa-bullhorn"></div>
+                        <div title="Prompt" class="mes_prompt fa-solid fa-square-poll-horizontal "></div>
                         <div title="Copy" class="mes_copy fa-solid fa-copy "></div>
                         <div title="Edit" class="mes_edit fa-solid fa-pencil "></div>
                     </div>
@@ -2415,12 +2484,18 @@
     <div id="typing_indicator_template" class="template_element">
         <div class="typing_indicator"><span class="typing_indicator_name">CHAR</span> is typing</div>
     </div>
+    <div id="movingDivs"></div>
     <div id="sheld">
         <div id="sheldheader" class="fa-solid fa-grip drag-grabber"></div>
         <!-- <div class="pull-tab"></div> -->
         <div id="chat">
         </div>
         <div id="form_sheld">
+            <div id="token_breakdown" style="display:none;">
+                <div>
+                    <!-- Token Breakdown Goes Here -->
+                </div>
+            </div>
             <div id="dialogue_del_mes">
                 <div id="dialogue_del_mes_ok" class="menu_button">Delete</div>
                 <div id="dialogue_del_mes_cancel" class="menu_button">Cancel</div>
@@ -2430,9 +2505,9 @@
                 <textarea id="send_textarea" placeholder="Not connected to API!" name="text"></textarea>
                 <div id="send_but_sheld">
                     <div id="loading_mes">
-                        <div alt="" class="fa-solid fa-hourglass-half"></div>
+                        <div title="Loading" class="fa-solid fa-hourglass-half"></div>
                     </div>
-                    <div id="send_but" class="fa-solid fa-feather-pointed"></div>
+                    <div id="send_but" class="fa-solid fa-feather-pointed" title="Send a message"></div>
                 </div>
             </form>
         </div>
@@ -2448,6 +2523,10 @@
             <a id="option_new_bookmark">
                 <i class="fa-lg fa-solid fa-bookmark"></i>
                 <span>Save bookmark</span>
+            </a>
+            <a id="option_toggle_AN">
+                <i class="fa-lg fa-solid fa-note-sticky"></i>
+                <span>Open Author's Note</span>
             </a>
             <a id="option_convert_to_group">
                 <i class="fa-lg fa-solid fa-people-arrows"></i>
@@ -2486,6 +2565,9 @@
     <div id="avatar_zoom_popup">
         <div id="avatar_zoom_popupheader" class="fa-solid fa-grip drag-grabber"></div>
         <img id="zoomed_avatar" src="">
+    </div>
+    <div id="rawPromptPopup" class="list-group">
+        <div id="rawPromptWrapper" class="tokenItemizingSubclass"></div>
     </div>
 </body>
 

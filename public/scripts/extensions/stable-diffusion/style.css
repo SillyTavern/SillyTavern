@@ -1,4 +1,4 @@
-.sd_settings label {
+.sd_settings label:not(.checkbox_label) {
     display: block;
 }
 
@@ -16,7 +16,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-
 }
 
 #sd_gen:hover {

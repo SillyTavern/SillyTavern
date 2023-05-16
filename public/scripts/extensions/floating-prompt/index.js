@@ -1,5 +1,6 @@
 import { chat_metadata, saveSettingsDebounced } from "../../../script.js";
 import { extension_settings, getContext } from "../../extensions.js";
+import { registerSlashCommand } from "../../slash-commands.js";
 import { debounce } from "../../utils.js";
 export { MODULE_NAME };
 
@@ -17,6 +18,10 @@ const metadata_keys = {
     interval: 'note_interval',
     depth: 'note_depth',
     position: 'note_position',
+}
+
+function setNoteCommand(_, text) {
+    $('#extension_floating_prompt').val(text).trigger('input');
 }
 
 async function onExtensionFloatingPromptInput() {
@@ -100,7 +105,7 @@ async function moduleWorker() {
 
     if (lastMessageNumber <= 0 || chat_metadata[metadata_keys.interval] <= 0) {
         context.setExtensionPrompt(MODULE_NAME, '');
-        $('#extension_floating_counter').text('No');
+        $('#extension_floating_counter').text('(disabled)');
         return;
     }
 
@@ -110,57 +115,67 @@ async function moduleWorker() {
     const shouldAddPrompt = messagesTillInsertion == 0;
     const prompt = shouldAddPrompt ? $('#extension_floating_prompt').val() : '';
     context.setExtensionPrompt(MODULE_NAME, prompt, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth]);
-    $('#extension_floating_counter').text(shouldAddPrompt ? 'This' : messagesTillInsertion);
+    $('#extension_floating_counter').text(shouldAddPrompt ? '0' : messagesTillInsertion);
 }
 
 (function () {
     function addExtensionsSettings() {
         const settingsHtml = `
-        <div class="floating_prompt_settings">
-            <div class="inline-drawer">
-                <div class="inline-drawer-toggle inline-drawer-header">
-                    <b>Author's Note / Character Bias</b>
-                    <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
-            </div>
-            <div class="inline-drawer-content">
-                <small>
-                    Your notes are saved <b>PER CHAT</b>. When you start a new chat, you'll see the default / empty note.<br>
-                    Saving a bookmark will copy your note to a bookmark chat. Making changes to it won't update the note in a parent chat.<br>
-                </small>
-                <label for="extension_floating_prompt">Append the following text:</label>
-                <textarea id="extension_floating_prompt" class="text_pole" rows="8"></textarea>
-                <div class="floating_prompt_radio_group">
-                    <label>
-                        <input type="radio" name="extension_floating_position" value="0" />
-                        After scenario
-                    </label>
-                    <label>
-                        <input type="radio" name="extension_floating_position" value="1" />
-                        In-chat
-                    </label>
-                </div>
-                <label for="extension_floating_interval">Every N messages <b>you</b> send (set to 0 to disable):</label>
-                <input id="extension_floating_interval" class="text_pole" type="number" min="0" max="999" />
-                <label for="extension_floating_interval">Insertion depth (for in-chat positioning):</label>
-                <input id="extension_floating_depth" class="text_pole" type="number" min="0" max="99" />
-                <span>Appending to the prompt in next: <span id="extension_floating_counter">No</span> message(s)</span>
-                </div>
-            </div>
-            <div class="inline-drawer">
-                <div class="inline-drawer-toggle inline-drawer-header">
-                    <b>Default note for new chats</b>
-                    <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+        <div id="floatingPrompt" class="drawer-content flexGap5">
+            <div id="floatingPromptheader" class="fa-solid fa-grip drag-grabber"></div>
+            <div name="floatingPromptHolder">
+                <div class="inline-drawer">
+                    <div id="ANBlockToggle" class="inline-drawer-toggle inline-drawer-header">
+                        <b>Author's Note</b>
+                        <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
                 </div>
                 <div class="inline-drawer-content">
-                    <label for="extension_floating_default">Default Author's Note</label>
-                    <textarea id="extension_floating_default" class="text_pole" rows="8"
-                    placeholder="Example:\n[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
+                    <small>
+                        <b>Unique to this chat</b>.<br>
+                        Bookmarks inherit the Note from their parent, and can be changed individually after that.<br>
+                    </small>
+                    
+                    <textarea id="extension_floating_prompt" class="text_pole" rows="8"></textarea>
+                    
+                    <div class="floating_prompt_radio_group">
+                        <label>
+                            <input type="radio" name="extension_floating_position" value="0" />
+                            After scenario
+                        </label>
+                        <label>
+                            <input type="radio" name="extension_floating_position" value="1" />
+                            In-chat @ Depth <input id="extension_floating_depth" class="text_pole widthUnset" type="number" min="0" max="99" />
+                        </label>
+                    </div>
+                    <!--<label for="extension_floating_interval">In-Chat Insertion Depth</label>-->
+                    
+                    <label for="extension_floating_interval">Insertion Frequency</label>                    
+                    
+                    <input id="extension_floating_interval" class="text_pole widthUnset" type="number" min="0" max="999" /><small> (0 = Disable)</small>
+                    <br>
+
+                    <span>User inputs until next insertion: <span id="extension_floating_counter">(disabled)</span></span>
+
+                    </div>
+                </div>
+                <hr class="sysHR">
+                <div class="inline-drawer">
+                    <div id="defaultANBlockToggle" class="inline-drawer-toggle inline-drawer-header">
+                        <b>Default Author's Note</b>
+                        <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+                    </div>
+                    <div class="inline-drawer-content">
+                    <small>Will be automatically added as the Author's Note for all new chats.</small>
+                        
+                        <textarea id="extension_floating_default" class="text_pole" rows="8"
+                        placeholder="Example:\n[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
+                    </div>
                 </div>
             </div>
         </div>
         `;
 
-        $('#extensions_settings').append(settingsHtml);
+        $('#movingDivs').append(settingsHtml);
         $('#extension_floating_prompt').on('input', onExtensionFloatingPromptInput);
         $('#extension_floating_interval').on('input', onExtensionFloatingIntervalInput);
         $('#extension_floating_depth').on('input', onExtensionFloatingDepthInput);
@@ -170,4 +185,5 @@ async function moduleWorker() {
 
     addExtensionsSettings();
     setInterval(moduleWorkerWrapper, UPDATE_INTERVAL);
+    registerSlashCommand('note', setNoteCommand, [], " – sets an author's note for the currently selected chat", true, true);
 })();

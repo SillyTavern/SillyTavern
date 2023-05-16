@@ -85,6 +85,11 @@ const allowKeysExposure = config.allowKeysExposure;
 const axios = require('axios');
 const tiktoken = require('@dqbd/tiktoken');
 const WebSocket = require('ws');
+const AIHorde = require("./src/horde");
+const ai_horde = new AIHorde({
+    client_agent: getVersion()?.agent || 'SillyTavern:UNKNOWN:Cohee#1207',
+});
+const ipMatching = require('ip-matching');
 
 var Client = require('node-rest-client').Client;
 var client = new Client();
@@ -242,7 +247,7 @@ app.use(function (req, res, next) { //Security
     }
 
     //clientIp = req.connection.remoteAddress.split(':').pop();
-    if (whitelistMode === true && !whitelist.includes(clientIp)) {
+    if (whitelistMode === true && !whitelist.some(x => ipMatching.matches(clientIp, ipMatching.getMatch(x)))) {
         console.log('Forbidden: Connection attempt from ' + clientIp + '. If you are attempting to connect, please add your IP address in whitelist or disable whitelist mode in config.conf in root of SillyTavern folder.\n');
         return res.status(403).send('<b>Forbidden</b>: Connection attempt from <b>' + clientIp + '</b>. If you are attempting to connect, please add your IP address in whitelist or disable whitelist mode in config.conf in root of SillyTavern folder.');
     }
@@ -312,27 +317,8 @@ app.get('/deviceinfo', function (request, response) {
     return response.send(deviceInfo);
 });
 app.get('/version', function (_, response) {
-    let pkgVersion, gitRevision, gitBranch;
-    try {
-        const pkgJson = require('./package.json');
-        pkgVersion = pkgJson.version;
-        if (commandExistsSync('git')) {
-            gitRevision = require('child_process')
-                .execSync('git rev-parse --short HEAD', { cwd: process.cwd() })
-                .toString().trim();
-
-            gitBranch = require('child_process')
-                .execSync('git rev-parse --abbrev-ref HEAD', { cwd: process.cwd() })
-                .toString().trim();
-        }
-    }
-    catch {
-        // suppress exception
-    }
-    finally {
-        const agent = `SillyTavern:${gitRevision || pkgVersion}:Cohee#1207`;
-        response.send({ agent, pkgVersion, gitRevision, gitBranch });
-    }
+    const data = getVersion();
+    response.send(data);
 })
 
 //**************Kobold api
@@ -531,7 +517,7 @@ app.post("/savechat", jsonParser, function (request, response) {
     var dir_name = String(request.body.avatar_url).replace('.png', '');
     let chat_data = request.body.chat;
     let jsonlData = chat_data.map(JSON.stringify).join('\n');
-    fs.writeFile(chatsPath + dir_name + "/" + request.body.file_name + '.jsonl', jsonlData, 'utf8', function (err) {
+    fs.writeFile(`${chatsPath + dir_name}/${sanitize(request.body.file_name)}.jsonl`, jsonlData, 'utf8', function (err) {
         if (err) {
             response.send(err);
             return console.log(err);
@@ -555,11 +541,10 @@ app.post("/getchat", jsonParser, function (request, response) {
 
             if (err === null) { //if there is a dir, then read the requested file from the JSON call
 
-                fs.stat(chatsPath + dir_name + "/" + request.body.file_name + ".jsonl", function (err, stat) {
-
+                fs.stat(`${chatsPath + dir_name}/${sanitize(request.body.file_name)}.jsonl`, function (err, stat) {
                     if (err === null) { //if no error (the file exists), read the file
                         if (stat !== undefined) {
-                            fs.readFile(chatsPath + dir_name + "/" + request.body.file_name + ".jsonl", 'utf8', (err, data) => {
+                            fs.readFile(`${chatsPath + dir_name}/${sanitize(request.body.file_name)}.jsonl`, 'utf8', (err, data) => {
                                 if (err) {
                                     console.error(err);
                                     response.send(err);
@@ -588,9 +573,8 @@ app.post("/getchat", jsonParser, function (request, response) {
             }
         }
     });
-
-
 });
+
 app.post("/getstatus", jsonParser, async function (request, response_getstatus = response) {
     if (!request.body) return response_getstatus.sendStatus(400);
     api_server = request.body.api_server;
@@ -669,6 +653,31 @@ app.post("/setsoftprompt", jsonParser, async function (request, response) {
 
     return response.sendStatus(200);
 });
+
+function getVersion() {
+    let pkgVersion = 'UNKNOWN';
+    let gitRevision = null;
+    let gitBranch = null;
+    try {
+        const pkgJson = require('./package.json');
+        pkgVersion = pkgJson.version;
+        if (!process.pkg && commandExistsSync('git')) {
+            gitRevision = require('child_process')
+                .execSync('git rev-parse --short HEAD', { cwd: process.cwd() })
+                .toString().trim();
+
+            gitBranch = require('child_process')
+                .execSync('git rev-parse --abbrev-ref HEAD', { cwd: process.cwd() })
+                .toString().trim();
+        }
+    }
+    catch {
+        // suppress exception
+    }
+
+    const agent = `SillyTavern:${pkgVersion}:Cohee#1207`;
+    return { agent, pkgVersion, gitRevision, gitBranch };
+}
 
 function tryParse(str) {
     try {
@@ -1284,7 +1293,7 @@ app.post('/getsettings', jsonParser, (request, response) => { //Wintermute's cod
         .filter(x => path.parse(x).ext == '.json')
         .sort();
 
-        instructFiles.forEach(item => {
+    instructFiles.forEach(item => {
         const file = fs.readFileSync(
             path.join(directories.instruct, item),
             'utf-8',
@@ -1645,7 +1654,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                     }
                     catch {
                         console.error('WEBP image conversion failed. Using the default character image.');
-                        uploadPath = defaultAvatarPath; 
+                        uploadPath = defaultAvatarPath;
                     }
                 }
 
@@ -2557,7 +2566,8 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
                 response_generate_openai.send({ error: true });
             } else if (response.status == 429) {
                 console.log('Out of quota');
-                response_generate_openai.send({ error: true, quota_error: true, });
+                const quota_error = response?.data?.type === 'insufficient_quota';
+                response_generate_openai.send({ error: true, quota_error, });
             } else if (response.status == 500 || response.status == 409 || response.status == 504) {
                 if (request.body.stream) {
                     response.data.on('data', chunk => {
@@ -2580,7 +2590,7 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
                 }
             }
             try {
-                const quota_error = error?.response?.status === 429;
+                const quota_error = error?.response?.status === 429 && error?.response?.data?.error?.type === 'insufficient_quota';
                 if (!response_generate_openai.headersSent) {
                     response_generate_openai.send({ error: true, quota_error });
                 }
@@ -2856,7 +2866,7 @@ app.post('/writesecret', jsonParser, (request, response) => {
     const key = request.body.key;
     const value = request.body.value;
 
-    writeSecret(key,value);
+    writeSecret(key, value);
     return response.send('ok');
 });
 
@@ -2881,8 +2891,9 @@ app.post('/readsecretstate', jsonParser, (_, response) => {
     }
 });
 
+const ANONYMOUS_KEY = "0000000000";
+
 app.post('/generate_horde', jsonParser, async (request, response) => {
-    const ANONYMOUS_KEY = "0000000000";
     const api_key_horde = readSecret(SECRET_KEYS.HORDE) || ANONYMOUS_KEY;
     const url = 'https://horde.koboldai.net/api/v2/generate/text/async';
 
@@ -2923,6 +2934,63 @@ app.post('/viewsecrets', jsonParser, async (_, response) => {
         console.error(error);
         return response.sendStatus(500);
     }
+});
+
+app.post('/horde_samplers', jsonParser, async (_, response) => {
+    const samplers = Object.values(ai_horde.ModelGenerationInputStableSamplers);
+    response.send(samplers);
+});
+
+app.post('/horde_models', jsonParser, async (_, response) => {
+    const models = await ai_horde.getModels();
+    response.send(models);
+});
+
+app.post('/horde_generateimage', jsonParser, async (request, response) => {
+    const MAX_ATTEMPTS = 100;
+    const CHECK_INTERVAL = 3000;
+    const api_key_horde = readSecret(SECRET_KEYS.HORDE) || ANONYMOUS_KEY;
+    console.log('Stable Horde request:', request.body);
+    const generation = await ai_horde.postAsyncImageGenerate(
+        {
+            prompt: `${request.body.prompt_prefix} ${request.body.prompt} ### ${request.body.negative_prompt}`,
+            params:
+            {
+                sampler_name: request.body.sampler,
+                cfg_scale: request.body.scale,
+                steps: request.body.steps,
+                width: request.body.width,
+                height: request.body.height,
+                n: 1,
+            },
+            r2: false,
+            nsfw: request.body.nfsw,
+            models: [request.body.model],
+        },
+        { token: api_key_horde });
+
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+        await delay(CHECK_INTERVAL);
+        const check = await ai_horde.getImageGenerationCheck(generation.id);
+        console.log(check);
+    
+        if (check.done) {
+            const result = await ai_horde.getImageGenerationStatus(generation.id);
+            return response.send(result.generations[0].img);
+        }
+
+        /*
+        if (!check.is_possible) {
+            return response.sendStatus(503);
+        }
+        */
+
+        if (check.faulted) {
+            return response.sendStatus(500);
+        }
+    }
+    
+    return response.sendStatus(504);
 });
 
 function writeSecret(key, value) {
