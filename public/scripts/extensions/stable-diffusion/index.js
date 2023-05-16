@@ -37,6 +37,7 @@ const triggerWords = {
     [generationMode.CHARACTER]: ['you'],
     [generationMode.USER]: ['me'],
     [generationMode.SCENARIO]: ['scene'],
+    [generationMode.FREE]: ['raw_last'],
     [generationMode.NOW]: ['last'],
     [generationMode.FACE]: ['face'],
 
@@ -54,7 +55,7 @@ const quietPrompts = {
 
     [generationMode.USER]: "[Pause your roleplay and provide a detailed description of {{user}}'s appearance from the perspective of {{char}} in the form of a comma-delimited list of keywords and phrases. Ignore the rest of the story when crafting this description. Do not roleplay as {{char}}}} when writing this description, and do not attempt to continue the story.]",
     [generationMode.SCENARIO]: "[Pause your roleplay and provide a detailed description for all of the following: a brief recap of recent events in the story, {{char}}'s appearance, and {{char}}'s surroundings. Do not roleplay while writing this description.]",
-    [generationMode.FREE]: "[Pause your roleplay and provide ONLY an echo this string back to me verbatim: {0}. Do not write anything after the string. Do not roleplay at all in your response.]",
+    [generationMode.FREE]: "[Pause your roleplay and provide ONLY the last chat message string back to me verbatim. Do not write anything after the string. Do not roleplay at all in your response. Do not continue the roleplay story.]",
 }
 
 const helpString = [
@@ -65,8 +66,9 @@ const helpString = [
     `<li>${m(j(triggerWords[generationMode.USER]))} – user character full body selfie</li>`,
     `<li>${m(j(triggerWords[generationMode.SCENARIO]))} – visual recap of the whole chat scenario</li>`,
     `<li>${m(j(triggerWords[generationMode.NOW]))} – visual recap of the last chat message</li>`,
+    `<li>${m(j(triggerWords[generationMode.FREE]))} – visual recap of the last chat message with no summary</li>`,
     '</ul>',
-    `Anything else would trigger a "free mode" to make SD generate whatever you prompted.<Br> 
+    `Anything else would trigger a "free mode" to make SD generate whatever you prompted.<Br>
     example: '/sd apple tree' would generate a picture of an apple tree.`,
 ].join('<br>');
 
@@ -251,7 +253,14 @@ function processReply(str) {
     return str;
 }
 
-async function generatePicture(_, trigger) {
+function getRawLastMessage(context) {
+    const lastMessage = context.chat.slice(-1)[0].mes,
+        characterDescription = context.characters[context.characterId].description,
+        situation = context.characters[context.characterId].scenario;
+    return `((${lastMessage})), (${situation}:0.7), (${characterDescription}:0.5)`
+}
+
+async function generatePicture(_, trigger, message, callback) {
     if (!trigger || trigger.trim().length === 0) {
         console.log('Trigger word empty, aborting');
         return;
@@ -264,7 +273,7 @@ async function generatePicture(_, trigger) {
     const context = getContext();
 
     try {
-        const prompt = processReply(await new Promise(
+        const prompt = trigger == 'raw_last' ? message || getRawLastMessage(context) : processReply(await new Promise(
             async function promptPromise(resolve, reject) {
                 try {
                     await context.generate('quiet', { resolve, reject, quiet_prompt, force_name2: true, });
@@ -278,7 +287,6 @@ async function generatePicture(_, trigger) {
         hideSwipeButtons();
 
         console.log('Processed Stable Diffusion prompt:', prompt);
-
         const url = new URL(getApiUrl());
         url.pathname = '/api/image';
         const result = await fetch(url, {
@@ -302,7 +310,7 @@ async function generatePicture(_, trigger) {
         if (result.ok) {
             const data = await result.json();
             const base64Image = `data:image/jpeg;base64,${data.image}`;
-            sendMessage(prompt, base64Image);
+            callback? callback(prompt, base64Image):sendMessage(prompt, base64Image);
         }
     } catch (err) {
         console.trace(err);
@@ -335,6 +343,10 @@ async function sendMessage(prompt, image) {
 }
 
 function addSDGenButtons() {
+    const messageButtonHtml = `
+        <div title="Generate Image" onclick="sdMessageButton(event)" class="sd_message_gen fa-solid fa-paintbrush"></div>
+        `;
+
     const buttonHtml = `
         <div id="sd_gen" class="fa-solid fa-paintbrush" /></div>
         `;
@@ -351,19 +363,24 @@ function addSDGenButtons() {
             <li class="list-group-item" id="sd_me" data-value="me">Me</li>
             <li class="list-group-item" id="sd_world" data-value="world">The Whole Story</li>
             <li class="list-group-item" id="sd_last" data-value="last">The Last Message</li>
+            <li class="list-group-item" id="sd_raw_last" data-value="raw_last">Raw Last Message</li>
         </ul>
     </div>`;
 
+    $('.mes_buttons').prepend(messageButtonHtml);
     $('#send_but_sheld').prepend(buttonHtml);
     $('#send_but_sheld').prepend(waitButtonHtml);
-    $(document.body).append(dropdownHtml)
+    $(document.body).append(dropdownHtml);
+    $(document.body).append(dropdownHtml);
 
+    const messageButton = $('.sd_message_gen');
     const button = $('#sd_gen');
     const waitButton = $("#sd_gen_wait");
     const dropdown = $('#sd_dropdown');
     waitButton.hide();
     dropdown.hide();
     button.hide();
+    messageButton.hide();
 
     let popper = Popper.createPopper(button.get(0), dropdown.get(0), {
         placement: 'top-start',
@@ -396,13 +413,45 @@ async function moduleWorker() {
             $("#sd_gen_wait").show(200);
         } */
 
-    context.onlineStatus === 'no_connection'
-        ? $('#sd_gen').hide(200)
-        : $('#sd_gen').show(200)
+    if (context.onlineStatus === 'no_connection'){
+        $('#sd_gen').hide(200);
+        $('.sd_message_gen').hide(200);
+    }
+    else{
+        $('#sd_gen').show(200);
+        $('.sd_message_gen').show(200);
+    }
 }
 
 addSDGenButtons();
+
 setInterval(moduleWorker, UPDATE_INTERVAL);
+
+function sdMessageButton (e) {
+    const character = $(e.currentTarget).parents('div.mes_block').children('div.ch_name').children('span.name_text').text(),
+    message = $(e.currentTarget).parents('div.mes_block').children('div.mes_text').text();
+
+    console.log("doing /sd raw last");
+    generatePicture('sd', 'raw_last', `${character} said: ${message}`, appendImageToMessage);
+
+    function appendImageToMessage(prompt, image){
+        const sd_image = document.createElement("img"),
+            context = getContext(),
+            message_id = $(e.target).parents('div.mes').attr('mesid');
+        sd_image.src = image;
+        sd_image.title = prompt;
+        sd_image.classList.add("img_extra");
+        $(e.target).parents('div.mes_block').children('div.mes_text').append(sd_image);
+
+        context.chat[message_id].extra.inline_image = true;
+        context.chat[message_id].extra.image = image;
+        context.chat[message_id].extra.title = prompt;
+
+        context.saveChat();
+    }
+};
+
+window.sdMessageButton = sdMessageButton;
 
 $("#sd_dropdown [id]").on("click", function () {
     var id = $(this).attr("id");
@@ -429,6 +478,11 @@ $("#sd_dropdown [id]").on("click", function () {
     else if (id == "sd_last") {
         console.log("doing /sd last");
         generatePicture('sd', 'last');
+    }
+
+    else if (id == "sd_raw_last") {
+        console.log("doing /sd raw last");
+        generatePicture('sd', 'raw_last');
     }
 });
 
