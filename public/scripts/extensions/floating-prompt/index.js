@@ -1,5 +1,6 @@
 import { chat_metadata, saveSettingsDebounced } from "../../../script.js";
 import { extension_settings, getContext } from "../../extensions.js";
+import { registerSlashCommand } from "../../slash-commands.js";
 import { debounce } from "../../utils.js";
 export { MODULE_NAME };
 
@@ -17,6 +18,10 @@ const metadata_keys = {
     interval: 'note_interval',
     depth: 'note_depth',
     position: 'note_position',
+}
+
+function setNoteCommand(_, text) {
+    $('#extension_floating_prompt').val(text).trigger('input');
 }
 
 async function onExtensionFloatingPromptInput() {
@@ -180,4 +185,5 @@ async function moduleWorker() {
 
     addExtensionsSettings();
     setInterval(moduleWorkerWrapper, UPDATE_INTERVAL);
+    registerSlashCommand('note', setNoteCommand, [], " – sets an author's note for the currently selected chat", true, true);
 })();
