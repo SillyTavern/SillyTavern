@@ -409,11 +409,12 @@ async function generateExtrasImage(prompt) {
         }),
     });
 
-
     if (result.ok) {
         const data = await result.json();
         const base64Image = `data:image/jpeg;base64,${data.image}`;
         sendMessage(prompt, base64Image);
+    } else {
+        callPopup('Image generation has failed. Please try again.', 'text');
     }
 }
 
@@ -439,6 +440,8 @@ async function generateHordeImage(prompt) {
         const data = await result.text();
         const base64Image = `data:image/webp;base64,${data}`;
         sendMessage(prompt, base64Image);
+    } else {
+        callPopup('Image generation has failed. Please try again.', 'text');
     }
 }
 
