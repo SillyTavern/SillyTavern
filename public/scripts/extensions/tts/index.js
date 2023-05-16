@@ -23,6 +23,24 @@ let ttsProviders = {
 }
 let ttsProvider
 let ttsProviderName
+let autoGeneration = true;
+
+function resetTtsPlayback() {
+    // Clear currently processing jobs
+    currentTtsJob = null;
+    currentAudioJob = null;
+
+    // Reset audio element
+    audioElement.currentTime = 0;
+    audioElement.src = null;
+
+    // Clearn any queue items
+    ttsJobQueue.splice(0, ttsJobQueue.length);
+    audioJobQueue.splice(0, audioJobQueue.length);
+
+    // Set audio ready to process again
+    audioQueueProcessorReady = true;
+}
 
 async function onNarrateOneMessage() {
     cancelTtsPlay();
@@ -34,11 +52,7 @@ async function onNarrateOneMessage() {
         return;
     }
 
-    currentTtsJob = null;
-    audioElement.pause();
-    audioElement.currentTime = 0;
-    ttsJobQueue.splice(0, ttsJobQueue.length);
-    audioJobQueue.splice(0, audioJobQueue.length);
+    resetTtsPlayback()
     ttsJobQueue.push(message);
     moduleWorker();
 }
@@ -62,7 +76,7 @@ async function moduleWorkerWrapper() {
 }
 
 async function moduleWorker() {
-    // Primarily determinign when to add new chat to the TTS queue
+    // Primarily determining when to add new chat to the TTS queue
     const enabled = $('#tts_enabled').is(':checked')
     $('body').toggleClass('tts', enabled);
     if (!enabled) {
@@ -136,7 +150,7 @@ let audioElement = new Audio()
 let audioJobQueue = []
 let currentAudioJob
 let audioPaused = false
-let queueProcessorReady = true
+let audioQueueProcessorReady = true
 
 let lastAudioPosition = 0
 
@@ -207,7 +221,7 @@ function addAudioControl() {
 }
 
 function completeCurrentAudioJob() {
-    queueProcessorReady = true
+    audioQueueProcessorReady = true
     lastAudioPosition = 0
     // updateUiPlayState();
 }
@@ -227,16 +241,16 @@ async function addAudioJob(response) {
 
 async function processAudioJobQueue() {
     // Nothing to do, audio not completed, or audio paused - stop processing.
-    if (audioJobQueue.length == 0 || !queueProcessorReady || audioPaused) {
+    if (audioJobQueue.length == 0 || !audioQueueProcessorReady || audioPaused) {
         return
     }
     try {
-        queueProcessorReady = false
+        audioQueueProcessorReady = false
         currentAudioJob = audioJobQueue.pop()
         playAudioData(currentAudioJob)
     } catch (error) {
         console.error(error)
-        queueProcessorReady = true
+        audioQueueProcessorReady = true
     }
 }
 
