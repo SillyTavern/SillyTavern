@@ -130,7 +130,7 @@ async function moduleWorker() {
                         Bookmarks inherit the Note from their parent, and can be changed individually after that.<br>
                     </small>
                     
-                    <textarea id="extension_floating_prompt" class="text_pole widthUnset" rows="8"></textarea>
+                    <textarea id="extension_floating_prompt" class="text_pole" rows="8"></textarea>
                     
                     <div class="floating_prompt_radio_group">
                         <label>
@@ -162,7 +162,7 @@ async function moduleWorker() {
                     <div class="inline-drawer-content">
                     <small>Will be automatically added as the Author's Note for all new chats.</small>
                         
-                        <textarea id="extension_floating_default" class="text_pole widthUnset" rows="8"
+                        <textarea id="extension_floating_default" class="text_pole" rows="8"
                         placeholder="Example:\n[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
                     </div>
                 </div>
