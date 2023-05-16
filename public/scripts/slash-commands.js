@@ -97,7 +97,9 @@ function executeSlashCommands(text) {
         return false;
     }
 
-    const lines = text.split('\n');
+    // Hack to allow multi-line slash commands
+    // All slash command messages should begin with a slash
+    const lines = [text];
     const linesToRemove = [];
 
     let interrupt = false;

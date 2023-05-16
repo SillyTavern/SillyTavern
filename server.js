@@ -82,10 +82,11 @@ const allowKeysExposure = config.allowKeysExposure;
 const axios = require('axios');
 const tiktoken = require('@dqbd/tiktoken');
 const WebSocket = require('ws');
-const AIHorde = require("@zeldafan0225/ai_horde");
+const AIHorde = require("./src/horde");
 const ai_horde = new AIHorde({
     client_agent: getVersion()?.agent || 'SillyTavern:UNKNOWN:Cohee#1207',
 });
+const ipMatching = require('ip-matching');
 
 var Client = require('node-rest-client').Client;
 var client = new Client();
@@ -243,7 +244,7 @@ app.use(function (req, res, next) { //Security
     }
 
     //clientIp = req.connection.remoteAddress.split(':').pop();
-    if (whitelistMode === true && !whitelist.includes(clientIp)) {
+    if (whitelistMode === true && !whitelist.some(x => ipMatching.matches(clientIp, ipMatching.getMatch(x)))) {
         console.log('Forbidden: Connection attempt from ' + clientIp + '. If you are attempting to connect, please add your IP address in whitelist or disable whitelist mode in config.conf in root of SillyTavern folder.\n');
         return res.status(403).send('<b>Forbidden</b>: Connection attempt from <b>' + clientIp + '</b>. If you are attempting to connect, please add your IP address in whitelist or disable whitelist mode in config.conf in root of SillyTavern folder.');
     }
@@ -2562,7 +2563,8 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
                 response_generate_openai.send({ error: true });
             } else if (response.status == 429) {
                 console.log('Out of quota');
-                response_generate_openai.send({ error: true, quota_error: true, });
+                const quota_error = response?.data?.type === 'insufficient_quota';
+                response_generate_openai.send({ error: true, quota_error, });
             } else if (response.status == 500 || response.status == 409 || response.status == 504) {
                 if (request.body.stream) {
                     response.data.on('data', chunk => {
@@ -2585,7 +2587,7 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
                 }
             }
             try {
-                const quota_error = error?.response?.status === 429;
+                const quota_error = error?.response?.status === 429 && error?.response?.data?.error?.type === 'insufficient_quota';
                 if (!response_generate_openai.headersSent) {
                     response_generate_openai.send({ error: true, quota_error });
                 }

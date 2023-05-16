@@ -282,5 +282,6 @@ GNU Affero General Public License for more details.**
 * KoboldAI Presets from KAI Lite: <https://lite.koboldai.net/>
 * Noto Sans font by Google (OFL license)
 * Icon theme by Font Awesome <https://fontawesome.com> (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License)
+* AI Horde client library by ZeldaFan0225: https://github.com/ZeldaFan0225/ai_horde
 * Linux startup script by AlpinDale
 * Thanks paniphons for providing a FAQ document
