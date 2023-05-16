@@ -82,7 +82,7 @@ const allowKeysExposure = config.allowKeysExposure;
 const axios = require('axios');
 const tiktoken = require('@dqbd/tiktoken');
 const WebSocket = require('ws');
-const AIHorde = require("@zeldafan0225/ai_horde");
+const AIHorde = require("./src/horde");
 const ai_horde = new AIHorde({
     client_agent: getVersion()?.agent || 'SillyTavern:UNKNOWN:Cohee#1207',
 });
