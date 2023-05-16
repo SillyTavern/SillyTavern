@@ -45,7 +45,7 @@
     "version": "1.5.4",
     "scripts": {
         "start": "node server.js",
-        "pkg": "pkg --compress ."
+        "pkg": "pkg --compress Gzip ."
     },
     "bin": {
         "sillytavern": "./server.js"
