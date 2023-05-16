@@ -868,7 +868,7 @@ async function charaWrite(img_url, data, target_img, response = undefined, mes =
         let rawImg = await jimp.read(img_url);
 
         // Apply crop if defined
-        if (typeof crop == 'object') {
+        if (typeof crop == 'object' && [crop.x, crop.y, crop.width, crop.height].every(x => typeof x === 'number')) {
             rawImg = rawImg.crop(crop.x, crop.y, crop.width, crop.height);
         }
 
