@@ -31,7 +31,7 @@ jobs:
       with:
         files: dist/*
         tag_name: ci-dev
-        name: CI Release (Dev)
+        name: Continuous Release (Dev)
         prerelease: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
