@@ -139,14 +139,14 @@ async function moduleWorker() {
                         </label>
                         <label>
                             <input type="radio" name="extension_floating_position" value="1" />
-                            In-chat @ Depth <input id="extension_floating_depth" class="text_pole" type="number" min="0" max="99" />
+                            In-chat @ Depth <input id="extension_floating_depth" class="text_pole widthUnset" type="number" min="0" max="99" />
                         </label>
                     </div>
                     <!--<label for="extension_floating_interval">In-Chat Insertion Depth</label>-->
                     
                     <label for="extension_floating_interval">Insertion Frequency</label>                    
                     
-                    <input id="extension_floating_interval" class="text_pole" type="number" min="0" max="999" /><small> (0 = Disable)</small>
+                    <input id="extension_floating_interval" class="text_pole widthUnset" type="number" min="0" max="999" /><small> (0 = Disable)</small>
                     <br>
 
                     <span>User inputs until next insertion: <span id="extension_floating_counter">(disabled)</span></span>
