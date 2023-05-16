@@ -948,7 +948,7 @@ function printMessages() {
 function clearChat() {
     count_view_mes = 0;
     extension_prompts = {};
-    $("#chat").html("");
+    $("#chat").children().remove();
 }
 
 function deleteLastMessage() {
