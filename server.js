@@ -86,6 +86,7 @@ const AIHorde = require("./src/horde");
 const ai_horde = new AIHorde({
     client_agent: getVersion()?.agent || 'SillyTavern:UNKNOWN:Cohee#1207',
 });
+const ipMatching = require('ip-matching');
 
 var Client = require('node-rest-client').Client;
 var client = new Client();
@@ -243,7 +244,7 @@ app.use(function (req, res, next) { //Security
     }
 
     //clientIp = req.connection.remoteAddress.split(':').pop();
-    if (whitelistMode === true && !whitelist.includes(clientIp)) {
+    if (whitelistMode === true && !whitelist.some(x => ipMatching.matches(clientIp, ipMatching.getMatch(x)))) {
         console.log('Forbidden: Connection attempt from ' + clientIp + '. If you are attempting to connect, please add your IP address in whitelist or disable whitelist mode in config.conf in root of SillyTavern folder.\n');
         return res.status(403).send('<b>Forbidden</b>: Connection attempt from <b>' + clientIp + '</b>. If you are attempting to connect, please add your IP address in whitelist or disable whitelist mode in config.conf in root of SillyTavern folder.');
     }
