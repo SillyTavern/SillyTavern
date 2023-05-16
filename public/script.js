@@ -428,7 +428,7 @@ function getTokenCount(str, padding = 0) {
             let tokenCount = 0;
             jQuery.ajax({
                 async: false,
-                type: 'POST', // 
+                type: 'POST', //
                 url: `/tokenize_llama`,
                 data: JSON.stringify({ text: str }),
                 dataType: "json",
@@ -572,7 +572,7 @@ $.get("/csrf-token").then(async (data) => {
 });
 
 function checkOnlineStatus() {
-    ///////// REMOVED LINES THAT DUPLICATE RA_CHeckOnlineStatus FEATURES 
+    ///////// REMOVED LINES THAT DUPLICATE RA_CHeckOnlineStatus FEATURES
 
     if (online_status == "no_connection") {
         $("#online_status_indicator2").css("background-color", "red");  //Kobold
@@ -1020,7 +1020,7 @@ function appendImageToMessage(mes, messageElement) {
         image.src = mes.extra?.image;
         image.title = mes.extra?.title || mes.title;
         image.classList.add("img_extra");
-        messageElement.find(".mes_text").prepend(image);
+        mes.extra?.inline_image?messageElement.find(".mes_text").append(image):messageElement.find(".mes_text").prepend(image);
     }
 }
 
@@ -1078,7 +1078,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
                 avatarImg = default_avatar;
             }
         }
-        //old processing: 
+        //old processing:
         //if messge is from sytem, use the name provided in the message JSONL to proceed,
         //if not system message, use name2 (char's name) to proceed
         //characterName = mes.is_system || mes.force_avatar ? mes.name : name2;
@@ -1816,7 +1816,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             if (novel_tier === 1) {
                 this_max_context = 1024;
             } else {
-                this_max_context = 2048 - 60;//fix for fat tokens 
+                this_max_context = 2048 - 60;//fix for fat tokens
                 if (nai_settings.model_novel == 'krake-v2') {
                     this_max_context -= 160;
                 }
@@ -1949,7 +1949,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                             // where it left off by removing the trailing newline at the end
                             // that was added by chat2 generator. This causes problems with
                             // instruct mode that could not have a trailing newline. So we're
-                            // removing a newline ONLY at the end of the string if it exists. 
+                            // removing a newline ONLY at the end of the string if it exists.
                             item = item.replace(/\n?$/, '');
                             //item = item.substr(0, item.length - 1);
                         }
@@ -2127,7 +2127,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         let promptBiasTokens = getTokenCount(promptBias);
                         let mesSendStringTokens = getTokenCount(mesSendString)
                         let ActualChatHistoryTokens = mesSendStringTokens - allAnchorsTokens + power_user.token_padding;
-            
+
                         let totalTokensInPrompt =
                             allAnchorsTokens +      // AN and/or legacy anchors
                             //afterScenarioAnchorTokens +       //only counts if AN is set to 'after scenario'
@@ -2137,21 +2137,21 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                             promptBiasTokens +      //{{}}
                             ActualChatHistoryTokens +   //chat history
                             power_user.token_padding;
-            
+
                         console.log(
                             `
                 Prompt Itemization
                 -------------------
                 Extension Add-ins AN: ${allAnchorsTokens}
-                
+
                 World Info: ${worldInfoStringTokens}
-            
+
                 Character Definitions: ${storyStringTokens}
                 -- Description: ${charDescriptionTokens}
                 -- Example Messages: ${examplesStringTokens}
                 -- Character Personality: ${charPersonalityTokens}
                 -- Character Scenario: ${scenarioTextTokens}
-            
+
                 Chat History: ${ActualChatHistoryTokens}
                 {{}} Bias: ${promptBiasTokens}
                 Padding: ${power_user.token_padding}
@@ -2160,7 +2160,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 vs
                 finalPrompt: ${finalPromptTokens}
                 Max Context: ${this_max_context}
-            
+
                 `
                         ); */
 
@@ -2277,8 +2277,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             }
             else {
                 jQuery.ajax({
-                    type: 'POST', // 
-                    url: generate_url, // 
+                    type: 'POST', //
+                    url: generate_url, //
                     data: JSON.stringify(generate_data),
                     beforeSend: function () {
 
