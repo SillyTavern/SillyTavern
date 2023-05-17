@@ -58,7 +58,6 @@ const quietPrompts = {
     [generationMode.SCENARIO]: "[Pause your roleplay and provide a detailed description for all of the following: a brief recap of recent events in the story, {{char}}'s appearance, and {{char}}'s surroundings. Do not roleplay while writing this description.]",
     [generationMode.NOW]: "[Pause your roleplay and provide a brief description of the last chat message. Focus on visual details, clothing, actions. Ignore the emotions and thoughts of {{char}} and {{user}} as well as any spoken dialog. Do not roleplay as {{char}} while writing this description. Do not continue the roleplay story.]",
     [generationMode.RAW_LAST]: "[Pause your roleplay and provide ONLY the last chat message string back to me verbatim. Do not write anything after the string. Do not roleplay at all in your response. Do not continue the roleplay story.]",
-    [generationMode.FREE]: '[Pause your roleplay and provide only a detailed comma-delimited list of keywords and phrases which describe the following: "{0}". Include "{0}" into the list. Do not roleplay as {{char}} while writing this description. Do not continue the roleplay story.]',
 }
 
 const helpString = [
@@ -329,7 +328,7 @@ function getGenerationType(prompt) {
     for (const [key, values] of Object.entries(triggerWords)) {
         for (const value of values) {
             if (value.toLowerCase() === prompt.toLowerCase().trim()) {
-                return key;
+                return Number(key);
             }
         }
     }
@@ -338,6 +337,10 @@ function getGenerationType(prompt) {
 }
 
 function getQuietPrompt(mode, trigger) {
+    if (mode === generationMode.FREE) {
+        return trigger;
+    }
+
     return substituteParams(stringFormat(quietPrompts[mode], trigger));
 }
 
@@ -362,7 +365,8 @@ function processReply(str) {
     return str;
 }
 
-function getRawLastMessage(context) {
+function getRawLastMessage() {
+    const context = getContext();
     const lastMessage = context.chat.slice(-1)[0].mes,
         characterDescription = context.characters[context.characterId].description,
         situation = context.characters[context.characterId].scenario;
@@ -390,25 +394,16 @@ async function generatePicture(_, trigger, message, callback) {
     const context = getContext();
 
     const prevSDHeight = extension_settings.sd.height;
-    if (trigger === triggerWords[generationMode.FACE][0]) {
+    if (generationType == generationMode.FACE) {
         extension_settings.sd.height = extension_settings.sd.width * 1.5;
     }
 
     try {
-        const prompt = trigger == trigger[generationMode.RAW_LAST][0] ? message || getRawLastMessage(context) : processReply(await new Promise(
-            async function promptPromise(resolve, reject) {
-                try {
-                    await context.generate('quiet', { resolve, reject, quiet_prompt, force_name2: true, });
-                }
-                catch {
-                    reject();
-                }
-            }));
+        const prompt = await getPrompt(generationType, message, trigger, quiet_prompt);
+        console.log('Processed Stable Diffusion prompt:', prompt);
 
         context.deactivateSendButtons();
         hideSwipeButtons();
-
-        console.log('Processed Stable Diffusion prompt:', prompt);
 
         await sendGenerationRequest(prompt, callback);
     } catch (err) {
@@ -420,6 +415,36 @@ async function generatePicture(_, trigger, message, callback) {
         context.activateSendButtons();
         showSwipeButtons();
     }
+}
+
+async function getPrompt(generationType, message, trigger, quiet_prompt) {
+    let prompt;
+
+    switch (generationType) {
+        case generationMode.RAW_LAST:
+            prompt = message || getRawLastMessage();
+            break;
+        case generationMode.FREE:
+            prompt = processReply(trigger);
+            break;
+        default:
+            prompt = await generatePrompt(quiet_prompt);
+            break;
+    }
+
+    return prompt;
+}
+
+async function generatePrompt(quiet_prompt) {
+    return processReply(await new Promise(
+        async function promptPromise(resolve, reject) {
+            try {
+                await getContext().generate('quiet', { resolve, reject, quiet_prompt, force_name2: true, });
+            }
+            catch {
+                reject();
+            }
+        }));
 }
 
 async function sendGenerationRequest(prompt, callback) {
