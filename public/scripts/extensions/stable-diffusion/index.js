@@ -296,8 +296,10 @@ async function loadHordeModels() {
         headers: getRequestHeaders(),
     });
 
+
     if (result.ok) {
         const data = await result.json();
+        data.sort((a, b) => b.count - a.count);
         const models = data.map(x => ({ value: x.name, text: `${x.name} (ETA: ${x.eta}s, Queue: ${x.queued}, Workers: ${x.count})` }));
         return models;
     }
