@@ -17,6 +17,7 @@ import {
     this_chid,
     callPopup,
     getRequestHeaders,
+    system_message_types,
 } from "../script.js";
 import { groups, selected_group } from "./group-chats.js";
 
@@ -157,7 +158,7 @@ function setOpenAIOnlineStatus(value) {
     is_get_status_openai = value;
 }
 
-function setOpenAIMessages(chat, quietPrompt) {
+function setOpenAIMessages(chat) {
     let j = 0;
     // clean openai msgs
     openai_msgs = [];
@@ -165,15 +166,20 @@ function setOpenAIMessages(chat, quietPrompt) {
         let role = chat[j]['is_user'] ? 'user' : 'assistant';
         let content = chat[j]['mes'];
 
+        // 100% legal way to send a message as system
+        if (chat[j].extra?.type === system_message_types.NARRATOR) {
+            role = 'system';
+        }
+
         // for groups - prepend a character's name
         if (selected_group) {
             content = `${chat[j].name}: ${content}`;
         }
 
         // replace bias markup
-        //content = (content ?? '').replace(/{.*}/g, '');
         content = (content ?? '').replace(/{{(\*?.*\*?)}}/g, '');
 
+        // remove caret return (waste of tokens)
         content = content.replace(/\r/gm, '');
 
         // Apply the "wrap in quotes" option
@@ -182,16 +188,13 @@ function setOpenAIMessages(chat, quietPrompt) {
         j++;
     }
 
+    // Add chat injections, 100 = maximum depth of injection. (Why would you ever need more?)
     for (let i = 0; i < 100; i++) {
         const anchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, i);
 
         if (anchor && anchor.length) {
             openai_msgs.splice(i, 0, { "role": 'system', 'content': anchor.trim() })
         }
-    }
-
-    if (quietPrompt) {
-        openai_msgs.splice(0, 0, { role: 'system', content: quietPrompt });
     }
 }
 
@@ -277,7 +280,7 @@ function formatWorldInfo(value) {
     return `[Details of the fictional world the RP is set in:\n${value}]\n`;
 }
 
-async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAfter, extensionPrompt, bias, type) {
+async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAfter, extensionPrompt, bias, type, quietPrompt) {
     const isImpersonate = type == "impersonate";
     let this_max_context = oai_settings.openai_max_context;
     let nsfw_toggle_prompt = "";
@@ -355,6 +358,12 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
         await delay(1);
     }
 
+    if (quietPrompt) {
+        const quietPromptMessage = { role: 'system', content: quietPrompt };
+        total_count += handler_instance.count([quietPromptMessage], true, 'quiet');
+        openai_msgs.push(quietPromptMessage);
+    }
+
     if (isImpersonate) {
         const impersonateMessage = { "role": "system", "content": substituteParams(oai_settings.impersonation_prompt) };
         openai_msgs.push(impersonateMessage);
@@ -372,8 +381,6 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
             // get the current example block with multiple user/bot messages
             let example_block = element;
             // add the first message from the user to tell the model that it's a new dialogue
-            // TODO: instead of role user content use role system name example_user
-            // message from the user so the model doesn't confuse the context (maybe, I just think that this should be done)
             if (example_block.length != 0) {
                 examples_tosend.push(new_chat_msg);
             }

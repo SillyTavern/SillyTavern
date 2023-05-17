@@ -1788,7 +1788,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
         if (main_api === 'openai') {
             message_already_generated = ''; // OpenAI doesn't have multigen
-            setOpenAIMessages(coreChat, quiet_prompt);
+            setOpenAIMessages(coreChat);
             setOpenAIMessageExamples(mesExamplesArray);
         }
 
@@ -1827,27 +1827,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 break;
             }
 
-            let charName = selected_group ? coreChat[j].name : name2;
-            let this_mes_ch_name = '';
-            if (coreChat[j]['is_user']) {
-                this_mes_ch_name = coreChat[j]['name'];
-            } else {
-                this_mes_ch_name = charName;
-            }
-            if (coreChat[j]['is_name'] || selected_group) {
-                chat2[i] = this_mes_ch_name + ': ' + coreChat[j]['mes'] + '\n';
-            } else {
-                chat2[i] = coreChat[j]['mes'] + '\n';
-            }
-
-            if (isInstruct) {
-                chat2[i] = formatInstructModeChat(this_mes_ch_name, coreChat[j]['mes'], coreChat[j]['is_user']);
-            }
-
-            // replace bias markup
-            chat2[i] = (chat2[i] ?? '').replace(/{{(\*?.*\*?)}}/g, '');
+            chat2[i] = formatMessageHistoryItem(coreChat[j], isInstruct);
         }
-        //chat2 = chat2.reverse();
 
         // Determine token limit
         let this_max_context = getMaxContextSize();
@@ -1866,8 +1847,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 this_max_context = (adjustedParams.maxContextLength - adjustedParams.maxLength);
             }
         }
-
-        console.log();
 
         // Extension added strings
         const allAnchors = getAllExtensionPrompts();
@@ -2025,7 +2004,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     // Add quiet generation prompt at depth 0
                     if (isBottom && quiet_prompt && quiet_prompt.length) {
                         const name = is_pygmalion ? 'You' : name1;
-                        const quietAppend = isInstruct ? formatInstructModeChat(name, quiet_prompt, true) : `\n${name}: ${quiet_prompt}`;
+                        const quietAppend = isInstruct ? formatInstructModeChat(name, quiet_prompt, false, true) : `\n${name}: ${quiet_prompt}`;
                         mesSendString += quietAppend;
                     }
 
@@ -2151,7 +2130,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 generate_data = getNovelGenerationData(finalPromt, this_settings);
             }
             else if (main_api == 'openai') {
-                let [prompt, counts] = await prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAfter, afterScenarioAnchor, promptBias, type);
+                let [prompt, counts] = await prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAfter, afterScenarioAnchor, promptBias, type, quiet_prompt);
                 generate_data = { prompt: prompt };
 
                 // counts will return false if the user has not enabled the token breakdown feature
@@ -2378,6 +2357,24 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     }
     //console.log('generate ending');
 } //generate ends
+
+function formatMessageHistoryItem(chatItem, isInstruct) {
+    const isNarratorType = chatItem?.extra?.type === system_message_types.NARRATOR;
+    const characterName = selected_group ? chatItem.name : name2;
+    const itemName = chatItem.is_user ? chatItem['name'] : characterName;
+    const shouldPrependName = (chatItem.is_name || selected_group) && !isNarratorType;
+
+    let textResult = shouldPrependName ? `${itemName}: ${chatItem.mes}\n` : `${chatItem.mes}\n`;
+
+    if (isInstruct) {
+        textResult = formatInstructModeChat(itemName, chatItem.mes, chatItem.is_user, isNarratorType);
+    }
+
+    // replace bias markup
+    textResult = (textResult ?? '').replace(/{{(\*?.*\*?)}}/g, '');
+
+    return textResult;
+}
 
 function sendMessageAsUser(textareaText, messageBias) {
     chat[chat.length] = {};
