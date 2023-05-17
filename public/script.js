@@ -5412,8 +5412,11 @@ $(document).ready(function () {
 
     $("#delete_button").click(function () {
         popup_type = "del_ch";
-        callPopup(
-            "<h3>Delete the character?</h3>Your chat will be closed."
+        callPopup(`
+            <h3>Delete the character?</h3>
+            <b>THIS IS PERMANENT!<br><br>
+            THIS WILL ALSO DELETE ALL<br>
+            OF THE CHARACTER'S CHAT FILES.<br><br></b>`
         );
     });
 
