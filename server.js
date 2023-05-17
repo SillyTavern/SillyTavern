@@ -869,18 +869,11 @@ app.post("/deletecharacter", urlencodedParser, function (request, response) {
 async function charaWrite(img_url, data, target_img, response = undefined, mes = 'ok', crop = undefined) {
     try {
         // Read the image, resize, and save it as a PNG into the buffer
-        let rawImg = await jimp.read(img_url);
-
-        // Apply crop if defined
-        if (typeof crop == 'object' && [crop.x, crop.y, crop.width, crop.height].every(x => typeof x === 'number')) {
-            rawImg = rawImg.crop(crop.x, crop.y, crop.width, crop.height);
-        }
-
-        const image = await rawImg.cover(AVATAR_WIDTH, AVATAR_HEIGHT).getBufferAsync(jimp.MIME_PNG);
+        const image = await tryReadImage(img_url, crop);
 
         // Get the chunks
         const chunks = extract(image);
-        const tEXtChunks = chunks.filter(chunk => chunk.create_date === 'tEXt');
+        const tEXtChunks = chunks.filter(chunk => chunk.create_date === 'tEXt' || chunk.name === 'tEXt');
 
         // Remove all existing tEXt chunks
         for (let tEXtChunk of tEXtChunks) {
@@ -894,12 +887,28 @@ async function charaWrite(img_url, data, target_img, response = undefined, mes =
         fs.writeFileSync(charactersPath + target_img + '.png', new Buffer.from(encode(chunks)));
         if (response !== undefined) response.send(mes);
         return true;
-
-
     } catch (err) {
         console.log(err);
         if (response !== undefined) response.status(500).send(err);
         return false;
+    }
+}
+
+async function tryReadImage(img_url, crop) {
+    try {
+        let rawImg = await jimp.read(img_url);
+    
+        // Apply crop if defined
+        if (typeof crop == 'object' && [crop.x, crop.y, crop.width, crop.height].every(x => typeof x === 'number')) {
+            rawImg = rawImg.crop(crop.x, crop.y, crop.width, crop.height);
+        }
+    
+        const image = await rawImg.cover(AVATAR_WIDTH, AVATAR_HEIGHT).getBufferAsync(jimp.MIME_PNG);
+        return image;
+    }
+    // If it's an unsupported type of image (APNG) - just read the file as buffer
+    catch {
+        return fs.readFileSync(img_url);
     }
 }
 
@@ -2342,11 +2351,20 @@ async function generateThumbnail(type, file) {
     const mySize = imageSizes[type];
 
     try {
-        const image = await jimp.read(pathToOriginalFile);
-        const buffer = await image.cover(mySize[0], mySize[1]).quality(95).getBufferAsync(mime.lookup('jpg'));
+        let buffer;
+
+        try {
+            const image = await jimp.read(pathToOriginalFile);
+            buffer = await image.cover(mySize[0], mySize[1]).quality(95).getBufferAsync(mime.lookup('jpg'));
+        }
+        catch (inner) {
+            console.warn(`Thumbnailer can not process the image: ${pathToOriginalFile}. Using original size`);
+            buffer = fs.readFileSync(pathToOriginalFile);
+        }
+
         fs.writeFileSync(pathToCachedFile, buffer);
     }
-    catch (err) {
+    catch (outer) {
         return null;
     }
 
