@@ -317,7 +317,11 @@ async function loadExtensionSettings(settings) {
 }
 
 $(document).ready(async function () {
-    setTimeout(function () { addExtensionsButtonAndMenu(); }, 100)
+    setTimeout(function () {
+        addExtensionsButtonAndMenu();
+        $("#extensionsMenuButton").css("display", "flex");
+    }, 100)
+
     $("#extensions_connect").on('click', connectClickHandler);
     $("#extensions_autoconnect").on('input', autoConnectInputHandler);
     $("#extensions_details").on('click', showExtensionsDetails);

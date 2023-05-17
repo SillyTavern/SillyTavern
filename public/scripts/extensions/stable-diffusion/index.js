@@ -617,8 +617,8 @@ async function moduleWorker() {
     }
 }
 
-addSDGenButtons();
 
+addSDGenButtons();
 setInterval(moduleWorker, UPDATE_INTERVAL);
 
 async function sdMessageButton(e) {
