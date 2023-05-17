@@ -617,7 +617,6 @@ async function moduleWorker() {
     }
 }
 
-
 addSDGenButtons();
 setInterval(moduleWorker, UPDATE_INTERVAL);
 
