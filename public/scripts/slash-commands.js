@@ -1,7 +1,11 @@
 import {
+    addOneMessage,
+    chat,
     sendSystemMessage,
+    system_avatar,
     system_message_types
 } from "../script.js";
+import { humanizedDateTime } from "./RossAscends-mods.js";
 export {
     executeSlashCommands,
     registerSlashCommand,
@@ -75,6 +79,28 @@ const getSlashCommandsHelp = parser.getHelpString.bind(parser);
 
 parser.addCommand('help', helpCommandCallback, ['?'], ' – displays this help message', true, true);
 parser.addCommand('bg', setBackgroundCallback, ['background'], '<span class="monospace">(filename)</span> – sets a background according to filename, partial names allowed, will set the first one alphebetically if multiple files begin with the provided argument string', false, true);
+parser.addCommand('sys', sendNarratorMessage, [], ' - sends message as a narrator character', false, true);
+
+function sendNarratorMessage(_, text) {
+    if (!text) {
+        return;
+    }
+
+    const message = {
+        extra: {},
+        name: 'Narrator',
+        is_user: false,
+        is_name: false,
+        is_system: false,
+        send_date: humanizedDateTime(),
+        mes: text.trim(),
+        force_avatar: system_avatar,
+        type
+    };
+    
+    chat.push(message);
+    addOneMessage(message);
+}
 
 function helpCommandCallback() {
     sendSystemMessage(system_message_types.HELP);

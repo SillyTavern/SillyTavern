@@ -236,7 +236,7 @@ let characters = [];
 let this_chid;
 let backgrounds = [];
 const default_avatar = "img/ai4.png";
-const system_avatar = "img/five.png";
+export const system_avatar = "img/five.png";
 export let CLIENT_VERSION = 'SillyTavern:UNKNOWN:Cohee#1207'; // For Horde header
 let is_colab = false;
 let is_checked_colab = false;
