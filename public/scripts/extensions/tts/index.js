@@ -34,11 +34,7 @@ async function onNarrateOneMessage() {
         return;
     }
 
-    currentTtsJob = null;
-    audioElement.pause();
-    audioElement.currentTime = 0;
-    ttsJobQueue.splice(0, ttsJobQueue.length);
-    audioJobQueue.splice(0, audioJobQueue.length);
+    resetTtsPlayback()
     ttsJobQueue.push(message);
     moduleWorker();
 }
@@ -62,7 +58,7 @@ async function moduleWorkerWrapper() {
 }
 
 async function moduleWorker() {
-    // Primarily determinign when to add new chat to the TTS queue
+    // Primarily determining when to add new chat to the TTS queue
     const enabled = $('#tts_enabled').is(':checked')
     $('body').toggleClass('tts', enabled);
     if (!enabled) {
@@ -75,6 +71,12 @@ async function moduleWorker() {
     processTtsQueue()
     processAudioJobQueue()
     updateUiAudioPlayState()
+    
+
+    // Auto generation is disabled
+    if (extension_settings.tts.auto_generation == false){
+        return
+    }
 
     // no characters or group selected
     if (!context.groupId && context.characterId === undefined) {
@@ -127,6 +129,38 @@ async function moduleWorker() {
     ttsJobQueue.push(message)
 }
 
+
+function resetTtsPlayback() {
+    // Clear currently processing jobs
+    currentTtsJob = null;
+    currentAudioJob = null;
+
+    // Reset audio element
+    audioElement.currentTime = 0;
+    audioElement.src = null;
+
+    // Clear any queue items
+    ttsJobQueue.splice(0, ttsJobQueue.length);
+    audioJobQueue.splice(0, audioJobQueue.length);
+
+    // Set audio ready to process again
+    audioQueueProcessorReady = true;
+}
+
+function isTtsProcessing() {
+    let processing = false
+
+    // Check job queues 
+    if (ttsJobQueue.length > 0 || audioJobQueue > 0){
+        processing = true
+    }
+    // Check current jobs
+    if (currentTtsJob != null || currentAudioJob != null) {
+        processing = true
+    }
+    return processing
+}
+
 //##################//
 //   Audio Control  //
 //##################//
@@ -136,11 +170,15 @@ let audioElement = new Audio()
 let audioJobQueue = []
 let currentAudioJob
 let audioPaused = false
-let queueProcessorReady = true
+let audioQueueProcessorReady = true
 
 let lastAudioPosition = 0
 
 async function playAudioData(audioBlob) {
+    // Since current audio job can be cancelled, don't playback if it is null
+    if (currentAudioJob == null){
+        console.log("Cancelled TTS playback because currentAudioJob was null")
+    }
     const reader = new FileReader()
     reader.onload = function (e) {
         const srcUrl = e.target.result
@@ -185,9 +223,13 @@ async function onTtsVoicesClick() {
 function updateUiAudioPlayState() {
     if (extension_settings.tts.enabled == true) {
         audioControl.style.display = 'flex'
-        const img = !audioElement.paused
-            ? 'fa-solid fa-circle-pause'
-            : 'fa-solid fa-circle-play'
+        let img
+        // Give user feedback that TTS is active by setting the stop icon if processing or playing
+        if (!audioElement.paused || isTtsProcessing()){
+            img = 'fa-solid fa-stop-circle'
+        } else {
+            img = 'fa-solid fa-circle-play'
+        }
         audioControl.className = img
     } else {
         audioControl.style.display = 'none'
@@ -195,7 +237,14 @@ function updateUiAudioPlayState() {
 }
 
 function onAudioControlClicked() {
-    audioElement.paused ? audioElement.play() : audioElement.pause()
+    let context = getContext()
+    // Not pausing, doing a full stop to anything TTS is doing. Better UX as pause is not as useful
+    if (!audioElement.paused || isTtsProcessing()){
+        resetTtsPlayback()
+    } else {
+        // Default play behavior if not processing or playing is to play the last message.
+        ttsJobQueue.push(context.chat[context.chat.length - 1])
+    }
     updateUiAudioPlayState()
 }
 
@@ -207,7 +256,8 @@ function addAudioControl() {
 }
 
 function completeCurrentAudioJob() {
-    queueProcessorReady = true
+    audioQueueProcessorReady = true
+    currentAudioJob = null
     lastAudioPosition = 0
     // updateUiPlayState();
 }
@@ -227,16 +277,16 @@ async function addAudioJob(response) {
 
 async function processAudioJobQueue() {
     // Nothing to do, audio not completed, or audio paused - stop processing.
-    if (audioJobQueue.length == 0 || !queueProcessorReady || audioPaused) {
+    if (audioJobQueue.length == 0 || !audioQueueProcessorReady || audioPaused) {
         return
     }
     try {
-        queueProcessorReady = false
+        audioQueueProcessorReady = false
         currentAudioJob = audioJobQueue.pop()
         playAudioData(currentAudioJob)
     } catch (error) {
         console.error(error)
-        queueProcessorReady = true
+        audioQueueProcessorReady = true
     }
 }
 
@@ -245,7 +295,7 @@ async function processAudioJobQueue() {
 //################//
 
 let ttsJobQueue = []
-let currentTtsJob
+let currentTtsJob // Null if nothing is currently being processed
 let currentMessageNumber = 0
 
 function completeTtsJob() {
@@ -334,14 +384,15 @@ function loadSettings() {
     )
     $('#tts_narrate_dialogues').prop('checked', extension_settings.tts.narrate_dialogues_only)
     $('#tts_narrate_quoted').prop('checked', extension_settings.tts.narrate_quoted_only)
+    $('#tts_auto_generation').prop('checked', extension_settings.tts.auto_generation)
     $('body').toggleClass('tts', extension_settings.tts.enabled);
 }
 
 const defaultSettings = {
     voiceMap: '',
     ttsEnabled: false,
-    currentProvider: "ElevenLabs"
-
+    currentProvider: "ElevenLabs",
+    auto_generation: true
 }
 
 function setTtsStatus(status, success) {
@@ -418,6 +469,11 @@ function onEnableClick() {
         ':checked'
     )
     updateUiAudioPlayState()
+    saveSettingsDebounced()
+}
+
+function onAutoGenerationClick() {
+    extension_settings.tts.auto_generation = $('#tts_auto_generation').prop('checked');
     saveSettingsDebounced()
 }
 
@@ -509,6 +565,10 @@ $(document).ready(function () {
                             <input type="checkbox" id="tts_enabled" name="tts_enabled">
                             Enabled
                         </label>
+                        <label class="checkbox_label" for="tts_auto_generation">
+                            <input type="checkbox" id="tts_auto_generation">
+                            Auto Generation
+                        </label>
                         <label class="checkbox_label" for="tts_narrate_dialogues">
                             <input type="checkbox" id="tts_narrate_dialogues">
                             Narrate dialogues only
@@ -540,6 +600,7 @@ $(document).ready(function () {
         $('#tts_enabled').on('click', onEnableClick)
         $('#tts_narrate_dialogues').on('click', onNarrateDialoguesClick);
         $('#tts_narrate_quoted').on('click', onNarrateQuotedClick);
+        $('#tts_auto_generation').on('click', onAutoGenerationClick);
         $('#tts_voices').on('click', onTtsVoicesClick)
         $('#tts_provider_settings').on('input', onTtsProviderSettingsInput)
         for (const provider in ttsProviders) {
