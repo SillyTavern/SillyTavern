@@ -2975,6 +2975,8 @@ app.post('/horde_generateimage', jsonParser, async (request, response) => {
             params:
             {
                 sampler_name: request.body.sampler,
+                hires_fix: request.body.enable_hr,
+                use_gfpgan: request.body.restore_faces,
                 cfg_scale: request.body.scale,
                 steps: request.body.steps,
                 width: request.body.width,

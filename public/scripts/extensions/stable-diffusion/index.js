@@ -33,19 +33,19 @@ const generationMode = {
     CHARACTER: 0,
     USER: 1,
     SCENARIO: 2,
-    FREE: 3,
+    RAW_LAST: 3,
     NOW: 4,
     FACE: 5,
+    FREE: 6,
 }
 
 const triggerWords = {
     [generationMode.CHARACTER]: ['you'],
     [generationMode.USER]: ['me'],
     [generationMode.SCENARIO]: ['scene'],
-    [generationMode.FREE]: ['raw_last'],
+    [generationMode.RAW_LAST]: ['raw_last'],
     [generationMode.NOW]: ['last'],
     [generationMode.FACE]: ['face'],
-
 }
 
 const quietPrompts = {
@@ -57,7 +57,8 @@ const quietPrompts = {
     [generationMode.USER]: "[Pause your roleplay and provide a detailed description of {{user}}'s appearance from the perspective of {{char}} in the form of a comma-delimited list of keywords and phrases. Ignore the rest of the story when crafting this description. Do not roleplay as {{char}}}} when writing this description, and do not attempt to continue the story.]",
     [generationMode.SCENARIO]: "[Pause your roleplay and provide a detailed description for all of the following: a brief recap of recent events in the story, {{char}}'s appearance, and {{char}}'s surroundings. Do not roleplay while writing this description.]",
     [generationMode.NOW]: "[Pause your roleplay and provide a brief description of the last chat message. Focus on visual details, clothing, actions. Ignore the emotions and thoughts of {{char}} and {{user}} as well as any spoken dialog. Do not roleplay as {{char}} while writing this description. Do not continue the roleplay story.]",
-    [generationMode.FREE]: "[Pause your roleplay and provide ONLY the last chat message string back to me verbatim. Do not write anything after the string. Do not roleplay at all in your response. Do not continue the roleplay story.]",
+    [generationMode.RAW_LAST]: "[Pause your roleplay and provide ONLY the last chat message string back to me verbatim. Do not write anything after the string. Do not roleplay at all in your response. Do not continue the roleplay story.]",
+    [generationMode.FREE]: '[Pause your roleplay and provide only a detailed comma-delimited list of keywords and phrases which describe the following: "{0}". Include "{0}" into the list. Do not roleplay as {{char}} while writing this description. Do not continue the roleplay story.]',
 }
 
 const helpString = [
@@ -68,7 +69,7 @@ const helpString = [
     `<li>${m(j(triggerWords[generationMode.USER]))} – user character full body selfie</li>`,
     `<li>${m(j(triggerWords[generationMode.SCENARIO]))} – visual recap of the whole chat scenario</li>`,
     `<li>${m(j(triggerWords[generationMode.NOW]))} – visual recap of the last chat message</li>`,
-    `<li>${m(j(triggerWords[generationMode.FREE]))} – visual recap of the last chat message with no summary</li>`,
+    `<li>${m(j(triggerWords[generationMode.RAW_LAST]))} – visual recap of the last chat message with no summary</li>`,
     '</ul>',
     `Anything else would trigger a "free mode" to make SD generate whatever you prompted.<Br>
     example: '/sd apple tree' would generate a picture of an apple tree.`,
@@ -94,11 +95,16 @@ const defaultSettings = {
     width: 512,
     height: 512,
 
-    prompt_prefix: 'best quality, absurdres, masterpiece, detailed, intricate, colorful,',
+    prompt_prefix: 'best quality, absurdres, masterpiece, detailed, intricate,',
     negative_prompt: 'lowres, bad anatomy, bad hands, text, error, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry',
     sampler: 'DDIM',
     model: '',
 
+    // Automatic1111/Horde exclusives
+    restore_faces: false,
+    enable_hr: false,
+
+    // Horde settings
     horde: false,
     horde_nsfw: false,
 }
@@ -116,6 +122,8 @@ async function loadSettings() {
     $('#sd_height').val(extension_settings.sd.height).trigger('input');
     $('#sd_horde').prop('checked', extension_settings.sd.horde);
     $('#sd_horde_nsfw').prop('checked', extension_settings.sd.horde_nsfw);
+    $('#sd_restore_faces').prop('checked', extension_settings.sd.restore_faces);
+    $('#sd_enable_hr').prop('checked', extension_settings.sd.enable_hr);
 
     await Promise.all([loadSamplers(), loadModels()]);
 }
@@ -174,11 +182,21 @@ async function onHordeNsfwInput() {
     saveSettingsDebounced();
 }
 
+function onRestoreFacesInput() {
+    extension_settings.sd.restore_faces = !!$(this).prop('checked');
+    saveSettingsDebounced();
+}
+
+function onHighResFixInput() {
+    extension_settings.sd.enable_hr = !!$(this).prop('checked');
+    saveSettingsDebounced();
+}
+
 async function onModelChange() {
     extension_settings.sd.model = $('#sd_model').find(':selected').val();
     saveSettingsDebounced();
 
-    if (extension_settings.sd.horde == false) {
+    if (!extension_settings.sd.horde) {
         await updateExtrasRemoteModel();
     }
 }
@@ -324,6 +342,10 @@ function getQuietPrompt(mode, trigger) {
 }
 
 function processReply(str) {
+    if (!str) {
+        return '';
+    }
+
     str = str.replaceAll('"', '')
     str = str.replaceAll('“', '')
     str = str.replaceAll('\n', ', ')
@@ -344,7 +366,7 @@ function getRawLastMessage(context) {
     const lastMessage = context.chat.slice(-1)[0].mes,
         characterDescription = context.characters[context.characterId].description,
         situation = context.characters[context.characterId].scenario;
-    return `((${lastMessage})), (${situation}:0.7), (${characterDescription}:0.5)`
+    return `((${processReply(lastMessage)})), (${processReply(situation)}:0.7), (${processReply(characterDescription)}:0.5)`
 }
 
 async function generatePicture(_, trigger, message, callback) {
@@ -362,18 +384,18 @@ async function generatePicture(_, trigger, message, callback) {
     extension_settings.sd.model = $('#sd_model').find(':selected').val();
 
     trigger = trigger.trim();
-    const generationMode = getGenerationType(trigger);
-    console.log('Generation mode', generationMode, 'triggered with', trigger);
-    const quiet_prompt = getQuietPrompt(generationMode, trigger);
+    const generationType = getGenerationType(trigger);
+    console.log('Generation mode', generationType, 'triggered with', trigger);
+    const quiet_prompt = getQuietPrompt(generationType, trigger);
     const context = getContext();
 
-    if (trigger === 'face') {
-        var prevSDHeight = extension_settings.sd.height;
+    const prevSDHeight = extension_settings.sd.height;
+    if (trigger === triggerWords[generationMode.FACE][0]) {
         extension_settings.sd.height = extension_settings.sd.width * 1.5;
     }
 
     try {
-        const prompt = trigger == 'raw_last' ? message || getRawLastMessage(context) : processReply(await new Promise(
+        const prompt = trigger == trigger[generationMode.RAW_LAST][0] ? message || getRawLastMessage(context) : processReply(await new Promise(
             async function promptPromise(resolve, reject) {
                 try {
                     await context.generate('quiet', { resolve, reject, quiet_prompt, force_name2: true, });
@@ -424,8 +446,8 @@ async function generateExtrasImage(prompt, callback) {
             height: extension_settings.sd.height,
             prompt_prefix: extension_settings.sd.prompt_prefix,
             negative_prompt: extension_settings.sd.negative_prompt,
-            restore_faces: true,
-            face_restoration_model: 'GFPGAN',
+            restore_faces: !!extension_settings.sd.restore_faces,
+            enable_hr: !!extension_settings.sd.enable_hr,
         }),
     });
 
@@ -453,6 +475,8 @@ async function generateHordeImage(prompt, callback) {
             negative_prompt: extension_settings.sd.negative_prompt,
             model: extension_settings.sd.model,
             nsfw: extension_settings.sd.horde_nsfw,
+            restore_faces: !!extension_settings.sd.restore_faces,
+            enable_hr: !!extension_settings.sd.enable_hr,
         }),
     });
 
@@ -658,6 +682,17 @@ jQuery(async () => {
             <input id="sd_width" type="range" max="${defaultSettings.dimension_max}" min="${defaultSettings.dimension_min}" step="${defaultSettings.dimension_step}" value="${defaultSettings.width}" />
             <label for="sd_height">Height (<span id="sd_height_value"></span>)</label>
             <input id="sd_height" type="range" max="${defaultSettings.dimension_max}" min="${defaultSettings.dimension_min}" step="${defaultSettings.dimension_step}" value="${defaultSettings.height}" />
+            <div><small>Only for Horde or remote Stable Diffusion Web UI:</small></div>
+            <div class="flex-container">
+                <label class="flex1 checkbox_label">
+                    <input id="sd_restore_faces" type="checkbox" />
+                    Restore Faces
+                </label>
+                <label class="flex1 checkbox_label">
+                    <input id="sd_enable_hr" type="checkbox" />
+                    Hires. Fix
+                </label>
+            </div>
             <label for="sd_model">Stable Diffusion model</label>
             <select id="sd_model"></select>
             <label for="sd_sampler">Sampling method</label>
@@ -680,6 +715,8 @@ jQuery(async () => {
     $('#sd_height').on('input', onHeightInput);
     $('#sd_horde').on('input', onHordeInput);
     $('#sd_horde_nsfw').on('input', onHordeNsfwInput);
+    $('#sd_restore_faces').on('input', onRestoreFacesInput);
+    $('#sd_enable_hr').on('input', onHighResFixInput);
 
     $('.sd_settings .inline-drawer-toggle').on('click', function () {
         initScrollHeight($("#sd_prompt_prefix"));
