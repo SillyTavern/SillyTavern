@@ -7,7 +7,8 @@ import {
     callPopup,
     getRequestHeaders,
     event_types,
-    eventSource
+    eventSource,
+    appendImageToMessage
 } from "../../../script.js";
 import { getApiUrl, getContext, extension_settings, defaultRequestArgs, modules } from "../../extensions.js";
 import { stringFormat, initScrollHeight, resetScrollHeight } from "../../utils.js";
@@ -41,24 +42,22 @@ const triggerWords = {
     [generationMode.CHARACTER]: ['you'],
     [generationMode.USER]: ['me'],
     [generationMode.SCENARIO]: ['scene'],
+    [generationMode.FREE]: ['raw_last'],
     [generationMode.NOW]: ['last'],
     [generationMode.FACE]: ['face'],
 
 }
 
 const quietPrompts = {
+    /*OLD:     [generationMode.CHARACTER]: "Pause your roleplay and provide comma-delimited list of phrases and keywords which describe {{char}}'s physical appearance and clothing. Ignore {{char}}'s personality traits, and chat history when crafting this description. End your response once the comma-delimited list is complete. Do not roleplay when writing this description, and do not attempt to continue the story.", */
+    [generationMode.CHARACTER]: "[In the next response I want you to provide only a detailed comma-delimited list of keywords and phrases which describe {{char}}. The list must include all of the following items in this order: name, species and race, gender, age, clothing, occupation, physical features and appearances. Do not include descriptions of non-visual qualities such as personality, movements, scents, mental traits, or anything which could not be seen in a still photograph. Do not write in full sentences. Prefix your description with the phrase 'full body portrait:']",
     //face-specific prompt
     [generationMode.FACE]: "[In the next response I want you to provide only a detailed comma-delimited list of keywords and phrases which describe {{char}}. The list must include all of the following items in this order: name, species and race, gender, age, facial features and expressions, occupation, hair and hair accessories (if any), what they are wearing on their upper body (if anything). Do not describe anything below their neck. Do not include descriptions of non-visual qualities such as personality, movements, scents, mental traits, or anything which could not be seen in a still photograph. Do not write in full sentences. Prefix your description with the phrase 'close up facial portrait:']",
     //prompt for only the last message
-    [generationMode.NOW]: "[Pause your roleplay and provide a brief description of the last chat message. Focus on visual details, clothing, actions. Ignore the emotions and thoughts of {{char}} and {{user}} as well as any spoken dialog. Do not roleplay as {{char}} while writing this description. Do not continue the roleplay story.]",
-
-    [generationMode.CHARACTER]: "[In the next response I want you to provide only a detailed comma-delimited list of keywords and phrases which describe {{char}}. The list must include all of the following items in this order: name, species and race, gender, age, clothing, occupation, physical features and appearances. Do not include descriptions of non-visual qualities such as personality, movements, scents, mental traits, or anything which could not be seen in a still photograph. Do not write in full sentences. Prefix your description with the phrase 'full body portrait:']",
-
-    /*OLD:     [generationMode.CHARACTER]: "Pause your roleplay and provide comma-delimited list of phrases and keywords which describe {{char}}'s physical appearance and clothing. Ignore {{char}}'s personality traits, and chat history when crafting this description. End your response once the comma-delimited list is complete. Do not roleplay when writing this description, and do not attempt to continue the story.", */
-
     [generationMode.USER]: "[Pause your roleplay and provide a detailed description of {{user}}'s appearance from the perspective of {{char}} in the form of a comma-delimited list of keywords and phrases. Ignore the rest of the story when crafting this description. Do not roleplay as {{char}}}} when writing this description, and do not attempt to continue the story.]",
     [generationMode.SCENARIO]: "[Pause your roleplay and provide a detailed description for all of the following: a brief recap of recent events in the story, {{char}}'s appearance, and {{char}}'s surroundings. Do not roleplay while writing this description.]",
-    [generationMode.FREE]: "[Pause your roleplay and provide ONLY an echo this string back to me verbatim: {0}. Do not write anything after the string. Do not roleplay at all in your response.]",
+    [generationMode.NOW]: "[Pause your roleplay and provide a brief description of the last chat message. Focus on visual details, clothing, actions. Ignore the emotions and thoughts of {{char}} and {{user}} as well as any spoken dialog. Do not roleplay as {{char}} while writing this description. Do not continue the roleplay story.]",
+    [generationMode.FREE]: "[Pause your roleplay and provide ONLY the last chat message string back to me verbatim. Do not write anything after the string. Do not roleplay at all in your response. Do not continue the roleplay story.]",
 }
 
 const helpString = [
@@ -69,8 +68,9 @@ const helpString = [
     `<li>${m(j(triggerWords[generationMode.USER]))} – user character full body selfie</li>`,
     `<li>${m(j(triggerWords[generationMode.SCENARIO]))} – visual recap of the whole chat scenario</li>`,
     `<li>${m(j(triggerWords[generationMode.NOW]))} – visual recap of the last chat message</li>`,
+    `<li>${m(j(triggerWords[generationMode.FREE]))} – visual recap of the last chat message with no summary</li>`,
     '</ul>',
-    `Anything else would trigger a "free mode" to make SD generate whatever you prompted.<Br> 
+    `Anything else would trigger a "free mode" to make SD generate whatever you prompted.<Br>
     example: '/sd apple tree' would generate a picture of an apple tree.`,
 ].join('<br>');
 
@@ -340,7 +340,14 @@ function processReply(str) {
     return str;
 }
 
-async function generatePicture(_, trigger) {
+function getRawLastMessage(context) {
+    const lastMessage = context.chat.slice(-1)[0].mes,
+        characterDescription = context.characters[context.characterId].description,
+        situation = context.characters[context.characterId].scenario;
+    return `((${lastMessage})), (${situation}:0.7), (${characterDescription}:0.5)`
+}
+
+async function generatePicture(_, trigger, message, callback) {
     if (!trigger || trigger.trim().length === 0) {
         console.log('Trigger word empty, aborting');
         return;
@@ -361,7 +368,7 @@ async function generatePicture(_, trigger) {
     const context = getContext();
 
     try {
-        const prompt = processReply(await new Promise(
+        const prompt = trigger == 'raw_last' ? message || getRawLastMessage(context) : processReply(await new Promise(
             async function promptPromise(resolve, reject) {
                 try {
                     await context.generate('quiet', { resolve, reject, quiet_prompt, force_name2: true, });
@@ -377,9 +384,9 @@ async function generatePicture(_, trigger) {
         console.log('Processed Stable Diffusion prompt:', prompt);
 
         if (extension_settings.sd.horde) {
-            await generateHordeImage(prompt);
+            await generateHordeImage(prompt, callback);
         } else {
-            await generateExtrasImage(prompt);
+            await generateExtrasImage(prompt, callback);
         }
     } catch (err) {
         console.trace(err);
@@ -391,7 +398,7 @@ async function generatePicture(_, trigger) {
     }
 }
 
-async function generateExtrasImage(prompt) {
+async function generateExtrasImage(prompt, callback) {
     const url = new URL(getApiUrl());
     url.pathname = '/api/image';
     const result = await fetch(url, {
@@ -414,13 +421,13 @@ async function generateExtrasImage(prompt) {
     if (result.ok) {
         const data = await result.json();
         const base64Image = `data:image/jpeg;base64,${data.image}`;
-        sendMessage(prompt, base64Image);
+        callback ? callback(prompt, base64Image) : sendMessage(prompt, base64Image);
     } else {
         callPopup('Image generation has failed. Please try again.', 'text');
     }
 }
 
-async function generateHordeImage(prompt) {
+async function generateHordeImage(prompt, callback) {
     const result = await fetch('/horde_generateimage', {
         method: 'POST',
         headers: getRequestHeaders(),
@@ -441,7 +448,7 @@ async function generateHordeImage(prompt) {
     if (result.ok) {
         const data = await result.text();
         const base64Image = `data:image/webp;base64,${data}`;
-        sendMessage(prompt, base64Image);
+        callback ? callback(prompt, base64Image) : sendMessage(prompt, base64Image);
     } else {
         callPopup('Image generation has failed. Please try again.', 'text');
     }
@@ -468,6 +475,7 @@ async function sendMessage(prompt, image) {
 }
 
 function addSDGenButtons() {
+
     const buttonHtml = `
         <div id="sd_gen" class="fa-solid fa-paintbrush" title="Trigger Stable Diffusion" /></div>
         `;
@@ -484,23 +492,28 @@ function addSDGenButtons() {
             <li class="list-group-item" id="sd_me" data-value="me">Me</li>
             <li class="list-group-item" id="sd_world" data-value="world">The Whole Story</li>
             <li class="list-group-item" id="sd_last" data-value="last">The Last Message</li>
+            <li class="list-group-item" id="sd_raw_last" data-value="raw_last">Raw Last Message</li>
         </ul>
     </div>`;
 
     $('#send_but_sheld').prepend(buttonHtml);
     $('#send_but_sheld').prepend(waitButtonHtml);
-    $(document.body).append(dropdownHtml)
+    $(document.body).append(dropdownHtml);
 
+    const messageButton = $('.sd_message_gen');
     const button = $('#sd_gen');
     const waitButton = $("#sd_gen_wait");
     const dropdown = $('#sd_dropdown');
     waitButton.hide();
     dropdown.hide();
     button.hide();
+    messageButton.hide();
 
     let popper = Popper.createPopper(button.get(0), dropdown.get(0), {
-        placement: 'top-start',
+        placement: 'top-end',
     });
+
+    $(document).on('click', '.sd_message_gen', sdMessageButton);
 
     $(document).on('click touchend', function (e) {
         const target = $(e.target);
@@ -519,13 +532,46 @@ function addSDGenButtons() {
 async function moduleWorker() {
     const context = getContext();
 
-    context.onlineStatus === 'no_connection'
-        ? $('#sd_gen').hide(200)
-        : $('#sd_gen').show(200)
+    if (context.onlineStatus === 'no_connection') {
+        $('#sd_gen').hide(200);
+        $('.sd_message_gen').hide();
+    }
+    else {
+        $('#sd_gen').show(200);
+        $('.sd_message_gen').show();
+    }
 }
 
 addSDGenButtons();
+
 setInterval(moduleWorker, UPDATE_INTERVAL);
+
+function sdMessageButton(e) {
+    const $mes = $(e.currentTarget).closest('.mes');
+    const character = $mes.find('.name_text').text(),
+        message = $mes.find('.mes_text').text();
+
+    console.log("doing /sd raw last");
+    generatePicture('sd', 'raw_last', `${character} said: ${message}`, saveGeneratedImage);
+
+    function saveGeneratedImage(prompt, image) {
+        const context = getContext();
+        const message_id = $mes.attr('mesid');
+        const message = context.chat[message_id];
+
+        // Some message sources may not create the extra object
+        if (typeof message.extra !== 'object') {
+            message.extra = {};
+        }
+
+        message.extra.inline_image = true;
+        message.extra.image = image;
+        message.extra.title = prompt;
+        appendImageToMessage(message, $mes);
+
+        context.saveChat();
+    }
+};
 
 $("#sd_dropdown [id]").on("click", function () {
     var id = $(this).attr("id");
@@ -552,6 +598,11 @@ $("#sd_dropdown [id]").on("click", function () {
     else if (id == "sd_last") {
         console.log("doing /sd last");
         generatePicture('sd', 'last');
+    }
+
+    else if (id == "sd_raw_last") {
+        console.log("doing /sd raw last");
+        generatePicture('sd', 'raw_last');
     }
 });
 
@@ -618,4 +669,5 @@ jQuery(async () => {
     });
 
     await loadSettings();
+    $('body').addClass('sd');
 });

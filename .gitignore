@@ -17,3 +17,4 @@ public/settings.json
 whitelist.txt
 .vscode
 secrets.json
+/dist

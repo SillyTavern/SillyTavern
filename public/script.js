@@ -261,7 +261,7 @@ let fav_ch_checked = false;
 //initialize global var for future cropped blobs
 let currentCroppedAvatar = '';
 
-const durationSaveEdit = 200;
+const durationSaveEdit = 500;
 const saveSettingsDebounced = debounce(() => saveSettings(), durationSaveEdit);
 const saveCharacterDebounced = debounce(() => $("#create_button").trigger('click'), durationSaveEdit);
 const getStatusDebounced = debounce(() => getStatus(), 90000);
@@ -446,7 +446,7 @@ function getTokenCount(str, padding = undefined) {
             let tokenCount = 0;
             jQuery.ajax({
                 async: false,
-                type: 'POST', // 
+                type: 'POST', //
                 url: `/tokenize_llama`,
                 data: JSON.stringify({ text: str }),
                 dataType: "json",
@@ -588,7 +588,7 @@ $.get("/csrf-token").then(async (data) => {
 });
 
 function checkOnlineStatus() {
-    ///////// REMOVED LINES THAT DUPLICATE RA_CHeckOnlineStatus FEATURES 
+    ///////// REMOVED LINES THAT DUPLICATE RA_CHeckOnlineStatus FEATURES
 
     if (online_status == "no_connection") {
         $("#online_status_indicator2").css("background-color", "red");  //Kobold
@@ -948,7 +948,7 @@ function printMessages() {
 function clearChat() {
     count_view_mes = 0;
     extension_prompts = {};
-    $("#chat").html("");
+    $("#chat").children().remove();
 }
 
 function deleteLastMessage() {
@@ -1030,13 +1030,14 @@ function getMessageFromTemplate({ mesId, characterName, isUser, avatarImg, bias,
     return mes;
 }
 
-function appendImageToMessage(mes, messageElement) {
+export function appendImageToMessage(mes, messageElement) {
     if (mes.extra?.image) {
-        const image = document.createElement("img");
-        image.src = mes.extra?.image;
-        image.title = mes.extra?.title || mes.title;
-        image.classList.add("img_extra");
-        messageElement.find(".mes_text").prepend(image);
+        const image = messageElement.find('.mes_img');
+        const isInline = !!mes.extra?.inline_image;
+        image.attr('src', mes.extra?.image);
+        image.attr('title', mes.extra?.title || mes.title);
+        messageElement.find(".mes_img_container").addClass("img_extra");
+        image.toggleClass("img_inline", isInline);
     }
 }
 
@@ -1094,7 +1095,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
                 avatarImg = default_avatar;
             }
         }
-        //old processing: 
+        //old processing:
         //if messge is from sytem, use the name provided in the message JSONL to proceed,
         //if not system message, use name2 (char's name) to proceed
         //characterName = mes.is_system || mes.force_avatar ? mes.name : name2;
@@ -1963,7 +1964,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                             // where it left off by removing the trailing newline at the end
                             // that was added by chat2 generator. This causes problems with
                             // instruct mode that could not have a trailing newline. So we're
-                            // removing a newline ONLY at the end of the string if it exists. 
+                            // removing a newline ONLY at the end of the string if it exists.
                             item = item.replace(/\n?$/, '');
                             //item = item.substr(0, item.length - 1);
                         }
@@ -2192,8 +2193,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             }
             else {
                 jQuery.ajax({
-                    type: 'POST', // 
-                    url: generate_url, // 
+                    type: 'POST', //
+                    url: generate_url, //
                     data: JSON.stringify(generate_data),
                     beforeSend: function () {
 
@@ -4479,6 +4480,40 @@ export function cancelTtsPlay() {
     }
 }
 
+async function deleteMessageImage() {
+    const value = await callPopup("<h3>Delete image from message?<br>This action can't be undone.</h3>", 'confirm');
+
+    if (!value) {
+        return;
+    }
+
+    const mesBlock = $(this).closest('.mes');
+    const mesId = mesBlock.attr('mesid');
+    const message = chat[mesId];
+    delete message.extra.image;
+    delete message.extra.inline_image;
+    mesBlock.find('.mes_img_container').removeClass('img_extra');
+    mesBlock.find('.mes_img').attr('src', '');
+    saveChatConditional();
+}
+
+function enlargeMessageImage() {
+    const mesBlock = $(this).closest('.mes');
+    const mesId = mesBlock.attr('mesid');
+    const message = chat[mesId];
+    const imgSrc = message?.extra?.image;
+
+    if (!imgSrc) {
+        return;
+    }
+
+    const img = document.createElement('img');
+    img.classList.add('img_enlarged');
+    img.src = imgSrc;
+    $('#dialogue_popup').addClass('wide_dialogue_popup');
+    callPopup(img.outerHTML, 'text');
+}
+
 window["SillyTavern"].getContext = function () {
     return {
         chat: chat,
@@ -6432,6 +6467,9 @@ $(document).ready(function () {
     $('#chat').on('scroll', () => {
         $('.code-copied').css({ 'display': 'none' });
     });
+
+    $(document).on('click', '.mes_img_enlarge', enlargeMessageImage);
+    $(document).on('click', '.mes_img_delete', deleteMessageImage);
 
     $(window).on('beforeunload', () => {
         cancelTtsPlay();

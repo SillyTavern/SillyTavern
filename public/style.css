@@ -204,12 +204,14 @@ table.responsiveTable {
     text-align: center;
 }
 
+.sd_message_gen,
 .mes_narrate,
 body.tts .mes[is_user="true"] .mes_narrate,
 body.tts .mes[is_system="true"] .mes_narrate {
     display: none;
 }
 
+body.sd .sd_message_gen,
 body.tts .mes_narrate {
     display: inline-block;
 }
@@ -297,8 +299,8 @@ code {
     text-align: center;
     border-radius: 5px;
     vertical-align: middle;
-    right: 5px;
-    top: 5px;
+    right: 0px;
+    top: 0px;
     opacity: 0.5;
     cursor: grab;
     border: 1px solid var(--white30a);
@@ -1255,7 +1257,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     background-repeat: no-repeat;
     background-size: cover;
     background-position: center;
-    border-radius: 20px;
+    border-radius: 10px;
     border: 1px solid var(--black50a);
     box-shadow: 0 0 7px var(--black50a);
     margin: 5px;
@@ -2187,6 +2189,7 @@ input[type="range"]::-webkit-slider-thumb {
 
 .mes_prompt,
 .mes_narrate,
+.sd_message_gen,
 .mes_copy,
 .mes_edit {
     cursor: pointer;
@@ -2199,11 +2202,13 @@ input[type="range"]::-webkit-slider-thumb {
 
 .mes_edit:hover,
 .mes_copy:hover,
+.sd_message_gen:hover,
 .mes_narrate:hover,
 .mes_stop:hover {
     opacity: 1;
 }
 
+.last_mes .sd_message_gen,
 .last_mes .mes_copy,
 .last_mes .mes_narrate,
 .last_mes .mes_prompt {
@@ -2431,7 +2436,7 @@ h5 {
     box-shadow: 0px 0px 20px black;
     padding: 10px;
     background-color: var(--SmartThemeBlurTintColor);
-    border-radius: 20px;
+    border-radius: 10px;
     overflow-y: auto;
     border: 1px solid var(--grey30);
 }
@@ -3307,16 +3312,58 @@ a {
 }
 
 /* Message images */
-.mes img.img_extra {
+.mes .mes_img_container {
     max-width: 100%;
-    max-height: 60svh;
     /*to fit inside single window height of mobile landscape*/
-    border-radius: 10px;
-    display: block;
+    display: none;
+    position: relative;
+    width: fit-content;
+    transition: all 0.1s;
 }
 
-.mes img.img_extra~* {
+.mes_img {
+    border-radius: 10px;
+    width: 100%;
+}
+
+.mes_img_controls {
+    position: absolute;
+    top: 0.5em;
+    left: 0;
+    width: 100%;
     display: none;
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 0.75em;
+}
+
+.mes_img_controls .right_menu_button {
+    padding: 0;
+    filter: brightness(80%);
+}
+
+.mes_img_controls .right_menu_button:hover {
+    filter: brightness(150%);
+}
+
+/*
+.mes_img_container:hover .mes_img {
+    opacity: 0.9;
+}
+*/
+
+.mes_img_container:hover .mes_img_controls {
+    display: flex;
+}
+
+.mes .mes_img_container.img_extra {
+    display: flex;
+}
+
+.img_enlarged {
+    width: 100%;
+    padding: 10px 0;
+    border-radius: 2px;
 }
 
 /* Extensions */
@@ -3510,13 +3557,13 @@ label[for="extensions_autoconnect"] {
 .drawer-content {
     background-color: var(--SmartThemeBlurTintColor);
     color: var(--SmartThemeBodyColor);
-    border-radius: 20px;
+    border-radius: 10px;
     padding: 10px;
     border: 1px solid var(--grey30a);
     box-shadow: 0 0 20px black;
     min-width: 450px;
     width: var(--sheldWidth);
-    overflow-y: scroll;
+    overflow-y: auto;
     max-height: calc(100svh - 70px);
     display: none;
     position: absolute;
@@ -3593,6 +3640,10 @@ toolcool-color-picker {
 
 .padding5 {
     padding: 5px;
+}
+
+.padding10 {
+    padding: 10px;
 }
 
 .margin0 {
@@ -3805,7 +3856,7 @@ toolcool-color-picker {
 
 body.bubblechat .mes {
     padding: 10px;
-    border-radius: 20px;
+    border-radius: 10px;
     background-color: var(--SmartThemeBlurTintColor);
     margin-bottom: 5px;
     border: 1px solid var(--white30a);
@@ -3893,6 +3944,16 @@ body.movingUI #avatar_zoom_popup,
 body.movingUI #floatingPrompt {
     resize: both;
 }
+
+body.movingUI #chat::-webkit-scrollbar-thumb {
+    background-color: var(--grey7070a);
+    border: 2px solid transparent;
+    border-top: 20px solid transparent;
+    box-shadow: inset 0 0 0 1px var(--black50a);
+    border-radius: 10px;
+    background-clip: content-box;
+}
+
 
 #expression-image.default,
 #expression-holder:has(.default) {
@@ -4142,11 +4203,12 @@ body.waifuMode #avatar_zoom_popup {
     }
 
     #right-nav-panel,
-    #left-nav-panel {
+    #left-nav-panel,
+    #floatingPrompt {
         height: calc(100svh - 45px);
-        min-width: 100%;
-        width: 100%;
-        max-width: 100%;
+        min-width: 100% !important;
+        width: 100% !important;
+        max-width: 100% !important;
         overflow-y: hidden;
         border-left: 1px solid var(--grey30);
         border-right: 1px solid var(--grey30);
@@ -4155,6 +4217,10 @@ body.waifuMode #avatar_zoom_popup {
         top: 40px !important;
         left: 0 !important;
         backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
+    }
+
+    #floatingPrompt {
+        height: min-content;
     }
 
     #right-nav-panel h4 {

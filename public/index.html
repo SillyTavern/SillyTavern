@@ -1019,7 +1019,7 @@
                                     Enter <span class="monospace">0000000000</span> to use anonymous mode.
                                 </h5>
                                 <div class="flex-container">
-                                    <input id="horde_api_key" name="horde_api_key" class="text_pole flex1" maxlength="500" type="text" placeholder="0000000000">
+                                    <input id="horde_api_key" name="horde_api_key" class="text_pole flex1" maxlength="500" type="text" placeholder="0000000000" autocomplete="off">
                                     <div title="Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_horde"></div>
                                 </div>
                                 <div class="neutral_warning">For privacy reasons, your API key will be hidden after you reload the page.</div>
@@ -1053,7 +1053,7 @@
                                 </ol>
                             </span>
                             <div class="flex-container">
-                                <input id="api_key_novel" name="api_key_novel" class="text_pole flex1 wide100p" maxlength="500" size="35" type="text">
+                                <input id="api_key_novel" name="api_key_novel" class="text_pole flex1 wide100p" maxlength="500" size="35" type="text" autocomplete="off">
                                 <div title="Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_novel"></div>
                             </div>
                             <div class="neutral_warning">For privacy reasons, your API key will be hidden after you reload the page.</div>
@@ -1088,13 +1088,12 @@
                                 <div class="flex1">
                                     <h4>Blocking API url</h4>
                                     <h5>Example: http://127.0.0.1:5000/</h5>
-                                    <input id="textgenerationwebui_api_url_text" name="textgenerationwebui_api_url" class="text_pole wide100p"
-                                        maxlength="500" value="">
+                                    <input id="textgenerationwebui_api_url_text" name="textgenerationwebui_api_url" class="text_pole wide100p" maxlength="500" value="" autocomplete="off">
                                 </div>
                                 <div class="flex1">
                                     <h4>Streaming API url</h4>
                                     <h5>Example: ws://127.0.0.1:5005/api/v1/stream</h5>
-                                    <input id="streaming_url_textgenerationwebui" type="text" class="text_pole wide100p" maxlength="500" value="">
+                                    <input id="streaming_url_textgenerationwebui" type="text" class="text_pole wide100p" maxlength="500" value="" autocomplete="off">
                                 </div>
                             </div>
                             <input id="api_button_textgenerationwebui" class="menu_button" type="submit" value="Connect">
@@ -1117,7 +1116,7 @@
                                 </ol>
                             </span>
                             <div class="flex-container">
-                                <input id="api_key_openai" name="api_key_openai" class="text_pole flex1" maxlength="500" value="" type="text">
+                                <input id="api_key_openai" name="api_key_openai" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
                                 <div title="Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_openai"></div>
                             </div>
                             <div class="neutral_warning">For privacy reasons, your API key will be hidden after you reload the page.</div>
@@ -1157,7 +1156,7 @@
                         </span>
                         <div class="widthFreeExpand">
                             <div class="flex-container">
-                                <input id="poe_token" class="text_pole flex1" type="text" maxlength="100" />
+                                <input id="poe_token" class="text_pole flex1" type="text" maxlength="100"  autocomplete="off" />
                                 <div title="Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_poe"></div>
                             </div>
                             <div class="neutral_warning">For privacy reasons, your API key will be hidden after you reload the page.</div>
@@ -2394,6 +2393,7 @@
                     <span class="name_text">${characterName}</span>
 
                     <div class="mes_buttons">
+                        <div title="Generate Image" class="sd_message_gen fa-solid fa-paintbrush"></div>
                         <div title="Narrate" class="mes_narrate fa-solid fa-bullhorn"></div>
                         <div title="Prompt" class="mes_prompt fa-solid fa-square-poll-horizontal "></div>
                         <div title="Copy" class="mes_copy fa-solid fa-copy "></div>
@@ -2409,6 +2409,13 @@
                     </div>
                 </div>
                 <div class=mes_text></div>
+                <div class="mes_img_container">
+                    <div class="mes_img_controls">
+                        <div title="Enlarge" class="right_menu_button fa-lg fa-solid fa-magnifying-glass mes_img_enlarge"></div>
+                        <div title="Delete" class="right_menu_button fa-lg fa-solid fa-trash-can mes_img_delete"></div>
+                    </div>
+                    <img class="mes_img" src="" />
+                </div>
                 <div title="Stop Streaming" class="mes_stop">
                     <i class="fa-xl fa-solid fa-circle-stop"></i>
                 </div>
@@ -2487,7 +2494,6 @@
     <div id="movingDivs"></div>
     <div id="sheld">
         <div id="sheldheader" class="fa-solid fa-grip drag-grabber"></div>
-        <!-- <div class="pull-tab"></div> -->
         <div id="chat">
         </div>
         <div id="form_sheld">

@@ -3,9 +3,11 @@
  * allow access to the endpoint after successful authentication.
  */
 
-const {dirname} = require('path');
-const appDir = dirname(require.main.filename);
-const config = require(appDir + '/config.conf');
+//const {dirname} = require('path');
+//const appDir = dirname(require.main.filename);
+//const config = require(appDir + '/config.conf');
+const path = require('path');
+const config = require(path.join(process.cwd(), './config.conf'));
 
 const unauthorizedResponse = (res) => {
     res.set('WWW-Authenticate', 'Basic realm="SillyTavern", charset="UTF-8"');
