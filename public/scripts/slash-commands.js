@@ -88,7 +88,9 @@ const NARRATOR_NAME_KEY = 'narrator_name';
 const NARRATOR_NAME_DEFAULT = 'System';
 
 function setNarratorName(_, text) {
-    chat_metadata[NARRATOR_NAME_KEY] = text || NARRATOR_NAME_DEFAULT;
+    const name = text || NARRATOR_NAME_DEFAULT;
+    chat_metadata[NARRATOR_NAME_KEY] = name;
+    toastr.info(`System narrator name set to ${name}`);
     saveChatConditional();
 }
 
