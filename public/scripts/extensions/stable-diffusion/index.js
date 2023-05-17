@@ -303,6 +303,8 @@ async function loadExtrasModels() {
         return [];
     }
 
+    addSDGenButtons();
+
     const url = new URL(getApiUrl());
     url.pathname = '/api/image/model';
     const getCurrentModelResult = await fetch(url, defaultRequestArgs);
@@ -605,7 +607,7 @@ async function moduleWorker() {
     }
 }
 
-addSDGenButtons();
+
 
 setInterval(moduleWorker, UPDATE_INTERVAL);
 
