@@ -814,6 +814,10 @@ select {
     margin-bottom: 10px;
 }
 
+.marginTop10 {
+    margin-top: 10px;
+}
+
 #description_textarea,
 #firstmessage_textarea {
     height: -webkit-fill-available;

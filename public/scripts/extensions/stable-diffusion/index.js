@@ -637,17 +637,19 @@ jQuery(async () => {
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
-            <small><i>Use slash commands to generate images. Type <span class="monospace">/help</span> in chat for more details</i></small>
+            <small><i>Use slash commands or the bottom Paintbrush buttron to generate images. Type <span class="monospace">/help</span> in chat for more details</i></small>
             <br>
             <small><i>Hint: Save an API key in Horde KoboldAI API settings to use it here.</i></small>
-            <label class="checkbox_label">
-                <input id="sd_horde" type="checkbox" />
-                Use Stable Horde
-            </label>
-            <label style="margin-left:1em;" class="checkbox_label">
-                <input id="sd_horde_nsfw" type="checkbox" />
-                Allow NSFW images
-            </label>
+            <div class="flex-container flexGap5 marginTop10 margin-bot-10px">
+                <label class="checkbox_label">
+                    <input id="sd_horde" type="checkbox" />
+                    Use Stable Horde
+                </label>
+                <label style="margin-left:1em;" class="checkbox_label">
+                    <input id="sd_horde_nsfw" type="checkbox" />
+                    Allow NSFW images from Horde
+                </label>
+            </div>
             <label for="sd_scale">CFG Scale (<span id="sd_scale_value"></span>)</label>
             <input id="sd_scale" type="range" min="${defaultSettings.scale_min}" max="${defaultSettings.scale_max}" step="${defaultSettings.scale_step}" value="${defaultSettings.scale}" />
             <label for="sd_steps">Sampling steps (<span id="sd_steps_value"></span>)</label>
