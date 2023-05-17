@@ -169,6 +169,7 @@ export {
     getStoppingStrings,
     getStatus,
     reloadMarkdownProcessor,
+    getCurrentChatId,
     chat,
     this_chid,
     selected_button,
@@ -483,6 +484,15 @@ function reloadMarkdownProcessor(render_formulas = false) {
     }
 
     return converter;
+}
+
+function getCurrentChatId() {
+    if (selected_group) {
+        return groups.find(x => x.id == selected_group)?.chat_id;
+    }
+    else if (this_chid) {
+        return characters[this_chid].chat;
+    }
 }
 
 const CHARACTERS_PER_TOKEN_RATIO = 3.35;
