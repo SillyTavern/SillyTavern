@@ -29,7 +29,10 @@ async function doDiceRoll() {
 
 function addDiceRollButton() {
     const buttonHtml = `
-        <div id="roll_dice" class="fa-solid fa-dice list-group-item" title="Roll the dice" /></div>
+    <div id="roll_dice" class="list-group-item flex-container flexGap5">    
+        <div class="fa-solid fa-dice extensionsMenuExtensionButton" title="Roll Dice" /></div>
+        Roll Dice
+    </div>
         `;
     const dropdownHtml = `
     <div id="dice_dropdown">
@@ -55,7 +58,7 @@ function addDiceRollButton() {
     button.hide();
 
     let popper = Popper.createPopper(button.get(0), dropdown.get(0), {
-        placement: 'left-end',
+        placement: 'bottom',
     });
 
     $(document).on('click touchend', function (e) {

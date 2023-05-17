@@ -512,10 +512,14 @@ code {
 #extensionsMenu {
     z-index: 100;
     backdrop-filter: blur(var(--SmartThemeBlurStrength));
-    font-size: 30px;
     /* padding: 10px; */
     display: flex;
-    gap: 10px;
+}
+
+.extensionsMenuExtensionButton {
+    font-size: 20px;
+    height: 20px;
+    width: 20px;
 }
 
 #right-nav-panel hr,
@@ -526,7 +530,7 @@ code {
 }
 
 .options-content a,
-#extensionsMenu div {
+#extensionsMenu>div {
     color: var(--SmartThemeBodyColor);
     padding: 12px 16px;
     text-decoration: none;

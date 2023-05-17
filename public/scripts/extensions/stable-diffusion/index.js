@@ -537,11 +537,14 @@ async function sendMessage(prompt, image) {
 function addSDGenButtons() {
 
     const buttonHtml = `
-        <div id="sd_gen" class="fa-solid fa-paintbrush list-group-item" title="Trigger Stable Diffusion" /></div>
+    <div id="sd_gen" class="list-group-item flex-container flexGap5">    
+        <div class="fa-solid fa-paintbrush extensionsMenuExtensionButton" title="Trigger Stable Diffusion" /></div>
+        StableDiffusion
+    </div>
         `;
 
     const waitButtonHtml = `
-        <div id="sd_gen_wait" class="fa-solid fa-hourglass-half list-group-item" /></div>
+        <div id="sd_gen_wait" class="fa-solid fa-hourglass-half" /></div>
     `
     const dropdownHtml = `
     <div id="sd_dropdown">
@@ -570,7 +573,7 @@ function addSDGenButtons() {
     messageButton.hide();
 
     let popper = Popper.createPopper(button.get(0), dropdown.get(0), {
-        placement: 'left-end',
+        placement: 'bottom',
     });
 
     $(document).on('click', '.sd_message_gen', sdMessageButton);

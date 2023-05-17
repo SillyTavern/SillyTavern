@@ -233,9 +233,9 @@ function updateUiAudioPlayState() {
         let img
         // Give user feedback that TTS is active by setting the stop icon if processing or playing
         if (!audioElement.paused || isTtsProcessing()) {
-            img = 'fa-solid fa-stop-circle list-group-item'
+            img = 'fa-solid fa-stop-circle extensionsMenuExtensionButton'
         } else {
-            img = 'fa-solid fa-circle-play list-group-item'
+            img = 'fa-solid fa-circle-play extensionsMenuExtensionButton'
         }
         audioControl.className = img
     } else {
@@ -256,7 +256,12 @@ function onAudioControlClicked() {
 }
 
 function addAudioControl() {
-    $('#extensionsMenu').prepend('<div id="tts_media_control" class="list-group-item" />')
+
+    $('#extensionsMenu').prepend(`
+        <div id="ttsExtensionMenuItem" class="list-group-item flex-container flexGap5">    
+            <div id="tts_media_control" class="extensionsMenuExtensionButton "/></div>
+            TTS Playback
+        </div>`)
     $('#tts_media_control').attr('title', 'TTS play/pause').on('click', onAudioControlClicked)
     audioControl = document.getElementById('tts_media_control')
     updateUiAudioPlayState()

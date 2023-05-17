@@ -3,8 +3,8 @@
 }
 
 #sd_gen {
-    order: 100;
-    /*     width: 40px;
+    /*order: 100;
+    width: 40px;
     height: 40px;
     margin: 0;
     padding: 1px; */
@@ -15,7 +15,7 @@
     opacity: 0.7;
     display: flex;
     align-items: center;
-    justify-content: center;
+    /* justify-content: center; */
 }
 
 #sd_gen:hover {
