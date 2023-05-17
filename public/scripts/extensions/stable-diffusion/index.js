@@ -383,11 +383,7 @@ async function generatePicture(_, trigger, message, callback) {
 
         console.log('Processed Stable Diffusion prompt:', prompt);
 
-        if (extension_settings.sd.horde) {
-            await generateHordeImage(prompt, callback);
-        } else {
-            await generateExtrasImage(prompt, callback);
-        }
+        await sendGenerationRequest(prompt, callback);
     } catch (err) {
         console.trace(err);
         throw new Error('SD prompt text generation failed.')
@@ -395,6 +391,14 @@ async function generatePicture(_, trigger, message, callback) {
     finally {
         context.activateSendButtons();
         showSwipeButtons();
+    }
+}
+
+async function sendGenerationRequest(prompt, callback) {
+    if (extension_settings.sd.horde) {
+        await generateHordeImage(prompt, callback);
+    } else {
+        await generateExtrasImage(prompt, callback);
     }
 }
 
@@ -547,24 +551,32 @@ addSDGenButtons();
 setInterval(moduleWorker, UPDATE_INTERVAL);
 
 function sdMessageButton(e) {
+    const context = getContext();
     const $mes = $(e.currentTarget).closest('.mes');
-    const character = $mes.find('.name_text').text(),
-        message = $mes.find('.mes_text').text();
+    const characterName = $mes.find('.name_text').text();
+    const messageText = $mes.find('.mes_text').text();
+    const message_id = $mes.attr('mesid');
+    const message = context.chat[message_id];
+    const hasSavedImage = message?.extra?.image && message?.extra?.title;
 
-    console.log("doing /sd raw last");
-    generatePicture('sd', 'raw_last', `${character} said: ${message}`, saveGeneratedImage);
+    if (hasSavedImage) {
+        const prompt = message?.extra?.title;
+        console.log('Regenerating an image, using existing prompt:', prompt);
+        sendGenerationRequest(prompt, saveGeneratedImage);
+    }
+    else {
+        console.log("doing /sd raw last");
+        generatePicture('sd', 'raw_last', `${characterName} said: ${messageText}`, saveGeneratedImage);
+    }
 
     function saveGeneratedImage(prompt, image) {
-        const context = getContext();
-        const message_id = $mes.attr('mesid');
-        const message = context.chat[message_id];
-
         // Some message sources may not create the extra object
         if (typeof message.extra !== 'object') {
             message.extra = {};
         }
 
-        message.extra.inline_image = true;
+        // If already contains an image and it's not inline - leave it as is
+        message.extra.inline_image = message.extra.image && !message.extra.inline_image ? false : true;
         message.extra.image = image;
         message.extra.title = prompt;
         appendImageToMessage(message, $mes);

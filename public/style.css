@@ -3337,7 +3337,7 @@ a {
     display: none;
     flex-direction: row;
     justify-content: space-between;
-    padding: 0.75em;
+    padding: 1em;
 }
 
 .mes_img_controls .right_menu_button {
