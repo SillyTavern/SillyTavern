@@ -107,7 +107,7 @@ import {
 } from "./scripts/poe.js";
 
 import { debounce, delay, restoreCaretPosition, saveCaretPosition, end_trim_to_sentence } from "./scripts/utils.js";
-import { extension_settings, loadExtensionSettings } from "./scripts/extensions.js";
+import { extension_settings, loadExtensionSettings, runGenerationInterceptors } from "./scripts/extensions.js";
 import { executeSlashCommands, getSlashCommandsHelp, registerSlashCommand } from "./scripts/slash-commands.js";
 import {
     tag_map,
@@ -1651,6 +1651,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     setGenerationProgress(0);
     tokens_already_generated = 0;
     generation_started = new Date();
+    
+    await runGenerationInterceptors();
 
     const isImpersonate = type == "impersonate";
     const isInstruct = power_user.instruct.enabled;

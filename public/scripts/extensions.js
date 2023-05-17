@@ -4,6 +4,7 @@ export {
     getContext,
     getApiUrl,
     loadExtensionSettings,
+    runGenerationInterceptors,
     defaultRequestArgs,
     modules,
     extension_settings,
@@ -26,6 +27,7 @@ const extension_settings = {
     dice: {},
     tts: {},
     sd: {},
+    chromadb: {},
 };
 
 let modules = [];
@@ -314,6 +316,19 @@ async function loadExtensionSettings(settings) {
     await activateExtensions();
     if (extension_settings.autoConnect && extension_settings.apiUrl) {
         await connectToApi(extension_settings.apiUrl);
+    }
+}
+
+async function runGenerationInterceptors() {
+    for (const manifest of Object.values(manifests)) {
+        const interceptorKey = manifest.generate_interceptor;
+        if (typeof window[interceptorKey] === 'function') {
+            try {
+                await window[interceptorKey]();
+            } catch(e) {
+                console.error(`Failed running interceptor for ${manifest.display_name}`, e);
+            }
+        }
     }
 }
 
