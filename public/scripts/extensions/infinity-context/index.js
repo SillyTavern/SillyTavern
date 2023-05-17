@@ -55,6 +55,7 @@ async function addMessages(chat_id, messages) {
         role: m.is_user ? 'user' : 'assistant',
         content: m.mes,
         date: m.send_date,
+        meta: JSON.stringify(m),
     }));
 
     const addMessagesResult = await fetch(url, {
@@ -113,13 +114,7 @@ window.chromadb_interceptGeneration = async () => {
             queriedMessages.sort((a, b) => a.date - b.date);
 
             const newChat = [
-                ...queriedMessages.map(m => ({
-                    name: m.role === 'user' ? context.name1: context.name2,
-                    is_user: m.role === 'user',
-                    is_name: true,
-                    send_date: m.date,
-                    mes: m.content,
-                })),
+                ...queriedMessages.map(m => JSON.parse(m.meta)),
                 ...messagesToKeep,
             ];
 
