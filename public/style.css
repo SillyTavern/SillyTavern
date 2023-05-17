@@ -1486,7 +1486,8 @@ input[type=search]:focus::-webkit-search-cancel-button {
 }
 
 .wide_dialogue_popup {
-    width: 90svh !important;
+    max-width: 90svh !important;
+    width: fit-content !important;
 }
 
 .height100pSpaceEvenly {
@@ -3363,9 +3364,14 @@ a {
 }
 
 .img_enlarged {
-    width: 100%;
+    max-width: 100%;
+    max-height: 100%;
     padding: 10px 0;
     border-radius: 2px;
+}
+
+.cropper-container {
+    max-width: 100% !important;
 }
 
 /* Extensions */
