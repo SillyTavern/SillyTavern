@@ -49,17 +49,14 @@ const triggerWords = {
 }
 
 const quietPrompts = {
+    /*OLD:     [generationMode.CHARACTER]: "Pause your roleplay and provide comma-delimited list of phrases and keywords which describe {{char}}'s physical appearance and clothing. Ignore {{char}}'s personality traits, and chat history when crafting this description. End your response once the comma-delimited list is complete. Do not roleplay when writing this description, and do not attempt to continue the story.", */
+    [generationMode.CHARACTER]: "[In the next response I want you to provide only a detailed comma-delimited list of keywords and phrases which describe {{char}}. The list must include all of the following items in this order: name, species and race, gender, age, clothing, occupation, physical features and appearances. Do not include descriptions of non-visual qualities such as personality, movements, scents, mental traits, or anything which could not be seen in a still photograph. Do not write in full sentences. Prefix your description with the phrase 'full body portrait:']",
     //face-specific prompt
     [generationMode.FACE]: "[In the next response I want you to provide only a detailed comma-delimited list of keywords and phrases which describe {{char}}. The list must include all of the following items in this order: name, species and race, gender, age, facial features and expressions, occupation, hair and hair accessories (if any), what they are wearing on their upper body (if anything). Do not describe anything below their neck. Do not include descriptions of non-visual qualities such as personality, movements, scents, mental traits, or anything which could not be seen in a still photograph. Do not write in full sentences. Prefix your description with the phrase 'close up facial portrait:']",
     //prompt for only the last message
-    [generationMode.NOW]: "[Pause your roleplay and provide a brief description of the last chat message. Focus on visual details, clothing, actions. Ignore the emotions and thoughts of {{char}} and {{user}} as well as any spoken dialog. Do not roleplay as {{char}} while writing this description. Do not continue the roleplay story.]",
-
-    [generationMode.CHARACTER]: "[In the next response I want you to provide only a detailed comma-delimited list of keywords and phrases which describe {{char}}. The list must include all of the following items in this order: name, species and race, gender, age, clothing, occupation, physical features and appearances. Do not include descriptions of non-visual qualities such as personality, movements, scents, mental traits, or anything which could not be seen in a still photograph. Do not write in full sentences. Prefix your description with the phrase 'full body portrait:']",
-
-    /*OLD:     [generationMode.CHARACTER]: "Pause your roleplay and provide comma-delimited list of phrases and keywords which describe {{char}}'s physical appearance and clothing. Ignore {{char}}'s personality traits, and chat history when crafting this description. End your response once the comma-delimited list is complete. Do not roleplay when writing this description, and do not attempt to continue the story.", */
-
     [generationMode.USER]: "[Pause your roleplay and provide a detailed description of {{user}}'s appearance from the perspective of {{char}} in the form of a comma-delimited list of keywords and phrases. Ignore the rest of the story when crafting this description. Do not roleplay as {{char}}}} when writing this description, and do not attempt to continue the story.]",
     [generationMode.SCENARIO]: "[Pause your roleplay and provide a detailed description for all of the following: a brief recap of recent events in the story, {{char}}'s appearance, and {{char}}'s surroundings. Do not roleplay while writing this description.]",
+    [generationMode.NOW]: "[Pause your roleplay and provide a brief description of the last chat message. Focus on visual details, clothing, actions. Ignore the emotions and thoughts of {{char}} and {{user}} as well as any spoken dialog. Do not roleplay as {{char}} while writing this description. Do not continue the roleplay story.]",
     [generationMode.FREE]: "[Pause your roleplay and provide ONLY the last chat message string back to me verbatim. Do not write anything after the string. Do not roleplay at all in your response. Do not continue the roleplay story.]",
 }
 
@@ -513,7 +510,7 @@ function addSDGenButtons() {
     messageButton.hide();
 
     let popper = Popper.createPopper(button.get(0), dropdown.get(0), {
-        placement: 'top-start',
+        placement: 'top-end',
     });
 
     $(document).on('click', '.sd_message_gen', sdMessageButton);
@@ -535,11 +532,11 @@ function addSDGenButtons() {
 async function moduleWorker() {
     const context = getContext();
 
-    if (context.onlineStatus === 'no_connection'){
+    if (context.onlineStatus === 'no_connection') {
         $('#sd_gen').hide(200);
         $('.sd_message_gen').hide();
     }
-    else{
+    else {
         $('#sd_gen').show(200);
         $('.sd_message_gen').show();
     }
@@ -549,15 +546,15 @@ addSDGenButtons();
 
 setInterval(moduleWorker, UPDATE_INTERVAL);
 
-function sdMessageButton (e) {
-    const $mes =  $(e.currentTarget).closest('.mes');
+function sdMessageButton(e) {
+    const $mes = $(e.currentTarget).closest('.mes');
     const character = $mes.find('.name_text').text(),
-    message = $mes.find('.mes_text').text();
+        message = $mes.find('.mes_text').text();
 
     console.log("doing /sd raw last");
     generatePicture('sd', 'raw_last', `${character} said: ${message}`, saveGeneratedImage);
 
-    function saveGeneratedImage(prompt, image){
+    function saveGeneratedImage(prompt, image) {
         const context = getContext();
         const message_id = $mes.attr('mesid');
         const message = context.chat[message_id];

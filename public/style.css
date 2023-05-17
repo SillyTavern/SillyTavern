@@ -4203,11 +4203,12 @@ body.waifuMode #avatar_zoom_popup {
     }
 
     #right-nav-panel,
-    #left-nav-panel {
+    #left-nav-panel,
+    #floatingPrompt {
         height: calc(100svh - 45px);
-        min-width: 100%;
-        width: 100%;
-        max-width: 100%;
+        min-width: 100% !important;
+        width: 100% !important;
+        max-width: 100% !important;
         overflow-y: hidden;
         border-left: 1px solid var(--grey30);
         border-right: 1px solid var(--grey30);
@@ -4216,6 +4217,10 @@ body.waifuMode #avatar_zoom_popup {
         top: 40px !important;
         left: 0 !important;
         backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
+    }
+
+    #floatingPrompt {
+        height: min-content;
     }
 
     #right-nav-panel h4 {
