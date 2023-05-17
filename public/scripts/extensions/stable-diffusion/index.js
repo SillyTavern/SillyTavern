@@ -708,7 +708,7 @@ jQuery(async () => {
             <label for="sd_height">Height (<span id="sd_height_value"></span>)</label>
             <input id="sd_height" type="range" max="${defaultSettings.dimension_max}" min="${defaultSettings.dimension_min}" step="${defaultSettings.dimension_step}" value="${defaultSettings.height}" />
             <div><small>Only for Horde or remote Stable Diffusion Web UI:</small></div>
-            <div class="flex-container">
+            <div class="flex-container marginTop10 margin-bot-10px">
                 <label class="flex1 checkbox_label">
                     <input id="sd_restore_faces" type="checkbox" />
                     Restore Faces
