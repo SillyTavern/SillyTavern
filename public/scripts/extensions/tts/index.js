@@ -25,7 +25,6 @@ let ttsProvider
 let ttsProviderName
 
 async function onNarrateOneMessage() {
-    cancelTtsPlay();
     const context = getContext();
     const id = $(this).closest('.mes').attr('mesid');
     const message = context.chat[id];
@@ -131,6 +130,9 @@ async function moduleWorker() {
 
 
 function resetTtsPlayback() {
+    // Stop system TTS utterance
+    cancelTtsPlay();
+
     // Clear currently processing jobs
     currentTtsJob = null;
     currentAudioJob = null;
