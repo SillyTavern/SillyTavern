@@ -1033,11 +1033,13 @@ function getMessageFromTemplate({ mesId, characterName, isUser, avatarImg, bias,
 export function appendImageToMessage(mes, messageElement) {
     if (mes.extra?.image) {
         const image = messageElement.find('.mes_img');
+        const text = messageElement.find('.mes_text');
         const isInline = !!mes.extra?.inline_image;
         image.attr('src', mes.extra?.image);
-        image.attr('title', mes.extra?.title || mes.title);
+        image.attr('title', mes.extra?.title || mes.title || '');
         messageElement.find(".mes_img_container").addClass("img_extra");
         image.toggleClass("img_inline", isInline);
+        text.toggleClass('displayNone', !isInline);
     }
 }
 

@@ -118,7 +118,7 @@ async function generatePoe(type, finalPrompt, signal) {
     const isImpersonate = type === 'impersonate';
     const isQuiet = type === 'quiet';
 
-    if (poe_settings.character_nudge && !isImpersonate) {
+    if (poe_settings.character_nudge && !isQuiet && !isImpersonate) {
         let characterNudge = '\n' + substituteParams(poe_settings.character_nudge_message);
         finalPrompt += characterNudge;
     }
