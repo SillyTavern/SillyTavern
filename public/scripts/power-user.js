@@ -638,9 +638,9 @@ function loadInstructMode() {
     });
 }
 
-export function formatInstructModeChat(name, mes, isUser) {
-    const includeNames = power_user.instruct.names || !!selected_group;
-    const sequence = isUser ? power_user.instruct.input_sequence : power_user.instruct.output_sequence;
+export function formatInstructModeChat(name, mes, isUser, isNarrator) {
+    const includeNames = isNarrator ? false : power_user.instruct.names || !!selected_group;
+    const sequence = (isUser || isNarrator) ? power_user.instruct.input_sequence : power_user.instruct.output_sequence;
     const separator = power_user.instruct.wrap ? '\n' : '';
     const textArray = includeNames ? [sequence, `${name}: ${mes}`, separator] : [sequence, mes, separator];
     const text = textArray.filter(x => x).join(separator);
