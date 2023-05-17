@@ -543,6 +543,11 @@ code {
     opacity: 0.7;
 }
 
+#extensionsMenu>div:hover {
+    filter: brightness(1.2);
+    opacity: 1;
+}
+
 .options-content a div:first-child {
     min-width: 20px;
 }

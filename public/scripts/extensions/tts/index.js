@@ -71,7 +71,6 @@ async function moduleWorker() {
     processAudioJobQueue()
     updateUiAudioPlayState()
 
-
     // Auto generation is disabled
     if (extension_settings.tts.auto_generation == false) {
         return
@@ -229,7 +228,7 @@ async function onTtsVoicesClick() {
 
 function updateUiAudioPlayState() {
     if (extension_settings.tts.enabled == true) {
-        audioControl.style.display = 'flex'
+        $('#ttsExtensionMenuItem').show();
         let img
         // Give user feedback that TTS is active by setting the stop icon if processing or playing
         if (!audioElement.paused || isTtsProcessing()) {
@@ -237,9 +236,9 @@ function updateUiAudioPlayState() {
         } else {
             img = 'fa-solid fa-circle-play extensionsMenuExtensionButton'
         }
-        audioControl.className = img
+        $('#tts_media_control').attr('class', img);
     } else {
-        audioControl.style.display = 'none'
+        $('#ttsExtensionMenuItem').hide();
     }
 }
 
