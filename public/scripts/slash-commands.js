@@ -113,6 +113,7 @@ function sendNarratorMessage(_, text) {
 
     chat.push(message);
     addOneMessage(message);
+    saveChatConditional();
 }
 
 function helpCommandCallback() {

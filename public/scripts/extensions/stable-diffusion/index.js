@@ -609,23 +609,44 @@ addSDGenButtons();
 
 setInterval(moduleWorker, UPDATE_INTERVAL);
 
-function sdMessageButton(e) {
+async function sdMessageButton(e) {
+    function setBusyIcon(isBusy) {
+        $icon.toggleClass('fa-paintbrush', !isBusy);
+        $icon.toggleClass(busyClass, isBusy);
+    }
+
+    const busyClass = 'fa-hourglass';
     const context = getContext();
-    const $mes = $(e.currentTarget).closest('.mes');
+    const $icon = $(e.currentTarget);
+    const $mes = $icon.closest('.mes');
     const characterName = $mes.find('.name_text').text();
     const messageText = $mes.find('.mes_text').text();
     const message_id = $mes.attr('mesid');
     const message = context.chat[message_id];
     const hasSavedImage = message?.extra?.image && message?.extra?.title;
 
-    if (hasSavedImage) {
-        const prompt = message?.extra?.title;
-        console.log('Regenerating an image, using existing prompt:', prompt);
-        sendGenerationRequest(prompt, saveGeneratedImage);
+    if ($icon.hasClass(busyClass)) {
+        console.log('Previous image is still being generated...');
+        return;
     }
-    else {
-        console.log("doing /sd raw last");
-        generatePicture('sd', 'raw_last', `${characterName} said: ${messageText}`, saveGeneratedImage);
+
+    try {
+        setBusyIcon(true);
+        if (hasSavedImage) {
+            const prompt = message?.extra?.title;
+            console.log('Regenerating an image, using existing prompt:', prompt);
+            await sendGenerationRequest(prompt, saveGeneratedImage);
+        }
+        else {
+            console.log("doing /sd raw last");
+            await generatePicture('sd', 'raw_last', `${characterName} said: ${messageText}`, saveGeneratedImage);
+        }
+    }
+    catch (error) {
+        console.error('Could not generate inline image: ', error);
+    }
+    finally {
+        setBusyIcon(false);
     }
 
     function saveGeneratedImage(prompt, image) {
@@ -689,7 +710,7 @@ jQuery(async () => {
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
-            <small><i>Use slash commands or the bottom Paintbrush buttron to generate images. Type <span class="monospace">/help</span> in chat for more details</i></small>
+            <small><i>Use slash commands or the bottom Paintbrush button to generate images. Type <span class="monospace">/help</span> in chat for more details</i></small>
             <br>
             <small><i>Hint: Save an API key in Horde KoboldAI API settings to use it here.</i></small>
             <div class="flex-container flexGap5 marginTop10 margin-bot-10px">
