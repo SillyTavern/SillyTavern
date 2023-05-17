@@ -275,6 +275,7 @@ const system_message_types = {
     GENERIC: "generic",
     BOOKMARK_CREATED: "bookmark_created",
     BOOKMARK_BACK: "bookmark_back",
+    NARRATOR: "narrator",
 };
 
 const extension_prompt_types = {

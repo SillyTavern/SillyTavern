@@ -87,7 +87,6 @@ function sendNarratorMessage(_, text) {
     }
 
     const message = {
-        extra: {},
         name: 'Narrator',
         is_user: false,
         is_name: false,
@@ -95,9 +94,11 @@ function sendNarratorMessage(_, text) {
         send_date: humanizedDateTime(),
         mes: text.trim(),
         force_avatar: system_avatar,
-        type
+        extra: {
+            type: system_message_types.NARRATOR,
+        },
     };
-    
+
     chat.push(message);
     addOneMessage(message);
 }
