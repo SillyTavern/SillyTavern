@@ -20,8 +20,50 @@ const metadata_keys = {
     position: 'note_position',
 }
 
-function setNoteCommand(_, text) {
+function setNoteTextCommand(_, text) {
     $('#extension_floating_prompt').val(text).trigger('input');
+    toastr.success("Author's Note text updated");
+}
+
+function setNoteDepthCommand(_, text) {
+    const value = Number(text);
+
+    if (Number.isNaN(value)) {
+        toastr.error('Not a valid number');
+        return;
+    }
+
+    $('#extension_floating_depth').val(Math.abs(value)).trigger('input');
+    toastr.success("Author's Note depth updated");
+}
+
+function setNoteIntervalCommand(_, text) {
+    const value = Number(text);
+
+    if (Number.isNaN(value)) {
+        toastr.error('Not a valid number');
+        return;
+    }
+
+    $('#extension_floating_interval').val(Math.abs(value)).trigger('input');
+    toastr.success("Author's Note frequency updated");
+}
+
+function setNotePositionCommand(_, text) {
+    const validPositions = {
+        'scenario': 0,
+        'chat': 1,
+    };
+
+    const position = validPositions[text?.trim()];
+
+    if (Number.isNaN(position)) {
+        toastr.error('Not a valid position');
+        return;
+    }
+
+    $(`input[name="extension_floating_position"][value="${position}"]`).prop('checked', true).trigger('input');
+    toastr.info("Author's Note position updated");
 }
 
 async function onExtensionFloatingPromptInput() {
@@ -185,5 +227,8 @@ async function moduleWorker() {
 
     addExtensionsSettings();
     setInterval(moduleWorkerWrapper, UPDATE_INTERVAL);
-    registerSlashCommand('note', setNoteCommand, [], " – sets an author's note for the currently selected chat", true, true);
+    registerSlashCommand('note', setNoteTextCommand, [], "<span class='monospace'>(text)</span> – sets an author's note for the currently selected chat", true, true);
+    registerSlashCommand('depth', setNoteDepthCommand, [], "<span class='monospace'>(number)</span> – sets an author's note depth for in-chat positioning", true, true);
+    registerSlashCommand('freq', setNoteIntervalCommand, ['interval'], "<span class='monospace'>(number)</span> – sets an author's note insertion frequency", true, true);
+    registerSlashCommand('pos', setNotePositionCommand, ['position'], "(<span class='monospace'>chat</span> or <span class='monospace'>scenario</span>) – sets an author's note position", true, true);
 })();

@@ -22,6 +22,11 @@ class SlashCommandParser {
 
     addCommand(command, callback, aliases, helpString = '', interruptsGeneration = false, purgeFromMessage = true) {
         const fnObj = { callback, helpString, interruptsGeneration, purgeFromMessage };
+
+        if ([command, ...aliases].some(x => this.commands.hasOwnProperty(x))) {
+            console.trace('WARN: Duplicate slash command registered!');
+        }
+    
         this.commands[command] = fnObj;
 
         if (Array.isArray(aliases)) {
@@ -81,7 +86,7 @@ const getSlashCommandsHelp = parser.getHelpString.bind(parser);
 
 parser.addCommand('help', helpCommandCallback, ['?'], ' – displays this help message', true, true);
 parser.addCommand('bg', setBackgroundCallback, ['background'], '<span class="monospace">(filename)</span> – sets a background according to filename, partial names allowed, will set the first one alphebetically if multiple files begin with the provided argument string', false, true);
-parser.addCommand('sys', sendNarratorMessage, [], ' – sends message as a system narrator', false, true);
+parser.addCommand('sys', sendNarratorMessage, [], '<span class="monospace">(text)</span> – sends message as a system narrator', false, true);
 parser.addCommand('sysname', setNarratorName, [], '<span class="monospace">(name)</span> – sets a name for future system narrator messages in this chat (display only). Default: System. Leave empty to reset.', true, true);
 
 const NARRATOR_NAME_KEY = 'narrator_name';
