@@ -3319,6 +3319,7 @@ a {
     position: relative;
     width: fit-content;
     transition: all 0.1s;
+    padding: 0.5rem;
 }
 
 .mes_img {
