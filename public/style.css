@@ -3325,6 +3325,7 @@ a {
 .mes_img {
     border-radius: 10px;
     width: 100%;
+    max-height: 40svh;
 }
 
 .mes_img_controls {
