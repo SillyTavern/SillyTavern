@@ -106,6 +106,7 @@ const defaultSettings = {
     // Horde settings
     horde: false,
     horde_nsfw: false,
+    horde_karras: true,
 }
 
 async function loadSettings() {
@@ -121,6 +122,7 @@ async function loadSettings() {
     $('#sd_height').val(extension_settings.sd.height).trigger('input');
     $('#sd_horde').prop('checked', extension_settings.sd.horde);
     $('#sd_horde_nsfw').prop('checked', extension_settings.sd.horde_nsfw);
+    $('#sd_horde_karras').prop('checked', extension_settings.sd.horde_karras);
     $('#sd_restore_faces').prop('checked', extension_settings.sd.restore_faces);
     $('#sd_enable_hr').prop('checked', extension_settings.sd.enable_hr);
 
@@ -178,6 +180,11 @@ async function onHordeInput() {
 
 async function onHordeNsfwInput() {
     extension_settings.sd.horde_nsfw = !!$(this).prop('checked');
+    saveSettingsDebounced();
+}
+
+async function onHordeKarrasInput() {
+    extension_settings.sd.horde_karras = !!$(this).prop('checked');
     saveSettingsDebounced();
 }
 
@@ -473,6 +480,7 @@ async function generateExtrasImage(prompt, callback) {
             negative_prompt: extension_settings.sd.negative_prompt,
             restore_faces: !!extension_settings.sd.restore_faces,
             enable_hr: !!extension_settings.sd.enable_hr,
+            karras: !!extension_settings.sd.horde_karras,
         }),
     });
 
@@ -592,16 +600,18 @@ function addSDGenButtons() {
     });
 }
 
-async function moduleWorker() {
-    const context = getContext();
+function isConnectedToExtras() {
+    return modules.includes('sd');
+}
 
-    if (context.onlineStatus === 'no_connection') {
-        $('#sd_gen').hide(200);
-        $('.sd_message_gen').hide();
-    }
-    else {
+async function moduleWorker() {
+    if (isConnectedToExtras() || extension_settings.sd.horde) {
         $('#sd_gen').show(200);
         $('.sd_message_gen').show();
+    }
+    else {
+        $('#sd_gen').hide(200);
+        $('.sd_message_gen').hide();
     }
 }
 
@@ -746,6 +756,12 @@ jQuery(async () => {
             <select id="sd_model"></select>
             <label for="sd_sampler">Sampling method</label>
             <select id="sd_sampler"></select>
+            <div class="flex-container flexGap5 marginTop10 margin-bot-10px">
+                <label class="checkbox_label">
+                    <input id="sd_horde_karras" type="checkbox" />
+                    Karras (only for Horde, not all samplers supported)
+                </label>
+            </div>
             <label for="sd_prompt_prefix">Generated prompt prefix</label>
             <textarea id="sd_prompt_prefix" class="text_pole textarea_compact" rows="2"></textarea>
             <label for="sd_negative_prompt">Negative prompt</label>
@@ -764,6 +780,7 @@ jQuery(async () => {
     $('#sd_height').on('input', onHeightInput);
     $('#sd_horde').on('input', onHordeInput);
     $('#sd_horde_nsfw').on('input', onHordeNsfwInput);
+    $('#sd_horde_karras').on('input', onHordeKarrasInput);
     $('#sd_restore_faces').on('input', onRestoreFacesInput);
     $('#sd_enable_hr').on('input', onHighResFixInput);
 

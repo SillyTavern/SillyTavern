@@ -193,7 +193,6 @@ async function connectToApi(baseUrl) {
             modules = data.modules;
             await activateExtensions();
             eventSource.emit(event_types.EXTRAS_CONNECTED, modules);
-            $("#extensionsMenuButton").css("display", "flex");
         }
 
         updateStatus(getExtensionsResult.ok);
