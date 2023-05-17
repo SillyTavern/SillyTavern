@@ -367,6 +367,11 @@ async function generatePicture(_, trigger, message, callback) {
     const quiet_prompt = getQuietPrompt(generationMode, trigger);
     const context = getContext();
 
+    if (trigger === 'face') {
+        var prevSDHeight = extension_settings.sd.height;
+        extension_settings.sd.height = extension_settings.sd.width * 1.5;
+    }
+
     try {
         const prompt = trigger == 'raw_last' ? message || getRawLastMessage(context) : processReply(await new Promise(
             async function promptPromise(resolve, reject) {
@@ -389,6 +394,7 @@ async function generatePicture(_, trigger, message, callback) {
         throw new Error('SD prompt text generation failed.')
     }
     finally {
+        extension_settings.sd.height = prevSDHeight;
         context.activateSendButtons();
         showSwipeButtons();
     }
@@ -403,6 +409,7 @@ async function sendGenerationRequest(prompt, callback) {
 }
 
 async function generateExtrasImage(prompt, callback) {
+    console.log(extension_settings.sd);
     const url = new URL(getApiUrl());
     url.pathname = '/api/image';
     const result = await fetch(url, {
@@ -595,6 +602,7 @@ $("#sd_dropdown [id]").on("click", function () {
     else if (id == "sd_face") {
         console.log("doing /sd face");
         generatePicture('sd', 'face');
+
     }
 
     else if (id == "sd_me") {
