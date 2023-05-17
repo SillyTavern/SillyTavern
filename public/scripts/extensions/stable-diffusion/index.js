@@ -549,7 +549,7 @@ function addSDGenButtons() {
     const buttonHtml = `
     <div id="sd_gen" class="list-group-item flex-container flexGap5">    
         <div class="fa-solid fa-paintbrush extensionsMenuExtensionButton" title="Trigger Stable Diffusion" /></div>
-        StableDiffusion
+        Stable Diffusion
     </div>
         `;
 
@@ -757,7 +757,7 @@ jQuery(async () => {
             <select id="sd_model"></select>
             <label for="sd_sampler">Sampling method</label>
             <select id="sd_sampler"></select>
-            <div class="flex-container flexGap5 marginTop10 margin-bot-10px">
+            <div class="flex-container flexGap5 margin-bot-10px">
                 <label class="checkbox_label">
                     <input id="sd_horde_karras" type="checkbox" />
                     Karras (only for Horde, not all samplers supported)

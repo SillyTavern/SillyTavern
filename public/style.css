@@ -538,6 +538,11 @@ code {
     cursor: pointer;
 }
 
+#extensionsMenu>div {
+    transition: 0.3s;
+    opacity: 0.7;
+}
+
 .options-content a div:first-child {
     min-width: 20px;
 }
