@@ -149,7 +149,7 @@ function autoConnectInputHandler() {
 
 function addExtensionsButtonAndMenu() {
     const buttonHTML =
-        `<div id="extensionsMenuButton" class="fa-solid fa-square-caret-up" title="Extras Extensions" /></div>`;
+        `<div id="extensionsMenuButton" class="fa-solid fa-magic-wand-sparkles" title="Extras Extensions" /></div>`;
     const extensionsMenuHTML = `<div id="extensionsMenu" class="list-group"></div>`;
 
     $(document.body).append(extensionsMenuHTML);
