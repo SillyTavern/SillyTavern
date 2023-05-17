@@ -147,6 +147,36 @@ function autoConnectInputHandler() {
     saveSettingsDebounced();
 }
 
+function addExtensionsButtonAndMenu() {
+    const buttonHTML =
+        `<div id="extensionsMenuButton" class="fa-solid fa-square-caret-up" title="Extras Extensions" /></div>`;
+    const extensionsMenuHTML = `<div id="extensionsMenu" class="list-group"></div>`;
+
+    $(document.body).append(extensionsMenuHTML);
+
+    $('#send_but_sheld').prepend(buttonHTML);
+
+    const button = $('#extensionsMenuButton');
+    const dropdown = $('#extensionsMenu');
+
+    let popper = Popper.createPopper(button.get(0), dropdown.get(0), {
+        placement: 'top-end',
+    });
+
+    $(document).on('click touchend', function (e) {
+        const target = $(e.target);
+        if (target.is(dropdown)) return;
+        if (target.is(button) && !dropdown.is(":visible")) {
+            e.preventDefault();
+
+            dropdown.show(200);
+            popper.update();
+        } else {
+            dropdown.hide(200);
+        }
+    });
+}
+
 async function connectToApi(baseUrl) {
     if (!baseUrl) {
         return;
@@ -163,6 +193,7 @@ async function connectToApi(baseUrl) {
             modules = data.modules;
             await activateExtensions();
             eventSource.emit(event_types.EXTRAS_CONNECTED, modules);
+            $("#extensionsMenuButton").css("display", "flex");
         }
 
         updateStatus(getExtensionsResult.ok);
@@ -287,6 +318,7 @@ async function loadExtensionSettings(settings) {
 }
 
 $(document).ready(async function () {
+    setTimeout(function () { addExtensionsButtonAndMenu(); }, 100)
     $("#extensions_connect").on('click', connectClickHandler);
     $("#extensions_autoconnect").on('input', autoConnectInputHandler);
     $("#extensions_details").on('click', showExtensionsDetails);

@@ -70,10 +70,10 @@ async function moduleWorker() {
     processTtsQueue()
     processAudioJobQueue()
     updateUiAudioPlayState()
-    
+
 
     // Auto generation is disabled
-    if (extension_settings.tts.auto_generation == false){
+    if (extension_settings.tts.auto_generation == false) {
         return
     }
 
@@ -153,7 +153,7 @@ function isTtsProcessing() {
     let processing = false
 
     // Check job queues 
-    if (ttsJobQueue.length > 0 || audioJobQueue > 0){
+    if (ttsJobQueue.length > 0 || audioJobQueue > 0) {
         processing = true
     }
     // Check current jobs
@@ -178,7 +178,7 @@ let lastAudioPosition = 0
 
 async function playAudioData(audioBlob) {
     // Since current audio job can be cancelled, don't playback if it is null
-    if (currentAudioJob == null){
+    if (currentAudioJob == null) {
         console.log("Cancelled TTS playback because currentAudioJob was null")
     }
     const reader = new FileReader()
@@ -212,7 +212,12 @@ async function onTtsVoicesClick() {
         const voiceIds = await ttsProvider.fetchTtsVoiceIds()
 
         for (const voice of voiceIds) {
-            popupText += `<div class="voice_preview"><span class="voice_lang">${voice.lang || ''}</span> <b class="voice_name">${voice.name}</b> <i onclick="tts_preview('${voice.voice_id}')" class="fa-solid fa-play"></i></div>`
+            popupText += `
+            <div class="voice_preview">
+                <span class="voice_lang">${voice.lang || ''}</span>
+                <b class="voice_name">${voice.name}</b> 
+                <i onclick="tts_preview('${voice.voice_id}')" class="fa-solid fa-play"></i>
+            </div>`
             popupText += `<audio id="${voice.voice_id}" src="${voice.preview_url}" data-disabled="${voice.preview_url == false}"></audio>`
         }
     } catch {
@@ -227,10 +232,10 @@ function updateUiAudioPlayState() {
         audioControl.style.display = 'flex'
         let img
         // Give user feedback that TTS is active by setting the stop icon if processing or playing
-        if (!audioElement.paused || isTtsProcessing()){
-            img = 'fa-solid fa-stop-circle'
+        if (!audioElement.paused || isTtsProcessing()) {
+            img = 'fa-solid fa-stop-circle list-group-item'
         } else {
-            img = 'fa-solid fa-circle-play'
+            img = 'fa-solid fa-circle-play list-group-item'
         }
         audioControl.className = img
     } else {
@@ -241,7 +246,7 @@ function updateUiAudioPlayState() {
 function onAudioControlClicked() {
     let context = getContext()
     // Not pausing, doing a full stop to anything TTS is doing. Better UX as pause is not as useful
-    if (!audioElement.paused || isTtsProcessing()){
+    if (!audioElement.paused || isTtsProcessing()) {
         resetTtsPlayback()
     } else {
         // Default play behavior if not processing or playing is to play the last message.
@@ -251,7 +256,7 @@ function onAudioControlClicked() {
 }
 
 function addAudioControl() {
-    $('#send_but_sheld').prepend('<div id="tts_media_control"/>')
+    $('#extensionsMenu').prepend('<div id="tts_media_control" class="list-group-item" />')
     $('#tts_media_control').attr('title', 'TTS play/pause').on('click', onAudioControlClicked)
     audioControl = document.getElementById('tts_media_control')
     updateUiAudioPlayState()
@@ -459,7 +464,7 @@ function onApplyClick() {
         console.error(error)
         setTtsStatus(error, false)
     })
-    
+
     extension_settings.tts[ttsProviderName] = ttsProvider.settings
     saveSettingsDebounced()
     setTtsStatus('Successfully applied settings', true)
@@ -539,7 +544,7 @@ function onTtsProviderSettingsInput() {
     ttsProvider.onSettingsChange()
 
     // Persist changes to SillyTavern tts extension settings
-    
+
     extension_settings.tts[ttsProviderName] = ttsProvider.setttings
     saveSettingsDebounced()
     console.info(`Saved settings ${ttsProviderName} ${JSON.stringify(ttsProvider.settings)}`)

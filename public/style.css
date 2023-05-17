@@ -486,6 +486,38 @@ code {
     border-top: 1px solid var(--white30a);
 }
 
+#extensionsMenuButton {
+    order: 100;
+    width: 40px;
+    height: 40px;
+    margin: 0;
+    padding: 1px;
+    outline: none;
+    border: none;
+    cursor: pointer;
+    transition: 0.3s;
+    opacity: 0.7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    display: none;
+
+}
+
+#extensionsMenuButton:hover {
+    opacity: 1;
+    filter: brightness(1.2);
+}
+
+#extensionsMenu {
+    z-index: 100;
+    backdrop-filter: blur(var(--SmartThemeBlurStrength));
+    font-size: 30px;
+    /* padding: 10px; */
+    display: flex;
+    gap: 10px;
+}
+
 #right-nav-panel hr,
 #personality_div hr,
 #top-settings-holder hr {
@@ -493,7 +525,8 @@ code {
     min-height: 1px;
 }
 
-.options-content a {
+.options-content a,
+#extensionsMenu div {
     color: var(--SmartThemeBodyColor);
     padding: 12px 16px;
     text-decoration: none;

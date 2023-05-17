@@ -8,7 +8,7 @@ const UPDATE_INTERVAL = 1000;
 function setDiceIcon() {
     const sendButton = document.getElementById('roll_dice');
     /* sendButton.style.backgroundImage = `url(/img/dice-solid.svg)`; */
-    sendButton.classList.remove('spin');
+    //sendButton.classList.remove('spin');
 }
 
 async function doDiceRoll() {
@@ -29,7 +29,7 @@ async function doDiceRoll() {
 
 function addDiceRollButton() {
     const buttonHtml = `
-        <div id="roll_dice" class="fa-solid fa-dice" title="Roll the dice" /></div>
+        <div id="roll_dice" class="fa-solid fa-dice list-group-item" title="Roll the dice" /></div>
         `;
     const dropdownHtml = `
     <div id="dice_dropdown">
@@ -45,7 +45,8 @@ function addDiceRollButton() {
         </ul>
     </div>`;
 
-    $('#send_but_sheld').prepend(buttonHtml);
+    $('#extensionsMenu').prepend(buttonHtml);
+
     $(document.body).append(dropdownHtml)
     $('#dice_dropdown li').on('click', doDiceRoll);
     const button = $('#roll_dice');
@@ -54,7 +55,7 @@ function addDiceRollButton() {
     button.hide();
 
     let popper = Popper.createPopper(button.get(0), dropdown.get(0), {
-        placement: 'top-start',
+        placement: 'left-end',
     });
 
     $(document).on('click touchend', function (e) {

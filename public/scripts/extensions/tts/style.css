@@ -1,9 +1,9 @@
 #tts_media_control {
     order: 100;
-    width: 40px;
+    /*     width: 40px;
     height: 40px;
     margin: 0;
-    padding: 1px;
+    padding: 1px; */
     outline: none;
     border: none;
     cursor: pointer;
