@@ -219,12 +219,12 @@ body.tts .mes_narrate {
 code {
     font-family: Consolas, monospace;
     white-space: pre-wrap;
-    word-wrap: break-word;
+    /* word-wrap: break-word; */
     border: 1px solid var(--white30a);
     border-radius: 5px;
     background-color: var(--black70a);
     padding: 0 3px;
-    max-width: calc(100svw - 95px);
+    /* max-width: calc(100svw - 95px); */
     line-height: var(--mainFontSize);
 }
 
@@ -572,8 +572,8 @@ code {
 }
 
 .mes {
-    display: grid;
-    grid-template-columns: min-content min-content auto min-content;
+    display: flex;
+    align-items: flex-start;
     padding: 20px 10px 0 10px;
     margin-top: 0;
     width: 100%;
@@ -587,9 +587,6 @@ code {
 }
 
 .last_mes {
-    grid-template-columns: [checkbox] fit-content(60px) [avatar-leftswipe] 50px [name-mestext] auto [edit-rightswipe] 30px !important;
-    grid-template-rows: [avatar-NameMesText-edit] 50px [swipes] auto;
-    grid-row-gap: 30px;
     margin-bottom: 0 !important;
     /*only affects bubblechat to make it sit nicely at the bottom*/
 }
@@ -601,7 +598,6 @@ code {
     height: 40px;
     width: 40px;
     opacity: 0.3;
-    right: 5px;
     align-items: center;
     justify-content: center;
     z-index: 9999;
@@ -610,12 +606,8 @@ code {
     flex-flow: column;
     font-size: 30px;
     cursor: pointer;
-}
-
-.swipe_right img,
-.swipe_left img {
-    height: 30px;
-    width: 30px;
+    align-self: center;
+    position: absolute;
 }
 
 .swipes-counter {
@@ -628,11 +620,12 @@ code {
 }
 
 .swipe_left {
-    left: 15px;
     right: auto;
-    grid-column-start: 2;
-    align-items: flex-end;
-    padding-bottom: 17px;
+    left: 20px;
+}
+
+.swipe_right {
+    right: 5px;
 }
 
 .ui-settings {
@@ -762,11 +755,6 @@ body.big-avatars #user_avatar_block .avatar img {
     width: 60px;
 }
 
-body.big-avatars .last_mes {
-    grid-template-rows: [avatar-NameMesText-edit] 80px [swipes] auto;
-    grid-template-columns: [checkbox] fit-content(60px) [avatar-leftswipe] fit-content(60px) [name-mestext] auto [edit-rightswipe] 30px !important;
-}
-
 body.big-avatars .avatar img {
     width: 100%;
     height: 100%;
@@ -779,9 +767,7 @@ body.big-avatars .avatar img {
 .mes_block {
     padding-top: 0;
     padding-left: 10px;
-    grid-row-start: 1;
-    grid-row-end: 3;
-    grid-column-start: 3;
+    width: 100%;
 }
 
 
@@ -1233,6 +1219,14 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 .ch_name {
     font-weight: bolder;
+}
+
+.justifySpaceBetween {
+    justify-content: space-between;
+}
+
+.mes_block .ch_name {
+    max-width: 100%;
 }
 
 /*applies to both groups and solos chars in the char list*/
@@ -1830,10 +1824,6 @@ input[type=search]:focus::-webkit-search-cancel-button {
     gap: 5px;
 }
 
-#form_rename_world {
-    /* margin-right: 50px; */
-}
-
 #form_rename_chat {
     flex: 1;
 }
@@ -2244,11 +2234,21 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .mes_buttons {
-    float: right;
     height: 20px;
     grid-row-start: 1;
     position: relative;
-    right: 0px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+}
+
+.last_mes .mes_buttons {
+    right: -30px;
+}
+
+.last_mes .mes_block {
+    margin-right: 30px;
 }
 
 .mes_prompt,
@@ -2258,8 +2258,6 @@ input[type="range"]::-webkit-slider-thumb {
 .mes_edit {
     cursor: pointer;
     transition: 0.3s ease-in-out;
-    height: 20px;
-    width: 20px;
     filter: drop-shadow(0px 0px 2px black);
     opacity: 0.2;
 }
@@ -2270,24 +2268,6 @@ input[type="range"]::-webkit-slider-thumb {
 .mes_narrate:hover,
 .mes_stop:hover {
     opacity: 1;
-}
-
-.last_mes .sd_message_gen,
-.last_mes .mes_copy,
-.last_mes .mes_narrate,
-.last_mes .mes_prompt {
-    grid-row-start: 1;
-    position: relative;
-    right: -30px;
-}
-
-
-.last_mes .mes_edit,
-.last_mes .mes_edit_buttons,
-.last_mes .mes_stop {
-    grid-row-start: 1;
-    position: relative;
-    right: -30px;
 }
 
 .mes_edit_buttons {
@@ -4231,7 +4211,7 @@ body.waifuMode #avatar_zoom_popup {
         {
         max-height: calc(100svh - 45px);
         width: 100% !important;
-        margin: 0 auto;
+        margin: 0 5px;
         max-width: 100%;
         left: 0 !important;
         resize: none !important;
