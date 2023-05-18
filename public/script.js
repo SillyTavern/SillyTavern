@@ -1990,7 +1990,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 // Add quiet generation prompt at depth 0
                 if (quiet_prompt && quiet_prompt.length) {
                     const name = is_pygmalion ? 'You' : name1;
-                    const quietAppend = isInstruct ? formatInstructModeChat(name, quiet_prompt, false, true) : `\n${name}: ${quiet_prompt}`;
+                    const quietAppend = isInstruct ? formatInstructModeChat(name, quiet_prompt, false, true, false) : `\n${name}: ${quiet_prompt}`;
                     mesSendString += quietAppend;
                 }
 
@@ -2362,14 +2362,14 @@ function getBiasStrings(textareaText) {
 
 function formatMessageHistoryItem(chatItem, isInstruct) {
     const isNarratorType = chatItem?.extra?.type === system_message_types.NARRATOR;
-    const characterName = selected_group ? chatItem.name : name2;
+    const characterName = (selected_group || chatItem.force_avatar) ? chatItem.name : name2;
     const itemName = chatItem.is_user ? chatItem['name'] : characterName;
-    const shouldPrependName = (chatItem.is_name || selected_group) && !isNarratorType;
+    const shouldPrependName = (chatItem.is_name || chatItem.force_avatar || selected_group) && !isNarratorType;
 
     let textResult = shouldPrependName ? `${itemName}: ${chatItem.mes}\n` : `${chatItem.mes}\n`;
 
     if (isInstruct) {
-        textResult = formatInstructModeChat(itemName, chatItem.mes, chatItem.is_user, isNarratorType);
+        textResult = formatInstructModeChat(itemName, chatItem.mes, chatItem.is_user, isNarratorType, chatItem.force_avatar);
     }
 
     // replace bias markup

@@ -171,8 +171,8 @@ function setOpenAIMessages(chat) {
             role = 'system';
         }
 
-        // for groups - prepend a character's name
-        if (selected_group) {
+        // for groups or sendas command - prepend a character's name
+        if (selected_group || chat[j].force_avatar) {
             content = `${chat[j].name}: ${content}`;
         }
 

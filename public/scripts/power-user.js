@@ -640,8 +640,8 @@ function loadInstructMode() {
     });
 }
 
-export function formatInstructModeChat(name, mes, isUser, isNarrator) {
-    const includeNames = isNarrator ? false : power_user.instruct.names || !!selected_group;
+export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvatar) {
+    const includeNames = isNarrator ? false : (power_user.instruct.names || !!selected_group || !!forceAvatar);
     const sequence = (isUser || isNarrator) ? power_user.instruct.input_sequence : power_user.instruct.output_sequence;
     const separator =  power_user.instruct.wrap ? '\n' : '';
     const separatorSequence =  power_user.instruct.separator_sequence && !isUser 

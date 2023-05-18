@@ -1,7 +1,10 @@
 import {
     addOneMessage,
+    characters,
     chat,
     chat_metadata,
+    default_avatar,
+    getThumbnailUrl,
     saveChatConditional,
     sendSystemMessage,
     system_avatar,
@@ -85,7 +88,8 @@ const registerSlashCommand = parser.addCommand.bind(parser);
 const getSlashCommandsHelp = parser.getHelpString.bind(parser);
 
 parser.addCommand('help', helpCommandCallback, ['?'], ' – displays this help message', true, true);
-parser.addCommand('bg', setBackgroundCallback, ['background'], '<span class="monospace">(filename)</span> – sets a background according to filename, partial names allowed, will set the first one alphebetically if multiple files begin with the provided argument string', false, true);
+parser.addCommand('bg', setBackgroundCallback, ['background'], '<span class="monospace">(filename)</span> – sets a background according to filename, partial names allowed, will set the first one alphabetically if multiple files begin with the provided argument string', false, true);
+parser.addCommand('sendas', sendMessageAs, [], ` – sends message as a specific character.<br>Example:<br><pre><code>/sendas Chloe\nHello, guys!</code></pre>will send "Hello, guys!" from "Chloe".<br>Uses character avatar if it exists in the characters list.`, true, true);
 parser.addCommand('sys', sendNarratorMessage, [], '<span class="monospace">(text)</span> – sends message as a system narrator', false, true);
 parser.addCommand('sysname', setNarratorName, [], '<span class="monospace">(name)</span> – sets a name for future system narrator messages in this chat (display only). Default: System. Leave empty to reset.', true, true);
 
@@ -96,6 +100,49 @@ function setNarratorName(_, text) {
     const name = text || NARRATOR_NAME_DEFAULT;
     chat_metadata[NARRATOR_NAME_KEY] = name;
     toastr.info(`System narrator name set to ${name}`);
+    saveChatConditional();
+}
+
+function sendMessageAs(_, text) {
+    if (!text) {
+        return;
+    }
+
+    const parts = text.split('\n');
+
+    if (parts.length <= 1) {
+        toastr.warning('Both character name and message are required. Separate them with a new line.');
+        return;
+    }
+
+    const name = parts.shift().trim();
+    const mesText = parts.join('\n').trim();
+
+    const character = characters.find(x => x.name === name);
+    let force_avatar, original_avatar;
+
+    if (character && character.avatar !== 'none') {
+        force_avatar = getThumbnailUrl('avatar', character.avatar);
+        original_avatar = character.avatar;
+    }
+    else {
+        force_avatar = default_avatar;
+        original_avatar = default_avatar;
+    }
+
+    const message = {
+        name: name,
+        is_user: false,
+        is_name: true,
+        is_system: false,
+        send_date: humanizedDateTime(),
+        mes: mesText,
+        force_avatar: force_avatar,
+        original_avatar: original_avatar,
+    };
+
+    chat.push(message);
+    addOneMessage(message);
     saveChatConditional();
 }
 
