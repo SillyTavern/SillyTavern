@@ -638,6 +638,7 @@ code {
     cursor: pointer;
     align-self: center;
     position: absolute;
+    bottom: 15px;
 }
 
 .swipes-counter {
@@ -691,9 +692,12 @@ code {
     border-style: none;
 }
 
+.mesAvatarWrapper {
+    padding-bottom: 50px;
+}
+
 .mes .avatar {
     cursor: pointer;
-
 }
 
 .hotswapAvatar,
