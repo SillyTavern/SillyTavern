@@ -261,7 +261,7 @@ function addAudioControl() {
             <div id="tts_media_control" class="extensionsMenuExtensionButton "/></div>
             TTS Playback
         </div>`)
-    $('#tts_media_control').attr('title', 'TTS play/pause').on('click', onAudioControlClicked)
+    $('#ttsExtensionMenuItem').attr('title', 'TTS play/pause').on('click', onAudioControlClicked)
     audioControl = document.getElementById('tts_media_control')
     updateUiAudioPlayState()
 }
