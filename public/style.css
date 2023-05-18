@@ -103,10 +103,12 @@ body {
 
 ::-webkit-scrollbar-thumb {
     background-color: var(--grey7070a);
-    border: 2px solid transparent;
     box-shadow: inset 0 0 0 1px var(--black50a);
     border-radius: 10px;
     background-clip: content-box;
+    border: 2px solid transparent;
+    border-top: 20px solid transparent;
+    min-height: 40px;
 }
 
 table.responsiveTable {
@@ -4023,16 +4025,6 @@ body.movingUI #avatar_zoom_popup,
 body.movingUI #floatingPrompt {
     resize: both;
 }
-
-body.movingUI #chat::-webkit-scrollbar-thumb {
-    background-color: var(--grey7070a);
-    border: 2px solid transparent;
-    border-top: 20px solid transparent;
-    box-shadow: inset 0 0 0 1px var(--black50a);
-    border-radius: 10px;
-    background-clip: content-box;
-}
-
 
 #expression-image.default,
 #expression-holder:has(.default) {
