@@ -744,9 +744,9 @@ function updateSoftPromptsList(soft_prompts) {
 
     // Add SPs added to Kobold
     soft_prompts.forEach((prompt) => {
-        if ($(`#softprompt option[value = "${prompt.name}"]`).length === 0) {
+        if ($(`#softprompt option[value="${prompt.name}"]`).length === 0) {
             $("#softprompt").append(
-                `< option value = "${prompt.name}" > ${prompt.name}</option > `
+                `<option value="${prompt.name}">${prompt.name}</option>`
             );
 
             if (prompt.selected) {
@@ -770,7 +770,7 @@ function printCharacters() {
         }
         // Populate the template
         const template = $('#character_template .character_select').clone();
-        template.attr({ 'chid': i, 'id': `CharID${i} ` });
+        template.attr({ 'chid': i, 'id': `CharID${i}` });
         template.find('img').attr('src', this_avatar);
         template.find('.avatar').attr('title', item.avatar);
         template.find('.ch_name').text(item.name);
@@ -833,7 +833,7 @@ async function getBackgrounds() {
         for (const bg of getData) {
             const thumbPath = getThumbnailUrl('bg', bg);
             $("#bg_menu_content").append(
-                `< div class="bg_example flex-container" bgfile = "${bg}" class="bg_example_img" title = "${bg}" style = "background-image: url('${thumbPath}');" >
+                `<div class="bg_example flex-container" bgfile="${bg}" class="bg_example_img" title="${bg}" style="background-image: url('${thumbPath}');">
                     <div bgfile="${bg}" class="bg_example_cross fa-solid fa-circle-xmark"></div>
                     <div class="BGSampleTitle">
                         ${bg
@@ -841,7 +841,7 @@ async function getBackgrounds() {
                     .replace('.jpg', '')
                     .replace('.webp', '')}
                 </div>
-                </div > `
+                </div>`
             );
         }
     }
@@ -1004,7 +1004,7 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
             .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
             .replace(/\n/g, "<br/>");
     } else if (!isSystem) {
-        mes = mes.replace(/```[\s\S]*? ```|``[\s\S]*?``|`[\s\S]*? `|(\".+?\")|(\u201C.+?\u201D)/gm, function (match, p1, p2) {
+        mes = mes.replace(/```[\s\S]*?```|``[\s\S]*?``|`[\s\S]*?`|(\".+?\")|(\u201C.+?\u201D)/gm, function (match, p1, p2) {
             if (p1) {
                 return '<q>"' + p1.replace(/\"/g, "") + '"</q>';
             } else if (p2) {
@@ -1027,7 +1027,7 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
     }
 
     if (!power_user.allow_name2_display && ch_name && !isUser && !isSystem) {
-        mes = mes.replaceAll(`${ch_name}: `, "");
+        mes = mes.replaceAll(`${ch_name}:`, "");
     }
 
     return mes;
@@ -1072,8 +1072,8 @@ function addCopyToCodeBlocks(messageElement) {
                 const copiedMsg = document.createElement("div");
                 copiedMsg.classList.add('code-copied');
                 copiedMsg.innerText = "Copied!";
-                copiedMsg.style.top = `${event.clientY - 55} px`;
-                copiedMsg.style.left = `${event.clientX - 55} px`;
+                copiedMsg.style.top = `${event.clientY - 55}px`;
+                copiedMsg.style.left = `${event.clientX - 55}px`;
                 document.body.append(copiedMsg);
                 setTimeout(() => {
                     document.body.removeChild(copiedMsg);
@@ -1148,14 +1148,14 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
             $("#chat").append(HTMLForEachMes);
         }
         else {
-            const target = $("#chat").find(`.mes[mesid = "${insertAfter}"]`);
+            const target = $("#chat").find(`.mes[mesid="${insertAfter}"]`);
             $(HTMLForEachMes).insertAfter(target);
             $(HTMLForEachMes).find('.swipe_left').css('display', 'none');
             $(HTMLForEachMes).find('.swipe_right').css('display', 'none');
         }
     }
 
-    const newMessage = $(`#chat[mesid = "${count_view_mes}"]`);
+    const newMessage = $(`#chat [mesid="${count_view_mes}"]`);
     newMessage.data("isSystem", isSystem);
 
     if (isSystem) {
@@ -1166,17 +1166,17 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     // don't need prompt button for user
     if (params.isUser === true) {
         newMessage.find(".mes_prompt").hide();
-        console.log(`hiding prompt for user mesID ${params.mesId} `);
+        console.log(`hiding prompt for user mesID ${params.mesId}`);
     }
 
     //shows or hides the Prompt display button
     let mesIdToFind = Number(newMessage.attr('mesId'));
     if (itemizedPrompts.length !== 0) {
-        //console.log(`itemizedPrompt.length = ${ itemizedPrompts.length } `)
+        //console.log(`itemizedPrompt.length = ${itemizedPrompts.length}`)
         for (var i = 0; i < itemizedPrompts.length; i++) {
             if (itemizedPrompts[i].mesId === mesIdToFind) {
                 newMessage.find(".mes_prompt").show();
-                console.log(`showing prompt for mesID ${params.mesId} from ${params.characterName} `);
+                console.log(`showing prompt for mesID ${params.mesId} from ${params.characterName}`);
             } else {
                 console.log(`no cache obj for mesID ${mesIdToFind}, hiding prompt button and continuing search`);
                 newMessage.find(".mes_prompt").hide();
@@ -1191,23 +1191,23 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
 
     newMessage.find('.avatar img').on('error', function () {
         $(this).hide();
-        $(this).parent().html(`< div class="missing-avatar fa-solid fa-user-slash" ></div > `);
+        $(this).parent().html(`<div class="missing-avatar fa-solid fa-user-slash"></div>`);
     });
 
     if (type === 'swipe') {
-        $("#chat").find(`[mesid = "${count_view_mes - 1}"]`).find('.mes_text').html('');
-        $("#chat").find(`[mesid = "${count_view_mes - 1}"]`).find('.mes_text').append(messageText);
-        appendImageToMessage(mes, $("#chat").find(`[mesid = "${count_view_mes - 1}"]`));
-        $("#chat").find(`[mesid = "${count_view_mes - 1}"]`).attr('title', title);
+        $("#chat").find(`[mesid="${count_view_mes - 1}"]`).find('.mes_text').html('');
+        $("#chat").find(`[mesid="${count_view_mes - 1}"]`).find('.mes_text').append(messageText);
+        appendImageToMessage(mes, $("#chat").find(`[mesid="${count_view_mes - 1}"]`));
+        $("#chat").find(`[mesid="${count_view_mes - 1}"]`).attr('title', title);
 
         if (mes.swipe_id == mes.swipes.length - 1) {
-            $("#chat").find(`[mesid = "${count_view_mes - 1}"]`).find('.mes_timer').text(params.timerValue);
-            $("#chat").find(`[mesid = "${count_view_mes - 1}"]`).find('.mes_timer').attr('title', params.timerTitle);
+            $("#chat").find(`[mesid="${count_view_mes - 1}"]`).find('.mes_timer').text(params.timerValue);
+            $("#chat").find(`[mesid="${count_view_mes - 1}"]`).find('.mes_timer').attr('title', params.timerTitle);
         } else {
-            $("#chat").find(`[mesid = "${count_view_mes - 1}"]`).find('.mes_timer').html('');
+            $("#chat").find(`[mesid="${count_view_mes - 1}"]`).find('.mes_timer').html('');
         }
     } else {
-        $("#chat").find(`[mesid = "${count_view_mes}"]`).find('.mes_text').append(messageText);
+        $("#chat").find(`[mesid="${count_view_mes}"]`).find('.mes_text').append(messageText);
         appendImageToMessage(mes, newMessage);
         hideSwipeButtons();
         count_view_mes++;
@@ -1235,10 +1235,10 @@ function formatGenerationTimer(gen_started, gen_finished) {
     const start = moment(gen_started);
     const finish = moment(gen_finished);
     const seconds = finish.diff(start, 'seconds', true);
-    const timerValue = `${seconds.toFixed(1)} s`;
+    const timerValue = `${seconds.toFixed(1)}s`;
     const timerTitle = [
-        `Generation queued: ${start.format(dateFormat)} `,
-        `Reply received: ${finish.format(dateFormat)} `,
+        `Generation queued: ${start.format(dateFormat)}`,
+        `Reply received: ${finish.format(dateFormat)}`,
         `Time to generate: ${seconds} seconds`,
     ].join('\n');
 
@@ -1267,9 +1267,9 @@ function substituteParams(content, _name1, _name2) {
 }
 
 function getStoppingStrings(isImpersonate, addSpace) {
-    const charString = `\n${name2}: `;
-    const youString = `\nYou: `;
-    const userString = `\n${name1}: `;
+    const charString = `\n${name2}:`;
+    const youString = `\nYou:`;
+    const userString = `\n${name1}:`;
     const result = isImpersonate ? [charString] : [youString];
 
     result.push(userString);
@@ -1282,7 +1282,7 @@ function getStoppingStrings(isImpersonate, addSpace) {
             const names = group.members
                 .map(x => characters.find(y => y.avatar == x))
                 .filter(x => x && x.name !== name2)
-                .map(x => `\n${x.name}: `);
+                .map(x => `\n${x.name}:`);
             result.push(...names);
         }
     }
@@ -1382,7 +1382,7 @@ function cleanGroupMessage(getMessage) {
                 continue;
             }
 
-            const indexOfMember = getMessage.indexOf(`${name}: `);
+            const indexOfMember = getMessage.indexOf(`${name}:`);
             if (indexOfMember != -1) {
                 getMessage = getMessage.substr(0, indexOfMember);
             }
@@ -1456,8 +1456,8 @@ class StreamingProcessor {
             return;
         }
 
-        $(`#chat.mes[mesid = "${messageId}"].mes_stop`).css({ 'display': 'block' });
-        $(`#chat.mes[mesid = "${messageId}"].mes_buttons`).css({ 'display': 'none' });
+        $(`#chat .mes[mesid="${messageId}"] .mes_stop`).css({ 'display': 'block' });
+        $(`#chat .mes[mesid="${messageId}"] .mes_buttons`).css({ 'display': 'none' });
     }
 
     hideStopButton(messageId) {
@@ -1465,8 +1465,8 @@ class StreamingProcessor {
             return;
         }
 
-        $(`#chat.mes[mesid = "${messageId}"].mes_stop`).css({ 'display': 'none' });
-        $(`#chat.mes[mesid = "${messageId}"].mes_buttons`).css({ 'display': 'block' });
+        $(`#chat .mes[mesid="${messageId}"] .mes_stop`).css({ 'display': 'none' });
+        $(`#chat .mes[mesid="${messageId}"] .mes_buttons`).css({ 'display': 'block' });
     }
 
     onStartStreaming(text) {
@@ -1530,9 +1530,9 @@ class StreamingProcessor {
                 chat[messageId].is_system,
                 chat[messageId].is_user,
             );
-            const mesText = $(`#chat.mes[mesid = "${messageId}"].mes_text`);
+            const mesText = $(`#chat .mes[mesid="${messageId}"] .mes_text`);
             mesText.html(formattedText);
-            $(`#chat.mes[mesid = "${messageId}"].mes_timer`).text(timePassed.timerValue).attr('title', timePassed.timerTitle);
+            $(`#chat .mes[mesid="${messageId}"] .mes_timer`).text(timePassed.timerValue).attr('title', timePassed.timerTitle);
             this.setFirstSwipe(messageId);
         }
 
@@ -1542,7 +1542,7 @@ class StreamingProcessor {
     onFinishStreaming(messageId, text) {
         this.hideStopButton(this.messageId);
         this.onProgressStreaming(messageId, text, true);
-        addCopyToCodeBlocks($(`#chat.mes[mesid = "${messageId}"]`));
+        addCopyToCodeBlocks($(`#chat .mes[mesid="${messageId}"]`));
         saveChatConditional();
         activateSendButtons();
         showSwipeButtons();
@@ -1554,7 +1554,7 @@ class StreamingProcessor {
 
         if (power_user.auto_swipe) {
             function containsBlacklistedWords(str, blacklist, threshold) {
-                const regex = new RegExp(`\\b(${blacklist.join('|')}) \\b`, 'gi');
+                const regex = new RegExp(`\\b(${blacklist.join('|')})\\b`, 'gi');
                 const matches = str.match(regex) || [];
                 return matches.length >= threshold;
             }
@@ -1764,7 +1764,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 power_user.custom_chat_separator ? power_user.custom_chat_separator :
                     power_user.disable_examples_formatting ? '' :
                         is_pygmalion ? '<START>' : `This is how ${name2} should talk`;
-        let mesExamplesArray = mesExamples.split(/<START>/gi).slice(1).map(block => `${blockHeading} \n${block.trim()} \n`);
+        let mesExamplesArray = mesExamples.split(/<START>/gi).slice(1).map(block => `${blockHeading}\n${block.trim()}\n`);
 
         // First message in fresh 1-on-1 chat reacts to user/character settings changes
         if (chat.length) {
@@ -1776,7 +1776,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         if (type === 'swipe') {
             coreChat.pop();
         }
-        console.log(`Core / all messages: ${coreChat.length} /${chat.length}`);
+        console.log(`Core/all messages: ${coreChat.length}/${chat.length}`);
 
         if (main_api === 'openai') {
             message_already_generated = ''; // OpenAI doesn't have multigen
