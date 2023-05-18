@@ -56,7 +56,31 @@ const quietPrompts = {
     //prompt for only the last message
     [generationMode.USER]: "[Pause your roleplay and provide a detailed description of {{user}}'s physical appearance from the perspective of {{char}} in the form of a comma-delimited list of keywords and phrases. The list must include all of the following items in this order: name, species and race, gender, age, clothing, occupation, physical features and appearances. Do not include descriptions of non-visual qualities such as personality, movements, scents, mental traits, or anything which could not be seen in a still photograph. Do not write in full sentences. Prefix your description with the phrase 'full body portrait,'. Ignore the rest of the story when crafting this description. Do not roleplay as {{char}} when writing this description, and do not attempt to continue the story.]",
     [generationMode.SCENARIO]: "[Pause your roleplay and provide a detailed description for all of the following: a brief recap of recent events in the story, {{char}}'s appearance, and {{char}}'s surroundings. Do not roleplay while writing this description.]",
-    [generationMode.NOW]: "[Pause your roleplay and provide a brief description of the last chat message. Focus on visual details, clothing, actions and make them all coherent to the current state of the story. Ignore the non-visible feelings and thoughts of {{char}} and {{user}} as well as any spoken dialog. Do not roleplay as {{char}} while writing this description. Do not continue the roleplay story.]",
+
+    [generationMode.NOW]: `[Pause your roleplay. Your next response must be formatted as a single comma-delimited list of concise keywords.  The list will describe of the visual details included in the last chat message. 
+        
+    Only mention characters by using pronouns ('he','his','she','her','it','its') or neutral nouns ('male', 'the man', 'female', 'the woman'). 
+    
+    Ignore non-visible things such as feelings, personality traits, thoughts, and spoken dialog. 
+    
+    Add keywords in this precise order:
+    a keyword to describe the location of the scene,
+    a keyword to mention how many characters of each gender or type are present in the scene (minimum of two characters: 
+    {{user}} and {{char}}, example: '2 men ' or '1 man 1 woman ', '1 man 3 robots'),
+
+    keywords to describe the relative physical positioning of the characters to each other (if a commonly known term for the positioning is known use it isntead of describing the positioning in detail) + 'POV',
+
+    a single keyword or phrase to describe the primary act taking place in the last chat message,
+    
+    keywords to describe {{char}}'s physical appearance and facial expression,
+    keywords to describe {{char}}'s actions,
+    keywords to describe {{user}}'s physical appearance and actions.
+    
+    If character actions involve direct physical interaction with another character, mention specifically which body parts interacting and how.
+    
+    A correctly formatted example response would be:
+    '(location),(character list by gender),(primary action), (relative character position) POV, (character 1's description and actions), (character 2's description and actions)']`,
+
     [generationMode.RAW_LAST]: "[Pause your roleplay and provide ONLY the last chat message string back to me verbatim. Do not write anything after the string. Do not roleplay at all in your response. Do not continue the roleplay story.]",
 }
 
