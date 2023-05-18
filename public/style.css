@@ -1352,6 +1352,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     align-self: flex-end;
     bottom: 0;
     position: relative;
+    word-break: break-word;
     background-color: var(--black50a);
     font-size: calc(var(--fontScale) * 0.9em);
 }

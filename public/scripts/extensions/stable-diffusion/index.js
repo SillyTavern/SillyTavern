@@ -68,7 +68,7 @@ const quietPrompts = {
     a keyword to mention how many characters of each gender or type are present in the scene (minimum of two characters: 
     {{user}} and {{char}}, example: '2 men ' or '1 man 1 woman ', '1 man 3 robots'),
 
-    keywords to describe the relative physical positioning of the characters to each other (if a commonly known term for the positioning is known use it isntead of describing the positioning in detail) + 'POV',
+    keywords to describe the relative physical positioning of the characters to each other (if a commonly known term for the positioning is known use it instead of describing the positioning in detail) + 'POV',
 
     a single keyword or phrase to describe the primary act taking place in the last chat message,
     
@@ -118,7 +118,7 @@ const defaultSettings = {
     width: 512,
     height: 512,
 
-    prompt_prefix: 'best quality, absurdres, masterpiece, detailed, intricate,',
+    prompt_prefix: 'best quality, absurdres, masterpiece,',
     negative_prompt: 'lowres, bad anatomy, bad hands, text, error, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry',
     sampler: 'DDIM',
     model: '',
@@ -384,6 +384,7 @@ function processReply(str) {
 
     str = str.replaceAll('"', '')
     str = str.replaceAll('“', '')
+    str = str.replaceAll('.', ',')
     str = str.replaceAll('\n', ', ')
     str = str.replace(/[^a-zA-Z0-9,:]+/g, ' ') // Replace everything except alphanumeric characters and commas with spaces
     str = str.replace(/\s+/g, ' '); // Collapse multiple whitespaces into one
@@ -571,7 +572,7 @@ async function sendMessage(prompt, image) {
 function addSDGenButtons() {
 
     const buttonHtml = `
-    <div id="sd_gen" class="list-group-item flex-container flexGap5">    
+    <div id="sd_gen" class="list-group-item flex-container flexGap5">
         <div class="fa-solid fa-paintbrush extensionsMenuExtensionButton" title="Trigger Stable Diffusion" /></div>
         Stable Diffusion
     </div>
