@@ -2014,7 +2014,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     if (!mesSendString.endsWith('\n')) {
                         mesSendString += '\n';
                     }
-                    mesSendString += name2 + ':' + promptBias;
+                    mesSendString += (`${name2}:${promptBias || ''}`);
                 }
 
                 return mesSendString;
