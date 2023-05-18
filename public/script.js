@@ -2166,7 +2166,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     type: 'POST', //
                     url: generate_url, //
                     data: JSON.stringify(generate_data),
-                    beforeSend: () => {},
+                    beforeSend: () => { },
                     cache: false,
                     dataType: "json",
                     contentType: "application/json",
@@ -4109,10 +4109,10 @@ function select_rm_info(type, charId) {
         const element = $(`#rm_characters_block [title="${charId + '.png'}"]`).get(0);
         element.scrollIntoView({ behavior: 'smooth', block: 'end' });
 
-        /*             $(`#rm_characters_block [title="${charId + '.png'}"]`).parent.addClass('flash animated');
-                    setTimeout(function(){
-                        $(`#rm_characters_block [title="${charId + '.png'}"]`).parent.addClass('flash animated');
-                    }, 1000); */
+        $(`#rm_characters_block [title="${charId + '.png'}"]`).parent().addClass('flash animated');
+        setTimeout(function () {
+            $(`#rm_characters_block [title="${charId + '.png'}"]`).parent().removeClass('flash animated');
+        }, 5000);
 
     }
 

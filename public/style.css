@@ -133,23 +133,25 @@ table.responsiveTable {
 }
 
 .animated {
-    -webkit-animation-duration: 1s;
-    animation-duration: 1s;
-    -webkit-animation-fill-mode: both;
-    animation-fill-mode: both;
+    -webkit-animation-duration: 3s !important;
+    animation-duration: 3s !important;
+    -webkit-animation-fill-mode: both !important;
+    animation-fill-mode: both !important;
+    box-shadow: inset 0 0 5px var(--SmartThemeQuoteColor);
 }
 
 @keyframes flash {
 
-    0%,
-    50%,
+    20%,
+    60%,
     100% {
         opacity: 1;
     }
 
-    25%,
-    75% {
-        opacity: 0;
+    0%,
+    40%,
+    80% {
+        opacity: 0.2;
     }
 }
 
