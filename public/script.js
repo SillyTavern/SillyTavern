@@ -293,8 +293,7 @@ const system_messages = {
         mes: [
             'Hi there! The following chat formatting commands are supported:',
             '<ol>',
-            '<li><tt>{{text}}</tt> – sets a permanent behavioral bias for the AI</li>',
-            '<li><tt>{{}}</tt> – removes any active character bias</li>',
+            '<li><tt>{{text}}</tt> – sets a one-time behavioral bias for the AI. Resets when you send the next message.</li>',
             '</ol>',
         ].join('')
     },
@@ -1351,14 +1350,6 @@ function extractMessageBias(message) {
         found.push(curMatch[1].trim());
     }
 
-    if (!found.length) {
-        // cancels a bias
-        if (message.includes('{{') && message.includes('}}')) {
-            return '';
-        }
-        return null;
-    }
-
     return ` ${found.join(" ")} `;
 }
 
@@ -2357,15 +2348,14 @@ function getBiasStrings(textareaText) {
 
     // gets bias of the latest message where it was applied
     for (let mes of chat.slice().reverse()) {
-        if (mes && mes.is_user && mes.extra && mes.extra.bias) {
-            if (mes.extra.bias.trim().length > 0) {
+        if (mes && mes.is_user) {
+            if (mes.extra && mes.extra.bias && mes.extra.bias.trim().length > 0) {
                 promptBias = mes.extra.bias;
             }
             break;
         }
     }
 
-    // bias from the latest message is top priority//
     promptBias = messageBias || promptBias || '';
     return { messageBias, promptBias };
 }
@@ -2401,7 +2391,7 @@ function sendMessageAsUser(textareaText, messageBias) {
         console.log('checking bias');
         chat[chat.length - 1]['extra']['bias'] = messageBias;
     }
-    //console.log('Generate calls addOneMessage');
+
     addOneMessage(chat[chat.length - 1]);
 }
 
