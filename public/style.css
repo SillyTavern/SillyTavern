@@ -132,6 +132,31 @@ table.responsiveTable {
     border-top: 2px solid grey;
 }
 
+.animated {
+    -webkit-animation-duration: 1s;
+    animation-duration: 1s;
+    -webkit-animation-fill-mode: both;
+    animation-fill-mode: both;
+}
+
+@keyframes flash {
+
+    0%,
+    50%,
+    100% {
+        opacity: 1;
+    }
+
+    25%,
+    75% {
+        opacity: 0;
+    }
+}
+
+.flash {
+    animation-name: flash;
+}
+
 .tokenItemizingSubclass {
     font-size: calc(var(--mainFontSize) * 0.8);
     color: var(--SmartThemeEmColor);
@@ -578,6 +603,7 @@ code {
     margin-top: 0;
     width: 100%;
     color: var(--SmartThemeBodyColor);
+    position: relative;
 }
 
 .mes q:before,

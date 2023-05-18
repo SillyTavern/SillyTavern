@@ -4104,6 +4104,21 @@ function select_rm_info(type, charId) {
     }
 
     selectRightMenuWithAnimation('rm_characters_block');
+
+    if (type === 'char_import' || type === 'char_create') {
+
+        //$(`#rm_characters_block [title="${charId + '.png'}"]`).scrollIntoView({ behavior: "smooth", block: "end" });
+        const element = $(`#rm_characters_block [title="${charId + '.png'}"]`).get(0);
+        element.scrollIntoView({ behavior: 'smooth', block: 'end' });
+
+        /*             $(`#rm_characters_block [title="${charId + '.png'}"]`).parent.addClass('flash animated');
+                    setTimeout(function(){
+                        $(`#rm_characters_block [title="${charId + '.png'}"]`).parent.addClass('flash animated');
+                    }, 1000); */
+
+    }
+
+
     setRightTabSelectedClass();
 
     prev_selected_char = charId;
