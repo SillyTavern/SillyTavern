@@ -423,22 +423,25 @@ function isUrlOrAPIKey(string) {
 }
 
 function OpenNavPanels() {
-    //auto-open R nav if locked and previously open
-    if (LoadLocalBool("NavLockOn") == true && LoadLocalBool("NavOpened") == true) {
-        //console.log("RA -- clicking right nav to open");
-        $("#rightNavDrawerIcon").click();
-    }
 
-    //auto-open L nav if locked and previously open
-    if (LoadLocalBool("LNavLockOn") == true && LoadLocalBool("LNavOpened") == true) {
-        console.log("RA -- clicking left nav to open");
-        $("#leftNavDrawerIcon").click();
-    }
+    if (deviceInfo.device.type === 'desktop') {
+        //auto-open R nav if locked and previously open
+        if (LoadLocalBool("NavLockOn") == true && LoadLocalBool("NavOpened") == true) {
+            //console.log("RA -- clicking right nav to open");
+            $("#rightNavDrawerIcon").click();
+        }
 
-    //auto-open WI if locked and previously open
-    if (LoadLocalBool("WINavLockOn") == true && LoadLocalBool("WINavOpened") == true) {
-        console.log("RA -- clicking WI to open");
-        $("#WIDrawerIcon").click();
+        //auto-open L nav if locked and previously open
+        if (LoadLocalBool("LNavLockOn") == true && LoadLocalBool("LNavOpened") == true) {
+            console.log("RA -- clicking left nav to open");
+            $("#leftNavDrawerIcon").click();
+        }
+
+        //auto-open WI if locked and previously open
+        if (LoadLocalBool("WINavLockOn") == true && LoadLocalBool("WINavOpened") == true) {
+            console.log("RA -- clicking WI to open");
+            $("#WIDrawerIcon").click();
+        }
     }
 }
 
