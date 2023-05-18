@@ -134,6 +134,7 @@ let power_user = {
         input_sequence: '### Instruction:',
         output_sequence: '### Response:',
         preset: 'Alpaca',
+        separator_sequence: '',
     }
 };
 
@@ -584,6 +585,7 @@ function loadInstructMode() {
         { id: "instruct_wrap", property: "wrap", isCheckbox: true },
         { id: "instruct_system_prompt", property: "system_prompt", isCheckbox: false },
         { id: "instruct_system_sequence", property: "system_sequence", isCheckbox: false },
+        { id: "instruct_separator_sequence", property: "separator_sequence", isCheckbox: false },
         { id: "instruct_input_sequence", property: "input_sequence", isCheckbox: false },
         { id: "instruct_output_sequence", property: "output_sequence", isCheckbox: false },
         { id: "instruct_stop_sequence", property: "stop_sequence", isCheckbox: false },
@@ -641,8 +643,11 @@ function loadInstructMode() {
 export function formatInstructModeChat(name, mes, isUser, isNarrator) {
     const includeNames = isNarrator ? false : power_user.instruct.names || !!selected_group;
     const sequence = (isUser || isNarrator) ? power_user.instruct.input_sequence : power_user.instruct.output_sequence;
-    const separator = power_user.instruct.wrap ? '\n' : '';
-    const textArray = includeNames ? [sequence, `${name}: ${mes}`, separator] : [sequence, mes, separator];
+    const separator =  power_user.instruct.wrap ? '\n' : '';
+    const separatorSequence =  power_user.instruct.separator_sequence && !isUser 
+        ? power_user.instruct.separator_sequence
+        : (power_user.instruct.wrap ? '\n' : '');
+    const textArray = includeNames ? [sequence, `${name}: ${mes}`, separatorSequence] : [sequence, mes, separatorSequence];
     const text = textArray.filter(x => x).join(separator);
     return text;
 }
@@ -661,7 +666,7 @@ export function formatInstructModePrompt(name, isImpersonate) {
     const sequence = isImpersonate ? power_user.instruct.input_sequence : power_user.instruct.output_sequence;
     const separator = power_user.instruct.wrap ? '\n' : '';
     const text = includeNames ? (separator + sequence + separator + `${name}:`) : (separator + sequence);
-    return text;
+    return text.trimEnd();
 }
 
 const sortFunc = (a, b) => power_user.sort_order == 'asc' ? compareFunc(a, b) : compareFunc(b, a);

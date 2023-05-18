@@ -5,5 +5,6 @@
     "stop_sequence": "</s>",
     "input_sequence": "<|user|>",
     "output_sequence": "<|model|>",
+    "separator_sequence": "",
     "wrap": false
 }

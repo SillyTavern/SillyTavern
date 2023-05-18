@@ -435,6 +435,10 @@ Text added before the character's reply.
 
 Text added before the system prompt.
 
+#### Separator Sequence
+
+Text added after the character reply to separate the chat history logs.
+
 #### Stop Sequence
 
 Text that denotes the end of the reply. Will be trimmed from the output text.
