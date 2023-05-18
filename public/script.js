@@ -1733,21 +1733,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
         deactivateSendButtons();
 
-        let promptBias = null;
-        let messageBias = extractMessageBias(textareaText);
-
-        // gets bias of the latest message where it was applied
-        for (let mes of chat.slice().reverse()) {
-            if (mes && mes.is_user && mes.extra && mes.extra.bias) {
-                if (mes.extra.bias.trim().length > 0) {
-                    promptBias = mes.extra.bias;
-                }
-                break;
-            }
-        }
-
-        // bias from the latest message is top priority//
-        promptBias = messageBias ?? promptBias ?? '';
+        let { messageBias, promptBias } = getBiasStrings(textareaText);
 
         //*********************************
         //PRE FORMATING STRING
@@ -1809,7 +1795,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         }
 
         // Pygmalion does that anyway
-        if (power_user.always_force_name2 && !is_pygmalion) {
+        if (promptBias || (power_user.always_force_name2 && !is_pygmalion)) {
             force_name2 = true;
         }
 
@@ -1871,7 +1857,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 storyString,
                 examplesString,
                 chatString,
-                promptBias,
                 allAnchors,
                 quiet_prompt,
             ].join('').replace(/\r/gm, '');
@@ -1893,15 +1878,14 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             }
 
             chatString = item + chatString;
-            if (canFitMessages()) { //(The number of tokens in the entire promt) need fix, it must count correctly (added +120, so that the description of the character does not hide)
-                //if (is_pygmalion && i == chat2.length-1) item='<START>\n'+item;
+            if (canFitMessages()) {
                 arrMes[arrMes.length] = item;
-
             } else {
                 break;
-
             }
-            await delay(1); //For disable slow down (encode gpt-2 need fix)
+
+            // Prevent UI thread lock on tokenization
+            await delay(1);
         }
 
         if (main_api !== 'openai') {
@@ -2005,33 +1989,44 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     const isBottom = j === mesSend.length - 1;
                     mesSendString += mesSend[j];
 
-                    // Add quiet generation prompt at depth 0
-                    if (isBottom && quiet_prompt && quiet_prompt.length) {
-                        const name = is_pygmalion ? 'You' : name1;
-                        const quietAppend = isInstruct ? formatInstructModeChat(name, quiet_prompt, false, true) : `\n${name}: ${quiet_prompt}`;
-                        mesSendString += quietAppend;
-                    }
-
-                    if (isInstruct && isBottom && tokens_already_generated === 0) {
-                        const name = isImpersonate ? (is_pygmalion ? 'You' : name1) : name2;
-                        mesSendString += formatInstructModePrompt(name, isImpersonate);
-                    }
-
-                    if (!isInstruct && isImpersonate && isBottom && tokens_already_generated === 0) {
-                        const name = is_pygmalion ? 'You' : name1;
-                        if (!mesSendString.endsWith('\n')) {
-                            mesSendString += '\n';
-                        }
-                        mesSendString += name + ':';
-                    }
-
-                    if (force_name2 && isBottom && tokens_already_generated === 0) {
-                        if (!mesSendString.endsWith('\n')) {
-                            mesSendString += '\n';
-                        }
-                        mesSendString += name2 + ':';
+                    if (isBottom) {
+                        mesSendString = modifyLastPromptLine(mesSendString);
                     }
                 }
+            }
+
+            function modifyLastPromptLine(mesSendString) {
+                // Add quiet generation prompt at depth 0
+                if (quiet_prompt && quiet_prompt.length) {
+                    const name = is_pygmalion ? 'You' : name1;
+                    const quietAppend = isInstruct ? formatInstructModeChat(name, quiet_prompt, false, true) : `\n${name}: ${quiet_prompt}`;
+                    mesSendString += quietAppend;
+                }
+
+                // Get instruct mode line
+                if (isInstruct && tokens_already_generated === 0) {
+                    const name = isImpersonate ? (is_pygmalion ? 'You' : name1) : name2;
+                    mesSendString += formatInstructModePrompt(name, isImpersonate);
+                }
+
+                // Get non-instruct impersonation line
+                if (!isInstruct && isImpersonate && tokens_already_generated === 0) {
+                    const name = is_pygmalion ? 'You' : name1;
+                    if (!mesSendString.endsWith('\n')) {
+                        mesSendString += '\n';
+                    }
+                    mesSendString += name + ':';
+                }
+
+                // Add character's name
+                if (force_name2 && tokens_already_generated === 0) {
+                    if (!mesSendString.endsWith('\n')) {
+                        mesSendString += '\n';
+                    }
+                    mesSendString += name2 + ':' + promptBias;
+                }
+
+                return mesSendString;
             }
 
             function checkPromtSize() {
@@ -2043,7 +2038,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     mesExmString,
                     mesSendString,
                     generatedPromtCache,
-                    promptBias,
                     allAnchors,
                     quiet_prompt,
                 ].join('').replace(/\r/gm, '');
@@ -2081,8 +2075,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 afterScenarioAnchor +
                 mesExmString +
                 mesSendString +
-                generatedPromtCache +
-                promptBias;
+                generatedPromtCache;
 
             if (zeroDepthAnchor && zeroDepthAnchor.length) {
                 if (!isMultigenEnabled() || tokens_already_generated == 0) {
@@ -2182,9 +2175,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     type: 'POST', //
                     url: generate_url, //
                     data: JSON.stringify(generate_data),
-                    beforeSend: function () {
-
-                    },
+                    beforeSend: () => {},
                     cache: false,
                     dataType: "json",
                     contentType: "application/json",
@@ -2353,14 +2344,31 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         } //rungenerate ends
     } else {    //generate's primary loop ends, after this is error handling for no-connection or safety-id
         if (this_chid === undefined || this_chid === 'invalid-safety-id') {
-            //send ch sel
-            popup_type = 'char_not_selected';
-            callPopup('<h3>Сharacter is not selected</h3>');
+            toastr.warning('Сharacter is not selected');
         }
         is_send_press = false;
     }
     //console.log('generate ending');
 } //generate ends
+
+function getBiasStrings(textareaText) {
+    let promptBias = '';
+    let messageBias = extractMessageBias(textareaText);
+
+    // gets bias of the latest message where it was applied
+    for (let mes of chat.slice().reverse()) {
+        if (mes && mes.is_user && mes.extra && mes.extra.bias) {
+            if (mes.extra.bias.trim().length > 0) {
+                promptBias = mes.extra.bias;
+            }
+            break;
+        }
+    }
+
+    // bias from the latest message is top priority//
+    promptBias = messageBias || promptBias || '';
+    return { messageBias, promptBias };
+}
 
 function formatMessageHistoryItem(chatItem, isInstruct) {
     const isNarratorType = chatItem?.extra?.type === system_message_types.NARRATOR;
