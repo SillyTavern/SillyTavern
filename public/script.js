@@ -823,13 +823,17 @@ async function getBackgrounds() {
         for (const bg of getData) {
             const thumbPath = getThumbnailUrl('bg', bg);
             $("#bg_menu_content").append(
-                `<div class="bg_example" bgfile="${bg}" class="bg_example_img" title="${bg}" style="background-image: url('${thumbPath}');">
-                <div bgfile="${bg}" class="bg_example_cross fa-solid fa-circle-xmark"></div>
-            </div>`
+                `<div class="bg_example flex-container" bgfile="${bg}" class="bg_example_img" title="${bg}" style="background-image: url('${thumbPath}');">
+                    <div bgfile="${bg}" class="bg_example_cross fa-solid fa-circle-xmark"></div>
+                    <div class="BGSampleTitle">
+                        ${bg
+                    .replace('.png', '')
+                    .replace('.jpg', '')
+                    .replace('.webp', '')}
+                </div>
+                </div>`
             );
         }
-        //var aa = JSON.parse(getData[0]);
-        //const load_ch_coint = Object.getOwnPropertyNames(getData);
     }
 }
 async function isColab() {

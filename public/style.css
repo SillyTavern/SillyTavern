@@ -1312,13 +1312,27 @@ input[type=search]:focus::-webkit-search-cancel-button {
     margin: 5px;
     cursor: pointer;
     aspect-ratio: 16/9;
+    justify-content: flex-end;
+}
+
+.BGSampleTitle {
+    display: flex;
+    width: 100%;
+    height: min-content;
+    text-align: center;
+    justify-content: center;
+    align-self: flex-end;
+    bottom: 0;
+    position: relative;
+    background-color: var(--black50a);
+    font-size: calc(var(--fontScale) * 0.9em);
 }
 
 .bg_example_cross {
     width: 15px;
     height: 15px;
     position: relative;
-    float: right;
+    /* float: right; */
     right: 10px;
     top: 5px;
     cursor: pointer;
@@ -3631,7 +3645,6 @@ label[for="extensions_autoconnect"] {
     backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
     -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
     z-index: 9999 !important;
-    border: 1px solid var(--white30a);
 }
 
 .fillRight,
