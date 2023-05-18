@@ -692,7 +692,7 @@ code {
     border-style: none;
 }
 
-.mesAvatarWrapper {
+.last_mes .mesAvatarWrapper {
     padding-bottom: 50px;
 }
 
@@ -4236,7 +4236,7 @@ body.waifuMode #avatar_zoom_popup {
         {
         max-height: calc(100svh - 45px);
         width: 100% !important;
-        margin: 0 5px;
+        margin: 0 auto;
         max-width: 100%;
         left: 0 !important;
         resize: none !important;
