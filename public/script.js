@@ -4095,10 +4095,38 @@ function setRightTabSelectedClass(selectedButtonId) {
     });
 }
 
-function select_rm_info(text, charId = null) {
-    $("#rm_info_text").html("<h3>" + text + "</h3>");
+function select_rm_info(type, charId) {
 
-    selectRightMenuWithAnimation('rm_info_block');
+    if (!type) {
+        toastr.error(`Invalid process (no 'type')`);
+        return;
+    }
+    if (type === 'char_delete') {
+        toastr.warning(`Character Deleted: ${charId}`);
+    }
+    if (type === 'char_create') {
+        toastr.success(`Character Created: ${charId}`);
+    }
+    if (type === 'char_import') {
+        toastr.success(`Character Imported: ${charId}`);
+    }
+
+    selectRightMenuWithAnimation('rm_characters_block');
+
+    if (type === 'char_import' || type === 'char_create') {
+
+        //$(`#rm_characters_block [title="${charId + '.png'}"]`).scrollIntoView({ behavior: "smooth", block: "end" });
+        const element = $(`#rm_characters_block [title="${charId + '.png'}"]`).get(0);
+        element.scrollIntoView({ behavior: 'smooth', block: 'end' });
+
+        /*             $(`#rm_characters_block [title="${charId + '.png'}"]`).parent.addClass('flash animated');
+                    setTimeout(function(){
+                        $(`#rm_characters_block [title="${charId + '.png'}"]`).parent.addClass('flash animated');
+                    }, 1000); */
+
+    }
+
+
     setRightTabSelectedClass();
 
     prev_selected_char = charId;
@@ -5163,7 +5191,7 @@ $(document).ready(function () {
                 method: "POST",
                 url: "/deletecharacter",
                 beforeSend: function () {
-                    select_rm_info("Character deleted");
+                    select_rm_info("char_delete", characters[this_chid].name);
                     //$('#create_button').attr('value','Deleting...');
                 },
                 data: msg,
@@ -5345,7 +5373,7 @@ $(document).ready(function () {
                         $("#rm_info_block").transition({ opacity: 0, duration: 0 });
                         var $prev_img = $("#avatar_div_div").clone();
                         $("#rm_info_avatar").append($prev_img);
-                        select_rm_info(`Character created<br><h4>${DOMPurify.sanitize(save_name)}</h4>`, oldSelectedChar);
+                        select_rm_info(`char_create`, save_name);
 
                         $("#rm_info_block").transition({ opacity: 1.0, duration: 2000 });
                         crop_data = undefined;
@@ -6212,7 +6240,7 @@ $(document).ready(function () {
                         names.push(data.file_name);
                         let nameString = DOMPurify.sanitize(names.join(', '));
                         await getCharacters();
-                        select_rm_info(`Character imported<br><h4>${nameString}</h4>`, oldSelectedChar);
+                        select_rm_info(`char_import`, data.file_name);
                         $("#rm_info_block").transition({ opacity: 1, duration: 1000 });
                     }
                 },
