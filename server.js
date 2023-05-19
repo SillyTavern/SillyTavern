@@ -915,7 +915,7 @@ async function tryReadImage(img_url, crop) {
 }
 
 async function charaRead(img_url, input_format) {
-	return characterCardParser.parse(img_url, input_format);
+    return characterCardParser.parse(img_url, input_format);
 }
 
 app.post("/getcharacters", jsonParser, function (request, response) {
@@ -1873,7 +1873,7 @@ app.post('/uploaduseravatar', urlencodedParser, async (request, response) => {
         const crop = tryParse(request.query.crop);
         let rawImg = await jimp.read(pathToUpload);
 
-        if (typeof crop == 'object') {
+        if (typeof crop == 'object' && [crop.x, crop.y, crop.width, crop.height].every(x => typeof x === 'number')) {
             rawImg = rawImg.crop(crop.x, crop.y, crop.width, crop.height);
         }
 
