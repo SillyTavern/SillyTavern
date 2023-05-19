@@ -18,6 +18,7 @@ import {
     callPopup,
     getRequestHeaders,
     system_message_types,
+    replaceBiasMarkup,
 } from "../script.js";
 import { groups, selected_group } from "./group-chats.js";
 
@@ -174,8 +175,7 @@ function setOpenAIMessages(chat) {
             content = `${chat[j].name}: ${content}`;
         }
 
-        // replace bias markup
-        content = (content ?? '').replace(/{{(\*?.*\*?)}}/g, '');
+        content = replaceBiasMarkup(content);
 
         // remove caret return (waste of tokens)
         content = content.replace(/\r/gm, '');

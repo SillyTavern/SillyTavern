@@ -294,7 +294,7 @@ const system_messages = {
         mes: [
             `Hi there! The following chat formatting commands are supported:
             <ul>
-            <li><tt>{{text}}</tt> - sets a one-time behavioral bias for the AI. Resets when you send the next message.
+            <li><tt>{​{text}​}</tt> - sets a one-time behavioral bias for the AI. Resets when you send the next message.
             </li>
             </ul>
             Hotkeys/Keybinds: 
@@ -1027,6 +1027,11 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
         });
     }
 
+    // Hides bias from empty messages send with slash commands
+    if (isSystem) {
+        mes = mes.replace(/{{(\*?.*\*?)}}/g, "");
+    }
+
     if (!power_user.allow_name2_display && ch_name && !isUser && !isSystem) {
         mes = mes.replaceAll(`${ch_name}:`, "");
     }
@@ -1160,7 +1165,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     newMessage.data("isSystem", isSystem);
 
     if (isSystem) {
-        newMessage.find(".mes_edit").hide();
+        // newMessage.find(".mes_edit").hide();
         newMessage.find(".mes_prompt").hide(); //don't need prompt button for sys
     }
 
@@ -1320,7 +1325,7 @@ function processCommands(message, type) {
     return result.interrupt;
 }
 
-function sendSystemMessage(type, text) {
+function sendSystemMessage(type, text, extra = {}) {
     const systemMessage = system_messages[type];
 
     if (!systemMessage) {
@@ -1341,6 +1346,7 @@ function sendSystemMessage(type, text) {
         newMessage.extra = {};
     }
 
+    newMessage.extra = Object.assign(newMessage.extra, extra);
     newMessage.extra.type = type;
 
     chat.push(newMessage);
@@ -1348,7 +1354,7 @@ function sendSystemMessage(type, text) {
     is_send_press = false;
 }
 
-function extractMessageBias(message) {
+export function extractMessageBias(message) {
     if (!message) {
         return null;
     }
@@ -1744,7 +1750,13 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
         //for normal messages sent from user..
         if (textareaText != "" && !automatic_trigger && type !== 'quiet') {
-            sendMessageAsUser(textareaText, messageBias);
+            // If user message contains no text other than bias - send as a system message
+            if (messageBias && replaceBiasMarkup(textareaText).trim().length === 0) {
+                sendSystemMessage(system_message_types.GENERIC, ' ', { bias: messageBias });
+            }
+            else {
+                sendMessageAsUser(textareaText, messageBias);
+            }
         }
         ////////////////////////////////////
         const scenarioText = chat_metadata['scenario'] || characters[this_chid].scenario;
@@ -2360,8 +2372,8 @@ function getBiasStrings(textareaText) {
 
     // gets bias of the latest message where it was applied
     for (let mes of chat.slice().reverse()) {
-        if (mes && mes.is_user) {
-            if (mes.extra && mes.extra.bias && mes.extra.bias.trim().length > 0) {
+        if (mes && mes.extra && (mes.is_user || mes.is_system || mes.extra.type === system_message_types.NARRATOR)) {
+            if (mes.extra.bias && mes.extra.bias.trim().length > 0) {
                 promptBias = mes.extra.bias;
             }
             break;
@@ -2384,10 +2396,13 @@ function formatMessageHistoryItem(chatItem, isInstruct) {
         textResult = formatInstructModeChat(itemName, chatItem.mes, chatItem.is_user, isNarratorType, chatItem.force_avatar);
     }
 
-    // replace bias markup
-    textResult = (textResult ?? '').replace(/{{(\*?.*\*?)}}/g, '');
+    textResult = replaceBiasMarkup(textResult);
 
     return textResult;
+}
+
+export function replaceBiasMarkup(str) {
+    return (str ?? '').replace(/{{(\*?.*\*?)}}/g, '');
 }
 
 function sendMessageAsUser(textareaText, messageBias) {
@@ -3882,22 +3897,30 @@ function messageEditAuto(div) {
     let mesBlock = div.closest(".mes_block");
     var text = mesBlock.find(".edit_textarea").val().trim();
     const bias = extractMessageBias(text);
-    chat[this_edit_mes_id]["mes"] = text;
-    if (chat[this_edit_mes_id]["swipe_id"] !== undefined) {
-        chat[this_edit_mes_id]["swipes"][chat[this_edit_mes_id]["swipe_id"]] = text;
+    const mes = chat[this_edit_mes_id];
+    mes["mes"] = text;
+    if (mes["swipe_id"] !== undefined) {
+        mes["swipes"][mes["swipe_id"]] = text;
     }
 
     // editing old messages
-    if (!chat[this_edit_mes_id]["extra"]) {
-        chat[this_edit_mes_id]["extra"] = {};
+    if (!mes["extra"]) {
+        mes["extra"] = {};
     }
-    chat[this_edit_mes_id]["extra"]["bias"] = bias ?? null;
+
+    if (mes.is_system || mes.is_user || mes.extra.type === system_message_types.NARRATOR) {
+        mes.extra.bias = bias ?? null;
+    }
+    else {
+        mes.extra.bias = null;
+    }
+
     mesBlock.find(".mes_text").val('');
     mesBlock.find(".mes_text").val(messageFormatting(
         text,
         this_edit_mes_chname,
-        chat[this_edit_mes_id].is_system,
-        chat[this_edit_mes_id].is_user,
+        mes.is_system,
+        mes.is_user,
     ));
     saveChatDebounced();
 }
@@ -3906,17 +3929,23 @@ function messageEditDone(div) {
     let mesBlock = div.closest(".mes_block");
     var text = mesBlock.find(".edit_textarea").val().trim();
     const bias = extractMessageBias(text);
-    chat[this_edit_mes_id]["mes"] = text;
-    if (chat[this_edit_mes_id]["swipe_id"] !== undefined) {
-        chat[this_edit_mes_id]["swipes"][chat[this_edit_mes_id]["swipe_id"]] = text;
+    const mes = chat[this_edit_mes_id];
+    mes["mes"] = text;
+    if (mes["swipe_id"] !== undefined) {
+        mes["swipes"][mes["swipe_id"]] = text;
     }
 
     // editing old messages
-    if (!chat[this_edit_mes_id]["extra"]) {
-        chat[this_edit_mes_id]["extra"] = {};
+    if (!mes.extra) {
+        mes.extra = {};
     }
 
-    chat[this_edit_mes_id]["extra"]["bias"] = bias ?? null;
+    if (mes.is_system || mes.is_user || mes.extra.type === system_message_types.NARRATOR) {
+        mes.extra.bias = bias ?? null;
+    }
+    else {
+        mes.extra.bias = null;
+    }
 
     mesBlock.find(".mes_text").empty();
     mesBlock.find(".mes_edit_buttons").css("display", "none");
@@ -3925,13 +3954,13 @@ function messageEditDone(div) {
         messageFormatting(
             text,
             this_edit_mes_chname,
-            chat[this_edit_mes_id].is_system,
-            chat[this_edit_mes_id].is_user,
+            mes.is_system,
+            mes.is_user,
         )
     );
     mesBlock.find(".mes_bias").empty();
     mesBlock.find(".mes_bias").append(messageFormatting(bias));
-    appendImageToMessage(chat[this_edit_mes_id], div.closest(".mes"));
+    appendImageToMessage(mes, div.closest(".mes"));
     addCopyToCodeBlocks(div.closest(".mes"));
     this_edit_mes_id = undefined;
     saveChatConditional();
@@ -5956,11 +5985,12 @@ $(document).ready(function () {
     //***Message Editor***
     $(document).on("click", ".mes_edit", function () {
         if (this_chid !== undefined || selected_group) {
-            const message = $(this).closest(".mes");
+            // Previously system messages we're allowed to be edited
+            /*const message = $(this).closest(".mes");
 
             if (message.data("isSystem")) {
                 return;
-            }
+            }*/
 
             let chatScrollPosition = $("#chat").scrollTop();
             if (this_edit_mes_id !== undefined) {
