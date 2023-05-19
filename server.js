@@ -147,7 +147,6 @@ const tokenizersCache = {};
 
 function getTiktokenTokenizer(model) {
     if (tokenizersCache[model]) {
-        console.log('Using the cached tokenizer instance for', model);
         return tokenizersCache[model];
     }
 
