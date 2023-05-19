@@ -1615,10 +1615,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
     // Set empty promise resolution functions
     if (typeof resolve !== 'function') {
-        resolve = () => {};
+        resolve = () => { };
     }
     if (typeof reject !== 'function') {
-        reject = () => {};
+        reject = () => { };
     }
 
     if (selected_group && !is_group_generating) {
@@ -4080,7 +4080,7 @@ function isHordeGenerationNotAllowed() {
 }
 
 export function cancelTtsPlay() {
-    if (speechSynthesis) {
+    if ('speechSynthesis' in window) {
         speechSynthesis.cancel();
     }
 }
