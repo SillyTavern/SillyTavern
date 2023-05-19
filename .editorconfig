@@ -7,5 +7,5 @@ trim_trailing_whitespace = true
 
 [*.{js, conf, json}]
 charset = utf-8
-indent_style = tab
+indent_style = space
 indent_size = 4
