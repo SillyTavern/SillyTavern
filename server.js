@@ -63,7 +63,9 @@ const utf8Encode = new TextEncoder();
 const utf8Decode = new TextDecoder('utf-8', { ignoreBOM: true });
 const commandExistsSync = require('command-exists').sync;
 
+const characterCardParser = require('./src/character-card-parser.js');
 const config = require(path.join(process.cwd(), './config.conf'));
+
 const server_port = process.env.SILLY_TAVERN_PORT || config.port;
 
 const whitelistPath = path.join(process.cwd(), "./whitelist.txt");
@@ -913,61 +915,7 @@ async function tryReadImage(img_url, crop) {
 }
 
 async function charaRead(img_url, input_format) {
-    let format;
-    if (input_format === undefined) {
-        if (img_url.indexOf('.webp') !== -1) {
-            format = 'webp';
-        } else {
-            format = 'png';
-        }
-    } else {
-        format = input_format;
-    }
-
-    switch (format) {
-        case 'webp':
-            try {
-                const exif_data = await ExifReader.load(fs.readFileSync(img_url));
-                let char_data;
-
-                if (exif_data['UserComment']['description']) {
-                    let description = exif_data['UserComment']['description'];
-                    if (description === 'Undefined' && exif_data['UserComment'].value && exif_data['UserComment'].value.length === 1) {
-                        description = exif_data['UserComment'].value[0];
-                    }
-                    try {
-                        json5.parse(description);
-                        char_data = description;
-                    } catch {
-                        const byteArr = description.split(",").map(Number);
-                        const uint8Array = new Uint8Array(byteArr);
-                        const char_data_string = utf8Decode.decode(uint8Array);
-                        char_data = char_data_string;
-                    }
-                } else {
-                    console.log('No description found in EXIF data.');
-                    return false;
-                }
-                return char_data;
-            }
-            catch (err) {
-                console.log(err);
-                return false;
-            }
-        case 'png':
-            const buffer = fs.readFileSync(img_url);
-            const chunks = extract(buffer);
-
-            const textChunks = chunks.filter(function (chunk) {
-                return chunk.name === 'tEXt';
-            }).map(function (chunk) {
-                return PNGtext.decode(chunk.data);
-            });
-            var base64DecodedData = Buffer.from(textChunks[0].text, 'base64').toString('utf8');
-            return base64DecodedData;//textChunks[0].text;
-        default:
-            break;
-    }
+	return characterCardParser.parse(img_url, input_format);
 }
 
 app.post("/getcharacters", jsonParser, function (request, response) {
