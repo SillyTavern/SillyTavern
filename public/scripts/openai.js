@@ -102,7 +102,6 @@ const default_settings = {
     openai_model: 'gpt-3.5-turbo',
     jailbreak_system: false,
     reverse_proxy: '',
-    oai_breakdown: false,
 };
 
 const oai_settings = {
@@ -127,7 +126,6 @@ const oai_settings = {
     openai_model: 'gpt-3.5-turbo',
     jailbreak_system: false,
     reverse_proxy: '',
-    oai_breakdown: false,
 };
 
 let openai_setting_names;
@@ -460,7 +458,7 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
     handler_instance.log();
     return [
         openai_msgs_tosend,
-        oai_settings.oai_breakdown ? handler_instance.counts : false,
+        handler_instance.counts,
     ];
 }
 
@@ -562,13 +560,19 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
             const decoder = new TextDecoder();
             const reader = response.body.getReader();
             let getMessage = "";
+            let messageBuffer = "";
             while (true) {
                 const { done, value } = await reader.read();
                 let response = decoder.decode(value);
 
                 tryParseStreamingError(response);
-
-                let eventList = response.split("\n");
+                
+                // ReadableStream's buffer is not guaranteed to contain full SSE messages as they arrive in chunks
+                // We need to buffer chunks until we have one or more full messages (separated by double newlines)
+                messageBuffer += response;
+                let eventList = messageBuffer.split("\n\n");
+                // Last element will be an empty string or a leftover partial message
+                messageBuffer = eventList.pop();
 
                 for (let event of eventList) {
                     if (!event.startsWith("data"))
@@ -745,7 +749,6 @@ function loadOpenAISettings(data, settings) {
     if (settings.nsfw_first !== undefined) oai_settings.nsfw_first = !!settings.nsfw_first;
     if (settings.openai_model !== undefined) oai_settings.openai_model = settings.openai_model;
     if (settings.jailbreak_system !== undefined) oai_settings.jailbreak_system = !!settings.jailbreak_system;
-    if (settings.oai_breakdown !== undefined) oai_settings.oai_breakdown = !!settings.oai_breakdown;
 
     $('#stream_toggle').prop('checked', oai_settings.stream_openai);
 
@@ -761,7 +764,6 @@ function loadOpenAISettings(data, settings) {
     $('#wrap_in_quotes').prop('checked', oai_settings.wrap_in_quotes);
     $('#nsfw_first').prop('checked', oai_settings.nsfw_first);
     $('#jailbreak_system').prop('checked', oai_settings.jailbreak_system);
-    $('#oai_breakdown').prop('checked', oai_settings.oai_breakdown);
 
     if (settings.main_prompt !== undefined) oai_settings.main_prompt = settings.main_prompt;
     if (settings.nsfw_prompt !== undefined) oai_settings.nsfw_prompt = settings.nsfw_prompt;
@@ -881,7 +883,7 @@ async function saveOpenAIPreset(name, settings) {
         jailbreak_system: settings.jailbreak_system,
         impersonation_prompt: settings.impersonation_prompt,
         bias_preset_selected: settings.bias_preset_selected,
-        oai_breakdown: settings.oai_breakdown,
+        reverse_proxy: settings.reverse_proxy,
     };
 
     const savePresetSettings = await fetch(`/savepreset_openai?name=${name}`, {
@@ -1140,12 +1142,12 @@ function onSettingsPresetChange() {
         wrap_in_quotes: ['#wrap_in_quotes', 'wrap_in_quotes', true],
         nsfw_first: ['#nsfw_first', 'nsfw_first', true],
         jailbreak_system: ['#jailbreak_system', 'jailbreak_system', true],
-        oai_breakdown: ['#oai_breakdown', 'oai_breakdown', true],
         main_prompt: ['#main_prompt_textarea', 'main_prompt', false],
         nsfw_prompt: ['#nsfw_prompt_textarea', 'nsfw_prompt', false],
         jailbreak_prompt: ['#jailbreak_prompt_textarea', 'jailbreak_prompt', false],
         impersonation_prompt: ['#impersonation_prompt_textarea', 'impersonation_prompt', false],
         bias_preset_selected: ['#openai_logit_bias_preset', 'bias_preset_selected', false],
+        reverse_proxy: ['#openai_reverse_proxy', 'reverse_proxy', false],
     };
 
     for (const [key, [selector, setting, isCheckbox]] of Object.entries(settingsToUpdate)) {
@@ -1310,16 +1312,6 @@ $(document).ready(function () {
 
     $("#jailbreak_system").on('change', function () {
         oai_settings.jailbreak_system = !!$(this).prop("checked");
-        saveSettingsDebounced();
-    });
-
-    $("#oai_breakdown").on('change', function () {
-        oai_settings.oai_breakdown = !!$(this).prop("checked");
-        if (!oai_settings.oai_breakdown) {
-            $("#token_breakdown").css('display', 'none');
-        } else {
-            $("#token_breakdown").css('display', 'flex');
-        }
         saveSettingsDebounced();
     });
 

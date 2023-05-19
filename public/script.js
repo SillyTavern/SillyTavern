@@ -49,6 +49,7 @@ import {
     editGroup,
     deleteGroupChat,
     renameGroupChat,
+    importGroupChat,
 } from "./scripts/group-chats.js";
 
 import {
@@ -291,11 +292,22 @@ const system_messages = {
         is_system: true,
         is_name: true,
         mes: [
-            'Hi there! The following chat formatting commands are supported:',
-            '<ol>',
-            '<li><tt>{{text}}</tt> – sets a one-time behavioral bias for the AI. Resets when you send the next message.</li>',
-            '</ol>',
-        ].join('')
+            `Hi there! The following chat formatting commands are supported:
+            <ul>
+            <li><tt>{{text}}</tt> - sets a one-time behavioral bias for the AI. Resets when you send the next message.
+            </li>
+            </ul>
+            Hotkeys/Keybinds: 
+            <ul>
+            <li><tt>Up</tt> = Edit last message in chat</li>
+            <li><tt>Ctrl+Up</tt> = Edit last USER message in chat</li>
+            <li><tt>Left</tt> = swipe left</li>
+            <li><tt>Right</tt> = swipe right (NOTE: swipe hotkeys are disabled when chatbar has something typed into it)</li>
+            <li><tt>Ctrl+Left</tt> = view locally stored variables (in the browser console window)</li>
+            <li><tt>Enter</tt> (with chat bar selected) = send your message to AI</li>
+            <li><tt>Ctrl+Enter</tt> = Regenerate the last AI response</li>
+            </ul>`
+        ]
     },
     welcome:
     {
@@ -304,42 +316,42 @@ const system_messages = {
         is_user: false,
         is_name: true,
         mes: [
-            '<h2>Welcome to <span id="version_display_welcome">SillyTavern</span>!</h2>',
-            '<div id="version_display_welcome"></div>',
-            '<h3>Want to Update to the latest version?</h3>',
-            "Read the <a href='/notes/update.html' target='_blank'>instructions here</a>. Also located in your installation's base folder",
-            '<hr class="sysHR">',
-            '<h3>In order to begin chatting:</h3>',
-            '<ol>',
-            '<li>Connect to one of the supported generation APIs (the plug icon)</li>',
-            '<li>Create or pick a character from the list (the top-right namecard icon)</li>',
-            '</ol>',
-            '<hr class="sysHR">',
-            '<h3>Where to download more characters?</h3>',
-            '<i>(Not endorsed, your discretion is advised)</i>',
-            '<ol>',
-            '<li><a target="_blank" href="https://discord.gg/pygmalionai">Pygmalion AI Discord</a></li>',
-            '<li><a target="_blank" href="https://www.characterhub.org/">CharacterHub (NSFW)</a></li>',
-            '</ol>',
-            '<hr class="sysHR">',
-            '<h3>Where can I get help?</h3>',
-            'Before going any further, check out the following resources:',
-            '<ol>',
-            '<li><a target="_blank" href="/notes/readme.md">Introduction to SillyTavern</a></li>',
-            '<li><a target="_blank" href="/notes/faq.md">SillyTavern FAQ</a></li>',
-            '<li><a target="_blank" href="/notes">SillyTavern Guidebook</a></li>',
-            '<li><a target="_blank" href="https://github.com/Cohee1207/TavernAI-extras/blob/main/README.md">Extras API Docs</a></li>',
-            '<li><a target="_blank" href="https://docs.alpindale.dev/">Pygmalion AI Docs</a></li>',
-            '</ol>',
-            'Type <tt>/?</tt> in any chat to get help on message formatting commands.',
-            '<hr class="sysHR">',
-            '<h3>Still have questions or suggestions left?</h3>',
-            '<a target="_blank" href="https://discord.gg/RZdyAEUPvj">SillyTavern Community Discord</a>',
-            '<br/>',
-            '<a target="_blank" href="https://github.com/Cohee1207/SillyTavern/issues">Post a GitHub issue.</a>',
-            '<br/>',
-            '<a target="_blank" href="https://github.com/Cohee1207/SillyTavern#questions-or-suggestions">Contact the developers.</a>',
-        ].join('')
+            `<h2>Welcome to <span id="version_display_welcome">SillyTavern</span>!</h2>
+            <div id="version_display_welcome"></div>
+            <h3>Want to Update to the latest version?</h3>
+            Read the <a href='/notes/update.html' target='_blank'>instructions here</a>. Also located in your installation's base folder
+            <hr class="sysHR">
+            <h3>In order to begin chatting:</h3>
+            <ol>
+            <li>Connect to one of the supported generation APIs (the plug icon)</li>
+            <li>Create or pick a character from the list (the top-right namecard icon)</li>
+            </ol>
+            <hr class="sysHR">
+            <h3>Where to download more characters?</h3>
+            <i>(Not endorsed, your discretion is advised)</i>
+            <ol>
+            <li><a target="_blank" href="https://discord.gg/pygmalionai">Pygmalion AI Discord</a></li>
+            <li><a target="_blank" href="https://www.characterhub.org/">CharacterHub (NSFW)</a></li>
+            </ol>
+            <hr class="sysHR">
+            <h3>Where can I get help?</h3>
+            Before going any further, check out the following resources:
+            <ol>
+            <li><a target="_blank" href="/notes/readme.md">Introduction to SillyTavern</a></li>
+            <li><a target="_blank" href="/notes/faq.md">SillyTavern FAQ</a></li>
+            <li><a target="_blank" href="/notes">SillyTavern Guidebook</a></li>
+            <li><a target="_blank" href="https://github.com/Cohee1207/TavernAI-extras/blob/main/README.md">Extras API Docs</a></li>
+            <li><a target="_blank" href="https://docs.alpindale.dev/">Pygmalion AI Docs</a></li>
+            </ol>
+            Type <tt>/?</tt> in any chat to get help on message formatting commands.
+            <hr class="sysHR">
+            <h3>Still have questions or suggestions left?</h3>
+            <a target="_blank" href="https://discord.gg/RZdyAEUPvj">SillyTavern Community Discord</a>
+            <br>
+            <a target="_blank" href="https://github.com/Cohee1207/SillyTavern/issues">Post a GitHub issue.</a>
+            <br>
+            <a target="_blank" href="https://github.com/Cohee1207/SillyTavern#questions-or-suggestions">Contact the developers.</a>
+        `].join('')
     },
     group: {
         name: systemUserName,
@@ -408,7 +420,7 @@ async function getClientVersion() {
         let displayVersion = `SillyTavern ${data.pkgVersion}`;
 
         if (data.gitRevision && data.gitBranch) {
-            displayVersion += ` '${data.gitBranch}' (${data.gitRevision})`;
+            displayVersion += ` '${data.gitBranch}'(${data.gitRevision})`;
         }
 
         $('#version_display').text(displayVersion);
@@ -447,7 +459,7 @@ function getTokenCount(str, padding = undefined) {
             jQuery.ajax({
                 async: false,
                 type: 'POST', //
-                url: `/tokenize_llama`,
+                url: `/ tokenize_llama`,
                 data: JSON.stringify({ text: str }),
                 dataType: "json",
                 contentType: "application/json",
@@ -2420,9 +2432,6 @@ function getMaxContextSize() {
 }
 
 function parseTokenCounts(counts, thisPromptBits) {
-    const breakdown_bar = $('#token_breakdown div:first-child');
-    breakdown_bar.empty();
-
     const total = Object.values(counts).filter(x => !Number.isNaN(x)).reduce((acc, val) => acc + val, 0);
 
     thisPromptBits.push({
@@ -2435,22 +2444,6 @@ function parseTokenCounts(counts, thisPromptBits) {
         oaiExamplesTokens: Object.entries(counts)[6][1],
         oaiConversationTokens: Object.entries(counts)[7][1],
         oaiTotalTokens: total,
-    });
-
-    Object.entries(counts).forEach(([type, value]) => {
-        if (value === 0) {
-            return;
-        }
-        const percent_value = (value / total) * 100;
-        const color = uniqolor(type, { saturation: 50, lightness: 75, }).color;
-        const bar = document.createElement('div');
-        bar.style.width = `${percent_value}%`;
-        bar.classList.add('token_breakdown_segment');
-        bar.style.backgroundColor = color + 'AA';
-        bar.style.borderColor = color + 'FF';
-        bar.innerText = value;
-        bar.title = `${type}: ${percent_value.toFixed(2)}%`;
-        breakdown_bar.append(bar);
     });
 }
 
@@ -3398,6 +3391,7 @@ async function read_avatar_load(input) {
         await delay(durationSaveEdit);
         await fetch(getThumbnailUrl('avatar', formData.get('avatar_url')), {
             method: 'GET',
+            cache: 'no-cache',
             headers: {
                 'pragma': 'no-cache',
                 'cache-control': 'no-cache',
@@ -3569,10 +3563,8 @@ function changeMainAPI() {
         // Hide common settings for OpenAI
         if (selectedVal == "openai") {
             $("#common-gen-settings-block").css("display", "none");
-            //$("#token_breakdown").css("display", "flex");
         } else {
             $("#common-gen-settings-block").css("display", "block");
-            //$("#token_breakdown").css("display", "none");
         }
         // Hide amount gen for poe
         if (selectedVal == "poe") {
@@ -3962,7 +3954,7 @@ async function getPastCharacterChats() {
     return data;
 }
 
-async function displayPastChats() {
+export async function displayPastChats() {
     $("#select_chat_div").empty();
 
     const group = selected_group ? groups.find(x => x.id === selected_group) : null;
@@ -3999,7 +3991,7 @@ async function displayPastChats() {
 
             $("#select_chat_div").append(template);
 
-            if (currentChat === fileName.replace(".jsonl", "")) {
+            if (currentChat === fileName.toString().replace(".jsonl", "")) {
                 $("#select_chat_div").find(".select_chat_block:last").attr("highlight", true);
             }
         }
@@ -4044,7 +4036,6 @@ async function getStatusNovel() {
     }
 }
 
-
 function selectRightMenuWithAnimation(selectedMenuId) {
     const displayModes = {
         'rm_info_block': 'flex',
@@ -4065,13 +4056,7 @@ function selectRightMenuWithAnimation(selectedMenuId) {
                 easing: animation_easing,
                 complete: function () { },
             });
-
-
-
-            // $(menu).find('#groupCurrentMemberListToggle').click();
-
         }
-
     })
 }
 
@@ -4113,9 +4098,7 @@ function select_rm_info(type, charId) {
         setTimeout(function () {
             $(`#rm_characters_block [title="${charId + '.png'}"]`).parent().removeClass('flash animated');
         }, 5000);
-
     }
-
 
     setRightTabSelectedClass();
 
@@ -4444,6 +4427,27 @@ export async function saveChatConditional() {
     else {
         await saveChat();
     }
+}
+
+async function importCharacterChat(formData) {
+    await jQuery.ajax({
+        type: "POST",
+        url: "/importchat",
+        data: formData,
+        beforeSend: function () {
+        },
+        cache: false,
+        contentType: false,
+        processData: false,
+        success: async function (data) {
+            if (data.res) {
+                await displayPastChats();
+            }
+        },
+        error: function () {
+            $("#create_button").removeAttr("disabled");
+        },
+    });
 }
 
 function updateViewMessageIds() {
@@ -6278,12 +6282,13 @@ $(document).ready(function () {
         $("#chat_import_file").click();
     });
 
-    $("#chat_import_file").on("change", function (e) {
+    $("#chat_import_file").on("change", async function (e) {
         var file = e.target.files[0];
-        //console.log(1);
+
         if (!file) {
             return;
         }
+
         var ext = file.name.match(/\.(\w+)$/);
         if (
             !ext ||
@@ -6292,33 +6297,23 @@ $(document).ready(function () {
             return;
         }
 
+        if (selected_group && file.name.endsWith('.json')) {
+            toastr.warning("Only SillyTavern's own format is supported for group chat imports. Sorry!");
+            return;
+        }
+
         var format = ext[1].toLowerCase();
         $("#chat_import_file_type").val(format);
-        //console.log(format);
+
         var formData = new FormData($("#form_import_chat").get(0));
-        //console.log('/importchat entered with: '+formData);
-        jQuery.ajax({
-            type: "POST",
-            url: "/importchat",
-            data: formData,
-            beforeSend: function () {
-                $("#select_chat_div").html("");
-                $("#load_select_chat_div").css("display", "block");
-                //$('#create_button').attr('value','Creating...');
-            },
-            cache: false,
-            contentType: false,
-            processData: false,
-            success: function (data) {
-                //console.log(data);
-                if (data.res) {
-                    displayPastChats();
-                }
-            },
-            error: function (jqXHR, exception) {
-                $("#create_button").removeAttr("disabled");
-            },
-        });
+        $("#select_chat_div").html("");
+        $("#load_select_chat_div").css("display", "block");
+
+        if (selected_group) {
+            await importGroupChat(formData);
+        } else {
+            await importCharacterChat(formData);
+        }
     });
 
     $("#rm_button_group_chats").click(function () {
