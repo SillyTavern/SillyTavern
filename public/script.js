@@ -227,7 +227,6 @@ let safetychat = [
 ];
 let chat_create_date = 0;
 
-let prev_selected_char = null;
 const default_ch_mes = "Hello";
 let count_view_mes = 0;
 let mesStr = "";
@@ -4105,8 +4104,7 @@ function setRightTabSelectedClass(selectedButtonId) {
     });
 }
 
-function select_rm_info(type, charId) {
-
+function select_rm_info(type, charId, previousCharId = null) {
     if (!type) {
         toastr.error(`Invalid process (no 'type')`);
         return;
@@ -4137,10 +4135,8 @@ function select_rm_info(type, charId) {
 
     setRightTabSelectedClass();
 
-    prev_selected_char = charId;
-
-    if (prev_selected_char) {
-        const newId = characters.findIndex((x) => x.name == prev_selected_char);
+    if (previousCharId) {
+        const newId = characters.findIndex((x) => x.avatar == previousCharId);
         if (newId >= 0) {
             this_chid = newId;
         }
@@ -4247,19 +4243,9 @@ function select_rm_create() {
 }
 
 function select_rm_characters() {
-    restoreSelectedCharacter();
-
     menu_type = "characters";
     selectRightMenuWithAnimation('rm_characters_block');
     setRightTabSelectedClass('rm_button_characters');
-}
-
-function restoreSelectedCharacter() {
-    if (prev_selected_char) {
-        let newChId = characters.findIndex((x) => x.name == prev_selected_char);
-        $(`.character_select[chid="${newChId}"]`).trigger("click");
-        prev_selected_char = null;
-    }
 }
 
 function setExtensionPrompt(key, value, position, depth) {
@@ -5392,7 +5378,7 @@ $(document).ready(function () {
                         $("#create_button").attr("value", "✅");
                         let oldSelectedChar = null;
                         if (this_chid != undefined && this_chid != "invalid-safety-id") {
-                            oldSelectedChar = characters[this_chid].name;
+                            oldSelectedChar = characters[this_chid].avatar;
                         }
 
                         console.log(`new avatar id: ${html}`);
@@ -5402,7 +5388,7 @@ $(document).ready(function () {
                         $("#rm_info_block").transition({ opacity: 0, duration: 0 });
                         var $prev_img = $("#avatar_div_div").clone();
                         $("#rm_info_avatar").append($prev_img);
-                        select_rm_info(`char_create`, save_name);
+                        select_rm_info(`char_create`, save_name, oldSelectedChar);
 
                         $("#rm_info_block").transition({ opacity: 1.0, duration: 2000 });
                         crop_data = undefined;
@@ -6226,8 +6212,6 @@ $(document).ready(function () {
             return;
         }
 
-        let names = [];
-
         for (const file of e.target.files) {
             var ext = file.name.match(/\.(\w+)$/);
             if (
@@ -6264,13 +6248,11 @@ $(document).ready(function () {
 
                         let oldSelectedChar = null;
                         if (this_chid != undefined && this_chid != "invalid-safety-id") {
-                            oldSelectedChar = characters[this_chid].name;
+                            oldSelectedChar = characters[this_chid].avatar;
                         }
 
-                        names.push(data.file_name);
-                        let nameString = DOMPurify.sanitize(names.join(', '));
                         await getCharacters();
-                        select_rm_info(`char_import`, data.file_name);
+                        select_rm_info(`char_import`, data.file_name, oldSelectedChar);
                         $("#rm_info_block").transition({ opacity: 1, duration: 1000 });
                     }
                 },
