@@ -216,3 +216,19 @@ export function end_trim_to_sentence(input, include_newline = false) {
 
     return input.substring(0, last + 1).trimEnd();
 }
+
+export function countOccurrences(string, character) {
+  let count = 0;
+  
+  for (let i = 0; i < string.length; i++) {
+    if (string[i] === character) {
+      count++;
+    }
+  }
+  
+  return count;
+}
+
+export function isOdd(number) {
+  return number % 2 !== 0;
+}

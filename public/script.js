@@ -107,7 +107,7 @@ import {
     setPoeOnlineStatus,
 } from "./scripts/poe.js";
 
-import { debounce, delay, restoreCaretPosition, saveCaretPosition, end_trim_to_sentence } from "./scripts/utils.js";
+import { debounce, delay, restoreCaretPosition, saveCaretPosition, end_trim_to_sentence, countOccurrences, isOdd } from "./scripts/utils.js";
 import { extension_settings, loadExtensionSettings } from "./scripts/extensions.js";
 import { executeSlashCommands, getSlashCommandsHelp, registerSlashCommand } from "./scripts/slash-commands.js";
 import {
@@ -1515,6 +1515,12 @@ class StreamingProcessor {
         let result = extractNameFromMessage(processedText, this.force_name2, isImpersonate);
         let isName = result.this_mes_is_name;
         processedText = result.getMessage;
+
+        // Predict unbalanced asterisks during streaming
+        if (!isFinal && isOdd(countOccurrences(processedText, '*'))) {
+            // Add asterisk at the end to balance it
+            processedText = processedText.trimEnd() + '*';
+        }
 
         if (isImpersonate) {
             $('#send_textarea').val(processedText).trigger('input');
