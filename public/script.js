@@ -2432,9 +2432,6 @@ function getMaxContextSize() {
 }
 
 function parseTokenCounts(counts, thisPromptBits) {
-    const breakdown_bar = $('#token_breakdown div:first-child');
-    breakdown_bar.empty();
-
     const total = Object.values(counts).filter(x => !Number.isNaN(x)).reduce((acc, val) => acc + val, 0);
 
     thisPromptBits.push({
@@ -2447,22 +2444,6 @@ function parseTokenCounts(counts, thisPromptBits) {
         oaiExamplesTokens: Object.entries(counts)[6][1],
         oaiConversationTokens: Object.entries(counts)[7][1],
         oaiTotalTokens: total,
-    });
-
-    Object.entries(counts).forEach(([type, value]) => {
-        if (value === 0) {
-            return;
-        }
-        const percent_value = (value / total) * 100;
-        const color = uniqolor(type, { saturation: 50, lightness: 75, }).color;
-        const bar = document.createElement('div');
-        bar.style.width = `${percent_value}%`;
-        bar.classList.add('token_breakdown_segment');
-        bar.style.backgroundColor = color + 'AA';
-        bar.style.borderColor = color + 'FF';
-        bar.innerText = value;
-        bar.title = `${type}: ${percent_value.toFixed(2)}%`;
-        breakdown_bar.append(bar);
     });
 }
 
@@ -3582,10 +3563,8 @@ function changeMainAPI() {
         // Hide common settings for OpenAI
         if (selectedVal == "openai") {
             $("#common-gen-settings-block").css("display", "none");
-            //$("#token_breakdown").css("display", "flex");
         } else {
             $("#common-gen-settings-block").css("display", "block");
-            //$("#token_breakdown").css("display", "none");
         }
         // Hide amount gen for poe
         if (selectedVal == "poe") {
