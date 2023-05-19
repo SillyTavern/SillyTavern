@@ -555,13 +555,19 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
             const decoder = new TextDecoder();
             const reader = response.body.getReader();
             let getMessage = "";
+            let messageBuffer = "";
             while (true) {
                 const { done, value } = await reader.read();
                 let response = decoder.decode(value);
 
                 tryParseStreamingError(response);
-
-                let eventList = response.split("\n");
+                
+                // ReadableStream's buffer is not guaranteed to contain full SSE messages as they arrive in chunks
+                // We need to buffer chunks until we have one or more full messages (separated by double newlines)
+                messageBuffer += response;
+                let eventList = messageBuffer.split("\n\n");
+                // Last element will be an empty string or a leftover partial message
+                messageBuffer = eventList.pop();
 
                 for (let event of eventList) {
                     if (!event.startsWith("data"))
