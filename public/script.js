@@ -4538,7 +4538,7 @@ function isHordeGenerationNotAllowed() {
 }
 
 export function cancelTtsPlay() {
-    if (speechSynthesis) {
+    if ('speechSynthesis' in window) {
         speechSynthesis.cancel();
     }
 }
