@@ -921,6 +921,26 @@ select {
 }
 
 
+.chat_injections_list:empty {
+    width: 100%;
+    height: 100%;
+}
+
+.chat_injections_list:empty::before {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    content: "No injections";
+    font-weight: bolder;
+    width: 100%;
+    height: 100%;
+    opacity: 0.8;
+    min-height: 3rem;
+}
+
+.template_parameters_list code {
+    cursor: pointer;
+}
 
 h3 {
     margin: 10px 0;
@@ -3602,7 +3622,7 @@ label[for="extensions_autoconnect"] {
 
 .code-copied {
     position: absolute;
-    z-index: 99;
+    z-index: 10000;
     font-size: var(--mainFontSize);
     color: var(--SmartThemeBodyColor);
     background-color: var(--SmartThemeFastUIBGColor);
@@ -3742,6 +3762,10 @@ toolcool-color-picker {
 
 .flex1 {
     flex: 1;
+}
+
+.flex2 {
+    flex: 2;
 }
 
 .flexFlowColumn {
