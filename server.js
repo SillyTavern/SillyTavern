@@ -1754,6 +1754,17 @@ app.post("/exportcharacter", jsonParser, async function (request, response) {
     return response.sendStatus(400);
 });
 
+app.post("/importgroupchat", urlencodedParser, function (request, response) {
+    try {
+        const filedata = request.file;
+        const chatname = humanizedISO8601DateTime();
+        fs.copyFileSync(`./uploads/${filedata.filename}`, (`${directories.groupChats}/${chatname}.jsonl`));
+        return response.send({ res: chatname });
+    } catch (error) {
+        console.error(error);
+        return response.send({ error: true });
+    }
+});
 
 app.post("/importchat", urlencodedParser, function (request, response) {
     if (!request.body) return response.sendStatus(400);
@@ -1763,9 +1774,8 @@ app.post("/importchat", urlencodedParser, function (request, response) {
     let avatar_url = (request.body.avatar_url).replace('.png', '');
     let ch_name = request.body.character_name;
     if (filedata) {
-
         if (format === 'json') {
-            fs.readFile('./uploads/' + filedata.filename, 'utf8', (err, data) => {
+            fs.readFile(`./uploads/${filedata.filename}`, 'utf8', (err, data) => {
 
                 if (err) {
                     console.log(err);
@@ -1782,7 +1792,6 @@ app.post("/importchat", urlencodedParser, function (request, response) {
                                     user_name: 'You',
                                     character_name: ch_name,
                                     create_date: humanizedISO8601DateTime(),
-
                                 },
                                 ...history.msgs.map(
                                     (message) => ({
@@ -1803,7 +1812,7 @@ app.post("/importchat", urlencodedParser, function (request, response) {
 
                     const errors = [];
                     newChats.forEach(chat => fs.writeFile(
-                        chatsPath + avatar_url + '/' + ch_name + ' - ' + humanizedISO8601DateTime() + ' imported.jsonl',
+                        `${chatsPath + avatar_url}/${ch_name} - ${humanizedISO8601DateTime()} imported.jsonl`,
                         chat.map(JSON.stringify).join('\n'),
                         'utf8',
                         (err) => err ?? errors.push(err)
@@ -1832,8 +1841,7 @@ app.post("/importchat", urlencodedParser, function (request, response) {
                 let jsonData = json5.parse(line);
 
                 if (jsonData.user_name !== undefined || jsonData.name !== undefined) {
-                    //console.log(humanizedISO8601DateTime()+':/importchat copying chat as '+ch_name+' - '+humanizedISO8601DateTime()+'.jsonl');
-                    fs.copyFile('./uploads/' + filedata.filename, chatsPath + avatar_url + '/' + ch_name + ' - ' + humanizedISO8601DateTime() + '.jsonl', (err) => { //added character name and replaced Date.now() with humanizedISO8601DateTime
+                    fs.copyFile(`./uploads/${filedata.filename}`, (`${chatsPath + avatar_url}/${ch_name} - ${humanizedISO8601DateTime()}.jsonl`), (err) => {
                         if (err) {
                             response.send({ error: true });
                             return console.log(err);
@@ -1849,9 +1857,7 @@ app.post("/importchat", urlencodedParser, function (request, response) {
                 rl.close();
             });
         }
-
     }
-
 });
 
 app.post('/importworldinfo', urlencodedParser, (request, response) => {

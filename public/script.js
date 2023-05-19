@@ -49,6 +49,7 @@ import {
     editGroup,
     deleteGroupChat,
     renameGroupChat,
+    importGroupChat,
 } from "./scripts/group-chats.js";
 
 import {
@@ -3409,6 +3410,7 @@ async function read_avatar_load(input) {
         await delay(durationSaveEdit);
         await fetch(getThumbnailUrl('avatar', formData.get('avatar_url')), {
             method: 'GET',
+            cache: 'no-cache',
             headers: {
                 'pragma': 'no-cache',
                 'cache-control': 'no-cache',
@@ -3973,7 +3975,7 @@ async function getPastCharacterChats() {
     return data;
 }
 
-async function displayPastChats() {
+export async function displayPastChats() {
     $("#select_chat_div").empty();
 
     const group = selected_group ? groups.find(x => x.id === selected_group) : null;
@@ -4010,7 +4012,7 @@ async function displayPastChats() {
 
             $("#select_chat_div").append(template);
 
-            if (currentChat === fileName.replace(".jsonl", "")) {
+            if (currentChat === fileName.toString().replace(".jsonl", "")) {
                 $("#select_chat_div").find(".select_chat_block:last").attr("highlight", true);
             }
         }
@@ -4055,7 +4057,6 @@ async function getStatusNovel() {
     }
 }
 
-
 function selectRightMenuWithAnimation(selectedMenuId) {
     const displayModes = {
         'rm_info_block': 'flex',
@@ -4076,13 +4077,7 @@ function selectRightMenuWithAnimation(selectedMenuId) {
                 easing: animation_easing,
                 complete: function () { },
             });
-
-
-
-            // $(menu).find('#groupCurrentMemberListToggle').click();
-
         }
-
     })
 }
 
@@ -4124,9 +4119,7 @@ function select_rm_info(type, charId) {
         setTimeout(function () {
             $(`#rm_characters_block [title="${charId + '.png'}"]`).parent().removeClass('flash animated');
         }, 5000);
-
     }
-
 
     setRightTabSelectedClass();
 
@@ -4455,6 +4448,27 @@ export async function saveChatConditional() {
     else {
         await saveChat();
     }
+}
+
+async function importCharacterChat(formData) {
+    await jQuery.ajax({
+        type: "POST",
+        url: "/importchat",
+        data: formData,
+        beforeSend: function () {
+        },
+        cache: false,
+        contentType: false,
+        processData: false,
+        success: async function (data) {
+            if (data.res) {
+                await displayPastChats();
+            }
+        },
+        error: function () {
+            $("#create_button").removeAttr("disabled");
+        },
+    });
 }
 
 function updateViewMessageIds() {
@@ -6289,12 +6303,13 @@ $(document).ready(function () {
         $("#chat_import_file").click();
     });
 
-    $("#chat_import_file").on("change", function (e) {
+    $("#chat_import_file").on("change", async function (e) {
         var file = e.target.files[0];
-        //console.log(1);
+
         if (!file) {
             return;
         }
+
         var ext = file.name.match(/\.(\w+)$/);
         if (
             !ext ||
@@ -6303,33 +6318,23 @@ $(document).ready(function () {
             return;
         }
 
+        if (selected_group && file.name.endsWith('.json')) {
+            toastr.warning("Only SillyTavern's own format is supported for group chat imports. Sorry!");
+            return;
+        }
+
         var format = ext[1].toLowerCase();
         $("#chat_import_file_type").val(format);
-        //console.log(format);
+
         var formData = new FormData($("#form_import_chat").get(0));
-        //console.log('/importchat entered with: '+formData);
-        jQuery.ajax({
-            type: "POST",
-            url: "/importchat",
-            data: formData,
-            beforeSend: function () {
-                $("#select_chat_div").html("");
-                $("#load_select_chat_div").css("display", "block");
-                //$('#create_button').attr('value','Creating...');
-            },
-            cache: false,
-            contentType: false,
-            processData: false,
-            success: function (data) {
-                //console.log(data);
-                if (data.res) {
-                    displayPastChats();
-                }
-            },
-            error: function (jqXHR, exception) {
-                $("#create_button").removeAttr("disabled");
-            },
-        });
+        $("#select_chat_div").html("");
+        $("#load_select_chat_div").css("display", "block");
+
+        if (selected_group) {
+            await importGroupChat(formData);
+        } else {
+            await importCharacterChat(formData);
+        }
     });
 
     $("#rm_button_group_chats").click(function () {
