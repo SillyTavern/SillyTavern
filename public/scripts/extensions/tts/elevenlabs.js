@@ -7,6 +7,7 @@ class ElevenLabsTtsProvider {
 
     settings
     voices = []
+    separator = ' ... ... ... '
     
     get settings() {
         return this.settings

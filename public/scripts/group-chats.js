@@ -47,6 +47,7 @@ import {
     select_selected_character,
     cancelTtsPlay,
     isMultigenEnabled,
+    displayPastChats,
 } from "../script.js";
 import { appendTagToList, createTagMapFromList, getTagsList, applyTagsOnCharacterSelect } from './tags.js';
 
@@ -291,6 +292,12 @@ async function getGroups() {
             }
             if (group.past_metadata == undefined) {
                 group.past_metadata = {};
+            }
+            if (typeof group.chat_id === 'number') {
+                group.chat_id = String(group.chat_id);
+            }
+            if (Array.isArray(group.chats) && group.chats.some(x => typeof x === 'number')) {
+                group.chats = group.chats.map(x => String(x));
             }
         }
     }
@@ -1280,6 +1287,34 @@ export async function deleteGroupChat(groupId, chatId) {
             await createNewGroupChat(groupId);
         }
     }
+}
+
+export async function importGroupChat(formData) {
+    await jQuery.ajax({
+        type: "POST",
+        url: "/importgroupchat",
+        data: formData,
+        beforeSend: function () {
+        },
+        cache: false,
+        contentType: false,
+        processData: false,
+        success: async function (data) {
+            if (data.res) {
+                const chatId = data.res;
+                const group = groups.find(x => x.id == selected_group);
+                
+                if (group) {
+                    group.chats.push(chatId);
+                    await editGroup(selected_group, true, true);
+                    await displayPastChats();
+                }
+            }
+        },
+        error: function () {
+            $("#create_button").removeAttr("disabled");
+        },
+    });
 }
 
 export async function saveGroupBookmarkChat(groupId, name, metadata) {

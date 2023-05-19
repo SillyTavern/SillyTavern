@@ -1,4 +1,4 @@
-import { callPopup, saveSettings, saveSettingsDebounced } from "../script.js";
+import { callPopup, eventSource, event_types, saveSettings, saveSettingsDebounced } from "../script.js";
 import { isSubsetOf } from "./utils.js";
 export {
     getContext,
@@ -147,6 +147,36 @@ function autoConnectInputHandler() {
     saveSettingsDebounced();
 }
 
+function addExtensionsButtonAndMenu() {
+    const buttonHTML =
+        `<div id="extensionsMenuButton" class="fa-solid fa-magic-wand-sparkles" title="Extras Extensions" /></div>`;
+    const extensionsMenuHTML = `<div id="extensionsMenu" class="list-group"></div>`;
+
+    $(document.body).append(extensionsMenuHTML);
+
+    $('#send_but_sheld').prepend(buttonHTML);
+
+    const button = $('#extensionsMenuButton');
+    const dropdown = $('#extensionsMenu');
+
+    let popper = Popper.createPopper(button.get(0), dropdown.get(0), {
+        placement: 'top-end',
+    });
+
+    $(document).on('click touchend', function (e) {
+        const target = $(e.target);
+        if (target.is(dropdown)) return;
+        if (target.is(button) && !dropdown.is(":visible")) {
+            e.preventDefault();
+
+            dropdown.show(200);
+            popper.update();
+        } else {
+            dropdown.hide(200);
+        }
+    });
+}
+
 async function connectToApi(baseUrl) {
     if (!baseUrl) {
         return;
@@ -162,6 +192,7 @@ async function connectToApi(baseUrl) {
             const data = await getExtensionsResult.json();
             modules = data.modules;
             await activateExtensions();
+            eventSource.emit(event_types.EXTRAS_CONNECTED, modules);
         }
 
         updateStatus(getExtensionsResult.ok);
@@ -286,6 +317,11 @@ async function loadExtensionSettings(settings) {
 }
 
 $(document).ready(async function () {
+    setTimeout(function () {
+        addExtensionsButtonAndMenu();
+        $("#extensionsMenuButton").css("display", "flex");
+    }, 100)
+
     $("#extensions_connect").on('click', connectClickHandler);
     $("#extensions_autoconnect").on('input', autoConnectInputHandler);
     $("#extensions_details").on('click', showExtensionsDetails);

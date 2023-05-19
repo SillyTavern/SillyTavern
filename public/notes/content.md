@@ -50,11 +50,11 @@ This is because every AI model has a limit to the amount of context it can proce
 
 This is the information that gets sent to the AI each time you ask it to generate a response:
 
-*   Character definitions
-*   Chat history
-*   Author's Notes
-*   Special Format strings
-*   [bracket commands]
+* Character definitions
+* Chat history
+* Author's Notes
+* Special Format strings
+* [bracket commands]
 
 SillyTavern automatically calculates the best way to allocate the available context tokens before sending the information to the AI model.
 
@@ -62,23 +62,23 @@ SillyTavern automatically calculates the best way to allocate the available cont
 
 These will always be sent to the AI with every generation request:
 
-*   Character Name (keep the name short! Sent at the start of EVERY Character message)
-*   Character Description Box
-*   Character Personality Box
-*   Scenario Box
+* Character Name (keep the name short! Sent at the start of EVERY Character message)
+* Character Description Box
+* Character Personality Box
+* Scenario Box
 
 ### What parts of a Character's Definitions are NOT permanent?
 
-*   The first message box - only sent once at the start of the chat.
-*   Example messages box - only kept until chat history fills up the context (optionally these can be forced to be kept in context)
+* The first message box - only sent once at the start of the chat.
+* Example messages box - only kept until chat history fills up the context (optionally these can be forced to be kept in context)
 
 ### Popular AI Model Context Token Limits
 
-*   Older models below 6B parameters - 1024
-*   Pygmalion 6B - 2048
-*   Poe.com (Claude-instant or ChatGPT) - 2048
-*   OpenAI ChatGPT - 4000-ish?
-*   OpenAI GPT-4 - 8000?
+* Older models below 6B parameters - 1024
+* Pygmalion 6B - 2048
+* Poe.com (Claude-instant or ChatGPT) - 2048
+* OpenAI ChatGPT - 4000-ish?
+* OpenAI GPT-4 - 8000?
 
 ### Personality summary
 
@@ -105,7 +105,6 @@ You can also use asterisks ** to describe the character's actions.
 For example:
 
 `*I noticed you came inside, I walked up and stood right in front of you* Welcome. I'm glad to see you here. *I said with toothy smug sunny smile looking you straight in the eye* What brings you...`  
-
 
 ### Examples of dialogue
 
@@ -217,7 +216,7 @@ Entries inserted by direct mentioning of their keys have higher priority than th
 
 **Entries can activate other entries by mentioning their keywords in the content text.**
 
-For example, if your World Info contains two entries: 
+For example, if your World Info contains two entries:
 
 ```
 Entry #1
@@ -366,7 +365,7 @@ The range of influence of Repetition penalty in tokens.
 
 If your subscription tier is Paper, Tablet or Scroll use only Euterpe model otherwise you can not get an answer from NovelAI API.
 
-## OpenAI 
+## OpenAI
 
 ### API key
 
@@ -385,34 +384,20 @@ _Lost API keys can't be restored! Make sure to keep it safe!_
 
 **How to get your access token / cookie:**
 
-1.  Login to [poe.com](https://poe.com)
-2.  Open browser DevTools (F12) and navigate to "Application" tab
-3.  Find a _p-b_ cookie for poe.com domain and copy its value
-4.  Paste cookie value to the box below and click "Connect"
-5.  Select a character and start chatting
+1. Login to [poe.com](https://poe.com)
+2. Open browser DevTools (F12) and navigate to "Application" tab.
+3. Type any message into the poe.com chat, and get a response from the AI.
+4. Find the 'Cookie' section on the left side of Dev Tools 'Application' tab, expand it
+5. Click "<http://poe.com/>" listing inside the Cookies section.
+6. Look to the right for the listing of _p-b_ and copy its Value.
+7. Paste the cookie value into the Poe API connection URL box, and click "Connect".
+8. Select a character and start chatting
 
 ## Anchors
 
-Anchors are used to increase the length of messages.
-There are two types of anchors: _Character Anchor_ and _Style Anchor_.
+This feature is considered obsolete and has been removed.
 
-_Character Anchor_ - affects the character played by the AI by motivating it to write longer messages.
-
-Looks like: `[Elaborate speaker]`
-
-_Style Anchor_ - affects the entire AI model, motivating the AI to write longer messages even when it is not acting as the character.
-
-Looks like: `[Writing style: very long messages]`
-
-***
-
-Anchors Order sets the location of anchors in the prompt, the first anchor in the order is much further back in the context and thus has less influence than second.
-
-The second anchor is only turned on after 8-12 messages, because when the chat still only has a few messages, the first anchor creates enough effect on its own.
-
-Sometimes an AI model may not perceive anchors correctly or the AI model already generates sufficiently long messages. For these cases, you can disable the anchors by unchecking their respective boxes.
-
-_When using Pygmalion models these anchors are automatically disabled, since Pygmalion already generates long enough messages._
+The use of the Author's Note extension is now a preferred way to add prompt injections of variable depth.
 
 ## Instruct Mode
 
@@ -436,7 +421,7 @@ Write one reply in internet RP style for {{char}}. Be verbose and creative.
 
 Provides ready-made presets with prompts and sequences for some well-known instruct models.
 
-*Changing a preset resets your system prompt to default!*
+_Changing a preset resets your system prompt to default!_
 
 #### Input Sequence
 
@@ -450,6 +435,10 @@ Text added before the character's reply.
 
 Text added before the system prompt.
 
+#### Separator Sequence
+
+Text added after the character reply to separate the chat history logs.
+
 #### Stop Sequence
 
 Text that denotes the end of the reply. Will be trimmed from the output text.
@@ -458,7 +447,7 @@ Text that denotes the end of the reply. Will be trimmed from the output text.
 
 If enabled, prepend character and user names to chat history logs after inserting the sequences.
 
-*Always enabled for group chats!*
+_Always enabled for group chats!_
 
 #### Wrap Sequences with Newline
 
@@ -474,7 +463,7 @@ To import Character.AI chats, use this tool: [https://github.com/0x000011b/chara
 
 **Important: This section doesn't apply to OpenAI API. SillyTavern will always use a matching tokenizer for OpenAI models.**
 
-A tokenizer is a tool that breaks down a piece of text into smaller units called tokens. These tokens can be individual words or even parts of words, such as prefixes, suffixes, or punctuation. A rule of thumb is that one token generally corresponds to 3~4 characters of text. 
+A tokenizer is a tool that breaks down a piece of text into smaller units called tokens. These tokens can be individual words or even parts of words, such as prefixes, suffixes, or punctuation. A rule of thumb is that one token generally corresponds to 3~4 characters of text.
 
 SillyTavern can use the following tokenizers while forming a request to the AI backend:
 
@@ -487,7 +476,7 @@ SillyTavern can use the following tokenizers while forming a request to the AI b
 
 **Important: This section doesn't apply to OpenAI API. SillyTavern will always use a matching tokenizer for OpenAI models.**
 
-SillyTavern cannot use a proper tokenizer provided by the model running on a remote instance of KoboldAI or Oobabooga's TextGen, so all token counts assumed during prompt generation are estimated based on the selected [tokenizer](#Tokenizer) type.
+SillyTavern cannot use a proper tokenizer provided by the model running on a remote instance of KoboldAI or Oobabooga's TextGen, so all token counts assumed during prompt generation are estimated based on the selected [tokenizer](#tokenizer) type.
 
 Since the results of tokenization can be inaccurate on context sizes close to the model-defined maximum, some parts of the prompt may be trimmed or dropped, which may negatively affect the coherence of character definitions.
 
@@ -507,15 +496,15 @@ Overrides the default separators controlled by "Disable example chats formatting
 
 #### Disable description formatting
 
-`**NAME's Persona:** `won't be prepended to the content of your character's Description box.
+`**NAME's Persona:**`won't be prepended to the content of your character's Description box.
 
 #### Disable scenario formatting
 
-`**Scenario:** `won't be prepended to the content of your character's Scenario box.
+`**Scenario:**`won't be prepended to the content of your character's Scenario box.
 
 #### Disable personality formatting
 
-`**Personality:** `won't be prepended to the content of your character's Personality box.
+`**Personality:**`won't be prepended to the content of your character's Personality box.
 
 #### Disable example chats formatting
 
@@ -539,11 +528,11 @@ Has no effect.
 
 #### Disable scenario formatting
 
-`**Circumstances and context of the dialogue:** `won't be prepended to the content of your character's Scenario box.
+`**Circumstances and context of the dialogue:**`won't be prepended to the content of your character's Scenario box.
 
 #### Disable personality formatting
 
-`**NAME's personality:** `won't be prepended to the content of your character's Personality box.
+`**NAME's personality:**`won't be prepended to the content of your character's Personality box.
 
 #### Disable example chats formatting
 
@@ -594,28 +583,31 @@ Characters are drafted based on the order they are presented in group members li
 
 ## Multigen
 
+_This feature provides a pseudo-streaming functionality which conflicts with token streaming. When Multigen is enabled and generation API supports streaming, only Multigen streaming will be used._
+
 SillyTavern tries to create faster and longer responses by chaining the generation using smaller batches.
 
-### Default settings:
+### Default settings
 
 First batch = 50 tokens
 
 Next batches = 30 tokens
 
-### Algorithm:
+### Algorithm
 
 1. Generate the first batch (if amount of generation setting is more than batch length).
 2. Generate next batch of tokens until one of the stopping conditions is reached.
 3. Append the generated text to the next cycle's prompt.
 
-### Stopping conditions:
+### Stopping conditions
 
 1. Generated enough text.
 2. Character starts speaking for You.
 3. &lt;|endoftext|&gt; token reached.
 4. No text generated.
+5. Stop sequence generated. (Instruct mode only)
 
-## User Settings 
+## User Settings
 
 ### Message Sound
 
@@ -634,13 +626,15 @@ Enables math formulas rendering using the [showdown-katex](https://obedm503.gith
 The following formatting rules are supported:
 
 #### LaTeX syntax
+
 ```
 $$ formula goes here $$
 ```
 
 #### Asciimath syntax
+
 ```
-$ formula goes here $
+formula goes here $
 ```
 
 More information: [KaTeX](https://katex.org/)
