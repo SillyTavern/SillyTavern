@@ -148,10 +148,10 @@ Easy to follow guide with pretty pictures:
 
 Installing via zip download
 
-  1. install [NodeJS](https://nodejs.org/en) (latest LTS version is recommended)
-  2. download the zip from this GitHub repo
-  3. unzip it into a folder of your choice
-  4. run start.bat via double-clicking or in a command line.
+  1. Install [NodeJS](https://nodejs.org/en) (latest LTS version is recommended)
+  2. Download the zip from this GitHub repo. (Get the `Source code (zip)` from [Releases](https://github.com/Cohee1207/SillyTavern/releases/latest))
+  3. Unzip it into a folder of your choice
+  4. Run `Start.bat` via double-clicking or in a command line.
   5. Once the server has prepared everything for you, it will open a tab in your browser.
 
 ### Linux
@@ -221,7 +221,7 @@ Use http:// NOT https://
 
 ### Opening your ST to all IPs
 
-We do not reccomend doing this, but you can open `config.conf` and change `whitelist` to `false`.
+We do not recommend doing this, but you can open `config.conf` and change `whitelist` to `false`.
 
 You must remove (or rename) `whitelist.txt` in the SillyTavern base install folder, if it exists. 
 

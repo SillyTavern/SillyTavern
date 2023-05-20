@@ -16,6 +16,7 @@ Method 1 - GIT
 We always recommend users install using 'git'. Here's why: 
 
 When you have installed via `git clone`, all you have to do to update is type `git pull` in a command line in the ST folder. 
+You can also try running the 'UpdateAndStart.bat' file, which will almost do the same thing. (Windows only) 
 Alternatively, if the command prompt gives you problems (and you have GitHub Desktop installed), you can use the 'Repository' menu and select 'Pull'.
 The updates are applied automatically and safely.
 
