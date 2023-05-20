@@ -7,6 +7,8 @@ assignees: ''
 
 ---
 
+> **Warning**. Complete **all** the fields below. Otherwise your bug report will be **ignored**!
+
 **Describe the bug**
 A clear and concise description of what the bug is.
 
