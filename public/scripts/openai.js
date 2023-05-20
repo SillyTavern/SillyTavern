@@ -103,6 +103,7 @@ const default_settings = {
     openai_model: 'gpt-3.5-turbo',
     jailbreak_system: false,
     reverse_proxy: '',
+    legacy_streaming: false,
 };
 
 const oai_settings = {
@@ -127,6 +128,7 @@ const oai_settings = {
     openai_model: 'gpt-3.5-turbo',
     jailbreak_system: false,
     reverse_proxy: '',
+    legacy_streaming: false,
 };
 
 let openai_setting_names;
@@ -566,13 +568,19 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
                 let response = decoder.decode(value);
 
                 tryParseStreamingError(response);
-                
+
+                let eventList = [];
+
                 // ReadableStream's buffer is not guaranteed to contain full SSE messages as they arrive in chunks
                 // We need to buffer chunks until we have one or more full messages (separated by double newlines)
-                messageBuffer += response;
-                let eventList = messageBuffer.split("\n\n");
-                // Last element will be an empty string or a leftover partial message
-                messageBuffer = eventList.pop();
+                if (!oai_settings.legacy_streaming) {
+                    messageBuffer += response;
+                    eventList = messageBuffer.split("\n\n");
+                    // Last element will be an empty string or a leftover partial message
+                    messageBuffer = eventList.pop();
+                } else {
+                    eventList = response.split("\n");
+                }
 
                 for (let event of eventList) {
                     if (!event.startsWith("data"))
@@ -694,7 +702,7 @@ function countTokens(messages, full = false) {
         else {
             jQuery.ajax({
                 async: false,
-                type: 'POST', // 
+                type: 'POST', //
                 url: `/tokenize_openai?model=${oai_settings.openai_model}`,
                 data: JSON.stringify([message]),
                 dataType: "json",
@@ -741,6 +749,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.openai_max_tokens = settings.openai_max_tokens ?? default_settings.openai_max_tokens;
     oai_settings.bias_preset_selected = settings.bias_preset_selected ?? default_settings.bias_preset_selected;
     oai_settings.bias_presets = settings.bias_presets ?? default_settings.bias_presets;
+    oai_settings.legacy_streaming = settings.legacy_streaming ?? default_settings.legacy_streaming;
 
     if (settings.nsfw_toggle !== undefined) oai_settings.nsfw_toggle = !!settings.nsfw_toggle;
     if (settings.keep_example_dialogue !== undefined) oai_settings.keep_example_dialogue = !!settings.keep_example_dialogue;
@@ -764,6 +773,7 @@ function loadOpenAISettings(data, settings) {
     $('#wrap_in_quotes').prop('checked', oai_settings.wrap_in_quotes);
     $('#nsfw_first').prop('checked', oai_settings.nsfw_first);
     $('#jailbreak_system').prop('checked', oai_settings.jailbreak_system);
+    $('#legacy_streaming').prop('checked', oai_settings.legacy_streaming);
 
     if (settings.main_prompt !== undefined) oai_settings.main_prompt = settings.main_prompt;
     if (settings.nsfw_prompt !== undefined) oai_settings.nsfw_prompt = settings.nsfw_prompt;
@@ -812,8 +822,8 @@ async function getStatusOpen() {
         };
 
         return jQuery.ajax({
-            type: 'POST', // 
-            url: '/getstatus_openai', // 
+            type: 'POST', //
+            url: '/getstatus_openai', //
             data: JSON.stringify(data),
             beforeSend: function () {
                 if (oai_settings.reverse_proxy) {
@@ -884,6 +894,7 @@ async function saveOpenAIPreset(name, settings) {
         impersonation_prompt: settings.impersonation_prompt,
         bias_preset_selected: settings.bias_preset_selected,
         reverse_proxy: settings.reverse_proxy,
+        legacy_streaming: settings.legacy_streaming,
     };
 
     const savePresetSettings = await fetch(`/savepreset_openai?name=${name}`, {
@@ -1148,6 +1159,7 @@ function onSettingsPresetChange() {
         impersonation_prompt: ['#impersonation_prompt_textarea', 'impersonation_prompt', false],
         bias_preset_selected: ['#openai_logit_bias_preset', 'bias_preset_selected', false],
         reverse_proxy: ['#openai_reverse_proxy', 'reverse_proxy', false],
+        legacy_streaming: ['#legacy_streaming', 'legacy_streaming', false],
     };
 
     for (const [key, [selector, setting, isCheckbox]] of Object.entries(settingsToUpdate)) {
@@ -1365,6 +1377,11 @@ $(document).ready(function () {
     $("#impersonation_prompt_restore").on('click', function () {
         oai_settings.impersonation_prompt = default_impersonation_prompt;
         $('#impersonation_prompt_textarea').val(oai_settings.impersonation_prompt);
+        saveSettingsDebounced();
+    });
+
+    $('#legacy_streaming').on('input', function () {
+        oai_settings.legacy_streaming = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 
