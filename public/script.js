@@ -1268,6 +1268,8 @@ function substituteParams(content, _name1, _name2) {
     content = content.replace(/{{char}}/gi, _name2);
     content = content.replace(/<USER>/gi, _name1);
     content = content.replace(/<BOT>/gi, _name2);
+    content = content.replace(/{{time}}/gi, moment().format('LT'));
+    content = content.replace(/{{date}}/gi, moment().format('LL'));
     return content;
 }
 
@@ -1370,7 +1372,7 @@ export function extractMessageBias(message) {
     let biasString = '';
 
     if (found.length) {
-        biasString = ` ${found.join(" ")} `
+        biasString = ` ${found.join(" ")}`
     }
 
     return biasString;
