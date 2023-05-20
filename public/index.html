@@ -63,6 +63,7 @@
     <script type="module" src="scripts/slash-commands.js"></script>
     <script type="module" src="scripts/tags.js"></script>
     <script type="module" src="scripts/secrets.js"></script>
+    <script type="module" src="scripts/context-template.js"></script>
     <script type="text/javascript" src="scripts/toolcool-color-picker.js"></script>
 
     <title>SillyTavern</title>
@@ -367,15 +368,6 @@
                                     </div>
                                     <div class="wide100p">
                                         <input id="openai_reverse_proxy" type="text" class="text_pole" placeholder="https://api.openai.com/v1" maxlength="100" />
-                                    </div>
-                                </div>
-                                <div class="range-block">
-                                    <label for="oai_breakdown" class="checkbox_label widthFreeExpand">
-                                        <input id="oai_breakdown" type="checkbox" />
-                                        Token Breakdown
-                                    </label>
-                                    <div class="toggle-description justifyLeft">
-                                        Display a breakdown of the tokens used in the request.
                                     </div>
                                 </div>
                                 <div class="range-block">
@@ -1349,6 +1341,21 @@
                         <label class="checkbox_label" for="collapse-newlines-checkbox"><input id="collapse-newlines-checkbox" type="checkbox" />
                             Remove Empty New Lines from Output
                         </label>
+                        <div id="context-templates-block" class="template_element">
+                            <h4>
+                                Context Templates
+                            </h4>
+                            <div class="flex-container flexGap5">
+                                <select id="prompt_template" class="flex1 margin0">
+                                    <option value="None">None (Default)</option>
+                                    <option value="Classic">Classic</option>
+                                    <option value="Pygmalion">Pygmalion</option>
+                                </select>
+                                <div id="context_template_edit" class="menu_button fa-solid fa-pencil margin0" title="Edit"></div>
+                                <div id="context_template_new" class="menu_button fa-solid fa-plus margin0" title="Add new"></div>
+                                <div id="context_template_delete" class="menu_button fa-solid fa-trash-can margin0" title="Delete"></div>
+                            </div>
+                        </div>
                         <div>
                             <h4>Pygmalion Formatting</h4>
                             <select id="pygmalion_formatting">
@@ -1379,24 +1386,6 @@
                                     <small>Next chunks (tokens)</small>
                                     <input id="multigen_next_chunks" type="number" class="text_pole textarea_compact" min="1" max="512" />
                                 </label>
-                            </div>
-                        </div>
-                        <div id="context-templates-block" style="display:none">
-                            <h4>
-                                Context Templates
-                            </h4>
-                            <div>
-                                <label>Presets:</label>
-                                <div class="flex-container flexGap5">
-                                    <select id="prompt_template" class="flex1 margin0">
-                                        <option value="None">None</option>
-                                        <option value="Classic">Classic</option>
-                                        <option value="Pygmalion">Pygmalion</option>
-                                    </select>
-                                    <div id="context_template_edit" class="menu_button fa-solid fa-pencil margin0" title="Edit"></div>
-                                    <div id="context_template_new" class="menu_button fa-solid fa-plus margin0" title="Add new"></div>
-                                    <div id="context_template_delete" class="menu_button fa-solid fa-trash-can margin0" title="Delete"></div>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -1783,7 +1772,7 @@
                                 <input id="auto_swipe_minimum_length" name="auto_swipe_minimum_length" type="number" min="0" step="1" value="0" class="text_pole">
                                 <div>Blacklisted words</div>
                                 <div class="auto_swipe">
-                                    <input id="auto_swipe_blacklist" name="auto_swipe_blacklist" placeholder="words you dont want generated separated by comma ','" class="text_pole" maxlength="500" value="" autocomplete="off">
+                                    <textarea id="auto_swipe_blacklist" name="auto_swipe_blacklist" placeholder="words you dont want generated separated by comma ','" class="text_pole textarea_compact" maxlength="500" value="" autocomplete="off" rows="3"></textarea>
                                     <div>Blacklisted word count to swipe</div>
                                     <input id="auto_swipe_blacklist_threshold" name="auto_swipe_blacklist_threshold" type="number" min="0" step="1" value="1" class="text_pole">
                                 </div>
@@ -2203,6 +2192,58 @@
     </div>
 
     <!-- templates for JS to reuse when needed -->
+    <div id="context_editor_template" class="template_element">
+        <div class="context_editor">
+            <h3>Context Template Editor</h3>
+    
+            <div class="inline-drawer wide100p">
+                <div class="inline-drawer-toggle inline-drawer-header">
+                    Substitution Parameters
+                    <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+                </div>
+                <div class="inline-drawer-content">
+                    <i>Click to copy.</i>
+                    <ul class="template_parameters_list justifyLeft margin0">
+                        <li><code>{{char}}</code> - current character name</li>
+                        <li><code>{{user}}</code> - current user name</li>
+                        <li><code>{{description}}</code> - character description</li>
+                        <li><code>{{scenario}}</code> - character or group scenario</li>
+                        <li><code>{{personality}}</code> - character personality</li>
+                        <li><code>{{mesExamples}}</code> - message examples</li>
+                        <li><code>{{wiBeforeCharacter}}</code> - activated World Info entries (Before Char)</li>
+                        <li><code>{{wiAfterCharacter}}</code> - activated World Info entries (After Char)</li>
+                        <li><code>{{instructSystemPrompt}}</code> - system prompt (Instruct mode only)</li>
+                    </ul>
+                </div>
+            </div>
+            <div>
+                <div class="margin-bot-10px wide100p justifyLeft">
+                    Story String Template
+                </div>
+                <textarea class="wide100p textarea_compact story_string_template" rows="8"></textarea>
+                <div>
+                    <small>Lines containing parameters resolving to an empty value will be removed from the template string.</small>
+                </div>
+            </div>
+            <div>
+                <div class="title_restorable">
+                    <span>Chat Injections</span>
+                    <div title="Add chat injection" class="menu_button">
+                        <div class="fa-solid fa-plus"></div>
+                    </div>
+                </div>
+                <div class="chat_injections_list flex-container flexFlowColumn flexGap5 wide100p"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="chat_injection_template" class="template_element">
+        <div class="chat_injection flex-container wide100p flexGap5 flexnowrap">
+            <input class="chat_injection_text textarea_compact text_pole flex2" placeholder="Injection text (supports parameters)" type="text" />
+            <input class="chat_injection_depth textarea_compact text_pole flex1" placeholder="Injection depth" type="number" min="0" max="100" />
+            <div title="Remove injection" class="menu_button fa-solid fa-xmark chat_injection_remove"></div>
+        </div>
+    </div>
 
     <div id="group_scenario_template" class="template_element">
         <div class="group_scenario range-block flexFlowColumn flex-container">
@@ -2507,11 +2548,6 @@
         <div id="chat">
         </div>
         <div id="form_sheld">
-            <div id="token_breakdown" style="display:none;">
-                <div>
-                    <!-- Token Breakdown Goes Here -->
-                </div>
-            </div>
             <div id="dialogue_del_mes">
                 <div id="dialogue_del_mes_ok" class="menu_button">Delete</div>
                 <div id="dialogue_del_mes_cancel" class="menu_button">Cancel</div>

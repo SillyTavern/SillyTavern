@@ -49,6 +49,7 @@ import {
     editGroup,
     deleteGroupChat,
     renameGroupChat,
+    importGroupChat,
 } from "./scripts/group-chats.js";
 
 import {
@@ -106,7 +107,7 @@ import {
     setPoeOnlineStatus,
 } from "./scripts/poe.js";
 
-import { debounce, delay, restoreCaretPosition, saveCaretPosition, end_trim_to_sentence } from "./scripts/utils.js";
+import { debounce, delay, restoreCaretPosition, saveCaretPosition, end_trim_to_sentence, countOccurrences, isOdd } from "./scripts/utils.js";
 import { extension_settings, loadExtensionSettings } from "./scripts/extensions.js";
 import { executeSlashCommands, getSlashCommandsHelp, registerSlashCommand } from "./scripts/slash-commands.js";
 import {
@@ -226,7 +227,6 @@ let safetychat = [
 ];
 let chat_create_date = 0;
 
-let prev_selected_char = null;
 const default_ch_mes = "Hello";
 let count_view_mes = 0;
 let mesStr = "";
@@ -293,7 +293,7 @@ const system_messages = {
         mes: [
             `Hi there! The following chat formatting commands are supported:
             <ul>
-            <li><tt>{{text}}</tt> - sets a one-time behavioral bias for the AI. Resets when you send the next message.
+            <li><tt>{​{text}​}</tt> - sets a one-time behavioral bias for the AI. Resets when you send the next message.
             </li>
             </ul>
             Hotkeys/Keybinds: 
@@ -1026,6 +1026,11 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
         });
     }
 
+    // Hides bias from empty messages send with slash commands
+    if (isSystem) {
+        mes = mes.replace(/{{(\*?.*\*?)}}/g, "");
+    }
+
     if (!power_user.allow_name2_display && ch_name && !isUser && !isSystem) {
         mes = mes.replaceAll(`${ch_name}:`, "");
     }
@@ -1159,7 +1164,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     newMessage.data("isSystem", isSystem);
 
     if (isSystem) {
-        newMessage.find(".mes_edit").hide();
+        // newMessage.find(".mes_edit").hide();
         newMessage.find(".mes_prompt").hide(); //don't need prompt button for sys
     }
 
@@ -1319,7 +1324,7 @@ function processCommands(message, type) {
     return result.interrupt;
 }
 
-function sendSystemMessage(type, text) {
+function sendSystemMessage(type, text, extra = {}) {
     const systemMessage = system_messages[type];
 
     if (!systemMessage) {
@@ -1340,6 +1345,7 @@ function sendSystemMessage(type, text) {
         newMessage.extra = {};
     }
 
+    newMessage.extra = Object.assign(newMessage.extra, extra);
     newMessage.extra.type = type;
 
     chat.push(newMessage);
@@ -1347,7 +1353,7 @@ function sendSystemMessage(type, text) {
     is_send_press = false;
 }
 
-function extractMessageBias(message) {
+export function extractMessageBias(message) {
     if (!message) {
         return null;
     }
@@ -1508,6 +1514,12 @@ class StreamingProcessor {
         let result = extractNameFromMessage(processedText, this.force_name2, isImpersonate);
         let isName = result.this_mes_is_name;
         processedText = result.getMessage;
+
+        // Predict unbalanced asterisks during streaming
+        if (!isFinal && isOdd(countOccurrences(processedText, '*'))) {
+            // Add asterisk at the end to balance it
+            processedText = processedText.trimEnd() + '*';
+        }
 
         if (isImpersonate) {
             $('#send_textarea').val(processedText).trigger('input');
@@ -1743,7 +1755,13 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
         //for normal messages sent from user..
         if (textareaText != "" && !automatic_trigger && type !== 'quiet') {
-            sendMessageAsUser(textareaText, messageBias);
+            // If user message contains no text other than bias - send as a system message
+            if (messageBias && replaceBiasMarkup(textareaText).trim().length === 0) {
+                sendSystemMessage(system_message_types.GENERIC, ' ', { bias: messageBias });
+            }
+            else {
+                sendMessageAsUser(textareaText, messageBias);
+            }
         }
         ////////////////////////////////////
         const scenarioText = chat_metadata['scenario'] || characters[this_chid].scenario;
@@ -2359,8 +2377,8 @@ function getBiasStrings(textareaText) {
 
     // gets bias of the latest message where it was applied
     for (let mes of chat.slice().reverse()) {
-        if (mes && mes.is_user) {
-            if (mes.extra && mes.extra.bias && mes.extra.bias.trim().length > 0) {
+        if (mes && mes.extra && (mes.is_user || mes.is_system || mes.extra.type === system_message_types.NARRATOR)) {
+            if (mes.extra.bias && mes.extra.bias.trim().length > 0) {
                 promptBias = mes.extra.bias;
             }
             break;
@@ -2383,10 +2401,13 @@ function formatMessageHistoryItem(chatItem, isInstruct) {
         textResult = formatInstructModeChat(itemName, chatItem.mes, chatItem.is_user, isNarratorType, chatItem.force_avatar);
     }
 
-    // replace bias markup
-    textResult = (textResult ?? '').replace(/{{(\*?.*\*?)}}/g, '');
+    textResult = replaceBiasMarkup(textResult);
 
     return textResult;
+}
+
+export function replaceBiasMarkup(str) {
+    return (str ?? '').replace(/{{(\*?.*\*?)}}/g, '');
 }
 
 function sendMessageAsUser(textareaText, messageBias) {
@@ -2431,9 +2452,6 @@ function getMaxContextSize() {
 }
 
 function parseTokenCounts(counts, thisPromptBits) {
-    const breakdown_bar = $('#token_breakdown div:first-child');
-    breakdown_bar.empty();
-
     const total = Object.values(counts).filter(x => !Number.isNaN(x)).reduce((acc, val) => acc + val, 0);
 
     thisPromptBits.push({
@@ -2446,22 +2464,6 @@ function parseTokenCounts(counts, thisPromptBits) {
         oaiExamplesTokens: Object.entries(counts)[6][1],
         oaiConversationTokens: Object.entries(counts)[7][1],
         oaiTotalTokens: total,
-    });
-
-    Object.entries(counts).forEach(([type, value]) => {
-        if (value === 0) {
-            return;
-        }
-        const percent_value = (value / total) * 100;
-        const color = uniqolor(type, { saturation: 50, lightness: 75, }).color;
-        const bar = document.createElement('div');
-        bar.style.width = `${percent_value}%`;
-        bar.classList.add('token_breakdown_segment');
-        bar.style.backgroundColor = color + 'AA';
-        bar.style.borderColor = color + 'FF';
-        bar.innerText = value;
-        bar.title = `${type}: ${percent_value.toFixed(2)}%`;
-        breakdown_bar.append(bar);
     });
 }
 
@@ -3409,6 +3411,7 @@ async function read_avatar_load(input) {
         await delay(durationSaveEdit);
         await fetch(getThumbnailUrl('avatar', formData.get('avatar_url')), {
             method: 'GET',
+            cache: 'no-cache',
             headers: {
                 'pragma': 'no-cache',
                 'cache-control': 'no-cache',
@@ -3580,10 +3583,8 @@ function changeMainAPI() {
         // Hide common settings for OpenAI
         if (selectedVal == "openai") {
             $("#common-gen-settings-block").css("display", "none");
-            //$("#token_breakdown").css("display", "flex");
         } else {
             $("#common-gen-settings-block").css("display", "block");
-            //$("#token_breakdown").css("display", "none");
         }
         // Hide amount gen for poe
         if (selectedVal == "poe") {
@@ -3901,22 +3902,30 @@ function messageEditAuto(div) {
     let mesBlock = div.closest(".mes_block");
     var text = mesBlock.find(".edit_textarea").val().trim();
     const bias = extractMessageBias(text);
-    chat[this_edit_mes_id]["mes"] = text;
-    if (chat[this_edit_mes_id]["swipe_id"] !== undefined) {
-        chat[this_edit_mes_id]["swipes"][chat[this_edit_mes_id]["swipe_id"]] = text;
+    const mes = chat[this_edit_mes_id];
+    mes["mes"] = text;
+    if (mes["swipe_id"] !== undefined) {
+        mes["swipes"][mes["swipe_id"]] = text;
     }
 
     // editing old messages
-    if (!chat[this_edit_mes_id]["extra"]) {
-        chat[this_edit_mes_id]["extra"] = {};
+    if (!mes["extra"]) {
+        mes["extra"] = {};
     }
-    chat[this_edit_mes_id]["extra"]["bias"] = bias ?? null;
+
+    if (mes.is_system || mes.is_user || mes.extra.type === system_message_types.NARRATOR) {
+        mes.extra.bias = bias ?? null;
+    }
+    else {
+        mes.extra.bias = null;
+    }
+
     mesBlock.find(".mes_text").val('');
     mesBlock.find(".mes_text").val(messageFormatting(
         text,
         this_edit_mes_chname,
-        chat[this_edit_mes_id].is_system,
-        chat[this_edit_mes_id].is_user,
+        mes.is_system,
+        mes.is_user,
     ));
     saveChatDebounced();
 }
@@ -3925,17 +3934,23 @@ function messageEditDone(div) {
     let mesBlock = div.closest(".mes_block");
     var text = mesBlock.find(".edit_textarea").val().trim();
     const bias = extractMessageBias(text);
-    chat[this_edit_mes_id]["mes"] = text;
-    if (chat[this_edit_mes_id]["swipe_id"] !== undefined) {
-        chat[this_edit_mes_id]["swipes"][chat[this_edit_mes_id]["swipe_id"]] = text;
+    const mes = chat[this_edit_mes_id];
+    mes["mes"] = text;
+    if (mes["swipe_id"] !== undefined) {
+        mes["swipes"][mes["swipe_id"]] = text;
     }
 
     // editing old messages
-    if (!chat[this_edit_mes_id]["extra"]) {
-        chat[this_edit_mes_id]["extra"] = {};
+    if (!mes.extra) {
+        mes.extra = {};
     }
 
-    chat[this_edit_mes_id]["extra"]["bias"] = bias ?? null;
+    if (mes.is_system || mes.is_user || mes.extra.type === system_message_types.NARRATOR) {
+        mes.extra.bias = bias ?? null;
+    }
+    else {
+        mes.extra.bias = null;
+    }
 
     mesBlock.find(".mes_text").empty();
     mesBlock.find(".mes_edit_buttons").css("display", "none");
@@ -3944,13 +3959,13 @@ function messageEditDone(div) {
         messageFormatting(
             text,
             this_edit_mes_chname,
-            chat[this_edit_mes_id].is_system,
-            chat[this_edit_mes_id].is_user,
+            mes.is_system,
+            mes.is_user,
         )
     );
     mesBlock.find(".mes_bias").empty();
     mesBlock.find(".mes_bias").append(messageFormatting(bias));
-    appendImageToMessage(chat[this_edit_mes_id], div.closest(".mes"));
+    appendImageToMessage(mes, div.closest(".mes"));
     addCopyToCodeBlocks(div.closest(".mes"));
     this_edit_mes_id = undefined;
     saveChatConditional();
@@ -3973,7 +3988,7 @@ async function getPastCharacterChats() {
     return data;
 }
 
-async function displayPastChats() {
+export async function displayPastChats() {
     $("#select_chat_div").empty();
 
     const group = selected_group ? groups.find(x => x.id === selected_group) : null;
@@ -4010,7 +4025,7 @@ async function displayPastChats() {
 
             $("#select_chat_div").append(template);
 
-            if (currentChat === fileName.replace(".jsonl", "")) {
+            if (currentChat === fileName.toString().replace(".jsonl", "")) {
                 $("#select_chat_div").find(".select_chat_block:last").attr("highlight", true);
             }
         }
@@ -4055,7 +4070,6 @@ async function getStatusNovel() {
     }
 }
 
-
 function selectRightMenuWithAnimation(selectedMenuId) {
     const displayModes = {
         'rm_info_block': 'flex',
@@ -4076,13 +4090,7 @@ function selectRightMenuWithAnimation(selectedMenuId) {
                 easing: animation_easing,
                 complete: function () { },
             });
-
-
-
-            // $(menu).find('#groupCurrentMemberListToggle').click();
-
         }
-
     })
 }
 
@@ -4096,8 +4104,7 @@ function setRightTabSelectedClass(selectedButtonId) {
     });
 }
 
-function select_rm_info(type, charId) {
-
+function select_rm_info(type, charId, previousCharId = null) {
     if (!type) {
         toastr.error(`Invalid process (no 'type')`);
         return;
@@ -4124,16 +4131,12 @@ function select_rm_info(type, charId) {
         setTimeout(function () {
             $(`#rm_characters_block [title="${charId + '.png'}"]`).parent().removeClass('flash animated');
         }, 5000);
-
     }
-
 
     setRightTabSelectedClass();
 
-    prev_selected_char = charId;
-
-    if (prev_selected_char) {
-        const newId = characters.findIndex((x) => x.name == prev_selected_char);
+    if (previousCharId) {
+        const newId = characters.findIndex((x) => x.avatar == previousCharId);
         if (newId >= 0) {
             this_chid = newId;
         }
@@ -4240,19 +4243,9 @@ function select_rm_create() {
 }
 
 function select_rm_characters() {
-    restoreSelectedCharacter();
-
     menu_type = "characters";
     selectRightMenuWithAnimation('rm_characters_block');
     setRightTabSelectedClass('rm_button_characters');
-}
-
-function restoreSelectedCharacter() {
-    if (prev_selected_char) {
-        let newChId = characters.findIndex((x) => x.name == prev_selected_char);
-        $(`.character_select[chid="${newChId}"]`).trigger("click");
-        prev_selected_char = null;
-    }
 }
 
 function setExtensionPrompt(key, value, position, depth) {
@@ -4457,6 +4450,27 @@ export async function saveChatConditional() {
     }
 }
 
+async function importCharacterChat(formData) {
+    await jQuery.ajax({
+        type: "POST",
+        url: "/importchat",
+        data: formData,
+        beforeSend: function () {
+        },
+        cache: false,
+        contentType: false,
+        processData: false,
+        success: async function (data) {
+            if (data.res) {
+                await displayPastChats();
+            }
+        },
+        error: function () {
+            $("#create_button").removeAttr("disabled");
+        },
+    });
+}
+
 function updateViewMessageIds() {
     $('#chat').find(".mes").each(function (index, element) {
         $(element).attr("mesid", index);
@@ -4516,7 +4530,7 @@ function isHordeGenerationNotAllowed() {
 }
 
 export function cancelTtsPlay() {
-    if (speechSynthesis) {
+    if ('speechSynthesis' in window) {
         speechSynthesis.cancel();
     }
 }
@@ -5364,7 +5378,7 @@ $(document).ready(function () {
                         $("#create_button").attr("value", "✅");
                         let oldSelectedChar = null;
                         if (this_chid != undefined && this_chid != "invalid-safety-id") {
-                            oldSelectedChar = characters[this_chid].name;
+                            oldSelectedChar = characters[this_chid].avatar;
                         }
 
                         console.log(`new avatar id: ${html}`);
@@ -5374,7 +5388,7 @@ $(document).ready(function () {
                         $("#rm_info_block").transition({ opacity: 0, duration: 0 });
                         var $prev_img = $("#avatar_div_div").clone();
                         $("#rm_info_avatar").append($prev_img);
-                        select_rm_info(`char_create`, save_name);
+                        select_rm_info(`char_create`, save_name, oldSelectedChar);
 
                         $("#rm_info_block").transition({ opacity: 1.0, duration: 2000 });
                         crop_data = undefined;
@@ -5963,11 +5977,12 @@ $(document).ready(function () {
     //***Message Editor***
     $(document).on("click", ".mes_edit", function () {
         if (this_chid !== undefined || selected_group) {
-            const message = $(this).closest(".mes");
+            // Previously system messages we're allowed to be edited
+            /*const message = $(this).closest(".mes");
 
             if (message.data("isSystem")) {
                 return;
-            }
+            }*/
 
             let chatScrollPosition = $("#chat").scrollTop();
             if (this_edit_mes_id !== undefined) {
@@ -6197,8 +6212,6 @@ $(document).ready(function () {
             return;
         }
 
-        let names = [];
-
         for (const file of e.target.files) {
             var ext = file.name.match(/\.(\w+)$/);
             if (
@@ -6235,13 +6248,11 @@ $(document).ready(function () {
 
                         let oldSelectedChar = null;
                         if (this_chid != undefined && this_chid != "invalid-safety-id") {
-                            oldSelectedChar = characters[this_chid].name;
+                            oldSelectedChar = characters[this_chid].avatar;
                         }
 
-                        names.push(data.file_name);
-                        let nameString = DOMPurify.sanitize(names.join(', '));
                         await getCharacters();
-                        select_rm_info(`char_import`, data.file_name);
+                        select_rm_info(`char_import`, data.file_name, oldSelectedChar);
                         $("#rm_info_block").transition({ opacity: 1, duration: 1000 });
                     }
                 },
@@ -6289,12 +6300,13 @@ $(document).ready(function () {
         $("#chat_import_file").click();
     });
 
-    $("#chat_import_file").on("change", function (e) {
+    $("#chat_import_file").on("change", async function (e) {
         var file = e.target.files[0];
-        //console.log(1);
+
         if (!file) {
             return;
         }
+
         var ext = file.name.match(/\.(\w+)$/);
         if (
             !ext ||
@@ -6303,33 +6315,23 @@ $(document).ready(function () {
             return;
         }
 
+        if (selected_group && file.name.endsWith('.json')) {
+            toastr.warning("Only SillyTavern's own format is supported for group chat imports. Sorry!");
+            return;
+        }
+
         var format = ext[1].toLowerCase();
         $("#chat_import_file_type").val(format);
-        //console.log(format);
+
         var formData = new FormData($("#form_import_chat").get(0));
-        //console.log('/importchat entered with: '+formData);
-        jQuery.ajax({
-            type: "POST",
-            url: "/importchat",
-            data: formData,
-            beforeSend: function () {
-                $("#select_chat_div").html("");
-                $("#load_select_chat_div").css("display", "block");
-                //$('#create_button').attr('value','Creating...');
-            },
-            cache: false,
-            contentType: false,
-            processData: false,
-            success: function (data) {
-                //console.log(data);
-                if (data.res) {
-                    displayPastChats();
-                }
-            },
-            error: function (jqXHR, exception) {
-                $("#create_button").removeAttr("disabled");
-            },
-        });
+        $("#select_chat_div").html("");
+        $("#load_select_chat_div").css("display", "block");
+
+        if (selected_group) {
+            await importGroupChat(formData);
+        } else {
+            await importCharacterChat(formData);
+        }
     });
 
     $("#rm_button_group_chats").click(function () {

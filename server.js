@@ -63,7 +63,9 @@ const utf8Encode = new TextEncoder();
 const utf8Decode = new TextDecoder('utf-8', { ignoreBOM: true });
 const commandExistsSync = require('command-exists').sync;
 
+const characterCardParser = require('./src/character-card-parser.js');
 const config = require(path.join(process.cwd(), './config.conf'));
+
 const server_port = process.env.SILLY_TAVERN_PORT || config.port;
 
 const whitelistPath = path.join(process.cwd(), "./whitelist.txt");
@@ -145,7 +147,6 @@ const tokenizersCache = {};
 
 function getTiktokenTokenizer(model) {
     if (tokenizersCache[model]) {
-        console.log('Using the cached tokenizer instance for', model);
         return tokenizersCache[model];
     }
 
@@ -913,61 +914,7 @@ async function tryReadImage(img_url, crop) {
 }
 
 async function charaRead(img_url, input_format) {
-    let format;
-    if (input_format === undefined) {
-        if (img_url.indexOf('.webp') !== -1) {
-            format = 'webp';
-        } else {
-            format = 'png';
-        }
-    } else {
-        format = input_format;
-    }
-
-    switch (format) {
-        case 'webp':
-            try {
-                const exif_data = await ExifReader.load(fs.readFileSync(img_url));
-                let char_data;
-
-                if (exif_data['UserComment']['description']) {
-                    let description = exif_data['UserComment']['description'];
-                    if (description === 'Undefined' && exif_data['UserComment'].value && exif_data['UserComment'].value.length === 1) {
-                        description = exif_data['UserComment'].value[0];
-                    }
-                    try {
-                        json5.parse(description);
-                        char_data = description;
-                    } catch {
-                        const byteArr = description.split(",").map(Number);
-                        const uint8Array = new Uint8Array(byteArr);
-                        const char_data_string = utf8Decode.decode(uint8Array);
-                        char_data = char_data_string;
-                    }
-                } else {
-                    console.log('No description found in EXIF data.');
-                    return false;
-                }
-                return char_data;
-            }
-            catch (err) {
-                console.log(err);
-                return false;
-            }
-        case 'png':
-            const buffer = fs.readFileSync(img_url);
-            const chunks = extract(buffer);
-
-            const textChunks = chunks.filter(function (chunk) {
-                return chunk.name === 'tEXt';
-            }).map(function (chunk) {
-                return PNGtext.decode(chunk.data);
-            });
-            var base64DecodedData = Buffer.from(textChunks[0].text, 'base64').toString('utf8');
-            return base64DecodedData;//textChunks[0].text;
-        default:
-            break;
-    }
+    return characterCardParser.parse(img_url, input_format);
 }
 
 app.post("/getcharacters", jsonParser, function (request, response) {
@@ -1754,6 +1701,17 @@ app.post("/exportcharacter", jsonParser, async function (request, response) {
     return response.sendStatus(400);
 });
 
+app.post("/importgroupchat", urlencodedParser, function (request, response) {
+    try {
+        const filedata = request.file;
+        const chatname = humanizedISO8601DateTime();
+        fs.copyFileSync(`./uploads/${filedata.filename}`, (`${directories.groupChats}/${chatname}.jsonl`));
+        return response.send({ res: chatname });
+    } catch (error) {
+        console.error(error);
+        return response.send({ error: true });
+    }
+});
 
 app.post("/importchat", urlencodedParser, function (request, response) {
     if (!request.body) return response.sendStatus(400);
@@ -1763,9 +1721,8 @@ app.post("/importchat", urlencodedParser, function (request, response) {
     let avatar_url = (request.body.avatar_url).replace('.png', '');
     let ch_name = request.body.character_name;
     if (filedata) {
-
         if (format === 'json') {
-            fs.readFile('./uploads/' + filedata.filename, 'utf8', (err, data) => {
+            fs.readFile(`./uploads/${filedata.filename}`, 'utf8', (err, data) => {
 
                 if (err) {
                     console.log(err);
@@ -1782,7 +1739,6 @@ app.post("/importchat", urlencodedParser, function (request, response) {
                                     user_name: 'You',
                                     character_name: ch_name,
                                     create_date: humanizedISO8601DateTime(),
-
                                 },
                                 ...history.msgs.map(
                                     (message) => ({
@@ -1803,7 +1759,7 @@ app.post("/importchat", urlencodedParser, function (request, response) {
 
                     const errors = [];
                     newChats.forEach(chat => fs.writeFile(
-                        chatsPath + avatar_url + '/' + ch_name + ' - ' + humanizedISO8601DateTime() + ' imported.jsonl',
+                        `${chatsPath + avatar_url}/${ch_name} - ${humanizedISO8601DateTime()} imported.jsonl`,
                         chat.map(JSON.stringify).join('\n'),
                         'utf8',
                         (err) => err ?? errors.push(err)
@@ -1832,8 +1788,7 @@ app.post("/importchat", urlencodedParser, function (request, response) {
                 let jsonData = json5.parse(line);
 
                 if (jsonData.user_name !== undefined || jsonData.name !== undefined) {
-                    //console.log(humanizedISO8601DateTime()+':/importchat copying chat as '+ch_name+' - '+humanizedISO8601DateTime()+'.jsonl');
-                    fs.copyFile('./uploads/' + filedata.filename, chatsPath + avatar_url + '/' + ch_name + ' - ' + humanizedISO8601DateTime() + '.jsonl', (err) => { //added character name and replaced Date.now() with humanizedISO8601DateTime
+                    fs.copyFile(`./uploads/${filedata.filename}`, (`${chatsPath + avatar_url}/${ch_name} - ${humanizedISO8601DateTime()}.jsonl`), (err) => {
                         if (err) {
                             response.send({ error: true });
                             return console.log(err);
@@ -1849,9 +1804,7 @@ app.post("/importchat", urlencodedParser, function (request, response) {
                 rl.close();
             });
         }
-
     }
-
 });
 
 app.post('/importworldinfo', urlencodedParser, (request, response) => {
@@ -1919,7 +1872,7 @@ app.post('/uploaduseravatar', urlencodedParser, async (request, response) => {
         const crop = tryParse(request.query.crop);
         let rawImg = await jimp.read(pathToUpload);
 
-        if (typeof crop == 'object') {
+        if (typeof crop == 'object' && [crop.x, crop.y, crop.width, crop.height].every(x => typeof x === 'number')) {
             rawImg = rawImg.crop(crop.x, crop.y, crop.width, crop.height);
         }
 
@@ -2746,8 +2699,12 @@ const setupTasks = async function () {
 }
 
 if (listen && !config.whitelistMode && !config.basicAuthMode) {
-    console.error('Your SillyTavern is currently unsecurely open to the public. Enable whitelisting or basic authentication.');
-    process.exit(1);
+	if (config.securityOverride)
+		console.warn("Security has been override. If it's not a trusted network, change the settings.");
+	else {
+		console.error('Your SillyTavern is currently unsecurely open to the public. Enable whitelisting or basic authentication.');
+		process.exit(1);
+	}
 }
 
 if (true === cliArguments.ssl)

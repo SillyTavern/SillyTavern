@@ -4,7 +4,9 @@ import {
     chat,
     chat_metadata,
     default_avatar,
+    extractMessageBias,
     getThumbnailUrl,
+    replaceBiasMarkup,
     saveChatConditional,
     sendSystemMessage,
     system_avatar,
@@ -117,6 +119,9 @@ function sendMessageAs(_, text) {
 
     const name = parts.shift().trim();
     const mesText = parts.join('\n').trim();
+    // Messages that do nothing but set bias will be hidden from the context
+    const bias = extractMessageBias(mesText);
+    const isSystem = replaceBiasMarkup(mesText).trim().length === 0;
 
     const character = characters.find(x => x.name === name);
     let force_avatar, original_avatar;
@@ -134,11 +139,14 @@ function sendMessageAs(_, text) {
         name: name,
         is_user: false,
         is_name: true,
-        is_system: false,
+        is_system: isSystem,
         send_date: humanizedDateTime(),
         mes: mesText,
         force_avatar: force_avatar,
         original_avatar: original_avatar,
+        extra: {
+            bias: bias.trim().length ? bias : null,
+        }
     };
 
     chat.push(message);
@@ -152,16 +160,21 @@ function sendNarratorMessage(_, text) {
     }
 
     const name = chat_metadata[NARRATOR_NAME_KEY] || NARRATOR_NAME_DEFAULT;
+    // Messages that do nothing but set bias will be hidden from the context
+    const bias = extractMessageBias(text);
+    const isSystem = replaceBiasMarkup(text).trim().length === 0;
+
     const message = {
         name: name,
         is_user: false,
         is_name: false,
-        is_system: false,
+        is_system: isSystem,
         send_date: humanizedDateTime(),
         mes: text.trim(),
         force_avatar: system_avatar,
         extra: {
             type: system_message_types.NARRATOR,
+            bias: bias.trim().length ? bias : null,
         },
     };
 
