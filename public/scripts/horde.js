@@ -185,6 +185,28 @@ function loadHordeSettings(settings) {
     $('#horde_auto_adjust_context_length').prop("checked", horde_settings.auto_adjust_context_length);
 }
 
+async function showKudos() {
+    const response = await fetch('/horde_userinfo', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+    });
+
+    if (!response.ok) {
+        toastr.warning('Could not load user info from Horde. Please try again later.');
+        return;
+    }
+
+    const data = await response.json();
+
+    if (data.anonymous) {
+        toastr.info('You are in anonymous mode. Set your personal Horde API key to see kudos.')
+        return;
+    }
+
+    console.log('Horde user data', data);
+    toastr.info(`${data.username}<br>Kudos: ${data.kudos}`);
+}
+
 jQuery(function () {
     $("#use_horde").on("input", async function () {
         horde_settings.use_horde = !!$(this).prop("checked");
@@ -225,4 +247,5 @@ jQuery(function () {
     });
 
     $("#horde_refresh").on("click", getHordeModels);
+    $("#horde_kudos").on("click", showKudos);
 })

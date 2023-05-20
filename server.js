@@ -125,7 +125,7 @@ let response_generate_openai;
 let response_getstatus_openai;
 
 //RossAscends: Added function to format dates used in files and chat timestamps to a humanized format.
-//Mostly I wanted this to be for file names, but couldn't figure out exactly where the filename save code was as everything seemed to be connected. 
+//Mostly I wanted this to be for file names, but couldn't figure out exactly where the filename save code was as everything seemed to be connected.
 //During testing, this performs the same as previous date.now() structure.
 //It also does not break old characters/chats, as the code just uses whatever timestamp exists in the chat.
 //New chats made with characters will use this new formatting.
@@ -898,12 +898,12 @@ async function charaWrite(img_url, data, target_img, response = undefined, mes =
 async function tryReadImage(img_url, crop) {
     try {
         let rawImg = await jimp.read(img_url);
-    
+
         // Apply crop if defined
         if (typeof crop == 'object' && [crop.x, crop.y, crop.width, crop.height].every(x => typeof x === 'number')) {
             rawImg = rawImg.crop(crop.x, crop.y, crop.width, crop.height);
         }
-    
+
         const image = await rawImg.cover(AVATAR_WIDTH, AVATAR_HEIGHT).getBufferAsync(jimp.MIME_PNG);
         return image;
     }
@@ -1351,7 +1351,7 @@ function getImages(path) {
         .sort(Intl.Collator().compare);
 }
 
-//***********Novel.ai API 
+//***********Novel.ai API
 
 app.post("/getstatus_novelai", jsonParser, function (request, response_getstatus_novel = response) {
 
@@ -2921,54 +2921,76 @@ app.post('/horde_models', jsonParser, async (_, response) => {
     response.send(models);
 });
 
+app.post('/horde_userinfo', jsonParser, async (_, response) => {
+    const api_key_horde = readSecret(SECRET_KEYS.HORDE);
+
+    if (!api_key_horde) {
+        return response.send({ anonymous: true });
+    }
+
+    try {
+        const user = await ai_horde.findUser({ token: api_key_horde });
+        return response.send(user);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+})
+
 app.post('/horde_generateimage', jsonParser, async (request, response) => {
     const MAX_ATTEMPTS = 100;
     const CHECK_INTERVAL = 3000;
     const api_key_horde = readSecret(SECRET_KEYS.HORDE) || ANONYMOUS_KEY;
     console.log('Stable Horde request:', request.body);
-    const generation = await ai_horde.postAsyncImageGenerate(
-        {
-            prompt: `${request.body.prompt_prefix} ${request.body.prompt} ### ${request.body.negative_prompt}`,
-            params:
+
+    try {
+        const generation = await ai_horde.postAsyncImageGenerate(
             {
-                sampler_name: request.body.sampler,
-                hires_fix: request.body.enable_hr,
-                use_gfpgan: request.body.restore_faces,
-                cfg_scale: request.body.scale,
-                steps: request.body.steps,
-                width: request.body.width,
-                height: request.body.height,
-                karras: Boolean(request.body.karras),
-                n: 1,
+                prompt: `${request.body.prompt_prefix} ${request.body.prompt} ### ${request.body.negative_prompt}`,
+                params:
+                {
+                    sampler_name: request.body.sampler,
+                    hires_fix: request.body.enable_hr,
+                    use_gfpgan: request.body.restore_faces,
+                    cfg_scale: request.body.scale,
+                    steps: request.body.steps,
+                    width: request.body.width,
+                    height: request.body.height,
+                    karras: Boolean(request.body.karras),
+                    n: 1,
+                },
+                r2: false,
+                nsfw: request.body.nfsw,
+                models: [request.body.model],
             },
-            r2: false,
-            nsfw: request.body.nfsw,
-            models: [request.body.model],
-        },
-        { token: api_key_horde });
+            { token: api_key_horde });
 
-    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-        await delay(CHECK_INTERVAL);
-        const check = await ai_horde.getImageGenerationCheck(generation.id);
-        console.log(check);
-    
-        if (check.done) {
-            const result = await ai_horde.getImageGenerationStatus(generation.id);
-            return response.send(result.generations[0].img);
+        for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+            await delay(CHECK_INTERVAL);
+            const check = await ai_horde.getImageGenerationCheck(generation.id);
+            console.log(check);
+
+            if (check.done) {
+                const result = await ai_horde.getImageGenerationStatus(generation.id);
+                return response.send(result.generations[0].img);
+            }
+
+            /*
+            if (!check.is_possible) {
+                return response.sendStatus(503);
+            }
+            */
+
+            if (check.faulted) {
+                return response.sendStatus(500);
+            }
         }
 
-        /*
-        if (!check.is_possible) {
-            return response.sendStatus(503);
-        }
-        */
-
-        if (check.faulted) {
-            return response.sendStatus(500);
-        }
+        return response.sendStatus(504);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
     }
-    
-    return response.sendStatus(504);
 });
 
 function writeSecret(key, value) {
