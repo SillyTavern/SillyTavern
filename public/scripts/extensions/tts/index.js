@@ -162,6 +162,23 @@ function isTtsProcessing() {
     return processing
 }
 
+function debugTtsPlayback() {
+    console.log(JSON.stringify(
+        {
+            "ttsProviderName": ttsProviderName,
+            "currentMessageNumber": currentMessageNumber,
+            "isWorkerBusy":isWorkerBusy,
+            "audioPaused": audioPaused,
+            "audioJobQueue": audioJobQueue,
+            "currentAudioJob": currentAudioJob,
+            "audioQueueProcessorReady": audioQueueProcessorReady,
+            "ttsJobQueue": ttsJobQueue,
+            "currentTtsJob": currentTtsJob,
+        }
+    ))
+}
+window.debugTtsPlayback = debugTtsPlayback
+
 //##################//
 //   Audio Control  //
 //##################//
