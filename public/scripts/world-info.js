@@ -506,16 +506,18 @@ function checkWorldInfo(chat) {
 
             if (Array.isArray(entry.key) && entry.key.length) {
                 primary: for (let key of entry.key) {
-                    if (key && textToScan.includes(key.trim().toLowerCase())) {
+                    const substituted = substituteParams(key);
+                    if (substituted && textToScan.includes(substituted.trim().toLowerCase())) {
                         if (
                             entry.selective &&
                             Array.isArray(entry.keysecondary) &&
                             entry.keysecondary.length
                         ) {
                             secondary: for (let keysecondary of entry.keysecondary) {
+                                const secondarySubstituted = substituteParams(keysecondary);
                                 if (
-                                    keysecondary &&
-                                    textToScan.includes(keysecondary.trim().toLowerCase())
+                                    secondarySubstituted &&
+                                    textToScan.includes(secondarySubstituted.trim().toLowerCase())
                                 ) {
                                     activatedNow.add(entry.uid);
                                     break secondary;
