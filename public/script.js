@@ -1367,7 +1367,13 @@ export function extractMessageBias(message) {
         found.push(curMatch[1].trim());
     }
 
-    return ` ${found.join(" ")} `;
+    let biasString = '';
+
+    if (found.length) {
+        biasString = ` ${found.join(" ")} `
+    }
+
+    return biasString;
 }
 
 function cleanGroupMessage(getMessage) {
@@ -1705,8 +1711,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         return;
     }
 
-    streamingProcessor = isStreamingEnabled() ? new StreamingProcessor(type, force_name2) : false;
-
     // Hide swipes on either multigen or real streaming
     if (isStreamingEnabled() || isMultigenEnabled()) {
         hideSwipeButtons();
@@ -1814,8 +1818,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             storyString += appendToStoryString(Scenario, power_user.disable_scenario_formatting ? '' : 'Circumstances and context of the dialogue: ');
         }
 
-        // Pygmalion does that anyway
-        if (promptBias || (power_user.always_force_name2 && !is_pygmalion)) {
+        if (promptBias || power_user.always_force_name2 || is_pygmalion) {
             force_name2 = true;
         }
 
@@ -1928,6 +1931,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
         let mesSend = [];
         console.log('calling runGenerate');
+        streamingProcessor = isStreamingEnabled() ? new StreamingProcessor(type, force_name2) : false;
         await runGenerate();
 
         async function runGenerate(cycleGenerationPromt = '') {
@@ -1960,14 +1964,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         }
                     }
                     if (is_pygmalion && !isInstruct) {
-                        if (i === arrMes.length - 1 && item.trim().startsWith(name1 + ":")) {//for add name2 when user sent
-                            item = item + name2 + ":";
-                        }
-                        if (i === arrMes.length - 1 && !item.trim().startsWith(name1 + ":")) {//for add name2 when continue
-                            if (textareaText == "") {
-                                item = item + '\n' + name2 + ":";
-                            }
-                        }
                         if (item.trim().startsWith(name1)) {
                             item = item.replace(name1 + ':', 'You:');
                         }
@@ -2026,7 +2022,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 // Get instruct mode line
                 if (isInstruct && tokens_already_generated === 0) {
                     const name = isImpersonate ? (is_pygmalion ? 'You' : name1) : name2;
-                    mesSendString += formatInstructModePrompt(name, isImpersonate);
+                    mesSendString += formatInstructModePrompt(name, isImpersonate, promptBias);
                 }
 
                 // Get non-instruct impersonation line
@@ -2039,7 +2035,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 }
 
                 // Add character's name
-                if (force_name2 && tokens_already_generated === 0) {
+                if (!isInstruct && force_name2 && tokens_already_generated === 0) {
                     if (!mesSendString.endsWith('\n')) {
                         mesSendString += '\n';
                     }

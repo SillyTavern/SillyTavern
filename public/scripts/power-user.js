@@ -661,11 +661,16 @@ export function formatInstructStoryString(story) {
     return text;
 }
 
-export function formatInstructModePrompt(name, isImpersonate) {
+export function formatInstructModePrompt(name, isImpersonate, promptBias) {
     const includeNames = power_user.instruct.names || !!selected_group;
     const sequence = isImpersonate ? power_user.instruct.input_sequence : power_user.instruct.output_sequence;
     const separator = power_user.instruct.wrap ? '\n' : '';
-    const text = includeNames ? (separator + sequence + separator + `${name}:`) : (separator + sequence);
+    let text = includeNames ? (separator + sequence + separator + `${name}:`) : (separator + sequence);
+
+    if (!isImpersonate && promptBias) {
+        text += (includeNames ?  promptBias : (separator + promptBias));
+    }
+
     return text.trimEnd();
 }
 
