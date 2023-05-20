@@ -480,7 +480,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
             activatedMembers = activateSwipe(group.members);
 
             if (activatedMembers.length === 0) {
-                callPopup('<h3>Deleted group member swiped. To get a reply, add them back to the group.</h3>', 'text');
+                toastr.warning('Deleted group member swiped. To get a reply, add them back to the group.');
                 throw new Error('Deleted group member swiped');
             }
         }
@@ -961,7 +961,7 @@ function select_group_chats(groupId, skipAnimation) {
     $("#rm_group_delete").off();
     $("#rm_group_delete").on("click", function () {
         if (is_group_generating) {
-            callPopup('<h3>Not so fast! Wait for the characters to stop typing before deleting the group.</h3>', 'text');
+            toastr.warning('Not so fast! Wait for the characters to stop typing before deleting the group.');
             return;
         }
 

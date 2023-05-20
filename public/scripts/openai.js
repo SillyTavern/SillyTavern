@@ -146,7 +146,7 @@ function validateReverseProxy() {
         new URL(oai_settings.reverse_proxy);
     }
     catch (err) {
-        callPopup('Entered reverse proxy address is not a valid URL', 'text');
+        toastr.error('Entered reverse proxy address is not a valid URL');
         setOnlineStatus('no_connection');
         resultCheckStatusOpen();
         throw err;
@@ -930,7 +930,7 @@ async function showApiKeyUsage() {
     }
     catch (err) {
         console.error(err);
-        callPopup('Invalid API key', 'text');
+        toastr.error('Invalid API key');
     }
 }
 
@@ -995,7 +995,7 @@ async function createNewLogitBiasPreset() {
     }
 
     if (name in oai_settings.bias_presets) {
-        callPopup('Preset name should be unique.', 'text');
+        toastr.error('Preset name should be unique.');
         return;
     }
 
@@ -1032,12 +1032,12 @@ async function onLogitBiasPresetImportFileChange(e) {
     e.target.value = '';
 
     if (name in oai_settings.bias_presets) {
-        callPopup('Preset name should be unique.', 'text');
+        toastr.error('Preset name should be unique.');
         return;
     }
 
     if (!Array.isArray(importedFile)) {
-        callPopup('Invalid logit bias preset file.', 'text');
+        toastr.error('Invalid logit bias preset file.');
         return;
     }
 
@@ -1341,7 +1341,7 @@ $(document).ready(function () {
     $("#update_oai_preset").on('click', async function () {
         const name = oai_settings.preset_settings_openai;
         await saveOpenAIPreset(name, oai_settings);
-        callPopup('Preset updated', 'text');
+        toastr.success('Preset updated');
     });
 
     $("#main_prompt_restore").on('click', function () {

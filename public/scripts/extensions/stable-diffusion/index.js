@@ -414,7 +414,7 @@ async function generatePicture(_, trigger, message, callback) {
     }
 
     if (!modules.includes('sd') && !extension_settings.sd.horde) {
-        callPopup("Extensions API is not connected or doesn't provide SD module. Enable Stable Horde to generate images.", 'text');
+        toastr.warning("Extensions API is not connected or doesn't provide SD module. Enable Stable Horde to generate images.");
         return;
     }
 
@@ -545,7 +545,7 @@ async function generateHordeImage(prompt, callback) {
         const base64Image = `data:image/webp;base64,${data}`;
         callback ? callback(prompt, base64Image) : sendMessage(prompt, base64Image);
     } else {
-        callPopup('Image generation has failed. Please try again.', 'text');
+        toastr.error('Image generation has failed. Please try again.');
     }
 }
 

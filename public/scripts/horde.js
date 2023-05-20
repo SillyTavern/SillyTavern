@@ -41,7 +41,7 @@ function validateHordeModel() {
     let selectedModels = models.filter(m => horde_settings.models.includes(m.name));
 
     if (selectedModels.length === 0) {
-        callPopup('No Horde model selected or the selected models are no longer available. Please choose another model', 'text');
+        toastr.warning('No Horde model selected or the selected models are no longer available. Please choose another model');
         throw new Error('No Horde model available');
     }
 

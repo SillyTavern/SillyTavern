@@ -1703,7 +1703,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     }
 
     if (main_api == 'textgenerationwebui' && textgenerationwebui_settings.streaming && !textgenerationwebui_settings.streaming_url) {
-        callPopup('Streaming URL is not set. Look it up in the console window when starting TextGen Web UI', 'text');
+        toastr.error('Streaming URL is not set. Look it up in the console window when starting TextGen Web UI');
         is_send_press = false;
         return;
     }
@@ -2998,11 +2998,6 @@ function extractMessageFromData(data) {
 
     if (main_api == 'textgenerationwebui') {
         getMessage = data.results[0].text;
-        if (getMessage == null || data.error) {
-            activateSendButtons();
-            callPopup('<h3>Got empty response from Text generation web UI. Try restarting the API with recommended options.</h3>', 'text');
-            return;
-        }
     }
 
     if (main_api == 'novel') {
@@ -4520,7 +4515,7 @@ function setGenerationProgress(progress) {
 
 function isHordeGenerationNotAllowed() {
     if (main_api == "kobold" && horde_settings.use_horde && preset_settings == "gui") {
-        callPopup('GUI Settings preset is not supported for Horde. Please select another preset.', 'text');
+        toastr.error('GUI Settings preset is not supported for Horde. Please select another preset.');
         return true;
     }
 
@@ -5587,7 +5582,7 @@ $(document).ready(function () {
             let value = formatKoboldUrl($.trim($("#api_url_text").val()));
 
             if (!value) {
-                callPopup('Please enter a valid URL.', 'text');
+                toastr.error('Please enter a valid URL.');
                 return;
             }
 

@@ -80,7 +80,7 @@ function setWorldInfoSettings(settings, data) {
 // World Info Editor
 async function showWorldEditor() {
     if (!world_info) {
-        callPopup("<h3>Select a world info first!</h3>", "text");
+        toastr.warning("Select a world info first!");
         return;
     }
 
