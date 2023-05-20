@@ -197,17 +197,27 @@ Now devices which have the IP specified in the file will be able to connect.
 
 *Note: `config.conf` also has a `whitelist` array, which you can use in the same way, but this array will be ignored if `whitelist.txt` exists.*
 
-### 2. Connecting to ST from a remote device
+### 2. Getting the IP for the ST host machine
 
-After the whitelist has been setup, to connect over wifi you'll need the IP of the ST-hosting device. 
+After the whitelist has been setup, you'll need the IP of the ST-hosting device. 
 
-If the ST-hosting device is on the same wifi network, you will point your remote device's browser to the ST-host's internal wifi IP: 
+If the ST-hosting device is on the same wifi network, you will use the ST-host's internal wifi IP: 
 
 * For Windows: windows button > type `cmd.exe` in the search bar > type `ipconfig` in the console, hit Enter > look for `IPv4` listing.
 
 If you (or someone else) wants to connect to your hosted ST while not being on the same network, you will need the public IP of your ST-hosting device.
 
-While using the ST-hosting device, access [this page](https://whatismyipaddress.com/) and look for for `IPv4`. This is what you would use to connect from the remote device.
+* While using the ST-hosting device, access [this page](https://whatismyipaddress.com/) and look for for `IPv4`. This is what you would use to connect from the remote device.
+
+### 3. Connect the remote device to the ST host machine.
+
+Whatever IP you ended up with for your situation, you will put that IP address and port number into the remote device's web browser.
+
+A typical address for an ST host on the same wifi network would look like: 
+
+`http://192.168.0.5:8000`
+
+Use http:// NOT https://
 
 ### Opening your ST to all IPs
 
