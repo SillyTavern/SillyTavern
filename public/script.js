@@ -296,7 +296,7 @@ const system_messages = {
             <li><tt>{​{text}​}</tt> - sets a one-time behavioral bias for the AI. Resets when you send the next message.
             </li>
             </ul>
-            Hotkeys/Keybinds: 
+            Hotkeys/Keybinds:
             <ul>
             <li><tt>Up</tt> = Edit last message in chat</li>
             <li><tt>Ctrl+Up</tt> = Edit last USER message in chat</li>
@@ -458,7 +458,7 @@ function getTokenCount(str, padding = undefined) {
             jQuery.ajax({
                 async: false,
                 type: 'POST', //
-                url: `/ tokenize_llama`,
+                url: `/tokenize_llama`,
                 data: JSON.stringify({ text: str }),
                 dataType: "json",
                 contentType: "application/json",
@@ -2434,7 +2434,7 @@ function getMaxContextSize() {
         if (novel_tier === 1) {
             this_max_context = 1024;
         } else {
-            this_max_context = 2048 - 60; //fix for fat tokens 
+            this_max_context = 2048 - 60; //fix for fat tokens
             if (nai_settings.model_novel == 'krake-v2') {
                 this_max_context -= 160;
             }
@@ -2715,7 +2715,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
                         <div  class="flex1" style="color: gold;">World Info:</div>
                         <div  class="">${worldInfoStringTokens}</div>
                     </div>
-                    <div class="wide100p flex-container">        
+                    <div class="wide100p flex-container">
                         <div  class="flex1" style="color: palegreen;">Chat History:</div>
                         <div  class=""> ${ActualChatHistoryTokens}</div>
                     </div>
@@ -2802,7 +2802,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
                         <div  class="flex1" style="color: gold;">World Info:</div>
                         <div  class="">${worldInfoStringTokens}</div>
                     </div>
-                    <div class="wide100p flex-container">        
+                    <div class="wide100p flex-container">
                         <div  class="flex1" style="color: palegreen;">Chat History:</div>
                         <div  class=""> ${ActualChatHistoryTokens}</div>
                     </div>
@@ -3852,6 +3852,7 @@ async function saveSettings(type) {
             world_info_depth: world_info_depth,
             world_info_budget: world_info_budget,
             world_info_recursive: world_info_recursive,
+            world_info_case_sensitive: world_info_case_sensitive,
             textgenerationwebui_settings: textgenerationwebui_settings,
             swipes: swipes,
             horde_settings: horde_settings,

@@ -1458,12 +1458,21 @@
                             </div>
                         </div>
 
-                        <div class="flex1 range-block">
+                        <div class="flex1 range-block flex-container flexFlowColumn">
                             <label title="Entries can activate other entries by mentioning their keywords" class="checkbox_label">
                                 <input id="world_info_recursive" type="checkbox" />
                                 <span>
                                     Recursive scanning
                                     <a href="/notes#recursivescanning" class="notes-link" target="_blank">
+                                        <span class="note-link-span">?</span>
+                                    </a>
+                                </span>
+                            </label>
+                            <label title="Lookup for the entry keys in the context will respect the case" class="checkbox_label">
+                                <input id="world_info_case_sensitive" type="checkbox" />
+                                <span>
+                                    Case-sensitive keys
+                                    <a href="/notes#casesensitivekeys" class="notes-link" target="_blank">
                                         <span class="note-link-span">?</span>
                                     </a>
                                 </span>
@@ -2195,7 +2204,7 @@
     <div id="context_editor_template" class="template_element">
         <div class="context_editor">
             <h3>Context Template Editor</h3>
-    
+
             <div class="inline-drawer wide100p">
                 <div class="inline-drawer-toggle inline-drawer-header">
                     Substitution Parameters

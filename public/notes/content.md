@@ -16,7 +16,7 @@ Usually it all takes 200-350 tokens.
 
 For most Kobold's models the easiest way is to use a free form for description, and in each sentence it is desirable to specify the name of the character.
 
-The entire description should be in one line without hyphenation.  
+The entire description should be in one line without hyphenation.
 
 For example:
 
@@ -96,15 +96,15 @@ Another example:
 
 ### First message
 
-The First Message is an important thing that sets exactly how and in what style the character will communicate.  
+The First Message is an important thing that sets exactly how and in what style the character will communicate.
 
-It is desirable that the character's first message be long, so that later it would be less likely that the character would respond in with very short messages.  
+It is desirable that the character's first message be long, so that later it would be less likely that the character would respond in with very short messages.
 
 You can also use asterisks ** to describe the character's actions.
 
 For example:
 
-`*I noticed you came inside, I walked up and stood right in front of you* Welcome. I'm glad to see you here. *I said with toothy smug sunny smile looking you straight in the eye* What brings you...`  
+`*I noticed you came inside, I walked up and stood right in front of you* Welcome. I'm glad to see you here. *I said with toothy smug sunny smile looking you straight in the eye* What brings you...`
 
 ### Examples of dialogue
 
@@ -116,13 +116,13 @@ Example:
 
 ```
 <START>
-{{user}}: Hi Aqua, I heard you like to spend time in the pub.  
-{{char}}: *excitedly* Oh my goodness, yes! I just love spending time at the pub! It's so much fun to talk to all the adventurers and hear about their exciting adventures! And you are?  
-{{user}}: I'm a new here and I wanted to ask for your advice.  
-{{char}}: *giggles* Oh, advice! I love giving advice! And in gratitude for that, treat me to a drink! *gives signals to the bartender*  
+{{user}}: Hi Aqua, I heard you like to spend time in the pub.
+{{char}}: *excitedly* Oh my goodness, yes! I just love spending time at the pub! It's so much fun to talk to all the adventurers and hear about their exciting adventures! And you are?
+{{user}}: I'm a new here and I wanted to ask for your advice.
+{{char}}: *giggles* Oh, advice! I love giving advice! And in gratitude for that, treat me to a drink! *gives signals to the bartender*
 
 <START>
-{{user}}: Hello  
+{{user}}: Hello
 {{char}}: *excitedly* Hello there, dear! Are you new to Axel? Don't worry, I, Aqua the goddess of water, am here to help you! Do you need any assistance? And may I say, I look simply radiant today! *strikes a pose and looks at you with puppy eyes*
 ```
 
@@ -134,7 +134,7 @@ Circumstances and context of the dialogue.
 
 _A list of tags that are replaced when sending to generate:_
 
-1. {{user}} and &lt;USER&gt; are replaced by the User's Name  
+1. {{user}} and &lt;USER&gt; are replaced by the User's Name
 2. {{char}} and &lt;BOT&gt; are replaced by the Character's Name
 3. {{time}} is replaced with the current system time.
 4. {{date}} is replaced with the current system date.
@@ -163,7 +163,7 @@ _It is important to note that while World Info helps guide the AI towards your d
 
 #### Key
 
-A list of keywords that trigger the activation of a World Info entry.
+A list of keywords that trigger the activation of a World Info entry. Keys are not case-sensitive by default (this is [configurable](#casesensitivekeys)).
 
 #### Secondary Key
 
@@ -234,6 +234,14 @@ Content: Rufus is a dog.
 
 **Both** of them will be pulled into the context if the message text mentions **just Bessie**.
 
+### Case-sensitive keys
+
+**To get pulled into the context, entry keys need to match the case as they are defined in the World Info entry.**
+
+This is useful when your keys are common words or parts of common words.
+
+For example, when this setting is active, keys 'rose' and 'Rose' will be treated differently, depending on the inputs.
+
 ## KoboldAI
 
 ### Basic Settings
@@ -258,7 +266,7 @@ The maximum amount of tokens that the AI will generate to respond. One word is a
 
 #### Context size
 
-How much will the AI remember. Context size also affects the speed of generation.  
+How much will the AI remember. Context size also affects the speed of generation.
 
 _Important_: The setting of Context Size in SillyTavern GUI overrides the setting for KoboldAI GUI
 
@@ -323,10 +331,10 @@ They are created by training the AI with a special type of prompt using a collec
 
 To get a NovelAI API key, follow these instructions:
 
-1. Go to the NovelAI website and Login.  
-2. Create a new story, or open an existing story.  
-3. Open the Network Tools on your web browser. (For Chrome or Firefox, you do this by pressing Ctrl+Shift+I, then switching to the Network tab.)  
-4. Generate something. You should see two requests to [api.novelai.net/ai/generate-stream](http://api.novelai.net/ai/generate-stream), which might look something like this:  
+1. Go to the NovelAI website and Login.
+2. Create a new story, or open an existing story.
+3. Open the Network Tools on your web browser. (For Chrome or Firefox, you do this by pressing Ctrl+Shift+I, then switching to the Network tab.)
+4. Generate something. You should see two requests to [api.novelai.net/ai/generate-stream](http://api.novelai.net/ai/generate-stream), which might look something like this:
 
 ![1.png](1.png)
 
@@ -340,7 +348,7 @@ The long string (after "Bearer", not including it) is your API key.
 
 ### Settings
 
-The files with the settings are here (SillyTavern\public\NovelAI Settings).  
+The files with the settings are here (SillyTavern\public\NovelAI Settings).
 You can also manually add your own settings files.
 
 #### Temperature
@@ -510,12 +518,12 @@ Overrides the default separators controlled by "Disable example chats formatting
 
 #### Disable example chats formatting
 
-`<START>` won't be added at the beginning of each example message block.  
+`<START>` won't be added at the beginning of each example message block.
 _(If custom separator is not set)_
 
 #### Disable chat start formatting
 
-`<START>` won't be added between the character card and the chat log.  
+`<START>` won't be added between the character card and the chat log.
 _(If custom separator is not set)_
 
 #### Always add character's name to prompt
@@ -538,12 +546,12 @@ Has no effect.
 
 #### Disable example chats formatting
 
-`This is how **Character** should talk` won't be added at the beginning of each example message block.  
+`This is how **Character** should talk` won't be added at the beginning of each example message block.
 _(If custom separator is not set)_
 
 #### Disable chat start formatting
 
-`Then the roleplay chat between **User** and **Character** begins` won't be added between the character card and the chat log.  
+`Then the roleplay chat between **User** and **Character** begins` won't be added between the character card and the chat log.
 _(If custom separator is not set)_
 
 #### Always add character's name to prompt
@@ -552,7 +560,7 @@ Appends character's name to the prompt to force the model to complete the messag
 
 ```
 ** OTHER CONTEXT HERE **
-Character: 
+Character:
 ```
 
 ## Group Chats

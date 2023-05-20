@@ -7,6 +7,7 @@ export {
     world_info_budget,
     world_info_depth,
     world_info_recursive,
+    world_info_case_sensitive,
     world_names,
     imported_world_name,
     checkWorldInfo,
@@ -23,6 +24,7 @@ let world_info_depth = 2;
 let world_info_budget = 128;
 let is_world_edit_open = false;
 let world_info_recursive = false;
+let world_info_case_sensitive = false;
 let imported_world_name = "";
 const saveWorldDebounced = debounce(async () => await _save(), 500);
 const saveSettingsDebounced = debounce(() => saveSettings(), 500);
@@ -51,6 +53,8 @@ function setWorldInfoSettings(settings, data) {
         world_info_budget = Number(settings.world_info_budget);
     if (settings.world_info_recursive !== undefined)
         world_info_recursive = Boolean(settings.world_info_recursive);
+    if (settings.world_info_case_sensitive !== undefined)
+        world_info_case_sensitive = Boolean(settings.world_info_case_sensitive);
 
     $("#world_info_depth_counter").text(world_info_depth);
     $("#world_info_depth").val(world_info_depth);
@@ -59,6 +63,7 @@ function setWorldInfoSettings(settings, data) {
     $("#world_info_budget").val(world_info_budget);
 
     $("#world_info_recursive").prop('checked', world_info_recursive);
+    $("#world_info_case_sensitive").prop('checked', world_info_case_sensitive);
 
     world_names = data.world_names?.length ? data.world_names : [];
 
@@ -476,13 +481,18 @@ async function createNewWorldInfo() {
     }
 }
 
+// Gets a string that respects the case sensitivity setting
+function transformString(str) {
+    return world_info_case_sensitive ? str : str.toLowerCase();
+}
+
 function checkWorldInfo(chat) {
     if (world_info_data.entries.length == 0) {
         return "";
     }
 
     const messagesToLookBack = world_info_depth * 2;
-    let textToScan = chat.slice(0, messagesToLookBack).join("").toLowerCase();
+    let textToScan = transformString(chat.slice(0, messagesToLookBack).join(""));
     let worldInfoBefore = "";
     let worldInfoAfter = "";
     let needsToScan = true;
@@ -507,7 +517,7 @@ function checkWorldInfo(chat) {
             if (Array.isArray(entry.key) && entry.key.length) {
                 primary: for (let key of entry.key) {
                     const substituted = substituteParams(key);
-                    if (substituted && textToScan.includes(substituted.trim().toLowerCase())) {
+                    if (substituted && textToScan.includes(transformString(substituted.trim()))) {
                         if (
                             entry.selective &&
                             Array.isArray(entry.keysecondary) &&
@@ -517,7 +527,7 @@ function checkWorldInfo(chat) {
                                 const secondarySubstituted = substituteParams(keysecondary);
                                 if (
                                     secondarySubstituted &&
-                                    textToScan.includes(secondarySubstituted.trim().toLowerCase())
+                                    textToScan.includes(transformString(secondarySubstituted.trim()))
                                 ) {
                                     activatedNow.add(entry.uid);
                                     break secondary;
@@ -557,11 +567,7 @@ function checkWorldInfo(chat) {
         }
 
         if (needsToScan) {
-            textToScan =
-                newEntries
-                    .map((x) => x.content)
-                    .join("\n")
-                    .toLowerCase() + textToScan;
+            textToScan = (transformString(newEntries.map(x => x.content).join('\n')) + textToScan);
         }
 
         allActivatedEntries = new Set([...allActivatedEntries, ...activatedNow]);
@@ -583,7 +589,7 @@ function selectImportedWorldInfo() {
     imported_world_name = "";
 }
 
-$(document).ready(() => {
+jQuery(() => {
     $("#world_info").change(async function () {
         const selectedWorld = $("#world_info").find(":selected").val();
         world_info = null;
@@ -686,6 +692,11 @@ $(document).ready(() => {
 
     $(document).on("input", "#world_info_recursive", function () {
         world_info_recursive = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    })
+
+    $('#world_info_case_sensitive').on('input', function () {
+        world_info_case_sensitive = !!$(this).prop('checked');
         saveSettingsDebounced();
     })
 });
