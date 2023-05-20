@@ -136,6 +136,8 @@ _A list of tags that are replaced when sending to generate:_
 
 1. {{user}} and &lt;USER&gt; are replaced by the User's Name  
 2. {{char}} and &lt;BOT&gt; are replaced by the Character's Name
+3. {{time}} is replaced with the current system time.
+4. {{date}} is replaced with the current system date.
 
 ### Favorite Character
 
