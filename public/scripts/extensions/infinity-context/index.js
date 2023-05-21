@@ -1,7 +1,7 @@
 import { saveSettingsDebounced, getCurrentChatId } from "../../../script.js";
 import { getApiUrl, extension_settings } from "../../extensions.js";
 import { splitRecursive } from "../../utils.js";
-export { MODULE_NAME, chromadb_interceptGeneration };
+export { MODULE_NAME };
 
 const MODULE_NAME = 'chromadb';
 
@@ -125,7 +125,7 @@ window.chromadb_interceptGeneration = async (chat) => {
             await addMessages(currentChatId, messagesToStore);
         }
 
-        const lastMessage = messagesToKeep[messagesToKeep.length - 1];
+        const lastMessage = chat[chat.length - 1];
 
         if (lastMessage) {
             const queriedMessages = await queryMessages(currentChatId, lastMessage.mes);
