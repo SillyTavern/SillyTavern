@@ -134,6 +134,10 @@ table.responsiveTable {
     border-top: 2px solid grey;
 }
 
+.hiddenByCharListScroll {
+    visibility: hidden !important;
+}
+
 .animated {
     -webkit-animation-duration: 3s !important;
     animation-duration: 3s !important;
