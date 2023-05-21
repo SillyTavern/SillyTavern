@@ -243,5 +243,36 @@ export function countOccurrences(string, character) {
 }
 
 export function isOdd(number) {
-    return number % 2 !== 0;
+  return number % 2 !== 0;
+}
+
+/** Split string to parts no more than length in size */
+export function splitRecursive(input, length, delimitiers = ['\n\n', '\n', ' ', '']) {
+    const delim = delimitiers[0] ?? '';
+    const parts = input.split(delim);
+
+    const flatParts = parts.flatMap(p => {
+        if (p.length < length) return p;
+        return splitRecursive(input, length, delimitiers.slice(1));
+    });
+
+    // Merge short chunks
+    const result = [];
+    let currentChunk = '';
+    for (let i = 0; i < flatParts.length;) {
+        currentChunk = flatParts[i];
+        let j = i + 1; 
+        while (j < flatParts.length) {
+            const nextChunk = flatParts[j];
+            if (currentChunk.length + nextChunk.length + delim.length <= length) {
+                currentChunk += delim + nextChunk;
+            } else {
+                break;
+            }
+            j++;
+        }
+        i = j;
+        result.push(currentChunk);
+    }
+    return result;
 }
