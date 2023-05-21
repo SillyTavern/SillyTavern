@@ -1080,12 +1080,12 @@ input[type="file"] {
 }
 
 #rm_print_characters_block {
-    padding: 5px 0;
+    /* padding: 5px 0; */
     overflow-y: auto;
     flex-grow: 1;
     display: flex;
     flex-direction: column;
-    row-gap: 5px;
+    /* row-gap: 5px; */
 }
 
 #rm_ch_create_block {

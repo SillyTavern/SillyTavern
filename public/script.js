@@ -782,7 +782,7 @@ function updateSoftPromptsList(soft_prompts) {
     }
 }
 
-function printCharacters() {
+async function printCharacters() {
     $("#rm_print_characters_block").empty();
     characters.forEach(function (item, i, arr) {
         let this_avatar = default_avatar;
@@ -812,11 +812,9 @@ function printCharacters() {
     printGroups();
     sortCharactersList();
     favsToHotswap();
-    setTimeout(function () {
-        updateVisibleDivs();
-    }, 1000);
-    $("#rm_print_characters_block").on('scroll',
-        debounce(updateVisibleDivs, 50));
+    await delay(300);
+    updateVisibleDivs();
+
 }
 
 async function getCharacters() {
@@ -4801,6 +4799,7 @@ const swipe_right = () => {
 }
 
 function updateVisibleDivs() {
+
     var $container = $('#rm_print_characters_block');
     var $children = $container.children();
     var totalHeight = 0;
@@ -4810,9 +4809,9 @@ function updateVisibleDivs() {
     $container.css({
         height: totalHeight,
     });
-    var scrollTop = $container.scrollTop();
+    //var scrollTop = $container.scrollTop();
     var containerTop = $container.offset().top;
-    var containerBottom = containerTop + $container.height();
+    //var containerBottom = containerTop + $container.height();
     //console.log(`${scrollTop},${containerTop},${containerBottom}`);
     var firstVisibleIndex = null;
     var lastVisibleIndex = null;
@@ -4828,8 +4827,8 @@ function updateVisibleDivs() {
         }
         $child.toggleClass('hiddenByCharListScroll', childTop > $container.height() || childBottom < 0);
     });
-    var visibleStart = firstVisibleIndex !== null ? firstVisibleIndex : 0;
-    var visibleEnd = lastVisibleIndex !== null ? lastVisibleIndex + 1 : 0;
+    //var visibleStart = firstVisibleIndex !== null ? firstVisibleIndex : 0;
+    //var visibleEnd = lastVisibleIndex !== null ? lastVisibleIndex + 1 : 0;
     //console.log(`${visibleStart},${visibleEnd}`);
 }
 
@@ -4837,6 +4836,9 @@ $(document).ready(function () {
 
 
     //////////INPUT BAR FOCUS-KEEPING LOGIC/////////////
+
+    $("#rm_print_characters_block").on('scroll',
+        debounce(updateVisibleDivs, 5));
 
     let S_TAFocused = false;
     let S_TAPreviouslyFocused = false;
