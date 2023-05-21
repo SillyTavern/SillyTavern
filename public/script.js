@@ -812,6 +812,7 @@ function printCharacters() {
     printGroups();
     sortCharactersList();
     favsToHotswap();
+    setCharacterBlockHeight();
     setCharListVisible();
 }
 
@@ -3918,6 +3919,18 @@ async function saveSettings(type) {
     });
 }
 
+function setCharacterBlockHeight() {
+    const $children = $("#rm_print_characters_block").children();
+    const originalHeight = $children.length * $children.find(':visible').first().outerHeight();
+    $("#rm_print_characters_block").css('height', originalHeight);
+    //show and hide charlist divs on pageload (causes load lag)
+    //$children.each(function () { setCharListVisible($(this)) });
+
+
+    //delay timer to allow for charlist to populate,
+    //should be set to an onload for rm_print_characters or windows?
+}
+
 function messageEditAuto(div) {
     let mesBlock = div.closest(".mes_block");
     var text = mesBlock.find(".edit_textarea").val().trim();
@@ -6205,23 +6218,13 @@ $(document).ready(function () {
         showSwipeButtons();
     });
 
-    setTimeout(function () {
-        const $children = $("#rm_print_characters_block").children();
-        const originalHeight = $children.length * $children.first().outerHeight();
-        $("#rm_print_characters_block").css('height', originalHeight);
-        //show and hide charlist divs on pageload (causes load lag)
-        //$children.each(function () { setCharListVisible($(this)) });
-
-        $("#rm_print_characters_block").on('scroll', debounce(function () {
-            const containerHeight = $children.length * $children.find(':visible').first().outerHeight();
-            $("#rm_print_characters_block").css('height', containerHeight);
-            //show and hide on scroll
-            setCharListVisible();
-        }, 1));
-        //delay timer to allow for charlist to populate,
-        //should be set to an onload for rm_print_characters or windows?
-    }, 1000);
-
+    $("#rm_print_characters_block").on('scroll', debounce(function () {
+        setCharacterBlockHeight();
+        //const containerHeight = $children.length * $children.find(':visible').first().outerHeight();
+        //$("#rm_print_characters_block").css('height', containerHeight);
+        //show and hide on scroll
+        setCharListVisible();
+    }, 1));
 
     $(document).on("click", ".mes_edit_delete", function () {
         if (!confirm("Are you sure you want to delete this message?")) {
