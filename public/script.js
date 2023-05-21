@@ -118,7 +118,7 @@ import {
     isElementInViewport,
 } from "./scripts/utils.js";
 
-import { extension_settings, loadExtensionSettings } from "./scripts/extensions.js";
+import { extension_settings, loadExtensionSettings, runGenerationInterceptors } from "./scripts/extensions.js";
 import { executeSlashCommands, getSlashCommandsHelp, registerSlashCommand } from "./scripts/slash-commands.js";
 import {
     tag_map,
@@ -180,6 +180,7 @@ export {
     getStoppingStrings,
     getStatus,
     reloadMarkdownProcessor,
+    getCurrentChatId,
     chat,
     this_chid,
     selected_button,
@@ -504,6 +505,15 @@ function reloadMarkdownProcessor(render_formulas = false) {
     }
 
     return converter;
+}
+
+function getCurrentChatId() {
+    if (selected_group) {
+        return groups.find(x => x.id == selected_group)?.chat_id;
+    }
+    else if (this_chid) {
+        return characters[this_chid].chat;
+    }
 }
 
 const CHARACTERS_PER_TOKEN_RATIO = 3.35;
@@ -1812,6 +1822,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         if (type === 'swipe') {
             coreChat.pop();
         }
+
+        await runGenerationInterceptors(coreChat);
         console.log(`Core/all messages: ${coreChat.length}/${chat.length}`);
 
         if (main_api === 'openai') {
@@ -3904,6 +3916,18 @@ async function saveSettings(type) {
             console.log(jqXHR);
         },
     });
+}
+
+function setCharacterBlockHeight() {
+    const $children = $("#rm_print_characters_block").children();
+    const originalHeight = $children.length * $children.find(':visible').first().outerHeight();
+    $("#rm_print_characters_block").css('height', originalHeight);
+    //show and hide charlist divs on pageload (causes load lag)
+    //$children.each(function () { setCharListVisible($(this)) });
+
+
+    //delay timer to allow for charlist to populate,
+    //should be set to an onload for rm_print_characters or windows?
 }
 
 function messageEditAuto(div) {
