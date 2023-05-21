@@ -5676,10 +5676,13 @@ $(document).ready(function () {
                     duration: 250,
                     easing: animation_easing,
                 });
+                console.log('displayed AN panel');
+
                 if ($("#ANBlockToggle")
                     .siblings('.inline-drawer-content')
                     .css('display') !== 'block') {
                     $("#ANBlockToggle").click();
+                    console.log('opened AN box');
                 }
             } else {
                 $("#floatingPrompt").transition({
@@ -5687,7 +5690,11 @@ $(document).ready(function () {
                     duration: 250,
                     easing: animation_easing,
                 });
-                setTimeout(function () { $("#floatingPrompt").hide(); }, 250);
+                setTimeout(function () {
+                    $("#floatingPrompt").hide();
+                    console.log('hid AN panel');
+                }, 250);
+
             }
         }
 
