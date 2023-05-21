@@ -1,5 +1,6 @@
-import { chat, saveSettingsDebounced, getCurrentChatId } from "../../../script.js";
-import { getApiUrl, extension_settings, getContext } from "../../extensions.js";
+import { saveSettingsDebounced, getCurrentChatId } from "../../../script.js";
+import { getApiUrl, extension_settings } from "../../extensions.js";
+import { splitRecursive } from "../../utils.js";
 export { MODULE_NAME, chromadb_interceptGeneration };
 
 const MODULE_NAME = 'chromadb';
@@ -14,6 +15,11 @@ const defaultSettings = {
     n_results_min: 1,
     n_results_max: 100,
     n_results_step: 1,
+
+    split_length: 384,
+    split_length_min: 64,
+    split_length_max: 4096,
+    split_length_step: 64,
 };
 
 const postHeaders = {
@@ -28,6 +34,7 @@ async function loadSettings() {
 
     $('#chromadb_keep_context').val(extension_settings.chromadb.keep_context).trigger('input');
     $('#chromadb_n_results').val(extension_settings.chromadb.n_results).trigger('input');
+    $('#chromadb_split_length').val(extension_settings.chromadb.split_length).trigger('input');
 }
 
 function onKeepContextInput() {
@@ -42,16 +49,32 @@ function onNResultsInput() {
     saveSettingsDebounced();
 }
 
-async function moduleWorker() {
-    // ??? 
+function onSplitLengthInput() {
+    extension_settings.chromadb.split_length = Number($('#chromadb_split_length').val());
+    $('#chromadb_split_length_value').text(extension_settings.chromadb.split_length);
+    saveSettingsDebounced();
 }
 
 async function addMessages(chat_id, messages) {
     const url = new URL(getApiUrl());
     url.pathname = '/api/chroma';
 
-    const transformedMessages = messages.map((m, id) => ({
-        id: id,
+    const messagesDeepCopy = JSON.parse(JSON.stringify(messages));
+    const splittedMessages = [];
+
+    let id = 0;
+    messagesDeepCopy.forEach(m => {
+        const split = splitRecursive(m.mes, extension_settings.chromadb.split_length);
+        splittedMessages.push(...split.map(text => ({
+            ...m,
+            mes: text,
+            send_date: id,
+            id: `msg-${id++}`,
+        })));
+    });
+
+    const transformedMessages = splittedMessages.map((m) => ({
+        id: m.id,
         role: m.is_user ? 'user' : 'assistant',
         content: m.mes,
         date: m.send_date,
@@ -92,15 +115,11 @@ async function queryMessages(chat_id, query) {
     return [];
 }
 
-setInterval(moduleWorker, UPDATE_INTERVAL);
-
-window.chromadb_interceptGeneration = async () => {
-    const context = getContext();
+window.chromadb_interceptGeneration = async (chat) => {
     const currentChatId = getCurrentChatId();
 
     if (currentChatId) {
         const messagesToStore = chat.slice(0, -extension_settings.chromadb.keep_context);
-        const messagesToKeep = chat.slice(-extension_settings.chromadb.keep_context);
 
         if (messagesToStore.length > 0) {
             await addMessages(currentChatId, messagesToStore);
@@ -113,15 +132,11 @@ window.chromadb_interceptGeneration = async () => {
 
             queriedMessages.sort((a, b) => a.date - b.date);
 
-            const newChat = [
-                ...queriedMessages.map(m => JSON.parse(m.meta)),
-                ...messagesToKeep,
-            ];
+            const newChat = queriedMessages.map(m => JSON.parse(m.meta));
 
             console.log(newChat);
 
-            // TODO replace current chat temporarily somehow...
-
+            chat.splice(0, messagesToStore.length, newChat);
         }
     }
 }
@@ -139,12 +154,15 @@ jQuery(async () => {
             <input id="chromadb_keep_context" type="range" min="${defaultSettings.keep_context_min}" max="${defaultSettings.keep_context_max}" step="${defaultSettings.keep_context_step}" value="${defaultSettings.keep_context}" />
             <label for="chromadb_n_results">Max messages to inject (<span id="chromadb_n_results_value"></span>)</label>
             <input id="chromadb_n_results" type="range" min="${defaultSettings.n_results_min}" max="${defaultSettings.n_results_max}" step="${defaultSettings.n_results_step}" value="${defaultSettings.n_results}" />
+            <label for="chromadb_split_length">Max length for message chunks (<span id="chromadb_split_length_value"></span>)</label>
+            <input id="chromadb_split_length" type="range" min="${defaultSettings.split_length_min}" max="${defaultSettings.split_length_max}" step="${defaultSettings.split_length_step}" value="${defaultSettings.split_length}" />
         </div>
     </div>`;
 
     $('#extensions_settings').append(settingsHtml);
     $('#chromadb_keep_context').on('input', onKeepContextInput);
     $('#chromadb_n_results').on('input', onNResultsInput);
+    $('#chromadb_split_length').on('input', onSplitLengthInput);
 
     await loadSettings();
 });
