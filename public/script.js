@@ -5667,34 +5667,35 @@ $(document).ready(function () {
         var id = $(this).attr("id");
 
         if (id == "option_toggle_AN") {
-            if (selected_group || this_chid !== undefined
-                && $("#floatingPrompt").css("display") !== 'flex') {
-                $("#floatingPrompt").css("display", "flex");
-                $("#floatingPrompt").css("opacity", 0.0);
-                $("#floatingPrompt").transition({
-                    opacity: 1.0,
-                    duration: 250,
-                    easing: animation_easing,
-                });
-                console.log('displayed AN panel');
+            if (selected_group || this_chid) {
+                if ($("#floatingPrompt").css("display") !== 'flex') {
+                    $("#floatingPrompt").css("display", "flex");
+                    $("#floatingPrompt").css("opacity", 0.0);
+                    $("#floatingPrompt").transition({
+                        opacity: 1.0,
+                        duration: 250,
+                        easing: animation_easing,
+                    });
+                    console.log('displayed AN panel');
 
-                if ($("#ANBlockToggle")
-                    .siblings('.inline-drawer-content')
-                    .css('display') !== 'block') {
-                    $("#ANBlockToggle").click();
-                    console.log('opened AN box');
+                    if ($("#ANBlockToggle")
+                        .siblings('.inline-drawer-content')
+                        .css('display') !== 'block') {
+                        $("#ANBlockToggle").click();
+                        console.log('opened AN box');
+                    }
+                } else {
+                    $("#floatingPrompt").transition({
+                        opacity: 0.0,
+                        duration: 250,
+                        easing: animation_easing,
+                    });
+                    setTimeout(function () {
+                        $("#floatingPrompt").hide();
+                        console.log('hid AN panel');
+                    }, 250);
+
                 }
-            } else {
-                $("#floatingPrompt").transition({
-                    opacity: 0.0,
-                    duration: 250,
-                    easing: animation_easing,
-                });
-                setTimeout(function () {
-                    $("#floatingPrompt").hide();
-                    console.log('hid AN panel');
-                }, 250);
-
             }
         }
 
