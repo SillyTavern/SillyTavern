@@ -205,7 +205,7 @@ export {
     talkativeness_default,
     default_ch_mes,
     extension_prompt_types,
-    setCharListVisible,
+    updateVisibleDivs
 }
 
 // API OBJECT FOR EXTERNAL WIRING
@@ -812,8 +812,7 @@ function printCharacters() {
     printGroups();
     sortCharactersList();
     favsToHotswap();
-    setCharacterBlockHeight();
-    setCharListVisible();
+    updateVisibleDivs();
 }
 
 async function getCharacters() {
@@ -4794,31 +4793,37 @@ const swipe_right = () => {
     }
 }
 
-function setCharListVisible() {
-    const $children = $("#rm_print_characters_block").children();
+function updateVisibleDivs() {
+    var $container = $('#rm_print_characters_block');
+    var $children = $container.children();
+    var totalHeight = 0;
     $children.each(function () {
-        if (isElementInViewport($(this))) {
-            $(this)
-                //.css('opacity', 1);
-                //.css('display', 'flex');
-                .stop(true, false).animate({ opacity: 1 }, { duration: 50, queue: false });
+        totalHeight += $(this).outerHeight();
+    });
+    $container.css({
+        height: totalHeight,
+    });
+    var scrollTop = $container.scrollTop();
+    var containerTop = $container.offset().top;
+    var containerBottom = containerTop + $container.height();
+    //console.log(`${scrollTop},${containerTop},${containerBottom}`);
+    var firstVisibleIndex = null;
+    var lastVisibleIndex = null;
+    $children.each(function (index) {
+        var $child = $(this);
+        var childTop = $child.offset().top - containerTop;
+        var childBottom = childTop + $child.outerHeight();
+        if (childTop <= $container.height() && childBottom >= 0) {
+            if (firstVisibleIndex === null) {
+                firstVisibleIndex = index;
+            }
+            lastVisibleIndex = index;
         }
-
-        if (!isElementInViewport($(this)) &&
-            ($(this).css('opacity') === '1' || $(this).css('opacity') === undefined)) {
-            //.css('opacity', 0);
-
-            $(this)
-                //.css('opacity', 0);
-                //.css('display', 'none');
-                .stop(true, false).animate({ opacity: 0 }, { duration: 50, queue: false });
-        };
-        /* console.log(`chid ${$(elem).find('.ch_name').text()}
-      inview? ${isElementInViewport($(elem))}
-      opacity? ${$(elem).css('opacity')}`
-
-    ); */
-    })
+        $child.toggleClass('hiddenByCharListScroll', childTop > $container.height() || childBottom < 0);
+    });
+    var visibleStart = firstVisibleIndex !== null ? firstVisibleIndex : 0;
+    var visibleEnd = lastVisibleIndex !== null ? lastVisibleIndex + 1 : 0;
+    //console.log(`${visibleStart},${visibleEnd}`);
 }
 
 $(document).ready(function () {
@@ -4973,6 +4978,7 @@ $(document).ready(function () {
 
         if (!searchValue) {
             $(selector).removeClass('hiddenBySearch');
+            updateVisibleDivs();
         } else {
             $(selector).each(function () {
                 const isValidSearch = $(this)
@@ -4983,9 +4989,9 @@ $(document).ready(function () {
 
                 $(this).toggleClass('hiddenBySearch', !isValidSearch);
             });
+            updateVisibleDivs();
         }
 
-        setCharListVisible();
     });
 
     $("#send_but").click(function () {
@@ -6218,13 +6224,10 @@ $(document).ready(function () {
         showSwipeButtons();
     });
 
-    $("#rm_print_characters_block").on('scroll', debounce(function () {
-        setCharacterBlockHeight();
-        //const containerHeight = $children.length * $children.find(':visible').first().outerHeight();
-        //$("#rm_print_characters_block").css('height', containerHeight);
-        //show and hide on scroll
-        setCharListVisible();
-    }, 1));
+    setTimeout(function () {
+        $("#rm_print_characters_block").on('scroll',
+            debounce(updateVisibleDivs, 50));
+    }, 3000)
 
     $(document).on("click", ".mes_edit_delete", function () {
         if (!confirm("Are you sure you want to delete this message?")) {

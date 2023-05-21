@@ -8,7 +8,7 @@ import {
     reloadCurrentChat,
     getRequestHeaders,
     substituteParams,
-    setCharListVisible,
+    updateVisibleDivs,
 } from "../script.js";
 import { favsToHotswap } from "./RossAscends-mods.js";
 import {
@@ -719,7 +719,7 @@ function sortCharactersList() {
     for (const item of array) {
         $(`${item.selector}[${item.attribute}="${item.id}"]`).css({ 'order': orderedList.indexOf(item) });
     }
-    setCharListVisible();
+    updateVisibleDivs();
 }
 
 function sortGroupMembers(selector) {
