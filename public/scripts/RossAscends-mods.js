@@ -276,8 +276,12 @@ async function RA_autoloadchat() {
     if (document.getElementById('CharID0') !== null) {
         var charToAutoLoad = document.getElementById('CharID' + LoadLocal('ActiveChar'));
         let groupToAutoLoad = document.querySelector(`.group_select[grid="${LoadLocal('ActiveGroup')}"]`);
-        if (charToAutoLoad != null) { $(charToAutoLoad).click(); }
-        else if (groupToAutoLoad != null) { $(groupToAutoLoad).click(); }
+        if (charToAutoLoad != null) {
+            $(charToAutoLoad).click();
+        }
+        else if (groupToAutoLoad != null) {
+            $(groupToAutoLoad).click();
+        }
 
         // if the charcter list hadn't been loaded yet, try again. 
     } else { setTimeout(RA_autoloadchat, 100); }

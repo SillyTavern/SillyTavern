@@ -812,7 +812,11 @@ function printCharacters() {
     printGroups();
     sortCharactersList();
     favsToHotswap();
-    updateVisibleDivs();
+    setTimeout(function () {
+        updateVisibleDivs();
+    }, 1000);
+    $("#rm_print_characters_block").on('scroll',
+        debounce(updateVisibleDivs, 50));
 }
 
 async function getCharacters() {
@@ -1193,7 +1197,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     // don't need prompt button for user
     if (params.isUser === true) {
         newMessage.find(".mes_prompt").hide();
-        console.log(`hiding prompt for user mesID ${params.mesId}`);
+        //console.log(`hiding prompt for user mesID ${params.mesId}`);
     }
 
     //shows or hides the Prompt display button
@@ -1211,10 +1215,12 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
             }
         }
     } else if (params.isUser !== true) { //hide all when prompt cache is empty
-        console.log('saw empty prompt cache, hiding all prompt buttons');
+        //console.log('saw empty prompt cache, hiding all prompt buttons');
         $(".mes_prompt").hide();
         //console.log(itemizedPrompts);
-    } else { console.log('skipping prompt data for User Message'); }
+    } else {
+        //console.log('skipping prompt data for User Message'); 
+    }
 
     newMessage.find('.avatar img').on('error', function () {
         $(this).hide();
@@ -4278,6 +4284,7 @@ function select_rm_characters() {
     menu_type = "characters";
     selectRightMenuWithAnimation('rm_characters_block');
     setRightTabSelectedClass('rm_button_characters');
+    updateVisibleDivs();
 }
 
 function setExtensionPrompt(key, value, position, depth) {
@@ -6224,10 +6231,6 @@ $(document).ready(function () {
         showSwipeButtons();
     });
 
-    setTimeout(function () {
-        $("#rm_print_characters_block").on('scroll',
-            debounce(updateVisibleDivs, 50));
-    }, 3000)
 
     $(document).on("click", ".mes_edit_delete", function () {
         if (!confirm("Are you sure you want to delete this message?")) {
