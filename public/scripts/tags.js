@@ -1,4 +1,4 @@
-import { characters, saveSettingsDebounced, this_chid, callPopup, menu_type } from "../script.js";
+import { characters, saveSettingsDebounced, this_chid, callPopup, menu_type, setCharListVisible } from "../script.js";
 import { selected_group } from "./group-chats.js";
 
 export {
@@ -50,6 +50,8 @@ function applyFavFilter() {
             }
         }
     });
+
+    setCharListVisible();
 }
 
 function filterByGroups() {
@@ -61,6 +63,8 @@ function filterByGroups() {
     $(CHARACTER_SELECTOR).each((_, element) => {
         $(element).toggleClass('hiddenByGroup', displayGroupsOnly && !$(element).hasClass('group_select'));
     });
+
+    setCharListVisible();
 }
 
 function loadTagsSettings(settings) {
@@ -234,6 +238,8 @@ function onTagFilterClick(listElement) {
 
     const tagIds = [...($(listElement).find(".tag.selected:not(.actionable)").map((_, el) => $(el).attr("id")))];
     $(CHARACTER_SELECTOR).each((_, element) => applyFilterToElement(tagIds, element));
+
+    setCharListVisible();
 }
 
 function applyFilterToElement(tagIds, element) {

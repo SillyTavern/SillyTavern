@@ -1822,7 +1822,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         if (type === 'swipe') {
             coreChat.pop();
         }
-        
+
         await runGenerationInterceptors(coreChat);
         console.log(`Core/all messages: ${coreChat.length}/${chat.length}`);
 
@@ -4971,6 +4971,8 @@ $(document).ready(function () {
                 $(this).toggleClass('hiddenBySearch', !isValidSearch);
             });
         }
+
+        setCharListVisible();
     });
 
     $("#send_but").click(function () {
@@ -6211,12 +6213,12 @@ $(document).ready(function () {
         //$children.each(function () { setCharListVisible($(this)) });
 
         $("#rm_print_characters_block").on('scroll', debounce(function () {
-            const containerHeight = $children.length * $children.first().outerHeight();
+            const containerHeight = $children.length * $children.find(':visible').first().outerHeight();
             $("#rm_print_characters_block").css('height', containerHeight);
             //show and hide on scroll
             setCharListVisible();
         }, 1));
-        //delay timer to allow for charlist to populate, 
+        //delay timer to allow for charlist to populate,
         //should be set to an onload for rm_print_characters or windows?
     }, 1000);
 
