@@ -497,9 +497,10 @@ function tryParseStreamingError(str) {
 }
 
 function checkQuotaError(data) {
-    const errorText = `<h3>You have no credits left to use with this API key.<br>
-    Check your billing details on the
-    <a href="https://platform.openai.com/account/usage" target="_blank">OpenAI website.</a></h3>`;
+    const errorText = `<h3>Encountered an error while processing your request.<br>
+    Check you have credits available on your
+    <a href="https://platform.openai.com/account/usage" target="_blank">OpenAI account</a>.<br>
+    If you have sufficient credits, please try again later.</h3>`;
 
     if (!data) {
         return;
