@@ -2967,7 +2967,9 @@ function extractNameFromMessage(getMessage, force_name2, isImpersonate) {
     // Like OAI, Poe is very unlikely to send you an incomplete message.
     // But it doesn't send "name:" either, so we assume that we always have a name
     // prepend to have clearer logs when building up a prompt context.
-    if (force_name2 || main_api == 'poe')
+    // Instruct mode needs to have it on to make sure you won't have names lost
+    // if disable in a middle of a solo chat.
+    if (force_name2 || main_api == 'poe' || power_user.instruct.enabled)
         this_mes_is_name = true;
 
     if (isImpersonate) {
