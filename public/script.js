@@ -5452,8 +5452,8 @@ $(document).ready(function () {
                 error: function (jqXHR, exception) {
                     $("#create_button").removeAttr("disabled");
                     $("#result_info").html("<font color=red>Error: no connection</font>");
-                    console.log('Cant use that name! Invalid or already exists.');
-                    alert('Cant use that name! Invalid or already exists.');
+                    console.log('Error! Either a file with the same name already existed, or the image file provided was in an invalid format. Double check that the image is not a webp.');
+                    alert('Error! Either a file with the same name already existed, or the image file provided was in an invalid format. Double check that the image is not a webp.');
                 },
             });
         }
