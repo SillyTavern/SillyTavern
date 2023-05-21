@@ -65,6 +65,8 @@ Get in touch with the developers directly:
   * Character emotional expressions
   * Auto-Summary of the chat history
   * Sending images to chat, and the AI interpreting the content.
+  * Stable Diffusion image generation (5 chat-related presets plus 'free mode')
+  * Text-to-speech for AI response messages (via ElevenLabs, Silero, or the OS's System TTS)
 
 ## UI Extensions 🚀
 
@@ -76,6 +78,8 @@ Get in touch with the developers directly:
 | D&D Dice | A set of 7 classic D&D dice for all your dice rolling needs.<br><br>*I used to roll the dice.<br>Feel the fear in my enemies' eyes* | None | <img style="max-width:200px" alt="image" src="https://user-images.githubusercontent.com/18619528/226199925-a066c6fc-745e-4a2b-9203-1cbffa481b14.png"> |
 | Author's Note | Built-in extension that allows you to append notes that will be added to the context and steer the story and character in a specific direction. Because it's sent after the character description, it has a lot of weight. Thanks Ali឵#2222 for pitching the idea! | None | ![image](https://user-images.githubusercontent.com/128647114/230311637-d809cd9b-af66-4dd1-a310-7a27e847c011.png) |
 | Character Backgrounds | Built-in extension to assign unique backgrounds to specific chats or groups. | None | <img style="max-width:200px" alt="image" src="https://user-images.githubusercontent.com/18619528/233494454-bfa7c9c7-4faa-4d97-9c69-628fd96edd92.png"> |
+| Stable Diffusion | Use local of cloud-based Stable Diffusion webUI API to generate images. 5 presets included ('you', 'your face', 'me', 'the story', and 'the last message'. Free mode also supported via `/sd (anything_here_)` command in the chat input bar. Most common StableDiffusion generation settings are customizable within the SillyTavern UI. | None | <img style="max-width:200px" alt="image" src="https://files.catbox.moe/ppata8.png"> |
+| Text-to-Speech | AI-generated voice will read back character messages on demand, or automatically read new messages they arrive. Supports ElevenLabs, Silero, and your device's TTS service. | None | <img style="max-width:200px" alt="image" src="https://files.catbox.moe/o3wxkk.png"> |
 
 ## UI/CSS/Quality of Life tweaks by RossAscends
 
@@ -144,10 +148,10 @@ Easy to follow guide with pretty pictures:
 
 Installing via zip download
 
-  1. install [NodeJS](https://nodejs.org/en) (latest LTS version is recommended)
-  2. download the zip from this GitHub repo
-  3. unzip it into a folder of your choice
-  4. run start.bat via double-clicking or in a command line.
+  1. Install [NodeJS](https://nodejs.org/en) (latest LTS version is recommended)
+  2. Download the zip from this GitHub repo. (Get the `Source code (zip)` from [Releases](https://github.com/Cohee1207/SillyTavern/releases/latest))
+  3. Unzip it into a folder of your choice
+  4. Run `Start.bat` via double-clicking or in a command line.
   5. Once the server has prepared everything for you, it will open a tab in your browser.
 
 ### Linux
@@ -203,21 +207,31 @@ Now devices which have the IP specified in the file will be able to connect.
 
 *Note: `config.conf` also has a `whitelist` array, which you can use in the same way, but this array will be ignored if `whitelist.txt` exists.*
 
-### 2. Connecting to ST from a remote device
+### 2. Getting the IP for the ST host machine
 
-After the whitelist has been setup, to connect over wifi you'll need the IP of the ST-hosting device.
+After the whitelist has been setup, you'll need the IP of the ST-hosting device. 
 
-If the ST-hosting device is on the same wifi network, you will point your remote device's browser to the ST-host's internal wifi IP:
+If the ST-hosting device is on the same wifi network, you will use the ST-host's internal wifi IP: 
 
 * For Windows: windows button > type `cmd.exe` in the search bar > type `ipconfig` in the console, hit Enter > look for `IPv4` listing.
 
 If you (or someone else) wants to connect to your hosted ST while not being on the same network, you will need the public IP of your ST-hosting device.
 
-While using the ST-hosting device, access [this page](https://whatismyipaddress.com/) and look for for `IPv4`. This is what you would use to connect from the remote device.
+* While using the ST-hosting device, access [this page](https://whatismyipaddress.com/) and look for for `IPv4`. This is what you would use to connect from the remote device.
+
+### 3. Connect the remote device to the ST host machine.
+
+Whatever IP you ended up with for your situation, you will put that IP address and port number into the remote device's web browser.
+
+A typical address for an ST host on the same wifi network would look like: 
+
+`http://192.168.0.5:8000`
+
+Use http:// NOT https://
 
 ### Opening your ST to all IPs
 
-We do not reccomend doing this, but you can open `config.conf` and change `whitelist` to `false`.
+We do not recommend doing this, but you can open `config.conf` and change `whitelist` to `false`.
 
 You must remove (or rename) `whitelist.txt` in the SillyTavern base install folder, if it exists.
 

@@ -71,7 +71,6 @@ async function moduleWorker() {
     processAudioJobQueue()
     updateUiAudioPlayState()
 
-
     // Auto generation is disabled
     if (extension_settings.tts.auto_generation == false) {
         return
@@ -163,6 +162,23 @@ function isTtsProcessing() {
     return processing
 }
 
+function debugTtsPlayback() {
+    console.log(JSON.stringify(
+        {
+            "ttsProviderName": ttsProviderName,
+            "currentMessageNumber": currentMessageNumber,
+            "isWorkerBusy":isWorkerBusy,
+            "audioPaused": audioPaused,
+            "audioJobQueue": audioJobQueue,
+            "currentAudioJob": currentAudioJob,
+            "audioQueueProcessorReady": audioQueueProcessorReady,
+            "ttsJobQueue": ttsJobQueue,
+            "currentTtsJob": currentTtsJob,
+        }
+    ))
+}
+window.debugTtsPlayback = debugTtsPlayback
+
 //##################//
 //   Audio Control  //
 //##################//
@@ -229,7 +245,7 @@ async function onTtsVoicesClick() {
 
 function updateUiAudioPlayState() {
     if (extension_settings.tts.enabled == true) {
-        audioControl.style.display = 'flex'
+        $('#ttsExtensionMenuItem').show();
         let img
         // Give user feedback that TTS is active by setting the stop icon if processing or playing
         if (!audioElement.paused || isTtsProcessing()) {
@@ -237,9 +253,9 @@ function updateUiAudioPlayState() {
         } else {
             img = 'fa-solid fa-circle-play extensionsMenuExtensionButton'
         }
-        audioControl.className = img
+        $('#tts_media_control').attr('class', img);
     } else {
-        audioControl.style.display = 'none'
+        $('#ttsExtensionMenuItem').hide();
     }
 }
 
@@ -262,7 +278,7 @@ function addAudioControl() {
             <div id="tts_media_control" class="extensionsMenuExtensionButton "/></div>
             TTS Playback
         </div>`)
-    $('#tts_media_control').attr('title', 'TTS play/pause').on('click', onAudioControlClicked)
+    $('#ttsExtensionMenuItem').attr('title', 'TTS play/pause').on('click', onAudioControlClicked)
     audioControl = document.getElementById('tts_media_control')
     updateUiAudioPlayState()
 }

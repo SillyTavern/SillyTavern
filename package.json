@@ -42,7 +42,7 @@
         "type": "git",
         "url": "https://github.com/Cohee1207/SillyTavern.git"
     },
-    "version": "1.5.4",
+    "version": "1.6.0",
     "scripts": {
         "start": "node server.js",
         "pkg": "pkg --compress Gzip ."
@@ -72,6 +72,7 @@
     },
     "devDependencies": {
         "pkg": "^5.8.1",
-        "pkg-fetch": "^3.5.2"
+        "pkg-fetch": "^3.5.2",
+        "toastr": "^2.1.4"
     }
 }

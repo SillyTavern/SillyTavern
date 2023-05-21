@@ -1,11 +1,16 @@
 ---
 name: Bug report
-about: "Create a report to help us improve. PAY ATTENTION: Support requests for extenal programs (reverse proxies, 3rd party servers, other peoples' forks) will be refused!"
+about: "Create a report to help us improve. PAY ATTENTION: Support requests for external programs (reverse proxies, 3rd party servers, other peoples' forks) will be refused!"
 title: "[BUG]"
 labels: ''
 assignees: ''
 
 ---
+
+> **Warning**. Complete **all** the fields below. Otherwise your bug report will be **ignored**!
+
+**Have you searched for similar [bugs](https://github.com/Cohee1207/SillyTavern/issues?q=)?**
+Yes/No
 
 **Describe the bug**
 A clear and concise description of what the bug is.

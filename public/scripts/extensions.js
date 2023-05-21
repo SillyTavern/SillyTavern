@@ -195,7 +195,6 @@ async function connectToApi(baseUrl) {
             modules = data.modules;
             await activateExtensions();
             eventSource.emit(event_types.EXTRAS_CONNECTED, modules);
-            $("#extensionsMenuButton").css("display", "flex");
         }
 
         updateStatus(getExtensionsResult.ok);
@@ -319,12 +318,12 @@ async function loadExtensionSettings(settings) {
     }
 }
 
-async function runGenerationInterceptors() {
+async function runGenerationInterceptors(chat) {
     for (const manifest of Object.values(manifests)) {
         const interceptorKey = manifest.generate_interceptor;
         if (typeof window[interceptorKey] === 'function') {
             try {
-                await window[interceptorKey]();
+                await window[interceptorKey](chat);
             } catch(e) {
                 console.error(`Failed running interceptor for ${manifest.display_name}`, e);
             }
@@ -333,7 +332,11 @@ async function runGenerationInterceptors() {
 }
 
 $(document).ready(async function () {
-    setTimeout(function () { addExtensionsButtonAndMenu(); }, 100)
+    setTimeout(function () {
+        addExtensionsButtonAndMenu();
+        $("#extensionsMenuButton").css("display", "flex");
+    }, 100)
+
     $("#extensions_connect").on('click', connectClickHandler);
     $("#extensions_autoconnect").on('input', autoConnectInputHandler);
     $("#extensions_details").on('click', showExtensionsDetails);

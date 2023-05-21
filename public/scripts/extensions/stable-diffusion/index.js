@@ -56,7 +56,31 @@ const quietPrompts = {
     //prompt for only the last message
     [generationMode.USER]: "[Pause your roleplay and provide a detailed description of {{user}}'s physical appearance from the perspective of {{char}} in the form of a comma-delimited list of keywords and phrases. The list must include all of the following items in this order: name, species and race, gender, age, clothing, occupation, physical features and appearances. Do not include descriptions of non-visual qualities such as personality, movements, scents, mental traits, or anything which could not be seen in a still photograph. Do not write in full sentences. Prefix your description with the phrase 'full body portrait,'. Ignore the rest of the story when crafting this description. Do not roleplay as {{char}} when writing this description, and do not attempt to continue the story.]",
     [generationMode.SCENARIO]: "[Pause your roleplay and provide a detailed description for all of the following: a brief recap of recent events in the story, {{char}}'s appearance, and {{char}}'s surroundings. Do not roleplay while writing this description.]",
-    [generationMode.NOW]: "[Pause your roleplay and provide a brief description of the last chat message. Focus on visual details, clothing, actions and make them all coherent to the current state of the story. Ignore the non-visible feelings and thoughts of {{char}} and {{user}} as well as any spoken dialog. Do not roleplay as {{char}} while writing this description. Do not continue the roleplay story.]",
+
+    [generationMode.NOW]: `[Pause your roleplay. Your next response must be formatted as a single comma-delimited list of concise keywords.  The list will describe of the visual details included in the last chat message. 
+        
+    Only mention characters by using pronouns ('he','his','she','her','it','its') or neutral nouns ('male', 'the man', 'female', 'the woman'). 
+    
+    Ignore non-visible things such as feelings, personality traits, thoughts, and spoken dialog. 
+    
+    Add keywords in this precise order:
+    a keyword to describe the location of the scene,
+    a keyword to mention how many characters of each gender or type are present in the scene (minimum of two characters: 
+    {{user}} and {{char}}, example: '2 men ' or '1 man 1 woman ', '1 man 3 robots'),
+
+    keywords to describe the relative physical positioning of the characters to each other (if a commonly known term for the positioning is known use it instead of describing the positioning in detail) + 'POV',
+
+    a single keyword or phrase to describe the primary act taking place in the last chat message,
+    
+    keywords to describe {{char}}'s physical appearance and facial expression,
+    keywords to describe {{char}}'s actions,
+    keywords to describe {{user}}'s physical appearance and actions.
+    
+    If character actions involve direct physical interaction with another character, mention specifically which body parts interacting and how.
+    
+    A correctly formatted example response would be:
+    '(location),(character list by gender),(primary action), (relative character position) POV, (character 1's description and actions), (character 2's description and actions)']`,
+
     [generationMode.RAW_LAST]: "[Pause your roleplay and provide ONLY the last chat message string back to me verbatim. Do not write anything after the string. Do not roleplay at all in your response. Do not continue the roleplay story.]",
 }
 
@@ -94,7 +118,7 @@ const defaultSettings = {
     width: 512,
     height: 512,
 
-    prompt_prefix: 'best quality, absurdres, masterpiece, detailed, intricate,',
+    prompt_prefix: 'best quality, absurdres, masterpiece,',
     negative_prompt: 'lowres, bad anatomy, bad hands, text, error, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry',
     sampler: 'DDIM',
     model: '',
@@ -106,6 +130,7 @@ const defaultSettings = {
     // Horde settings
     horde: false,
     horde_nsfw: false,
+    horde_karras: true,
 }
 
 async function loadSettings() {
@@ -121,6 +146,7 @@ async function loadSettings() {
     $('#sd_height').val(extension_settings.sd.height).trigger('input');
     $('#sd_horde').prop('checked', extension_settings.sd.horde);
     $('#sd_horde_nsfw').prop('checked', extension_settings.sd.horde_nsfw);
+    $('#sd_horde_karras').prop('checked', extension_settings.sd.horde_karras);
     $('#sd_restore_faces').prop('checked', extension_settings.sd.restore_faces);
     $('#sd_enable_hr').prop('checked', extension_settings.sd.enable_hr);
 
@@ -178,6 +204,11 @@ async function onHordeInput() {
 
 async function onHordeNsfwInput() {
     extension_settings.sd.horde_nsfw = !!$(this).prop('checked');
+    saveSettingsDebounced();
+}
+
+async function onHordeKarrasInput() {
+    extension_settings.sd.horde_karras = !!$(this).prop('checked');
     saveSettingsDebounced();
 }
 
@@ -289,8 +320,10 @@ async function loadHordeModels() {
         headers: getRequestHeaders(),
     });
 
+
     if (result.ok) {
         const data = await result.json();
+        data.sort((a, b) => b.count - a.count);
         const models = data.map(x => ({ value: x.name, text: `${x.name} (ETA: ${x.eta}s, Queue: ${x.queued}, Workers: ${x.count})` }));
         return models;
     }
@@ -351,6 +384,7 @@ function processReply(str) {
 
     str = str.replaceAll('"', '')
     str = str.replaceAll('“', '')
+    str = str.replaceAll('.', ',')
     str = str.replaceAll('\n', ', ')
     str = str.replace(/[^a-zA-Z0-9,:]+/g, ' ') // Replace everything except alphanumeric characters and commas with spaces
     str = str.replace(/\s+/g, ' '); // Collapse multiple whitespaces into one
@@ -380,7 +414,7 @@ async function generatePicture(_, trigger, message, callback) {
     }
 
     if (!modules.includes('sd') && !extension_settings.sd.horde) {
-        callPopup("Extensions API is not connected or doesn't provide SD module. Enable Stable Horde to generate images.", 'text');
+        toastr.warning("Extensions API is not connected or doesn't provide SD module. Enable Stable Horde to generate images.");
         return;
     }
 
@@ -473,6 +507,7 @@ async function generateExtrasImage(prompt, callback) {
             negative_prompt: extension_settings.sd.negative_prompt,
             restore_faces: !!extension_settings.sd.restore_faces,
             enable_hr: !!extension_settings.sd.enable_hr,
+            karras: !!extension_settings.sd.horde_karras,
         }),
     });
 
@@ -510,7 +545,7 @@ async function generateHordeImage(prompt, callback) {
         const base64Image = `data:image/webp;base64,${data}`;
         callback ? callback(prompt, base64Image) : sendMessage(prompt, base64Image);
     } else {
-        callPopup('Image generation has failed. Please try again.', 'text');
+        toastr.error('Image generation has failed. Please try again.');
     }
 }
 
@@ -537,9 +572,9 @@ async function sendMessage(prompt, image) {
 function addSDGenButtons() {
 
     const buttonHtml = `
-    <div id="sd_gen" class="list-group-item flex-container flexGap5">    
+    <div id="sd_gen" class="list-group-item flex-container flexGap5">
         <div class="fa-solid fa-paintbrush extensionsMenuExtensionButton" title="Trigger Stable Diffusion" /></div>
-        StableDiffusion
+        Stable Diffusion
     </div>
         `;
 
@@ -592,40 +627,62 @@ function addSDGenButtons() {
     });
 }
 
-async function moduleWorker() {
-    const context = getContext();
+function isConnectedToExtras() {
+    return modules.includes('sd');
+}
 
-    if (context.onlineStatus === 'no_connection') {
-        $('#sd_gen').hide(200);
-        $('.sd_message_gen').hide();
-    }
-    else {
+async function moduleWorker() {
+    if (isConnectedToExtras() || extension_settings.sd.horde) {
         $('#sd_gen').show(200);
         $('.sd_message_gen').show();
+    }
+    else {
+        $('#sd_gen').hide(200);
+        $('.sd_message_gen').hide();
     }
 }
 
 addSDGenButtons();
-
 setInterval(moduleWorker, UPDATE_INTERVAL);
 
-function sdMessageButton(e) {
+async function sdMessageButton(e) {
+    function setBusyIcon(isBusy) {
+        $icon.toggleClass('fa-paintbrush', !isBusy);
+        $icon.toggleClass(busyClass, isBusy);
+    }
+
+    const busyClass = 'fa-hourglass';
     const context = getContext();
-    const $mes = $(e.currentTarget).closest('.mes');
+    const $icon = $(e.currentTarget);
+    const $mes = $icon.closest('.mes');
     const characterName = $mes.find('.name_text').text();
     const messageText = $mes.find('.mes_text').text();
     const message_id = $mes.attr('mesid');
     const message = context.chat[message_id];
     const hasSavedImage = message?.extra?.image && message?.extra?.title;
 
-    if (hasSavedImage) {
-        const prompt = message?.extra?.title;
-        console.log('Regenerating an image, using existing prompt:', prompt);
-        sendGenerationRequest(prompt, saveGeneratedImage);
+    if ($icon.hasClass(busyClass)) {
+        console.log('Previous image is still being generated...');
+        return;
     }
-    else {
-        console.log("doing /sd raw last");
-        generatePicture('sd', 'raw_last', `${characterName} said: ${messageText}`, saveGeneratedImage);
+
+    try {
+        setBusyIcon(true);
+        if (hasSavedImage) {
+            const prompt = message?.extra?.title;
+            console.log('Regenerating an image, using existing prompt:', prompt);
+            await sendGenerationRequest(prompt, saveGeneratedImage);
+        }
+        else {
+            console.log("doing /sd raw last");
+            await generatePicture('sd', 'raw_last', `${characterName} said: ${messageText}`, saveGeneratedImage);
+        }
+    }
+    catch (error) {
+        console.error('Could not generate inline image: ', error);
+    }
+    finally {
+        setBusyIcon(false);
     }
 
     function saveGeneratedImage(prompt, image) {
@@ -689,7 +746,7 @@ jQuery(async () => {
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
-            <small><i>Use slash commands or the bottom Paintbrush buttron to generate images. Type <span class="monospace">/help</span> in chat for more details</i></small>
+            <small><i>Use slash commands or the bottom Paintbrush button to generate images. Type <span class="monospace">/help</span> in chat for more details</i></small>
             <br>
             <small><i>Hint: Save an API key in Horde KoboldAI API settings to use it here.</i></small>
             <div class="flex-container flexGap5 marginTop10 margin-bot-10px">
@@ -725,6 +782,12 @@ jQuery(async () => {
             <select id="sd_model"></select>
             <label for="sd_sampler">Sampling method</label>
             <select id="sd_sampler"></select>
+            <div class="flex-container flexGap5 margin-bot-10px">
+                <label class="checkbox_label">
+                    <input id="sd_horde_karras" type="checkbox" />
+                    Karras (only for Horde, not all samplers supported)
+                </label>
+            </div>
             <label for="sd_prompt_prefix">Generated prompt prefix</label>
             <textarea id="sd_prompt_prefix" class="text_pole textarea_compact" rows="2"></textarea>
             <label for="sd_negative_prompt">Negative prompt</label>
@@ -743,6 +806,7 @@ jQuery(async () => {
     $('#sd_height').on('input', onHeightInput);
     $('#sd_horde').on('input', onHordeInput);
     $('#sd_horde_nsfw').on('input', onHordeNsfwInput);
+    $('#sd_horde_karras').on('input', onHordeKarrasInput);
     $('#sd_restore_faces').on('input', onRestoreFacesInput);
     $('#sd_enable_hr').on('input', onHighResFixInput);
 

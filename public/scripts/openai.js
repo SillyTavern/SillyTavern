@@ -18,6 +18,7 @@ import {
     callPopup,
     getRequestHeaders,
     system_message_types,
+    replaceBiasMarkup,
 } from "../script.js";
 import { groups, selected_group } from "./group-chats.js";
 
@@ -102,7 +103,7 @@ const default_settings = {
     openai_model: 'gpt-3.5-turbo',
     jailbreak_system: false,
     reverse_proxy: '',
-    oai_breakdown: false,
+    legacy_streaming: false,
 };
 
 const oai_settings = {
@@ -127,7 +128,7 @@ const oai_settings = {
     openai_model: 'gpt-3.5-turbo',
     jailbreak_system: false,
     reverse_proxy: '',
-    oai_breakdown: false,
+    legacy_streaming: false,
 };
 
 let openai_setting_names;
@@ -147,7 +148,7 @@ function validateReverseProxy() {
         new URL(oai_settings.reverse_proxy);
     }
     catch (err) {
-        callPopup('Entered reverse proxy address is not a valid URL', 'text');
+        toastr.error('Entered reverse proxy address is not a valid URL');
         setOnlineStatus('no_connection');
         resultCheckStatusOpen();
         throw err;
@@ -171,13 +172,12 @@ function setOpenAIMessages(chat) {
             role = 'system';
         }
 
-        // for groups - prepend a character's name
-        if (selected_group) {
+        // for groups or sendas command - prepend a character's name
+        if (selected_group || chat[j].force_avatar) {
             content = `${chat[j].name}: ${content}`;
         }
 
-        // replace bias markup
-        content = (content ?? '').replace(/{{(\*?.*\*?)}}/g, '');
+        content = replaceBiasMarkup(content);
 
         // remove caret return (waste of tokens)
         content = content.replace(/\r/gm, '');
@@ -460,7 +460,7 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
     handler_instance.log();
     return [
         openai_msgs_tosend,
-        oai_settings.oai_breakdown ? handler_instance.counts : false,
+        handler_instance.counts,
     ];
 }
 
@@ -562,13 +562,25 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
             const decoder = new TextDecoder();
             const reader = response.body.getReader();
             let getMessage = "";
+            let messageBuffer = "";
             while (true) {
                 const { done, value } = await reader.read();
                 let response = decoder.decode(value);
 
                 tryParseStreamingError(response);
 
-                let eventList = response.split("\n");
+                let eventList = [];
+
+                // ReadableStream's buffer is not guaranteed to contain full SSE messages as they arrive in chunks
+                // We need to buffer chunks until we have one or more full messages (separated by double newlines)
+                if (!oai_settings.legacy_streaming) {
+                    messageBuffer += response;
+                    eventList = messageBuffer.split("\n\n");
+                    // Last element will be an empty string or a leftover partial message
+                    messageBuffer = eventList.pop();
+                } else {
+                    eventList = response.split("\n");
+                }
 
                 for (let event of eventList) {
                     if (!event.startsWith("data"))
@@ -690,7 +702,7 @@ function countTokens(messages, full = false) {
         else {
             jQuery.ajax({
                 async: false,
-                type: 'POST', // 
+                type: 'POST', //
                 url: `/tokenize_openai?model=${oai_settings.openai_model}`,
                 data: JSON.stringify([message]),
                 dataType: "json",
@@ -737,6 +749,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.openai_max_tokens = settings.openai_max_tokens ?? default_settings.openai_max_tokens;
     oai_settings.bias_preset_selected = settings.bias_preset_selected ?? default_settings.bias_preset_selected;
     oai_settings.bias_presets = settings.bias_presets ?? default_settings.bias_presets;
+    oai_settings.legacy_streaming = settings.legacy_streaming ?? default_settings.legacy_streaming;
 
     if (settings.nsfw_toggle !== undefined) oai_settings.nsfw_toggle = !!settings.nsfw_toggle;
     if (settings.keep_example_dialogue !== undefined) oai_settings.keep_example_dialogue = !!settings.keep_example_dialogue;
@@ -745,7 +758,6 @@ function loadOpenAISettings(data, settings) {
     if (settings.nsfw_first !== undefined) oai_settings.nsfw_first = !!settings.nsfw_first;
     if (settings.openai_model !== undefined) oai_settings.openai_model = settings.openai_model;
     if (settings.jailbreak_system !== undefined) oai_settings.jailbreak_system = !!settings.jailbreak_system;
-    if (settings.oai_breakdown !== undefined) oai_settings.oai_breakdown = !!settings.oai_breakdown;
 
     $('#stream_toggle').prop('checked', oai_settings.stream_openai);
 
@@ -761,7 +773,7 @@ function loadOpenAISettings(data, settings) {
     $('#wrap_in_quotes').prop('checked', oai_settings.wrap_in_quotes);
     $('#nsfw_first').prop('checked', oai_settings.nsfw_first);
     $('#jailbreak_system').prop('checked', oai_settings.jailbreak_system);
-    $('#oai_breakdown').prop('checked', oai_settings.oai_breakdown);
+    $('#legacy_streaming').prop('checked', oai_settings.legacy_streaming);
 
     if (settings.main_prompt !== undefined) oai_settings.main_prompt = settings.main_prompt;
     if (settings.nsfw_prompt !== undefined) oai_settings.nsfw_prompt = settings.nsfw_prompt;
@@ -810,8 +822,8 @@ async function getStatusOpen() {
         };
 
         return jQuery.ajax({
-            type: 'POST', // 
-            url: '/getstatus_openai', // 
+            type: 'POST', //
+            url: '/getstatus_openai', //
             data: JSON.stringify(data),
             beforeSend: function () {
                 if (oai_settings.reverse_proxy) {
@@ -881,7 +893,8 @@ async function saveOpenAIPreset(name, settings) {
         jailbreak_system: settings.jailbreak_system,
         impersonation_prompt: settings.impersonation_prompt,
         bias_preset_selected: settings.bias_preset_selected,
-        oai_breakdown: settings.oai_breakdown,
+        reverse_proxy: settings.reverse_proxy,
+        legacy_streaming: settings.legacy_streaming,
     };
 
     const savePresetSettings = await fetch(`/savepreset_openai?name=${name}`, {
@@ -928,7 +941,7 @@ async function showApiKeyUsage() {
     }
     catch (err) {
         console.error(err);
-        callPopup('Invalid API key', 'text');
+        toastr.error('Invalid API key');
     }
 }
 
@@ -993,7 +1006,7 @@ async function createNewLogitBiasPreset() {
     }
 
     if (name in oai_settings.bias_presets) {
-        callPopup('Preset name should be unique.', 'text');
+        toastr.error('Preset name should be unique.');
         return;
     }
 
@@ -1030,12 +1043,12 @@ async function onLogitBiasPresetImportFileChange(e) {
     e.target.value = '';
 
     if (name in oai_settings.bias_presets) {
-        callPopup('Preset name should be unique.', 'text');
+        toastr.error('Preset name should be unique.');
         return;
     }
 
     if (!Array.isArray(importedFile)) {
-        callPopup('Invalid logit bias preset file.', 'text');
+        toastr.error('Invalid logit bias preset file.');
         return;
     }
 
@@ -1140,12 +1153,13 @@ function onSettingsPresetChange() {
         wrap_in_quotes: ['#wrap_in_quotes', 'wrap_in_quotes', true],
         nsfw_first: ['#nsfw_first', 'nsfw_first', true],
         jailbreak_system: ['#jailbreak_system', 'jailbreak_system', true],
-        oai_breakdown: ['#oai_breakdown', 'oai_breakdown', true],
         main_prompt: ['#main_prompt_textarea', 'main_prompt', false],
         nsfw_prompt: ['#nsfw_prompt_textarea', 'nsfw_prompt', false],
         jailbreak_prompt: ['#jailbreak_prompt_textarea', 'jailbreak_prompt', false],
         impersonation_prompt: ['#impersonation_prompt_textarea', 'impersonation_prompt', false],
         bias_preset_selected: ['#openai_logit_bias_preset', 'bias_preset_selected', false],
+        reverse_proxy: ['#openai_reverse_proxy', 'reverse_proxy', false],
+        legacy_streaming: ['#legacy_streaming', 'legacy_streaming', false],
     };
 
     for (const [key, [selector, setting, isCheckbox]] of Object.entries(settingsToUpdate)) {
@@ -1313,16 +1327,6 @@ $(document).ready(function () {
         saveSettingsDebounced();
     });
 
-    $("#oai_breakdown").on('change', function () {
-        oai_settings.oai_breakdown = !!$(this).prop("checked");
-        if (!oai_settings.oai_breakdown) {
-            $("#token_breakdown").css('display', 'none');
-        } else {
-            $("#token_breakdown").css('display', 'flex');
-        }
-        saveSettingsDebounced();
-    });
-
     // auto-select a preset based on character/group name
     $(document).on("click", ".character_select", function () {
         const chid = $(this).attr('chid');
@@ -1349,7 +1353,7 @@ $(document).ready(function () {
     $("#update_oai_preset").on('click', async function () {
         const name = oai_settings.preset_settings_openai;
         await saveOpenAIPreset(name, oai_settings);
-        callPopup('Preset updated', 'text');
+        toastr.success('Preset updated');
     });
 
     $("#main_prompt_restore").on('click', function () {
@@ -1373,6 +1377,11 @@ $(document).ready(function () {
     $("#impersonation_prompt_restore").on('click', function () {
         oai_settings.impersonation_prompt = default_impersonation_prompt;
         $('#impersonation_prompt_textarea').val(oai_settings.impersonation_prompt);
+        saveSettingsDebounced();
+    });
+
+    $('#legacy_streaming').on('input', function () {
+        oai_settings.legacy_streaming = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 

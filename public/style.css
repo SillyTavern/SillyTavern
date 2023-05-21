@@ -103,10 +103,12 @@ body {
 
 ::-webkit-scrollbar-thumb {
     background-color: var(--grey7070a);
-    border: 2px solid transparent;
     box-shadow: inset 0 0 0 1px var(--black50a);
     border-radius: 10px;
     background-clip: content-box;
+    border: 2px solid transparent;
+    border-top: 20px solid transparent;
+    min-height: 40px;
 }
 
 table.responsiveTable {
@@ -130,6 +132,33 @@ table.responsiveTable {
 
 .sysHR {
     border-top: 2px solid grey;
+}
+
+.animated {
+    -webkit-animation-duration: 3s !important;
+    animation-duration: 3s !important;
+    -webkit-animation-fill-mode: both !important;
+    animation-fill-mode: both !important;
+    box-shadow: inset 0 0 5px var(--SmartThemeQuoteColor);
+}
+
+@keyframes flash {
+
+    20%,
+    60%,
+    100% {
+        opacity: 1;
+    }
+
+    0%,
+    40%,
+    80% {
+        opacity: 0.2;
+    }
+}
+
+.flash {
+    animation-name: flash;
 }
 
 .tokenItemizingSubclass {
@@ -219,12 +248,12 @@ body.tts .mes_narrate {
 code {
     font-family: Consolas, monospace;
     white-space: pre-wrap;
-    word-wrap: break-word;
+    /* word-wrap: break-word; */
     border: 1px solid var(--white30a);
     border-radius: 5px;
     background-color: var(--black70a);
     padding: 0 3px;
-    max-width: calc(100svw - 95px);
+    /* max-width: calc(100svw - 95px); */
     line-height: var(--mainFontSize);
 }
 
@@ -398,19 +427,6 @@ code {
     justify-content: center;
 }
 
-#token_breakdown div {
-    display: flex;
-    width: 100%;
-    justify-content: center;
-}
-
-.token_breakdown_segment {
-    min-width: 40px !important;
-    border: solid 2px;
-    border-radius: 5px;
-}
-
-
 #loading_mes {
     display: none;
     width: 40px;
@@ -500,8 +516,6 @@ code {
     display: flex;
     align-items: center;
     justify-content: center;
-    display: none;
-
 }
 
 #extensionsMenuButton:hover {
@@ -540,6 +554,16 @@ code {
     cursor: pointer;
 }
 
+#extensionsMenu>div {
+    transition: 0.3s;
+    opacity: 0.7;
+}
+
+#extensionsMenu>div:hover {
+    filter: brightness(1.2);
+    opacity: 1;
+}
+
 .options-content a div:first-child {
     min-width: 20px;
 }
@@ -564,12 +588,13 @@ code {
 }
 
 .mes {
-    display: grid;
-    grid-template-columns: min-content min-content auto min-content;
+    display: flex;
+    align-items: flex-start;
     padding: 20px 10px 0 10px;
     margin-top: 0;
     width: 100%;
     color: var(--SmartThemeBodyColor);
+    position: relative;
 }
 
 .mes q:before,
@@ -579,9 +604,6 @@ code {
 }
 
 .last_mes {
-    grid-template-columns: [checkbox] fit-content(60px) [avatar-leftswipe] 50px [name-mestext] auto [edit-rightswipe] 30px !important;
-    grid-template-rows: [avatar-NameMesText-edit] 50px [swipes] auto;
-    grid-row-gap: 30px;
     margin-bottom: 0 !important;
     /*only affects bubblechat to make it sit nicely at the bottom*/
 }
@@ -593,7 +615,6 @@ code {
     height: 40px;
     width: 40px;
     opacity: 0.3;
-    right: 5px;
     align-items: center;
     justify-content: center;
     z-index: 9999;
@@ -602,12 +623,9 @@ code {
     flex-flow: column;
     font-size: 30px;
     cursor: pointer;
-}
-
-.swipe_right img,
-.swipe_left img {
-    height: 30px;
-    width: 30px;
+    align-self: center;
+    position: absolute;
+    bottom: 15px;
 }
 
 .swipes-counter {
@@ -620,11 +638,12 @@ code {
 }
 
 .swipe_left {
-    left: 15px;
     right: auto;
-    grid-column-start: 2;
-    align-items: flex-end;
-    padding-bottom: 17px;
+    left: 20px;
+}
+
+.swipe_right {
+    right: 5px;
 }
 
 .ui-settings {
@@ -660,9 +679,12 @@ code {
     border-style: none;
 }
 
+.last_mes .mesAvatarWrapper {
+    padding-bottom: 50px;
+}
+
 .mes .avatar {
     cursor: pointer;
-
 }
 
 .hotswapAvatar,
@@ -754,11 +776,6 @@ body.big-avatars #user_avatar_block .avatar img {
     width: 60px;
 }
 
-body.big-avatars .last_mes {
-    grid-template-rows: [avatar-NameMesText-edit] 80px [swipes] auto;
-    grid-template-columns: [checkbox] fit-content(60px) [avatar-leftswipe] fit-content(60px) [name-mestext] auto [edit-rightswipe] 30px !important;
-}
-
 body.big-avatars .avatar img {
     width: 100%;
     height: 100%;
@@ -771,9 +788,7 @@ body.big-avatars .avatar img {
 .mes_block {
     padding-top: 0;
     padding-left: 10px;
-    grid-row-start: 1;
-    grid-row-end: 3;
-    grid-column-start: 3;
+    width: 100%;
 }
 
 
@@ -893,6 +908,26 @@ select {
 }
 
 
+.chat_injections_list:empty {
+    width: 100%;
+    height: 100%;
+}
+
+.chat_injections_list:empty::before {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    content: "No injections";
+    font-weight: bolder;
+    width: 100%;
+    height: 100%;
+    opacity: 0.8;
+    min-height: 3rem;
+}
+
+.template_parameters_list code {
+    cursor: pointer;
+}
 
 h3 {
     margin: 10px 0;
@@ -1227,6 +1262,14 @@ input[type=search]:focus::-webkit-search-cancel-button {
     font-weight: bolder;
 }
 
+.justifySpaceBetween {
+    justify-content: space-between;
+}
+
+.mes_block .ch_name {
+    max-width: 100%;
+}
+
 /*applies to both groups and solos chars in the char list*/
 #rm_print_characters_block .ch_name {
     width: 100%;
@@ -1304,13 +1347,28 @@ input[type=search]:focus::-webkit-search-cancel-button {
     margin: 5px;
     cursor: pointer;
     aspect-ratio: 16/9;
+    justify-content: flex-end;
+}
+
+.BGSampleTitle {
+    display: flex;
+    width: 100%;
+    height: min-content;
+    text-align: center;
+    justify-content: center;
+    align-self: flex-end;
+    bottom: 0;
+    position: relative;
+    word-break: break-word;
+    background-color: var(--black50a);
+    font-size: calc(var(--fontScale) * 0.9em);
 }
 
 .bg_example_cross {
     width: 15px;
     height: 15px;
     position: relative;
-    float: right;
+    /* float: right; */
     right: 10px;
     top: 5px;
     cursor: pointer;
@@ -1808,10 +1866,6 @@ input[type=search]:focus::-webkit-search-cancel-button {
     gap: 5px;
 }
 
-#form_rename_world {
-    /* margin-right: 50px; */
-}
-
 #form_rename_chat {
     flex: 1;
 }
@@ -2222,11 +2276,21 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .mes_buttons {
-    float: right;
     height: 20px;
     grid-row-start: 1;
     position: relative;
-    right: 0px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+}
+
+.last_mes .mes_buttons {
+    right: -30px;
+}
+
+.last_mes .mes_block {
+    margin-right: 30px;
 }
 
 .mes_prompt,
@@ -2236,8 +2300,6 @@ input[type="range"]::-webkit-slider-thumb {
 .mes_edit {
     cursor: pointer;
     transition: 0.3s ease-in-out;
-    height: 20px;
-    width: 20px;
     filter: drop-shadow(0px 0px 2px black);
     opacity: 0.2;
 }
@@ -2248,24 +2310,6 @@ input[type="range"]::-webkit-slider-thumb {
 .mes_narrate:hover,
 .mes_stop:hover {
     opacity: 1;
-}
-
-.last_mes .sd_message_gen,
-.last_mes .mes_copy,
-.last_mes .mes_narrate,
-.last_mes .mes_prompt {
-    grid-row-start: 1;
-    position: relative;
-    right: -30px;
-}
-
-
-.last_mes .mes_edit,
-.last_mes .mes_edit_buttons,
-.last_mes .mes_stop {
-    grid-row-start: 1;
-    position: relative;
-    right: -30px;
 }
 
 .mes_edit_buttons {
@@ -3565,7 +3609,7 @@ label[for="extensions_autoconnect"] {
 
 .code-copied {
     position: absolute;
-    z-index: 99;
+    z-index: 10000;
     font-size: var(--mainFontSize);
     color: var(--SmartThemeBodyColor);
     background-color: var(--SmartThemeFastUIBGColor);
@@ -3623,7 +3667,6 @@ label[for="extensions_autoconnect"] {
     backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
     -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
     z-index: 9999 !important;
-    border: 1px solid var(--white30a);
 }
 
 .fillRight,
@@ -3706,6 +3749,10 @@ toolcool-color-picker {
 
 .flex1 {
     flex: 1;
+}
+
+.flex2 {
+    flex: 2;
 }
 
 .flexFlowColumn {
@@ -3994,16 +4041,6 @@ body.movingUI #avatar_zoom_popup,
 body.movingUI #floatingPrompt {
     resize: both;
 }
-
-body.movingUI #chat::-webkit-scrollbar-thumb {
-    background-color: var(--grey7070a);
-    border: 2px solid transparent;
-    border-top: 20px solid transparent;
-    box-shadow: inset 0 0 0 1px var(--black50a);
-    border-radius: 10px;
-    background-clip: content-box;
-}
-
 
 #expression-image.default,
 #expression-holder:has(.default) {

@@ -266,7 +266,7 @@ async function convertSoloToGroupChat() {
     $(`.group_select[grid="${group.id}"]`).click();
 
     await delay(1);
-    callPopup('The chat has been successfully converted!', 'text');
+    toastr.success('The chat has been successfully converted!');
 }
 
 $(document).ready(function () {
