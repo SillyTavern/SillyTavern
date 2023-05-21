@@ -5667,15 +5667,20 @@ $(document).ready(function () {
         var id = $(this).attr("id");
 
         if (id == "option_toggle_AN") {
-            if (selected_group || this_chid !== undefined && $("#floatingPrompt").css("display") === 'none') {
+            if (selected_group || this_chid !== undefined
+                && $("#floatingPrompt").css("display") !== 'flex') {
                 $("#floatingPrompt").css("display", "flex");
                 $("#floatingPrompt").css("opacity", 0.0);
                 $("#floatingPrompt").transition({
                     opacity: 1.0,
-                    duration: animation_duration,
+                    duration: 250,
                     easing: animation_easing,
                 });
-                $("#ANBlockToggle").click();
+                if ($("#ANBlockToggle")
+                    .siblings('.inline-drawer-content')
+                    .css('display') !== 'block') {
+                    $("#ANBlockToggle").click();
+                }
             } else {
                 $("#floatingPrompt").transition({
                     opacity: 0.0,
