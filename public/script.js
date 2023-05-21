@@ -3339,7 +3339,7 @@ async function saveChat(chat_name, withMetadata) {
     sortCharactersList();
     chat.forEach(function (item, i) {
         if (item["is_group"]) {
-            alert('Trying to save group chat with regular saveChat function. Aborting to prevent corruption.');
+            toastr.error('Trying to save group chat with regular saveChat function. Aborting to prevent corruption.');
             throw new Error('Group chat saved from saveChat');
         }
         /*
@@ -5521,7 +5521,7 @@ $(document).ready(function () {
                     $("#create_button").removeAttr("disabled");
                     $("#result_info").html("<font color=red>Error: no connection</font>");
                     console.log('Error! Either a file with the same name already existed, or the image file provided was in an invalid format. Double check that the image is not a webp.');
-                    alert('Error! Either a file with the same name already existed, or the image file provided was in an invalid format. Double check that the image is not a webp.');
+                    toastr.error('Something went wrong while saving the character, or the image file provided was in an invalid format. Double check that the image is not a webp.');
                 },
             });
         }

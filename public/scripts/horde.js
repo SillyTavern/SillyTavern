@@ -204,7 +204,7 @@ async function showKudos() {
     }
 
     console.log('Horde user data', data);
-    toastr.info(`${data.username}<br>Kudos: ${data.kudos}`);
+    toastr.info(`Kudos: ${data.kudos}`, data.username);
 }
 
 jQuery(function () {
