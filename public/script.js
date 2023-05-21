@@ -107,7 +107,17 @@ import {
     setPoeOnlineStatus,
 } from "./scripts/poe.js";
 
-import { debounce, delay, restoreCaretPosition, saveCaretPosition, end_trim_to_sentence, countOccurrences, isOdd } from "./scripts/utils.js";
+import {
+    debounce,
+    delay,
+    restoreCaretPosition,
+    saveCaretPosition,
+    end_trim_to_sentence,
+    countOccurrences,
+    isOdd,
+    isElementInViewport,
+} from "./scripts/utils.js";
+
 import { extension_settings, loadExtensionSettings } from "./scripts/extensions.js";
 import { executeSlashCommands, getSlashCommandsHelp, registerSlashCommand } from "./scripts/slash-commands.js";
 import {
@@ -194,6 +204,7 @@ export {
     talkativeness_default,
     default_ch_mes,
     extension_prompt_types,
+    setCharListVisible,
 }
 
 // API OBJECT FOR EXTERNAL WIRING
@@ -791,6 +802,7 @@ function printCharacters() {
     printGroups();
     sortCharactersList();
     favsToHotswap();
+    setCharListVisible();
 }
 
 async function getCharacters() {
@@ -4755,6 +4767,33 @@ const swipe_right = () => {
     }
 }
 
+function setCharListVisible() {
+    const $children = $("#rm_print_characters_block").children();
+    $children.each(function () {
+        if (isElementInViewport($(this))) {
+            $(this)
+                //.css('opacity', 1);
+                //.css('display', 'flex');
+                .stop(true, false).animate({ opacity: 1 }, { duration: 50, queue: false });
+        }
+
+        if (!isElementInViewport($(this)) &&
+            ($(this).css('opacity') === '1' || $(this).css('opacity') === undefined)) {
+            //.css('opacity', 0);
+
+            $(this)
+                //.css('opacity', 0);
+                //.css('display', 'none');
+                .stop(true, false).animate({ opacity: 0 }, { duration: 50, queue: false });
+        };
+        /* console.log(`chid ${$(elem).find('.ch_name').text()}
+      inview? ${isElementInViewport($(elem))}
+      opacity? ${$(elem).css('opacity')}`
+
+    ); */
+    })
+}
+
 $(document).ready(function () {
 
 
@@ -5676,13 +5715,11 @@ $(document).ready(function () {
                         duration: 250,
                         easing: animation_easing,
                     });
-                    console.log('displayed AN panel');
 
                     if ($("#ANBlockToggle")
                         .siblings('.inline-drawer-content')
                         .css('display') !== 'block') {
                         $("#ANBlockToggle").click();
-                        console.log('opened AN box');
                     }
                 } else {
                     $("#floatingPrompt").transition({
@@ -5692,7 +5729,6 @@ $(document).ready(function () {
                     });
                     setTimeout(function () {
                         $("#floatingPrompt").hide();
-                        console.log('hid AN panel');
                     }, 250);
 
                 }
@@ -6152,6 +6188,24 @@ $(document).ready(function () {
         $('#chat')[0].scrollTop = oldScroll;
         showSwipeButtons();
     });
+
+    setTimeout(function () {
+        const $children = $("#rm_print_characters_block").children();
+        const originalHeight = $children.length * $children.first().outerHeight();
+        $("#rm_print_characters_block").css('height', originalHeight);
+        //show and hide charlist divs on pageload (causes load lag)
+        //$children.each(function () { setCharListVisible($(this)) });
+
+        $("#rm_print_characters_block").on('scroll', debounce(function () {
+            const containerHeight = $children.length * $children.first().outerHeight();
+            $("#rm_print_characters_block").css('height', containerHeight);
+            //show and hide on scroll
+            setCharListVisible();
+        }, 1));
+        //delay timer to allow for charlist to populate, 
+        //should be set to an onload for rm_print_characters or windows?
+    }, 1000);
+
 
     $(document).on("click", ".mes_edit_delete", function () {
         if (!confirm("Are you sure you want to delete this message?")) {

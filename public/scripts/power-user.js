@@ -8,6 +8,7 @@ import {
     reloadCurrentChat,
     getRequestHeaders,
     substituteParams,
+    setCharListVisible,
 } from "../script.js";
 import { favsToHotswap } from "./RossAscends-mods.js";
 import {
@@ -643,8 +644,8 @@ function loadInstructMode() {
 export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvatar) {
     const includeNames = isNarrator ? false : (power_user.instruct.names || !!selected_group || !!forceAvatar);
     const sequence = (isUser || isNarrator) ? power_user.instruct.input_sequence : power_user.instruct.output_sequence;
-    const separator =  power_user.instruct.wrap ? '\n' : '';
-    const separatorSequence =  power_user.instruct.separator_sequence && !isUser 
+    const separator = power_user.instruct.wrap ? '\n' : '';
+    const separatorSequence = power_user.instruct.separator_sequence && !isUser
         ? power_user.instruct.separator_sequence
         : (power_user.instruct.wrap ? '\n' : '');
     const textArray = includeNames ? [sequence, `${name}: ${mes}`, separatorSequence] : [sequence, mes, separatorSequence];
@@ -668,7 +669,7 @@ export function formatInstructModePrompt(name, isImpersonate, promptBias) {
     let text = includeNames ? (separator + sequence + separator + `${name}:`) : (separator + sequence);
 
     if (!isImpersonate && promptBias) {
-        text += (includeNames ?  promptBias : (separator + promptBias));
+        text += (includeNames ? promptBias : (separator + promptBias));
     }
 
     return text.trimEnd();
@@ -718,6 +719,7 @@ function sortCharactersList() {
     for (const item of array) {
         $(`${item.selector}[${item.attribute}="${item.id}"]`).css({ 'order': orderedList.indexOf(item) });
     }
+    setCharListVisible();
 }
 
 function sortGroupMembers(selector) {
@@ -882,7 +884,7 @@ $(document).ready(() => {
     // include newline is the child of trim sentences
     // if include newline is checked, trim sentences must be checked
     // if trim sentences is unchecked, include newline must be unchecked
-    $("#trim_sentences_checkbox").change(function() {
+    $("#trim_sentences_checkbox").change(function () {
         power_user.trim_sentences = !!$(this).prop("checked");
         if (!$(this).prop("checked")) {
             $("#include_newline_checkbox").prop("checked", false);
@@ -891,7 +893,7 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
-    $("#include_newline_checkbox").change(function() {
+    $("#include_newline_checkbox").change(function () {
         power_user.include_newline = !!$(this).prop("checked");
         if ($(this).prop("checked")) {
             $("#trim_sentences_checkbox").prop("checked", true);

@@ -80,6 +80,19 @@ export function debounce(func, timeout = 300) {
     };
 }
 
+export function isElementInViewport(el) {
+    if (typeof jQuery === "function" && el instanceof jQuery) {
+        el = el[0];
+    }
+    var rect = el.getBoundingClientRect();
+    return (
+        rect.top >= 0 &&
+        rect.left >= 0 &&
+        rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) && /* or $(window).height() */
+        rect.right <= (window.innerWidth || document.documentElement.clientWidth) /* or $(window).width() */
+    );
+}
+
 export function getUniqueName(name, exists) {
     let i = 1;
     let baseName = name;
@@ -218,17 +231,17 @@ export function end_trim_to_sentence(input, include_newline = false) {
 }
 
 export function countOccurrences(string, character) {
-  let count = 0;
-  
-  for (let i = 0; i < string.length; i++) {
-    if (string[i] === character) {
-      count++;
+    let count = 0;
+
+    for (let i = 0; i < string.length; i++) {
+        if (string[i] === character) {
+            count++;
+        }
     }
-  }
-  
-  return count;
+
+    return count;
 }
 
 export function isOdd(number) {
-  return number % 2 !== 0;
+    return number % 2 !== 0;
 }
