@@ -1,9 +1,11 @@
 import { saveSettingsDebounced, getCurrentChatId } from "../../../script.js";
 import { getApiUrl, extension_settings } from "../../extensions.js";
-import { splitRecursive } from "../../utils.js";
+import { getFileText, getStringHash, splitRecursive } from "../../utils.js";
 export { MODULE_NAME };
 
 const MODULE_NAME = 'chromadb';
+
+const fileSplitLength = 2048;
 
 const defaultSettings = {
     keep_context: 10,
@@ -115,6 +117,52 @@ async function queryMessages(chat_id, query) {
     return [];
 }
 
+async function onSelectInjectFile(e) {
+    const file = e.target.files[0];
+
+    if (!file) {
+        return;
+    }
+
+    try {
+        const currentChatId = getCurrentChatId();
+        const text = await getFileText(file);
+
+        const split = splitRecursive(text, fileSplitLength);
+
+        const messages = split.map(m => ({
+            id: `${getStringHash(file.name)}-${getStringHash(m)}`,
+            role: 'assistant', // probably need a system role?
+            content: m,
+            date: Date.now(),
+            meta: file.name,
+        }));
+
+        const url = new URL(getApiUrl());
+        url.pathname = '/api/chromadb';
+
+        const addMessagesResult = await fetch(url, {
+            method: 'POST',
+            headers: postHeaders,
+            body: JSON.stringify({ chat_id: currentChatId, messages: messages }),
+        });
+
+        if (addMessagesResult.ok) {
+            const addMessagesData = await addMessagesResult.json();
+
+            toastr.info(`Number of chunks: ${addMessagesData.count}`, 'Injected successfully!');
+            return addMessagesData;
+        }
+    }
+    catch (error) {
+        console.log(error);
+        toastr.error('Something went wrong while injecting the data');
+    }
+    finally {
+        e.target.form.reset();
+    }
+}
+
 window.chromadb_interceptGeneration = async (chat) => {
     const currentChatId = getCurrentChatId();
 
@@ -132,9 +180,9 @@ window.chromadb_interceptGeneration = async (chat) => {
                 queriedMessages.sort((a, b) => a.date - b.date);
 
                 const newChat = queriedMessages.map(m => JSON.parse(m.meta));
-                
+
                 chat.splice(0, messagesToStore.length, ...newChat);
-                
+
                 console.log('ChromaDB chat after injection', chat);
             }
         }
@@ -156,13 +204,20 @@ jQuery(async () => {
             <input id="chromadb_n_results" type="range" min="${defaultSettings.n_results_min}" max="${defaultSettings.n_results_max}" step="${defaultSettings.n_results_step}" value="${defaultSettings.n_results}" />
             <label for="chromadb_split_length">Max length for message chunks (<span id="chromadb_split_length_value"></span>)</label>
             <input id="chromadb_split_length" type="range" min="${defaultSettings.split_length_min}" max="${defaultSettings.split_length_max}" step="${defaultSettings.split_length_step}" value="${defaultSettings.split_length}" />
+            <div id="chromadb_inject" title="Upload custom textual data to use in the context of the current chat" class="menu_button">
+                <i class="fa-solid fa-file-arrow-up"></i>
+                <span>Inject data to the context (TXT file)</span>
+            </div>
         </div>
+        <form><input id="chromadb_inject_file" type="file" accept="text/plain" hidden></form>
     </div>`;
 
     $('#extensions_settings').append(settingsHtml);
     $('#chromadb_keep_context').on('input', onKeepContextInput);
     $('#chromadb_n_results').on('input', onNResultsInput);
     $('#chromadb_split_length').on('input', onSplitLengthInput);
+    $('#chromadb_inject').on('click', () => $('#chromadb_inject_file').trigger('click'));
+    $('#chromadb_inject_file').on('change', onSelectInjectFile);
 
     await loadSettings();
 });

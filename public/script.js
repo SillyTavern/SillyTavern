@@ -840,7 +840,7 @@ async function getCharacters() {
             $("#avatar_url_pole").val(characters[this_chid].avatar);
         }
         await getGroups();
-        printCharacters();
+        await printCharacters();
     }
 }
 
@@ -1219,7 +1219,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
         $(".mes_prompt").hide();
         //console.log(itemizedPrompts);
     } else {
-        //console.log('skipping prompt data for User Message'); 
+        //console.log('skipping prompt data for User Message');
     }
 
     newMessage.find('.avatar img').on('error', function () {

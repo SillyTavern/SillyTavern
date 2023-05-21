@@ -35,6 +35,19 @@ export async function urlContentToDataUri(url, params) {
     });
 }
 
+export function getFileText(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsText(file);
+        reader.onload = function () {
+            resolve(reader.result);
+        };
+        reader.onerror = function (error) {
+            reject(error);
+        };
+    });
+}
+
 export function getBase64Async(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -261,7 +274,7 @@ export function splitRecursive(input, length, delimitiers = ['\n\n', '\n', ' ', 
     let currentChunk = '';
     for (let i = 0; i < flatParts.length;) {
         currentChunk = flatParts[i];
-        let j = i + 1; 
+        let j = i + 1;
         while (j < flatParts.length) {
             const nextChunk = flatParts[j];
             if (currentChunk.length + nextChunk.length + delim.length <= length) {
