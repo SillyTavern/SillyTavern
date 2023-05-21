@@ -57,7 +57,7 @@ function onSplitLengthInput() {
 
 async function addMessages(chat_id, messages) {
     const url = new URL(getApiUrl());
-    url.pathname = '/api/chroma';
+    url.pathname = '/api/chromadb';
 
     const messagesDeepCopy = JSON.parse(JSON.stringify(messages));
     const splittedMessages = [];
@@ -98,7 +98,7 @@ async function addMessages(chat_id, messages) {
 
 async function queryMessages(chat_id, query) {
     const url = new URL(getApiUrl());
-    url.pathname = '/api/chroma/query';
+    url.pathname = '/api/chromadb/query';
 
     const queryMessagesResult = await fetch(url, {
         method: 'POST',
@@ -123,20 +123,20 @@ window.chromadb_interceptGeneration = async (chat) => {
 
         if (messagesToStore.length > 0) {
             await addMessages(currentChatId, messagesToStore);
-        }
 
-        const lastMessage = chat[chat.length - 1];
+            const lastMessage = chat[chat.length - 1];
 
-        if (lastMessage) {
-            const queriedMessages = await queryMessages(currentChatId, lastMessage.mes);
+            if (lastMessage) {
+                const queriedMessages = await queryMessages(currentChatId, lastMessage.mes);
 
-            queriedMessages.sort((a, b) => a.date - b.date);
+                queriedMessages.sort((a, b) => a.date - b.date);
 
-            const newChat = queriedMessages.map(m => JSON.parse(m.meta));
-
-            console.log(newChat);
-
-            chat.splice(0, messagesToStore.length, newChat);
+                const newChat = queriedMessages.map(m => JSON.parse(m.meta));
+                
+                chat.splice(0, messagesToStore.length, ...newChat);
+                
+                console.log('ChromaDB chat after injection', chat);
+            }
         }
     }
 }
