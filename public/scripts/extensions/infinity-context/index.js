@@ -1,11 +1,10 @@
-import { saveSettingsDebounced, getCurrentChatId } from "../../../script.js";
+import { saveSettingsDebounced, getCurrentChatId, system_message_types } from "../../../script.js";
+import { humanizedDateTime } from "../../RossAscends-mods.js";
 import { getApiUrl, extension_settings } from "../../extensions.js";
-import { getFileText, getStringHash, splitRecursive } from "../../utils.js";
+import { getFileText, onlyUnique, splitRecursive } from "../../utils.js";
 export { MODULE_NAME };
 
 const MODULE_NAME = 'chromadb';
-
-const fileSplitLength = 2048;
 
 const defaultSettings = {
     keep_context: 10,
@@ -22,6 +21,11 @@ const defaultSettings = {
     split_length_min: 64,
     split_length_max: 4096,
     split_length_step: 64,
+
+    file_split_length: 1024,
+    file_split_length_min: 512,
+    file_split_length_max: 4096,
+    file_split_length_step: 128,
 };
 
 const postHeaders = {
@@ -37,6 +41,7 @@ async function loadSettings() {
     $('#chromadb_keep_context').val(extension_settings.chromadb.keep_context).trigger('input');
     $('#chromadb_n_results').val(extension_settings.chromadb.n_results).trigger('input');
     $('#chromadb_split_length').val(extension_settings.chromadb.split_length).trigger('input');
+    $('#chromadb_file_split_length').val(extension_settings.chromadb.file_split_length).trigger('input');
 }
 
 function onKeepContextInput() {
@@ -54,6 +59,12 @@ function onNResultsInput() {
 function onSplitLengthInput() {
     extension_settings.chromadb.split_length = Number($('#chromadb_split_length').val());
     $('#chromadb_split_length_value').text(extension_settings.chromadb.split_length);
+    saveSettingsDebounced();
+}
+
+function onFileSplitLengthInput() {
+    extension_settings.chromadb.file_split_length = Number($('#chromadb_file_split_length').val());
+    $('#chromadb_file_split_length_value').text(extension_settings.chromadb.file_split_length);
     saveSettingsDebounced();
 }
 
@@ -98,6 +109,22 @@ async function addMessages(chat_id, messages) {
     return { count: 0 };
 }
 
+async function onPurgeClick() {
+    const chat_id = getCurrentChatId();
+    const url = new URL(getApiUrl());
+    url.pathname = '/api/chromadb/purge';
+
+    const purgeResult = await fetch(url, {
+        method: 'POST',
+        headers: postHeaders,
+        body: JSON.stringify({ chat_id }),
+    });
+
+    if (purgeResult.ok) {
+        toastr.success('ChromaDB context has been successfully cleared');
+    }
+}
+
 async function queryMessages(chat_id, query) {
     const url = new URL(getApiUrl());
     url.pathname = '/api/chromadb/query';
@@ -125,17 +152,28 @@ async function onSelectInjectFile(e) {
     }
 
     try {
+        toastr.info('This may take some time, depending on the file size', 'Processing...');
         const currentChatId = getCurrentChatId();
         const text = await getFileText(file);
 
-        const split = splitRecursive(text, fileSplitLength);
+        const split = splitRecursive(text, extension_settings.chromadb.file_split_length).filter(onlyUnique);
 
-        const messages = split.map(m => ({
-            id: `${getStringHash(file.name)}-${getStringHash(m)}`,
-            role: 'assistant', // probably need a system role?
+        const messages =  split.map(m => ({
+            id: `${file.name}-${split.indexOf(m)}`,
+            role: 'system',
             content: m,
             date: Date.now(),
-            meta: file.name,
+            meta: JSON.stringify({
+                name: file.name,
+                is_user: false,
+                is_name: false,
+                is_system: false,
+                send_date: humanizedDateTime(),
+                mes: m,
+                extra: {
+                    type: system_message_types.NARRATOR,
+                }
+            }),
         }));
 
         const url = new URL(getApiUrl());
@@ -150,8 +188,10 @@ async function onSelectInjectFile(e) {
         if (addMessagesResult.ok) {
             const addMessagesData = await addMessagesResult.json();
 
-            toastr.info(`Number of chunks: ${addMessagesData.count}`, 'Injected successfully!');
+            toastr.success(`Number of chunks: ${addMessagesData.count}`, 'Injected successfully!');
             return addMessagesData;
+        } else {
+            throw new Error();
         }
     }
     catch (error) {
@@ -204,10 +244,19 @@ jQuery(async () => {
             <input id="chromadb_n_results" type="range" min="${defaultSettings.n_results_min}" max="${defaultSettings.n_results_max}" step="${defaultSettings.n_results_step}" value="${defaultSettings.n_results}" />
             <label for="chromadb_split_length">Max length for message chunks (<span id="chromadb_split_length_value"></span>)</label>
             <input id="chromadb_split_length" type="range" min="${defaultSettings.split_length_min}" max="${defaultSettings.split_length_max}" step="${defaultSettings.split_length_step}" value="${defaultSettings.split_length}" />
-            <div id="chromadb_inject" title="Upload custom textual data to use in the context of the current chat" class="menu_button">
-                <i class="fa-solid fa-file-arrow-up"></i>
-                <span>Inject data to the context (TXT file)</span>
+            <label for="chromadb_file_split_length">Max length for injected file chunks (<span id="chromadb_file_split_length_value"></span>)</label>
+            <input id="chromadb_file_split_length" type="range" min="${defaultSettings.file_split_length_min}" max="${defaultSettings.file_split_length_max}" step="${defaultSettings.file_split_length_step}" value="${defaultSettings.file_split_length}" />
+            <div class="flex-container spaceEvenly">
+                <div id="chromadb_inject" title="Upload custom textual data to use in the context of the current chat" class="menu_button">
+                    <i class="fa-solid fa-file-arrow-up"></i>
+                    <span>Inject Data to the Context (TXT file)</span>
+                </div>
+                <div id="chromadb_purge" title="Force purge all the data related to the current chat from the database" class="menu_button">
+                    <i class="fa-solid fa-broom"></i>
+                    <span>Purge Current Chat from the DB</span>
+                </div>
             </div>
+            <small><i>Since ChromaDB state is not persisted to disk by default, you'll need to inject text data every time the Extras API server is restarted.</i></small>
         </div>
         <form><input id="chromadb_inject_file" type="file" accept="text/plain" hidden></form>
     </div>`;
@@ -216,8 +265,10 @@ jQuery(async () => {
     $('#chromadb_keep_context').on('input', onKeepContextInput);
     $('#chromadb_n_results').on('input', onNResultsInput);
     $('#chromadb_split_length').on('input', onSplitLengthInput);
+    $('#chromadb_file_split_length').on('input', onFileSplitLengthInput);
     $('#chromadb_inject').on('click', () => $('#chromadb_inject_file').trigger('click'));
     $('#chromadb_inject_file').on('change', onSelectInjectFile);
+    $('#chromadb_purge').on('click', onPurgeClick);
 
     await loadSettings();
 });

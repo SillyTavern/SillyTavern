@@ -1,7 +1,7 @@
-#chromadb_inject {
+.chromadb_settings .menu_button {
     width: fit-content;
     display: flex;
     gap: 10px;
-    align-items: center;
+    align-items: baseline;
     flex-direction: row;
 }
