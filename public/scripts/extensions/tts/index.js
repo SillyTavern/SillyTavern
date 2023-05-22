@@ -1,3 +1,4 @@
+import { config } from 'yargs'
 import { callPopup, cancelTtsPlay, isMultigenEnabled, is_send_press, saveSettingsDebounced } from '../../../script.js'
 import { extension_settings, getContext } from '../../extensions.js'
 import { getStringHash } from '../../utils.js'
@@ -174,6 +175,7 @@ function debugTtsPlayback() {
             "audioQueueProcessorReady": audioQueueProcessorReady,
             "ttsJobQueue": ttsJobQueue,
             "currentTtsJob": currentTtsJob,
+            "ttsConfig": extension_settings.tts
         }
     ))
 }
@@ -372,6 +374,7 @@ async function processTtsQueue() {
     try {
         if (!text) {
             console.warn('Got empty text in TTS queue job.');
+            completeTtsJob()
             return;
         }
 
