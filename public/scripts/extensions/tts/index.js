@@ -1,4 +1,3 @@
-import { config } from 'yargs'
 import { callPopup, cancelTtsPlay, isMultigenEnabled, is_send_press, saveSettingsDebounced } from '../../../script.js'
 import { extension_settings, getContext } from '../../extensions.js'
 import { getStringHash } from '../../utils.js'
