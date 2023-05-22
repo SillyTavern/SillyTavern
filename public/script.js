@@ -1503,7 +1503,7 @@ class StreamingProcessor {
             return;
         }
 
-        $(`#chat .mes[mesid="${messageId}"] .mes_stop`).css({ 'display': 'block' });
+        $(`#chat .mes[mesid="${messageId}"] .mes_stop`).css({ 'display': '' });
         $(`#chat .mes[mesid="${messageId}"] .mes_buttons`).css({ 'display': 'none' });
     }
 
@@ -1513,7 +1513,7 @@ class StreamingProcessor {
         }
 
         $(`#chat .mes[mesid="${messageId}"] .mes_stop`).css({ 'display': 'none' });
-        $(`#chat .mes[mesid="${messageId}"] .mes_buttons`).css({ 'display': 'block' });
+        $(`#chat .mes[mesid="${messageId}"] .mes_buttons`).css({ 'display': '' });
     }
 
     onStartStreaming(text) {
@@ -3997,7 +3997,7 @@ function messageEditDone(div) {
 
     mesBlock.find(".mes_text").empty();
     mesBlock.find(".mes_edit_buttons").css("display", "none");
-    mesBlock.find(".mes_buttons").css("display", "inline-block");
+    mesBlock.find(".mes_buttons").css("display", "");
     mesBlock.find(".mes_text").append(
         messageFormatting(
             text,
@@ -6147,7 +6147,7 @@ $(document).ready(function () {
 
         $(this).closest(".mes_block").find(".mes_text").empty();
         $(this).closest(".mes_edit_buttons").css("display", "none");
-        $(this).closest(".mes_block").find(".mes_buttons").css("display", "inline-block");
+        $(this).closest(".mes_block").find(".mes_buttons").css("display", "");
         $(this)
             .closest(".mes_block")
             .find(".mes_text")
