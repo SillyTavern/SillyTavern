@@ -833,6 +833,13 @@ async function getCharacters() {
             characters[i] = [];
             characters[i] = getData[i];
             characters[i]['name'] = DOMPurify.sanitize(characters[i]['name']);
+
+            // For dropped-in cards
+            if (!characters[i]['chat']) {
+                characters[i]['chat'] = `${characters[i]['name']} - ${humanizedDateTime()}`;
+            }
+
+            characters[i]['chat'] = String(characters[i]['chat']);
         }
         if (this_chid != undefined && this_chid != "invalid-safety-id") {
             $("#avatar_url_pole").val(characters[this_chid].avatar);
@@ -1217,7 +1224,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
         $(".mes_prompt").hide();
         //console.log(itemizedPrompts);
     } else {
-        //console.log('skipping prompt data for User Message'); 
+        //console.log('skipping prompt data for User Message');
     }
 
     newMessage.find('.avatar img').on('error', function () {
