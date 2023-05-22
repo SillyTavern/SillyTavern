@@ -1069,9 +1069,15 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
     return mes;
 }
 
-function getMessageFromTemplate({ mesId, characterName, isUser, avatarImg, bias, isSystem, title, timerValue, timerTitle } = {}) {
+function getMessageFromTemplate({ mesId, characterName, isUser, avatarImg, bias, isSystem, title, timerValue, timerTitle, bookmarkLink } = {}) {
     const mes = $('#message_template .mes').clone();
-    mes.attr({ 'mesid': mesId, 'ch_name': characterName, 'is_user': isUser, 'is_system': !!isSystem });
+    mes.attr({
+        'mesid': mesId,
+        'ch_name': characterName,
+        'is_user': isUser,
+        'is_system': !!isSystem,
+        'bookmark_link': bookmarkLink,
+    });
     mes.find('.avatar img').attr('src', avatarImg);
     mes.find('.ch_name .name_text').text(characterName);
     mes.find('.mes_bias').html(bias);
@@ -1105,15 +1111,7 @@ function addCopyToCodeBlocks(messageElement) {
             codeBlocks.get(i).appendChild(copyButton);
             copyButton.addEventListener('pointerup', function (event) {
                 navigator.clipboard.writeText(codeBlocks.get(i).innerText);
-                const copiedMsg = document.createElement("div");
-                copiedMsg.classList.add('code-copied');
-                copiedMsg.innerText = "Copied!";
-                copiedMsg.style.top = `${event.clientY - 55}px`;
-                copiedMsg.style.left = `${event.clientX - 55}px`;
-                document.body.append(copiedMsg);
-                setTimeout(() => {
-                    document.body.removeChild(copiedMsg);
-                }, 1000);
+                toastr.info('Copied!', '', { timeOut: 2000 });
             });
         }
     }
@@ -1165,6 +1163,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
         mes.is_user,
     );
     const bias = messageFormatting(mes.extra?.bias ?? "");
+    const bookmarkLink = mes?.extra?.bookmark_link ?? '';
 
     let params = {
         mesId: count_view_mes,
@@ -1174,6 +1173,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
         bias: bias,
         isSystem: isSystem,
         title: title,
+        bookmarkLink: bookmarkLink,
         ...formatGenerationTimer(mes.gen_started, mes.gen_finished),
     };
 
@@ -6026,15 +6026,7 @@ $(document).ready(function () {
                     var edit_mes_id = $(this).closest(".mes").attr("mesid");
                     var text = chat[edit_mes_id]["mes"];
                     navigator.clipboard.writeText(text);
-                    const copiedMsg = document.createElement("div");
-                    copiedMsg.classList.add('code-copied');
-                    copiedMsg.innerText = "Copied!";
-                    copiedMsg.style.top = `${event.clientY - 55}px`;
-                    copiedMsg.style.left = `${event.clientX - 55}px`;
-                    document.body.append(copiedMsg);
-                    setTimeout(() => {
-                        document.body.removeChild(copiedMsg);
-                    }, 1000);
+                    toastr.info('Copied!', '', { timeOut: 2000 });
                 } catch (err) {
                     console.error('Failed to copy: ', err);
                 }
@@ -6220,8 +6212,9 @@ $(document).ready(function () {
         showSwipeButtons();
     });
 
-    $(document).on("click", ".mes_edit_copy", function () {
-        if (!confirm('Create a copy of this message?')) {
+    $(document).on("click", ".mes_edit_copy", async function () {
+        const confirmation = await callPopup('Create a copy of this message?', 'confirm');
+        if (!confirmation) {
             return;
         }
 
@@ -6241,8 +6234,9 @@ $(document).ready(function () {
     });
 
 
-    $(document).on("click", ".mes_edit_delete", function () {
-        if (!confirm("Are you sure you want to delete this message?")) {
+    $(document).on("click", ".mes_edit_delete", async function () {
+        const confirmation = await callPopup("Are you sure you want to delete this message?", 'confirm');
+        if (!confirmation) {
             return;
         }
 
@@ -6439,8 +6433,14 @@ $(document).ready(function () {
         select_rm_characters();
     });
 
-    $(document).on("click", ".select_chat_block, .bookmark_link", async function () {
-        let file_name = $(this).attr("file_name").replace(".jsonl", "");
+    $(document).on("click", ".select_chat_block, .bookmark_link, .mes_bookmark", async function () {
+        let file_name = $(this).hasClass('mes_bookmark')
+            ? $(this).closest('.mes').attr('bookmark_link')
+            : $(this).attr("file_name").replace(".jsonl", "");
+
+        if (!file_name) {
+            return;
+        }
 
         if (selected_group) {
             await openGroupChat(selected_group, file_name);
@@ -6603,10 +6603,6 @@ $(document).ready(function () {
                 $bgContent.hide();
             }
         });
-    });
-
-    $('#chat').on('scroll', () => {
-        $('.code-copied').css({ 'display': 'none' });
     });
 
     $(document).on('click', '.mes_img_enlarge', enlargeMessageImage);
