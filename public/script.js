@@ -833,6 +833,13 @@ async function getCharacters() {
             characters[i] = [];
             characters[i] = getData[i];
             characters[i]['name'] = DOMPurify.sanitize(characters[i]['name']);
+
+            // For dropped-in cards
+            if (!characters[i]['chat']) {
+                characters[i]['chat'] = `${characters[i]['name']} - ${humanizedDateTime()}`;
+            }
+
+            characters[i]['chat'] = String(characters[i]['chat']);
         }
         if (this_chid != undefined && this_chid != "invalid-safety-id") {
             $("#avatar_url_pole").val(characters[this_chid].avatar);
@@ -1062,9 +1069,15 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
     return mes;
 }
 
-function getMessageFromTemplate({ mesId, characterName, isUser, avatarImg, bias, isSystem, title, timerValue, timerTitle } = {}) {
+function getMessageFromTemplate({ mesId, characterName, isUser, avatarImg, bias, isSystem, title, timerValue, timerTitle, bookmarkLink } = {}) {
     const mes = $('#message_template .mes').clone();
-    mes.attr({ 'mesid': mesId, 'ch_name': characterName, 'is_user': isUser, 'is_system': !!isSystem });
+    mes.attr({
+        'mesid': mesId,
+        'ch_name': characterName,
+        'is_user': isUser,
+        'is_system': !!isSystem,
+        'bookmark_link': bookmarkLink,
+    });
     mes.find('.avatar img').attr('src', avatarImg);
     mes.find('.ch_name .name_text').text(characterName);
     mes.find('.mes_bias').html(bias);
@@ -1098,15 +1111,7 @@ function addCopyToCodeBlocks(messageElement) {
             codeBlocks.get(i).appendChild(copyButton);
             copyButton.addEventListener('pointerup', function (event) {
                 navigator.clipboard.writeText(codeBlocks.get(i).innerText);
-                const copiedMsg = document.createElement("div");
-                copiedMsg.classList.add('code-copied');
-                copiedMsg.innerText = "Copied!";
-                copiedMsg.style.top = `${event.clientY - 55}px`;
-                copiedMsg.style.left = `${event.clientX - 55}px`;
-                document.body.append(copiedMsg);
-                setTimeout(() => {
-                    document.body.removeChild(copiedMsg);
-                }, 1000);
+                toastr.info('Copied!', '', { timeOut: 2000 });
             });
         }
     }
@@ -1158,6 +1163,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
         mes.is_user,
     );
     const bias = messageFormatting(mes.extra?.bias ?? "");
+    const bookmarkLink = mes?.extra?.bookmark_link ?? '';
 
     let params = {
         mesId: count_view_mes,
@@ -1167,6 +1173,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
         bias: bias,
         isSystem: isSystem,
         title: title,
+        bookmarkLink: bookmarkLink,
         ...formatGenerationTimer(mes.gen_started, mes.gen_finished),
     };
 
@@ -1496,7 +1503,7 @@ class StreamingProcessor {
             return;
         }
 
-        $(`#chat .mes[mesid="${messageId}"] .mes_stop`).css({ 'display': 'block' });
+        $(`#chat .mes[mesid="${messageId}"] .mes_stop`).css({ 'display': '' });
         $(`#chat .mes[mesid="${messageId}"] .mes_buttons`).css({ 'display': 'none' });
     }
 
@@ -1506,7 +1513,7 @@ class StreamingProcessor {
         }
 
         $(`#chat .mes[mesid="${messageId}"] .mes_stop`).css({ 'display': 'none' });
-        $(`#chat .mes[mesid="${messageId}"] .mes_buttons`).css({ 'display': 'block' });
+        $(`#chat .mes[mesid="${messageId}"] .mes_buttons`).css({ 'display': '' });
     }
 
     onStartStreaming(text) {
@@ -3990,7 +3997,7 @@ function messageEditDone(div) {
 
     mesBlock.find(".mes_text").empty();
     mesBlock.find(".mes_edit_buttons").css("display", "none");
-    mesBlock.find(".mes_buttons").css("display", "inline-block");
+    mesBlock.find(".mes_buttons").css("display", "");
     mesBlock.find(".mes_text").append(
         messageFormatting(
             text,
@@ -6019,15 +6026,7 @@ $(document).ready(function () {
                     var edit_mes_id = $(this).closest(".mes").attr("mesid");
                     var text = chat[edit_mes_id]["mes"];
                     navigator.clipboard.writeText(text);
-                    const copiedMsg = document.createElement("div");
-                    copiedMsg.classList.add('code-copied');
-                    copiedMsg.innerText = "Copied!";
-                    copiedMsg.style.top = `${event.clientY - 55}px`;
-                    copiedMsg.style.left = `${event.clientX - 55}px`;
-                    document.body.append(copiedMsg);
-                    setTimeout(() => {
-                        document.body.removeChild(copiedMsg);
-                    }, 1000);
+                    toastr.info('Copied!', '', { timeOut: 2000 });
                 } catch (err) {
                     console.error('Failed to copy: ', err);
                 }
@@ -6140,7 +6139,7 @@ $(document).ready(function () {
 
         $(this).closest(".mes_block").find(".mes_text").empty();
         $(this).closest(".mes_edit_buttons").css("display", "none");
-        $(this).closest(".mes_block").find(".mes_buttons").css("display", "inline-block");
+        $(this).closest(".mes_block").find(".mes_buttons").css("display", "");
         $(this)
             .closest(".mes_block")
             .find(".mes_text")
@@ -6213,8 +6212,9 @@ $(document).ready(function () {
         showSwipeButtons();
     });
 
-    $(document).on("click", ".mes_edit_copy", function () {
-        if (!confirm('Create a copy of this message?')) {
+    $(document).on("click", ".mes_edit_copy", async function () {
+        const confirmation = await callPopup('Create a copy of this message?', 'confirm');
+        if (!confirmation) {
             return;
         }
 
@@ -6234,8 +6234,9 @@ $(document).ready(function () {
     });
 
 
-    $(document).on("click", ".mes_edit_delete", function () {
-        if (!confirm("Are you sure you want to delete this message?")) {
+    $(document).on("click", ".mes_edit_delete", async function () {
+        const confirmation = await callPopup("Are you sure you want to delete this message?", 'confirm');
+        if (!confirmation) {
             return;
         }
 
@@ -6432,8 +6433,14 @@ $(document).ready(function () {
         select_rm_characters();
     });
 
-    $(document).on("click", ".select_chat_block, .bookmark_link", async function () {
-        let file_name = $(this).attr("file_name").replace(".jsonl", "");
+    $(document).on("click", ".select_chat_block, .bookmark_link, .mes_bookmark", async function () {
+        let file_name = $(this).hasClass('mes_bookmark')
+            ? $(this).closest('.mes').attr('bookmark_link')
+            : $(this).attr("file_name").replace(".jsonl", "");
+
+        if (!file_name) {
+            return;
+        }
 
         if (selected_group) {
             await openGroupChat(selected_group, file_name);
@@ -6596,10 +6603,6 @@ $(document).ready(function () {
                 $bgContent.hide();
             }
         });
-    });
-
-    $('#chat').on('scroll', () => {
-        $('.code-copied').css({ 'display': 'none' });
     });
 
     $(document).on('click', '.mes_img_enlarge', enlargeMessageImage);

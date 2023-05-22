@@ -174,6 +174,7 @@ function debugTtsPlayback() {
             "audioQueueProcessorReady": audioQueueProcessorReady,
             "ttsJobQueue": ttsJobQueue,
             "currentTtsJob": currentTtsJob,
+            "ttsConfig": extension_settings.tts
         }
     ))
 }
@@ -372,6 +373,7 @@ async function processTtsQueue() {
     try {
         if (!text) {
             console.warn('Got empty text in TTS queue job.');
+            completeTtsJob()
             return;
         }
 

@@ -515,65 +515,51 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
 
 
 app.post("/savechat", jsonParser, function (request, response) {
-    var dir_name = String(request.body.avatar_url).replace('.png', '');
-    let chat_data = request.body.chat;
-    let jsonlData = chat_data.map(JSON.stringify).join('\n');
-    fs.writeFile(`${chatsPath + dir_name}/${sanitize(request.body.file_name)}.jsonl`, jsonlData, 'utf8', function (err) {
-        if (err) {
-            response.send(err);
-            return console.log(err);
-        } else {
-            response.send({ result: "ok" });
-        }
-    });
-
+    try {
+        var dir_name = String(request.body.avatar_url).replace('.png', '');
+        let chat_data = request.body.chat;
+        let jsonlData = chat_data.map(JSON.stringify).join('\n');
+        fs.writeFileSync(`${chatsPath + dir_name}/${sanitize(String(request.body.file_name))}.jsonl`, jsonlData, 'utf8');
+        return response.send({ result: "ok" });
+    } catch (error) {
+        response.send(error);
+        return console.log(error);
+    }
 });
+
 app.post("/getchat", jsonParser, function (request, response) {
-    var dir_name = String(request.body.avatar_url).replace('.png', '');
+    try {
+        const dirName = String(request.body.avatar_url).replace('.png', '');
+        const chatDirExists = fs.existsSync(chatsPath + dirName);
 
-    fs.stat(chatsPath + dir_name, function (err, stat) {
-
-        if (stat === undefined) {		//if no chat dir for the character is found, make one with the character name
-
-            fs.mkdirSync(chatsPath + dir_name);
-            response.send({});
-            return;
-        } else {
-
-            if (err === null) { //if there is a dir, then read the requested file from the JSON call
-
-                fs.stat(`${chatsPath + dir_name}/${sanitize(request.body.file_name)}.jsonl`, function (err, stat) {
-                    if (err === null) { //if no error (the file exists), read the file
-                        if (stat !== undefined) {
-                            fs.readFile(`${chatsPath + dir_name}/${sanitize(request.body.file_name)}.jsonl`, 'utf8', (err, data) => {
-                                if (err) {
-                                    console.error(err);
-                                    response.send(err);
-                                    return;
-                                }
-                                //console.log(data);
-                                const lines = data.split('\n');
-
-                                // Iterate through the array of strings and parse each line as JSON
-                                const jsonData = lines.map(tryParse).filter(x => x);
-                                response.send(jsonData);
-                                //console.log('read the requested file')
-
-                            });
-                        }
-                    } else {
-                        response.send({});
-                        //return console.log(err);
-                        return;
-                    }
-                });
-            } else {
-                console.error(err);
-                response.send({});
-                return;
-            }
+        //if no chat dir for the character is found, make one with the character name
+        if (!chatDirExists) {
+            fs.mkdirSync(chatsPath + dirName);
+            return response.send({});
         }
-    });
+
+
+        if (!request.body.file_name) {
+            return response.send({});
+        }
+
+        const fileName = `${chatsPath + dirName}/${sanitize(String(request.body.file_name))}.jsonl`;
+        const chatFileExists = fs.existsSync(fileName);
+
+        if (!chatFileExists) {
+            return response.send({});
+        }
+
+        const data = fs.readFileSync(fileName, 'utf8');
+        const lines = data.split('\n');
+
+        // Iterate through the array of strings and parse each line as JSON
+        const jsonData = lines.map(tryParse).filter(x => x);
+        return response.send(jsonData);
+    } catch (error) {
+        console.error(error);
+        return response.send({});
+    }
 });
 
 app.post("/getstatus", jsonParser, async function (request, response_getstatus = response) {

@@ -11,15 +11,7 @@ function openContextTemplateEditor() {
 function copyTemplateParameter(event) {
     const text = $(event.target).text();
     navigator.clipboard.writeText(text);
-    const copiedMsg = document.createElement("div");
-    copiedMsg.classList.add('code-copied');
-    copiedMsg.innerText = "Copied!";
-    copiedMsg.style.top = `${event.clientY - 55}px`;
-    copiedMsg.style.left = `${event.clientX - 55}px`;
-    document.body.append(copiedMsg);
-    setTimeout(() => {
-        document.body.removeChild(copiedMsg);
-    }, 1000);
+    toastr.info('Copied!', '', { timeOut: 2000 });
 }
 
 jQuery(() => {

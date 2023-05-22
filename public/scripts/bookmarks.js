@@ -124,6 +124,26 @@ function showBookmarksButtons() {
 }
 
 async function createNewBookmark() {
+    if (!chat.length) {
+        toastr.warning('The chat is empty.', 'Bookmark creation failed');
+        return;
+    }
+
+    const mesId = chat.length - 1;
+    const lastMes = chat[mesId];
+
+    if (typeof lastMes.extra !== 'object') {
+        lastMes.extra = {};
+    }
+
+    if (lastMes.extra.bookmark_link) {
+        const confirm = await callPopup('Bookmark checkpoint for the last message already exists. Would you like to replace it?', 'confirm');
+
+        if (!confirm) {
+            return;
+        }
+    }
+
     let name = await getBookmarkName();
 
     if (!name) {
@@ -139,9 +159,11 @@ async function createNewBookmark() {
         await saveChat(name, newMetadata);
     }
 
-    let mainMessage = stringFormat(system_messages[system_message_types.BOOKMARK_CREATED].mes, name, name);
-    sendSystemMessage(system_message_types.BOOKMARK_CREATED, mainMessage);
+    lastMes.extra['bookmark_link'] = name;
+    $(`.mes[mesid="${mesId}"]`).attr('bookmark_link', name);
+
     await saveChatConditional();
+    toastr.success('Click the bookmark icon in the last message to open the checkpoint chat.', 'Bookmark created', { timeOut: 10000 });
 }
 
 async function backToMainChat() {
