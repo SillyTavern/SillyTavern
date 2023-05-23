@@ -2271,12 +2271,14 @@ input[type="range"]::-webkit-slider-thumb {
 
 .mes_stop {
     display: none;
-    float: right;
     cursor: pointer;
     transition: opacity 0.3s ease-in-out;
     height: 20px;
     width: 20px;
     opacity: 0.5;
+    position: absolute;
+    right: 15px;
+    bottom: 15px
 }
 
 .mes_buttons {
