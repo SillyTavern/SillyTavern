@@ -133,10 +133,27 @@ let response_getstatus_openai;
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 
-const { SentencePieceProcessor, cleanText } = require("./src/sentencepiece/sentencepiece.min.js");
-let spp = new SentencePieceProcessor();
+const { SentencePieceProcessor, cleanText } = require("sentencepiece-js");
+
+let spp;
+
+async function loadSentencepieceTokenizer() {
+    try {
+        const spp = new SentencePieceProcessor();
+        await spp.load("src/sentencepiece/tokenizer.model");
+        return spp;
+    } catch (error) {
+        console.error("Sentencepiece tokenizer failed to load.");
+        return null;
+    }
+};
 
 async function countTokensLlama(text) {
+    // Fallback to strlen estimation
+    if (!spp) {
+        return Math.ceil(v.length / 3.35);
+    }
+
     let cleaned = cleanText(text);
 
     let ids = spp.encodeIds(cleaned);
@@ -2676,7 +2693,7 @@ const setupTasks = async function () {
     // Colab users could run the embedded tool
     if (!is_colab) await convertWebp();
 
-    await spp.load(`./src/sentencepiece/tokenizer.model`);
+    spp = await loadSentencepieceTokenizer();
 
     console.log('Launching...');
 
@@ -2685,12 +2702,12 @@ const setupTasks = async function () {
 }
 
 if (listen && !config.whitelistMode && !config.basicAuthMode) {
-	if (config.securityOverride)
-		console.warn("Security has been override. If it's not a trusted network, change the settings.");
-	else {
-		console.error('Your SillyTavern is currently unsecurely open to the public. Enable whitelisting or basic authentication.');
-		process.exit(1);
-	}
+    if (config.securityOverride)
+        console.warn("Security has been override. If it's not a trusted network, change the settings.");
+    else {
+        console.error('Your SillyTavern is currently unsecurely open to the public. Enable whitelisting or basic authentication.');
+        process.exit(1);
+    }
 }
 
 if (true === cliArguments.ssl)
