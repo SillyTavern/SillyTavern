@@ -259,6 +259,31 @@ export function isOdd(number) {
   return number % 2 !== 0;
 }
 
+export function timestampToMoment(timestamp) {
+    // Unix time (legacy TAI)
+    if (typeof timestamp === 'number') {
+        return moment(timestamp);
+    }
+
+    // ST "humanized" format pattern
+    const pattern = /(\d{4})-(\d{1,2})-(\d{1,2}) @(\d{1,2})h (\d{1,2})m (\d{1,2})s (\d{1,3})ms/;
+    const replacement = (match, year, month, day, hour, minute, second, millisecond) => {
+        return `${year.padStart(4, "0")}-${month.padStart(2, "0")}-${day.padStart(2, "0")}T${hour.padStart(2, "0")}:${minute.padStart(2, "0")}:${second.padStart(2, "0")}.${millisecond.padStart(3, "0")}Z`;
+    };
+    const isoTimestamp = timestamp.replace(pattern, replacement);
+    return moment(isoTimestamp);
+}
+
+export function sortMoments(a, b) {
+    if (a.isBefore(b)) {
+        return 1;
+    } else if (a.isAfter(b)) {
+        return -1;
+    } else {
+        return 0;
+    }
+}
+
 /** Split string to parts no more than length in size */
 export function splitRecursive(input, length, delimitiers = ['\n\n', '\n', ' ', '']) {
     const delim = delimitiers[0] ?? '';

@@ -116,6 +116,8 @@ import {
     countOccurrences,
     isOdd,
     isElementInViewport,
+    sortMoments,
+    timestampToMoment,
 } from "./scripts/utils.js";
 
 import { extension_settings, loadExtensionSettings, runGenerationInterceptors } from "./scripts/extensions.js";
@@ -1503,7 +1505,7 @@ class StreamingProcessor {
             return;
         }
 
-        $(`#chat .mes[mesid="${messageId}"] .mes_stop`).css({ 'display': '' });
+        $(`#chat .mes[mesid="${messageId}"] .mes_stop`).css({ 'display': 'block' });
         $(`#chat .mes[mesid="${messageId}"] .mes_buttons`).css({ 'display': 'none' });
     }
 
@@ -1513,7 +1515,7 @@ class StreamingProcessor {
         }
 
         $(`#chat .mes[mesid="${messageId}"] .mes_stop`).css({ 'display': 'none' });
-        $(`#chat .mes[mesid="${messageId}"] .mes_buttons`).css({ 'display': '' });
+        $(`#chat .mes[mesid="${messageId}"] .mes_buttons`).css({ 'display': 'block' });
     }
 
     onStartStreaming(text) {
@@ -4040,6 +4042,9 @@ export async function displayPastChats() {
     const displayName = selected_group ? group?.name : characters[this_chid].name;
     const avatarImg = selected_group ? group?.avatar_url : getThumbnailUrl('avatar', characters[this_chid]['avatar']);
 
+    // Sort by last message date descending
+    data.sort((a, b) => sortMoments(timestampToMoment(a.last_mes), timestampToMoment(b.last_mes)));
+
     $("#load_select_chat_div").css("display", "none");
     $("#ChatHistoryCharName").text(displayName);
     for (const key in data) {
@@ -4053,6 +4058,7 @@ export async function displayPastChats() {
             const chat_items = data[key]["chat_items"];
             const file_size = data[key]["file_size"];
             const fileName = data[key]['file_name'];
+            const timestamp = timestampToMoment(data[key]['last_mes']).format('LL LT');
             const template = $('#past_chat_template .select_chat_block_wrapper').clone();
             template.find('.select_chat_block').attr('file_name', fileName);
             template.find('.avatar img').attr('src', avatarImg);
@@ -4061,6 +4067,7 @@ export async function displayPastChats() {
             template.find('.chat_messages_num').text(" (" + chat_items + " messages)");
             template.find('.select_chat_block_mes').text(mes);
             template.find('.PastChat_cross').attr('file_name', fileName);
+            template.find('.chat_messages_date').text(timestamp);
 
             if (selected_group) {
                 template.find('.avatar img').replaceWith(getGroupAvatar(group));
