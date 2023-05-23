@@ -587,6 +587,7 @@ var main_api;// = "kobold";
 let novel_tier;
 let novelai_settings;
 let novelai_setting_names;
+let abortController;
 
 //css
 var css_mes_bg = $('<div class="mes"></div>').css("background");
@@ -1499,22 +1500,30 @@ function isStreamingEnabled() {
         && !isMultigenEnabled(); // Multigen has a quasi-streaming mode which breaks the real streaming
 }
 
+function showStopButton() {
+    $('#mes_stop').css({ 'display': 'flex' });
+}
+
+function hideStopButton() {
+    $('#mes_stop').css({ 'display': 'none' });
+}
+
 class StreamingProcessor {
-    showStopButton(messageId) {
+    showMessageButtons(messageId) {
         if (messageId == -1) {
             return;
         }
 
-        $(`#chat .mes[mesid="${messageId}"] .mes_stop`).css({ 'display': 'block' });
+        showStopButton();
         $(`#chat .mes[mesid="${messageId}"] .mes_buttons`).css({ 'display': 'none' });
     }
 
-    hideStopButton(messageId) {
+    hideMessageButtons(messageId) {
         if (messageId == -1) {
             return;
         }
 
-        $(`#chat .mes[mesid="${messageId}"] .mes_stop`).css({ 'display': 'none' });
+        hideStopButton();
         $(`#chat .mes[mesid="${messageId}"] .mes_buttons`).css({ 'display': 'flex' });
     }
 
@@ -1527,7 +1536,7 @@ class StreamingProcessor {
         else {
             saveReply(this.type, text);
             messageId = count_view_mes - 1;
-            this.showStopButton(messageId);
+            this.showMessageButtons(messageId);
         }
 
         hideSwipeButtons();
@@ -1595,7 +1604,7 @@ class StreamingProcessor {
     }
 
     onFinishStreaming(messageId, text) {
-        this.hideStopButton(this.messageId);
+        this.hideMessageButtons(this.messageId);
         this.onProgressStreaming(messageId, text, true);
         addCopyToCodeBlocks($(`#chat .mes[mesid="${messageId}"]`));
         saveChatConditional();
@@ -1641,7 +1650,7 @@ class StreamingProcessor {
     }
 
     onErrorStreaming() {
-        this.hideStopButton(this.messageId);
+        this.hideMessageButtons(this.messageId);
         $("#send_textarea").removeAttr('disabled');
         is_send_press = false;
         activateSendButtons();
@@ -2203,12 +2212,15 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             let generate_url = getGenerateUrl();
             console.log('rungenerate calling API');
 
+            abortController = new AbortController();
+            showStopButton();
+
             if (main_api == 'openai') {
                 if (isStreamingEnabled() && type !== 'quiet') {
                     streamingProcessor.generator = await sendOpenAIRequest(type, generate_data.prompt, streamingProcessor.abortController.signal);
                 }
                 else {
-                    sendOpenAIRequest(type, generate_data.prompt).then(onSuccess).catch(onError);
+                    sendOpenAIRequest(type, generate_data.prompt, abortController.signal).then(onSuccess).catch(onError);
                 }
             }
             else if (main_api == 'kobold' && horde_settings.use_horde) {
@@ -2219,25 +2231,32 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     streamingProcessor.generator = await generatePoe(type, finalPromt, streamingProcessor.abortController.signal);
                 }
                 else {
-                    generatePoe(type, finalPromt).then(onSuccess).catch(onError);
+                    generatePoe(type, finalPromt, abortController.signal).then(onSuccess).catch(onError);
                 }
             }
             else if (main_api == 'textgenerationwebui' && isStreamingEnabled() && type !== 'quiet') {
                 streamingProcessor.generator = await generateTextGenWithStreaming(generate_data, streamingProcessor.abortController.signal);
             }
             else {
-                jQuery.ajax({
-                    type: 'POST', //
-                    url: generate_url, //
-                    data: JSON.stringify(generate_data),
-                    beforeSend: () => { },
-                    cache: false,
-                    dataType: "json",
-                    contentType: "application/json",
-                    success: onSuccess,
-                    error: onError
-                }); //end of "if not data error"
-            }
+                try {
+                    const response = await fetch(generate_url, {
+                        method: 'POST',
+                        headers: getRequestHeaders(),
+                        cache: 'no-cache',
+                        body: JSON.stringify(generate_data),
+                        signal: abortController.signal,
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(response.status);
+                    }
+
+                    const data = await response.json();
+                    onSuccess(data);
+                } catch (error) {
+                    onError(error);
+                }
+             }
 
             //set array object for prompt token itemization of this message
             let currentArrayEntry = Number(thisPromptBits.length - 1);
@@ -2284,6 +2303,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             }
 
             function onSuccess(data) {
+                hideStopButton();
                 is_send_press = false;
                 if (!data.error) {
                     //const getData = await response.json();
@@ -2386,14 +2406,14 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 }
             };
 
-            function onError(jqXHR, exception) {
+            function onError(exception) {
+                hideStopButton();
                 reject(exception);
                 $("#send_textarea").removeAttr('disabled');
                 is_send_press = false;
                 activateSendButtons();
                 setGenerationProgress(0);
                 console.log(exception);
-                console.log(jqXHR);
             };
 
         } //rungenerate ends
@@ -3233,13 +3253,13 @@ export function isMultigenEnabled() {
 function activateSendButtons() {
     is_send_press = false;
     $("#send_but").css("display", "flex");
-    $("#loading_mes").css("display", "none");
     $("#send_textarea").attr("disabled", false);
+    hideStopButton();
 }
 
 function deactivateSendButtons() {
     $("#send_but").css("display", "none");
-    $("#loading_mes").css("display", "flex");
+    showStopButton();
 }
 
 function resetChatState() {
@@ -6465,6 +6485,10 @@ $(document).ready(function () {
             streamingProcessor.isStopped = true;
             streamingProcessor.onStopStreaming();
             streamingProcessor = null;
+        }
+        if (!isStreamingEnabled() && abortController) {
+            abortController.abort();
+            abortController = null;
         }
     });
 

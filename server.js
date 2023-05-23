@@ -39,13 +39,11 @@ const multer = require("multer");
 const http = require("http");
 const https = require('https');
 const basicAuthMiddleware = require('./src/middleware/basicAuthMiddleware');
-//const PNG = require('pngjs').PNG;
 const extract = require('png-chunks-extract');
 const encode = require('png-chunks-encode');
 const PNGtext = require('png-chunk-text');
 
 const jimp = require('jimp');
-//const path = require('path');
 const sanitize = require('sanitize-filename');
 const mime = require('mime-types');
 
@@ -54,13 +52,11 @@ const crypto = require('crypto');
 const ipaddr = require('ipaddr.js');
 const json5 = require('json5');
 
-const ExifReader = require('exifreader');
 const exif = require('piexifjs');
 const webp = require('webp-converter');
 const DeviceDetector = require("device-detector-js");
 const { TextEncoder, TextDecoder } = require('util');
 const utf8Encode = new TextEncoder();
-const utf8Decode = new TextDecoder('utf-8', { ignoreBOM: true });
 const commandExistsSync = require('command-exists').sync;
 
 const characterCardParser = require('./src/character-card-parser.js');
@@ -93,36 +89,25 @@ const ai_horde = new AIHorde({
 });
 const ipMatching = require('ip-matching');
 
-var Client = require('node-rest-client').Client;
-var client = new Client();
+const Client = require('node-rest-client').Client;
+const client = new Client();
 
 client.on('error', (err) => {
     console.error('An error occurred:', err);
 });
 
-let poe = require('./poe-client');
+const poe = require('./poe-client');
 
-var api_server = "http://0.0.0.0:5000";
-var api_novelai = "https://api.novelai.net";
+let api_server = "http://0.0.0.0:5000";
+let api_novelai = "https://api.novelai.net";
 let api_openai = "https://api.openai.com/v1";
-var main_api = "kobold";
+let main_api = "kobold";
 
-var response_get_story;
-var response_generate;
-var response_generate_novel;
-var request_promt;
-var response_promt;
-var characters = {};
-var character_i = 0;
-var response_create;
-var response_edit;
-var response_dw_bg;
-var response_getstatus;
-var response_getstatus_novel;
-var response_getlastversion;
+let response_generate_novel;
+let characters = {};
+let response_dw_bg;
+let response_getstatus;
 
-let response_generate_openai;
-let response_getstatus_openai;
 
 //RossAscends: Added function to format dates used in files and chat timestamps to a humanized format.
 //Mostly I wanted this to be for file names, but couldn't figure out exactly where the filename save code was as everything seemed to be connected.
@@ -220,7 +205,7 @@ const doubleCsrf = require('csrf-csrf').doubleCsrf;
 const CSRF_SECRET = crypto.randomBytes(8).toString('hex');
 const COOKIES_SECRET = crypto.randomBytes(8).toString('hex');
 
-const { invalidCsrfTokenError, generateToken, doubleCsrfProtection } = doubleCsrf({
+const { generateToken, doubleCsrfProtection } = doubleCsrf({
     getSecret: () => CSRF_SECRET,
     cookieName: "X-CSRF-Token",
     cookieOptions: {
@@ -342,27 +327,29 @@ app.get('/version', function (_, response) {
 //**************Kobold api
 app.post("/generate", jsonParser, async function (request, response_generate = response) {
     if (!request.body) return response_generate.sendStatus(400);
-    //console.log(request.body.prompt);
-    //const dataJson = JSON.parse(request.body);
-    request_promt = request.body.prompt;
 
-    //console.log(request.body);
-    var this_settings = {
-        prompt: request_promt,
+    const request_prompt = request.body.prompt;
+    const controller = new AbortController();
+    request.socket.removeAllListeners('close');
+    request.socket.on('close', function () {
+        console.log('Kobold aborted');
+        controller.abort();
+    });
+
+    let this_settings = {
+        prompt: request_prompt,
         use_story: false,
         use_memory: false,
         use_authors_note: false,
         use_world_info: false,
         max_context_length: request.body.max_context_length,
         singleline: !!request.body.singleline,
-        //temperature: request.body.temperature,
-        //max_length: request.body.max_length
     };
 
     if (request.body.gui_settings == false) {
-        var sampler_order = [request.body.s1, request.body.s2, request.body.s3, request.body.s4, request.body.s5, request.body.s6, request.body.s7];
+        const sampler_order = [request.body.s1, request.body.s2, request.body.s3, request.body.s4, request.body.s5, request.body.s6, request.body.s7];
         this_settings = {
-            prompt: request_promt,
+            prompt: request_prompt,
             use_story: false,
             use_memory: false,
             use_authors_note: false,
@@ -387,9 +374,10 @@ app.post("/generate", jsonParser, async function (request, response_generate = r
     }
 
     console.log(this_settings);
-    var args = {
-        data: this_settings,
-        headers: { "Content-Type": "application/json" }
+    const args = {
+        body: JSON.stringify(this_settings),
+        signal: controller.signal,
+        headers: { "Content-Type": "application/json" },
     };
 
     const MAX_RETRIES = 10;
@@ -426,13 +414,15 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
 
     console.log(request.body);
 
-    if (!!request.header('X-Response-Streaming')) {
-        let isStreamingStopped = false;
-        request.socket.removeAllListeners('close');
-        request.socket.on('close', function () {
-            isStreamingStopped = true;
-        });
+    const controller = new AbortController();
+    let isGenerationStopped = false;
+    request.socket.removeAllListeners('close');
+    request.socket.on('close', function () {
+        isGenerationStopped = true;
+        controller.abort();
+    });
 
+    if (request.header('X-Response-Streaming')) {
         response_generate.writeHead(200, {
             'Content-Type': 'text/plain;charset=utf-8',
             'Transfer-Encoding': 'chunked',
@@ -459,7 +449,7 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
             });
 
             while (true) {
-                if (isStreamingStopped) {
+                if (isGenerationStopped) {
                     console.error('Streaming stopped by user. Closing websocket...');
                     websocket.close();
                     return;
@@ -504,29 +494,20 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
         }
     }
     else {
-        var args = {
-            data: request.body,
-            headers: { "Content-Type": "application/json" }
+        const args = {
+            body: JSON.stringify(request.body),
+            headers: { "Content-Type": "application/json" },
+            signal: controller.signal,
         };
-        client.post(api_server + "/v1/generate", args, function (data, response) {
-            console.log("####", data);
-            if (response.statusCode == 200) {
-                console.log(data);
-                response_generate.send(data);
-            }
-            if (response.statusCode == 422) {
-                console.log('Validation error');
-                response_generate.send({ error: true });
-            }
-            if (response.statusCode == 501 || response.statusCode == 503 || response.statusCode == 507) {
-                console.log(data);
-                response_generate.send({ error: true });
-            }
-        }).on('error', function (err) {
-            console.log(err);
-            //console.log('something went wrong on the request', err.request.options);
-            response_generate.send({ error: true });
-        });
+
+        try {
+            const data = await postAsync(api_server + "/v1/generate", args);
+            console.log(data);
+            return response_generate.send(data);
+        } catch (error) {
+            console.log(error);
+            return response_generate.send({ error: true });
+        }
     }
 });
 
@@ -610,7 +591,7 @@ app.post("/getstatus", jsonParser, async function (request, response_getstatus =
             data.result = "no_connection";
         }
         response_getstatus.send(data);
-    }).on('error', function (err) {
+    }).on('error', function () {
         response_getstatus.send({ result: "no_connection" });
     });
 });
@@ -691,18 +672,6 @@ function tryParse(str) {
     }
 }
 
-function checkServer() {
-    api_server = 'http://127.0.0.1:5000';
-    var args = {
-        headers: { "Content-Type": "application/json" }
-    };
-    client.get(api_server + "/v1/model", args, function (data, response) {
-        console.log(data.result);
-        console.log(data);
-    }).on('error', function (err) {
-        console.log(err);
-    });
-}
 
 //***************** Main functions
 function charaFormatData(data) {
@@ -767,7 +736,6 @@ app.post("/renamecharacter", jsonParser, async function (request, response) {
     const newAvatarName = `${newInternalName}.png`;
 
     const oldAvatarPath = path.join(charactersPath, oldAvatarName);
-    const newAvatarPath = path.join(charactersPath, newAvatarName);
 
     const oldChatsPath = path.join(chatsPath, oldInternalName);
     const newChatsPath = path.join(chatsPath, newInternalName);
@@ -1384,7 +1352,7 @@ app.post("/getstatus_novelai", jsonParser, function (request, response_getstatus
             console.log(data);
             response_getstatus_novel.send({ error: true });
         }
-    }).on('error', function (err) {
+    }).on('error', function () {
         //console.log('');
         //console.log('something went wrong on the request', err.request.options);
         response_getstatus_novel.send({ error: true });
@@ -1451,7 +1419,7 @@ app.post("/generate_novelai", jsonParser, function (request, response_generate_n
             console.log(data);
             response_generate_novel.send({ error: true });
         }
-    }).on('error', function (err) {
+    }).on('error', function () {
         //console.log('');
         //console.log('something went wrong on the request', err.request.options);
         response_getstatus.send({ error: true });
@@ -2111,6 +2079,15 @@ app.post('/generate_poe', jsonParser, async (request, response) => {
         return response.sendStatus(401);
     }
 
+    let isGenerationStopped = false;
+    request.socket.removeAllListeners('close');
+    request.socket.on('close', function () {
+        isGenerationStopped = true;
+
+        if (client) {
+            client.abortController.abort();
+        }
+    });
     const prompt = request.body.prompt;
     const bot = request.body.bot ?? POE_DEFAULT_BOT;
     const streaming = request.body.streaming ?? false;
@@ -2126,13 +2103,6 @@ app.post('/generate_poe', jsonParser, async (request, response) => {
     }
 
     if (streaming) {
-        let isStreamingStopped = false;
-        request.socket.removeAllListeners('close');
-        request.socket.on('close', function () {
-            isStreamingStopped = true;
-            client.abortController.abort();
-        });
-
         try {
             response.writeHead(200, {
                 'Content-Type': 'text/plain;charset=utf-8',
@@ -2142,7 +2112,7 @@ app.post('/generate_poe', jsonParser, async (request, response) => {
 
             let reply = '';
             for await (const mes of client.send_message(bot, prompt)) {
-                if (isStreamingStopped) {
+                if (isGenerationStopped) {
                     console.error('Streaming stopped by user. Closing websocket...');
                     break;
                 }
@@ -2158,7 +2128,7 @@ app.post('/generate_poe', jsonParser, async (request, response) => {
         }
         finally {
             client.disconnect_ws();
-            return response.end();
+            response.end();
         }
     }
     else {
@@ -2390,7 +2360,7 @@ app.post("/getstatus_openai", jsonParser, function (request, response_getstatus_
             console.log(data);
             response_getstatus_openai.send({ error: true });
         }
-    }).on('error', function (err) {
+    }).on('error', function () {
         response_getstatus_openai.send({ error: true });
     });
 });
@@ -2628,16 +2598,6 @@ app.post("/tokenize_llama", jsonParser, async function (request, response) {
 });
 
 // ** REST CLIENT ASYNC WRAPPERS **
-function deleteAsync(url, args) {
-    return new Promise((resolve, reject) => {
-        client.delete(url, args, (data, response) => {
-            if (response.statusCode >= 400) {
-                reject(data);
-            }
-            resolve(data);
-        }).on('error', e => reject(e));
-    })
-}
 
 function putAsync(url, args) {
     return new Promise((resolve, reject) => {
@@ -2650,15 +2610,15 @@ function putAsync(url, args) {
     })
 }
 
-function postAsync(url, args) {
-    return new Promise((resolve, reject) => {
-        client.post(url, args, (data, response) => {
-            if (response.statusCode >= 400) {
-                reject([data, response]);
-            }
-            resolve(data);
-        }).on('error', e => reject(e));
-    })
+async function postAsync(url, args) {
+    const response = await fetch(url, { method: 'POST', args });
+
+    if (response.ok) {
+        const data = response.json();
+        return data;
+    }
+
+    throw new Error(response.statusText);
 }
 
 function getAsync(url, args) {
@@ -2876,7 +2836,7 @@ app.post('/generate_horde', jsonParser, async (request, response) => {
     const url = 'https://horde.koboldai.net/api/v2/generate/text/async';
 
     const args = {
-        data: request.body,
+        body: JSON.stringify(request.body),
         headers: {
             "Content-Type": "application/json",
             "Client-Agent": request.header('Client-Agent'),
