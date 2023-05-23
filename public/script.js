@@ -1212,11 +1212,11 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
         for (var i = 0; i < itemizedPrompts.length; i++) {
             if (itemizedPrompts[i].mesId === mesIdToFind) {
                 newMessage.find(".mes_prompt").show();
-                console.log(`showing prompt for mesID ${params.mesId} from ${params.characterName}`);
+                //console.log(`showing prompt for mesID ${params.mesId} from ${params.characterName}`);
             } else {
-                console.log(`no cache obj for mesID ${mesIdToFind}, hiding prompt button and continuing search`);
+                //console.log(`no cache obj for mesID ${mesIdToFind}, hiding prompt button and continuing search`);
                 newMessage.find(".mes_prompt").hide();
-                console.log(itemizedPrompts);
+                //console.log(itemizedPrompts);
             }
         }
     } else if (params.isUser !== true) { //hide all when prompt cache is empty
@@ -1603,7 +1603,7 @@ class StreamingProcessor {
         $('.mes_buttons:last').show();
         generatedPromtCache = '';
 
-        console.log("Generated text size:", text.length, text)
+        //console.log("Generated text size:", text.length, text)
 
         if (power_user.auto_swipe) {
             function containsBlacklistedWords(str, blacklist, threshold) {
