@@ -1454,7 +1454,6 @@ app.post("/getallchatsofcharacter", jsonParser, function (request, response) {
         }
 
         // filter for JSON files
-        console.log('looking for JSONL files');
         const jsonFiles = files.filter(file => path.extname(file) === '.jsonl');
 
         // sort the files by name
@@ -1496,6 +1495,7 @@ app.post("/getallchatsofcharacter", jsonParser, function (request, response) {
                             chatData[i]['file_size'] = fileSizeInKB;
                             chatData[i]['chat_items'] = itemCounter - 1;
                             chatData[i]['mes'] = jsonData['mes'] || '[The chat is empty]';
+                            chatData[i]['last_mes'] = jsonData['send_date'] || Date.now();
                         }
                     }
                     if (ii === 0) {

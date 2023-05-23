@@ -1206,9 +1206,11 @@ export async function getGroupPastChats(groupId) {
             let this_chat_file_size = (JSON.stringify(messages).length / 1024).toFixed(2) + "kb";
             let chat_items = messages.length;
             const lastMessage = messages.length ? messages[messages.length - 1].mes : '[The chat is empty]';
+            const lastMessageDate = messages.length ? (messages[messages.length - 1].send_date || Date.now()) : Date.now();
             chats.push({
                 'file_name': chatId,
                 'mes': lastMessage,
+                'last_mes': lastMessageDate,
                 'file_size': this_chat_file_size,
                 'chat_items': chat_items,
             });
@@ -1303,7 +1305,7 @@ export async function importGroupChat(formData) {
             if (data.res) {
                 const chatId = data.res;
                 const group = groups.find(x => x.id == selected_group);
-                
+
                 if (group) {
                     group.chats.push(chatId);
                     await editGroup(selected_group, true, true);
