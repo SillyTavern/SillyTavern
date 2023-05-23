@@ -1503,7 +1503,7 @@ class StreamingProcessor {
             return;
         }
 
-        $(`#chat .mes[mesid="${messageId}"] .mes_stop`).css({ 'display': '' });
+        $(`#chat .mes[mesid="${messageId}"] .mes_stop`).css({ 'display': 'block' });
         $(`#chat .mes[mesid="${messageId}"] .mes_buttons`).css({ 'display': 'none' });
     }
 
@@ -1513,7 +1513,7 @@ class StreamingProcessor {
         }
 
         $(`#chat .mes[mesid="${messageId}"] .mes_stop`).css({ 'display': 'none' });
-        $(`#chat .mes[mesid="${messageId}"] .mes_buttons`).css({ 'display': '' });
+        $(`#chat .mes[mesid="${messageId}"] .mes_buttons`).css({ 'display': 'block' });
     }
 
     onStartStreaming(text) {
