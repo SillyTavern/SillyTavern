@@ -1,12 +1,13 @@
 version: "3"
 services:
-  tavernai:
+  sillytavern:
     build: ..
-    container_name: tavernai
-    hostname: tavernai
-    image: tavernai/tavernai:latest
+    container_name: sillytavern
+    hostname: sillytavern
+    image: cohee1207/sillytavern:latest
     ports:
       - "8000:8000"
     volumes:
       - "./config:/home/node/app/config"
+      - "./config.conf:/home/node/app/config.conf"
     restart: unless-stopped

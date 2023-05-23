@@ -521,7 +521,7 @@ class Client {
 
         console.log(`Sending message to ${chatbot}: ${message}`);
 
-        const messageData = await this.send_query("AddHumanMessageMutation", {
+        const messageData = await this.send_query("SendMessageMutation", {
             "bot": chatbot,
             "query": message,
             "chatId": this.bots[chatbot]["chatId"],
@@ -531,14 +531,14 @@ class Client {
 
         delete this.active_messages["pending"];
 
-        if (!messageData["data"]["messageCreateWithStatus"]["messageLimit"]["canSend"]) {
+        if (!messageData["data"]["messageEdgeCreate"]["message"]) {
             throw new Error(`Daily limit reached for ${chatbot}.`);
         }
 
         let humanMessageId;
         try {
-            const humanMessage = messageData["data"]["messageCreateWithStatus"];
-            humanMessageId = humanMessage["message"]["messageId"];
+            const humanMessage = messageData["data"]["messageEdgeCreate"]["message"];
+            humanMessageId = humanMessage["node"]["messageId"];
         } catch (error) {
             throw new Error(`An unknown error occured. Raw response data: ${messageData}`);
         }

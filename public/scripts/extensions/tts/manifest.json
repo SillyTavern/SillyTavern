@@ -1,8 +1,10 @@
 {
-    "display_name": "ElevenLabs TTS",
+    "display_name": "TTS",
     "loading_order": 10,
     "requires": [],
-    "optional": [],
+    "optional": [
+        "tts"
+    ],
     "js": "index.js",
     "css": "style.css",
     "author": "Ouoertheo#7264",

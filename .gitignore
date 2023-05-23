@@ -16,3 +16,5 @@ public/settings.json
 /thumbnails
 whitelist.txt
 .vscode
+secrets.json
+/dist

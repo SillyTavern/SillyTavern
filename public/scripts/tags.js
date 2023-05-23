@@ -1,4 +1,12 @@
-import { characters, saveSettingsDebounced, this_chid, callPopup, menu_type } from "../script.js";
+import {
+    characters,
+    saveSettingsDebounced,
+    this_chid,
+    callPopup,
+    menu_type,
+    updateVisibleDivs,
+} from "../script.js";
+
 import { selected_group } from "./group-chats.js";
 
 export {
@@ -14,6 +22,14 @@ export {
 };
 
 const random_id = () => Math.round(Date.now() * Math.random()).toString();
+const TAG_LOGIC_AND = true; // switch to false to use OR logic for combining tags
+const CHARACTER_SELECTOR = '#rm_print_characters_block > div';
+
+const ACTIONABLE_TAGS = {
+    VIEW: { id: 2, name: 'Manage tags', color: 'rgba(150, 100, 100, 0.5)', action: onViewTagsListClick, icon: 'fa-solid fa-tags' },
+    FAV: { id: 1, name: 'Show only favorites', color: 'rgba(255, 255, 0, 0.5)', action: applyFavFilter, icon: 'fa-solid fa-star' },
+    GROUP: { id: 0, name: 'Show only groups', color: 'rgba(100, 100, 100, 0.5)', action: filterByGroups, icon: 'fa-solid fa-users' },
+}
 
 const DEFAULT_TAGS = [
     { id: random_id(), name: "Plain Text" },
@@ -26,6 +42,37 @@ const DEFAULT_TAGS = [
 
 let tags = [];
 let tag_map = {};
+
+function applyFavFilter() {
+    const isSelected = $(this).hasClass('selected');
+    const displayFavoritesOnly = !isSelected;
+
+    $(this).toggleClass('selected', displayFavoritesOnly);
+    $(CHARACTER_SELECTOR).removeClass('hiddenByFav');
+
+    $(CHARACTER_SELECTOR).each(function () {
+        if (displayFavoritesOnly) {
+            if ($(this).find(".ch_fav").length !== 0) {
+                const shouldBeDisplayed = $(this).find(".ch_fav").val().toLowerCase().includes(true);
+                $(this).toggleClass('hiddenByFav', !shouldBeDisplayed);
+            }
+        }
+
+    });
+    updateVisibleDivs();
+}
+
+function filterByGroups() {
+    const isSelected = $(this).hasClass('selected');
+    const displayGroupsOnly = !isSelected;
+    $(this).toggleClass('selected', displayGroupsOnly);
+    $(CHARACTER_SELECTOR).removeClass('hiddenByGroup');
+
+    $(CHARACTER_SELECTOR).each((_, element) => {
+        $(element).toggleClass('hiddenByGroup', displayGroupsOnly && !$(element).hasClass('group_select'));
+    });
+    updateVisibleDivs();
+}
 
 function loadTagsSettings(settings) {
     tags = settings.tags !== undefined ? settings.tags : DEFAULT_TAGS;
@@ -136,7 +183,7 @@ function selectTag(event, ui, listSelector) {
     }
 
     // unfocus and clear the input
-    $(event.target).val("").blur();
+    $(event.target).val("").trigger('blur');
 
     // add tag to the UI and internal map
     appendTagToList(listSelector, tag, { removable: true });
@@ -159,7 +206,7 @@ function createNewTag(tagName) {
     return tag;
 }
 
-function appendTagToList(listElement, tag, { removable, editable, selectable }) {
+function appendTagToList(listElement, tag, { removable, selectable, action }) {
     if (!listElement) {
         return;
     }
@@ -174,28 +221,43 @@ function appendTagToList(listElement, tag, { removable, editable, selectable }) 
     const removeButton = tagElement.find(".tag_remove");
     removable ? removeButton.show() : removeButton.hide();
 
+    if (tag.icon) {
+        tagElement.find('.tag_name').text('').attr('title', tag.name).addClass(tag.icon);
+    }
+
     if (selectable) {
-        tagElement.on('click', onTagFilterClick);
+        tagElement.on('click', () => onTagFilterClick.bind(tagElement)(listElement));
+    }
+
+    if (action) {
+        tagElement.on('click', () => action.bind(tagElement)());
+        tagElement.addClass('actionable');
     }
 
     $(listElement).append(tagElement);
 }
 
-function onTagFilterClick() {
+function onTagFilterClick(listElement) {
     const wasSelected = $(this).hasClass('selected');
-    clearTagsFilter();
+    $(CHARACTER_SELECTOR).removeClass('hiddenByTag');
 
-    if (wasSelected) {
+    $(this).toggleClass('selected', !wasSelected);
+
+    const tagIds = [...($(listElement).find(".tag.selected:not(.actionable)").map((_, el) => $(el).attr("id")))];
+    $(CHARACTER_SELECTOR).each((_, element) => applyFilterToElement(tagIds, element));
+    updateVisibleDivs();
+}
+
+function applyFilterToElement(tagIds, element) {
+    if (tagIds.length === 0) {
+        $(element).removeClass('hiddenByTag');
         return;
     }
 
-    const tagId = $(this).attr('id');
-    $(this).addClass('selected');
-    $('#rm_print_characters_block > div').each((_, element) => applyFilterToElement(tagId, element));
-}
+    const tagFlags = tagIds.map(tagId => isElementTagged(element, tagId));
+    const trueFlags = tagFlags.filter(x => x);
+    const isTagged = TAG_LOGIC_AND ? tagFlags.length === trueFlags.length : trueFlags.length > 0;
 
-function applyFilterToElement(tagId, element) {
-    const isTagged = isElementTagged(element, tagId);
     $(element).toggleClass('hiddenByTag', !isTagged);
 }
 
@@ -211,18 +273,30 @@ function isElementTagged(element, tagId) {
 
 function clearTagsFilter() {
     $('#rm_tag_filter .tag').removeClass('selected');
-    $('#rm_print_characters_block > div').removeClass('hiddenByTag');
+    $(CHARACTER_SELECTOR).removeClass('hiddenByTag');
 }
 
 function printTags() {
-    $('#rm_tag_filter').empty();
+    const FILTER_SELECTOR = '#rm_tag_filter';
+    const selectedTagIds = [...($(FILTER_SELECTOR).find(".tag.selected").map((_, el) => $(el).attr("id")))];
+    $(FILTER_SELECTOR).empty();
     const characterTagIds = Object.values(tag_map).flat();
     const tagsToDisplay = tags
         .filter(x => characterTagIds.includes(x.id))
         .sort((a, b) => a.name.localeCompare(b.name));
 
+    for (const tag of Object.values(ACTIONABLE_TAGS)) {
+        appendTagToList(FILTER_SELECTOR, tag, { removable: false, selectable: false, action: tag.action });
+    }
+
+    $(FILTER_SELECTOR).find('.actionable').last().addClass('margin-right-10px');
+
     for (const tag of tagsToDisplay) {
-        appendTagToList('#rm_tag_filter', tag, { removable: false, editable: false, selectable: true, });
+        appendTagToList(FILTER_SELECTOR, tag, { removable: false, selectable: true, });
+    }
+
+    for (const tagId of selectedTagIds) {
+        $(`${FILTER_SELECTOR} .tag[id="${tagId}"]`).trigger('click');
     }
 }
 
@@ -257,7 +331,7 @@ function onGroupCreateClick() {
 }
 
 export function applyTagsOnCharacterSelect() {
-    clearTagsFilter();
+    //clearTagsFilter();
     const chid = Number($(this).attr('chid'));
     const key = characters[chid].avatar;
     const tags = getTagsList(key);
@@ -270,7 +344,7 @@ export function applyTagsOnCharacterSelect() {
 }
 
 function applyTagsOnGroupSelect() {
-    clearTagsFilter();
+    //clearTagsFilter();
     const key = $(this).attr('grid');
     const tags = getTagsList(key);
 
@@ -306,7 +380,7 @@ function onViewTagsListClick() {
         template.find('.tag_view_name').text(tag.name);
         template.find('.tag_view_name').addClass('tag');
         template.find('.tag_view_name').css('background-color', tag.color);
-        const colorPickerId = tag.name + "-tag-color";
+        const colorPickerId = tag.id + "-tag-color";
         template.find('.tagColorPickerHolder').html(
             `<toolcool-color-picker id="${colorPickerId}" color="${tag.color}" class="tag-color"></toolcool-color-picker>`
         );
@@ -315,7 +389,7 @@ function onViewTagsListClick() {
         list.appendChild(template.get(0));
 
         setTimeout(function () {
-            document.querySelector(`#${colorPickerId}`).addEventListener('change', (evt) => {
+            document.querySelector(`.tag-color[id="${colorPickerId}"`).addEventListener('change', (evt) => {
                 onTagColorize(evt);
             });
         }, 100);

@@ -7,9 +7,13 @@ import {
     reloadMarkdownProcessor,
     reloadCurrentChat,
     getRequestHeaders,
+    substituteParams,
+    updateVisibleDivs,
 } from "../script.js";
+import { favsToHotswap } from "./RossAscends-mods.js";
 import {
     groups,
+    selected_group,
 } from "./group-chats.js";
 
 export {
@@ -24,6 +28,9 @@ export {
     tokenizers,
     send_on_enter_options,
 };
+
+const MAX_CONTEXT_DEFAULT = 2048;
+const MAX_CONTEXT_UNLOCKED = 65536;
 
 const avatar_styles = {
     ROUND: 0,
@@ -70,6 +77,8 @@ let power_user = {
     disable_personality_formatting: false,
     disable_examples_formatting: false,
     disable_start_formatting: false,
+    trim_sentences: false,
+    include_newline: false,
     always_force_name2: false,
     multigen: false,
     multigen_first_chunk: 50,
@@ -101,16 +110,37 @@ let power_user = {
     noShadows: false,
     theme: 'Default (Dark)',
 
+    auto_swipe: false,
+    auto_swipe_minimum_length: 0,
+    auto_swipe_blacklist: [],
+    auto_swipe_blacklist_threshold: 2,
     auto_scroll_chat_to_bottom: true,
     auto_fix_generated_markdown: true,
     send_on_enter: send_on_enter_options.AUTO,
+    console_log_prompts: false,
     render_formulas: false,
+    allow_name1_display: false,
     allow_name2_display: false,
     hotswap_enabled: true,
     timer_enabled: true,
+    max_context_unlocked: false,
+
+    instruct: {
+        enabled: false,
+        wrap: true,
+        names: false,
+        system_prompt: "Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\nWrite {{char}}'s next reply in a fictional roleplay chat between {{user}} and {{char}}. Write 1 reply only.",
+        system_sequence: '',
+        stop_sequence: '',
+        input_sequence: '### Instruction:',
+        output_sequence: '### Response:',
+        preset: 'Alpaca',
+        separator_sequence: '',
+    }
 };
 
 let themes = [];
+let instruct_presets = [];
 
 const storage_keys = {
     fast_ui_mode: "TavernAI_fast_ui_mode",
@@ -194,24 +224,28 @@ function switchHotswap() {
     const value = localStorage.getItem(storage_keys.hotswap_enabled);
     power_user.hotswap_enabled = value === null ? true : value == "true";
     $("body").toggleClass("no-hotswap", !power_user.hotswap_enabled);
+    $("#hotswapEnabled").prop("checked", power_user.hotswap_enabled);
 }
 
 function switchTimer() {
     const value = localStorage.getItem(storage_keys.timer_enabled);
     power_user.timer_enabled = value === null ? true : value == "true";
     $("body").toggleClass("no-timer", !power_user.timer_enabled);
+    $("#messageTimerEnabled").prop("checked", power_user.timer_enabled);
 }
 
 function switchUiMode() {
     const fastUi = localStorage.getItem(storage_keys.fast_ui_mode);
     power_user.fast_ui_mode = fastUi === null ? true : fastUi == "true";
     $("body").toggleClass("no-blur", power_user.fast_ui_mode);
+    $("#fast_ui_mode").prop("checked", power_user.fast_ui_mode);
 }
 
 function switchWaifuMode() {
     const waifuMode = localStorage.getItem(storage_keys.waifuMode);
     power_user.waifuMode = waifuMode === null ? false : waifuMode == "true";
     $("body").toggleClass("waifuMode", power_user.waifuMode);
+    $("#waifuMode").prop("checked", power_user.waifuMode);
     scrollChatToBottom();
 }
 
@@ -226,17 +260,22 @@ function noShadows() {
     const noShadows = localStorage.getItem(storage_keys.noShadows);
     power_user.noShadows = noShadows === null ? false : noShadows == "true";
     $("body").toggleClass("noShadows", power_user.noShadows);
+    $("#noShadowsmode").prop("checked", power_user.noShadows);
     scrollChatToBottom();
 }
 
 function applyAvatarStyle() {
     power_user.avatar_style = Number(localStorage.getItem(storage_keys.avatar_style) ?? avatar_styles.ROUND);
     $("body").toggleClass("big-avatars", power_user.avatar_style === avatar_styles.RECTANGULAR);
+    $(`input[name="avatar_style"][value="${power_user.avatar_style}"]`).prop("checked", true);
+
 }
 
 function applyChatDisplay() {
     power_user.chat_display = Number(localStorage.getItem(storage_keys.chat_display) ?? chat_styles.DEFAULT);
     $("body").toggleClass("bubblechat", power_user.chat_display === chat_styles.BUBBLES);
+    $(`input[name="chat_display"][value="${power_user.chat_display}"]`).prop("checked", true);
+
 }
 
 function applySheldWidth() {
@@ -248,6 +287,7 @@ function applySheldWidth() {
     } else {
         r.style.setProperty('--sheldWidth', '800px');
     }
+    $(`input[name="sheld_width"][value="${power_user.sheld_width}"]`).prop("checked", true);
 }
 
 async function applyThemeColor(type) {
@@ -275,6 +315,7 @@ async function applyBlurStrength() {
     power_user.blur_strength = Number(localStorage.getItem(storage_keys.blur_strength) ?? 1);
     document.documentElement.style.setProperty('--blurStrength', power_user.blur_strength);
     $("#blur_strength_counter").text(power_user.blur_strength);
+    $("#blur_strength").val(power_user.blur_strength);
 
 }
 
@@ -282,6 +323,7 @@ async function applyShadowWidth() {
     power_user.shadow_width = Number(localStorage.getItem(storage_keys.shadow_width) ?? 2);
     document.documentElement.style.setProperty('--shadowWidth', power_user.shadow_width);
     $("#shadow_width_counter").text(power_user.shadow_width);
+    $("#shadow_width").val(power_user.shadow_width);
 
 }
 
@@ -289,6 +331,7 @@ async function applyFontScale() {
     power_user.font_scale = Number(localStorage.getItem(storage_keys.font_scale) ?? 1);
     document.documentElement.style.setProperty('--fontScale', power_user.font_scale);
     $("#font_scale_counter").text(power_user.font_scale);
+    $("#font_scale").val(power_user.font_scale);
 }
 
 async function applyTheme(name) {
@@ -317,6 +360,69 @@ async function applyTheme(name) {
             action: async () => {
                 localStorage.setItem(storage_keys.shadow_width, power_user.shadow_width);
                 await applyShadowWidth();
+            }
+        },
+        {
+            key: 'font_scale',
+            action: async () => {
+                localStorage.setItem(storage_keys.font_scale, power_user.font_scale);
+                await applyFontScale();
+            }
+        },
+        {
+            key: 'fast_ui_mode',
+            action: async () => {
+                localStorage.setItem(storage_keys.fast_ui_mode, power_user.fast_ui_mode);
+                switchUiMode();
+            }
+        },
+        {
+            key: 'waifuMode',
+            action: async () => {
+                localStorage.setItem(storage_keys.waifuMode, power_user.waifuMode);
+                switchWaifuMode();
+            }
+        },
+        {
+            key: 'chat_display',
+            action: async () => {
+                localStorage.setItem(storage_keys.chat_display, power_user.chat_display);
+                applyChatDisplay();
+            }
+        },
+        {
+            key: 'avatar_style',
+            action: async () => {
+                localStorage.setItem(storage_keys.avatar_style, power_user.avatar_style);
+                applyAvatarStyle();
+            }
+        },
+        {
+            key: 'noShadows',
+            action: async () => {
+                localStorage.setItem(storage_keys.noShadows, power_user.noShadows);
+                noShadows();
+            }
+        },
+        {
+            key: 'sheld_width',
+            action: async () => {
+                localStorage.setItem(storage_keys.sheld_width, power_user.sheld_width);
+                applySheldWidth();
+            }
+        },
+        {
+            key: 'timer_enabled',
+            action: async () => {
+                localStorage.setItem(storage_keys.timer_enabled, power_user.timer_enabled);
+                switchTimer();
+            }
+        },
+        {
+            key: 'hotswap_enabled',
+            action: async () => {
+                localStorage.setItem(storage_keys.hotswap_enabled, power_user.hotswap_enabled);
+                switchHotswap();
             }
         }
     ];
@@ -357,6 +463,10 @@ function loadPowerUserSettings(settings, data) {
         themes = data.themes;
     }
 
+    if (data.instruct !== undefined) {
+        instruct_presets = data.instruct;
+    }
+
     // These are still local storage
     const fastUi = localStorage.getItem(storage_keys.fast_ui_mode);
     const waifuMode = localStorage.getItem(storage_keys.waifuMode);
@@ -376,6 +486,12 @@ function loadPowerUserSettings(settings, data) {
     power_user.font_scale = Number(localStorage.getItem(storage_keys.font_scale) ?? 1);
     power_user.blur_strength = Number(localStorage.getItem(storage_keys.blur_strength) ?? 10);
 
+    $('#auto_swipe').prop("checked", power_user.auto_swipe);
+    $('#auto_swipe_minimum_length').val(power_user.auto_swipe_minimum_length);
+    $('#auto_swipe_blacklist').val(power_user.auto_swipe_blacklist.join(", "));
+    $('#auto_swipe_blacklist_threshold').val(power_user.auto_swipe_blacklist_threshold);
+
+    $("#console_log_prompts").prop("checked", power_user.console_log_prompts);
     $('#auto_fix_generated_markdown').prop("checked", power_user.auto_fix_generated_markdown);
     $('#auto_scroll_chat_to_bottom').prop("checked", power_user.auto_scroll_chat_to_bottom);
     $(`#tokenizer option[value="${power_user.tokenizer}"]`).attr('selected', true);
@@ -389,6 +505,8 @@ function loadPowerUserSettings(settings, data) {
     $("#always-force-name2-checkbox").prop("checked", power_user.always_force_name2);
     $("#disable-examples-formatting-checkbox").prop("checked", power_user.disable_examples_formatting);
     $('#disable-start-formatting-checkbox').prop("checked", power_user.disable_start_formatting);
+    $("#trim_sentences_checkbox").prop("checked", power_user.trim_sentences);
+    $("#include_newline_checkbox").prop("checked", power_user.include_newline);
     $('#render_formulas').prop("checked", power_user.render_formulas);
     $("#custom_chat_separator").val(power_user.custom_chat_separator);
     $("#fast_ui_mode").prop("checked", power_user.fast_ui_mode);
@@ -401,6 +519,7 @@ function loadPowerUserSettings(settings, data) {
     $("#play_message_sound").prop("checked", power_user.play_message_sound);
     $("#play_sound_unfocused").prop("checked", power_user.play_sound_unfocused);
     $("#auto_save_msg_edits").prop("checked", power_user.auto_save_msg_edits);
+    $("#allow_name1_display").prop("checked", power_user.allow_name1_display);
     $("#allow_name2_display").prop("checked", power_user.allow_name2_display);
     $("#hotswapEnabled").prop("checked", power_user.hotswap_enabled);
     $("#messageTimerEnabled").prop("checked", power_user.timer_enabled);
@@ -436,13 +555,138 @@ function loadPowerUserSettings(settings, data) {
     $(`#character_sort_order option[data-order="${power_user.sort_order}"][data-field="${power_user.sort_field}"]`).prop("selected", true);
     sortCharactersList();
     reloadMarkdownProcessor(power_user.render_formulas);
+    loadInstructMode();
+    loadMaxContextUnlocked();
+}
+
+function loadMaxContextUnlocked() {
+    $('#max_context_unlocked').prop('checked', power_user.max_context_unlocked);
+    $('#max_context_unlocked').on('change', function () {
+        power_user.max_context_unlocked = !!$(this).prop('checked');
+        switchMaxContextSize();
+        saveSettingsDebounced();
+    });
+    switchMaxContextSize();
+}
+
+function switchMaxContextSize() {
+    const element = $('#max_context');
+    const maxValue = power_user.max_context_unlocked ? MAX_CONTEXT_UNLOCKED : MAX_CONTEXT_DEFAULT;
+    element.attr('max', maxValue);
+    const value = Number(element.val());
+
+    if (value >= maxValue) {
+        element.val(maxValue).trigger('input');
+    }
+}
+
+function loadInstructMode() {
+    const controls = [
+        { id: "instruct_enabled", property: "enabled", isCheckbox: true },
+        { id: "instruct_wrap", property: "wrap", isCheckbox: true },
+        { id: "instruct_system_prompt", property: "system_prompt", isCheckbox: false },
+        { id: "instruct_system_sequence", property: "system_sequence", isCheckbox: false },
+        { id: "instruct_separator_sequence", property: "separator_sequence", isCheckbox: false },
+        { id: "instruct_input_sequence", property: "input_sequence", isCheckbox: false },
+        { id: "instruct_output_sequence", property: "output_sequence", isCheckbox: false },
+        { id: "instruct_stop_sequence", property: "stop_sequence", isCheckbox: false },
+        { id: "instruct_names", property: "names", isCheckbox: true },
+    ];
+
+    controls.forEach(control => {
+        const $element = $(`#${control.id}`);
+
+        if (control.isCheckbox) {
+            $element.prop('checked', power_user.instruct[control.property]);
+        } else {
+            $element.val(power_user.instruct[control.property]);
+        }
+
+        $element.on('input', function () {
+            power_user.instruct[control.property] = control.isCheckbox ? $(this).prop('checked') : $(this).val();
+            saveSettingsDebounced();
+        });
+    });
+
+    instruct_presets.forEach((preset) => {
+        const name = preset.name;
+        const option = document.createElement('option');
+        option.value = name;
+        option.innerText = name;
+        option.selected = name === power_user.instruct.preset;
+        $('#instruct_presets').append(option);
+    });
+
+    $('#instruct_presets').on('change', function () {
+        const name = $(this).find(':selected').val();
+        const preset = instruct_presets.find(x => x.name === name);
+
+        if (!preset) {
+            return;
+        }
+
+        power_user.instruct.preset = name;
+        controls.forEach(control => {
+            if (preset[control.property] !== undefined) {
+                power_user.instruct[control.property] = preset[control.property];
+                const $element = $(`#${control.id}`);
+
+                if (control.isCheckbox) {
+                    $element.prop('checked', power_user.instruct[control.property]).trigger('input');
+                } else {
+                    $element.val(power_user.instruct[control.property]).trigger('input');
+                }
+            }
+        });
+    });
+}
+
+export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvatar) {
+    const includeNames = isNarrator ? false : (power_user.instruct.names || !!selected_group || !!forceAvatar);
+    const sequence = (isUser || isNarrator) ? power_user.instruct.input_sequence : power_user.instruct.output_sequence;
+    const separator = power_user.instruct.wrap ? '\n' : '';
+    const separatorSequence = power_user.instruct.separator_sequence && !isUser
+        ? power_user.instruct.separator_sequence
+        : (power_user.instruct.wrap ? '\n' : '');
+    const textArray = includeNames ? [sequence, `${name}: ${mes}`, separatorSequence] : [sequence, mes, separatorSequence];
+    const text = textArray.filter(x => x).join(separator);
+    return text;
+}
+
+export function formatInstructStoryString(story) {
+    const sequence = power_user.instruct.system_sequence || '';
+    const prompt = substituteParams(power_user.instruct.system_prompt) || '';
+    const separator = power_user.instruct.wrap ? '\n' : '';
+    const textArray = [sequence, prompt, story, separator];
+    const text = textArray.filter(x => x).join(separator);
+    return text;
+}
+
+export function formatInstructModePrompt(name, isImpersonate, promptBias) {
+    const includeNames = power_user.instruct.names || !!selected_group;
+    const sequence = isImpersonate ? power_user.instruct.input_sequence : power_user.instruct.output_sequence;
+    const separator = power_user.instruct.wrap ? '\n' : '';
+    let text = includeNames ? (separator + sequence + separator + `${name}:`) : (separator + sequence);
+
+    if (!isImpersonate && promptBias) {
+        text += (includeNames ? promptBias : (separator + promptBias));
+    }
+
+    return text.trimEnd();
 }
 
 const sortFunc = (a, b) => power_user.sort_order == 'asc' ? compareFunc(a, b) : compareFunc(b, a);
 const compareFunc = (first, second) => {
     switch (power_user.sort_rule) {
         case 'boolean':
-            return Number(first[power_user.sort_field] == "true") - Number(second[power_user.sort_field] == "true");
+            const a = first[power_user.sort_field];
+            const b = second[power_user.sort_field];
+            if (a === true || a === 'true') return 1;  // Prioritize 'true' or true
+            if (b === true || b === 'true') return -1; // Prioritize 'true' or true
+            if (a && !b) return -1;        // Move truthy values to the end
+            if (!a && b) return 1;         // Move falsy values to the beginning
+            if (a === b) return 0;         // Sort equal values normally
+            return a < b ? -1 : 1;         // Sort non-boolean values normally
         default:
             return typeof first[power_user.sort_field] == "string"
                 ? first[power_user.sort_field].localeCompare(second[power_user.sort_field])
@@ -475,6 +719,7 @@ function sortCharactersList() {
     for (const item of array) {
         $(`${item.selector}[${item.attribute}="${item.id}"]`).css({ 'order': orderedList.indexOf(item) });
     }
+    updateVisibleDivs();
 }
 
 function sortGroupMembers(selector) {
@@ -506,6 +751,16 @@ async function saveTheme() {
         blur_tint_color: power_user.blur_tint_color,
         shadow_color: power_user.shadow_color,
         shadow_width: power_user.shadow_width,
+        font_scale: power_user.font_scale,
+        fast_ui_mode: power_user.fast_ui_mode,
+        waifuMode: power_user.waifuMode,
+        avatar_style: power_user.avatar_style,
+        chat_display: power_user.chat_display,
+        noShadows: power_user.noShadows,
+        sheld_width: power_user.sheld_width,
+        timer_enabled: power_user.timer_enabled,
+        hotswap_enabled: power_user.hotswap_enabled,
+
     };
 
     const response = await fetch('/savetheme', {
@@ -542,18 +797,21 @@ function resetMovablePanels() {
     document.getElementById("sheld").style.right = '';
     document.getElementById("sheld").style.height = '';
     document.getElementById("sheld").style.width = '';
+    document.getElementById("sheld").style.margin = '';
 
 
     document.getElementById("left-nav-panel").style.top = '';
     document.getElementById("left-nav-panel").style.left = '';
     document.getElementById("left-nav-panel").style.height = '';
     document.getElementById("left-nav-panel").style.width = '';
+    document.getElementById("left-nav-panel").style.margin = '';
 
     document.getElementById("right-nav-panel").style.top = '';
     document.getElementById("right-nav-panel").style.left = '';
     document.getElementById("right-nav-panel").style.right = '';
     document.getElementById("right-nav-panel").style.height = '';
     document.getElementById("right-nav-panel").style.width = '';
+    document.getElementById("right-nav-panel").style.margin = '';
 
     document.getElementById("expression-holder").style.top = '';
     document.getElementById("expression-holder").style.left = '';
@@ -561,6 +819,7 @@ function resetMovablePanels() {
     document.getElementById("expression-holder").style.bottom = '';
     document.getElementById("expression-holder").style.height = '';
     document.getElementById("expression-holder").style.width = '';
+    document.getElementById("expression-holder").style.margin = '';
 
     document.getElementById("avatar_zoom_popup").style.top = '';
     document.getElementById("avatar_zoom_popup").style.left = '';
@@ -568,6 +827,15 @@ function resetMovablePanels() {
     document.getElementById("avatar_zoom_popup").style.bottom = '';
     document.getElementById("avatar_zoom_popup").style.height = '';
     document.getElementById("avatar_zoom_popup").style.width = '';
+    document.getElementById("avatar_zoom_popup").style.margin = '';
+
+    document.getElementById("WorldInfo").style.top = '';
+    document.getElementById("WorldInfo").style.left = '';
+    document.getElementById("WorldInfo").style.right = '';
+    document.getElementById("WorldInfo").style.bottom = '';
+    document.getElementById("WorldInfo").style.height = '';
+    document.getElementById("WorldInfo").style.width = '';
+    document.getElementById("WorldInfo").style.margin = '';
 }
 
 $(document).ready(() => {
@@ -610,6 +878,27 @@ $(document).ready(() => {
 
     $("#disable-start-formatting-checkbox").change(function () {
         power_user.disable_start_formatting = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    // include newline is the child of trim sentences
+    // if include newline is checked, trim sentences must be checked
+    // if trim sentences is unchecked, include newline must be unchecked
+    $("#trim_sentences_checkbox").change(function () {
+        power_user.trim_sentences = !!$(this).prop("checked");
+        if (!$(this).prop("checked")) {
+            $("#include_newline_checkbox").prop("checked", false);
+            power_user.include_newline = false;
+        }
+        saveSettingsDebounced();
+    });
+
+    $("#include_newline_checkbox").change(function () {
+        power_user.include_newline = !!$(this).prop("checked");
+        if ($(this).prop("checked")) {
+            $("#trim_sentences_checkbox").prop("checked", true);
+            power_user.trim_sentences = true;
+        }
         saveSettingsDebounced();
     });
 
@@ -670,7 +959,7 @@ $(document).ready(() => {
     $(`input[name="sheld_width"]`).on('input', function (e) {
         power_user.sheld_width = Number(e.target.value);
         localStorage.setItem(storage_keys.sheld_width, power_user.sheld_width);
-        console.log("sheld width changing now");
+        //console.log("sheld width changing now");
         applySheldWidth();
     });
 
@@ -760,6 +1049,7 @@ $(document).ready(() => {
         power_user.sort_order = $(this).find(":selected").data('order');
         power_user.sort_rule = $(this).find(":selected").data('rule');
         sortCharactersList();
+        favsToHotswap();
         saveSettingsDebounced();
     });
 
@@ -773,9 +1063,44 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
+    $('#auto_swipe').on('input', function () {
+        power_user.auto_swipe = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $('#auto_swipe_blacklist').on('input', function () {
+        power_user.auto_swipe_blacklist = $(this).val()
+            .split(",")
+            .map(str => str.trim())
+            .filter(str => str);
+        console.log("power_user.auto_swipe_blacklist", power_user.auto_swipe_blacklist)
+        saveSettingsDebounced();
+    });
+
+    $('#auto_swipe_minimum_length').on('input', function () {
+        const number = parseInt($(this).val());
+        if (!isNaN(number)) {
+            power_user.auto_swipe_minimum_length = number;
+            saveSettingsDebounced();
+        }
+    });
+
+    $('#auto_swipe_blacklist_threshold').on('input', function () {
+        const number = parseInt($(this).val());
+        if (!isNaN(number)) {
+            power_user.auto_swipe_blacklist_threshold = number;
+            saveSettingsDebounced();
+        }
+    });
+
     $('#auto_fix_generated_markdown').on('input', function () {
         power_user.auto_fix_generated_markdown = !!$(this).prop('checked');
         reloadCurrentChat();
+        saveSettingsDebounced();
+    });
+
+    $("#console_log_prompts").on('input', function () {
+        power_user.console_log_prompts = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 
@@ -803,6 +1128,12 @@ $(document).ready(() => {
     $("#render_formulas").on("input", function () {
         power_user.render_formulas = !!$(this).prop('checked');
         reloadMarkdownProcessor(power_user.render_formulas);
+        reloadCurrentChat();
+        saveSettingsDebounced();
+    });
+
+    $("#allow_name1_display").on("input", function () {
+        power_user.allow_name1_display = !!$(this).prop('checked');
         reloadCurrentChat();
         saveSettingsDebounced();
     })

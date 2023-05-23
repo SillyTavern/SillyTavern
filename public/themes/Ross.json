@@ -1,0 +1,20 @@
+{
+    "name": "Ross",
+    "blur_strength": 10,
+    "main_text_color": "rgba(255, 255, 255, 1)",
+    "italics_text_color": "rgba(143, 143, 143, 1)",
+    "quote_text_color": "rgba(97, 161, 207, 1)",
+    "fastui_bg_color": "rgba(0, 0, 0, 0.9)",
+    "blur_tint_color": "rgba(50, 50, 50, 0.48)",
+    "shadow_color": "rgba(0, 0, 0, 0.5)",
+    "shadow_width": 2,
+    "font_scale": 0.95,
+    "fast_ui_mode": false,
+    "waifuMode": false,
+    "avatar_style": 1,
+    "chat_display": 1,
+    "noShadows": false,
+    "sheld_width": 1,
+    "timer_enabled": true,
+    "hotswap_enabled": true
+}

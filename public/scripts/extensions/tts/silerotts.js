@@ -1,3 +1,5 @@
+import { getApiUrl, modules } from "../../extensions.js"
+
 export { SileroTtsProvider }
 
 class SileroTtsProvider {
@@ -7,6 +9,7 @@ class SileroTtsProvider {
 
     settings
     voices = []
+    separator = ' .. '
 
     defaultSettings = {
         provider_endpoint: "http://localhost:8001/tts",
@@ -17,7 +20,8 @@ class SileroTtsProvider {
         let html = `
         <label for="silero_tts_endpoint">Provider Endpoint:</label>
         <input id="silero_tts_endpoint" type="text" class="text_pole" maxlength="250" value="${this.defaultSettings.provider_endpoint}"/>
-        <span> A simple Python Silero TTS Server can be found <a href="https://github.com/ouoertheo/silero-api-server">here</a>.</span>
+        <span>
+        <span>Use <a target="_blank" href="https://github.com/Cohee1207/SillyTavern-extras">SillyTavern Extras API</a> or <a target="_blank" href="https://github.com/ouoertheo/silero-api-server">Silero TTS Server</a>.</span>
         `
         return html
     }
@@ -43,8 +47,19 @@ class SileroTtsProvider {
                 throw `Invalid setting passed to TTS Provider: ${key}`
             }
         }
+
+        const apiCheckInterval = setInterval(() => {
+            // Use Extras API if TTS support is enabled
+            if (modules.includes('tts')) {
+                const baseUrl = new URL(getApiUrl());
+                baseUrl.pathname = '/api/tts';
+                this.settings.provider_endpoint = baseUrl.toString();
+                $('#silero_tts_endpoint').val(this.settings.provider_endpoint);
+                clearInterval(apiCheckInterval);
+            }
+        }, 2000);
         
-        $('#silero_tts_endpoint').text(this.settings.provider_endpoint)
+        $('#silero_tts_endpoint').val(this.settings.provider_endpoint)
         console.info("Settings loaded")
     }
 

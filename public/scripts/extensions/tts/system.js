@@ -21,6 +21,7 @@ class SystemTtsProvider {
     fallbackPreview = 'Neque porro quisquam est qui dolorem ipsum quia dolor sit amet'
     settings
     voices = []
+    separator = ' ... '
 
     defaultSettings = {
         voiceMap: {},
@@ -29,7 +30,7 @@ class SystemTtsProvider {
     }
 
     get settingsHtml() {
-        if (!window.speechSynthesis) {
+        if (!('speechSynthesis' in window)) {
             return "Your browser or operating system doesn't support speech synthesis";
         }
 
@@ -80,7 +81,7 @@ class SystemTtsProvider {
     //  TTS Interfaces //
     //#################//
     fetchTtsVoiceIds() {
-        if (!window.speechSynthesis) {
+        if (!('speechSynthesis' in window)) {
             return [];
         }
 
@@ -91,6 +92,10 @@ class SystemTtsProvider {
     }
 
     previewTtsVoice(voiceId) {
+        if (!('speechSynthesis' in window)) {
+            throw 'Speech synthesis API is not supported';
+        }
+
         const voice = speechSynthesis.getVoices().find(x => x.voiceURI === voiceId);
 
         if (!voice) {
@@ -107,11 +112,11 @@ class SystemTtsProvider {
     }
 
     async getVoice(voiceName) {
-        if (!window.speechSynthesis) {
+        if (!('speechSynthesis' in window)) {
             return { voice_id: null }
         }
 
-        const voices = window.speechSynthesis.getVoices();
+        const voices = speechSynthesis.getVoices();
         const match = voices.find(x => x.name == voiceName);
 
         if (!match) {
@@ -122,7 +127,7 @@ class SystemTtsProvider {
     }
 
     async generateTts(text, voiceId) {
-        if (!window.speechSynthesis) {
+        if (!('speechSynthesis' in window)) {
             throw 'Speech synthesis API is not supported';
         }
 
