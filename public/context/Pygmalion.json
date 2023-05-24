@@ -1,0 +1,4 @@
+{
+    "storyString": "{{instructSystemPrompt}}\n{{wiBeforeCharacter}}\n{{char}}'s Persona: {{description}}\nPersonality: {{personality}}\nScenario: {{scenario}}\n{{wiAfterCharacter}}\n<START>\n{{mesExamples}}\n<START>\n",
+    "injections": []
+}

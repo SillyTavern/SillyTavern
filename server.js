@@ -197,6 +197,7 @@ const directories = {
     themes: 'public/themes',
     extensions: 'public/scripts/extensions',
     instruct: 'public/instruct',
+    context: 'public/context',
 };
 
 // CSRF Protection //
@@ -1074,30 +1075,88 @@ app.post("/savesettings", jsonParser, function (request, response) {
     });
 });
 
-app.post('/getsettings', jsonParser, (request, response) => { //Wintermute's code
-    const koboldai_settings = [];
-    const koboldai_setting_names = [];
-    const novelai_settings = [];
-    const novelai_setting_names = [];
-    const openai_settings = [];
-    const openai_setting_names = [];
-    const textgenerationwebui_presets = [];
-    const textgenerationwebui_preset_names = [];
-    const themes = [];
-    const instruct = [];
+function readAndParseFromDirectory(directoryPath, fileExtension = '.json') {
+    const files = fs
+        .readdirSync(directoryPath)
+        .filter(x => path.parse(x).ext == fileExtension)
+        .sort();
+
+    const parsedFiles = [];
+
+    files.forEach(item => {
+        try {
+            const file = fs.readFileSync(path.join(directoryPath, item), 'utf-8');
+            parsedFiles.push(fileExtension == '.json' ? json5.parse(file) : file);
+        }
+        catch {
+            // skip
+        }
+    });
+
+    return parsedFiles;
+}
+
+function sortByModifiedDate(directory) {
+    return (a, b) => new Date(fs.statSync(`${directory}/${b}`).mtime) - new Date(fs.statSync(`${directory}/${a}`).mtime);
+}
+
+function readPresetsFromDirectory(directoryPath, options = {}) {
+    const {
+        sortFunction,
+        removeFileExtension = false
+    } = options;
+
+    const files = fs.readdirSync(directoryPath).sort(sortFunction);
+    const fileContents = [];
+    const fileNames = [];
+
+    files.forEach(item => {
+        try {
+            const file = fs.readFileSync(path.join(directoryPath, item), 'utf8');
+            json5.parse(file);
+            fileContents.push(file);
+            fileNames.push(removeFileExtension ? item.replace(/\.[^/.]+$/, '') : item);
+        } catch {
+            // skip
+            console.log(`${item} is not a valid JSON`);
+        }
+    });
+
+    return { fileContents, fileNames };
+}
+
+// Wintermute's code
+app.post('/getsettings', jsonParser, (request, response) => {
     const settings = fs.readFileSync('public/settings.json', 'utf8', (err, data) => {
         if (err) return response.sendStatus(500);
 
         return data;
     });
+
+    // NovelAI Settings
+    const { fileContents: novelai_settings, fileNames: novelai_setting_names }
+        = readPresetsFromDirectory(directories.novelAI_Settings, {
+            sortFunction: sortByModifiedDate(directories.novelAI_Settings),
+            removeFileExtension: true
+        });
+
+    // OpenAI Settings
+    const { fileContents: openai_settings, fileNames: openai_setting_names }
+        = readPresetsFromDirectory(directories.openAI_Settings, {
+            sortFunction: sortByModifiedDate(directories.openAI_Settings), removeFileExtension: true
+        });
+
+    // TextGenerationWebUI Settings
+    const { fileContents: textgenerationwebui_presets, fileNames: textgenerationwebui_preset_names }
+        = readPresetsFromDirectory(directories.textGen_Settings, {
+            sortFunction: sortByModifiedDate(directories.textGen_Settings), removeFileExtension: true
+        });
+
     //Kobold
-    const files = fs
-        .readdirSync('public/KoboldAI Settings')
-        .sort(
-            (a, b) =>
-                new Date(fs.statSync(`public/KoboldAI Settings/${b}`).mtime) -
-                new Date(fs.statSync(`public/KoboldAI Settings/${a}`).mtime)
-        );
+    const { fileContents: koboldai_settings, fileNames: koboldai_setting_names }
+        = readPresetsFromDirectory(directories.koboldAI_Settings, {
+            sortFunction: sortByModifiedDate(directories.koboldAI_Settings), removeFileExtension: true
+        })
 
     const worldFiles = fs
         .readdirSync(directories.worlds)
@@ -1105,135 +1164,9 @@ app.post('/getsettings', jsonParser, (request, response) => { //Wintermute's cod
         .sort((a, b) => a < b);
     const world_names = worldFiles.map(item => path.parse(item).name);
 
-    files.forEach(item => {
-        const file = fs.readFileSync(
-            `public/KoboldAI Settings/${item}`,
-            'utf8',
-            (err, data) => {
-                if (err) return response.sendStatus(500)
-
-                return data;
-            }
-        );
-        koboldai_settings.push(file);
-        koboldai_setting_names.push(item.replace(/\.[^/.]+$/, ''));
-    });
-
-    //Novel
-    const files2 = fs
-        .readdirSync('public/NovelAI Settings')
-        .sort(
-            (a, b) =>
-                new Date(fs.statSync(`public/NovelAI Settings/${b}`).mtime) -
-                new Date(fs.statSync(`public/NovelAI Settings/${a}`).mtime)
-        );
-
-    files2.forEach(item => {
-        const file2 = fs.readFileSync(
-            `public/NovelAI Settings/${item}`,
-            'utf8',
-            (err, data) => {
-                if (err) return response.sendStatus(500);
-
-                return data;
-            }
-        );
-
-        novelai_settings.push(file2);
-        novelai_setting_names.push(item.replace(/\.[^/.]+$/, ''));
-    });
-
-    //OpenAI
-    const files3 = fs
-        .readdirSync('public/OpenAI Settings')
-        .sort(
-            (a, b) =>
-                new Date(fs.statSync(`public/OpenAI Settings/${b}`).mtime) -
-                new Date(fs.statSync(`public/OpenAI Settings/${a}`).mtime)
-        );
-
-    files3.forEach(item => {
-        const file3 = fs.readFileSync(
-            `public/OpenAI Settings/${item}`,
-            'utf8',
-            (err, data) => {
-                if (err) return response.sendStatus(500);
-
-                return data;
-            }
-        );
-
-        openai_settings.push(file3);
-        openai_setting_names.push(item.replace(/\.[^/.]+$/, ''));
-    });
-
-    // TextGenerationWebUI
-    const textGenFiles = fs
-        .readdirSync(directories.textGen_Settings)
-        .sort();
-
-    textGenFiles.forEach(item => {
-        const file = fs.readFileSync(
-            path.join(directories.textGen_Settings, item),
-            'utf8',
-            (err, data) => {
-                if (err) return response.sendStatus(500);
-
-                return data;
-            }
-        );
-
-        textgenerationwebui_presets.push(file);
-        textgenerationwebui_preset_names.push(item.replace(/\.[^/.]+$/, ''));
-    });
-
-    // Theme files
-    const themeFiles = fs
-        .readdirSync(directories.themes)
-        .filter(x => path.parse(x).ext == '.json')
-        .sort();
-
-    themeFiles.forEach(item => {
-        const file = fs.readFileSync(
-            path.join(directories.themes, item),
-            'utf-8',
-            (err, data) => {
-                if (err) return response.sendStatus(500);
-                return data;
-            }
-        );
-
-        try {
-            themes.push(json5.parse(file));
-        }
-        catch {
-            // skip
-        }
-    })
-
-    // Instruct files
-    const instructFiles = fs
-        .readdirSync(directories.instruct)
-        .filter(x => path.parse(x).ext == '.json')
-        .sort();
-
-    instructFiles.forEach(item => {
-        const file = fs.readFileSync(
-            path.join(directories.instruct, item),
-            'utf-8',
-            (err, data) => {
-                if (err) return response.sendStatus(500);
-                return data;
-            }
-        );
-
-        try {
-            instruct.push(json5.parse(file));
-        }
-        catch {
-            // skip
-        }
-    });
+    const themes = readAndParseFromDirectory(directories.themes);
+    const instruct = readAndParseFromDirectory(directories.instruct);
+    const context = readAndParseFromDirectory(directories.context);
 
     response.send({
         settings,
@@ -1248,6 +1181,7 @@ app.post('/getsettings', jsonParser, (request, response) => { //Wintermute's cod
         textgenerationwebui_preset_names,
         themes,
         instruct,
+        context,
         enable_extensions: enableExtensions,
     });
 });
