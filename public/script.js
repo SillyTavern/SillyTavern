@@ -2193,7 +2193,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             }
             else if (main_api == 'novel') {
                 const this_settings = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
-                generate_data = getNovelGenerationData(finalPromt, this_settings);
+                generate_data = getNovelGenerationData(finalPromt, this_settings, this_amount_gen);
             }
             else if (main_api == 'openai') {
                 let [prompt, counts] = await prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAfter, afterScenarioAnchor, promptBias, type, quiet_prompt);
@@ -2485,7 +2485,7 @@ function getMaxContextSize() {
         if (novel_tier === 1) {
             this_max_context = 1024;
         } else {
-            this_max_context = 2048 - 60; //fix for fat tokens
+            this_max_context = Number(max_context);
             if (nai_settings.model_novel == 'krake-v2') {
                 this_max_context -= 160;
             }
@@ -2938,19 +2938,22 @@ function getTextGenGenerationData(finalPromt, this_amount_gen, isImpersonate) {
 }
 
 // TODO: move to nai-settings.js
-function getNovelGenerationData(finalPromt, this_settings) {
+function getNovelGenerationData(finalPromt, this_settings, this_amount_gen) {
     return {
         "input": finalPromt,
         "model": nai_settings.model_novel,
         "use_string": true,
         "temperature": parseFloat(nai_settings.temp_novel),
-        "max_length": this_settings.max_length,
+        "max_length": this_amount_gen, // this_settings.max_length, // <= why?
         "min_length": this_settings.min_length,
         "tail_free_sampling": this_settings.tail_free_sampling,
         "repetition_penalty": parseFloat(nai_settings.rep_pen_novel),
         "repetition_penalty_range": parseInt(nai_settings.rep_pen_size_novel),
         "repetition_penalty_frequency": this_settings.repetition_penalty_frequency,
         "repetition_penalty_presence": this_settings.repetition_penalty_presence,
+        "top_a": this_settings.top_a,
+        "top_p": this_settings.top_p,
+        "top_k": this_settings.top_k,
         //"stop_sequences": {{187}},
         //bad_words_ids = {{50256}, {0}, {1}};
         //generate_until_sentence = true;
