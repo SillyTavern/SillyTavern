@@ -3991,6 +3991,7 @@ async function saveSettings(type) {
             }
         },
         error: function (jqXHR, exception) {
+            toastr.error('Check the server connection and reload the page to prevent data loss.', 'Settings could not be saved');
             console.log(exception);
             console.log(jqXHR);
         },
