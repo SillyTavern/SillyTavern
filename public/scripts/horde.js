@@ -79,7 +79,7 @@ async function adjustHordeGenerationParams(max_context_length, max_length) {
     return { maxContextLength, maxLength };
 }
 
-async function generateHorde(prompt, params) {
+async function generateHorde(prompt, params, signal) {
     validateHordeModel();
     delete params.prompt;
 
@@ -119,6 +119,16 @@ async function generateHorde(prompt, params) {
     console.log(`Horde task id = ${task_id}`);
 
     for (let retryNumber = 0; retryNumber < MAX_RETRIES; retryNumber++) {
+        if (signal.aborted) {
+            await fetch(`https://horde.koboldai.net/api/v2/generate/text/status/${task_id}`, {
+                method: 'DELETE',
+                headers: {
+                    "Client-Agent": CLIENT_VERSION,
+                }
+            });
+            throw new Error('Request aborted');
+        }
+
         const statusCheckResponse = await fetch(`https://horde.koboldai.net/api/v2/generate/text/status/${task_id}`, getRequestArgs());
 
         const statusCheckJson = await statusCheckResponse.json();

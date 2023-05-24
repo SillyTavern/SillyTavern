@@ -1726,6 +1726,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     setGenerationProgress(0);
     tokens_already_generated = 0;
     generation_started = new Date();
+    abortController = new AbortController();
 
     const isImpersonate = type == "impersonate";
     const isInstruct = power_user.instruct.enabled;
@@ -2226,7 +2227,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             let generate_url = getGenerateUrl();
             console.log('rungenerate calling API');
 
-            abortController = new AbortController();
             showStopButton();
 
             if (main_api == 'openai') {
@@ -2238,7 +2238,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 }
             }
             else if (main_api == 'koboldhorde') {
-                generateHorde(finalPromt, generate_data).then(onSuccess).catch(onError);
+                generateHorde(finalPromt, generate_data, abortController.signal).then(onSuccess).catch(onError);
             }
             else if (main_api == 'poe') {
                 if (isStreamingEnabled() && type !== 'quiet') {
@@ -2421,12 +2421,13 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             };
 
             function onError(exception) {
-                hideStopButton();
                 reject(exception);
                 $("#send_textarea").removeAttr('disabled');
                 is_send_press = false;
                 activateSendButtons();
+                showSwipeButtons();
                 setGenerationProgress(0);
+                $('.mes_buttons:last').show();
                 console.log(exception);
             };
 
@@ -6519,9 +6520,9 @@ $(document).ready(function () {
             streamingProcessor.onStopStreaming();
             streamingProcessor = null;
         }
-        if (!isStreamingEnabled() && abortController) {
+        if (abortController) {
             abortController.abort();
-            abortController = null;
+            hideStopButton();
         }
     });
 

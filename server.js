@@ -332,7 +332,6 @@ app.post("/generate", jsonParser, async function (request, response_generate = r
     const controller = new AbortController();
     request.socket.removeAllListeners('close');
     request.socket.on('close', function () {
-        console.log('Kobold aborted');
         controller.abort();
     });
 
@@ -390,19 +389,17 @@ app.post("/generate", jsonParser, async function (request, response_generate = r
         }
         catch (error) {
             // data
-            console.log(error[0]);
+            if (typeof error['text'] === 'function') {
+                console.log(await error.text());
+            }
 
             // response
-            if (error[1]) {
-                switch (error[1].statusCode) {
-                    case 503:
-                        await delay(delayAmount);
-                        break;
-                    default:
-                        return response_generate.send({ error: true });
-                }
-            } else {
-                return response_generate.send({ error: true });
+            switch (error.statusCode) {
+                case 503:
+                    await delay(delayAmount);
+                    break;
+                default:
+                    return response_generate.send({ error: true });
             }
         }
     }
@@ -1359,7 +1356,7 @@ app.post("/getstatus_novelai", jsonParser, function (request, response_getstatus
     });
 });
 
-app.post("/generate_novelai", jsonParser, function (request, response_generate_novel = response) {
+app.post("/generate_novelai", jsonParser, async function (request, response_generate_novel = response) {
     if (!request.body) return response_generate_novel.sendStatus(400);
 
     const api_key_novel = readSecret(SECRET_KEYS.NOVEL);
@@ -1368,8 +1365,14 @@ app.post("/generate_novelai", jsonParser, function (request, response_generate_n
         return response_generate_novel.sendStatus(401);
     }
 
+    const controller = new AbortController();
+    request.socket.removeAllListeners('close');
+    request.socket.on('close', function () {
+        controller.abort();
+    });
+
     console.log(request.body);
-    var data = {
+    const data = {
         "input": request.body.input,
         "model": request.body.model,
         "parameters": {
@@ -1382,6 +1385,9 @@ app.post("/generate_novelai", jsonParser, function (request, response_generate_n
             "repetition_penalty_range": request.body.repetition_penalty_range,
             "repetition_penalty_frequency": request.body.repetition_penalty_frequency,
             "repetition_penalty_presence": request.body.repetition_penalty_presence,
+            "top_a": request.body.top_a,
+            "top_p": request.body.top_p,
+            "top_k": request.body.top_k,
             //"stop_sequences": {{187}},
             //bad_words_ids = {{50256}, {0}, {1}};
             //generate_until_sentence = true;
@@ -1393,37 +1399,31 @@ app.post("/generate_novelai", jsonParser, function (request, response_generate_n
         }
     };
 
-    var args = {
-        data: data,
-
-        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + api_key_novel }
+    const args = {
+        body: JSON.stringify(data),
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + api_key_novel },
+        signal: controller.signal,
     };
-    client.post(api_novelai + "/ai/generate", args, function (data, response) {
-        if (response.statusCode == 201) {
-            console.log(data);
-            response_generate_novel.send(data);
+
+    try {
+        const response = await postAsync(api_novelai + "/ai/generate", args);
+        console.log(response);
+        return response_generate_novel.send(response);
+    } catch (error) {
+        switch (error?.statusCode) {
+            case 400:
+                console.log('Validation error');
+                break;
+            case 401:
+                console.log('Access Token is incorrect');
+                break;
+            case 402:
+                console.log('An active subscription is required to access this endpoint');
+                break;
         }
-        if (response.statusCode == 400) {
-            console.log('Validation error');
-            response_generate_novel.send({ error: true });
-        }
-        if (response.statusCode == 401) {
-            console.log('Access Token is incorrect');
-            response_generate_novel.send({ error: true });
-        }
-        if (response.statusCode == 402) {
-            console.log('An active subscription is required to access this endpoint');
-            response_generate_novel.send({ error: true });
-        }
-        if (response.statusCode == 500 || response.statusCode == 409) {
-            console.log(data);
-            response_generate_novel.send({ error: true });
-        }
-    }).on('error', function () {
-        //console.log('');
-        //console.log('something went wrong on the request', err.request.options);
-        response_getstatus.send({ error: true });
-    });
+
+        return response_generate_novel.send({ error: true });
+    }
 });
 
 app.post("/getallchatsofcharacter", jsonParser, function (request, response) {
@@ -2611,14 +2611,14 @@ function putAsync(url, args) {
 }
 
 async function postAsync(url, args) {
-    const response = await fetch(url, { method: 'POST', args });
+    const response = await fetch(url, { method: 'POST', ...args });
 
     if (response.ok) {
-        const data = response.json();
+        const data = await response.json();
         return data;
     }
 
-    throw new Error(response.statusText);
+    throw new Error(response);
 }
 
 function getAsync(url, args) {
@@ -2836,19 +2836,20 @@ app.post('/generate_horde', jsonParser, async (request, response) => {
     const url = 'https://horde.koboldai.net/api/v2/generate/text/async';
 
     const args = {
-        body: JSON.stringify(request.body),
-        headers: {
+        "body": JSON.stringify(request.body),
+        "headers": {
             "Content-Type": "application/json",
             "Client-Agent": request.header('Client-Agent'),
             "apikey": api_key_horde,
         }
     };
 
-    console.log(args.data);
+    console.log(args.body);
     try {
         const data = await postAsync(url, args);
         return response.send(data);
-    } catch {
+    } catch (error) {
+        console.error(error);
         return response.sendStatus(500);
     }
 });
