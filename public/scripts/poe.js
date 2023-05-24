@@ -86,6 +86,23 @@ function onBotChange() {
     saveSettingsDebounced();
 }
 
+export function appendPoeAnchors(type, prompt) {
+    const isImpersonate = type === 'impersonate';
+    const isQuiet = type === 'quiet';
+
+    if (poe_settings.character_nudge && !isQuiet && !isImpersonate) {
+        let characterNudge = '\n' + substituteParams(poe_settings.character_nudge_message);
+        prompt += characterNudge;
+    }
+
+    if (poe_settings.impersonation_prompt && isImpersonate) {
+        let impersonationNudge = '\n' + substituteParams(poe_settings.impersonation_prompt);
+        prompt += impersonationNudge;
+    }
+
+    return prompt;
+}
+
 async function generatePoe(type, finalPrompt, signal) {
     if (poe_settings.auto_purge) {
         let count_to_delete = -1;
@@ -115,28 +132,7 @@ async function generatePoe(type, finalPrompt, signal) {
         console.log('Could not jailbreak the bot');
     }
 
-    const isImpersonate = type === 'impersonate';
     const isQuiet = type === 'quiet';
-
-    if (poe_settings.character_nudge && !isQuiet && !isImpersonate) {
-        let characterNudge = '\n' + substituteParams(poe_settings.character_nudge_message);
-        finalPrompt += characterNudge;
-    }
-
-    if (poe_settings.impersonation_prompt && isImpersonate) {
-        let impersonationNudge = '\n' + substituteParams(poe_settings.impersonation_prompt);
-        finalPrompt += impersonationNudge;
-    }
-
-    // If prompt overflows the max context, reduce it (or the generation would fail)
-    // Split by sentence boundary and remove sentence-by-sentence from the beginning
-    while (getTokenCount(finalPrompt) > max_context) {
-        const sentences = finalPrompt.split(/([.?!])\s+/);
-        const removed = sentences.shift();
-        console.log(`Reducing Poe context due to overflow. Sentence dropped from prompt: "${removed}"`);
-        finalPrompt = sentences.join('');
-    }
-
     const reply = await sendMessage(finalPrompt, !isQuiet, signal);
     got_reply = true;
     return reply;

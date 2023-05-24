@@ -105,6 +105,7 @@ import {
     generatePoe,
     is_get_status_poe,
     setPoeOnlineStatus,
+    appendPoeAnchors,
 } from "./scripts/poe.js";
 
 import {
@@ -1901,10 +1902,16 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         }
 
         // Extension added strings
-        const allAnchors = getAllExtensionPrompts();
+        let allAnchors = getAllExtensionPrompts();
         const afterScenarioAnchor = getExtensionPrompt(extension_prompt_types.AFTER_SCENARIO);
         let zeroDepthAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, 0, ' ');
         let { worldInfoString, worldInfoBefore, worldInfoAfter } = getWorldInfoPrompt(chat2);
+
+        // Moved here to not overflow the Poe context with added prompt bits
+        if (main_api == 'poe') {
+            allAnchors = appendPoeAnchors(type, allAnchors);
+            zeroDepthAnchor = appendPoeAnchors(type, zeroDepthAnchor);
+        }
 
         // hack for regeneration of the first message
         if (chat2.length == 0) {
