@@ -1,12 +1,14 @@
 import { saveSettingsDebounced, getCurrentChatId, system_message_types } from "../../../script.js";
 import { humanizedDateTime } from "../../RossAscends-mods.js";
-import { getApiUrl, extension_settings } from "../../extensions.js";
+import { getApiUrl, extension_settings, getContext } from "../../extensions.js";
 import { getFileText, onlyUnique, splitRecursive } from "../../utils.js";
 export { MODULE_NAME };
 
 const MODULE_NAME = 'chromadb';
 
 const defaultSettings = {
+    strategy: 'original',
+
     keep_context: 10,
     keep_context_min: 1,
     keep_context_max: 100,
@@ -38,10 +40,23 @@ async function loadSettings() {
         Object.assign(extension_settings.chromadb, defaultSettings);
     }
 
+    console.log(`loading chromadb strat:${extension_settings.chromadb.strategy}`);
+    $("#chromadb_strategy option[value=" + extension_settings.chromadb.strategy + "]").attr(
+        "selected",
+        "true"
+    );
     $('#chromadb_keep_context').val(extension_settings.chromadb.keep_context).trigger('input');
     $('#chromadb_n_results').val(extension_settings.chromadb.n_results).trigger('input');
     $('#chromadb_split_length').val(extension_settings.chromadb.split_length).trigger('input');
     $('#chromadb_file_split_length').val(extension_settings.chromadb.file_split_length).trigger('input');
+}
+
+function onStrategyChange() {
+    console.log('changing chromadb strat');
+    extension_settings.chromadb.strategy = $('#chromadb_strategy').val();
+
+    //$('#chromadb_strategy').select(extension_settings.chromadb.strategy);
+    saveSettingsDebounced();
 }
 
 function onKeepContextInput() {
@@ -158,7 +173,7 @@ async function onSelectInjectFile(e) {
 
         const split = splitRecursive(text, extension_settings.chromadb.file_split_length).filter(onlyUnique);
 
-        const messages =  split.map(m => ({
+        const messages = split.map(m => ({
             id: `${file.name}-${split.indexOf(m)}`,
             role: 'system',
             content: m,
@@ -205,7 +220,7 @@ async function onSelectInjectFile(e) {
 
 window.chromadb_interceptGeneration = async (chat) => {
     const currentChatId = getCurrentChatId();
-
+    const selectedStrategy = extension_settings.chromadb.strategy;
     if (currentChatId) {
         const messagesToStore = chat.slice(0, -extension_settings.chromadb.keep_context);
 
@@ -219,10 +234,41 @@ window.chromadb_interceptGeneration = async (chat) => {
 
                 queriedMessages.sort((a, b) => a.date - b.date);
 
-                const newChat = queriedMessages.map(m => JSON.parse(m.meta));
+                const newChat = [];
 
-                chat.splice(0, messagesToStore.length, ...newChat);
+                if (selectedStrategy === 'ross') {
+                    //adds chroma to the end of chat and allows Generate() to cull old messages naturally.
+                    const context = getContext();
+                    const charname = context.name2;
+                    newChat.push(
+                        {
+                            is_name: false,
+                            is_user: false,
+                            mes: `[Use these past chat exchanges to inform ${charname}'s next response:`,
+                            name: "system",
+                            send_date: 0,
+                        }
+                    );
+                    newChat.push(...queriedMessages.map(m => JSON.parse(m.meta)));
+                    newChat.push(
+                        {
+                            is_name: false,
+                            is_user: false,
+                            mes: `]\n`,
+                            name: "system",
+                            send_date: 0,
+                        }
+                    );
+                    chat.splice(chat.length, 0, ...newChat);
+                }
 
+                if (selectedStrategy === 'original') {
+                    //removes .length # messages from the start of 'kept messages'
+                    //replaces them with chromaDB results (with no separator)
+                    newChat.push(...queriedMessages.map(m => JSON.parse(m.meta)));
+                    chat.splice(0, messagesToStore.length, ...newChat);
+
+                }
                 console.log('ChromaDB chat after injection', chat);
             }
         }
@@ -238,13 +284,18 @@ jQuery(async () => {
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
-            <label for="chromadb_keep_context">How many messages to keep (<span id="chromadb_keep_context_value"></span>)</label>
+            <span>Memory Injection Strategy</span>
+            <select id="chromadb_strategy">
+                <option value="original">Replace non-kept chat items with memories</option>
+                <option value="ross">Add memories after chat with a header tag</option>
+            </select>
+            <label for="chromadb_keep_context">How many original chat messages to keep: (<span id="chromadb_keep_context_value"></span>) messages</label>
             <input id="chromadb_keep_context" type="range" min="${defaultSettings.keep_context_min}" max="${defaultSettings.keep_context_max}" step="${defaultSettings.keep_context_step}" value="${defaultSettings.keep_context}" />
-            <label for="chromadb_n_results">Max messages to inject (<span id="chromadb_n_results_value"></span>)</label>
+            <label for="chromadb_n_results">Maximum number of ChromaDB 'memories' to inject: (<span id="chromadb_n_results_value"></span>) messages</label>
             <input id="chromadb_n_results" type="range" min="${defaultSettings.n_results_min}" max="${defaultSettings.n_results_max}" step="${defaultSettings.n_results_step}" value="${defaultSettings.n_results}" />
-            <label for="chromadb_split_length">Max length for message chunks (<span id="chromadb_split_length_value"></span>)</label>
+            <label for="chromadb_split_length">Max length for each 'memory' pulled from the current chat history: (<span id="chromadb_split_length_value"></span>) characters</label>
             <input id="chromadb_split_length" type="range" min="${defaultSettings.split_length_min}" max="${defaultSettings.split_length_max}" step="${defaultSettings.split_length_step}" value="${defaultSettings.split_length}" />
-            <label for="chromadb_file_split_length">Max length for injected file chunks (<span id="chromadb_file_split_length_value"></span>)</label>
+            <label for="chromadb_file_split_length">Max length for each 'memory' pulled from imported text files: (<span id="chromadb_file_split_length_value"></span>) characters</label>
             <input id="chromadb_file_split_length" type="range" min="${defaultSettings.file_split_length_min}" max="${defaultSettings.file_split_length_max}" step="${defaultSettings.file_split_length_step}" value="${defaultSettings.file_split_length}" />
             <div class="flex-container spaceEvenly">
                 <div id="chromadb_inject" title="Upload custom textual data to use in the context of the current chat" class="menu_button">
@@ -262,6 +313,7 @@ jQuery(async () => {
     </div>`;
 
     $('#extensions_settings').append(settingsHtml);
+    $('#chromadb_strategy').on('change', onStrategyChange);
     $('#chromadb_keep_context').on('input', onKeepContextInput);
     $('#chromadb_n_results').on('input', onNResultsInput);
     $('#chromadb_split_length').on('input', onSplitLengthInput);

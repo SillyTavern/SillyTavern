@@ -1719,6 +1719,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 /* ------ online status indicators and texts. 2 = kobold AI, 3 = Novel AI  ----------*/
 #online_status2,
+#online_status_horde,
 .online_status4 {
     opacity: 0.5;
     margin-top: 2px;
@@ -1726,6 +1727,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 }
 
 #online_status_indicator2,
+#online_status_indicator_horde,
 .online_status_indicator4 {
     border-radius: 7px;
     width: 14px;
@@ -1735,6 +1737,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 }
 
 #online_status_text2,
+#online_status_text_horde,
 .online_status_text4 {
     margin-left: 4px;
     display: inline-block;
