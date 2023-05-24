@@ -2276,7 +2276,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 } catch (error) {
                     onError(error);
                 }
-             }
+            }
 
             //set array object for prompt token itemization of this message
             let currentArrayEntry = Number(thisPromptBits.length - 1);
@@ -4232,6 +4232,9 @@ function select_rm_info(type, charId, previousCharId = null) {
     if (type === 'char_create') {
         toastr.success(`Character Created: ${charId}`);
     }
+    if (type === 'group_create') {
+        toastr.success(`Group Created`);
+    }
     if (type === 'char_import') {
         toastr.success(`Character Imported: ${charId}`);
     }
@@ -4247,6 +4250,16 @@ function select_rm_info(type, charId, previousCharId = null) {
         $(`#rm_characters_block [title="${charId + '.png'}"]`).parent().addClass('flash animated');
         setTimeout(function () {
             $(`#rm_characters_block [title="${charId + '.png'}"]`).parent().removeClass('flash animated');
+        }, 5000);
+    }
+
+    if (type === 'group_create') {
+        //for groups, ${charId} = data.id from group-chats.js createGroup()
+        const element = $(`#rm_characters_block [grid="${charId}"]`).get(0);
+        element.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        $(`#rm_characters_block [grid="${charId}"]`).addClass('flash animated');
+        setTimeout(function () {
+            $(`#rm_characters_block [grid="${charId}"]`).removeClass('flash animated');
         }, 5000);
     }
 

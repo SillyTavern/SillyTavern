@@ -1133,15 +1133,8 @@ async function createGroup() {
     if (createGroupResponse.ok) {
         const data = await createGroupResponse.json();
         createTagMapFromList("#groupTagList", data.id);
-
         await getCharacters();
-        $("#rm_info_avatar").html("");
-        const avatar = $("#avatar_div_div").clone();
-        avatar.find("img").attr("src", avatar_url);
-        $("#rm_info_avatar").append(avatar);
-        $("#rm_info_block").transition({ opacity: 0, duration: 0 });
-        select_rm_info("Group chat created");
-        $("#rm_info_block").transition({ opacity: 1.0, duration: 2000 });
+        select_rm_info('group_create', data.id);
     }
 }
 
