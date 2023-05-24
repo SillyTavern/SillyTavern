@@ -16,7 +16,6 @@ let models = [];
 
 let horde_settings = {
     models: [],
-    use_horde: false,
     auto_adjust_response_length: true,
     auto_adjust_context_length: false,
 };
@@ -180,7 +179,6 @@ function loadHordeSettings(settings) {
         Object.assign(horde_settings, settings.horde_settings);
     }
 
-    $('#use_horde').prop("checked", horde_settings.use_horde).trigger('input');
     $('#horde_auto_adjust_response_length').prop("checked", horde_settings.auto_adjust_response_length);
     $('#horde_auto_adjust_context_length').prop("checked", horde_settings.auto_adjust_context_length);
 }
@@ -208,23 +206,6 @@ async function showKudos() {
 }
 
 jQuery(function () {
-    $("#use_horde").on("input", async function () {
-        horde_settings.use_horde = !!$(this).prop("checked");
-
-        if (horde_settings.use_horde) {
-            $('#kobold_api_block').hide();
-            $('#kobold_horde_block').show();
-        }
-        else {
-            $('#kobold_api_block').show();
-            $('#kobold_horde_block').hide();
-        }
-
-        // Trigger status check
-        changeMainAPI();
-        saveSettingsDebounced();
-    });
-
     $("#horde_model").on("change", function () {
         horde_settings.models = $('#horde_model').val();
         console.log('Updated Horde models', horde_settings.models);
