@@ -145,7 +145,7 @@ export async function getGroupChat(groupId) {
         }
         printMessages();
     } else {
-        sendSystemMessage(system_message_types.GROUP);
+        sendSystemMessage(system_message_types.GROUP, '', { isSmallSys: true });
         if (group && Array.isArray(group.members)) {
             for (let member of group.members) {
                 const character = characters.find(x => x.avatar === member || x.name === member);

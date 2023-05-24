@@ -244,6 +244,31 @@ body.tts .mes[is_system="true"] .mes_narrate {
     display: none;
 }
 
+.mes.smallSysMes {
+    padding: 5px !important;
+    font-size: calc(var(--mainFontSize)* 0.9);
+    text-align: center;
+}
+
+.mes.smallSysMes .mes_text {
+    padding: 0 !important;
+    text-align: center;
+}
+
+.mes.smallSysMes .mes_block {
+    margin-right: unset !important;
+}
+
+.mes.smallSysMes .ch_name {
+    display: none;
+}
+
+.mes.smallSysMes .mesAvatarWrapper {
+    display: none;
+    height: unset;
+    min-height: unset;
+}
+
 body.sd .sd_message_gen,
 body.tts .mes_narrate {
     display: inline-block;
