@@ -320,6 +320,7 @@ const system_messages = {
             <li><tt>Ctrl+Left</tt> = view locally stored variables (in the browser console window)</li>
             <li><tt>Enter</tt> (with chat bar selected) = send your message to AI</li>
             <li><tt>Ctrl+Enter</tt> = Regenerate the last AI response</li>
+            <li><tt>Escape</tt> = stop AI response generation</li>
             </ul>`
         ]
     },
@@ -4720,6 +4721,105 @@ window["SillyTavern"].getContext = function () {
     };
 };
 
+function swipe_left() {      // when we swipe left..but no generation.
+    if (chat.length - 1 === Number(this_edit_mes_id)) {
+        closeMessageEditor();
+    }
+
+    if (isStreamingEnabled() && streamingProcessor) {
+        streamingProcessor.isStopped = true;
+    }
+
+    const swipe_duration = 120;
+    const swipe_range = '700px';
+    chat[chat.length - 1]['swipe_id']--;
+    if (chat[chat.length - 1]['swipe_id'] >= 0) {
+        /*$(this).parent().children('swipe_right').css('display', 'flex');
+        if (chat[chat.length - 1]['swipe_id'] === 0) {
+            $(this).css('display', 'none');
+        }*/ // Just in case
+        let this_mes_div = $(this).parent();
+        let this_mes_block = $(this).parent().children('.mes_block').children('.mes_text');
+        const this_mes_div_height = this_mes_div[0].scrollHeight;
+        this_mes_div.css('height', this_mes_div_height);
+        const this_mes_block_height = this_mes_block[0].scrollHeight;
+        chat[chat.length - 1]['mes'] = chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipe_id']];
+        $(this).parent().children('.mes_block').transition({
+            x: swipe_range,
+            duration: swipe_duration,
+            easing: animation_easing,
+            queue: false,
+            complete: function () {
+                const is_animation_scroll = ($('#chat').scrollTop() >= ($('#chat').prop("scrollHeight") - $('#chat').outerHeight()) - 10);
+                //console.log('on left swipe click calling addOneMessage');
+                addOneMessage(chat[chat.length - 1], { type: 'swipe' });
+                let new_height = this_mes_div_height - (this_mes_block_height - this_mes_block[0].scrollHeight);
+                if (new_height < 103) new_height = 103;
+                this_mes_div.animate({ height: new_height + 'px' }, {
+                    duration: 0, //used to be 100
+                    queue: false,
+                    progress: function () {
+                        // Scroll the chat down as the message expands
+
+                        if (is_animation_scroll) $("#chat").scrollTop($("#chat")[0].scrollHeight);
+                    },
+                    complete: function () {
+                        this_mes_div.css('height', 'auto');
+                        // Scroll the chat down to the bottom once the animation is complete
+                        if (is_animation_scroll) $("#chat").scrollTop($("#chat")[0].scrollHeight);
+                    }
+                });
+                $(this).parent().children('.mes_block').transition({
+                    x: '-' + swipe_range,
+                    duration: 0,
+                    easing: animation_easing,
+                    queue: false,
+                    complete: function () {
+                        $(this).parent().children('.mes_block').transition({
+                            x: '0px',
+                            duration: swipe_duration,
+                            easing: animation_easing,
+                            queue: false,
+                            complete: function () {
+                                saveChatConditional();
+                            }
+                        });
+                    }
+                });
+            }
+        });
+
+        $(this).parent().children('.avatar').transition({
+            x: swipe_range,
+            duration: swipe_duration,
+            easing: animation_easing,
+            queue: false,
+            complete: function () {
+                $(this).parent().children('.avatar').transition({
+                    x: '-' + swipe_range,
+                    duration: 0,
+                    easing: animation_easing,
+                    queue: false,
+                    complete: function () {
+                        $(this).parent().children('.avatar').transition({
+                            x: '0px',
+                            duration: swipe_duration,
+                            easing: animation_easing,
+                            queue: false,
+                            complete: function () {
+
+                            }
+                        });
+                    }
+                });
+            }
+        });
+    }
+    if (chat[chat.length - 1]['swipe_id'] < 0) {
+        chat[chat.length - 1]['swipe_id'] = 0;
+    }
+}
+
 // when we click swipe right button
 const swipe_right = () => {
     if (chat.length - 1 === Number(this_edit_mes_id)) {
@@ -4961,104 +5061,7 @@ $(document).ready(function () {
 
     $(document).on('click', '.swipe_right', swipe_right);
 
-    $(document).on('click', '.swipe_left', function () {      // when we swipe left..but no generation.
-        if (chat.length - 1 === Number(this_edit_mes_id)) {
-            closeMessageEditor();
-        }
-
-        if (isStreamingEnabled() && streamingProcessor) {
-            streamingProcessor.isStopped = true;
-        }
-
-        const swipe_duration = 120;
-        const swipe_range = '700px';
-        chat[chat.length - 1]['swipe_id']--;
-        if (chat[chat.length - 1]['swipe_id'] >= 0) {
-            /*$(this).parent().children('swipe_right').css('display', 'flex');
-            if (chat[chat.length - 1]['swipe_id'] === 0) {
-                $(this).css('display', 'none');
-            }*/ // Just in case
-            let this_mes_div = $(this).parent();
-            let this_mes_block = $(this).parent().children('.mes_block').children('.mes_text');
-            const this_mes_div_height = this_mes_div[0].scrollHeight;
-            this_mes_div.css('height', this_mes_div_height);
-            const this_mes_block_height = this_mes_block[0].scrollHeight;
-            chat[chat.length - 1]['mes'] = chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipe_id']];
-            $(this).parent().children('.mes_block').transition({
-                x: swipe_range,
-                duration: swipe_duration,
-                easing: animation_easing,
-                queue: false,
-                complete: function () {
-                    const is_animation_scroll = ($('#chat').scrollTop() >= ($('#chat').prop("scrollHeight") - $('#chat').outerHeight()) - 10);
-                    //console.log('on left swipe click calling addOneMessage');
-                    addOneMessage(chat[chat.length - 1], { type: 'swipe' });
-                    let new_height = this_mes_div_height - (this_mes_block_height - this_mes_block[0].scrollHeight);
-                    if (new_height < 103) new_height = 103;
-                    this_mes_div.animate({ height: new_height + 'px' }, {
-                        duration: 0, //used to be 100
-                        queue: false,
-                        progress: function () {
-                            // Scroll the chat down as the message expands
-
-                            if (is_animation_scroll) $("#chat").scrollTop($("#chat")[0].scrollHeight);
-                        },
-                        complete: function () {
-                            this_mes_div.css('height', 'auto');
-                            // Scroll the chat down to the bottom once the animation is complete
-                            if (is_animation_scroll) $("#chat").scrollTop($("#chat")[0].scrollHeight);
-                        }
-                    });
-                    $(this).parent().children('.mes_block').transition({
-                        x: '-' + swipe_range,
-                        duration: 0,
-                        easing: animation_easing,
-                        queue: false,
-                        complete: function () {
-                            $(this).parent().children('.mes_block').transition({
-                                x: '0px',
-                                duration: swipe_duration,
-                                easing: animation_easing,
-                                queue: false,
-                                complete: function () {
-                                    saveChatConditional();
-                                }
-                            });
-                        }
-                    });
-                }
-            });
-
-            $(this).parent().children('.avatar').transition({
-                x: swipe_range,
-                duration: swipe_duration,
-                easing: animation_easing,
-                queue: false,
-                complete: function () {
-                    $(this).parent().children('.avatar').transition({
-                        x: '-' + swipe_range,
-                        duration: 0,
-                        easing: animation_easing,
-                        queue: false,
-                        complete: function () {
-                            $(this).parent().children('.avatar').transition({
-                                x: '0px',
-                                duration: swipe_duration,
-                                easing: animation_easing,
-                                queue: false,
-                                complete: function () {
-
-                                }
-                            });
-                        }
-                    });
-                }
-            });
-        }
-        if (chat[chat.length - 1]['swipe_id'] < 0) {
-            chat[chat.length - 1]['swipe_id'] = 0;
-        }
-    });
+    $(document).on('click', '.swipe_left', swipe_left);
 
     $("#character_search_bar").on("input", function () {
         const selector = ['#rm_print_characters_block .character_select', '#rm_print_characters_block .group_select'].join(',');
@@ -6659,7 +6662,12 @@ $(document).ready(function () {
                 $(`#chat .mes[mesid="${this_edit_mes_id}"] .mes_edit_done`).click()
                 $("#send_textarea").focus();
             }
-
+            if (!this_edit_mes_id && $('#mes_stop').is(':visible')) {
+                $('#mes_stop').trigger('click');
+                if (chat.length && Array.isArray(chat[chat.length - 1].swipes) && chat[chat.length - 1].swipe_id == chat[chat.length - 1].swipes.length) {
+                    $('.last_mes .swipe_left').trigger('click');
+                }
+            }
         }
     });
 
