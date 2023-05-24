@@ -1194,11 +1194,16 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     }
 
     const newMessage = $(`#chat [mesid="${count_view_mes}"]`);
+    const isSmallSys = mes?.extra?.isSmallSys;
     newMessage.data("isSystem", isSystem);
 
     if (isSystem) {
         // newMessage.find(".mes_edit").hide();
         newMessage.find(".mes_prompt").hide(); //don't need prompt button for sys
+    }
+
+    if (isSmallSys === true) {
+        newMessage.addClass('smallSysMes');
     }
 
     // don't need prompt button for user
