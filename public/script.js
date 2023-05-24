@@ -105,6 +105,7 @@ import {
     generatePoe,
     is_get_status_poe,
     setPoeOnlineStatus,
+    appendPoeAnchors,
 } from "./scripts/poe.js";
 
 import {
@@ -627,6 +628,8 @@ function checkOnlineStatus() {
     if (online_status == "no_connection") {
         $("#online_status_indicator2").css("background-color", "red");  //Kobold
         $("#online_status_text2").html("No connection...");
+        $("#online_status_indicator_horde").css("background-color", "red");  //Kobold Horde
+        $("#online_status_text_horde").html("No connection...");
         $("#online_status_indicator3").css("background-color", "red");  //Novel
         $("#online_status_text3").html("No connection...");
         $(".online_status_indicator4").css("background-color", "red");  //OAI / ooba
@@ -638,6 +641,8 @@ function checkOnlineStatus() {
     } else {
         $("#online_status_indicator2").css("background-color", "green"); //kobold
         $("#online_status_text2").html(online_status);
+        $("#online_status_indicator_horde").css("background-color", "green");  //Kobold Horde
+        $("#online_status_text_horde").html(online_status);
         $("#online_status_indicator3").css("background-color", "green"); //novel
         $("#online_status_text3").html(online_status);
         $(".online_status_indicator4").css("background-color", "green"); //OAI / ooba
@@ -647,7 +652,7 @@ function checkOnlineStatus() {
 
 async function getStatus() {
     if (is_get_status) {
-        if (main_api == "kobold" && horde_settings.use_horde) {
+        if (main_api == "koboldhorde") {
             try {
                 const hordeStatus = await checkHordeStatus();
                 online_status = hordeStatus ? 'Connected' : 'no_connection';
@@ -693,7 +698,7 @@ async function getStatus() {
                 }
 
                 // determine if we can use stop sequence
-                if (main_api == "kobold") {
+                if (main_api === "kobold" || main_api === "koboldhorde") {
                     kai_settings.use_stop_sequence = canUseKoboldStopSequence(data.version);
                 }
 
@@ -1892,7 +1897,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
         // Adjust token limit for Horde
         let adjustedParams;
-        if (main_api == 'kobold' && horde_settings.use_horde && (horde_settings.auto_adjust_context_length || horde_settings.auto_adjust_response_length)) {
+        if (main_api == 'koboldhorde' && (horde_settings.auto_adjust_context_length || horde_settings.auto_adjust_response_length)) {
             try {
                 adjustedParams = await adjustHordeGenerationParams(max_context, amount_gen);
             }
@@ -1906,10 +1911,16 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         }
 
         // Extension added strings
-        const allAnchors = getAllExtensionPrompts();
+        let allAnchors = getAllExtensionPrompts();
         const afterScenarioAnchor = getExtensionPrompt(extension_prompt_types.AFTER_SCENARIO);
         let zeroDepthAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, 0, ' ');
         let { worldInfoString, worldInfoBefore, worldInfoAfter } = getWorldInfoPrompt(chat2);
+
+        // Moved here to not overflow the Poe context with added prompt bits
+        if (main_api == 'poe') {
+            allAnchors = appendPoeAnchors(type, allAnchors);
+            zeroDepthAnchor = appendPoeAnchors(type, zeroDepthAnchor);
+        }
 
         // hack for regeneration of the first message
         if (chat2.length == 0) {
@@ -2158,7 +2169,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
             let thisPromptBits = [];
 
-            if (main_api == 'kobold' && horde_settings.use_horde && horde_settings.auto_adjust_response_length) {
+            if (main_api == 'koboldhorde' && horde_settings.auto_adjust_response_length) {
                 this_amount_gen = Math.min(this_amount_gen, adjustedParams.maxLength);
                 this_amount_gen = Math.max(this_amount_gen, MIN_AMOUNT_GEN); // prevent validation errors
             }
@@ -2174,17 +2185,20 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     singleline: kai_settings.single_line,
                 };
 
-                if (preset_settings != 'gui' || horde_settings.use_horde) {
-                    const maxContext = horde_settings.use_horde && horde_settings.auto_adjust_context_length ? adjustedParams.maxContextLength : max_context;
+            }
+            else if (main_api == 'koboldhorde') {
+                if (preset_settings != 'gui') {
+                    const maxContext = horde_settings.auto_adjust_context_length ? adjustedParams.maxContextLength : max_context;
                     generate_data = getKoboldGenerationData(finalPromt, this_settings, this_amount_gen, maxContext, isImpersonate);
                 }
+
             }
             else if (main_api == 'textgenerationwebui') {
                 generate_data = getTextGenGenerationData(finalPromt, this_amount_gen, isImpersonate);
             }
             else if (main_api == 'novel') {
                 const this_settings = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
-                generate_data = getNovelGenerationData(finalPromt, this_settings);
+                generate_data = getNovelGenerationData(finalPromt, this_settings, this_amount_gen);
             }
             else if (main_api == 'openai') {
                 let [prompt, counts] = await prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAfter, afterScenarioAnchor, promptBias, type, quiet_prompt);
@@ -2216,7 +2230,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     sendOpenAIRequest(type, generate_data.prompt).then(onSuccess).catch(onError);
                 }
             }
-            else if (main_api == 'kobold' && horde_settings.use_horde) {
+            else if (main_api == 'koboldhorde') {
                 generateHorde(finalPromt, generate_data).then(onSuccess).catch(onError);
             }
             else if (main_api == 'poe') {
@@ -2469,14 +2483,14 @@ function sendMessageAsUser(textareaText, messageBias) {
 
 function getMaxContextSize() {
     let this_max_context = 1487;
-    if (main_api == 'kobold' || main_api == 'textgenerationwebui') {
+    if (main_api == 'kobold' || main_api == 'koboldhorde' || main_api == 'textgenerationwebui') {
         this_max_context = (max_context - amount_gen);
     }
     if (main_api == 'novel') {
         if (novel_tier === 1) {
             this_max_context = 1024;
         } else {
-            this_max_context = 2048 - 60; //fix for fat tokens
+            this_max_context = Number(max_context);
             if (nai_settings.model_novel == 'krake-v2') {
                 this_max_context -= 160;
             }
@@ -2929,19 +2943,22 @@ function getTextGenGenerationData(finalPromt, this_amount_gen, isImpersonate) {
 }
 
 // TODO: move to nai-settings.js
-function getNovelGenerationData(finalPromt, this_settings) {
+function getNovelGenerationData(finalPromt, this_settings, this_amount_gen) {
     return {
         "input": finalPromt,
         "model": nai_settings.model_novel,
         "use_string": true,
         "temperature": parseFloat(nai_settings.temp_novel),
-        "max_length": this_settings.max_length,
+        "max_length": this_amount_gen, // this_settings.max_length, // <= why?
         "min_length": this_settings.min_length,
         "tail_free_sampling": this_settings.tail_free_sampling,
         "repetition_penalty": parseFloat(nai_settings.rep_pen_novel),
         "repetition_penalty_range": parseInt(nai_settings.rep_pen_size_novel),
         "repetition_penalty_frequency": this_settings.repetition_penalty_frequency,
         "repetition_penalty_presence": this_settings.repetition_penalty_presence,
+        "top_a": this_settings.top_a,
+        "top_p": this_settings.top_p,
+        "top_k": this_settings.top_k,
         //"stop_sequences": {{187}},
         //bad_words_ids = {{50256}, {0}, {1}};
         //generate_until_sentence = true;
@@ -3022,7 +3039,7 @@ function throwCircuitBreakerError() {
 }
 
 function extractTitleFromData(data) {
-    if (main_api == 'kobold' && horde_settings.use_horde) {
+    if (main_api == 'koboldhorde') {
         return data.workerName;
     }
 
@@ -3032,11 +3049,11 @@ function extractTitleFromData(data) {
 function extractMessageFromData(data) {
     let getMessage = "";
 
-    if (main_api == 'kobold' && !horde_settings.use_horde) {
+    if (main_api == 'kobold') {
         getMessage = data.results[0].text;
     }
 
-    if (main_api == 'kobold' && horde_settings.use_horde) {
+    if (main_api == 'koboldhorde') {
         getMessage = data.text;
     }
 
@@ -3232,7 +3249,7 @@ function extractImageFromMessage(getMessage) {
 }
 
 export function isMultigenEnabled() {
-    return power_user.multigen && (main_api == 'textgenerationwebui' || main_api == 'kobold' || main_api == 'novel');
+    return power_user.multigen && (main_api == 'textgenerationwebui' || main_api == 'kobold' || main_api == 'koboldhorde' || main_api == 'novel');
 }
 
 function activateSendButtons() {
@@ -3544,6 +3561,15 @@ function changeMainAPI() {
     const selectedVal = $("#main_api").val();
     //console.log(selectedVal);
     const apiElements = {
+        "koboldhorde": {
+            apiSettings: $("#kobold_api-settings"),
+            apiConnector: $("#kobold_horde"),
+            apiPresets: $('#kobold_api-presets'),
+            apiRanges: $("#range_block"),
+            maxContextElem: $("#max_context_block"),
+            amountGenElem: $("#amount_gen_block"),
+            softPromptElem: $("#softprompt_block")
+        },
         "kobold": {
             apiSettings: $("#kobold_api-settings"),
             apiConnector: $("#kobold_api"),
@@ -3593,49 +3619,62 @@ function changeMainAPI() {
     //console.log('--- apiElements--- ');
     //console.log(apiElements);
 
+    //first, disable everything so the old elements stop showing
     for (const apiName in apiElements) {
         const apiObj = apiElements[apiName];
-        const isCurrentApi = selectedVal === apiName;
-
-        apiObj.apiSettings.css("display", isCurrentApi ? "block" : "none");
-        apiObj.apiConnector.css("display", isCurrentApi ? "block" : "none");
-        apiObj.apiRanges.css("display", isCurrentApi ? "block" : "none");
-        apiObj.apiPresets.css("display", isCurrentApi ? "block" : "none");
-
-        if (isCurrentApi && apiName === "openai") {
-            apiObj.apiPresets.css("display", "flex");
+        //do not hide items to then proceed to immediately show them.
+        if (selectedVal === apiName) {
+            continue;
         }
+        apiObj.apiSettings.css("display", "none");
+        apiObj.apiConnector.css("display", "none");
+        apiObj.apiRanges.css("display", "none");
+        apiObj.apiPresets.css("display", "none");
+    }
 
-        if (isCurrentApi && apiName === "kobold") {
-            //console.log("enabling SP for kobold");
-            $("#softprompt_block").css("display", "block");
-        }
+    //then, find and enable the active item.
+    //This is split out of the loop so that different apis can share settings divs
+    let activeItem = apiElements[selectedVal];
 
-        if (isCurrentApi && (apiName === "textgenerationwebui" || apiName === "novel")) {
-            console.log("enabling amount_gen for ooba/novel");
-            apiObj.amountGenElem.find('input').prop("disabled", false);
-            apiObj.amountGenElem.css("opacity", 1.0);
-        }
+    activeItem.apiSettings.css("display", "block");
+    activeItem.apiConnector.css("display", "block");
+    activeItem.apiRanges.css("display", "block");
+    activeItem.apiPresets.css("display", "block");
 
-        // Hide common settings for OpenAI
-        if (selectedVal == "openai") {
-            $("#common-gen-settings-block").css("display", "none");
-        } else {
-            $("#common-gen-settings-block").css("display", "block");
-        }
-        // Hide amount gen for poe
-        if (selectedVal == "poe") {
-            $("#amount_gen_block").css("display", "none");
-        } else {
-            $("#amount_gen_block").css("display", "flex");
-        }
+    if (selectedVal === "openai") {
+        activeItem.apiPresets.css("display", "flex");
+    }
 
+    if (selectedVal === "kobold" || selectedVal === 'koboldhorde') {
+        //console.log("enabling SP for kobold");
+        $("#softprompt_block").css("display", "block");
+    }
+
+    if (selectedVal === "textgenerationwebui" || selectedVal === "novel") {
+        console.log("enabling amount_gen for ooba/novel");
+        activeItem.amountGenElem.find('input').prop("disabled", false);
+        activeItem.amountGenElem.css("opacity", 1.0);
+    }
+
+    // Hide common settings for OpenAI
+    console.log('value?', selectedVal);
+    if (selectedVal == "openai") {
+        console.log('hiding settings?');
+        $("#common-gen-settings-block").css("display", "none");
+    } else {
+        $("#common-gen-settings-block").css("display", "block");
+    }
+    // Hide amount gen for poe
+    if (selectedVal == "poe") {
+        $("#amount_gen_block").css("display", "none");
+    } else {
+        $("#amount_gen_block").css("display", "flex");
     }
 
     main_api = selectedVal;
     online_status = "no_connection";
 
-    if (main_api == "kobold" && horde_settings.use_horde) {
+    if (main_api == "koboldhorde") {
         is_get_status = true;
         getStatus();
         getHordeModels();
@@ -4577,7 +4616,7 @@ function setGenerationProgress(progress) {
 }
 
 function isHordeGenerationNotAllowed() {
-    if (main_api == "kobold" && horde_settings.use_horde && preset_settings == "gui") {
+    if (main_api == "koboldhorde" && preset_settings == "gui") {
         toastr.error('GUI Settings preset is not supported for Horde. Please select another preset.');
         return true;
     }
@@ -5681,7 +5720,7 @@ $(document).ready(function () {
 
     $("#api_button").click(function (e) {
         e.stopPropagation();
-        if ($("#api_url_text").val() != "" && !horde_settings.use_horde) {
+        if ($("#api_url_text").val() != "") {
             let value = formatKoboldUrl($.trim($("#api_url_text").val()));
 
             if (!value) {
@@ -5701,12 +5740,6 @@ $(document).ready(function () {
             getStatus();
             clearSoftPromptsList();
             getSoftPromptsList();
-        }
-        else if (horde_settings.use_horde) {
-            main_api = "kobold";
-            is_get_status = true;
-            getStatus();
-            clearSoftPromptsList();
         }
     });
 
