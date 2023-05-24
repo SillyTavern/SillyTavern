@@ -2181,7 +2181,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 };
 
             }
-            else if(main_api == 'koboldhorde'){
+            else if (main_api == 'koboldhorde') {
                 if (preset_settings != 'gui') {
                     const maxContext = horde_settings.auto_adjust_context_length ? adjustedParams.maxContextLength : max_context;
                     generate_data = getKoboldGenerationData(finalPromt, this_settings, this_amount_gen, maxContext, isImpersonate);
@@ -3241,7 +3241,7 @@ function extractImageFromMessage(getMessage) {
 }
 
 export function isMultigenEnabled() {
-    return power_user.multigen && (main_api == 'textgenerationwebui' || main_api == 'kobold'  || main_api == 'koboldhorde' || main_api == 'novel');
+    return power_user.multigen && (main_api == 'textgenerationwebui' || main_api == 'kobold' || main_api == 'koboldhorde' || main_api == 'novel');
 }
 
 function activateSendButtons() {
@@ -3615,7 +3615,7 @@ function changeMainAPI() {
     for (const apiName in apiElements) {
         const apiObj = apiElements[apiName];
         //do not hide items to then proceed to immediately show them.
-        if(selectedVal === apiName){
+        if (selectedVal === apiName) {
             continue;
         }
         apiObj.apiSettings.css("display", "none");
@@ -3624,7 +3624,7 @@ function changeMainAPI() {
         apiObj.apiPresets.css("display", "none");
     }
 
-    //then, find and enable the active item.  
+    //then, find and enable the active item.
     //This is split out of the loop so that different apis can share settings divs
     let activeItem = apiElements[selectedVal];
 
@@ -3649,7 +3649,7 @@ function changeMainAPI() {
     }
 
     // Hide common settings for OpenAI
-        console.log('value?', selectedVal);
+    console.log('value?', selectedVal);
     if (selectedVal == "openai") {
         console.log('hiding settings?');
         $("#common-gen-settings-block").css("display", "none");
