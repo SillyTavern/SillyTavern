@@ -141,6 +141,7 @@ import {
 } from "./scripts/secrets.js";
 import uniqolor from "./scripts/uniqolor.js";
 import { EventEmitter } from './scripts/eventemitter.js';
+import { context_settings, loadContextTemplatesFromSettings } from "./scripts/context-template.js";
 
 //exporting functions and vars for mods
 export {
@@ -3881,6 +3882,9 @@ async function getSettings(type) {
                 // Load- character tags
                 loadTagsSettings(settings);
 
+                // Load context templates
+                loadContextTemplatesFromSettings(data, settings);
+
                 // Set context size after loading power user (may override the max value)
                 $("#max_context").val(max_context);
                 $("#max_context_counter").text(`${max_context}`);
@@ -3964,6 +3968,7 @@ async function saveSettings(type) {
             power_user: power_user,
             poe_settings: poe_settings,
             extension_settings: extension_settings,
+            context_settings: context_settings,
             tags: tags,
             tag_map: tag_map,
             ...nai_settings,
@@ -4432,7 +4437,7 @@ function callPopup(text, type, inputValue = '') {
         $("#dialogue_popup_input").css("display", "none");
     }
 
-    $("#dialogue_popup_text").html(text);
+    $("#dialogue_popup_text").empty().append(text);
     $("#shadow_popup").css("display", "block");
     if (popup_type == 'input') {
         $("#dialogue_popup_input").focus();

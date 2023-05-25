@@ -1365,13 +1365,11 @@
                                 Context Templates
                             </h4>
                             <div class="flex-container flexGap5">
-                                <select id="prompt_template" class="flex1 margin0">
-                                    <option value="None">None (Default)</option>
-                                    <option value="Classic">Classic</option>
-                                    <option value="Pygmalion">Pygmalion</option>
+                                <select id="context_template" class="flex1 margin0">
                                 </select>
-                                <div id="context_template_edit" class="menu_button fa-solid fa-pencil margin0" title="Edit"></div>
-                                <div id="context_template_new" class="menu_button fa-solid fa-plus margin0" title="Add new"></div>
+                                <div id="context_template_new" class="menu_button fa-solid fa-plus margin0" title="Create new"></div>
+                                <div id="context_template_edit" class="menu_button fa-solid fa-file-pen margin0" title="Edit"></div>
+                                <div id="context_template_rename" class="menu_button fa-solid fa-i-cursor margin0" title="Rename"></div>
                                 <div id="context_template_delete" class="menu_button fa-solid fa-trash-can margin0" title="Delete"></div>
                             </div>
                         </div>
@@ -2223,6 +2221,7 @@
     <div id="context_editor_template" class="template_element">
         <div class="context_editor">
             <h3>Context Template Editor</h3>
+                <h4 class="template_name"></h4>
 
             <div class="inline-drawer wide100p">
                 <div class="inline-drawer-toggle inline-drawer-header">
@@ -2256,7 +2255,7 @@
             <div>
                 <div class="title_restorable">
                     <span>Chat Injections</span>
-                    <div title="Add chat injection" class="menu_button">
+                    <div title="Add chat injection" class="menu_button chat_injection_add">
                         <div class="fa-solid fa-plus"></div>
                     </div>
                 </div>
