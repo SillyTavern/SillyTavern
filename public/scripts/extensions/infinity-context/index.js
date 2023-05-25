@@ -98,6 +98,7 @@ async function addMessages(chat_id, messages) {
             mes: text,
             send_date: id,
             id: `msg-${id++}`,
+            extra: undefined,
         })));
     });
 
