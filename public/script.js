@@ -2395,6 +2395,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                             playMessageSound();
                         }
 
+
                         generate_loop_counter = 0;
                     } else {
                         ++generate_loop_counter;
@@ -2408,6 +2409,32 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         setTimeout(() => {
                             Generate(type, { automatic_trigger, force_name2: true, resolve, reject, quiet_prompt, force_chid });
                         }, generate_loop_counter * 1000);
+                    }
+
+                    if (power_user.auto_swipe) {
+                        console.log('checking for autoswipeblacklist on non-streaming message');
+                        function containsBlacklistedWords(getMessage, blacklist, threshold) {
+                            console.log('checking blacklisted words');
+                            const regex = new RegExp(`\\b(${blacklist.join('|')})\\b`, 'gi');
+                            const matches = getMessage.match(regex) || [];
+                            return matches.length >= threshold;
+                        }
+
+                        const generatedTextFiltered = (getMessage) => {
+                            if (power_user.auto_swipe_blacklist_threshold) {
+                                if (containsBlacklistedWords(getMessage, power_user.auto_swipe_blacklist, power_user.auto_swipe_blacklist_threshold)) {
+                                    console.log("Generated text has blacklisted words")
+                                    return true
+                                }
+                            }
+
+                            return false
+                        }
+                        if (generatedTextFiltered(getMessage)) {
+                            console.log('swiping right automatically');
+                            swipe_right();
+                            return
+                        }
                     }
                 } else {
                     activateSendButtons();
