@@ -3938,7 +3938,8 @@ toolcool-color-picker {
 }
 
 .neutral_warning {
-    color: rgba(255, 0, 0, 0.5)
+    color: rgba(225, 0, 0, 0.9);
+    font-weight: 800;
 }
 
 .max_context_unlocked_block .checkbox_label {
