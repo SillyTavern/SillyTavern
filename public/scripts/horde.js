@@ -25,6 +25,7 @@ let horde_settings = {
     models: [],
     auto_adjust_response_length: true,
     auto_adjust_context_length: false,
+    trusted_workers_only: false,
 };
 
 const MAX_RETRIES = 100;
@@ -100,7 +101,7 @@ async function generateHorde(prompt, params, signal) {
     const payload = {
         "prompt": prompt,
         "params": params,
-        //"trusted_workers": false,
+        "trusted_workers": horde_settings.trusted_workers_only,
         //"slow_workers": false,
         "models": horde_settings.models,
     };
@@ -198,6 +199,7 @@ function loadHordeSettings(settings) {
 
     $('#horde_auto_adjust_response_length').prop("checked", horde_settings.auto_adjust_response_length);
     $('#horde_auto_adjust_context_length').prop("checked", horde_settings.auto_adjust_context_length);
+    $("#horde_trusted_workers_only").prop("checked", horde_settings.trusted_workers_only);
 }
 
 async function showKudos() {
@@ -250,6 +252,11 @@ jQuery(function () {
         horde_settings.auto_adjust_context_length = !!$(this).prop("checked");
         saveSettingsDebounced();
     });
+
+    $("#horde_trusted_workers_only").on("input", function () {
+        horde_settings.trusted_workers_only = !!$(this).prop("checked");
+        saveSettingsDebounced();
+    })
 
     $("#horde_api_key").on("input", async function () {
         const key = $(this).val().trim();

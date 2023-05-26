@@ -1008,6 +1008,12 @@
                                 <input id="horde_auto_adjust_response_length" type="checkbox" />
                                 Adjust response length to worker capabilities
                             </label>
+
+                            <label for="horde_trusted_workers_only" class="checkbox_label" title="Can help with bad responses by queueing only the approved workers. May slowdown the response time.">
+                                <input id="horde_trusted_workers_only" type="checkbox" />
+                                Trusted workers only
+                            </label>
+
                             <h4>API key</h4>
                             <h5>Get it here: <a target="_blank" href="https://horde.koboldai.net/register">Register</a><br>
                                 Enter <span class="monospace">0000000000</span> to use anonymous mode.
@@ -1026,7 +1032,7 @@
                                     <div class="fa-solid fa-repeat "></div>
                                 </div>
                             </h4>
-                            <small class="horde_multiple_hint">You can select multiple models.</small>
+                            <small class="horde_multiple_hint">You can select multiple models.<br>Avoid sending sensitive information to the Horde. <a id="horde_privacy_disclaimer" target="_blank" href="/notes#horde">Learn more</a></small>
                             <select id="horde_model" multiple>
                                 <option>-- Horde models not loaded --</option>
                             </select>
