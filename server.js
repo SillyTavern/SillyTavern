@@ -1676,6 +1676,40 @@ app.post("/importchat", urlencodedParser, function (request, response) {
                     }
 
                     response.send({ res: true });
+                } else if (Array.isArray(jsonData.data_visible)) {
+                    // oobabooga's format
+                    const chat = [{
+                        user_name: 'You',
+                        character_name: ch_name,
+                        create_date: humanizedISO8601DateTime(),
+                    }];
+
+                    for (const arr of jsonData.data_visible) {
+                        if (arr[0]) {
+                            const userMessage = {
+                                name: 'You',
+                                is_user: true,
+                                is_name: true,
+                                send_date: humanizedISO8601DateTime(),
+                                mes: arr[0],
+                            };
+                            chat.push(userMessage);
+                        }
+                        if (arr[1]) {
+                            const charMessage = {
+                                name: ch_name,
+                                is_user: false,
+                                is_name: true,
+                                send_date: humanizedISO8601DateTime(),
+                                mes: arr[1],
+                            };
+                            chat.push(charMessage);
+                        }
+                    }
+
+                    fs.writeFileSync(`${chatsPath + avatar_url}/${ch_name} - ${humanizedISO8601DateTime()} imported.jsonl`, chat.map(JSON.stringify).join('\n'), 'utf8');
+
+                    response.send({ res: true });
                 } else {
                     response.send({ error: true });
                 }
