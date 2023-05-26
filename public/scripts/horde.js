@@ -1,6 +1,7 @@
 import { saveSettingsDebounced, changeMainAPI, callPopup, setGenerationProgress, CLIENT_VERSION, getRequestHeaders } from "../script.js";
 import { SECRET_KEYS, writeSecret } from "./secrets.js";
 import { delay } from "./utils.js";
+import { deviceInfo } from "./RossAscends-mods.js";
 
 export {
     horde_settings,
@@ -215,12 +216,33 @@ async function showKudos() {
     toastr.info(`Kudos: ${data.kudos}`, data.username);
 }
 
+
+
 jQuery(function () {
-    $("#horde_model").on("change", function () {
+
+    var hordeModelSelectScrollTop = null;
+    $("#horde_model").on('mousedown change', function (e) {
+        //desktop-only routine for multi-select without CTRL
+        if (deviceInfo.device.type === 'desktop') {
+            e.preventDefault();
+            var option = $(e.target);
+            var selectElement = $(this)[0];
+            hordeModelSelectScrollTop = selectElement.scrollTop;
+            option.prop('selected', !option.prop('selected'));
+            setTimeout(function () {
+                selectElement.scrollTop = hordeModelSelectScrollTop;
+            }, 1)
+        }
         horde_settings.models = $('#horde_model').val();
         console.log('Updated Horde models', horde_settings.models);
-        saveSettingsDebounced();
     });
+
+    /*     $("#horde_model").on("change", function () {
+            horde_settings.models = $('#horde_model').val();
+            console.log('Updated Horde models', horde_settings.models);
+            saveSettingsDebounced();
+        }); */
+
 
     $("#horde_auto_adjust_response_length").on("input", function () {
         horde_settings.auto_adjust_response_length = !!$(this).prop("checked");
