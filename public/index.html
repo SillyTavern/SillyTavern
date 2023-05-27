@@ -1118,7 +1118,14 @@
                         </div>
                     </div>
                     <div id="openai_api" style="display: none;position: relative;">
-                        <form action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                        <label for="use_window_ai" class="checkbox_label">
+                            <input id="use_window_ai" type="checkbox" />
+                            Use Window.ai 
+                            <a href="/notes#windowai" class="notes-link" target="_blank">
+                                <span class="note-link-span">?</span>
+                            </a>
+                        </label>
+                        <form id="openai_form" action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <h4>API key </h4>
                             <span>
                                 <ol>
@@ -1135,24 +1142,24 @@
                             <div class="neutral_warning">For privacy reasons, your API key will be hidden after you reload the page.</div>
                             <input id="api_button_openai" class="menu_button" type="submit" value="Connect">
                             <div id="api_loading_openai" class=" api-load-icon fa-solid fa-hourglass fa-spin"></div>
+                            <div class="online_status4">
+                                <div class="online_status_indicator4"></div>
+                                <div class="online_status_text4">No connection...</div>
+                            </div>
+                            <div>
+                                <h4>OpenAI Model</h4>
+                                <select id="model_openai_select">
+                                    <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+                                    <option value="gpt-3.5-turbo-0301">gpt-3.5-turbo-0301</option>
+                                    <option value="gpt-4">gpt-4</option>
+                                    <option value="gpt-4-0314">gpt-4-0314</option>
+                                    <option value="gpt-4-32k">gpt-4-32k</option>
+                                </select>
+                            </div>
+                            <div>
+                                <a id="openai_api_usage" href="javascript:void(0);">View API Usage Metrics</a>
+                            </div>
                         </form>
-                        <div class="online_status4">
-                            <div class="online_status_indicator4"></div>
-                            <div class="online_status_text4">No connection...</div>
-                        </div>
-                        <div>
-                            <h4>OpenAI Model</h4>
-                            <select id="model_openai_select">
-                                <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
-                                <option value="gpt-3.5-turbo-0301">gpt-3.5-turbo-0301</option>
-                                <option value="gpt-4">gpt-4</option>
-                                <option value="gpt-4-0314">gpt-4-0314</option>
-                                <option value="gpt-4-32k">gpt-4-32k</option>
-                            </select>
-                        </div>
-                        <div>
-                            <a id="openai_api_usage" href="javascript:void(0);">View API Usage Metrics</a>
-                        </div>
                         <br>
                     </div>
                     <div id="poe_api">
