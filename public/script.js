@@ -2188,7 +2188,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             }
 
             let generate_data;
-            if (main_api == 'kobold') {
+            if (main_api == 'koboldhorde' || main_api == 'kobold') {
                 generate_data = {
                     prompt: finalPromt,
                     gui_settings: true,
@@ -2197,8 +2197,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     max_context_length: max_context,
                     singleline: kai_settings.single_line,
                 };
-            }
-            else if (main_api == 'koboldhorde' || main_api == 'kobold') {
+
                 if (preset_settings != 'gui') {
                     const maxContext = (adjustedParams && horde_settings.auto_adjust_context_length) ? adjustedParams.maxContextLength : max_context;
                     generate_data = getKoboldGenerationData(finalPromt, this_settings, this_amount_gen, maxContext, isImpersonate);
