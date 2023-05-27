@@ -2199,12 +2199,11 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 };
 
             }
-            else if (main_api == 'koboldhorde') {
+            else if (main_api == 'koboldhorde' || main_api == 'kobold') {
                 if (preset_settings != 'gui') {
-                    const maxContext = horde_settings.auto_adjust_context_length ? adjustedParams.maxContextLength : max_context;
+                    const maxContext = (adjustedParams && horde_settings.auto_adjust_context_length) ? adjustedParams.maxContextLength : max_context;
                     generate_data = getKoboldGenerationData(finalPromt, this_settings, this_amount_gen, maxContext, isImpersonate);
                 }
-
             }
             else if (main_api == 'textgenerationwebui') {
                 generate_data = getTextGenGenerationData(finalPromt, this_amount_gen, isImpersonate);
