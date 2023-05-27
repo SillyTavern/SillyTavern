@@ -3813,16 +3813,6 @@ async function getSettings(type) {
                     }
                 }
 
-                //Load which API we are using
-                if (settings.main_api != undefined) {
-                    main_api = settings.main_api;
-                    $("#main_api option[value=" + main_api + "]").attr(
-                        "selected",
-                        "true"
-                    );
-                    changeMainAPI();
-                }
-
                 //Load KoboldAI settings
                 koboldai_setting_names = data.koboldai_setting_names;
                 koboldai_settings = data.koboldai_settings;
@@ -3911,7 +3901,7 @@ async function getSettings(type) {
                 // Load power user settings
                 loadPowerUserSettings(settings, data);
 
-                // Load- character tags
+                // Load character tags
                 loadTagsSettings(settings);
 
                 // Load context templates
@@ -3924,8 +3914,14 @@ async function getSettings(type) {
                 $("#amount_gen").val(amount_gen);
                 $("#amount_gen_counter").text(`${amount_gen}`);
 
-                //Enable GUI deference settings if GUI is selected for Kobold
-                if (main_api === "kobold") {
+                //Load which API we are using
+                if (settings.main_api != undefined) {
+                    main_api = settings.main_api;
+                    $("#main_api option[value=" + main_api + "]").attr(
+                        "selected",
+                        "true"
+                    );
+                    changeMainAPI();
                 }
 
                 //Load User's Name and Avatar

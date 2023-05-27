@@ -557,8 +557,28 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
             return showWindowExtensionError();
         }
 
-        async function* windowStreamingFunction(res) {
-            yield (res?.message?.content || '');
+        let content = '';
+        let lastContent = '';
+        let finished = false;
+
+        async function* windowStreamingFunction() {
+            while (true) {
+                if (signal.aborted) {
+                    return;
+                }
+
+                await delay(1);
+
+                if (lastContent !== content) {
+                    yield content;
+                }
+
+                lastContent = content;
+
+                if (finished) {
+                    return;
+                }
+            }
         }
 
         const generatePromise = window.ai.generateText(
@@ -568,22 +588,34 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
             {
                 temperature: parseFloat(oai_settings.temp_openai),
                 maxTokens: oai_settings.openai_max_tokens,
-                onStreamResult: windowStreamingFunction,
+                onStreamResult: (res, err) => {
+                    if (err) {
+                        handleWindowError(err);
+                    }
+
+                    const thisContent = res?.message?.content;
+
+                    if (res?.isPartial) {
+                        content += thisContent;
+                    }
+                    else {
+                        content = thisContent;
+                    }
+                },
             }
         );
 
-        if (stream) {
-            return windowStreamingFunction;
-        }
-
         try {
-            const [{ message }] = await generatePromise;
-            windowStreamingFunction(message);
-            return message?.content;
+            if (stream) {
+                generatePromise.then(() => { finished = true; }).catch(handleWindowError);
+                return windowStreamingFunction;
+            } else {
+                const result = await generatePromise;
+                content = result[0]?.message?.content;
+                return content;
+            }
         } catch (err) {
-            const text = parseWindowError(err);
-            toastr.error(text, 'Window.ai returned an error');
-            throw err;
+            handleWindowError(err);
         }
     }
 
@@ -651,6 +683,12 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
     }
 }
 
+function handleWindowError(err) {
+    const text = parseWindowError(err);
+    toastr.error(text, 'Window.ai returned an error');
+    throw err;
+}
+
 function parseWindowError(err) {
     let text = 'Unknown error';
 
@@ -671,7 +709,7 @@ function parseWindowError(err) {
             text = 'Malformed request';
             break;
     }
-    
+
     return text;
 }
 
@@ -812,6 +850,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.bias_preset_selected = settings.bias_preset_selected ?? default_settings.bias_preset_selected;
     oai_settings.bias_presets = settings.bias_presets ?? default_settings.bias_presets;
     oai_settings.legacy_streaming = settings.legacy_streaming ?? default_settings.legacy_streaming;
+    oai_settings.use_window_ai = settings.use_window_ai ?? default_settings.use_window_ai;
 
     if (settings.nsfw_toggle !== undefined) oai_settings.nsfw_toggle = !!settings.nsfw_toggle;
     if (settings.keep_example_dialogue !== undefined) oai_settings.keep_example_dialogue = !!settings.keep_example_dialogue;
@@ -891,7 +930,7 @@ async function getStatusOpen() {
                 showWindowExtensionError();
                 status = 'no_connection';
             }
-            
+
             setOnlineStatus(status);
             return resultCheckStatusOpen();
         }
