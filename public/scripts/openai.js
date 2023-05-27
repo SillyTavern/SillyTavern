@@ -610,7 +610,10 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
 
         try {
             if (stream) {
-                generatePromise.then(() => { finished = true; }).catch(handleWindowError);
+                generatePromise.then((res) => {
+                    content = res[0]?.message?.content;
+                    finished = true;
+                }).catch(handleWindowError);
                 return windowStreamingFunction;
             } else {
                 const result = await generatePromise;
