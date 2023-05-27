@@ -4328,7 +4328,7 @@ export function select_selected_character(chid) {
     //$("#character_import_button").css("display", "none");
     $("#create_button").attr("value", "Save");              // what is the use case for this?
     $("#dupe_button").show();
-    //$("#create_button_label").css("display", "none");
+    $("#create_button_label").css("display", "none");
 
     // Don't update the navbar name if we're peeking the group member defs
     if (!selected_group) {
