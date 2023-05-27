@@ -1673,6 +1673,8 @@ app.post("/importchat", urlencodedParser, function (request, response) {
     let filedata = request.file;
     let avatar_url = (request.body.avatar_url).replace('.png', '');
     let ch_name = request.body.character_name;
+    let user_name = request.body.user_name || 'You';
+
     if (filedata) {
         if (format === 'json') {
             fs.readFile(`./uploads/${filedata.filename}`, 'utf8', (err, data) => {
@@ -1689,13 +1691,13 @@ app.post("/importchat", urlencodedParser, function (request, response) {
                         from(history) {
                             return [
                                 {
-                                    user_name: 'You',
+                                    user_name: user_name,
                                     character_name: ch_name,
                                     create_date: humanizedISO8601DateTime(),
                                 },
                                 ...history.msgs.map(
                                     (message) => ({
-                                        name: message.src.is_human ? 'You' : ch_name,
+                                        name: message.src.is_human ? user_name : ch_name,
                                         is_user: message.src.is_human,
                                         is_name: true,
                                         send_date: humanizedISO8601DateTime(),
@@ -1727,7 +1729,7 @@ app.post("/importchat", urlencodedParser, function (request, response) {
                 } else if (Array.isArray(jsonData.data_visible)) {
                     // oobabooga's format
                     const chat = [{
-                        user_name: 'You',
+                        user_name: user_name,
                         character_name: ch_name,
                         create_date: humanizedISO8601DateTime(),
                     }];
@@ -1735,7 +1737,7 @@ app.post("/importchat", urlencodedParser, function (request, response) {
                     for (const arr of jsonData.data_visible) {
                         if (arr[0]) {
                             const userMessage = {
-                                name: 'You',
+                                name: user_name,
                                 is_user: true,
                                 is_name: true,
                                 send_date: humanizedISO8601DateTime(),

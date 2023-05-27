@@ -6541,6 +6541,7 @@ $(document).ready(function () {
         $("#chat_import_file_type").val(format);
 
         var formData = new FormData($("#form_import_chat").get(0));
+        formData.append('user_name', name1);
         $("#select_chat_div").html("");
         $("#load_select_chat_div").css("display", "block");
 
