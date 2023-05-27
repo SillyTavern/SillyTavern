@@ -121,7 +121,7 @@ waitForElement("#floatingPrompt", 10000).then(function () {
 });
 
 // Device detection
-const deviceInfo = await getDeviceInfo();
+export const deviceInfo = await getDeviceInfo();
 
 async function getDeviceInfo() {
     try {
@@ -135,7 +135,7 @@ async function getDeviceInfo() {
     }
 }
 
-function isMobile() {
+export function isMobile() {
     const mobileTypes = ['smartphone', 'tablet', 'phablet', 'feature phone', 'portable media player'];
     return mobileTypes.includes(deviceInfo?.device?.type);
 }
@@ -336,15 +336,6 @@ export async function favsToHotswap() {
         //console.log(`count was ${count} so no need to knock off any selectors!`);
     }
 }
-
-/* function RestoreNavTab() {
-    if ($('#rm_button_selected_ch').children("h2").text() !== '') {
-
-        $(SelectedNavTab).click();                                 
-    } else {
-        setTimeout(RestoreNavTab, 100);                            
-    }
-} */
 
 //changes input bar and send button display depending on connection status
 function RA_checkOnlineStatus() {

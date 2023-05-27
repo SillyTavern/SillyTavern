@@ -145,7 +145,7 @@ export async function getGroupChat(groupId) {
         }
         printMessages();
     } else {
-        sendSystemMessage(system_message_types.GROUP);
+        sendSystemMessage(system_message_types.GROUP, '', { isSmallSys: true });
         if (group && Array.isArray(group.members)) {
             for (let member of group.members) {
                 const character = characters.find(x => x.avatar === member || x.name === member);
@@ -762,7 +762,7 @@ async function deleteGroup(id) {
 
         $("#rm_info_avatar").html("");
         $("#rm_info_block").transition({ opacity: 0, duration: 0 });
-        select_rm_info("Group deleted!");
+        select_rm_info("group_delete", id);
         $("#rm_info_block").transition({ opacity: 1.0, duration: 2000 });
 
         $("#rm_button_selected_ch").children("h2").text('');
@@ -1133,15 +1133,8 @@ async function createGroup() {
     if (createGroupResponse.ok) {
         const data = await createGroupResponse.json();
         createTagMapFromList("#groupTagList", data.id);
-
         await getCharacters();
-        $("#rm_info_avatar").html("");
-        const avatar = $("#avatar_div_div").clone();
-        avatar.find("img").attr("src", avatar_url);
-        $("#rm_info_avatar").append(avatar);
-        $("#rm_info_block").transition({ opacity: 0, duration: 0 });
-        select_rm_info("Group chat created");
-        $("#rm_info_block").transition({ opacity: 1.0, duration: 2000 });
+        select_rm_info('group_create', data.id);
     }
 }
 

@@ -244,6 +244,31 @@ body.tts .mes[is_system="true"] .mes_narrate {
     display: none;
 }
 
+.mes.smallSysMes {
+    padding: 5px !important;
+    font-size: calc(var(--mainFontSize)* 0.9);
+    text-align: center;
+}
+
+.mes.smallSysMes .mes_text {
+    padding: 0 !important;
+    text-align: center;
+}
+
+.mes.smallSysMes .mes_block {
+    margin-right: unset !important;
+}
+
+.mes.smallSysMes .ch_name {
+    display: none;
+}
+
+.mes.smallSysMes .mesAvatarWrapper {
+    display: none;
+    height: unset;
+    min-height: unset;
+}
+
 body.sd .sd_message_gen,
 body.tts .mes_narrate {
     display: inline-block;
@@ -416,30 +441,34 @@ code {
     overflow: hidden;
 }
 
-#send_but {
+
+#send_but_sheld>div {
     width: 40px;
     height: 40px;
     margin: 0;
-    display: none;
     outline: none;
     border: none;
     cursor: pointer;
     transition: 0.3s;
     opacity: 0.7;
-    order: 99999;
     align-items: center;
     justify-content: center;
 }
 
-#loading_mes {
+#options_button:hover,
+#send_but_sheld>div:hover {
+    opacity: 1;
+    filter: brightness(1.2);
+}
+
+#send_but {
     display: none;
-    width: 40px;
-    height: 40px;
-    margin: 0 auto;
     order: 99999;
-    align-items: center;
-    justify-content: center;
-    filter: brightness(0.7);
+}
+
+.mes_stop {
+    display: none;
+    order: 99998;
 }
 
 #options_button {
@@ -464,12 +493,6 @@ code {
     font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
     font-size: var(--mainFontSize);
     font-weight: 400;
-}
-
-#options_button:hover,
-#send_but:hover {
-    opacity: 1;
-    filter: brightness(1.2);
 }
 
 #options {
@@ -1721,6 +1744,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 /* ------ online status indicators and texts. 2 = kobold AI, 3 = Novel AI  ----------*/
 #online_status2,
+#online_status_horde,
 .online_status4 {
     opacity: 0.5;
     margin-top: 2px;
@@ -1728,6 +1752,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 }
 
 #online_status_indicator2,
+#online_status_indicator_horde,
 .online_status_indicator4 {
     border-radius: 7px;
     width: 14px;
@@ -1737,6 +1762,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 }
 
 #online_status_text2,
+#online_status_text_horde,
 .online_status_text4 {
     margin-left: 4px;
     display: inline-block;
@@ -2267,16 +2293,6 @@ input[type="range"]::-webkit-slider-thumb {
     background-color: var(--black70a);
     -webkit-backdrop-filter: blur(var(--SmartThemeBlurStrength));
     backdrop-filter: blur(var(--SmartThemeBlurStrength));
-}
-
-.mes_stop {
-    display: none;
-    float: right;
-    cursor: pointer;
-    transition: opacity 0.3s ease-in-out;
-    height: 20px;
-    width: 20px;
-    opacity: 0.5;
 }
 
 .mes_buttons {
@@ -3922,7 +3938,8 @@ toolcool-color-picker {
 }
 
 .neutral_warning {
-    color: rgba(255, 0, 0, 0.5)
+    color: rgba(225, 0, 0, 0.9);
+    font-weight: 800;
 }
 
 .max_context_unlocked_block .checkbox_label {

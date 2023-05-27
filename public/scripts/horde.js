@@ -1,6 +1,13 @@
-import { saveSettingsDebounced, changeMainAPI, callPopup, setGenerationProgress, CLIENT_VERSION, getRequestHeaders } from "../script.js";
+import {
+    saveSettingsDebounced,
+    callPopup,
+    setGenerationProgress,
+    CLIENT_VERSION,
+    getRequestHeaders,
+} from "../script.js";
 import { SECRET_KEYS, writeSecret } from "./secrets.js";
 import { delay } from "./utils.js";
+import { deviceInfo } from "./RossAscends-mods.js";
 
 export {
     horde_settings,
@@ -16,7 +23,6 @@ let models = [];
 
 let horde_settings = {
     models: [],
-    use_horde: false,
     auto_adjust_response_length: true,
     auto_adjust_context_length: false,
 };
@@ -80,7 +86,7 @@ async function adjustHordeGenerationParams(max_context_length, max_length) {
     return { maxContextLength, maxLength };
 }
 
-async function generateHorde(prompt, params) {
+async function generateHorde(prompt, params, signal) {
     validateHordeModel();
     delete params.prompt;
 
@@ -120,6 +126,16 @@ async function generateHorde(prompt, params) {
     console.log(`Horde task id = ${task_id}`);
 
     for (let retryNumber = 0; retryNumber < MAX_RETRIES; retryNumber++) {
+        if (signal.aborted) {
+            await fetch(`https://horde.koboldai.net/api/v2/generate/text/status/${task_id}`, {
+                method: 'DELETE',
+                headers: {
+                    "Client-Agent": CLIENT_VERSION,
+                }
+            });
+            throw new Error('Request aborted');
+        }
+
         const statusCheckResponse = await fetch(`https://horde.koboldai.net/api/v2/generate/text/status/${task_id}`, getRequestArgs());
 
         const statusCheckJson = await statusCheckResponse.json();
@@ -180,7 +196,6 @@ function loadHordeSettings(settings) {
         Object.assign(horde_settings, settings.horde_settings);
     }
 
-    $('#use_horde').prop("checked", horde_settings.use_horde).trigger('input');
     $('#horde_auto_adjust_response_length').prop("checked", horde_settings.auto_adjust_response_length);
     $('#horde_auto_adjust_context_length').prop("checked", horde_settings.auto_adjust_context_length);
 }
@@ -208,27 +223,22 @@ async function showKudos() {
 }
 
 jQuery(function () {
-    $("#use_horde").on("input", async function () {
-        horde_settings.use_horde = !!$(this).prop("checked");
 
-        if (horde_settings.use_horde) {
-            $('#kobold_api_block').hide();
-            $('#kobold_horde_block').show();
+    let hordeModelSelectScrollTop = null;
+
+    $("#horde_model").on('mousedown change', async function (e) {
+        //desktop-only routine for multi-select without CTRL
+        if (deviceInfo.device.type === 'desktop') {
+            e.preventDefault();
+            const option = $(e.target);
+            const selectElement = $(this)[0];
+            hordeModelSelectScrollTop = selectElement.scrollTop;
+            option.prop('selected', !option.prop('selected'));
+            await delay(1);
+            selectElement.scrollTop = hordeModelSelectScrollTop;
         }
-        else {
-            $('#kobold_api_block').show();
-            $('#kobold_horde_block').hide();
-        }
-
-        // Trigger status check
-        changeMainAPI();
-        saveSettingsDebounced();
-    });
-
-    $("#horde_model").on("change", function () {
         horde_settings.models = $('#horde_model').val();
         console.log('Updated Horde models', horde_settings.models);
-        saveSettingsDebounced();
     });
 
     $("#horde_auto_adjust_response_length").on("input", function () {
