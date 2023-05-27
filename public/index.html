@@ -2143,35 +2143,36 @@
             </div>
         </div>
     </div>
-    <div id="character_popup">
+    <div id="character_popup" class="flex-container flexFlowColumn flexNoGap">
 
         <div id="character_popup_text">
-            <div>
-                <img src="img/book2.png" id="advanced_book_logo">
-            </div>
-
-            <div>
-                <h3 id="character_popup_text_h3"></h3> - Advanced Definitions
-            </div>
-
+            <h3 id="character_popup_text_h3"></h3> - Advanced Definitions
         </div>
+        <hr>
         <div id="character_cross" class="fa-solid fa-circle-xmark"></div>
 
+        <div id="creatorcomment_div">
+            Creator's Comment
+            <h5>This is not sent to the AI Prompt.
+                <textarea id="creatorcomment_textarea" name="creatorcomment" placeholder="(Describe the bot to the user, list the chat models it has been tested on, and any other useful tips)" form="form_create" class="text_pole" autocomplete="off" rows="2" maxlength="20000"></textarea>
+        </div>
+
         <div id="personality_div">
-            <hr>
-            <h4>Personality summary</h4>
-            <h5>A brief description of the personality <a href="/notes#personalitysummary" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
-            <textarea id="personality_textarea" name="personality" placeholder="" form="form_create" class="text_pole" autocomplete="off" rows="2" maxlength="20000"></textarea>
+            <h4>
+                Personality summary
+                <a href="/notes#personalitysummary" class="notes-link" target="_blank"><span class="note-link-span">?</span></a>
+            </h4>
+            <textarea id="personality_textarea" name="personality" placeholder="(A brief description of the personality)" form="form_create" class="text_pole" autocomplete="off" rows="1" maxlength="20000"></textarea>
         </div>
 
         <div id="scenario_div">
-            <h4>Scenario</h4>
-            <h5>Circumstances and context of the dialogue
+            <h4>
+                Scenario
                 <a href="/notes#scenario" class="notes-link" target="_blank">
                     <span class="note-link-span">?</span>
                 </a>
-            </h5>
-            <textarea id="scenario_pole" name="scenario" class="text_pole" maxlength="20000" value="" autocomplete="off" form="form_create" rows="2"></textarea>
+            </h4>
+            <textarea id="scenario_pole" name="scenario" placeholder="(Circumstances and context of the interaction)" class="text_pole" maxlength="20000" value="" autocomplete="off" form="form_create" rows="1"></textarea>
         </div>
 
         <div id="talkativeness_div">
@@ -2185,13 +2186,13 @@
                 <span>Chatty</span>
             </div>
         </div>
-
-        <div id="mes_example_div">
+        <hr>
+        <div id="mes_example_div" class="flex-container flexFlowColumn">
             <div>
-                <h4>Examples of dialogue</h4>
-                <h5>Forms a personality more clearly <a href="/notes#examplesofdialogue" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
+                <h4>Example Dialogue</h4>
+                <h5>Important to set the character's writing style. <a href="/notes#examplesofdialogue" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
             </div>
-            <textarea id="mes_example_textarea" name="mes_example" placeholder="" form="form_create" maxlength="20000"></textarea>
+            <textarea id="mes_example_textarea" class="flexGrow" name="mes_example" placeholder="(Examples of chat dialog. Begin each example with <start> on a new line.)" form="form_create" maxlength="20000"></textarea>
         </div>
         <div id="character_popup_ok" class="menu_button">Save</div>
 

@@ -673,7 +673,19 @@ function tryParse(str) {
 
 //***************** Main functions
 function charaFormatData(data) {
-    var char = { "name": data.ch_name, "description": data.description, "personality": data.personality, "first_mes": data.first_mes, "avatar": 'none', "chat": data.ch_name + ' - ' + humanizedISO8601DateTime(), "mes_example": data.mes_example, "scenario": data.scenario, "create_date": humanizedISO8601DateTime(), "talkativeness": data.talkativeness, "fav": data.fav };
+    var char = {
+        "name": data.ch_name,
+        "description": data.description,
+        "creatorcomment": data.creatorcomment,
+        "personality": data.personality,
+        "first_mes": data.first_mes,
+        "avatar": 'none', "chat": data.ch_name + ' - ' + humanizedISO8601DateTime(),
+        "mes_example": data.mes_example,
+        "scenario": data.scenario,
+        "create_date": humanizedISO8601DateTime(),
+        "talkativeness": data.talkativeness,
+        "fav": data.fav
+    };
     return char;
 }
 
@@ -1468,6 +1480,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                     let char = {
                         "name": jsonData.name,
                         "description": jsonData.description ?? '',
+                        "creatorcomment": jsonData.creatorcomment ?? '',
                         "personality": jsonData.personality ?? '',
                         "first_mes": jsonData.first_mes ?? '',
                         "avatar": 'none', "chat": jsonData.name + " - " + humanizedISO8601DateTime(),
@@ -1485,6 +1498,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                     let char = {
                         "name": jsonData.char_name,
                         "description": jsonData.char_persona ?? '',
+                        "creatorcomment": '',
                         "personality": '',
                         "first_mes": jsonData.char_greeting ?? '',
                         "avatar": 'none',
@@ -1525,6 +1539,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                     let char = {
                         "name": jsonData.name,
                         "description": jsonData.description ?? '',
+                        "creatorcomment": jsonData.creatorcomment ?? '',
                         "personality": jsonData.personality ?? '',
                         "first_mes": jsonData.first_mes ?? '',
                         "avatar": 'none',
