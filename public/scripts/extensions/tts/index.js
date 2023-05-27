@@ -362,15 +362,15 @@ function onApplyClick() {
     Promise.all([
         ttsProvider.onApplyClick(),
         updateVoiceMap()
-    ]).catch(error => {
+    ]).then(() => {
+        extension_settings.tts[ttsProviderName] = ttsProvider.settings
+        saveSettingsDebounced()
+        setTtsStatus('Successfully applied settings', true)
+        console.info(`Saved settings ${ttsProviderName} ${JSON.stringify(ttsProvider.settings)}`)
+    }).catch(error => {
         console.error(error)
         setTtsStatus(error, false)
     })
-    
-    extension_settings.tts[ttsProviderName] = ttsProvider.settings
-    saveSettingsDebounced()
-    setTtsStatus('Successfully applied settings', true)
-    console.info(`Saved settings ${ttsProviderName} ${JSON.stringify(ttsProvider.settings)}`)
 }
 
 function onEnableClick() {
