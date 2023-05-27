@@ -1545,6 +1545,39 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
     }
 });
 
+app.post("/dupecharacter", jsonParser, async function (request, response) {
+    try {
+        if (!request.body.avatar_url) {
+            console.log("avatar URL not found in request body");
+            console.log(request.body);
+            return response.sendStatus(400);
+        }
+        let filename = path.join(directories.characters, sanitize(request.body.avatar_url));
+        if (!fs.existsSync(filename)) {
+            console.log('file for dupe not found');
+            console.log(filename);
+            return response.sendStatus(404);
+        }
+        let suffix = 1;
+        let newFilename = filename;
+        while (fs.existsSync(newFilename)) {
+            let suffixStr = "_" + suffix;
+            let ext = path.extname(filename);
+            newFilename = filename.slice(0, -ext.length) + suffixStr + ext;
+            suffix++;
+        }
+        fs.copyFile(filename, newFilename, (err) => {
+            if (err) throw err;
+            console.log(`${filename} was copied to ${newFilename}`);
+            response.sendStatus(200);
+        });
+    }
+    catch (error) {
+        console.error(error);
+        return response.send({ error: true });
+    }
+});
+
 app.post("/exportcharacter", jsonParser, async function (request, response) {
     if (!request.body.format || !request.body.avatar_url) {
         return response.sendStatus(400);

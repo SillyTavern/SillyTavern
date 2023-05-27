@@ -4258,30 +4258,38 @@ function select_rm_info(type, charId, previousCharId = null) {
         toastr.error(`Invalid process (no 'type')`);
         return;
     }
+    if (type !== 'group_create') {
+        var displayName = String(charId).replace('.png', '');
+    }
+
     if (type === 'char_delete') {
-        toastr.warning(`Character Deleted: ${charId}`);
+        toastr.warning(`Character Deleted: ${displayName}`);
     }
     if (type === 'char_create') {
-        toastr.success(`Character Created: ${charId}`);
+        toastr.success(`Character Created: ${displayName}`);
     }
     if (type === 'group_create') {
         toastr.success(`Group Created`);
     }
-    if (type === 'char_import') {
-        toastr.success(`Character Imported: ${charId}`);
+    if (type === 'group_delete') {
+        toastr.warning(`Group Deleted`);
     }
 
+    if (type === 'char_import') {
+        toastr.success(`Character Imported: ${displayName}`);
+    }
+
+    getCharacters();
     selectRightMenuWithAnimation('rm_characters_block');
 
     if (type === 'char_import' || type === 'char_create') {
 
-        //$(`#rm_characters_block [title="${charId + '.png'}"]`).scrollIntoView({ behavior: "smooth", block: "end" });
-        const element = $(`#rm_characters_block [title="${charId + '.png'}"]`).get(0);
+        const element = $(`#rm_characters_block [title="${charId}"]`).get(0);
         element.scrollIntoView({ behavior: 'smooth', block: 'end' });
 
-        $(`#rm_characters_block [title="${charId + '.png'}"]`).parent().addClass('flash animated');
+        $(`#rm_characters_block [title="${charId}"]`).parent().addClass('flash animated');
         setTimeout(function () {
-            $(`#rm_characters_block [title="${charId + '.png'}"]`).parent().removeClass('flash animated');
+            $(`#rm_characters_block [title="${charId}"]`).parent().removeClass('flash animated');
         }, 5000);
     }
 
@@ -4319,7 +4327,8 @@ export function select_selected_character(chid) {
     $("#rm_button_back").css("display", "none");
     //$("#character_import_button").css("display", "none");
     $("#create_button").attr("value", "Save");              // what is the use case for this?
-    $("#create_button_label").css("display", "none");
+    $("#dupe_button").show();
+    //$("#create_button_label").css("display", "none");
 
     // Don't update the navbar name if we're peeking the group member defs
     if (!selected_group) {
@@ -4376,8 +4385,7 @@ function select_rm_create() {
     $("#export_button").css("display", "none");
     $("#create_button_label").css("display", "");
     $("#create_button").attr("value", "Create");
-    //RossAscends: commented this out as part of the auto-loading token counter
-    //$('#result_info').html('&nbsp;');
+    $("#dupe_button").hide();
 
     //create text poles
     $("#rm_button_back").css("display", "");
@@ -4511,7 +4519,7 @@ function read_bg_load(input) {
                 url: "/downloadbackground",
                 data: formData,
                 beforeSend: function () {
-                    //$('#create_button').attr('value','Creating...');
+
                 },
                 cache: false,
                 contentType: false,
@@ -5412,7 +5420,6 @@ $(document).ready(function () {
                 url: "/deletecharacter",
                 beforeSend: function () {
                     select_rm_info("char_delete", characters[this_chid].name);
-                    //$('#create_button').attr('value','Deleting...');
                 },
                 data: msg,
                 cache: false,
@@ -5593,7 +5600,7 @@ $(document).ready(function () {
                         $("#rm_info_block").transition({ opacity: 0, duration: 0 });
                         var $prev_img = $("#avatar_div_div").clone();
                         $("#rm_info_avatar").append($prev_img);
-                        select_rm_info(`char_create`, save_name, oldSelectedChar);
+                        select_rm_info(`char_create`, html, oldSelectedChar);
 
                         $("#rm_info_block").transition({ opacity: 1.0, duration: 2000 });
                         crop_data = undefined;
@@ -5617,7 +5624,7 @@ $(document).ready(function () {
                 url: url,
                 data: formData,
                 beforeSend: function () {
-                    //$("#create_button").attr("disabled", true);
+                    $("#create_button").attr("disabled", true);
                     $("#create_button").attr("value", "Save");
                 },
                 cache: false,
@@ -6546,6 +6553,20 @@ $(document).ready(function () {
     $("#rm_button_back_from_group").click(function () {
         selected_button = "characters";
         select_rm_characters();
+    });
+
+    $("#dupe_button").click(async function () {
+
+        const body = { avatar_url: characters[this_chid].avatar };
+        const response = await fetch('/dupecharacter', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify(body),
+        });
+        if (response.ok) {
+            toastr.success("Character Duplicated");
+            getCharacters();
+        }
     });
 
     $(document).on("click", ".select_chat_block, .bookmark_link, .mes_bookmark", async function () {
