@@ -526,6 +526,90 @@ function checkQuotaError(data) {
     }
 }
 
+async function sendWindowAIRequest(openai_msgs_tosend, signal, stream) {
+    if (!('ai' in window)) {
+        return showWindowExtensionError();
+    }
+
+    let content = '';
+    let lastContent = '';
+    let finished = false;
+
+    async function* windowStreamingFunction() {
+        while (true) {
+            if (signal.aborted) {
+                return;
+            }
+
+            // unhang UI thread
+            await delay(1);
+
+            if (lastContent !== content) {
+                yield content;
+            }
+
+            lastContent = content;
+
+            if (finished) {
+                return;
+            }
+        }
+    }
+
+    const onStreamResult = (res, err) => {
+        if (err) {
+            handleWindowError(err);
+        }
+
+        const thisContent = res?.message?.content;
+
+        if (res?.isPartial) {
+            content += thisContent;
+        }
+        else {
+            content = thisContent;
+        }
+    }
+
+    const generatePromise = window.ai.generateText(
+        {
+            messages: openai_msgs_tosend,
+        },
+        {
+            temperature: parseFloat(oai_settings.temp_openai),
+            maxTokens: oai_settings.openai_max_tokens,
+            onStreamResult: onStreamResult,
+        }
+    );
+
+    const handleGeneratePromise = (resolve, reject) => {
+        generatePromise
+            .then((res) => {
+                content = res[0]?.message?.content;
+                finished = true;
+                resolve && resolve(content);
+            })
+            .catch((err) => {
+                handleWindowError(err);
+                finished = true;
+                reject && reject(err);
+            });
+    };
+
+    if (stream) {
+        handleGeneratePromise();
+        return windowStreamingFunction;
+    } else {
+        return new Promise((resolve, reject) => {
+            signal.addEventListener('abort', (reason) => {
+                reject(reason);
+            });
+
+            handleGeneratePromise(resolve, reject);
+        });
+    }
+}
+
 async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
     // Provide default abort signal
     if (!signal) {
@@ -538,6 +622,12 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
 
     let logit_bias = {};
     const stream = type !== 'quiet' && oai_settings.stream_openai;
+
+    // If we're using the window.ai extension, use that instead
+    // Doesn't support logit bias yet
+    if (oai_settings.use_window_ai) {
+        return sendWindowAIRequest(openai_msgs_tosend, signal, stream);
+    }
 
     if (oai_settings.bias_preset_selected
         && Array.isArray(oai_settings.bias_presets[oai_settings.bias_preset_selected])
@@ -558,77 +648,6 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
         "reverse_proxy": oai_settings.reverse_proxy,
         "logit_bias": logit_bias,
     };
-
-    if (oai_settings.use_window_ai) {
-        if (!('ai' in window)) {
-            return showWindowExtensionError();
-        }
-
-        let content = '';
-        let lastContent = '';
-        let finished = false;
-
-        async function* windowStreamingFunction() {
-            while (true) {
-                if (signal.aborted) {
-                    return;
-                }
-
-                // unhang UI thread
-                await delay(1);
-
-                if (lastContent !== content) {
-                    yield content;
-                }
-
-                lastContent = content;
-
-                if (finished) {
-                    return;
-                }
-            }
-        }
-
-        const generatePromise = window.ai.generateText(
-            {
-                messages: openai_msgs_tosend,
-            },
-            {
-                temperature: parseFloat(oai_settings.temp_openai),
-                maxTokens: oai_settings.openai_max_tokens,
-                onStreamResult: (res, err) => {
-                    if (err) {
-                        handleWindowError(err);
-                    }
-
-                    const thisContent = res?.message?.content;
-
-                    if (res?.isPartial) {
-                        content += thisContent;
-                    }
-                    else {
-                        content = thisContent;
-                    }
-                },
-            }
-        );
-
-        try {
-            if (stream) {
-                generatePromise.then((res) => {
-                    content = res[0]?.message?.content;
-                    finished = true;
-                }).catch(handleWindowError);
-                return windowStreamingFunction;
-            } else {
-                const result = await generatePromise;
-                content = result[0]?.message?.content;
-                return content;
-            }
-        } catch (err) {
-            handleWindowError(err);
-        }
-    }
 
     const generate_url = '/generate_openai';
     const response = await fetch(generate_url, {
@@ -1486,7 +1505,7 @@ $(document).ready(function () {
         saveSettingsDebounced();
     });
 
-    $("#wi_format_textarea").on('input', function (){
+    $("#wi_format_textarea").on('input', function () {
         oai_settings.wi_format = $('#wi_format_textarea').val();
         saveSettingsDebounced();
     });
@@ -1555,7 +1574,7 @@ $(document).ready(function () {
         saveSettingsDebounced();
     });
 
-    $("#wi_format_restore").on('click', function() {
+    $("#wi_format_restore").on('click', function () {
         oai_settings.wi_format = default_wi_format;
         $('#wi_format_textarea').val(oai_settings.wi_format);
         saveSettingsDebounced();
