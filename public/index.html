@@ -883,20 +883,44 @@
                                         <textarea id="jailbreak_prompt_textarea" class="text_pole textarea_compact" name="jailbreak_prompt" rows="6" placeholder=""></textarea>
                                     </div>
                                 </div>
-                                <div class="range-block">
-                                    <div class="range-block-title openai_restorable">
-                                        <span>Impersonation prompt</span>
-                                        <div id="impersonation_prompt_restore" title="Restore default prompt" class="right_menu_button">
-                                            <div class="fa-solid fa-clock-rotate-left"></div>
+
+                                <div class="inline-drawer wide100p margin-bot-10px">
+                                    <div class="inline-drawer-toggle inline-drawer-header">
+                                        <b>Advanced prompt bits</b>
+                                        <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+                                    </div>
+                                    <div class="inline-drawer-content">
+                                        <div class="range-block">
+                                            <div class="range-block-title openai_restorable">
+                                                <span>Impersonation prompt</span>
+                                                <div id="impersonation_prompt_restore" title="Restore default prompt" class="right_menu_button">
+                                                    <div class="fa-solid fa-clock-rotate-left"></div>
+                                                </div>
+                                            </div>
+                                            <div class="toggle-description justifyLeft">
+                                                Prompt that is used for Impersonation function
+                                            </div>
+                                            <div class="wide100p">
+                                                <textarea id="impersonation_prompt_textarea" class="text_pole textarea_compact" name="impersonation_prompt" rows="6" placeholder=""></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="range-block">
+                                            <div class="range-block-title openai_restorable">
+                                                <span>World Info format template</span>
+                                                <div id="wi_format_restore" title="Restore default format" class="right_menu_button">
+                                                    <div class="fa-solid fa-clock-rotate-left"></div>
+                                                </div>
+                                            </div>
+                                            <div class="toggle-description justifyLeft">
+                                                Wraps activated World Info entries before inserting into the prompt. Use <tt>{0}</tt> to mark a place where the content is inserted.
+                                            </div>
+                                            <div class="wide100p">
+                                                <textarea id="wi_format_textarea" class="text_pole textarea_compact" rows="3" placeholder=""></textarea>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="toggle-description justifyLeft">
-                                        Prompt that is used for Impersonation function
-                                    </div>
-                                    <div class="wide100p">
-                                        <textarea id="impersonation_prompt_textarea" class="text_pole textarea_compact" name="impersonation_prompt" rows="6" placeholder=""></textarea>
-                                    </div>
                                 </div>
+
                                 <div class="range-block">
                                     <div class="range-block-title openai_restorable">
                                         Logit Bias
