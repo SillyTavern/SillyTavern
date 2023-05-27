@@ -1441,6 +1441,7 @@ app.post("/generate_novelai", jsonParser, function (request, response_generate_n
             "tail_free_sampling": request.body.tail_free_sampling,
             "repetition_penalty": request.body.repetition_penalty,
             "repetition_penalty_range": request.body.repetition_penalty_range,
+            "repetition_penalty_slope": request.body.repetition_penalty_slope,
             "repetition_penalty_frequency": request.body.repetition_penalty_frequency,
             "repetition_penalty_presence": request.body.repetition_penalty_presence,
             //"stop_sequences": {{187}},
@@ -1450,7 +1451,11 @@ app.post("/generate_novelai", jsonParser, function (request, response_generate_n
             //use_string = true;
             "return_full_text": request.body.return_full_text,
             "prefix": request.body.prefix,
-            "order": request.body.order
+            "order": request.body.order,
+            "top_k": request.body.top_k,
+            "top_p": request.body.top_p,
+            "typical_p": request.body.typical_p,
+            "top_a": request.body.top_a
         }
     };
 
