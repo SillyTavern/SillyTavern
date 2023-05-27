@@ -388,6 +388,15 @@ If your subscription tier is Paper, Tablet or Scroll use only Euterpe model othe
 
 _Lost API keys can't be restored! Make sure to keep it safe!_
 
+### Window.ai
+
+You can use window.ai browser extension to access AI models with SillyTavern.
+
+1. Install a browser extension from: [windowai.io](https://windowai.io/)
+2. Create an OpenRouter account: [openrouter.ai](https://openrouter.ai/)
+3. Select OpenRouter as a provider in Window.ai extension.
+4. Use OpenAI API provider and enable "Use Window.ai" option in SillyTavern
+
 ## Poe
 
 ### API key

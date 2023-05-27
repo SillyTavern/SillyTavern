@@ -104,6 +104,7 @@ const default_settings = {
     jailbreak_system: false,
     reverse_proxy: '',
     legacy_streaming: false,
+    use_window_ai: false,
 };
 
 const oai_settings = {
@@ -129,6 +130,7 @@ const oai_settings = {
     jailbreak_system: false,
     reverse_proxy: '',
     legacy_streaming: false,
+    use_window_ai: false,
 };
 
 let openai_setting_names;
@@ -550,6 +552,41 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
         "logit_bias": logit_bias,
     };
 
+    if (oai_settings.use_window_ai) {
+        if (!('ai' in window)) {
+            return showWindowExtensionError();
+        }
+
+        async function* windowStreamingFunction(res) {
+            yield (res?.message?.content || '');
+        }
+
+        const generatePromise = window.ai.generateText(
+            {
+                messages: openai_msgs_tosend,
+            },
+            {
+                temperature: parseFloat(oai_settings.temp_openai),
+                maxTokens: oai_settings.openai_max_tokens,
+                onStreamResult: windowStreamingFunction,
+            }
+        );
+
+        if (stream) {
+            return windowStreamingFunction;
+        }
+
+        try {
+            const [{ message }] = await generatePromise;
+            windowStreamingFunction(message);
+            return message?.content;
+        } catch (err) {
+            const text = parseWindowError(err);
+            toastr.error(text, 'Window.ai returned an error');
+            throw err;
+        }
+    }
+
     const generate_url = '/generate_openai';
     const response = await fetch(generate_url, {
         method: 'POST',
@@ -612,6 +649,30 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
 
         return data.choices[0]["message"]["content"];
     }
+}
+
+function parseWindowError(err) {
+    let text = 'Unknown error';
+
+    switch (err) {
+        case "NOT_AUTHENTICATED":
+            text = 'Incorrect API key / auth';
+            break;
+        case "MODEL_REJECTED_REQUEST":
+            text = 'AI model refused to fulfill a request';
+            break;
+        case "PERMISSION_DENIED":
+            text = 'User denied permission to the app';
+            break;
+        case "REQUEST_NOT_FOUND":
+            text = 'Permission request popup timed out';
+            break;
+        case "INVALID_REQUEST":
+            text = 'Malformed request';
+            break;
+    }
+    
+    return text;
 }
 
 async function calculateLogitBias() {
@@ -813,10 +874,27 @@ function loadOpenAISettings(data, settings) {
         $('#openai_logit_bias_preset').append(option);
     }
     $('#openai_logit_bias_preset').trigger('change');
+
+    $('#use_window_ai').prop('checked', oai_settings.use_window_ai);
+    $('#openai_form').toggle(!oai_settings.use_window_ai);
 }
 
 async function getStatusOpen() {
     if (is_get_status_openai) {
+        if (oai_settings.use_window_ai) {
+            let status;
+
+            if ('ai' in window) {
+                status = 'Valid';
+            }
+            else {
+                showWindowExtensionError();
+                status = 'no_connection';
+            }
+            
+            setOnlineStatus(status);
+            return resultCheckStatusOpen();
+        }
 
         let data = {
             reverse_proxy: oai_settings.reverse_proxy,
@@ -849,6 +927,15 @@ async function getStatusOpen() {
     } else {
         setOnlineStatus('no_connection');
     }
+}
+
+function showWindowExtensionError() {
+    toastr.error('Get it here: <a href="https://windowai.io/" target="_blank">windowai.io</a>', 'Extension is not installed', {
+        escapeHtml: false,
+        timeOut: 0,
+        extendedTimeOut: 0,
+        preventDuplicates: true,
+    });
 }
 
 function resultCheckStatusOpen() {
@@ -1221,6 +1308,13 @@ function onReverseProxyInput() {
 
 async function onConnectButtonClick(e) {
     e.stopPropagation();
+
+    if (oai_settings.use_window_ai) {
+        is_get_status_openai = true;
+        is_api_button_press_openai = true;
+        return await getStatusOpen();
+    }
+
     const api_key_openai = $('#api_key_openai').val().trim();
 
     if (api_key_openai.length) {
@@ -1383,6 +1477,15 @@ $(document).ready(function () {
 
     $('#legacy_streaming').on('input', function () {
         oai_settings.legacy_streaming = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $('#use_window_ai').on('input', function() {
+        oai_settings.use_window_ai = !!$(this).prop('checked');
+        $('#openai_form').toggle(!oai_settings.use_window_ai);
+        setOnlineStatus('no_connection');
+        resultCheckStatusOpen();
+        $('#api_button_openai').trigger('click');
         saveSettingsDebounced();
     });
 

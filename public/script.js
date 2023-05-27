@@ -3725,6 +3725,10 @@ function changeMainAPI() {
     main_api = selectedVal;
     online_status = "no_connection";
 
+    if (main_api == 'openai' && oai_settings.use_window_ai) {
+        $('#api_button_openai').trigger('click');
+    }
+
     if (main_api == "koboldhorde") {
         is_get_status = true;
         getStatus();
