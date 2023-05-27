@@ -130,10 +130,6 @@ table.responsiveTable {
     padding: 5px;
 }
 
-.sysHR {
-    border-top: 2px solid grey;
-}
-
 .hiddenByCharListScroll {
     visibility: hidden !important;
 }
@@ -563,11 +559,11 @@ code {
     width: 20px;
 }
 
-#right-nav-panel hr,
-#personality_div hr,
-#top-settings-holder hr {
+hr {
     background-image: linear-gradient(90deg, var(--transparent), var(--white30a), var(--transparent));
-    min-height: 1px;
+    margin: 5px 0;
+    height: 1px;
+    border: 0;
 }
 
 .options-content a,
@@ -2424,9 +2420,7 @@ input[type="range"]::-webkit-slider-thumb {
     background-color: var(--black30a);
     backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)*2));
     -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)*2));
-    grid-template-rows: 50px 1fr 1fr 1fr 5fr;
-    grid-gap: 10px;
-    min-height: 100px;
+    min-height: calc(100svh - 100px);
     min-width: 100px;
     max-width: var(--sheldWidth);
     max-height: calc(100svh - 100px);
@@ -2438,12 +2432,9 @@ input[type="range"]::-webkit-slider-thumb {
     right: 0;
     top: 40px;
     box-shadow: 0 0 20px var(--black70a);
-    padding-left: 30px;
-    padding-right: 30px;
-    padding-top: 20px;
-    padding-bottom: 30px;
+    padding: 10px;
     border: 1px solid var(--black30a);
-    border-radius: 0 0 20px 20px;
+    border-radius: 0 0 10px 10px;
     overflow-y: auto;
 }
 
@@ -2468,11 +2459,7 @@ h5 {
 
 
 #character_popup_text {
-    display: grid;
-    grid-template-columns: 50px auto;
-    grid-gap: 20px;
     align-items: center;
-    width: 100%;
 }
 
 #personality_textarea {
@@ -2481,8 +2468,8 @@ h5 {
 
 #mes_example_div {
     height: 100%;
-    display: grid;
-    grid-template-rows: min-content auto;
+    display: flex;
+    flex-grow: 1;
 }
 
 #scenario_pole {
@@ -2492,7 +2479,7 @@ h5 {
 
 #mes_example_textarea {
     width: 100%;
-    max-height: 100%;
+    height: 100%;
     margin-left: 0;
 }
 
@@ -3271,12 +3258,6 @@ span.warning {
 p {
     margin-bottom: 16px;
     margin-top: 0;
-}
-
-hr {
-    margin: 5px 0;
-    height: 1px;
-    border: 0;
 }
 
 h1 {

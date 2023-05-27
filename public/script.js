@@ -336,20 +336,20 @@ const system_messages = {
             <div id="version_display_welcome"></div>
             <h3>Want to Update to the latest version?</h3>
             Read the <a href='/notes/update.html' target='_blank'>instructions here</a>. Also located in your installation's base folder
-            <hr class="sysHR">
+            <hr>
             <h3>In order to begin chatting:</h3>
             <ol>
             <li>Connect to one of the supported generation APIs (the plug icon)</li>
             <li>Create or pick a character from the list (the top-right namecard icon)</li>
             </ol>
-            <hr class="sysHR">
+            <hr>
             <h3>Where to download more characters?</h3>
             <i>(Not endorsed, your discretion is advised)</i>
             <ol>
             <li><a target="_blank" href="https://discord.gg/pygmalionai">Pygmalion AI Discord</a></li>
             <li><a target="_blank" href="https://www.characterhub.org/">CharacterHub (NSFW)</a></li>
             </ol>
-            <hr class="sysHR">
+            <hr>
             <h3>Where can I get help?</h3>
             Before going any further, check out the following resources:
             <ol>
@@ -360,7 +360,7 @@ const system_messages = {
             <li><a target="_blank" href="https://docs.alpindale.dev/">Pygmalion AI Docs</a></li>
             </ol>
             Type <tt>/?</tt> in any chat to get help on message formatting commands.
-            <hr class="sysHR">
+            <hr>
             <h3>Still have questions or suggestions left?</h3>
             <a target="_blank" href="https://discord.gg/RZdyAEUPvj">SillyTavern Community Discord</a>
             <br>
@@ -532,6 +532,7 @@ var selected_button = ""; //which button pressed
 var create_save_name = "";
 var create_fav_chara = "";
 var create_save_description = "";
+var create_save_creatorcomment = "";
 var create_save_personality = "";
 var create_save_first_message = "";
 var create_save_avatar = "";
@@ -2757,7 +2758,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
             Grey color items may not have been included in the context due to certain prompt format settings.
         </span>
         <div id="showRawPrompt" class="fa-solid fa-square-poll-horizontal menu_button"></div>
-        <hr class="sysHR">
+        <hr>
         <div class="justifyLeft">
             <div class="flex-container">
                 <div class="flex-container flex1 flexFlowColumns flexNoGap wide50p tokenGraph">
@@ -2845,7 +2846,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
                 </div>
 
             </div>
-            <hr class="sysHR">
+            <hr>
             <div class="wide100p flex-container flexFlowColumns">
                 <div class="flex-container wide100p">
                     <div  class="flex1">Total Tokens in Prompt:</div><div  class=""> ${finalPromptTokens}</div>
@@ -2855,7 +2856,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
                 </div>
             </div>
         </div>
-        <hr class="sysHR">
+        <hr>
         `, 'text'
         );
 
@@ -2871,7 +2872,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
             Grey color items may not have been included in the context due to certain prompt format settings.
         </span>
         <div id="showRawPrompt" class="fa-solid fa-square-poll-horizontal menu_button"></div>
-        <hr class="sysHR">
+        <hr>
         <div class="justifyLeft">
             <div class="flex-container">
                 <div class="flex-container flex1 flexFlowColumns flexNoGap wide50p tokenGraph">
@@ -2932,7 +2933,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
                 </div>
 
             </div>
-            <hr class="sysHR">
+            <hr>
             <div class="wide100p flex-container flexFlowColumns">
                 <div class="flex-container wide100p">
                     <div  class="flex1">Total Tokens in Prompt:</div><div  class=""> ${totalTokensInPrompt}</div>
@@ -2949,7 +2950,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
                 </div>
             </div>
         </div>
-        <hr class="sysHR">
+        <hr>
         `, 'text'
         );
     }
@@ -4340,6 +4341,7 @@ export function select_selected_character(chid) {
     $("#character_popup_text_h3").text(characters[chid].name);
     $("#character_name_pole").val(characters[chid].name);
     $("#description_textarea").val(characters[chid].description);
+    $("#creatorcomment_textarea").val(characters[chid].creatorcomment);
     $("#personality_textarea").val(characters[chid].personality);
     $("#firstmessage_textarea").val(characters[chid].first_mes);
     $("#scenario_pole").val(characters[chid].scenario);
@@ -4393,6 +4395,7 @@ function select_rm_create() {
     $("#character_popup_text_h3").text("Create character");
     $("#character_name_pole").val(create_save_name);
     $("#description_textarea").val(create_save_description);
+    $("#creatorcomment_textarea").val(create_save_creatorcomment);
     $("#personality_textarea").val(create_save_personality);
     $("#firstmessage_textarea").val(create_save_first_message);
     $("#talkativeness_slider").val(create_save_talkativeness);
@@ -5342,7 +5345,7 @@ $(document).ready(function () {
     $("#advanced_div").click(function () {
         if (!is_advanced_char_open) {
             is_advanced_char_open = true;
-            $("#character_popup").css("display", "grid");
+            $("#character_popup").css("display", "flex");
             $("#character_popup").css("opacity", 0.0);
             $("#character_popup").transition({
                 opacity: 1.0,
@@ -5566,6 +5569,8 @@ $(document).ready(function () {
                         create_save_name = "";
                         $("#description_textarea").val("");
                         create_save_description = "";
+                        $("#creatorcomment_textarea").val("");
+                        create_save_creatorcomment = "";
                         $("#personality_textarea").val("");
                         create_save_personality = "";
                         $("#firstmessage_textarea").val("");
@@ -5700,10 +5705,11 @@ $(document).ready(function () {
         }
     });
 
-    $("#description_textarea, #personality_textarea, #scenario_pole, #mes_example_textarea, #firstmessage_textarea")
+    $("#description_textarea, #creatorcomment_textarea, #personality_textarea, #scenario_pole, #mes_example_textarea, #firstmessage_textarea")
         .on("input", function () {
             if (menu_type == "create") {
                 create_save_description = $("#description_textarea").val();
+                create_save_creatorcomment = $("#creatorcomment_textarea").val();
                 create_save_personality = $("#personality_textarea").val();
                 create_save_scenario = $("#scenario_pole").val();
                 create_save_mes_example = $("#mes_example_textarea").val();
