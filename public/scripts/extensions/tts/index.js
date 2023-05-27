@@ -151,7 +151,7 @@ function resetTtsPlayback() {
 function isTtsProcessing() {
     let processing = false
 
-    // Check job queues 
+    // Check job queues
     if (ttsJobQueue.length > 0 || audioJobQueue > 0) {
         processing = true
     }
@@ -232,7 +232,7 @@ async function onTtsVoicesClick() {
             popupText += `
             <div class="voice_preview">
                 <span class="voice_lang">${voice.lang || ''}</span>
-                <b class="voice_name">${voice.name}</b> 
+                <b class="voice_name">${voice.name}</b>
                 <i onclick="tts_preview('${voice.voice_id}')" class="fa-solid fa-play"></i>
             </div>`
             popupText += `<audio id="${voice.voice_id}" src="${voice.preview_url}" data-disabled="${voice.preview_url == false}"></audio>`
@@ -275,7 +275,7 @@ function onAudioControlClicked() {
 function addAudioControl() {
 
     $('#extensionsMenu').prepend(`
-        <div id="ttsExtensionMenuItem" class="list-group-item flex-container flexGap5">    
+        <div id="ttsExtensionMenuItem" class="list-group-item flex-container flexGap5">
             <div id="tts_media_control" class="extensionsMenuExtensionButton "/></div>
             TTS Playback
         </div>`)
@@ -483,15 +483,15 @@ function onApplyClick() {
     Promise.all([
         ttsProvider.onApplyClick(),
         updateVoiceMap()
-    ]).catch(error => {
+    ]).then(() => {
+        extension_settings.tts[ttsProviderName] = ttsProvider.settings
+        saveSettingsDebounced()
+        setTtsStatus('Successfully applied settings', true)
+        console.info(`Saved settings ${ttsProviderName} ${JSON.stringify(ttsProvider.settings)}`)
+    }).catch(error => {
         console.error(error)
         setTtsStatus(error, false)
     })
-
-    extension_settings.tts[ttsProviderName] = ttsProvider.settings
-    saveSettingsDebounced()
-    setTtsStatus('Successfully applied settings', true)
-    console.info(`Saved settings ${ttsProviderName} ${JSON.stringify(ttsProvider.settings)}`)
 }
 
 function onEnableClick() {
