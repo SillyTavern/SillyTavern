@@ -77,6 +77,7 @@ const default_bias_presets = {
 const gpt3_max = 4095;
 const gpt4_max = 8191;
 const gpt4_32k_max = 32767;
+const unlocked_max = 100 * 1024;
 
 let biasCache = undefined;
 const tokenCache = {};
@@ -105,6 +106,7 @@ const default_settings = {
     reverse_proxy: '',
     legacy_streaming: false,
     use_window_ai: false,
+    max_context_unlocked: false,
 };
 
 const oai_settings = {
@@ -131,6 +133,7 @@ const oai_settings = {
     reverse_proxy: '',
     legacy_streaming: false,
     use_window_ai: false,
+    max_context_unlocked: false,
 };
 
 let openai_setting_names;
@@ -851,6 +854,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.bias_presets = settings.bias_presets ?? default_settings.bias_presets;
     oai_settings.legacy_streaming = settings.legacy_streaming ?? default_settings.legacy_streaming;
     oai_settings.use_window_ai = settings.use_window_ai ?? default_settings.use_window_ai;
+    oai_settings.max_context_unlocked = settings.max_context_unlocked ?? default_settings.max_context_unlocked;
 
     if (settings.nsfw_toggle !== undefined) oai_settings.nsfw_toggle = !!settings.nsfw_toggle;
     if (settings.keep_example_dialogue !== undefined) oai_settings.keep_example_dialogue = !!settings.keep_example_dialogue;
@@ -915,6 +919,7 @@ function loadOpenAISettings(data, settings) {
     $('#openai_logit_bias_preset').trigger('change');
 
     $('#use_window_ai').prop('checked', oai_settings.use_window_ai);
+    $('#oai_max_context_unlocked').prop('checked', oai_settings.max_context_unlocked);
     $('#openai_form').toggle(!oai_settings.use_window_ai);
 }
 
@@ -1022,6 +1027,7 @@ async function saveOpenAIPreset(name, settings) {
         bias_preset_selected: settings.bias_preset_selected,
         reverse_proxy: settings.reverse_proxy,
         legacy_streaming: settings.legacy_streaming,
+        max_context_unlocked: settings.max_context_unlocked,
     };
 
     const savePresetSettings = await fetch(`/savepreset_openai?name=${name}`, {
@@ -1286,7 +1292,8 @@ function onSettingsPresetChange() {
         impersonation_prompt: ['#impersonation_prompt_textarea', 'impersonation_prompt', false],
         bias_preset_selected: ['#openai_logit_bias_preset', 'bias_preset_selected', false],
         reverse_proxy: ['#openai_reverse_proxy', 'reverse_proxy', false],
-        legacy_streaming: ['#legacy_streaming', 'legacy_streaming', false],
+        legacy_streaming: ['#legacy_streaming', 'legacy_streaming', true],
+        max_context_unlocked: ['#oai_max_context_unlocked', 'max_context_unlocked', true],
     };
 
     for (const [key, [selector, setting, isCheckbox]] of Object.entries(settingsToUpdate)) {
@@ -1309,7 +1316,10 @@ function onModelChange() {
     const value = $(this).val();
     oai_settings.openai_model = value;
 
-    if (value == 'gpt-4' || value == 'gpt-4-0314') {
+    if (oai_settings.max_context_unlocked) {
+        $('#openai_max_context').attr('max', unlocked_max);
+    }
+    else if (value == 'gpt-4' || value == 'gpt-4-0314') {
         $('#openai_max_context').attr('max', gpt4_max);
     }
     else if (value == 'gpt-4-32k') {
@@ -1519,12 +1529,18 @@ $(document).ready(function () {
         saveSettingsDebounced();
     });
 
-    $('#use_window_ai').on('input', function() {
+    $('#use_window_ai').on('input', function () {
         oai_settings.use_window_ai = !!$(this).prop('checked');
         $('#openai_form').toggle(!oai_settings.use_window_ai);
         setOnlineStatus('no_connection');
         resultCheckStatusOpen();
         $('#api_button_openai').trigger('click');
+        saveSettingsDebounced();
+    });
+
+    $('#oai_max_context_unlocked').on('input', function () {
+        oai_settings.max_context_unlocked = !!$(this).prop('checked');
+        onModelChange();
         saveSettingsDebounced();
     });
 
