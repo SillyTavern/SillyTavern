@@ -2197,7 +2197,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     max_context_length: max_context,
                     singleline: kai_settings.single_line,
                 };
-
             }
             else if (main_api == 'koboldhorde' || main_api == 'kobold') {
                 if (preset_settings != 'gui') {
