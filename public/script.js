@@ -414,6 +414,9 @@ const system_messages = {
 
 export const event_types = {
     EXTRAS_CONNECTED: 'extras_connected',
+    MESSAGE_SWIPED: 'message_swiped',
+    MESSAGE_SENT: 'message_sent',
+    MESSAGE_RECEIVED: 'message_received',
 }
 
 export const eventSource = new EventEmitter();
@@ -2391,6 +2394,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
                         if (type !== 'quiet') {
                             playMessageSound();
+                            eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1));
                         }
 
 
@@ -2527,6 +2531,7 @@ function sendMessageAsUser(textareaText, messageBias) {
     }
 
     addOneMessage(chat[chat.length - 1]);
+    eventSource.emit(event_types.MESSAGE_SENT, (chat.length - 1));
 }
 
 function getMaxContextSize() {
@@ -4836,6 +4841,7 @@ function swipe_left() {      // when we swipe left..but no generation.
                             queue: false,
                             complete: function () {
                                 saveChatConditional();
+                                eventSource.emit(event_types.MESSAGE_SWIPED, (chat.length - 1));
                             }
                         });
                     }
@@ -4997,6 +5003,7 @@ const swipe_right = () => {
                                         saveChatConditional();
                                     }
                                 }
+                                eventSource.emit(event_types.MESSAGE_SWIPED, (chat.length - 1));
                             }
                         });
                     }

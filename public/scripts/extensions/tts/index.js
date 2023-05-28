@@ -1,4 +1,4 @@
-import { callPopup, cancelTtsPlay, isMultigenEnabled, is_send_press, saveSettingsDebounced } from '../../../script.js'
+import { callPopup, cancelTtsPlay, eventSource, event_types, isMultigenEnabled, is_send_press, saveSettingsDebounced } from '../../../script.js'
 import { extension_settings, getContext } from '../../extensions.js'
 import { getStringHash } from '../../utils.js'
 import { ElevenLabsTtsProvider } from './elevenlabs.js'
@@ -167,7 +167,7 @@ function debugTtsPlayback() {
         {
             "ttsProviderName": ttsProviderName,
             "currentMessageNumber": currentMessageNumber,
-            "isWorkerBusy":isWorkerBusy,
+            "isWorkerBusy": isWorkerBusy,
             "audioPaused": audioPaused,
             "audioJobQueue": audioJobQueue,
             "currentAudioJob": currentAudioJob,
@@ -644,4 +644,5 @@ $(document).ready(function () {
     loadTtsProvider(extension_settings.tts.currentProvider) // No dependencies
     addAudioControl() // Depends on Extension Controls
     setInterval(moduleWorkerWrapper, UPDATE_INTERVAL) // Init depends on all the things
+    eventSource.on(event_types.MESSAGE_SWIPED, resetTtsPlayback);
 })
