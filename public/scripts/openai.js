@@ -19,7 +19,14 @@ import {
     this_chid,
     callPopup,
 } from "../script.js";
-import { groups, selected_group } from "./group-chats.js";
+import {groups, selected_group} from "./group-chats.js";
+
+import {
+    defaultPromptManagerSettings,
+    openAiDefaultPromptLists,
+    openAiDefaultPrompts,
+    PromptManagerModule as PromptManager
+} from "./PromptManager.js";
 
 import {
     power_user,
@@ -36,6 +43,7 @@ export {
     loadOpenAISettings,
     setOpenAIMessages,
     setOpenAIMessageExamples,
+    setupOpenAIPromptManager,
     generateOpenAIPromptCache,
     prepareOpenAIMessages,
     sendOpenAIRequest,
@@ -103,6 +111,8 @@ const oai_settings = {
 
 let openai_setting_names;
 let openai_settings;
+
+let promptManager = null;
 
 function validateReverseProxy() {
     if (!oai_settings.reverse_proxy) {
@@ -178,6 +188,25 @@ function setOpenAIMessageExamples(mesExamplesArray) {
         // add to the example message blocks array
         openai_msgs_example.push(parsed);
     }
+}
+
+function setupOpenAIPromptManager(settings) {
+    promptManager = new PromptManager();
+    const configuration = {
+        prefix: 'openai_',
+        containerIdentifier: 'openai_prompt_manager',
+        listIdentifier: 'openai_prompt_manager_list',
+        draggable: true
+    };
+
+    promptManager.saveServiceSettings = () => {
+        saveSettingsDebounced();
+    }
+
+    promptManager.init(configuration, settings, default_settings);
+    promptManager.render();
+
+
 }
 
 function generateOpenAIPromptCache(charPersonality, topAnchorDepth, anchorTop, anchorBottom) {
