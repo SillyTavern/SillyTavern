@@ -138,7 +138,7 @@ function resetTtsPlayback() {
 
     // Reset audio element
     audioElement.currentTime = 0;
-    audioElement.src = null;
+    audioElement.src = '';
 
     // Clear any queue items
     ttsJobQueue.splice(0, ttsJobQueue.length);
