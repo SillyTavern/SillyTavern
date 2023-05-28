@@ -1862,8 +1862,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             coreChat.pop();
         }
 
-        await runGenerationInterceptors(coreChat);
-        console.log(`Core/all messages: ${coreChat.length}/${chat.length}`);
+        if (extension_settings.chromadb.n_results !== 0) {
+            await runGenerationInterceptors(coreChat);
+            console.log(`Core/all messages: ${coreChat.length}/${chat.length}`);
+        }
 
         if (main_api === 'openai') {
             message_already_generated = ''; // OpenAI doesn't have multigen
