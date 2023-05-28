@@ -1298,6 +1298,7 @@ async function onLogitBiasPresetDeleteClick() {
     saveSettingsDebounced();
 }
 
+// Load OpenAI preset settings
 function onSettingsPresetChange() {
     oai_settings.preset_settings_openai = $('#settings_perset_openai').find(":selected").text();
     const preset = openai_settings[openai_setting_names[oai_settings.preset_settings_openai]];
@@ -1310,6 +1311,7 @@ function onSettingsPresetChange() {
         frequency_penalty: ['#freq_pen_openai', 'freq_pen_openai', false],
         presence_penalty: ['#pres_pen_openai', 'pres_pen_openai', false],
         top_p: ['#top_p_openai', 'top_p_openai', false],
+        max_context_unlocked: ['#oai_max_context_unlocked', 'max_context_unlocked', true],
         openai_model: ['#model_openai_select', 'openai_model', false],
         openai_max_context: ['#openai_max_context', 'openai_max_context', false],
         openai_max_tokens: ['#openai_max_tokens', 'openai_max_tokens', false],
@@ -1325,7 +1327,6 @@ function onSettingsPresetChange() {
         bias_preset_selected: ['#openai_logit_bias_preset', 'bias_preset_selected', false],
         reverse_proxy: ['#openai_reverse_proxy', 'reverse_proxy', false],
         legacy_streaming: ['#legacy_streaming', 'legacy_streaming', true],
-        max_context_unlocked: ['#oai_max_context_unlocked', 'max_context_unlocked', true],
         nsfw_avoidance_prompt: ['#nsfw_avoidance_prompt_textarea', 'nsfw_avoidance_prompt', false],
         wi_format: ['#wi_format_textarea', 'wi_format', false],
     };
@@ -1596,7 +1597,7 @@ $(document).ready(function () {
 
     $('#oai_max_context_unlocked').on('input', function () {
         oai_settings.max_context_unlocked = !!$(this).prop('checked');
-        onModelChange();
+        $("#model_openai_select").trigger('change');
         saveSettingsDebounced();
     });
 
