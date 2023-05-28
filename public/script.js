@@ -1135,6 +1135,10 @@ function addCopyToCodeBlocks(messageElement) {
 function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true } = {}) {
     var messageText = mes["mes"];
 
+    if (mes?.extra?.display_text) {
+        messageText = mes.extra.display_text;
+    }
+
     if (mes.name === name1) {
         var characterName = name1; //set to user's name by default
     } else { var characterName = mes.name }
@@ -4803,6 +4807,16 @@ function swipe_left() {      // when we swipe left..but no generation.
         this_mes_div.css('height', this_mes_div_height);
         const this_mes_block_height = this_mes_block[0].scrollHeight;
         chat[chat.length - 1]['mes'] = chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipe_id']];
+        if (chat[chat.length - 1].extra) {
+            // if message has memory attached - remove it to allow regen
+            if (chat[chat.length - 1].extra.memory) {
+                delete chat[chat.length - 1].extra.memory;
+            }
+            // ditto for display text
+            if (chat[chat.length - 1].extra.display_text) {
+                delete chat[chat.length - 1].extra.display_text;
+            }
+        }
         $(this).parent().children('.mes_block').transition({
             x: swipe_range,
             duration: swipe_duration,
@@ -4901,9 +4915,15 @@ const swipe_right = () => {
         chat[chat.length - 1]['swipes'][0] = chat[chat.length - 1]['mes'];  //assign swipe array with last message from chat
     }
     chat[chat.length - 1]['swipe_id']++;                                      //make new slot in array
-    // if message has memory attached - remove it to allow regen
-    if (chat[chat.length - 1].extra && chat[chat.length - 1].extra.memory) {
-        delete chat[chat.length - 1].extra.memory;
+    if (chat[chat.length - 1].extra) {
+        // if message has memory attached - remove it to allow regen
+        if ( chat[chat.length - 1].extra.memory) {
+            delete chat[chat.length - 1].extra.memory;
+        }
+        // ditto for display text
+        if (chat[chat.length - 1].extra.display_text) {
+            delete chat[chat.length - 1].extra.display_text;
+        }
     }
     //console.log(chat[chat.length-1]['swipes']);
     if (parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length) { //if swipe id of last message is the same as the length of the 'swipes' array

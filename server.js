@@ -2975,6 +2975,39 @@ app.post('/horde_generateimage', jsonParser, async (request, response) => {
     }
 });
 
+app.post('/google_translate', jsonParser, async (request, response) => {
+    const { generateRequestUrl, normaliseResponse } = require('google-translate-api-browser');
+    const https = require('https');
+
+    const text = request.body.text;
+    const lang = request.body.lang;
+
+    if (!text || !lang) {
+        return response.sendStatus(400);
+    }
+
+    console.log('Input text: ' + text);
+
+    const url = generateRequestUrl(text, { to: lang });
+
+    https.get(url, (resp) => {
+        let data = '';
+
+        resp.on('data', (chunk) => {
+            data += chunk;
+        });
+
+        resp.on('end', () => {
+            const result = normaliseResponse(JSON.parse(data));
+            console.log('Translated text: ' + result.text);
+            return response.send(result.text);
+        });
+    }).on("error", (err) => {
+        console.log("Translation error: " + err.message);
+        return response.sendStatus(500);
+    });
+});
+
 function writeSecret(key, value) {
     if (!fs.existsSync(SECRETS_FILE)) {
         const emptyFile = JSON.stringify({});

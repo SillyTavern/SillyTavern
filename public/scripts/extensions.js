@@ -28,6 +28,7 @@ const extension_settings = {
     tts: {},
     sd: {},
     chromadb: {},
+    translate: {},
 };
 
 let modules = [];

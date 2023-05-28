@@ -233,6 +233,7 @@ table.responsiveTable {
     text-align: center;
 }
 
+.mes_translate,
 .sd_message_gen,
 .mes_narrate,
 body.tts .mes[is_user="true"] .mes_narrate,
@@ -266,6 +267,7 @@ body.tts .mes[is_system="true"] .mes_narrate {
 }
 
 body.sd .sd_message_gen,
+body.translate .mes_translate,
 body.tts .mes_narrate {
     display: inline-block;
 }
