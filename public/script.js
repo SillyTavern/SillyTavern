@@ -6440,8 +6440,26 @@ $(document).ready(function () {
             name1 = $("#your_name").val();
             if (name1 === undefined || name1 == "") name1 = default_user_name;
             console.log(name1);
+            toastr.success(`Your messages will now be sent as ${name1}`, 'User Name updated');
             saveSettings("change_name");
         }
+    });
+
+    $('#sync_name_button').on('click', async function () {
+        const confirmation = await callPopup(`<h3>Are you sure?</h3>All user-sent messages in this chat will be attributed to ${name1}.`, 'confirm');
+
+        if (!confirmation) {
+            return;
+        }
+
+        for (const mes of chat) {
+            if (mes.is_user) {
+                mes.name = name1;
+            }
+        }
+
+        await saveChatConditional();
+        await reloadCurrentChat();
     });
     //Select chat
 
