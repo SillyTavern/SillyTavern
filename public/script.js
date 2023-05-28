@@ -5795,6 +5795,43 @@ $(document).ready(function () {
         }
     });
 
+    $(document).on("click", ".exportChatButton", async function () {
+        const filenamefull = $(this).closest('.select_chat_block_wrapper').find('.select_chat_block_filename').text();
+        const filename = filenamefull.replace('.jsonl', '');
+        const body = {
+            is_group: !!selected_group,
+            avatar_url: characters[this_chid]?.avatar,
+            file: `${filename}.jsonl`,
+            exportfilename: `${filename}.txt`,
+        }
+        console.log(body);
+        try {
+            const response = await fetch('/exportchat', {
+                method: 'POST',
+                body: JSON.stringify(body),
+                headers: getRequestHeaders(),
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                // display error message
+                console.log(data.message);
+                await delay(250);
+                toastr.error(`Error: ${data.message}`);
+                return;
+            } else {
+                // success, handle response data
+                console.log(data);
+                await delay(250);
+                toastr.success(data.message);
+            }
+        } catch (error) {
+            // display error message
+            console.log(`An error has occurred: ${error.message}`);
+            await delay(250);
+            toastr.error(`Error: ${error.message}`);
+        }
+    });
+
     $("#talkativeness_slider").on("input", function () {
         if (menu_type == "create") {
             create_save_talkativeness = $("#talkativeness_slider").val();
