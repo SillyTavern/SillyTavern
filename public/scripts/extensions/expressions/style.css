@@ -131,6 +131,14 @@ img.expression.default {
     margin-left: 0px !important;
 }
 
+.expression_buttons .menu_button {
+    width: fit-content;
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+    flex-direction: row;
+}
+
 @media screen and (max-width:1200px) {
     div.expression {
         display: none;

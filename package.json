@@ -32,7 +32,8 @@
         "uniqolor": "^1.1.0",
         "webp-converter": "2.3.2",
         "ws": "^8.13.0",
-        "yargs": "^17.7.1"
+        "yargs": "^17.7.1",
+        "yauzl": "^2.10.0"
     },
     "overrides": {
         "parse-bmfont-xml": {

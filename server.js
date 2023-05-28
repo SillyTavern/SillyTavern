@@ -88,6 +88,7 @@ const ai_horde = new AIHorde({
     client_agent: getVersion()?.agent || 'SillyTavern:UNKNOWN:Cohee#1207',
 });
 const ipMatching = require('ip-matching');
+const yauzl = require('yauzl');
 
 const Client = require('node-rest-client').Client;
 const client = new Client();
@@ -3044,21 +3045,24 @@ app.post('/google_translate', jsonParser, async (request, response) => {
 
     console.log('Input text: ' + text);
 
-    try {
-        const url = generateRequestUrl(text, { to: lang });
-        const resp = await fetch(url);
+    const url = generateRequestUrl(text, { to: lang });
 
-        if (!resp.ok) {
-            throw new Error(resp.statusText);
-        }
+    https.get(url, (resp) => {
+        let data = '';
 
-        const result = normaliseResponse(await resp.json());
-        console.log('Translated text: ' + result.text);
-        return response.send(result.text);
-    } catch (err) {
+        resp.on('data', (chunk) => {
+            data += chunk;
+        });
+
+        resp.on('end', () => {
+            const result = normaliseResponse(JSON.parse(data));
+            console.log('Translated text: ' + result.text);
+            return response.send(result.text);
+        });
+    }).on("error", (err) => {
         console.log("Translation error: " + err.message);
         return response.sendStatus(500);
-    }
+    });
 });
 
 app.post('/delete_sprite', jsonParser, async (request, response) => {
@@ -3093,6 +3097,53 @@ app.post('/delete_sprite', jsonParser, async (request, response) => {
     }
 });
 
+app.post('/upload_sprite_pack', urlencodedParser, async (request, response) => {
+    const file = request.file;
+    const name = request.body.name;
+
+    if (!file || !name) {
+        return response.sendStatus(400);
+    }
+
+    try {
+        const spritesPath = path.join(directories.characters, name);
+
+        // Create sprites folder if it doesn't exist
+        if (!fs.existsSync(spritesPath)) {
+            fs.mkdirSync(spritesPath);
+        }
+
+        // Path to sprites is not a directory. This should never happen.
+        if (!fs.statSync(spritesPath).isDirectory()) {
+            return response.sendStatus(404);
+        }
+
+        const spritePackPath = path.join("./uploads/", file.filename);
+        const sprites = await getImageBuffers(spritePackPath);
+        const files = fs.readdirSync(spritesPath);
+
+        for (const [filename, buffer] of sprites) {
+            // Remove existing sprite with the same label
+            const existingFile = files.find(file => path.parse(file).name === path.parse(filename).name);
+
+            if (existingFile) {
+                fs.rmSync(path.join(spritesPath, existingFile));
+            }
+
+            // Write sprite buffer to disk
+            const pathToSprite = path.join(spritesPath, filename);
+            fs.writeFileSync(pathToSprite, buffer);
+        }
+
+        // Remove uploaded ZIP file
+        fs.rmSync(spritePackPath);
+        return response.send({ count: sprites.length });
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
 app.post('/upload_sprite', urlencodedParser, async (request, response) => {
     const file = request.file;
     const label = request.body.label;
@@ -3105,14 +3156,14 @@ app.post('/upload_sprite', urlencodedParser, async (request, response) => {
     try {
         const spritesPath = path.join(directories.characters, name);
 
-        // Path to sprites is not a directory. This should never happen.
-        if (!fs.statSync(spritesPath).isDirectory()) {
-            return response.sendStatus(404);
-        }
-
         // Create sprites folder if it doesn't exist
         if (!fs.existsSync(spritesPath)) {
             fs.mkdirSync(spritesPath);
+        }
+
+        // Path to sprites is not a directory. This should never happen.
+        if (!fs.statSync(spritesPath).isDirectory()) {
+            return response.sendStatus(404);
         }
 
         const files = fs.readdirSync(spritesPath);
@@ -3158,4 +3209,55 @@ function readSecret(key) {
     const fileContents = fs.readFileSync(SECRETS_FILE);
     const secrets = JSON.parse(fileContents);
     return secrets[key];
+}
+
+async function getImageBuffers(zipFilePath) {
+    return new Promise((resolve, reject) => {
+        // Check if the zip file exists
+        if (!fs.existsSync(zipFilePath)) {
+            reject(new Error('File not found'));
+            return;
+        }
+
+        const imageBuffers = [];
+
+        yauzl.open(zipFilePath, { lazyEntries: true }, (err, zipfile) => {
+            if (err) {
+                reject(err);
+            } else {
+                zipfile.readEntry();
+                zipfile.on('entry', (entry) => {
+                    const mimeType = mime.lookup(entry.fileName);
+                    if (mimeType && mimeType.startsWith('image/') && !entry.fileName.startsWith('__MACOSX')) {
+                        console.log(`Extracting ${entry.fileName}`);
+                        zipfile.openReadStream(entry, (err, readStream) => {
+                            if (err) {
+                                reject(err);
+                            } else {
+                                const chunks = [];
+                                readStream.on('data', (chunk) => {
+                                    chunks.push(chunk);
+                                });
+
+                                readStream.on('end', () => {
+                                    imageBuffers.push([path.parse(entry.fileName).base, Buffer.concat(chunks)]);
+                                    zipfile.readEntry(); // Continue to the next entry
+                                });
+                            }
+                        });
+                    } else {
+                        zipfile.readEntry(); // Continue to the next entry
+                    }
+                });
+
+                zipfile.on('end', () => {
+                    resolve(imageBuffers);
+                });
+
+                zipfile.on('error', (err) => {
+                    reject(err);
+                });
+            }
+        });
+    });
 }
