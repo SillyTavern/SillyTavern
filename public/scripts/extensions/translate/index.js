@@ -157,8 +157,6 @@ async function translateIncomingMessage(messageId) {
     message.extra.display_text = translation;
 
     $(`#chat .mes[mesid="${messageId}"] .mes_text`).html(messageFormatting(translation, message.name, message.is_system, message.is_user));
-
-    context.saveChat();
 }
 
 async function translateProviderGoogle(text, lang) {
@@ -264,8 +262,10 @@ jQuery(() => {
         saveSettingsDebounced();
     });
     $(document).on('click', '.mes_translate', function () {
+        const context = getContext();
         const messageId = $(this).closest('.mes').attr('mesid');
         translateIncomingMessage(messageId);
+        context.saveChat();
     });
 
     loadSettings();

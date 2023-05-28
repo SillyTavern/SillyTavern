@@ -56,7 +56,13 @@ EventEmitter.prototype.emit = async function (event) {
         length = listeners.length;
 
         for (i = 0; i < length; i++) {
-            await listeners[i].apply(this, args);
+            try {
+                await listeners[i].apply(this, args);
+            }
+            catch (err) {
+                console.error(err);
+                console.trace('Error in event listener');
+            }
         }
     }
 };

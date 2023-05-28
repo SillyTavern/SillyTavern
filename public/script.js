@@ -2335,7 +2335,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 }
             }
 
-            function onSuccess(data) {
+            async function onSuccess(data) {
                 hideStopButton();
                 is_send_press = false;
                 if (!data.error) {
@@ -2401,7 +2401,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                             else {
                                 ({ type, getMessage } = saveReply('appendFinal', getMessage, this_mes_is_name, title));
                             }
-                            eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1));
+                            await eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1));
                         }
                         activateSendButtons();
 
