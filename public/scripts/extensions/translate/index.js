@@ -1,4 +1,13 @@
-import { eventSource, event_types, getRequestHeaders, messageFormatting, saveSettingsDebounced, substituteParams } from "../../../script.js";
+import {
+    callPopup,
+    eventSource,
+    event_types,
+    getRequestHeaders,
+    messageFormatting,
+    reloadCurrentChat,
+    saveSettingsDebounced,
+    substituteParams,
+} from "../../../script.js";
 import { extension_settings, getContext } from "../../extensions.js";
 
 const autoModeOptions = {
@@ -217,6 +226,54 @@ function createEventHandler(translateFunction, shouldTranslateFunction) {
     };
 }
 
+// Prevents the chat from being translated in parallel
+let translateChatExecuting = false;
+
+async function onTranslateChatClick() {
+    if (translateChatExecuting) {
+        return;
+    }
+
+    try {
+        translateChatExecuting = true;
+        const context = getContext();
+        const chat = context.chat;
+
+        toastr.info(`${chat.length} message(s) queued for translation.`, 'Please wait...');
+
+        for (let i = 0; i < chat.length; i++) {
+            await translateIncomingMessage(i);
+        }
+
+        await context.saveChat();
+    } catch (error) {
+        console.log(error);
+        toastr.error('Failed to translate chat');
+    } finally {
+        translateChatExecuting = false;
+    }
+}
+
+async function onTranslationsClearClick() {
+    const confirm = await callPopup('<h3>Are you sure?</h3>This will remove translated text from all messages in the current chat. This action cannot be undone.', 'confirm');
+
+    if (!confirm) {
+        return;
+    }
+
+    const context = getContext();
+    const chat = context.chat;
+
+    for (const mes of chat) {
+        if (mes.extra) {
+            delete mes.extra.display_text;
+        }
+    }
+
+    await context.saveChat();
+    await reloadCurrentChat();
+}
+
 jQuery(() => {
     const html = `
     <div class="translation_settings">
@@ -239,11 +296,23 @@ jQuery(() => {
                 <select>
                 <label for="translation_target_language">Target Language</label>
                 <select id="translation_target_language" name="target_language"></select>
+                <div id="translation_clear" class="menu_button">
+                    <i class="fa-solid fa-trash-can"></i>
+                    <span>Clear Translations</span>
+                </div>
             </div>
         </div>
     </div>`;
 
+    const buttonHtml = `
+        <div id="translate_chat" class="list-group-item flex-container flexGap5">
+            <div class="fa-solid fa-language extensionsMenuExtensionButton" /></div>
+            Translate Chat
+        </div>`;
+    $('#extensionsMenu').append(buttonHtml);
     $('#extensions_settings').append(html);
+    $('#translate_chat').on('click', onTranslateChatClick);
+    $('#translation_clear').on('click', onTranslationsClearClick);
 
     for (const [key, value] of Object.entries(languageCodes)) {
         $('#translation_target_language').append(`<option value="${value}">${key}</option>`);
