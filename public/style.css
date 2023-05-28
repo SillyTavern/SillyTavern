@@ -1,5 +1,7 @@
 @charset "UTF-8";
 
+@import url(css/promptmanager.css);
+
 :root {
     --doc-height: 100%;
     --transparent: rgba(0, 0, 0, 0);
