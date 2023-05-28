@@ -308,6 +308,8 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
         enhance_definitions_prompt = "If you have more knowledge of " + name2 + ", add to the character's lore and personality to enhance them but keep the Character Sheet's definitions absolute.";
     }
 
+    const characterInfo = storyString;
+
     const wiBefore = formatWorldInfo(worldInfoBefore);
     const wiAfter = formatWorldInfo(worldInfoAfter);
 
@@ -434,10 +436,28 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
             }
         }
     }
+
+    const chatCompletion = promptManager.getChatCompletion();
+
+    chatCompletion.replace('worldInfoBefore', {role: "system", content: wiBefore});
+    chatCompletion.replace('worldInfoAfter', {role: "system", content: wiAfter});
+    chatCompletion.replace('characterInfo', {role: 'system', content: characterInfo});
+    chatCompletion.replace('newExampleChat', new_chat_msg);
+    chatCompletion.replace('newMainChat', new_chat_msg);
+    chatCompletion.replace('chatHistory', openai_msgs);
+
+    const flattenedExampleMessages = 0 !== openai_msgs_example.length ? openai_msgs_example.reduce( (examples, obj) => [...examples, ...obj]) : [];
+    chatCompletion.replace('dialogueExamples', flattenedExampleMessages);
+
+    chatCompletion.insertAfter('characterInfo', 'enhancedDefinitions', {role: 'system', content: enhance_definitions_prompt});
+    chatCompletion.insertAfter('worldInfoAfter', 'extensionPrompt', extensionPrompt);
+
     // reverse the messages array because we had the newest at the top to remove the oldest,
     // now we want proper order
-    openai_msgs_tosend.reverse();
-    openai_msgs_tosend = [prompt_msg, ...examples_tosend, new_chat_msg, ...openai_msgs_tosend]
+    //openai_msgs_tosend.reverse();
+    //openai_msgs_tosend = [prompt_msg, ...examples_tosend, new_chat_msg, ...openai_msgs_tosend]
+
+    openai_msgs_tosend = chatCompletion.getChat();
 
     console.log("We're sending this:")
     console.log(openai_msgs_tosend);
