@@ -1866,8 +1866,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             coreChat.pop();
         }
 
-        await runGenerationInterceptors(coreChat);
-        console.log(`Core/all messages: ${coreChat.length}/${chat.length}`);
+        if (extension_settings.chromadb.n_results !== 0) {
+            await runGenerationInterceptors(coreChat);
+            console.log(`Core/all messages: ${coreChat.length}/${chat.length}`);
+        }
 
         if (main_api === 'openai') {
             message_already_generated = ''; // OpenAI doesn't have multigen
@@ -5812,6 +5814,43 @@ $(document).ready(function () {
         } catch {
             await delay(500);
             await callPopup('An error has occurred. Chat was not renamed.', 'text');
+        }
+    });
+
+    $(document).on("click", ".exportChatButton", async function () {
+        const filenamefull = $(this).closest('.select_chat_block_wrapper').find('.select_chat_block_filename').text();
+        const filename = filenamefull.replace('.jsonl', '');
+        const body = {
+            is_group: !!selected_group,
+            avatar_url: characters[this_chid]?.avatar,
+            file: `${filename}.jsonl`,
+            exportfilename: `${filename}.txt`,
+        }
+        console.log(body);
+        try {
+            const response = await fetch('/exportchat', {
+                method: 'POST',
+                body: JSON.stringify(body),
+                headers: getRequestHeaders(),
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                // display error message
+                console.log(data.message);
+                await delay(250);
+                toastr.error(`Error: ${data.message}`);
+                return;
+            } else {
+                // success, handle response data
+                console.log(data);
+                await delay(250);
+                toastr.success(data.message);
+            }
+        } catch (error) {
+            // display error message
+            console.log(`An error has occurred: ${error.message}`);
+            await delay(250);
+            toastr.error(`Error: ${error.message}`);
         }
     });
 

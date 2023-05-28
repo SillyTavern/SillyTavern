@@ -2620,7 +2620,8 @@ h5 {
     flex: 1
 }
 
-.renameChatButton {
+.renameChatButton,
+.exportChatButton {
     cursor: pointer;
 }
 
