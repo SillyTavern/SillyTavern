@@ -865,7 +865,9 @@ $("document").ready(function () {
 
     // when a char is selected from the list, save them as the auto-load character for next page load
     $(document).on("click", ".character_select", function () {
-        SaveLocal('ActiveChar', $(this).attr('chid'));
+        const chid = $(this).attr('chid');
+        document.dispatchEvent(new CustomEvent('characterSelected', { detail: {id: chid, character: characters[chid]}}));
+        SaveLocal('ActiveChar', chid);
         SaveLocal('ActiveGroup', null);
     });
 
