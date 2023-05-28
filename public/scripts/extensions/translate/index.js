@@ -1,10 +1,18 @@
 import { eventSource, event_types, getRequestHeaders, messageFormatting, saveSettingsDebounced } from "../../../script.js";
 import { extension_settings, getContext } from "../../extensions.js";
 
+const autoModeOptions = {
+    NONE: 'none',
+    RESPONSES: 'responses',
+    INPUT: 'inputs',
+    BOTH: 'both',
+};
+
 const defaultSettings = {
     target_language: 'en',
+    internal_language: 'en',
     provider: 'google',
-    auto: false,
+    auto_mode: autoModeOptions.NONE,
 };
 
 const languageCodes = {
@@ -115,13 +123,20 @@ const languageCodes = {
 };
 
 function loadSettings() {
-    if (Object.keys(extension_settings.translate).length === 0) {
-        Object.assign(extension_settings.translate, defaultSettings);
+    for (const key in defaultSettings) {
+        if (!extension_settings.translate.hasOwnProperty(key)) {
+            extension_settings.translate[key] = defaultSettings[key];
+        }
     }
 
     $(`#translation_provider option[value="${extension_settings.translate.provider}"]`).attr('selected', true);
     $(`#translation_target_language option[value="${extension_settings.translate.target_language}"]`).attr('selected', true);
-    $('#translation_auto').prop('checked', extension_settings.translate.auto);
+    $(`#translation_auto_mode option[value="${extension_settings.translate.auto_mode}"]`).attr('selected', true);
+}
+
+async function translateImpersonate(text) {
+    const translatedText = await translate(text, extension_settings.translate.target_language);
+    $("#send_textarea").val(translatedText);
 }
 
 async function translateIncomingMessage(messageId) {
@@ -137,7 +152,7 @@ async function translateIncomingMessage(messageId) {
         return;
     }
 
-    const translation = await translate(message.mes);
+    const translation = await translate(message.mes, extension_settings.translate.target_language);
     message.extra.display_text = translation;
 
     $(`#chat .mes[mesid="${messageId}"] .mes_text`).html(messageFormatting(translation, message.name, message.is_system, message.is_user));
@@ -145,11 +160,11 @@ async function translateIncomingMessage(messageId) {
     context.saveChat();
 }
 
-async function translateProviderGoogle(text) {
+async function translateProviderGoogle(text, lang) {
     const response = await fetch('/google_translate', {
         method: 'POST',
         headers: getRequestHeaders(),
-        body: JSON.stringify({ text: text, lang: extension_settings.translate.target_language }),
+        body: JSON.stringify({ text: text, lang: lang }),
     });
 
     if (response.ok) {
@@ -160,11 +175,11 @@ async function translateProviderGoogle(text) {
     throw new Error(response.statusText);
 }
 
-async function translate(text) {
+async function translate(text, lang) {
     try {
         switch (extension_settings.translate.provider) {
             case 'google':
-                return await translateProviderGoogle(text);
+                return await translateProviderGoogle(text, lang);
             default:
                 console.error('Unknown translation provider', extension_settings.translate.provider);
                 return text;
@@ -176,7 +191,31 @@ async function translate(text) {
 }
 
 async function translateOutgoingMessage(messageId) {
-    alert('translateOutgoingMessage', messageId);
+    const context = getContext();
+    const message = context.chat[messageId];
+
+    if (typeof message.extra !== 'object') {
+        message.extra = {};
+    }
+
+    const originalText = message.mes;
+    message.extra.display_text = originalText;
+    $(`#chat .mes[mesid="${messageId}"] .mes_text`).html(messageFormatting(originalText, message.name, message.is_system, message.is_user));
+    message.mes = await translate(originalText, extension_settings.translate.internal_language);
+
+    console.log('translateOutgoingMessage', messageId);
+}
+
+function shouldTranslate(types) {
+    return types.includes(extension_settings.translate.auto_mode);
+}
+
+function createEventHandler(translateFunction, shouldTranslateFunction) {
+    return async (data) => {
+        if (shouldTranslateFunction()) {
+            await translateFunction(data);
+        }
+    };
 }
 
 jQuery(() => {
@@ -188,10 +227,13 @@ jQuery(() => {
                 <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
             </div>
             <div class="inline-drawer-content">
-                <label for="translation_auto" class="checkbox_label">
-                    <input type="checkbox" id="translation_auto" />
-                    Auto-mode
-                </label>
+                <label for="translation_auto_mode" class="checkbox_label">Auto-mode</label>
+                <select id="translation_auto_mode">
+                    <option value="none">None</option>
+                    <option value="responses">Translate responses</option>
+                    <option value="inputs">Translate inputs</option>
+                    <option value="both">Translate both</option>
+                </select>
                 <label for="translation_provider">Provider</label>
                 <select id="translation_provider" name="provider">
                     <option value="google">Google</option>
@@ -203,33 +245,13 @@ jQuery(() => {
     </div>`;
 
     $('#extensions_settings').append(html);
+
     for (const [key, value] of Object.entries(languageCodes)) {
         $('#translation_target_language').append(`<option value="${value}">${key}</option>`);
     }
 
-    loadSettings();
-    eventSource.on(event_types.MESSAGE_RECEIVED, async (messageId) => {
-        if (!extension_settings.translate.auto) {
-            return;
-        }
-        await translateIncomingMessage(messageId);
-    });
-    eventSource.on(event_types.MESSAGE_SWIPED, async (messageId) => {
-        if (!extension_settings.translate.auto) {
-            return;
-        }
-
-        await translateIncomingMessage(messageId);
-    });
-    eventSource.on(event_types.MESSAGE_SENT, async (messageId) => {
-        if (!extension_settings.translate.auto) {
-            return;
-        }
-
-        await translateOutgoingMessage(messageId);
-    });
-    $('#translation_auto').on('input', (event) => {
-        extension_settings.translate.auto = event.target.checked;
+    $('#translation_auto_mode').on('change', (event) => {
+        extension_settings.translate.auto_mode = event.target.value;
         saveSettingsDebounced();
     });
     $('#translation_provider').on('change', (event) => {
@@ -244,5 +266,20 @@ jQuery(() => {
         const messageId = $(this).closest('.mes').attr('mesid');
         translateIncomingMessage(messageId);
     });
+
+    loadSettings();
+
+    const incomingTypes = [autoModeOptions.RESPONSES, autoModeOptions.BOTH];
+    const outgoingTypes = [autoModeOptions.INPUT, autoModeOptions.BOTH];
+
+    const handleIncomingMessage = createEventHandler(translateIncomingMessage, () => shouldTranslate(incomingTypes));
+    const handleOutgoingMessage = createEventHandler(translateOutgoingMessage, () => shouldTranslate(outgoingTypes));
+    const handleImpersonateReady = createEventHandler(translateImpersonate, () => shouldTranslate(incomingTypes));
+
+    eventSource.on(event_types.MESSAGE_RECEIVED, handleIncomingMessage);
+    eventSource.on(event_types.MESSAGE_SWIPED, handleIncomingMessage);
+    eventSource.on(event_types.MESSAGE_SENT, handleOutgoingMessage);
+    eventSource.on(event_types.IMPERSONATE_READY, handleImpersonateReady);
+
     document.body.classList.add('translate');
 });

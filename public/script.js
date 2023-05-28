@@ -417,6 +417,7 @@ export const event_types = {
     MESSAGE_SWIPED: 'message_swiped',
     MESSAGE_SENT: 'message_sent',
     MESSAGE_RECEIVED: 'message_received',
+    IMPERSONATE_READY: 'impersonate_ready',
 }
 
 export const eventSource = new EventEmitter();
@@ -1667,6 +1668,10 @@ class StreamingProcessor {
             }
         }
         playMessageSound();
+
+        const eventType = this.type !== 'impersonate' ? event_types.MESSAGE_RECEIVED : event_types.IMPERSONATE_READY;
+        const eventData = this.type !== 'impersonate' ? this.messageId : text;
+        eventSource.emit(eventType, eventData);
     }
 
     onErrorStreaming() {
@@ -1831,7 +1836,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 sendSystemMessage(system_message_types.GENERIC, ' ', { bias: messageBias });
             }
             else {
-                sendMessageAsUser(textareaText, messageBias);
+                await sendMessageAsUser(textareaText, messageBias);
             }
         }
         ////////////////////////////////////
@@ -2384,6 +2389,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         if (isImpersonate) {
                             $('#send_textarea').val(getMessage).trigger('input');
                             generatedPromtCache = "";
+                            eventSource.emit(event_types.IMPERSONATE_READY, getMessage);
                         }
                         else if (type == 'quiet') {
                             resolve(getMessage);
@@ -2395,14 +2401,13 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                             else {
                                 ({ type, getMessage } = saveReply('appendFinal', getMessage, this_mes_is_name, title));
                             }
+                            eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1));
                         }
                         activateSendButtons();
 
                         if (type !== 'quiet') {
                             playMessageSound();
-                            eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1));
                         }
-
 
                         generate_loop_counter = 0;
                     } else {
@@ -2522,7 +2527,7 @@ export function replaceBiasMarkup(str) {
     return (str ?? '').replace(/{{(\*?.*\*?)}}/g, '');
 }
 
-function sendMessageAsUser(textareaText, messageBias) {
+async function sendMessageAsUser(textareaText, messageBias) {
     chat[chat.length] = {};
     chat[chat.length - 1]['name'] = name1;
     chat[chat.length - 1]['is_user'] = true;
@@ -2537,7 +2542,9 @@ function sendMessageAsUser(textareaText, messageBias) {
     }
 
     addOneMessage(chat[chat.length - 1]);
-    eventSource.emit(event_types.MESSAGE_SENT, (chat.length - 1));
+    // Wait for all handlers to finish before continuing with the prompt
+    await eventSource.emit(event_types.MESSAGE_SENT, (chat.length - 1));
+    console.log('message sent as user');
 }
 
 function getMaxContextSize() {
