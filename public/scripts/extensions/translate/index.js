@@ -1,4 +1,4 @@
-import { eventSource, event_types, getRequestHeaders, messageFormatting, saveSettingsDebounced } from "../../../script.js";
+import { eventSource, event_types, getRequestHeaders, messageFormatting, saveSettingsDebounced, substituteParams } from "../../../script.js";
 import { extension_settings, getContext } from "../../extensions.js";
 
 const autoModeOptions = {
@@ -152,7 +152,8 @@ async function translateIncomingMessage(messageId) {
         return;
     }
 
-    const translation = await translate(message.mes, extension_settings.translate.target_language);
+    const textToTranslate = substituteParams(message.mes, context.name1, message.name);
+    const translation = await translate(textToTranslate, extension_settings.translate.target_language);
     message.extra.display_text = translation;
 
     $(`#chat .mes[mesid="${messageId}"] .mes_text`).html(messageFormatting(translation, message.name, message.is_system, message.is_user));
