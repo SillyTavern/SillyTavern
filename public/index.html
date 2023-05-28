@@ -630,26 +630,6 @@
                             <div id="openai_settings">
                                 <div class="">
                                     <div class="range-block">
-                                        <label class="checkbox_label" for="nsfw_toggle">
-                                            <input id="nsfw_toggle" type="checkbox" checked>
-                                            NSFW Toggle
-                                        </label>
-                                    </div>
-                                    <div class="range-block">
-                                        <label title="NSFW block goes first in the resulting prompt" class="checkbox_label widthFreeExpand">
-                                            <input id="nsfw_first" type="checkbox" />
-                                            NSFW first
-                                        </label>
-                                        <div class="range-block-counter justifyLeft">NSFW block goes first in the resulting prompt</div>
-                                    </div>
-                                    <div class="range-block">
-                                        <label title="Inserts jailbreak as a last system message" class="checkbox_label widthFreeExpand">
-                                            <input id="jailbreak_system" type="checkbox" />
-                                            Send Jailbreak
-                                        </label>
-                                        <div class="range-block-counter justifyLeft">Inserts jailbreak as a last system message</div>
-                                    </div>
-                                    <div class="range-block">
                                         <label for="stream_toggle" title="Enables OpenAI completion streaming" class="checkbox_label widthFreeExpand">
                                             <input id="stream_toggle" type="checkbox" />
                                             Streaming
@@ -675,48 +655,8 @@
                                             Leave off if you use quotes manually for speech.
                                         </div>
                                     </div>
-                                </div>
-                                <br>
-                                <div class="range-block">
-                                    <div class="range-block-title openai_restorable">
-                                        <span>Main prompt</span>
-                                        <div id="main_prompt_restore" title="Restore default prompt" class="right_menu_button">
-                                            <div class="fa-solid fa-clock-rotate-left "></div>
-                                        </div>
-                                    </div>
-                                    <div class="range-block-counter">
-                                        The main prompt used to set the model behavior
-                                    </div>
-                                    <div class="wide100p">
-                                        <textarea id="main_prompt_textarea" class="text_pole textarea_compact" name="main_prompt" rows="6" placeholder=""></textarea>
-                                    </div>
-                                </div>
-                                <div class="range-block">
-                                    <div class="range-block-title openai_restorable">
-                                        <span>NSFW prompt</span>
-                                        <div id="nsfw_prompt_restore" title="Restore default prompt" class="right_menu_button">
-                                            <div class="fa-solid fa-clock-rotate-left "></div>
-                                        </div>
-                                    </div>
-                                    <div class="range-block-counter">
-                                        Prompt that is used when the NSFW toggle is on
-                                    </div>
-                                    <div class="wide100p">
-                                        <textarea id="nsfw_prompt_textarea" class="text_pole textarea_compact" name="nsfw_prompt" rows="6" placeholder=""></textarea>
-                                    </div>
-                                </div>
-                                <div class="range-block">
-                                    <div class="range-block-title openai_restorable">
-                                        <span>Jailbreak prompt</span>
-                                        <div id="jailbreak_prompt_restore" title="Restore default prompt" class="right_menu_button">
-                                            <div class="fa-solid fa-clock-rotate-left"></div>
-                                        </div>
-                                    </div>
-                                    <div class="range-block-counter">
-                                        Prompt that is used when the Jailbreak toggle is on
-                                    </div>
-                                    <div class="wide100p">
-                                        <textarea id="jailbreak_prompt_textarea" class="text_pole textarea_compact" name="jailbreak_prompt" rows="6" placeholder=""></textarea>
+                                    <div class="range-block">
+                                        <div id="openai_prompt_manager"></div>
                                     </div>
                                 </div>
                                 <div class="range-block">
@@ -1765,10 +1705,47 @@
             </div>
         </div>
     </div>
+    <div id="openai_prompt_manager_popup" style="display:none;">
+        <h3>OpenAI Prompt Manager Settings</h3>
+        <div class="openai_prompt_manager_popup_entry">
+            <form class="openai_prompt_manager_popup_entry_form">
+                <div class="openai_prompt_manager_popup_entry_form_control">
+                    <label for="openai_prompt_manager_popup_entry_form_name">
+                        <span>Name</span>
+                    </label>
+                    <div class="text_muted">A name for this prompt.</div>
+                    <input id="openai_prompt_manager_popup_entry_form_name" class="text_pole" type="text" name="name" />
+                </div>
+                <div class="openai_prompt_manager_popup_entry_form_control">
+                    <label for="openai_prompt_manager_popup_entry_form_role">
+                        <span>Role</span>
+                    </label>
+                    <div class="text_muted">To whom this message will be attributed.</div>
+                    <select id="openai_prompt_manager_popup_entry_form_role" class="text_pole" name="role">
+                        <option value="system">System</option>
+                        <option value="user">User</option>
+                        <option value="assistant">AI Assistant</option>
+                    </select>
+                </div>
+                <div class="openai_prompt_manager_popup_entry_form_control">
+                    <label for="openai_prompt_manager_popup_entry_form_prompt">
+                        <span>Prompt</span>
+                    </label>
+                    <div class="text_muted">The prompt to be sent.</div>
+                    <textarea id="openai_prompt_manager_popup_entry_form_prompt" class="text_pole" name="prompt">
+                    </textarea>
+                </div>
+                <div id="openai_prompt_manager_popup_entry_form_footer" >
+                    <a id="openai_prompt_manager_popup_entry_form_close" class="fa-solid fa-close menu_button"></a>
+                    <a id="openai_prompt_manager_popup_entry_form_save" class="fa-solid fa-save menu_button" data-pm-prompt=""></a>
+                </div>
+            </form>
+        </div>
+    </div>
     <div id="shadow_select_chat_popup">
         <div id="select_chat_popup">
             <div id="select_chat_import"> <!-- import chat popup header -->
-                <div id="chat_import_button" class="fa-solid fa-file-arrow-up  menu_button"></div>
+                <div id="chat_import_button" class="fa-solid fa-file-arrow-up menu_button"></div>
                 <div id="selectChatPopupHeaderText" class="TxtLrgBoldCenter">
                     <span id="ChatHistoryCharName"></span>
                     <br>
