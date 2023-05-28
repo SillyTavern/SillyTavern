@@ -63,6 +63,7 @@ export {
     sendOpenAIRequest,
     setOpenAIOnlineStatus,
     getChatCompletionModel,
+    countTokens
 }
 
 let openai_msgs = [];
