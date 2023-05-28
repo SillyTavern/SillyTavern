@@ -117,6 +117,11 @@ async function moduleWorker() {
         return
     }
 
+    // Don't generate if message doesn't have a display text
+    if (extension_settings.tts.narrate_translated_only && !(message?.extra?.display_text)) {
+        return;
+    }
+
     // New messages, add new chat to history
     lastMessageHash = hashNew
     currentMessageNumber = lastMessageNumber
@@ -356,9 +361,10 @@ async function processTtsQueue() {
 
     console.debug('New message found, running TTS')
     currentTtsJob = ttsJobQueue.shift()
-    let text = extension_settings.tts.narrate_dialogues_only
-        ? currentTtsJob.mes.replace(/\*[^\*]*?(\*|$)/g, '').trim() // remove asterisks content
-        : currentTtsJob.mes.replaceAll('*', '').trim() // remove just the asterisks
+    let text = extension_settings.tts.narrate_translated_only ? currentTtsJob?.extra?.display_text : currentTtsJob.mes
+    text = extension_settings.tts.narrate_dialogues_only
+        ? text.replace(/\*[^\*]*?(\*|$)/g, '').trim() // remove asterisks content
+        : text.replaceAll('*', '').trim() // remove just the asterisks
 
     if (extension_settings.tts.narrate_quoted_only) {
         const special_quotes = /[“”]/g; // Extend this regex to include other special quotes
@@ -415,6 +421,7 @@ function loadSettings() {
     $('#tts_narrate_dialogues').prop('checked', extension_settings.tts.narrate_dialogues_only)
     $('#tts_narrate_quoted').prop('checked', extension_settings.tts.narrate_quoted_only)
     $('#tts_auto_generation').prop('checked', extension_settings.tts.auto_generation)
+    $('#tts_narrate_translated_only').prop('checked', extension_settings.tts.narrate_translated_only);
     $('body').toggleClass('tts', extension_settings.tts.enabled);
 }
 
@@ -520,6 +527,11 @@ function onNarrateQuotedClick() {
 }
 
 
+function onNarrateTranslatedOnlyClick() {
+    extension_settings.tts.narrate_translated_only = $('#tts_narrate_translated_only').prop('checked');
+    saveSettingsDebounced();
+}
+
 //##############//
 // TTS Provider //
 //##############//
@@ -607,6 +619,10 @@ $(document).ready(function () {
                             <input type="checkbox" id="tts_narrate_quoted">
                             Narrate quoted only
                         </label>
+                        <label class="checkbox_label" for="tts_narrate_translated_only">
+                            <input type="checkbox" id="tts_narrate_translated_only">
+                            Narrate only the translated text
+                        </label>
                     </div>
                     <label>Voice Map</label>
                     <textarea id="tts_voice_map" type="text" class="text_pole textarea_compact" rows="4"
@@ -630,6 +646,7 @@ $(document).ready(function () {
         $('#tts_enabled').on('click', onEnableClick)
         $('#tts_narrate_dialogues').on('click', onNarrateDialoguesClick);
         $('#tts_narrate_quoted').on('click', onNarrateQuotedClick);
+        $('#tts_narrate_translated_only').on('click', onNarrateTranslatedOnlyClick);
         $('#tts_auto_generation').on('click', onAutoGenerationClick);
         $('#tts_voices').on('click', onTtsVoicesClick)
         $('#tts_provider_settings').on('input', onTtsProviderSettingsInput)
