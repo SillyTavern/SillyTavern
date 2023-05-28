@@ -3061,6 +3061,83 @@ app.post('/google_translate', jsonParser, async (request, response) => {
     }
 });
 
+app.post('/delete_sprite', jsonParser, async (request, response) => {
+    const label = request.body.label;
+    const name = request.body.name;
+
+    if (!label || !name) {
+        return response.sendStatus(400);
+    }
+
+    try {
+        const spritesPath = path.join(directories.characters, name);
+
+        // No sprites folder exists, or not a directory
+        if (!fs.existsSync(spritesPath) || !fs.statSync(spritesPath).isDirectory()) {
+            return response.sendStatus(404);
+        }
+
+        const files = fs.readdirSync(spritesPath);
+
+        // Remove existing sprite with the same label
+        for (const file of files) {
+            if (path.parse(file).name === label) {
+                fs.rmSync(path.join(spritesPath, file));
+            }
+        }
+
+        return response.sendStatus(200);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
+app.post('/upload_sprite', urlencodedParser, async (request, response) => {
+    const file = request.file;
+    const label = request.body.label;
+    const name = request.body.name;
+
+    if (!file || !label || !name) {
+        return response.sendStatus(400);
+    }
+
+    try {
+        const spritesPath = path.join(directories.characters, name);
+
+        // Path to sprites is not a directory. This should never happen.
+        if (!fs.statSync(spritesPath).isDirectory()) {
+            return response.sendStatus(404);
+        }
+
+        // Create sprites folder if it doesn't exist
+        if (!fs.existsSync(spritesPath)) {
+            fs.mkdirSync(spritesPath);
+        }
+
+        const files = fs.readdirSync(spritesPath);
+
+        // Remove existing sprite with the same label
+        for (const file of files) {
+            if (path.parse(file).name === label) {
+                fs.rmSync(path.join(spritesPath, file));
+            }
+        }
+
+        const filename = label + path.parse(file.originalname).ext;
+        const spritePath = path.join("./uploads/", file.filename);
+        const pathToFile = path.join(spritesPath, filename);
+        // Copy uploaded file to sprites folder
+        fs.cpSync(spritePath, pathToFile);
+        // Remove uploaded file
+        fs.rmSync(spritePath);
+        return response.sendStatus(200);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
 function writeSecret(key, value) {
     if (!fs.existsSync(SECRETS_FILE)) {
         const emptyFile = JSON.stringify({});
