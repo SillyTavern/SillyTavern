@@ -48,6 +48,7 @@ export {
     prepareOpenAIMessages,
     sendOpenAIRequest,
     setOpenAIOnlineStatus,
+    countTokens
 }
 
 let openai_msgs = [];
@@ -560,7 +561,7 @@ async function sendOpenAIRequest(openai_msgs_tosend, signal) {
 }
 
 function countTokens(messages, full = false) {
-    let chatId = selected_group ? selected_group : characters[this_chid].chat;
+    let chatId = selected_group ?? (characters[this_chid]?.chat ?? 'general');
 
     if (typeof tokenCache[chatId] !== 'object') {
         tokenCache[chatId] = {};
