@@ -417,6 +417,7 @@ export const event_types = {
     MESSAGE_SWIPED: 'message_swiped',
     MESSAGE_SENT: 'message_sent',
     MESSAGE_RECEIVED: 'message_received',
+    MESSAGE_EDITED: 'message_edited',
     IMPERSONATE_READY: 'impersonate_ready',
 }
 
@@ -4042,39 +4043,8 @@ function setCharacterBlockHeight() {
     //should be set to an onload for rm_print_characters or windows?
 }
 
-function messageEditAuto(div) {
-    let mesBlock = div.closest(".mes_block");
-    var text = mesBlock.find(".edit_textarea").val().trim();
-    const bias = extractMessageBias(text);
-    const mes = chat[this_edit_mes_id];
-    mes["mes"] = text;
-    if (mes["swipe_id"] !== undefined) {
-        mes["swipes"][mes["swipe_id"]] = text;
-    }
-
-    // editing old messages
-    if (!mes["extra"]) {
-        mes["extra"] = {};
-    }
-
-    if (mes.is_system || mes.is_user || mes.extra.type === system_message_types.NARRATOR) {
-        mes.extra.bias = bias ?? null;
-    }
-    else {
-        mes.extra.bias = null;
-    }
-
-    mesBlock.find(".mes_text").val('');
-    mesBlock.find(".mes_text").val(messageFormatting(
-        text,
-        this_edit_mes_chname,
-        mes.is_system,
-        mes.is_user,
-    ));
-    saveChatDebounced();
-}
-
-function messageEditDone(div) {
+// Common code for message editor done and auto-save
+function updateMessage(div) {
     let mesBlock = div.closest(".mes_block");
     var text = mesBlock.find(".edit_textarea").val().trim();
     const bias = extractMessageBias(text);
@@ -4091,10 +4061,28 @@ function messageEditDone(div) {
 
     if (mes.is_system || mes.is_user || mes.extra.type === system_message_types.NARRATOR) {
         mes.extra.bias = bias ?? null;
-    }
-    else {
+    } else {
         mes.extra.bias = null;
     }
+
+    return { mesBlock, text, mes, bias };
+}
+
+function messageEditAuto(div) {
+    const { mesBlock, text, mes } = updateMessage(div);
+
+    mesBlock.find(".mes_text").val('');
+    mesBlock.find(".mes_text").val(messageFormatting(
+        text,
+        this_edit_mes_chname,
+        mes.is_system,
+        mes.is_user,
+    ));
+    saveChatDebounced();
+}
+
+async function messageEditDone(div) {
+    const { mesBlock, text, mes, bias } = updateMessage(div);
 
     mesBlock.find(".mes_text").empty();
     mesBlock.find(".mes_edit_buttons").css("display", "none");
@@ -4111,6 +4099,8 @@ function messageEditDone(div) {
     mesBlock.find(".mes_bias").append(messageFormatting(bias));
     appendImageToMessage(mes, div.closest(".mes"));
     addCopyToCodeBlocks(div.closest(".mes"));
+    await eventSource.emit(event_types.MESSAGE_EDITED, this_edit_mes_id);
+
     this_edit_mes_id = undefined;
     saveChatConditional();
 }

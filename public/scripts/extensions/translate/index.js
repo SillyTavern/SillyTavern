@@ -17,6 +17,9 @@ const autoModeOptions = {
     BOTH: 'both',
 };
 
+const incomingTypes = [autoModeOptions.RESPONSES, autoModeOptions.BOTH];
+const outgoingTypes = [autoModeOptions.INPUT, autoModeOptions.BOTH];
+
 const defaultSettings = {
     target_language: 'en',
     internal_language: 'en',
@@ -274,6 +277,25 @@ async function onTranslationsClearClick() {
     await reloadCurrentChat();
 }
 
+async function translateMessageEdit(messageId) {
+    const context = getContext();
+    const chat = context.chat;
+    const message = chat[messageId];
+
+    if (message.is_system || extension_settings.translate.auto_mode == autoModeOptions.NONE) {
+        return;
+    }
+
+    if ((message.is_user && shouldTranslate(outgoingTypes)) || (!message.is_user && shouldTranslate(incomingTypes))) {
+        await translateIncomingMessage(messageId);
+    }
+}
+
+const handleIncomingMessage = createEventHandler(translateIncomingMessage, () => shouldTranslate(incomingTypes));
+const handleOutgoingMessage = createEventHandler(translateOutgoingMessage, () => shouldTranslate(outgoingTypes));
+const handleImpersonateReady = createEventHandler(translateImpersonate, () => shouldTranslate(incomingTypes));
+const handleMessageEdit = createEventHandler(translateMessageEdit, () => true);
+
 jQuery(() => {
     const html = `
     <div class="translation_settings">
@@ -339,17 +361,11 @@ jQuery(() => {
 
     loadSettings();
 
-    const incomingTypes = [autoModeOptions.RESPONSES, autoModeOptions.BOTH];
-    const outgoingTypes = [autoModeOptions.INPUT, autoModeOptions.BOTH];
-
-    const handleIncomingMessage = createEventHandler(translateIncomingMessage, () => shouldTranslate(incomingTypes));
-    const handleOutgoingMessage = createEventHandler(translateOutgoingMessage, () => shouldTranslate(outgoingTypes));
-    const handleImpersonateReady = createEventHandler(translateImpersonate, () => shouldTranslate(incomingTypes));
-
     eventSource.on(event_types.MESSAGE_RECEIVED, handleIncomingMessage);
     eventSource.on(event_types.MESSAGE_SWIPED, handleIncomingMessage);
     eventSource.on(event_types.MESSAGE_SENT, handleOutgoingMessage);
     eventSource.on(event_types.IMPERSONATE_READY, handleImpersonateReady);
+    eventSource.on(event_types.MESSAGE_EDITED, handleMessageEdit);
 
     document.body.classList.add('translate');
 });
