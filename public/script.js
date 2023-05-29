@@ -418,6 +418,7 @@ export const event_types = {
     MESSAGE_SENT: 'message_sent',
     MESSAGE_RECEIVED: 'message_received',
     MESSAGE_EDITED: 'message_edited',
+    MESSAGE_DELETED: 'message_deleted',
     IMPERSONATE_READY: 'impersonate_ready',
 }
 
@@ -1013,6 +1014,7 @@ function deleteLastMessage() {
     count_view_mes--;
     chat.length = chat.length - 1;
     $('#chat').children('.mes').last().remove();
+    eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
 }
 
 export async function reloadCurrentChat() {
@@ -1819,6 +1821,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 $('#chat').children().last().hide(500, function () {
                     $(this).remove();
                 });
+                eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
             }
         }
 
@@ -4846,8 +4849,8 @@ function swipe_left() {      // when we swipe left..but no generation.
                             easing: animation_easing,
                             queue: false,
                             complete: function () {
-                                saveChatConditional();
                                 eventSource.emit(event_types.MESSAGE_SWIPED, (chat.length - 1));
+                                saveChatConditional();
                             }
                         });
                     }
@@ -5005,6 +5008,7 @@ const swipe_right = () => {
                             easing: animation_easing,
                             queue: false,
                             complete: function () {
+                                eventSource.emit(event_types.MESSAGE_SWIPED, (chat.length - 1));
                                 if (run_generate && !is_send_press && parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length) {
                                     console.log('caught here 2');
                                     is_send_press = true;
@@ -5015,7 +5019,6 @@ const swipe_right = () => {
                                         saveChatConditional();
                                     }
                                 }
-                                eventSource.emit(event_types.MESSAGE_SWIPED, (chat.length - 1));
                             }
                         });
                     }
@@ -6113,6 +6116,7 @@ $(document).ready(function () {
             saveChatConditional();
             var $textchat = $("#chat");
             $textchat.scrollTop($textchat[0].scrollHeight);
+            eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
         }
         this_del_mes = 0;
         $('#chat .mes').last().addClass('last_mes');

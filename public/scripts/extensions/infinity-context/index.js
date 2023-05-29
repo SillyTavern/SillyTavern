@@ -1,4 +1,4 @@
-import { saveSettingsDebounced, getCurrentChatId, system_message_types } from "../../../script.js";
+import { saveSettingsDebounced, getCurrentChatId, system_message_types, eventSource, event_types } from "../../../script.js";
 import { humanizedDateTime } from "../../RossAscends-mods.js";
 import { getApiUrl, extension_settings, getContext } from "../../extensions.js";
 import { getFileText, onlyUnique, splitRecursive } from "../../utils.js";
@@ -34,6 +34,33 @@ const postHeaders = {
     'Content-Type': 'application/json',
     'Bypass-Tunnel-Reminder': 'bypass',
 };
+
+const chatStateFlags = {};
+
+function invalidateMessageSyncState(messageId) {
+    console.log('CHROMADB: invalidating message sync state', messageId);
+    const state = getChatSyncState();
+    state[messageId] = false;
+}
+
+function getChatSyncState() {
+    const currentChatId = getCurrentChatId();
+    if (!checkChatId(currentChatId)) {
+        return;
+    }
+
+    const context = getContext();
+    const chatState = chatStateFlags[currentChatId] || [];
+    chatState.length = context.chat.length;
+    for (let i = 0; i < chatState.length; i++) {
+        if (chatState[i] === undefined) {
+            chatState[i] = false;
+        }
+    }
+    chatStateFlags[currentChatId] = chatState;
+
+    return chatState;
+}
 
 async function loadSettings() {
     if (Object.keys(extension_settings.chromadb).length === 0) {
@@ -96,19 +123,27 @@ async function addMessages(chat_id, messages) {
     url.pathname = '/api/chromadb';
 
     const messagesDeepCopy = JSON.parse(JSON.stringify(messages));
-    const splittedMessages = [];
+    let splittedMessages = [];
 
     let id = 0;
-    messagesDeepCopy.forEach(m => {
+    messagesDeepCopy.forEach((m, index) => {
         const split = splitRecursive(m.mes, extension_settings.chromadb.split_length);
         splittedMessages.push(...split.map(text => ({
             ...m,
             mes: text,
             send_date: id,
             id: `msg-${id++}`,
+            index: index,
             extra: undefined,
         })));
     });
+
+    splittedMessages = filterSyncedMessages(splittedMessages);
+
+    // no messages to add
+    if (splittedMessages.length === 0) {
+        return { count: 0 };
+    }
 
     const transformedMessages = splittedMessages.map((m) => ({
         id: m.id,
@@ -133,6 +168,37 @@ async function addMessages(chat_id, messages) {
     return { count: 0 };
 }
 
+function filterSyncedMessages(splittedMessages) {
+    const syncState = getChatSyncState();
+    const removeIndices = [];
+    const syncedIndices = [];
+    for (let i = 0; i < splittedMessages.length; i++) {
+        const index = splittedMessages[i].index;
+
+        if (syncState[index]) {
+            removeIndices.push(i);
+            continue;
+        }
+
+        syncedIndices.push(index);
+    }
+
+    for (const index of syncedIndices) {
+        syncState[index] = true;
+    }
+
+    logSyncState(syncState);
+
+    // remove messages that are already synced
+    return splittedMessages.filter((_, i) => !removeIndices.includes(i));
+}
+
+function logSyncState(syncState) {
+    const chat = getContext().chat;
+    console.log('CHROMADB: sync state');
+    console.table(syncState.map((v, i) => ({ synced: v, name: chat[i].name, message: chat[i].mes })));
+}
+
 async function onPurgeClick() {
     const chat_id = getCurrentChatId();
     if (!checkChatId(chat_id)) {
@@ -148,6 +214,7 @@ async function onPurgeClick() {
     });
 
     if (purgeResult.ok) {
+        delete chatStateFlags[chat_id];
         toastr.success('ChromaDB context has been successfully cleared');
     }
 }
@@ -168,7 +235,7 @@ async function onExportClick() {
 
     if (exportResult.ok) {
         const data = await exportResult.json();
-        const blob = new Blob([JSON.stringify(data, null, 2)], {type : 'application/json'});
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         const href = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = href;
@@ -198,12 +265,11 @@ async function onSelectImportFile(e) {
         const text = await getFileText(file);
         const imported = JSON.parse(text);
 
-
         imported.chat_id = currentChatId;
-    
+
         const url = new URL(getApiUrl());
         url.pathname = '/api/chromadb/import';
-        
+
         const importResult = await fetch(url, {
             method: 'POST',
             headers: postHeaders,
@@ -422,4 +488,13 @@ jQuery(async () => {
     $('#chromadb_purge').on('click', onPurgeClick);
     $('#chromadb_export').on('click', onExportClick);
     await loadSettings();
+
+    // Not sure if this is needed, but it's here just in case
+    eventSource.on(event_types.MESSAGE_DELETED, getChatSyncState);
+    eventSource.on(event_types.MESSAGE_RECEIVED, getChatSyncState);
+    eventSource.on(event_types.MESSAGE_SENT, getChatSyncState);
+    // Will make the sync state update when a message is edited or swiped
+    eventSource.on(event_types.MESSAGE_EDITED, invalidateMessageSyncState);
+    eventSource.on(event_types.MESSAGE_SWIPED, invalidateMessageSyncState);
 });
+
