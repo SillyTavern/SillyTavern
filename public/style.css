@@ -96,6 +96,10 @@ body {
     color: var(--SmartThemeBodyColor);
 }
 
+body.dragover {
+    filter: grayscale(25%) blur(2px);
+}
+
 ::-webkit-scrollbar {
     width: 10px;
     scrollbar-gutter: stable;

@@ -5076,9 +5076,58 @@ function updateVisibleDivs() {
     //console.log(`${visibleStart},${visibleEnd}`);
 }
 
+
+function importCharacter(file) {
+    const ext = file.name.match(/\.(\w+)$/);
+    if (
+        !ext ||
+        (ext[1].toLowerCase() != "json" && ext[1].toLowerCase() != "png" && ext[1] != "webp")
+    ) {
+        return;
+    }
+
+    const format = ext[1].toLowerCase();
+    $("#character_import_file_type").val(format);
+    const formData = new FormData();
+    formData.append('avatar', file);
+    formData.append('file_type', format);
+
+    jQuery.ajax({
+        type: "POST",
+        url: "/importcharacter",
+        data: formData,
+        async: false,
+        beforeSend: function () {
+        },
+        cache: false,
+        contentType: false,
+        processData: false,
+        success: async function (data) {
+            if (data.file_name !== undefined) {
+                $("#rm_info_block").transition({ opacity: 0, duration: 0 });
+                var $prev_img = $("#avatar_div_div").clone();
+                $prev_img
+                    .children("img")
+                    .attr("src", "characters/" + data.file_name + ".png");
+                $("#rm_info_avatar").append($prev_img);
+
+                let oldSelectedChar = null;
+                if (this_chid != undefined && this_chid != "invalid-safety-id") {
+                    oldSelectedChar = characters[this_chid].avatar;
+                }
+
+                await getCharacters();
+                select_rm_info(`char_import`, data.file_name, oldSelectedChar);
+                $("#rm_info_block").transition({ opacity: 1, duration: 1000 });
+            }
+        },
+        error: function (jqXHR, exception) {
+            $("#create_button").removeAttr("disabled");
+        },
+    });
+}
+
 $(document).ready(function () {
-
-
     //////////INPUT BAR FOCUS-KEEPING LOGIC/////////////
 
     $("#rm_print_characters_block").on('scroll',
@@ -6494,53 +6543,7 @@ $(document).ready(function () {
         }
 
         for (const file of e.target.files) {
-            var ext = file.name.match(/\.(\w+)$/);
-            if (
-                !ext ||
-                (ext[1].toLowerCase() != "json" && ext[1].toLowerCase() != "png" && ext[1] != "webp")
-            ) {
-                continue;
-            }
-
-            var format = ext[1].toLowerCase();
-            $("#character_import_file_type").val(format);
-            var formData = new FormData();
-            formData.append('avatar', file);
-            formData.append('file_type', format);
-
-            jQuery.ajax({
-                type: "POST",
-                url: "/importcharacter",
-                data: formData,
-                async: false,
-                beforeSend: function () {
-                },
-                cache: false,
-                contentType: false,
-                processData: false,
-                success: async function (data) {
-                    if (data.file_name !== undefined) {
-                        $("#rm_info_block").transition({ opacity: 0, duration: 0 });
-                        var $prev_img = $("#avatar_div_div").clone();
-                        $prev_img
-                            .children("img")
-                            .attr("src", "characters/" + data.file_name + ".png");
-                        $("#rm_info_avatar").append($prev_img);
-
-                        let oldSelectedChar = null;
-                        if (this_chid != undefined && this_chid != "invalid-safety-id") {
-                            oldSelectedChar = characters[this_chid].avatar;
-                        }
-
-                        await getCharacters();
-                        select_rm_info(`char_import`, data.file_name, oldSelectedChar);
-                        $("#rm_info_block").transition({ opacity: 1, duration: 1000 });
-                    }
-                },
-                error: function (jqXHR, exception) {
-                    $("#create_button").removeAttr("disabled");
-                },
-            });
+            importCharacter(file);
         }
     });
     $("#export_button").click(function (e) {
@@ -6872,4 +6875,43 @@ $(document).ready(function () {
         $(masterElement).val(myValue).trigger('input');
         restoreCaretPosition($(this).get(0), caretPosition);
     });
+
+    const $dropzone = $(document.body);
+
+    $dropzone.on('dragover', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        $dropzone.addClass('dragover');
+    });
+
+    $dropzone.on('dragleave', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        $dropzone.removeClass('dragover');
+    });
+
+    $dropzone.on('drop', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        $dropzone.removeClass('dragover');
+
+        const files = event.originalEvent.dataTransfer.files;
+        processDroppedFiles(files);
+    });
+
+    function processDroppedFiles(files) {
+        const allowedMimeTypes = [
+            'application/json',
+            'image/png',
+            'image/webp',
+        ];
+
+        for (const file of files) {
+            if (allowedMimeTypes.includes(file.type)) {
+                importCharacter(file);
+            } else {
+                toastr.warning('Unsupported file type: ' + file.name);
+            }
+        }
+    }
 })
