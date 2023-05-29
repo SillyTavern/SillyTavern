@@ -1,6 +1,8 @@
-# SillyTavern
+![image](https://github.com/Cohee1207/SillyTavern/assets/18619528/8c41a061-7f72-4d2b-9d54-e6d058209e7b)
 
-## Based on a fork of TavernAI 1.2.8
+Mobile-friendly, Multi-API (KoboldAI/CPP, Horde, NovelAI, Ooba, OpenAI+proxies, Poe, WindowAI(Claude!)), VN-like Waifu Mode, Horde SD, System TTS, WorldInfo (lorebooks), customizable UI, auto-translate, and more prompt options than you'd ever want or need. Optional Extras server for more SD/TTS options + ChromaDB/Summarize.
+
+Based on a fork of TavernAI 1.2.8
 
 ### Brought to you by Cohee, RossAscends and the SillyTavern community
 
