@@ -315,7 +315,7 @@ async function loadExtensionSettings(settings) {
     manifests = await getManifests(extensionNames)
     await activateExtensions();
     if (extension_settings.autoConnect && extension_settings.apiUrl) {
-        await connectToApi(extension_settings.apiUrl);
+        connectToApi(extension_settings.apiUrl);
     }
 }
 
