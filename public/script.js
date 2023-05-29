@@ -6707,6 +6707,9 @@ $(document).ready(function () {
                     easing: "swing",
                     start: function () {
                         jQuery(this).css('display', 'flex');
+                    },
+                    complete: function () {
+                        $("#rm_print_characters_block").trigger("scroll");
                     }
                 })
             } else {
