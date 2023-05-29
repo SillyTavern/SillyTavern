@@ -1820,11 +1820,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 if (nai_settings.model_novel == 'krake-v2') {
                     this_max_context -= 160;
                 }
-                if (nai_settings.model_novel == 'clio-v1') {
-                    // Clio has a max context of 8192
-                    // TODO: Evaluate the relevance of nerdstash-v1 tokenizer, changes quite a bit.
-                    this_max_context = 8192 - 60 - 160;
-                }
             }
         }
         if (main_api == 'openai') {
@@ -2478,14 +2473,13 @@ function getNovelGenerationData(finalPromt, this_settings) {
         "model": nai_settings.model_novel,
         "use_string": true,
         "temperature": parseFloat(nai_settings.temp_novel),
-        "max_length": amount_gen,
+        "max_length": this_settings.max_length,
         "min_length": this_settings.min_length,
-        "tail_free_sampling": parseFloat(nai_settings.tail_free_sampling_novel),
+        "tail_free_sampling": this_settings.tail_free_sampling,
         "repetition_penalty": parseFloat(nai_settings.rep_pen_novel),
         "repetition_penalty_range": parseInt(nai_settings.rep_pen_size_novel),
-        "repetition_penalty_slope": parseFloat(nai_settings.rep_pen_slope_novel),
-        "repetition_penalty_frequency": parseFloat(nai_settings.rep_pen_freq_novel),
-        "repetition_penalty_presence": parseFloat(nai_settings.rep_pen_presence_novel),
+        "repetition_penalty_frequency": this_settings.repetition_penalty_frequency,
+        "repetition_penalty_presence": this_settings.repetition_penalty_presence,
         //"stop_sequences": {{187}},
         //bad_words_ids = {{50256}, {0}, {1}};
         //generate_until_sentence = true;
@@ -2493,10 +2487,6 @@ function getNovelGenerationData(finalPromt, this_settings) {
         //use_string = true;
         "return_full_text": false,
         "prefix": "vanilla",
-        "top_k": this_settings.top_k,
-        "top_p": this_settings.top_p,
-        "typical_p": this_settings.typical_p,
-        "top_a": this_settings.top_a,
         "order": this_settings.order
     };
 }
@@ -5327,8 +5317,6 @@ $(document).ready(function () {
 
         const preset = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
         loadNovelPreset(preset);
-        amount_gen = parseInt($("#amount_gen").val());
-        max_context = parseInt($("#max_context").val());
 
         saveSettingsDebounced();
     });
@@ -5695,8 +5683,6 @@ $(document).ready(function () {
         $("#api_button_novel").css("display", "none");
         is_get_status_novel = true;
         is_api_button_press_novel = true;
-        // Check near immediately rather than waiting for up to 90s
-        setTimeout(getStatusNovel, 10);
     });
 
     $("#anchor_order").change(function () {
