@@ -2561,6 +2561,11 @@ function getMaxContextSize() {
             if (nai_settings.model_novel == 'krake-v2') {
                 this_max_context -= 160;
             }
+            if (nai_settings.model_novel == 'clio-v1') {
+                // Clio has a max context of 8192
+                // TODO: Evaluate the relevance of nerdstash-v1 tokenizer, changes quite a bit.
+                this_max_context = 8192 - 60 - 160;
+            }
         }
     }
     if (main_api == 'openai') {
