@@ -5864,6 +5864,7 @@ $(document).ready(function () {
     });
 
     $(document).on("click", ".exportChatButton", async function () {
+        await saveChatConditional();
         const filenamefull = $(this).closest('.select_chat_block_wrapper').find('.select_chat_block_filename').text();
         const filename = filenamefull.replace('.jsonl', '');
         const body = {
