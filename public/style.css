@@ -837,10 +837,6 @@ body.big-avatars .avatar img {
 br {
     display: block;
     margin: 2px 0;
-    line-height: 0;
-    height: 0;
-    padding: 0;
-    content: '';
 }
 
 textarea {
