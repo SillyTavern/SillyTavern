@@ -423,13 +423,9 @@ export const event_types = {
 
 export const eventSource = new EventEmitter();
 
-// refresh token
 $(document).ajaxError(function myErrorHandler(_, xhr) {
     if (xhr.status == 403) {
-        $.get("/csrf-token").then((data) => {
-            console.log('refreshed csrf token');
-            token = data.token;
-        });
+        toastr.warning("doubleCsrf errors in console are NORMAL in this case. Just reload the page or close this tab.", "Looks like you've opened SillyTavern in another browser tab", { timeOut: 0, extendedTimeOut: 0, preventDuplicates: true });
     }
 });
 
