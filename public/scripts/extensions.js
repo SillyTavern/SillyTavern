@@ -161,6 +161,7 @@ function addExtensionsButtonAndMenu() {
 
     const button = $('#extensionsMenuButton');
     const dropdown = $('#extensionsMenu');
+    dropdown.hide();
 
     let popper = Popper.createPopper(button.get(0), dropdown.get(0), {
         placement: 'top-end',
