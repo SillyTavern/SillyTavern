@@ -3007,14 +3007,20 @@ body .ui-widget-content li:hover {
     transition: all 0.2s ease-in-out;
 }
 
-#rm_group_members .right_menu_button[data-action="speak"]:hover,
+/* #rm_group_members .right_menu_button[data-action="speak"]:hover, */
 #rm_group_members .group_member:not(.disabled) .right_menu_button[data-action="disable"]:hover {
     opacity: inherit;
-    filter: inherit;
+    filter: drop-shadow(0px 0px 5px rgb(243, 166, 65));
 }
 
+#rm_group_members .group_member.disabled .right_menu_button[data-action="enable"] {
+    filter: drop-shadow(0px 0px 5px rgb(243, 166, 65));
+}
+
+
 #rm_group_members .right_menu_button[data-action="speak"]:hover {
-    filter: drop-shadow(0px 0px 2px green);
+    opacity: inherit;
+    filter: drop-shadow(0px 0px 5px rgb(153, 255, 153));
 }
 
 /* Rules for icon display */
