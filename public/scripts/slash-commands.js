@@ -148,6 +148,7 @@ async function sendMessageAs(_, text) {
         original_avatar: original_avatar,
         extra: {
             bias: bias.trim().length ? bias : null,
+            gen_id: Date.now(),
         }
     };
 
@@ -178,6 +179,7 @@ async function sendNarratorMessage(_, text) {
         extra: {
             type: system_message_types.NARRATOR,
             bias: bias.trim().length ? bias : null,
+            gen_id: Date.now(),
         },
     };
 
