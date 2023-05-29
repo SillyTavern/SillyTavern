@@ -404,6 +404,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
     }
 
     const group = groups.find((x) => x.id === selected_group);
+    let typingIndicator = $("#chat .typing_indicator");
 
     if (!group || !Array.isArray(group.members) || !group.members.length) {
         sendSystemMessage(system_message_types.EMPTY);
@@ -416,8 +417,6 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
         setCharacterName('');
         setCharacterId(undefined);
         const userInput = $("#send_textarea").val();
-
-        let typingIndicator = $("#chat .typing_indicator");
 
         if (typingIndicator.length === 0 && !isStreamingEnabled()) {
             typingIndicator = $(
@@ -435,6 +434,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
         let activationText = "";
         let isUserInput = false;
         let isGenerationDone = false;
+        let isGenerationAborted = false;
 
         if (userInput && userInput.length && !by_auto_mode) {
             isUserInput = true;
@@ -448,6 +448,16 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
 
         const resolveOriginal = params.resolve;
         const rejectOriginal = params.reject;
+
+        if (params.signal instanceof AbortSignal) {
+            if (params.signal.aborted) {
+                throw new Error('Already aborted signal passed. Group generation stopped');
+            }
+
+            params.signal.onabort = () => {
+                isGenerationAborted = true;
+            };
+        }
 
         if (typeof params.resolve === 'function') {
             params.resolve = function () {
@@ -517,6 +527,10 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
 
             // TODO: This is awful. Refactor this
             while (true) {
+                if (isGenerationAborted) {
+                    throw new Error('Group generation aborted');
+                }
+
                 // if not swipe - check if message generated already
                 if (type !== "swipe" && !isMultigenEnabled() && chat.length == messagesBefore) {
                     await delay(100);
@@ -593,11 +607,12 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
                 }
             }
 
-            // hide and reapply the indicator to the bottom of the list
-            typingIndicator.hide(250);
-            $("#chat").append(typingIndicator);
         }
     } finally {
+        // hide and reapply the indicator to the bottom of the list
+        typingIndicator.hide(250);
+        $("#chat").append(typingIndicator);
+
         is_group_generating = false;
         $("#send_textarea").attr("disabled", false);
         setSendButtonState(false);

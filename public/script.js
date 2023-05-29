@@ -1738,12 +1738,16 @@ class StreamingProcessor {
     }
 }
 
-async function Generate(type, { automatic_trigger, force_name2, resolve, reject, quiet_prompt, force_chid } = {}) {
+async function Generate(type, { automatic_trigger, force_name2, resolve, reject, quiet_prompt, force_chid, signal } = {}) {
     //console.log('Generate entered');
     setGenerationProgress(0);
     tokens_already_generated = 0;
     generation_started = new Date();
-    abortController = new AbortController();
+
+    // Don't recreate abort controller if signal is passed
+    if (!(abortController && signal)) {
+        abortController = new AbortController();
+    }
 
     const isImpersonate = type == "impersonate";
     const isInstruct = power_user.instruct.enabled;
@@ -1794,7 +1798,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     }
 
     if (selected_group && !is_group_generating) {
-        generateGroupWrapper(false, type, { resolve, reject, quiet_prompt, force_chid });
+        generateGroupWrapper(false, type, { resolve, reject, quiet_prompt, force_chid, signal: abortController.signal });
         return;
     }
 
