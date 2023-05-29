@@ -1209,7 +1209,8 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
         }
     }
 
-    const newMessage = $(`#chat [mesid="${count_view_mes}"]`);
+    const newMessageId = type == 'swipe' ? count_view_mes - 1 : count_view_mes;
+    const newMessage = $(`#chat [mesid="${newMessageId}"]`);
     const isSmallSys = mes?.extra?.isSmallSys;
     newMessage.data("isSystem", isSystem);
 
@@ -1235,6 +1236,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
         for (var i = 0; i < itemizedPrompts.length; i++) {
             if (itemizedPrompts[i].mesId === mesIdToFind) {
                 newMessage.find(".mes_prompt").show();
+                break;
                 //console.log(`showing prompt for mesID ${params.mesId} from ${params.characterName}`);
             } else {
                 //console.log(`no cache obj for mesID ${mesIdToFind}, hiding prompt button and continuing search`);
@@ -2300,7 +2302,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             let additionalPromptStuff = {
                 ...thisPromptBits[currentArrayEntry],
                 rawPrompt: generate_data.prompt,
-                mesId: Number(count_view_mes),
+                mesId: type == 'swipe' ? Number(count_view_mes - 1) : Number(count_view_mes),
                 worldInfoBefore: worldInfoBefore,
                 allAnchors: allAnchors,
                 summarizeString: (extension_prompts['1_memory']?.value || ''),

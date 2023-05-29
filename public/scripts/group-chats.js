@@ -391,7 +391,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
     let typingIndicator = $("#chat .typing_indicator");
 
     if (!group || !Array.isArray(group.members) || !group.members.length) {
-        sendSystemMessage(system_message_types.EMPTY);
+        sendSystemMessage(system_message_types.EMPTY, '', { isSmallSys: true });
         return;
     }
 
