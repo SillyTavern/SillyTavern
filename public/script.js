@@ -119,6 +119,7 @@ import {
     isElementInViewport,
     sortMoments,
     timestampToMoment,
+    download,
 } from "./scripts/utils.js";
 
 import { extension_settings, loadExtensionSettings, runGenerationInterceptors } from "./scripts/extensions.js";
@@ -5890,6 +5891,7 @@ $(document).ready(function () {
                 console.log(data);
                 await delay(250);
                 toastr.success(data.message);
+                download(data.result, body.exportfilename, 'text/plain');
             }
         } catch (error) {
             // display error message

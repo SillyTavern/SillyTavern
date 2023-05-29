@@ -1603,48 +1603,39 @@ app.post("/exportchat", jsonParser, async function (request, response) {
     const pathToFolder = request.body.is_group
         ? directories.groupChats
         : path.join(directories.chats, String(request.body.avatar_url).replace('.png', ''));
-    //let charname = String(sanitize(request.body.avatar_url)).replace('.png', '');
     let filename = path.join(pathToFolder, request.body.file);
-    let exportfilename = path.join(pathToFolder, request.body.exportfilename)
+    let exportfilename = request.body.exportfilename
     if (!fs.existsSync(filename)) {
         const errorMessage = {
-            message: `Could not find JSONL file to export. Source chat file: ${filename}. Intended destination file: ${exportfilename}.`
+            message: `Could not find JSONL file to export. Source chat file: ${filename}.`
         }
         console.log(errorMessage.message);
         return response.status(404).json(errorMessage);
-    }
-    if (fs.existsSync(exportfilename)) {
-        const errorMessage = {
-            message: `File by that name already exists. Export chat aborted.`
-        }
-        console.log(errorMessage.message);
-        return response.status(400).json(errorMessage);
     }
     try {
         const readline = require('readline');
         const fs = require('fs');
         const readStream = fs.createReadStream(filename);
-        const writeStream = fs.createWriteStream(exportfilename);
         const rl = readline.createInterface({
             input: readStream,
         });
+        let buffer = '';
         rl.on('line', (line) => {
             const data = JSON.parse(line);
             if (data.mes) {
                 const name = data.name;
-                const message = data.mes.replace(/\r?\n/g, '\n');
-                writeStream.write(`${name}: ${message}\n\n`);
+                const message = (data?.extra?.display_text || data?.mes || '').replace(/\r?\n/g, '\n');
+                buffer += (`${name}: ${message}\n\n`);
             }
         });
         rl.on('close', () => {
-            writeStream.end();
+            const successMessage = {
+                message: `Chat saved to ${exportfilename}`,
+                result: buffer,
+            }
+            console.log(`Chat exported as ${exportfilename}`);
+            return response.status(200).json(successMessage);
         });
-        //fs.promises.copyFile(filename, exportfilename)
-        const successMessage = {
-            message: `Chat exported as ${exportfilename}`
-        }
-        console.log(`Chat exported as ${exportfilename}`);
-        return response.status(200).json(successMessage);
     }
     catch (err) {
         console.log("chat export failed.")
