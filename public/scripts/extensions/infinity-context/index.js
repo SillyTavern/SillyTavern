@@ -15,7 +15,7 @@ const defaultSettings = {
     keep_context_step: 1,
 
     n_results: 20,
-    n_results_min: 1,
+    n_results_min: 0,
     n_results_max: 100,
     n_results_step: 1,
 

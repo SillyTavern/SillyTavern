@@ -13,6 +13,10 @@ const nai_settings = {
     temp_novel: 0.5,
     rep_pen_novel: 1,
     rep_pen_size_novel: 100,
+    rep_pen_slope_novel: 0,
+    rep_pen_freq_novel: 0,
+    rep_pen_presence_novel: 0,
+    tail_free_sampling_novel: 0.68,
     model_novel: "euterpe-v2",
     preset_settings_novel: "Classic-Euterpe",
 };
@@ -29,17 +33,24 @@ function getNovelTier(tier) {
 }
 
 function loadNovelPreset(preset) {
+    $("#amount_gen").val(preset.max_length);
+    $("#amount_gen_counter").text(`${preset.max_length}`);
+    if (((preset.max_context > 2048) && (!$("#max_context_unlocked")[0].checked)) ||
+        ((preset.max_context <= 2048) && ($("#max_context_unlocked")[0].checked))) {
+        $("#max_context_unlocked").click();
+    }
+    $("#max_context").val(preset.max_context);
+    $("#max_context_counter").text(`${preset.max_context}`);
+    $("#rep_pen_size_novel").attr('max', preset.max_context);
+
     nai_settings.temp_novel = preset.temperature;
     nai_settings.rep_pen_novel = preset.repetition_penalty;
     nai_settings.rep_pen_size_novel = preset.repetition_penalty_range;
-    $("#temp_novel").val(nai_settings.temp_novel);
-    $("#temp_counter_novel").html(nai_settings.temp_novel);
-
-    $("#rep_pen_novel").val(nai_settings.rep_pen_novel);
-    $("#rep_pen_counter_novel").html(nai_settings.rep_pen_novel);
-
-    $("#rep_pen_size_novel").val(nai_settings.rep_pen_size_novel);
-    $("#rep_pen_size_counter_novel").html(`${nai_settings.rep_pen_size_novel}`);
+    nai_settings.rep_pen_slope_novel = preset.repetition_penalty_slope;
+    nai_settings.rep_pen_freq_novel = preset.repetition_penalty_frequency;
+    nai_settings.rep_pen_presence_novel = preset.repetition_penalty_presence;
+    nai_settings.tail_free_sampling_novel = preset.tail_free_sampling;
+    loadNovelSettingsUi(nai_settings);
 }
 
 function loadNovelSettings(settings) {
@@ -50,15 +61,28 @@ function loadNovelSettings(settings) {
     nai_settings.temp_novel = settings.temp_novel;
     nai_settings.rep_pen_novel = settings.rep_pen_novel;
     nai_settings.rep_pen_size_novel = settings.rep_pen_size_novel;
+    nai_settings.rep_pen_slope_novel = settings.rep_pen_slope_novel;
+    nai_settings.rep_pen_freq_novel = settings.rep_pen_freq_novel;
+    nai_settings.rep_pen_presence_novel = settings.rep_pen_presence_novel;
+    nai_settings.tail_free_sampling_novel = settings.tail_free_sampling_novel;
+    loadNovelSettingsUi(nai_settings);
+}
 
-    $("#temp_novel").val(nai_settings.temp_novel);
-    $("#temp_counter_novel").text(Number(nai_settings.temp_novel).toFixed(2));
-
-    $("#rep_pen_novel").val(nai_settings.rep_pen_novel);
-    $("#rep_pen_counter_novel").text(Number(nai_settings.rep_pen_novel).toFixed(2));
-
-    $("#rep_pen_size_novel").val(nai_settings.rep_pen_size_novel);
-    $("#rep_pen_size_counter_novel").text(`${nai_settings.rep_pen_size_novel}`);
+function loadNovelSettingsUi(ui_settings) {
+    $("#temp_novel").val(ui_settings.temp_novel);
+    $("#temp_counter_novel").html(Number(ui_settings.temp_novel).toFixed(2));
+    $("#rep_pen_novel").val(ui_settings.rep_pen_novel);
+    $("#rep_pen_counter_novel").html(Number(ui_settings.rep_pen_novel).toFixed(2));
+    $("#rep_pen_size_novel").val(ui_settings.rep_pen_size_novel);
+    $("#rep_pen_size_counter_novel").html(Number(ui_settings.rep_pen_size_novel).toFixed(0));
+    $("#rep_pen_slope_novel").val(ui_settings.rep_pen_slope_novel);
+    $("#rep_pen_slope_counter_novel").html(Number(`${ui_settings.rep_pen_slope_novel}`).toFixed(2));
+    $("#rep_pen_freq_novel").val(ui_settings.rep_pen_freq_novel);
+    $("#rep_pen_freq_counter_novel").html(Number(ui_settings.rep_pen_freq_novel).toFixed(5));
+    $("#rep_pen_presence_novel").val(ui_settings.rep_pen_presence_novel);
+    $("#rep_pen_presence_counter_novel").html(Number(ui_settings.rep_pen_presence_novel).toFixed(3));
+    $("#tail_free_sampling_novel").val(ui_settings.tail_free_sampling_novel);
+    $("#tail_free_sampling_counter_novel").html(Number(ui_settings.tail_free_sampling_novel).toFixed(3));
 }
 
 const sliders = [
@@ -66,19 +90,43 @@ const sliders = [
         sliderId: "#temp_novel",
         counterId: "#temp_counter_novel",
         format: (val) => Number(val).toFixed(2),
-        setValue: (val) => { nai_settings.temp_novel = Number(val); },
+        setValue: (val) => { nai_settings.temp_novel = Number(val).toFixed(2); },
     },
     {
         sliderId: "#rep_pen_novel",
         counterId: "#rep_pen_counter_novel",
         format: (val) => Number(val).toFixed(2),
-        setValue: (val) => { nai_settings.rep_pen_novel = Number(val); },
+        setValue: (val) => { nai_settings.rep_pen_novel = Number(val).toFixed(2); },
     },
     {
         sliderId: "#rep_pen_size_novel",
         counterId: "#rep_pen_size_counter_novel",
         format: (val) => `${val}`,
-        setValue: (val) => { nai_settings.rep_pen_size_novel = Number(val); },
+        setValue: (val) => { nai_settings.rep_pen_size_novel = Number(val).toFixed(0); },
+    },
+    {
+        sliderId: "#rep_pen_slope_novel",
+        counterId: "#rep_pen_slope_counter_novel",
+        format: (val) => `${val}`,
+        setValue: (val) => { nai_settings.rep_pen_slope_novel = Number(val).toFixed(2); },
+    },
+    {
+        sliderId: "#rep_pen_freq_novel",
+        counterId: "#rep_pen_freq_counter_novel",
+        format: (val) => `${val}`,
+        setValue: (val) => { nai_settings.rep_pen_freq_novel = Number(val).toFixed(5); },
+    },
+    {
+        sliderId: "#rep_pen_presence_novel",
+        counterId: "#rep_pen_presence_counter_novel",
+        format: (val) => `${val}`,
+        setValue: (val) => { nai_settings.rep_pen_presence_novel = Number(val).toFixed(3); },
+    },
+    {
+        sliderId: "#tail_free_sampling_novel",
+        counterId: "#tail_free_sampling_counter_novel",
+        format: (val) => `${val}`,
+        setValue: (val) => { nai_settings.tail_free_sampling_novel = Number(val).toFixed(3); },
     },
 ];
 

@@ -1,8 +1,5 @@
 {
-   "order": [
-      3,
-      0
-   ],
+   "order": [3, 0],
    "temperature": 1.7,
    "max_length": 90,
    "min_length": 1,
@@ -10,5 +7,7 @@
    "repetition_penalty": 1.06,
    "repetition_penalty_range": 340,
    "repetition_penalty_frequency": 0,
-   "repetition_penalty_presence": 0
+   "repetition_penalty_presence": 0,
+   "repetition_penalty_slope": 0,
+   "max_context": 2048
 }

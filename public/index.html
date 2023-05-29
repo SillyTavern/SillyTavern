@@ -64,6 +64,7 @@
     <script type="module" src="scripts/tags.js"></script>
     <script type="module" src="scripts/secrets.js"></script>
     <script type="module" src="scripts/context-template.js"></script>
+    <script type="module" src="scripts/extensions.js"></script>
     <script type="text/javascript" src="scripts/toolcool-color-picker.js"></script>
 
     <title>SillyTavern</title>
@@ -275,6 +276,81 @@
                                         </div>
                                     </div>
                                 </div>
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        Rep. Pen. Range.
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="rep_pen_size_novel" name="volume" min="0" max="2048" step="1">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="rep_pen_size_novel" id="rep_pen_size_counter_novel">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        Rep. Pen. Slope
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="rep_pen_slope_novel" name="volume" min="0" max="10" step="0.01">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="rep_pen_slope_novel" id="rep_pen_slope_counter_novel">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        Rep. Pen. Freq.
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="rep_pen_freq_novel" name="volume" min="0" max="1" step="0.00001">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="rep_pen_freq_novel" id="rep_pen_freq_counter_novel">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        Rep. Pen. Presence
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="rep_pen_presence_novel" name="volume" min="0" max="1" step="0.001">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="rep_pen_presence_novel" id="rep_pen_presence_counter_novel">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        Tail Free Sampling
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="tail_free_sampling_novel" name="volume" min="0" max="1" step="0.001">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="tail_free_sampling_novel" id="tail_free_sampling_counter_novel">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             <div id="range_block_textgenerationwebui">
                                 <div class="range-block">
@@ -379,6 +455,15 @@
                                     </div>
                                     <div class="toggle-description justifyLeft">
                                         Enable this if the streaming doesn't work with your proxy.
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <label class="checkbox_label">
+                                        <input id="oai_max_context_unlocked" type="checkbox" />
+                                        Unlocked Context Size
+                                    </label>
+                                    <div class="toggle-description justifyLeft">
+                                        Unrestricted maximum value for the context size slider. Enable only if you know what you're doing.
                                     </div>
                                 </div>
                                 <div class="range-block">
@@ -840,10 +925,24 @@
                                         </div>
                                     </div>
                                     <div class="toggle-description justifyLeft">
-                                        Prompt that is used when the NSFW toggle is on
+                                        Prompt that is used when the NSFW toggle is ON
                                     </div>
                                     <div class="wide100p">
                                         <textarea id="nsfw_prompt_textarea" class="text_pole textarea_compact" name="nsfw_prompt" rows="6" placeholder=""></textarea>
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title openai_restorable">
+                                        <span>NSFW avoidance prompt</span>
+                                        <div id="nsfw_avoidance_prompt_restore" title="Restore default prompt" class="right_menu_button">
+                                            <div class="fa-solid fa-clock-rotate-left"></div>
+                                        </div>
+                                    </div>
+                                    <div class="toggle-description justifyLeft">
+                                        Prompt that is used when the NSFW toggle is OFF
+                                    </div>
+                                    <div class="wide100p">
+                                        <textarea id="nsfw_avoidance_prompt_textarea" class="text_pole textarea_compact" name="nsfw_prompt" rows="2" placeholder=""></textarea>
                                     </div>
                                 </div>
                                 <div class="range-block">
@@ -860,20 +959,44 @@
                                         <textarea id="jailbreak_prompt_textarea" class="text_pole textarea_compact" name="jailbreak_prompt" rows="6" placeholder=""></textarea>
                                     </div>
                                 </div>
-                                <div class="range-block">
-                                    <div class="range-block-title openai_restorable">
-                                        <span>Impersonation prompt</span>
-                                        <div id="impersonation_prompt_restore" title="Restore default prompt" class="right_menu_button">
-                                            <div class="fa-solid fa-clock-rotate-left"></div>
+
+                                <div class="inline-drawer wide100p">
+                                    <div class="inline-drawer-toggle inline-drawer-header margin-bot-10px">
+                                        <b>Advanced prompt bits</b>
+                                        <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+                                    </div>
+                                    <div class="inline-drawer-content">
+                                        <div class="range-block">
+                                            <div class="range-block-title openai_restorable">
+                                                <span>Impersonation prompt</span>
+                                                <div id="impersonation_prompt_restore" title="Restore default prompt" class="right_menu_button">
+                                                    <div class="fa-solid fa-clock-rotate-left"></div>
+                                                </div>
+                                            </div>
+                                            <div class="toggle-description justifyLeft">
+                                                Prompt that is used for Impersonation function
+                                            </div>
+                                            <div class="wide100p">
+                                                <textarea id="impersonation_prompt_textarea" class="text_pole textarea_compact" name="impersonation_prompt" rows="6" placeholder=""></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="range-block">
+                                            <div class="range-block-title openai_restorable">
+                                                <span>World Info format template</span>
+                                                <div id="wi_format_restore" title="Restore default format" class="right_menu_button">
+                                                    <div class="fa-solid fa-clock-rotate-left"></div>
+                                                </div>
+                                            </div>
+                                            <div class="toggle-description justifyLeft">
+                                                Wraps activated World Info entries before inserting into the prompt. Use <tt>{0}</tt> to mark a place where the content is inserted.
+                                            </div>
+                                            <div class="wide100p">
+                                                <textarea id="wi_format_textarea" class="text_pole textarea_compact" rows="3" placeholder=""></textarea>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="toggle-description justifyLeft">
-                                        Prompt that is used for Impersonation function
-                                    </div>
-                                    <div class="wide100p">
-                                        <textarea id="impersonation_prompt_textarea" class="text_pole textarea_compact" name="impersonation_prompt" rows="6" placeholder=""></textarea>
-                                    </div>
                                 </div>
+
                                 <div class="range-block">
                                     <div class="range-block-title openai_restorable">
                                         Logit Bias
@@ -989,54 +1112,54 @@
                     </div>
                     <div id="kobold_horde" style="position: relative;"> <!-- shows the kobold settings -->
                         <form action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                        <div id="kobold_horde_block">
-                            <ul>
-                                <li>
-                                    <a target="_blank" href="https://horde.koboldai.net/register">Register a Horde account for faster queue times</a>
-                                </li>
-                                <li>
-                                    <a target="_blank" href="https://github.com/db0/AI-Horde-Worker#readme">Learn how to contribute your idle GPU cycles to the Horde</a>
-                                </li>
-                            </ul>
+                            <div id="kobold_horde_block">
+                                <ul>
+                                    <li>
+                                        <a target="_blank" href="https://horde.koboldai.net/register">Register a Horde account for faster queue times</a>
+                                    </li>
+                                    <li>
+                                        <a target="_blank" href="https://github.com/db0/AI-Horde-Worker#readme">Learn how to contribute your idle GPU cycles to the Horde</a>
+                                    </li>
+                                </ul>
 
-                            <label for="horde_auto_adjust_context_length" class="checkbox_label">
-                                <input id="horde_auto_adjust_context_length" type="checkbox" />
-                                Adjust context size to worker capabilities
-                            </label>
+                                <label for="horde_auto_adjust_context_length" class="checkbox_label">
+                                    <input id="horde_auto_adjust_context_length" type="checkbox" />
+                                    Adjust context size to worker capabilities
+                                </label>
 
-                            <label for="horde_auto_adjust_response_length" class="checkbox_label">
-                                <input id="horde_auto_adjust_response_length" type="checkbox" />
-                                Adjust response length to worker capabilities
-                            </label>
+                                <label for="horde_auto_adjust_response_length" class="checkbox_label">
+                                    <input id="horde_auto_adjust_response_length" type="checkbox" />
+                                    Adjust response length to worker capabilities
+                                </label>
 
-                            <label for="horde_trusted_workers_only" class="checkbox_label" title="Can help with bad responses by queueing only the approved workers. May slowdown the response time.">
-                                <input id="horde_trusted_workers_only" type="checkbox" />
-                                Trusted workers only
-                            </label>
+                                <label for="horde_trusted_workers_only" class="checkbox_label" title="Can help with bad responses by queueing only the approved workers. May slowdown the response time.">
+                                    <input id="horde_trusted_workers_only" type="checkbox" />
+                                    Trusted workers only
+                                </label>
 
-                            <h4>API key</h4>
-                            <h5>Get it here: <a target="_blank" href="https://horde.koboldai.net/register">Register</a><br>
-                                Enter <span class="monospace">0000000000</span> to use anonymous mode.
-                            </h5>
-                            <div>
-                                <a id="horde_kudos" href="javascript:void(0);">View my Kudos</a>
-                            </div>
-                            <div class="flex-container">
-                                <input id="horde_api_key" name="horde_api_key" class="text_pole flex1" maxlength="500" type="text" placeholder="0000000000" autocomplete="off">
-                                <div title="Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_horde"></div>
-                            </div>
-                            <div class="neutral_warning">For privacy reasons, your API key will be hidden after you reload the page.</div>
-                            <h4 class="horde_model_title">
-                                Model
-                                <div id="horde_refresh" title="Refresh models" class="right_menu_button">
-                                    <div class="fa-solid fa-repeat "></div>
+                                <h4>API key</h4>
+                                <h5>Get it here: <a target="_blank" href="https://horde.koboldai.net/register">Register</a><br>
+                                    Enter <span class="monospace">0000000000</span> to use anonymous mode.
+                                </h5>
+                                <div>
+                                    <a id="horde_kudos" href="javascript:void(0);">View my Kudos</a>
                                 </div>
-                            </h4>
-                            <small class="horde_multiple_hint">You can select multiple models.<br>Avoid sending sensitive information to the Horde. <a id="horde_privacy_disclaimer" target="_blank" href="/notes#horde">Learn more</a></small>
-                            <select id="horde_model" multiple>
-                                <option>-- Horde models not loaded --</option>
-                            </select>
-                        </div>
+                                <div class="flex-container">
+                                    <input id="horde_api_key" name="horde_api_key" class="text_pole flex1" maxlength="500" type="text" placeholder="0000000000" autocomplete="off">
+                                    <div title="Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_horde"></div>
+                                </div>
+                                <div class="neutral_warning">For privacy reasons, your API key will be hidden after you reload the page.</div>
+                                <h4 class="horde_model_title">
+                                    Model
+                                    <div id="horde_refresh" title="Refresh models" class="right_menu_button">
+                                        <div class="fa-solid fa-repeat "></div>
+                                    </div>
+                                </h4>
+                                <small class="horde_multiple_hint">You can select multiple models.<br>Avoid sending sensitive information to the Horde. <a id="horde_privacy_disclaimer" target="_blank" href="/notes#horde">Learn more</a></small>
+                                <select id="horde_model" multiple>
+                                    <option>-- Horde models not loaded --</option>
+                                </select>
+                            </div>
                             <div id="online_status_horde">
                                 <div id="online_status_indicator_horde"></div>
                                 <div id="online_status_text_horde">Not connected</div>
@@ -1124,7 +1247,14 @@
                         </div>
                     </div>
                     <div id="openai_api" style="display: none;position: relative;">
-                        <form action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                        <label for="use_window_ai" class="checkbox_label">
+                            <input id="use_window_ai" type="checkbox" />
+                            Use Window.ai
+                            <a href="/notes#windowai" class="notes-link" target="_blank">
+                                <span class="note-link-span">?</span>
+                            </a>
+                        </label>
+                        <form id="openai_form" action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <h4>API key </h4>
                             <span>
                                 <ol>
@@ -1141,24 +1271,24 @@
                             <div class="neutral_warning">For privacy reasons, your API key will be hidden after you reload the page.</div>
                             <input id="api_button_openai" class="menu_button" type="submit" value="Connect">
                             <div id="api_loading_openai" class=" api-load-icon fa-solid fa-hourglass fa-spin"></div>
+                            <div class="online_status4">
+                                <div class="online_status_indicator4"></div>
+                                <div class="online_status_text4">No connection...</div>
+                            </div>
+                            <div>
+                                <h4>OpenAI Model</h4>
+                                <select id="model_openai_select">
+                                    <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+                                    <option value="gpt-3.5-turbo-0301">gpt-3.5-turbo-0301</option>
+                                    <option value="gpt-4">gpt-4</option>
+                                    <option value="gpt-4-0314">gpt-4-0314</option>
+                                    <option value="gpt-4-32k">gpt-4-32k</option>
+                                </select>
+                            </div>
+                            <div>
+                                <a id="openai_api_usage" href="javascript:void(0);">View API Usage Metrics</a>
+                            </div>
                         </form>
-                        <div class="online_status4">
-                            <div class="online_status_indicator4"></div>
-                            <div class="online_status_text4">No connection...</div>
-                        </div>
-                        <div>
-                            <h4>OpenAI Model</h4>
-                            <select id="model_openai_select">
-                                <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
-                                <option value="gpt-3.5-turbo-0301">gpt-3.5-turbo-0301</option>
-                                <option value="gpt-4">gpt-4</option>
-                                <option value="gpt-4-0314">gpt-4-0314</option>
-                                <option value="gpt-4-32k">gpt-4-32k</option>
-                            </select>
-                        </div>
-                        <div>
-                            <a id="openai_api_usage" href="javascript:void(0);">View API Usage Metrics</a>
-                        </div>
                         <br>
                     </div>
                     <div id="poe_api">
@@ -1817,6 +1947,8 @@
                                 <input id="your_name" name="your_name" placeholder="Enter your name" class="text_pole wide100p" maxlength="50" value="" autocomplete="off">
                                 <div id="your_name_button" class="menu_button fa-solid fa-check" title="Click to set a new User Name">
                                 </div>
+                                <div id="sync_name_button" class="menu_button fa-solid fa-sync" title="Click to set user name for all messages">
+                                </div>
                             </div>
                         </div>
                         <div name="AvatarSelector">
@@ -1937,6 +2069,7 @@
                                     <input type="hidden" id="fav_checkbox" name="fav" />
                                     <div id="advanced_div" class="menu_button fa-solid fa-book " title="Advanced Definitions"></div>
                                     <div id="export_button" class="menu_button fa-solid fa-file-export " title="Export and Download"></div>
+                                    <div id="dupe_button" class="menu_button fa-solid fa-clone " title="Duplicate Character"></div>
                                     <label for="create_button" id="create_button_label" class="menu_button fa-solid fa-user-check" title="Create Character">
                                         <input type="submit" id="create_button" name="create_button">
                                     </label>
@@ -2141,35 +2274,36 @@
             </div>
         </div>
     </div>
-    <div id="character_popup">
+    <div id="character_popup" class="flex-container flexFlowColumn flexNoGap">
 
         <div id="character_popup_text">
-            <div>
-                <img src="img/book2.png" id="advanced_book_logo">
-            </div>
-
-            <div>
-                <h3 id="character_popup_text_h3"></h3> - Advanced Definitions
-            </div>
-
+            <h3 id="character_popup_text_h3"></h3> - Advanced Definitions
         </div>
+        <hr>
         <div id="character_cross" class="fa-solid fa-circle-xmark"></div>
 
+        <div id="creatorcomment_div">
+            Creator's Comment
+            <h5>This is not sent to the AI Prompt.
+                <textarea id="creatorcomment_textarea" name="creatorcomment" placeholder="(Describe the bot to the user, list the chat models it has been tested on, and any other useful tips)" form="form_create" class="text_pole" autocomplete="off" rows="2" maxlength="20000"></textarea>
+        </div>
+
         <div id="personality_div">
-            <hr>
-            <h4>Personality summary</h4>
-            <h5>A brief description of the personality <a href="/notes#personalitysummary" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
-            <textarea id="personality_textarea" name="personality" placeholder="" form="form_create" class="text_pole" autocomplete="off" rows="2" maxlength="20000"></textarea>
+            <h4>
+                Personality summary
+                <a href="/notes#personalitysummary" class="notes-link" target="_blank"><span class="note-link-span">?</span></a>
+            </h4>
+            <textarea id="personality_textarea" name="personality" placeholder="(A brief description of the personality)" form="form_create" class="text_pole" autocomplete="off" rows="1" maxlength="20000"></textarea>
         </div>
 
         <div id="scenario_div">
-            <h4>Scenario</h4>
-            <h5>Circumstances and context of the dialogue
+            <h4>
+                Scenario
                 <a href="/notes#scenario" class="notes-link" target="_blank">
                     <span class="note-link-span">?</span>
                 </a>
-            </h5>
-            <textarea id="scenario_pole" name="scenario" class="text_pole" maxlength="20000" value="" autocomplete="off" form="form_create" rows="2"></textarea>
+            </h4>
+            <textarea id="scenario_pole" name="scenario" placeholder="(Circumstances and context of the interaction)" class="text_pole" maxlength="20000" value="" autocomplete="off" form="form_create" rows="1"></textarea>
         </div>
 
         <div id="talkativeness_div">
@@ -2183,13 +2317,13 @@
                 <span>Chatty</span>
             </div>
         </div>
-
-        <div id="mes_example_div">
+        <hr>
+        <div id="mes_example_div" class="flex-container flexFlowColumn">
             <div>
-                <h4>Examples of dialogue</h4>
-                <h5>Forms a personality more clearly <a href="/notes#examplesofdialogue" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
+                <h4>Example Dialogue</h4>
+                <h5>Important to set the character's writing style. <a href="/notes#examplesofdialogue" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
             </div>
-            <textarea id="mes_example_textarea" name="mes_example" placeholder="" form="form_create" maxlength="20000"></textarea>
+            <textarea id="mes_example_textarea" class="flexGrow" name="mes_example" placeholder="(Examples of chat dialog. Begin each example with <start> on a new line.)" form="form_create" maxlength="20000"></textarea>
         </div>
         <div id="character_popup_ok" class="menu_button">Save</div>
 
@@ -2227,7 +2361,7 @@
     <div id="context_editor_template" class="template_element">
         <div class="context_editor">
             <h3>Context Template Editor</h3>
-                <h4 class="template_name"></h4>
+            <h4 class="template_name"></h4>
 
             <div class="inline-drawer wide100p">
                 <div class="inline-drawer-toggle inline-drawer-header">
@@ -2313,6 +2447,7 @@
             </div>
             <div class="flex-container height100pSpaceEvenly">
                 <div class="renameChatButton fa-solid fa-pen"></div>
+                <div class="exportChatButton fa-solid fa-file-export"></div>
                 <div file_name="" class="PastChat_cross fa-solid fa-circle-xmark"></div>
             </div>
         </div>
@@ -2478,6 +2613,7 @@
                     <span class="name_text">${characterName}</span>
 
                     <div class="mes_buttons">
+                        <div title="Translate message" class="mes_translate fa-solid fa-language"></div>
                         <div title="Open bookmark chat" class="mes_bookmark fa-solid fa-bookmark"></div>
                         <div title="Generate Image" class="sd_message_gen fa-solid fa-paintbrush"></div>
                         <div title="Narrate" class="mes_narrate fa-solid fa-bullhorn"></div>

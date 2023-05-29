@@ -88,6 +88,7 @@ const ai_horde = new AIHorde({
     client_agent: getVersion()?.agent || 'SillyTavern:UNKNOWN:Cohee#1207',
 });
 const ipMatching = require('ip-matching');
+const yauzl = require('yauzl');
 
 const Client = require('node-rest-client').Client;
 const client = new Client();
@@ -673,7 +674,19 @@ function tryParse(str) {
 
 //***************** Main functions
 function charaFormatData(data) {
-    var char = { "name": data.ch_name, "description": data.description, "personality": data.personality, "first_mes": data.first_mes, "avatar": 'none', "chat": data.ch_name + ' - ' + humanizedISO8601DateTime(), "mes_example": data.mes_example, "scenario": data.scenario, "create_date": humanizedISO8601DateTime(), "talkativeness": data.talkativeness, "fav": data.fav };
+    var char = {
+        "name": data.ch_name,
+        "description": data.description,
+        "creatorcomment": data.creatorcomment,
+        "personality": data.personality,
+        "first_mes": data.first_mes,
+        "avatar": 'none', "chat": data.ch_name + ' - ' + humanizedISO8601DateTime(),
+        "mes_example": data.mes_example,
+        "scenario": data.scenario,
+        "create_date": humanizedISO8601DateTime(),
+        "talkativeness": data.talkativeness,
+        "fav": data.fav
+    };
     return char;
 }
 
@@ -1317,11 +1330,13 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
             "tail_free_sampling": request.body.tail_free_sampling,
             "repetition_penalty": request.body.repetition_penalty,
             "repetition_penalty_range": request.body.repetition_penalty_range,
+            "repetition_penalty_slope": request.body.repetition_penalty_slope,
             "repetition_penalty_frequency": request.body.repetition_penalty_frequency,
             "repetition_penalty_presence": request.body.repetition_penalty_presence,
             "top_a": request.body.top_a,
             "top_p": request.body.top_p,
             "top_k": request.body.top_k,
+            "typical_p": request.body.typical_p,
             //"stop_sequences": {{187}},
             //bad_words_ids = {{50256}, {0}, {1}};
             //generate_until_sentence = true;
@@ -1468,6 +1483,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                     let char = {
                         "name": jsonData.name,
                         "description": jsonData.description ?? '',
+                        "creatorcomment": jsonData.creatorcomment ?? '',
                         "personality": jsonData.personality ?? '',
                         "first_mes": jsonData.first_mes ?? '',
                         "avatar": 'none', "chat": jsonData.name + " - " + humanizedISO8601DateTime(),
@@ -1485,6 +1501,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                     let char = {
                         "name": jsonData.char_name,
                         "description": jsonData.char_persona ?? '',
+                        "creatorcomment": '',
                         "personality": '',
                         "first_mes": jsonData.char_greeting ?? '',
                         "avatar": 'none',
@@ -1525,6 +1542,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                     let char = {
                         "name": jsonData.name,
                         "description": jsonData.description ?? '',
+                        "creatorcomment": jsonData.creatorcomment ?? '',
                         "personality": jsonData.personality ?? '',
                         "first_mes": jsonData.first_mes ?? '',
                         "avatar": 'none',
@@ -1544,6 +1562,96 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
         }
     }
 });
+
+app.post("/dupecharacter", jsonParser, async function (request, response) {
+    try {
+        if (!request.body.avatar_url) {
+            console.log("avatar URL not found in request body");
+            console.log(request.body);
+            return response.sendStatus(400);
+        }
+        let filename = path.join(directories.characters, sanitize(request.body.avatar_url));
+        if (!fs.existsSync(filename)) {
+            console.log('file for dupe not found');
+            console.log(filename);
+            return response.sendStatus(404);
+        }
+        let suffix = 1;
+        let newFilename = filename;
+        while (fs.existsSync(newFilename)) {
+            let suffixStr = "_" + suffix;
+            let ext = path.extname(filename);
+            newFilename = filename.slice(0, -ext.length) + suffixStr + ext;
+            suffix++;
+        }
+        fs.copyFile(filename, newFilename, (err) => {
+            if (err) throw err;
+            console.log(`${filename} was copied to ${newFilename}`);
+            response.sendStatus(200);
+        });
+    }
+    catch (error) {
+        console.error(error);
+        return response.send({ error: true });
+    }
+});
+
+app.post("/exportchat", jsonParser, async function (request, response) {
+    if (!request.body.file || (!request.body.avatar_url && request.body.is_group === false)) {
+        return response.sendStatus(400);
+    }
+    const pathToFolder = request.body.is_group
+        ? directories.groupChats
+        : path.join(directories.chats, String(request.body.avatar_url).replace('.png', ''));
+    //let charname = String(sanitize(request.body.avatar_url)).replace('.png', '');
+    let filename = path.join(pathToFolder, request.body.file);
+    let exportfilename = path.join(pathToFolder, request.body.exportfilename)
+    if (!fs.existsSync(filename)) {
+        const errorMessage = {
+            message: `Could not find JSONL file to export. Source chat file: ${filename}. Intended destination file: ${exportfilename}.`
+        }
+        console.log(errorMessage.message);
+        return response.status(404).json(errorMessage);
+    }
+    if (fs.existsSync(exportfilename)) {
+        const errorMessage = {
+            message: `File by that name already exists. Export chat aborted.`
+        }
+        console.log(errorMessage.message);
+        return response.status(400).json(errorMessage);
+    }
+    try {
+        const readline = require('readline');
+        const fs = require('fs');
+        const readStream = fs.createReadStream(filename);
+        const writeStream = fs.createWriteStream(exportfilename);
+        const rl = readline.createInterface({
+            input: readStream,
+        });
+        rl.on('line', (line) => {
+            const data = JSON.parse(line);
+            if (data.mes) {
+                const name = data.name;
+                const message = data.mes.replace(/\r?\n/g, '\n');
+                writeStream.write(`${name}: ${message}\n\n`);
+            }
+        });
+        rl.on('close', () => {
+            writeStream.end();
+        });
+        //fs.promises.copyFile(filename, exportfilename)
+        const successMessage = {
+            message: `Chat exported as ${exportfilename}`
+        }
+        console.log(`Chat exported as ${exportfilename}`);
+        return response.status(200).json(successMessage);
+    }
+    catch (err) {
+        console.log("chat export failed.")
+        console.log(err);
+        return response.sendStatus(400);
+    }
+})
 
 app.post("/exportcharacter", jsonParser, async function (request, response) {
     if (!request.body.format || !request.body.avatar_url) {
@@ -1625,6 +1733,8 @@ app.post("/importchat", urlencodedParser, function (request, response) {
     let filedata = request.file;
     let avatar_url = (request.body.avatar_url).replace('.png', '');
     let ch_name = request.body.character_name;
+    let user_name = request.body.user_name || 'You';
+
     if (filedata) {
         if (format === 'json') {
             fs.readFile(`./uploads/${filedata.filename}`, 'utf8', (err, data) => {
@@ -1641,13 +1751,13 @@ app.post("/importchat", urlencodedParser, function (request, response) {
                         from(history) {
                             return [
                                 {
-                                    user_name: 'You',
+                                    user_name: user_name,
                                     character_name: ch_name,
                                     create_date: humanizedISO8601DateTime(),
                                 },
                                 ...history.msgs.map(
                                     (message) => ({
-                                        name: message.src.is_human ? 'You' : ch_name,
+                                        name: message.src.is_human ? user_name : ch_name,
                                         is_user: message.src.is_human,
                                         is_name: true,
                                         send_date: humanizedISO8601DateTime(),
@@ -1674,6 +1784,40 @@ app.post("/importchat", urlencodedParser, function (request, response) {
                     if (0 < errors.length) {
                         response.send('Errors occurred while writing character files. Errors: ' + JSON.stringify(errors));
                     }
+
+                    response.send({ res: true });
+                } else if (Array.isArray(jsonData.data_visible)) {
+                    // oobabooga's format
+                    const chat = [{
+                        user_name: user_name,
+                        character_name: ch_name,
+                        create_date: humanizedISO8601DateTime(),
+                    }];
+
+                    for (const arr of jsonData.data_visible) {
+                        if (arr[0]) {
+                            const userMessage = {
+                                name: user_name,
+                                is_user: true,
+                                is_name: true,
+                                send_date: humanizedISO8601DateTime(),
+                                mes: arr[0],
+                            };
+                            chat.push(userMessage);
+                        }
+                        if (arr[1]) {
+                            const charMessage = {
+                                name: ch_name,
+                                is_user: false,
+                                is_name: true,
+                                send_date: humanizedISO8601DateTime(),
+                                mes: arr[1],
+                            };
+                            chat.push(charMessage);
+                        }
+                    }
+
+                    fs.writeFileSync(`${chatsPath + avatar_url}/${ch_name} - ${humanizedISO8601DateTime()} imported.jsonl`, chat.map(JSON.stringify).join('\n'), 'utf8');
 
                     response.send({ res: true });
                 } else {
@@ -2891,6 +3035,162 @@ app.post('/horde_generateimage', jsonParser, async (request, response) => {
     }
 });
 
+app.post('/google_translate', jsonParser, async (request, response) => {
+    const { generateRequestUrl, normaliseResponse } = require('google-translate-api-browser');
+
+    const text = request.body.text;
+    const lang = request.body.lang;
+
+    if (!text || !lang) {
+        return response.sendStatus(400);
+    }
+
+    console.log('Input text: ' + text);
+
+    const url = generateRequestUrl(text, { to: lang });
+
+    https.get(url, (resp) => {
+        let data = '';
+
+        resp.on('data', (chunk) => {
+            data += chunk;
+        });
+
+        resp.on('end', () => {
+            const result = normaliseResponse(JSON.parse(data));
+            console.log('Translated text: ' + result.text);
+            return response.send(result.text);
+        });
+    }).on("error", (err) => {
+        console.log("Translation error: " + err.message);
+        return response.sendStatus(500);
+    });
+});
+
+app.post('/delete_sprite', jsonParser, async (request, response) => {
+    const label = request.body.label;
+    const name = request.body.name;
+
+    if (!label || !name) {
+        return response.sendStatus(400);
+    }
+
+    try {
+        const spritesPath = path.join(directories.characters, name);
+
+        // No sprites folder exists, or not a directory
+        if (!fs.existsSync(spritesPath) || !fs.statSync(spritesPath).isDirectory()) {
+            return response.sendStatus(404);
+        }
+
+        const files = fs.readdirSync(spritesPath);
+
+        // Remove existing sprite with the same label
+        for (const file of files) {
+            if (path.parse(file).name === label) {
+                fs.rmSync(path.join(spritesPath, file));
+            }
+        }
+
+        return response.sendStatus(200);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
+app.post('/upload_sprite_pack', urlencodedParser, async (request, response) => {
+    const file = request.file;
+    const name = request.body.name;
+
+    if (!file || !name) {
+        return response.sendStatus(400);
+    }
+
+    try {
+        const spritesPath = path.join(directories.characters, name);
+
+        // Create sprites folder if it doesn't exist
+        if (!fs.existsSync(spritesPath)) {
+            fs.mkdirSync(spritesPath);
+        }
+
+        // Path to sprites is not a directory. This should never happen.
+        if (!fs.statSync(spritesPath).isDirectory()) {
+            return response.sendStatus(404);
+        }
+
+        const spritePackPath = path.join("./uploads/", file.filename);
+        const sprites = await getImageBuffers(spritePackPath);
+        const files = fs.readdirSync(spritesPath);
+
+        for (const [filename, buffer] of sprites) {
+            // Remove existing sprite with the same label
+            const existingFile = files.find(file => path.parse(file).name === path.parse(filename).name);
+
+            if (existingFile) {
+                fs.rmSync(path.join(spritesPath, existingFile));
+            }
+
+            // Write sprite buffer to disk
+            const pathToSprite = path.join(spritesPath, filename);
+            fs.writeFileSync(pathToSprite, buffer);
+        }
+
+        // Remove uploaded ZIP file
+        fs.rmSync(spritePackPath);
+        return response.send({ count: sprites.length });
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
+app.post('/upload_sprite', urlencodedParser, async (request, response) => {
+    const file = request.file;
+    const label = request.body.label;
+    const name = request.body.name;
+
+    if (!file || !label || !name) {
+        return response.sendStatus(400);
+    }
+
+    try {
+        const spritesPath = path.join(directories.characters, name);
+
+        // Create sprites folder if it doesn't exist
+        if (!fs.existsSync(spritesPath)) {
+            fs.mkdirSync(spritesPath);
+        }
+
+        // Path to sprites is not a directory. This should never happen.
+        if (!fs.statSync(spritesPath).isDirectory()) {
+            return response.sendStatus(404);
+        }
+
+        const files = fs.readdirSync(spritesPath);
+
+        // Remove existing sprite with the same label
+        for (const file of files) {
+            if (path.parse(file).name === label) {
+                fs.rmSync(path.join(spritesPath, file));
+            }
+        }
+
+        const filename = label + path.parse(file.originalname).ext;
+        const spritePath = path.join("./uploads/", file.filename);
+        const pathToFile = path.join(spritesPath, filename);
+        // Copy uploaded file to sprites folder
+        fs.cpSync(spritePath, pathToFile);
+        // Remove uploaded file
+        fs.rmSync(spritePath);
+        return response.sendStatus(200);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
 function writeSecret(key, value) {
     if (!fs.existsSync(SECRETS_FILE)) {
         const emptyFile = JSON.stringify({});
@@ -2911,4 +3211,55 @@ function readSecret(key) {
     const fileContents = fs.readFileSync(SECRETS_FILE);
     const secrets = JSON.parse(fileContents);
     return secrets[key];
+}
+
+async function getImageBuffers(zipFilePath) {
+    return new Promise((resolve, reject) => {
+        // Check if the zip file exists
+        if (!fs.existsSync(zipFilePath)) {
+            reject(new Error('File not found'));
+            return;
+        }
+
+        const imageBuffers = [];
+
+        yauzl.open(zipFilePath, { lazyEntries: true }, (err, zipfile) => {
+            if (err) {
+                reject(err);
+            } else {
+                zipfile.readEntry();
+                zipfile.on('entry', (entry) => {
+                    const mimeType = mime.lookup(entry.fileName);
+                    if (mimeType && mimeType.startsWith('image/') && !entry.fileName.startsWith('__MACOSX')) {
+                        console.log(`Extracting ${entry.fileName}`);
+                        zipfile.openReadStream(entry, (err, readStream) => {
+                            if (err) {
+                                reject(err);
+                            } else {
+                                const chunks = [];
+                                readStream.on('data', (chunk) => {
+                                    chunks.push(chunk);
+                                });
+
+                                readStream.on('end', () => {
+                                    imageBuffers.push([path.parse(entry.fileName).base, Buffer.concat(chunks)]);
+                                    zipfile.readEntry(); // Continue to the next entry
+                                });
+                            }
+                        });
+                    } else {
+                        zipfile.readEntry(); // Continue to the next entry
+                    }
+                });
+
+                zipfile.on('end', () => {
+                    resolve(imageBuffers);
+                });
+
+                zipfile.on('error', (err) => {
+                    reject(err);
+                });
+            }
+        });
+    });
 }

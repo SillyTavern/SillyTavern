@@ -4,6 +4,8 @@ import {
     chat,
     chat_metadata,
     default_avatar,
+    eventSource,
+    event_types,
     extractMessageBias,
     getThumbnailUrl,
     replaceBiasMarkup,
@@ -31,7 +33,7 @@ class SlashCommandParser {
         if ([command, ...aliases].some(x => this.commands.hasOwnProperty(x))) {
             console.trace('WARN: Duplicate slash command registered!');
         }
-    
+
         this.commands[command] = fnObj;
 
         if (Array.isArray(aliases)) {
@@ -105,7 +107,7 @@ function setNarratorName(_, text) {
     saveChatConditional();
 }
 
-function sendMessageAs(_, text) {
+async function sendMessageAs(_, text) {
     if (!text) {
         return;
     }
@@ -151,10 +153,11 @@ function sendMessageAs(_, text) {
 
     chat.push(message);
     addOneMessage(message);
+    await eventSource.emit(event_types.MESSAGE_SENT, (chat.length - 1));
     saveChatConditional();
 }
 
-function sendNarratorMessage(_, text) {
+async function sendNarratorMessage(_, text) {
     if (!text) {
         return;
     }
@@ -180,6 +183,7 @@ function sendNarratorMessage(_, text) {
 
     chat.push(message);
     addOneMessage(message);
+    await eventSource.emit(event_types.MESSAGE_SENT, (chat.length - 1));
     saveChatConditional();
 }
 

@@ -10,6 +10,7 @@
         "device-detector-js": "^3.0.3",
         "exifreader": "^4.12.0",
         "express": "^4.18.2",
+        "google-translate-api-browser": "^3.0.1",
         "gpt3-tokenizer": "^1.1.5",
         "ip-matching": "^2.1.2",
         "ipaddr.js": "^2.0.1",
@@ -31,7 +32,8 @@
         "uniqolor": "^1.1.0",
         "webp-converter": "2.3.2",
         "ws": "^8.13.0",
-        "yargs": "^17.7.1"
+        "yargs": "^17.7.1",
+        "yauzl": "^2.10.0"
     },
     "overrides": {
         "parse-bmfont-xml": {

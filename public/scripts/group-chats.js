@@ -762,7 +762,7 @@ async function deleteGroup(id) {
 
         $("#rm_info_avatar").html("");
         $("#rm_info_block").transition({ opacity: 0, duration: 0 });
-        select_rm_info("Group deleted!");
+        select_rm_info("group_delete", id);
         $("#rm_info_block").transition({ opacity: 1.0, duration: 2000 });
 
         $("#rm_button_selected_ch").children("h2").text('');

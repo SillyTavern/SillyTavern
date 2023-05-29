@@ -78,9 +78,23 @@ img.expression.default {
     align-items: center;
 }
 
+.expression_list_buttons {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    height: 20%;
+    padding: 0.25rem;
+}
+
 .expression_list_image {
     max-width: 100%;
     height: 100%;
+    object-fit: cover;
 }
 
 #image_list {
@@ -115,6 +129,14 @@ img.expression.default {
 
 .expression_settings label input {
     margin-left: 0px !important;
+}
+
+.expression_buttons .menu_button {
+    width: fit-content;
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+    flex-direction: row;
 }
 
 @media screen and (max-width:1200px) {

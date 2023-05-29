@@ -48,7 +48,7 @@ EventEmitter.prototype.removeListener = function (event, listener) {
     }
 };
 
-EventEmitter.prototype.emit = function (event) {
+EventEmitter.prototype.emit = async function (event) {
     var i, listeners, length, args = [].slice.call(arguments, 1);
 
     if (typeof this.events[event] === 'object') {
@@ -56,7 +56,13 @@ EventEmitter.prototype.emit = function (event) {
         length = listeners.length;
 
         for (i = 0; i < length; i++) {
-            listeners[i].apply(this, args);
+            try {
+                await listeners[i].apply(this, args);
+            }
+            catch (err) {
+                console.error(err);
+                console.trace('Error in event listener');
+            }
         }
     }
 };
