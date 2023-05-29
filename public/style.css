@@ -835,7 +835,7 @@ body.big-avatars .avatar img {
 }
 
 br {
-    display: block;
+    display: contents;
     margin: 3px 0;
 }
 

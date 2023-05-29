@@ -3937,6 +3937,7 @@ async function getSettings(type) {
         //Load which API we are using
         if (settings.main_api != undefined) {
             main_api = settings.main_api;
+            $('#main_api').val(main_api);
             $("#main_api option[value=" + main_api + "]").attr(
                 "selected",
                 "true"
