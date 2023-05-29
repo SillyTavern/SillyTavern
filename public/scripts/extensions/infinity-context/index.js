@@ -83,6 +83,14 @@ function onFileSplitLengthInput() {
     saveSettingsDebounced();
 }
 
+function checkChatId(chat_id) {
+    if (!chat_id || chat_id.trim() === '') {
+        toastr.error('Please select a character and try again.');
+        return false;
+    }
+    return true;
+}
+
 async function addMessages(chat_id, messages) {
     const url = new URL(getApiUrl());
     url.pathname = '/api/chromadb';
@@ -127,6 +135,9 @@ async function addMessages(chat_id, messages) {
 
 async function onPurgeClick() {
     const chat_id = getCurrentChatId();
+    if (!checkChatId(chat_id)) {
+        return;
+    }
     const url = new URL(getApiUrl());
     url.pathname = '/api/chromadb/purge';
 
@@ -138,6 +149,82 @@ async function onPurgeClick() {
 
     if (purgeResult.ok) {
         toastr.success('ChromaDB context has been successfully cleared');
+    }
+}
+
+async function onExportClick() {
+    const currentChatId = getCurrentChatId();
+    if (!checkChatId(currentChatId)) {
+        return;
+    }
+    const url = new URL(getApiUrl());
+    url.pathname = '/api/chromadb/export';
+
+    const exportResult = await fetch(url, {
+        method: 'POST',
+        headers: postHeaders,
+        body: JSON.stringify({ currentChatId }),
+    });
+
+    if (exportResult.ok) {
+        const data = await exportResult.json();
+        const blob = new Blob([JSON.stringify(data, null, 2)], {type : 'application/json'});
+        const href = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = href;
+        link.download = currentChatId + '.json';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    } else {
+        toastr.error('An error occurred while attempting to download the data');
+    }
+}
+
+async function onSelectImportFile(e) {
+    const file = e.target.files[0];
+    const currentChatId = getCurrentChatId();
+    if (!checkChatId(currentChatId)) {
+        return;
+    }
+
+    if (!file) {
+        return;
+    }
+
+    try {
+        toastr.info('This may take some time, depending on the file size', 'Processing...');
+
+        const text = await getFileText(file);
+        const imported = JSON.parse(text);
+
+
+        imported.chat_id = currentChatId;
+    
+        const url = new URL(getApiUrl());
+        url.pathname = '/api/chromadb/import';
+        
+        const importResult = await fetch(url, {
+            method: 'POST',
+            headers: postHeaders,
+            body: JSON.stringify(imported),
+        });
+
+        if (importResult.ok) {
+            const importResultData = await importResult.json();
+
+            toastr.success(`Number of chunks: ${importResultData.count}`, 'Injected successfully!');
+            return importResultData;
+        } else {
+            throw new Error();
+        }
+    }
+    catch (error) {
+        console.log(error);
+        toastr.error('Something went wrong while importing the data');
+    }
+    finally {
+        e.target.form.reset();
     }
 }
 
@@ -162,14 +249,16 @@ async function queryMessages(chat_id, query) {
 
 async function onSelectInjectFile(e) {
     const file = e.target.files[0];
-
+    const currentChatId = getCurrentChatId();
+    if (!checkChatId(currentChatId)) {
+        return;
+    }
     if (!file) {
         return;
     }
 
     try {
         toastr.info('This may take some time, depending on the file size', 'Processing...');
-        const currentChatId = getCurrentChatId();
         const text = await getFileText(file);
 
         const split = splitRecursive(text, extension_settings.chromadb.file_split_length).filter(onlyUnique);
@@ -303,6 +392,12 @@ jQuery(async () => {
                     <i class="fa-solid fa-file-arrow-up"></i>
                     <span>Inject Data to the Context (TXT file)</span>
                 </div>
+                <div id="chromadb_export" title="Export all of the current chromadb data for this current chat" class="menu_button">
+                    <i class="fa-solid fa-file-export"></i>
+                </div>
+                <div id="chromadb_import" title="Import a full chromadb export for this current chat" class="menu_button">
+                    <i class="fa-solid fa-file-import"></i>
+                </div>
                 <div id="chromadb_purge" title="Force purge all the data related to the current chat from the database" class="menu_button">
                     <i class="fa-solid fa-broom"></i>
                     <span>Purge Current Chat from the DB</span>
@@ -311,6 +406,7 @@ jQuery(async () => {
             <small><i>Since ChromaDB state is not persisted to disk by default, you'll need to inject text data every time the Extras API server is restarted.</i></small>
         </div>
         <form><input id="chromadb_inject_file" type="file" accept="text/plain" hidden></form>
+        <form><input id="chromadb_import_file" type="file" accept="application/json" hidden></form>
     </div>`;
 
     $('#extensions_settings').append(settingsHtml);
@@ -320,8 +416,10 @@ jQuery(async () => {
     $('#chromadb_split_length').on('input', onSplitLengthInput);
     $('#chromadb_file_split_length').on('input', onFileSplitLengthInput);
     $('#chromadb_inject').on('click', () => $('#chromadb_inject_file').trigger('click'));
+    $('#chromadb_import').on('click', () => $('#chromadb_import_file').trigger('click'));
     $('#chromadb_inject_file').on('change', onSelectInjectFile);
+    $('#chromadb_import_file').on('change', onSelectImportFile);
     $('#chromadb_purge').on('click', onPurgeClick);
-
+    $('#chromadb_export').on('click', onExportClick);
     await loadSettings();
 });
