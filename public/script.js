@@ -3023,14 +3023,16 @@ function getNovelGenerationData(finalPromt, this_settings, this_amount_gen) {
         "temperature": parseFloat(nai_settings.temp_novel),
         "max_length": this_amount_gen, // this_settings.max_length, // <= why?
         "min_length": this_settings.min_length,
-        "tail_free_sampling": this_settings.tail_free_sampling,
+        "tail_free_sampling": parseFloat(nai_settings.tail_free_sampling_novel),
         "repetition_penalty": parseFloat(nai_settings.rep_pen_novel),
         "repetition_penalty_range": parseInt(nai_settings.rep_pen_size_novel),
-        "repetition_penalty_frequency": this_settings.repetition_penalty_frequency,
-        "repetition_penalty_presence": this_settings.repetition_penalty_presence,
+        "repetition_penalty_slope": parseFloat(nai_settings.rep_pen_slope_novel),
+        "repetition_penalty_frequency": parseFloat(nai_settings.rep_pen_freq_novel),
+        "repetition_penalty_presence": parseFloat(nai_settings.rep_pen_presence_novel),
         "top_a": this_settings.top_a,
         "top_p": this_settings.top_p,
         "top_k": this_settings.top_k,
+        "typical_p": this_settings.typical_p,
         //"stop_sequences": {{187}},
         //bad_words_ids = {{50256}, {0}, {1}};
         //generate_until_sentence = true;
@@ -6163,6 +6165,8 @@ $(document).ready(function () {
 
         const preset = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
         loadNovelPreset(preset);
+        amount_gen = parseInt($("#amount_gen").val());
+        max_context = parseInt($("#max_context").val());
 
         saveSettingsDebounced();
     });

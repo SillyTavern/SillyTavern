@@ -1330,11 +1330,13 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
             "tail_free_sampling": request.body.tail_free_sampling,
             "repetition_penalty": request.body.repetition_penalty,
             "repetition_penalty_range": request.body.repetition_penalty_range,
+            "repetition_penalty_slope": request.body.repetition_penalty_slope,
             "repetition_penalty_frequency": request.body.repetition_penalty_frequency,
             "repetition_penalty_presence": request.body.repetition_penalty_presence,
             "top_a": request.body.top_a,
             "top_p": request.body.top_p,
             "top_k": request.body.top_k,
+            "typical_p": request.body.typical_p,
             //"stop_sequences": {{187}},
             //bad_words_ids = {{50256}, {0}, {1}};
             //generate_until_sentence = true;
