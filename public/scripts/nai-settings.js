@@ -70,19 +70,19 @@ function loadNovelSettings(settings) {
 
 function loadNovelSettingsUi(ui_settings) {
     $("#temp_novel").val(ui_settings.temp_novel);
-    $("#temp_counter_novel").html(Number(ui_settings.temp_novel).toFixed(2));
+    $("#temp_counter_novel").text(Number(ui_settings.temp_novel).toFixed(2));
     $("#rep_pen_novel").val(ui_settings.rep_pen_novel);
-    $("#rep_pen_counter_novel").html(Number(ui_settings.rep_pen_novel).toFixed(2));
+    $("#rep_pen_counter_novel").text(Number(ui_settings.rep_pen_novel).toFixed(2));
     $("#rep_pen_size_novel").val(ui_settings.rep_pen_size_novel);
-    $("#rep_pen_size_counter_novel").html(Number(ui_settings.rep_pen_size_novel).toFixed(0));
+    $("#rep_pen_size_counter_novel").text(Number(ui_settings.rep_pen_size_novel).toFixed(0));
     $("#rep_pen_slope_novel").val(ui_settings.rep_pen_slope_novel);
-    $("#rep_pen_slope_counter_novel").html(Number(`${ui_settings.rep_pen_slope_novel}`).toFixed(2));
+    $("#rep_pen_slope_counter_novel").text(Number(`${ui_settings.rep_pen_slope_novel}`).toFixed(2));
     $("#rep_pen_freq_novel").val(ui_settings.rep_pen_freq_novel);
-    $("#rep_pen_freq_counter_novel").html(Number(ui_settings.rep_pen_freq_novel).toFixed(5));
+    $("#rep_pen_freq_counter_novel").text(Number(ui_settings.rep_pen_freq_novel).toFixed(5));
     $("#rep_pen_presence_novel").val(ui_settings.rep_pen_presence_novel);
-    $("#rep_pen_presence_counter_novel").html(Number(ui_settings.rep_pen_presence_novel).toFixed(3));
+    $("#rep_pen_presence_counter_novel").text(Number(ui_settings.rep_pen_presence_novel).toFixed(3));
     $("#tail_free_sampling_novel").val(ui_settings.tail_free_sampling_novel);
-    $("#tail_free_sampling_counter_novel").html(Number(ui_settings.tail_free_sampling_novel).toFixed(3));
+    $("#tail_free_sampling_counter_novel").text(Number(ui_settings.tail_free_sampling_novel).toFixed(3));
 }
 
 const sliders = [
