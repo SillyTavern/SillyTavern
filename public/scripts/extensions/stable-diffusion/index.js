@@ -655,10 +655,10 @@ async function sdMessageButton(e) {
     const context = getContext();
     const $icon = $(e.currentTarget);
     const $mes = $icon.closest('.mes');
-    const characterName = $mes.find('.name_text').text();
-    const messageText = $mes.find('.mes_text').text();
     const message_id = $mes.attr('mesid');
     const message = context.chat[message_id];
+    const characterName = message?.name || context.name2;
+    const messageText = substituteParams(message?.mes);
     const hasSavedImage = message?.extra?.image && message?.extra?.title;
 
     if ($icon.hasClass(busyClass)) {
