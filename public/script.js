@@ -6530,6 +6530,8 @@ $(document).ready(function () {
         $("#api_button_novel").css("display", "none");
         is_get_status_novel = true;
         is_api_button_press_novel = true;
+        // Check near immediately rather than waiting for up to 90s
+        setTimeout(getStatusNovel, 10);
     });
 
     //**************************CHARACTER IMPORT EXPORT*************************//
