@@ -282,6 +282,9 @@ async function getGroups() {
 
         // Convert groups to new format
         for (const group of groups) {
+            if (group.disabled_members == undefined) {
+                group.disabled_members = [];
+            }
             if (group.chat_id == undefined) {
                 group.chat_id = group.id;
                 group.chats = [group.id];
@@ -348,34 +351,15 @@ function getGroupAvatar(group) {
         }
     }
 
-    // Cohee: there's probably a smarter way to do this..
-    if (memberAvatars.length === 1) {
-        const groupAvatar = $("#group_avatars_template .collage_1").clone();
-        groupAvatar.find(".img_1").attr("src", memberAvatars[0]);
-        return groupAvatar;
-    }
+    const avatarCount = memberAvatars.length;
 
-    if (memberAvatars.length === 2) {
-        const groupAvatar = $("#group_avatars_template .collage_2").clone();
-        groupAvatar.find(".img_1").attr("src", memberAvatars[0]);
-        groupAvatar.find(".img_2").attr("src", memberAvatars[1]);
-        return groupAvatar;
-    }
+    if (avatarCount >= 1 && avatarCount <= 4) {
+        const groupAvatar = $(`#group_avatars_template .collage_${avatarCount}`).clone();
 
-    if (memberAvatars.length === 3) {
-        const groupAvatar = $("#group_avatars_template .collage_3").clone();
-        groupAvatar.find(".img_1").attr("src", memberAvatars[0]);
-        groupAvatar.find(".img_2").attr("src", memberAvatars[1]);
-        groupAvatar.find(".img_3").attr("src", memberAvatars[2]);
-        return groupAvatar;
-    }
+        for (let i = 0; i < avatarCount; i++) {
+            groupAvatar.find(`.img_${i + 1}`).attr("src", memberAvatars[i]);
+        }
 
-    if (memberAvatars.length === 4) {
-        const groupAvatar = $("#group_avatars_template .collage_4").clone();
-        groupAvatar.find(".img_1").attr("src", memberAvatars[0]);
-        groupAvatar.find(".img_2").attr("src", memberAvatars[1]);
-        groupAvatar.find(".img_3").attr("src", memberAvatars[2]);
-        groupAvatar.find(".img_4").attr("src", memberAvatars[3]);
         return groupAvatar;
     }
 
@@ -436,7 +420,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
         let isGenerationDone = false;
         let isGenerationAborted = false;
 
-        if (userInput && userInput.length && !by_auto_mode) {
+        if (userInput?.length && !by_auto_mode) {
             isUserInput = true;
             activationText = userInput;
             messagesBefore++;
@@ -474,6 +458,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
         }
 
         const activationStrategy = Number(group.activation_strategy ?? group_activation_strategy.NATURAL);
+        const enabledMembers = group.members.filter(x => !group.disabled_members.includes(x));
         let activatedMembers = [];
 
         if (params && typeof params.force_chid == 'number') {
@@ -484,7 +469,6 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
             if (activatedMembers.length === 0) {
                 activatedMembers = activateListOrder(group.members.slice(0, 1));
             }
-
         }
         else if (type === "swipe") {
             activatedMembers = activateSwipe(group.members);
@@ -499,13 +483,18 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
             activatedMembers = activateImpersonate(group.members);
         }
         else if (activationStrategy === group_activation_strategy.NATURAL) {
-            activatedMembers = activateNaturalOrder(group.members, activationText, lastMessage, group.allow_self_responses, isUserInput);
+            activatedMembers = activateNaturalOrder(enabledMembers, activationText, lastMessage, group.allow_self_responses, isUserInput);
         }
         else if (activationStrategy === group_activation_strategy.LIST) {
-            activatedMembers = activateListOrder(group.members);
+            activatedMembers = activateListOrder(enabledMembers);
         }
 
-        // now the real generation begins: cycle through every character
+        if (activatedMembers.length === 0) {
+            toastr.warning('All group members are disabled. Enable at least one to get a reply.');
+            throw new Error('All group members are disabled');
+        }
+
+        // now the real generation begins: cycle through every activated character
         for (const chId of activatedMembers) {
             isGenerationDone = false;
             const generateType = type == "swipe" || type == "impersonate" || type == "quiet" ? type : "group_chat";
@@ -514,7 +503,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
 
             await Generate(generateType, { automatic_trigger: by_auto_mode, ...(params || {}) });
 
-            if (type !== "swipe" && type !== "impersonate" && !isMultigenEnabled()) {
+            if (type !== "swipe" && type !== "impersonate" && !isMultigenEnabled() && !isStreamingEnabled()) {
                 // update indicator and scroll down
                 typingIndicator
                     .find(".typing_indicator_name")
@@ -949,6 +938,7 @@ function select_group_chats(groupId, skipAnimation) {
             group.members.includes(character.avatar)
         ) {
             template.css({ 'order': group.members.indexOf(character.avatar) });
+            template.toggleClass('disabled', group.disabled_members.includes(character.avatar));
             $("#rm_group_members").append(template);
         } else {
             $("#rm_group_add_members").append(template);
@@ -1028,6 +1018,23 @@ function select_group_chats(groupId, skipAnimation) {
 
         if (action === 'add') {
             await modifyGroupMember(groupId, member, false);
+        }
+
+        if (action === 'enable') {
+            member.removeClass('disabled');
+            const _thisGroup = groups.find(x => x.id === groupId);
+            const index = _thisGroup.disabled_members.indexOf(member.data('id'));
+            if (index !== -1) {
+                _thisGroup.disabled_members.splice(index, 1);
+            }
+            await editGroup(groupId);
+        }
+
+        if (action === 'disable') {
+            member.addClass('disabled');
+            const _thisGroup = groups.find(x => x.id === groupId);
+            _thisGroup.disabled_members.push(member.data('id'));
+            await editGroup(groupId);
         }
 
         if (action === 'up' || action === 'down') {
@@ -1138,6 +1145,7 @@ async function createGroup() {
             avatar_url: avatar_url,
             allow_self_responses: allow_self_responses,
             activation_strategy: activation_strategy,
+            disabled_members: [],
             chat_metadata: {},
             fav: fav_grp_checked,
             chat_id: chatName,

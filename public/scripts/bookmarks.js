@@ -213,6 +213,7 @@ async function convertSoloToGroupChat() {
             avatar_url: avatar,
             allow_self_responses: activationStrategy,
             activation_strategy: allowSelfResponses,
+            disabled_members: [],
             chat_metadata: metadata,
             fav: favChecked,
             chat_id: chatName,
