@@ -2384,6 +2384,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                             return;
                         }
 
+                        tokens_already_generated = 0;
+                        generatedPromtCache = "";
                         getMessage = message_already_generated.substring(magFirst.length);
                     }
 
