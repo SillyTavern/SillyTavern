@@ -299,3 +299,4 @@ GNU Affero General Public License for more details.**
 * AI Horde client library by ZeldaFan0225: https://github.com/ZeldaFan0225/ai_horde
 * Linux startup script by AlpinDale
 * Thanks paniphons for providing a FAQ document
+* TTS and Objective extensions by Ouoertheo

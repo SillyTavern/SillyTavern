@@ -29,6 +29,7 @@ const extension_settings = {
     sd: {},
     chromadb: {},
     translate: {},
+    objective: {},
 };
 
 let modules = [];

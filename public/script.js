@@ -419,6 +419,7 @@ export const event_types = {
     MESSAGE_RECEIVED: 'message_received',
     MESSAGE_EDITED: 'message_edited',
     IMPERSONATE_READY: 'impersonate_ready',
+    CHAT_CHANGED: 'chat_id_changed',
 }
 
 export const eventSource = new EventEmitter();
@@ -3613,6 +3614,7 @@ async function getChatResult() {
     if (chat.length === 1) {
         await eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1));
     }
+    await eventSource.emit(event_types.CHAT_CHANGED, (getCurrentChatId()));
 }
 
 async function openCharacterChat(file_name) {
