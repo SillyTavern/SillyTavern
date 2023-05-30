@@ -35,6 +35,19 @@ export async function urlContentToDataUri(url, params) {
     });
 }
 
+export function getFileText(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsText(file);
+        reader.onload = function () {
+            resolve(reader.result);
+        };
+        reader.onerror = function (error) {
+            reject(error);
+        };
+    });
+}
+
 export function getBase64Async(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -78,6 +91,19 @@ export function debounce(func, timeout = 300) {
         clearTimeout(timer);
         timer = setTimeout(() => { func.apply(this, args); }, timeout);
     };
+}
+
+export function isElementInViewport(el) {
+    if (typeof jQuery === "function" && el instanceof jQuery) {
+        el = el[0];
+    }
+    var rect = el.getBoundingClientRect();
+    return (
+        rect.top >= 0 &&
+        rect.left >= 0 &&
+        rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) && /* or $(window).height() */
+        rect.right <= (window.innerWidth || document.documentElement.clientWidth) /* or $(window).width() */
+    );
 }
 
 export function getUniqueName(name, exists) {
@@ -188,4 +214,103 @@ export function sortByCssOrder(a, b) {
     const _a = Number($(a).css('order'));
     const _b = Number($(b).css('order'));
     return _a - _b;
+}
+
+export function end_trim_to_sentence(input, include_newline = false) {
+    // inspired from https://github.com/kaihordewebui/kaihordewebui.github.io/blob/06b95e6b7720eb85177fbaf1a7f52955d7cdbc02/index.html#L4853-L4867
+
+    const punctuation = new Set(['.', '!', '?', '*', '"', ')', '}', '`', ']', '$']); // extend this as you see fit
+    let last = -1;
+
+    for (let i = input.length - 1; i >= 0; i--) {
+        const char = input[i];
+
+        if (punctuation.has(char)) {
+            last = i;
+            break;
+        }
+
+        if (include_newline && char === '\n') {
+            last = i;
+            break;
+        }
+    }
+
+    if (last === -1) {
+        return input.trimEnd();
+    }
+
+    return input.substring(0, last + 1).trimEnd();
+}
+
+export function countOccurrences(string, character) {
+    let count = 0;
+
+    for (let i = 0; i < string.length; i++) {
+        if (string[i] === character) {
+            count++;
+        }
+    }
+
+    return count;
+}
+
+export function isOdd(number) {
+  return number % 2 !== 0;
+}
+
+export function timestampToMoment(timestamp) {
+    // Unix time (legacy TAI)
+    if (typeof timestamp === 'number') {
+        return moment(timestamp);
+    }
+
+    // ST "humanized" format pattern
+    const pattern = /(\d{4})-(\d{1,2})-(\d{1,2}) @(\d{1,2})h (\d{1,2})m (\d{1,2})s (\d{1,3})ms/;
+    const replacement = (match, year, month, day, hour, minute, second, millisecond) => {
+        return `${year.padStart(4, "0")}-${month.padStart(2, "0")}-${day.padStart(2, "0")}T${hour.padStart(2, "0")}:${minute.padStart(2, "0")}:${second.padStart(2, "0")}.${millisecond.padStart(3, "0")}Z`;
+    };
+    const isoTimestamp = timestamp.replace(pattern, replacement);
+    return moment(isoTimestamp);
+}
+
+export function sortMoments(a, b) {
+    if (a.isBefore(b)) {
+        return 1;
+    } else if (a.isAfter(b)) {
+        return -1;
+    } else {
+        return 0;
+    }
+}
+
+/** Split string to parts no more than length in size */
+export function splitRecursive(input, length, delimitiers = ['\n\n', '\n', ' ', '']) {
+    const delim = delimitiers[0] ?? '';
+    const parts = input.split(delim);
+
+    const flatParts = parts.flatMap(p => {
+        if (p.length < length) return p;
+        return splitRecursive(input, length, delimitiers.slice(1));
+    });
+
+    // Merge short chunks
+    const result = [];
+    let currentChunk = '';
+    for (let i = 0; i < flatParts.length;) {
+        currentChunk = flatParts[i];
+        let j = i + 1;
+        while (j < flatParts.length) {
+            const nextChunk = flatParts[j];
+            if (currentChunk.length + nextChunk.length + delim.length <= length) {
+                currentChunk += delim + nextChunk;
+            } else {
+                break;
+            }
+            j++;
+        }
+        i = j;
+        result.push(currentChunk);
+    }
+    return result;
 }

@@ -9,6 +9,7 @@ class SileroTtsProvider {
 
     settings
     voices = []
+    separator = ' .. '
 
     defaultSettings = {
         provider_endpoint: "http://localhost:8001/tts",

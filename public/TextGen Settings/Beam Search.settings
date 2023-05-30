@@ -3,6 +3,8 @@
     "top_p": 0.92,
     "top_k": 150,
     "typical_p": 1,
+    "top_a": 0,
+    "tfs": 1,
     "rep_pen": 4.5,
     "no_repeat_ngram_size": 2,
     "penalty_alpha": 0,

@@ -1,9 +1,10 @@
-import { callPopup, saveSettings, saveSettingsDebounced } from "../script.js";
+import { callPopup, eventSource, event_types, saveSettings, saveSettingsDebounced } from "../script.js";
 import { isSubsetOf } from "./utils.js";
 export {
     getContext,
     getApiUrl,
     loadExtensionSettings,
+    runGenerationInterceptors,
     defaultRequestArgs,
     modules,
     extension_settings,
@@ -26,6 +27,8 @@ const extension_settings = {
     dice: {},
     tts: {},
     sd: {},
+    chromadb: {},
+    translate: {},
 };
 
 let modules = [];
@@ -147,6 +150,37 @@ function autoConnectInputHandler() {
     saveSettingsDebounced();
 }
 
+function addExtensionsButtonAndMenu() {
+    const buttonHTML =
+        `<div id="extensionsMenuButton" class="fa-solid fa-magic-wand-sparkles" title="Extras Extensions" /></div>`;
+    const extensionsMenuHTML = `<div id="extensionsMenu" class="list-group"></div>`;
+
+    $(document.body).append(extensionsMenuHTML);
+
+    $('#send_but_sheld').prepend(buttonHTML);
+
+    const button = $('#extensionsMenuButton');
+    const dropdown = $('#extensionsMenu');
+    dropdown.hide();
+
+    let popper = Popper.createPopper(button.get(0), dropdown.get(0), {
+        placement: 'top-end',
+    });
+
+    $(document).on('click touchend', function (e) {
+        const target = $(e.target);
+        if (target.is(dropdown)) return;
+        if (target.is(button) && !dropdown.is(":visible")) {
+            e.preventDefault();
+
+            dropdown.show(200);
+            popper.update();
+        } else {
+            dropdown.hide(200);
+        }
+    });
+}
+
 async function connectToApi(baseUrl) {
     if (!baseUrl) {
         return;
@@ -162,6 +196,7 @@ async function connectToApi(baseUrl) {
             const data = await getExtensionsResult.json();
             modules = data.modules;
             await activateExtensions();
+            eventSource.emit(event_types.EXTRAS_CONNECTED, modules);
         }
 
         updateStatus(getExtensionsResult.ok);
@@ -281,11 +316,29 @@ async function loadExtensionSettings(settings) {
     manifests = await getManifests(extensionNames)
     await activateExtensions();
     if (extension_settings.autoConnect && extension_settings.apiUrl) {
-        await connectToApi(extension_settings.apiUrl);
+        connectToApi(extension_settings.apiUrl);
+    }
+}
+
+async function runGenerationInterceptors(chat) {
+    for (const manifest of Object.values(manifests)) {
+        const interceptorKey = manifest.generate_interceptor;
+        if (typeof window[interceptorKey] === 'function') {
+            try {
+                await window[interceptorKey](chat);
+            } catch(e) {
+                console.error(`Failed running interceptor for ${manifest.display_name}`, e);
+            }
+        }
     }
 }
 
 $(document).ready(async function () {
+    setTimeout(function () {
+        addExtensionsButtonAndMenu();
+        $("#extensionsMenuButton").css("display", "flex");
+    }, 100)
+
     $("#extensions_connect").on('click', connectClickHandler);
     $("#extensions_autoconnect").on('input', autoConnectInputHandler);
     $("#extensions_details").on('click', showExtensionsDetails);

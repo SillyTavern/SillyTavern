@@ -1,5 +1,7 @@
 import {
     getRequestHeaders,
+    getStoppingStrings,
+    max_context,
     saveSettingsDebounced,
 } from "../script.js";
 
@@ -13,6 +15,8 @@ let textgenerationwebui_settings = {
     temp: 0.7,
     top_p: 0.5,
     top_k: 40,
+    top_a: 0,
+    tfs: 1,
     typical_p: 1,
     rep_pen: 1.2,
     no_repeat_ngram_size: 0,
@@ -43,6 +47,8 @@ const setting_names = [
     "no_repeat_ngram_size",
     "top_k",
     "top_p",
+    "top_a",
+    "tfs",
     "typical_p",
     "penalty_alpha",
     "num_beams",
@@ -185,4 +191,32 @@ async function generateTextGenWithStreaming(generate_data, signal) {
             yield getMessage;
         }
     }
+}
+
+export function getTextGenGenerationData(finalPromt, this_amount_gen, isImpersonate) {
+    return {
+        'prompt': finalPromt,
+        'max_new_tokens': this_amount_gen,
+        'do_sample': textgenerationwebui_settings.do_sample,
+        'temperature': textgenerationwebui_settings.temp,
+        'top_p': textgenerationwebui_settings.top_p,
+        'typical_p': textgenerationwebui_settings.typical_p,
+        'repetition_penalty': textgenerationwebui_settings.rep_pen,
+        'encoder_repetition_penalty': textgenerationwebui_settings.encoder_rep_pen,
+        'top_k': textgenerationwebui_settings.top_k,
+        'min_length': textgenerationwebui_settings.min_length,
+        'no_repeat_ngram_size': textgenerationwebui_settings.no_repeat_ngram_size,
+        'num_beams': textgenerationwebui_settings.num_beams,
+        'penalty_alpha': textgenerationwebui_settings.penalty_alpha,
+        'length_penalty': textgenerationwebui_settings.length_penalty,
+        'early_stopping': textgenerationwebui_settings.early_stopping,
+        'seed': textgenerationwebui_settings.seed,
+        'add_bos_token': textgenerationwebui_settings.add_bos_token,
+        'stopping_strings': getStoppingStrings(isImpersonate, false),
+        'truncation_length': max_context,
+        'ban_eos_token': textgenerationwebui_settings.ban_eos_token,
+        'skip_special_tokens': textgenerationwebui_settings.skip_special_tokens,
+        'top_a': textgenerationwebui_settings.top_a,
+        'tfs': textgenerationwebui_settings.tfs,
+    };
 }

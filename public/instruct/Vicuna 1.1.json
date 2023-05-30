@@ -5,5 +5,6 @@
     "stop_sequence": "",
     "input_sequence": "USER: ",
     "output_sequence": "ASSISTANT: ",
-    "wrap": true
+    "separator_sequence": "</s>",
+    "wrap": false
 }

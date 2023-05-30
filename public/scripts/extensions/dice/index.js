@@ -8,7 +8,7 @@ const UPDATE_INTERVAL = 1000;
 function setDiceIcon() {
     const sendButton = document.getElementById('roll_dice');
     /* sendButton.style.backgroundImage = `url(/img/dice-solid.svg)`; */
-    sendButton.classList.remove('spin');
+    //sendButton.classList.remove('spin');
 }
 
 async function doDiceRoll() {
@@ -23,13 +23,16 @@ async function doDiceRoll() {
     if (isValid) {
         const result = droll.roll(value);
         const context = getContext();
-        context.sendSystemMessage('generic', `${context.name1} rolls a ${value}. The result is: ${result.total} (${result.rolls})`);
+        context.sendSystemMessage('generic', `${context.name1} rolls a ${value}. The result is: ${result.total} (${result.rolls})`, { isSmallSys: true });
     }
 }
 
 function addDiceRollButton() {
     const buttonHtml = `
-        <div id="roll_dice" class="fa-solid fa-dice" /></div>
+    <div id="roll_dice" class="list-group-item flex-container flexGap5">    
+        <div class="fa-solid fa-dice extensionsMenuExtensionButton" title="Roll Dice" /></div>
+        Roll Dice
+    </div>
         `;
     const dropdownHtml = `
     <div id="dice_dropdown">
@@ -45,7 +48,8 @@ function addDiceRollButton() {
         </ul>
     </div>`;
 
-    $('#send_but_sheld').prepend(buttonHtml);
+    $('#extensionsMenu').prepend(buttonHtml);
+
     $(document.body).append(dropdownHtml)
     $('#dice_dropdown li').on('click', doDiceRoll);
     const button = $('#roll_dice');
@@ -54,7 +58,7 @@ function addDiceRollButton() {
     button.hide();
 
     let popper = Popper.createPopper(button.get(0), dropdown.get(0), {
-        placement: 'top-start',
+        placement: 'bottom',
     });
 
     $(document).on('click touchend', function (e) {

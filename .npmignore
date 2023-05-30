@@ -2,3 +2,5 @@ node_modules/
 /uploads/
 .DS_Store
 /thumbnails
+secrets.json
+/dist
