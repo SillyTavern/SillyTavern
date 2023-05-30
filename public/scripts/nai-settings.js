@@ -130,6 +130,35 @@ const sliders = [
     },
 ];
 
+export function getNovelGenerationData(finalPromt, this_settings, this_amount_gen) {
+    return {
+        "input": finalPromt,
+        "model": nai_settings.model_novel,
+        "use_string": true,
+        "temperature": parseFloat(nai_settings.temp_novel),
+        "max_length": this_amount_gen, // this_settings.max_length, // <= why?
+        "min_length": this_settings.min_length,
+        "tail_free_sampling": parseFloat(nai_settings.tail_free_sampling_novel),
+        "repetition_penalty": parseFloat(nai_settings.rep_pen_novel),
+        "repetition_penalty_range": parseInt(nai_settings.rep_pen_size_novel),
+        "repetition_penalty_slope": parseFloat(nai_settings.rep_pen_slope_novel),
+        "repetition_penalty_frequency": parseFloat(nai_settings.rep_pen_freq_novel),
+        "repetition_penalty_presence": parseFloat(nai_settings.rep_pen_presence_novel),
+        "top_a": this_settings.top_a,
+        "top_p": this_settings.top_p,
+        "top_k": this_settings.top_k,
+        "typical_p": this_settings.typical_p,
+        //"stop_sequences": {{187}},
+        //bad_words_ids = {{50256}, {0}, {1}};
+        //generate_until_sentence = true;
+        "use_cache": false,
+        //use_string = true;
+        "return_full_text": false,
+        "prefix": "vanilla",
+        "order": this_settings.order
+    };
+}
+
 $(document).ready(function () {
     sliders.forEach(slider => {
         $(document).on("input", slider.sliderId, function () {

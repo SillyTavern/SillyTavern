@@ -580,6 +580,9 @@ app.post("/getstatus", jsonParser, async function (request, response_getstatus =
         }
     }
     client.get(url, args, function (data, response) {
+        if (typeof data !== 'object') {
+            data = {};
+        }
         if (response.statusCode == 200) {
             data.version = version;
             if (data.result != "ReadOnly") {
