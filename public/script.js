@@ -4021,8 +4021,8 @@ function setCharacterBlockHeight() {
 
 // Common code for message editor done and auto-save
 function updateMessage(div) {
-    let mesBlock = div.closest(".mes_block");
-    var text = mesBlock.find(".edit_textarea").val().trim();
+    const mesBlock = div.closest(".mes_block");
+    const text = mesBlock.find(".edit_textarea").val().trim();
     const bias = extractMessageBias(text);
     const mes = chat[this_edit_mes_id];
     mes["mes"] = text;
@@ -4078,7 +4078,7 @@ async function messageEditDone(div) {
     await eventSource.emit(event_types.MESSAGE_EDITED, this_edit_mes_id);
 
     this_edit_mes_id = undefined;
-    saveChatConditional();
+    await saveChatConditional();
 }
 
 async function getPastCharacterChats() {
@@ -6265,7 +6265,7 @@ $(document).ready(function () {
 
     //********************
     //***Message Editor***
-    $(document).on("click", ".mes_edit", function () {
+    $(document).on("click", ".mes_edit", async function () {
         if (this_chid !== undefined || selected_group) {
             // Previously system messages we're allowed to be edited
             /*const message = $(this).closest(".mes");
@@ -6276,12 +6276,8 @@ $(document).ready(function () {
 
             let chatScrollPosition = $("#chat").scrollTop();
             if (this_edit_mes_id !== undefined) {
-                let mes_edited = $("#chat")
-                    .children()
-                    .filter('[mesid="' + this_edit_mes_id + '"]')
-                    .find(".mes_block")
-                    .find(".mes_edit_done");
-                if (edit_mes_id == count_view_mes - 1) { //if the generating swipe (...)
+                let mes_edited = $(`#chat [mesid="${this_edit_mes_id}"]`).find(".mes_edit_done");
+                if (Number(edit_mes_id) == count_view_mes - 1) { //if the generating swipe (...)
                     if (chat[edit_mes_id]['swipe_id'] !== undefined) {
                         if (chat[edit_mes_id]['swipes'].length === chat[edit_mes_id]['swipe_id']) {
                             run_edit = false;
@@ -6291,7 +6287,7 @@ $(document).ready(function () {
                         hideSwipeButtons();
                     }
                 }
-                messageEditDone(mes_edited);
+                await messageEditDone(mes_edited);
             }
             $(this).closest(".mes_block").find(".mes_text").empty();
             $(this).closest(".mes_block").find(".mes_buttons").css("display", "none");
@@ -6462,8 +6458,8 @@ $(document).ready(function () {
         showSwipeButtons();
     });
 
-    $(document).on("click", ".mes_edit_done", function () {
-        messageEditDone($(this));
+    $(document).on("click", ".mes_edit_done", async function () {
+        await messageEditDone($(this));
     });
 
     $("#your_name_button").click(function () {
