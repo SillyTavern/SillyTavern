@@ -2379,9 +2379,13 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                             hideSwipeButtons();
                             tokens_already_generated += this_amount_gen;            // add new gen amt to any prev gen counter..
                             getMessage = message_already_generated;
-                            runGenerate(getMessage);
-                            console.log('returning to make generate again');
-                            return;
+
+                            // if any tokens left to generate
+                            if (getMultigenAmount() > 0) {
+                                runGenerate(getMessage);
+                                console.log('returning to make generate again');
+                                return;
+                            }
                         }
 
                         tokens_already_generated = 0;
@@ -2459,6 +2463,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         }
                     }
                 } else {
+                    generatedPromtCache = '';
                     activateSendButtons();
                     //console.log('runGenerate calling showSwipeBtns');
                     showSwipeButtons();
