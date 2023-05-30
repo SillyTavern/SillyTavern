@@ -3,10 +3,10 @@ import {
     eventSource,
     event_types,
     getRequestHeaders,
-    messageFormatting,
     reloadCurrentChat,
     saveSettingsDebounced,
     substituteParams,
+    updateMessageBlock,
 } from "../../../script.js";
 import { extension_settings, getContext } from "../../extensions.js";
 
@@ -168,7 +168,7 @@ async function translateIncomingMessage(messageId) {
     const translation = await translate(textToTranslate, extension_settings.translate.target_language);
     message.extra.display_text = translation;
 
-    $(`#chat .mes[mesid="${messageId}"] .mes_text`).html(messageFormatting(translation, message.name, message.is_system, message.is_user));
+    updateMessageBlock(messageId, message);
 }
 
 async function translateProviderGoogle(text, lang) {
@@ -211,8 +211,8 @@ async function translateOutgoingMessage(messageId) {
 
     const originalText = message.mes;
     message.extra.display_text = originalText;
-    $(`#chat .mes[mesid="${messageId}"] .mes_text`).html(messageFormatting(originalText, message.name, message.is_system, message.is_user));
     message.mes = await translate(originalText, extension_settings.translate.internal_language);
+    updateMessageBlock(messageId, message);
 
     console.log('translateOutgoingMessage', messageId);
 }
@@ -299,7 +299,7 @@ async function onMessageTranslateClick() {
     // If the message is already translated, revert it back to the original text
     if (message?.extra?.display_text) {
         delete message.extra.display_text;
-        $(`#chat .mes[mesid="${messageId}"] .mes_text`).html(messageFormatting(message.mes, message.name, message.is_system, message.is_user));
+        updateMessageBlock(messageId, message);
     }
     // If the message is not translated, translate it
     else {

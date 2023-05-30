@@ -1104,6 +1104,14 @@ function getMessageFromTemplate({ mesId, characterName, isUser, avatarImg, bias,
     return mes;
 }
 
+export function updateMessageBlock(messageId, message) {
+    const messageElement = $(`#chat [mesid="${messageId}"]`);
+    const text = message?.extra?.display_text ?? message.mes;
+    messageElement.find('.mes_text').html(messageFormatting(text, message.name, message.is_system, message.is_user));
+    addCopyToCodeBlocks(messageElement)
+    appendImageToMessage(message, messageElement);
+}
+
 export function appendImageToMessage(mes, messageElement) {
     if (mes.extra?.image) {
         const image = messageElement.find('.mes_img');
@@ -1117,7 +1125,7 @@ export function appendImageToMessage(mes, messageElement) {
     }
 }
 
-function addCopyToCodeBlocks(messageElement) {
+export function addCopyToCodeBlocks(messageElement) {
     const codeBlocks = $(messageElement).find("pre code");
     for (let i = 0; i < codeBlocks.length; i++) {
         hljs.highlightElement(codeBlocks.get(i));
