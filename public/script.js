@@ -13,6 +13,7 @@ import {
     textgenerationwebui_settings,
     loadTextGenSettings,
     generateTextGenWithStreaming,
+    getTextGenGenerationData,
 } from "./scripts/textgen-settings.js";
 
 import {
@@ -2998,33 +2999,6 @@ function setInContextMessages(lastmsg, type) {
     }
 
     $('#chat .mes:not([is_system="true"])').eq(-lastmsg).addClass('lastInContext');
-}
-
-// TODO: move to textgen-settings.js
-function getTextGenGenerationData(finalPromt, this_amount_gen, isImpersonate) {
-    return {
-        'prompt': finalPromt,
-        'max_new_tokens': this_amount_gen,
-        'do_sample': textgenerationwebui_settings.do_sample,
-        'temperature': textgenerationwebui_settings.temp,
-        'top_p': textgenerationwebui_settings.top_p,
-        'typical_p': textgenerationwebui_settings.typical_p,
-        'repetition_penalty': textgenerationwebui_settings.rep_pen,
-        'encoder_repetition_penalty': textgenerationwebui_settings.encoder_rep_pen,
-        'top_k': textgenerationwebui_settings.top_k,
-        'min_length': textgenerationwebui_settings.min_length,
-        'no_repeat_ngram_size': textgenerationwebui_settings.no_repeat_ngram_size,
-        'num_beams': textgenerationwebui_settings.num_beams,
-        'penalty_alpha': textgenerationwebui_settings.penalty_alpha,
-        'length_penalty': textgenerationwebui_settings.length_penalty,
-        'early_stopping': textgenerationwebui_settings.early_stopping,
-        'seed': textgenerationwebui_settings.seed,
-        'add_bos_token': textgenerationwebui_settings.add_bos_token,
-        'stopping_strings': getStoppingStrings(isImpersonate, false),
-        'truncation_length': max_context,
-        'ban_eos_token': textgenerationwebui_settings.ban_eos_token,
-        'skip_special_tokens': textgenerationwebui_settings.skip_special_tokens,
-    };
 }
 
 // TODO: move to nai-settings.js

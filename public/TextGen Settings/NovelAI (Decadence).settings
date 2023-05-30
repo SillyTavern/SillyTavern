@@ -4,6 +4,8 @@
     "top_k": 100,
     "typical_p": 0.97,
     "rep_pen": 1,
+    "top_a": 0,
+    "tfs": 1,
     "no_repeat_ngram_size": 0,
     "penalty_alpha": 0,
     "num_beams": 1,
