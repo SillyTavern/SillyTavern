@@ -230,7 +230,7 @@ async function onExportClick() {
     const exportResult = await fetch(url, {
         method: 'POST',
         headers: postHeaders,
-        body: JSON.stringify({ currentChatId }),
+        body: JSON.stringify({ chat_id: currentChatId }),
     });
 
     if (exportResult.ok) {
