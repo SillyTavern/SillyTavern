@@ -291,6 +291,24 @@ async function translateMessageEdit(messageId) {
     }
 }
 
+async function onMessageTranslateClick() {
+    const context = getContext();
+    const messageId = $(this).closest('.mes').attr('mesid');
+    const message = context.chat[messageId];
+
+    // If the message is already translated, revert it back to the original text
+    if (message?.extra?.display_text) {
+        delete message.extra.display_text;
+        $(`#chat .mes[mesid="${messageId}"] .mes_text`).html(messageFormatting(message.mes, message.name, message.is_system, message.is_user));
+    }
+    // If the message is not translated, translate it
+    else {
+        await translateIncomingMessage(messageId);
+    }
+
+    await context.saveChat();
+}
+
 const handleIncomingMessage = createEventHandler(translateIncomingMessage, () => shouldTranslate(incomingTypes));
 const handleOutgoingMessage = createEventHandler(translateOutgoingMessage, () => shouldTranslate(outgoingTypes));
 const handleImpersonateReady = createEventHandler(translateImpersonate, () => shouldTranslate(incomingTypes));
@@ -352,12 +370,7 @@ jQuery(() => {
         extension_settings.translate.target_language = event.target.value;
         saveSettingsDebounced();
     });
-    $(document).on('click', '.mes_translate', function () {
-        const context = getContext();
-        const messageId = $(this).closest('.mes').attr('mesid');
-        translateIncomingMessage(messageId);
-        context.saveChat();
-    });
+    $(document).on('click', '.mes_translate', onMessageTranslateClick);
 
     loadSettings();
 
