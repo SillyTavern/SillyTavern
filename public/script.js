@@ -2725,16 +2725,17 @@ function promptItemize(itemizedPrompts, requestedMesId) {
         var oaiNudgeTokens = itemizedPrompts[thisPromptSet].oaiNudgeTokens;
         var oaiImpersonateTokens = itemizedPrompts[thisPromptSet].oaiImpersonateTokens;
         var finalPromptTokens =
+            oaiStartTokens +
+            oaiPromptTokens +
             oaiBiasTokens +
             oaiImpersonateTokens +
             oaiJailbreakTokens +
             oaiNudgeTokens +
-            oaiPromptTokens +
             ActualChatHistoryTokens +
-            charDescriptionTokens +
-            charPersonalityTokens +
-            allAnchorsTokens +
-            worldInfoStringTokens +
+            //charDescriptionTokens +
+            //charPersonalityTokens +
+            //allAnchorsTokens +
+            //worldInfoStringTokens +
             examplesStringTokens;
         // OAI doesn't use padding
         thisPrompt_padding = 0;
@@ -2799,6 +2800,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
             <div class="flex-container">
                 <div class="flex-container flex1 flexFlowColumns flexNoGap wide50p tokenGraph">
                 <div class="wide100p" style="background-color: grey; height: ${oaiSystemTokensPercentage}%;"></div>
+                    <div class="wide100p" style="background-color: salmon; height: ${oaiStartTokensPercentage}%;"></div>
                     <div class="wide100p" style="background-color: indianred; height: ${storyStringTokensPercentage}%;"></div>
                     <div class="wide100p" style="background-color: gold; height: ${worldInfoStringTokensPercentage}%;"></div>
                     <div class="wide100p" style="background-color: palegreen; height: ${ActualChatHistoryTokensPercentage}%;"></div>
