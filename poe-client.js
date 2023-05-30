@@ -318,14 +318,14 @@ class Client {
         if (!viewer.availableBots) {
             throw new Error('Invalid token.');
         }
-        const botList = viewer.availableBots;
+        const botList = viewer.viewerBotList;
         const retries = 2;
         const bots = {};
         for (const bot of botList.filter(x => x.deletionState == 'not_deleted')) {
             try {
                 const url = `https://poe.com/_next/data/${this.next_data.buildId}/${bot.displayName}.json`;
                 let r;
-    
+
                 if (this.use_cached_bots && cached_bots[url]) {
                     r = cached_bots[url];
                 }
@@ -334,7 +334,7 @@ class Client {
                     r = await request_with_retries(() => this.session.get(url), retries);
                     cached_bots[url] = r;
                 }
-    
+
                 const chatData = r.data.pageProps.payload.chatOfBotDisplayName;
                 bots[chatData.defaultBotObject.nickname] = chatData;
             }
