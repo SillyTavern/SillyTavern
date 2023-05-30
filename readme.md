@@ -80,6 +80,9 @@ Get in touch with the developers directly:
 | Character Backgrounds | Built-in extension to assign unique backgrounds to specific chats or groups. | None | <img style="max-width:200px" alt="image" src="https://user-images.githubusercontent.com/18619528/233494454-bfa7c9c7-4faa-4d97-9c69-628fd96edd92.png"> |
 | Stable Diffusion | Use local of cloud-based Stable Diffusion webUI API to generate images. 5 presets included ('you', 'your face', 'me', 'the story', and 'the last message'. Free mode also supported via `/sd (anything_here_)` command in the chat input bar. Most common StableDiffusion generation settings are customizable within the SillyTavern UI. | None | <img style="max-width:200px" alt="image" src="https://files.catbox.moe/ppata8.png"> |
 | Text-to-Speech | AI-generated voice will read back character messages on demand, or automatically read new messages they arrive. Supports ElevenLabs, Silero, and your device's TTS service. | None | <img style="max-width:200px" alt="image" src="https://files.catbox.moe/o3wxkk.png"> |
+| Chat Translation | Automatically translates incoming and/or outgoing messages into the chosen language. | None | Pending |
+| Token Counter | Simple way to calculate the number of tokens in any text with selected tokenizer. | None | Pending |
+| Smart Context<br><br>*Infinity Context / Object Permanence* | **What it doesn't do:** Magically increase your context size.<br>**What it does:** Optimizes the arrangement of your message history within the context space for more effective use.<br><br>Imagine two variables:<br>X: How many original chat messages to keep<br>Y: Maximum number of ChromaDB 'memories' to inject<br><br>When the chat reaches the threshold of X messages, additional messages will no longer be included in the context chronologically. Instead, they will be selected from the history based on their similarity to your recent inputs (limited to a maximum of Y), which should provide more relevant information than simply disregarding past messages. Adjust these values according to your average number of in-context entries for optimal performance. | `chromadb` | Pending |
 
 ## UI/CSS/Quality of Life tweaks by RossAscends
 
@@ -139,10 +142,10 @@ Easy to follow guide with pretty pictures:
   4. Browse to or Create a folder that is not controlled or monitored by Windows. (ex: C:\MySpecialFolder\)
   5. Open a Command Prompt inside that folder by clicking in the 'Address Bar' at the top, typing `cmd`, and pressing Enter.
   6. Once the black box (Command Prompt) pops up, type ONE of the following into it and press Enter:
-  
+
 * for Main Branch: `git clone https://github.com/Cohee1207/SillyTavern -b main`
 * for Dev Branch: `git clone https://github.com/Cohee1207/SillyTavern -b dev`
-  
+
   7. Once everything is cloned, double click `Start.bat` to make NodeJS install its requirements.
   8. The server will then start, and SillyTavern will popup in your browser.
 
@@ -209,9 +212,9 @@ Now devices which have the IP specified in the file will be able to connect.
 
 ### 2. Getting the IP for the ST host machine
 
-After the whitelist has been setup, you'll need the IP of the ST-hosting device. 
+After the whitelist has been setup, you'll need the IP of the ST-hosting device.
 
-If the ST-hosting device is on the same wifi network, you will use the ST-host's internal wifi IP: 
+If the ST-hosting device is on the same wifi network, you will use the ST-host's internal wifi IP:
 
 * For Windows: windows button > type `cmd.exe` in the search bar > type `ipconfig` in the console, hit Enter > look for `IPv4` listing.
 
@@ -223,7 +226,7 @@ If you (or someone else) wants to connect to your hosted ST while not being on t
 
 Whatever IP you ended up with for your situation, you will put that IP address and port number into the remote device's web browser.
 
-A typical address for an ST host on the same wifi network would look like: 
+A typical address for an ST host on the same wifi network would look like:
 
 `http://192.168.0.5:8000`
 

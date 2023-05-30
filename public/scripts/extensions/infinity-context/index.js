@@ -436,10 +436,11 @@ jQuery(async () => {
     <div class="chromadb_settings">
         <div class="inline-drawer">
             <div class="inline-drawer-toggle inline-drawer-header">
-            <b>Infinity Context</b>
+            <b>Smart Context</b>
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
+            <p>This extension rearranges the messages in the current chat to keep more relevant information in the context. Adjust the sliders below based on average amount of messages in your prompt (refer to the chat cut-off line).</p>
             <span>Memory Injection Strategy</span>
             <select id="chromadb_strategy">
                 <option value="original">Replace non-kept chat items with memories</option>
@@ -456,17 +457,19 @@ jQuery(async () => {
             <div class="flex-container spaceEvenly">
                 <div id="chromadb_inject" title="Upload custom textual data to use in the context of the current chat" class="menu_button">
                     <i class="fa-solid fa-file-arrow-up"></i>
-                    <span>Inject Data to the Context (TXT file)</span>
+                    <span>Inject Data (TXT file)</span>
                 </div>
                 <div id="chromadb_export" title="Export all of the current chromadb data for this current chat" class="menu_button">
                     <i class="fa-solid fa-file-export"></i>
+                    <span>Export</span>
                 </div>
                 <div id="chromadb_import" title="Import a full chromadb export for this current chat" class="menu_button">
                     <i class="fa-solid fa-file-import"></i>
+                    <span>Import</span>
                 </div>
                 <div id="chromadb_purge" title="Force purge all the data related to the current chat from the database" class="menu_button">
                     <i class="fa-solid fa-broom"></i>
-                    <span>Purge Current Chat from the DB</span>
+                    <span>Purge Chat from the DB</span>
                 </div>
             </div>
             <small><i>Since ChromaDB state is not persisted to disk by default, you'll need to inject text data every time the Extras API server is restarted.</i></small>

@@ -2,6 +2,6 @@
     width: fit-content;
     display: flex;
     gap: 10px;
-    align-items: baseline;
+    align-items: center;
     flex-direction: row;
 }
