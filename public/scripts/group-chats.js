@@ -48,6 +48,9 @@ import {
     cancelTtsPlay,
     isMultigenEnabled,
     displayPastChats,
+    sendMessageAsUser,
+    getBiasStrings,
+    saveChatConditional,
 } from "../script.js";
 import { appendTagToList, createTagMapFromList, getTagsList, applyTagsOnCharacterSelect } from './tags.js';
 
@@ -414,7 +417,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
         group_generation_id = Date.now();
         const lastMessage = chat[chat.length - 1];
         let messagesBefore = chat.length;
-        let lastMessageText = lastMessage.mes;
+        let lastMessageText = lastMessage?.mes || '';
         let activationText = "";
         let isUserInput = false;
         let isGenerationDone = false;
@@ -491,7 +494,12 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
 
         if (activatedMembers.length === 0) {
             toastr.warning('All group members are disabled. Enable at least one to get a reply.');
-            throw new Error('All group members are disabled');
+
+            // Send user message as is
+            const bias = getBiasStrings(userInput);
+            await sendMessageAsUser(userInput, bias.messageBias);
+            await saveChatConditional();
+            $('#send_textarea').val('');
         }
 
         // now the real generation begins: cycle through every activated character
@@ -714,7 +722,8 @@ function activateNaturalOrder(members, input, lastMessage, allowSelfResponses, i
     }
 
     // pick 1 at random if no one was activated
-    while (activatedMembers.length === 0) {
+    let retries = 0;
+    while (activatedMembers.length === 0 && ++retries <= members.length) {
         const randomIndex = Math.floor(Math.random() * members.length);
         const character = characters.find((x) => x.avatar === members[randomIndex]);
 

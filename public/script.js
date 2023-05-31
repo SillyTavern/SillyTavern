@@ -2512,7 +2512,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     //console.log('generate ending');
 } //generate ends
 
-function getBiasStrings(textareaText) {
+export function getBiasStrings(textareaText) {
     let promptBias = '';
     let messageBias = extractMessageBias(textareaText);
 
@@ -2551,7 +2551,7 @@ export function replaceBiasMarkup(str) {
     return (str ?? '').replace(/{{(\*?.*\*?)}}/g, '');
 }
 
-async function sendMessageAsUser(textareaText, messageBias) {
+export async function sendMessageAsUser(textareaText, messageBias) {
     chat[chat.length] = {};
     chat[chat.length - 1]['name'] = name1;
     chat[chat.length - 1]['is_user'] = true;
