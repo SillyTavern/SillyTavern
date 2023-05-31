@@ -136,36 +136,33 @@ async function checkTaskCompleted() {
     } else {
         console.debug(`Checked task completion. taskResponse: ${taskResponse}`)
     }
- }
+}
 
 
 // Set a task in extensionPrompt context. Defaults to first incomplete
-function setCurrentTask(index=null) {
+function setCurrentTask(index = null) {
     const context = getContext();
-    currentTask = {}
-
-    // Default to selecting first incomplete task if not given index, else no task
-    if (index==null){
-        currentTask = globalTasks.find(task=>{return true? !task.completed: false})
-        if (currentTask == undefined){
-            currentTask = {}
-        }
-    } else if (index < globalTasks.length && index > 0){
-        currentTask = globalTasks[index]
+    let currentTask = {};
+  
+    if (index === null) {
+      currentTask = globalTasks.find(task => !task.completed) || {};
+    } else if (index >= 0 && index < globalTasks.length) {
+      currentTask = globalTasks[index];
     }
-    
-    // Inject task into extension prompt context
-    if (Object.keys(currentTask).length > 0){
-        context.setExtensionPrompt(
-            MODULE_NAME, injectPrompts["task"].replace(/{{task}}/gi, currentTask.description), 1, $('#objective-chat-depth').val()
-        );
-        console.info(`Current task in context.extensionPrompts.Objective is ${JSON.stringify(context.extensionPrompts.Objective)}`)
+  
+    const { description } = currentTask;
+    const injectPromptsTask = injectPrompts["task"].replace(/{{task}}/gi, description);
+  
+    if (description) {
+      context.setExtensionPrompt(MODULE_NAME, injectPromptsTask, 1, $('#objective-chat-depth').val());
+      console.info(`Current task in context.extensionPrompts.Objective is ${JSON.stringify(context.extensionPrompts.Objective)}`);
     } else {
-        context.setExtensionPrompt(MODULE_NAME,'')
-        console.info(`No current task`)
+      context.setExtensionPrompt(MODULE_NAME, '');
+      console.info(`No current task`);
     }
-    saveState()
-}
+  
+    saveState();
+  }
 
 
 
@@ -188,6 +185,9 @@ function resetState(){
 
 // 
 function saveState(){
+    if (currentChatId == ""){
+        currentChatId = getContext().chatId
+    }
     extension_settings.objective[currentChatId].objective = globalObjective
     extension_settings.objective[currentChatId].tasks = globalTasks
     extension_settings.objective[currentChatId].checkFrequency = $('#objective-check-frequency').val()
@@ -211,42 +211,30 @@ window.debugObjectiveExtension = debugObjectiveExtension
 
 
 // Add a single task to the UI and attach event listeners for user edits
-function addUiTask(taskIndex, taskComplete, taskDescription){
-    let template = `
-    <div id={{task_label_id}} class="flex1 checkbox_label">
-        <span>{{task_index}}</span>
-        <input id="{{task_complete_id}}" type="checkbox">
-        <span id="{{task_description_id}}" contenteditable>{{task_description}}</span>
-    </div><br>
-    `
-
-    // Define id values
-    const taskLabelId = `objective-task-label-${taskIndex}`
-    const taskCompleteId = `objective-task-complete-${taskIndex}`
-    const taskDescriptionId = `objective-task-description-${taskIndex}`
-
-    // Assign id values and populate current state
-    template = template.replace(/{{task_index}}/gi,taskIndex)
-    template = template.replace(/{{task_description}}/gi,taskDescription)
-    template = template.replace(/{{task_label_id}}/gi,taskLabelId)
-    template = template.replace(/{{task_complete_id}}/gi,taskCompleteId)
-    template = template.replace(/{{task_description_id}}/gi,taskDescriptionId)
-
+function addUiTask(taskIndex, taskComplete, taskDescription) {
+    const template = `
+      <div id="objective-task-label-${taskIndex}" class="flex1 checkbox_label">
+          <span>${taskIndex}</span>
+          <input id="objective-task-complete-${taskIndex}" type="checkbox">
+          <span class="text_pole" style="display: block" id="objective-task-description-${taskIndex}" contenteditable>${taskDescription}</span>
+      </div><br>
+    `;
+  
     // Add the filled out template
-    $('#objective-tasks').append(template)
-
+    $('#objective-tasks').append(template);
+  
     // Add event listeners and set properties
-    $(`#${taskCompleteId}`).prop('checked',taskComplete)
-    $(`#${taskCompleteId}`).on('click', event => {
-        const index = Number(event.target.id[event.target.id.length - 1])
-        globalTasks[index].completed = event.target.checked
-        setCurrentTask()
+    $(`#objective-task-complete-${taskIndex}`).prop('checked', taskComplete);
+    $(`#objective-task-complete-${taskIndex}`).on('click', event => {
+      const index = Number(event.target.id.split('-').pop());
+      globalTasks[index].completed = event.target.checked;
+      setCurrentTask();
     });
-    $(`#${taskDescriptionId}`).on('keyup', event => {
-        const index = Number(event.target.id[event.target.id.length - 1])
-        globalTasks[index].description = event.target.textContent
+    $(`#objective-task-description-${taskIndex}`).on('keyup', event => {
+      const index = Number(event.target.id.split('-').pop());
+      globalTasks[index].description = event.target.textContent;
     });
-}
+  }
 
 // Populate UI task list
 function updateUiTaskList() {
@@ -269,18 +257,12 @@ async function onGenerateObjectiveClick() {
 
 // Update extension prompts
 function onChatDepthInput() {
-    if (currentChatId == ""){
-        currentChatId = getContext().chatId
-    }
     saveState()
     setCurrentTask() // Ensure extension prompt is updated
 }
 
 // Update how often we check for task completion
 function onCheckFrequencyInput() {
-    if (currentChatId == ""){
-        currentChatId = getContext().chatId
-    }
     saveState()
 }
 
@@ -320,15 +302,17 @@ jQuery(() => {
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
-            <label for="objective-text">Objective</label>
+            <label for="objective-text"><small>Enter an objective and generate tasks. The AI will attempt to complete tasks autonomously</small></label>
             <textarea id="objective-text" type="text" class="text_pole textarea_compact" rows="4"></textarea>
             <input id="objective-generate" class="menu_button" type="submit" value="Generate Tasks" />
+            <small>Automatically generate tasks for an objective. Will take a moment and populate tasks below</small>
             <div id="objective-tasks"> </div>
             <label for="objective-chat-depth">In-chat @ Depth</label>
             <input id="objective-chat-depth" class="text_pole widthUnset" type="number" min="0" max="99" /><br>
             <label for="objective-check-frequency">Task Check Frequency</label> 
-            <input id="objective-check-frequency" class="text_pole widthUnset" type="number" min="1" max="99" /><br>
-            <span> Messages until next task completion check <span id="objective-counter">0</span></span>
+            <input id="objective-check-frequency" class="text_pole widthUnset" type="number" min="" max="99" /><br>
+            <span> Messages until next AI task completion check <span id="objective-counter">0</span></span> <small> 0 to disable auto completion checks </small>
+            <hr class="sysHR">
         </div>
     </div>`;
     
@@ -346,8 +330,10 @@ jQuery(() => {
         if (currentChatId == undefined){
             return
         }
-        checkTaskCompleted();
-        checkCounter -= 1
+        if ($("#objective-check-frequency").val() > 0) {
+            checkTaskCompleted();
+            checkCounter -= 1
+        }
         setCurrentTask();
         $('#objective-counter').text(checkCounter)
     });
