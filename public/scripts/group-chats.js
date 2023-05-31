@@ -53,6 +53,9 @@ import {
     saveChatConditional,
     deactivateSendButtons,
     activateSendButtons,
+    eventSource,
+    event_types,
+    getCurrentChatId,
 } from "../script.js";
 import { appendTagToList, createTagMapFromList, getTagsList, applyTagsOnCharacterSelect } from './tags.js';
 
@@ -172,6 +175,7 @@ export async function getGroupChat(groupId) {
     }
 
     await saveGroupChat(groupId, true);
+    eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
 }
 
 function getFirstCharacterMessage(character) {
