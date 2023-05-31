@@ -63,29 +63,19 @@ Get in touch with the developers directly:
 * Soft prompts selector for KoboldAI
 * Prompt generation formatting tweaking
 * webp character card interoperability (PNG is still an internal format)
-* Extensibility support via [SillyLossy's TAI-extras](https://github.com/Cohee1207/TavernAI-extras) plugins
-  * Author's Note / Character Bias
-  * Character emotional expressions
-  * Auto-Summary of the chat history
-  * Sending images to chat, and the AI interpreting the content.
-  * Stable Diffusion image generation (5 chat-related presets plus 'free mode')
-  * Text-to-speech for AI response messages (via ElevenLabs, Silero, or the OS's System TTS)
 
-## UI Extensions 🚀
+## Extensions
 
-| Name             | Description                      | Required <a href="https://github.com/Cohee1207/TavernAI-extras#modules" target="_blank">Extra Modules</a> | Screenshot |
-| ---------------- | ---------------------------------| ---------------------------- | ---------- |
-| Image Captioning | Send a cute picture to your bot!<br><br>Picture select option will appear beside the "Message send" button. | `caption`                    | <img src="https://user-images.githubusercontent.com/18619528/224161576-ddfc51cd-995e-44ec-bf2d-d2477d603f0c.png" style="max-width:200px" />  |
-| Character Expressions | See your character reacting to your messages!<br><br>**You need to provide your own character images!**<br><br>1. Create a folder in TavernAI called `public/characters/<name>`, where `<name>` is the name of your character.<br>2. For the base emotion classification model, put six PNG files there with the following names: `joy.png`, `anger.png`, `fear.png`, `love.png`, `sadness.png`, `surprise.png`. Other models may provide other options.<br>3. Images only display in desktop mode. | `classify` | <img style="max-width:200px" alt="image" src="https://user-images.githubusercontent.com/18619528/223765089-34968217-6862-47e0-85da-7357370f8de6.png"> |
-| Memory | Chatbot long-term memory simulation using automatic message context summarization. | `summarize` |  <img style="max-width:200px" alt="image" src="https://user-images.githubusercontent.com/18619528/223766279-88a46481-1fa6-40c5-9724-6cdd6f587233.png"> |
-| D&D Dice | A set of 7 classic D&D dice for all your dice rolling needs.<br><br>*I used to roll the dice.<br>Feel the fear in my enemies' eyes* | None | <img style="max-width:200px" alt="image" src="https://user-images.githubusercontent.com/18619528/226199925-a066c6fc-745e-4a2b-9203-1cbffa481b14.png"> |
-| Author's Note | Built-in extension that allows you to append notes that will be added to the context and steer the story and character in a specific direction. Because it's sent after the character description, it has a lot of weight. Thanks Ali឵#2222 for pitching the idea! | None | ![image](https://user-images.githubusercontent.com/128647114/230311637-d809cd9b-af66-4dd1-a310-7a27e847c011.png) |
-| Character Backgrounds | Built-in extension to assign unique backgrounds to specific chats or groups. | None | <img style="max-width:200px" alt="image" src="https://user-images.githubusercontent.com/18619528/233494454-bfa7c9c7-4faa-4d97-9c69-628fd96edd92.png"> |
-| Stable Diffusion | Use local of cloud-based Stable Diffusion webUI API to generate images. 5 presets included ('you', 'your face', 'me', 'the story', and 'the last message'. Free mode also supported via `/sd (anything_here_)` command in the chat input bar. Most common StableDiffusion generation settings are customizable within the SillyTavern UI. | None | <img style="max-width:200px" alt="image" src="https://files.catbox.moe/ppata8.png"> |
-| Text-to-Speech | AI-generated voice will read back character messages on demand, or automatically read new messages they arrive. Supports ElevenLabs, Silero, and your device's TTS service. | None | <img style="max-width:200px" alt="image" src="https://files.catbox.moe/o3wxkk.png"> |
-| Chat Translation | Automatically translates incoming and/or outgoing messages into the chosen language. | None | Pending |
-| Token Counter | Simple way to calculate the number of tokens in any text with selected tokenizer. | None | Pending |
-| Smart Context<br><br>*Infinity Context / Object Permanence* | **What it doesn't do:** Magically increase your context size.<br>**What it does:** Optimizes the arrangement of your message history within the context space for more effective use.<br><br>Imagine two variables:<br>X: How many original chat messages to keep<br>Y: Maximum number of ChromaDB 'memories' to inject<br><br>When the chat reaches the threshold of X messages, additional messages will no longer be included in the context chronologically. Instead, they will be selected from the history based on their similarity to your recent inputs (limited to a maximum of Y), which should provide more relevant information than simply disregarding past messages. Adjust these values according to your average number of in-context entries for optimal performance. | `chromadb` | Pending |
+SillyTavern has an extensibility support, with some additional AI modules hosted via [SillyTavern Extras API](https://github.com/SillyTavern/SillyTavern-extras)
+
+* Author's Note / Character Bias
+* Character emotional expressions
+* Auto-Summary of the chat history
+* Sending images to chat, and the AI interpreting the content.
+* Stable Diffusion image generation (5 chat-related presets plus 'free mode')
+* Text-to-speech for AI response messages (via ElevenLabs, Silero, or the OS's System TTS)
+
+Full list of included extenisons and tutorials how to use them can be found on [Wiki](https://github.com/SillyTavern/SillyTavern/wiki).
 
 ## UI/CSS/Quality of Life tweaks by RossAscends
 
