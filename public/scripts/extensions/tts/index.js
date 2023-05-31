@@ -110,6 +110,7 @@ async function moduleWorker() {
 
     // We're currently swiping or streaming. Don't generate voice
     if (
+        !message ||
         message.mes === '...' ||
         message.mes === '' ||
         (context.streamingProcessor && !context.streamingProcessor.isFinished)
