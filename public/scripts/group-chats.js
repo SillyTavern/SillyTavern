@@ -968,6 +968,9 @@ function select_group_chats(groupId, skipAnimation) {
         $("#rm_group_scenario").show();
     } else {
         $("#rm_group_submit").show();
+        if ($("#groupAddMemberListToggle .inline-drawer-content").css('display') !== 'block') {
+            $("#groupAddMemberListToggle").trigger('click');
+        }
         $("#rm_group_delete").hide();
         $("#rm_group_scenario").hide();
     }

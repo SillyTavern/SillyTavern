@@ -4249,27 +4249,40 @@ function select_rm_info(type, charId, previousCharId = null) {
     getCharacters();
     selectRightMenuWithAnimation('rm_characters_block');
 
-    if (type === 'char_import' || type === 'char_create') {
+    setTimeout(function () {
+        if (type === 'char_import' || type === 'char_create') {
+            const element = $(`#rm_characters_block [title="${charId}"]`).parent().get(0);
+            console.log(element);
+            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-        const element = $(`#rm_characters_block [title="${charId}"]`).get(0);
-        element.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            try {
+                if (element !== undefined || element !== null) {
+                    $(element).addClass('flash animated');
+                    setTimeout(function () {
+                        $(element).removeClass('flash animated');
+                    }, 5000);
+                } else { console.log('didnt find the element'); }
+            } catch (e) {
+                console.error(e);
+            }
+        }
 
-        $(`#rm_characters_block [title="${charId}"]`).parent().addClass('flash animated');
-        setTimeout(function () {
-            $(`#rm_characters_block [title="${charId}"]`).parent().removeClass('flash animated');
-        }, 5000);
-    }
-
-    if (type === 'group_create') {
-        //for groups, ${charId} = data.id from group-chats.js createGroup()
-        const element = $(`#rm_characters_block [grid="${charId}"]`).get(0);
-        element.scrollIntoView({ behavior: 'smooth', block: 'end' });
-        $(`#rm_characters_block [grid="${charId}"]`).addClass('flash animated');
-        setTimeout(function () {
-            $(`#rm_characters_block [grid="${charId}"]`).removeClass('flash animated');
-        }, 5000);
-    }
-
+        if (type === 'group_create') {
+            //for groups, ${charId} = data.id from group-chats.js createGroup()
+            const element = $(`#rm_characters_block [grid="${charId}"]`).get(0);
+            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            try {
+                if (element !== undefined || element !== null) {
+                    $(element).addClass('flash animated');
+                    setTimeout(function () {
+                        $(element).removeClass('flash animated');
+                    }, 5000);
+                } else { console.log('didnt find the element'); }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+    }, 100);
     setRightTabSelectedClass();
 
     if (previousCharId) {
@@ -5108,6 +5121,12 @@ function importCharacter(file) {
 
 $(document).ready(function () {
     //////////INPUT BAR FOCUS-KEEPING LOGIC/////////////
+
+    setTimeout(function () {
+        $("#groupControlsToggle").trigger('click');
+        $("#groupCurrentMemberListToggle .inline-drawer-icon").trigger('click');
+    }, 200);
+
 
     $("#rm_print_characters_block").on('scroll',
         debounce(updateVisibleDivs, 5));
