@@ -51,6 +51,22 @@ function getChatSyncState() {
 
     const context = getContext();
     const chatState = chatStateFlags[currentChatId] || [];
+
+    // if the chat length has decreased, it means that some messages were deleted
+    if (chatState.length > context.chat.length) {
+        for (let i = context.chat.length; i < chatState.length; i++) {
+            // if the synced message was deleted, notify the user
+            if (chatState[i]) {
+                toastr.warning(
+                    'It is recommended to purge and re-sync the ChromaDB state to prevent recalling false memories. See the "Smart Context" tab in the Extensions menu for more information.',
+                    'The message that has already been pushed to ChromaDB was deleted.',
+                    { timeOut: 0, extendedTimeOut: 0, preventDuplicates: true },
+                );
+                break;
+            }
+        }
+    }
+
     chatState.length = context.chat.length;
     for (let i = 0; i < chatState.length; i++) {
         if (chatState[i] === undefined) {
