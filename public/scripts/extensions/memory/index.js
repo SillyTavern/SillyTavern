@@ -1,5 +1,5 @@
 import { getStringHash, debounce } from "../../utils.js";
-import { getContext, getApiUrl, extension_settings } from "../../extensions.js";
+import { getContext, getApiUrl, extension_settings, ModuleWorkerWrapper } from "../../extensions.js";
 import { extension_prompt_types, is_send_press, saveSettingsDebounced } from "../../../script.js";
 export { MODULE_NAME };
 
@@ -44,7 +44,7 @@ function loadSettings() {
     if (Object.keys(extension_settings.memory).length === 0) {
         Object.assign(extension_settings.memory, defaultSettings);
     }
-    
+
     $('#memory_long_length').val(extension_settings.memory.longMemoryLength).trigger('input');
     $('#memory_short_length').val(extension_settings.memory.shortMemoryLength).trigger('input');
     $('#memory_repetition_penalty').val(extension_settings.memory.repetitionPenalty).trigger('input');
@@ -129,29 +129,11 @@ function getLatestMemoryFromChat(chat) {
     return '';
 }
 
-let isWorkerBusy = false;
-
-async function moduleWorkerWrapper() {
-    // Don't touch me I'm busy...
-    if (isWorkerBusy) {
-        return;
-    }
-
-    // I'm free. Let's update!
-    try {
-        isWorkerBusy = true;
-        await moduleWorker();
-    }
-    finally {
-        isWorkerBusy = false;
-    }
-}
-
 async function moduleWorker() {
     const context = getContext();
     const chat = context.chat;
 
-    // no characters or group selected 
+    // no characters or group selected
     if (!context.groupId && context.characterId === undefined) {
         return;
     }
@@ -384,5 +366,6 @@ $(document).ready(function () {
 
     addExtensionControls();
     loadSettings();
-    setInterval(moduleWorkerWrapper, UPDATE_INTERVAL);
+    const wrapper = new ModuleWorkerWrapper(moduleWorker);
+    setInterval(wrapper.update.bind(wrapper), UPDATE_INTERVAL);
 });

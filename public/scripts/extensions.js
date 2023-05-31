@@ -8,11 +8,37 @@ export {
     defaultRequestArgs,
     modules,
     extension_settings,
+    ModuleWorkerWrapper,
 };
 
 let extensionNames = [];
 let manifests = [];
 const defaultUrl = "http://localhost:5100";
+
+// Disables parallel updates
+class ModuleWorkerWrapper {
+    constructor(callback) {
+        this.isBusy = false;
+        this.callback = callback;
+    }
+
+    // Called by the extension
+    async update() {
+        // Don't touch me I'm busy...
+        if (this.isBusy) {
+            return;
+        }
+
+        // I'm free. Let's update!
+        try {
+            this.isBusy = true;
+            await this.callback();
+        }
+        finally {
+            this.isBusy = false;
+        }
+    }
+}
 
 const extension_settings = {
     apiUrl: defaultUrl,

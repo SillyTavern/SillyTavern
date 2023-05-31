@@ -6,11 +6,7 @@ const MODULE_NAME = 'caption';
 const UPDATE_INTERVAL = 1000;
 
 async function moduleWorker() {
-    const context = getContext();
-
-    context.onlineStatus === 'no_connection'
-        ? $('#send_picture').hide(200)
-        : $('#send_picture').show(200);
+    $('#send_picture').toggle(getContext().onlineStatus !== 'no_connection');
 }
 
 async function setImageIcon() {

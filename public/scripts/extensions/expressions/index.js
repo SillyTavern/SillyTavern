@@ -1,5 +1,5 @@
 import { callPopup, getRequestHeaders, saveSettingsDebounced } from "../../../script.js";
-import { getContext, getApiUrl, modules, extension_settings } from "../../extensions.js";
+import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper } from "../../extensions.js";
 export { MODULE_NAME };
 
 const MODULE_NAME = 'expressions';
@@ -55,24 +55,6 @@ function onExpressionsShowDefaultInput() {
         if (value) {
             lastMessage = null;
         }
-    }
-}
-
-let isWorkerBusy = false;
-
-async function moduleWorkerWrapper() {
-    // Don't touch me I'm busy...
-    if (isWorkerBusy) {
-        return;
-    }
-
-    // I'm free. Let's update!
-    try {
-        isWorkerBusy = true;
-        await moduleWorker();
-    }
-    finally {
-        isWorkerBusy = false;
     }
 }
 
@@ -509,6 +491,7 @@ async function onClickExpressionDelete(event) {
 
     addExpressionImage();
     addSettings();
-    setInterval(moduleWorkerWrapper, UPDATE_INTERVAL);
-    moduleWorkerWrapper();
+    const wrapper = new ModuleWorkerWrapper(moduleWorker);
+    setInterval(wrapper.update.bind(wrapper), UPDATE_INTERVAL);
+    moduleWorker();
 })();
