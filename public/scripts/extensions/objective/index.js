@@ -8,7 +8,7 @@ import {
 } from "../../../script.js";
 
 const MODULE_NAME = "Objective"
-const UPDATE_INTERVAL = 1000;
+
 let globalObjective = ""
 let globalTasks = []
 let currentChatId = ""
@@ -20,7 +20,7 @@ const objectivePrompts = {
     "createTask": `Pause your roleplay and generate a list of tasks to complete an objective. Your next response must be formatted as a numbered list of plain text entries. Do not include anything but the numbered list. The list must be prioritized in the order that tasks must be completed.
 
     The objective that you must make a numbered task list for is: [{{objective}}].
-    The tasks created should take into account the character traits of {{char}}. These tasks may or may not involve {{user}}
+    The tasks created should take into account the character traits of {{char}}. These tasks may or may not involve {{user}} directly. Be sure to include the objective as the final task.
 
     Given an example objective of 'Make me a four course dinner', here is an example output:
     1. Determine what the courses will be
@@ -147,6 +147,9 @@ function setCurrentTask(index=null) {
     // Default to selecting first incomplete task if not given index, else no task
     if (index==null){
         currentTask = globalTasks.find(task=>{return true? !task.completed: false})
+        if (currentTask == undefined){
+            currentTask = {}
+        }
     } else if (index < globalTasks.length && index > 0){
         currentTask = globalTasks[index]
     }
@@ -164,6 +167,8 @@ function setCurrentTask(index=null) {
     saveState()
 }
 
+
+
 //###############################//
 //#       UI AND Settings       #//
 //###############################//
@@ -176,11 +181,12 @@ const defaultSettings = {
     checkFrequency:3,
 }
 
-// Convenient single call
+// Convenient single call. Not much at the moment.
 function resetState(){
     loadSettings();
 }
 
+// 
 function saveState(){
     extension_settings.objective[currentChatId].objective = globalObjective
     extension_settings.objective[currentChatId].tasks = globalTasks
@@ -189,6 +195,7 @@ function saveState(){
     saveSettingsDebounced()
 }
 
+// Dump core state
 function debugObjectiveExtension(){
     console.log(JSON.stringify({
         "currentTask": currentTask,
@@ -202,22 +209,55 @@ function debugObjectiveExtension(){
 
 window.debugObjectiveExtension = debugObjectiveExtension
 
-// Create user-friendly task string
+
+// Add a single task to the UI and attach event listeners for user edits
+function addUiTask(taskIndex, taskComplete, taskDescription){
+    let template = `
+    <div id={{task_label_id}} class="flex1 checkbox_label">
+        <span>{{task_index}}</span>
+        <input id="{{task_complete_id}}" type="checkbox">
+        <span id="{{task_description_id}}" contenteditable>{{task_description}}</span>
+    </div><br>
+    `
+
+    // Define id values
+    const taskLabelId = `objective-task-label-${taskIndex}`
+    const taskCompleteId = `objective-task-complete-${taskIndex}`
+    const taskDescriptionId = `objective-task-description-${taskIndex}`
+
+    // Assign id values and populate current state
+    template = template.replace(/{{task_index}}/gi,taskIndex)
+    template = template.replace(/{{task_description}}/gi,taskDescription)
+    template = template.replace(/{{task_label_id}}/gi,taskLabelId)
+    template = template.replace(/{{task_complete_id}}/gi,taskCompleteId)
+    template = template.replace(/{{task_description_id}}/gi,taskDescriptionId)
+    $(`#${taskCompleteId}`).prop('checked',taskComplete)
+
+    // Add the filled out template
+    $('#objective-tasks').append(template)
+
+    // Add event listeners
+    $(`#${taskDescriptionId}`).on('keyup', event => {
+        const index = Number(event.target.id[event.target.id.length - 1])
+        globalTasks[index].description = event.target.textContent
+    });
+    $(`#${taskCompleteId}`).on('click', event => {
+        const index = Number(event.target.id[event.target.id.length - 1])
+        JSON.parse("TRUE".toLowerCase()) 
+        globalTasks[index].completed = JSON.parse(event.target.getAttribute("checked"))
+    });
+}
+
+// Populate UI task list
 function updateUiTaskList() {
-    let taskPrettyString = ""
+    $('#objective-tasks').empty()
     for (const index in globalTasks) {
-        if (globalTasks[index].completed == true){
-            taskPrettyString += '[*] '
-        } else {
-            taskPrettyString += '[ ] '
-        }
-        taskPrettyString += `${Number(index) + 1}. `
-        taskPrettyString += globalTasks[index].description
-        if (index != globalTasks.length-1) {
-            taskPrettyString += '\n'
-        }
+        addUiTask(
+            index,
+            globalTasks[index].completed,
+            globalTasks[index].description
+        )
     }
-    $('#objective-tasks').text(taskPrettyString)
 }
 
 // Trigger creation of new tasks with given objective.
@@ -236,6 +276,7 @@ function onChatDepthInput() {
     setCurrentTask() // Ensure extension prompt is updated
 }
 
+// Update how often we check for task completion
 function onCheckFrequencyInput() {
     if (currentChatId == ""){
         currentChatId = getContext().chatId
@@ -282,8 +323,7 @@ jQuery(() => {
             <label for="objective-text">Objective</label>
             <textarea id="objective-text" type="text" class="text_pole textarea_compact" rows="4"></textarea>
             <input id="objective-generate" class="menu_button" type="submit" value="Generate Tasks" />
-            <label for="objective-tasks">Objective Tasks</label>
-            <textarea id="objective-tasks" class="text_pole" rows="8" placeholder="Objective tasks will be generated here..."></textarea>
+            <div id="objective-tasks"> </div>
             <label for="objective-chat-depth">In-chat @ Depth</label>
             <input id="objective-chat-depth" class="text_pole widthUnset" type="number" min="0" max="99" /><br>
             <label for="objective-check-frequency">Task Check Frequency</label> 
@@ -303,6 +343,9 @@ jQuery(() => {
     });
 
     eventSource.on(event_types.MESSAGE_RECEIVED, () => {
+        if (currentChatId == undefined){
+            return
+        }
         checkTaskCompleted();
         checkCounter -= 1
         setCurrentTask();
