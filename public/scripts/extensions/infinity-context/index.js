@@ -92,6 +92,7 @@ async function loadSettings() {
     $('#chromadb_n_results').val(extension_settings.chromadb.n_results).trigger('input');
     $('#chromadb_split_length').val(extension_settings.chromadb.split_length).trigger('input');
     $('#chromadb_file_split_length').val(extension_settings.chromadb.file_split_length).trigger('input');
+    $('#chromadb_freeze').prop('checked', extension_settings.chromadb.freeze);
 }
 
 function onStrategyChange() {
@@ -135,6 +136,10 @@ function checkChatId(chat_id) {
 }
 
 async function addMessages(chat_id, messages) {
+    if (extension_settings.chromadb.freeze) {
+        return { count: 0 };
+    }
+
     const url = new URL(getApiUrl());
     url.pathname = '/api/chromadb';
 
@@ -396,7 +401,7 @@ window.chromadb_interceptGeneration = async (chat) => {
     if (currentChatId) {
         const messagesToStore = chat.slice(0, -extension_settings.chromadb.keep_context);
 
-        if (messagesToStore.length > 0) {
+        if (messagesToStore.length > 0 || extension_settings.chromadb.freeze) {
             await addMessages(currentChatId, messagesToStore);
 
             const lastMessage = chat[chat.length - 1];
@@ -447,6 +452,11 @@ window.chromadb_interceptGeneration = async (chat) => {
     }
 }
 
+function onFreezeInput() {
+    extension_settings.chromadb.freeze = $('#chromadb_freeze').is(':checked');
+    saveSettingsDebounced();
+}
+
 jQuery(async () => {
     const settingsHtml = `
     <div class="chromadb_settings">
@@ -470,6 +480,10 @@ jQuery(async () => {
             <input id="chromadb_split_length" type="range" min="${defaultSettings.split_length_min}" max="${defaultSettings.split_length_max}" step="${defaultSettings.split_length_step}" value="${defaultSettings.split_length}" />
             <label for="chromadb_file_split_length">Max length for each 'memory' pulled from imported text files: (<span id="chromadb_file_split_length_value"></span>) characters</label>
             <input id="chromadb_file_split_length" type="range" min="${defaultSettings.file_split_length_min}" max="${defaultSettings.file_split_length_max}" step="${defaultSettings.file_split_length_step}" value="${defaultSettings.file_split_length}" />
+            <label class="checkbox_label" for="chromadb_freeze" title="Pauses the automatic synchronization of new messages with ChromaDB. Older messages and injections will still be pulled as usual." >
+                <input type="checkbox" id="chromadb_freeze" />
+                <span>Freeze ChromaDB state</span>
+            </label>
             <div class="flex-container spaceEvenly">
                 <div id="chromadb_inject" title="Upload custom textual data to use in the context of the current chat" class="menu_button">
                     <i class="fa-solid fa-file-arrow-up"></i>
@@ -506,6 +520,7 @@ jQuery(async () => {
     $('#chromadb_import_file').on('change', onSelectImportFile);
     $('#chromadb_purge').on('click', onPurgeClick);
     $('#chromadb_export').on('click', onExportClick);
+    $('#chromadb_freeze').on('input', onFreezeInput);
     await loadSettings();
 
     // Not sure if this is needed, but it's here just in case
