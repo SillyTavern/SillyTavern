@@ -114,7 +114,7 @@ async function generateTasks() {
 // Call Quiet Generate to check if a task is completed 
 async function checkTaskCompleted() {
     // Make sure there are tasks
-    if (globalObjective == "" || globalTasks.length == 0){
+    if (currentTask == {}){
         return
     }
 
@@ -231,20 +231,20 @@ function addUiTask(taskIndex, taskComplete, taskDescription){
     template = template.replace(/{{task_label_id}}/gi,taskLabelId)
     template = template.replace(/{{task_complete_id}}/gi,taskCompleteId)
     template = template.replace(/{{task_description_id}}/gi,taskDescriptionId)
-    $(`#${taskCompleteId}`).prop('checked',taskComplete)
 
     // Add the filled out template
     $('#objective-tasks').append(template)
 
-    // Add event listeners
+    // Add event listeners and set properties
+    $(`#${taskCompleteId}`).prop('checked',taskComplete)
+    $(`#${taskCompleteId}`).on('click', event => {
+        const index = Number(event.target.id[event.target.id.length - 1])
+        globalTasks[index].completed = event.target.checked
+        setCurrentTask()
+    });
     $(`#${taskDescriptionId}`).on('keyup', event => {
         const index = Number(event.target.id[event.target.id.length - 1])
         globalTasks[index].description = event.target.textContent
-    });
-    $(`#${taskCompleteId}`).on('click', event => {
-        const index = Number(event.target.id[event.target.id.length - 1])
-        JSON.parse("TRUE".toLowerCase()) 
-        globalTasks[index].completed = JSON.parse(event.target.getAttribute("checked"))
     });
 }
 
