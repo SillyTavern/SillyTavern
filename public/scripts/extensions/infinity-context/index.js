@@ -58,8 +58,8 @@ function getChatSyncState() {
             // if the synced message was deleted, notify the user
             if (chatState[i]) {
                 toastr.warning(
-                    'It is recommended to purge and re-sync the ChromaDB state to prevent recalling false memories. See the "Smart Context" tab in the Extensions menu for more information.',
-                    'The message that has already been pushed to ChromaDB was deleted.',
+                    'Purge your ChromaDB to remove it from there too. See the "Smart Context" tab in the Extensions menu for more information.',
+                    'Message deleted from chat, but it still exists inside the ChromaDB database.',
                     { timeOut: 0, extendedTimeOut: 0, preventDuplicates: true },
                 );
                 break;
