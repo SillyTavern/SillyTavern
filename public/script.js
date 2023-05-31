@@ -3294,14 +3294,14 @@ export function isMultigenEnabled() {
     return power_user.multigen && (main_api == 'textgenerationwebui' || main_api == 'kobold' || main_api == 'koboldhorde' || main_api == 'novel');
 }
 
-function activateSendButtons() {
+export function activateSendButtons() {
     is_send_press = false;
     $("#send_but").css("display", "flex");
     $("#send_textarea").attr("disabled", false);
     hideStopButton();
 }
 
-function deactivateSendButtons() {
+export function deactivateSendButtons() {
     $("#send_but").css("display", "none");
     showStopButton();
 }
