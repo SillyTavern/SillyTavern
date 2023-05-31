@@ -472,7 +472,7 @@ jQuery(async () => {
                     <span>Purge Chat from the DB</span>
                 </div>
             </div>
-            <small><i>Since ChromaDB state is not persisted to disk by default, you'll need to inject text data every time the Extras API server is restarted.</i></small>
+            <small><i>Local ChromaDB now persists to disk by default. The default folder is .chroma_db, and you can set a different folder with the --chroma-folder argument. If you are using the Extras Colab notebook, you will need to inject the text data every time the Extras API server is restarted.</i></small>
         </div>
         <form><input id="chromadb_inject_file" type="file" accept="text/plain" hidden></form>
         <form><input id="chromadb_import_file" type="file" accept="application/json" hidden></form>
