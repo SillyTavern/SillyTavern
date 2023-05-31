@@ -333,12 +333,13 @@ async function onSelectInjectFile(e) {
         const text = await getFileText(file);
 
         const split = splitRecursive(text, extension_settings.chromadb.file_split_length).filter(onlyUnique);
+        const baseDate = Date.now();
 
-        const messages = split.map(m => ({
+        const messages = split.map((m, i) => ({
             id: `${file.name}-${split.indexOf(m)}`,
             role: 'system',
             content: m,
-            date: Date.now(),
+            date: baseDate + i,
             meta: JSON.stringify({
                 name: file.name,
                 is_user: false,
