@@ -144,6 +144,7 @@ async function createNewBookmark() {
         }
     }
 
+    await delay(250);
     let name = await getBookmarkName();
 
     if (!name) {
