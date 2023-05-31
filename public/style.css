@@ -1329,22 +1329,6 @@ input[type=search]:focus::-webkit-search-cancel-button {
     width: unset;
 }
 
-#avatar_url_div {
-    display: none;
-}
-
-#selected_chat_div {
-    display: none;
-}
-
-#create_date_div {
-    display: none;
-}
-
-#last_mes_div {
-    display: none;
-}
-
 /*LEFT SIDE BG MENU*/
 
 #logo_block {

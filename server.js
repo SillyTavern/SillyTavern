@@ -674,22 +674,76 @@ function tryParse(str) {
     }
 }
 
+function convertToV2(char) {
+    // Simulate incoming data from frontend form
+    const result = charaFormatData({
+        json_data: JSON.stringify(char),
+        ch_name: char.name,
+        description: char.description,
+        personality: char.personality,
+        scenario: char.scenario,
+        first_mes: char.first_mes,
+        mes_example: char.mes_example,
+        creatorcomment: char.creatorcomment,
+        talkativeness: char.talkativeness,
+        fav: char.fav,
+    });
+
+    result.chat = char.chat;
+    result.create_date = char.create_date;
+    return result;
+}
 
 //***************** Main functions
 function charaFormatData(data) {
-    var char = {
-        "name": data.ch_name,
-        "description": data.description,
-        "creatorcomment": data.creatorcomment,
-        "personality": data.personality,
-        "first_mes": data.first_mes,
-        "avatar": 'none', "chat": data.ch_name + ' - ' + humanizedISO8601DateTime(),
-        "mes_example": data.mes_example,
-        "scenario": data.scenario,
-        "create_date": humanizedISO8601DateTime(),
-        "talkativeness": data.talkativeness,
-        "fav": data.fav
-    };
+    // This is supposed to save all the foreign keys that ST doesn't care about
+    const _ = require('lodash');
+    const char = tryParse(data.json_data) || {};
+
+    // Spec V1 fields
+    _.set(char, 'name', data.ch_name);
+    _.set(char, 'description', data.description);
+    _.set(char, 'personality', data.personality);
+    _.set(char, 'scenario', data.scenario);
+    _.set(char, 'first_mes', data.first_mes);
+    _.set(char, 'mes_example', data.mes_example);
+
+    // Old ST extension fields (for compatibility, will be deprecated)
+    _.set(char, 'creatorcomment', data.creatorcomment);
+    _.set(char, 'avatar', 'none');
+    _.set(char, 'chat', data.ch_name + ' - ' + humanizedISO8601DateTime());
+    _.set(char, 'talkativeness', data.talkativeness);
+    _.set(char, 'fav', data.fav);
+    _.set(char, 'create_date', humanizedISO8601DateTime());
+
+    // Spec V2 fields
+    _.set(char, 'spec', 'chara_card_v2');
+    _.set(char, 'spec_version', '2.0');
+    _.set(char, 'data.name', data.ch_name);
+    _.set(char, 'data.description', data.description);
+    _.set(char, 'data.personality', data.personality);
+    _.set(char, 'data.scenario', data.scenario);
+    _.set(char, 'data.first_mes', data.first_mes);
+    _.set(char, 'data.mes_example', data.mes_example);
+
+    // New V2 fields
+    _.set(char, 'data.creator_notes', data.creatorcomment);
+    _.set(char, 'data.system_prompt', data.system_prompt);
+    _.set(char, 'data.post_history_instructions', data.post_history_instructions);
+    _.set(char, 'data.tags', []);
+    _.set(char, 'data.creator', data.creator);
+    _.set(char, 'data.character_version', data.character_version);
+
+    // ST extension fields to V2 object
+    _.set(char, 'data.extensions.talkativeness', data.talkativeness);
+    _.set(char, 'data.extensions.fav', data.fav);
+    //_.set(char, 'data.extensions.create_date', humanizedISO8601DateTime());
+    //_.set(char, 'data.extensions.avatar', 'none');
+    //_.set(char, 'data.extensions.chat', data.ch_name + ' - ' + humanizedISO8601DateTime());
+
+    // TODO: Character book
+    _.set(char, 'data.character_book', undefined);
+
     return char;
 }
 
@@ -918,10 +972,17 @@ app.post("/getcharacters", jsonParser, function (request, response) {
             try {
                 var img_data = await charaRead(charactersPath + item);
                 let jsonObject = json5.parse(img_data);
+
+                if (jsonObject.spec === undefined) {
+                    //console.log('Old character detected, converting to V2: ' + item);
+                    jsonObject = convertToV2(jsonObject);
+                    //console.log('Conversion complete.', jsonObject);
+                }
+
                 jsonObject.avatar = item;
-                //console.log(jsonObject);
                 characters[i] = {};
                 characters[i] = jsonObject;
+                characters[i]['json_data'] = img_data;
 
                 try {
                     const charStat = fs.statSync(path.join(charactersPath, item));

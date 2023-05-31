@@ -544,6 +544,7 @@ var create_save_avatar = "";
 var create_save_scenario = "";
 var create_save_mes_example = "";
 var create_save_talkativeness = talkativeness_default;
+var create_save_json_data = "";
 
 //animation right menu
 var animation_duration = 250;
@@ -4317,6 +4318,7 @@ export function select_selected_character(chid) {
     $("#avatar_url_pole").val(characters[chid].avatar);
     $("#chat_import_avatar_url").val(characters[chid].avatar);
     $("#chat_import_character_name").val(characters[chid].name);
+    $("#character_json_data").val(characters[chid].json_data);
     let this_avatar = default_avatar;
     if (characters[chid].avatar != "none") {
         this_avatar = getThumbnailUrl('avatar', characters[chid].avatar);
@@ -4370,6 +4372,7 @@ function select_rm_create() {
     } else {
         $("#mes_example_textarea").val(create_save_mes_example);
     }
+    $("#characted_json_data").val(create_save_json_data);
     $("#avatar_div").css("display", "flex");
     $("#avatar_load_preview").attr("src", default_avatar);
     $("#renameCharButton").css('display', 'none');
@@ -5619,6 +5622,9 @@ $(document).ready(function () {
                         create_save_mes_example = "";
 
                         create_save_avatar = "";
+                        create_save_json_data = "";
+
+                        $("#character_json_data").val("");
 
                         $("#create_button").removeAttr("disabled");
                         $("#add_avatar_button").replaceWith(
@@ -5749,6 +5755,7 @@ $(document).ready(function () {
                 create_save_mes_example = $("#mes_example_textarea").val();
                 create_save_first_message = $("#firstmessage_textarea").val();
                 create_fav_chara = $("#fav_checkbox").val();
+                create_save_json_data = $("#character_json_data").val();
             } else {
                 saveCharacterDebounced();
             }
