@@ -188,7 +188,7 @@ async function validateImages(character, forceRedrawCached) {
 
     if (spriteCache[character]) {
         if (forceRedrawCached && $('#image_list').data('name') !== character) {
-            console.log('force redrawing character sprites list')
+            console.debug('force redrawing character sprites list')
             drawSpritesList(character, labels, spriteCache[character]);
         }
 
@@ -237,7 +237,7 @@ function getListItem(item, imageSrc, textClass) {
 }
 
 async function getSpritesList(name) {
-    console.log('getting sprites list');
+    console.debug('getting sprites list');
 
     try {
         const result = await fetch(`/get_sprites?name=${encodeURIComponent(name)}`);
@@ -284,14 +284,14 @@ async function getExpressionsList() {
 }
 
 async function setExpression(character, expression, force) {
-    console.log('entered setExpressions');
+    console.debug('entered setExpressions');
     await validateImages(character);
     const img = $('img.expression');
 
     const sprite = (spriteCache[character] && spriteCache[character].find(x => x.label === expression));
-    console.log('checking for expression images to show..');
+    console.debug('checking for expression images to show..');
     if (sprite) {
-        console.log('setting expression from character images folder');
+        console.debug('setting expression from character images folder');
         img.attr('src', sprite.path);
         img.removeClass('default');
         img.off('error');
@@ -308,7 +308,7 @@ async function setExpression(character, expression, force) {
     }
 
     function setDefault() {
-        console.log('setting default');
+        console.debug('setting default');
         const defImgUrl = `/img/default-expressions/${expression}.png`;
         //console.log(defImgUrl);
         img.attr('src', defImgUrl);

@@ -226,7 +226,7 @@ let converter;
 reloadMarkdownProcessor();
 
 // array for prompt token calculations
-console.log('initializing Prompt Itemization Array on Startup');
+console.debug('initializing Prompt Itemization Array on Startup');
 let itemizedPrompts = [];
 
 /* let bg_menu_toggle = false; */
@@ -448,7 +448,7 @@ async function getClientVersion() {
         $('#version_display').text(displayVersion);
         $('#version_display_welcome').text(displayVersion);
     } catch (err) {
-        console.log("Couldn't get client version", err);
+        console.error("Couldn't get client version", err);
     }
 }
 
@@ -1931,7 +1931,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         for (let i = coreChat.length - 1, j = 0; i >= 0; i--, j++) {
             // For OpenAI it's only used in WI
             if (main_api == 'openai' && !world_info) {
-                console.log('No WI, skipping chat2 for OAI');
+                console.debug('No WI, skipping chat2 for OAI');
                 break;
             }
 
@@ -2031,7 +2031,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         }
 
         let mesSend = [];
-        console.log('calling runGenerate');
+        console.debug('calling runGenerate');
         streamingProcessor = isStreamingEnabled() ? new StreamingProcessor(type, force_name2) : false;
         await runGenerate();
 
@@ -2044,7 +2044,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     generateOpenAIPromptCache();
                 }
 
-                console.log('generating prompt');
+                console.debug('generating prompt');
                 chatString = "";
                 arrMes = arrMes.reverse();
                 arrMes.forEach(function (item, i, arr) {//For added anchors and others
@@ -2099,7 +2099,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     return;
                 }
 
-                console.log('--setting Prompt string');
+                console.debug('--setting Prompt string');
                 mesExmString = pinExmString ?? mesExamplesArray.slice(0, count_exm_add).join('');
                 mesSendString = '';
                 for (let j = 0; j < mesSend.length; j++) {
@@ -2147,7 +2147,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             }
 
             function checkPromtSize() {
-                console.log('---checking Prompt size');
+                console.debug('---checking Prompt size');
                 setPromtString();
                 const prompt = [
                     worldInfoString,
@@ -2169,16 +2169,16 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         checkPromtSize();                            // and check size again..
                     } else {
                         //end
-                        console.log(`---mesSend.length = ${mesSend.length}`);
+                        console.debug(`---mesSend.length = ${mesSend.length}`);
                     }
                 }
             }
 
             if (generatedPromtCache.length > 0 && main_api !== 'openai') {
-                console.log('---Generated Prompt Cache length: ' + generatedPromtCache.length);
+                console.debug('---Generated Prompt Cache length: ' + generatedPromtCache.length);
                 checkPromtSize();
             } else {
-                console.log('---calling setPromtString ' + generatedPromtCache.length)
+                console.debug('---calling setPromtString ' + generatedPromtCache.length)
                 setPromtString();
             }
 
@@ -2263,7 +2263,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             }
 
             let generate_url = getGenerateUrl();
-            console.log('rungenerate calling API');
+            console.debug('rungenerate calling API');
 
             showStopButton();
 
@@ -2374,11 +2374,11 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
                         if (!isImpersonate) {
                             if (tokens_already_generated == 0) {
-                                console.log("New message");
+                                console.debug("New message");
                                 ({ type, getMessage } = saveReply(type, getMessage, this_mes_is_name, title));
                             }
                             else {
-                                console.log("Should append message");
+                                console.debug("Should append message");
                                 ({ type, getMessage } = saveReply('append', getMessage, this_mes_is_name, title));
                             }
                         } else {
@@ -2395,7 +2395,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                             // if any tokens left to generate
                             if (getMultigenAmount() > 0) {
                                 runGenerate(getMessage);
-                                console.log('returning to make generate again');
+                                console.debug('returning to make generate again');
                                 return;
                             }
                         }
@@ -2450,9 +2450,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     }
 
                     if (power_user.auto_swipe) {
-                        console.log('checking for autoswipeblacklist on non-streaming message');
+                        console.debug('checking for autoswipeblacklist on non-streaming message');
                         function containsBlacklistedWords(getMessage, blacklist, threshold) {
-                            console.log('checking blacklisted words');
+                            console.debug('checking blacklisted words');
                             const regex = new RegExp(`\\b(${blacklist.join('|')})\\b`, 'gi');
                             const matches = getMessage.match(regex) || [];
                             return matches.length >= threshold;
@@ -2461,7 +2461,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         const generatedTextFiltered = (getMessage) => {
                             if (power_user.auto_swipe_blacklist_threshold) {
                                 if (containsBlacklistedWords(getMessage, power_user.auto_swipe_blacklist, power_user.auto_swipe_blacklist_threshold)) {
-                                    console.log("Generated text has blacklisted words")
+                                    console.debug("Generated text has blacklisted words")
                                     return true
                                 }
                             }
@@ -2469,7 +2469,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                             return false
                         }
                         if (generatedTextFiltered(getMessage)) {
-                            console.log('swiping right automatically');
+                            console.debug('swiping right automatically');
                             swipe_right();
                             return
                         }
@@ -2480,7 +2480,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     //console.log('runGenerate calling showSwipeBtns');
                     showSwipeButtons();
                 }
-                console.log('/savechat called by /Generate');
+                console.debug('/savechat called by /Generate');
 
                 saveChatConditional();
                 activateSendButtons();
@@ -2563,14 +2563,14 @@ export async function sendMessageAsUser(textareaText, messageBias) {
     chat[chat.length - 1]['extra'] = {};
 
     if (messageBias) {
-        console.log('checking bias');
+        console.debug('checking bias');
         chat[chat.length - 1]['extra']['bias'] = messageBias;
     }
 
     addOneMessage(chat[chat.length - 1]);
     // Wait for all handlers to finish before continuing with the prompt
     await eventSource.emit(event_types.MESSAGE_SENT, (chat.length - 1));
-    console.log('message sent as user');
+    console.debug('message sent as user');
 }
 
 function getMaxContextSize() {
@@ -2690,7 +2690,7 @@ function getMultigenAmount() {
 
 function promptItemize(itemizedPrompts, requestedMesId) {
     var incomingMesId = Number(requestedMesId);
-    console.log(`looking for MesId ${incomingMesId}`);
+    console.debug(`looking for MesId ${incomingMesId}`);
     var thisPromptSet = undefined;
 
     for (var i = 0; i < itemizedPrompts.length; i++) {
@@ -3217,14 +3217,14 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
             chat[chat.length - 1]['mes'] = getMessage;
         }
     } else if (type === 'append') {
-        console.log("Trying to append.")
+        console.debug("Trying to append.")
         chat[chat.length - 1]['title'] = title;
         chat[chat.length - 1]['mes'] += getMessage;
         chat[chat.length - 1]['gen_started'] = generation_started;
         chat[chat.length - 1]['gen_finished'] = generationFinished;
         addOneMessage(chat[chat.length - 1], { type: 'swipe' });
     } else if (type === 'appendFinal') {
-        console.log("Trying to appendFinal.")
+        console.debug("Trying to appendFinal.")
         chat[chat.length - 1]['title'] = title;
         chat[chat.length - 1]['mes'] = getMessage;
         chat[chat.length - 1]['gen_started'] = generation_started;
@@ -3232,7 +3232,7 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         addOneMessage(chat[chat.length - 1], { type: 'swipe' });
 
     } else {
-        console.log('entering chat update routine for non-swipe post');
+        console.debug('entering chat update routine for non-swipe post');
         chat[chat.length] = {};
         chat[chat.length - 1]['extra'] = {};
         chat[chat.length - 1]['name'] = name2;
@@ -3246,7 +3246,7 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         chat[chat.length - 1]['gen_finished'] = generationFinished;
 
         if (selected_group) {
-            console.log('entering chat update for groups');
+            console.debug('entering chat update for groups');
             let avatarImg = 'img/ai4.png';
             if (characters[this_chid].avatar != 'none') {
                 avatarImg = getThumbnailUrl('avatar', characters[this_chid].avatar);
@@ -3698,9 +3698,9 @@ function changeMainAPI() {
     }
 
     // Hide common settings for OpenAI
-    console.log('value?', selectedVal);
+    console.debug('value?', selectedVal);
     if (selectedVal == "openai") {
-        console.log('hiding settings?');
+        console.debug('hiding settings?');
         $("#common-gen-settings-block").css("display", "none");
     } else {
         $("#common-gen-settings-block").css("display", "block");
@@ -4993,7 +4993,7 @@ const swipe_right = () => {
                             complete: function () {
                                 eventSource.emit(event_types.MESSAGE_SWIPED, (chat.length - 1));
                                 if (run_generate && !is_send_press && parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length) {
-                                    console.log('caught here 2');
+                                    console.debug('caught here 2');
                                     is_send_press = true;
                                     $('.mes_buttons:last').hide();
                                     Generate('swipe');
@@ -6086,7 +6086,7 @@ $(document).ready(function () {
             $(this).prop("checked", false);
         });
         this_del_mes = 0;
-        console.log('canceled del msgs, calling showswipesbtns');
+        console.debug('canceled del msgs, calling showswipesbtns');
         showSwipeButtons();
         is_delete_mode = false;
     });
@@ -6116,7 +6116,7 @@ $(document).ready(function () {
         this_del_mes = 0;
         $('#chat .mes').last().addClass('last_mes');
         $('#chat .mes').eq(-2).removeClass('last_mes');
-        console.log('confirmed del msgs, calling showswipesbtns');
+        console.debug('confirmed del msgs, calling showswipesbtns');
         showSwipeButtons();
         is_delete_mode = false;
     });
@@ -6881,7 +6881,7 @@ $(document).ready(function () {
             return;
         }
 
-        console.log('Label value OK, setting to the master input control', myText);
+        console.debug('Label value OK, setting to the master input control', myText);
         $(masterElement).val(myValue).trigger('input');
         restoreCaretPosition($(this).get(0), caretPosition);
     });

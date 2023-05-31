@@ -79,7 +79,7 @@ observer.observe(document.documentElement, observerConfig);
 /**
  * Wait for an element before resolving a promise
  * @param {String} querySelector - Selector of element to wait for
- * @param {Integer} timeout - Milliseconds to wait before timing out, or 0 for no timeout              
+ * @param {Integer} timeout - Milliseconds to wait before timing out, or 0 for no timeout
  */
 function waitForElement(querySelector, timeout) {
     return new Promise((resolve, reject) => {
@@ -259,7 +259,7 @@ export function RA_CountCharTokens() {
                 (power_user.pin_examples ? characters[this_chid].mes_example : ''),
             ].join('\n').replace(/\r/gm, '').trim();
             perm_tokens = getTokenCount(perm_string);
-        } else { console.log("RA_TC -- no valid char found, closing."); }                // if neither, probably safety char or some error in loading
+        } else { console.debug("RA_TC -- no valid char found, closing."); }                // if neither, probably safety char or some error in loading
     }
     // display the counted tokens
     if (count_tokens < 1024 && perm_tokens < 1024) {
@@ -283,7 +283,7 @@ async function RA_autoloadchat() {
             $(groupToAutoLoad).click();
         }
 
-        // if the charcter list hadn't been loaded yet, try again. 
+        // if the charcter list hadn't been loaded yet, try again.
     } else { setTimeout(RA_autoloadchat, 100); }
 }
 
@@ -428,13 +428,13 @@ function OpenNavPanels() {
 
         //auto-open L nav if locked and previously open
         if (LoadLocalBool("LNavLockOn") == true && LoadLocalBool("LNavOpened") == true) {
-            console.log("RA -- clicking left nav to open");
+            console.debug("RA -- clicking left nav to open");
             $("#leftNavDrawerIcon").click();
         }
 
         //auto-open WI if locked and previously open
         if (LoadLocalBool("WINavLockOn") == true && LoadLocalBool("WINavOpened") == true) {
-            console.log("RA -- clicking WI to open");
+            console.debug("RA -- clicking WI to open");
             $("#WIDrawerIcon").click();
         }
     }
@@ -563,10 +563,10 @@ function dragElement(elmnt) {
                                         offsetLeft: ${elmnt.offsetLeft}, offsetTop: ${elmnt.offsetTop}
                                         winWidth: ${winWidth}, winHeight: ${winHeight}
                                         sheldWidth: ${sheldWidth}
-                                        X: ${elmnt.style.left} 
-                                        Y: ${elmnt.style.top} 
-                                        MaxX: ${maxX}, MaxY: ${maxY} 
-                                        Topbar 1st X: ${((winWidth - sheldWidth) / 2)} 
+                                        X: ${elmnt.style.left}
+                                        Y: ${elmnt.style.top}
+                                        MaxX: ${maxX}, MaxY: ${maxY}
+                                        Topbar 1st X: ${((winWidth - sheldWidth) / 2)}
                                         TopBar lastX: ${((winWidth - sheldWidth) / 2) + sheldWidth}
                                             `); */
 
@@ -651,14 +651,14 @@ $("document").ready(function () {
     $(WIPanelPin).on("click", function () {
         SaveLocal("WINavLockOn", $(WIPanelPin).prop("checked"));
         if ($(WIPanelPin).prop("checked") == true) {
-            console.log('adding pin class to WI');
+            console.debug('adding pin class to WI');
             $(WorldInfo).addClass('pinnedOpen');
         } else {
-            console.log('removing pin class from WI');
+            console.debug('removing pin class from WI');
             $(WorldInfo).removeClass('pinnedOpen');
 
             if ($(WorldInfo).hasClass('openDrawer') && $('.openDrawer').length > 1) {
-                console.log('closing WI after lock removal');
+                console.debug('closing WI after lock removal');
                 $(WorldInfo).slideToggle(200, "swing");
                 //$(WorldInfoDrawerIcon).toggleClass('openIcon closedIcon');
                 $(WorldInfo).toggleClass('openDrawer closedDrawer');
@@ -673,7 +673,7 @@ $("document").ready(function () {
         $(RightNavPanel).addClass('pinnedOpen');
     }
     if ($(RPanelPin).prop('checked' == true)) {
-        console.log('setting pin class via checkbox state');
+        console.debug('setting pin class via checkbox state');
         $(RightNavPanel).addClass('pinnedOpen');
     }
     // read the state of left Nav Lock and apply to leftnav classlist
@@ -683,7 +683,7 @@ $("document").ready(function () {
         $(LeftNavPanel).addClass('pinnedOpen');
     }
     if ($(LPanelPin).prop('checked' == true)) {
-        console.log('setting pin class via checkbox state');
+        console.debug('setting pin class via checkbox state');
         $(LeftNavPanel).addClass('pinnedOpen');
     }
 
@@ -695,7 +695,7 @@ $("document").ready(function () {
     }
 
     if ($(WIPanelPin).prop('checked' == true)) {
-        console.log('setting pin class via checkbox state');
+        console.debug('setting pin class via checkbox state');
         $(WorldInfo).addClass('pinnedOpen');
     }
 
@@ -751,7 +751,7 @@ $("document").ready(function () {
         SaveLocal('ActiveGroup', $(this).data('id'));
     });
 
-    //this makes the chat input text area resize vertically to match the text size (limited by CSS at 50% window height)    
+    //this makes the chat input text area resize vertically to match the text size (limited by CSS at 50% window height)
     $('#send_textarea').on('input', function () {
         this.style.height = '40px';
         this.style.height = (this.scrollHeight) + 'px';
@@ -842,7 +842,7 @@ $("document").ready(function () {
         }
 
         if (event.ctrlKey && event.key == "ArrowUp") { //edits last USER message if chatbar is empty and focused
-            console.log('got ctrl+uparrow input');
+            console.debug('got ctrl+uparrow input');
             if (
                 $("#send_textarea").val() === '' &&
                 chatbarInFocus === true &&

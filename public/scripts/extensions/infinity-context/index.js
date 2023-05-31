@@ -83,7 +83,7 @@ async function loadSettings() {
         Object.assign(extension_settings.chromadb, defaultSettings);
     }
 
-    console.log(`loading chromadb strat:${extension_settings.chromadb.strategy}`);
+    console.debug(`loading chromadb strat:${extension_settings.chromadb.strategy}`);
     $("#chromadb_strategy option[value=" + extension_settings.chromadb.strategy + "]").attr(
         "selected",
         "true"
@@ -95,7 +95,7 @@ async function loadSettings() {
 }
 
 function onStrategyChange() {
-    console.log('changing chromadb strat');
+    console.debug('changing chromadb strat');
     extension_settings.chromadb.strategy = $('#chromadb_strategy').val();
 
     //$('#chromadb_strategy').select(extension_settings.chromadb.strategy);
