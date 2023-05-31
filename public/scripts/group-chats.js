@@ -506,12 +506,11 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
 
         // now the real generation begins: cycle through every activated character
         for (const chId of activatedMembers) {
+            deactivateSendButtons();
             isGenerationDone = false;
             const generateType = type == "swipe" || type == "impersonate" || type == "quiet" ? type : "group_chat";
             setCharacterId(chId);
             setCharacterName(characters[chId].name)
-
-            await Generate(generateType, { automatic_trigger: by_auto_mode, ...(params || {}) });
 
             if (type !== "swipe" && type !== "impersonate" && !isMultigenEnabled() && !isStreamingEnabled()) {
                 // update indicator and scroll down
@@ -523,6 +522,8 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
                     typingIndicator.get(0).scrollIntoView({ behavior: "smooth" });
                 });
             }
+
+            Generate(generateType, { automatic_trigger: by_auto_mode, ...(params || {}) });
 
             // TODO: This is awful. Refactor this
             while (true) {
@@ -606,7 +607,6 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
                     break;
                 }
             }
-
         }
     } finally {
         // hide and reapply the indicator to the bottom of the list
