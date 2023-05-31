@@ -51,6 +51,8 @@ import {
     sendMessageAsUser,
     getBiasStrings,
     saveChatConditional,
+    deactivateSendButtons,
+    activateSendButtons,
 } from "../script.js";
 import { appendTagToList, createTagMapFromList, getTagsList, applyTagsOnCharacterSelect } from './tags.js';
 
@@ -517,13 +519,14 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
                     .find(".typing_indicator_name")
                     .text(characters[chId].name);
                 $("#chat").append(typingIndicator);
-                typingIndicator.show(250, function () {
+                typingIndicator.show(200, function () {
                     typingIndicator.get(0).scrollIntoView({ behavior: "smooth" });
                 });
             }
 
             // TODO: This is awful. Refactor this
             while (true) {
+                deactivateSendButtons();
                 if (isGenerationAborted) {
                     throw new Error('Group generation aborted');
                 }
@@ -607,7 +610,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
         }
     } finally {
         // hide and reapply the indicator to the bottom of the list
-        typingIndicator.hide(250);
+        typingIndicator.hide(200);
         $("#chat").append(typingIndicator);
 
         is_group_generating = false;
@@ -615,6 +618,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
         setSendButtonState(false);
         setCharacterId(undefined);
         setCharacterName('');
+        activateSendButtons();
         showSwipeButtons();
     }
 }
