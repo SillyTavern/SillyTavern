@@ -19,7 +19,7 @@ let checkCounter = 0
 const objectivePrompts = {
     "createTask": `Pause your roleplay and generate a list of tasks to complete an objective. Your next response must be formatted as a numbered list of plain text entries. Do not include anything but the numbered list. The list must be prioritized in the order that tasks must be completed.
 
-    The objective that you must make a numbered task list for is: {{objective}}.
+    The objective that you must make a numbered task list for is: [{{objective}}].
     The tasks created should take into account the character traits of {{char}}. These tasks may or may not involve {{user}}
 
     Given an example objective of 'Make me a four course dinner', here is an example output:
@@ -31,7 +31,7 @@ const objectivePrompts = {
     6. Serve the food
     7. Enjoy eating the meal with {{user}}
     `,
-    "checkTaskCompleted": `Pause your roleplay. Determine if this task is completed: {{task}}. 
+    "checkTaskCompleted": `Pause your roleplay. Determine if this task is completed: [{{task}}]. 
     To do this, examine the most recent messages. Your response must only contain either true or false, nothing other words.
     Example output:
     true
@@ -39,7 +39,7 @@ const objectivePrompts = {
 }
 
 const injectPrompts = {
-    "task": "Your current task is {{task}}. Balance existing roleplay with completing this task."
+    "task": "Your current task is [{{task}}]. Balance existing roleplay with completing this task."
 }
 
 // Background prompt generation
@@ -66,6 +66,7 @@ function addTask(description, position=null) {
         "description": description,
         "completed": false
     })
+    saveState()
 }
 
 // Get a task either by index or task description. Return current task if none specified
@@ -89,6 +90,7 @@ function completeTask(task) {
     console.info(`Task successfully completed: ${JSON.stringify(task)}`)
     setCurrentTask()
     updateUiTaskList()
+    saveState()
 }
 
 // Call Quiet Generate to create task list using character context, then convert to tasks. Should not be called much.
@@ -117,10 +119,10 @@ async function checkTaskCompleted() {
     }
 
     // Check only at specified interval
-    if (checkCounter <= $('#objective-check-frequency').val()){
+    if (checkCounter >= 0){
         return
     }
-    checkCounter = 0
+    checkCounter = $('#objective-check-frequency').val()
 
     const prompt = substituteParams(objectivePrompts["checkTaskCompleted"].replace(/{{task}}/gi, currentTask.description));
     const taskResponse = (await generateQuietPrompt(prompt)).toLowerCase()
@@ -132,7 +134,7 @@ async function checkTaskCompleted() {
     } else if (!(taskResponse.includes("false"))) {
         console.warn(`checkTaskCompleted response did not contain true or false. taskResponse: ${taskResponse}`)
     } else {
-        console.debug(`taskResponse: ${taskResponse}`)
+        console.debug(`Checked task completion. taskResponse: ${taskResponse}`)
     }
  }
 
@@ -159,6 +161,7 @@ function setCurrentTask(index=null) {
         context.setExtensionPrompt(MODULE_NAME,'')
         console.info(`No current task`)
     }
+    saveState()
 }
 
 //###############################//
@@ -175,23 +178,29 @@ const defaultSettings = {
 
 // Convenient single call
 function resetState(){
-    checkCounter = 0
     loadSettings();
 }
 
-function debugObjectiveFunction(){
-    console.log({
-        "globalObjective": globalObjective,
-        "globalTasks": globalTasks,
-        "currentChatId": currentChatId,
-        "currentTask": currentTask,
-        "checkCounter": checkCounter,
-        "currentChatId": currentChatId,
-        "extension_settings": extension_settings.objective[currentChatId],
-    })
+function saveState(){
+    extension_settings.objective[currentChatId].objective = globalObjective
+    extension_settings.objective[currentChatId].tasks = globalTasks
+    extension_settings.objective[currentChatId].checkFrequency = $('#objective-check-frequency').val()
+    extension_settings.objective[currentChatId].chatDepth = $('#objective-chat-depth').val()
+    saveSettingsDebounced()
 }
 
-window.debugObjectiveFunction = debugObjectiveFunction
+function debugObjectiveExtension(){
+    console.log(JSON.stringify({
+        "currentTask": currentTask,
+        "currentChatId": currentChatId,
+        "checkCounter": checkCounter,
+        "globalObjective": globalObjective,
+        "globalTasks": globalTasks,
+        "extension_settings": extension_settings.objective[currentChatId],
+    }, null, 2))
+}
+
+window.debugObjectiveExtension = debugObjectiveExtension
 
 // Create user-friendly task string
 function updateUiTaskList() {
@@ -215,9 +224,7 @@ function updateUiTaskList() {
 async function onGenerateObjectiveClick() {
     globalObjective = $('#objective-text').val()
     await generateTasks()
-    extension_settings.objective[currentChatId].objective = globalObjective
-    extension_settings.objective[currentChatId].tasks = globalTasks
-    saveSettingsDebounced()
+    saveState()
 }
 
 // Update extension prompts
@@ -225,17 +232,15 @@ function onChatDepthInput() {
     if (currentChatId == ""){
         currentChatId = getContext().chatId
     }
-    extension_settings.objective[currentChatId].chatDepth = $('#objective-chat-depth').val()
+    saveState()
     setCurrentTask() // Ensure extension prompt is updated
-    saveSettingsDebounced()
 }
 
 function onCheckFrequencyInput() {
     if (currentChatId == ""){
         currentChatId = getContext().chatId
     }
-    extension_settings.objective[currentChatId].checkFrequency = $('#objective-check-frequency').val()
-    saveSettingsDebounced()
+    saveState()
 }
 
 function loadSettings() {
@@ -254,12 +259,15 @@ function loadSettings() {
     // Update globals
     globalObjective = extension_settings.objective[currentChatId].objective
     globalTasks = extension_settings.objective[currentChatId].tasks
+    checkCounter = extension_settings.objective[currentChatId].checkFrequency
 
     // Update UI elements
+    $('#objective-counter').text(checkCounter)
     $("#objective-text").text(globalObjective)
     updateUiTaskList()
     $('#objective-chat-depth').val(extension_settings.objective[currentChatId].chatDepth)
     $('#objective-check-frequency').val(extension_settings.objective[currentChatId].checkFrequency)
+    setCurrentTask()
 }
 
 jQuery(() => {
@@ -277,10 +285,10 @@ jQuery(() => {
             <label for="objective-tasks">Objective Tasks</label>
             <textarea id="objective-tasks" class="text_pole" rows="8" placeholder="Objective tasks will be generated here..."></textarea>
             <label for="objective-chat-depth">In-chat @ Depth</label>
-            <input id="objective-chat-depth" class="text_pole widthUnset" type="number" min="0" max="99" />
-            <label for="objective-check-frequency">Task Check Frequency</label>
-            <input id="objective-check-frequency" class="text_pole widthUnset" type="number" min="1" max="99" />
-            
+            <input id="objective-chat-depth" class="text_pole widthUnset" type="number" min="0" max="99" /><br>
+            <label for="objective-check-frequency">Task Check Frequency</label> 
+            <input id="objective-check-frequency" class="text_pole widthUnset" type="number" min="1" max="99" /><br>
+            <span> Messages until next task completion check <span id="objective-counter">0</span></span>
         </div>
     </div>`;
     
@@ -296,7 +304,8 @@ jQuery(() => {
 
     eventSource.on(event_types.MESSAGE_RECEIVED, () => {
         checkTaskCompleted();
-        checkCounter += 1
+        checkCounter -= 1
         setCurrentTask();
+        $('#objective-counter').text(checkCounter)
     });
 });
