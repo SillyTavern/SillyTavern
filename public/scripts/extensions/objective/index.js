@@ -113,13 +113,13 @@ async function generateTasks() {
 
 // Call Quiet Generate to check if a task is completed 
 async function checkTaskCompleted() {
-    // Make sure there are tasks
-    if (currentTask == {}){
+    // Make sure there are tasks and check is enabled
+    if (currentTask == {} || $('#objective-check-frequency').val() == 0){
         return
     }
 
     // Check only at specified interval
-    if (checkCounter >= 0){
+    if (checkCounter > 0){
         return
     }
     checkCounter = $('#objective-check-frequency').val()
@@ -176,6 +176,7 @@ const defaultSettings = {
     tasks: [],
     chatDepth: 2,
     checkFrequency:3,
+    hideTasks: false
 }
 
 // Convenient single call. Not much at the moment.
@@ -192,6 +193,7 @@ function saveState(){
     extension_settings.objective[currentChatId].tasks = globalTasks
     extension_settings.objective[currentChatId].checkFrequency = $('#objective-check-frequency').val()
     extension_settings.objective[currentChatId].chatDepth = $('#objective-chat-depth').val()
+    extension_settings.objective[currentChatId].hideTasks = $('#objective-hide-tasks').prop('checked')
     saveSettingsDebounced()
 }
 
@@ -266,6 +268,11 @@ function onCheckFrequencyInput() {
     saveState()
 }
 
+function onHideTasksInput(){
+    $('#objective-tasks').prop('hidden',$('#objective-hide-tasks').prop('checked'))
+    saveState()
+}
+
 function loadSettings() {
     // Load/Init settings for chatId
     currentChatId = getContext().chatId
@@ -290,6 +297,8 @@ function loadSettings() {
     updateUiTaskList()
     $('#objective-chat-depth').val(extension_settings.objective[currentChatId].chatDepth)
     $('#objective-check-frequency').val(extension_settings.objective[currentChatId].checkFrequency)
+    $('#objective-hide-tasks').prop('checked',extension_settings.objective[currentChatId].hideTasks)
+    onHideTasksInput()
     setCurrentTask()
 }
 
@@ -304,14 +313,15 @@ jQuery(() => {
         <div class="inline-drawer-content">
             <label for="objective-text"><small>Enter an objective and generate tasks. The AI will attempt to complete tasks autonomously</small></label>
             <textarea id="objective-text" type="text" class="text_pole textarea_compact" rows="4"></textarea>
-            <input id="objective-generate" class="menu_button" type="submit" value="Generate Tasks" />
-            <small>Automatically generate tasks for an objective. Will take a moment and populate tasks below</small>
+            <label class="checkbox_label"><input id="objective-generate" class="menu_button" type="submit" value="Generate Tasks" />
+            <small>Automatically generate tasks for Objective. Takes a moment.</small></label></br>
+            <label class="checkbox_label"><input id="objective-hide-tasks" type="checkbox"> Hide Tasks</label><br>
             <div id="objective-tasks"> </div>
             <label for="objective-chat-depth">In-chat @ Depth</label>
             <input id="objective-chat-depth" class="text_pole widthUnset" type="number" min="0" max="99" /><br>
             <label for="objective-check-frequency">Task Check Frequency</label> 
-            <input id="objective-check-frequency" class="text_pole widthUnset" type="number" min="" max="99" /><br>
-            <span> Messages until next AI task completion check <span id="objective-counter">0</span></span> <small> 0 to disable auto completion checks </small>
+            <input id="objective-check-frequency" class="text_pole widthUnset" type="number" min="" max="99" /><small> (0 = disabled) </small><br>
+            <span> Messages until next AI task completion check <span id="objective-counter">0</span></span> 
             <hr class="sysHR">
         </div>
     </div>`;
@@ -320,6 +330,7 @@ jQuery(() => {
     $('#objective-generate').on('click', onGenerateObjectiveClick)
     $('#objective-chat-depth').on('input',onChatDepthInput)
     $("#objective-check-frequency").on('input',onCheckFrequencyInput)
+    $('#objective-hide-tasks').on('click', onHideTasksInput)
     loadSettings()
     
     eventSource.on(event_types.CHAT_CHANGED, () => {
