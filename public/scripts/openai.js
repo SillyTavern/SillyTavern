@@ -355,77 +355,74 @@ function formatWorldInfo(value) {
 }
 
 async function prepareOpenAIMessages({ systemPrompt, name2, storyString, worldInfoBefore, worldInfoAfter, extensionPrompt, bias, type, quietPrompt, jailbreakPrompt, cyclePrompt } = {}) {
-    const isImpersonate = type == "impersonate";
-    let this_max_context = oai_settings.openai_max_context;
-    let enhance_definitions_prompt = "";
+    const chatCompletion = promptManager.getChatCompletion();
 
-    // Experimental but kinda works
-    if (oai_settings.enhance_definitions) {
-        enhance_definitions_prompt = "If you have more knowledge of " + name2 + ", add to the character's lore and personality to enhance them but keep the Character Sheet's definitions absolute.";
-    }
+    // Prepare messages
+    const enhanceDefinitionMessage = chatCompletion.makeSystemMessage(substituteParams('If you have more knowledge of {{char}}, add to the character\'s lore and personality to enhance them but keep the Character Sheet\'s definitions absolute.'));
+    const worldInfoBeforeMessage = chatCompletion.makeSystemMessage(formatWorldInfo(worldInfoBefore));
+    const worldInfoAfterMessage = chatCompletion.makeSystemMessage(formatWorldInfo(worldInfoAfter));
+    const characterInfoMessages = chatCompletion.makeSystemMessage(substituteParams(storyString));
+    const newChatMessage = chatCompletion.makeSystemMessage('[Start new chat]');
+    const chatMessages = openai_msgs;
+    const biasMessage = chatCompletion.makeSystemMessage(bias.trim());
 
-    const characterInfo = storyString;
+    // Prepare context
+    chatCompletion
+        .replace('worldInfoBefore', worldInfoBeforeMessage)
+        .replace('worldInfoAfter', worldInfoAfterMessage)
+        .replace('characterInfo', characterInfoMessages)
+        .replace('newExampleChat', newChatMessage)
+        .replace('newMainChat', newChatMessage)
+        .replace('chatHistory', chatMessages)
 
-    const wiBefore = formatWorldInfo(worldInfoBefore);
-    const wiAfter = formatWorldInfo(worldInfoAfter);
-
-    let whole_prompt = getSystemPrompt(enhance_definitions_prompt, wiBefore, storyString, wiAfter, extensionPrompt, isImpersonate);
-
-    // Join by a space and replace placeholders with real user/char names
-    storyString = substituteParams(whole_prompt.join("\n"), name1, name2, oai_settings.main_prompt).replace(/\r/gm, '').trim();
-
-    let prompt_msg = { "role": "system", "content": storyString }
-    let examples_tosend = [];
-    let openai_msgs_tosend = [];
-
-    // todo: static value, maybe include in the initial context calculation
-    const handler_instance = new TokenHandler(countTokens);
-
-    let new_chat_msg = { "role": "system", "content": "[Start a new chat]" };
-    let start_chat_count = handler_instance.count([new_chat_msg], true, 'start_chat');
-    await delay(1);
-    let total_count = handler_instance.count([prompt_msg], true, 'prompt') + start_chat_count;
-    await delay(1);
-
-    if (bias && bias.trim().length) {
-        let bias_msg = { "role": "system", "content": bias.trim() };
-        openai_msgs.push(bias_msg);
-        total_count += handler_instance.count([bias_msg], true, 'bias');
-        await delay(1);
-    }
-
+    // Hande group chats
     if (selected_group) {
-        // set "special" group nudging messages
-        const groupMembers = groups.find(x => x.id === selected_group)?.members;
-        let names = '';
-        if (Array.isArray(groupMembers)) {
-            names = groupMembers.map(member => characters.find(c => c.avatar === member)).filter(x => x).map(x => x.name);
-            names = names.join(', ')
-        }
-        new_chat_msg.content = `[Start a new group chat. Group members: ${names}]`;
-        let group_nudge = { "role": "system", "content": `[Write the next reply only as ${name2}]` };
-        openai_msgs.push(group_nudge);
-
-        // add a group nudge count
-        let group_nudge_count = handler_instance.count([group_nudge], true, 'nudge');
-        await delay(1);
-        total_count += group_nudge_count;
-
-        // recount tokens for new start message
-        total_count -= start_chat_count
-        handler_instance.uncount(start_chat_count, 'start_chat');
-        start_chat_count = handler_instance.count([new_chat_msg], true);
-        await delay(1);
-        total_count += start_chat_count;
+        const names = getGroupMembers(groups);
+        const groupChatMessage = chatCompletion.makeSystemMessage(`[Start a new group chat. Group members: ${names}]`);
+        const groupNudgeMessage = chatCompletion.makeSystemMessage(`[Write the next reply only as ${name2}]`);
+        chatCompletion.replace('newMainChat', groupChatMessage)
+        chatCompletion.insertAfter('newMainChat', 'groupNudgeMessage', groupNudgeMessage);
     }
 
-    if (isImpersonate) {
-        const impersonateMessage = { "role": "system", "content": substituteParams(oai_settings.impersonation_prompt) };
-        openai_msgs.push(impersonateMessage);
+    if (oai_settings.enhance_definitions) chatCompletion.insertAfter('characterInfo', 'enhancedDefinitions', enhanceDefinitionMessage);
+    if (extensionPrompt) chatCompletion.insertAfter('worldInfoAfter', 'extensionPrompt', extensionPrompt);
+    if (bias && bias.trim().length) chatCompletion.add(biasMessage);
 
-        total_count += handler_instance.count([impersonateMessage], true, 'impersonate');
-        await delay(1);
+    const exampleMessages = prepareExampleMessages(openai_msgs ,openai_msgs_example, power_user.pin_examples);
+    if (exampleMessages.length) chatCompletion.replace('dialogueExamples', exampleMessages);
+
+    // Handle impersonation
+    if (type === "impersonate") {
+        chatCompletion.insertBefore('chatHistory', 'impersonate', substituteParams(oai_settings.impersonation_prompt));
+        chatCompletion.remove('main');
     }
+
+    promptManager.updatePrompts(chatCompletion.getPromptsWithTokenCount());
+
+    // Save settings with updated token calculation and return context
+    return promptManager.saveServiceSettings().then(() => {
+        promptManager.render();
+
+        const openai_msgs_tosend = chatCompletion.getChat();
+        openai_messages_count = openai_msgs_tosend.filter(x => x.role === "user" || x.role === "assistant").length;
+
+        console.log("We're sending this:")
+        console.log(openai_msgs_tosend);
+
+        return openai_msgs_tosend;
+    });
+}
+
+function getGroupMembers(activeGroup) {
+    const groupMembers = activeGroup.find(x => x.id === selected_group)?.members;
+    let names = '';
+    if (Array.isArray(groupMembers)) {
+        names = groupMembers.map(member => characters.find(c => c.avatar === member)).filter(x => x).map(x => x.name);
+        names = names.join(', ')
+    }
+
+    return names;
+}
 
     if (quietPrompt) {
         const quietPromptMessage = { role: 'system', content: quietPrompt };
@@ -449,12 +446,17 @@ async function prepareOpenAIMessages({ systemPrompt, name2, storyString, worldIn
         await delay(1);
     }
 
+function prepareExampleMessages(messages, exampleMessages, includeAll = false, ) {
     // The user wants to always have all example messages in the context
-    if (power_user.pin_examples) {
+    let examples_tosend = [];
+    let total_count = 0;
+    const new_chat_msg = {role: 'system', content: '[Start new chat]'}
+
+    if (includeAll) {
         // first we send *all* example messages
         // we don't check their token size since if it's bigger than the context, the user is fucked anyway
         // and should've have selected that option (maybe have some warning idk, too hard to add)
-        for (const element of openai_msgs_example) {
+        for (const element of exampleMessages) {
             // get the current example block with multiple user/bot messages
             let example_block = element;
             // add the first message from the user to tell the model that it's a new dialogue
@@ -466,58 +468,48 @@ async function prepareOpenAIMessages({ systemPrompt, name2, storyString, worldIn
                 examples_tosend.push(example);
             }
         }
-        total_count += handler_instance.count(examples_tosend, true, 'examples');
-        await delay(1);
+
         // go from newest message to oldest, because we want to delete the older ones from the context
-        for (let j = openai_msgs.length - 1; j >= 0; j--) {
-            let item = openai_msgs[j];
+        for (let j = messages.length - 1; j >= 0; j--) {
+            let item = messages[j];
             let item_count = handler_instance.count(item, true, 'conversation');
-            await delay(1);
             // If we have enough space for this message, also account for the max assistant reply size
-            if ((total_count + item_count) < (this_max_context - oai_settings.openai_max_tokens)) {
-                openai_msgs_tosend.push(item);
-                total_count += item_count;
-            }
-            else {
+            if ((total_count + item_count) < (oai_settings.openai_max_context - oai_settings.openai_max_tokens)) {
+                messages.push(item);
+            } else {
                 // early break since if we still have more messages, they just won't fit anyway
                 handler_instance.uncount(item_count, 'conversation');
                 break;
             }
         }
     } else {
-        for (let j = openai_msgs.length - 1; j >= 0; j--) {
-            let item = openai_msgs[j];
+        for (let j = messages.length - 1; j >= 0; j--) {
+            let item = messages[j];
             let item_count = handler_instance.count(item, true, 'conversation');
-            await delay(1);
             // If we have enough space for this message, also account for the max assistant reply size
-            if ((total_count + item_count) < (this_max_context - oai_settings.openai_max_tokens)) {
-                openai_msgs_tosend.push(item);
-                total_count += item_count;
-            }
-            else {
+            if ((total_count + item_count) < (oai_settings.openai_max_context - oai_settings.openai_max_tokens)) {
+                messages.push(item);
+            } else {
                 // early break since if we still have more messages, they just won't fit anyway
                 handler_instance.uncount(item_count, 'conversation');
                 break;
             }
         }
 
-        //console.log(total_count);
-
         // each example block contains multiple user/bot messages
-        for (let example_block of openai_msgs_example) {
-            if (example_block.length == 0) { continue; }
+        for (let example_block of exampleMessages) {
+            if (example_block.length == 0) {
+                continue;
+            }
 
             // include the heading
             example_block = [new_chat_msg, ...example_block];
 
             // add the block only if there is enough space for all its messages
             const example_count = handler_instance.count(example_block, true, 'examples');
-            await delay(1);
-            if ((total_count + example_count) < (this_max_context - oai_settings.openai_max_tokens)) {
+            if ((total_count + example_count) < (oai_settings.openai_max_context - oai_settings.openai_max_tokens)) {
                 examples_tosend.push(...example_block)
-                total_count += example_count;
-            }
-            else {
+            } else {
                 // early break since more examples probably won't fit anyway
                 handler_instance.uncount(example_count, 'examples');
                 break;
@@ -525,58 +517,7 @@ async function prepareOpenAIMessages({ systemPrompt, name2, storyString, worldIn
         }
     }
 
-    const chatCompletion = promptManager.getChatCompletion();
-
-    chatCompletion.replace('worldInfoBefore', {role: "system", content: wiBefore});
-    chatCompletion.replace('worldInfoAfter', {role: "system", content: wiAfter});
-    chatCompletion.replace('characterInfo', {role: 'system', content: characterInfo});
-    chatCompletion.replace('newExampleChat', new_chat_msg);
-    chatCompletion.replace('newMainChat', new_chat_msg);
-    chatCompletion.replace('chatHistory', openai_msgs);
-
-    const flattenedExampleMessages = 0 !== openai_msgs_example.length ? openai_msgs_example.reduce( (examples, obj) => [...examples, ...obj]) : [];
-    chatCompletion.replace('dialogueExamples', flattenedExampleMessages);
-
-    chatCompletion.insertAfter('characterInfo', 'enhancedDefinitions', {role: 'system', content: enhance_definitions_prompt});
-    chatCompletion.insertAfter('worldInfoAfter', 'extensionPrompt', extensionPrompt);
-
-
-    openai_messages_count = openai_msgs_tosend.filter(x => x.role == "user" || x.role == "assistant").length + openai_narrator_messages_count;
-    // reverse the messages array because we had the newest at the top to remove the oldest,
-    // now we want proper order
-    //openai_msgs_tosend.reverse();
-    //openai_msgs_tosend = [prompt_msg, ...examples_tosend, new_chat_msg, ...openai_msgs_tosend]
-
-    openai_msgs_tosend = chatCompletion.getChat();
-
-    //console.log("We're sending this:")
-    //console.log(openai_msgs_tosend);
-    //console.log(`Calculated the total context to be ${total_count} tokens`);
-    handler_instance.log();
-    return [
-        openai_msgs_tosend,
-        handler_instance.counts,
-    ];
-}
-
-function getSystemPrompt(systemPrompt, nsfw_toggle_prompt, enhance_definitions_prompt, wiBefore, storyString, wiAfter, extensionPrompt, isImpersonate) {
-    // If the character has a custom system prompt AND user has it preferred, use that instead of the default
-    let prompt = power_user.prefer_character_prompt && systemPrompt ? systemPrompt : oai_settings.main_prompt;
-    let whole_prompt = [];
-
-    if (isImpersonate) {
-        whole_prompt = [nsfw_toggle_prompt, enhance_definitions_prompt + "\n\n" + wiBefore, storyString, wiAfter, extensionPrompt];
-    }
-    else {
-        // If it's toggled, NSFW prompt goes first.
-        if (oai_settings.nsfw_first) {
-            whole_prompt = [nsfw_toggle_prompt, prompt, enhance_definitions_prompt + "\n\n" + wiBefore, storyString, wiAfter, extensionPrompt];
-        }
-        else {
-            whole_prompt = [prompt, nsfw_toggle_prompt, enhance_definitions_prompt, "\n", wiBefore, storyString, wiAfter, extensionPrompt].filter(elem => elem);
-        }
-    }
-    return whole_prompt;
+    return examples_tosend;
 }
 
 function tryParseStreamingError(response, decoded) {
@@ -1129,9 +1070,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.chat_completion_source = settings.chat_completion_source ?? default_settings.chat_completion_source;
     oai_settings.api_url_scale = settings.api_url_scale ?? default_settings.api_url_scale;
 
-    if (0 === settings.prompts.length) oai_settings.prompts = default_settings.prompts;
-    else oai_settings.prompts = settings.prompts
-
+    oai_settings.prompts = settings.prompts ?? []
     oai_settings.prompt_lists = settings.prompt_lists ?? [];
     oai_settings.prompt_manager_settings = settings.prompt_manager_settings ?? [];
 
