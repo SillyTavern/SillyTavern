@@ -281,8 +281,12 @@ PromptManagerModule.prototype.sanitizeServiceSettings = function () {
 };
 
 PromptManagerModule.prototype.recalculateTokens = function () {
-    (this.serviceSettings.prompts ?? []).forEach(prompt => prompt.calculated_tokens = this.getTokenCountForPrompt(prompt));
+    (this.serviceSettings.prompts ?? []).forEach(prompt => prompt.calculated_tokens = (true === prompt.marker ?  prompt.calculated_tokens : this.getTokenCountForPrompt(prompt)));
 };
+
+PromptManagerModule.prototype.recalculateTotalActiveTokens = function () {
+    this.totalActiveTokens = this.getPromptsForCharacter(this.activeCharacter, true).reduce((sum, prompt) => sum + Number(prompt.calculated_tokens), 0);
+}
 
 PromptManagerModule.prototype.getTokenCountForPrompt = function (prompt) {
     if (!prompt.role || !prompt.content) return 0;
@@ -294,10 +298,6 @@ PromptManagerModule.prototype.getTokenCountForPrompt = function (prompt) {
 
 PromptManagerModule.prototype.isPromptDeletionAllowed = function (prompt) {
     return false === prompt.system_prompt;
-}
-
-PromptManagerModule.prototype.recalculateTotalActiveTokens = function () {
-    this.totalActiveTokens = this.getPromptsForCharacter(this.activeCharacter, true).reduce((sum, prompt) => sum + Number(prompt.calculated_tokens), 0);
 }
 
 PromptManagerModule.prototype.handleCharacterSelected = function (event) {
@@ -315,7 +315,7 @@ PromptManagerModule.prototype.getPromptsForCharacter = function (character, only
         .filter(prompt => null !== prompt);
 }
 
-// Get the prompt order for a given character, otherwise an empty array is returned. 
+// Get the prompt order for a given character, otherwise an empty array is returned.
 PromptManagerModule.prototype.getPromptListByCharacter = function (character) {
     return character === null ? [] : (this.serviceSettings.prompt_lists.find(list => String(list.character_id) === String(character.id))?.list ?? []);
 }
@@ -514,16 +514,13 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
     const nameSpan = document.createElement('span');
     nameSpan.textContent = 'Name';
 
-    const roleSpan = document.createElement('span');
-    roleSpan.textContent = 'Role';
-
     const tokensSpan = document.createElement('span');
+    tokensSpan.classList.add('prompt_manager_prompt_tokens');
     tokensSpan.textContent = 'Tokens';
 
     promptManagerListHead.appendChild(nameSpan);
-    promptManagerListHead.appendChild(roleSpan);
-    promptManagerListHead.appendChild(tokensSpan);
     promptManagerListHead.appendChild(document.createElement('span'));
+    promptManagerListHead.appendChild(tokensSpan);
 
     promptManagerList.appendChild(promptManagerListHead);
 
@@ -543,21 +540,13 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
             if (prompt.identifier !== 'newMainChat' &&
                 prompt.identifier !== 'chatHistory' &&
                 false === advancedEnabled) return;
-
-            const listItem = document.createElement('li');
-            listItem.classList.add(this.configuration.prefix + 'prompt_manager_prompt', this.configuration.prefix + 'prompt_manager_marker');
-            listItem.classList.add('dropAllowed');
-            if (true === draggableEnabled) listItem.classList.add('draggable');
-            listItem.setAttribute('draggable', String(draggableEnabled));
-            listItem.setAttribute('data-pm-identifier', prompt.identifier);
-            listItem.textContent = prompt.name;
-            promptManagerList.appendChild(listItem);
-            return;
         }
 
         const listItem = document.createElement('li');
         listItem.classList.add(this.configuration.prefix + 'prompt_manager_prompt');
         if (true === draggableEnabled) listItem.classList.add('draggable');
+
+        if (prompt.marker) listItem.classList.add(this.configuration.prefix + 'prompt_manager_marker');
 
         const listEntry = this.getPromptListEntry(this.activeCharacter, prompt.identifier);
         if (false === listEntry.enabled) listItem.classList.add(this.configuration.prefix + 'prompt_manager_prompt_disabled');
@@ -569,15 +558,14 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
         nameSpan.setAttribute('data-pm-name', prompt.name);
         nameSpan.textContent = prompt.name;
 
-        const roleSpan = document.createElement('span');
-        roleSpan.setAttribute('data-pm-role', prompt.role);
-        roleSpan.textContent = prompt.role;
 
         const tokensSpan = document.createElement('span');
+        tokensSpan.classList.add('prompt_manager_prompt_tokens')
         tokensSpan.setAttribute('data-pm-tokens', prompt.calculated_tokens);
-        tokensSpan.textContent = prompt.calculated_tokens;
+        tokensSpan.textContent = prompt.calculated_tokens ? prompt.calculated_tokens : '-';
 
         const actionsSpan = document.createElement('span');
+        actionsSpan.classList.add('prompt_manager_prompt_controls');
 
         // Don't add delete control to system prompts
         if (true === this.isPromptDeletionAllowed(prompt)) {
@@ -607,9 +595,9 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
         controlSpan.append(actionsSpan)
 
         listItem.appendChild(nameSpan);
-        listItem.appendChild(roleSpan);
+        if (prompt.marker) listItem.appendChild(document.createElement('span'));
+        else listItem.appendChild(controlSpan);
         listItem.appendChild(tokensSpan);
-        listItem.appendChild(controlSpan);
 
         promptManagerList.appendChild(listItem);
     });
