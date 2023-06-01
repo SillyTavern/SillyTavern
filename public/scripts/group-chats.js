@@ -602,6 +602,14 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
                         await delay(100);
                     }
                 }
+                else if (isStreamingEnabled()) {
+                    if (streamingProcessor && !streamingProcessor.isFinished) {
+                        await delay(100);
+                    } else {
+                        messagesBefore++;
+                        break;
+                    }
+                }
                 else {
                     messagesBefore++;
                     break;
