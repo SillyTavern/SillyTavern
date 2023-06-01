@@ -2,3 +2,15 @@
     font-weight: 600;
     color: orange;
 }
+
+.objective_block {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    column-gap: 10px;
+}
+
+.objective_block_control small,
+.objective_block_control label {
+    width: max-content;
+}
