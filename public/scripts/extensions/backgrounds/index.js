@@ -1,4 +1,4 @@
-import { getContext } from "../../extensions.js";
+import { getContext, saveMetadataDebounced } from "../../extensions.js";
 export { MODULE_NAME };
 
 const MODULE_NAME = 'backgrounds';
@@ -51,13 +51,13 @@ function hasCustomBackground() {
 function saveBackgroundMetadata(file) {
     const context = getContext();
     context.chatMetadata[METADATA_KEY] = file;
-    context.saveMetadata();
+    saveMetadataDebounced();
 }
 
 function removeBackgroundMetadata() {
     const context = getContext();
     delete context.chatMetadata[METADATA_KEY];
-    context.saveMetadata();
+    saveMetadataDebounced();
 }
 
 function setCustomBackground() {

@@ -1,15 +1,13 @@
 import { chat_metadata } from "../../../script.js";
-import { getContext, extension_settings } from "../../extensions.js";
+import { getContext, extension_settings, saveMetadataDebounced } from "../../extensions.js";
 import {
     substituteParams,
     eventSource,
     event_types,
 } from "../../../script.js";
-import { debounce } from "../../utils.js";
 
 const MODULE_NAME = "Objective"
 
-const saveMetadataDebounced = debounce(async () => await context.saveMetadata(), 1000);
 
 let globalObjective = ""
 let globalTasks = []

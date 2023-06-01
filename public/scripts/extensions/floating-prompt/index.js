@@ -1,10 +1,7 @@
 import { chat_metadata, saveSettingsDebounced } from "../../../script.js";
-import { ModuleWorkerWrapper, extension_settings, getContext } from "../../extensions.js";
+import { ModuleWorkerWrapper, extension_settings, getContext, saveMetadataDebounced } from "../../extensions.js";
 import { registerSlashCommand } from "../../slash-commands.js";
-import { debounce } from "../../utils.js";
 export { MODULE_NAME };
-
-const saveMetadataDebounced = debounce(async () => await getContext().saveMetadata(), 1000);
 
 const MODULE_NAME = '2_floating_prompt'; // <= Deliberate, for sorting lower than memory
 const UPDATE_INTERVAL = 1000;

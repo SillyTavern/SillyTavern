@@ -1,5 +1,5 @@
 import { callPopup, eventSource, event_types, saveSettings, saveSettingsDebounced } from "../script.js";
-import { isSubsetOf } from "./utils.js";
+import { isSubsetOf, debounce } from "./utils.js";
 export {
     getContext,
     getApiUrl,
@@ -14,6 +14,7 @@ export {
 let extensionNames = [];
 let manifests = [];
 const defaultUrl = "http://localhost:5100";
+export const saveMetadataDebounced = debounce(async () => await getContext().saveMetadata(), 1000);
 
 // Disables parallel updates
 class ModuleWorkerWrapper {
