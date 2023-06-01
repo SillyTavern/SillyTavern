@@ -26,6 +26,7 @@ import {
     setWorldInfoSettings,
     deleteWorldInfo,
     world_info_recursive,
+    world_info_case_sensitive,
 } from "./scripts/world-info.js";
 
 import {
