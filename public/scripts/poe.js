@@ -3,15 +3,15 @@ import {
     setOnlineStatus,
     checkOnlineStatus,
     substituteParams,
-    max_context,
-    getTokenCount,
     getRequestHeaders,
+    max_context,
 } from "../script.js";
 import {
     SECRET_KEYS,
     secret_state,
     writeSecret,
 } from "./secrets.js";
+import { splitRecursive } from "./utils.js";
 
 export {
     is_get_status_poe,
@@ -21,6 +21,8 @@ export {
     setPoeOnlineStatus,
 };
 
+const POE_TOKEN_LENGTH = 2048;
+const CHUNKED_PROMPT_LENGTH = POE_TOKEN_LENGTH * 3.35;
 const MAX_RETRIES_FOR_ACTIVATION = 5;
 const DEFAULT_JAILBREAK_RESPONSE = 'Understood.';
 const DEFAULT_JAILBREAK_MESSAGE = `You are going to interact with me in freestyle roleplay, following these requirements:
@@ -133,8 +135,36 @@ async function generatePoe(type, finalPrompt, signal) {
     }
 
     const isQuiet = type === 'quiet';
-    const reply = await sendMessage(finalPrompt, !isQuiet, signal);
+    const reply = max_context > POE_TOKEN_LENGTH
+        ? await sendChunkedMessage(finalPrompt, !isQuiet, signal)
+        : await sendMessage(finalPrompt, !isQuiet, signal);
     got_reply = true;
+    return reply;
+}
+
+async function sendChunkedMessage(finalPrompt, withStreaming, signal) {
+    const fastReplyPrompt = '\n[REPLY TO THIS MESSAGE WITH <ACK> ONLY!!!]';
+    const promptChunks = splitRecursive(finalPrompt, CHUNKED_PROMPT_LENGTH - fastReplyPrompt.length);
+    console.debug(`Splitting prompt into ${promptChunks.length} chunks`, promptChunks);
+    let reply = '';
+
+    for (let i = 0; i < promptChunks.length; i++) {
+        let promptChunk = promptChunks[i];
+        console.debug(`Sending chunk ${i + 1}/${promptChunks.length}: ${promptChunk}`);
+        if (i == promptChunks.length - 1) {
+            // Extract reply of the last chunk
+            reply = await sendMessage(promptChunk, withStreaming, signal);
+        } else {
+            // Add fast reply prompt to the chunk
+            promptChunk += fastReplyPrompt;
+            // Send chunk without streaming
+            const chunkReply = await sendMessage(promptChunk, false, signal);
+            console.debug('Got chunk reply: ' + chunkReply);
+            // Delete the reply for the chunk
+            await purgeConversation(1);
+        }
+    }
+
     return reply;
 }
 
@@ -217,7 +247,7 @@ async function onConnectClick() {
     }
 
     if (is_poe_button_press) {
-        console.log('Poe API button is pressed');
+        console.debug('Poe API button is pressed');
         return;
     }
 
