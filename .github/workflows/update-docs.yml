@@ -29,11 +29,15 @@ jobs:
         cp readme.md SillyTavern-Docs/readme.md
         cp public/notes/update.md SillyTavern-Docs/update.md
 
-    - name: Commit and push changes to SillyTavern-Docs
-      run: |
-        cd SillyTavern-Docs
-        git config --global user.email "github-actions[bot]@users.noreply.github.com"
-        git config --global user.name "GitHub Actions"
-        git add guidebook.md faq.md README.md
-        git commit -m "Update guidebook, faq and README files"
-        git push
+    - name: Deploy to external repository
+      uses: cpina/github-action-push-to-another-repository@main
+      env:
+        SSH_DEPLOY_KEY: ${{ secrets.SSH_DEPLOY_KEY }
+      with:
+          # GitHub Action output files
+          source-directory: SillyTavern-Docs/
+          destination-github-username: SillyTavern
+          destination-repository-name: SillyTavern-Docs
+          user-email: github-actions[bot]@users.noreply.github.com
+          user-name: "GitHub Actions"
+          target-branch: "main"
