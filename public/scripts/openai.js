@@ -56,6 +56,7 @@ export {
 let openai_msgs = [];
 let openai_msgs_example = [];
 let openai_messages_count = 0;
+let openai_narrator_messages_count = 0;
 
 let is_get_status_openai = false;
 let is_api_button_press_openai = false;
@@ -175,6 +176,7 @@ function setOpenAIMessages(chat) {
     let j = 0;
     // clean openai msgs
     openai_msgs = [];
+    openai_narrator_messages_count = 0;
     for (let i = chat.length - 1; i >= 0; i--) {
         let role = chat[j]['is_user'] ? 'user' : 'assistant';
         let content = chat[j]['mes'];
@@ -182,6 +184,7 @@ function setOpenAIMessages(chat) {
         // 100% legal way to send a message as system
         if (chat[j].extra?.type === system_message_types.NARRATOR) {
             role = 'system';
+            openai_narrator_messages_count++;
         }
 
         // for groups or sendas command - prepend a character's name
@@ -457,7 +460,7 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
         }
     }
 
-    openai_messages_count = openai_msgs_tosend.filter(x => x.role == "user" || x.role == "assistant").length;
+    openai_messages_count = openai_msgs_tosend.filter(x => x.role == "user" || x.role == "assistant").length + openai_narrator_messages_count;
     // reverse the messages array because we had the newest at the top to remove the oldest,
     // now we want proper order
     openai_msgs_tosend.reverse();
