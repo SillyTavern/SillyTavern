@@ -5,8 +5,11 @@ import {
     eventSource,
     event_types,
 } from "../../../script.js";
+import { debounce } from "../../utils.js";
 
 const MODULE_NAME = "Objective"
+
+const saveMetadataDebounced = debounce(async () => await context.saveMetadata(), 1000);
 
 let globalObjective = ""
 let globalTasks = []
@@ -201,7 +204,7 @@ function saveState() {
         hideTasks: $('#objective-hide-tasks').prop('checked'),
     }
 
-    context.saveMetadata();
+    saveMetadataDebounced();
 }
 
 // Dump core state

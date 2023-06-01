@@ -28,7 +28,9 @@ process.chdir(directory);
 const express = require('express');
 const compression = require('compression');
 const app = express();
+const responseTime = require('response-time')
 app.use(compression());
+app.use(responseTime());
 
 const fs = require('fs');
 const readline = require('readline');

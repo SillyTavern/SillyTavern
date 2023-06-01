@@ -108,19 +108,29 @@ async function disableExtension(name) {
 
 async function getManifests(names) {
     const obj = {};
-    for (const name of names) {
-        const response = await fetch(`/scripts/extensions/${name}/manifest.json`);
+    const promises = [];
 
-        if (response.ok) {
-            const json = await response.json();
-            obj[name] = json;
-        }
+    for (const name of names) {
+        const promise = new Promise((resolve, reject) => {
+            fetch(`/scripts/extensions/${name}/manifest.json`).then(async response => {
+                if (response.ok) {
+                    const json = await response.json();
+                    obj[name] = json;
+                    resolve();
+                }
+            }).catch(err => reject() && console.log('Could not load manifest.json for ' + name, err));
+        });
+
+        promises.push(promise);
     }
+
+    await Promise.allSettled(promises);
     return obj;
 }
 
 async function activateExtensions() {
     const extensions = Object.entries(manifests).sort((a, b) => a[1].loading_order - b[1].loading_order);
+    const promises = [];
 
     for (let entry of extensions) {
         const name = entry[0];
@@ -138,9 +148,11 @@ async function activateExtensions() {
                 const li = document.createElement('li');
 
                 if (!isDisabled) {
-                    await addExtensionScript(name, manifest);
-                    await addExtensionStyle(name, manifest);
-                    activeExtensions.add(name);
+                    const promise = Promise.all([addExtensionScript(name, manifest), addExtensionStyle(name, manifest)]);
+                    promise
+                        .then(() => activeExtensions.add(name))
+                        .catch(err => console.log('Could not activate extension: ' + name, err));
+                    promises.push(promise);
                 }
                 else {
                     li.classList.add('disabled');
@@ -157,6 +169,8 @@ async function activateExtensions() {
             }
         }
     }
+
+    await Promise.allSettled(promises);
 }
 
 async function connectClickHandler() {
@@ -353,7 +367,7 @@ async function runGenerationInterceptors(chat) {
         if (typeof window[interceptorKey] === 'function') {
             try {
                 await window[interceptorKey](chat);
-            } catch(e) {
+            } catch (e) {
                 console.error(`Failed running interceptor for ${manifest.display_name}`, e);
             }
         }
