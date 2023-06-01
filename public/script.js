@@ -2032,7 +2032,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         let mesSend = [];
         console.log('calling runGenerate');
         streamingProcessor = isStreamingEnabled() ? new StreamingProcessor(type, force_name2) : false;
-        await runGenerate();
+        runGenerate();
 
         async function runGenerate(cycleGenerationPromt = '') {
             is_send_press = true;
