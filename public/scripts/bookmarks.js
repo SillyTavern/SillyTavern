@@ -258,7 +258,7 @@ async function convertSoloToGroupChat() {
         }
 
         // Skip messages we don't care about
-        if (message.is_user || message.is_system) {
+        if (message.is_user || message.is_system || message.extra?.type === system_message_types.NARRATOR || message.force_avatar !== undefined) {
             continue;
         }
 
