@@ -516,7 +516,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
             setCharacterId(chId);
             setCharacterName(characters[chId].name)
 
-            Generate(generateType, { automatic_trigger: by_auto_mode, ...(params || {}) });
+            await Generate(generateType, { automatic_trigger: by_auto_mode, ...(params || {}) });
 
             if (type !== "swipe" && type !== "impersonate" && !isMultigenEnabled() && !isStreamingEnabled()) {
                 // update indicator and scroll down
