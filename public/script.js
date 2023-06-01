@@ -280,11 +280,11 @@ let fav_ch_checked = false;
 //initialize global var for future cropped blobs
 let currentCroppedAvatar = '';
 
-const durationSaveEdit = 500;
+const durationSaveEdit = 1000;
 const saveSettingsDebounced = debounce(() => saveSettings(), durationSaveEdit);
 const saveCharacterDebounced = debounce(() => $("#create_button").trigger('click'), durationSaveEdit);
 const getStatusDebounced = debounce(() => getStatus(), 90000);
-const saveChatDebounced = debounce(() => saveChatConditional(), 1000);
+const saveChatDebounced = debounce(() => saveChatConditional(), durationSaveEdit);
 
 const system_message_types = {
     HELP: "help",
