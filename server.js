@@ -2193,7 +2193,12 @@ app.post('/purge_poe', jsonParser, async (request, response) => {
 
     try {
         const client = await getPoeClient(token, true);
-        await client.purge_conversation(bot, count);
+        if (count > 0) {
+            await client.purge_conversation(bot, count);
+        }
+        else {
+            await client.send_chat_break(bot);
+        }
         client.disconnect_ws();
 
         return response.send({ "ok": true });
