@@ -276,15 +276,6 @@ PromptManagerModule.prototype.addPrompt = function (prompt, identifier) {
 
 PromptManagerModule.prototype.sanitizeServiceSettings = function () {
     this.serviceSettings.prompts.forEach((prompt => prompt.identifier = prompt.identifier || this.getUuidv4()));
-    const hasFaultyPositions = this.serviceSettings.prompts.some((prompt => prompt.position));
-    if (hasFaultyPositions) {
-        this.serviceSettings.prompts.sort((a, b) => (a.identifier > b.identifier) ? 1 : -1);
-
-        for (let i = 0; i < this.serviceSettings.prompts.length; i++) {
-            this.serviceSettings.prompts[i].position = String(i + 1);
-        }
-    }
-
     // TODO:
     // Sanitize data
 };
