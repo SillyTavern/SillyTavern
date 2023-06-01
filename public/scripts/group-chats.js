@@ -512,6 +512,8 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
             setCharacterId(chId);
             setCharacterName(characters[chId].name)
 
+            Generate(generateType, { automatic_trigger: by_auto_mode, ...(params || {}) });
+
             if (type !== "swipe" && type !== "impersonate" && !isMultigenEnabled() && !isStreamingEnabled()) {
                 // update indicator and scroll down
                 typingIndicator
@@ -522,8 +524,6 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
                     typingIndicator.get(0).scrollIntoView({ behavior: "smooth" });
                 });
             }
-
-            Generate(generateType, { automatic_trigger: by_auto_mode, ...(params || {}) });
 
             // TODO: This is awful. Refactor this
             while (true) {
