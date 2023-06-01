@@ -85,8 +85,7 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
 
     this.handleAdvancedSettingsToggle = () => {
         this.serviceSettings.prompt_manager_settings.showAdvancedSettings = !this.serviceSettings.prompt_manager_settings.showAdvancedSettings
-        this.saveServiceSettings();
-        this.render();
+        this.saveServiceSettings().then(() => this.render());
     }
 
     // Enable and disable prompts
@@ -95,8 +94,7 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
         const promptListEntry = this.getPromptListEntry(this.activeCharacter, promptID);
 
         promptListEntry.enabled = !promptListEntry.enabled;
-        this.saveServiceSettings();
-        this.render();
+        this.saveServiceSettings().then(() => this.render());
     };
 
     // Open edit form and load selected prompt
@@ -118,8 +116,7 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
         this.detachPrompt(prompt, this.activeCharacter);
         this.hideEditForm();
         this.clearEditForm();
-        this.saveServiceSettings();
-        this.render();
+        this.saveServiceSettings().then(() => this.render());
     };
 
     // Save prompt edit form to settings and close form.
@@ -130,10 +127,9 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
         if (null === prompt) this.addPrompt(prompt, promptId);
         else this.updatePrompt(prompt);
 
-        this.clearEditForm(prompt);
-        this.saveServiceSettings();
         this.hideEditForm();
-        this.render();
+        this.clearEditForm(prompt);
+        this.saveServiceSettings().then(() => this.render());
     }
 
     this.handleAppendPrompt = (event) => {
@@ -141,9 +137,7 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
         const prompt = this.getPromptById(promptID);
 
         this.appendPrompt(prompt, this.activeCharacter);
-        this.saveServiceSettings();
-        this.saveServiceSettings()
-        this.render();
+        this.saveServiceSettings().then(() => this.render());
     }
 
     // Delete selected prompt from list form and close edit form
@@ -156,8 +150,7 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
             this.serviceSettings.prompts.splice(Number(promptIndex), 1);
             this.hideEditForm();
             this.clearEditForm();
-            this.saveServiceSettings();
-            this.render();
+            this.saveServiceSettings().then(() => this.render());
         }
     };
 
@@ -177,8 +170,7 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
     // Re-render when the character changes.
     document.addEventListener('characterSelected', (event) => {
         this.handleCharacterSelected(event)
-        this.saveServiceSettings();
-        this.render();
+        this.saveServiceSettings().then(() => this.render());
     });
 
     // Prepare prompt edit form save and close button.

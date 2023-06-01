@@ -19,6 +19,7 @@ import {
     getRequestHeaders,
     system_message_types,
     replaceBiasMarkup,
+    saveSettings
 } from "../script.js";
 import {groups, selected_group} from "./group-chats.js";
 
