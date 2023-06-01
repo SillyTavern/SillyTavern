@@ -231,6 +231,18 @@ PromptManagerModule.prototype.updatePrompt = function (prompt) {
     prompt.content = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_prompt').value;
 }
 
+PromptManagerModule.prototype.updatePromptByIdentifier = function (identifier, updatePrompt) {
+    let prompt = this.serviceSettings.prompts.find((item) => identifier === item.identifier);
+    if (prompt) prompt = Object.assign(prompt, updatePrompt);
+}
+
+PromptManagerModule.prototype.updatePrompts = function (prompts) {
+    prompts.forEach((update) => {
+        let prompt = this.getPromptById(update.identifier);
+        if (prompt) Object.assign(prompt, update);
+    })
+}
+
 // Add a prompt to the current characters prompt list
 PromptManagerModule.prototype.appendPrompt = function (prompt, character) {
     const promptList = this.getPromptListByCharacter(character);
