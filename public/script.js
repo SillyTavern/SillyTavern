@@ -1766,8 +1766,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         abortController = new AbortController();
     }
 
+    // OpenAI doesn't need instruct mode. Use OAI main prompt instead.
+    const isInstruct = power_user.instruct.enabled && main_api !== 'openai';
     const isImpersonate = type == "impersonate";
-    const isInstruct = power_user.instruct.enabled;
 
     message_already_generated = isImpersonate ? `${name1}: ` : `${name2}: `;
     // Name for the multigen prefix
@@ -2387,7 +2388,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                             $('#send_textarea').val(extract.getMessage).trigger('input');
                         }
 
-                        if (shouldContinueMultigen(getMessage, isImpersonate)) {
+                        if (shouldContinueMultigen(getMessage, isImpersonate, isInstruct)) {
                             hideSwipeButtons();
                             tokens_already_generated += this_amount_gen;            // add new gen amt to any prev gen counter..
                             getMessage = message_already_generated;
@@ -3026,8 +3027,8 @@ function getGenerateUrl() {
     return generate_url;
 }
 
-function shouldContinueMultigen(getMessage, isImpersonate) {
-    if (power_user.instruct.enabled && power_user.instruct.stop_sequence) {
+function shouldContinueMultigen(getMessage, isImpersonate, isInstruct) {
+    if (isInstruct && power_user.instruct.stop_sequence) {
         if (message_already_generated.indexOf(power_user.instruct.stop_sequence) !== -1) {
             return false;
         }
@@ -3153,17 +3154,17 @@ function cleanUpMessage(getMessage, isImpersonate, displayIncompleteSentences = 
     }
     if (getMessage.indexOf('<|endoftext|>') != -1) {
         getMessage = getMessage.substr(0, getMessage.indexOf('<|endoftext|>'));
-
     }
-    if (power_user.instruct.enabled && power_user.instruct.stop_sequence) {
+    const isInstruct = power_user.instruct.enabled && main_api !== 'openai';
+    if (isInstruct && power_user.instruct.stop_sequence) {
         if (getMessage.indexOf(power_user.instruct.stop_sequence) != -1) {
             getMessage = getMessage.substring(0, getMessage.indexOf(power_user.instruct.stop_sequence));
         }
     }
-    if (power_user.instruct.enabled && power_user.instruct.input_sequence && isImpersonate) {
+    if (isInstruct && power_user.instruct.input_sequence && isImpersonate) {
         getMessage = getMessage.replaceAll(power_user.instruct.input_sequence, '');
     }
-    if (power_user.instruct.enabled && power_user.instruct.output_sequence && !isImpersonate) {
+    if (isInstruct && power_user.instruct.output_sequence && !isImpersonate) {
         getMessage = getMessage.replaceAll(power_user.instruct.output_sequence, '');
     }
     // clean-up group message from excessive generations
