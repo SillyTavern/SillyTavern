@@ -1,0 +1,39 @@
+name: Update SillyTavern-Docs
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  update_docs:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout current repository
+      uses: actions/checkout@v2
+
+    - name: Checkout SillyTavern-Docs repository
+      uses: actions/checkout@v2
+      with:
+        repository: SillyTavern/SillyTavern-Docs
+        path: SillyTavern-Docs
+
+    - name: Clone SillyTavern wiki into SillyTavern-Docs/wiki
+      run: git clone https://github.com/SillyTavern/SillyTavern.wiki.git SillyTavern-Docs/wiki
+
+    - name: Copy files
+      run: |
+        cp public/notes/content.md SillyTavern-Docs/guidebook.md
+        cp faq.md SillyTavern-Docs/faq.md
+        cp README.md SillyTavern-Docs/README.md
+        cp public/notes/update.md SillyTavern-Docs/update.md
+
+    - name: Commit and push changes to SillyTavern-Docs
+      run: |
+        cd SillyTavern-Docs
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git config --global user.name "GitHub Actions"
+        git add guidebook.md faq.md README.md
+        git commit -m "Update guidebook, faq and README files"
+        git push
