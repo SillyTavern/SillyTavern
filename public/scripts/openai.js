@@ -384,12 +384,24 @@ async function prepareOpenAIMessages({ systemPrompt, name2, storyString, worldIn
         chatCompletion.insertAfter('newMainChat', 'groupNudgeMessage', groupNudgeMessage);
     }
 
+    // Handle enhanced definitions
     if (oai_settings.enhance_definitions) chatCompletion.insertAfter('characterInfo', 'enhancedDefinitions', enhanceDefinitionMessage);
+
+    // Handle extension prompt
     if (extensionPrompt) chatCompletion.insertAfter('worldInfoAfter', 'extensionPrompt', extensionPrompt);
+
+    // Handle bias settings
     if (bias && bias.trim().length) chatCompletion.add(biasMessage);
 
+    // Handle chat examples
     const exampleMessages = prepareExampleMessages(openai_msgs ,openai_msgs_example, power_user.pin_examples);
     if (exampleMessages.length) chatCompletion.replace('dialogueExamples', exampleMessages);
+
+    // Handle quiet prompt
+    if (quietPrompt) {
+        const quietPromptMessage = chatCompletion.makeSystemMessage(quietPrompt);
+        chatCompletion.insertAfter('main', quietPromptMessage)
+    }
 
     // Handle impersonation
     if (type === "impersonate") {
@@ -408,6 +420,8 @@ async function prepareOpenAIMessages({ systemPrompt, name2, storyString, worldIn
 
         console.log("We're sending this:")
         console.log(openai_msgs_tosend);
+
+        // Integrate const handler_instance = new TokenHandler(countTokens);
 
         return openai_msgs_tosend;
     });
