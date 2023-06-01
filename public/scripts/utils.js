@@ -162,7 +162,7 @@ export function saveCaretPosition(element) {
         end: range.endOffset
     };
 
-    console.log('Caret saved', position);
+    console.debug('Caret saved', position);
 
     return position;
 }
@@ -174,7 +174,7 @@ export function restoreCaretPosition(element, position) {
         return;
     }
 
-    console.log('Caret restored', position);
+    console.debug('Caret restored', position);
 
     // Create a new range object
     const range = new Range();
