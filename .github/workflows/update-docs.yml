@@ -32,7 +32,7 @@ jobs:
     - name: Deploy to external repository
       uses: cpina/github-action-push-to-another-repository@main
       env:
-        SSH_DEPLOY_KEY: ${{ secrets.SSH_DEPLOY_KEY }
+        SSH_DEPLOY_KEY: ${{ secrets.SSH_DEPLOY_KEY }}
       with:
           # GitHub Action output files
           source-directory: SillyTavern-Docs/
