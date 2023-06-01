@@ -20,6 +20,7 @@ import {
     system_message_types,
     replaceBiasMarkup,
     is_send_press,
+    saveSettings,
     main_api,
 } from "../script.js";
 import {groups, selected_group} from "./group-chats.js";
