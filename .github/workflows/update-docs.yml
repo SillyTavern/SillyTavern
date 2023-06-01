@@ -26,7 +26,7 @@ jobs:
       run: |
         cp public/notes/content.md SillyTavern-Docs/guidebook.md
         cp faq.md SillyTavern-Docs/faq.md
-        cp README.md SillyTavern-Docs/README.md
+        cp readme.md SillyTavern-Docs/readme.md
         cp public/notes/update.md SillyTavern-Docs/update.md
 
     - name: Commit and push changes to SillyTavern-Docs
