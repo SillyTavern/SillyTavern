@@ -40,6 +40,26 @@ const ChatCompletion = {
                 const index = this.map.findIndex(message => message.identifier === identifier)
                 return -1 === index ? false : index;
             },
+            makeSystemMessage(content) {
+                return this.makeMessage('system', content);
+            },
+            makeUserMessage(content) {
+                return this.makeMessage('user', content);
+            },
+            makeAssistantMessage(content) {
+                return this.makeMessage('assistant', content);
+            },
+            makeMessage(role, content) {
+                return {role: role, content: content}
+            },
+            getPromptsWithTokenCount() {
+              return this.map.map((message) => {
+                  return { identifier: message.identifier, calculated_tokens: message.message ? countTokens(message.message) : 0}
+              });
+            },
+            getTotalTokenCount() {
+              return this.getPromptsWithTokenCount().reduce((acc, message) => acc += message.calculated_tokens, 0)
+            },
             getChat() {
                 return this.map.reduce((chat, item) => {
                     if (!item || !item.message || (false === Array.isArray(item.message) && !item.message.content)) return chat;
