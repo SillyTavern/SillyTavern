@@ -2284,14 +2284,21 @@ input[type="range"]::-webkit-slider-thumb {
     backdrop-filter: blur(var(--SmartThemeBlurStrength));
 }
 
-.mes_buttons {
-    height: 20px;
-    grid-row-start: 1;
+
+.mes_buttons,
+.extraMesButtons {
+    /* height: 20px; */
     position: relative;
     display: flex;
     gap: 10px;
     flex-wrap: nowrap;
     justify-content: flex-end;
+    transition: all 200ms;
+    overflow-x: hidden;
+}
+
+.extraMesButtons {
+    display: none;
 }
 
 .last_mes .mes_buttons {
@@ -2302,14 +2309,18 @@ input[type="range"]::-webkit-slider-thumb {
     margin-right: 30px;
 }
 
-.mes_buttons>div {
+.mes_buttons .mes_edit,
+.extraMesButtonsHint,
+.extraMesButtons div {
     cursor: pointer;
     transition: 0.3s ease-in-out;
     filter: drop-shadow(0px 0px 2px black);
     opacity: 0.2;
 }
 
-.mes_buttons>div:hover {
+.mes_buttons .mes_edit:hover,
+.extraMesButtonsHint:hover,
+.extraMesButtons div:hover {
     opacity: 1;
 }
 

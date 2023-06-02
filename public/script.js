@@ -6360,6 +6360,25 @@ $(document).ready(function () {
         }
     })
 
+    $(document).on("click", ".extraMesButtonsHint", function (e) {
+        const elmnt = e.target;
+        $(elmnt).transition({
+            opacity: 0,
+            duration: 150,
+            easing: 'ease-in-out',
+        });
+        setTimeout(function () {
+            $(elmnt).hide();
+            $(elmnt).siblings(".extraMesButtons").css('opcacity', '0');
+            $(elmnt).siblings(".extraMesButtons").css('display', 'flex');
+            $(elmnt).siblings(".extraMesButtons").transition({
+                opacity: 1,
+                duration: 150,
+                easing: 'ease-in-out',
+            });
+        }, 150);
+    })
+
     $(document).on("click", ".mes_edit_cancel", function () {
         let text = chat[this_edit_mes_id]["mes"];
 
