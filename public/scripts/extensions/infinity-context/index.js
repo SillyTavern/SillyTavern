@@ -1,10 +1,11 @@
 import { saveSettingsDebounced, getCurrentChatId, system_message_types, eventSource, event_types } from "../../../script.js";
 import { humanizedDateTime } from "../../RossAscends-mods.js";
 import { getApiUrl, extension_settings, getContext } from "../../extensions.js";
-import { getFileText, onlyUnique, splitRecursive } from "../../utils.js";
+import { getFileText, onlyUnique, splitRecursive, IndexedDBStore } from "../../utils.js";
 export { MODULE_NAME };
 
 const MODULE_NAME = 'chromadb';
+const dbStore = new IndexedDBStore('SillyTavern', MODULE_NAME);
 
 const defaultSettings = {
     strategy: 'original',
@@ -35,22 +36,21 @@ const postHeaders = {
     'Bypass-Tunnel-Reminder': 'bypass',
 };
 
-const chatStateFlags = {};
-
-function invalidateMessageSyncState(messageId) {
+async function invalidateMessageSyncState(messageId) {
     console.log('CHROMADB: invalidating message sync state', messageId);
-    const state = getChatSyncState();
-    state[messageId] = false;
+    const state = await getChatSyncState();
+    state[messageId] = 0;
+    await dbStore.put(getCurrentChatId(), state);
 }
 
-function getChatSyncState() {
+async function getChatSyncState() {
     const currentChatId = getCurrentChatId();
     if (!checkChatId(currentChatId)) {
         return;
     }
 
     const context = getContext();
-    const chatState = chatStateFlags[currentChatId] || [];
+    const chatState = (await dbStore.get(currentChatId)) || [];
 
     // if the chat length has decreased, it means that some messages were deleted
     if (chatState.length > context.chat.length) {
@@ -70,10 +70,10 @@ function getChatSyncState() {
     chatState.length = context.chat.length;
     for (let i = 0; i < chatState.length; i++) {
         if (chatState[i] === undefined) {
-            chatState[i] = false;
+            chatState[i] = 0;
         }
     }
-    chatStateFlags[currentChatId] = chatState;
+    await dbStore.put(currentChatId, chatState);
 
     return chatState;
 }
@@ -144,12 +144,12 @@ async function addMessages(chat_id, messages) {
     url.pathname = '/api/chromadb';
 
     const messagesDeepCopy = JSON.parse(JSON.stringify(messages));
-    let splittedMessages = [];
+    let splitMessages = [];
 
     let id = 0;
     messagesDeepCopy.forEach((m, index) => {
         const split = splitRecursive(m.mes, extension_settings.chromadb.split_length);
-        splittedMessages.push(...split.map(text => ({
+        splitMessages.push(...split.map(text => ({
             ...m,
             mes: text,
             send_date: id,
@@ -159,14 +159,14 @@ async function addMessages(chat_id, messages) {
         })));
     });
 
-    splittedMessages = filterSyncedMessages(splittedMessages);
+    splitMessages = await filterSyncedMessages(splitMessages);
 
     // no messages to add
-    if (splittedMessages.length === 0) {
+    if (splitMessages.length === 0) {
         return { count: 0 };
     }
 
-    const transformedMessages = splittedMessages.map((m) => ({
+    const transformedMessages = splitMessages.map((m) => ({
         id: m.id,
         role: m.is_user ? 'user' : 'assistant',
         content: m.mes,
@@ -182,19 +182,18 @@ async function addMessages(chat_id, messages) {
 
     if (addMessagesResult.ok) {
         const addMessagesData = await addMessagesResult.json();
-
         return addMessagesData; // { count: 1 }
     }
 
     return { count: 0 };
 }
 
-function filterSyncedMessages(splittedMessages) {
-    const syncState = getChatSyncState();
+async function filterSyncedMessages(splitMessages) {
+    const syncState = await getChatSyncState();
     const removeIndices = [];
     const syncedIndices = [];
-    for (let i = 0; i < splittedMessages.length; i++) {
-        const index = splittedMessages[i].index;
+    for (let i = 0; i < splitMessages.length; i++) {
+        const index = splitMessages[i].index;
 
         if (syncState[index]) {
             removeIndices.push(i);
@@ -205,19 +204,14 @@ function filterSyncedMessages(splittedMessages) {
     }
 
     for (const index of syncedIndices) {
-        syncState[index] = true;
+        syncState[index] = 1;
     }
 
-    logSyncState(syncState);
+    console.debug('CHROMADB: sync state', syncState.map((v, i) => ({ id: i, synced: v })));
+    await dbStore.put(getCurrentChatId(), syncState);
 
     // remove messages that are already synced
-    return splittedMessages.filter((_, i) => !removeIndices.includes(i));
-}
-
-function logSyncState(syncState) {
-    const chat = getContext().chat;
-    console.log('CHROMADB: sync state');
-    console.table(syncState.map((v, i) => ({ synced: v, name: chat[i].name, message: chat[i].mes })));
+    return splitMessages.filter((_, i) => !removeIndices.includes(i));
 }
 
 async function onPurgeClick() {
@@ -235,7 +229,7 @@ async function onPurgeClick() {
     });
 
     if (purgeResult.ok) {
-        delete chatStateFlags[chat_id];
+        await dbStore.delete(chat_id);
         toastr.success('ChromaDB context has been successfully cleared');
     }
 }

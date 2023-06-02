@@ -256,7 +256,7 @@ export function countOccurrences(string, character) {
 }
 
 export function isOdd(number) {
-  return number % 2 !== 0;
+    return number % 2 !== 0;
 }
 
 export function timestampToMoment(timestamp) {
@@ -313,4 +313,94 @@ export function splitRecursive(input, length, delimitiers = ['\n\n', '\n', ' ', 
         result.push(currentChunk);
     }
     return result;
+}
+
+export class IndexedDBStore {
+    constructor(dbName, storeName) {
+        this.dbName = dbName;
+        this.storeName = storeName;
+        this.db = null;
+    }
+
+    async open() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(this.dbName);
+
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                db.createObjectStore(this.storeName, { keyPath: null, autoIncrement: false });
+            };
+
+            request.onsuccess = (event) => {
+                console.debug(`IndexedDBStore.open(${this.dbName})`);
+                this.db = event.target.result;
+                resolve(this.db);
+            };
+
+            request.onerror = (event) => {
+                console.error(`IndexedDBStore.open(${this.dbName})`);
+                reject(event.target.error);
+            };
+        });
+    }
+
+    async get(key) {
+        if (!this.db) await this.open();
+
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction(this.storeName, "readonly");
+            const objectStore = transaction.objectStore(this.storeName);
+            const request = objectStore.get(key);
+
+            request.onsuccess = (event) => {
+                console.debug(`IndexedDBStore.get(${key})`);
+                resolve(event.target.result);
+            };
+
+            request.onerror = (event) => {
+                console.error(`IndexedDBStore.get(${key})`);
+                reject(event.target.error);
+            };
+        });
+    }
+
+    async put(key, object) {
+        if (!this.db) await this.open();
+
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction(this.storeName, "readwrite");
+            const objectStore = transaction.objectStore(this.storeName);
+            const request = objectStore.put(object, key);
+
+            request.onsuccess = (event) => {
+                console.debug(`IndexedDBStore.put(${key})`);
+                resolve(event.target.result);
+            };
+
+            request.onerror = (event) => {
+                console.error(`IndexedDBStore.put(${key})`);
+                reject(event.target.error);
+            };
+        });
+    }
+
+    async delete(key) {
+        if (!this.db) await this.open();
+
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction(this.storeName, "readwrite");
+            const objectStore = transaction.objectStore(this.storeName);
+            const request = objectStore.delete(key);
+
+            request.onsuccess = (event) => {
+                console.debug(`IndexedDBStore.delete(${key})`);
+                resolve(event.target.result);
+            };
+
+            request.onerror = (event) => {
+                console.error(`IndexedDBStore.delete(${key})`);
+                reject(event.target.error);
+            };
+        });
+    }
 }

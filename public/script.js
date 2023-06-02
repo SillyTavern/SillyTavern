@@ -1018,11 +1018,11 @@ function clearChat() {
     $("#chat").children().remove();
 }
 
-function deleteLastMessage() {
+async function deleteLastMessage() {
     count_view_mes--;
     chat.length = chat.length - 1;
     $('#chat').children('.mes').last().remove();
-    eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
+    await eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
 }
 
 export async function reloadCurrentChat() {
@@ -1839,7 +1839,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 $('#chat').children().last().hide(500, function () {
                     $(this).remove();
                 });
-                eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
+                await eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
             }
         }
 
@@ -2417,7 +2417,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         if (isImpersonate) {
                             $('#send_textarea').val(getMessage).trigger('input');
                             generatedPromtCache = "";
-                            eventSource.emit(event_types.IMPERSONATE_READY, getMessage);
+                            await eventSource.emit(event_types.IMPERSONATE_READY, getMessage);
                         }
                         else if (type == 'quiet') {
                             resolve(getMessage);
@@ -4838,9 +4838,9 @@ function swipe_left() {      // when we swipe left..but no generation.
                             duration: swipe_duration,
                             easing: animation_easing,
                             queue: false,
-                            complete: function () {
-                                eventSource.emit(event_types.MESSAGE_SWIPED, (chat.length - 1));
-                                saveChatConditional();
+                            complete: async function () {
+                                await eventSource.emit(event_types.MESSAGE_SWIPED, (chat.length - 1));
+                                await saveChatConditional();
                             }
                         });
                     }
@@ -4997,16 +4997,16 @@ const swipe_right = () => {
                             duration: swipe_duration,
                             easing: animation_easing,
                             queue: false,
-                            complete: function () {
-                                eventSource.emit(event_types.MESSAGE_SWIPED, (chat.length - 1));
+                            complete: async function () {
+                                await eventSource.emit(event_types.MESSAGE_SWIPED, (chat.length - 1));
                                 if (run_generate && !is_send_press && parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length) {
                                     console.debug('caught here 2');
                                     is_send_press = true;
                                     $('.mes_buttons:last').hide();
-                                    Generate('swipe');
+                                    await Generate('swipe');
                                 } else {
                                     if (parseInt(chat[chat.length - 1]['swipe_id']) !== chat[chat.length - 1]['swipes'].length) {
-                                        saveChatConditional();
+                                        await saveChatConditional();
                                     }
                                 }
                             }

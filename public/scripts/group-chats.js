@@ -120,7 +120,7 @@ async function regenerateGroup() {
             break;
         }
 
-        deleteLastMessage();
+        await deleteLastMessage();
     }
 
     generateGroupWrapper();
