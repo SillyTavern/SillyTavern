@@ -103,7 +103,7 @@ async function generateTasks() {
     const numberedListPattern = /^\d+\./
 
     // Add numbered tasks, store them without the numbers.
-    for (const task of taskResponse.split('\n')) {
+    for (const task of taskResponse.split('\n').map(x => x.trim())) {
         if (task.match(numberedListPattern) != null) {
             addTask(task.replace(numberedListPattern, '').trim())
         }
