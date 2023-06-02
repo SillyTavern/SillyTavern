@@ -1647,7 +1647,6 @@ class StreamingProcessor {
         activateSendButtons();
         showSwipeButtons();
         setGenerationProgress(0);
-        $('.mes_buttons:last').show();
         generatedPromtCache = '';
 
         //console.log("Generated text size:", text.length, text)
@@ -2488,7 +2487,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 activateSendButtons();
                 showSwipeButtons();
                 setGenerationProgress(0);
-                $('.mes_buttons:last').show();
 
                 if (type !== 'quiet') {
                     resolve();
@@ -2502,7 +2500,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 activateSendButtons();
                 showSwipeButtons();
                 setGenerationProgress(0);
-                $('.mes_buttons:last').show();
                 console.log(exception);
             };
 
@@ -3080,7 +3077,6 @@ function throwCircuitBreakerError() {
     activateSendButtons();
     setGenerationProgress(0);
     showSwipeButtons();
-    $('.mes_buttons:last').show();
     throw new Error('Generate circuit breaker interruption');
 }
 
@@ -3302,6 +3298,7 @@ export function activateSendButtons() {
     is_send_press = false;
     $("#send_but").css("display", "flex");
     $("#send_textarea").attr("disabled", false);
+    $('.mes_buttons:last').show();
     hideStopButton();
 }
 
