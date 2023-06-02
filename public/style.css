@@ -364,6 +364,11 @@ code {
     cursor: -webkit-grab;
     display: none;
     filter: drop-shadow(0px 0px 0px black);
+    transition: all 250ms;
+}
+
+.drag-grabber:hover {
+    opacity: 1;
 }
 
 #sheldheader:active {

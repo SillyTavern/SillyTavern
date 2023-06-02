@@ -5421,7 +5421,6 @@ $(document).ready(function () {
             easing: animation_easing,
         });
         setTimeout(function () { $("#character_popup").css("display", "none"); }, 200);
-        //$("#character_popup").css("display", "none");
     });
     $("#character_popup_ok").click(function () {
         is_advanced_char_open = false;
