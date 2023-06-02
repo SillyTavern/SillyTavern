@@ -3582,10 +3582,11 @@ async function getChatResult() {
     printMessages();
     select_selected_character(this_chid);
 
+    await eventSource.emit(event_types.CHAT_CHANGED, (getCurrentChatId()));
+
     if (chat.length === 1) {
         await eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1));
     }
-    await eventSource.emit(event_types.CHAT_CHANGED, (getCurrentChatId()));
 }
 
 async function openCharacterChat(file_name) {
