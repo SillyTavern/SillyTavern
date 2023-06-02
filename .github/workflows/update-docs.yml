@@ -20,7 +20,7 @@ jobs:
         path: SillyTavern-Docs
 
     - name: Clone SillyTavern wiki into SillyTavern-Docs/extensions
-      run: git clone https://github.com/SillyTavern/SillyTavern.wiki.git SillyTavern-Docs/extensions && rm -rf SillyTavern-Docs/extensions/.git
+      run: rm -rf SillyTavern-Docs/extensions && git clone https://github.com/SillyTavern/SillyTavern.wiki.git SillyTavern-Docs/extensions && rm -rf SillyTavern-Docs/extensions/.git
 
     - name: Copy files
       run: |
