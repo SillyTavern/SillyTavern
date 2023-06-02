@@ -437,7 +437,7 @@ PromptManagerModule.prototype.renderPromptManager = function () {
     advancedDiv.append(checkLabelSpan);
 
     const tokensDiv = document.createElement('div');
-    tokensDiv.textContent = 'Tokens: ' + this.totalActiveTokens;
+    tokensDiv.textContent = 'Total Tokens: ' + this.totalActiveTokens;
 
     promptManagerHeaderDiv.appendChild(advancedDiv);
     promptManagerHeaderDiv.appendChild(tokensDiv);
