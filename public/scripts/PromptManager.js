@@ -556,8 +556,16 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
 
         const nameSpan = document.createElement('span');
         nameSpan.setAttribute('data-pm-name', prompt.name);
-        nameSpan.textContent = prompt.name;
 
+        if (prompt.marker) {
+            const markerIconSpan = document.createElement('span');
+            markerIconSpan.classList.add('fa-solid', 'fa-thumb-tack');
+            nameSpan.appendChild(markerIconSpan);
+        }
+
+        const nameTextSpan = document.createElement('span');
+        nameTextSpan.textContent = prompt.name;
+        nameSpan.appendChild(nameTextSpan);
 
         const tokensSpan = document.createElement('span');
         tokensSpan.classList.add('prompt_manager_prompt_tokens')
