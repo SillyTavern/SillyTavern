@@ -424,6 +424,7 @@ export const event_types = {
     MESSAGE_DELETED: 'message_deleted',
     IMPERSONATE_READY: 'impersonate_ready',
     CHAT_CHANGED: 'chat_id_changed',
+    GENERATION_STOPPED: 'generation_stopped',
 }
 
 export const eventSource = new EventEmitter();
@@ -6707,6 +6708,7 @@ $(document).ready(function () {
             abortController.abort();
             hideStopButton();
         }
+        eventSource.emit(event_types.GENERATION_STOPPED);
     });
 
     $('.drawer-toggle').click(function () {

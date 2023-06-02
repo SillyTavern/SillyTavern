@@ -386,14 +386,14 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
         return;
     }
 
+    if (is_group_generating) {
+        return false;
+    }
+
     // Auto-navigate back to group menu
     if (menu_type !== "group_edit") {
         select_group_chats(selected_group);
         await delay(1);
-    }
-
-    if (is_group_generating) {
-        return false;
     }
 
     const group = groups.find((x) => x.id === selected_group);
@@ -815,6 +815,8 @@ export async function editGroup(id, immediately, reload = true) {
     saveGroupDebounced(group);
 }
 
+let groupAutoModeAbortController = null;
+
 async function groupChatAutoModeWorker() {
     if (!is_group_automode_enabled || online_status === "no_connection") {
         return;
@@ -830,7 +832,8 @@ async function groupChatAutoModeWorker() {
         return;
     }
 
-    await generateGroupWrapper(true);
+    groupAutoModeAbortController = new AbortController();
+    await generateGroupWrapper(true, 'auto', { signal: groupAutoModeAbortController.signal });
 }
 
 async function modifyGroupMember(chat_id, groupMember, isDelete) {
@@ -1403,6 +1406,15 @@ function onGroupScenarioRemoveClick() {
     $(this).closest('.group_scenario').find('.group_chat_scenario').val('').trigger('input');
 }
 
+function stopAutoModeGeneration() {
+    if (groupAutoModeAbortController) {
+        groupAutoModeAbortController.abort();
+    }
+
+    is_group_automode_enabled = false;
+    $("#rm_group_automode").prop("checked", false);
+}
+
 jQuery(() => {
     $(document).on("click", ".group_select", selectGroup);
     $(document).on("input", ".group_chat_scenario", onGroupScenarioInput);
@@ -1414,5 +1426,6 @@ jQuery(() => {
     $("#rm_group_automode").on("input", function () {
         const value = $(this).prop("checked");
         is_group_automode_enabled = value;
+        eventSource.once(event_types.GENERATION_STOPPED, stopAutoModeGeneration);
     });
 });
