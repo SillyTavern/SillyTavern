@@ -393,6 +393,9 @@ async function prepareOpenAIMessages({ systemPrompt, name2, storyString, worldIn
     // Handle bias settings
     if (bias && bias.trim().length) chatCompletion.add(biasMessage);
 
+    // Handle impersonation
+    if (type === "impersonate") chatCompletion.replace('main', substituteParams(oai_settings.impersonation_prompt));
+
     // Handle chat examples
     const exampleMessages = prepareExampleMessages(openai_msgs ,openai_msgs_example, power_user.pin_examples);
     if (exampleMessages.length) chatCompletion.replace('dialogueExamples', exampleMessages);
@@ -401,12 +404,6 @@ async function prepareOpenAIMessages({ systemPrompt, name2, storyString, worldIn
     if (quietPrompt) {
         const quietPromptMessage = chatCompletion.makeSystemMessage(quietPrompt);
         chatCompletion.insertAfter('main', quietPromptMessage)
-    }
-
-    // Handle impersonation
-    if (type === "impersonate") {
-        chatCompletion.insertBefore('chatHistory', 'impersonate', substituteParams(oai_settings.impersonation_prompt));
-        chatCompletion.remove('main');
     }
 
     promptManager.updatePrompts(chatCompletion.getPromptsWithTokenCount());
