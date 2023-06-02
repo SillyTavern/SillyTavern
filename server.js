@@ -2039,8 +2039,8 @@ app.post('/getgroups', jsonParser, (_, response) => {
         fs.mkdirSync(directories.groups);
     }
 
-    const files = fs.readdirSync(directories.groups);
-    const chats = fs.readdirSync(directories.groupChats);
+    const files = fs.readdirSync(directories.groups).filter(x => path.extname(x) === '.json');
+    const chats = fs.readdirSync(directories.groupChats).filter(x => path.extname(x) === '.jsonl');
 
     files.forEach(function (file) {
         try {
