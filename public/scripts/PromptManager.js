@@ -726,6 +726,15 @@ const openAiDefaultPrompts = {
             "system_prompt": true,
             "marker": true,
             "calculated_tokens": 0
+        },
+        {
+            "identifier": "enhanceDefinitions",
+            "role": "system",
+            "name": "Enhance Definitions",
+            "content": "If you have more knowledge of {{char}}, add to the character\'s lore and personality to enhance them but keep the Character Sheet\'s definitions absolute.",
+            "system_prompt": true,
+            "marker": false,
+            "calculated_tokens": 0
         }
     ]
 };
@@ -750,6 +759,10 @@ const openAiDefaultPromptLists = {
                 {
                     "identifier": "main",
                     "enabled": true
+                },
+                {
+                    "identifier": "enhanceDefinitions",
+                    "enabled": false
                 },
                 {
                     "identifier": "worldInfoAfter",
