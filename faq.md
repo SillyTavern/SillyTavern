@@ -91,7 +91,7 @@ These base instructions are only for OpenAI, which is a paid service. You can fi
 
 ### Install Tavern
 
-1. Install the latest NodeJS from https://nodejs.org/en/download/current
+1. Install the NodeJS LTS from https://nodejs.org/en/download
 1. If you know how to use git, clone https://github.com/Cohee1207/SillyTavern. Otherwise, browse to https://github.com/Cohee1207/SillyTavern/releases , download the zip file containing the source code, then extract it locally.
 1. Run Start.bat on Windows, or start.sh on OSX/Linux
 1. Your browser should have opened to the Tavern UI. This webpage is running locally on your computer.
