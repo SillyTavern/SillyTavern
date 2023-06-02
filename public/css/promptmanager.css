@@ -29,8 +29,14 @@
     width: 100%
 }
 
-#openai_prompt_manager #openai_prompt_manager_list li.openai_prompt_manager_prompt.openai_prompt_manager_marker {
+#openai_prompt_manager #openai_prompt_manager_list .openai_prompt_manager_marker span span {
+    /** TODO: Introduce classes to avoid this */
+    display: inline !important;
+}
 
+#openai_prompt_manager #openai_prompt_manager_list .openai_prompt_manager_marker .fa-thumb-tack {
+    padding: 0 0.5em;
+    color: var(--white50a);
 }
 
 #openai_prompt_manager #openai_prompt_manager_list li.openai_prompt_manager_list_head .prompt_manager_prompt_tokens,
@@ -53,7 +59,7 @@
     border-radius: 10px;
 }
 
-#openai_prompt_manager #openai_prompt_manager_list li.openai_prompt_manager_prompt span span {
+#openai_prompt_manager #openai_prompt_manager_list li.openai_prompt_manager_prompt .prompt_manager_prompt_controls {
     display: flex;
     justify-content: end;
 }
