@@ -381,12 +381,9 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
         const openai_msgs_tosend = chatCompletion.getChat();
         openai_messages_count = openai_msgs_tosend.filter(x => x.role === "user" || x.role === "assistant").length;
 
-        console.log("We're sending this:")
         console.log(openai_msgs_tosend);
 
-        // Integrate const handler_instance = new TokenHandler(countTokens);
-
-        return openai_msgs_tosend;
+        return [openai_msgs_tosend, false];
     });
 }
 
@@ -427,26 +424,24 @@ function prepareExampleMessages(messages, exampleMessages, includeAll = false, )
         // go from newest message to oldest, because we want to delete the older ones from the context
         for (let j = messages.length - 1; j >= 0; j--) {
             let item = messages[j];
-            let item_count = handler_instance.count(item, true, 'conversation');
+            let item_count = countTokens(item);
             // If we have enough space for this message, also account for the max assistant reply size
             if ((total_count + item_count) < (oai_settings.openai_max_context - oai_settings.openai_max_tokens)) {
                 messages.push(item);
             } else {
                 // early break since if we still have more messages, they just won't fit anyway
-                handler_instance.uncount(item_count, 'conversation');
                 break;
             }
         }
     } else {
         for (let j = messages.length - 1; j >= 0; j--) {
             let item = messages[j];
-            let item_count = handler_instance.count(item, true, 'conversation');
+            let item_count = countTokens(item);
             // If we have enough space for this message, also account for the max assistant reply size
             if ((total_count + item_count) < (oai_settings.openai_max_context - oai_settings.openai_max_tokens)) {
                 messages.push(item);
             } else {
                 // early break since if we still have more messages, they just won't fit anyway
-                handler_instance.uncount(item_count, 'conversation');
                 break;
             }
         }
@@ -461,12 +456,11 @@ function prepareExampleMessages(messages, exampleMessages, includeAll = false, )
             example_block = [new_chat_msg, ...example_block];
 
             // add the block only if there is enough space for all its messages
-            const example_count = handler_instance.count(example_block, true, 'examples');
+            const example_count = countTokens(example_block)
             if ((total_count + example_count) < (oai_settings.openai_max_context - oai_settings.openai_max_tokens)) {
                 examples_tosend.push(...example_block)
             } else {
                 // early break since more examples probably won't fit anyway
-                handler_instance.uncount(example_count, 'examples');
                 break;
             }
         }
