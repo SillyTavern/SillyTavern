@@ -467,10 +467,6 @@ function prepareExampleMessages(messages, exampleMessages, includeAll = false, )
         for (const element of exampleMessages) {
             // get the current example block with multiple user/bot messages
             let example_block = element;
-            // add the first message from the user to tell the model that it's a new dialogue
-            if (example_block.length != 0) {
-                examples_tosend.push(new_chat_msg);
-            }
             for (const example of example_block) {
                 // add all the messages from the example
                 examples_tosend.push(example);
@@ -507,9 +503,6 @@ function prepareExampleMessages(messages, exampleMessages, includeAll = false, )
             if (example_block.length == 0) {
                 continue;
             }
-
-            // include the heading
-            example_block = [new_chat_msg, ...example_block];
 
             // add the block only if there is enough space for all its messages
             const example_count = countTokens(example_block)
