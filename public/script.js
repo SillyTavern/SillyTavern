@@ -359,7 +359,7 @@ const system_messages = {
             '<li><a target="_blank" href="https://docs.sillytavern.app/">Introduction to SillyTavern</a></li>',
             '<li><a target="_blank" href="https://docs.sillytavern.app/usage/faq/">SillyTavern FAQ</a></li>',
             '<li><a target="_blank" href="https://docs.sillytavern.app/usage/guidebook/">SillyTavern Guidebook</a></li>',
-            '<li><a target="_blank" href="https://github.com/Cohee1207/TavernAI-extras/blob/main/README.md">Extras API Docs</a></li>',
+            '<li><a target="_blank" href="https://github.com/SillyTavern/TavernAI-extras/blob/main/README.md">Extras API Docs</a></li>',
             '<li><a target="_blank" href="https://docs.alpindale.dev/">Pygmalion AI Docs</a></li>',
             '</ol>',
             'Type <tt>/?</tt> in any chat to get help on message formatting commands.',
@@ -367,9 +367,9 @@ const system_messages = {
             '<h3>Still have questions or suggestions left?</h3>',
             '<a target="_blank" href="https://discord.gg/RZdyAEUPvj">SillyTavern Community Discord</a>',
             '<br>',
-            '<a target="_blank" href="https://github.com/Cohee1207/SillyTavern/issues">Post a GitHub issue.</a>',
+            '<a target="_blank" href="https://github.com/SillyTavern/SillyTavern/issues">Post a GitHub issue.</a>',
             '<br>',
-            '<a target="_blank" href="https://github.com/Cohee1207/SillyTavern#questions-or-suggestions">Contact the developers.</a>',
+            '<a target="_blank" href="https://github.com/SillyTavern/SillyTavern#questions-or-suggestions">Contact the developers.</a>',
         ].join('')
     },
     group: {

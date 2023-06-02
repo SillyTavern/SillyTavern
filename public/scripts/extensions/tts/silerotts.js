@@ -15,17 +15,17 @@ class SileroTtsProvider {
         provider_endpoint: "http://localhost:8001/tts",
         voiceMap: {}
     }
-    
+
     get settingsHtml() {
         let html = `
         <label for="silero_tts_endpoint">Provider Endpoint:</label>
         <input id="silero_tts_endpoint" type="text" class="text_pole" maxlength="250" value="${this.defaultSettings.provider_endpoint}"/>
         <span>
-        <span>Use <a target="_blank" href="https://github.com/Cohee1207/SillyTavern-extras">SillyTavern Extras API</a> or <a target="_blank" href="https://github.com/ouoertheo/silero-api-server">Silero TTS Server</a>.</span>
+        <span>Use <a target="_blank" href="https://github.com/SillyTavern/SillyTavern-extras">SillyTavern Extras API</a> or <a target="_blank" href="https://github.com/ouoertheo/silero-api-server">Silero TTS Server</a>.</span>
         `
         return html
     }
-    
+
     onSettingsChange() {
         // Used when provider settings are updated from UI
         this.settings.provider_endpoint = $('#silero_tts_endpoint').val()
@@ -58,12 +58,12 @@ class SileroTtsProvider {
                 clearInterval(apiCheckInterval);
             }
         }, 2000);
-        
+
         $('#silero_tts_endpoint').val(this.settings.provider_endpoint)
         console.info("Settings loaded")
     }
 
-    
+
     async onApplyClick() {
         return
     }
@@ -71,7 +71,7 @@ class SileroTtsProvider {
     //#################//
     //  TTS Interfaces //
     //#################//
-    
+
     async getVoice(voiceName) {
         if (this.voices.length == 0) {
             this.voices = await this.fetchTtsVoiceIds()
