@@ -143,12 +143,16 @@ async function moduleWorker() {
     function addExtensionsSettings() {
         const settingsHtml = `
         <div id="floatingPrompt" class="drawer-content flexGap5">
-            <div id="floatingPromptheader" class="fa-solid fa-grip drag-grabber"></div>
+            <div class="panelControlBar flex-container">
+                <div id="floatingPromptheader" class="fa-solid fa-grip drag-grabber"></div>
+                <div id="ANClose" class="fa-solid fa-circle-xmark"></div>
+            </div>
             <div name="floatingPromptHolder">
                 <div class="inline-drawer">
                     <div id="ANBlockToggle" class="inline-drawer-toggle inline-drawer-header">
                         <b>Author's Note</b>
                         <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+                        
                 </div>
                 <div class="inline-drawer-content">
                     <small>
@@ -202,6 +206,14 @@ async function moduleWorker() {
         $('#extension_floating_depth').on('input', onExtensionFloatingDepthInput);
         $('#extension_floating_default').on('input', onExtensionFloatingDefaultInput);
         $('input[name="extension_floating_position"]').on('change', onExtensionFloatingPositionInput);
+        $('#ANClose').on('click', function () {
+            $("#floatingPrompt").transition({
+                opacity: 0,
+                duration: 200,
+                easing: 'ease-in-out',
+            });
+            setTimeout(function () { $('#floatingPrompt').hide() }, 200);
+        })
     }
 
     addExtensionsSettings();
