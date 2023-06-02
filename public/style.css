@@ -4151,6 +4151,10 @@ body.waifuMode #avatar_zoom_popup {
     height: fit-content;
 }
 
+.widthFitContent {
+    width: fit-content;
+}
+
 .flexGap5 {
     gap: 5px;
 }

@@ -116,7 +116,7 @@ async function generateTasks() {
 // Call Quiet Generate to check if a task is completed
 async function checkTaskCompleted() {
     // Make sure there are tasks and check is enabled
-    if (currentTask == {} || $('#objective-check-frequency').val() == 0) {
+    if (Object.keys(currentTask).length == 0 || $('#objective-check-frequency').val() == 0) {
         return
     }
 
@@ -144,7 +144,7 @@ async function checkTaskCompleted() {
 // Set a task in extensionPrompt context. Defaults to first incomplete
 function setCurrentTask(index = null) {
     const context = getContext();
-    let currentTask = {};
+    currentTask = {};
 
     if (index === null) {
         currentTask = globalTasks.find(task => !task.completed) || {};
