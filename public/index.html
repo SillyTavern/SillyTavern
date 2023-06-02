@@ -2314,13 +2314,62 @@
         <div id="character_popup_text">
             <h3 id="character_popup_text_h3"></h3> - Advanced Definitions
         </div>
-        <hr>
+        <hr class="margin-bot-10px">
         <div id="character_cross" class="fa-solid fa-circle-xmark"></div>
 
-        <div id="creatorcomment_div">
-            Creator's Comment
-            <h5>This is not sent to the AI Prompt.
-                <textarea id="creatorcomment_textarea" name="creatorcomment" placeholder="(Describe the bot to the user, list the chat models it has been tested on, and any other useful tips)" form="form_create" class="text_pole" autocomplete="off" rows="2" maxlength="20000"></textarea>
+        <div class="inline-drawer">
+            <div class="inline-drawer-toggle inline-drawer-header">
+                <h4>
+                    AI Prompt Overrides
+                    <small>(Affects the generation)</small>
+                </h4>
+                <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+            </div>
+            <div class="inline-drawer-content">
+                <div>
+                    <h4>System Prompt</h4>
+                    <textarea id="system_prompt_textarea" name="system_prompt"
+                        placeholder="(Overrides the main prompt for OpenAI and/or system prompt for Instruct Mode if not empty)"
+                        form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="20000"></textarea>
+                </div>
+                <div>
+                    <h4>Post History Instructions</h4>
+                    <textarea id="post_history_instructions_textarea" name="post_history_instructions" placeholder="(Overrides the default jailbreak for OpenAI if not empty)" form="form_create" class="text_pole"
+                        autocomplete="off" rows="3" maxlength="100"></textarea>
+                </div>
+            </div>
+        </div>
+        <div class="inline-drawer">
+            <div class="inline-drawer-toggle inline-drawer-header">
+                <h4>
+                    Creator's Metadata
+                    <small>(Not sent with the AI Prompt)</small>
+                </h4>
+                <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+            </div>
+            <div class="inline-drawer-content">
+                <div>
+                    <h4>Creator's Name</h4>
+                    <textarea id="creator_textarea" name="creator" placeholder="(Botmaker's name / Contact info)" form="form_create" class="text_pole"
+                        autocomplete="off" rows="1" maxlength="100"></textarea>
+                </div>
+                <div>
+                    <h4>Creator's Notes</h4>
+                    <textarea id="creator_notes_textarea" name="creator_notes"
+                        placeholder="(Describe the bot to the user, list the chat models it has been tested on, and any other useful tips)"
+                        form="form_create" class="text_pole" autocomplete="off" rows="2" maxlength="20000"></textarea>
+                </div>
+                <div>
+                    <h4>Creators's Tags</h4>
+                    <textarea id="tags_textarea" name="tags" placeholder="(List of freeform comma-separated tags)" form="form_create"
+                        class="text_pole" autocomplete="off" rows="1" maxlength="2000"></textarea>
+                </div>
+                <div>
+                    <h4>Character Version</h4>
+                    <textarea id="character_version_textarea" name="character_version" placeholder="(Optional string to track character versions)"
+                        form="form_create" class="text_pole" autocomplete="off" rows="1" maxlength="100"></textarea>
+                </div>
+            </div>
         </div>
 
         <div id="personality_div">
@@ -2358,7 +2407,7 @@
                 <h4>Example Dialogue</h4>
                 <h5>Important to set the character's writing style. <a href="/notes#examplesofdialogue" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
             </div>
-            <textarea id="mes_example_textarea" class="flexGrow" name="mes_example" placeholder="(Examples of chat dialog. Begin each example with <start> on a new line.)" form="form_create" maxlength="20000"></textarea>
+            <textarea id="mes_example_textarea" class="flexGrow" name="mes_example" placeholder="(Examples of chat dialog. Begin each example with <start> on a new line.)" form="form_create" maxlength="20000" rows="6"></textarea>
         </div>
         <div id="character_popup_ok" class="menu_button">Save</div>
 

@@ -686,7 +686,7 @@ function convertToV2(char) {
         scenario: char.scenario,
         first_mes: char.first_mes,
         mes_example: char.mes_example,
-        creatorcomment: char.creatorcomment,
+        creator_notes: char.creatorcomment,
         talkativeness: char.talkativeness,
         fav: char.fav,
     });
@@ -694,6 +694,40 @@ function convertToV2(char) {
     result.chat = char.chat;
     result.create_date = char.create_date;
     return result;
+}
+
+function readFromV2(char) {
+    const _ = require('lodash');
+    if (_.isUndefined(char.data)) {
+        console.warn('Spec v2 data missing');
+        return char;
+    }
+
+    const fieldMappings = {
+        name: 'name',
+        description: 'description',
+        personality: 'personality',
+        scenario: 'scenario',
+        first_mes: 'first_mes',
+        mes_example: 'mes_example',
+        talkativeness: 'extensions.talkativeness',
+        fav: 'extensions.fav',
+    };
+
+    _.forEach(fieldMappings, (v2Path, charField) => {
+        //console.log(`Migrating field: ${charField} from ${v2Path}`);
+        const v2Value = _.get(char.data, v2Path);
+        if (_.isUndefined(v2Value)) {
+            console.debug(`Spec v2 data missing for field: ${charField}`);
+            return;
+        }
+        if (!_.isUndefined(char[charField]) && !_.isUndefined(v2Value) && char[charField] !== v2Value) {
+            console.debug(`Spec v2 data mismatch with Spec v1 for field: ${charField}`);
+        }
+        char[charField] = v2Value;
+    });
+
+    return char;
 }
 
 //***************** Main functions
@@ -710,8 +744,8 @@ function charaFormatData(data) {
     _.set(char, 'first_mes', data.first_mes);
     _.set(char, 'mes_example', data.mes_example);
 
-    // Old ST extension fields (for compatibility, will be deprecated)
-    _.set(char, 'creatorcomment', data.creatorcomment);
+    // Old ST extension fields (for backward compatibility, will be deprecated)
+    _.set(char, 'creatorcomment', data.creator_notes);
     _.set(char, 'avatar', 'none');
     _.set(char, 'chat', data.ch_name + ' - ' + humanizedISO8601DateTime());
     _.set(char, 'talkativeness', data.talkativeness);
@@ -729,12 +763,13 @@ function charaFormatData(data) {
     _.set(char, 'data.mes_example', data.mes_example);
 
     // New V2 fields
-    _.set(char, 'data.creator_notes', data.creatorcomment);
+    _.set(char, 'data.creator_notes', data.creator_notes);
     _.set(char, 'data.system_prompt', data.system_prompt);
     _.set(char, 'data.post_history_instructions', data.post_history_instructions);
-    _.set(char, 'data.tags', []);
+    _.set(char, 'data.tags', typeof data.tags == 'string' ? (data.tags.split(',').map(x => x.trim()).filter(x => x)) : []);
     _.set(char, 'data.creator', data.creator);
     _.set(char, 'data.character_version', data.character_version);
+    _.set(char, 'data.alternative_greetings', data.alternate_greetings);
 
     // ST extension fields to V2 object
     _.set(char, 'data.extensions.talkativeness', data.talkativeness);
@@ -976,9 +1011,9 @@ app.post("/getcharacters", jsonParser, function (request, response) {
                 let jsonObject = json5.parse(img_data);
 
                 if (jsonObject.spec === undefined) {
-                    //console.log('Old character detected, converting to V2: ' + item);
                     jsonObject = convertToV2(jsonObject);
-                    //console.log('Conversion complete.', jsonObject);
+                } else {
+                    jsonObject = readFromV2(jsonObject);
                 }
 
                 jsonObject.avatar = item;
@@ -1558,6 +1593,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                         "create_date": humanizedISO8601DateTime(),
                         "talkativeness": jsonData.talkativeness ?? 0.5
                     };
+                    char = convertToV2(char);
                     char = JSON.stringify(char);
                     charaWrite(defaultAvatarPath, char, png_name, response, { file_name: png_name });
                 } else if (jsonData.char_name !== undefined) {//json Pygmalion notepad
@@ -1577,6 +1613,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                         "create_date": humanizedISO8601DateTime(),
                         "talkativeness": jsonData.talkativeness ?? 0.5
                     };
+                    char = convertToV2(char);
                     char = JSON.stringify(char);
                     charaWrite(defaultAvatarPath, char, png_name, response, { file_name: png_name });
                 } else {
@@ -1618,6 +1655,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                         "create_date": humanizedISO8601DateTime(),
                         "talkativeness": jsonData.talkativeness ?? 0.5
                     };
+                    char = convertToV2(char);
                     char = JSON.stringify(char);
                     await charaWrite(uploadPath, char, png_name, response, { file_name: png_name });
                 }

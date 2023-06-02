@@ -143,7 +143,6 @@ import {
     secret_state,
     writeSecret
 } from "./scripts/secrets.js";
-import uniqolor from "./scripts/uniqolor.js";
 import { EventEmitter } from './scripts/eventemitter.js';
 import { context_settings, loadContextTemplatesFromSettings } from "./scripts/context-template.js";
 
@@ -536,39 +535,42 @@ var is_advanced_char_open = false;
 var menu_type = ""; //what is selected in the menu
 var selected_button = ""; //which button pressed
 //create pole save
-var create_save_name = "";
-var create_fav_chara = "";
-var create_save_description = "";
-var create_save_creatorcomment = "";
-var create_save_personality = "";
-var create_save_first_message = "";
-var create_save_avatar = "";
-var create_save_scenario = "";
-var create_save_mes_example = "";
-var create_save_talkativeness = talkativeness_default;
-var create_save_json_data = "";
+let create_save_name = "";
+let create_save_description = "";
+let create_save_creator_notes = "";
+let create_save_post_history_instructions = "";
+let create_save_character_version = "";
+let create_save_system_prompt = "";
+let create_save_tags = "";
+let create_save_creator = "";
+let create_save_personality = "";
+let create_save_first_message = "";
+let create_save_avatar = "";
+let create_save_scenario = "";
+let create_save_mes_example = "";
+let create_save_talkativeness = talkativeness_default;
 
 //animation right menu
-var animation_duration = 250;
-var animation_easing = "ease-in-out";
-var popup_type = "";
-var bg_file_for_del = "";
-var chat_file_for_del = "";
-var online_status = "no_connection";
+let animation_duration = 250;
+let animation_easing = "ease-in-out";
+let popup_type = "";
+let bg_file_for_del = "";
+let chat_file_for_del = "";
+let online_status = "no_connection";
 
-var api_server = "";
-var api_server_textgenerationwebui = "";
+let api_server = "";
+let api_server_textgenerationwebui = "";
 //var interval_timer = setInterval(getStatus, 2000);
-var interval_timer_novel = setInterval(getStatusNovel, 90000);
-var is_get_status = false;
-var is_get_status_novel = false;
-var is_api_button_press = false;
-var is_api_button_press_novel = false;
+let interval_timer_novel = setInterval(getStatusNovel, 90000);
+let is_get_status = false;
+let is_get_status_novel = false;
+let is_api_button_press = false;
+let is_api_button_press_novel = false;
 
-var is_send_press = false; //Send generation
-var add_mes_without_animation = false;
+let is_send_press = false; //Send generation
+let add_mes_without_animation = false;
 
-var this_del_mes = 0;
+let this_del_mes = 0;
 
 //message editing and chat scroll posistion persistence
 var this_edit_mes_text = "";
@@ -4321,11 +4323,17 @@ export function select_selected_character(chid) {
     $("#character_popup_text_h3").text(characters[chid].name);
     $("#character_name_pole").val(characters[chid].name);
     $("#description_textarea").val(characters[chid].description);
-    $("#creatorcomment_textarea").val(characters[chid].creatorcomment);
+    $("#creator_notes_textarea").val(characters[chid].data?.creator_notes || characters[chid].creatorcomment);
+    $("#character_version_textarea").val(characters[chid].data?.character_version || '');
+    $("#system_prompt_textarea").val(characters[chid].data?.system_prompt || '');
+    $("#post_history_instructions_textarea").val(characters[chid].data?.post_history_instructions || '');
+    $("#tags_textarea").val(Array.isArray(characters[chid].data?.tags) ? characters[chid].data.tags.join(', ') : '');
+    $("#creator_textarea").val(characters[chid].data?.creator);
+    $("#character_version_textarea").val(characters[chid].data?.character_version || '');
     $("#personality_textarea").val(characters[chid].personality);
     $("#firstmessage_textarea").val(characters[chid].first_mes);
     $("#scenario_pole").val(characters[chid].scenario);
-    $("#talkativeness_slider").val(characters[chid].talkativeness ?? talkativeness_default);
+    $("#talkativeness_slider").val(characters[chid].talkativeness || talkativeness_default);
     $("#mes_example_textarea").val(characters[chid].mes_example);
     $("#selected_chat_pole").val(characters[chid].chat);
     $("#create_date_pole").val(characters[chid].create_date);
@@ -4376,17 +4384,17 @@ function select_rm_create() {
     $("#character_popup_text_h3").text("Create character");
     $("#character_name_pole").val(create_save_name);
     $("#description_textarea").val(create_save_description);
-    $("#creatorcomment_textarea").val(create_save_creatorcomment);
+    $("#creator_notes_textarea").val(create_save_creator_notes);
+    $("#post_history_instructions_textarea").val(create_save_post_history_instructions);
+    $("#system_prompt_textarea").val(create_save_system_prompt);
+    $("#tags_textarea").val(create_save_tags);
+    $("#creator_textarea").val(create_save_creator);
+    $("#character_version_textarea").val(create_save_character_version);
     $("#personality_textarea").val(create_save_personality);
     $("#firstmessage_textarea").val(create_save_first_message);
     $("#talkativeness_slider").val(create_save_talkativeness);
     $("#scenario_pole").val(create_save_scenario);
-    if ($.trim(create_save_mes_example).length == 0) {
-        $("#mes_example_textarea").val("<START>");
-    } else {
-        $("#mes_example_textarea").val(create_save_mes_example);
-    }
-    $("#characted_json_data").val(create_save_json_data);
+    $("#mes_example_textarea").val(create_save_mes_example.trim().length === 0 ? '<START>' : create_save_mes_example);
     $("#avatar_div").css("display", "flex");
     $("#avatar_load_preview").attr("src", default_avatar);
     $("#renameCharButton").css('display', 'none');
@@ -5620,31 +5628,33 @@ $(document).ready(function () {
                     contentType: false,
                     processData: false,
                     success: async function (html) {
-                        $("#character_cross").click(); //closes the advanced character editing popup
-                        $("#character_name_pole").val("");
-                        create_save_name = "";
-                        $("#description_textarea").val("");
-                        create_save_description = "";
-                        $("#creatorcomment_textarea").val("");
-                        create_save_creatorcomment = "";
-                        $("#personality_textarea").val("");
-                        create_save_personality = "";
-                        $("#firstmessage_textarea").val("");
-                        create_save_first_message = "";
-                        $("#talkativeness_slider").val(talkativeness_default);
-                        create_save_talkativeness = talkativeness_default;
+                        $("#character_cross").trigger('click'); //closes the advanced character editing popup
+                        const fields = [
+                            { id: '#character_name_pole', callback: value => create_save_name = value },
+                            { id: '#description_textarea', callback: value => create_save_description = value },
+                            { id: '#creator_notes_textarea', callback: value => create_save_creator_notes = value },
+                            { id: '#character_version_textarea', callback: value => create_save_character_version = value },
+                            { id: '#post_history_instructions_textarea', callback: value => create_save_post_history_instructions = value },
+                            { id: '#system_prompt_textarea', callback: value => create_save_system_prompt = value },
+                            { id: '#tags_textarea', callback: value => create_save_tags = value },
+                            { id: '#creator_textarea', callback: value => create_save_creator = value },
+                            { id: '#personality_textarea', callback: value => create_save_personality = value },
+                            { id: '#firstmessage_textarea', callback: value => create_save_first_message = value },
+                            { id: '#talkativeness_slider', callback: value => create_save_talkativeness = value, defaultValue: talkativeness_default },
+                            { id: '#scenario_pole', callback: value => create_save_scenario = value },
+                            { id: '#mes_example_textarea', callback: value => create_save_mes_example = value },
+                            { id: '#character_json_data', callback: () => { } },
+                        ];
+
+                        fields.forEach(field => {
+                            const fieldValue = field.defaultValue !== undefined ? field.defaultValue : '';
+                            $(field.id).val(fieldValue);
+                            field.callback && field.callback(fieldValue);
+                        });
 
                         $("#character_popup_text_h3").text("Create character");
 
-                        $("#scenario_pole").val("");
-                        create_save_scenario = "";
-                        $("#mes_example_textarea").val("");
-                        create_save_mes_example = "";
-
                         create_save_avatar = "";
-                        create_save_json_data = "";
-
-                        $("#character_json_data").val("");
 
                         $("#create_button").removeAttr("disabled");
                         $("#add_avatar_button").replaceWith(
@@ -5765,27 +5775,35 @@ $(document).ready(function () {
         }
     });
 
-    $("#description_textarea, #creatorcomment_textarea, #personality_textarea, #scenario_pole, #mes_example_textarea, #firstmessage_textarea")
-        .on("input", function () {
+    const elementsToUpdate = {
+        '#description_textarea': function() { create_save_description = $("#description_textarea").val(); },
+        '#creator_notes_textarea': function() { create_save_creator_notes = $("#creator_notes_textarea").val(); },
+        '#character_version_textarea': function() { create_save_character_version = $("#character_version_textarea").val(); },
+        '#system_prompt_textarea': function() { create_save_system_prompt = $("#system_prompt_textarea").val(); },
+        '#post_history_instructions_textarea': function() { create_save_post_history_instructions = $("#post_history_instructions_textarea").val(); },
+        '#creator_textarea': function() { create_save_creator = $("#creator_textarea").val(); },
+        '#tags_textarea': function() { create_save_tags = $("#tags_textarea").val(); },
+        '#personality_textarea': function() { create_save_personality = $("#personality_textarea").val(); },
+        '#scenario_pole': function() { create_save_scenario = $("#scenario_pole").val(); },
+        '#mes_example_textarea': function() { create_save_mes_example = $("#mes_example_textarea").val(); },
+        '#firstmessage_textarea': function() { create_save_first_message = $("#firstmessage_textarea").val(); },
+        '#talkativeness_slider': function() { create_save_talkativeness = $("#talkativeness_slider").val(); },
+    };
+
+    Object.keys(elementsToUpdate).forEach(function(id) {
+        $(id).on("input", function() {
             if (menu_type == "create") {
-                create_save_description = $("#description_textarea").val();
-                create_save_creatorcomment = $("#creatorcomment_textarea").val();
-                create_save_personality = $("#personality_textarea").val();
-                create_save_scenario = $("#scenario_pole").val();
-                create_save_mes_example = $("#mes_example_textarea").val();
-                create_save_first_message = $("#firstmessage_textarea").val();
-                create_fav_chara = $("#fav_checkbox").val();
-                create_save_json_data = $("#character_json_data").val();
+                elementsToUpdate[id]();
             } else {
                 saveCharacterDebounced();
             }
         });
+    });
 
     $("#favorite_button").on('click', function () {
         updateFavButtonState(!fav_ch_checked);
         if (menu_type != "create") {
             saveCharacterDebounced();
-
         }
     });
 
@@ -5888,14 +5906,6 @@ $(document).ready(function () {
             console.log(`An error has occurred: ${error.message}`);
             await delay(250);
             toastr.error(`Error: ${error.message}`);
-        }
-    });
-
-    $("#talkativeness_slider").on("input", function () {
-        if (menu_type == "create") {
-            create_save_talkativeness = $("#talkativeness_slider").val();
-        } else {
-            saveCharacterDebounced();
         }
     });
 
