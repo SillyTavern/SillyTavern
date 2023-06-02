@@ -57,6 +57,7 @@ const extension_settings = {
     chromadb: {},
     translate: {},
     objective: {},
+    quickReply: {},
 };
 
 let modules = [];

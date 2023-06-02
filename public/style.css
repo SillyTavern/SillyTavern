@@ -412,6 +412,7 @@ code {
 
 #send_form {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     width: 100%;
     margin: 0 auto 0 auto;
