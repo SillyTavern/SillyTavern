@@ -6,7 +6,7 @@ Based on a fork of TavernAI 1.2.8
 
 ### Brought to you by Cohee, RossAscends and the SillyTavern community
 
-NOTE: We have added [a FAQ](faq.md) to answer most of your questions and help you get started.
+NOTE: We have created a [Documentation website](https://docs.sillytavern.app/) to answer most of your questions and help you get started.
 
 ### What is SillyTavern or TavernAI?
 
@@ -16,7 +16,7 @@ SillyTavern is a fork of TavernAI 1.2.8 which is under more active development a
 
 ### What do I need other than Tavern?
 
-On its own Tavern is useless, as it's just a user interface. You have to have access to an AI system backend that can act as the roleplay character. There are various supported backends: OpenAPI API (GPT), KoboldAI (either running locally or on Google Colab), and more. You can read more about this in [the FAQ](faq.md).
+On its own Tavern is useless, as it's just a user interface. You have to have access to an AI system backend that can act as the roleplay character. There are various supported backends: OpenAPI API (GPT), KoboldAI (either running locally or on Google Colab), and more. You can read more about this in [the FAQ](https://docs.sillytavern.app/usage/faq/).
 
 ### Do I need a powerful PC to run Tavern?
 

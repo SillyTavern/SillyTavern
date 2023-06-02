@@ -311,12 +311,6 @@ app.get("/", function (request, response) {
 app.get("/notes/*", function (request, response) {
     response.sendFile(process.cwd() + "/public" + request.url + ".html");
 });
-app.get('/get_faq', function (_, response) {
-    response.sendFile(process.cwd() + "/faq.md");
-});
-app.get('/get_readme', function (_, response) {
-    response.sendFile(process.cwd() + "/readme.md");
-});
 app.get('/deviceinfo', function (request, response) {
     const userAgent = request.header('user-agent');
     const deviceDetector = new DeviceDetector();
