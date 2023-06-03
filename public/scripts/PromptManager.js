@@ -337,6 +337,12 @@ PromptManagerModule.prototype.setPrompts = function(prompts) {
     this.serviceSettings.prompts = prompts;
 }
 
+
+/**
+ * Sets a new prompt list for a specific character.
+ * @param {Object} character - Object with at least an `id` property
+ * @param {Array<Object>} promptList - Array of prompt objects
+ */
 PromptManagerModule.prototype.setPromptListForCharacter = function (character, promptList) {
     this.serviceSettings.prompt_lists.push({
         character_id: character.id,
@@ -344,26 +350,55 @@ PromptManagerModule.prototype.setPromptListForCharacter = function (character, p
     });
 }
 
+/**
+ * Retrieves the default prompt list.
+ * @returns {Array<Object>} An array of prompt objects
+ */
 PromptManagerModule.prototype.getDefaultPromptList = function () {
     return this.getPromptListByCharacter({id: 'default'});
 }
 
+/**
+ * Searches for a prompt list entry for a given character and identifier.
+ * @param {Object} character - Character object
+ * @param {string} identifier - Identifier of the prompt list entry
+ * @returns {Object|null} The prompt list entry object, or null if not found
+ */
 PromptManagerModule.prototype.getPromptListEntry = function (character, identifier) {
     return this.getPromptListByCharacter(character).find(entry => entry.identifier === identifier) ?? null;
 }
 
+/**
+ * Finds and returns a prompt by its identifier.
+ * @param {string} identifier - Identifier of the prompt
+ * @returns {Object|null} The prompt object, or null if not found
+ */
 PromptManagerModule.prototype.getPromptById = function (identifier) {
     return this.serviceSettings.prompts.find(item => item.identifier === identifier) ?? null;
 }
 
+/**
+ * Finds and returns the index of a prompt by its identifier.
+ * @param {string} identifier - Identifier of the prompt
+ * @returns {number|null} Index of the prompt, or null if not found
+ */
 PromptManagerModule.prototype.getPromptIndexById = function (identifier) {
     return this.serviceSettings.prompts.findIndex(item => item.position === identifier) ?? null;
 }
 
+/**
+ * Prepares a prompt by creating a new object with its role and content.
+ * @param {Object} prompt - Prompt object
+ * @returns {Object} An object with "role" and "content" properties
+ */
 PromptManagerModule.prototype.preparePrompt = function (prompt) {
     return {role: prompt.role, content: substituteParams(prompt.content ?? '')};
 }
 
+/**
+ * Loads a given prompt into the edit form fields.
+ * @param {Object} prompt - Prompt object with properties 'name', 'role', 'content', and 'system_prompt'
+ */
 PromptManagerModule.prototype.loadPromptIntoEditForm = function (prompt) {
     const nameField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_name');
     const roleField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_role');
@@ -382,6 +417,9 @@ PromptManagerModule.prototype.loadPromptIntoEditForm = function (prompt) {
     savePromptButton.dataset.pmPrompt = prompt.identifier;
 }
 
+/**
+ * Clears all input fields in the edit form.
+ */
 PromptManagerModule.prototype.clearEditForm = function () {
     const nameField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_name');
     const roleField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_role');
@@ -394,6 +432,10 @@ PromptManagerModule.prototype.clearEditForm = function () {
     roleField.disabled = false;
 }
 
+/**
+ * Generates and returns a new ChatCompletion object based on the active character's prompt list.
+ * @returns {Object} A ChatCompletion object
+ */
 PromptManagerModule.prototype.getChatCompletion = function () {
     const chatCompletion = ChatCompletion.new();
     const promptList = this.getPromptListByCharacter(this.activeCharacter);
