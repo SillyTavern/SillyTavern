@@ -120,13 +120,8 @@ async function generateTasks() {
 
 // Call Quiet Generate to check if a task is completed
 async function checkTaskCompleted() {
-    // Make sure there are tasks and check is enabled
-    if (Object.keys(currentTask).length == 0 || $('#objective-check-frequency').val() == 0) {
-        return
-    }
-
-    // Check only at specified interval
-    if (checkCounter > 0) {
+    // Make sure there are tasks 
+    if (Object.keys(currentTask).length == 0) {
         return
     }
     checkCounter = $('#objective-check-frequency').val()
@@ -288,6 +283,15 @@ function updateUiTaskList() {
     }
 }
 
+function addManualTaskCheck() {
+    $('#extensionsMenu').prepend(`
+        <div id="objective-task-manual-check-menu-item" class="list-group-item flex-container flexGap5">
+            <div id="objective-task-manual-check" class="extensionsMenuExtensionButton fa-regular fa-square-check"/></div>
+            Manual Task Check
+        </div>`)
+    $('#objective-task-manual-check-menu-item').attr('title', 'Trigger AI check of completed tasks').on('click', checkTaskCompleted)
+}
+
 // Trigger creation of new tasks with given objective.
 async function onGenerateObjectiveClick() {
     globalObjective = $('#objective-text').val()
@@ -380,6 +384,7 @@ jQuery(() => {
         </div>
     </div>`;
 
+    addManualTaskCheck()
     $('#extensions_settings').append(settingsHtml);
     $('#objective-generate').on('click', onGenerateObjectiveClick)
     $('#objective-chat-depth').on('input', onChatDepthInput)
@@ -396,6 +401,10 @@ jQuery(() => {
             return
         }
         if ($("#objective-check-frequency").val() > 0) {
+            // Check only at specified interval
+            if (checkCounter > 0) {
+                return
+            }
             checkTaskCompleted();
             checkCounter -= 1
         }
