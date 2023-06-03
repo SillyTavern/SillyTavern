@@ -219,6 +219,12 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
         this.saveServiceSettings().then(() => this.render());
     });
 
+    // Sanitize settings after character has been deleted.
+    document.addEventListener('characterDeleted', (event) => {
+        this.handleCharacterDeleted(event)
+        this.saveServiceSettings().then(() => this.render());
+    });
+
     // Prepare prompt edit form save and close button.
     document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_save').addEventListener('click', this.handleSavePrompt);
     document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_close').addEventListener('click', () => {
@@ -311,13 +317,18 @@ PromptManagerModule.prototype.isPromptDeletionAllowed = function (prompt) {
     return false === prompt.system_prompt;
 }
 
+PromptManagerModule.prototype.handleCharacterDeleted = function (event) {
+    this.removePromptListForCharacter(this.activeCharacter);
+    if (this.activeCharacter.id === event.detail.id) this.activeCharacter = null;
+}
+
 PromptManagerModule.prototype.handleCharacterSelected = function (event) {
     this.activeCharacter = {id: event.detail.id, ...event.detail.character};
     const promptList = this.getPromptListByCharacter(this.activeCharacter);
 
     // ToDo: These should be passed as parameter or attached to the manager as a set of default options.
     // Set default prompts and order for character.
-    if (0 === promptList.length) this.setPromptListForCharacter(this.activeCharacter, openAiDefaultPromptList)
+    if (0 === promptList.length) this.addPromptListForCharacter(this.activeCharacter, openAiDefaultPromptList)
     // Check whether the referenced prompts are present.
     if (0 === this.serviceSettings.prompts.length) this.setPrompts(openAiDefaultPrompts);
 }
@@ -337,13 +348,17 @@ PromptManagerModule.prototype.setPrompts = function(prompts) {
     this.serviceSettings.prompts = prompts;
 }
 
+PromptManagerModule.prototype.removePromptListForCharacter = function (character) {
+    const index = this.serviceSettings.prompt_lists.findIndex(list => String(list.character_id) === String(character.id));
+    if (-1 !== index) this.serviceSettings.prompt_lists.splice(index, 1);
+}
 
 /**
  * Sets a new prompt list for a specific character.
  * @param {Object} character - Object with at least an `id` property
  * @param {Array<Object>} promptList - Array of prompt objects
  */
-PromptManagerModule.prototype.setPromptListForCharacter = function (character, promptList) {
+PromptManagerModule.prototype.addPromptListForCharacter = function (character, promptList) {
     this.serviceSettings.prompt_lists.push({
         character_id: character.id,
         list: promptList
