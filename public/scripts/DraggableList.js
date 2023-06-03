@@ -84,7 +84,7 @@ DraggableListModule.prototype.getClosestDraggable = function (element) {
 
 DraggableListModule.prototype.getClosestDroppable = function (element) {
     return element !== this.list && element.closest('#' + this.list.id)
-        ? element.closest('.dropAllowed')
+        ? element.closest('.droppable')
         : null;
 }
 
