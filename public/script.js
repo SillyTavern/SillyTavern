@@ -818,7 +818,7 @@ async function printCharacters() {
         template.find('.avatar').attr('title', item.avatar);
         template.find('.ch_name').text(item.name);
         template.find('.ch_fav_icon').css("display", 'none');
-        template.addClass(item.fav == "true" ? 'is_fav' : '');
+        template.toggleClass('is_fav', item.fav || item.fav == 'true');
         template.find('.ch_fav').val(item.fav);
 
         // Display inline tags
@@ -4348,7 +4348,7 @@ export function select_selected_character(chid) {
         this_avatar = getThumbnailUrl('avatar', characters[chid].avatar);
     }
 
-    updateFavButtonState(characters[chid].fav == "true");
+    updateFavButtonState(characters[chid].fav || characters[chid].fav == "true");
 
     $("#avatar_load_preview").attr("src", this_avatar);
     $("#name_div").removeClass('displayBlock');

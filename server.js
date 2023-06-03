@@ -3,6 +3,11 @@
 const process = require('process')
 const yargs = require('yargs/yargs');
 const { hideBin } = require('yargs/helpers');
+const net = require("net");
+// work around a node v20 bug: https://github.com/nodejs/node/issues/47822#issuecomment-1564708870
+if (net.setDefaultAutoSelectFamily) {
+  net.setDefaultAutoSelectFamily(false);
+}
 
 const cliArguments = yargs(hideBin(process.argv))
     .option('ssl', {
@@ -716,7 +721,7 @@ function readFromV2(char) {
             return;
         }
         if (!_.isUndefined(char[charField]) && !_.isUndefined(v2Value) && char[charField] !== v2Value) {
-            console.debug(`Spec v2 data mismatch with Spec v1 for field: ${charField}`);
+            console.debug(`Spec v2 data mismatch with Spec v1 for field: ${charField}`, char[charField], v2Value);
         }
         char[charField] = v2Value;
     });
@@ -743,7 +748,7 @@ function charaFormatData(data) {
     _.set(char, 'avatar', 'none');
     _.set(char, 'chat', data.ch_name + ' - ' + humanizedISO8601DateTime());
     _.set(char, 'talkativeness', data.talkativeness);
-    _.set(char, 'fav', data.fav);
+    _.set(char, 'fav', data.fav == 'true');
     _.set(char, 'create_date', humanizedISO8601DateTime());
 
     // Spec V2 fields
@@ -767,13 +772,13 @@ function charaFormatData(data) {
 
     // ST extension fields to V2 object
     _.set(char, 'data.extensions.talkativeness', data.talkativeness);
-    _.set(char, 'data.extensions.fav', data.fav);
+    _.set(char, 'data.extensions.fav', data.fav == 'true');
     //_.set(char, 'data.extensions.create_date', humanizedISO8601DateTime());
     //_.set(char, 'data.extensions.avatar', 'none');
     //_.set(char, 'data.extensions.chat', data.ch_name + ' - ' + humanizedISO8601DateTime());
 
     // TODO: Character book
-    _.set(char, 'data.character_book', undefined);
+    _//.set(char, 'data.character_book', undefined);
 
     return char;
 }
@@ -840,10 +845,12 @@ app.post("/renamecharacter", jsonParser, async function (request, response) {
     const newChatsPath = path.join(chatsPath, newInternalName);
 
     try {
+        const _ = require('lodash');
         // Read old file, replace name int it
         const rawOldData = await charaRead(oldAvatarPath);
-        const oldData = json5.parse(rawOldData);
-        oldData['name'] = newName;
+        const oldData = getCharaCardV2(json5.parse(rawOldData));
+        _.set(oldData, 'data.name', newName);
+        _.set(oldData, 'name', newName);
         const newData = JSON.stringify(oldData);
 
         // Write data to new location
@@ -1002,14 +1009,7 @@ app.post("/getcharacters", jsonParser, function (request, response) {
         for (const item of pngFiles) {
             try {
                 var img_data = await charaRead(charactersPath + item);
-                let jsonObject = json5.parse(img_data);
-
-                if (jsonObject.spec === undefined) {
-                    jsonObject = convertToV2(jsonObject);
-                } else {
-                    jsonObject = readFromV2(jsonObject);
-                }
-
+                let jsonObject = getCharaCardV2(json5.parse(img_data));
                 jsonObject.avatar = item;
                 characters[i] = {};
                 characters[i] = jsonObject;
@@ -1182,6 +1182,15 @@ app.post("/savesettings", jsonParser, function (request, response) {
         }
     });
 });
+
+function getCharaCardV2(jsonObject) {
+    if (jsonObject.spec === undefined) {
+        jsonObject = convertToV2(jsonObject);
+    } else {
+        jsonObject = readFromV2(jsonObject);
+    }
+    return jsonObject;
+}
 
 function readAndParseFromDirectory(directoryPath, fileExtension = '.json') {
     const files = fs
@@ -1759,7 +1768,7 @@ app.post("/exportcharacter", jsonParser, async function (request, response) {
         case 'json': {
             try {
                 let json = await charaRead(filename);
-                let jsonObject = json5.parse(json);
+                let jsonObject = getCharaCardV2(json5.parse(json));
                 return response.type('json').send(jsonObject)
             }
             catch {

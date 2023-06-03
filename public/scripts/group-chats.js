@@ -954,7 +954,7 @@ function select_group_chats(groupId, skipAnimation) {
         template.find(".avatar img").attr("title", character.avatar);
         template.find(".ch_name").text(character.name);
         template.attr("chid", characters.indexOf(character));
-        template.addClass(character.fav == 'true' ? 'is_fav' : '');
+        template.toggleClass('is_fav', character.fav || character.fav == 'true');
 
         if (!group) {
             template.find('[data-action="speak"]').hide();
