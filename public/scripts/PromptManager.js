@@ -650,6 +650,7 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
         if (prompt.marker &&
             prompt.identifier !== 'newMainChat' &&
             prompt.identifier !== 'chatHistory' &&
+            prompt.identifier !== 'characterInfo' &&
             !advancedEnabled) return;
 
         const listEntry = this.getPromptListEntry(this.activeCharacter, prompt.identifier);
