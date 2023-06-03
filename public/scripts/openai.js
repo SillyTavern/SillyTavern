@@ -1071,9 +1071,9 @@ function loadOpenAISettings(data, settings) {
     oai_settings.chat_completion_source = settings.chat_completion_source ?? default_settings.chat_completion_source;
     oai_settings.api_url_scale = settings.api_url_scale ?? default_settings.api_url_scale;
 
-    oai_settings.prompts = settings.prompts ?? []
-    oai_settings.prompt_lists = settings.prompt_lists ?? [];
-    oai_settings.prompt_manager_settings = settings.prompt_manager_settings ?? [];
+    oai_settings.prompts = settings.prompts ?? default_settings.prompts;
+    oai_settings.prompt_lists = settings.prompt_lists ?? default_settings.prompt_lists;
+    oai_settings.prompt_manager_settings = settings.prompt_manager_settings ?? default_settings.prompt_manager_settings;
 
     if (settings.nsfw_toggle !== undefined) oai_settings.nsfw_toggle = !!settings.nsfw_toggle;
     if (settings.keep_example_dialogue !== undefined) oai_settings.keep_example_dialogue = !!settings.keep_example_dialogue;
