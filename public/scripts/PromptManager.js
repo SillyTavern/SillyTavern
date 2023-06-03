@@ -313,11 +313,13 @@ PromptManagerModule.prototype.isPromptDeletionAllowed = function (prompt) {
 
 PromptManagerModule.prototype.handleCharacterSelected = function (event) {
     this.activeCharacter = {id: event.detail.id, ...event.detail.character};
-
     const promptList = this.getPromptListByCharacter(this.activeCharacter);
-    if (0 === promptList.length) {
-        this.setPromptListForCharacter(this.activeCharacter, this.getDefaultPromptList())
-    }
+
+    // ToDo: These should be passed as parameter or attached to the manager as a set of default options.
+    // Set default prompts and order for character.
+    if (0 === promptList.length) this.setPromptListForCharacter(this.activeCharacter, openAiDefaultPromptList)
+    // Check whether the referenced prompts are present.
+    if (0 === this.serviceSettings.prompts.length) this.setPrompts(openAiDefaultPrompts);
 }
 
 PromptManagerModule.prototype.getPromptsForCharacter = function (character, onlyEnabled = false) {
@@ -328,7 +330,11 @@ PromptManagerModule.prototype.getPromptsForCharacter = function (character, only
 
 // Get the prompt order for a given character, otherwise an empty array is returned.
 PromptManagerModule.prototype.getPromptListByCharacter = function (character) {
-    return character === null ? [] : (this.serviceSettings.prompt_lists.find(list => String(list.character_id) === String(character.id))?.list ?? []);
+    return !character ? [] : (this.serviceSettings.prompt_lists.find(list => String(list.character_id) === String(character.id))?.list ?? []);
+}
+
+PromptManagerModule.prototype.setPrompts = function(prompts) {
+    this.serviceSettings.prompts = prompts;
 }
 
 PromptManagerModule.prototype.setPromptListForCharacter = function (character, promptList) {
@@ -748,58 +754,55 @@ const openAiDefaultPrompts = {
 };
 
 const openAiDefaultPromptLists = {
-    "prompt_lists": [
-        {
-            "character_id": "default",
-            "list": [
-                {
-                    "identifier": "worldInfoBefore",
-                    "enabled": true
-                },
-                {
-                    "identifier": "characterInfo",
-                    "enabled": true
-                },
-                {
-                    "identifier": "nsfw",
-                    "enabled": false
-                },
-                {
-                    "identifier": "main",
-                    "enabled": true
-                },
-                {
-                    "identifier": "enhanceDefinitions",
-                    "enabled": false
-                },
-                {
-                    "identifier": "worldInfoAfter",
-                    "enabled": true
-                },
-                {
-                    "identifier": "newExampleChat",
-                    "enabled": true
-                },
-                {
-                    "identifier": "dialogueExamples",
-                    "enabled": true
-                },
-                {
-                    "identifier": "newMainChat",
-                    "enabled": true
-                },
-                {
-                    "identifier": "chatHistory",
-                    "enabled": true
-                },
-                {
-                    "identifier": "jailbreak",
-                    "enabled": false
-                }
-            ]
-        }
-    ]
+    "prompt_lists": []
 };
+
+const openAiDefaultPromptList = [
+    {
+        "identifier": "worldInfoBefore",
+        "enabled": true
+    },
+    {
+        "identifier": "characterInfo",
+        "enabled": true
+    },
+    {
+        "identifier": "nsfw",
+        "enabled": false
+    },
+    {
+        "identifier": "main",
+        "enabled": true
+    },
+    {
+        "identifier": "enhanceDefinitions",
+        "enabled": false
+    },
+    {
+        "identifier": "worldInfoAfter",
+        "enabled": true
+    },
+    {
+        "identifier": "newExampleChat",
+        "enabled": true
+    },
+    {
+        "identifier": "dialogueExamples",
+        "enabled": true
+    },
+    {
+        "identifier": "newMainChat",
+        "enabled": true
+    },
+    {
+        "identifier": "chatHistory",
+        "enabled": true
+    },
+    {
+        "identifier": "jailbreak",
+        "enabled": false
+    }
+];
 
 const defaultPromptManagerSettings = {
     "prompt_manager_settings": {
