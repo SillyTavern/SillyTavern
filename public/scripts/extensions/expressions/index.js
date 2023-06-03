@@ -1,5 +1,5 @@
 import { callPopup, getRequestHeaders, saveSettingsDebounced } from "../../../script.js";
-import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper } from "../../extensions.js";
+import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper, doExtrasFetch } from "../../extensions.js";
 export { MODULE_NAME };
 
 const MODULE_NAME = 'expressions';
@@ -122,7 +122,7 @@ async function moduleWorker() {
         const url = new URL(getApiUrl());
         url.pathname = '/api/classify';
 
-        const apiResult = await fetch(url, {
+        const apiResult = await doExtrasFetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -265,7 +265,7 @@ async function getExpressionsList() {
     url.pathname = '/api/classify/labels';
 
     try {
-        const apiResult = await fetch(url, {
+        const apiResult = await doExtrasFetch(url, {
             method: 'GET',
             headers: { 'Bypass-Tunnel-Reminder': 'bypass' },
         });
