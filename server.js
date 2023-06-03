@@ -2196,9 +2196,20 @@ app.post('/deletegroup', jsonParser, async (request, response) => {
 
 const POE_DEFAULT_BOT = 'a2';
 
+const poeClientCache = {};
+
 async function getPoeClient(token, useCache = false) {
-    let client = new poe.Client(false, useCache);
-    await client.init(token);
+    let client;
+
+    if (useCache && poeClientCache[token]) {
+        client = poeClientCache[token];
+    }
+    else {
+        client = new poe.Client(true, useCache);
+        await client.init(token);
+    }
+
+    poeClientCache[token] = client;
     return client;
 }
 
@@ -2210,9 +2221,9 @@ app.post('/status_poe', jsonParser, async (request, response) => {
     }
 
     try {
-        const client = await getPoeClient(token);
+        const client = await getPoeClient(token, false);
         const botNames = client.get_bot_names();
-        client.disconnect_ws();
+        //client.disconnect_ws();
 
         return response.send({ 'bot_names': botNames });
     }
@@ -2240,7 +2251,7 @@ app.post('/purge_poe', jsonParser, async (request, response) => {
         else {
             await client.send_chat_break(bot);
         }
-        client.disconnect_ws();
+        //client.disconnect_ws();
 
         return response.send({ "ok": true });
     }
@@ -2262,12 +2273,13 @@ app.post('/generate_poe', jsonParser, async (request, response) => {
     }
 
     let isGenerationStopped = false;
+    const abortController = new AbortController();
     request.socket.removeAllListeners('close');
     request.socket.on('close', function () {
         isGenerationStopped = true;
 
         if (client) {
-            client.abortController.abort();
+            abortController.abort();
         }
     });
     const prompt = request.body.prompt;
@@ -2293,7 +2305,7 @@ app.post('/generate_poe', jsonParser, async (request, response) => {
             });
 
             let reply = '';
-            for await (const mes of client.send_message(bot, prompt)) {
+            for await (const mes of client.send_message(bot, prompt, false, 30, abortController.signal)) {
                 if (isGenerationStopped) {
                     console.error('Streaming stopped by user. Closing websocket...');
                     break;
@@ -2309,22 +2321,22 @@ app.post('/generate_poe', jsonParser, async (request, response) => {
             console.error(err);
         }
         finally {
-            client.disconnect_ws();
+            //client.disconnect_ws();
             response.end();
         }
     }
     else {
         try {
             let reply;
-            for await (const mes of client.send_message(bot, prompt)) {
+            for await (const mes of client.send_message(bot, prompt, false, 30, abortController.signal)) {
                 reply = mes.text;
             }
             console.log(reply);
-            client.disconnect_ws();
+            //client.disconnect_ws();
             return response.send({ 'reply': reply });
         }
         catch {
-            client.disconnect_ws();
+            //client.disconnect_ws();
             return response.sendStatus(500);
         }
     }
