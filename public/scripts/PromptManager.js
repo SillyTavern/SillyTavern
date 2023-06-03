@@ -9,36 +9,37 @@ const ChatCompletion = {
         return {
             map: [],
             add(identifier, message) {
-                this.map.push({identifier: identifier, message: message})
+                this.map.push({ identifier, message });
                 return this;
             },
             insertBefore(identifier, insertIdentifier, insert) {
                 const index = this.getMessageIndex(identifier);
-                if (index === -1) throw new Error(`Identifier ${identifier} not found`);
-                this.map.splice(index, 0, {identifier: insertIdentifier, message: insert});
+                this.map.splice(this.assertIndex(index, identifier), 0, { identifier: insertIdentifier, message: insert });
                 return this;
             },
             insertAfter(identifier, insertIdentifier, insert) {
                 const index = this.getMessageIndex(identifier);
-                if (index === -1) throw new Error(`Identifier ${identifier} not found`);
-                this.map.splice(index + 1, 0, {identifier: insertIdentifier, message: insert});
+                this.map.splice(this.assertIndex(index, identifier) + 1, 0, { identifier: insertIdentifier, message: insert });
                 return this;
             },
             replace(identifier, replacement) {
                 const index = this.getMessageIndex(identifier);
-                if (index === -1) throw new Error(`Identifier ${identifier} not found`);
-                this.map[index] = {identifier: identifier, message: replacement};
+                this.map[this.assertIndex(index, identifier)] = { identifier, message: replacement };
                 return this;
             },
             remove(identifier) {
                 const index = this.getMessageIndex(identifier);
-                if (index === -1) throw new Error(`Identifier ${identifier} not found`);
-                this.map.splice(index, 1);
+                this.map.splice(this.assertIndex(index, identifier), 1);
                 return this;
             },
+            assertIndex(index, identifier) {
+                if (index === -1) {
+                    throw new IdentifierNotFoundError(`Identifier ${identifier} not found`);
+                }
+                return index;
+            },
             getMessageIndex(identifier) {
-                const index = this.map.findIndex(message => message.identifier === identifier)
-                return -1 === index ? false : index;
+                return this.map.findIndex(message => message.identifier === identifier);
             },
             makeSystemMessage(content) {
                 return this.makeMessage('system', content);
