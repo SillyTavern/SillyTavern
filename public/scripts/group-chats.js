@@ -185,6 +185,8 @@ function getFirstCharacterMessage(character) {
     mes["name"] = character.name;
     mes["is_name"] = true;
     mes["send_date"] = humanizedDateTime();
+    mes["original_avatar"] = character.avatar;
+    mes["extra"] = { "gen_id": Date.now() * Math.random() * 1000000 };
     mes["mes"] = character.first_mes
         ? substituteParams(character.first_mes.trim(), name1, character.name)
         : default_ch_mes;
@@ -1084,6 +1086,7 @@ function select_group_chats(groupId, skipAnimation) {
         }
 
         sortGroupMembers("#rm_group_add_members .group_member");
+        await eventSource.emit(event_types.GROUP_UPDATED);
     });
 }
 

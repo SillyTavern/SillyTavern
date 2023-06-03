@@ -10,6 +10,21 @@
     width: 100vw;
 }
 
+#visual-novel-wrapper {
+    display: flex;
+    height: calc(100vh - 40px);
+    width: 100vw;
+    position: relative;
+}
+
+#visual-novel-wrapper  .expression-holder {
+    width: max-content;
+}
+
+#visual-novel-wrapper img.expression {
+    object-fit: cover;
+}
+
 .expression-holder {
     min-width: 100px;
     min-height: 100px;

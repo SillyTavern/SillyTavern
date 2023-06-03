@@ -425,6 +425,8 @@ export const event_types = {
     IMPERSONATE_READY: 'impersonate_ready',
     CHAT_CHANGED: 'chat_id_changed',
     GENERATION_STOPPED: 'generation_stopped',
+    SETTINGS_UPDATED: 'settings_updated',
+    GROUP_UPDATED: 'group_updated',
 }
 
 export const eventSource = new EventEmitter();
@@ -3955,6 +3957,7 @@ function selectKoboldGuiPreset() {
 
 async function saveSettings(type) {
     //console.log('Entering settings with name1 = '+name1);
+    eventSource.emit(event_types.SETTINGS_UPDATED);
     return jQuery.ajax({
         type: "POST",
         url: "/savesettings",

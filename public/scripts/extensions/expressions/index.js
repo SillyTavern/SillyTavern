@@ -1,5 +1,8 @@
-import { callPopup, getRequestHeaders, saveSettingsDebounced } from "../../../script.js";
+import { callPopup, eventSource, event_types, getRequestHeaders, saveSettingsDebounced } from "../../../script.js";
+import { deviceInfo } from "../../RossAscends-mods.js";
 import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper, doExtrasFetch } from "../../extensions.js";
+import { power_user } from "../../power-user.js";
+import { onlyUnique, debounce } from "../../utils.js";
 export { MODULE_NAME };
 
 const MODULE_NAME = 'expressions';
@@ -41,6 +44,201 @@ let lastMessage = null;
 let spriteCache = {};
 let inApiCall = false;
 
+function isVisualNovelMode() {
+    return Boolean(!deviceInfo.isMobile && power_user.waifuMode && getContext().groupId);
+}
+
+async function forceUpdateVisualNovelMode() {
+    if (isVisualNovelMode()) {
+        await updateVisualNovelMode();
+    }
+}
+
+const updateVisualNovelModeDebounced = debounce(forceUpdateVisualNovelMode, 100);
+
+async function updateVisualNovelMode(name, expression) {
+    const container = $('#visual-novel-wrapper');
+
+    await visualNovelRemoveInactive(container);
+
+    const setSpritePromises = await visualNovelSetCharacterSprites(container, name, expression);
+
+    // calculate layer indices based on recent messages
+    await visualNovelUpdateLayers(container);
+
+    await Promise.allSettled(setSpritePromises);
+
+    // update again based on new sprites
+    if (setSpritePromises.length > 0) {
+        await visualNovelUpdateLayers(container);
+    }
+}
+
+async function visualNovelRemoveInactive(container) {
+    const context = getContext();
+    const group = context.groups.find(x => x.id == context.groupId);
+    const members = group.members;
+    const removeInactiveCharactersPromises = [];
+
+    // remove inactive characters after 1 second
+    container.find('.expression-holder').each((_, current) => {
+        const promise = new Promise(resolve => {
+            const element = $(current);
+            const avatar = element.data('avatar');
+
+            if (!members.includes(avatar) || group.disabled_members.includes(avatar)) {
+                element.fadeOut(250, () => {
+                    element.remove();
+                    resolve();
+                });
+            } else {
+                resolve();
+            }
+        });
+
+        removeInactiveCharactersPromises.push(promise);
+    });
+
+    await Promise.allSettled(removeInactiveCharactersPromises);
+}
+
+async function visualNovelSetCharacterSprites(container, name, expression) {
+    const context = getContext();
+    const group = context.groups.find(x => x.id == context.groupId);
+    const members = group.members;
+    const labels = await getExpressionsList();
+
+    const createCharacterPromises = [];
+    const setSpritePromises = [];
+
+    for (const avatar of members) {
+        const isDisabled = group.disabled_members.includes(avatar);
+
+        // skip disabled characters
+        if (isDisabled) {
+            continue;
+        }
+
+        const character = context.characters.find(x => x.avatar == avatar);
+
+        // download images if not downloaded yet
+        if (spriteCache[character.name] === undefined) {
+            spriteCache[character.name] = await getSpritesList(character.name, character);
+        }
+
+        const sprites = spriteCache[character.name];
+        const expressionImage = container.find(`.expression-holder[data-avatar="${avatar}"]`);
+        const defaultSpritePath = sprites.find(x => x.label === 'joy')?.path;
+
+        if (expressionImage.length > 0) {
+            if (name == character.name) {
+                const currentSpritePath = labels.includes(expression) ? sprites.find(x => x.label === expression)?.path : '';
+
+                const path = currentSpritePath || defaultSpritePath || '';
+                const img = expressionImage.find('img');
+                setImage(img, path);
+            }
+        } else {
+            const template = $('#expression-holder').clone();
+            template.attr('data-avatar', avatar);
+            $('#visual-novel-wrapper').append(template);
+            setImage(template.find('img'), defaultSpritePath || '');
+            const fadeInPromise = new Promise(resolve => {
+                template.fadeIn(250, () => resolve());
+            });
+            createCharacterPromises.push(fadeInPromise);
+            const setSpritePromise = setLastMessageSprite(template.find('img'), avatar, labels);
+            setSpritePromises.push(setSpritePromise);
+        }
+    }
+
+    await Promise.allSettled(createCharacterPromises);
+    return setSpritePromises;
+}
+
+async function visualNovelUpdateLayers(container) {
+    const context = getContext();
+    const group = context.groups.find(x => x.id == context.groupId);
+    const members = group.members;
+    const recentMessages = context.chat.map(x => x.original_avatar).filter(onlyUnique);
+    const filteredMembers = members.filter(x => !group.disabled_members.includes(x));
+    const layerIndices = filteredMembers.slice().sort((a, b) => recentMessages.indexOf(a) - recentMessages.indexOf(b));
+
+    const setLayerIndicesPromises = [];
+
+    const sortFunction = (a, b) => {
+        const avatarA = $(a).data('avatar');
+        const avatarB = $(b).data('avatar');
+        const indexA = filteredMembers.indexOf(avatarA);
+        const indexB = filteredMembers.indexOf(avatarB);
+        return indexA - indexB;
+    };
+
+    const containerWidth = container.width();
+    const pivotalPoint = containerWidth * 0.5;
+
+    let images = $('.expression-holder');
+    let imagesWidth = [];
+
+    images.sort(sortFunction).each(function () {
+        imagesWidth.push($(this).width());
+    });
+
+    let totalWidth = imagesWidth.reduce((a, b) => a + b, 0);
+    let currentPosition = pivotalPoint - (totalWidth / 2);
+
+    if (totalWidth > containerWidth) {
+        let overlap = (totalWidth - containerWidth) / (imagesWidth.length - 1);
+        imagesWidth = imagesWidth.map((width) => width - overlap);
+        currentPosition = 0; // Reset the initial position to 0
+    }
+
+    images.sort(sortFunction).each((index, current) => {
+        const element = $(current);
+        const avatar = element.data('avatar');
+        const layerIndex = layerIndices.indexOf(avatar);
+        element.css('z-index', layerIndex);
+        element.show();
+
+        const promise = new Promise(resolve => {
+            element.animate({ left: currentPosition + 'px' }, 500, () => {
+                resolve();
+            });
+        });
+
+        currentPosition += imagesWidth[index];
+
+        setLayerIndicesPromises.push(promise);
+    });
+
+    await Promise.allSettled(setLayerIndicesPromises);
+}
+
+async function setLastMessageSprite(img, avatar, labels) {
+    const context = getContext();
+    const lastMessage = context.chat.slice().reverse().find(x => x.original_avatar == avatar || (x.force_avatar && x.force_avatar.includes(encodeURIComponent(avatar))));
+
+    if (lastMessage) {
+        const text = lastMessage.mes || '';
+        const sprites = spriteCache[lastMessage.name] || [];
+        const label = await getExpressionLabel(text);
+        const path = labels.includes(label) ? sprites.find(x => x.label === label)?.path : '';
+
+        if (path) {
+            setImage(img, path);
+        }
+    }
+}
+
+function setImage(img, path) {
+    img.attr('src', path);
+    img.removeClass('default');
+    img.off('error');
+    img.on('error', function () {
+        $(this).attr('src', '');
+    });
+}
+
 function onExpressionsShowDefaultInput() {
     const value = $(this).prop('checked');
     extension_settings.expressions.showDefault = value;
@@ -71,6 +269,23 @@ async function moduleWorker() {
     if (context.groupId !== lastCharacter && context.characterId !== lastCharacter) {
         removeExpression();
         spriteCache = {};
+    }
+
+    const vnMode = isVisualNovelMode();
+    const vnWrapperVisible = $('#visual-novel-wrapper').is(':visible');
+
+    if (vnMode) {
+        $('#expression-wrapper').hide();
+        $('#visual-novel-wrapper').show();
+    } else {
+        $('#expression-wrapper').show();
+        $('#visual-novel-wrapper').hide();
+    }
+
+    const vnStateChanged = vnMode !== vnWrapperVisible;
+
+    if (vnStateChanged) {
+        lastMessage = null;
     }
 
     const currentLastMessage = getLastCharacterMessage();
@@ -119,29 +334,19 @@ async function moduleWorker() {
 
     try {
         inApiCall = true;
-        const url = new URL(getApiUrl());
-        url.pathname = '/api/classify';
+        let expression = await getExpressionLabel(currentLastMessage.mes);
 
-        const apiResult = await doExtrasFetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Bypass-Tunnel-Reminder': 'bypass',
-            },
-            body: JSON.stringify({ text: currentLastMessage.mes })
-        });
+        const name = context.groupId ? currentLastMessage.name : context.name2;
+        const force = !!context.groupId;
 
-        if (apiResult.ok) {
-            const name = context.groupId ? currentLastMessage.name : context.name2;
-            const force = !!context.groupId;
-            const data = await apiResult.json();
-            let expression = data.classification[0].label;
+        // Character won't be angry on you for swiping
+        if (currentLastMessage.mes == '...' && expressionsList.includes('joy')) {
+            expression = 'joy';
+        }
 
-            // Character won't be angry on you for swiping
-            if (currentLastMessage.mes == '...' && expressionsList.includes('joy')) {
-                expression = 'joy';
-            }
-
+        if (vnMode) {
+            await updateVisualNovelMode(name, expression);
+        } else {
             setExpression(name, expression, force);
         }
 
@@ -153,6 +358,25 @@ async function moduleWorker() {
         inApiCall = false;
         lastCharacter = context.groupId || context.characterId;
         lastMessage = currentLastMessage.mes;
+    }
+}
+
+async function getExpressionLabel(text) {
+    const url = new URL(getApiUrl());
+    url.pathname = '/api/classify';
+
+    const apiResult = await doExtrasFetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Bypass-Tunnel-Reminder': 'bypass',
+        },
+        body: JSON.stringify({ text: text }),
+    });
+
+    if (apiResult.ok) {
+        const data = await apiResult.json();
+        return data.classification[0].label;
     }
 }
 
@@ -450,6 +674,14 @@ async function onClickExpressionDelete(event) {
         </div>`;
         $('body').append(html);
     }
+    function addVisualNovelMode() {
+        const html = `
+        <div id="visual-novel-wrapper">
+        </div>`
+        const element = $(html);
+        element.hide();
+        $('body').append(element);
+    }
     function addSettings() {
 
         const html = `
@@ -486,12 +718,17 @@ async function onClickExpressionDelete(event) {
         $(document).on('click', '.expression_list_item', onClickExpressionImage);
         $(document).on('click', '.expression_list_upload', onClickExpressionUpload);
         $(document).on('click', '.expression_list_delete', onClickExpressionDelete);
+        $(window).on("resize", updateVisualNovelModeDebounced);
         $('.expression_settings').hide();
     }
 
     addExpressionImage();
+    addVisualNovelMode();
     addSettings();
     const wrapper = new ModuleWorkerWrapper(moduleWorker);
-    setInterval(wrapper.update.bind(wrapper), UPDATE_INTERVAL);
+    const updateFunction = wrapper.update.bind(wrapper);
+    setInterval(updateFunction, UPDATE_INTERVAL);
     moduleWorker();
+    eventSource.on(event_types.CHAT_CHANGED, updateFunction);
+    eventSource.on(event_types.GROUP_UPDATED, updateVisualNovelModeDebounced);
 })();
