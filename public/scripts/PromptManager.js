@@ -401,7 +401,8 @@ PromptManagerModule.prototype.renderPromptManager = function () {
     rangeBlockDescDiv.textContent = 'Shows your prompts and the order in which they will be sent'
 
     const notesLink = document.createElement('a');
-    notesLink.href = '';
+    notesLink.href = '/notes#openaipromptmanager';
+    notesLink.setAttribute('target', '_blank');
     notesLink.classList.add('notes-link');
 
     const noteLinkSpan = document.createElement('span');
