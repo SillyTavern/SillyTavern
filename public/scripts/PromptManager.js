@@ -2,6 +2,14 @@ import {countTokens} from "./openai.js";
 import {DraggablePromptListModule as DraggableList} from "./DraggableList.js";
 import {substituteParams} from "../script.js";
 
+// Thrown by ChatCompletion when a requested prompt couldn't be found.
+class IdentifierNotFoundError extends Error {
+    constructor(identifier) {
+        super(`Identifier ${identifier} not found`);
+        this.name = 'IdentifierNotFoundError';
+    }
+}
+
 // OpenAI API chat message handling
 // const map = [{identifier: 'example', message: {role: 'system', content: 'exampleContent'}}, ...];
 const ChatCompletion = {
@@ -11,6 +19,10 @@ const ChatCompletion = {
             add(identifier, message) {
                 this.map.push({ identifier, message });
                 return this;
+            },
+            get(identifier) {
+                const index = this.getMessageIndex(identifier);
+                return this.assertIndex(index, identifier).map[index];
             },
             insertBefore(identifier, insertIdentifier, insert) {
                 const index = this.getMessageIndex(identifier);
