@@ -395,9 +395,6 @@ async function prepareOpenAIMessages({ systemPrompt, name2, storyString, worldIn
     // Handle bias settings
     if (bias && bias.trim().length) chatCompletion.add(biasMessage);
 
-    // Handle impersonation
-    if (type === "impersonate") chatCompletion.replace('main', substituteParams(oai_settings.impersonation_prompt));
-
     // Handle chat examples
     // ToDo: Update dialogueExamples prompt with only the token count that's actually sent.
     const exampleMessages = prepareExampleMessages(openai_msgs ,openai_msgs_example, power_user.pin_examples);
@@ -408,6 +405,9 @@ async function prepareOpenAIMessages({ systemPrompt, name2, storyString, worldIn
         const quietPromptMessage = chatCompletion.makeSystemMessage(quietPrompt);
         chatCompletion.insertAfter('main', quietPromptMessage)
     }
+
+    // Handle impersonation
+    if (type === "impersonate") chatCompletion.replace('main', chatCompletion.makeSystemMessage(substituteParams(oai_settings.impersonation_prompt)));
 
     promptManager.updatePrompts(chatCompletion.getPromptsWithTokenCount());
 
