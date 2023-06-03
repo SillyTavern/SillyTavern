@@ -397,8 +397,8 @@ class Client {
             _headers['poe-tag-id'] = md5()(scramblePayload + this.formkey + "WpuLMiXEKKE98j56k");
             _headers['poe-formkey'] = this.formkey;
             const r = await request_with_retries(() => this.session.post(this.gql_url, payload, { headers: this.gql_headers }));
-            if (!r.data.data) {
-                logger.warn(`${queryName} returned an error: ${data.errors[0].message} | Retrying (${i + 1}/20)`);
+            if (!(r?.data?.data)) {
+                logger.warn(`${queryName} returned an error | Retrying (${i + 1}/20)`);
                 await delay(2000);
                 continue;
             }
