@@ -32,6 +32,7 @@ let queries = {};
 const cached_bots = {};
 
 const logger = console;
+const delay = ms => new Promise(res => setTimeout(res, ms));
 
 const user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36";
 
@@ -246,6 +247,7 @@ class Client {
     settings_url = "https://poe.com/api/settings";
 
     formkey = "";
+    token = "";
     next_data = {};
     bots = {};
     active_messages = {};
@@ -264,14 +266,13 @@ class Client {
     async reconnect() {
         if (!this.ws_connected) {
             console.log("WebSocket died. Reconnecting...");
-            this.disconnect_ws()
-            this.next_data = await this.get_next_data()
-            await this.subscribe();
-            await this.connect_ws();
+            this.disconnect_ws();
+            await this.init(this.token, this.proxy);
         }
     }
 
     async init(token, proxy = null) {
+        this.token = token;
         this.proxy = proxy;
         this.session = axios.default.create({
             timeout: 60000,
@@ -398,7 +399,7 @@ class Client {
             const r = await request_with_retries(() => this.session.post(this.gql_url, payload, { headers: this.gql_headers }));
             if (!r.data.data) {
                 logger.warn(`${queryName} returned an error: ${data.errors[0].message} | Retrying (${i + 1}/20)`);
-                await new Promise((resolve) => setTimeout(resolve, 2000));
+                await delay(2000);
                 continue;
             }
 
@@ -406,6 +407,29 @@ class Client {
         }
 
         throw new Error(`${queryName} failed too many times.`);
+    }
+
+    async ws_ping() {
+        const pongPromise = new Promise((resolve) => {
+            if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                this.ws.ping();
+            }
+            this.ws.once('pong', () => {
+                resolve('ok');
+            });
+        });
+
+        const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve('timeout'), 5000));
+        const result = await Promise.race([pongPromise, timeoutPromise]);
+
+        if (result == 'ok') {
+            return true;
+        }
+        else {
+            logger.warn('Websocket ping timed out.');
+            this.ws_connected = false;
+            return false;
+        }
     }
 
     async subscribe() {
@@ -459,7 +483,7 @@ class Client {
         this.ws_connected = false;
         this.ws_run_thread();
         while (!this.ws_connected) {
-            await new Promise(resolve => setTimeout(() => { resolve() }, 10));
+            await delay(10);
         }
     }
 
@@ -524,13 +548,15 @@ class Client {
     }
 
     async *send_message(chatbot, message, with_chat_break = false, timeout = 30, signal = null) {
+        await this.ws_ping();
+
         if (this.auto_reconnect) {
             await this.reconnect();
         }
 
         //if there is another active message, wait until it has finished sending
         while (Object.values(this.active_messages).includes(null)) {
-            await new Promise(resolve => setTimeout(resolve, 10));
+            await delay(10);
         }
 
         //null indicates that a message is still in progress
@@ -579,7 +605,7 @@ class Client {
                 const message = this.message_queues[humanMessageId].shift();
                 if (!message) {
                     timeout -= 1;
-                    await new Promise(resolve => setTimeout(() => resolve(), 1000));
+                    await delay(1000);
                     continue;
                     //throw new Error("Queue is empty");
                 }
