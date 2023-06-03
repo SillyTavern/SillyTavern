@@ -858,9 +858,9 @@ function loadOpenAISettings(data, settings) {
     oai_settings.nsfw_avoidance_prompt = settings.nsfw_avoidance_prompt ?? default_settings.nsfw_avoidance_prompt;
     oai_settings.wi_format = settings.wi_format ?? default_settings.wi_format;
 
-    oai_settings.prompts = settings.prompts ?? []
-    oai_settings.prompt_lists = settings.prompt_lists ?? [];
-    oai_settings.prompt_manager_settings = settings.prompt_manager_settings ?? [];
+    oai_settings.prompts = settings.prompts ?? default_settings.prompts;
+    oai_settings.prompt_lists = settings.prompt_lists ?? default_settings.prompt_lists;
+    oai_settings.prompt_manager_settings = settings.prompt_manager_settings ?? default_settings.prompt_manager_settings;
 
     if (settings.nsfw_toggle !== undefined) oai_settings.nsfw_toggle = !!settings.nsfw_toggle;
     if (settings.keep_example_dialogue !== undefined) oai_settings.keep_example_dialogue = !!settings.keep_example_dialogue;

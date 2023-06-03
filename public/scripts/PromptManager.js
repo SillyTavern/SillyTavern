@@ -411,7 +411,7 @@ PromptManagerModule.prototype.handleCharacterSelected = function (event) {
     // Set default prompts and order for character.
     if (0 === promptList.length) this.addPromptListForCharacter(this.activeCharacter, openAiDefaultPromptList)
     // Check whether the referenced prompts are present.
-    if (0 === this.serviceSettings.prompts.length) this.setPrompts(openAiDefaultPrompts);
+    if (0 === this.serviceSettings.prompts.length) this.setPrompts(openAiDefaultPrompts.prompts);
 }
 
 /**
