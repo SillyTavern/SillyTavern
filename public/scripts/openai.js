@@ -1075,12 +1075,9 @@ function loadOpenAISettings(data, settings) {
     oai_settings.prompt_lists = settings.prompt_lists ?? default_settings.prompt_lists;
     oai_settings.prompt_manager_settings = settings.prompt_manager_settings ?? default_settings.prompt_manager_settings;
 
-    if (settings.nsfw_toggle !== undefined) oai_settings.nsfw_toggle = !!settings.nsfw_toggle;
     if (settings.keep_example_dialogue !== undefined) oai_settings.keep_example_dialogue = !!settings.keep_example_dialogue;
     if (settings.wrap_in_quotes !== undefined) oai_settings.wrap_in_quotes = !!settings.wrap_in_quotes;
-    if (settings.nsfw_first !== undefined) oai_settings.nsfw_first = !!settings.nsfw_first;
     if (settings.openai_model !== undefined) oai_settings.openai_model = settings.openai_model;
-    if (settings.jailbreak_system !== undefined) oai_settings.jailbreak_system = !!settings.jailbreak_system;
 
     $('#stream_toggle').prop('checked', oai_settings.stream_openai);
     $('#api_url_scale').val(oai_settings.api_url_scale);
@@ -1104,9 +1101,6 @@ function loadOpenAISettings(data, settings) {
     $('#jailbreak_system').prop('checked', oai_settings.jailbreak_system);
     $('#legacy_streaming').prop('checked', oai_settings.legacy_streaming);
 
-    if (settings.main_prompt !== undefined) oai_settings.main_prompt = settings.main_prompt;
-    if (settings.nsfw_prompt !== undefined) oai_settings.nsfw_prompt = settings.nsfw_prompt;
-    if (settings.jailbreak_prompt !== undefined) oai_settings.jailbreak_prompt = settings.jailbreak_prompt;
     if (settings.impersonation_prompt !== undefined) oai_settings.impersonation_prompt = settings.impersonation_prompt;
     $('#main_prompt_textarea').val(oai_settings.main_prompt);
     $('#nsfw_prompt_textarea').val(oai_settings.nsfw_prompt);
@@ -1264,12 +1258,8 @@ async function saveOpenAIPreset(name, settings) {
         top_k: settings.top_k_openai,
         openai_max_context: settings.openai_max_context,
         openai_max_tokens: settings.openai_max_tokens,
-        nsfw_toggle: settings.nsfw_toggle,
         wrap_in_quotes: settings.wrap_in_quotes,
         send_if_empty: settings.send_if_empty,
-        nsfw_first: settings.nsfw_first,
-        main_prompt: settings.main_prompt,
-        nsfw_prompt: settings.nsfw_prompt,
         jailbreak_prompt: settings.jailbreak_prompt,
         jailbreak_system: settings.jailbreak_system,
         impersonation_prompt: settings.impersonation_prompt,
@@ -1615,10 +1605,8 @@ function onSettingsPresetChange() {
         openrouter_model: ['#model_openrouter_select', 'openrouter_model', false],
         openai_max_context: ['#openai_max_context', 'openai_max_context', false],
         openai_max_tokens: ['#openai_max_tokens', 'openai_max_tokens', false],
-        nsfw_toggle: ['#nsfw_toggle', 'nsfw_toggle', true],
         wrap_in_quotes: ['#wrap_in_quotes', 'wrap_in_quotes', true],
         send_if_empty: ['#send_if_empty_textarea', 'send_if_empty', false],
-        jailbreak_system: ['#jailbreak_system', 'jailbreak_system', true],
         impersonation_prompt: ['#impersonation_prompt_textarea', 'impersonation_prompt', false],
         bias_preset_selected: ['#openai_logit_bias_preset', 'bias_preset_selected', false],
         reverse_proxy: ['#openai_reverse_proxy', 'reverse_proxy', false],
@@ -2012,11 +2000,6 @@ $(document).ready(function () {
         saveSettingsDebounced();
     });
 
-    $('#nsfw_toggle').on('change', function () {
-        oai_settings.nsfw_toggle = !!$('#nsfw_toggle').prop('checked');
-        saveSettingsDebounced();
-    });
-
     $('#wrap_in_quotes').on('change', function () {
         oai_settings.wrap_in_quotes = !!$('#wrap_in_quotes').prop('checked');
         saveSettingsDebounced();
@@ -2024,26 +2007,6 @@ $(document).ready(function () {
 
     $("#send_if_empty_textarea").on('input', function () {
         oai_settings.send_if_empty = $('#send_if_empty_textarea').val();
-        saveSettingsDebounced();
-    });
-
-    $('#nsfw_first').on('change', function () {
-        oai_settings.nsfw_first = !!$('#nsfw_first').prop('checked');
-        saveSettingsDebounced();
-    });
-
-    $("#jailbreak_prompt_textarea").on('input', function () {
-        oai_settings.jailbreak_prompt = $('#jailbreak_prompt_textarea').val();
-        saveSettingsDebounced();
-    });
-
-    $("#main_prompt_textarea").on('input', function () {
-        oai_settings.main_prompt = $('#main_prompt_textarea').val();
-        saveSettingsDebounced();
-    });
-
-    $("#nsfw_prompt_textarea").on('input', function () {
-        oai_settings.nsfw_prompt = $('#nsfw_prompt_textarea').val();
         saveSettingsDebounced();
     });
 
@@ -2059,11 +2022,6 @@ $(document).ready(function () {
 
     $("#wi_format_textarea").on('input', function () {
         oai_settings.wi_format = $('#wi_format_textarea').val();
-        saveSettingsDebounced();
-    });
-
-    $("#jailbreak_system").on('change', function () {
-        oai_settings.jailbreak_system = !!$(this).prop("checked");
         saveSettingsDebounced();
     });
 
@@ -2096,27 +2054,9 @@ $(document).ready(function () {
         toastr.success('Preset updated');
     });
 
-    $("#main_prompt_restore").on('click', function () {
-        oai_settings.main_prompt = default_main_prompt;
-        $('#main_prompt_textarea').val(oai_settings.main_prompt);
-        saveSettingsDebounced();
-    });
-
-    $("#nsfw_prompt_restore").on('click', function () {
-        oai_settings.nsfw_prompt = default_nsfw_prompt;
-        $('#nsfw_prompt_textarea').val(oai_settings.nsfw_prompt);
-        saveSettingsDebounced();
-    });
-
     $("#nsfw_avoidance_prompt_restore").on('click', function () {
         oai_settings.nsfw_avoidance_prompt = default_nsfw_avoidance_prompt;
         $('#nsfw_avoidance_prompt_textarea').val(oai_settings.nsfw_avoidance_prompt);
-        saveSettingsDebounced();
-    });
-
-    $("#jailbreak_prompt_restore").on('click', function () {
-        oai_settings.jailbreak_prompt = default_jailbreak_prompt;
-        $('#jailbreak_prompt_textarea').val(oai_settings.jailbreak_prompt);
         saveSettingsDebounced();
     });
 
