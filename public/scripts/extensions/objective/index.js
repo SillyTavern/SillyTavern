@@ -12,7 +12,7 @@ const MODULE_NAME = "Objective"
 let globalObjective = ""
 let globalTasks = []
 let currentChatId = ""
-let currentTask = {}
+let currentTask = null
 let checkCounter = 0
 
 
@@ -59,13 +59,13 @@ async function generateQuietPrompt(quiet_prompt) {
 //#       Task Management       #//
 //###############################//
 
-// Accepts optional position. Defaults to adding to end of list.
-function addTask(description, position = null) {
-    position = position != null ? position: position = globalTasks.length
-    globalTasks.splice(position, 0, {
-        "description": description,
-        "completed": false
-    })
+// Accepts optional index. Defaults to adding to end of list.
+function addTask(description, index = null) {
+    index = index != null ? index: index = globalTasks.length
+    globalTasks.splice(index, 0, new ObjectiveTask(
+        index,
+        description,
+    ))
     saveState()
 }
 
@@ -75,7 +75,7 @@ function getTask(index = null, taskDescription = null) {
     if (index == null && taskDescription == null) {
         task = currentTask
     } else if (index != null) {
-        task = globalObjective[index]
+        task = globalTasks[index]
     } else if (taskDescription != null) {
         task = globalTasks.find(task => {
             return task.description == description ? true: false
@@ -90,27 +90,21 @@ function deleteTask(index){
     updateUiTaskList()
 }
 
-// Complete the current task, setting next task to next incomplete task
-function completeTask(task) {
-    task.completed = true
-    console.info(`Task successfully completed: ${JSON.stringify(task)}`)
-    setCurrentTask()
-    updateUiTaskList()
-}
-
 // Call Quiet Generate to create task list using character context, then convert to tasks. Should not be called much.
 async function generateTasks() {
     const prompt = substituteParams(objectivePrompts["createTask"].replace(/{{objective}}/gi, globalObjective));
     console.log(`Generating tasks for objective with prompt`)
     toastr.info('Generating tasks for objective', 'Please wait...');
     const taskResponse = await generateQuietPrompt(prompt)
+
+    // Clear all existing global tasks when generating
     globalTasks = []
     const numberedListPattern = /^\d+\./
 
-    // Add numbered tasks, store them without the numbers.
+    // Create tasks from generated task list
     for (const task of taskResponse.split('\n').map(x => x.trim())) {
         if (task.match(numberedListPattern) != null) {
-            addTask(task.replace(numberedListPattern, '').trim())
+            addTask(task.replace(numberedListPattern).trim())
         }
     }
     updateUiTaskList()
@@ -121,7 +115,7 @@ async function generateTasks() {
 // Call Quiet Generate to check if a task is completed
 async function checkTaskCompleted() {
     // Make sure there are tasks 
-    if (Object.keys(currentTask).length == 0) {
+    if (currentTask == null) {
         return
     }
     checkCounter = $('#objective-check-frequency').val()
@@ -166,7 +160,104 @@ function setCurrentTask(index = null) {
     saveState();
 }
 
+class ObjectiveTask {
+    // Task State
+    index
+    description
+    completed
+    parent
+    children
 
+    // UI Elements
+    taskHtml
+    descriptionSpan
+    completedCheckbox
+    deleteTaskButton
+    addTaskButton
+
+    constructor (index, description, parent=null) {
+        this.index = index
+        this.description = description
+        this.parent = parent
+    }
+    
+
+    // Complete the current task, setting next task to next incomplete task
+    completeTask() {
+        this.completed = true
+        console.info(`Task successfully completed: ${JSON.stringify(this.description)}`)
+        setCurrentTask()
+        updateUiTaskList()
+    }
+
+    // Add a single task to the UI and attach event listeners for user edits
+    addUiElement() {
+        const template = `
+        <div id="objective-task-label-${this.index}" class="flex1 checkbox_label">
+            <span>${this.index}</span>
+            <input id="objective-task-complete-${this.index}" type="checkbox">
+            <span class="text_pole" style="display: block" id="objective-task-description-${this.index}" contenteditable>${this.description}</span>
+            <div id="objective-task-delete-${this.index}" class="objective-task-button fa-solid fa-xmark fa-2x" title="Delete Task"></div>
+            <div id="objective-task-add-${this.index}" class="objective-task-button fa-solid fa-plus fa-2x" title="Add Task"></div>
+        </div><br>
+        `;
+        
+        // Add the filled out template
+        $('#objective-tasks').append(template);
+
+        this.completedCheckbox = $(`#objective-task-complete-${this.index}`);
+        this.descriptionSpan = $(`#objective-task-description-${this.index}`);
+        this.addButton = $(`#objective-task-add-${this.index}`);
+        this.deleteButton = $(`#objective-task-delete-${this.index}`);
+
+        // Add event listeners and set properties
+        $(`#objective-task-complete-${this.index}`).prop('checked', this.completed);
+        $(`#objective-task-complete-${this.index}`).on('click', this.onCompleteClick);
+        $(`#objective-task-description-${this.index}`).on('keyup', this.onDescriptionUpdate);
+        $(`#objective-task-delete-${this.index}`).on('click', this.onDeleteClick);
+        $(`#objective-task-add-${this.index}`).on('click', this.onAddClick);
+    }
+
+    onCompleteClick(){
+        this.completed = this.completedCheckbox.val()
+        setCurrentTask();
+    }
+
+    onDescriptionUpdate(){
+        this.description = this.descriptionSpan.val();
+    }
+    
+    onDeleteClick(){
+        deleteTask(this.index);
+    }
+
+    onAddClick(){
+        addTask("", this.index + 1);
+        setCurrentTask();
+        updateUiTaskList();
+    }
+
+    toString() {
+        return {
+            "index":this.index,
+            "description":this.description,
+            "completed":this.completed,
+        }
+    }
+}
+
+class TaskManager {
+    tasks = {}
+    
+    constructor (){
+    }
+
+    addTask (description, index, parent) {
+        if (this.tasks){}
+    }
+
+    deleteTask (index)
+}
 
 //###############################//
 //#       UI AND Settings       #//
@@ -194,9 +285,12 @@ function saveState() {
         currentChatId = context.chatId
     }
 
+    // Convert globalTasks for saving
+    const tasks = globalTasks.map(taskString => {return taskString.toString()})
+
     chat_metadata['objective'] = {
         objective: globalObjective,
-        tasks: globalTasks,
+        tasks: tasks,
         checkFrequency: $('#objective-check-frequency').val(),
         chatDepth: $('#objective-chat-depth').val(),
         hideTasks: $('#objective-hide-tasks').prop('checked'),
@@ -219,56 +313,13 @@ function debugObjectiveExtension() {
 
 window.debugObjectiveExtension = debugObjectiveExtension
 
-
-// Add a single task to the UI and attach event listeners for user edits
-function addUiTask(taskIndex, taskComplete, taskDescription) {
-    const template = `
-      <div id="objective-task-label-${taskIndex}" class="flex1 checkbox_label">
-          <span>${taskIndex}</span>
-          <input id="objective-task-complete-${taskIndex}" type="checkbox">
-          <span class="text_pole" style="display: block" id="objective-task-description-${taskIndex}" contenteditable>${taskDescription}</span>
-          <div id="objective-task-delete-${taskIndex}" class="objective-task-button fa-solid fa-xmark fa-2x" title="Delete Task"></div>
-          <div id="objective-task-add-${taskIndex}" class="objective-task-button fa-solid fa-plus fa-2x" title="Add Task"></div>
-      </div><br>
-    `;
-    
-    // Add the filled out template
-    $('#objective-tasks').append(template);
-
-    // Add event listeners and set properties
-    $(`#objective-task-complete-${taskIndex}`).prop('checked', taskComplete);
-    $(`#objective-task-complete-${taskIndex}`).on('click', event => {
-        const index = Number(event.target.id.split('-').pop());
-        globalTasks[index].completed = event.target.checked;
-        setCurrentTask();
-    });
-    $(`#objective-task-description-${taskIndex}`).on('keyup', event => {
-        const index = Number(event.target.id.split('-').pop());
-        globalTasks[index].description = event.target.textContent;
-    });
-    $(`#objective-task-delete-${taskIndex}`).on('click', event => {
-        const index = Number(event.target.id.split('-').pop());
-        deleteTask(index)        
-    });
-    $(`#objective-task-add-${taskIndex}`).on('click', event => {
-        const index = Number(event.target.id.split('-').pop()) + 1;
-        addTask("", index)
-        setCurrentTask()
-        updateUiTaskList()
-    });
-}
-
 // Populate UI task list
 function updateUiTaskList() {
     $('#objective-tasks').empty()
     // Show tasks if there are any
     if (globalTasks.length > 0){
-        for (const index in globalTasks) {
-            addUiTask(
-                index,
-                globalTasks[index].completed,
-                globalTasks[index].description
-            )
+        for (const task of globalTasks) {
+            task.addUiElement()
         }
     } else {
     // Show button to add tasks if there are none
@@ -283,7 +334,7 @@ function updateUiTaskList() {
     }
 }
 
-function addManualTaskCheck() {
+function addManualTaskCheckUi() {
     $('#extensionsMenu').prepend(`
         <div id="objective-task-manual-check-menu-item" class="list-group-item flex-container flexGap5">
             <div id="objective-task-manual-check" class="extensionsMenuExtensionButton fa-regular fa-square-check"/></div>
@@ -386,7 +437,7 @@ jQuery(() => {
         </div>
     </div>`;
 
-    addManualTaskCheck()
+    addManualTaskCheckUi()
     $('#extensions_settings').append(settingsHtml);
     $('#objective-generate').on('click', onGenerateObjectiveClick)
     $('#objective-chat-depth').on('input', onChatDepthInput)
