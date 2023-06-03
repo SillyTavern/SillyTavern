@@ -239,7 +239,7 @@ function setupOpenAIPromptManager(settings) {
         return saveSettings();
     }
 
-    promptManager.init(configuration, settings, default_settings);
+    promptManager.init(configuration, settings);
     promptManager.render();
 
 

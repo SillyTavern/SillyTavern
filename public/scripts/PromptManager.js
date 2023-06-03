@@ -83,7 +83,6 @@ function PromptManagerModule() {
     };
 
     this.serviceSettings = null;
-    this.defaultServiceSettings = null;
     this.containerElement = null;
     this.listElement = null;
     this.activeCharacter = null;
@@ -110,10 +109,9 @@ function PromptManagerModule() {
     };
 }
 
-PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSettings, defaultServiceSettings = []) {
+PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSettings) {
     this.configuration = Object.assign(this.configuration, moduleConfiguration);
     this.serviceSettings = serviceSettings;
-    this.defaultServiceSettings = defaultServiceSettings;
     this.containerElement = document.getElementById(this.configuration.containerIdentifier);
 
     this.sanitizeServiceSettings();
