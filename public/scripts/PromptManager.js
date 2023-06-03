@@ -778,7 +778,7 @@ const openAiDefaultPrompts = {
         },
         {
             "identifier": "characterInfo",
-            "name": "Character",
+            "name": "Character Description",
             "system_prompt": true,
             "marker": true,
             "calculated_tokens": 0,
@@ -859,15 +859,11 @@ const openAiDefaultPromptList = [
         "enabled": true
     },
     {
-        "identifier": "nsfw",
+        "identifier": "enhanceDefinitions",
         "enabled": false
     },
     {
-        "identifier": "main",
-        "enabled": true
-    },
-    {
-        "identifier": "enhanceDefinitions",
+        "identifier": "nsfw",
         "enabled": false
     },
     {
@@ -888,6 +884,10 @@ const openAiDefaultPromptList = [
     },
     {
         "identifier": "chatHistory",
+        "enabled": true
+    },
+    {
+        "identifier": "main",
         "enabled": true
     },
     {
