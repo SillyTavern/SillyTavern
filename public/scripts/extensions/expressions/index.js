@@ -7,6 +7,7 @@ export { MODULE_NAME };
 
 const MODULE_NAME = 'expressions';
 const UPDATE_INTERVAL = 2000;
+const FALLBACK_EXPRESSION = 'joy';
 const DEFAULT_EXPRESSIONS = [
     "admiration",
     "amusement",
@@ -128,7 +129,8 @@ async function visualNovelSetCharacterSprites(container, name, expression) {
 
         const sprites = spriteCache[character.name];
         const expressionImage = container.find(`.expression-holder[data-avatar="${avatar}"]`);
-        const defaultSpritePath = sprites.find(x => x.label === 'joy')?.path;
+        const defaultSpritePath = sprites.find(x => x.label === FALLBACK_EXPRESSION)?.path;
+        const noSprites = sprites.length === 0;
 
         if (expressionImage.length > 0) {
             if (name == character.name) {
@@ -138,10 +140,12 @@ async function visualNovelSetCharacterSprites(container, name, expression) {
                 const img = expressionImage.find('img');
                 setImage(img, path);
             }
+            expressionImage.toggleClass('hidden', noSprites);
         } else {
             const template = $('#expression-holder').clone();
             template.attr('data-avatar', avatar);
             $('#visual-novel-wrapper').append(template);
+            template.toggleClass('hidden', noSprites);
             setImage(template.find('img'), defaultSpritePath || '');
             const fadeInPromise = new Promise(resolve => {
                 template.fadeIn(250, () => resolve());
@@ -304,6 +308,7 @@ async function moduleWorker() {
 
         if (context.groupId) {
             await validateImages(currentLastMessage.name, true);
+            await forceUpdateVisualNovelMode();
         }
 
         return;
@@ -340,8 +345,8 @@ async function moduleWorker() {
         const force = !!context.groupId;
 
         // Character won't be angry on you for swiping
-        if (currentLastMessage.mes == '...' && expressionsList.includes('joy')) {
-            expression = 'joy';
+        if (currentLastMessage.mes == '...' && expressionsList.includes(FALLBACK_EXPRESSION)) {
+            expression = FALLBACK_EXPRESSION;
         }
 
         if (vnMode) {
@@ -362,6 +367,10 @@ async function moduleWorker() {
 }
 
 async function getExpressionLabel(text) {
+    if (!modules.includes('classify')) {
+        return FALLBACK_EXPRESSION;
+    }
+
     const url = new URL(getApiUrl());
     url.pathname = '/api/classify';
 
@@ -516,6 +525,25 @@ async function setExpression(character, expression, force) {
     console.debug('checking for expression images to show..');
     if (sprite) {
         console.debug('setting expression from character images folder');
+
+        if (force && isVisualNovelMode()) {
+            const context = getContext();
+            const group = context.groups.find(x => x.id === context.groupId);
+
+            for (const member of group.members) {
+                const groupMember = context.characters.find(x => x.avatar === member);
+
+                if (!groupMember) {
+                    continue;
+                }
+
+                if (groupMember.name == character) {
+                    setImage($(`.expression-holder[data-avatar="${member}"] img`), sprite.path);
+                    return;
+                }
+            }
+        }
+
         img.attr('src', sprite.path);
         img.removeClass('default');
         img.off('error');
@@ -729,6 +757,10 @@ async function onClickExpressionDelete(event) {
     const updateFunction = wrapper.update.bind(wrapper);
     setInterval(updateFunction, UPDATE_INTERVAL);
     moduleWorker();
-    eventSource.on(event_types.CHAT_CHANGED, updateFunction);
+    eventSource.on(event_types.CHAT_CHANGED, () => {
+        if (isVisualNovelMode()) {
+            $('#visual-novel-wrapper').empty();
+        }
+    });
     eventSource.on(event_types.GROUP_UPDATED, updateVisualNovelModeDebounced);
 })();

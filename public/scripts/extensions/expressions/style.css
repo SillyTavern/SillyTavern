@@ -21,6 +21,11 @@
     width: max-content;
 }
 
+#visual-novel-wrapper .hidden {
+    display: none !important;
+    visibility: hidden !important;
+}
+
 #visual-novel-wrapper img.expression {
     object-fit: cover;
 }

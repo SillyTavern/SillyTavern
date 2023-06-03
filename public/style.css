@@ -340,7 +340,7 @@ code {
     margin: 0 auto;
     left: 0;
     right: 0;
-    z-index: 3;
+    z-index: 30;
     min-height: 100px;
     min-width: 100px;
     width: var(--sheldWidth);
@@ -405,14 +405,14 @@ code {
     text-shadow: 0px 0px calc(var(--shadowWidth) * 1px) var(--SmartThemeShadowColor);
     scrollbar-width: thin;
     flex-direction: column;
-    z-index: 3;
+    z-index: 30;
 }
 
 #form_sheld {
     white-space: nowrap;
     width: 100%;
     margin: 1px auto 0 auto;
-    z-index: 3;
+    z-index: 30;
 }
 
 #send_form {
