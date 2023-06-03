@@ -17,7 +17,7 @@ const ChatCompletion = {
         return {
             map: [],
             add(identifier, message) {
-                this.map.push({ identifier, message });
+                this.map.push({identifier, message});
                 return this;
             },
             get(identifier) {
@@ -26,17 +26,23 @@ const ChatCompletion = {
             },
             insertBefore(identifier, insertIdentifier, insert) {
                 const index = this.getMessageIndex(identifier);
-                this.map.splice(this.assertIndex(index, identifier), 0, { identifier: insertIdentifier, message: insert });
+                this.map.splice(this.assertIndex(index, identifier), 0, {
+                    identifier: insertIdentifier,
+                    message: insert
+                });
                 return this;
             },
             insertAfter(identifier, insertIdentifier, insert) {
                 const index = this.getMessageIndex(identifier);
-                this.map.splice(this.assertIndex(index, identifier) + 1, 0, { identifier: insertIdentifier, message: insert });
+                this.map.splice(this.assertIndex(index, identifier) + 1, 0, {
+                    identifier: insertIdentifier,
+                    message: insert
+                });
                 return this;
             },
             replace(identifier, replacement) {
                 const index = this.getMessageIndex(identifier);
-                this.map[this.assertIndex(index, identifier)] = { identifier, message: replacement };
+                this.map[this.assertIndex(index, identifier)] = {identifier, message: replacement};
                 return this;
             },
             remove(identifier) {
@@ -66,12 +72,15 @@ const ChatCompletion = {
                 return {role: role, content: content}
             },
             getPromptsWithTokenCount() {
-              return this.map.map((message) => {
-                  return { identifier: message.identifier, calculated_tokens: message.message ? countTokens(message.message) : 0}
-              });
+                return this.map.map((message) => {
+                    return {
+                        identifier: message.identifier,
+                        calculated_tokens: message.message ? countTokens(message.message) : 0
+                    }
+                });
             },
             getTotalTokenCount() {
-              return this.getPromptsWithTokenCount().reduce((acc, message) => acc += message.calculated_tokens, 0)
+                return this.getPromptsWithTokenCount().reduce((acc, message) => acc += message.calculated_tokens, 0)
             },
             getChat() {
                 return this.map.reduce((chat, item) => {
@@ -242,17 +251,33 @@ PromptManagerModule.prototype.render = function () {
     this.makeDraggable();
 }
 
+/**
+ * Update a prompt with the values from the HTML form.
+ * @param {object} prompt - The prompt to be updated.
+ * @returns {void}
+ */
 PromptManagerModule.prototype.updatePrompt = function (prompt) {
     prompt.name = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_name').value;
     prompt.role = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_role').value;
     prompt.content = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_prompt').value;
 }
 
+/**
+ * Find a prompt by its identifier and update it with the provided object.
+ * @param {string} identifier - The identifier of the prompt.
+ * @param {object} updatePrompt - An object with properties to be updated in the prompt.
+ * @returns {void}
+ */
 PromptManagerModule.prototype.updatePromptByIdentifier = function (identifier, updatePrompt) {
     let prompt = this.serviceSettings.prompts.find((item) => identifier === item.identifier);
     if (prompt) prompt = Object.assign(prompt, updatePrompt);
 }
 
+/**
+ * Iterate over an array of prompts, find each one by its identifier, and update them with the provided data.
+ * @param {object[]} prompts - An array of prompt updates.
+ * @returns {void}
+ */
 PromptManagerModule.prototype.updatePrompts = function (prompts) {
     prompts.forEach((update) => {
         let prompt = this.getPromptById(update.identifier);
@@ -260,6 +285,18 @@ PromptManagerModule.prototype.updatePrompts = function (prompts) {
     })
 }
 
+/**
+ * Add a prompt to the current character's prompt list.
+ * @param {object} prompt - The prompt to be added.
+ * @param {object} character - The character whose prompt list will be updated.
+ * @returns {void}
+ */
+PromptManagerModule.prototype.appendPrompt = function (prompt, character) {
+    const promptList = this.getPromptListByCharacter(character);
+    const index = promptList.findIndex(entry => entry.identifier === prompt.identifier);
+
+    if (-1 === index) promptList.push({identifier: prompt.identifier, enabled: false});
+}
 // Add a prompt to the current characters prompt list
 PromptManagerModule.prototype.appendPrompt = function (prompt, character) {
     const promptList = this.getPromptListByCharacter(character);
@@ -268,6 +305,12 @@ PromptManagerModule.prototype.appendPrompt = function (prompt, character) {
     if (-1 === index) promptList.push({identifier: prompt.identifier, enabled: false});
 }
 
+/**
+ * Remove a prompt from the current character's prompt list.
+ * @param {object} prompt - The prompt to be removed.
+ * @param {object} character - The character whose prompt list will be updated.
+ * @returns {void}
+ */
 // Remove a prompt from the current characters prompt list
 PromptManagerModule.prototype.detachPrompt = function (prompt, character) {
     const promptList = this.getPromptListByCharacter(character);
@@ -276,6 +319,12 @@ PromptManagerModule.prototype.detachPrompt = function (prompt, character) {
     promptList.splice(index, 1)
 }
 
+/**
+ * Create a new prompt and add it to the list of prompts.
+ * @param {object} prompt - The prompt to be added.
+ * @param {string} identifier - The identifier for the new prompt.
+ * @returns {void}
+ */
 PromptManagerModule.prototype.addPrompt = function (prompt, identifier) {
     const newPrompt = {
         identifier: identifier,
@@ -291,20 +340,37 @@ PromptManagerModule.prototype.addPrompt = function (prompt, identifier) {
     this.serviceSettings.prompts.push(newPrompt);
 }
 
+/**
+ * Sanitize the service settings, ensuring each prompt has a unique identifier.
+ * @returns {void}
+ */
 PromptManagerModule.prototype.sanitizeServiceSettings = function () {
     this.serviceSettings.prompts.forEach((prompt => prompt.identifier = prompt.identifier || this.getUuidv4()));
     // TODO:
     // Sanitize data
 };
 
+/**
+ * Recalculate the number of tokens for each prompt.
+ * @returns {void}
+ */
 PromptManagerModule.prototype.recalculateTokens = function () {
-    (this.serviceSettings.prompts ?? []).forEach(prompt => prompt.calculated_tokens = (true === prompt.marker ?  prompt.calculated_tokens : this.getTokenCountForPrompt(prompt)));
+    (this.serviceSettings.prompts ?? []).forEach(prompt => prompt.calculated_tokens = (true === prompt.marker ? prompt.calculated_tokens : this.getTokenCountForPrompt(prompt)));
 };
 
+/**
+ * Recalculate the total number of active tokens.
+ * @returns {void}
+ */
 PromptManagerModule.prototype.recalculateTotalActiveTokens = function () {
     this.totalActiveTokens = this.getPromptsForCharacter(this.activeCharacter, true).reduce((sum, prompt) => sum + Number(prompt.calculated_tokens), 0);
 }
 
+/**
+ * Count the tokens for a prompt
+ * @param {object} prompt - The prompt to count.
+ * @returns Number
+ */
 PromptManagerModule.prototype.getTokenCountForPrompt = function (prompt) {
     if (!prompt.role || !prompt.content) return 0;
     return countTokens({
@@ -313,15 +379,30 @@ PromptManagerModule.prototype.getTokenCountForPrompt = function (prompt) {
     });
 }
 
+/**
+ * Check whether a prompt can be deleted. System prompts cannot be deleted.
+ * @param {object} prompt - The prompt to check.
+ * @returns {boolean} True if the prompt can be deleted, false otherwise.
+ */
 PromptManagerModule.prototype.isPromptDeletionAllowed = function (prompt) {
     return false === prompt.system_prompt;
 }
 
+/**
+ * Handle the deletion of a character by removing their prompt list and nullifying the active character if it was the one deleted.
+ * @param {object} event - The event object containing the character's ID.
+ * @returns boolean
+ */
 PromptManagerModule.prototype.handleCharacterDeleted = function (event) {
     this.removePromptListForCharacter(this.activeCharacter);
     if (this.activeCharacter.id === event.detail.id) this.activeCharacter = null;
 }
 
+/**
+ * Handle the selection of a character by setting them as the active character and setting up their prompt list if necessary.
+ * @param {object} event - The event object containing the character's ID and character data.
+ * @returns {void}
+ */
 PromptManagerModule.prototype.handleCharacterSelected = function (event) {
     this.activeCharacter = {id: event.detail.id, ...event.detail.character};
     const promptList = this.getPromptListByCharacter(this.activeCharacter);
@@ -333,21 +414,40 @@ PromptManagerModule.prototype.handleCharacterSelected = function (event) {
     if (0 === this.serviceSettings.prompts.length) this.setPrompts(openAiDefaultPrompts);
 }
 
+/**
+ * Get the prompts for a specific character. Can be filtered to only include enabled prompts.
+ * @returns {object[]} The prompts for the character.
+ * @param event
+ */
 PromptManagerModule.prototype.getPromptsForCharacter = function (character, onlyEnabled = false) {
     return this.getPromptListByCharacter(character)
         .map(item => true === onlyEnabled ? (true === item.enabled ? this.getPromptById(item.identifier) : null) : this.getPromptById(item.identifier))
         .filter(prompt => null !== prompt);
 }
 
-// Get the prompt order for a given character, otherwise an empty array is returned.
+/**
+ * Get the order of prompts for a specific character. If no character is specified or the character doesn't have a prompt list, an empty array is returned.
+ * @param {object|null} character - The character to get the prompt list for.
+ * @returns {object[]} The prompt list for the character, or an empty array.
+ */
 PromptManagerModule.prototype.getPromptListByCharacter = function (character) {
     return !character ? [] : (this.serviceSettings.prompt_lists.find(list => String(list.character_id) === String(character.id))?.list ?? []);
 }
 
-PromptManagerModule.prototype.setPrompts = function(prompts) {
+/**
+ * Set the prompts for the manager.
+ * @param {object[]} prompts - The prompts to be set.
+ * @returns {void}
+ */
+PromptManagerModule.prototype.setPrompts = function (prompts) {
     this.serviceSettings.prompts = prompts;
 }
 
+/**
+ * Remove the prompt list for a specific character.
+ * @param {object} character - The character whose prompt list will be removed.
+ * @returns {void}
+ */
 PromptManagerModule.prototype.removePromptListForCharacter = function (character) {
     const index = this.serviceSettings.prompt_lists.findIndex(list => String(list.character_id) === String(character.id));
     if (-1 !== index) this.serviceSettings.prompt_lists.splice(index, 1);
@@ -529,7 +629,7 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
     const promptManagerList = this.listElement;
     promptManagerList.innerHTML = '';
 
-    const { prefix } = this.configuration;
+    const {prefix} = this.configuration;
 
     let listItemHtml = `
         <li class="${prefix}prompt_manager_list_head">
@@ -601,7 +701,12 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
     });
 };
 
-// Makes the prompt list draggable and handles swapping of two entries in the list.
+/**
+ * Makes the prompt list draggable and handles swapping of two entries in the list.
+ * @typedef {Object} Entry
+ * @property {string} identifier
+ * @returns {void}
+ */
 PromptManagerModule.prototype.makeDraggable = function () {
     const handleOrderChange = (target, origin, direction) => {
         const promptList = this.getPromptListByCharacter(this.activeCharacter);
@@ -621,19 +726,30 @@ PromptManagerModule.prototype.makeDraggable = function () {
     if (true === this.configuration.draggable) new DraggableList(this.listElement, handleOrderChange);
 };
 
+/**
+ * Slides down the edit form and adds the class 'openDrawer' to the first element of '#openai_prompt_manager_popup'.
+ * @returns {void}
+ */
 PromptManagerModule.prototype.showEditForm = function () {
     $('#openai_prompt_manager_popup').first()
         .slideDown(200, "swing")
         .addClass('openDrawer');
 }
 
+/**
+ * Slides up the edit form and removes the class 'openDrawer' from the first element of '#openai_prompt_manager_popup'.
+ * @returns {void}
+ */
 PromptManagerModule.prototype.hideEditForm = function () {
     $('#openai_prompt_manager_popup').first()
         .slideUp(200, "swing")
         .removeClass('openDrawer');
 }
 
-// Quick uuid4 implementation
+/**
+ * Quick uuid4 implementation
+ * @returns {string} A string representation of an uuid4
+ */
 PromptManagerModule.prototype.getUuidv4 = function () {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
         let r = Math.random() * 16 | 0,
@@ -786,4 +902,10 @@ const defaultPromptManagerSettings = {
     }
 };
 
-export {PromptManagerModule, openAiDefaultPrompts, openAiDefaultPromptLists, defaultPromptManagerSettings, IdentifierNotFoundError};
+export {
+    PromptManagerModule,
+    openAiDefaultPrompts,
+    openAiDefaultPromptLists,
+    defaultPromptManagerSettings,
+    IdentifierNotFoundError
+};
