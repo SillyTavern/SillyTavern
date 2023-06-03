@@ -26,7 +26,7 @@ import {
 import {groups, selected_group} from "./group-chats.js";
 
 import {
-    defaultPromptManagerSettings,
+    defaultPromptManagerSettings, IdentifierNotFoundError,
     openAiDefaultPromptLists,
     openAiDefaultPrompts,
     PromptManagerModule as PromptManager
@@ -372,13 +372,21 @@ async function prepareOpenAIMessages({ systemPrompt, name2, storyString, worldIn
         .replace('newMainChat', newChatMessage)
         .replace('chatHistory', chatMessages)
 
-    // Hande group chats
+    // Handle group chats
     if (selected_group) {
         const names = getGroupMembers(groups);
         const groupChatMessage = chatCompletion.makeSystemMessage(`[Start a new group chat. Group members: ${names}]`);
         const groupNudgeMessage = chatCompletion.makeSystemMessage(`[Write the next reply only as ${name2}]`);
         chatCompletion.replace('newMainChat', groupChatMessage)
         chatCompletion.insertAfter('newMainChat', 'groupNudgeMessage', groupNudgeMessage);
+    }
+
+    // Handle NSFW prompt
+    try {
+        const nsfwMessage = chatCompletion.get('nsfw');
+    } catch (error) {
+        if (error instanceof IdentifierNotFoundError && oai_settings.nsfw_avoidance_prompt)
+            chatCompletion.insertAfter('main', 'nsfwAvoidance', chatCompletion.makeSystemMessage(oai_settings.nsfw_avoidance_prompt));
     }
 
     // Handle extension prompt
@@ -391,6 +399,7 @@ async function prepareOpenAIMessages({ systemPrompt, name2, storyString, worldIn
     if (type === "impersonate") chatCompletion.replace('main', substituteParams(oai_settings.impersonation_prompt));
 
     // Handle chat examples
+    // ToDo: Update dialogueExamples prompt with only the token count that's actually sent.
     const exampleMessages = prepareExampleMessages(openai_msgs ,openai_msgs_example, power_user.pin_examples);
     if (exampleMessages.length) chatCompletion.replace('dialogueExamples', exampleMessages);
 
