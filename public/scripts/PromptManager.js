@@ -354,7 +354,8 @@ PromptManagerModule.prototype.loadPromptIntoEditForm = function (prompt) {
     roleField.value = prompt.role ?? '';
     promptField.value = prompt.content ?? '';
 
-    if (true === prompt.system_prompt) {
+    if (true === prompt.system_prompt &&
+        false === this.serviceSettings.prompt_manager_settings.showAdvancedSettings) {
         roleField.disabled = true;
     }
 
