@@ -307,6 +307,8 @@ function onChatDepthInput() {
 
 // Update how often we check for task completion
 function onCheckFrequencyInput() {
+    checkCounter =  $("#objective-check-frequency").val()
+    $('#objective-counter').text(checkCounter)
     saveState()
 }
 
@@ -402,10 +404,9 @@ jQuery(() => {
         }
         if ($("#objective-check-frequency").val() > 0) {
             // Check only at specified interval
-            if (checkCounter > 0) {
-                return
+            if (checkCounter <= 0) {
+                checkTaskCompleted();
             }
-            checkTaskCompleted();
             checkCounter -= 1
         }
         setCurrentTask();
