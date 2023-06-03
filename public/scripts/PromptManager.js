@@ -409,10 +409,6 @@ PromptManagerModule.prototype.renderPromptManager = function () {
     rangeBlockTitleDiv.classList.add('range-block-title');
     rangeBlockTitleDiv.textContent = 'Prompts ';
 
-    const rangeBlockDescDiv = document.createElement('div');
-    rangeBlockDescDiv.classList.add('range-block-counter', 'justifyCenter')
-    rangeBlockDescDiv.textContent = 'Shows your prompts and the order in which they will be sent'
-
     const notesLink = document.createElement('a');
     notesLink.href = '/notes#openaipromptmanager';
     notesLink.setAttribute('target', '_blank');
@@ -425,7 +421,6 @@ PromptManagerModule.prototype.renderPromptManager = function () {
     notesLink.appendChild(noteLinkSpan);
     rangeBlockTitleDiv.appendChild(notesLink);
     promptManagerDiv.appendChild(rangeBlockTitleDiv);
-    promptManagerDiv.appendChild(rangeBlockDescDiv);
 
     const rangeBlockDiv = document.createElement('div');
     rangeBlockDiv.classList.add('range-block');
