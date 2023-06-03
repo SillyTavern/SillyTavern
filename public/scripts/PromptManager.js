@@ -448,224 +448,143 @@ PromptManagerModule.prototype.getChatCompletion = function () {
     return chatCompletion;
 }
 
-// Empties, then re-assembles the container cointaining the prompt list.
+// Empties, then re-assembles the container containing the prompt list.
 PromptManagerModule.prototype.renderPromptManager = function () {
     const promptManagerDiv = this.containerElement;
     promptManagerDiv.innerHTML = '';
 
-    const rangeBlockTitleDiv = document.createElement('div');
-    rangeBlockTitleDiv.classList.add('range-block-title');
-    rangeBlockTitleDiv.textContent = 'Prompts ';
+    const showAdvancedSettings = this.serviceSettings.prompt_manager_settings.showAdvancedSettings;
+    const checkSpanClass = showAdvancedSettings ? 'fa-solid fa-toggle-on' : 'fa-solid fa-toggle-off';
 
-    const notesLink = document.createElement('a');
-    notesLink.href = '/notes#openaipromptmanager';
-    notesLink.setAttribute('target', '_blank');
-    notesLink.classList.add('notes-link');
+    promptManagerDiv.insertAdjacentHTML('beforeend', `
+        <div class="range-block-title">
+            Prompts
+            <a href="/notes#openaipromptmanager" target="_blank" class="notes-link">
+                <span class="note-link-span">?</span>
+            </a>
+        </div>
+        <div class="range-block">
+            <div class="${this.configuration.prefix}prompt_manager_header">
+                <div class="${this.configuration.prefix}prompt_manager_header_advanced">
+                    <span class="${checkSpanClass}"></span>
+                    <span class="checkbox_label">Show advanced options</span>
+                </div>
+                <div>Total Tokens: ${this.totalActiveTokens}</div>
+            </div>
+            <ul id="${this.configuration.prefix}prompt_manager_list" class="text_pole"></ul>
+        </div>
+    `);
 
-    const noteLinkSpan = document.createElement('span');
-    noteLinkSpan.classList.add('note-link-span');
-    noteLinkSpan.textContent = '?';
-
-    notesLink.appendChild(noteLinkSpan);
-    rangeBlockTitleDiv.appendChild(notesLink);
-    promptManagerDiv.appendChild(rangeBlockTitleDiv);
-
-    const rangeBlockDiv = document.createElement('div');
-    rangeBlockDiv.classList.add('range-block');
-
-    const promptManagerHeaderDiv = document.createElement('div');
-    promptManagerHeaderDiv.classList.add(this.configuration.prefix + 'prompt_manager_header');
-
-    const advancedDiv = document.createElement('div');
-    advancedDiv.classList.add(this.configuration.prefix + 'prompt_manager_header_advanced');
-
-    const checkLabelSpan = document.createElement('span');
-    checkLabelSpan.classList.add('checkbox_label');
-    checkLabelSpan.textContent = 'Show advanced options';
-
-    const checkSpan = document.createElement('span');
-    if (true === this.serviceSettings.prompt_manager_settings.showAdvancedSettings)
-        checkSpan.classList.add('fa-solid', 'fa-toggle-on');
-    else checkSpan.classList.add('fa-solid', 'fa-toggle-off');
+    const checkSpan = promptManagerDiv.querySelector(`.${this.configuration.prefix}prompt_manager_header_advanced span`);
     checkSpan.addEventListener('click', this.handleAdvancedSettingsToggle);
 
-    advancedDiv.append(checkSpan);
-    advancedDiv.append(checkLabelSpan);
-
-    const tokensDiv = document.createElement('div');
-    tokensDiv.textContent = 'Total Tokens: ' + this.totalActiveTokens;
-
-    promptManagerHeaderDiv.appendChild(advancedDiv);
-    promptManagerHeaderDiv.appendChild(tokensDiv);
-    rangeBlockDiv.appendChild(promptManagerHeaderDiv);
-
-    const promptManagerList = document.createElement('ul');
-    promptManagerList.id = this.configuration.prefix + 'prompt_manager_list';
-    promptManagerList.classList.add('text_pole');
-
-    rangeBlockDiv.appendChild(promptManagerList);
-    this.listElement = promptManagerList;
+    this.listElement = promptManagerDiv.querySelector(`#${this.configuration.prefix}prompt_manager_list`);
 
     if (null !== this.activeCharacter) {
-        const promptManagerFooterDiv = document.createElement('div');
-        promptManagerFooterDiv.classList.add(this.configuration.prefix + 'prompt_manager_footer');
-
-        // Create a list of prompts to add to the current character
-        const selectElement = document.createElement('select');
-        selectElement.id = this.configuration.prefix + 'prompt_manager_footer_append_prompt';
-        selectElement.classList.add('text_pole');
-        selectElement.name = 'append-prompt';
-
-        // Create a prompt copy, sort them alphabetically and generate the prompt options.
-        [...this.serviceSettings.prompts]
+        const prompts = [...this.serviceSettings.prompts]
             .filter(prompt => !prompt.system_prompt)
             .sort((promptA, promptB) => promptA.name.localeCompare(promptB.name))
-            .forEach((prompt) => {
-                const option = document.createElement('option');
-                option.value = prompt.identifier;
-                option.textContent = prompt.name;
+            .reduce((acc, prompt) => acc + `<option value="${prompt.identifier}">${prompt.name}</option>`, '');
 
-                selectElement.append(option);
-            });
+        const footerHtml = `
+            <div class="${this.configuration.prefix}prompt_manager_footer">
+                <select id="${this.configuration.prefix}prompt_manager_footer_append_prompt" class="text_pole" name="append-prompt">
+                    ${prompts}
+                </select>
+                <a class="menu_button">Add</a>
+                <a class="caution menu_button">Delete</a>
+                <a class="menu_button">New</a>
+            </div>
+        `;
 
-        // Append an existing prompt to the list
-        const appendPromptLink = document.createElement('a');
-        appendPromptLink.classList.add('menu_button');
-        appendPromptLink.textContent = 'Add';
-        appendPromptLink.addEventListener('click', this.handleAppendPrompt);
+        const rangeBlockDiv = promptManagerDiv.querySelector('.range-block');
+        rangeBlockDiv.insertAdjacentHTML('beforeend', footerHtml);
 
-        // Delete an existing prompt from the settings
-        const deletePromptLink = document.createElement('a');
-        deletePromptLink.classList.add('caution', 'menu_button');
-        deletePromptLink.textContent = 'Delete';
-        deletePromptLink.addEventListener('click', this.handleDeletePrompt);
-
-        // Create a new prompt
-        const newPromptLink = document.createElement('a');
-        newPromptLink.classList.add('menu_button');
-        newPromptLink.textContent = 'New';
-        newPromptLink.addEventListener('click', this.handleNewPrompt);
-
-        promptManagerFooterDiv.append(selectElement);
-        promptManagerFooterDiv.append(appendPromptLink);
-        promptManagerFooterDiv.append(deletePromptLink);
-        promptManagerFooterDiv.append(newPromptLink);
-
-        rangeBlockDiv.appendChild(promptManagerFooterDiv);
+        const footerDiv = rangeBlockDiv.querySelector(`.${this.configuration.prefix}prompt_manager_footer`);
+        footerDiv.querySelector('.menu_button:nth-child(2)').addEventListener('click', this.handleAppendPrompt);
+        footerDiv.querySelector('.caution').addEventListener('click', this.handleDeletePrompt);
+        footerDiv.querySelector('.menu_button:last-child').addEventListener('click', this.handleNewPrompt);
     }
-
-    promptManagerDiv.appendChild(rangeBlockDiv);
 };
 
 // Empties, then re-assembles the prompt list.
 PromptManagerModule.prototype.renderPromptManagerListItems = function () {
     if (!this.serviceSettings.prompts) return;
 
-    const promptManagerList = this.listElement
+    const promptManagerList = this.listElement;
     promptManagerList.innerHTML = '';
 
-    const promptManagerListHead = document.createElement('li');
-    promptManagerListHead.classList.add(this.configuration.prefix + 'prompt_manager_list_head');
+    const { prefix } = this.configuration;
 
-    const nameSpan = document.createElement('span');
-    nameSpan.textContent = 'Name';
-
-    const tokensSpan = document.createElement('span');
-    tokensSpan.classList.add('prompt_manager_prompt_tokens');
-    tokensSpan.textContent = 'Tokens';
-
-    promptManagerListHead.appendChild(nameSpan);
-    promptManagerListHead.appendChild(document.createElement('span'));
-    promptManagerListHead.appendChild(tokensSpan);
-
-    promptManagerList.appendChild(promptManagerListHead);
-
-    const promptManagerListSeparator = document.createElement('li');
-    promptManagerListSeparator.classList.add(this.configuration.prefix + 'prompt_manager_list_separator');
-
-    const hrElement = document.createElement('hr');
-    promptManagerListSeparator.appendChild(hrElement);
+    let listItemHtml = `
+        <li class="${prefix}prompt_manager_list_head">
+            <span>Name</span>
+            <span></span>
+            <span class="prompt_manager_prompt_tokens">Tokens</span>
+        </li>
+        <li class="${prefix}prompt_manager_list_separator">
+            <hr>
+        </li>
+    `;
 
     this.getPromptsForCharacter(this.activeCharacter).forEach(prompt => {
-        // Marker offer almost no interaction except being draggable.
         const advancedEnabled = this.serviceSettings.prompt_manager_settings.showAdvancedSettings;
         let draggableEnabled = true;
-        if (true === prompt.system_prompt && false === advancedEnabled) draggableEnabled = false;
+        if (prompt.system_prompt && !advancedEnabled) draggableEnabled = false;
 
-        if (prompt.marker) {
-            if (prompt.identifier !== 'newMainChat' &&
-                prompt.identifier !== 'chatHistory' &&
-                false === advancedEnabled) return;
-        }
-
-        const listItem = document.createElement('li');
-        listItem.classList.add(this.configuration.prefix + 'prompt_manager_prompt');
-        if (true === draggableEnabled) listItem.classList.add('draggable');
-
-        if (prompt.marker) listItem.classList.add(this.configuration.prefix + 'prompt_manager_marker');
+        if (prompt.marker &&
+            prompt.identifier !== 'newMainChat' &&
+            prompt.identifier !== 'chatHistory' &&
+            !advancedEnabled) return;
 
         const listEntry = this.getPromptListEntry(this.activeCharacter, prompt.identifier);
-        if (false === listEntry.enabled) listItem.classList.add(this.configuration.prefix + 'prompt_manager_prompt_disabled');
-        listItem.classList.add('dropAllowed');
-        listItem.setAttribute('draggable', String(draggableEnabled));
-        listItem.setAttribute('data-pm-identifier', prompt.identifier);
+        const enabledClass = listEntry.enabled ? '' : `${prefix}prompt_manager_prompt_disabled`;
+        const draggableClass = draggableEnabled ? 'draggable' : '';
+        const markerClass = prompt.marker ? `${prefix}prompt_manager_marker` : '';
+        const calculatedTokens = prompt.calculated_tokens ? prompt.calculated_tokens : '-';
 
-        const nameSpan = document.createElement('span');
-        nameSpan.setAttribute('data-pm-name', prompt.name);
-
-        if (prompt.marker) {
-            const markerIconSpan = document.createElement('span');
-            markerIconSpan.classList.add('fa-solid', 'fa-thumb-tack');
-            nameSpan.appendChild(markerIconSpan);
+        let detachSpanHtml = '';
+        if (this.isPromptDeletionAllowed(prompt)) {
+            detachSpanHtml = `
+                <span title="delete" class="caution fa-solid fa-x"></span>
+            `;
         }
 
-        const nameTextSpan = document.createElement('span');
-        nameTextSpan.textContent = prompt.name;
-        nameSpan.appendChild(nameTextSpan);
-
-        const tokensSpan = document.createElement('span');
-        tokensSpan.classList.add('prompt_manager_prompt_tokens')
-        tokensSpan.setAttribute('data-pm-tokens', prompt.calculated_tokens);
-        tokensSpan.textContent = prompt.calculated_tokens ? prompt.calculated_tokens : '-';
-
-        const actionsSpan = document.createElement('span');
-        actionsSpan.classList.add('prompt_manager_prompt_controls');
-
-        // Don't add delete control to system prompts
-        if (true === this.isPromptDeletionAllowed(prompt)) {
-            const detachSpan = document.createElement('span');
-            detachSpan.title = 'delete';
-            detachSpan.classList.add('caution', 'fa-solid', 'fa-x');
-
-            detachSpan.addEventListener('click', this.handleDetach);
-            actionsSpan.appendChild(detachSpan);
-        }
-
-        const editSpan = document.createElement('span');
-        editSpan.title = 'edit';
-        editSpan.classList.add('fa-solid', 'fa-pencil');
-        editSpan.addEventListener('click', this.handleEdit)
-
-        const checkSpan = document.createElement('span');
-        if (true === listEntry.enabled) checkSpan.classList.add('fa-solid', 'fa-toggle-on');
-        else checkSpan.classList.add('fa-solid', 'fa-toggle-off');
-
-        checkSpan.addEventListener('click', this.handleToggle);
-
-        actionsSpan.appendChild(editSpan);
-        actionsSpan.appendChild(checkSpan);
-
-        const controlSpan = document.createElement('span');
-        controlSpan.append(actionsSpan);
-
-        listItem.appendChild(nameSpan);
-        if (prompt.marker) listItem.appendChild(document.createElement('span'));
-        else listItem.appendChild(controlSpan);
-        listItem.appendChild(tokensSpan);
-
-        promptManagerList.appendChild(listItem);
+        listItemHtml += `
+            <li class="${prefix}prompt_manager_prompt ${draggableClass} ${enabledClass} ${markerClass}" draggable="${draggableEnabled}" data-pm-identifier="${prompt.identifier}">
+                <span data-pm-name="${prompt.name}">
+                    ${prompt.marker ? '<span class="fa-solid fa-thumb-tack"></span>' : ''}
+                    <span>${prompt.name}</span>
+                </span>
+                ${prompt.marker ? '<span></span>' : `
+                    <span>
+                        <span class="prompt_manager_prompt_controls">
+                            ${detachSpanHtml}
+                            <span title="edit" class="fa-solid fa-pencil"></span>
+                            <span class="${listEntry.enabled ? 'fa-solid fa-toggle-on' : 'fa-solid fa-toggle-off'}"></span>
+                        </span>
+                    </span>
+                `}
+                <span class="prompt_manager_prompt_tokens" data-pm-tokens="${calculatedTokens}">${calculatedTokens}</span>
+            </li>
+        `;
     });
-}
+
+    promptManagerList.insertAdjacentHTML('beforeend', listItemHtml);
+
+    // Now that the new elements are in the DOM, you can add the event listeners.
+    Array.from(promptManagerList.getElementsByClassName('fa-x')).forEach(el => {
+        el.addEventListener('click', this.handleDetach);
+    });
+
+    Array.from(promptManagerList.getElementsByClassName('fa-pencil')).forEach(el => {
+        el.addEventListener('click', this.handleEdit);
+    });
+
+    Array.from(promptManagerList.querySelectorAll('.prompt_manager_prompt_controls span:last-child')).forEach(el => {
+        el.addEventListener('click', this.handleToggle);
+    });
+};
 
 // Makes the prompt list draggable and handles swapping of two entries in the list.
 PromptManagerModule.prototype.makeDraggable = function () {
