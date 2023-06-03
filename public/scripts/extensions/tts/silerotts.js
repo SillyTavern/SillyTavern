@@ -1,4 +1,4 @@
-import { getApiUrl, modules } from "../../extensions.js"
+import { doExtrasFetch, getApiUrl, modules } from "../../extensions.js"
 
 export { SileroTtsProvider }
 
@@ -94,7 +94,7 @@ class SileroTtsProvider {
     // API CALLS //
     //###########//
     async fetchTtsVoiceIds() {
-        const response = await fetch(`${this.settings.provider_endpoint}/speakers`)
+        const response = await doExtrasFetch(`${this.settings.provider_endpoint}/speakers`)
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${await response.json()}`)
         }
@@ -104,7 +104,7 @@ class SileroTtsProvider {
 
     async fetchTtsGeneration(inputText, voiceId) {
         console.info(`Generating new TTS for voice_id ${voiceId}`)
-        const response = await fetch(
+        const response = await doExtrasFetch(
             `${this.settings.provider_endpoint}/generate`,
             {
                 method: 'POST',
@@ -123,20 +123,9 @@ class SileroTtsProvider {
         return response
     }
 
+    // Interface not used by Silero TTS
     async fetchTtsFromHistory(history_item_id) {
-        console.info(`Fetched existing TTS with history_item_id ${history_item_id}`)
-        const response = await fetch(
-            `https://api.elevenlabs.io/v1/history/${history_item_id}/audio`,
-            {
-                headers: {
-                    'xi-api-key': this.API_KEY
-                }
-            }
-        )
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${await response.json()}`)
-        }
-        return response
+        return Promise.resolve(history_item_id);
     }
 
 }
