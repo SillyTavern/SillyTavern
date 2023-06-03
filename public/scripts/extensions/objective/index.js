@@ -38,9 +38,7 @@ const objectivePrompts = {
     `
 }
 
-const injectPrompts = {
-    "task": "Your current task is [{{task}}]. Balance existing roleplay with completing this task."
-}
+const extensionPrompt = "Your current task is [{{task}}]. Balance existing roleplay with completing this task."
 
 // Background prompt generation
 async function generateQuietPrompt(quiet_prompt) {
@@ -126,7 +124,7 @@ async function checkTaskCompleted() {
     // Check response if task complete
     if (taskResponse.includes("true")) {
         console.info(`Character determined task '${JSON.stringify(currentTask)} is completed.`)
-        completeTask(getTask())
+        currentTask.completeTask()
     } else if (!(taskResponse.includes("false"))) {
         console.warn(`checkTaskCompleted response did not contain true or false. taskResponse: ${taskResponse}`)
     } else {
@@ -140,17 +138,23 @@ function setCurrentTask(index = null) {
     const context = getContext();
     currentTask = {};
 
+    // Set current task to either the next incomplete task, or the index if valid value is specified
     if (index === null) {
         currentTask = globalTasks.find(task => !task.completed) || {};
-    } else if (index >= 0 && index < globalTasks.length) {
+    } else {
+        if (index >= 0 && index < globalTasks.length){
+            toastr.error(`Invalide task index ${index} specified. Must be between 0 and ${globalTasks.length}`)
+            return
+        }
         currentTask = globalTasks[index];
     }
 
-    const { description } = currentTask;
-    const injectPromptsTask = injectPrompts["task"].replace(/{{task}}/gi, description);
+    // Get the task description and add to extension prompt 
+    const { description } = currentTask.description;
 
     if (description) {
-        context.setExtensionPrompt(MODULE_NAME, injectPromptsTask, 1, $('#objective-chat-depth').val());
+        const extensionPromptText = extensionPrompt.replace(/{{task}}/gi, description);
+        context.setExtensionPrompt(MODULE_NAME, extensionPromptText, 1, $('#objective-chat-depth').val());
         console.info(`Current task in context.extensionPrompts.Objective is ${JSON.stringify(context.extensionPrompts.Objective)}`);
     } else {
         context.setExtensionPrompt(MODULE_NAME, '');
@@ -212,10 +216,10 @@ class ObjectiveTask {
 
         // Add event listeners and set properties
         $(`#objective-task-complete-${this.index}`).prop('checked', this.completed);
-        $(`#objective-task-complete-${this.index}`).on('click', this.onCompleteClick);
-        $(`#objective-task-description-${this.index}`).on('keyup', this.onDescriptionUpdate);
-        $(`#objective-task-delete-${this.index}`).on('click', this.onDeleteClick);
-        $(`#objective-task-add-${this.index}`).on('click', this.onAddClick);
+        $(`#objective-task-complete-${this.index}`).on('click', () => (this.onCompleteClick()));
+        $(`#objective-task-description-${this.index}`).on('keyup', () => (this.onDescriptionUpdate()));
+        $(`#objective-task-delete-${this.index}`).on('click', () => (this.onDeleteClick()));
+        $(`#objective-task-add-${this.index}`).on('click', () => (this.onAddClick()));
     }
 
     onCompleteClick(){
@@ -237,7 +241,7 @@ class ObjectiveTask {
         updateUiTaskList();
     }
 
-    toString() {
+    toSaveState() {
         return {
             "index":this.index,
             "description":this.description,
@@ -256,7 +260,7 @@ class TaskManager {
         if (this.tasks){}
     }
 
-    deleteTask (index)
+    deleteTask (index) {}
 }
 
 //###############################//
@@ -286,7 +290,7 @@ function saveState() {
     }
 
     // Convert globalTasks for saving
-    const tasks = globalTasks.map(taskString => {return taskString.toString()})
+    const tasks = globalTasks.map(task => {return task.toSaveState()})
 
     chat_metadata['objective'] = {
         objective: globalObjective,
@@ -389,7 +393,7 @@ function loadSettings() {
 
     // Update globals
     globalObjective = chat_metadata['objective'].objective
-    globalTasks = chat_metadata['objective'].tasks
+    globalTasks = chat_metadata['objective'].tasks.map((task, index) => {return new ObjectiveTask(index, task.description)})
     checkCounter = chat_metadata['objective'].checkFrequency
 
     // Update UI elements
