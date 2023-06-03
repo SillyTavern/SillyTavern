@@ -1,11 +1,11 @@
-import { callPopup, eventSource, event_types, saveSettings, saveSettingsDebounced } from "../script.js";
+import { callPopup, eventSource, event_types, extension_prompt_types, saveSettings, saveSettingsDebounced } from "../script.js";
 import { isSubsetOf, debounce } from "./utils.js";
 export {
     getContext,
     getApiUrl,
     loadExtensionSettings,
     runGenerationInterceptors,
-    defaultRequestArgs,
+    doExtrasFetch,
     modules,
     extension_settings,
     ModuleWorkerWrapper,
@@ -43,6 +43,7 @@ class ModuleWorkerWrapper {
 
 const extension_settings = {
     apiUrl: defaultUrl,
+    apiKey: '',
     autoConnect: false,
     disabledExtensions: [],
     memory: {},
@@ -65,8 +66,28 @@ let activeExtensions = new Set();
 
 const getContext = () => window['SillyTavern'].getContext();
 const getApiUrl = () => extension_settings.apiUrl;
-const defaultRequestArgs = { method: 'GET', headers: { 'Bypass-Tunnel-Reminder': 'bypass' } };
 let connectedToApi = false;
+
+async function doExtrasFetch(endpoint, args) {
+    if (!args) {
+        args = {}
+    }
+
+    if (!args.method) {
+        Object.assign(args, { method: 'GET' });
+    }
+
+    if (!args.headers) {
+        args.headers = {}
+    }
+    Object.assign(args.headers, {
+        'Authorization': `Bearer ${extension_settings.apiKey}`, 
+        'Bypass-Tunnel-Reminder': 'bypass' 
+    });
+
+    const response = await fetch(endpoint, args);
+    return response;
+}
 
 async function discoverExtensions() {
     try {
@@ -178,6 +199,8 @@ async function activateExtensions() {
 async function connectClickHandler() {
     const baseUrl = $("#extensions_url").val();
     extension_settings.apiUrl = baseUrl;
+    const testApiKey = $("#extensions_api_key").val();
+    extension_settings.apiKey = testApiKey;
     saveSettingsDebounced();
     await connectToApi(baseUrl);
 }
@@ -233,7 +256,7 @@ async function connectToApi(baseUrl) {
     url.pathname = '/api/modules';
 
     try {
-        const getExtensionsResult = await fetch(url, defaultRequestArgs);
+        const getExtensionsResult = await doExtrasFetch(url);
 
         if (getExtensionsResult.ok) {
             const data = await getExtensionsResult.json();
@@ -352,6 +375,7 @@ async function loadExtensionSettings(settings) {
     }
 
     $("#extensions_url").val(extension_settings.apiUrl);
+    $("#extensions_api_key").val(extension_settings.apiKey);
     $("#extensions_autoconnect").prop('checked', extension_settings.autoConnect);
 
     // Activate offline extensions

@@ -1,5 +1,5 @@
 import { getStringHash, debounce } from "../../utils.js";
-import { getContext, getApiUrl, extension_settings, ModuleWorkerWrapper } from "../../extensions.js";
+import { getContext, getApiUrl, extension_settings, ModuleWorkerWrapper, doExtrasFetch } from "../../extensions.js";
 import { extension_prompt_types, is_send_press, saveSettingsDebounced } from "../../../script.js";
 export { MODULE_NAME };
 
@@ -232,7 +232,7 @@ async function summarizeChat(context) {
         const url = new URL(getApiUrl());
         url.pathname = '/api/summarize';
 
-        const apiResult = await fetch(url, {
+        const apiResult = await doExtrasFetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

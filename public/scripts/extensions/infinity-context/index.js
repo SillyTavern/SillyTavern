@@ -1,6 +1,6 @@
 import { saveSettingsDebounced, getCurrentChatId, system_message_types, eventSource, event_types } from "../../../script.js";
 import { humanizedDateTime } from "../../RossAscends-mods.js";
-import { getApiUrl, extension_settings, getContext } from "../../extensions.js";
+import { getApiUrl, extension_settings, getContext, doExtrasFetch } from "../../extensions.js";
 import { getFileText, onlyUnique, splitRecursive, IndexedDBStore } from "../../utils.js";
 export { MODULE_NAME };
 
@@ -174,7 +174,7 @@ async function addMessages(chat_id, messages) {
         meta: JSON.stringify(m),
     }));
 
-    const addMessagesResult = await fetch(url, {
+    const addMessagesResult = await doExtrasFetch(url, {
         method: 'POST',
         headers: postHeaders,
         body: JSON.stringify({ chat_id, messages: transformedMessages }),
@@ -222,7 +222,7 @@ async function onPurgeClick() {
     const url = new URL(getApiUrl());
     url.pathname = '/api/chromadb/purge';
 
-    const purgeResult = await fetch(url, {
+    const purgeResult = await doExtrasFetch(url, {
         method: 'POST',
         headers: postHeaders,
         body: JSON.stringify({ chat_id }),
@@ -242,7 +242,7 @@ async function onExportClick() {
     const url = new URL(getApiUrl());
     url.pathname = '/api/chromadb/export';
 
-    const exportResult = await fetch(url, {
+    const exportResult = await doExtrasFetch(url, {
         method: 'POST',
         headers: postHeaders,
         body: JSON.stringify({ chat_id: currentChatId }),
@@ -285,7 +285,7 @@ async function onSelectImportFile(e) {
         const url = new URL(getApiUrl());
         url.pathname = '/api/chromadb/import';
 
-        const importResult = await fetch(url, {
+        const importResult = await doExtrasFetch(url, {
             method: 'POST',
             headers: postHeaders,
             body: JSON.stringify(imported),
@@ -313,7 +313,7 @@ async function queryMessages(chat_id, query) {
     const url = new URL(getApiUrl());
     url.pathname = '/api/chromadb/query';
 
-    const queryMessagesResult = await fetch(url, {
+    const queryMessagesResult = await doExtrasFetch(url, {
         method: 'POST',
         headers: postHeaders,
         body: JSON.stringify({ chat_id, query, n_results: extension_settings.chromadb.n_results }),
@@ -366,7 +366,7 @@ async function onSelectInjectFile(e) {
         const url = new URL(getApiUrl());
         url.pathname = '/api/chromadb';
 
-        const addMessagesResult = await fetch(url, {
+        const addMessagesResult = await doExtrasFetch(url, {
             method: 'POST',
             headers: postHeaders,
             body: JSON.stringify({ chat_id: currentChatId, messages: messages }),
