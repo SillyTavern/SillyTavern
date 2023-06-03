@@ -807,4 +807,4 @@ const defaultPromptManagerSettings = {
     }
 };
 
-export {PromptManagerModule, openAiDefaultPrompts, openAiDefaultPromptLists, defaultPromptManagerSettings};
+export {PromptManagerModule, openAiDefaultPrompts, openAiDefaultPromptLists, defaultPromptManagerSettings, IdentifierNotFoundError};
