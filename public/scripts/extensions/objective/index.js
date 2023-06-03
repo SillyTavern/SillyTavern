@@ -61,7 +61,7 @@ async function generateQuietPrompt(quiet_prompt) {
 
 // Accepts optional position. Defaults to adding to end of list.
 function addTask(description, position = null) {
-    position = position ? position != null : position = globalTasks.length
+    position = position != null ? position: position = globalTasks.length
     globalTasks.splice(position, 0, {
         "description": description,
         "completed": false
@@ -78,10 +78,16 @@ function getTask(index = null, taskDescription = null) {
         task = globalObjective[index]
     } else if (taskDescription != null) {
         task = globalTasks.find(task => {
-            return true ? task.description == description : false
+            return task.description == description ? true: false
         })
     }
     return task
+}
+
+function deleteTask(index){
+    globalTasks.splice(index, 1)
+    setCurrentTask()
+    updateUiTaskList()
 }
 
 // Complete the current task, setting next task to next incomplete task
@@ -90,7 +96,6 @@ function completeTask(task) {
     console.info(`Task successfully completed: ${JSON.stringify(task)}`)
     setCurrentTask()
     updateUiTaskList()
-    saveState()
 }
 
 // Call Quiet Generate to create task list using character context, then convert to tasks. Should not be called much.
@@ -227,9 +232,11 @@ function addUiTask(taskIndex, taskComplete, taskDescription) {
           <span>${taskIndex}</span>
           <input id="objective-task-complete-${taskIndex}" type="checkbox">
           <span class="text_pole" style="display: block" id="objective-task-description-${taskIndex}" contenteditable>${taskDescription}</span>
+          <div id="objective-task-delete-${taskIndex}" class="objective-task-button fa-solid fa-xmark fa-2x" title="Delete Task"></div>
+          <div id="objective-task-add-${taskIndex}" class="objective-task-button fa-solid fa-plus fa-2x" title="Add Task"></div>
       </div><br>
     `;
-
+    
     // Add the filled out template
     $('#objective-tasks').append(template);
 
@@ -244,17 +251,40 @@ function addUiTask(taskIndex, taskComplete, taskDescription) {
         const index = Number(event.target.id.split('-').pop());
         globalTasks[index].description = event.target.textContent;
     });
+    $(`#objective-task-delete-${taskIndex}`).on('click', event => {
+        const index = Number(event.target.id.split('-').pop());
+        deleteTask(index)        
+    });
+    $(`#objective-task-add-${taskIndex}`).on('click', event => {
+        const index = Number(event.target.id.split('-').pop()) + 1;
+        addTask("", index)
+        setCurrentTask()
+        updateUiTaskList()
+    });
 }
 
 // Populate UI task list
 function updateUiTaskList() {
     $('#objective-tasks').empty()
-    for (const index in globalTasks) {
-        addUiTask(
-            index,
-            globalTasks[index].completed,
-            globalTasks[index].description
-        )
+    // Show tasks if there are any
+    if (globalTasks.length > 0){
+        for (const index in globalTasks) {
+            addUiTask(
+                index,
+                globalTasks[index].completed,
+                globalTasks[index].description
+            )
+        }
+    } else {
+    // Show button to add tasks if there are none
+        $('#objective-tasks').append(`
+        <input id="objective-task-add-first" type="button" class="menu_button" value="Add Task">
+        `)
+        $("#objective-task-add-first").on('click', () => {
+            addTask("")
+            setCurrentTask()
+            updateUiTaskList()
+        })
     }
 }
 
