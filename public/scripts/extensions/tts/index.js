@@ -1,6 +1,7 @@
 import { callPopup, cancelTtsPlay, eventSource, event_types, isMultigenEnabled, is_send_press, saveSettingsDebounced } from '../../../script.js'
 import { ModuleWorkerWrapper, extension_settings, getContext } from '../../extensions.js'
 import { getStringHash } from '../../utils.js'
+import { EdgeTtsProvider } from './edge.js'
 import { ElevenLabsTtsProvider } from './elevenlabs.js'
 import { SileroTtsProvider } from './silerotts.js'
 import { SystemTtsProvider } from './system.js'
@@ -60,6 +61,7 @@ let ttsProviders = {
     ElevenLabs: ElevenLabsTtsProvider,
     Silero: SileroTtsProvider,
     System: SystemTtsProvider,
+    Edge: EdgeTtsProvider,
 }
 let ttsProvider
 let ttsProviderName
