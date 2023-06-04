@@ -633,11 +633,11 @@ function isConnectedToExtras() {
 
 async function moduleWorker() {
     if (isConnectedToExtras() || extension_settings.sd.horde) {
-        $('#sd_gen').show(200);
+        $('#sd_gen').show();
         $('.sd_message_gen').show();
     }
     else {
-        $('#sd_gen').hide(200);
+        $('#sd_gen').hide();
         $('.sd_message_gen').hide();
     }
 }

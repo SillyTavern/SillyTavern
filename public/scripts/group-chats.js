@@ -57,7 +57,7 @@ import {
     event_types,
     getCurrentChatId,
 } from "../script.js";
-import { appendTagToList, createTagMapFromList, getTagsList, applyTagsOnCharacterSelect } from './tags.js';
+import { appendTagToList, createTagMapFromList, getTagsList, applyTagsOnCharacterSelect, tag_map } from './tags.js';
 
 export {
     selected_group,
@@ -786,6 +786,7 @@ async function deleteGroup(id) {
 
     if (response.ok) {
         selected_group = null;
+        delete tag_map[id];
         resetChatState();
         clearChat();
         printMessages();
@@ -1004,7 +1005,7 @@ function select_group_chats(groupId, skipAnimation) {
         }
 
         $("#dialogue_popup").data("group_id", groupId);
-        callPopup("<h3>Delete the group?</h3>", "del_group");
+        callPopup('<h3>Delete the group?</h3><p>This will also delete all your chats with that group. If you want to delete a single conversation, select a "View past chats" option in the lower left menu.</p>', "del_group");
     });
 
     updateFavButtonState(group?.fav ?? false);

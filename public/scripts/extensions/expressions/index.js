@@ -78,7 +78,6 @@ async function updateVisualNovelMode(name, expression) {
 async function visualNovelRemoveInactive(container) {
     const context = getContext();
     const group = context.groups.find(x => x.id == context.groupId);
-    const members = group.members;
     const removeInactiveCharactersPromises = [];
 
     // remove inactive characters after 1 second
@@ -87,7 +86,7 @@ async function visualNovelRemoveInactive(container) {
             const element = $(current);
             const avatar = element.data('avatar');
 
-            if (!members.includes(avatar) || group.disabled_members.includes(avatar)) {
+            if (!group.members.includes(avatar) || group.disabled_members.includes(avatar)) {
                 element.fadeOut(250, () => {
                     element.remove();
                     resolve();
@@ -106,13 +105,12 @@ async function visualNovelRemoveInactive(container) {
 async function visualNovelSetCharacterSprites(container, name, expression) {
     const context = getContext();
     const group = context.groups.find(x => x.id == context.groupId);
-    const members = group.members;
     const labels = await getExpressionsList();
 
     const createCharacterPromises = [];
     const setSpritePromises = [];
 
-    for (const avatar of members) {
+    for (const avatar of group.members) {
         const isDisabled = group.disabled_members.includes(avatar);
 
         // skip disabled characters
@@ -121,6 +119,11 @@ async function visualNovelSetCharacterSprites(container, name, expression) {
         }
 
         const character = context.characters.find(x => x.avatar == avatar);
+
+        if (!character) {
+            continue;
+        }
+
         let spriteFolderName = character.name;
         const avatarFileName = getSpriteFolderName({ original_avatar: character.avatar });
         const expressionOverride = extension_settings.expressionOverrides.find((e) =>
@@ -142,7 +145,9 @@ async function visualNovelSetCharacterSprites(container, name, expression) {
         const noSprites = sprites.length === 0;
 
         if (expressionImage.length > 0) {
-            if (name == character.name) {
+            if (name == spriteFolderName) {
+                await validateImages(spriteFolderName, true);
+                setExpressionOverrideHtml(true); // <= force clear expression override input
                 const currentSpritePath = labels.includes(expression) ? sprites.find(x => x.label === expression)?.path : '';
 
                 const path = currentSpritePath || defaultSpritePath || '';
@@ -175,9 +180,8 @@ async function visualNovelSetCharacterSprites(container, name, expression) {
 async function visualNovelUpdateLayers(container) {
     const context = getContext();
     const group = context.groups.find(x => x.id == context.groupId);
-    const members = group.members;
     const recentMessages = context.chat.map(x => x.original_avatar).filter(x => x).reverse().filter(onlyUnique);
-    const filteredMembers = members.filter(x => !group.disabled_members.includes(x));
+    const filteredMembers = group.members.filter(x => !group.disabled_members.includes(x));
     const layerIndices = filteredMembers.slice().sort((a, b) => recentMessages.indexOf(b) - recentMessages.indexOf(a));
 
     const setLayerIndicesPromises = [];
@@ -270,6 +274,8 @@ function setImage(img, path) {
     img.removeClass('default');
     img.off('error');
     img.on('error', function () {
+        console.debug('Error loading image', path);
+        $(this).off('error');
         $(this).attr('src', '');
     });
 }
@@ -362,6 +368,7 @@ async function moduleWorker() {
             spriteCache = {};
             expressionsList = await getExpressionsList();
             await validateImages(spriteFolderName, true);
+            await forceUpdateVisualNovelMode();
         }
 
         offlineMode.css('display', 'none');
@@ -423,7 +430,6 @@ function getSpriteFolderName(message) {
     }
 
     const folderName = avatarPath.replace(/\.[^/.]+$/, "");
-    console.debug(`Folder for ${message.name}:`, folderName);
     return folderName;
 }
 
@@ -622,7 +628,9 @@ async function setExpression(character, expression, force) {
         img.removeClass('default');
         img.off('error');
         img.on('error', function () {
+            console.debug('Expression image error', sprite.path);
             $(this).attr('src', '');
+            $(this).off('error');
             if (force && extension_settings.expressions.showDefault) {
                 setDefault();
             }
@@ -845,7 +853,7 @@ async function onClickExpressionDelete(event) {
     await validateImages(name);
 }
 
-function setExpressionOverrideHtml() {
+function setExpressionOverrideHtml(forceClear = false) {
     const currentLastMessage = getLastCharacterMessage();
     const avatarFileName = getSpriteFolderName(currentLastMessage);
     if (!avatarFileName) {
@@ -860,6 +868,10 @@ function setExpressionOverrideHtml() {
         $("#expression_override").val(expressionOverride.path);
     } else if (expressionOverride) {
         delete extension_settings.expressionOverrides[expressionOverride.name];
+    }
+
+    if (forceClear && !expressionOverride) {
+        $("#expression_override").val("");
     }
 }
 
