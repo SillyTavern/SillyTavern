@@ -2181,14 +2181,27 @@ app.post('/deletegroup', jsonParser, async (request, response) => {
 
     const id = request.body.id;
     const pathToGroup = path.join(directories.groups, sanitize(`${id}.json`));
-    const pathToChat = path.join(directories.groupChats, sanitize(`${id}.jsonl`));
+
+    try {
+        // Delete group chats
+        const group = json5.parse(fs.readFileSync(pathToGroup));
+
+        if (group && Array.isArray(group.chats)) {
+            for (const chat of group.chats) {
+                console.log('Deleting group chat', chat);
+                const pathToFile = path.join(directories.groupChats, `${id}.jsonl`);
+
+                if (fs.existsSync(pathToFile)) {
+                    fs.rmSync(pathToFile);
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Could not delete group chats. Clean them up manually.', error);
+    }
 
     if (fs.existsSync(pathToGroup)) {
         fs.rmSync(pathToGroup);
-    }
-
-    if (fs.existsSync(pathToChat)) {
-        fs.rmSync(pathToChat);
     }
 
     return response.send({ ok: true });
