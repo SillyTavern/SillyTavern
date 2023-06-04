@@ -49,7 +49,7 @@
         "type": "git",
         "url": "https://github.com/SillyTavern/SillyTavern.git"
     },
-    "version": "1.6.5",
+    "version": "1.6.6",
     "scripts": {
         "start": "node server.js",
         "pkg": "pkg --compress Gzip --no-bytecode --public ."
