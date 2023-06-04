@@ -288,7 +288,7 @@
         "WEBP":"WEBP",
         "presets": "Presets",
         "Message Sound": "Message Sound",
-        "Author's Note Show/Hide": "Author's Note Show/Hide"
+        "Author's Note": "Author's Note"
     },
     "zh-cn": {
         "clickslidertips": "点击滑块右侧数字可手动输入",
@@ -578,6 +578,6 @@
         "WEBP":"WEBP",
         "presets": "预设",
         "Message Sound": "消息音效",
-        "Author's Note Show/Hide": "显示/隐藏作者注释"
+        "Author's Note": "作者的注释"
     }
 }
