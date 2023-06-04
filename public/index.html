@@ -22,15 +22,6 @@
     <link rel="apple-touch-icon" sizes="114x114" href="img/apple-icon-114x114.png" />
     <link rel="apple-touch-icon" sizes="144x144" href="img/apple-icon-144x144.png" />
 
-    <script>
-        const documentHeight = () => {
-            const doc = document.documentElement
-            doc.style.setProperty('--doc-height', `${window.innerHeight}px`)
-        }
-        window.addEventListener('resize', documentHeight)
-        documentHeight()
-    </script>
-
     <script src="scripts/jquery-3.5.1.min.js"></script>
     <script src="scripts/jquery-ui.min.js"></script>
     <script src="scripts/jquery.transit.min.js"></script>
@@ -3273,6 +3264,15 @@
         toastr.options.extendedTimeOut = 10000; // How long the toast will display after a user hovers over it
         toastr.options.progressBar = true; // Visually indicate how long before a toast expires.
         toastr.options.closeButton = true; // enable a close button
+    </script>
+
+    <script>
+        const documentHeight = () => {
+            const doc = document.documentElement
+            doc.style.setProperty('--doc-height', `${window.innerHeight}px`)
+        }
+        window.addEventListener('resize', documentHeight)
+        documentHeight()
     </script>
 </body>
 
