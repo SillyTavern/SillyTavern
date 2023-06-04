@@ -15,6 +15,7 @@
     height: calc(100vh - 40px);
     width: 100vw;
     position: relative;
+    overflow: hidden;
 }
 
 #visual-novel-wrapper  .expression-holder {
