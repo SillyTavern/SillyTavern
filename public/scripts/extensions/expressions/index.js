@@ -78,7 +78,6 @@ async function updateVisualNovelMode(name, expression) {
 async function visualNovelRemoveInactive(container) {
     const context = getContext();
     const group = context.groups.find(x => x.id == context.groupId);
-    const members = group.members;
     const removeInactiveCharactersPromises = [];
 
     // remove inactive characters after 1 second
@@ -87,7 +86,7 @@ async function visualNovelRemoveInactive(container) {
             const element = $(current);
             const avatar = element.data('avatar');
 
-            if (!members.includes(avatar) || group.disabled_members.includes(avatar)) {
+            if (!group.members.includes(avatar) || group.disabled_members.includes(avatar)) {
                 element.fadeOut(250, () => {
                     element.remove();
                     resolve();
@@ -106,13 +105,12 @@ async function visualNovelRemoveInactive(container) {
 async function visualNovelSetCharacterSprites(container, name, expression) {
     const context = getContext();
     const group = context.groups.find(x => x.id == context.groupId);
-    const members = group.members;
     const labels = await getExpressionsList();
 
     const createCharacterPromises = [];
     const setSpritePromises = [];
 
-    for (const avatar of members) {
+    for (const avatar of group.members) {
         const isDisabled = group.disabled_members.includes(avatar);
 
         // skip disabled characters
@@ -121,6 +119,11 @@ async function visualNovelSetCharacterSprites(container, name, expression) {
         }
 
         const character = context.characters.find(x => x.avatar == avatar);
+
+        if (!character) {
+            continue;
+        }
+
         let spriteFolderName = character.name;
         const avatarFileName = getSpriteFolderName({ original_avatar: character.avatar });
         const expressionOverride = extension_settings.expressionOverrides.find((e) =>
@@ -177,9 +180,8 @@ async function visualNovelSetCharacterSprites(container, name, expression) {
 async function visualNovelUpdateLayers(container) {
     const context = getContext();
     const group = context.groups.find(x => x.id == context.groupId);
-    const members = group.members;
     const recentMessages = context.chat.map(x => x.original_avatar).filter(x => x).reverse().filter(onlyUnique);
-    const filteredMembers = members.filter(x => !group.disabled_members.includes(x));
+    const filteredMembers = group.members.filter(x => !group.disabled_members.includes(x));
     const layerIndices = filteredMembers.slice().sort((a, b) => recentMessages.indexOf(b) - recentMessages.indexOf(a));
 
     const setLayerIndicesPromises = [];
