@@ -300,6 +300,16 @@ async function moduleWorker() {
         lastCharacter = context.groupId || context.characterId;
     }
 
+    let spriteFolderName = currentLastMessage.name;
+    const avatarFileName = context.characters[context.characterId].avatar.split(".")[0];
+    const expressionOverride = extension_settings.expressionOverrides.find((e) =>
+        e.name == avatarFileName
+    );
+
+    if (expressionOverride && expressionOverride.path) {
+        spriteFolderName = expressionOverride.path;
+    }
+
     const offlineMode = $('.expression_settings .offline_mode');
     if (!modules.includes('classify')) {
         $('.expression_settings').show();
@@ -307,7 +317,7 @@ async function moduleWorker() {
         lastCharacter = context.groupId || context.characterId;
 
         if (context.groupId) {
-            await validateImages(currentLastMessage.name, true);
+            await validateImages(spriteFolderName, true);
             await forceUpdateVisualNovelMode();
         }
 
@@ -319,7 +329,7 @@ async function moduleWorker() {
             expressionsList = null;
             spriteCache = {};
             expressionsList = await getExpressionsList();
-            await validateImages(currentLastMessage.name, true);
+            await validateImages(spriteFolderName, true);
         }
 
         offlineMode.css('display', 'none');
@@ -341,7 +351,11 @@ async function moduleWorker() {
         inApiCall = true;
         let expression = await getExpressionLabel(currentLastMessage.mes);
 
-        const name = context.groupId ? currentLastMessage.name : context.name2;
+        // If we're not already overriding the folder name, account for group chats.
+        if (spriteFolderName === currentLastMessage.name && !context.groupId) {
+            spriteFolderName = context.name2;
+        }
+
         const force = !!context.groupId;
 
         // Character won't be angry on you for swiping
@@ -349,11 +363,7 @@ async function moduleWorker() {
             expression = FALLBACK_EXPRESSION;
         }
 
-        if (vnMode) {
-            await updateVisualNovelMode(name, expression);
-        } else {
-            setExpression(name, expression, force);
-        }
+        await sendExpressionCall(spriteFolderName, expression, force, vnMode);
 
     }
     catch (error) {
@@ -366,8 +376,21 @@ async function moduleWorker() {
     }
 }
 
+async function sendExpressionCall(name, expression, force, vnMode) {
+    if (!vnMode) {
+        vnMode = isVisualNovelMode();
+    }
+
+    if (vnMode) {
+        await updateVisualNovelMode(name, expression);
+    } else {
+        setExpression(name, expression, force);
+    }
+}
+
 async function getExpressionLabel(text) {
-    if (!modules.includes('classify')) {
+    // Return if text is undefined, saving a costly fetch request
+    if (!modules.includes('classify') || !text) {
         return FALLBACK_EXPRESSION;
     }
 
@@ -636,6 +659,82 @@ async function onClickExpressionUpload(event) {
         .trigger('click');
 }
 
+async function onClickExpressionOverrideButton() {
+    const context = getContext();
+    const currentLastMessage = getLastCharacterMessage();
+    const avatarFileName = context.characters[context.characterId].avatar.split(".")[0];
+
+    // If the avatar name couldn't be found, abort.
+    if (!avatarFileName) {
+        console.debug(`Could not find filename for character with name ${currentLastMessage.name} and ID ${context.characterId}`);
+
+        return;
+    }
+
+    const overridePath = $("#expression_override").val();
+    const existingOverrideIndex = extension_settings.expressionOverrides.findIndex((e) =>
+        e.name == avatarFileName
+    );
+
+    // If the path is empty, delete the entry from overrides
+    if (overridePath === undefined || overridePath.length === 0) {
+        if (existingOverrideIndex === -1) {
+            return;
+        }
+
+        extension_settings.expressionOverrides.splice(existingOverrideIndex, 1);
+        console.debug(`Removed existing override for ${avatarFileName}`);
+    } else {
+        // Properly override objects and clear the sprite cache of the previously set names
+        const existingOverride = extension_settings.expressionOverrides[existingOverrideIndex];
+        if (existingOverride) {
+            Object.assign(existingOverride, { path: overridePath });
+            delete spriteCache[existingOverride.name];
+        } else {
+            const characterOverride = { name: avatarFileName, path: overridePath };
+            extension_settings.expressionOverrides.push(characterOverride);
+            delete spriteCache[currentLastMessage.name];
+        }
+
+        console.debug(`Added/edited expression override for character with filename ${avatarFileName} to folder ${overridePath}`);
+    }
+
+    saveSettingsDebounced();
+
+    // Refresh sprites list. Assume the override path has been properly handled.
+    try {
+        await validateImages(overridePath.length === 0 ? currentLastMessage.name : overridePath, true);
+        const expression = await getExpressionLabel(currentLastMessage.mes);
+        await sendExpressionCall(overridePath.length === 0 ? currentLastMessage.name : overridePath, expression, true);    
+    } catch(error) {
+        console.debug(`Setting expression override for ${avatarFileName} failed with error: ${error}`);
+    }
+}
+
+async function onClickExpressionOverrideRemoveAllButton() {
+    // Remove all the overrided entries from sprite cache
+    for (const element of extension_settings.expressionOverrides) {
+        delete spriteCache[element.name];
+    }
+
+    extension_settings.expressionOverrides = [];
+    saveSettingsDebounced();
+
+    console.debug("All expression image overrides have been cleared.");
+
+    // Refresh sprites list to use the default name if applicable
+    try {
+        const currentLastMessage = getLastCharacterMessage();
+        await validateImages(currentLastMessage.name, true);
+        const expression = await getExpressionLabel(currentLastMessage.mes);
+        await sendExpressionCall(currentLastMessage.name, expression, true);
+
+        console.debug(extension_settings.expressionOverrides);
+    } catch(error) {
+        console.debug(`The current expression could not be set because of error: ${error}`);
+    }
+}
+
 async function onClickExpressionUploadPackButton() {
     const name = $('#image_list').data('name');
 
@@ -691,6 +790,24 @@ async function onClickExpressionDelete(event) {
     await validateImages(name);
 }
 
+function setExpressionOverrideHtml() {
+    const context = getContext();
+    const avatarFileName = context.characters[context.characterId].avatar.split(".")[0];
+    if (!avatarFileName) {
+        return;
+    }
+
+    const expressionOverride = extension_settings.expressionOverrides.find((e) =>
+        e.name == avatarFileName
+    );
+
+    if (expressionOverride && expressionOverride.path) {
+        $("#expression_override").val(expressionOverride.path);
+    } else if (expressionOverride) {
+        delete extension_settings.expressionOverrides[expressionOverride.name];
+    }
+}
+
 (function () {
     function addExpressionImage() {
         const html = `
@@ -721,11 +838,19 @@ async function onClickExpressionDelete(event) {
                 </div>
                 <div class="inline-drawer-content">
                     <p class="offline_mode">You are in offline mode. Click on the image below to set the expression.</p>
+                    <div class="flex-container flexnowrap">
+                        <input id="expression_override" type="text" class="text_pole" placeholder="Override folder name" />
+                        <input id="expression_override_button" class="menu_button" type="submit" value="Submit" />
+                    </div>
                     <div id="image_list"></div>
-                    <div class="expression_buttons">
+                    <div class="expression_buttons flex-container spaceEvenly">
                         <div id="expression_upload_pack_button" class="menu_button">
                             <i class="fa-solid fa-file-zipper"></i>
                             <span>Upload sprite pack (ZIP)</span>
+                        </div>
+                        <div id="expression_override_cleanup_button" class="menu_button">
+                            <i class="fa-solid fa-trash-can"></i>
+                            <span>Remove all image overrides</span>
                         </div>
                     </div>
                     <p class="hint"><b>Hint:</b> <i>Create new folder in the <b>public/characters/</b> folder and name it as the name of the character.
@@ -740,9 +865,11 @@ async function onClickExpressionDelete(event) {
         </div>
         `;
         $('#extensions_settings').append(html);
+        $('#expression_override_button').on('click', onClickExpressionOverrideButton);
         $('#expressions_show_default').on('input', onExpressionsShowDefaultInput);
         $('#expression_upload_pack_button').on('click', onClickExpressionUploadPackButton);
         $('#expressions_show_default').prop('checked', extension_settings.expressions.showDefault).trigger('input');
+        $('#expression_override_cleanup_button').on('click', onClickExpressionOverrideRemoveAllButton);
         $(document).on('click', '.expression_list_item', onClickExpressionImage);
         $(document).on('click', '.expression_list_upload', onClickExpressionUpload);
         $(document).on('click', '.expression_list_delete', onClickExpressionDelete);
@@ -758,6 +885,8 @@ async function onClickExpressionDelete(event) {
     setInterval(updateFunction, UPDATE_INTERVAL);
     moduleWorker();
     eventSource.on(event_types.CHAT_CHANGED, () => {
+        setExpressionOverrideHtml();
+
         if (isVisualNovelMode()) {
             $('#visual-novel-wrapper').empty();
         }
