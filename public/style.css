@@ -3565,7 +3565,7 @@ label[for="extensions_autoconnect"] {
 #extensions_settings .inline-drawer-toggle.inline-drawer-header,
 #extensions_settings2 .inline-drawer-toggle.inline-drawer-header {
     /* background-color: var(--SmartThemeBlurTintColor); */
-    background-image: linear-gradient(350deg, var(--white30a)2%, var(--grey30a)10%, var(--black70a)90%, var(--SmartThemeQuoteColor)100%);
+    background-image: linear-gradient(348deg, var(--white30a)2%, var(--grey30a)10%, var(--black70a)95%, var(--SmartThemeQuoteColor)100%);
     margin-bottom: 5px;
     border-radius: 10px;
     padding: 5px;
