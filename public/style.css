@@ -423,7 +423,7 @@ code {
     margin: 0 auto 0 auto;
     border: 1px solid var(--grey30a);
 
-    border-radius: 0 0 20px 20px;
+    border-radius: 0 0 10px 10px;
     background-color: var(--SmartThemeBlurTintColor);
     backdrop-filter: blur(var(--SmartThemeBlurStrength));
 }
@@ -511,12 +511,12 @@ code {
     display: block;
     background-color: var(--SmartThemeBlurTintColor);
     border: 1px solid var(--white30a);
-    border-radius: 15px;
+    border-radius: 10px;
     box-shadow: 0 0 5px black;
     text-shadow: 0px 0px calc(var(--shadowWidth) * 1px) var(--SmartThemeShadowColor);
     backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)*2));
     z-index: 2000;
-    margin-bottom: 3px;
+    /* margin-bottom: 0px;*/
 }
 
 .options-content i {
@@ -578,10 +578,11 @@ hr {
 .options-content a,
 #extensionsMenu>div {
     color: var(--SmartThemeBodyColor);
-    padding: 12px 16px;
+    padding: 5px 5px;
+    padding-bottom: 5px;
     text-decoration: none;
     display: flex;
-    align-items: center;
+    /* align-items: center; */
     column-gap: 10px;
     cursor: pointer;
 }
@@ -3363,7 +3364,7 @@ a {
     background-color: var(--SmartThemeBlurTintColor);
     backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)*2));
     border: 1px solid var(--white30a);
-    border-radius: 15px;
+    border-radius: 10px;
     box-shadow: 0 0 5px black;
     text-shadow: 0px 0px calc(var(--shadowWidth) * 1px) var(--SmartThemeShadowColor);
 }
@@ -3727,9 +3728,10 @@ label[for="extensions_autoconnect"] {
     left: 0;
     right: auto;
     padding: 5px;
-    border-radius: 0 0 20px 0;
+    border-radius: 10px;
     box-shadow: none;
     overflow: hidden;
+    border: 1px solid var(--grey30a);
 }
 
 .scrollableInner {
