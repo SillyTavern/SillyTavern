@@ -476,32 +476,7 @@ function prepareExampleMessages(messages, exampleMessages, includeAll = false, )
                 examples_tosend.push(example);
             }
         }
-
-        // go from newest message to oldest, because we want to delete the older ones from the context
-        for (let j = messages.length - 1; j >= 0; j--) {
-            let item = messages[j];
-            let item_count = countTokens(item);
-            // If we have enough space for this message, also account for the max assistant reply size
-            if ((total_count + item_count) < (oai_settings.openai_max_context - oai_settings.openai_max_tokens)) {
-                messages.push(item);
-            } else {
-                // early break since if we still have more messages, they just won't fit anyway
-                break;
-            }
-        }
     } else {
-        for (let j = messages.length - 1; j >= 0; j--) {
-            let item = messages[j];
-            let item_count = countTokens(item);
-            // If we have enough space for this message, also account for the max assistant reply size
-            if ((total_count + item_count) < (oai_settings.openai_max_context - oai_settings.openai_max_tokens)) {
-                messages.push(item);
-            } else {
-                // early break since if we still have more messages, they just won't fit anyway
-                break;
-            }
-        }
-
         // each example block contains multiple user/bot messages
         for (let example_block of exampleMessages) {
             if (example_block.length == 0) {
