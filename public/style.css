@@ -500,10 +500,9 @@ code {
 }
 
 #options {
-    opacity: 0.0;
-    display: none;
-    z-index: 1990;
-
+    display: flex;
+    z-index: 100;
+    backdrop-filter: blur(var(--SmartThemeBlurStrength));
 }
 
 .options-content {
