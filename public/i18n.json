@@ -286,7 +286,9 @@
         "PNG":"PNG",
         "JSON":"JSON",
         "WEBP":"WEBP",
-        "presets": "Presets"
+        "presets": "Presets",
+        "Message Sound": "Message Sound",
+        "Author's Note Show/Hide": "Author's Note Show/Hide"
     },
     "zh-cn": {
         "clickslidertips": "点击滑块右侧数字可手动输入",
@@ -574,6 +576,8 @@
         "PNG":"PNG",
         "JSON":"JSON",
         "WEBP":"WEBP",
-        "presets": "预设"
+        "presets": "预设",
+        "Message Sound": "消息音效",
+        "Author's Note Show/Hide": "显示/隐藏作者注释"
     }
 }
