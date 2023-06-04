@@ -46,6 +46,7 @@ const extension_settings = {
     apiKey: '',
     autoConnect: false,
     disabledExtensions: [],
+    expressionOverrides: [],
     memory: {},
     note: {
         default: '',
