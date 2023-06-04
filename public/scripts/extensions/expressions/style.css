@@ -27,9 +27,9 @@
     visibility: hidden !important;
 }
 
-#visual-novel-wrapper img.expression {
+/*#visual-novel-wrapper img.expression {
     object-fit: cover;
-}
+}*/
 
 .expression-holder {
     min-width: 100px;

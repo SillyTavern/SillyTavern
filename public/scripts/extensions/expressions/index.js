@@ -1,5 +1,5 @@
 import { callPopup, eventSource, event_types, getRequestHeaders, saveSettingsDebounced } from "../../../script.js";
-import { deviceInfo } from "../../RossAscends-mods.js";
+import { deviceInfo, dragElement } from "../../RossAscends-mods.js";
 import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper, doExtrasFetch } from "../../extensions.js";
 import { power_user } from "../../power-user.js";
 import { onlyUnique, debounce } from "../../utils.js";
@@ -143,8 +143,11 @@ async function visualNovelSetCharacterSprites(container, name, expression) {
             expressionImage.toggleClass('hidden', noSprites);
         } else {
             const template = $('#expression-holder').clone();
+            template.attr('id',  `expression-${avatar}`);
             template.attr('data-avatar', avatar);
+            template.find('.drag-grabber').attr('id', `expression-${avatar}header`);
             $('#visual-novel-wrapper').append(template);
+            dragElement(template[0]);
             template.toggleClass('hidden', noSprites);
             setImage(template.find('img'), defaultSpritePath || '');
             const fadeInPromise = new Promise(resolve => {
@@ -164,9 +167,9 @@ async function visualNovelUpdateLayers(container) {
     const context = getContext();
     const group = context.groups.find(x => x.id == context.groupId);
     const members = group.members;
-    const recentMessages = context.chat.map(x => x.original_avatar).filter(onlyUnique);
+    const recentMessages = context.chat.map(x => x.original_avatar).filter(x => x).reverse().filter(onlyUnique);
     const filteredMembers = members.filter(x => !group.disabled_members.includes(x));
-    const layerIndices = filteredMembers.slice().sort((a, b) => recentMessages.indexOf(a) - recentMessages.indexOf(b));
+    const layerIndices = filteredMembers.slice().sort((a, b) => recentMessages.indexOf(b) - recentMessages.indexOf(a));
 
     const setLayerIndicesPromises = [];
 
@@ -201,6 +204,13 @@ async function visualNovelUpdateLayers(container) {
 
     images.sort(sortFunction).each((index, current) => {
         const element = $(current);
+
+        // skip repositioning of dragged elements
+        if (element.data('dragged')) {
+            currentPosition += imagesWidth[index];
+            return;
+        }
+
         const avatar = element.data('avatar');
         const layerIndex = layerIndices.indexOf(avatar);
         element.css('z-index', layerIndex);
@@ -765,5 +775,6 @@ async function onClickExpressionDelete(event) {
             $('#visual-novel-wrapper').empty();
         }
     });
+    eventSource.on(event_types.MOVABLE_PANELS_RESET, updateVisualNovelModeDebounced);
     eventSource.on(event_types.GROUP_UPDATED, updateVisualNovelModeDebounced);
 })();

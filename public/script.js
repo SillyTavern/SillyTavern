@@ -427,6 +427,7 @@ export const event_types = {
     GENERATION_STOPPED: 'generation_stopped',
     SETTINGS_UPDATED: 'settings_updated',
     GROUP_UPDATED: 'group_updated',
+    MOVABLE_PANELS_RESET: 'movable_panels_reset',
 }
 
 export const eventSource = new EventEmitter();
