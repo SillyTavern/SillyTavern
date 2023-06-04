@@ -5486,16 +5486,17 @@ $(document).ready(function () {
                 " -- Name: " +
                 characters[this_chid].name
             );
+            const avatar = characters[this_chid].avatar;
+            const name = characters[this_chid].name;
             var msg = jQuery("#form_create").serialize(); // ID form
             jQuery.ajax({
                 method: "POST",
                 url: "/deletecharacter",
                 beforeSend: function () {
-                    select_rm_info("char_delete", characters[this_chid].name);
                 },
                 data: msg,
                 cache: false,
-                success: function (html) {
+                success: async function (html) {
                     //RossAscends: New handling of character deletion that avoids page refreshes and should have
                     // fixed char corruption due to cache problems.
                     //due to how it is handled with 'popup_type', i couldn't find a way to make my method completely
@@ -5516,7 +5517,9 @@ $(document).ready(function () {
                         .text(""); // removes character name from nav tabs
                     clearChat(); // removes deleted char's chat
                     this_chid = undefined; // prevents getCharacters from trying to load an invalid char.
-                    getCharacters(); // gets the new list of characters (that doesn't include the deleted one)
+                    delete tag_map[avatar]; // removes deleted char's avatar from tag_map
+                    await getCharacters(); // gets the new list of characters (that doesn't include the deleted one)
+                    select_rm_info("char_delete", name); // also updates the 'deleted character' message
                     printMessages(); // prints out system user's 'deleted character' message
                     //console.log("#dialogue_popup_ok(del-char) >>>> saving");
                     saveSettingsDebounced(); // saving settings to keep changes to variables

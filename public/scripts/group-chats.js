@@ -57,7 +57,7 @@ import {
     event_types,
     getCurrentChatId,
 } from "../script.js";
-import { appendTagToList, createTagMapFromList, getTagsList, applyTagsOnCharacterSelect } from './tags.js';
+import { appendTagToList, createTagMapFromList, getTagsList, applyTagsOnCharacterSelect, tag_map } from './tags.js';
 
 export {
     selected_group,
@@ -786,6 +786,7 @@ async function deleteGroup(id) {
 
     if (response.ok) {
         selected_group = null;
+        delete tag_map[id];
         resetChatState();
         clearChat();
         printMessages();
