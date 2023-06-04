@@ -937,10 +937,10 @@ select {
     border: 1px solid var(--white30a);
     border-radius: 10px;
     font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
-
     padding: 7px;
     width: 100%;
     margin: 5px 0;
+    height: fit-content;
 }
 
 
