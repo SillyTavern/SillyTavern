@@ -144,7 +144,7 @@ jQuery(async () => {
         </div>
     </div>`;
 
-    $('#extensions_settings').append(settingsHtml);
+    $('#extensions_settings2').append(settingsHtml);
 
     $('#quickReply1Mes').on('input', function () { onQuickReplyInput(1); });
     $('#quickReply2Mes').on('input', function () { onQuickReplyInput(2); });

@@ -61,7 +61,7 @@ async function generateQuietPrompt(quiet_prompt) {
 
 // Accepts optional position. Defaults to adding to end of list.
 function addTask(description, position = null) {
-    position = position != null ? position: position = globalTasks.length
+    position = position != null ? position : position = globalTasks.length
     globalTasks.splice(position, 0, {
         "description": description,
         "completed": false
@@ -78,13 +78,13 @@ function getTask(index = null, taskDescription = null) {
         task = globalObjective[index]
     } else if (taskDescription != null) {
         task = globalTasks.find(task => {
-            return task.description == description ? true: false
+            return task.description == description ? true : false
         })
     }
     return task
 }
 
-function deleteTask(index){
+function deleteTask(index) {
     globalTasks.splice(index, 1)
     setCurrentTask()
     updateUiTaskList()
@@ -229,9 +229,9 @@ function addUiTask(taskIndex, taskComplete, taskDescription) {
           <span class="text_pole" style="display: block" id="objective-task-description-${taskIndex}" contenteditable>${taskDescription}</span>
           <div id="objective-task-delete-${taskIndex}" class="objective-task-button fa-solid fa-xmark fa-2x" title="Delete Task"></div>
           <div id="objective-task-add-${taskIndex}" class="objective-task-button fa-solid fa-plus fa-2x" title="Add Task"></div>
-      </div><br>
+      </div>
     `;
-    
+
     // Add the filled out template
     $('#objective-tasks').append(template);
 
@@ -248,7 +248,7 @@ function addUiTask(taskIndex, taskComplete, taskDescription) {
     });
     $(`#objective-task-delete-${taskIndex}`).on('click', event => {
         const index = Number(event.target.id.split('-').pop());
-        deleteTask(index)        
+        deleteTask(index)
     });
     $(`#objective-task-add-${taskIndex}`).on('click', event => {
         const index = Number(event.target.id.split('-').pop()) + 1;
@@ -262,7 +262,7 @@ function addUiTask(taskIndex, taskComplete, taskDescription) {
 function updateUiTaskList() {
     $('#objective-tasks').empty()
     // Show tasks if there are any
-    if (globalTasks.length > 0){
+    if (globalTasks.length > 0) {
         for (const index in globalTasks) {
             addUiTask(
                 index,
@@ -271,7 +271,7 @@ function updateUiTaskList() {
             )
         }
     } else {
-    // Show button to add tasks if there are none
+        // Show button to add tasks if there are none
         $('#objective-tasks').append(`
         <input id="objective-task-add-first" type="button" class="menu_button" value="Add Task">
         `)
@@ -307,7 +307,7 @@ function onChatDepthInput() {
 
 // Update how often we check for task completion
 function onCheckFrequencyInput() {
-    checkCounter =  $("#objective-check-frequency").val()
+    checkCounter = $("#objective-check-frequency").val()
     $('#objective-counter').text(checkCounter)
     saveState()
 }
@@ -363,19 +363,19 @@ jQuery(() => {
         <div class="inline-drawer-content">
             <label for="objective-text"><small>Enter an objective and generate tasks. The AI will attempt to complete tasks autonomously</small></label>
             <textarea id="objective-text" type="text" class="text_pole textarea_compact" rows="4"></textarea>
-            <div class="objective_block">
-                <input id="objective-generate" class="menu_button" type="submit" value="Generate Tasks" />
-                <small>Automatically generate tasks for Objective. Takes a moment.</small>
+            <div class="objective_block flex-container">
+                <input id="objective-generate" class="menu_button" type="submit" value="Auto-Generate Tasks" />                
+                <label class="checkbox_label"><input id="objective-hide-tasks" type="checkbox"> Hide Tasks</label>
             </div>
-            </br>
-            <label class="checkbox_label"><input id="objective-hide-tasks" type="checkbox"> Hide Tasks</label><br>
+            
             <div id="objective-tasks"> </div>
-            <div class="objective_block">
-                <div class="objective_block objective_block_control flex1">
-                    <label for="objective-chat-depth">In-chat @ Depth</label>
+            <div class="objective_block margin-bot-10px">
+                <div class="objective_block objective_block_control flex1 flexFlowColumn">
+                    <label for="objective-chat-depth">Position in Chat</label>
                     <input id="objective-chat-depth" class="text_pole widthUnset" type="number" min="0" max="99" />
+                    <small>Depth</small>
                 </div>
-                <div class="objective_block objective_block_control flex1">
+                <div class="objective_block objective_block_control flex1 flexFlowColumn">
                     <label for="objective-check-frequency">Task Check Frequency</label>
                     <input id="objective-check-frequency" class="text_pole widthUnset" type="number" min="0" max="99" />
                     <small>(0 = disabled)</small>

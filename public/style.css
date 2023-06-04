@@ -902,6 +902,10 @@ select {
     margin-top: 10px;
 }
 
+.marginTopBot5 {
+    margin: 5px 0;
+}
+
 #description_textarea,
 #firstmessage_textarea {
     height: -webkit-fill-available;
@@ -1316,7 +1320,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 }
 
 .alignitemsflexstart {
-    align-items: flex-start;
+    align-items: flex-start !important;
 }
 
 .gap5px {
@@ -3497,7 +3501,7 @@ a {
 }
 
 #extensions_status {
-    margin-bottom: 10px;
+    /* margin-bottom: 10px; */
     font-weight: 700;
 }
 
@@ -3556,6 +3560,16 @@ label[for="extensions_autoconnect"] {
 #extensions_list .disabled {
     text-decoration: line-through;
     color: lightgray;
+}
+
+#extensions_settings .inline-drawer-toggle.inline-drawer-header,
+#extensions_settings2 .inline-drawer-toggle.inline-drawer-header {
+    /* background-color: var(--SmartThemeBlurTintColor); */
+    background-image: linear-gradient(350deg, var(--white30a)2%, var(--grey30a)10%, var(--black70a)90%, var(--SmartThemeQuoteColor)100%);
+    margin-bottom: 5px;
+    border-radius: 10px;
+    padding: 5px;
+    border: 1px solid var(--grey30);
 }
 
 .success {
@@ -4182,6 +4196,12 @@ body.waifuMode #avatar_zoom_popup {
 /*will apply to anything 1000px or less. this catches ipads, horizontal phones, and vertical phones)*/
 
 @media screen and (max-width: 1000px) {
+
+    #extensions_settings,
+    #extensions_settings2 {
+        width: 100% !important;
+        min-width: 100% !important;
+    }
 
     #avatar_zoom_popup {
         min-width: 100px;

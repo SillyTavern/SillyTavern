@@ -2032,33 +2032,34 @@
                 <div class="drawer-icon fa-solid fa-cubes  closedIcon" title="Extensions"></div>
             </div>
             <div id="rm_extensions_block" class="drawer-content closedDrawer">
-                <div class="extensions_block">
-                    <h3>Extensions API:
-                        <a target="_blank" href="https://github.com/SillyTavern/SillyTavern-extras">
-                            SillyTavern-extras
-                        </a>
-                    </h3>
-                    <input id="extensions_url" type="text" class="text_pole" maxlength="250" placeholder="Extensions URL" />
-                    <input id="extensions_api_key" type="text" class="text_pole" maxlength="250" placeholder="API key" />
-                    <div class="extensions_url_block">
-                        <input id="extensions_connect" class="menu_button" type="submit" value="Connect" />
-                        <input id="extensions_details" class="menu_button" type="button" value="Manage extensions" />
-                        <span class="expander"></span>
-                        <label for="extensions_autoconnect"><input id="extensions_autoconnect" type="checkbox" />
+                <div class="extensions_block flex-container">
+                    <div class="alignitemscenter flex-container justify wide100p" style="justify-content: space-between;">
+                        <h3 class="margin0 flex1">Extensions API:
+                            <a target="_blank" href="https://github.com/SillyTavern/SillyTavern-extras">
+                                SillyTavern-extras
+                            </a>
+                        </h3>
+                        <div id="extensions_status">Not Connected</div>
+                        <label for="extensions_autoconnect">
+                            <input id="extensions_autoconnect" type="checkbox">
                             Auto-connect
                         </label>
                     </div>
-                    <div id="extensions_status">
-                        Not connected
+                    <div class="alignitemsflexstart flex-container wide100p">
+                        <input id="extensions_url" type="text" class="flex1 heightFitContent text_pole widthNatural" maxlength="250" placeholder="Extensions URL">
+                        <input id="extensions_api_key" type="text" class="flex1 heightFitContent text_pole widthNatural" maxlength="250" placeholder="API key">
+                        <div class="alignitemsflexstart extensions_url_block">
+                            <div class="" style="text-align: center">
+                                <input id="extensions_connect" class="menu_button" type="submit" value="Connect">
+                            </div>
+                            <input id="extensions_details" class="alignitemsflexstart menu_button" type="button" value="Manage extensions">
+                        </div>
                     </div>
-                    <div id="extensions_loaded">
-                        <h4>Active extensions</h4>
-                        <ul id="extensions_list">
-                        </ul>
+                    <div id="extensions_settings" class="flex1 widthNatural">
                     </div>
-                    <div id="extensions_settings">
-                        <h3>Extension settings</h3>
+                    <div id="extensions_settings2" class="flex1 widthNatural">
                     </div>
+
                 </div>
             </div>
         </div>
@@ -2329,14 +2330,11 @@
             <div class="inline-drawer-content">
                 <div>
                     <h4>System Prompt</h4>
-                    <textarea id="system_prompt_textarea" name="system_prompt"
-                        placeholder="(Overrides the main prompt for OpenAI and/or system prompt for Instruct Mode if not empty)"
-                        form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="20000"></textarea>
+                    <textarea id="system_prompt_textarea" name="system_prompt" placeholder="(Overrides the main prompt for OpenAI and/or system prompt for Instruct Mode if not empty)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="20000"></textarea>
                 </div>
                 <div>
                     <h4>Post History Instructions</h4>
-                    <textarea id="post_history_instructions_textarea" name="post_history_instructions" placeholder="(Overrides the default jailbreak for OpenAI if not empty)" form="form_create" class="text_pole"
-                        autocomplete="off" rows="3" maxlength="100"></textarea>
+                    <textarea id="post_history_instructions_textarea" name="post_history_instructions" placeholder="(Overrides the default jailbreak for OpenAI if not empty)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="100"></textarea>
                 </div>
             </div>
         </div>
@@ -2351,24 +2349,19 @@
             <div class="inline-drawer-content">
                 <div>
                     <h4>Creator's Name</h4>
-                    <textarea id="creator_textarea" name="creator" placeholder="(Botmaker's name / Contact info)" form="form_create" class="text_pole"
-                        autocomplete="off" rows="1" maxlength="100"></textarea>
+                    <textarea id="creator_textarea" name="creator" placeholder="(Botmaker's name / Contact info)" form="form_create" class="text_pole" autocomplete="off" rows="1" maxlength="100"></textarea>
                 </div>
                 <div>
                     <h4>Creator's Notes</h4>
-                    <textarea id="creator_notes_textarea" name="creator_notes"
-                        placeholder="(Describe the bot to the user, list the chat models it has been tested on, and any other useful tips)"
-                        form="form_create" class="text_pole" autocomplete="off" rows="2" maxlength="20000"></textarea>
+                    <textarea id="creator_notes_textarea" name="creator_notes" placeholder="(Describe the bot to the user, list the chat models it has been tested on, and any other useful tips)" form="form_create" class="text_pole" autocomplete="off" rows="2" maxlength="20000"></textarea>
                 </div>
                 <div>
                     <h4>Creators's Tags</h4>
-                    <textarea id="tags_textarea" name="tags" placeholder="(List of freeform comma-separated tags)" form="form_create"
-                        class="text_pole" autocomplete="off" rows="1" maxlength="2000"></textarea>
+                    <textarea id="tags_textarea" name="tags" placeholder="(List of freeform comma-separated tags)" form="form_create" class="text_pole" autocomplete="off" rows="1" maxlength="2000"></textarea>
                 </div>
                 <div>
                     <h4>Character Version</h4>
-                    <textarea id="character_version_textarea" name="character_version" placeholder="(Optional string to track character versions)"
-                        form="form_create" class="text_pole" autocomplete="off" rows="1" maxlength="100"></textarea>
+                    <textarea id="character_version_textarea" name="character_version" placeholder="(Optional string to track character versions)" form="form_create" class="text_pole" autocomplete="off" rows="1" maxlength="100"></textarea>
                 </div>
             </div>
         </div>
