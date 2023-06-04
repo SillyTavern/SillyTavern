@@ -3380,7 +3380,3 @@ async function getImageBuffers(zipFilePath) {
         });
     });
 }
-
-const edgeTts = require('./src/edge-tts');
-
-edgeTts.addEdgeTtsEndpoints(app, jsonParser);
