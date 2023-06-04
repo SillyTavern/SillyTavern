@@ -103,6 +103,8 @@ import {
     setPoeOnlineStatus,
 } from "./scripts/poe.js";
 
+import { generateRunpodPygmalion, runpod_settings, loadRunpodSettings } from "./scripts/runpod.js";
+
 import { debounce, delay, restoreCaretPosition, saveCaretPosition } from "./scripts/utils.js";
 import { extension_settings, loadExtensionSettings } from "./scripts/extensions.js";
 import { executeSlashCommands, getSlashCommandsHelp, registerSlashCommand } from "./scripts/slash-commands.js";
@@ -579,6 +581,8 @@ function checkOnlineStatus() {
         $("#online_status_text3").html("No connection...");
         $(".online_status_indicator4").css("background-color", "red");  //OAI / ooba
         $(".online_status_text4").html("No connection...");
+        $("#online_status_indicator5").css("background-color", "red"); //runpod
+        $("#online_status_text5").html("No connection...");
         is_get_status = false;
         is_get_status_novel = false;
         setOpenAIOnlineStatus(false);
@@ -590,6 +594,8 @@ function checkOnlineStatus() {
         $("#online_status_text3").html(online_status);
         $(".online_status_indicator4").css("background-color", "green"); //OAI / ooba
         $(".online_status_text4").html(online_status);
+        $("#online_status_indicator5").css("background-color", "green"); //runpod
+        $("#online_status_text5").html(online_status);
     }
 }
 
@@ -660,7 +666,7 @@ async function getStatus() {
             },
         });
     } else {
-        if (is_get_status_novel != true && is_get_status_openai != true && main_api != "poe") {
+        if (is_get_status_novel != true && is_get_status_openai != true && main_api != "poe" && main_api != "runpod") {
             online_status = "no_connection";
         }
     }
@@ -2149,6 +2155,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     generatePoe(type, finalPromt).then(onSuccess).catch(onError);
                 }
             }
+            else if (main_api == 'runpod'){
+                generateRunpodPygmalion(finalPromt, generate_data).then(onSuccess).catch(onError);
+            }
             else if (main_api == 'textgenerationwebui' && textgenerationwebui_settings.streaming && type !== 'quiet') {
                 streamingProcessor.generator = await generateTextGenWithStreaming(generate_data, streamingProcessor.abortController.signal);
             }
@@ -2456,7 +2465,7 @@ function extractMessageFromData(data) {
         getMessage = data.output;
     }
 
-    if (main_api == 'openai' || main_api == 'poe') {
+    if (main_api == 'openai' || main_api == 'poe' | main_api == "runpod") {
         getMessage = data;
     }
 
@@ -2959,6 +2968,15 @@ function changeMainAPI() {
             maxContextElem: $("#max_context_block"),
             amountGenElem: $("#amount_gen_block"),
             softPromptElem: $("#softprompt_block"),
+        },
+        "runpod": {
+            apiSettings: $("#runpod_api"),
+            apiConnector: $("#runpod_api"),
+            apiPresets: $("#runpod_api"),
+            apiRanges: $("#runpod_api"),
+            maxContextElem: $("#runpod_api"),
+            amountGenElem: $("#runpod_api"),
+            softPromptElem: $("#runpod_api"),
         }
     };
     //console.log('--- apiElements--- ');
@@ -3206,6 +3224,9 @@ async function getSettings(type) {
                 // Poe
                 loadPoeSettings(settings);
 
+                // Runpod
+                loadRunpodSettings(settings);
+
                 // Load power user settings
                 loadPowerUserSettings(settings, data);
 
@@ -3295,6 +3316,7 @@ async function saveSettings(type) {
             ...nai_settings,
             ...kai_settings,
             ...oai_settings,
+            ...runpod_settings,
         }, null, 4),
         beforeSend: function () {
             if (type == "change_name") {
@@ -5427,6 +5449,17 @@ $(document).ready(function () {
             is_api_button_press_novel = true;
         }
     });
+
+    $("#api_button_runpod").click(function (e) {
+        e.stopPropagation();
+        if ($("#api_key_runpod").val() != "") {
+            $("#api_loading_runpod").css("display", "inline-block");
+            $("#api_button_runpod").css("display", "none");
+            runpod_settings.runpod_api_key = $.trim($("#api_key_runpod").val());
+            saveSettingsDebounced();
+        }
+    });
+
     $("#anchor_order").change(function () {
         anchor_order = parseInt($("#anchor_order").find(":selected").val());
         saveSettingsDebounced();

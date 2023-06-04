@@ -1582,9 +1582,20 @@ input[type=search]:focus::-webkit-search-cancel-button {
     background-color: red;
     display: inline-block;
 }
+.online_status_indicator5 {
+    border-radius: 7px;
+    width: 14px;
+    height: 14px;
+    background-color: red;
+    display: inline-block;
+}
 
 #online_status_text2,
 .online_status_text4 {
+    margin-left: 4px;
+    display: inline-block;
+}
+#online_status_text5 {
     margin-left: 4px;
     display: inline-block;
 }
@@ -1597,6 +1608,13 @@ input[type=search]:focus::-webkit-search-cancel-button {
 }
 
 #online_status_indicator3 {
+    border-radius: 7px;
+    width: 14px;
+    height: 14px;
+    background-color: red;
+    display: inline-block;
+}
+#online_status_indicator5 {
     border-radius: 7px;
     width: 14px;
     height: 14px;

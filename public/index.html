@@ -953,6 +953,7 @@
                             <option value="novel">NovelAI</option>
                             <option value="openai">OpenAI</option>
                             <option value="poe">Poe</option>
+                            <option value="runpod">Runpod Pygmalion</option>
                         </select>
                     </div>
                     <div id="kobold_api" style="position: relative;"> <!-- shows the kobold settings -->
@@ -1128,9 +1129,29 @@
                             </div>
                         </div>
                         <div class="online_status4">
-                            <div class="online_status_indicator4"></div>
-                            <div class="online_status_text4">No connection...</div>
+                            <div id="online_status_indicator4"></div>
+                            <div id="online_status_text4">No connection...</div>
                         </div>
+                    </div>
+                    <div id="runpod_api">
+                        <form action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                            <h4>API key</h4>
+                            <span>
+                                <ol>
+                                    <li>
+                                        You can generate api keys in<a href="https://www.runpod.io/console/user/settings" class="notes-link" target="_blank"> your user settings at runpod.io</a>.
+                                    </li>
+                                    <li>Enter it in the box below:</li>
+                                </ol>
+                            </span>
+                            <input id="api_key_runpod" name="api_key_runpod" class="text_pole" maxlength="500" size="35" value="" autocomplete="off">
+                            <input id="api_button_runpod" class="menu_button" type="submit" value="Connect">
+                            <div id="api_loading_runpod" class="api-load-icon fa-solid fa-hourglass fa-spin"></div>
+                            <div id="online_status5">
+                                <div id="online_status_indicator5"></div>
+                                <div id="online_status_text5">No connection...</div>
+                            </div>
+                        </form>
                     </div>
                 </div>
                 <label for="auto-connect-checkbox" class="checkbox_label"><input id="auto-connect-checkbox" type="checkbox" />
