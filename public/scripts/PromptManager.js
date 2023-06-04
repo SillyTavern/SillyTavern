@@ -10,8 +10,12 @@ class IdentifierNotFoundError extends Error {
     }
 }
 
-// OpenAI API chat message handling
-// const map = [{identifier: 'example', message: {role: 'system', content: 'exampleContent'}}, ...];
+/**
+ * OpenAI API chat completion representation
+ * const map = [{identifier: 'example', message: {role: 'system', content: 'exampleContent'}}, ...];
+ *
+ * @see https://platform.openai.com/docs/guides/gpt/chat-completions-api
+ */
 const ChatCompletion = {
     new() {
         return {
@@ -228,6 +232,12 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
         this.saveServiceSettings().then(() => this.render());
     });
 
+    // Re-render when the group changes.
+    document.addEventListener('groupSelected', (event) => {
+        this.handleGroupSelected(event)
+        this.saveServiceSettings().then(() => this.render());
+    });
+
     // Sanitize settings after character has been deleted.
     document.addEventListener('characterDeleted', (event) => {
         this.handleCharacterDeleted(event)
@@ -297,7 +307,14 @@ PromptManagerModule.prototype.appendPrompt = function (prompt, character) {
 
     if (-1 === index) promptList.push({identifier: prompt.identifier, enabled: false});
 }
-// Add a prompt to the current characters prompt list
+
+/**
+ * Append a prompt to the current characters prompt list
+ *
+ * @param {object} prompt
+ * @param {object} character
+ * @returns {void}
+ */
 PromptManagerModule.prototype.appendPrompt = function (prompt, character) {
     const promptList = this.getPromptListByCharacter(character);
     const index = promptList.findIndex(entry => entry.identifier === prompt.identifier);
@@ -411,6 +428,17 @@ PromptManagerModule.prototype.handleCharacterSelected = function (event) {
     // Set default prompts and order for character.
     if (0 === promptList.length) this.addPromptListForCharacter(this.activeCharacter, openAiDefaultPromptList)
     // Check whether the referenced prompts are present.
+    if (0 === this.serviceSettings.prompts.length) this.setPrompts(openAiDefaultPrompts.prompts);
+}
+
+PromptManagerModule.prototype.handleGroupSelected = function (event) {
+    console.log(event.detail);
+
+    const characterDummy = {id: event.detail.id};
+    this.activeCharacter = characterDummy;
+    const promptList = this.getPromptListByCharacter(characterDummy);
+console.log(promptList);
+    if (0 === promptList.length) this.addPromptListForCharacter(characterDummy, openAiDefaultPromptList)
     if (0 === this.serviceSettings.prompts.length) this.setPrompts(openAiDefaultPrompts.prompts);
 }
 
