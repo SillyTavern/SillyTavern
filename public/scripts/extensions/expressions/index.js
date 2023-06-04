@@ -142,7 +142,9 @@ async function visualNovelSetCharacterSprites(container, name, expression) {
         const noSprites = sprites.length === 0;
 
         if (expressionImage.length > 0) {
-            if (name == character.name) {
+            if (name == spriteFolderName) {
+                await validateImages(spriteFolderName, true);
+                setExpressionOverrideHtml(true); // <= force clear expression override input
                 const currentSpritePath = labels.includes(expression) ? sprites.find(x => x.label === expression)?.path : '';
 
                 const path = currentSpritePath || defaultSpritePath || '';
@@ -362,6 +364,7 @@ async function moduleWorker() {
             spriteCache = {};
             expressionsList = await getExpressionsList();
             await validateImages(spriteFolderName, true);
+            await forceUpdateVisualNovelMode();
         }
 
         offlineMode.css('display', 'none');
@@ -423,7 +426,6 @@ function getSpriteFolderName(message) {
     }
 
     const folderName = avatarPath.replace(/\.[^/.]+$/, "");
-    console.debug(`Folder for ${message.name}:`, folderName);
     return folderName;
 }
 
@@ -845,7 +847,7 @@ async function onClickExpressionDelete(event) {
     await validateImages(name);
 }
 
-function setExpressionOverrideHtml() {
+function setExpressionOverrideHtml(forceClear = false) {
     const currentLastMessage = getLastCharacterMessage();
     const avatarFileName = getSpriteFolderName(currentLastMessage);
     if (!avatarFileName) {
@@ -860,6 +862,10 @@ function setExpressionOverrideHtml() {
         $("#expression_override").val(expressionOverride.path);
     } else if (expressionOverride) {
         delete extension_settings.expressionOverrides[expressionOverride.name];
+    }
+
+    if (forceClear && !expressionOverride) {
+        $("#expression_override").val("");
     }
 }
 
