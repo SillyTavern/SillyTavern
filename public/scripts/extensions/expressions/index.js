@@ -274,6 +274,8 @@ function setImage(img, path) {
     img.removeClass('default');
     img.off('error');
     img.on('error', function () {
+        console.debug('Error loading image', path);
+        $(this).off('error');
         $(this).attr('src', '');
     });
 }
@@ -626,7 +628,9 @@ async function setExpression(character, expression, force) {
         img.removeClass('default');
         img.off('error');
         img.on('error', function () {
+            console.debug('Expression image error', sprite.path);
             $(this).attr('src', '');
+            $(this).off('error');
             if (force && extension_settings.expressions.showDefault) {
                 setDefault();
             }
