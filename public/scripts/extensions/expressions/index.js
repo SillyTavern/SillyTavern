@@ -1,5 +1,5 @@
 import { callPopup, eventSource, event_types, getRequestHeaders, saveSettingsDebounced } from "../../../script.js";
-import { deviceInfo } from "../../RossAscends-mods.js";
+import { deviceInfo, dragElement } from "../../RossAscends-mods.js";
 import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper, doExtrasFetch } from "../../extensions.js";
 import { power_user } from "../../power-user.js";
 import { onlyUnique, debounce } from "../../utils.js";
@@ -121,13 +121,22 @@ async function visualNovelSetCharacterSprites(container, name, expression) {
         }
 
         const character = context.characters.find(x => x.avatar == avatar);
+        let spriteFolderName = character.name;
+        const avatarFileName = getSpriteFolderName({ original_avatar: character.avatar });
+        const expressionOverride = extension_settings.expressionOverrides.find((e) =>
+            e.name == avatarFileName
+        );
 
-        // download images if not downloaded yet
-        if (spriteCache[character.name] === undefined) {
-            spriteCache[character.name] = await getSpritesList(character.name, character);
+        if (expressionOverride && expressionOverride.path) {
+            spriteFolderName = expressionOverride.path;
         }
 
-        const sprites = spriteCache[character.name];
+        // download images if not downloaded yet
+        if (spriteCache[spriteFolderName] === undefined) {
+            spriteCache[spriteFolderName] = await getSpritesList(spriteFolderName);
+        }
+
+        const sprites = spriteCache[spriteFolderName];
         const expressionImage = container.find(`.expression-holder[data-avatar="${avatar}"]`);
         const defaultSpritePath = sprites.find(x => x.label === FALLBACK_EXPRESSION)?.path;
         const noSprites = sprites.length === 0;
@@ -143,8 +152,11 @@ async function visualNovelSetCharacterSprites(container, name, expression) {
             expressionImage.toggleClass('hidden', noSprites);
         } else {
             const template = $('#expression-holder').clone();
+            template.attr('id', `expression-${avatar}`);
             template.attr('data-avatar', avatar);
+            template.find('.drag-grabber').attr('id', `expression-${avatar}header`);
             $('#visual-novel-wrapper').append(template);
+            dragElement(template[0]);
             template.toggleClass('hidden', noSprites);
             setImage(template.find('img'), defaultSpritePath || '');
             const fadeInPromise = new Promise(resolve => {
@@ -164,9 +176,9 @@ async function visualNovelUpdateLayers(container) {
     const context = getContext();
     const group = context.groups.find(x => x.id == context.groupId);
     const members = group.members;
-    const recentMessages = context.chat.map(x => x.original_avatar).filter(onlyUnique);
+    const recentMessages = context.chat.map(x => x.original_avatar).filter(x => x).reverse().filter(onlyUnique);
     const filteredMembers = members.filter(x => !group.disabled_members.includes(x));
-    const layerIndices = filteredMembers.slice().sort((a, b) => recentMessages.indexOf(a) - recentMessages.indexOf(b));
+    const layerIndices = filteredMembers.slice().sort((a, b) => recentMessages.indexOf(b) - recentMessages.indexOf(a));
 
     const setLayerIndicesPromises = [];
 
@@ -201,6 +213,13 @@ async function visualNovelUpdateLayers(container) {
 
     images.sort(sortFunction).each((index, current) => {
         const element = $(current);
+
+        // skip repositioning of dragged elements
+        if (element.data('dragged')) {
+            currentPosition += imagesWidth[index];
+            return;
+        }
+
         const avatar = element.data('avatar');
         const layerIndex = layerIndices.indexOf(avatar);
         element.css('z-index', layerIndex);
@@ -226,7 +245,17 @@ async function setLastMessageSprite(img, avatar, labels) {
 
     if (lastMessage) {
         const text = lastMessage.mes || '';
-        const sprites = spriteCache[lastMessage.name] || [];
+        let spriteFolderName = lastMessage.name;
+        const avatarFileName = getSpriteFolderName(lastMessage);
+        const expressionOverride = extension_settings.expressionOverrides.find((e) =>
+            e.name == avatarFileName
+        );
+
+        if (expressionOverride && expressionOverride.path) {
+            spriteFolderName = expressionOverride.path;
+        }
+
+        const sprites = spriteCache[spriteFolderName] || [];
         const label = await getExpressionLabel(text);
         const path = labels.includes(label) ? sprites.find(x => x.label === label)?.path : '';
 
@@ -293,13 +322,23 @@ async function moduleWorker() {
     if (vnStateChanged) {
         lastMessage = null;
         $('#visual-novel-wrapper').empty();
+        $("#expression-holder").css({ top: '', left: '', right: '', bottom: '', height: '', width: '', margin: '' });
     }
 
     const currentLastMessage = getLastCharacterMessage();
+    let spriteFolderName = currentLastMessage.name;
+    const avatarFileName = getSpriteFolderName(currentLastMessage);
+    const expressionOverride = extension_settings.expressionOverrides.find((e) =>
+        e.name == avatarFileName
+    );
+
+    if (expressionOverride && expressionOverride.path) {
+        spriteFolderName = expressionOverride.path;
+    }
 
     // character has no expressions or it is not loaded
     if (Object.keys(spriteCache).length === 0) {
-        await validateImages(currentLastMessage.name);
+        await validateImages(spriteFolderName);
         lastCharacter = context.groupId || context.characterId;
     }
 
@@ -310,7 +349,7 @@ async function moduleWorker() {
         lastCharacter = context.groupId || context.characterId;
 
         if (context.groupId) {
-            await validateImages(currentLastMessage.name, true);
+            await validateImages(spriteFolderName, true);
             await forceUpdateVisualNovelMode();
         }
 
@@ -322,12 +361,11 @@ async function moduleWorker() {
             expressionsList = null;
             spriteCache = {};
             expressionsList = await getExpressionsList();
-            await validateImages(currentLastMessage.name, true);
+            await validateImages(spriteFolderName, true);
         }
 
         offlineMode.css('display', 'none');
     }
-
 
     // check if last message changed
     if ((lastCharacter === context.characterId || lastCharacter === context.groupId)
@@ -344,7 +382,11 @@ async function moduleWorker() {
         inApiCall = true;
         let expression = await getExpressionLabel(currentLastMessage.mes);
 
-        const name = context.groupId ? currentLastMessage.name : context.name2;
+        // If we're not already overriding the folder name, account for group chats.
+        if (spriteFolderName === currentLastMessage.name && !context.groupId) {
+            spriteFolderName = context.name2;
+        }
+
         const force = !!context.groupId;
 
         // Character won't be angry on you for swiping
@@ -352,11 +394,7 @@ async function moduleWorker() {
             expression = FALLBACK_EXPRESSION;
         }
 
-        if (vnMode) {
-            await updateVisualNovelMode(name, expression);
-        } else {
-            setExpression(name, expression, force);
-        }
+        await sendExpressionCall(spriteFolderName, expression, force, vnMode);
 
     }
     catch (error) {
@@ -369,8 +407,41 @@ async function moduleWorker() {
     }
 }
 
+function getSpriteFolderName(message) {
+    const context = getContext();
+    let avatarPath = '';
+
+    if (context.groupId) {
+        avatarPath = message.original_avatar || context.characters.find(x => message.force_avatar && message.force_avatar.includes(encodeURIComponent(x.avatar)))?.avatar;
+    }
+    else if (context.characterId) {
+        avatarPath = context.characters[context.characterId].avatar;
+    }
+
+    if (!avatarPath) {
+        return '';
+    }
+
+    const folderName = avatarPath.replace(/\.[^/.]+$/, "");
+    console.debug(`Folder for ${message.name}:`, folderName);
+    return folderName;
+}
+
+async function sendExpressionCall(name, expression, force, vnMode) {
+    if (!vnMode) {
+        vnMode = isVisualNovelMode();
+    }
+
+    if (vnMode) {
+        await updateVisualNovelMode(name, expression);
+    } else {
+        setExpression(name, expression, force);
+    }
+}
+
 async function getExpressionLabel(text) {
-    if (!modules.includes('classify')) {
+    // Return if text is undefined, saving a costly fetch request
+    if (!modules.includes('classify') || !text) {
         return FALLBACK_EXPRESSION;
     }
 
@@ -401,10 +472,10 @@ function getLastCharacterMessage() {
             continue;
         }
 
-        return { mes: mes.mes, name: mes.name };
+        return { mes: mes.mes, name: mes.name, original_avatar: mes.original_avatar, force_avatar: mes.force_avatar };
     }
 
-    return { mes: '', name: null };
+    return { mes: '', name: null, original_avatar: null, force_avatar: null };
 }
 
 function removeExpression() {
@@ -639,6 +710,86 @@ async function onClickExpressionUpload(event) {
         .trigger('click');
 }
 
+async function onClickExpressionOverrideButton() {
+    const context = getContext();
+    const currentLastMessage = getLastCharacterMessage();
+    const avatarFileName = getSpriteFolderName(currentLastMessage);
+
+    // If the avatar name couldn't be found, abort.
+    if (!avatarFileName) {
+        console.debug(`Could not find filename for character with name ${currentLastMessage.name} and ID ${context.characterId}`);
+
+        return;
+    }
+
+    const overridePath = $("#expression_override").val();
+    const existingOverrideIndex = extension_settings.expressionOverrides.findIndex((e) =>
+        e.name == avatarFileName
+    );
+
+    // If the path is empty, delete the entry from overrides
+    if (overridePath === undefined || overridePath.length === 0) {
+        if (existingOverrideIndex === -1) {
+            return;
+        }
+
+        extension_settings.expressionOverrides.splice(existingOverrideIndex, 1);
+        console.debug(`Removed existing override for ${avatarFileName}`);
+    } else {
+        // Properly override objects and clear the sprite cache of the previously set names
+        const existingOverride = extension_settings.expressionOverrides[existingOverrideIndex];
+        if (existingOverride) {
+            Object.assign(existingOverride, { path: overridePath });
+            delete spriteCache[existingOverride.name];
+        } else {
+            const characterOverride = { name: avatarFileName, path: overridePath };
+            extension_settings.expressionOverrides.push(characterOverride);
+            delete spriteCache[currentLastMessage.name];
+        }
+
+        console.debug(`Added/edited expression override for character with filename ${avatarFileName} to folder ${overridePath}`);
+    }
+
+    saveSettingsDebounced();
+
+    // Refresh sprites list. Assume the override path has been properly handled.
+    try {
+        $('#visual-novel-wrapper').empty();
+        await validateImages(overridePath.length === 0 ? currentLastMessage.name : overridePath, true);
+        const expression = await getExpressionLabel(currentLastMessage.mes);
+        await sendExpressionCall(overridePath.length === 0 ? currentLastMessage.name : overridePath, expression, true);
+        forceUpdateVisualNovelMode();
+    } catch (error) {
+        console.debug(`Setting expression override for ${avatarFileName} failed with error: ${error}`);
+    }
+}
+
+async function onClickExpressionOverrideRemoveAllButton() {
+    // Remove all the overrided entries from sprite cache
+    for (const element of extension_settings.expressionOverrides) {
+        delete spriteCache[element.name];
+    }
+
+    extension_settings.expressionOverrides = [];
+    saveSettingsDebounced();
+
+    console.debug("All expression image overrides have been cleared.");
+
+    // Refresh sprites list to use the default name if applicable
+    try {
+        $('#visual-novel-wrapper').empty();
+        const currentLastMessage = getLastCharacterMessage();
+        await validateImages(currentLastMessage.name, true);
+        const expression = await getExpressionLabel(currentLastMessage.mes);
+        await sendExpressionCall(currentLastMessage.name, expression, true);
+        forceUpdateVisualNovelMode();
+
+        console.debug(extension_settings.expressionOverrides);
+    } catch (error) {
+        console.debug(`The current expression could not be set because of error: ${error}`);
+    }
+}
+
 async function onClickExpressionUploadPackButton() {
     const name = $('#image_list').data('name');
 
@@ -694,6 +845,24 @@ async function onClickExpressionDelete(event) {
     await validateImages(name);
 }
 
+function setExpressionOverrideHtml() {
+    const currentLastMessage = getLastCharacterMessage();
+    const avatarFileName = getSpriteFolderName(currentLastMessage);
+    if (!avatarFileName) {
+        return;
+    }
+
+    const expressionOverride = extension_settings.expressionOverrides.find((e) =>
+        e.name == avatarFileName
+    );
+
+    if (expressionOverride && expressionOverride.path) {
+        $("#expression_override").val(expressionOverride.path);
+    } else if (expressionOverride) {
+        delete extension_settings.expressionOverrides[expressionOverride.name];
+    }
+}
+
 (function () {
     function addExpressionImage() {
         const html = `
@@ -724,11 +893,19 @@ async function onClickExpressionDelete(event) {
                 </div>
                 <div class="inline-drawer-content">
                     <p class="offline_mode">You are in offline mode. Click on the image below to set the expression.</p>
+                    <div class="flex-container flexnowrap">
+                        <input id="expression_override" type="text" class="text_pole" placeholder="Override folder name" />
+                        <input id="expression_override_button" class="menu_button" type="submit" value="Submit" />
+                    </div>
                     <div id="image_list"></div>
-                    <div class="expression_buttons">
+                    <div class="expression_buttons flex-container spaceEvenly">
                         <div id="expression_upload_pack_button" class="menu_button">
                             <i class="fa-solid fa-file-zipper"></i>
                             <span>Upload sprite pack (ZIP)</span>
+                        </div>
+                        <div id="expression_override_cleanup_button" class="menu_button">
+                            <i class="fa-solid fa-trash-can"></i>
+                            <span>Remove all image overrides</span>
                         </div>
                     </div>
                     <p class="hint"><b>Hint:</b> <i>Create new folder in the <b>public/characters/</b> folder and name it as the name of the character.
@@ -743,9 +920,11 @@ async function onClickExpressionDelete(event) {
         </div>
         `;
         $('#extensions_settings').append(html);
+        $('#expression_override_button').on('click', onClickExpressionOverrideButton);
         $('#expressions_show_default').on('input', onExpressionsShowDefaultInput);
         $('#expression_upload_pack_button').on('click', onClickExpressionUploadPackButton);
         $('#expressions_show_default').prop('checked', extension_settings.expressions.showDefault).trigger('input');
+        $('#expression_override_cleanup_button').on('click', onClickExpressionOverrideRemoveAllButton);
         $(document).on('click', '.expression_list_item', onClickExpressionImage);
         $(document).on('click', '.expression_list_upload', onClickExpressionUpload);
         $(document).on('click', '.expression_list_delete', onClickExpressionDelete);
@@ -761,9 +940,12 @@ async function onClickExpressionDelete(event) {
     setInterval(updateFunction, UPDATE_INTERVAL);
     moduleWorker();
     eventSource.on(event_types.CHAT_CHANGED, () => {
+        setExpressionOverrideHtml();
+
         if (isVisualNovelMode()) {
             $('#visual-novel-wrapper').empty();
         }
     });
+    eventSource.on(event_types.MOVABLE_PANELS_RESET, updateVisualNovelModeDebounced);
     eventSource.on(event_types.GROUP_UPDATED, updateVisualNovelModeDebounced);
 })();
