@@ -318,14 +318,14 @@ class Client {
         if (!viewer.availableBots) {
             throw new Error('Invalid token.');
         }
-        const botList = viewer.availableBots;
+        const botList = viewer.viewerBotList;
         const retries = 2;
         const bots = {};
         for (const bot of botList.filter(x => x.deletionState == 'not_deleted')) {
             try {
                 const url = `https://poe.com/_next/data/${this.next_data.buildId}/${bot.displayName}.json`;
                 let r;
-    
+
                 if (this.use_cached_bots && cached_bots[url]) {
                     r = cached_bots[url];
                 }
@@ -334,7 +334,7 @@ class Client {
                     r = await request_with_retries(() => this.session.get(url), retries);
                     cached_bots[url] = r;
                 }
-    
+
                 const chatData = r.data.pageProps.payload.chatOfBotDisplayName;
                 bots[chatData.defaultBotObject.nickname] = chatData;
             }
@@ -521,7 +521,7 @@ class Client {
 
         console.log(`Sending message to ${chatbot}: ${message}`);
 
-        const messageData = await this.send_query("AddHumanMessageMutation", {
+        const messageData = await this.send_query("SendMessageMutation", {
             "bot": chatbot,
             "query": message,
             "chatId": this.bots[chatbot]["chatId"],
@@ -531,14 +531,14 @@ class Client {
 
         delete this.active_messages["pending"];
 
-        if (!messageData["data"]["messageCreateWithStatus"]["messageLimit"]["canSend"]) {
+        if (!messageData["data"]["messageEdgeCreate"]["message"]) {
             throw new Error(`Daily limit reached for ${chatbot}.`);
         }
 
         let humanMessageId;
         try {
-            const humanMessage = messageData["data"]["messageCreateWithStatus"];
-            humanMessageId = humanMessage["message"]["messageId"];
+            const humanMessage = messageData["data"]["messageEdgeCreate"]["message"];
+            humanMessageId = humanMessage["node"]["messageId"];
         } catch (error) {
             throw new Error(`An unknown error occured. Raw response data: ${messageData}`);
         }

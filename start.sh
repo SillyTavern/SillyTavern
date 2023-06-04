@@ -10,7 +10,8 @@ then
         [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
         curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
         source ~/.bashrc
-        nvm install node;;
+        nvm install lts
+        nvm use lts;;
       n|N ) 
         echo "Nodejs and npm will not be installed."
         exit;;
@@ -30,4 +31,4 @@ echo "Installing Node Modules..."
 npm i
 
 echo "Entering SillyTavern..."
-node server.js
+node "$(dirname "$0")/server.js"

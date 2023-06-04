@@ -1,0 +1,10 @@
+{
+    "name": "WizardLM",
+    "system_prompt": "Write {{char}}'s next reply in a fictional roleplay chat between {{user}} and {{char}}.\n",
+    "system_sequence": "",
+    "stop_sequence": "",
+    "input_sequence": "",
+    "output_sequence": "### Response:",
+    "separator_sequence": "</s>",
+    "wrap": true
+}

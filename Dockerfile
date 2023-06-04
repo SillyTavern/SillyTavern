@@ -23,7 +23,7 @@ COPY . ./
 
 # Copy default chats, characters and user avatars to <folder>.default folder
 RUN \
-  IFS="," RESOURCES="characters,chats,User Avatars,settings.json" && \
+  IFS="," RESOURCES="characters,chats,groups,group chats,User Avatars,worlds,settings.json" && \
   \
   echo "*** Store default $RESOURCES in <folder>.default ***" && \
   for R in $RESOURCES; do mv "public/$R" "public/$R.default"; done && \

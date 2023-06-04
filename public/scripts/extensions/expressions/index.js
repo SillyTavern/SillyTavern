@@ -1,4 +1,4 @@
-import { saveSettingsDebounced } from "../../../script.js";
+import { callPopup, getRequestHeaders, saveSettingsDebounced } from "../../../script.js";
 import { getContext, getApiUrl, modules, extension_settings } from "../../extensions.js";
 export { MODULE_NAME };
 
@@ -240,6 +240,14 @@ function drawSpritesList(character, labels, sprites) {
 function getListItem(item, imageSrc, textClass) {
     return `
         <div id="${item}" class="expression_list_item">
+            <div class="expression_list_buttons">
+                <div class="menu_button expression_list_upload" title="Upload image">
+                    <i class="fa-solid fa-upload"></i>
+                </div>
+                <div class="menu_button expression_list_delete" title="Delete image">
+                    <i class="fa-solid fa-trash"></i>
+                </div>
+            </div>
             <span class="expression_list_title ${textClass}">${item}</span>
             <img class="expression_list_image" src="${imageSrc}" />
         </div>
@@ -340,6 +348,114 @@ function onClickExpressionImage() {
         setExpression(name, expression, true);
     }
 }
+async function handleFileUpload(url, formData) {
+    try {
+        const data = await jQuery.ajax({
+            type: "POST",
+            url: url,
+            data: formData,
+            beforeSend: function () { },
+            cache: false,
+            contentType: false,
+            processData: false,
+        });
+
+        // Refresh sprites list
+        const name = formData.get('name');
+        delete spriteCache[name];
+        await validateImages(name);
+
+        return data;
+    } catch (error) {
+        toastr.error('Failed to upload image');
+    }
+}
+
+async function onClickExpressionUpload(event) {
+    // Prevents the expression from being set
+    event.stopPropagation();
+
+    const id = $(this).closest('.expression_list_item').attr('id');
+    const name = $('#image_list').data('name');
+
+    const handleExpressionUploadChange = async (e) => {
+        const file = e.target.files[0];
+
+        if (!file) {
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('name', name);
+        formData.append('label', id);
+        formData.append('avatar', file);
+
+        await handleFileUpload('/upload_sprite', formData);
+
+        // Reset the input
+        e.target.form.reset();
+    };
+
+    $('#expression_upload')
+        .off('change')
+        .on('change', handleExpressionUploadChange)
+        .trigger('click');
+}
+
+async function onClickExpressionUploadPackButton() {
+    const name = $('#image_list').data('name');
+
+    const handleFileUploadChange = async (e) => {
+        const file = e.target.files[0];
+
+        if (!file) {
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('name', name);
+        formData.append('avatar', file);
+
+        const { count } = await handleFileUpload('/upload_sprite_pack', formData);
+        toastr.success(`Uploaded ${count} image(s) for ${name}`);
+
+        // Reset the input
+        e.target.form.reset();
+    };
+
+    $('#expression_upload_pack')
+        .off('change')
+        .on('change', handleFileUploadChange)
+        .trigger('click');
+}
+
+async function onClickExpressionDelete(event) {
+    // Prevents the expression from being set
+    event.stopPropagation();
+
+    const confirmation = await callPopup("<h3>Are you sure?</h3>Once deleted, it's gone forever!", 'confirm');
+
+    if (!confirmation) {
+        return;
+    }
+
+    const id = $(this).closest('.expression_list_item').attr('id');
+    const name = $('#image_list').data('name');
+
+    try {
+        await fetch('/delete_sprite', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ name, label: id }),
+        });
+    } catch (error) {
+        toastr.error('Failed to delete image. Try again later.');
+    }
+
+    // Refresh sprites list
+    delete spriteCache[name];
+    await validateImages(name);
+}
 
 (function () {
     function addExpressionImage() {
@@ -357,24 +473,37 @@ function onClickExpressionImage() {
         const html = `
         <div class="expression_settings">
             <div class="inline-drawer">
-            <div class="inline-drawer-toggle inline-drawer-header">
-                <b>Expression images</b>
-                <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+                <div class="inline-drawer-toggle inline-drawer-header">
+                    <b>Expression images</b>
+                    <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+                </div>
+                <div class="inline-drawer-content">
+                    <p class="offline_mode">You are in offline mode. Click on the image below to set the expression.</p>
+                    <div id="image_list"></div>
+                    <div class="expression_buttons">
+                        <div id="expression_upload_pack_button" class="menu_button">
+                            <i class="fa-solid fa-file-zipper"></i>
+                            <span>Upload sprite pack (ZIP)</span>
+                        </div>
+                    </div>
+                    <p class="hint"><b>Hint:</b> <i>Create new folder in the <b>public/characters/</b> folder and name it as the name of the character.
+                    Put images with expressions there. File names should follow the pattern: <tt>[expression_label].[image_format]</tt></i></p>
+                    <label for="expressions_show_default"><input id="expressions_show_default" type="checkbox">Show default images (emojis) if missing</label>
+                </div>
             </div>
-            <div class="inline-drawer-content">
-                <p class="offline_mode">You are in offline mode. Click on the image below to set the expression.</p>
-                <div id="image_list"></div>
-                <p class="hint"><b>Hint:</b> <i>Create new folder in the <b>public/characters/</b> folder and name it as the name of the character.
-                Put images with expressions there. File names should follow the pattern: <tt>[expression_label].[image_format]</tt></i></p>
-                <label for="expressions_show_default"><input id="expressions_show_default" type="checkbox">Show default images (emojis) if missing</label>
-            </div>
-            </div>
+            <form>
+                <input type="file" id="expression_upload_pack" name="expression_upload_pack" accept="application/zip" hidden>
+                <input type="file" id="expression_upload" name="expression_upload" accept="image/*" hidden>
+            </form>
         </div>
         `;
         $('#extensions_settings').append(html);
         $('#expressions_show_default').on('input', onExpressionsShowDefaultInput);
+        $('#expression_upload_pack_button').on('click', onClickExpressionUploadPackButton);
         $('#expressions_show_default').prop('checked', extension_settings.expressions.showDefault).trigger('input');
         $(document).on('click', '.expression_list_item', onClickExpressionImage);
+        $(document).on('click', '.expression_list_upload', onClickExpressionUpload);
+        $(document).on('click', '.expression_list_delete', onClickExpressionDelete);
         $('.expression_settings').hide();
     }
 

@@ -7,6 +7,7 @@ class ElevenLabsTtsProvider {
 
     settings
     voices = []
+    separator = ' ... ... ... '
     
     get settings() {
         return this.settings
@@ -16,6 +17,7 @@ class ElevenLabsTtsProvider {
         stability: 0.75,
         similarity_boost: 0.75,
         apiKey: "",
+        multilingual: false,
         voiceMap: {}
     }
 
@@ -27,6 +29,10 @@ class ElevenLabsTtsProvider {
         <input id="elevenlabs_tts_stability" type="range" value="${this.defaultSettings.stability}" min="0" max="1" step="0.05" />
         <label for="elevenlabs_tts_similarity_boost">Similarity Boost: <span id="elevenlabs_tts_similarity_boost_output"></span></label>
         <input id="elevenlabs_tts_similarity_boost" type="range" value="${this.defaultSettings.similarity_boost}" min="0" max="1" step="0.05" />
+        <label class="checkbox_label" for="elevenlabs_tts_multilingual">
+            <input id="elevenlabs_tts_multilingual" type="checkbox" value="${this.defaultSettings.multilingual}" />
+            Enable Multilingual
+        </label>
         `
         return html
     }
@@ -35,6 +41,7 @@ class ElevenLabsTtsProvider {
         // Update dynamically
         this.settings.stability = $('#elevenlabs_tts_stability').val()
         this.settings.similarity_boost = $('#elevenlabs_tts_similarity_boost').val()
+        this.settings.multilingual = $('#elevenlabs_tts_multilingual').prop('checked')
     }
     
 
@@ -58,6 +65,7 @@ class ElevenLabsTtsProvider {
         $('#elevenlabs_tts_stability').val(this.settings.stability)
         $('#elevenlabs_tts_similarity_boost').val(this.settings.similarity_boost)
         $('#elevenlabs_tts_api_key').val(this.settings.apiKey)
+        $('#tts_auto_generation').prop('checked', this.settings.multilingual)
         console.info("Settings loaded")
     }
 
@@ -164,6 +172,10 @@ class ElevenLabsTtsProvider {
     }
 
     async fetchTtsGeneration(text, voiceId) {
+        let model = "eleven_monolingual_v1"
+        if (this.settings.multilingual == true) {
+            model = "eleven_multilingual_v1"
+        }
         console.info(`Generating new TTS for voice_id ${voiceId}`)
         const response = await fetch(
             `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
@@ -174,6 +186,7 @@ class ElevenLabsTtsProvider {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
+                    model: model,
                     text: text,
                     voice_settings: this.settings
                 })
