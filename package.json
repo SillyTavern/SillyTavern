@@ -19,6 +19,7 @@
         "json5": "^2.2.3",
         "lodash": "^4.17.21",
         "mime-types": "^2.1.35",
+        "msedge-tts": "^1.1.4",
         "multer": "^1.4.5-lts.1",
         "node-fetch": "^2.6.11",
         "node-rest-client": "^3.1.1",
@@ -69,7 +70,7 @@
         ],
         "assets": [
             "node_modules/**/*",
-            "poe_graphql/**/*"
+            "src/poe_graphql/**/*"
         ],
         "outputPath": "dist",
         "scripts": [

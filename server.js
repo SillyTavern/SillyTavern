@@ -104,7 +104,7 @@ client.on('error', (err) => {
     console.error('An error occurred:', err);
 });
 
-const poe = require('./poe-client');
+const poe = require('./src/poe-client');
 
 let api_server = "http://0.0.0.0:5000";
 let api_novelai = "https://api.novelai.net";
@@ -3379,3 +3379,7 @@ async function getImageBuffers(zipFilePath) {
         });
     });
 }
+
+const edgeTts = require('./src/edge-tts');
+
+edgeTts.addEdgeTtsEndpoints(app, jsonParser);

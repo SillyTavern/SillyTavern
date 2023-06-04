@@ -1,9 +1,9 @@
-const poe = require('./poe-client');
+const poe = require('./src/poe-client');
 
 async function test() {
     const client = new poe.Client();
     await client.init('pb-cookie');
-    
+
     const bots = client.get_bot_names();
     console.log(bots);
 
