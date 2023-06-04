@@ -290,6 +290,7 @@ async function moduleWorker() {
 
     if (vnStateChanged) {
         lastMessage = null;
+        $('#visual-novel-wrapper').empty();
     }
 
     const currentLastMessage = getLastCharacterMessage();
