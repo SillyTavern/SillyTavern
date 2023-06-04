@@ -768,7 +768,7 @@ function charaFormatData(data) {
     _.set(char, 'data.tags', typeof data.tags == 'string' ? (data.tags.split(',').map(x => x.trim()).filter(x => x)) : []);
     _.set(char, 'data.creator', data.creator);
     _.set(char, 'data.character_version', data.character_version);
-    _.set(char, 'data.alternative_greetings', data.alternate_greetings);
+    _.set(char, 'data.alternate_greetings', Array.isArray(data.alternate_greetings) ? data.alternate_greetings : []);
 
     // ST extension fields to V2 object
     _.set(char, 'data.extensions.talkativeness', data.talkativeness);
