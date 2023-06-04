@@ -344,7 +344,8 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
         const groupChatMessage = chatCompletion.makeSystemMessage(`[Start a new group chat. Group members: ${names}]`);
         const groupNudgeMessage = chatCompletion.makeSystemMessage(`[Write the next reply only as ${name2}]`);
         chatCompletion.replace('newMainChat', groupChatMessage)
-        chatCompletion.insertAfter('newMainChat', 'groupNudgeMessage', groupNudgeMessage);
+        chatCompletion.insertAfter('main', 'groupNudgeMessage', groupNudgeMessage);
+        chatCompletion.remove('main'); // ToDo: Instead of removing, the main prompt could be altered to reinforce the situation being a group scene.
     }
 
     // Handle NSFW prompt
