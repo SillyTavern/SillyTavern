@@ -3570,6 +3570,12 @@ label[for="extensions_autoconnect"] {
     border-radius: 10px;
     padding: 5px;
     border: 1px solid var(--grey30);
+    transition: all 250ms;
+}
+
+#extensions_settings .inline-drawer-toggle.inline-drawer-header:hover,
+#extensions_settings2 .inline-drawer-toggle.inline-drawer-header:hover {
+    filter: brightness(150%);
 }
 
 .success {
