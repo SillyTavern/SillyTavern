@@ -1097,6 +1097,8 @@ function select_group_chats(groupId, skipAnimation) {
         sortGroupMembers("#rm_group_add_members .group_member");
         await eventSource.emit(event_types.GROUP_UPDATED);
     });
+
+    document.dispatchEvent(new CustomEvent('groupSelected', { detail: {id: groupId, group: group}}));
 }
 
 function updateFavButtonState(state) {
