@@ -7224,6 +7224,7 @@ $(document).ready(function () {
                 contentType: false,
                 processData: false,
                 success: async function (html) {
+                    eventSource.emit('characterDeleted', {id: this_chid, character: characters[this_chid]});
                     //RossAscends: New handling of character deletion that avoids page refreshes and should have
                     // fixed char corruption due to cache problems.
                     //due to how it is handled with 'popup_type', i couldn't find a way to make my method completely
