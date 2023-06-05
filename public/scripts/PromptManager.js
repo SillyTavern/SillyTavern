@@ -600,7 +600,7 @@ PromptManagerModule.prototype.renderPromptManager = function () {
     const checkSpanClass = showAdvancedSettings ? 'fa-solid fa-toggle-on' : 'fa-solid fa-toggle-off';
 
     promptManagerDiv.insertAdjacentHTML('beforeend', `
-        <div class="range-block-title">
+        <div class="range-block-title" data-i18n="Prompts">
             Prompts
             <a href="/notes#openaipromptmanager" target="_blank" class="notes-link">
                 <span class="note-link-span">?</span>
@@ -610,7 +610,7 @@ PromptManagerModule.prototype.renderPromptManager = function () {
             <div class="${this.configuration.prefix}prompt_manager_header">
                 <div class="${this.configuration.prefix}prompt_manager_header_advanced">
                     <span class="${checkSpanClass}"></span>
-                    <span class="checkbox_label">Show advanced options</span>
+                    <span class="checkbox_label" data-i18n="Show advanced options">Show advanced options</span>
                 </div>
                 <div>Total Tokens: ${this.totalActiveTokens}</div>
             </div>
@@ -634,9 +634,9 @@ PromptManagerModule.prototype.renderPromptManager = function () {
                 <select id="${this.configuration.prefix}prompt_manager_footer_append_prompt" class="text_pole" name="append-prompt">
                     ${prompts}
                 </select>
-                <a class="menu_button">Add</a>
-                <a class="caution menu_button">Delete</a>
-                <a class="menu_button">New</a>
+                <a class="menu_button" data-i18n="Add">Add</a>
+                <a class="caution menu_button" data-i18n="Delete">Delete</a>
+                <a class="menu_button" data-i18n="New">New</a>
             </div>
         `;
 
@@ -661,9 +661,9 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
 
     let listItemHtml = `
         <li class="${prefix}prompt_manager_list_head">
-            <span>Name</span>
+            <span data-i18n="Name">Name</span>
             <span></span>
-            <span class="prompt_manager_prompt_tokens">Tokens</span>
+            <span class="prompt_manager_prompt_tokens" data-i18n="Tokens">Tokens</span>
         </li>
         <li class="${prefix}prompt_manager_list_separator">
             <hr>
