@@ -2459,13 +2459,17 @@
                             placeholder="Describe your character's physical and mental traits here."
                             class="margin-bot-10px" name="description" placeholder=""></textarea>
 
-                        <div id="first_message_div" class="margin-bot-10px">
-                            <span data-i18n="First message">First message</span>
-                            <a href="https://docs.sillytavern.app/usage/guidebook/#first-message" class="notes-link"
-                                target="_blank">
-                                <span class="note-link-span">?</span>
-                            </a>
-
+                        <div id="first_message_div" class="margin-bot-10px title_restorable">
+                            <span>
+                                <span data-i18n="First message">First message</span>
+                                <a href="https://docs.sillytavern.app/usage/guidebook/#first-message" class="notes-link"
+                                    target="_blank">
+                                    <span class="note-link-span">?</span>
+                                </a>
+                            </span>
+                            <div class="menu_button open_alternate_greetings" title="Click to set additional greeting messages">
+                                <i class="fa-solid fa-comment-dots"></i>
+                            </div>
                         </div>
                         <textarea id="firstmessage_textarea"
                             placeholder="This will be the first message from the character that starts every chat."
@@ -3174,6 +3178,36 @@
         </div>
     </div>
 
+    <div id="alternate_greetings_template" class="template_element">
+        <div class="alternate_grettings flexFlowColumn flex-container">
+            <div class="title_restorable">
+                <h3><span data-i18n="Alternate Greetings">Alternate Greetings</span></h3>
+                <div title="Add" class="menu_button fa-solid fa-plus add_alternate_greeting"></div>
+            </div>
+            <div class="justifyLeft" data-i18n="Alternate Greetings Subtitle">
+                These will be displayed as swipes on the first message when starting a new chat.
+                Group members can select one of them to initiate the conversation.
+            </div>
+            <hr>
+            <div class="alternate_greetings_list flexFlowColumn flex-container wide100p">
+                <strong class="alternate_grettings_hint margin-bot-10px" data-i18n="Alternate Greetings Hint">
+                    Click the <i class="fa-solid fa-plus"></i> button to get started!
+                </strong>
+            </div>
+        </div>
+    </div>
+
+    <div id="alternate_greeting_form_template" class="template_element">
+        <div class="alternate_greeting">
+            <div class="title_restorable">
+                <strong>Alternate Greeting #<span class="greeting_index"></span></strong>
+                <div class="menu_button fa-solid fa-trash-alt delete_alternate_greeting"></div>
+            </div>
+            <textarea name="alternate_greetings" placeholder="(This will be the first message from the character that starts every chat)"
+                class="text_pole textarea_compact alternate_greeting_text" maxlength="20000" value="" autocomplete="off" rows="4"></textarea>
+        </div>
+    </div>
+
     <!-- chat and input bar -->
     <div id="typing_indicator_template" class="template_element">
         <div class="typing_indicator"><span class="typing_indicator_name">CHAR</span> is typing</div>
@@ -3221,7 +3255,7 @@
                 <span data-i18n="Convert to group">Convert to group</span>
             </a>
             <a id="option_start_new_chat">
-                <i class="fa-lg fa-solid fa-comment-dots"></i>
+                <i class="fa-lg fa-solid fa-comments"></i>
                 <span data-i18n="Start new chat">Start new chat</span>
             </a>
             <a id="option_select_chat">

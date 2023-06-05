@@ -179,6 +179,14 @@ export async function getGroupChat(groupId) {
 }
 
 function getFirstCharacterMessage(character) {
+    let messageText = character.first_mes;
+
+    // if there are alternate greetings, pick one at random
+    if (Array.isArray(character.data?.alternate_greetings)) {
+        const messageTexts = [character.first_mes, ...character.data.alternate_greetings].filter(x => x);
+        messageText = messageTexts[Math.floor(Math.random() * messageTexts.length)];
+    }
+
     const mes = {};
     mes["is_user"] = false;
     mes["is_system"] = false;
@@ -187,8 +195,8 @@ function getFirstCharacterMessage(character) {
     mes["send_date"] = humanizedDateTime();
     mes["original_avatar"] = character.avatar;
     mes["extra"] = { "gen_id": Date.now() * Math.random() * 1000000 };
-    mes["mes"] = character.first_mes
-        ? substituteParams(character.first_mes.trim(), name1, character.name)
+    mes["mes"] = messageText
+        ? substituteParams(messageText.trim(), name1, character.name)
         : default_ch_mes;
     mes["force_avatar"] =
         character.avatar != "none"
