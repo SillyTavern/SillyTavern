@@ -1,6 +1,6 @@
 import {countTokens} from "./openai.js";
 import {DraggablePromptListModule as DraggableList} from "./DraggableList.js";
-import {substituteParams} from "../script.js";
+import {eventSource, substituteParams} from "../script.js";
 
 // Thrown by ChatCompletion when a requested prompt couldn't be found.
 class IdentifierNotFoundError extends Error {
@@ -227,19 +227,19 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
     }
 
     // Re-render when the character changes.
-    document.addEventListener('characterSelected', (event) => {
+    eventSource.on('characterSelected', (event) => {
         this.handleCharacterSelected(event)
         this.saveServiceSettings().then(() => this.render());
     });
 
     // Re-render when the group changes.
-    document.addEventListener('groupSelected', (event) => {
+    eventSource.on('groupSelected', (event) => {
         this.handleGroupSelected(event)
         this.saveServiceSettings().then(() => this.render());
     });
 
     // Sanitize settings after character has been deleted.
-    document.addEventListener('characterDeleted', (event) => {
+    eventSource.on('characterDeleted', (event) => {
         this.handleCharacterDeleted(event)
         this.saveServiceSettings().then(() => this.render());
     });

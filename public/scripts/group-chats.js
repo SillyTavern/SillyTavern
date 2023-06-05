@@ -1098,7 +1098,7 @@ function select_group_chats(groupId, skipAnimation) {
         await eventSource.emit(event_types.GROUP_UPDATED);
     });
 
-    document.dispatchEvent(new CustomEvent('groupSelected', { detail: {id: groupId, group: group}}));
+    eventSource.emit('groupSelected', {detail: {id: groupId, group: group}});
 }
 
 function updateFavButtonState(state) {
