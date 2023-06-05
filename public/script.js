@@ -481,20 +481,31 @@ function getTokenCount(str, padding = undefined) {
         case tokenizers.CLASSIC:
             return encode(str).length + padding;
         case tokenizers.LLAMA:
-            let tokenCount = 0;
-            jQuery.ajax({
-                async: false,
-                type: 'POST', //
-                url: `/tokenize_llama`,
-                data: JSON.stringify({ text: str }),
-                dataType: "json",
-                contentType: "application/json",
-                success: function (data) {
-                    tokenCount = data.count;
-                }
-            });
-            return tokenCount + padding;
+            return countTokensRemote('/tokenize_llama', str, padding);
+        case tokenizers.NERD:
+            return countTokensRemote('/tokenize_nerdstash', str, padding);
+        case tokenizers.NERD2:
+            return countTokensRemote('/tokenize_nerdstash_v2', str, padding);
+        default:
+            console.warn("Unknown tokenizer type", tokenizerType);
+            return Math.ceil(str.length / CHARACTERS_PER_TOKEN_RATIO) + padding;
     }
+}
+
+function countTokensRemote(endpoint, str, padding) {
+    let tokenCount = 0;
+    jQuery.ajax({
+        async: false,
+        type: 'POST',
+        url: endpoint,
+        data: JSON.stringify({ text: str }),
+        dataType: "json",
+        contentType: "application/json",
+        success: function (data) {
+            tokenCount = data.count;
+        }
+    });
+    return tokenCount + padding;
 }
 
 function reloadMarkdownProcessor(render_formulas = false) {
@@ -2589,12 +2600,14 @@ function getMaxContextSize() {
         } else {
             this_max_context = Number(max_context);
             if (nai_settings.model_novel == 'krake-v2') {
-                this_max_context -= 160;
+                // Krake has a max context of 2048
+                // Should be used with nerdstash tokenizer for best results
+                this_max_context = Math.min(max_context, 2048);
             }
             if (nai_settings.model_novel == 'clio-v1') {
                 // Clio has a max context of 8192
-                // TODO: Evaluate the relevance of nerdstash-v1 tokenizer, changes quite a bit.
-                this_max_context = 8192 - 60 - 160;
+                // Should be used with nerdstash_v2 tokenizer for best results
+                this_max_context = Math.min(max_context, 8192);
             }
         }
     }

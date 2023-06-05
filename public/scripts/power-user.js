@@ -60,6 +60,8 @@ const tokenizers = {
     GPT3: 1,
     CLASSIC: 2,
     LLAMA: 3,
+    NERD: 4,
+    NERD2: 5,
 }
 
 const send_on_enter_options = {
