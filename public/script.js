@@ -4848,7 +4848,7 @@ function openAlternateGreetings() {
         return;
     } else {
         // If the character does not have alternate greetings, create an empty array
-        if (Array.isArray(characters[chid].data.alternate_greetings) == false) {
+        if (chid && Array.isArray(characters[chid].data.alternate_greetings) == false) {
             characters[chid].data.alternate_greetings = [];
         }
     }
