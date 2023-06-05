@@ -5,6 +5,7 @@ import { EdgeTtsProvider } from './edge.js'
 import { ElevenLabsTtsProvider } from './elevenlabs.js'
 import { SileroTtsProvider } from './silerotts.js'
 import { SystemTtsProvider } from './system.js'
+import { NovelTtsProvider } from './novel.js'
 
 const UPDATE_INTERVAL = 1000
 
@@ -62,6 +63,7 @@ let ttsProviders = {
     Silero: SileroTtsProvider,
     System: SystemTtsProvider,
     Edge: EdgeTtsProvider,
+    Novel: NovelTtsProvider,
 }
 let ttsProvider
 let ttsProviderName
@@ -244,7 +246,7 @@ async function playAudioData(audioBlob) {
 window['tts_preview'] = function (id) {
     const audio = document.getElementById(id)
 
-    if (!$(audio).data('disabled')) {
+    if (audio && !$(audio).data('disabled')) {
         audio.play()
     }
     else {
@@ -265,7 +267,9 @@ async function onTtsVoicesClick() {
                 <b class="voice_name">${voice.name}</b>
                 <i onclick="tts_preview('${voice.voice_id}')" class="fa-solid fa-play"></i>
             </div>`
-            popupText += `<audio id="${voice.voice_id}" src="${voice.preview_url}" data-disabled="${voice.preview_url == false}"></audio>`
+            if (voice.preview_url) {
+                popupText += `<audio id="${voice.voice_id}" src="${voice.preview_url}" data-disabled="${voice.preview_url == false}"></audio>`
+            }
         }
     } catch {
         popupText = 'Could not load voices list. Check your API key.'
@@ -327,7 +331,7 @@ function completeCurrentAudioJob() {
  */
 async function addAudioJob(response) {
     const audioData = await response.blob()
-    if (!audioData.type in ['audio/mpeg', 'audio/wav', 'audio/x-wav', 'audio/wave']) {
+    if (!audioData.type in ['audio/mpeg', 'audio/wav', 'audio/x-wav', 'audio/wave', 'audio/webm']) {
         throw `TTS received HTTP response with invalid data format. Expecting audio/mpeg, got ${audioData.type}`
     }
     audioJobQueue.push(audioData)

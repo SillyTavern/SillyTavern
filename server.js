@@ -6,7 +6,7 @@ const { hideBin } = require('yargs/helpers');
 const net = require("net");
 // work around a node v20 bug: https://github.com/nodejs/node/issues/47822#issuecomment-1564708870
 if (net.setDefaultAutoSelectFamily) {
-  net.setDefaultAutoSelectFamily(false);
+    net.setDefaultAutoSelectFamily(false);
 }
 
 const cliArguments = yargs(hideBin(process.argv))
@@ -3197,6 +3197,40 @@ app.post('/google_translate', jsonParser, async (request, response) => {
     });
 });
 
+app.post('/novel_tts', jsonParser, async (request, response) => {
+    const token = readSecret(SECRET_KEYS.NOVEL);
+
+    if (!token) {
+        return response.sendStatus(401);
+    }
+
+    const text = request.body.text;
+    const voice = request.body.voice;
+
+    if (!text || !voice) {
+        return response.sendStatus(400);
+    }
+
+    try {
+        const fetch = require('node-fetch').default;
+        const url = `${api_novelai}/ai/generate-voice?text=${encodeURIComponent(text)}&voice=-1&seed=${encodeURIComponent(voice)}&opus=false&version=v2`;
+        const result = await fetch(url, { method: 'GET', headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'audio/webm' } });
+
+        if (!result.ok) {
+            return response.sendStatus(result.status);
+        }
+
+        const chunks = await readAllChunks(result.body);
+        const buffer = Buffer.concat(chunks);
+        response.setHeader('Content-Type', 'audio/webm');
+        return response.send(buffer);
+    }
+    catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
 app.post('/delete_sprite', jsonParser, async (request, response) => {
     const label = request.body.label;
     const name = request.body.name;
@@ -3341,6 +3375,26 @@ function readSecret(key) {
     const fileContents = fs.readFileSync(SECRETS_FILE);
     const secrets = JSON.parse(fileContents);
     return secrets[key];
+}
+
+async function readAllChunks(readableStream) {
+    return new Promise((resolve, reject) => {
+        // Consume the readable stream
+        const chunks = [];
+        readableStream.on('data', (chunk) => {
+            chunks.push(chunk);
+        });
+
+        readableStream.on('end', () => {
+            console.log('Finished reading the stream.');
+            resolve(chunks);
+        });
+
+        readableStream.on('error', (error) => {
+            console.error('Error while reading the stream:', error);
+            reject();
+        });
+    });
 }
 
 async function getImageBuffers(zipFilePath) {
