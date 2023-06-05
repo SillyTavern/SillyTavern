@@ -8,7 +8,7 @@ class ElevenLabsTtsProvider {
     settings
     voices = []
     separator = ' ... ... ... '
-    
+
     get settings() {
         return this.settings
     }
@@ -43,7 +43,7 @@ class ElevenLabsTtsProvider {
         this.settings.similarity_boost = $('#elevenlabs_tts_similarity_boost').val()
         this.settings.multilingual = $('#elevenlabs_tts_multilingual').prop('checked')
     }
-    
+
 
     loadSettings(settings) {
         // Pupulate Provider UI given input settings
@@ -75,8 +75,8 @@ class ElevenLabsTtsProvider {
             throw error
         })
     }
-    
-    
+
+
     async updateApiKey() {
         // Using this call to validate API key
         this.settings.apiKey = $('#elevenlabs_tts_api_key').val()
@@ -108,7 +108,7 @@ class ElevenLabsTtsProvider {
 
     async generateTts(text, voiceId){
         const historyId = await this.findTtsGenerationInHistory(text, voiceId)
-    
+
         let response
         if (historyId) {
             console.debug(`Found existing TTS generation with id ${historyId}`)
@@ -119,11 +119,11 @@ class ElevenLabsTtsProvider {
         }
         return response
     }
-    
+
     //###################//
     //  Helper Functions //
     //###################//
-    
+
     async findTtsGenerationInHistory(message, voiceId) {
         const ttsHistory = await this.fetchTtsHistory()
         for (const history of ttsHistory) {
@@ -149,7 +149,7 @@ class ElevenLabsTtsProvider {
             headers: headers
         })
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${await response.json()}`)
+            throw new Error(`HTTP ${response.status}: ${await response.text()}`)
         }
         const responseJson = await response.json()
         return responseJson.voices
@@ -166,7 +166,7 @@ class ElevenLabsTtsProvider {
             }
         )
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${await response.json()}`)
+            throw new Error(`HTTP ${response.status}: ${await response.text()}`)
         }
         return response.json()
     }
@@ -193,7 +193,8 @@ class ElevenLabsTtsProvider {
             }
         )
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${await response.json()}`)
+            toastr.error(response.statusText, 'TTS Generation Failed');
+            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
         }
         return response
     }
@@ -209,7 +210,7 @@ class ElevenLabsTtsProvider {
             }
         )
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${await response.json()}`)
+            throw new Error(`HTTP ${response.status}: ${await response.text()}`)
         }
         return response
     }
@@ -222,7 +223,7 @@ class ElevenLabsTtsProvider {
             headers: headers
         })
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${await response.json()}`)
+            throw new Error(`HTTP ${response.status}: ${await response.text()}`)
         }
         const responseJson = await response.json()
         return responseJson.history

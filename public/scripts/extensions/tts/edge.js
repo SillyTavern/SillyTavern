@@ -84,7 +84,7 @@ class EdgeTtsProvider {
         url.pathname = `/api/edge-tts/list`
         const response = await doExtrasFetch(url)
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${await response.json()}`)
+            throw new Error(`HTTP ${response.status}: ${await response.text()}`)
         }
         let responseJson = await response.json()
         responseJson = responseJson
@@ -101,7 +101,7 @@ class EdgeTtsProvider {
         const text = getPreviewString(voice.lang);
         const response = await this.fetchTtsGeneration(text, id)
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${await response.json()}`)
+            throw new Error(`HTTP ${response.status}: ${await response.text()}`)
         }
 
         const audio = await response.blob();
@@ -127,8 +127,8 @@ class EdgeTtsProvider {
             }
         )
         if (!response.ok) {
-            toastr.error(response.statusText);
-            throw new Error(`HTTP ${response.status}`)
+            toastr.error(response.statusText, 'TTS Generation Failed');
+            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
         }
         return response
     }
