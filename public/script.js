@@ -7522,6 +7522,7 @@ $(document).ready(function () {
         if (popup_type == "del_ch") {
             const deleteChats = !!$("#del_char_checkbox").prop("checked");
             await handleDeleteCharacter(popup_type, this_chid, deleteChats);
+            eventSource.emit('characterDeleted', {id: this_chid, character: characters[this_chid]});
         }
         if (popup_type == "alternate_greeting" && menu_type !== "create") {
             createOrEditCharacter();
