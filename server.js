@@ -128,23 +128,25 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 
 const { SentencePieceProcessor, cleanText } = require("sentencepiece-js");
 
-let spp;
+let spp_llama;
+let spp_nerd;
+let spp_nerd_v2;
 
-async function loadSentencepieceTokenizer() {
+async function loadSentencepieceTokenizer(modelPath) {
     try {
         const spp = new SentencePieceProcessor();
-        await spp.load("src/sentencepiece/tokenizer.model");
+        await spp.load(modelPath);
         return spp;
     } catch (error) {
-        console.error("Sentencepiece tokenizer failed to load.");
+        console.error("Sentencepiece tokenizer failed to load: " + modelPath, error);
         return null;
     }
 };
 
-async function countTokensLlama(text) {
+async function countSentencepieceTokens(spp, text) {
     // Fallback to strlen estimation
     if (!spp) {
-        return Math.ceil(v.length / 3.35);
+        return Math.ceil(text.length / 3.35);
     }
 
     let cleaned = cleanText(text);
@@ -2795,14 +2797,22 @@ app.post("/savepreset_openai", jsonParser, function (request, response) {
     return response.send({ name });
 });
 
-app.post("/tokenize_llama", jsonParser, async function (request, response) {
-    if (!request.body) {
-        return response.sendStatus(400);
-    }
+function createTokenizationHandler(getTokenizerFn) {
+    return async function (request, response) {
+        if (!request.body) {
+            return response.sendStatus(400);
+        }
 
-    const count = await countTokensLlama(request.body.text);
-    return response.send({ count });
-});
+        const text = request.body.text || '';
+        const tokenizer = getTokenizerFn();
+        const count = await countSentencepieceTokens(tokenizer, text);
+        return response.send({ count });
+    };
+}
+
+app.post("/tokenize_llama", jsonParser, createTokenizationHandler(() => spp_llama));
+app.post("/tokenize_nerdstash", jsonParser, createTokenizationHandler(() => spp_nerd));
+app.post("/tokenize_nerdstash_v2", jsonParser, createTokenizationHandler(() => spp_nerd_v2));
 
 // ** REST CLIENT ASYNC WRAPPERS **
 
@@ -2861,7 +2871,11 @@ const setupTasks = async function () {
     // Colab users could run the embedded tool
     if (!is_colab) await convertWebp();
 
-    spp = await loadSentencepieceTokenizer();
+    [spp_llama, spp_nerd, spp_nerd_v2] = await Promise.all([
+        loadSentencepieceTokenizer('src/sentencepiece/tokenizer.model'),
+        loadSentencepieceTokenizer('src/sentencepiece/nerdstash.model'),
+        loadSentencepieceTokenizer('src/sentencepiece/nerdstash_v2.model'),
+    ]);
 
     console.log('Launching...');
 
