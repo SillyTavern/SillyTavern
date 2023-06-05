@@ -4301,7 +4301,7 @@ body.waifuMode #avatar_zoom_popup {
     /* ,
     #world_popup  */
         {
-        max-height: calc(100svh - 45px);
+        max-height: calc(100svh - 40px);
         width: 100% !important;
         margin: 0 auto;
         max-width: 100%;
@@ -4493,9 +4493,16 @@ body.waifuMode #avatar_zoom_popup {
         max-height: unset;
         width: 100svw;
         height: calc(100svh - 40px);
-        padding-right: max(env(safe-area-inset-right), 5px);
-        padding-left: max(env(safe-area-inset-left), 5px);
+        padding-right: max(env(safe-area-inset-right), 0px);
+        padding-left: max(env(safe-area-inset-left), 0px);
+        padding-bottom: 0;
+    }
+
+    body.PWA #sheld {
+        padding-right: max(env(safe-area-inset-right), 2px);
+        padding-left: max(env(safe-area-inset-left), 2px);
         padding-bottom: max(env(safe-area-inset-bottom), 15px);
+
     }
 
     #character_popup,
