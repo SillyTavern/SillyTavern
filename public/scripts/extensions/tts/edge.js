@@ -127,14 +127,14 @@ class EdgeTtsProvider {
             }
         )
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${await response.json()}`)
+            toastr.error(response.statusText);
+            throw new Error(`HTTP ${response.status}`)
         }
         return response
     }
 }
 function throwIfModuleMissing() {
     if (!modules.includes('edge-tts')) {
-
         toastr.error(`Edge TTS module not loaded. Add edge-tts to enable-modules and restart the Extras API.`)
         throw new Error(`Edge TTS module not loaded.`)
     }

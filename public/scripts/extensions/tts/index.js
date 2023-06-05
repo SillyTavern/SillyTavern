@@ -414,6 +414,7 @@ async function processTtsQueue() {
         const voice = await ttsProvider.getVoice((voiceMap[char]))
         const voiceId = voice.voice_id
         if (voiceId == null) {
+            toastr.error(`Specified voice for ${char} was not found. Check the TTS extension settings.`)
             throw `Unable to attain voiceId for ${char}`
         }
         tts(text, voiceId)
@@ -494,7 +495,6 @@ async function voicemapIsValid(parsedVoiceMap) {
 
 async function updateVoiceMap() {
     let isValidResult = false
-    const context = getContext()
 
     const value = $('#tts_voice_map').val()
     const parsedVoiceMap = parseVoiceMap(value)
