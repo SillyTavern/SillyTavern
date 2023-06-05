@@ -719,8 +719,24 @@ function readFromV2(char) {
         //console.log(`Migrating field: ${charField} from ${v2Path}`);
         const v2Value = _.get(char.data, v2Path);
         if (_.isUndefined(v2Value)) {
-            console.debug(`Spec v2 data missing for field: ${charField}`);
-            return;
+            let defaultValue = undefined;
+
+            // Backfill default values for missing ST extension fields
+            if (v2Path === 'extensions.talkativeness') {
+                defaultValue = 0.5;
+            }
+
+            if (v2Path === 'extensions.fav') {
+                defaultValue = false;
+            }
+
+            if (!_.isUndefined(defaultValue)) {
+                //console.debug(`Spec v2 extension data missing for field: ${charField}, using default value: ${defaultValue}`);
+                char[charField] = defaultValue;
+            } else {
+                console.debug(`Spec v2 data missing for unknown field: ${charField}`);
+                return;
+            }
         }
         if (!_.isUndefined(char[charField]) && !_.isUndefined(v2Value) && char[charField] !== v2Value) {
             console.debug(`Spec v2 data mismatch with Spec v1 for field: ${charField}`, char[charField], v2Value);
@@ -737,13 +753,21 @@ function charaFormatData(data) {
     const _ = require('lodash');
     const char = tryParse(data.json_data) || {};
 
+    // This function uses _.cond() to create a series of conditional checks that return the desired output based on the input data.
+    // It checks if data.alternate_greetings is an array, a string, or neither, and acts accordingly.
+    const getAlternateGreetings = data => _.cond([
+        [d => Array.isArray(d.alternate_greetings), d => d.alternate_greetings],
+        [d => typeof d.alternate_greetings === 'string', d => [d.alternate_greetings]],
+        [_.stubTrue, _.constant([])]
+      ])(data);
+
     // Spec V1 fields
     _.set(char, 'name', data.ch_name);
-    _.set(char, 'description', data.description);
-    _.set(char, 'personality', data.personality);
-    _.set(char, 'scenario', data.scenario);
-    _.set(char, 'first_mes', data.first_mes);
-    _.set(char, 'mes_example', data.mes_example);
+    _.set(char, 'description', data.description || '');
+    _.set(char, 'personality', data.personality || '');
+    _.set(char, 'scenario', data.scenario || '');
+    _.set(char, 'first_mes', data.first_mes || '');
+    _.set(char, 'mes_example', data.mes_example || '');
 
     // Old ST extension fields (for backward compatibility, will be deprecated)
     _.set(char, 'creatorcomment', data.creator_notes);
@@ -757,20 +781,20 @@ function charaFormatData(data) {
     _.set(char, 'spec', 'chara_card_v2');
     _.set(char, 'spec_version', '2.0');
     _.set(char, 'data.name', data.ch_name);
-    _.set(char, 'data.description', data.description);
-    _.set(char, 'data.personality', data.personality);
-    _.set(char, 'data.scenario', data.scenario);
-    _.set(char, 'data.first_mes', data.first_mes);
-    _.set(char, 'data.mes_example', data.mes_example);
+    _.set(char, 'data.description', data.description || '');
+    _.set(char, 'data.personality', data.personality || '');
+    _.set(char, 'data.scenario', data.scenario || '');
+    _.set(char, 'data.first_mes', data.first_mes || '');
+    _.set(char, 'data.mes_example', data.mes_example || '');
 
     // New V2 fields
-    _.set(char, 'data.creator_notes', data.creator_notes);
-    _.set(char, 'data.system_prompt', data.system_prompt);
-    _.set(char, 'data.post_history_instructions', data.post_history_instructions);
+    _.set(char, 'data.creator_notes', data.creator_notes || '');
+    _.set(char, 'data.system_prompt', data.system_prompt || '');
+    _.set(char, 'data.post_history_instructions', data.post_history_instructions || '');
     _.set(char, 'data.tags', typeof data.tags == 'string' ? (data.tags.split(',').map(x => x.trim()).filter(x => x)) : []);
-    _.set(char, 'data.creator', data.creator);
-    _.set(char, 'data.character_version', data.character_version);
-    _.set(char, 'data.alternate_greetings', Array.isArray(data.alternate_greetings) ? data.alternate_greetings : []);
+    _.set(char, 'data.creator', data.creator || '');
+    _.set(char, 'data.character_version', data.character_version || '');
+    _.set(char, 'data.alternate_greetings', getAlternateGreetings(data));
 
     // ST extension fields to V2 object
     _.set(char, 'data.extensions.talkativeness', data.talkativeness);
@@ -1580,9 +1604,17 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                     console.log(err);
                     response.send({ error: true });
                 }
-                const jsonData = json5.parse(data);
 
-                if (jsonData.name !== undefined) {
+                let = jsonData = json5.parse(data);
+
+                if (jsonData.spec !== undefined) {
+                    console.log('importing from v2 json');
+                    jsonData = readFromV2(jsonData);
+                    png_name = getPngName(jsonData.data?.name || jsonData.name);
+                    let char = JSON.stringify(jsonData);
+                    charaWrite(defaultAvatarPath, char, png_name, response, { file_name: png_name });
+                } else if (jsonData.name !== undefined) {
+                    console.log('importing from v1 json');
                     jsonData.name = sanitize(jsonData.name);
 
                     png_name = getPngName(jsonData.name);
@@ -1592,7 +1624,8 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                         "creatorcomment": jsonData.creatorcomment ?? '',
                         "personality": jsonData.personality ?? '',
                         "first_mes": jsonData.first_mes ?? '',
-                        "avatar": 'none', "chat": jsonData.name + " - " + humanizedISO8601DateTime(),
+                        "avatar": 'none',
+                        "chat": jsonData.name + " - " + humanizedISO8601DateTime(),
                         "mes_example": jsonData.mes_example ?? '',
                         "scenario": jsonData.scenario ?? '',
                         "create_date": humanizedISO8601DateTime(),
@@ -1602,6 +1635,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                     char = JSON.stringify(char);
                     charaWrite(defaultAvatarPath, char, png_name, response, { file_name: png_name });
                 } else if (jsonData.char_name !== undefined) {//json Pygmalion notepad
+                    console.log('importing from gradio json');
                     jsonData.char_name = sanitize(jsonData.char_name);
 
                     png_name = getPngName(jsonData.char_name);
@@ -1630,7 +1664,9 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
             try {
                 var img_data = await charaRead(uploadPath, format);
                 let jsonData = json5.parse(img_data);
-                jsonData.name = sanitize(jsonData.name);
+
+                jsonData.name = sanitize(jsonData.data?.name || jsonData.name);
+                png_name = getPngName(jsonData.name);
 
                 if (format == 'webp') {
                     try {
@@ -1644,9 +1680,13 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                     }
                 }
 
-                png_name = getPngName(jsonData.name);
-
-                if (jsonData.name !== undefined) {
+                if (jsonData.spec !== undefined) {
+                    console.log('Found a v2 character file.');
+                    jsonData = readFromV2(jsonData);
+                    let char = JSON.stringify(jsonData);
+                    charaWrite(uploadPath, char, png_name, response, { file_name: png_name });
+                } else if (jsonData.name !== undefined) {
+                    console.log('Found a v1 character file.');
                     let char = {
                         "name": jsonData.name,
                         "description": jsonData.description ?? '',
@@ -1663,6 +1703,9 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                     char = convertToV2(char);
                     char = JSON.stringify(char);
                     await charaWrite(uploadPath, char, png_name, response, { file_name: png_name });
+                } else {
+                    console.log('Unknown character card format');
+                    response.send({ error: true });
                 }
             } catch (err) {
                 console.log(err);
