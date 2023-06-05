@@ -1,11 +1,9 @@
 import { getRequestHeaders } from "../../../script.js"
-import { getApiUrl } from "../../extensions.js"
-import { doExtrasFetch, modules } from "../../extensions.js"
 import { getPreviewString } from "./index.js"
 
-export { EdgeTtsProvider }
+export { NovelTtsProvider }
 
-class EdgeTtsProvider {
+class NovelTtsProvider {
     //########//
     // Config //
     //########//
@@ -20,15 +18,17 @@ class EdgeTtsProvider {
     }
 
     get settingsHtml() {
-        let html = `Microsoft Edge TTS Provider<br>`
-        return html
+        let html = `Use NovelAI's TTS engine.<br>
+        The Voice IDs in the preview list are only examples, as it can be any string of text. Feel free to try different options!<br>
+        <small><i>Hint: Save an API key in the NovelAI API settings to use it here.</i></small>`;
+        return html;
     }
 
     onSettingsChange() {
     }
 
     loadSettings(settings) {
-        // Pupulate Provider UI given input settings
+        // Populate Provider UI given input settings
         if (Object.keys(settings).length == 0) {
             console.info("Using default TTS Provider settings")
         }
@@ -57,16 +57,11 @@ class EdgeTtsProvider {
     //#################//
 
     async getVoice(voiceName) {
-        if (this.voices.length == 0) {
-            this.voices = await this.fetchTtsVoiceIds()
+        if (!voiceName) {
+            throw `TTS Voice name not provided`
         }
-        const match = this.voices.filter(
-            voice => voice.name == voiceName
-        )[0]
-        if (!match) {
-            throw `TTS Voice name ${voiceName} not found`
-        }
-        return match
+
+        return { name: voiceName, voice_id: voiceName, lang: 'en-US', preview_url: false}
     }
 
     async generateTts(text, voiceId) {
@@ -78,30 +73,34 @@ class EdgeTtsProvider {
     // API CALLS //
     //###########//
     async fetchTtsVoiceIds() {
-        throwIfModuleMissing()
+        const voices = [
+            { name: 'Ligeia', voice_id: 'Ligeia', lang: 'en-US', preview_url: false },
+            { name: 'Aini', voice_id: 'Aini', lang: 'en-US', preview_url: false },
+            { name: 'Orea', voice_id: 'Orea', lang: 'en-US', preview_url: false },
+            { name: 'Claea', voice_id: 'Claea', lang: 'en-US', preview_url: false },
+            { name: 'Lim', voice_id: 'Lim', lang: 'en-US', preview_url: false },
+            { name: 'Aurae', voice_id: 'Aurae', lang: 'en-US', preview_url: false },
+            { name: 'Naia', voice_id: 'Naia', lang: 'en-US', preview_url: false },
+            { name: 'Aulon', voice_id: 'Aulon', lang: 'en-US', preview_url: false },
+            { name: 'Elei', voice_id: 'Elei', lang: 'en-US', preview_url: false },
+            { name: 'Ogma', voice_id: 'Ogma', lang: 'en-US', preview_url: false },
+            { name: 'Raid', voice_id: 'Raid', lang: 'en-US', preview_url: false },
+            { name: 'Pega', voice_id: 'Pega', lang: 'en-US', preview_url: false },
+            { name: 'Lam', voice_id: 'Lam', lang: 'en-US', preview_url: false },
+        ];
 
-        const url = new URL(getApiUrl());
-        url.pathname = `/api/edge-tts/list`
-        const response = await doExtrasFetch(url)
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${await response.text()}`)
-        }
-        let responseJson = await response.json()
-        responseJson = responseJson
-            .sort((a, b) => a.Locale.localeCompare(b.Locale) || a.ShortName.localeCompare(b.ShortName))
-            .map(x => ({ name: x.ShortName, voice_id: x.ShortName, preview_url: false, lang: x.Locale }));
-        return responseJson
+        return voices;
     }
 
 
     async previewTtsVoice(id) {
         this.audioElement.pause();
         this.audioElement.currentTime = 0;
-        const voice = await this.getVoice(id);
-        const text = getPreviewString(voice.lang);
+
+        const text = getPreviewString('en-US')
         const response = await this.fetchTtsGeneration(text, id)
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${await response.text()}`)
+            throw new Error(`HTTP ${response.status}`)
         }
 
         const audio = await response.blob();
@@ -111,12 +110,8 @@ class EdgeTtsProvider {
     }
 
     async fetchTtsGeneration(inputText, voiceId) {
-        throwIfModuleMissing()
-
         console.info(`Generating new TTS for voice_id ${voiceId}`)
-        const url = new URL(getApiUrl());
-        url.pathname = `/api/edge-tts/generate`;
-        const response = await doExtrasFetch(url,
+        const response = await fetch(`/novel_tts`,
             {
                 method: 'POST',
                 headers: getRequestHeaders(),
@@ -133,10 +128,3 @@ class EdgeTtsProvider {
         return response
     }
 }
-function throwIfModuleMissing() {
-    if (!modules.includes('edge-tts')) {
-        toastr.error(`Edge TTS module not loaded. Add edge-tts to enable-modules and restart the Extras API.`)
-        throw new Error(`Edge TTS module not loaded.`)
-    }
-}
-

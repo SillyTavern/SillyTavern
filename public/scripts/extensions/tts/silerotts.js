@@ -118,7 +118,8 @@ class SileroTtsProvider {
             }
         )
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${await response.json()}`)
+            toastr.error(response.statusText, 'TTS Generation Failed');
+            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
         }
         return response
     }

@@ -6,7 +6,7 @@ const { hideBin } = require('yargs/helpers');
 const net = require("net");
 // work around a node v20 bug: https://github.com/nodejs/node/issues/47822#issuecomment-1564708870
 if (net.setDefaultAutoSelectFamily) {
-  net.setDefaultAutoSelectFamily(false);
+    net.setDefaultAutoSelectFamily(false);
 }
 
 const cliArguments = yargs(hideBin(process.argv))
@@ -128,23 +128,25 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 
 const { SentencePieceProcessor, cleanText } = require("sentencepiece-js");
 
-let spp;
+let spp_llama;
+let spp_nerd;
+let spp_nerd_v2;
 
-async function loadSentencepieceTokenizer() {
+async function loadSentencepieceTokenizer(modelPath) {
     try {
         const spp = new SentencePieceProcessor();
-        await spp.load("src/sentencepiece/tokenizer.model");
+        await spp.load(modelPath);
         return spp;
     } catch (error) {
-        console.error("Sentencepiece tokenizer failed to load.");
+        console.error("Sentencepiece tokenizer failed to load: " + modelPath, error);
         return null;
     }
 };
 
-async function countTokensLlama(text) {
+async function countSentencepieceTokens(spp, text) {
     // Fallback to strlen estimation
     if (!spp) {
-        return Math.ceil(v.length / 3.35);
+        return Math.ceil(text.length / 3.35);
     }
 
     let cleaned = cleanText(text);
@@ -2795,14 +2797,22 @@ app.post("/savepreset_openai", jsonParser, function (request, response) {
     return response.send({ name });
 });
 
-app.post("/tokenize_llama", jsonParser, async function (request, response) {
-    if (!request.body) {
-        return response.sendStatus(400);
-    }
+function createTokenizationHandler(getTokenizerFn) {
+    return async function (request, response) {
+        if (!request.body) {
+            return response.sendStatus(400);
+        }
 
-    const count = await countTokensLlama(request.body.text);
-    return response.send({ count });
-});
+        const text = request.body.text || '';
+        const tokenizer = getTokenizerFn();
+        const count = await countSentencepieceTokens(tokenizer, text);
+        return response.send({ count });
+    };
+}
+
+app.post("/tokenize_llama", jsonParser, createTokenizationHandler(() => spp_llama));
+app.post("/tokenize_nerdstash", jsonParser, createTokenizationHandler(() => spp_nerd));
+app.post("/tokenize_nerdstash_v2", jsonParser, createTokenizationHandler(() => spp_nerd_v2));
 
 // ** REST CLIENT ASYNC WRAPPERS **
 
@@ -2861,7 +2871,11 @@ const setupTasks = async function () {
     // Colab users could run the embedded tool
     if (!is_colab) await convertWebp();
 
-    spp = await loadSentencepieceTokenizer();
+    [spp_llama, spp_nerd, spp_nerd_v2] = await Promise.all([
+        loadSentencepieceTokenizer('src/sentencepiece/tokenizer.model'),
+        loadSentencepieceTokenizer('src/sentencepiece/nerdstash.model'),
+        loadSentencepieceTokenizer('src/sentencepiece/nerdstash_v2.model'),
+    ]);
 
     console.log('Launching...');
 
@@ -3197,6 +3211,40 @@ app.post('/google_translate', jsonParser, async (request, response) => {
     });
 });
 
+app.post('/novel_tts', jsonParser, async (request, response) => {
+    const token = readSecret(SECRET_KEYS.NOVEL);
+
+    if (!token) {
+        return response.sendStatus(401);
+    }
+
+    const text = request.body.text;
+    const voice = request.body.voice;
+
+    if (!text || !voice) {
+        return response.sendStatus(400);
+    }
+
+    try {
+        const fetch = require('node-fetch').default;
+        const url = `${api_novelai}/ai/generate-voice?text=${encodeURIComponent(text)}&voice=-1&seed=${encodeURIComponent(voice)}&opus=false&version=v2`;
+        const result = await fetch(url, { method: 'GET', headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'audio/webm' } });
+
+        if (!result.ok) {
+            return response.sendStatus(result.status);
+        }
+
+        const chunks = await readAllChunks(result.body);
+        const buffer = Buffer.concat(chunks);
+        response.setHeader('Content-Type', 'audio/webm');
+        return response.send(buffer);
+    }
+    catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
 app.post('/delete_sprite', jsonParser, async (request, response) => {
     const label = request.body.label;
     const name = request.body.name;
@@ -3341,6 +3389,26 @@ function readSecret(key) {
     const fileContents = fs.readFileSync(SECRETS_FILE);
     const secrets = JSON.parse(fileContents);
     return secrets[key];
+}
+
+async function readAllChunks(readableStream) {
+    return new Promise((resolve, reject) => {
+        // Consume the readable stream
+        const chunks = [];
+        readableStream.on('data', (chunk) => {
+            chunks.push(chunk);
+        });
+
+        readableStream.on('end', () => {
+            console.log('Finished reading the stream.');
+            resolve(chunks);
+        });
+
+        readableStream.on('error', (error) => {
+            console.error('Error while reading the stream:', error);
+            reject();
+        });
+    });
 }
 
 async function getImageBuffers(zipFilePath) {

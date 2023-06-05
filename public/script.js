@@ -119,7 +119,6 @@ import {
     end_trim_to_sentence,
     countOccurrences,
     isOdd,
-    isElementInViewport,
     sortMoments,
     timestampToMoment,
     download,
@@ -481,20 +480,31 @@ function getTokenCount(str, padding = undefined) {
         case tokenizers.CLASSIC:
             return encode(str).length + padding;
         case tokenizers.LLAMA:
-            let tokenCount = 0;
-            jQuery.ajax({
-                async: false,
-                type: 'POST', //
-                url: `/tokenize_llama`,
-                data: JSON.stringify({ text: str }),
-                dataType: "json",
-                contentType: "application/json",
-                success: function (data) {
-                    tokenCount = data.count;
-                }
-            });
-            return tokenCount + padding;
+            return countTokensRemote('/tokenize_llama', str, padding);
+        case tokenizers.NERD:
+            return countTokensRemote('/tokenize_nerdstash', str, padding);
+        case tokenizers.NERD2:
+            return countTokensRemote('/tokenize_nerdstash_v2', str, padding);
+        default:
+            console.warn("Unknown tokenizer type", tokenizerType);
+            return Math.ceil(str.length / CHARACTERS_PER_TOKEN_RATIO) + padding;
     }
+}
+
+function countTokensRemote(endpoint, str, padding) {
+    let tokenCount = 0;
+    jQuery.ajax({
+        async: false,
+        type: 'POST',
+        url: endpoint,
+        data: JSON.stringify({ text: str }),
+        dataType: "json",
+        contentType: "application/json",
+        success: function (data) {
+            tokenCount = data.count;
+        }
+    });
+    return tokenCount + padding;
 }
 
 function reloadMarkdownProcessor(render_formulas = false) {
@@ -2589,12 +2599,14 @@ function getMaxContextSize() {
         } else {
             this_max_context = Number(max_context);
             if (nai_settings.model_novel == 'krake-v2') {
-                this_max_context -= 160;
+                // Krake has a max context of 2048
+                // Should be used with nerdstash tokenizer for best results
+                this_max_context = Math.min(max_context, 2048);
             }
             if (nai_settings.model_novel == 'clio-v1') {
                 // Clio has a max context of 8192
-                // TODO: Evaluate the relevance of nerdstash-v1 tokenizer, changes quite a bit.
-                this_max_context = 8192 - 60 - 160;
+                // Should be used with nerdstash_v2 tokenizer for best results
+                this_max_context = Math.min(max_context, 8192);
             }
         }
     }
@@ -3397,7 +3409,15 @@ async function renameCharacter() {
 
                     // Also rename as a group member
                     await renameGroupMember(oldAvatar, newAvatar, newValue);
-                    callPopup('<h3>Character renamed!</h3>Sprites folder (if any) should be renamed manually.', 'text');
+                    const renamePastChatsConfirm = await callPopup(`<h3>Character renamed!</h3>
+                    <p>Past chats will still contain the old character name. Would you like to update the character name in previous chats as well?</p>
+                    <i><b>Sprites folder (if any) should be renamed manually.</b></i>`, 'confirm');
+
+                    if (renamePastChatsConfirm) {
+                        await renamePastChats(newAvatar, newValue);
+                        await reloadCurrentChat();
+                        toastr.success('Character renamed and past chats updated!');
+                    }
                 }
                 else {
                     throw new Error('Newly renamed character was lost?');
@@ -3411,6 +3431,59 @@ async function renameCharacter() {
             // Reloading to prevent data corruption
             await callPopup('Something went wrong. The page will be reloaded.', 'text');
             location.reload();
+        }
+    }
+}
+
+async function renamePastChats(newAvatar, newValue) {
+    const pastChats = await getPastCharacterChats();
+
+    for (const { file_name } of pastChats) {
+        try {
+            const fileNameWithoutExtension = file_name.replace('.jsonl', '');
+            const getChatResponse = await fetch('/getchat', {
+                method: 'POST',
+                headers: getRequestHeaders(),
+                body: JSON.stringify({
+                    ch_name: newValue,
+                    file_name: fileNameWithoutExtension,
+                    avatar_url: newAvatar,
+                }),
+                cache: 'no-cache',
+            });
+
+            if (getChatResponse.ok) {
+                const currentChat = await getChatResponse.json();
+
+                for (const message of currentChat) {
+                    if (message.is_user || message.is_system || message.extra?.type == system_message_types.NARRATOR) {
+                        continue;
+                    }
+
+                    if (message.name !== undefined) {
+                        message.name = newValue;
+                    }
+                }
+
+                const saveChatResponse = await fetch('/savechat', {
+                    method: "POST",
+                    headers: getRequestHeaders(),
+                    body: JSON.stringify({
+                        ch_name: newValue,
+                        file_name: fileNameWithoutExtension,
+                        chat: currentChat,
+                        avatar_url: newAvatar,
+                    }),
+                    cache: 'no-cache',
+                });
+
+                if (!saveChatResponse.ok) {
+                    throw new Error('Could not save chat');
+                }
+            }
+        } catch (error) {
+            toastr.error(`Past chat could not be updated: ${file_name}`);
+            console.error(error);
         }
     }
 }
