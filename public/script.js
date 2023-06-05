@@ -5207,6 +5207,9 @@ function importCharacter(file) {
     });
 }
 
+const isPwaMode = window.navigator.standalone;
+if (isPwaMode) { $("body").addClass('PWA') }
+
 $(document).ready(function () {
     //////////INPUT BAR FOCUS-KEEPING LOGIC/////////////
 
