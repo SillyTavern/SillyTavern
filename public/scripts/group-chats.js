@@ -57,7 +57,7 @@ import {
     event_types,
     getCurrentChatId,
 } from "../script.js";
-import { appendTagToList, createTagMapFromList, getTagsList, applyTagsOnCharacterSelect } from './tags.js';
+import { appendTagToList, createTagMapFromList, getTagsList, applyTagsOnCharacterSelect, tag_map } from './tags.js';
 
 export {
     selected_group,
@@ -179,14 +179,24 @@ export async function getGroupChat(groupId) {
 }
 
 function getFirstCharacterMessage(character) {
+    let messageText = character.first_mes;
+
+    // if there are alternate greetings, pick one at random
+    if (Array.isArray(character.data?.alternate_greetings)) {
+        const messageTexts = [character.first_mes, ...character.data.alternate_greetings].filter(x => x);
+        messageText = messageTexts[Math.floor(Math.random() * messageTexts.length)];
+    }
+
     const mes = {};
     mes["is_user"] = false;
     mes["is_system"] = false;
     mes["name"] = character.name;
     mes["is_name"] = true;
     mes["send_date"] = humanizedDateTime();
-    mes["mes"] = character.first_mes
-        ? substituteParams(character.first_mes.trim(), name1, character.name)
+    mes["original_avatar"] = character.avatar;
+    mes["extra"] = { "gen_id": Date.now() * Math.random() * 1000000 };
+    mes["mes"] = messageText
+        ? substituteParams(messageText.trim(), name1, character.name)
         : default_ch_mes;
     mes["force_avatar"] =
         character.avatar != "none"
@@ -784,6 +794,7 @@ async function deleteGroup(id) {
 
     if (response.ok) {
         selected_group = null;
+        delete tag_map[id];
         resetChatState();
         clearChat();
         printMessages();
@@ -954,7 +965,7 @@ function select_group_chats(groupId, skipAnimation) {
         template.find(".avatar img").attr("title", character.avatar);
         template.find(".ch_name").text(character.name);
         template.attr("chid", characters.indexOf(character));
-        template.addClass(character.fav == 'true' ? 'is_fav' : '');
+        template.toggleClass('is_fav', character.fav || character.fav == 'true');
 
         if (!group) {
             template.find('[data-action="speak"]').hide();
@@ -1002,7 +1013,7 @@ function select_group_chats(groupId, skipAnimation) {
         }
 
         $("#dialogue_popup").data("group_id", groupId);
-        callPopup("<h3>Delete the group?</h3>", "del_group");
+        callPopup('<h3>Delete the group?</h3><p>This will also delete all your chats with that group. If you want to delete a single conversation, select a "View past chats" option in the lower left menu.</p>', "del_group");
     });
 
     updateFavButtonState(group?.fav ?? false);
@@ -1084,6 +1095,7 @@ function select_group_chats(groupId, skipAnimation) {
         }
 
         sortGroupMembers("#rm_group_add_members .group_member");
+        await eventSource.emit(event_types.GROUP_UPDATED);
     });
 }
 

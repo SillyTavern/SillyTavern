@@ -3,6 +3,11 @@
 const process = require('process')
 const yargs = require('yargs/yargs');
 const { hideBin } = require('yargs/helpers');
+const net = require("net");
+// work around a node v20 bug: https://github.com/nodejs/node/issues/47822#issuecomment-1564708870
+if (net.setDefaultAutoSelectFamily) {
+    net.setDefaultAutoSelectFamily(false);
+}
 
 const cliArguments = yargs(hideBin(process.argv))
     .option('ssl', {
@@ -99,7 +104,7 @@ client.on('error', (err) => {
     console.error('An error occurred:', err);
 });
 
-const poe = require('./poe-client');
+const poe = require('./src/poe-client');
 
 let api_server = "http://0.0.0.0:5000";
 let api_novelai = "https://api.novelai.net";
@@ -123,23 +128,25 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 
 const { SentencePieceProcessor, cleanText } = require("sentencepiece-js");
 
-let spp;
+let spp_llama;
+let spp_nerd;
+let spp_nerd_v2;
 
-async function loadSentencepieceTokenizer() {
+async function loadSentencepieceTokenizer(modelPath) {
     try {
         const spp = new SentencePieceProcessor();
-        await spp.load("src/sentencepiece/tokenizer.model");
+        await spp.load(modelPath);
         return spp;
     } catch (error) {
-        console.error("Sentencepiece tokenizer failed to load.");
+        console.error("Sentencepiece tokenizer failed to load: " + modelPath, error);
         return null;
     }
 };
 
-async function countTokensLlama(text) {
+async function countSentencepieceTokens(spp, text) {
     // Fallback to strlen estimation
     if (!spp) {
-        return Math.ceil(v.length / 3.35);
+        return Math.ceil(text.length / 3.35);
     }
 
     let cleaned = cleanText(text);
@@ -712,11 +719,27 @@ function readFromV2(char) {
         //console.log(`Migrating field: ${charField} from ${v2Path}`);
         const v2Value = _.get(char.data, v2Path);
         if (_.isUndefined(v2Value)) {
-            console.debug(`Spec v2 data missing for field: ${charField}`);
-            return;
+            let defaultValue = undefined;
+
+            // Backfill default values for missing ST extension fields
+            if (v2Path === 'extensions.talkativeness') {
+                defaultValue = 0.5;
+            }
+
+            if (v2Path === 'extensions.fav') {
+                defaultValue = false;
+            }
+
+            if (!_.isUndefined(defaultValue)) {
+                //console.debug(`Spec v2 extension data missing for field: ${charField}, using default value: ${defaultValue}`);
+                char[charField] = defaultValue;
+            } else {
+                console.debug(`Spec v2 data missing for unknown field: ${charField}`);
+                return;
+            }
         }
         if (!_.isUndefined(char[charField]) && !_.isUndefined(v2Value) && char[charField] !== v2Value) {
-            console.debug(`Spec v2 data mismatch with Spec v1 for field: ${charField}`);
+            console.debug(`Spec v2 data mismatch with Spec v1 for field: ${charField}`, char[charField], v2Value);
         }
         char[charField] = v2Value;
     });
@@ -730,50 +753,58 @@ function charaFormatData(data) {
     const _ = require('lodash');
     const char = tryParse(data.json_data) || {};
 
+    // This function uses _.cond() to create a series of conditional checks that return the desired output based on the input data.
+    // It checks if data.alternate_greetings is an array, a string, or neither, and acts accordingly.
+    const getAlternateGreetings = data => _.cond([
+        [d => Array.isArray(d.alternate_greetings), d => d.alternate_greetings],
+        [d => typeof d.alternate_greetings === 'string', d => [d.alternate_greetings]],
+        [_.stubTrue, _.constant([])]
+      ])(data);
+
     // Spec V1 fields
     _.set(char, 'name', data.ch_name);
-    _.set(char, 'description', data.description);
-    _.set(char, 'personality', data.personality);
-    _.set(char, 'scenario', data.scenario);
-    _.set(char, 'first_mes', data.first_mes);
-    _.set(char, 'mes_example', data.mes_example);
+    _.set(char, 'description', data.description || '');
+    _.set(char, 'personality', data.personality || '');
+    _.set(char, 'scenario', data.scenario || '');
+    _.set(char, 'first_mes', data.first_mes || '');
+    _.set(char, 'mes_example', data.mes_example || '');
 
     // Old ST extension fields (for backward compatibility, will be deprecated)
     _.set(char, 'creatorcomment', data.creator_notes);
     _.set(char, 'avatar', 'none');
     _.set(char, 'chat', data.ch_name + ' - ' + humanizedISO8601DateTime());
     _.set(char, 'talkativeness', data.talkativeness);
-    _.set(char, 'fav', data.fav);
+    _.set(char, 'fav', data.fav == 'true');
     _.set(char, 'create_date', humanizedISO8601DateTime());
 
     // Spec V2 fields
     _.set(char, 'spec', 'chara_card_v2');
     _.set(char, 'spec_version', '2.0');
     _.set(char, 'data.name', data.ch_name);
-    _.set(char, 'data.description', data.description);
-    _.set(char, 'data.personality', data.personality);
-    _.set(char, 'data.scenario', data.scenario);
-    _.set(char, 'data.first_mes', data.first_mes);
-    _.set(char, 'data.mes_example', data.mes_example);
+    _.set(char, 'data.description', data.description || '');
+    _.set(char, 'data.personality', data.personality || '');
+    _.set(char, 'data.scenario', data.scenario || '');
+    _.set(char, 'data.first_mes', data.first_mes || '');
+    _.set(char, 'data.mes_example', data.mes_example || '');
 
     // New V2 fields
-    _.set(char, 'data.creator_notes', data.creator_notes);
-    _.set(char, 'data.system_prompt', data.system_prompt);
-    _.set(char, 'data.post_history_instructions', data.post_history_instructions);
+    _.set(char, 'data.creator_notes', data.creator_notes || '');
+    _.set(char, 'data.system_prompt', data.system_prompt || '');
+    _.set(char, 'data.post_history_instructions', data.post_history_instructions || '');
     _.set(char, 'data.tags', typeof data.tags == 'string' ? (data.tags.split(',').map(x => x.trim()).filter(x => x)) : []);
-    _.set(char, 'data.creator', data.creator);
-    _.set(char, 'data.character_version', data.character_version);
-    _.set(char, 'data.alternative_greetings', data.alternate_greetings);
+    _.set(char, 'data.creator', data.creator || '');
+    _.set(char, 'data.character_version', data.character_version || '');
+    _.set(char, 'data.alternate_greetings', getAlternateGreetings(data));
 
     // ST extension fields to V2 object
     _.set(char, 'data.extensions.talkativeness', data.talkativeness);
-    _.set(char, 'data.extensions.fav', data.fav);
+    _.set(char, 'data.extensions.fav', data.fav == 'true');
     //_.set(char, 'data.extensions.create_date', humanizedISO8601DateTime());
     //_.set(char, 'data.extensions.avatar', 'none');
     //_.set(char, 'data.extensions.chat', data.ch_name + ' - ' + humanizedISO8601DateTime());
 
     // TODO: Character book
-    _.set(char, 'data.character_book', undefined);
+    _//.set(char, 'data.character_book', undefined);
 
     return char;
 }
@@ -840,10 +871,12 @@ app.post("/renamecharacter", jsonParser, async function (request, response) {
     const newChatsPath = path.join(chatsPath, newInternalName);
 
     try {
+        const _ = require('lodash');
         // Read old file, replace name int it
         const rawOldData = await charaRead(oldAvatarPath);
-        const oldData = json5.parse(rawOldData);
-        oldData['name'] = newName;
+        const oldData = getCharaCardV2(json5.parse(rawOldData));
+        _.set(oldData, 'data.name', newName);
+        _.set(oldData, 'name', newName);
         const newData = JSON.stringify(oldData);
 
         // Write data to new location
@@ -1002,14 +1035,7 @@ app.post("/getcharacters", jsonParser, function (request, response) {
         for (const item of pngFiles) {
             try {
                 var img_data = await charaRead(charactersPath + item);
-                let jsonObject = json5.parse(img_data);
-
-                if (jsonObject.spec === undefined) {
-                    jsonObject = convertToV2(jsonObject);
-                } else {
-                    jsonObject = readFromV2(jsonObject);
-                }
-
+                let jsonObject = getCharaCardV2(json5.parse(img_data));
                 jsonObject.avatar = item;
                 characters[i] = {};
                 characters[i] = jsonObject;
@@ -1182,6 +1208,15 @@ app.post("/savesettings", jsonParser, function (request, response) {
         }
     });
 });
+
+function getCharaCardV2(jsonObject) {
+    if (jsonObject.spec === undefined) {
+        jsonObject = convertToV2(jsonObject);
+    } else {
+        jsonObject = readFromV2(jsonObject);
+    }
+    return jsonObject;
+}
 
 function readAndParseFromDirectory(directoryPath, fileExtension = '.json') {
     const files = fs
@@ -1569,9 +1604,17 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                     console.log(err);
                     response.send({ error: true });
                 }
-                const jsonData = json5.parse(data);
 
-                if (jsonData.name !== undefined) {
+                let = jsonData = json5.parse(data);
+
+                if (jsonData.spec !== undefined) {
+                    console.log('importing from v2 json');
+                    jsonData = readFromV2(jsonData);
+                    png_name = getPngName(jsonData.data?.name || jsonData.name);
+                    let char = JSON.stringify(jsonData);
+                    charaWrite(defaultAvatarPath, char, png_name, response, { file_name: png_name });
+                } else if (jsonData.name !== undefined) {
+                    console.log('importing from v1 json');
                     jsonData.name = sanitize(jsonData.name);
 
                     png_name = getPngName(jsonData.name);
@@ -1581,7 +1624,8 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                         "creatorcomment": jsonData.creatorcomment ?? '',
                         "personality": jsonData.personality ?? '',
                         "first_mes": jsonData.first_mes ?? '',
-                        "avatar": 'none', "chat": jsonData.name + " - " + humanizedISO8601DateTime(),
+                        "avatar": 'none',
+                        "chat": jsonData.name + " - " + humanizedISO8601DateTime(),
                         "mes_example": jsonData.mes_example ?? '',
                         "scenario": jsonData.scenario ?? '',
                         "create_date": humanizedISO8601DateTime(),
@@ -1591,6 +1635,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                     char = JSON.stringify(char);
                     charaWrite(defaultAvatarPath, char, png_name, response, { file_name: png_name });
                 } else if (jsonData.char_name !== undefined) {//json Pygmalion notepad
+                    console.log('importing from gradio json');
                     jsonData.char_name = sanitize(jsonData.char_name);
 
                     png_name = getPngName(jsonData.char_name);
@@ -1619,7 +1664,9 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
             try {
                 var img_data = await charaRead(uploadPath, format);
                 let jsonData = json5.parse(img_data);
-                jsonData.name = sanitize(jsonData.name);
+
+                jsonData.name = sanitize(jsonData.data?.name || jsonData.name);
+                png_name = getPngName(jsonData.name);
 
                 if (format == 'webp') {
                     try {
@@ -1633,9 +1680,13 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                     }
                 }
 
-                png_name = getPngName(jsonData.name);
-
-                if (jsonData.name !== undefined) {
+                if (jsonData.spec !== undefined) {
+                    console.log('Found a v2 character file.');
+                    jsonData = readFromV2(jsonData);
+                    let char = JSON.stringify(jsonData);
+                    charaWrite(uploadPath, char, png_name, response, { file_name: png_name });
+                } else if (jsonData.name !== undefined) {
+                    console.log('Found a v1 character file.');
                     let char = {
                         "name": jsonData.name,
                         "description": jsonData.description ?? '',
@@ -1652,6 +1703,9 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                     char = convertToV2(char);
                     char = JSON.stringify(char);
                     await charaWrite(uploadPath, char, png_name, response, { file_name: png_name });
+                } else {
+                    console.log('Unknown character card format');
+                    response.send({ error: true });
                 }
             } catch (err) {
                 console.log(err);
@@ -1759,7 +1813,7 @@ app.post("/exportcharacter", jsonParser, async function (request, response) {
         case 'json': {
             try {
                 let json = await charaRead(filename);
-                let jsonObject = json5.parse(json);
+                let jsonObject = getCharaCardV2(json5.parse(json));
                 return response.type('json').send(jsonObject)
             }
             catch {
@@ -2172,14 +2226,27 @@ app.post('/deletegroup', jsonParser, async (request, response) => {
 
     const id = request.body.id;
     const pathToGroup = path.join(directories.groups, sanitize(`${id}.json`));
-    const pathToChat = path.join(directories.groupChats, sanitize(`${id}.jsonl`));
+
+    try {
+        // Delete group chats
+        const group = json5.parse(fs.readFileSync(pathToGroup));
+
+        if (group && Array.isArray(group.chats)) {
+            for (const chat of group.chats) {
+                console.log('Deleting group chat', chat);
+                const pathToFile = path.join(directories.groupChats, `${id}.jsonl`);
+
+                if (fs.existsSync(pathToFile)) {
+                    fs.rmSync(pathToFile);
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Could not delete group chats. Clean them up manually.', error);
+    }
 
     if (fs.existsSync(pathToGroup)) {
         fs.rmSync(pathToGroup);
-    }
-
-    if (fs.existsSync(pathToChat)) {
-        fs.rmSync(pathToChat);
     }
 
     return response.send({ ok: true });
@@ -2187,9 +2254,20 @@ app.post('/deletegroup', jsonParser, async (request, response) => {
 
 const POE_DEFAULT_BOT = 'a2';
 
+const poeClientCache = {};
+
 async function getPoeClient(token, useCache = false) {
-    let client = new poe.Client(false, useCache);
-    await client.init(token);
+    let client;
+
+    if (useCache && poeClientCache[token]) {
+        client = poeClientCache[token];
+    }
+    else {
+        client = new poe.Client(true, useCache);
+        await client.init(token);
+    }
+
+    poeClientCache[token] = client;
     return client;
 }
 
@@ -2201,9 +2279,9 @@ app.post('/status_poe', jsonParser, async (request, response) => {
     }
 
     try {
-        const client = await getPoeClient(token);
+        const client = await getPoeClient(token, false);
         const botNames = client.get_bot_names();
-        client.disconnect_ws();
+        //client.disconnect_ws();
 
         return response.send({ 'bot_names': botNames });
     }
@@ -2231,7 +2309,7 @@ app.post('/purge_poe', jsonParser, async (request, response) => {
         else {
             await client.send_chat_break(bot);
         }
-        client.disconnect_ws();
+        //client.disconnect_ws();
 
         return response.send({ "ok": true });
     }
@@ -2253,12 +2331,13 @@ app.post('/generate_poe', jsonParser, async (request, response) => {
     }
 
     let isGenerationStopped = false;
+    const abortController = new AbortController();
     request.socket.removeAllListeners('close');
     request.socket.on('close', function () {
         isGenerationStopped = true;
 
         if (client) {
-            client.abortController.abort();
+            abortController.abort();
         }
     });
     const prompt = request.body.prompt;
@@ -2284,7 +2363,7 @@ app.post('/generate_poe', jsonParser, async (request, response) => {
             });
 
             let reply = '';
-            for await (const mes of client.send_message(bot, prompt)) {
+            for await (const mes of client.send_message(bot, prompt, false, 30, abortController.signal)) {
                 if (isGenerationStopped) {
                     console.error('Streaming stopped by user. Closing websocket...');
                     break;
@@ -2300,22 +2379,22 @@ app.post('/generate_poe', jsonParser, async (request, response) => {
             console.error(err);
         }
         finally {
-            client.disconnect_ws();
+            //client.disconnect_ws();
             response.end();
         }
     }
     else {
         try {
             let reply;
-            for await (const mes of client.send_message(bot, prompt)) {
+            for await (const mes of client.send_message(bot, prompt, false, 30, abortController.signal)) {
                 reply = mes.text;
             }
             console.log(reply);
-            client.disconnect_ws();
+            //client.disconnect_ws();
             return response.send({ 'reply': reply });
         }
         catch {
-            client.disconnect_ws();
+            //client.disconnect_ws();
             return response.sendStatus(500);
         }
     }
@@ -2761,14 +2840,22 @@ app.post("/savepreset_openai", jsonParser, function (request, response) {
     return response.send({ name });
 });
 
-app.post("/tokenize_llama", jsonParser, async function (request, response) {
-    if (!request.body) {
-        return response.sendStatus(400);
-    }
+function createTokenizationHandler(getTokenizerFn) {
+    return async function (request, response) {
+        if (!request.body) {
+            return response.sendStatus(400);
+        }
 
-    const count = await countTokensLlama(request.body.text);
-    return response.send({ count });
-});
+        const text = request.body.text || '';
+        const tokenizer = getTokenizerFn();
+        const count = await countSentencepieceTokens(tokenizer, text);
+        return response.send({ count });
+    };
+}
+
+app.post("/tokenize_llama", jsonParser, createTokenizationHandler(() => spp_llama));
+app.post("/tokenize_nerdstash", jsonParser, createTokenizationHandler(() => spp_nerd));
+app.post("/tokenize_nerdstash_v2", jsonParser, createTokenizationHandler(() => spp_nerd_v2));
 
 // ** REST CLIENT ASYNC WRAPPERS **
 
@@ -2784,7 +2871,8 @@ function putAsync(url, args) {
 }
 
 async function postAsync(url, args) {
-    const response = await fetch(url, { method: 'POST', ...args });
+    const fetch = require('node-fetch').default;
+    const response = await fetch(url, { method: 'POST', timeout: 0, ...args });
 
     if (response.ok) {
         const data = await response.json();
@@ -2826,7 +2914,11 @@ const setupTasks = async function () {
     // Colab users could run the embedded tool
     if (!is_colab) await convertWebp();
 
-    spp = await loadSentencepieceTokenizer();
+    [spp_llama, spp_nerd, spp_nerd_v2] = await Promise.all([
+        loadSentencepieceTokenizer('src/sentencepiece/tokenizer.model'),
+        loadSentencepieceTokenizer('src/sentencepiece/nerdstash.model'),
+        loadSentencepieceTokenizer('src/sentencepiece/nerdstash_v2.model'),
+    ]);
 
     console.log('Launching...');
 
@@ -3162,6 +3254,40 @@ app.post('/google_translate', jsonParser, async (request, response) => {
     });
 });
 
+app.post('/novel_tts', jsonParser, async (request, response) => {
+    const token = readSecret(SECRET_KEYS.NOVEL);
+
+    if (!token) {
+        return response.sendStatus(401);
+    }
+
+    const text = request.body.text;
+    const voice = request.body.voice;
+
+    if (!text || !voice) {
+        return response.sendStatus(400);
+    }
+
+    try {
+        const fetch = require('node-fetch').default;
+        const url = `${api_novelai}/ai/generate-voice?text=${encodeURIComponent(text)}&voice=-1&seed=${encodeURIComponent(voice)}&opus=false&version=v2`;
+        const result = await fetch(url, { method: 'GET', headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'audio/webm' } });
+
+        if (!result.ok) {
+            return response.sendStatus(result.status);
+        }
+
+        const chunks = await readAllChunks(result.body);
+        const buffer = Buffer.concat(chunks);
+        response.setHeader('Content-Type', 'audio/webm');
+        return response.send(buffer);
+    }
+    catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
 app.post('/delete_sprite', jsonParser, async (request, response) => {
     const label = request.body.label;
     const name = request.body.name;
@@ -3306,6 +3432,26 @@ function readSecret(key) {
     const fileContents = fs.readFileSync(SECRETS_FILE);
     const secrets = JSON.parse(fileContents);
     return secrets[key];
+}
+
+async function readAllChunks(readableStream) {
+    return new Promise((resolve, reject) => {
+        // Consume the readable stream
+        const chunks = [];
+        readableStream.on('data', (chunk) => {
+            chunks.push(chunk);
+        });
+
+        readableStream.on('end', () => {
+            console.log('Finished reading the stream.');
+            resolve(chunks);
+        });
+
+        readableStream.on('error', (error) => {
+            console.error('Error while reading the stream:', error);
+            reject();
+        });
+    });
 }
 
 async function getImageBuffers(zipFilePath) {

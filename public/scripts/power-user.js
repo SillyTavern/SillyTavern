@@ -9,6 +9,8 @@ import {
     getRequestHeaders,
     substituteParams,
     updateVisibleDivs,
+    eventSource,
+    event_types,
 } from "../script.js";
 import { favsToHotswap } from "./RossAscends-mods.js";
 import {
@@ -58,6 +60,8 @@ const tokenizers = {
     GPT3: 1,
     CLASSIC: 2,
     LLAMA: 3,
+    NERD: 4,
+    NERD2: 5,
 }
 
 const send_on_enter_options = {
@@ -836,6 +840,9 @@ function resetMovablePanels() {
     document.getElementById("WorldInfo").style.height = '';
     document.getElementById("WorldInfo").style.width = '';
     document.getElementById("WorldInfo").style.margin = '';
+
+    $('*[data-dragged="true"]').removeAttr('data-dragged');
+    eventSource.emit(event_types.MOVABLE_PANELS_RESET);
 }
 
 $(document).ready(() => {

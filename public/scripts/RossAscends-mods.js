@@ -450,7 +450,7 @@ dragElement(document.getElementById("WorldInfo"));
 
 
 
-function dragElement(elmnt) {
+export function dragElement(elmnt) {
 
     var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     if (document.getElementById(elmnt.id + "header")) { //ex: id="sheldheader"
@@ -504,7 +504,7 @@ function dragElement(elmnt) {
         pos3 = e.clientX;   //new mouse X
         pos4 = e.clientY;   //new mouse Y
 
-
+        elmnt.setAttribute('data-dragged', 'true');
 
         //fix over/underflows:
 

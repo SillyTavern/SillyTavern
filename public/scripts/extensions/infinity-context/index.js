@@ -1,6 +1,6 @@
 import { saveSettingsDebounced, getCurrentChatId, system_message_types, eventSource, event_types } from "../../../script.js";
 import { humanizedDateTime } from "../../RossAscends-mods.js";
-import { getApiUrl, extension_settings, getContext } from "../../extensions.js";
+import { getApiUrl, extension_settings, getContext, doExtrasFetch } from "../../extensions.js";
 import { getFileText, onlyUnique, splitRecursive, IndexedDBStore } from "../../utils.js";
 export { MODULE_NAME };
 
@@ -174,7 +174,7 @@ async function addMessages(chat_id, messages) {
         meta: JSON.stringify(m),
     }));
 
-    const addMessagesResult = await fetch(url, {
+    const addMessagesResult = await doExtrasFetch(url, {
         method: 'POST',
         headers: postHeaders,
         body: JSON.stringify({ chat_id, messages: transformedMessages }),
@@ -222,7 +222,7 @@ async function onPurgeClick() {
     const url = new URL(getApiUrl());
     url.pathname = '/api/chromadb/purge';
 
-    const purgeResult = await fetch(url, {
+    const purgeResult = await doExtrasFetch(url, {
         method: 'POST',
         headers: postHeaders,
         body: JSON.stringify({ chat_id }),
@@ -242,7 +242,7 @@ async function onExportClick() {
     const url = new URL(getApiUrl());
     url.pathname = '/api/chromadb/export';
 
-    const exportResult = await fetch(url, {
+    const exportResult = await doExtrasFetch(url, {
         method: 'POST',
         headers: postHeaders,
         body: JSON.stringify({ chat_id: currentChatId }),
@@ -285,7 +285,7 @@ async function onSelectImportFile(e) {
         const url = new URL(getApiUrl());
         url.pathname = '/api/chromadb/import';
 
-        const importResult = await fetch(url, {
+        const importResult = await doExtrasFetch(url, {
             method: 'POST',
             headers: postHeaders,
             body: JSON.stringify(imported),
@@ -313,7 +313,7 @@ async function queryMessages(chat_id, query) {
     const url = new URL(getApiUrl());
     url.pathname = '/api/chromadb/query';
 
-    const queryMessagesResult = await fetch(url, {
+    const queryMessagesResult = await doExtrasFetch(url, {
         method: 'POST',
         headers: postHeaders,
         body: JSON.stringify({ chat_id, query, n_results: extension_settings.chromadb.n_results }),
@@ -366,7 +366,7 @@ async function onSelectInjectFile(e) {
         const url = new URL(getApiUrl());
         url.pathname = '/api/chromadb';
 
-        const addMessagesResult = await fetch(url, {
+        const addMessagesResult = await doExtrasFetch(url, {
             method: 'POST',
             headers: postHeaders,
             body: JSON.stringify({ chat_id: currentChatId, messages: messages }),
@@ -461,19 +461,20 @@ jQuery(async () => {
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
-            <p>This extension rearranges the messages in the current chat to keep more relevant information in the context. Adjust the sliders below based on average amount of messages in your prompt (refer to the chat cut-off line).</p>
-            <span>Memory Injection Strategy</span>
+            <small>This extension rearranges the messages in the current chat to keep more relevant information in the context. Adjust the sliders below based on average amount of messages in your prompt (refer to the chat cut-off line).</small>
+            <span class="wide100p marginTopBot5 displayBlock">Memory Injection Strategy</span>
+            <hr>
             <select id="chromadb_strategy">
                 <option value="original">Replace non-kept chat items with memories</option>
                 <option value="ross">Add memories after chat with a header tag</option>
             </select>
-            <label for="chromadb_keep_context">How many original chat messages to keep: (<span id="chromadb_keep_context_value"></span>) messages</label>
+            <label for="chromadb_keep_context"><small>How many original chat messages to keep: (<span id="chromadb_keep_context_value"></span>) messages</small></label>
             <input id="chromadb_keep_context" type="range" min="${defaultSettings.keep_context_min}" max="${defaultSettings.keep_context_max}" step="${defaultSettings.keep_context_step}" value="${defaultSettings.keep_context}" />
-            <label for="chromadb_n_results">Maximum number of ChromaDB 'memories' to inject: (<span id="chromadb_n_results_value"></span>) messages</label>
+            <label for="chromadb_n_results"><small>Maximum number of ChromaDB 'memories' to inject: (<span id="chromadb_n_results_value"></span>) messages</small></label>
             <input id="chromadb_n_results" type="range" min="${defaultSettings.n_results_min}" max="${defaultSettings.n_results_max}" step="${defaultSettings.n_results_step}" value="${defaultSettings.n_results}" />
-            <label for="chromadb_split_length">Max length for each 'memory' pulled from the current chat history: (<span id="chromadb_split_length_value"></span>) characters</label>
+            <label for="chromadb_split_length"><small>Max length for each 'memory' pulled from the current chat history: (<span id="chromadb_split_length_value"></span>) characters</small></label>
             <input id="chromadb_split_length" type="range" min="${defaultSettings.split_length_min}" max="${defaultSettings.split_length_max}" step="${defaultSettings.split_length_step}" value="${defaultSettings.split_length}" />
-            <label for="chromadb_file_split_length">Max length for each 'memory' pulled from imported text files: (<span id="chromadb_file_split_length_value"></span>) characters</label>
+            <label for="chromadb_file_split_length"><small>Max length for each 'memory' pulled from imported text files: (<span id="chromadb_file_split_length_value"></span>) characters</small></label>
             <input id="chromadb_file_split_length" type="range" min="${defaultSettings.file_split_length_min}" max="${defaultSettings.file_split_length_max}" step="${defaultSettings.file_split_length_step}" value="${defaultSettings.file_split_length}" />
             <label class="checkbox_label" for="chromadb_freeze" title="Pauses the automatic synchronization of new messages with ChromaDB. Older messages and injections will still be pulled as usual." >
                 <input type="checkbox" id="chromadb_freeze" />
@@ -503,7 +504,7 @@ jQuery(async () => {
         <form><input id="chromadb_import_file" type="file" accept="application/json" hidden></form>
     </div>`;
 
-    $('#extensions_settings').append(settingsHtml);
+    $('#extensions_settings2').append(settingsHtml);
     $('#chromadb_strategy').on('change', onStrategyChange);
     $('#chromadb_keep_context').on('input', onKeepContextInput);
     $('#chromadb_n_results').on('input', onNResultsInput);

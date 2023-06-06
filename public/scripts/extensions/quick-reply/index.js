@@ -121,30 +121,30 @@ jQuery(async () => {
                     Enable Quick Replies
             </label>
             <small><i>Customize your Quick Replies:</i></small><br>
-            <div class="flex-container">
-                <input class="text_pole widthUnset" id="quickReply1Label" placeholder="(Add a button label)">
+            <div class="flex-container alignitemsflexstart">
+                <input class="text_pole wide30p" id="quickReply1Label" placeholder="(Add a button label)">
                 <textarea id="quickReply1Mes" placeholder="(custom message here)" class="text_pole textarea_compact widthUnset flex1" rows="2"></textarea>
             </div>
-            <div class="flex-container">
-                <input class="text_pole widthUnset" id="quickReply2Label" placeholder="(Add a button label)">
+            <div class="flex-container alignitemsflexstart">
+                <input class="text_pole wide30p" id="quickReply2Label" placeholder="(Add a button label)">
                 <textarea id="quickReply2Mes"  placeholder="(custom message here)" class="text_pole textarea_compact widthUnset flex1" rows="2"></textarea>
             </div>
-            <div class="flex-container">
-                <input class="text_pole widthUnset" id="quickReply3Label" placeholder="(Add a button label)">
+            <div class="flex-container alignitemsflexstart">
+                <input class="text_pole wide30p" id="quickReply3Label" placeholder="(Add a button label)">
                 <textarea id="quickReply3Mes"  placeholder="(custom message here)" class="text_pole textarea_compact widthUnset flex1" rows="2"></textarea>
             </div>
-            <div class="flex-container">
-                <input class="text_pole widthUnset" id="quickReply4Label" placeholder="(Add a button label)">
+            <div class="flex-container alignitemsflexstart">
+                <input class="text_pole wide30p" id="quickReply4Label" placeholder="(Add a button label)">
                 <textarea id="quickReply4Mes"  placeholder="(custom message here)" class="text_pole textarea_compact widthUnset flex1" rows="2"></textarea>
             </div>
-            <div class="flex-container">
-                <input class="text_pole widthUnset" id="quickReply5Label" placeholder="(Add a button label)">
+            <div class="flex-container alignitemsflexstart">
+                <input class="text_pole wide30p" id="quickReply5Label" placeholder="(Add a button label)">
                 <textarea id="quickReply5Mes"  placeholder="(custom message here)" class="text_pole textarea_compact widthUnset flex1" rows="2"></textarea>
             </div>
         </div>
     </div>`;
 
-    $('#extensions_settings').append(settingsHtml);
+    $('#extensions_settings2').append(settingsHtml);
 
     $('#quickReply1Mes').on('input', function () { onQuickReplyInput(1); });
     $('#quickReply2Mes').on('input', function () { onQuickReplyInput(2); });

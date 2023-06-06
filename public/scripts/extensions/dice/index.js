@@ -93,5 +93,5 @@ jQuery(function () {
     addDiceRollButton();
     moduleWorker();
     setInterval(moduleWorker, UPDATE_INTERVAL);
-    registerSlashCommand('roll', (_, value) => doDiceRoll(value), [], "<span class='monospace'>(dice formula)</span> – roll the dice. For example, /roll 2d6", false, true);
+    registerSlashCommand('roll', (_, value) => doDiceRoll(value), ['r'], "<span class='monospace'>(dice formula)</span> – roll the dice. For example, /roll 2d6", false, true);
 });

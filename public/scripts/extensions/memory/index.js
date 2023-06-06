@@ -1,5 +1,5 @@
 import { getStringHash, debounce } from "../../utils.js";
-import { getContext, getApiUrl, extension_settings, ModuleWorkerWrapper } from "../../extensions.js";
+import { getContext, getApiUrl, extension_settings, ModuleWorkerWrapper, doExtrasFetch } from "../../extensions.js";
 import { extension_prompt_types, is_send_press, saveSettingsDebounced } from "../../../script.js";
 export { MODULE_NAME };
 
@@ -232,7 +232,7 @@ async function summarizeChat(context) {
         const url = new URL(getApiUrl());
         url.pathname = '/api/summarize';
 
-        const apiResult = await fetch(url, {
+        const apiResult = await doExtrasFetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -321,24 +321,24 @@ $(document).ready(function () {
         <div id="memory_settings">
             <div class="inline-drawer">
                 <div class="inline-drawer-toggle inline-drawer-header">
-                <b>Chat memory</b>
+                <b>Summarize</b>
                 <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
             </div>
             <div class="inline-drawer-content">
-                <label for="memory_contents">Memory contents</label>
+                <label for="memory_contents">Current summary: </label>
                 <textarea id="memory_contents" class="text_pole" rows="8" placeholder="Context will be generated here..."></textarea>
                 <div class="memory_contents_controls">
                     <input id="memory_restore" class="menu_button" type="submit" value="Restore previous state" />
-                    <label for="memory_frozen"><input id="memory_frozen" type="checkbox" /> Freeze context</label>
+                    <label for="memory_frozen"><input id="memory_frozen" type="checkbox" />Stop summarization updates</label>
                 </div>
-            </div>
+            <!--</div>
             </div>
             <div class="inline-drawer">
                 <div class="inline-drawer-toggle inline-drawer-header">
                     <b>Summarization parameters</b>
                     <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
                 </div>
-                <div class="inline-drawer-content">
+                <div class="inline-drawer-content">-->
                     <label for="memory_short_length">Buffer <small>[short-term]</small> length (<span id="memory_short_length_tokens"></span> tokens)</label>
                     <input id="memory_short_length" type="range" value="${defaultSettings.shortMemoryLength}" min="${defaultSettings.minShortMemory}" max="${defaultSettings.maxShortMemory}" step="${defaultSettings.shortMemoryStep}" />
                     <label for="memory_long_length">Summary <small>[long-term]</small> length (<span id="memory_long_length_tokens"></span> tokens)</label>
@@ -353,7 +353,7 @@ $(document).ready(function () {
             </div>
         </div>
         `;
-        $('#extensions_settings').append(settingsHtml);
+        $('#extensions_settings2').append(settingsHtml);
         $('#memory_restore').on('click', onMemoryRestoreClick);
         $('#memory_contents').on('input', onMemoryContentInput);
         $('#memory_long_length').on('input', onMemoryLongInput);

@@ -1,5 +1,5 @@
 import { getBase64Async } from "../../utils.js";
-import { getContext, getApiUrl } from "../../extensions.js";
+import { getContext, getApiUrl, doExtrasFetch } from "../../extensions.js";
 export { MODULE_NAME };
 
 const MODULE_NAME = 'caption';
@@ -63,7 +63,7 @@ async function onSelectImage(e) {
         const url = new URL(getApiUrl());
         url.pathname = '/api/caption';
 
-        const apiResult = await fetch(url, {
+        const apiResult = await doExtrasFetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

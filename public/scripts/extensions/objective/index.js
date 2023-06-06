@@ -66,7 +66,6 @@ function addTask(description, index = null) {
     saveState()
 }
 
-
 // Return the task and index or throw an error
 function getTaskById(taskId){
     if (taskId == null) {
@@ -77,11 +76,13 @@ function getTaskById(taskId){
         return { task: globalTasks[index], index: index };
     } else {
         throw `Cannot find task with ${taskId}`
+
     }
 }
 
 function deleteTask(taskId){
     const { task, index } = getTaskById(taskId)
+
     globalTasks.splice(index, 1)
     setCurrentTask()
     updateUiTaskList()
@@ -325,6 +326,7 @@ function debugObjectiveExtension() {
 
 window.debugObjectiveExtension = debugObjectiveExtension
 
+
 // Populate UI task list
 function updateUiTaskList() {
     $('#objective-tasks').empty()
@@ -334,7 +336,7 @@ function updateUiTaskList() {
             task.addUiElement()
         }
     } else {
-    // Show button to add tasks if there are none
+        // Show button to add tasks if there are none
         $('#objective-tasks').append(`
         <input id="objective-task-add-first" type="button" class="menu_button" value="Add Task">
         `)
@@ -362,7 +364,7 @@ function onChatDepthInput() {
 
 // Update how often we check for task completion
 function onCheckFrequencyInput() {
-    checkCounter =  $("#objective-check-frequency").val()
+    checkCounter = $("#objective-check-frequency").val()
     $('#objective-counter').text(checkCounter)
     saveState()
 }
@@ -434,20 +436,20 @@ jQuery(() => {
         <div class="inline-drawer-content">
             <label for="objective-text"><small>Enter an objective and generate tasks. The AI will attempt to complete tasks autonomously</small></label>
             <textarea id="objective-text" type="text" class="text_pole textarea_compact" rows="4"></textarea>
-            <div class="objective_block">
-                <input id="objective-generate" class="menu_button" type="submit" value="Generate Tasks" />
-                <small>Automatically generate tasks for Objective. Takes a moment.</small>
+            <div class="objective_block flex-container">
+                <input id="objective-generate" class="menu_button" type="submit" value="Auto-Generate Tasks" />                
+                <label class="checkbox_label"><input id="objective-hide-tasks" type="checkbox"> Hide Tasks</label>
             </div>
-            </br>
-            <label class="checkbox_label"><input id="objective-hide-tasks" type="checkbox"> Hide Tasks</label><br>
+            
             <div id="objective-tasks"> </div>
-            <div class="objective_block">
-                <div class="objective_block objective_block_control flex1">
-                    <label for="objective-chat-depth">In-chat @ Depth</label>
+            <div class="objective_block margin-bot-10px">
+                <div class="objective_block objective_block_control flex1 flexFlowColumn">
+                    <label for="objective-chat-depth">Position in Chat</label>
                     <input id="objective-chat-depth" class="text_pole widthUnset" type="number" min="0" max="99" />
                 </div> 
                 <br>
                 <div class="objective_block objective_block_control flex1">
+
                     <label for="objective-check-frequency">Task Check Frequency</label>
                     <input id="objective-check-frequency" class="text_pole widthUnset" type="number" min="0" max="99" />
                     <small>(0 = disabled)</small>
