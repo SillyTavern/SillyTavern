@@ -432,20 +432,24 @@ PromptManagerModule.prototype.handleCharacterSelected = function (event) {
 }
 
 PromptManagerModule.prototype.handleGroupSelected = function (event) {
-    console.log(event.detail);
-
-    const characterDummy = {id: event.detail.id};
+    const characterDummy = {id: event.detail.id, group: event.detail.group};
     this.activeCharacter = characterDummy;
     const promptList = this.getPromptListByCharacter(characterDummy);
-console.log(promptList);
+
     if (0 === promptList.length) this.addPromptListForCharacter(characterDummy, openAiDefaultPromptList)
     if (0 === this.serviceSettings.prompts.length) this.setPrompts(openAiDefaultPrompts.prompts);
+}
+
+PromptManagerModule.prototype.getActiveGroupCharacters = function() {
+    // ToDo: Ideally, this should return the actual characters.
+    return (this.activeCharacter.group?.members || []).map(member => member.substring(0, member.lastIndexOf('.')));
 }
 
 /**
  * Get the prompts for a specific character. Can be filtered to only include enabled prompts.
  * @returns {object[]} The prompts for the character.
- * @param event
+ * @param character
+ * @param onlyEnabled
  */
 PromptManagerModule.prototype.getPromptsForCharacter = function (character, onlyEnabled = false) {
     return this.getPromptListByCharacter(character)
@@ -535,6 +539,8 @@ PromptManagerModule.prototype.getPromptIndexById = function (identifier) {
  * @returns {Object} An object with "role" and "content" properties
  */
 PromptManagerModule.prototype.preparePrompt = function (prompt) {
+    const groupMembers = this.getActiveGroupCharacters();
+    if (0 < groupMembers.length) return {role: prompt.role, content: substituteParams(prompt.content ?? '', null, null, groupMembers.join(', '))}
     return {role: prompt.role, content: substituteParams(prompt.content ?? '')};
 }
 
@@ -794,7 +800,7 @@ const openAiDefaultPrompts = {
             "system_prompt": true,
             "role": "system",
             "calculated_tokens": 81,
-            "content": "Write {{char}}'s next reply in a fictional chat between {{char}} and {{user}}. Write 1 reply only in internet RP style, italicize actions, and avoid quotation marks. Use markdown. Be proactive, creative, and drive the plot and conversation forward. Write at least 1 paragraph, up to 4. Always stay in character and avoid repetition.",
+            "content": "Write {{char}}'s next reply in a fictional chat between {{charIfNotGroup}} and {{user}}. Write 1 reply only in internet RP style, italicize actions, and avoid quotation marks. Use markdown. Be proactive, creative, and drive the plot and conversation forward. Write at least 1 paragraph, up to 4. Always stay in character and avoid repetition.",
             "identifier": "main"
         },
         {
