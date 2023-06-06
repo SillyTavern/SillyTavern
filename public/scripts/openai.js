@@ -84,6 +84,8 @@ const gpt4_32k_max = 32767;
 const claude_max = 7500;
 const claude_100k_max = 99000;
 const unlocked_max = 100 * 1024;
+const oai_max_temp = 2.0;
+const claude_max_temp = 1.0;
 
 let biasCache = undefined;
 const tokenCache = {};
@@ -1402,6 +1404,9 @@ function onModelChange() {
         }
 
         $('#openai_reverse_proxy').attr('placeholder', 'https://api.anthropic.com/v1');
+
+        oai_settings.temp_openai = Math.min(claude_max_temp, oai_settings.temp_openai);
+        $('#temp_openai').attr('max', claude_max_temp).val(oai_settings.temp_openai).trigger('input');
     } else {
         oai_settings.openai_model = value;
 
@@ -1421,6 +1426,9 @@ function onModelChange() {
         }
 
         $('#openai_reverse_proxy').attr('placeholder', 'https://api.openai.com/v1');
+
+        oai_settings.temp_openai = Math.min(oai_max_temp, oai_settings.temp_openai);
+        $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
     }
 
     saveSettingsDebounced();
