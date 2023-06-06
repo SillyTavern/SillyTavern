@@ -1399,6 +1399,20 @@ function getStoppingStrings(isImpersonate, addSpace) {
     return addSpace ? result.map(x => `${x} `) : result;
 }
 
+
+// Background prompt generation
+export async function generateQuietPrompt(quiet_prompt) {
+    return await new Promise(
+        async function promptPromise(resolve, reject) {
+            try {
+                await Generate('quiet', { resolve, reject, quiet_prompt, force_name2: true, });
+            }
+            catch {
+                reject();
+            }
+        });
+}
+
 function processCommands(message, type) {
     if (type == "regenerate" || type == "swipe" || type == 'quiet') {
         return null;

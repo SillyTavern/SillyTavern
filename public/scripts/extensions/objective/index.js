@@ -4,7 +4,9 @@ import {
     substituteParams,
     eventSource,
     event_types,
+    generateQuietPrompt,
 } from "../../../script.js";
+import { registerSlashCommand } from "../../slash-commands.js";
 
 const MODULE_NAME = "Objective"
 
@@ -40,18 +42,6 @@ const objectivePrompts = {
 
 const extensionPrompt = "Your current task is [{{task}}]. Balance existing roleplay with completing this task."
 
-// Background prompt generation
-async function generateQuietPrompt(quiet_prompt) {
-    return await new Promise(
-        async function promptPromise(resolve, reject) {
-            try {
-                await getContext().generate('quiet', { resolve, reject, quiet_prompt, force_name2: true, });
-            }
-            catch {
-                reject();
-            }
-        });
-}
 
 //###############################//
 //#       Task Management       #//
@@ -112,7 +102,7 @@ async function generateTasks() {
 
 // Call Quiet Generate to check if a task is completed
 async function checkTaskCompleted() {
-    // Make sure there are tasks 
+    // Make sure there are tasks
     if (jQuery.isEmptyObject(currentTask)) {
         return
     }
@@ -146,7 +136,7 @@ function setCurrentTask(taskId = null) {
         currentTask = globalTasks[index];
     }
 
-    // Get the task description and add to extension prompt 
+    // Get the task description and add to extension prompt
     const description = currentTask.description || null;
 
     // Now update the extension prompt
@@ -201,7 +191,7 @@ class ObjectiveTask {
             this.id=id
         }
     }
-    
+
 
     // Complete the current task, setting next task to next incomplete task
     completeTask() {
@@ -221,10 +211,10 @@ class ObjectiveTask {
             <div id="objective-task-add-${this.id}" class="objective-task-button fa-solid fa-plus fa-2x" title="Add Task"></div>
         </div><br>
         `;
-        
+
         // Add the filled out template
         $('#objective-tasks').append(template);
-        
+
         this.completedCheckbox = $(`#objective-task-complete-${this.id}`);
         this.descriptionSpan = $(`#objective-task-description-${this.id}`);
         this.addButton = $(`#objective-task-add-${this.id}`);
@@ -250,7 +240,7 @@ class ObjectiveTask {
     onDescriptionFocusout(){
         setCurrentTask();
     }
-    
+
     onDeleteClick(){
         deleteTask(this.id);
     }
@@ -437,16 +427,16 @@ jQuery(() => {
             <label for="objective-text"><small>Enter an objective and generate tasks. The AI will attempt to complete tasks autonomously</small></label>
             <textarea id="objective-text" type="text" class="text_pole textarea_compact" rows="4"></textarea>
             <div class="objective_block flex-container">
-                <input id="objective-generate" class="menu_button" type="submit" value="Auto-Generate Tasks" />                
+                <input id="objective-generate" class="menu_button" type="submit" value="Auto-Generate Tasks" />
                 <label class="checkbox_label"><input id="objective-hide-tasks" type="checkbox"> Hide Tasks</label>
             </div>
-            
+
             <div id="objective-tasks"> </div>
             <div class="objective_block margin-bot-10px">
                 <div class="objective_block objective_block_control flex1 flexFlowColumn">
                     <label for="objective-chat-depth">Position in Chat</label>
                     <input id="objective-chat-depth" class="text_pole widthUnset" type="number" min="0" max="99" />
-                </div> 
+                </div>
                 <br>
                 <div class="objective_block objective_block_control flex1">
 
@@ -486,4 +476,6 @@ jQuery(() => {
         setCurrentTask();
         $('#objective-counter').text(checkCounter)
     });
+
+    registerSlashCommand('taskcheck', checkTaskCompleted, [], ' – checks if the current task is completed', true, true);
 });
