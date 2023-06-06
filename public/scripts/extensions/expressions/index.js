@@ -182,7 +182,22 @@ async function visualNovelUpdateLayers(container) {
     const group = context.groups.find(x => x.id == context.groupId);
     const recentMessages = context.chat.map(x => x.original_avatar).filter(x => x).reverse().filter(onlyUnique);
     const filteredMembers = group.members.filter(x => !group.disabled_members.includes(x));
-    const layerIndices = filteredMembers.slice().sort((a, b) => recentMessages.indexOf(b) - recentMessages.indexOf(a));
+    const layerIndices = filteredMembers.slice().sort((a, b) =>  {
+        const aRecentIndex = recentMessages.indexOf(a);
+        const bRecentIndex = recentMessages.indexOf(b);
+        const aFilteredIndex = filteredMembers.indexOf(a);
+        const bFilteredIndex = filteredMembers.indexOf(b);
+
+        if (aRecentIndex !== -1 && bRecentIndex !== -1) {
+          return bRecentIndex - aRecentIndex;
+        } else if (aRecentIndex !== -1) {
+          return 1;
+        } else if (bRecentIndex !== -1) {
+          return -1;
+        } else {
+          return aFilteredIndex - bFilteredIndex;
+        }
+    });
 
     const setLayerIndicesPromises = [];
 
