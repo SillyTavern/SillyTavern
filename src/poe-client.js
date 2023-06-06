@@ -25,7 +25,36 @@ const path = require('path');
 const http = require('http');
 const https = require('https');
 
-const parent_path = path.resolve(__dirname);
+const directory = __dirname;
+
+function uuidv4() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}
+
+const getSavedDeviceId = (userId) => {
+    const device_id_path = 'poe_device.json';
+    let device_ids = {};
+
+    if (fs.existsSync(device_id_path)) {
+        device_ids = JSON.parse(fs.readFileSync(device_id_path, 'utf8'));
+    }
+
+    if (device_ids.hasOwnProperty(userId)) {
+        return device_ids[userId];
+    }
+
+    const device_id = uuidv4();
+    device_ids[userId] = device_id;
+    fs.writeFileSync(device_id_path, JSON.stringify(device_ids, null, 2));
+
+    return device_id;
+};
+
+const parent_path = path.resolve(directory);
 const queries_path = path.join(parent_path, "poe_graphql");
 let queries = {};
 
@@ -203,6 +232,18 @@ function md5() {
     return m;
 }
 
+function generateNonce(length = 16) {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+
+    for (let i = 0; i < length; i++) {
+        const randomIndex = Math.floor(Math.random() * characters.length);
+        result += characters[randomIndex];
+    }
+
+    return result;
+}
+
 function load_queries() {
     const files = fs.readdirSync(queries_path);
     for (const filename of files) {
@@ -257,6 +298,7 @@ class Client {
     ws_connected = false;
     auto_reconnect = false;
     use_cached_bots = false;
+    device_id = null;
 
     constructor(auto_reconnect = false, use_cached_bots = false) {
         this.auto_reconnect = auto_reconnect;
@@ -302,9 +344,18 @@ class Client {
             "poe-tchannel": this.channel["channel"],
             ...this.headers,
         };
+        if (this.device_id === null) {
+            this.device_id = this.get_device_id();
+        }
         await this.subscribe();
         await this.connect_ws();
         console.log('Client initialized.');
+    }
+
+    get_device_id() {
+        const user_id = this.viewer["poeUser"]["id"];
+        const device_id = getSavedDeviceId(user_id);
+        return device_id;
     }
 
     async get_next_data() {
@@ -569,6 +620,8 @@ class Client {
             "query": message,
             "chatId": this.bots[chatbot]["chatId"],
             "source": null,
+            "clientNonce": generateNonce(),
+            "sdid": this.device_id,
             "withChatBreak": with_chat_break
         });
 
