@@ -1347,17 +1347,25 @@ function scrollChatToBottom() {
     }
 }
 
-function substituteParams(content, _name1, _name2) {
+function substituteParams(content, _name1, _name2, _group) {
     _name1 = _name1 ?? name1;
     _name2 = _name2 ?? name2;
+    _group = _group ?? name2;
+
     if (!content) {
         return ''
     }
 
     content = content.replace(/{{user}}/gi, _name1);
     content = content.replace(/{{char}}/gi, _name2);
+    content = content.replace(/{{charIfNotGroup}}/gi, _group);
+    content = content.replace(/{{group}}/gi, _group);
+
     content = content.replace(/<USER>/gi, _name1);
     content = content.replace(/<BOT>/gi, _name2);
+    content = content.replace(/<CHARIFNOTGROUP>/gi, _group);
+    content = content.replace(/<GROUP>/gi, _group);
+
     content = content.replace(/{{time}}/gi, moment().format('LT'));
     content = content.replace(/{{date}}/gi, moment().format('LL'));
     return content;
