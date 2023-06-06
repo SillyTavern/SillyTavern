@@ -80,6 +80,7 @@ import {
     is_get_status_openai,
     openai_messages_count,
     getTokenCountOpenAI,
+    chat_completion_sources,
 } from "./scripts/openai.js";
 
 import {
@@ -349,7 +350,7 @@ const system_messages = {
             '<i>(Not endorsed, your discretion is advised)</i>',
             '<ol>',
             '<li><a target="_blank" href="https://discord.gg/pygmalionai">Pygmalion AI Discord</a></li>',
-            '<li><a target="_blank" href="https://www.characterhub.org/">CharacterHub (NSFW)</a></li>',
+            '<li><a target="_blank" href="https://chub.ai/">Chub (NSFW)</a></li>',
             '</ol>',
             '<hr>',
             '<h3>Where can I get help?</h3>',
@@ -1397,6 +1398,20 @@ function getStoppingStrings(isImpersonate, addSpace) {
     }
 
     return addSpace ? result.map(x => `${x} `) : result;
+}
+
+
+// Background prompt generation
+export async function generateQuietPrompt(quiet_prompt) {
+    return await new Promise(
+        async function promptPromise(resolve, reject) {
+            try {
+                await Generate('quiet', { resolve, reject, quiet_prompt, force_name2: true, });
+            }
+            catch {
+                reject();
+            }
+        });
 }
 
 function processCommands(message, type) {
@@ -3808,7 +3823,7 @@ function changeMainAPI() {
     main_api = selectedVal;
     online_status = "no_connection";
 
-    if (main_api == 'openai' && oai_settings.use_window_ai) {
+    if (main_api == 'openai' && oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
         $('#api_button_openai').trigger('click');
     }
 

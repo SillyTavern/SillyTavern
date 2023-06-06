@@ -21,13 +21,14 @@ import {
     send_on_enter_options,
 } from "./power-user.js";
 
-import { LoadLocal, SaveLocal, ClearLocal, CheckLocal, LoadLocalBool } from "./f-localStorage.js";
+import { LoadLocal, SaveLocal, CheckLocal, LoadLocalBool } from "./f-localStorage.js";
 import { selected_group, is_group_generating, getGroupAvatar, groups } from "./group-chats.js";
 import {
     SECRET_KEYS,
     secret_state,
 } from "./secrets.js";
 import { sortByCssOrder } from "./utils.js";
+import { chat_completion_sources, oai_settings } from "./openai.js";
 
 var NavToggle = document.getElementById("nav-toggle");
 
@@ -263,7 +264,7 @@ export function RA_CountCharTokens() {
     }
     // display the counted tokens
     if (count_tokens < 1024 && perm_tokens < 1024) {
-        $("#result_info").html(count_tokens + " Tokens (" + perm_tokens + " Permanent Tokens)");      //display normal if both counts are under 1024
+        $("#result_info").html(count_tokens + " Tokens (" + perm_tokens + " Permanent)");      //display normal if both counts are under 1024
     } else {
         $("#result_info").html(`
         <span class="neutral_warning">${count_tokens}</span>&nbsp;Tokens (<span class="neutral_warning">${perm_tokens}</span><span>&nbsp;Permanent Tokens)
@@ -388,7 +389,7 @@ function RA_autoconnect(PrevApi) {
                 }
                 break;
             case 'openai':
-                if (secret_state[SECRET_KEYS.OPENAI]) {
+                if (secret_state[SECRET_KEYS.OPENAI] || secret_state[SECRET_KEYS.CLAUDE] || oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
                     $("#api_button_openai").click();
                 }
                 break;
