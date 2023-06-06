@@ -4990,7 +4990,7 @@ async function createOrEditCharacter(e) {
 
         formData.delete('alternate_greetings');
         const chid = $('.open_alternate_greetings').data('chid');
-        if (Array.isArray(characters[chid]?.data?.alternate_greetings)) {
+        if (chid && Array.isArray(characters[chid]?.data?.alternate_greetings)) {
             for (const value of characters[chid].data.alternate_greetings) {
                 formData.append('alternate_greetings', value);
             }
