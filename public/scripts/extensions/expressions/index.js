@@ -904,7 +904,9 @@ function setExpressionOverrideHtml(forceClear = false) {
                     <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
                 </div>
                 <div class="inline-drawer-content">
-                    <p class="offline_mode">You are in offline mode. Click on the image below to set the expression.</p>
+                    <div class="offline_mode">
+                        <small>You are in offline mode. Click on the image below to set the expression.</small>
+                    </div>
                     <div class="flex-container flexnowrap">
                         <input id="expression_override" type="text" class="text_pole" placeholder="Override folder name" />
                         <input id="expression_override_button" class="menu_button" type="submit" value="Submit" />

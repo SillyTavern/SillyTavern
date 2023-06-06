@@ -5,10 +5,13 @@
 
 .objective_block {
     display: flex;
-    /* flex-direction: row; */
     align-items: center;
     column-gap: 5px;
     flex-wrap: wrap;
+}
+
+.objective_block_control {
+    align-items: baseline;
 }
 
 .objective_block_control small,
