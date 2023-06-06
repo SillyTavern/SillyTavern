@@ -109,6 +109,7 @@ const poe = require('./src/poe-client');
 let api_server = "http://0.0.0.0:5000";
 let api_novelai = "https://api.novelai.net";
 let api_openai = "https://api.openai.com/v1";
+let api_claude = "https://api.anthropic.com/v1";
 let main_api = "kobold";
 
 let response_generate_novel;
@@ -2694,14 +2695,88 @@ app.post("/deletepreset_openai", jsonParser, function (request, response) {
     return response.send({ error: true });
 });
 
+// Prompt Conversion script taken from RisuAI by @kwaroran (GPLv3).
+function convertClaudePrompt(messages) {
+    let requestPrompt = messages.map((v) => {
+        let prefix = '';
+        switch (v.role){
+            case "assistant":
+                prefix = "\n\nAssistant: ";
+                break
+            case "user":
+                prefix = "\n\nHuman: ";
+                break
+            case "system":
+                prefix = "\n\nSystem: ";
+                break
+        }
+        return prefix + v.content;
+    }).join('') + '\n\nAssistant: ';
+    return requestPrompt;
+}
+
+async function sendClaudeRequest(request, response) {
+    const fetch = require('node-fetch').default;
+
+    const api_url = new URL(request.body.reverse_proxy || api_claude).toString();
+    const api_key_claude = readSecret(SECRET_KEYS.CLAUDE);
+
+    if (!api_key_claude) {
+        return response.status(401).send({ error: true });
+    }
+
+    const controller = new AbortController();
+    request.socket.removeAllListeners('close');
+    request.socket.on('close', function () {
+        controller.abort();
+    });
+
+    const requestPrompt = convertClaudePrompt(request.body.messages);
+    console.log('Claude request:', requestPrompt);
+
+    const generateResponse = await fetch(api_url + '/complete', {
+        method: "POST",
+        signal: controller.signal,
+        body: JSON.stringify({
+            prompt : "\n\nHuman: " + requestPrompt,
+            model: request.body.model,
+            max_tokens_to_sample: request.body.max_tokens,
+            stop_sequences: ["\n\nHuman:", "\n\nSystem:", "\n\nAssistant:"],
+            temperature: request.body.temperature,
+        }),
+        headers: {
+            "Content-Type": "application/json",
+            "x-api-key": api_key_claude,
+        }
+    });
+
+    if (!generateResponse.ok) {
+        console.log(`Claude API returned error: ${generateResponse.status} ${generateResponse.statusText} ${await generateResponse.text()}`);
+        return response.status(generateResponse.status).send({ error: true });
+    }
+
+    const generateResponseJson = await generateResponse.json();
+    const responseText = generateResponseJson.completion;
+    console.log('Claude response:', responseText);
+
+    // Wrap it back to OAI format
+    const reply = { choices: [{ "message": { "content": responseText, } }] };
+    return response.send(reply);
+}
+
 app.post("/generate_openai", jsonParser, function (request, response_generate_openai) {
-    if (!request.body) return response_generate_openai.sendStatus(400);
+    if (!request.body) return response_generate_openai.status(400).send({ error: true });
+
+    if (request.body.use_claude) {
+        return sendClaudeRequest(request, response_generate_openai);
+    }
+
     const api_url = new URL(request.body.reverse_proxy || api_openai).toString();
 
     const api_key_openai = readSecret(SECRET_KEYS.OPENAI);
 
     if (!api_key_openai) {
-        return response_generate_openai.sendStatus(401);
+        return response_generate_openai.status(401).send({ error: true });
     }
 
     const controller = new AbortController();
@@ -3009,6 +3084,7 @@ const SECRET_KEYS = {
     OPENAI: 'api_key_openai',
     POE: 'api_key_poe',
     NOVEL: 'api_key_novel',
+    CLAUDE: 'api_key_claude',
 }
 
 function migrateSecrets() {

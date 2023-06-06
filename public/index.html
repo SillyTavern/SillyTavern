@@ -134,7 +134,7 @@
                             </div>
                             <div id="openai_api-presets">
                                 <div>
-                                    <h4><span data-i18n="openaipresets">OpenAI Presets</span></h4>
+                                    <h4><span data-i18n="openaipresets">Chat Completion Presets</span></h4>
                                     <div class="openai_preset_buttons">
                                         <select id="settings_perset_openai">
                                             <option value="gui" data-i18n="default">Default</option>
@@ -443,7 +443,7 @@
                             <div id="range_block_openai">
                                 <div class="range-block">
                                     <div class="range-block-title justifyLeft" data-i18n="OpenAI Reverse Proxy">
-                                        OpenAI Reverse Proxy
+                                        OpenAI / Claude Reverse Proxy
                                     </div>
                                     <div class="toggle-description justifyLeft">
                                         <span data-i18n="Alternative server URL (leave empty to use the default value).">
@@ -1186,7 +1186,7 @@
                             <option value="koboldhorde">KoboldAI Horde</option>
                             <option value="textgenerationwebui">Text Gen WebUI (ooba)</option>
                             <option value="novel">NovelAI</option>
-                            <option value="openai">OpenAI</option>
+                            <option value="openai">Chat Completion (OpenAI, Claude, Window.ai)</option>
                             <option value="poe">Poe</option>
                         </select>
                     </div>
@@ -1336,15 +1336,16 @@
                         </div>
                     </div>
                     <div id="openai_api" style="display: none;position: relative;">
-                        <label for="use_window_ai" class="checkbox_label">
-                            <input id="use_window_ai" type="checkbox" />
-                            Use Window.ai
-                            <a href="https://docs.sillytavern.app/usage/guidebook/#windowai" class="notes-link" target="_blank">
-                                <span class="note-link-span">?</span>
-                            </a>
-                        </label>
-                        <form id="openai_form" action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                            <h4>API key </h4>
+                        <h3>
+                            Chat Completion Source
+                        </h3>
+                        <select id="chat_completion_source">
+                            <option value="openai">OpenAI</option>
+                            <option value="windowai">Window.ai</option>
+                            <option value="claude">Claude</option>
+                        </select>
+                        <form id="openai_form">
+                            <h4>OpenAI API key</h4>
                             <span>
                                 <ol>
                                     <li>
@@ -1360,12 +1361,6 @@
                             </div>
                             <div class="neutral_warning">For privacy reasons, your API key will be hidden after you
                                 reload the page.</div>
-                            <input id="api_button_openai" class="menu_button" type="submit" value="Connect">
-                            <div id="api_loading_openai" class=" api-load-icon fa-solid fa-hourglass fa-spin"></div>
-                            <div class="online_status4">
-                                <div class="online_status_indicator4"></div>
-                                <div class="online_status_text4">No connection...</div>
-                            </div>
                             <div>
                                 <h4 data-i18n="OpenAI Model">OpenAI Model</h4>
                                 <select id="model_openai_select">
@@ -1380,6 +1375,31 @@
                                 <a id="openai_api_usage" href="javascript:void(0);">View API Usage Metrics</a>
                             </div>
                         </form>
+                        <form id="claude_form">
+                            <h4>Claude API Key</h4>
+                            <div class="flex-container">
+                                <input id="api_key_claude" name="api_key_claude" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
+                                <div title="Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_claude"></div>
+                            </div>
+                            <div class="neutral_warning">For privacy reasons, your API key will be hidden after you
+                                reload the page.</div>
+                            <div>
+                                <h4 data-i18n="Claude Model">Claude Model</h4>
+                                <select id="model_claude_select">
+                                    <option value="claude-v1">claude-v1</option>
+                                    <option value="claude-v1-100k">claude-v1-100k</option>
+                                    <option value="claude-instant-v1">claude-instant-v1</option>
+                                    <option value="claude-instant-v1-100k">claude-instant-v1-100k</option>
+                                </select>
+                            </div>
+                        </form>
+
+                        <input id="api_button_openai" class="menu_button" type="submit" value="Connect">
+                        <div id="api_loading_openai" class=" api-load-icon fa-solid fa-hourglass fa-spin"></div>
+                        <div class="online_status4">
+                            <div class="online_status_indicator4"></div>
+                            <div class="online_status_text4">No connection...</div>
+                        </div>
                         <br>
                     </div>
                     <div id="poe_api">

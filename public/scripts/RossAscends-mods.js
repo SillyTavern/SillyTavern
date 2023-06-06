@@ -21,13 +21,14 @@ import {
     send_on_enter_options,
 } from "./power-user.js";
 
-import { LoadLocal, SaveLocal, ClearLocal, CheckLocal, LoadLocalBool } from "./f-localStorage.js";
+import { LoadLocal, SaveLocal, CheckLocal, LoadLocalBool } from "./f-localStorage.js";
 import { selected_group, is_group_generating, getGroupAvatar, groups } from "./group-chats.js";
 import {
     SECRET_KEYS,
     secret_state,
 } from "./secrets.js";
 import { sortByCssOrder } from "./utils.js";
+import { chat_completion_sources, oai_settings } from "./openai.js";
 
 var NavToggle = document.getElementById("nav-toggle");
 
@@ -388,7 +389,7 @@ function RA_autoconnect(PrevApi) {
                 }
                 break;
             case 'openai':
-                if (secret_state[SECRET_KEYS.OPENAI]) {
+                if (secret_state[SECRET_KEYS.OPENAI] || secret_state[SECRET_KEYS.CLAUDE] || oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
                     $("#api_button_openai").click();
                 }
                 break;

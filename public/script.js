@@ -80,6 +80,7 @@ import {
     is_get_status_openai,
     openai_messages_count,
     getTokenCountOpenAI,
+    chat_completion_sources,
 } from "./scripts/openai.js";
 
 import {
@@ -1561,7 +1562,7 @@ function appendToStoryString(value, prefix) {
 }
 
 function isStreamingEnabled() {
-    return ((main_api == 'openai' && oai_settings.stream_openai)
+    return ((main_api == 'openai' && oai_settings.stream_openai && oai_settings.chat_completion_source !== chat_completion_sources.CLAUDE)
         || (main_api == 'poe' && poe_settings.streaming)
         || (main_api == 'textgenerationwebui' && textgenerationwebui_settings.streaming))
         && !isMultigenEnabled(); // Multigen has a quasi-streaming mode which breaks the real streaming
@@ -3822,7 +3823,7 @@ function changeMainAPI() {
     main_api = selectedVal;
     online_status = "no_connection";
 
-    if (main_api == 'openai' && oai_settings.use_window_ai) {
+    if (main_api == 'openai' && oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
         $('#api_button_openai').trigger('click');
     }
 
