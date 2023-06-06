@@ -1,5 +1,5 @@
 import { callPopup, eventSource, event_types, getRequestHeaders, saveSettingsDebounced } from "../../../script.js";
-import { deviceInfo, dragElement } from "../../RossAscends-mods.js";
+import { dragElement, isMobile } from "../../RossAscends-mods.js";
 import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper, doExtrasFetch } from "../../extensions.js";
 import { power_user } from "../../power-user.js";
 import { onlyUnique, debounce } from "../../utils.js";
@@ -46,7 +46,7 @@ let spriteCache = {};
 let inApiCall = false;
 
 function isVisualNovelMode() {
-    return Boolean(!deviceInfo.isMobile && power_user.waifuMode && getContext().groupId);
+    return Boolean(!isMobile() && power_user.waifuMode && getContext().groupId);
 }
 
 async function forceUpdateVisualNovelMode() {
