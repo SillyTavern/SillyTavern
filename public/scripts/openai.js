@@ -638,7 +638,7 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
 
     let logit_bias = {};
     const isClaude = oai_settings.chat_completion_source == chat_completion_sources.CLAUDE;
-    const stream = type !== 'quiet' && oai_settings.stream_openai && !isClaude;
+    const stream = type !== 'quiet' && oai_settings.stream_openai;
 
     // If we're using the window.ai extension, use that instead
     // Doesn't support logit bias yet
@@ -687,6 +687,11 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
                 const { done, value } = await reader.read();
                 let response = decoder.decode(value);
 
+                // Claude's streaming SSE messages are separated by \r
+                if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
+                    response = response.replace(/\r/g, "");
+                }
+
                 tryParseStreamingError(response);
 
                 let eventList = [];
@@ -710,7 +715,7 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
                     }
                     let data = JSON.parse(event.substring(6));
                     // the first and last messages are undefined, protect against that
-                    getMessage += data.choices[0]["delta"]["content"] || "";
+                    getMessage = getStreamingReply(getMessage, data);
                     yield getMessage;
                 }
 
@@ -732,6 +737,15 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
 
         return data.choices[0]["message"]["content"];
     }
+}
+
+function getStreamingReply(getMessage, data) {
+    if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
+        getMessage = data.completion || "";
+    } else{
+        getMessage += data.choices[0]["delta"]["content"] || "";
+    }
+    return getMessage;
 }
 
 function handleWindowError(err) {

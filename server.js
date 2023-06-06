@@ -760,7 +760,7 @@ function charaFormatData(data) {
         [d => Array.isArray(d.alternate_greetings), d => d.alternate_greetings],
         [d => typeof d.alternate_greetings === 'string', d => [d.alternate_greetings]],
         [_.stubTrue, _.constant([])]
-      ])(data);
+    ])(data);
 
     // Spec V1 fields
     _.set(char, 'name', data.ch_name);
@@ -2699,7 +2699,7 @@ app.post("/deletepreset_openai", jsonParser, function (request, response) {
 function convertClaudePrompt(messages) {
     let requestPrompt = messages.map((v) => {
         let prefix = '';
-        switch (v.role){
+        switch (v.role) {
             case "assistant":
                 prefix = "\n\nAssistant: ";
                 break
@@ -2725,43 +2725,66 @@ async function sendClaudeRequest(request, response) {
         return response.status(401).send({ error: true });
     }
 
-    const controller = new AbortController();
-    request.socket.removeAllListeners('close');
-    request.socket.on('close', function () {
-        controller.abort();
-    });
+    try {
+        const controller = new AbortController();
+        request.socket.removeAllListeners('close');
+        request.socket.on('close', function () {
+            controller.abort();
+        });
 
-    const requestPrompt = convertClaudePrompt(request.body.messages);
-    console.log('Claude request:', requestPrompt);
+        const requestPrompt = convertClaudePrompt(request.body.messages);
+        console.log('Claude request:', requestPrompt);
 
-    const generateResponse = await fetch(api_url + '/complete', {
-        method: "POST",
-        signal: controller.signal,
-        body: JSON.stringify({
-            prompt : "\n\nHuman: " + requestPrompt,
-            model: request.body.model,
-            max_tokens_to_sample: request.body.max_tokens,
-            stop_sequences: ["\n\nHuman:", "\n\nSystem:", "\n\nAssistant:"],
-            temperature: request.body.temperature,
-        }),
-        headers: {
-            "Content-Type": "application/json",
-            "x-api-key": api_key_claude,
+        const generateResponse = await fetch(api_url + '/complete', {
+            method: "POST",
+            signal: controller.signal,
+            body: JSON.stringify({
+                prompt: "\n\nHuman: " + requestPrompt,
+                model: request.body.model,
+                max_tokens_to_sample: request.body.max_tokens,
+                stop_sequences: ["\n\nHuman:", "\n\nSystem:", "\n\nAssistant:"],
+                temperature: request.body.temperature,
+                stream: request.body.stream,
+            }),
+            headers: {
+                "Content-Type": "application/json",
+                "x-api-key": api_key_claude,
+            }
+        });
+
+        if (request.body.stream) {
+            // Pipe remote SSE stream to Express response
+            generateResponse.body.pipe(response);
+
+            request.socket.on('close', function () {
+                generateResponse.body.destroy(); // Close the remote stream
+                response.end(); // End the Express response
+            });
+
+            generateResponse.body.on('end', function () {
+                console.log("Streaming request finished");
+                response.end();
+            });
+        } else {
+            if (!generateResponse.ok) {
+                console.log(`Claude API returned error: ${generateResponse.status} ${generateResponse.statusText} ${await generateResponse.text()}`);
+                return response.status(generateResponse.status).send({ error: true });
+            }
+
+            const generateResponseJson = await generateResponse.json();
+            const responseText = generateResponseJson.completion;
+            console.log('Claude response:', responseText);
+
+            // Wrap it back to OAI format
+            const reply = { choices: [{ "message": { "content": responseText, } }] };
+            return response.send(reply);
         }
-    });
-
-    if (!generateResponse.ok) {
-        console.log(`Claude API returned error: ${generateResponse.status} ${generateResponse.statusText} ${await generateResponse.text()}`);
-        return response.status(generateResponse.status).send({ error: true });
+    } catch (error) {
+        console.log('Error communicating with Claude: ', error);
+        if (!response.headersSent) {
+            return response.status(500).send({ error: true });
+        }
     }
-
-    const generateResponseJson = await generateResponse.json();
-    const responseText = generateResponseJson.completion;
-    console.log('Claude response:', responseText);
-
-    // Wrap it back to OAI format
-    const reply = { choices: [{ "message": { "content": responseText, } }] };
-    return response.send(reply);
 }
 
 app.post("/generate_openai", jsonParser, function (request, response_generate_openai) {
