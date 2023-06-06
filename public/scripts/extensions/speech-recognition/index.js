@@ -25,8 +25,8 @@ function composeValues(previous, interim) {
             grammar: '' // Custom grammar
         }, options);
 
-        const speechRecognition = window.SpeechRecognition || webkitSpeechRecognition;
-        const speechRecognitionList = window.SpeechGrammarList || webkitSpeechGrammarList;
+        const speechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const speechRecognitionList = window.SpeechGrammarList || window.webkitSpeechGrammarList;
 
         if (!speechRecognition) {
             console.warn('Speech recognition is not supported in this browser.');
@@ -35,7 +35,7 @@ function composeValues(previous, interim) {
 
         const recognition = new speechRecognition();
 
-        if (settings.grammar) {
+        if (settings.grammar && speechRecognitionList) {
             speechRecognitionList.addFromString(settings.grammar, 1);
             recognition.grammars = speechRecognitionList;
         }
