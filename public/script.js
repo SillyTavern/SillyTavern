@@ -349,7 +349,7 @@ const system_messages = {
             '<i>(Not endorsed, your discretion is advised)</i>',
             '<ol>',
             '<li><a target="_blank" href="https://discord.gg/pygmalionai">Pygmalion AI Discord</a></li>',
-            '<li><a target="_blank" href="https://www.characterhub.org/">CharacterHub (NSFW)</a></li>',
+            '<li><a target="_blank" href="https://chub.ai/">Chub (NSFW)</a></li>',
             '</ol>',
             '<hr>',
             '<h3>Where can I get help?</h3>',
