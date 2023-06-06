@@ -421,7 +421,7 @@ window.chromadb_interceptGeneration = async (chat) => {
                             send_date: 0,
                         }
                     );
-                    newChat.push(...queriedMessages.map(m => JSON.parse(m.meta)));
+                    newChat.push(...queriedMessages.map(m => m.meta).filter(onlyUnique).map(JSON.parse));
                     newChat.push(
                         {
                             is_name: false,
@@ -437,7 +437,7 @@ window.chromadb_interceptGeneration = async (chat) => {
                 if (selectedStrategy === 'original') {
                     //removes .length # messages from the start of 'kept messages'
                     //replaces them with chromaDB results (with no separator)
-                    newChat.push(...queriedMessages.map(m => JSON.parse(m.meta)));
+                    newChat.push(...queriedMessages.map(m => m.meta).filter(onlyUnique).map(JSON.parse));
                     chat.splice(0, messagesToStore.length, ...newChat);
 
                 }
