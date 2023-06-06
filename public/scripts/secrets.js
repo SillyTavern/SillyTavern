@@ -22,6 +22,7 @@ async function clearSecret() {
     secret_state[key] = false;
     updateSecretDisplay();
     $(INPUT_MAP[key]).val('');
+    $('#main_api').trigger('change');
 }
 
 function updateSecretDisplay() {
