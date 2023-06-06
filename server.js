@@ -2697,6 +2697,22 @@ app.post("/deletepreset_openai", jsonParser, function (request, response) {
 
 // Prompt Conversion script taken from RisuAI by @kwaroran (GPLv3).
 function convertClaudePrompt(messages) {
+    // Claude doesn't support system names, so we'll just add them to the message.
+    for (const message of messages) {
+        if (message.name) {
+            if (message.role === "system" && message.name === "example_assistant") {
+                message.role = "assistant";
+            }
+            else if (message.role === "system" && message.name === "example_user") {
+                message.role = "user";
+            }
+            else {
+                message.content = message.name + ": " + message.content;
+            }
+            delete message.name;
+        }
+    }
+
     let requestPrompt = messages.map((v) => {
         let prefix = '';
         switch (v.role) {
