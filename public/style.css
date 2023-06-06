@@ -241,6 +241,10 @@ body.tts .mes[is_system="true"] .mes_narrate {
     display: none;
 }
 
+small {
+    color: var(--grey70);
+}
+
 .mes.smallSysMes {
     padding: 5px !important;
     font-size: calc(var(--mainFontSize)* 0.9);
@@ -581,18 +585,20 @@ hr {
     padding-bottom: 5px;
     text-decoration: none;
     display: flex;
-    /* align-items: center; */
     column-gap: 10px;
     cursor: pointer;
+
 }
 
-#extensionsMenu>div {
-    transition: 0.3s;
-    opacity: 0.7;
+#extensionsMenu>div,
+.options-content a,
+.list-group-item {
+    opacity: 0.5;
 }
 
-#extensionsMenu>div:hover {
-    filter: brightness(1.2);
+#extensionsMenu>div:hover,
+.options-content a:hover,
+.list-group-item:hover {
     opacity: 1;
 }
 
@@ -611,9 +617,6 @@ hr {
     vertical-align: middle;
 }
 
-.options-content a:hover {
-    background-color: var(--SmartThemeEmColor);
-}
 
 .auto_hide {
     content-visibility: auto;
@@ -681,7 +684,7 @@ hr {
 .ui-settings {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 5px;
 }
 
 #avatars-style .range-block-range,
@@ -848,7 +851,7 @@ textarea {
     background-color: var(--black30a);
     outline: none;
     border: 1px solid var(--white30a);
-    border-radius: 10px;
+    border-radius: 7px;
     color: var(--SmartThemeBodyColor);
     font-size: var(--mainFontSize);
     font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
@@ -881,7 +884,7 @@ select {
 
 
 .text_pole::placeholder {
-    color: rgb(92, 90, 90);
+    color: rgb(139, 139, 139);
 }
 
 #send_textarea::placeholder {
@@ -894,12 +897,21 @@ select {
     min-height: 175px;
 }
 
-.margin-bot-10px {
+.margin-bot-10px,
+.marginBot10 {
     margin-bottom: 10px;
 }
 
 .marginTop10 {
     margin-top: 10px;
+}
+
+.marginBot5 {
+    margin-bottom: 5px;
+}
+
+.marginTop5 {
+    margin-top: 5px;
 }
 
 .marginTopBot5 {
@@ -935,9 +947,9 @@ select {
     background-color: var(--black30a);
     color: var(--SmartThemeBodyColor);
     border: 1px solid var(--white30a);
-    border-radius: 10px;
+    border-radius: 7px;
     font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
-    padding: 7px;
+    padding: 3px 5px;
     width: 100%;
     margin: 5px 0;
     height: fit-content;
@@ -1138,11 +1150,11 @@ input[type="file"] {
 
 select {
 
-    padding: 7px;
+    padding: 3px 2px;
     background-color: var(--black30a);
     border: 1px solid var(--white30a);
-    border-radius: 10px;
-    margin-bottom: 10px;
+    border-radius: 7px;
+    margin-bottom: 5px;
     height: min-content;
 }
 
@@ -1249,20 +1261,26 @@ select option:not(:checked) {
     column-gap: 5px;
 }
 
-#form_character_search_form .menu_button {
+#form_character_search_form .menu_button,
+#GroupFavDelOkBack .menu_button {
     margin: 0;
+    height: fit-content;
+    padding: 5px;
+    border-radius: 7px;
+    aspect-ratio: 1 / 1;
 }
 
 #character_sort_order {
     margin: 0;
     flex: 1;
-    height: auto;
+    border-radius: 7px;
 }
 
 #character_search_bar {
     margin: 0;
     flex: 1;
-    padding-left: 0.75em;
+    /* padding-left: 0.75em; */
+    height: fit-content;
 }
 
 input[type=search]::-webkit-search-cancel-button {
@@ -1348,12 +1366,11 @@ input[type=search]:focus::-webkit-search-cancel-button {
 }
 
 #bg_menu_content {
-    margin-top: 5px;
     display: flex;
     flex-wrap: wrap;
     width: calc(var(--sheldWidth) - 10px);
     max-width: 100svw;
-    justify-content: space-evenly;
+    justify-content: center;
 }
 
 .bg_example {
@@ -1444,7 +1461,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 #user-settings-block h4,
 #user-settings-block h3 {
-    margin: 10px 0;
+    margin: 5px 0;
 }
 
 #avatar-and-name-block {
@@ -1519,8 +1536,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 .form_create_bottom_buttons_block {
     display: flex;
     flex: 1;
-    grid-template-columns: repeat(3, min-content);
-    grid-gap: 10px;
+    gap: 5px;
     align-items: center;
     justify-content: end;
     flex-wrap: wrap;
@@ -1674,8 +1690,8 @@ input[type=search]:focus::-webkit-search-cancel-button {
     color: var(--SmartThemeBodyColor);
     background-color: var(--black50a);
     border: 1px solid var(--white30a);
-    border-radius: 10px;
-    padding: 8px;
+    border-radius: 7px;
+    padding: 3px 5px;
     width: min-content;
     cursor: pointer;
     margin: 5px 0;
@@ -1692,10 +1708,10 @@ input[type=search]:focus::-webkit-search-cancel-button {
     font-weight: bold;
     padding: 5px;
     margin: 0;
-    height: 40px;
+    height: 35px;
     filter: grayscale(0.5);
     text-align: center;
-    font-size: 24px;
+    font-size: 20px;
     aspect-ratio: 1 / 1;
 }
 
@@ -2136,7 +2152,7 @@ input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    margin-bottom: 10px;
+    margin-bottom: 5px;
     justify-content: space-between;
 }
 
@@ -2233,7 +2249,7 @@ input[type="range"]::-webkit-slider-thumb {
     opacity: 1;
 }
 
-#tips_popup {
+/* #tips_popup {
 
     width: 500px;
     height: 600px;
@@ -2253,7 +2269,7 @@ input[type="range"]::-webkit-slider-thumb {
     -webkit-backdrop-filter: blur(var(--SmartThemeBlurStrength));
     border-radius: 10px;
     padding-top: 30px;
-}
+} */
 
 .nice-link {
     color: var(--SmartThemeBodyColor);
@@ -2456,7 +2472,7 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 h4 {
-    margin: 10px 0;
+    margin: 5px 0;
 }
 
 h5 {
@@ -2676,14 +2692,16 @@ h5 {
 .tag_controls {
     display: flex;
     flex-direction: row;
-    gap: 10px;
+    gap: 5px;
+    align-items: center;
 }
 
 .tag_view_item {
     display: flex;
     flex-direction: row;
     align-items: baseline;
-    gap: 15px;
+    gap: 10px;
+    margin-bottom: 5px;
 }
 
 .tag_view_name {
@@ -2708,7 +2726,7 @@ h5 {
     color: var(--SmartThemeBodyColor);
     background-color: var(--black30a);
     border-color: var(--white50a);
-    padding: 0.2rem 0.3rem;
+    padding: 0.1rem 0.2rem;
     font-size: calc(var(--mainFontSize) - 5%);
     display: flex;
     flex-direction: row;
@@ -2722,6 +2740,13 @@ h5 {
 
 .tag.actionable {
     border-radius: 50%;
+    aspect-ratio: 1 / 1;
+    min-height: calc(var(--mainFontSize) * 2);
+    min-width: calc(var(--mainFontSize) * 2);
+    font-size: calc(var(--mainFontSize) * 1);
+    padding: 0;
+    justify-content: center;
+    align-items: center;
 }
 
 .margin-right-10px {
@@ -2745,8 +2770,8 @@ h5 {
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: flex-start;
-    column-gap: 0.2rem;
-    row-gap: 0.2rem;
+    gap: 0.2rem;
+    align-items: flex-end;
 }
 
 #tagList.tags {
@@ -2792,8 +2817,11 @@ h5 {
     filter: brightness(0.8);
 }
 
-.tags_view {
+.tags_view,
+.open_alternate_greetings {
     margin: 0;
+    aspect-ratio: 1 / 1;
+    height: 2rem;
 }
 
 .tag.selected {
@@ -3368,13 +3396,9 @@ a {
     text-shadow: 0px 0px calc(var(--shadowWidth) * 1px) var(--SmartThemeShadowColor);
 }
 
-.list-group-item:hover {
-    background-color: var(--SmartThemeEmColor);
-}
-
 .list-group-item {
     color: var(--SmartThemeBodyColor);
-    padding: 0.75rem 1.25rem;
+    padding: 5px 7px;
     box-sizing: border-box;
     user-select: none;
     cursor: pointer;
@@ -3403,7 +3427,7 @@ a {
     border-left: 1px solid var(--grey30a);
     border-bottom: 1px solid var(--grey30a);
     box-shadow: none;
-    border-radius: 0 0 0 20px;
+    border-radius: 10px;
     overflow: hidden;
     scrollbar-width: thin;
     flex-flow: column;
@@ -3692,7 +3716,7 @@ label[for="extensions_autoconnect"] {
     background-color: var(--SmartThemeBlurTintColor);
     color: var(--SmartThemeBodyColor);
     border-radius: 10px;
-    padding: 10px;
+    padding: 5px;
     border: 1px solid var(--grey30a);
     box-shadow: 0 0 20px black;
     min-width: 450px;
@@ -3747,12 +3771,18 @@ label[for="extensions_autoconnect"] {
 }
 
 toolcool-color-picker {
-    margin-right: 10px;
+    /* margin-right: 10px; */
+}
+
+.settingsSectionWrap {
+    border: 1px solid var(--white30a);
+    border-radius: 10px;
+    padding: 5px;
 }
 
 .flex-container {
     display: flex;
-    gap: 10px;
+    gap: 5px;
     flex-wrap: wrap;
 }
 
@@ -3901,6 +3931,14 @@ toolcool-color-picker {
 .openai_logit_bias_list:empty {
     width: 100%;
     height: 100%;
+}
+
+/*used to fix smallness of certain FontAwesome glyph which break button squareness*/
+/*currently used on: CharList Import*/
+
+.faSmallFontSquareFix {
+    font-size: calc(var(--mainFontSize) *1.25);
+    width: calc(var(--mainFontSize) *1.95);
 }
 
 .openai_logit_bias_preset_form {

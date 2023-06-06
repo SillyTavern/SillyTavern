@@ -263,7 +263,7 @@ export function RA_CountCharTokens() {
     }
     // display the counted tokens
     if (count_tokens < 1024 && perm_tokens < 1024) {
-        $("#result_info").html(count_tokens + " Tokens (" + perm_tokens + " Permanent Tokens)");      //display normal if both counts are under 1024
+        $("#result_info").html(count_tokens + " Tokens (" + perm_tokens + " Permanent)");      //display normal if both counts are under 1024
     } else {
         $("#result_info").html(`
         <span class="neutral_warning">${count_tokens}</span>&nbsp;Tokens (<span class="neutral_warning">${perm_tokens}</span><span>&nbsp;Permanent Tokens)
