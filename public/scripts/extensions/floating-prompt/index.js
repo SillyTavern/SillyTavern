@@ -119,8 +119,8 @@ async function moduleWorker() {
     // take the count of messages
     let lastMessageNumber = Array.isArray(context.chat) && context.chat.length ? context.chat.filter(m => m.is_user).length : 0;
 
-    // special case for new chat
-    if (Array.isArray(context.chat) && context.chat.length === 1) {
+    // interval 1 should be inserted no matter what
+    if (chat_metadata[metadata_keys.interval] === 1) {
         lastMessageNumber = 1;
     }
 
@@ -152,7 +152,7 @@ async function moduleWorker() {
                     <div id="ANBlockToggle" class="inline-drawer-toggle inline-drawer-header">
                         <b>Author's Note</b>
                         <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
-                        
+
                 </div>
                 <div class="inline-drawer-content">
                     <small>
@@ -176,7 +176,7 @@ async function moduleWorker() {
 
                     <label for="extension_floating_interval">Insertion Frequency</label>
 
-                    <input id="extension_floating_interval" class="text_pole widthUnset" type="number" min="0" max="999"  /><small> (0 = Disable)</small>
+                    <input id="extension_floating_interval" class="text_pole widthUnset" type="number" min="0" max="999"  /><small> (0 = Disable, 1 = Always)</small>
                     <br>
 
                     <span>User inputs until next insertion: <span id="extension_floating_counter">(disabled)</span></span>
