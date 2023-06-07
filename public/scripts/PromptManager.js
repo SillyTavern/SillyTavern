@@ -445,6 +445,8 @@ PromptManagerModule.prototype.handleCharacterSelected = function (event) {
     if (0 === promptList.length) this.addPromptListForCharacter(this.activeCharacter, openAiDefaultPromptList)
     // Check whether the referenced prompts are present.
     if (0 === this.serviceSettings.prompts.length) this.setPrompts(openAiDefaultPrompts.prompts);
+
+    this.updatePrompts(this.getChatCompletion().getPromptsWithTokenCount());
 }
 
 PromptManagerModule.prototype.handleGroupSelected = function (event) {
@@ -454,6 +456,8 @@ PromptManagerModule.prototype.handleGroupSelected = function (event) {
 
     if (0 === promptList.length) this.addPromptListForCharacter(characterDummy, openAiDefaultPromptList)
     if (0 === this.serviceSettings.prompts.length) this.setPrompts(openAiDefaultPrompts.prompts);
+
+    this.updatePrompts(this.getChatCompletion().getPromptsWithTokenCount());
 }
 
 PromptManagerModule.prototype.getActiveGroupCharacters = function() {
@@ -902,6 +906,10 @@ const openAiDefaultPromptLists = {
 
 const openAiDefaultPromptList = [
     {
+        "identifier": "main",
+        "enabled": true
+    },
+    {
         "identifier": "worldInfoBefore",
         "enabled": true
     },
@@ -935,10 +943,6 @@ const openAiDefaultPromptList = [
     },
     {
         "identifier": "chatHistory",
-        "enabled": true
-    },
-    {
-        "identifier": "main",
         "enabled": true
     },
     {
