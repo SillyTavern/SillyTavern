@@ -366,6 +366,9 @@ PromptManagerModule.prototype.sanitizeServiceSettings = function () {
         this.serviceSettings.prompts = [];
     }
 
+    // Check whether the referenced prompts are present.
+    if (0 === this.serviceSettings.prompts.length) this.setPrompts(openAiDefaultPrompts.prompts);
+
     this.serviceSettings.prompts.forEach((prompt => prompt && (prompt.identifier = prompt.identifier || this.getUuidv4())));
     // TODO:
     // Sanitize data
