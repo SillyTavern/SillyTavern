@@ -3281,7 +3281,7 @@ app.post('/horde_userinfo', jsonParser, async (_, response) => {
 })
 
 app.post('/horde_generateimage', jsonParser, async (request, response) => {
-    const MAX_ATTEMPTS = 100;
+    const MAX_ATTEMPTS = 200;
     const CHECK_INTERVAL = 3000;
     const api_key_horde = readSecret(SECRET_KEYS.HORDE) || ANONYMOUS_KEY;
     console.log('Stable Horde request:', request.body);
