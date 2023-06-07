@@ -377,7 +377,7 @@ class Client {
         if (!viewer.availableBots) {
             throw new Error('Invalid token.');
         }
-        const botList = viewer.viewerBotList;
+        const botList = viewer.availableBotsConnection.edges.map(x => x.node);
         const retries = 2;
         const bots = {};
         const promises = [];
