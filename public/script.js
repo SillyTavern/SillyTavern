@@ -4890,7 +4890,7 @@ function openAlternateGreetings() {
 
 function addAlternateGreeting(template, greeting, index, getArray) {
     const greetingBlock = $('#alternate_greeting_form_template .alternate_greeting').clone();
-    greetingBlock.find('.alternate_greeting_text').on('input', async function() {
+    greetingBlock.find('.alternate_greeting_text').on('input', async function () {
         const value = $(this).val();
         const array = getArray();
         array[index] = value;
@@ -6190,10 +6190,15 @@ $(document).ready(function () {
         };
 
         optionsDiv.on('mouseenter touchstart', () => clearTimeout(hideOptionsTimeout));
-        optionsButtonDiv.on('mouseenter touchstart', () => clearTimeout(hideOptionsTimeout));
+        optionsButtonDiv.on('mouseenter touchstart', () => {
+            clearTimeout(hideOptionsTimeout);
+            hideOptionsTimeout = setTimeout(() => {
+                optionsDiv.show(200);
+            }, 200);
+        });
         optionsDiv.on('mouseleave', () => hideOptionsTimeout = setTimeout(hideOptions, 500));
         optionsButtonDiv.on('mouseleave', () => hideOptionsTimeout = setTimeout(hideOptions, 500));
-        optionsDiv.show(200);
+        //optionsDiv.show(200);
     }
 
     $("#options_button").on('mouseenter click touchstart', showOptions);
