@@ -1022,7 +1022,7 @@ async function getStatusOpen() {
         }
 
         if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
-            let status = 'I can\'t validate your key, but I hope it is legit.';
+            let status = 'Unable to verify key; assuming it\'s valid.';
             setOnlineStatus(status);
             return resultCheckStatusOpen();
         }
