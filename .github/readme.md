@@ -14,6 +14,15 @@ Tavern is a user interface you can install on your computer (and Android phones)
 
 SillyTavern is a fork of TavernAI 1.2.8 which is under more active development and has added many major features. At this point, they can be thought of as completely independent programs.
 
+### Branches
+
+SillyTavern is being developed using a two-branch system to ensure a smooth experience for all users.
+
+* main - This is the most stable and recommended branch, updated only when major releases are pushed. It's perfect for the majority of users. 🌟 **Recommended for most users.**
+* dev - This branch has the latest features, but be cautious as it may break at any time. ⚠️ **Not recommended for casual use.**
+
+If you're not familiar with using the git CLI or don't understand what a branch is, don't worry! The main branch is always the preferable option for you. 
+
 ### What do I need other than Tavern?
 
 On its own Tavern is useless, as it's just a user interface. You have to have access to an AI system backend that can act as the roleplay character. There are various supported backends: OpenAPI API (GPT), KoboldAI (either running locally or on Google Colab), and more. You can read more about this in [the FAQ](faq.md).
