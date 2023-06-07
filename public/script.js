@@ -123,6 +123,7 @@ import {
     sortMoments,
     timestampToMoment,
     download,
+    isDataURL,
 } from "./scripts/utils.js";
 
 import { extension_settings, loadExtensionSettings, runGenerationInterceptors } from "./scripts/extensions.js";
@@ -7024,14 +7025,11 @@ $(document).ready(function () {
     });
 
     $(document).on('click', '.mes .avatar', function () {
-
-        //if (window.innerWidth > 1000 || $('body').hasClass('waifuMode')) {
-
         let thumbURL = $(this).children('img').attr('src');
         let charsPath = '/characters/'
         let targetAvatarImg = thumbURL.substring(thumbURL.lastIndexOf("=") + 1);
 
-        let avatarSrc = charsPath + targetAvatarImg;
+        let avatarSrc = isDataURL(thumbURL) ? thumbURL : charsPath + targetAvatarImg;
         console.log(avatarSrc);
         if ($(this).parent().parent().attr('is_user') == 'true') { //handle user avatars
             $("#zoomed_avatar").attr('src', thumbURL);

@@ -404,3 +404,8 @@ export class IndexedDBStore {
         });
     }
 }
+
+export function isDataURL(str) {
+    const regex = /^data:([a-z]+\/[a-z0-9-+.]+(;[a-z-]+=[a-z0-9-]+)*;?)?(base64)?,([a-z0-9!$&',()*+;=\-_%.~:@\/?#]+)?$/i;
+    return regex.test(str);
+}
