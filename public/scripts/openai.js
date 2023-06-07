@@ -551,6 +551,14 @@ async function sendWindowAIRequest(openai_msgs_tosend, signal, stream) {
     let lastContent = '';
     let finished = false;
 
+    const currentModel = await window.ai.getCurrentModel();
+    let temperature = parseFloat(oai_settings.temp_openai);
+
+    if (currentModel.includes('claude') && temperature > claude_max_temp) {
+        console.warn(`Claude model only supports temperature up to ${claude_max_temp}. Clamping ${temperature} to ${claude_max_temp}.`);
+        temperature = claude_max_temp;
+    }
+
     async function* windowStreamingFunction() {
         while (true) {
             if (signal.aborted) {
@@ -592,7 +600,7 @@ async function sendWindowAIRequest(openai_msgs_tosend, signal, stream) {
             messages: openai_msgs_tosend,
         },
         {
-            temperature: parseFloat(oai_settings.temp_openai),
+            temperature: temperature,
             maxTokens: oai_settings.openai_max_tokens,
             onStreamResult: onStreamResult,
         }
