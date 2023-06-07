@@ -346,7 +346,6 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
         .replace('worldInfoBefore', worldInfoBeforeMessage)
         .replace('worldInfoAfter', worldInfoAfterMessage)
         .replace('characterInfo', characterInfoMessages)
-        .replace('newExampleChat', newChatMessage)
         .replace('newMainChat', newChatMessage)
         .replace('chatHistory', chatMessages)
 
@@ -374,7 +373,10 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
     // Handle chat examples
     // ToDo: Update dialogueExamples prompt with only the token count that's actually sent.
     const exampleMessages = prepareExampleMessages(openai_msgs ,openai_msgs_example, power_user.pin_examples);
-    if (exampleMessages.length) chatCompletion.replace('dialogueExamples', exampleMessages);
+    if (exampleMessages.length) {
+        chatCompletion.replace('newExampleChat', newChatMessage)
+        chatCompletion.replace('dialogueExamples', exampleMessages);
+    }
 
     // Handle quiet prompt
     if (quietPrompt) {
