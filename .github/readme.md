@@ -18,8 +18,8 @@ SillyTavern is a fork of TavernAI 1.2.8 which is under more active development a
 
 SillyTavern is being developed using a two-branch system to ensure a smooth experience for all users.
 
-* main - This is the most stable and recommended branch, updated only when major releases are pushed. It's perfect for the majority of users. 🌟 **Recommended for most users.**
-* dev - This branch has the latest features, but be cautious as it may break at any time. ⚠️ **Not recommended for casual use.**
+* main - This is the most stable and recommended branch, updated only when major releases are pushed. It's suitable for the majority of users. 🌟 **Recommended for most users.**
+* dev - This branch has the latest features, but be cautious as it may break at any time. Only for power users and enthusiasts. ⚠️ **Not recommended for casual use.**
 
 If you're not familiar with using the git CLI or don't understand what a branch is, don't worry! The main branch is always the preferable option for you. 
 
