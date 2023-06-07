@@ -10,7 +10,7 @@ import {
     api_server_textgenerationwebui,
     is_send_press,
     getTokenCount,
-    menu_type,
+    menu_type, eventSource,
 
 
 } from "../script.js";
@@ -743,8 +743,14 @@ $("document").ready(function () {
 
     // when a char is selected from the list, save them as the auto-load character for next page load
     $(document).on("click", ".character_select", function () {
-        SaveLocal('ActiveChar', $(this).attr('chid'));
-        SaveLocal('ActiveGroup', null);
+        const chid = $(this).attr('chid');
+        eventSource.emit(
+            'characterSelected',
+            {detail: {id: chid, character: characters[chid]}})
+            .then(r => {
+                SaveLocal('ActiveChar', chid);
+                SaveLocal('ActiveGroup', null);
+            });
     });
 
     $(document).on("click", ".group_select", function () {

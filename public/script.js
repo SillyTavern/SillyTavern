@@ -71,6 +71,7 @@ import {
 import {
     setOpenAIMessageExamples,
     setOpenAIMessages,
+    setupOpenAIPromptManager,
     prepareOpenAIMessages,
     sendOpenAIRequest,
     loadOpenAISettings,
@@ -1348,17 +1349,25 @@ function scrollChatToBottom() {
     }
 }
 
-function substituteParams(content, _name1, _name2) {
+function substituteParams(content, _name1, _name2, _group) {
     _name1 = _name1 ?? name1;
     _name2 = _name2 ?? name2;
+    _group = _group ?? name2;
+
     if (!content) {
         return ''
     }
 
     content = content.replace(/{{user}}/gi, _name1);
     content = content.replace(/{{char}}/gi, _name2);
+    content = content.replace(/{{charIfNotGroup}}/gi, _group);
+    content = content.replace(/{{group}}/gi, _group);
+
     content = content.replace(/<USER>/gi, _name1);
     content = content.replace(/<BOT>/gi, _name2);
+    content = content.replace(/<CHARIFNOTGROUP>/gi, _group);
+    content = content.replace(/<GROUP>/gi, _group);
+
     content = content.replace(/{{time}}/gi, moment().format('LT'));
     content = content.replace(/{{date}}/gi, moment().format('LL'));
     return content;
@@ -2640,14 +2649,14 @@ function parseTokenCounts(counts, thisPromptBits) {
     const total = Object.values(counts).filter(x => !Number.isNaN(x)).reduce((acc, val) => acc + val, 0);
 
     thisPromptBits.push({
-        oaiStartTokens: Object.entries(counts)[0][1],
-        oaiPromptTokens: Object.entries(counts)[1][1],
-        oaiBiasTokens: Object.entries(counts)[2][1],
-        oaiNudgeTokens: Object.entries(counts)[3][1],
-        oaiJailbreakTokens: Object.entries(counts)[4][1],
-        oaiImpersonateTokens: Object.entries(counts)[5][1],
-        oaiExamplesTokens: Object.entries(counts)[6][1],
-        oaiConversationTokens: Object.entries(counts)[7][1],
+        oaiStartTokens: Object.entries(counts)?.[0]?.[1] ?? 0,
+        oaiPromptTokens: Object.entries(counts)?.[1]?.[1] ?? 0,
+        oaiBiasTokens: Object.entries(counts)?.[2]?.[1] ?? 0,
+        oaiNudgeTokens: Object.entries(counts)?.[3]?.[1] ?? 0,
+        oaiJailbreakTokens: Object.entries(counts)?.[4]?.[1] ?? 0,
+        oaiImpersonateTokens: Object.entries(counts)?.[5]?.[1] ?? 0,
+        oaiExamplesTokens: Object.entries(counts)?.[6]?.[1] ?? 0,
+        oaiConversationTokens: Object.entries(counts)?.[7]?.[1] ?? 0,
         oaiTotalTokens: total,
     });
 }
@@ -3991,6 +4000,7 @@ async function getSettings(type) {
 
         // OpenAI
         loadOpenAISettings(data, settings);
+                setupOpenAIPromptManager(settings);
 
         // Horde
         loadHordeSettings(settings);
@@ -5853,6 +5863,7 @@ $(document).ready(function () {
                 data: msg,
                 cache: false,
                 success: async function (html) {
+                    eventSource.emit('characterDeleted', {id: this_chid, character: characters[this_chid]});
                     //RossAscends: New handling of character deletion that avoids page refreshes and should have
                     // fixed char corruption due to cache problems.
                     //due to how it is handled with 'popup_type', i couldn't find a way to make my method completely
