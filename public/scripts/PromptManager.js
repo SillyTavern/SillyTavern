@@ -362,6 +362,10 @@ PromptManagerModule.prototype.addPrompt = function (prompt, identifier) {
  * @returns {void}
  */
 PromptManagerModule.prototype.sanitizeServiceSettings = function () {
+    if (this.serviceSettings.prompts === undefined) {
+        this.serviceSettings.prompts = [];
+    }
+
     this.serviceSettings.prompts.forEach((prompt => prompt && (prompt.identifier = prompt.identifier || this.getUuidv4())));
     // TODO:
     // Sanitize data
