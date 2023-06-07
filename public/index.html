@@ -1882,6 +1882,20 @@
                                 </label>
                             </div>
                             <div>
+                                <label for="play_message_sound" class="checkbox_label">
+                                    <input id="play_message_sound" type="checkbox" />
+                                    <audio id="audio_message_sound" src="sounds/message.mp3" hidden></audio>
+                                    <span>
+                                        <span data-i18n="Message Sound">Message Sound</span>
+                                        <a href="https://docs.sillytavern.app/usage/guidebook/#message-sound" class="notes-link" target="_blank">
+                                            <span class="note-link-span">?</span>
+                                        </a>
+                                    </span>
+                                </label>
+                                <label for="play_sound_unfocused" class="checkbox_label">
+                                    <input id="play_sound_unfocused" type="checkbox" />
+                                    <span data-i18n="Background Sound Only">Background Sound Only</span>
+                                </label>
                                 <label for="fast_ui_mode" class="checkbox_label" title="removes blur and uses alternative background color for divs">
                                     <input id="fast_ui_mode" type="checkbox" />
                                     <span data-i18n="No Blur Effect">No Blur Effect</span>
@@ -1898,6 +1912,11 @@
                                 <label for="messageTimerEnabled" class="checkbox_label">
                                     <input id="messageTimerEnabled" type="checkbox" />
                                     <span data-i18n="Message Timer">Message Timer</span>
+                                </label>
+
+                                <label for="auto_scroll_chat_to_bottom" class="checkbox_label">
+                                    <input id="auto_scroll_chat_to_bottom" type="checkbox" />
+                                    <span data-i18n="Auto-scroll Chat">Auto-scroll Chat</span>
                                 </label>
 
                                 <label for="hotswapEnabled" class="checkbox_label">
@@ -2012,19 +2031,13 @@
                                 <input id="swipes-checkbox" type="checkbox" />
                                 <span data-i18n="Swipes">Swipes</span>
                             </label>
-                            <label for="play_message_sound" class="checkbox_label">
-                                <input id="play_message_sound" type="checkbox" />
-                                <audio id="audio_message_sound" src="sounds/message.mp3" hidden></audio>
-                                <span>
-                                    <span data-i18n="Message Sound">Message Sound</span>
-                                    <a href="https://docs.sillytavern.app/usage/guidebook/#message-sound" class="notes-link" target="_blank">
-                                        <span class="note-link-span">?</span>
-                                    </a>
-                                </span>
+                            <label data-i18n="Prefer Character Card Prompt" for="prefer_character_prompt" title="If checked and the character card contains a prompt override (System Prompt), use that instead." class="checkbox_label">
+                                <input id="prefer_character_prompt" type="checkbox" />
+                                Prefer Char. Prompt
                             </label>
-                            <label for="play_sound_unfocused" class="checkbox_label">
-                                <input id="play_sound_unfocused" type="checkbox" />
-                                <span data-i18n="Background Sound Only">Background Sound Only</span>
+                            <label data-i18n="Prefer Character Card Jailbreak" for="prefer_character_jailbreak" title="If checked and the character card contains a jailbreak override (Post History Instruction), use that instead." class="checkbox_label">
+                                <input id="prefer_character_jailbreak" type="checkbox" />
+                                Prefer Char. JB
                             </label>
                             <label for="auto-load-chat-checkbox"><input id="auto-load-chat-checkbox" type="checkbox" />
                                 <span data-i18n="Auto-load Last Chat">Auto-load Last Chat</span>
@@ -2038,15 +2051,11 @@
                             </label>
                             <label class="checkbox_label" for="allow_name2_display">
                                 <input id="allow_name2_display" type="checkbox" />
-                                <span data-i18n="Allow {{char}}: in bot messages">Allow {{char}}: in bot messages</span>
+                                <span data-i18n="Allow {{char}}: in bot messages">Show {{char}} responses</span>
                             </label>
                             <label class="checkbox_label" for="allow_name1_display">
                                 <input id="allow_name1_display" type="checkbox" />
-                                <span data-i18n="Allow {{user}}: in bot messages">Allow {{user}}: in bot messages</span>
-                            </label>
-                            <label for="auto_scroll_chat_to_bottom">
-                                <input id="auto_scroll_chat_to_bottom" type="checkbox" />
-                                <span data-i18n="Auto-scroll Chat">Auto-scroll Chat</span>
+                                <span data-i18n="Allow {{user}}: in bot messages">Show {{user}} responses</span>
                             </label>
                             <label for="console_log_prompts">
                                 <input id="console_log_prompts" type="checkbox" />

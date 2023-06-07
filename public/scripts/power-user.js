@@ -128,6 +128,8 @@ let power_user = {
     hotswap_enabled: true,
     timer_enabled: true,
     max_context_unlocked: false,
+    prefer_character_prompt: true,
+    prefer_character_jailbreak: true,
 
     instruct: {
         enabled: false,
@@ -527,6 +529,8 @@ function loadPowerUserSettings(settings, data) {
     $("#allow_name2_display").prop("checked", power_user.allow_name2_display);
     $("#hotswapEnabled").prop("checked", power_user.hotswap_enabled);
     $("#messageTimerEnabled").prop("checked", power_user.timer_enabled);
+    $("#prefer_character_prompt").prop("checked", power_user.prefer_character_prompt);
+    $("#prefer_character_jailbreak").prop("checked", power_user.prefer_character_jailbreak);
     $(`input[name="avatar_style"][value="${power_user.avatar_style}"]`).prop("checked", true);
     $(`input[name="chat_display"][value="${power_user.chat_display}"]`).prop("checked", true);
     $(`input[name="sheld_width"][value="${power_user.sheld_width}"]`).prop("checked", true);
@@ -657,11 +661,13 @@ export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvata
     return text;
 }
 
-export function formatInstructStoryString(story) {
+export function formatInstructStoryString(story, systemPrompt) {
+    // If the character has a custom system prompt AND user has it preferred, use that instead of the default
+    systemPrompt = power_user.prefer_character_prompt && systemPrompt ? systemPrompt : power_user.instruct.system_prompt;
     const sequence = power_user.instruct.system_sequence || '';
-    const prompt = substituteParams(power_user.instruct.system_prompt) || '';
+    const prompt = substituteParams(systemPrompt) || '';
     const separator = power_user.instruct.wrap ? '\n' : '';
-    const textArray = [sequence, prompt, story, separator];
+    const textArray = [sequence, prompt + '\n' + story, separator];
     const text = textArray.filter(x => x).join(separator);
     return text;
 }
@@ -1168,6 +1174,18 @@ $(document).ready(() => {
         power_user.hotswap_enabled = value;
         localStorage.setItem(storage_keys.hotswap_enabled, power_user.hotswap_enabled);
         switchHotswap();
+    });
+
+    $("#prefer_character_prompt").on("input", function () {
+        const value = !!$(this).prop('checked');
+        power_user.prefer_character_prompt = value;
+        saveSettingsDebounced();
+    });
+
+    $("#prefer_character_jailbreak").on("input", function () {
+        const value = !!$(this).prop('checked');
+        power_user.prefer_character_jailbreak = value;
+        saveSettingsDebounced();
     });
 
     $(window).on('focus', function () {

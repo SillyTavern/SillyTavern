@@ -310,7 +310,7 @@ function formatWorldInfo(value) {
     return stringFormat(oai_settings.wi_format, value);
 }
 
-async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAfter, extensionPrompt, bias, type, quietPrompt) {
+async function prepareOpenAIMessages(systemPrompt, name2, storyString, worldInfoBefore, worldInfoAfter, extensionPrompt, bias, type, quietPrompt) {
     const isImpersonate = type == "impersonate";
     let this_max_context = oai_settings.openai_max_context;
     let enhance_definitions_prompt = "";
@@ -324,7 +324,7 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
     const wiBefore = formatWorldInfo(worldInfoBefore);
     const wiAfter = formatWorldInfo(worldInfoAfter);
 
-    let whole_prompt = getSystemPrompt(nsfw_toggle_prompt, enhance_definitions_prompt, wiBefore, storyString, wiAfter, extensionPrompt, isImpersonate);
+    let whole_prompt = getSystemPrompt(systemPrompt, nsfw_toggle_prompt, enhance_definitions_prompt, wiBefore, storyString, wiAfter, extensionPrompt, isImpersonate);
 
     // Join by a space and replace placeholders with real user/char names
     storyString = substituteParams(whole_prompt.join("\n")).replace(/\r/gm, '').trim();
@@ -488,7 +488,9 @@ async function prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldI
     ];
 }
 
-function getSystemPrompt(nsfw_toggle_prompt, enhance_definitions_prompt, wiBefore, storyString, wiAfter, extensionPrompt, isImpersonate) {
+function getSystemPrompt(systemPrompt, nsfw_toggle_prompt, enhance_definitions_prompt, wiBefore, storyString, wiAfter, extensionPrompt, isImpersonate) {
+    // If the character has a custom system prompt AND user has it preferred, use that instead of the default
+    let prompt = power_user.prefer_character_prompt && systemPrompt ? systemPrompt : oai_settings.main_prompt;
     let whole_prompt = [];
 
     if (isImpersonate) {
@@ -497,10 +499,10 @@ function getSystemPrompt(nsfw_toggle_prompt, enhance_definitions_prompt, wiBefor
     else {
         // If it's toggled, NSFW prompt goes first.
         if (oai_settings.nsfw_first) {
-            whole_prompt = [nsfw_toggle_prompt, oai_settings.main_prompt, enhance_definitions_prompt + "\n\n" + wiBefore, storyString, wiAfter, extensionPrompt];
+            whole_prompt = [nsfw_toggle_prompt, prompt, enhance_definitions_prompt + "\n\n" + wiBefore, storyString, wiAfter, extensionPrompt];
         }
         else {
-            whole_prompt = [oai_settings.main_prompt, nsfw_toggle_prompt, enhance_definitions_prompt, "\n", wiBefore, storyString, wiAfter, extensionPrompt].filter(elem => elem);
+            whole_prompt = [prompt, nsfw_toggle_prompt, enhance_definitions_prompt, "\n", wiBefore, storyString, wiAfter, extensionPrompt].filter(elem => elem);
         }
     }
     return whole_prompt;
