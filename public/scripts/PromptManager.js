@@ -366,6 +366,10 @@ PromptManagerModule.prototype.sanitizeServiceSettings = function () {
         this.serviceSettings.prompts = [];
     }
 
+    if (this.serviceSettings.prompt_lists === undefined) {
+        this.serviceSettings.prompt_lists = [];
+    }
+
     // Check whether the referenced prompts are present.
     if (0 === this.serviceSettings.prompts.length) this.setPrompts(openAiDefaultPrompts.prompts);
 
