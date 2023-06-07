@@ -3309,6 +3309,11 @@ app.post('/horde_generateimage', jsonParser, async (request, response) => {
             },
             { token: api_key_horde });
 
+        if (!generation.id) {
+            console.error('Image generation request is not satisfyable:', generation.message || 'unknown error');
+            return response.sendStatus(400);
+        }
+
         for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
             await delay(CHECK_INTERVAL);
             const check = await ai_horde.getImageGenerationCheck(generation.id);
