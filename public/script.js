@@ -1898,6 +1898,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         let charPersonality = baseChatReplace(characters[this_chid].personality.trim(), name1, name2);
         let Scenario = baseChatReplace(scenarioText.trim(), name1, name2);
         let mesExamples = baseChatReplace(characters[this_chid].mes_example.trim(), name1, name2);
+        let systemPrompt = baseChatReplace(characters[this_chid].data?.system_prompt?.trim(), name1, name2);
 
         // Parse example messages
         if (!mesExamples.startsWith('<START>')) {
@@ -1956,7 +1957,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         }
 
         if (isInstruct) {
-            storyString = formatInstructStoryString(storyString);
+            storyString = formatInstructStoryString(storyString, systemPrompt);
         }
 
         //////////////////////////////////
@@ -2278,7 +2279,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 generate_data = getNovelGenerationData(finalPromt, this_settings, this_amount_gen);
             }
             else if (main_api == 'openai') {
-                let [prompt, counts] = await prepareOpenAIMessages(name2, storyString, worldInfoBefore, worldInfoAfter, afterScenarioAnchor, promptBias, type, quiet_prompt);
+                let [prompt, counts] = await prepareOpenAIMessages(systemPrompt, name2, storyString, worldInfoBefore, worldInfoAfter, afterScenarioAnchor, promptBias, type, quiet_prompt);
                 generate_data = { prompt: prompt };
 
                 // counts will return false if the user has not enabled the token breakdown feature
