@@ -354,7 +354,7 @@ async function prepareOpenAIMessages(systemPrompt, name2, storyString, worldInfo
         const groupMembers = groups.find(x => x.id === selected_group)?.members;
         let names = '';
         if (Array.isArray(groupMembers)) {
-            names = groupMembers.map(member => characters.find(c => c.avatar === member)).map((x) => x.name);
+            names = groupMembers.map(member => characters.find(c => c.avatar === member)).filter(x => x).map(x => x.name);
             names = names.join(', ')
         }
         new_chat_msg.content = `[Start a new group chat. Group members: ${names}]`;
