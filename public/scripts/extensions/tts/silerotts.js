@@ -50,7 +50,7 @@ class SileroTtsProvider {
 
         const apiCheckInterval = setInterval(() => {
             // Use Extras API if TTS support is enabled
-            if (modules.includes('tts')) {
+            if (modules.includes('tts') || modules.includes('silero-tts')) {
                 const baseUrl = new URL(getApiUrl());
                 baseUrl.pathname = '/api/tts';
                 this.settings.provider_endpoint = baseUrl.toString();
