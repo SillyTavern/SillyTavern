@@ -6221,36 +6221,6 @@ $(document).ready(function () {
     $("#options [id]").on("click", function () {
         var id = $(this).attr("id");
 
-        if (id == "option_toggle_AN") {
-            if (selected_group || this_chid) {
-                if ($("#floatingPrompt").css("display") !== 'flex') {
-                    $("#floatingPrompt").css("display", "flex");
-                    $("#floatingPrompt").css("opacity", 0.0);
-                    $("#floatingPrompt").transition({
-                        opacity: 1.0,
-                        duration: 250,
-                        easing: animation_easing,
-                    });
-
-                    if ($("#ANBlockToggle")
-                        .siblings('.inline-drawer-content')
-                        .css('display') !== 'block') {
-                        $("#ANBlockToggle").click();
-                    }
-                } else {
-                    $("#floatingPrompt").transition({
-                        opacity: 0.0,
-                        duration: 250,
-                        easing: animation_easing,
-                    });
-                    setTimeout(function () {
-                        $("#floatingPrompt").hide();
-                    }, 250);
-
-                }
-            }
-        }
-
         if (id == "option_select_chat") {
             if ((selected_group && !is_group_generating) || (this_chid !== undefined && !is_send_press)) {
                 displayPastChats();
