@@ -130,6 +130,7 @@ table.responsiveTable {
     padding: 5px;
 }
 
+.hidden,
 .hiddenByScroll {
     visibility: hidden !important;
 }
@@ -2332,6 +2333,7 @@ input[type="range"]::-webkit-slider-thumb {
 .mes_buttons .mes_edit,
 .mes_buttons .mes_bookmark,
 .extraMesButtonsHint,
+#tagListHint,
 .extraMesButtons div {
     cursor: pointer;
     transition: 0.3s ease-in-out;
@@ -2342,6 +2344,7 @@ input[type="range"]::-webkit-slider-thumb {
 .mes_buttons .mes_edit:hover,
 .mes_buttons .mes_bookmark:hover,
 .extraMesButtonsHint:hover,
+#tagListHint:hover,
 .extraMesButtons div:hover {
     opacity: 1;
 }
@@ -2735,8 +2738,12 @@ h5 {
     width: fit-content;
     min-width: 0;
     text-shadow: none !important;
-
 }
+
+#rm_tag_filter .tag:not(.actionable) {
+    display: none;
+}
+
 
 .tag.actionable {
     border-radius: 50%;
@@ -2745,8 +2752,19 @@ h5 {
     min-width: calc(var(--mainFontSize) * 2);
     font-size: calc(var(--mainFontSize) * 1);
     padding: 0;
+    display: flex;
     justify-content: center;
     align-items: center;
+}
+
+#tagListHint {
+    align-self: center;
+    display: flex;
+    margin-right: 10px;
+}
+
+.opacity1 {
+    opacity: 1 !important;
 }
 
 .margin-right-10px {
@@ -2852,7 +2870,7 @@ body .ui-front {
 body .ui-widget-content {
     background-color: var(--SmartThemeBlurTintColor);
     border: 1px solid var(--white30a) !important;
-    border-radius: 15px;
+    border-radius: 10px;
     box-shadow: 0 0 5px black;
     text-shadow: 0px 0px calc(var(--shadowWidth) * 1px) var(--SmartThemeShadowColor);
     backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)*2));
@@ -2869,15 +2887,18 @@ body .ui-widget-content .ui-menu-item-wrapper {
 }
 
 body .ui-widget-content li {
-    padding: 0.75rem 1.25rem;
+    padding: 5px;
     text-decoration: none;
     display: flex;
     align-items: center;
     cursor: pointer;
+    opacity: 0.5;
+    transition: all 200ms;
 }
 
 body .ui-widget-content li:hover {
-    background-color: var(--SmartThemeEmColor);
+    /* background-color: var(--SmartThemeEmColor); */
+    opacity: 1;
 }
 
 /* GROUP CHATS */

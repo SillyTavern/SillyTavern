@@ -5501,7 +5501,7 @@ $(document).ready(function () {
 
     $("#chat").on('scroll', debounce(() => {
         updateVisibleDivs('#chat', false);
-    }, 5));
+    }, 10));
 
     let S_TAFocused = false;
     let S_TAPreviouslyFocused = false;
