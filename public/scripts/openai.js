@@ -310,7 +310,7 @@ function formatWorldInfo(value) {
     return stringFormat(oai_settings.wi_format, value);
 }
 
-async function prepareOpenAIMessages(systemPrompt, name2, storyString, worldInfoBefore, worldInfoAfter, extensionPrompt, bias, type, quietPrompt) {
+async function prepareOpenAIMessages({ systemPrompt, name2, storyString, worldInfoBefore, worldInfoAfter, extensionPrompt, bias, type, quietPrompt, jailbreakPrompt } = {}) {
     const isImpersonate = type == "impersonate";
     let this_max_context = oai_settings.openai_max_context;
     let enhance_definitions_prompt = "";
@@ -374,8 +374,9 @@ async function prepareOpenAIMessages(systemPrompt, name2, storyString, worldInfo
         total_count += start_chat_count;
     }
 
-    if (oai_settings.jailbreak_system && oai_settings.jailbreak_prompt) {
-        const jailbreakMessage = { "role": "system", "content": substituteParams(oai_settings.jailbreak_prompt) };
+    const jailbreak = power_user.prefer_character_jailbreak && jailbreakPrompt ? jailbreakPrompt : oai_settings.jailbreak_prompt;
+    if (oai_settings.jailbreak_system && jailbreak) {
+        const jailbreakMessage = { "role": "system", "content": substituteParams(jailbreak) };
         openai_msgs.push(jailbreakMessage);
 
         total_count += handler_instance.count([jailbreakMessage], true, 'jailbreak');

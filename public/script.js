@@ -1900,6 +1900,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         let Scenario = baseChatReplace(scenarioText.trim(), name1, name2);
         let mesExamples = baseChatReplace(characters[this_chid].mes_example.trim(), name1, name2);
         let systemPrompt = baseChatReplace(characters[this_chid].data?.system_prompt?.trim(), name1, name2);
+        let jailbreakPrompt = baseChatReplace(characters[this_chid].data?.post_history_instructions?.trim(), name1, name2);
 
         // Parse example messages
         if (!mesExamples.startsWith('<START>')) {
@@ -2280,7 +2281,18 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 generate_data = getNovelGenerationData(finalPromt, this_settings, this_amount_gen);
             }
             else if (main_api == 'openai') {
-                let [prompt, counts] = await prepareOpenAIMessages(systemPrompt, name2, storyString, worldInfoBefore, worldInfoAfter, afterScenarioAnchor, promptBias, type, quiet_prompt);
+                let [prompt, counts] = await prepareOpenAIMessages({
+                    systemPrompt: systemPrompt,
+                    name2: name2,
+                    storyString: storyString,
+                    worldInfoBefore: worldInfoBefore,
+                    worldInfoAfter: worldInfoAfter,
+                    extensionPrompt: afterScenarioAnchor,
+                    bias: promptBias,
+                    type: type,
+                    quietPrompt: quiet_prompt,
+                    jailbreakPrompt: jailbreakPrompt,
+                });
                 generate_data = { prompt: prompt };
 
                 // counts will return false if the user has not enabled the token breakdown feature
