@@ -85,6 +85,7 @@ import {
 } from "./scripts/openai.js";
 
 import {
+    generateNovelWithStreaming,
     getNovelGenerationData,
     getNovelTier,
     loadNovelPreset,
@@ -1565,6 +1566,7 @@ function appendToStoryString(value, prefix) {
 
 function isStreamingEnabled() {
     return ((main_api == 'openai' && oai_settings.stream_openai)
+        || (main_api == 'novel' && nai_settings.streaming_novel)
         || (main_api == 'poe' && poe_settings.streaming)
         || (main_api == 'textgenerationwebui' && textgenerationwebui_settings.streaming))
         && !isMultigenEnabled(); // Multigen has a quasi-streaming mode which breaks the real streaming
@@ -2336,6 +2338,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             }
             else if (main_api == 'textgenerationwebui' && isStreamingEnabled() && type !== 'quiet') {
                 streamingProcessor.generator = await generateTextGenWithStreaming(generate_data, streamingProcessor.abortController.signal);
+            }
+            else if (main_api == 'novel' && isStreamingEnabled() && type !== 'quiet') {
+                streamingProcessor.generator = await generateNovelWithStreaming(generate_data, streamingProcessor.abortController.signal);
             }
             else {
                 try {

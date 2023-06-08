@@ -1486,22 +1486,33 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
     };
 
     try {
-        const response = await postAsync(api_novelai + "/ai/generate", args);
-        console.log(response);
-        return response_generate_novel.send(response);
-    } catch (error) {
-        switch (error?.statusCode) {
-            case 400:
-                console.log('Validation error');
-                break;
-            case 401:
-                console.log('Access Token is incorrect');
-                break;
-            case 402:
-                console.log('An active subscription is required to access this endpoint');
-                break;
-        }
+        const fetch = require('node-fetch').default;
+        const url = request.body.streaming ? `${api_novelai}/ai/generate-stream` : `${api_novelai}/ai/generate`;
+        const response = await fetch(url, { method: 'POST', timeout: 0, ...args });
 
+        if (request.body.streaming) {
+            // Pipe remote SSE stream to Express response
+            response.body.pipe(response_generate_novel);
+
+            request.socket.on('close', function () {
+                response.body.destroy(); // Close the remote stream
+                response_generate_novel.end(); // End the Express response
+            });
+
+            response.body.on('end', function () {
+                console.log("Streaming request finished");
+                response_generate_novel.end();
+            });
+        } else {
+            if (!response.ok) {
+                console.log(`Novel API returned error: ${response.status} ${response.statusText} ${await response.text()}`);
+                return response.status(response.status).send({ error: true });
+            }
+
+            const data = await response.json();
+            return response_generate_novel.send(data);
+        }
+    } catch (error) {
         return response_generate_novel.send({ error: true });
     }
 });
@@ -2764,7 +2775,8 @@ async function sendClaudeRequest(request, response) {
             headers: {
                 "Content-Type": "application/json",
                 "x-api-key": api_key_claude,
-            }
+            },
+            timeout: 0,
         });
 
         if (request.body.stream) {
@@ -3390,7 +3402,14 @@ app.post('/novel_tts', jsonParser, async (request, response) => {
     try {
         const fetch = require('node-fetch').default;
         const url = `${api_novelai}/ai/generate-voice?text=${encodeURIComponent(text)}&voice=-1&seed=${encodeURIComponent(voice)}&opus=false&version=v2`;
-        const result = await fetch(url, { method: 'GET', headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'audio/webm' } });
+        const result = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'audio/webm',
+            },
+            timeout: 0,
+         });
 
         if (!result.ok) {
             return response.sendStatus(result.status);
