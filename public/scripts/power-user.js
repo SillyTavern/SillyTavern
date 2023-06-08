@@ -641,9 +641,14 @@ function loadInstructMode() {
     });
 }
 
-export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvatar) {
+export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvatar, name1, name2) {
     const includeNames = isNarrator ? false : (power_user.instruct.names || !!selected_group || !!forceAvatar);
-    const sequence = (isUser || isNarrator) ? power_user.instruct.input_sequence : power_user.instruct.output_sequence;
+    const sequence = substituteParams(
+        (isUser || isNarrator) ? power_user.instruct.input_sequence : power_user.instruct.output_sequence,
+        name1,
+        name2
+    );
+
     const separator = power_user.instruct.wrap ? '\n' : '';
     const separatorSequence = power_user.instruct.separator_sequence && !isUser
         ? power_user.instruct.separator_sequence
@@ -662,9 +667,14 @@ export function formatInstructStoryString(story) {
     return text;
 }
 
-export function formatInstructModePrompt(name, isImpersonate, promptBias) {
+export function formatInstructModePrompt(name, isImpersonate, promptBias, name1, name2) {
     const includeNames = power_user.instruct.names || !!selected_group;
-    const sequence = isImpersonate ? power_user.instruct.input_sequence : power_user.instruct.output_sequence;
+    const sequence = substituteParams(
+        isImpersonate ? power_user.instruct.input_sequence : power_user.instruct.output_sequence,
+        name1,
+        name2
+    );
+
     const separator = power_user.instruct.wrap ? '\n' : '';
     let text = includeNames ? (separator + sequence + separator + `${name}:`) : (separator + sequence);
 
