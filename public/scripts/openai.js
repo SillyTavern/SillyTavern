@@ -1443,7 +1443,7 @@ function onModelChange() {
         $('#temp_openai').attr('max', claude_max_temp).val(oai_settings.temp_openai).trigger('input');
     }
 
-    if (oai_settings.chat_completion_source == chat_completion_sources.OPENAI) {
+    if (oai_settings.chat_completion_source == chat_completion_sources.OPENAI || oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
         }
