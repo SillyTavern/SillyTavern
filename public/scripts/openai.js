@@ -1414,9 +1414,17 @@ function onSettingsPresetChange() {
 function onModelChange() {
     const value = $(this).val();
 
-    if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
+    if ($(this).is('#model_claude_select')) {
+        console.log('Claude model changed to', value);
         oai_settings.claude_model  = value;
+    }
 
+    if ($(this).is('#model_openai_select')) {
+        console.log('OpenAI model changed to', value);
+        oai_settings.openai_model = value;
+    }
+
+    if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
         }
@@ -1433,9 +1441,9 @@ function onModelChange() {
 
         oai_settings.temp_openai = Math.min(claude_max_temp, oai_settings.temp_openai);
         $('#temp_openai').attr('max', claude_max_temp).val(oai_settings.temp_openai).trigger('input');
-    } else {
-        oai_settings.openai_model = value;
+    }
 
+    if (oai_settings.chat_completion_source == chat_completion_sources.OPENAI) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
         }
