@@ -27,6 +27,7 @@ import {
     deleteWorldInfo,
     world_info_recursive,
     world_info_case_sensitive,
+    world_info_match_whole_words,
 } from "./scripts/world-info.js";
 
 import {
@@ -1391,10 +1392,10 @@ function getStoppingStrings(isImpersonate, addSpace) {
 
     if (power_user.instruct.enabled) {
         if (power_user.instruct.input_sequence) {
-            result.push(wrap(power_user.instruct.input_sequence));
+            result.push(substituteParams(wrap(power_user.instruct.input_sequence), name1, name2));
         }
         if (power_user.instruct.output_sequence) {
-            result.push(wrap(power_user.instruct.output_sequence));
+            result.push(substituteParams(wrap(power_user.instruct.output_sequence), name1, name2));
         }
     }
 
@@ -1808,7 +1809,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     const magName = isImpersonate ? (is_pygmalion ? 'You' : name1) : name2;
 
     if (isInstruct) {
-        message_already_generated = formatInstructModePrompt(magName, isImpersonate);
+        message_already_generated = formatInstructModePrompt(magName, isImpersonate, false, name1, name2);
     } else {
         message_already_generated = `${magName}: `;
     }
@@ -2151,14 +2152,14 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 // Add quiet generation prompt at depth 0
                 if (quiet_prompt && quiet_prompt.length) {
                     const name = is_pygmalion ? 'You' : name1;
-                    const quietAppend = isInstruct ? formatInstructModeChat(name, quiet_prompt, false, true, false) : `\n${name}: ${quiet_prompt}`;
+                    const quietAppend = isInstruct ? formatInstructModeChat(name, quiet_prompt, false, true, false, name1, name2) : `\n${name}: ${quiet_prompt}`;
                     mesSendString += quietAppend;
                 }
 
                 // Get instruct mode line
                 if (isInstruct && tokens_already_generated === 0) {
                     const name = isImpersonate ? (is_pygmalion ? 'You' : name1) : name2;
-                    mesSendString += formatInstructModePrompt(name, isImpersonate, promptBias);
+                    mesSendString += formatInstructModePrompt(name, isImpersonate, promptBias, name1, name2);
                 }
 
                 // Get non-instruct impersonation line
@@ -2574,7 +2575,7 @@ function formatMessageHistoryItem(chatItem, isInstruct) {
     let textResult = shouldPrependName ? `${itemName}: ${chatItem.mes}\n` : `${chatItem.mes}\n`;
 
     if (isInstruct) {
-        textResult = formatInstructModeChat(itemName, chatItem.mes, chatItem.is_user, isNarratorType, chatItem.force_avatar);
+        textResult = formatInstructModeChat(itemName, chatItem.mes, chatItem.is_user, isNarratorType, chatItem.force_avatar, name1, name2);
     }
 
     textResult = replaceBiasMarkup(textResult);
@@ -4080,6 +4081,7 @@ async function saveSettings(type) {
             world_info_budget: world_info_budget,
             world_info_recursive: world_info_recursive,
             world_info_case_sensitive: world_info_case_sensitive,
+            world_info_match_whole_words: world_info_match_whole_words,
             textgenerationwebui_settings: textgenerationwebui_settings,
             swipes: swipes,
             horde_settings: horde_settings,
