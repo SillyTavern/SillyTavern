@@ -1370,10 +1370,10 @@ function getStoppingStrings(isImpersonate, addSpace) {
 
     if (power_user.instruct.enabled) {
         if (power_user.instruct.input_sequence) {
-            result.push(wrap(power_user.instruct.input_sequence));
+            result.push(substituteParams(wrap(power_user.instruct.input_sequence), name1, name2));
         }
         if (power_user.instruct.output_sequence) {
-            result.push(wrap(power_user.instruct.output_sequence));
+            result.push(substituteParams(wrap(power_user.instruct.output_sequence), name1, name2));
         }
     }
 
