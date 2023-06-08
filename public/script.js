@@ -27,6 +27,7 @@ import {
     deleteWorldInfo,
     world_info_recursive,
     world_info_case_sensitive,
+    world_info_match_whole_words,
 } from "./scripts/world-info.js";
 
 import {
@@ -4080,6 +4081,7 @@ async function saveSettings(type) {
             world_info_budget: world_info_budget,
             world_info_recursive: world_info_recursive,
             world_info_case_sensitive: world_info_case_sensitive,
+            world_info_match_whole_words: world_info_match_whole_words,
             textgenerationwebui_settings: textgenerationwebui_settings,
             swipes: swipes,
             horde_settings: horde_settings,
