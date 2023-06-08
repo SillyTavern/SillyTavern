@@ -1532,6 +1532,11 @@ function toggleChatCompletionForms() {
     } else {
         $('#model_openai_select').trigger('change');
     }
+
+    $('[data-source]').each(function () {
+        const validSources = $(this).data('source').split(',');
+        $(this).toggle(validSources.includes(oai_settings.chat_completion_source));
+    });
 }
 
 $(document).ready(function () {
