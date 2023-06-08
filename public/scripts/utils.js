@@ -93,6 +93,17 @@ export function debounce(func, timeout = 300) {
     };
 }
 
+export function throttle(func, limit = 300) {
+    let lastCall;
+    return (...args) => {
+        const now = Date.now();
+        if (!lastCall || (now - lastCall) >= limit) {
+            lastCall = now;
+            func.apply(this, args);
+        }
+    };
+}
+
 export function isElementInViewport(el) {
     if (typeof jQuery === "function" && el instanceof jQuery) {
         el = el[0];
