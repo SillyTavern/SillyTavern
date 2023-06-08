@@ -1524,9 +1524,6 @@ async function onConnectButtonClick(e) {
 }
 
 function toggleChatCompletionForms() {
-    $("#claude_form").toggle(oai_settings.chat_completion_source == chat_completion_sources.CLAUDE);
-    $("#openai_form").toggle(oai_settings.chat_completion_source == chat_completion_sources.OPENAI);
-
     if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
         $('#model_claude_select').trigger('change');
     } else {
