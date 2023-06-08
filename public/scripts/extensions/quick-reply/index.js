@@ -82,7 +82,7 @@ function addQuickReplyBar(numButtons) {
     for (let i = 0; i < numButtons; i++) {
         let quickReplyMes = extension_settings.quickReply[`quickReply${i + 1}Mes`];
         let quickReplyLabel = extension_settings.quickReply[`quickReply${i + 1}Label`];
-        console.log(quickReplyMes);
+        //console.log(quickReplyMes);
         quickReplyButtonHtml += `<div title="${quickReplyMes}" class="quickReplyButton" id="quickReply${i + 1}">${quickReplyLabel}</div>`;
     }
     const quickReplyEndHtml = `</div></div>`

@@ -130,7 +130,7 @@ table.responsiveTable {
     padding: 5px;
 }
 
-.hiddenByCharListScroll {
+.hiddenByScroll {
     visibility: hidden !important;
 }
 

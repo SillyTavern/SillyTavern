@@ -851,7 +851,7 @@ async function printCharacters() {
     sortCharactersList();
     favsToHotswap();
     await delay(300);
-    updateVisibleDivs();
+    updateVisibleDivs('#rm_print_characters_block', true);
 
 }
 
@@ -4521,7 +4521,7 @@ function select_rm_characters() {
     menu_type = "characters";
     selectRightMenuWithAnimation('rm_characters_block');
     setRightTabSelectedClass('rm_button_characters');
-    updateVisibleDivs();
+    updateVisibleDivs('#rm_print_characters_block', true);
 }
 
 function setExtensionPrompt(key, value, position, depth) {
@@ -5403,21 +5403,19 @@ const swipe_right = () => {
     }
 }
 
-function updateVisibleDivs() {
-
-    var $container = $('#rm_print_characters_block');
+function updateVisibleDivs(containerSelector, resizecontainer) {
+    var $container = $(containerSelector);
     var $children = $container.children();
     var totalHeight = 0;
     $children.each(function () {
         totalHeight += $(this).outerHeight();
     });
-    $container.css({
-        height: totalHeight,
-    });
-    //var scrollTop = $container.scrollTop();
-    var containerTop = $container.offset().top;
-    //var containerBottom = containerTop + $container.height();
-    //console.log(`${scrollTop},${containerTop},${containerBottom}`);
+    if (resizecontainer) {
+        $container.css({
+            height: totalHeight,
+        });
+    }
+    var containerTop = $container.offset() ? $container.offset().top : 0;
     var firstVisibleIndex = null;
     var lastVisibleIndex = null;
     $children.each(function (index) {
@@ -5430,11 +5428,8 @@ function updateVisibleDivs() {
             }
             lastVisibleIndex = index;
         }
-        $child.toggleClass('hiddenByCharListScroll', childTop > $container.height() || childBottom < 0);
+        $child.toggleClass('hiddenByScroll', childTop > $container.height() || childBottom < 0);
     });
-    //var visibleStart = firstVisibleIndex !== null ? firstVisibleIndex : 0;
-    //var visibleEnd = lastVisibleIndex !== null ? lastVisibleIndex + 1 : 0;
-    //console.log(`${visibleStart},${visibleEnd}`);
 }
 
 
@@ -5500,8 +5495,13 @@ $(document).ready(function () {
     }, 200);
 
 
-    $("#rm_print_characters_block").on('scroll',
-        debounce(updateVisibleDivs, 5));
+    $("#rm_print_characters_block").on('scroll', debounce(() => {
+        updateVisibleDivs('#rm_print_characters_block', true);
+    }, 5));
+
+    $("#chat").on('scroll', debounce(() => {
+        updateVisibleDivs('#chat', false);
+    }, 5));
 
     let S_TAFocused = false;
     let S_TAPreviouslyFocused = false;
@@ -5553,7 +5553,7 @@ $(document).ready(function () {
 
         if (!searchValue) {
             $(selector).removeClass('hiddenBySearch');
-            updateVisibleDivs();
+            updateVisibleDivs('#rm_print_characters_block', false);
         } else {
             $(selector).each(function () {
                 const isValidSearch = $(this)
@@ -5564,7 +5564,7 @@ $(document).ready(function () {
 
                 $(this).toggleClass('hiddenBySearch', !isValidSearch);
             });
-            updateVisibleDivs();
+            updateVisibleDivs('#rm_print_characters_block', false);
         }
 
     });

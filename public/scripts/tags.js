@@ -59,7 +59,7 @@ function applyFavFilter() {
         }
 
     });
-    updateVisibleDivs();
+    updateVisibleDivs('#rm_print_characters_block', true);
 }
 
 function filterByGroups() {
@@ -71,7 +71,7 @@ function filterByGroups() {
     $(CHARACTER_SELECTOR).each((_, element) => {
         $(element).toggleClass('hiddenByGroup', displayGroupsOnly && !$(element).hasClass('group_select'));
     });
-    updateVisibleDivs();
+    updateVisibleDivs('#rm_print_characters_block', true);
 }
 
 function loadTagsSettings(settings) {
@@ -245,7 +245,7 @@ function onTagFilterClick(listElement) {
 
     const tagIds = [...($(listElement).find(".tag.selected:not(.actionable)").map((_, el) => $(el).attr("id")))];
     $(CHARACTER_SELECTOR).each((_, element) => applyFilterToElement(tagIds, element));
-    updateVisibleDivs();
+    updateVisibleDivs('#rm_print_characters_block', true);
 }
 
 function applyFilterToElement(tagIds, element) {
