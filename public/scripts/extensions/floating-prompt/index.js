@@ -1,4 +1,5 @@
-import { chat_metadata, saveSettingsDebounced } from "../../../script.js";
+import { chat_metadata, saveSettingsDebounced, this_chid } from "../../../script.js";
+import { selected_group } from "../../group-chats.js";
 import { ModuleWorkerWrapper, extension_settings, getContext, saveMetadataDebounced } from "../../extensions.js";
 import { registerSlashCommand } from "../../slash-commands.js";
 export { MODULE_NAME };
@@ -139,6 +140,36 @@ async function moduleWorker() {
     $('#extension_floating_counter').text(shouldAddPrompt ? '0' : messagesTillInsertion);
 }
 
+function onANMenuItemClick() {
+    if (selected_group || this_chid) {
+        if ($("#floatingPrompt").css("display") !== 'flex') {
+            $("#floatingPrompt").css("display", "flex");
+            $("#floatingPrompt").css("opacity", 0.0);
+            $("#floatingPrompt").transition({
+                opacity: 1.0,
+                duration: 250,
+            });
+
+            if ($("#ANBlockToggle")
+                .siblings('.inline-drawer-content')
+                .css('display') !== 'block') {
+                $("#ANBlockToggle").click();
+            }
+        } else {
+            $("#floatingPrompt").transition({
+                opacity: 0.0,
+                duration: 250,
+            });
+            setTimeout(function () {
+                $("#floatingPrompt").hide();
+            }, 250);
+
+        }
+    } else {
+        toastr.warning(`Select a character before trying to use Author's Note`, '', { timeOut: 2000 });
+    }
+}
+
 (function () {
     function addExtensionsSettings() {
         const settingsHtml = `
@@ -200,6 +231,13 @@ async function moduleWorker() {
         </div>
         `;
 
+        const ANButtonHtml = `
+        <a id="option_toggle_AN">
+           <i class="fa-lg fa-solid fa-note-sticky"></i>
+           <span data-i18n="Author's Note">Author's Note</span>
+        </a>
+    `;
+        $('.options-content').prepend(ANButtonHtml);
         $('#movingDivs').append(settingsHtml);
         $('#extension_floating_prompt').on('input', onExtensionFloatingPromptInput);
         $('#extension_floating_interval').on('input', onExtensionFloatingIntervalInput);
@@ -214,6 +252,7 @@ async function moduleWorker() {
             });
             setTimeout(function () { $('#floatingPrompt').hide() }, 200);
         })
+        $("#option_toggle_AN").on('click', onANMenuItemClick);
     }
 
     addExtensionsSettings();
