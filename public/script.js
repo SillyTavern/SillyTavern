@@ -5446,6 +5446,19 @@ function updateVisibleDivs(containerSelector, resizecontainer) {
     });
 }
 
+function displayOverrideWarnings() {
+    if (!this_chid) {
+        return;
+    }
+
+    $('.prompt_overridden').toggle(!!(characters[this_chid]?.data?.system_prompt));
+    $('.jailbreak_overridden').toggle(!!(characters[this_chid]?.data?.post_history_instructions));
+}
+
+// Check for override warnings every 5 seconds...
+setInterval(displayOverrideWarnings, 5000);
+// ...or when the chat changes
+eventSource.on(event_types.CHAT_CHANGED, displayOverrideWarnings);
 
 function importCharacter(file) {
     const ext = file.name.match(/\.(\w+)$/);

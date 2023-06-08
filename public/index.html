@@ -988,6 +988,9 @@
                                             <div class="fa-solid fa-clock-rotate-left "></div>
                                         </div>
                                     </div>
+                                    <div class="prompt_overridden">
+                                        Overridden by the Character Definitions.
+                                    </div>
                                     <div class="toggle-description justifyLeft" data-i18n="The main prompt used to set the model behavior">
                                         The main prompt used to set the model behavior
                                     </div>
@@ -1029,6 +1032,9 @@
                                         <div id="jailbreak_prompt_restore" title="Restore default prompt" class="right_menu_button">
                                             <div class="fa-solid fa-clock-rotate-left"></div>
                                         </div>
+                                    </div>
+                                    <div class="jailbreak_overridden">
+                                        Overridden by the Character Definitions.
                                     </div>
                                     <div class="toggle-description justifyLeft" data-i18n="Prompt that is used when the Jailbreak toggle is on">
                                         Prompt that is used when the Jailbreak toggle is on
@@ -1546,6 +1552,9 @@
                             <label>
                                 <span data-i18n="System Prompt">System Prompt</span>
                             </label>
+                            <div class="prompt_overridden">
+                                Overridden by the Character Definitions.
+                            </div>
                             <textarea id="instruct_system_prompt" class="text_pole textarea_compact"></textarea>
                             <div class="flex-container">
                                 <div class="flex1">
@@ -1801,11 +1810,8 @@
                     <div id="world_popup">
                         <hr>
                         <div id="world_popup_text">
-                            <!-- <div id="world_cross" class="fa-solid fa-circle-xmark"></div> -->
                             <div id="world_popup_header" class="flex-container flexGap5">
-                                <!-- Consider changing logo to something else -->
                                 <div class="world_popup_logo_block">
-                                    <!-- <img src="img/book2.png" id="world_logo"> -->
                                     <h3>
                                         World Info Editor
                                         <a href="https://docs.sillytavern.app/usage/guidebook/#world-info-entry" class="notes-link" target="_blank"><span class="note-link-span">?</span></a>
@@ -1813,7 +1819,6 @@
                                 </div>
                                 <div id="OpenAllWIEntries" class="menu_button fa-solid fa-expand"></div>
                                 <div id="CloseAllWIEntries" class="menu_button fa-solid fa-compress"></div>
-                                <!-- <div class="world_popup_expander">&nbsp;</div> -->
                                 <form id="form_rename_world" action="javascript:void(null);" method="post" enctype="multipart/form-data">
                                     <input id="world_popup_name" name="world_popup_name" class="text_pole" maxlength="99" size="32" value="" autocomplete="off">
                                     <input id="world_popup_name_button" class="menu_button" type="submit" value="Rename">
@@ -1826,7 +1831,6 @@
 
                         <div id="world_popup_bottom_holder">
                             <div id="world_popup_new" class="menu_button">New Entry</div>
-                            <!-- <span class="world_popup_expander">&nbsp;</span> -->
                             <div id="world_popup_export" class="menu_button">Export</div>
                             <div id="world_popup_delete" class="menu_button">Delete World</div>
                         </div>
@@ -2469,11 +2473,11 @@
             <div class="inline-drawer-content">
                 <div>
                     <h4>System Prompt</h4>
-                    <textarea id="system_prompt_textarea" name="system_prompt" placeholder="(Overrides the main prompt for OpenAI and/or system prompt for Instruct Mode if not empty)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="20000"></textarea>
+                    <textarea id="system_prompt_textarea" name="system_prompt" placeholder="(Overrides the main prompt for Chat Completion and/or system prompt for Instruct Mode if not empty)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="20000"></textarea>
                 </div>
                 <div>
                     <h4>Post History Instructions</h4>
-                    <textarea id="post_history_instructions_textarea" name="post_history_instructions" placeholder="(Overrides the default jailbreak for OpenAI if not empty)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="100"></textarea>
+                    <textarea id="post_history_instructions_textarea" name="post_history_instructions" placeholder="(Overrides the default jailbreak for Chat Completion if not empty)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="100"></textarea>
                 </div>
             </div>
         </div>

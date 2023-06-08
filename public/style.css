@@ -3999,6 +3999,13 @@ toolcool-color-picker {
     align-items: center;
 }
 
+.prompt_overridden,
+.jailbreak_overridden {
+    color: var(--SmartThemeQuoteColor);
+    font-weight: bold;
+    font-style: italic;
+}
+
 .openai_restorable .right_menu_button img {
     height: 20px;
 }
