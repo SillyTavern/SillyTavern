@@ -1467,13 +1467,20 @@ export function extractMessageBias(message) {
         return null;
     }
 
+    const forbiddenMatches = ['user', 'char', 'time', 'date'];
     const found = [];
-    const rxp = /{{(\*?.+\*?)}}/g;
+    const rxp = /\{\{(.+?)\}\}/g;
     //const rxp = /{([^}]+)}/g;
     let curMatch;
 
     while ((curMatch = rxp.exec(message))) {
-        found.push(curMatch[1].trim());
+        const match = curMatch[1].trim();
+
+        if (forbiddenMatches.includes(match)) {
+            continue;
+        }
+
+        found.push(match);
     }
 
     let biasString = '';
@@ -2610,7 +2617,7 @@ export async function sendMessageAsUser(textareaText, messageBias) {
     chat[chat.length - 1]['is_user'] = true;
     chat[chat.length - 1]['is_name'] = true;
     chat[chat.length - 1]['send_date'] = humanizedDateTime();
-    chat[chat.length - 1]['mes'] = textareaText;
+    chat[chat.length - 1]['mes'] = substituteParams(textareaText);
     chat[chat.length - 1]['extra'] = {};
 
     if (messageBias) {

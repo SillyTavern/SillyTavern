@@ -11,6 +11,7 @@ import {
     replaceBiasMarkup,
     saveChatConditional,
     sendSystemMessage,
+    substituteParams,
     system_avatar,
     system_message_types
 } from "../script.js";
@@ -143,7 +144,7 @@ async function sendMessageAs(_, text) {
         is_name: true,
         is_system: isSystem,
         send_date: humanizedDateTime(),
-        mes: mesText,
+        mes: substituteParams(mesText),
         force_avatar: force_avatar,
         original_avatar: original_avatar,
         extra: {
@@ -174,7 +175,7 @@ async function sendNarratorMessage(_, text) {
         is_name: false,
         is_system: isSystem,
         send_date: humanizedDateTime(),
-        mes: text.trim(),
+        mes: substituteParams(text.trim()),
         force_avatar: system_avatar,
         extra: {
             type: system_message_types.NARRATOR,
