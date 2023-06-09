@@ -2225,7 +2225,7 @@ class StreamingProcessor {
     }
 }
 
-async function Generate(type, { automatic_trigger, force_name2, resolve, reject, quiet_prompt, force_chid, signal } = {}) {
+async function Generate(type, { automatic_trigger, force_name2, resolve, reject, quiet_prompt, force_chid, signal } = {}, dryRun = false) {
     //console.log('Generate entered');
     setGenerationProgress(0);
     tokens_already_generated = 0;
@@ -2302,7 +2302,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         return;
     }
 
-    if (online_status != 'no_connection' && this_chid != undefined && this_chid !== 'invalid-safety-id') {
+    if (true === dryRun ||
+        (online_status != 'no_connection' && this_chid != undefined && this_chid !== 'invalid-safety-id')) {
         let textareaText;
         if (type !== 'regenerate' && type !== "swipe" && type !== 'quiet' && !isImpersonate) {
             is_send_press = true;
@@ -2816,6 +2817,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
                 setInContextMessages(openai_messages_count, type);
             }
+
+            if (true === dryRun) return onSuccess({error: 'dryRun'});
 
             if (power_user.console_log_prompts) {
 
