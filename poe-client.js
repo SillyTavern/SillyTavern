@@ -315,7 +315,7 @@ class Client {
 
     async get_bots() {
         const viewer = this.next_data.props.pageProps.payload.viewer;
-        if (!viewer.availableBots) {
+        if (!viewer.availableBotsConnection) {
             throw new Error('Invalid token.');
         }
         const botList = viewer.availableBotsConnection.edges.map(x => x.node);
