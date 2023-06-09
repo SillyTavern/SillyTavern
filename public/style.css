@@ -223,7 +223,9 @@ table.responsiveTable {
 
 .mes_text pre code {
     position: relative;
-    padding-right: 30px;
+    display: block;
+    overflow-x: auto;
+    padding: 1em;
 }
 
 .mes .mes_timer {
