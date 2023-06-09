@@ -1,3 +1,4 @@
+import { isMobile } from "../../RossAscends-mods.js";
 import { getPreviewString } from "./index.js";
 
 export { SystemTtsProvider }
@@ -110,6 +111,21 @@ class SystemTtsProvider {
         // Populate Provider UI given input settings
         if (Object.keys(settings).length == 0) {
             console.info("Using default TTS Provider settings");
+        }
+
+        // iOS should only allows speech synthesis trigged by user interaction
+        if (isMobile()) {
+            let hasEnabledVoice = false;
+
+            document.addEventListener('click', () => {
+                if (hasEnabledVoice) {
+                    return;
+                }
+                const utterance = new SpeechSynthesisUtterance('hi');
+                utterance.volume = 0;
+                speechSynthesis.speak(utterance);
+                hasEnabledVoice = true;
+            });
         }
 
         // Only accept keys defined in defaultSettings
