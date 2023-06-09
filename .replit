@@ -1,6 +1,7 @@
 
 hidden = [".config", "package-lock.json"]
 run = "chmod 755 ./start.sh && ./start.sh"
+entrypoint = "server.js"
 
 [[hints]]
 regex = "Error \\[ERR_REQUIRE_ESM\\]"
@@ -62,7 +63,7 @@ support = true
       cwd = "."
       environment = []
       pauseForSourceMap = false
-      program = "./index.js"
+      program = "./server.js"
       request = "launch"
       sourceMaps = true
       stopOnEntry = false
