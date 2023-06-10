@@ -4198,6 +4198,7 @@ async function getChat() {
         }
         await getChatResult();
         await saveChat();
+        eventSource.emit('chatLoaded', {detail: {id: this_chid, character: characters[this_chid]}});
 
 
         setTimeout(function () {
