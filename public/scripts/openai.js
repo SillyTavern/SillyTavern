@@ -913,9 +913,12 @@ class TokenHandler {
         return token_count;
     }
 
+    getTotal() {
+        return Object.values(this.counts).reduce((a, b) => a + b);
+    }
+
     log() {
-        const total = Object.values(this.counts).reduce((a, b) => a + b);
-        console.table({ ...this.counts, 'total': total });
+        console.table({ ...this.counts, 'total': this.getTotal() });
     }
 }
 
