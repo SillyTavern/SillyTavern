@@ -11,6 +11,7 @@ import {
     updateVisibleDivs,
     eventSource,
     event_types,
+    getCurrentChatId,
 } from "../script.js";
 import { favsToHotswap } from "./RossAscends-mods.js";
 import {
@@ -1154,6 +1155,13 @@ $(document).ready(() => {
         reloadMarkdownProcessor(power_user.render_formulas);
         reloadCurrentChat();
         saveSettingsDebounced();
+    });
+
+    $("#reload_chat").on('click', function () {
+        const currentChatId = getCurrentChatId();
+        if (currentChatId !== undefined && currentChatId !== null) {
+            reloadCurrentChat();
+        }
     });
 
     $("#allow_name1_display").on("input", function () {
