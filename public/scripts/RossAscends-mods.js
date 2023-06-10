@@ -806,16 +806,33 @@ $("document").ready(function () {
                 Generate();
             }
         }
+        //ctrl+shift+up to scroll to context line
+        if (event.shiftKey && event.ctrlKey && event.key == "ArrowUp") {
+            event.preventDefault();
+            let contextLine = $('.lastInContext');
+            if (contextLine.length !== 0) {
+                $('#chat').animate({
+                    scrollTop: contextLine.offset().top - $('#chat').offset().top + $('#chat').scrollTop()
+                }, 300);
+            } else { toastr.warning('Context line not found, send a message first!'); }
+        }
+        //ctrl+shift+down to scroll to bottom of chat
+        if (event.shiftKey && event.ctrlKey && event.key == "ArrowDown") {
+            event.preventDefault();
+            $('#chat').animate({
+                scrollTop: $('#chat').prop('scrollHeight')
+            }, 300);
+        }
 
+        // Ctrl+Enter for Regeneration Last Response
         if (event.ctrlKey && event.key == "Enter") {
-            // Ctrl+Enter for Regeneration Last Response
             if (is_send_press == false) {
                 $('#option_regenerate').click();
                 $('#options').hide();
             }
         }
-
-        if (event.ctrlKey && event.key == "ArrowLeft") {        //for debug, show all local stored vars
+        //ctrl+left to show all local stored vars (debug)
+        if (event.ctrlKey && event.key == "ArrowLeft") {
             CheckLocal();
         }
 
