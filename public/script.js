@@ -328,6 +328,9 @@ const system_messages = {
             <li><tt>Enter</tt> (with chat bar selected) = send your message to AI</li>
             <li><tt>Ctrl+Enter</tt> = Regenerate the last AI response</li>
             <li><tt>Escape</tt> = stop AI response generation</li>
+            <li><tt>Ctrl+Shift+Up</tt> = Scroll to context line</li>
+            <li><tt>Ctrl+Shift+Down</tt> = Scroll chat to bottom</li>
+            
             </ul>`
         ]
     },
