@@ -291,6 +291,14 @@ code {
     line-height: var(--mainFontSize);
 }
 
+
+hr {
+    background-image: linear-gradient(90deg, var(--transparent), var(--white30a), var(--transparent));
+    margin: 5px 0;
+    height: 1px;
+    border: 0;
+}
+
 #bg1,
 #bg_custom {
     background-repeat: no-repeat;
@@ -506,28 +514,31 @@ code {
     font-weight: 400;
 }
 
-#options {
+#options,
+#extensionsMenu {
     display: flex;
     z-index: 100;
+    background-color: var(--SmartThemeBlurTintColor);
+    -webkit-backdrop-filter: blur(var(--SmartThemeBlurStrength));
     backdrop-filter: blur(var(--SmartThemeBlurStrength));
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    flex-flow: column;
 }
 
-.options-content {
+.options-content,
+.list-group {
     overflow: hidden;
     display: block;
-    background-color: var(--SmartThemeBlurTintColor);
     border: 1px solid var(--white30a);
     border-radius: 10px;
-    box-shadow: 0 0 5px black;
-    text-shadow: 0px 0px calc(var(--shadowWidth) * 1px) var(--SmartThemeShadowColor);
-    backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)*2));
     z-index: 2000;
-    /* margin-bottom: 0px;*/
 }
 
-.options-content i {
+.options-content i,
+.extensionsMenuExtensionButton {
     height: 20px;
     width: 20px;
+    font-size: var(--mainFontSize);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -541,18 +552,7 @@ code {
 
 #extensionsMenuButton {
     order: 100;
-    width: 40px;
-    height: 40px;
-    margin: 0;
     padding: 1px;
-    outline: none;
-    border: none;
-    cursor: pointer;
-    transition: 0.3s;
-    opacity: 0.7;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
 #extensionsMenuButton:hover {
@@ -560,29 +560,9 @@ code {
     filter: brightness(1.2);
 }
 
-#extensionsMenu {
-    z-index: 100;
-    backdrop-filter: blur(var(--SmartThemeBlurStrength));
-    /* padding: 10px; */
-    display: flex;
-}
-
-.extensionsMenuExtensionButton {
-    font-size: 20px;
-    height: 20px;
-    width: 20px;
-    text-align: center;
-}
-
-hr {
-    background-image: linear-gradient(90deg, var(--transparent), var(--white30a), var(--transparent));
-    margin: 5px 0;
-    height: 1px;
-    border: 0;
-}
-
 .options-content a,
-#extensionsMenu>div {
+#extensionsMenu>div,
+.list-group>div {
     color: var(--SmartThemeBodyColor);
     padding: 5px 5px;
     padding-bottom: 5px;
@@ -609,17 +589,9 @@ hr {
     min-width: 20px;
 }
 
-.options-content img {
-    width: calc(var(--mainFontSize) + .5rem);
-    margin-right: 5px;
-    height: calc(var(--mainFontSize) + .25rem);
-    vertical-align: middle;
-}
-
 .options-content span {
     vertical-align: middle;
 }
-
 
 .auto_hide {
     content-visibility: auto;
@@ -3417,14 +3389,6 @@ a {
     border-radius: 10px;
     box-shadow: 0 0 5px black;
     text-shadow: 0px 0px calc(var(--shadowWidth) * 1px) var(--SmartThemeShadowColor);
-}
-
-.list-group-item {
-    color: var(--SmartThemeBodyColor);
-    padding: 5px 7px;
-    box-sizing: border-box;
-    user-select: none;
-    cursor: pointer;
 }
 
 /* ############################################################# */
