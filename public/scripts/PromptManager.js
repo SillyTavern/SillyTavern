@@ -221,7 +221,7 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
     }
 
     // Re-render when the character changes.
-    eventSource.on('characterSelected', (event) => {
+    eventSource.on('chatLoaded', (event) => {
         this.handleCharacterSelected(event)
         this.saveServiceSettings().then(() => this.render());
     });
