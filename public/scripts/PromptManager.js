@@ -491,7 +491,7 @@ PromptManagerModule.prototype.getPromptListEntry = function (character, identifi
  * @returns {Object|null} The prompt object, or null if not found
  */
 PromptManagerModule.prototype.getPromptById = function (identifier) {
-    return this.serviceSettings.prompts.find(item => item.identifier === identifier) ?? null;
+    return this.serviceSettings.prompts.find(item => item && item.identifier === identifier) ?? null;
 }
 
 /**
@@ -576,6 +576,7 @@ PromptManagerModule.prototype.renderPromptManager = function () {
 
     const showAdvancedSettings = this.serviceSettings.prompt_manager_settings.showAdvancedSettings;
     const checkSpanClass = showAdvancedSettings ? 'fa-solid fa-toggle-on' : 'fa-solid fa-toggle-off';
+    const totalActiveTokens = this.tokenHandler?.getTotal();
 
     promptManagerDiv.insertAdjacentHTML('beforeend', `
         <div class="range-block-title" data-i18n="Prompts">
@@ -590,7 +591,7 @@ PromptManagerModule.prototype.renderPromptManager = function () {
                     <span class="${checkSpanClass}"></span>
                     <span class="checkbox_label" data-i18n="Show advanced options">Show advanced options</span>
                 </div>
-                <div>Total Tokens: ${this.totalActiveTokens}</div>
+                <div>Total Tokens: ${totalActiveTokens}</div>
             </div>
             <ul id="${this.configuration.prefix}prompt_manager_list" class="text_pole"></ul>
         </div>
@@ -603,7 +604,7 @@ PromptManagerModule.prototype.renderPromptManager = function () {
 
     if (null !== this.activeCharacter) {
         const prompts = [...this.serviceSettings.prompts]
-            .filter(prompt => !prompt.system_prompt)
+            .filter(prompt => !prompt?.system_prompt)
             .sort((promptA, promptB) => promptA.name.localeCompare(promptB.name))
             .reduce((acc, prompt) => acc + `<option value="${prompt.identifier}">${prompt.name}</option>`, '');
 
@@ -663,7 +664,7 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
         const enabledClass = listEntry.enabled ? '' : `${prefix}prompt_manager_prompt_disabled`;
         const draggableClass = draggableEnabled ? 'draggable' : prompt.marker ? 'droppable' : '';
         const markerClass = prompt.marker ? `${prefix}prompt_manager_marker` : '';
-        const calculatedTokens = this.tokenHandler?.getCounts()[prompt.identifier];
+        const calculatedTokens = this.tokenHandler?.getCounts()[prompt.identifier] ?? '';
 
         let detachSpanHtml = '';
         if (this.isPromptDeletionAllowed(prompt)) {
