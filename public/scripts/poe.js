@@ -5,13 +5,16 @@ import {
     substituteParams,
     getRequestHeaders,
     max_context,
+    eventSource,
+    event_types,
+    scrollChatToBottom,
 } from "../script.js";
 import {
     SECRET_KEYS,
     secret_state,
     writeSecret,
 } from "./secrets.js";
-import { splitRecursive } from "./utils.js";
+import { delay, splitRecursive } from "./utils.js";
 
 export {
     is_get_status_poe,
@@ -54,12 +57,14 @@ const poe_settings = {
     character_nudge: true,
     auto_purge: true,
     streaming: false,
+    suggest: false,
 };
 
 let auto_jailbroken = false;
 let messages_to_purge = 0;
 let is_get_status_poe = false;
 let is_poe_button_press = false;
+let abortControllerSuggest = null;
 
 function loadPoeSettings(settings) {
     if (settings.poe_settings) {
@@ -74,13 +79,104 @@ function loadPoeSettings(settings) {
     $('#poe_auto_purge').prop('checked', poe_settings.auto_purge);
     $('#poe_streaming').prop('checked', poe_settings.streaming);
     $('#poe_impersonation_prompt').val(poe_settings.impersonation_prompt);
+    $('#poe_suggest').prop('checked', poe_settings.suggest);
     selectBot();
+}
+
+function abortSuggestedReplies() {
+    abortControllerSuggest && abortControllerSuggest.abort();
+    $('.last_mes .suggested_replies').remove();
 }
 
 function selectBot() {
     if (poe_settings.bot) {
         $('#poe_bots').find(`option[value="${poe_settings.bot}"]`).attr('selected', true);
     }
+}
+
+function onSuggestedReplyClick() {
+    const reply = $(this).find('.suggested_reply_text').text();
+    $("#send_textarea").val(reply);
+    $("#send_but").trigger('click');
+}
+
+function appendSuggestedReply(reply) {
+    if ($('.last_mes .suggested_replies').length === 0) {
+        $('.last_mes .mes_block').append(`
+            <div class="suggested_replies">
+            </div>
+        `);
+    }
+
+    const newElement = $(`<div class="suggested_reply"><div class="suggested_reply_text">${reply}</div></div>`);
+    newElement.hide();
+    $('.last_mes .suggested_replies').append(newElement);
+    newElement.fadeIn(500, async () => {
+        await delay(1);
+        scrollChatToBottom();
+    });
+}
+
+async function suggestReplies(messageId) {
+    // If the feature is disabled
+    if (!poe_settings.suggest) {
+        return;
+    }
+
+    // Cancel previous request
+    if (abortControllerSuggest) {
+        abortControllerSuggest.abort();
+    }
+
+    abortControllerSuggest = new AbortController();
+
+    abortControllerSuggest.signal.addEventListener('abort', () => {
+        // Hide suggestion UI
+    });
+
+    console.log('Querying suggestions for message', messageId);
+
+    const response = await fetch(`/poe_suggest`, {
+        method: 'POST',
+        signal: abortControllerSuggest.signal,
+        headers: getRequestHeaders(),
+        body: JSON.stringify({
+            messageId: messageId,
+            bot: poe_settings.bot,
+        }),
+    });
+
+    const decodeSuggestions = async function* () {
+        const decoder = new TextDecoder();
+        const reader = response.body.getReader();
+
+        while (true) {
+            const { done, value } = await reader.read();
+            let response = decoder.decode(value);
+
+            const replies = response.split('\n\n');
+
+            for (let i = 0; i < replies.length - 1; i++) {
+                if (replies[i]) {
+                    yield replies[i];
+                }
+            }
+
+            if (done) {
+                return;
+            }
+        }
+    }
+
+    const suggestions = [];
+
+    for await (const suggestion of decodeSuggestions()) {
+        suggestions.push(suggestion);
+        console.log('Got suggestion:', [suggestion]);
+        appendSuggestedReply(suggestion);
+    }
+
+    return suggestions;
 }
 
 function onBotChange() {
@@ -127,7 +223,7 @@ async function onSendJailbreakClick() {
 
 async function autoJailbreak() {
     for (let retryNumber = 0; retryNumber < MAX_RETRIES_FOR_ACTIVATION; retryNumber++) {
-        const reply = await sendMessage(substituteParams(poe_settings.jailbreak_message), false);
+        const reply = await sendMessage(substituteParams(poe_settings.jailbreak_message), false, false);
 
         if (reply.toLowerCase().includes(poe_settings.jailbreak_response.toLowerCase())) {
             auto_jailbroken = true;
@@ -171,13 +267,13 @@ async function generatePoe(type, finalPrompt, signal) {
 
     if (max_context > POE_TOKEN_LENGTH) {
         console.debug('Prompt is too long, sending in chunks');
-        const result = await sendChunkedMessage(finalPrompt, !isQuiet, signal)
+        const result = await sendChunkedMessage(finalPrompt, !isQuiet, !isQuiet, signal)
         reply = result.reply;
         messages_to_purge = result.chunks + 1; // +1 for the reply
     }
     else {
         console.debug('Sending prompt in one message');
-        reply = await sendMessage(finalPrompt, !isQuiet, signal);
+        reply = await sendMessage(finalPrompt, !isQuiet, !isQuiet, signal);
         messages_to_purge = 2; // prompt and the reply
     }
 
@@ -195,12 +291,12 @@ async function sendChunkedMessage(finalPrompt, withStreaming, signal) {
         console.debug(`Sending chunk ${i + 1}/${promptChunks.length}: ${promptChunk}`);
         if (i == promptChunks.length - 1) {
             // Extract reply of the last chunk
-            reply = await sendMessage(promptChunk, withStreaming, signal);
+            reply = await sendMessage(promptChunk, withStreaming, true, signal);
         } else {
             // Add fast reply prompt to the chunk
             promptChunk += fastReplyPrompt;
             // Send chunk without streaming
-            const chunkReply = await sendMessage(promptChunk, false, signal);
+            const chunkReply = await sendMessage(promptChunk, false, false, signal);
             console.debug('Got chunk reply: ' + chunkReply);
             // Delete the reply for the chunk
             await purgeConversation(1);
@@ -232,7 +328,7 @@ async function purgeConversation(count = -1) {
     return response.ok;
 }
 
-async function sendMessage(prompt, withStreaming, signal) {
+async function sendMessage(prompt, withStreaming, withSuggestions, signal) {
     if (!signal) {
         signal = new AbortController().signal;
     }
@@ -250,6 +346,9 @@ async function sendMessage(prompt, withStreaming, signal) {
         signal: signal,
     });
 
+    const messageId = response.headers.get('X-Message-Id');
+
+
     if (withStreaming && poe_settings.streaming) {
         return async function* streamData() {
             const decoder = new TextDecoder();
@@ -261,6 +360,11 @@ async function sendMessage(prompt, withStreaming, signal) {
                 getMessage += response;
 
                 if (done) {
+                    // Start suggesting only once the message is fully received
+                    if (messageId && withSuggestions && poe_settings.suggest) {
+                        suggestReplies(messageId);
+                    }
+
                     return;
                 }
 
@@ -271,6 +375,10 @@ async function sendMessage(prompt, withStreaming, signal) {
 
     try {
         if (response.ok) {
+            if (messageId && withSuggestions && poe_settings.suggest) {
+                suggestReplies(messageId);
+            }
+
             const data = await response.json();
             return data.reply;
         }
@@ -339,6 +447,8 @@ async function checkStatusPoe() {
 
         selectBot();
         setOnlineStatus('Connected!');
+        eventSource.on(event_types.CHAT_CHANGED, abortSuggestedReplies);
+        eventSource.on(event_types.MESSAGE_SWIPED, abortSuggestedReplies);
     }
     else {
         if (response.status == 401) {
@@ -389,6 +499,15 @@ function onStreamingInput() {
     saveSettingsDebounced();
 }
 
+function onSuggestInput() {
+    poe_settings.suggest = !!$(this).prop('checked');
+    saveSettingsDebounced();
+
+    if (!poe_settings.suggest) {
+        abortSuggestedReplies();
+    }
+}
+
 function onImpersonationPromptInput() {
     poe_settings.impersonation_prompt = $(this).val();
     saveSettingsDebounced();
@@ -435,4 +554,6 @@ $('document').ready(function () {
     $('#poe_activation_message_restore').on('click', onMessageRestoreClick);
     $('#poe_send_jailbreak').on('click', onSendJailbreakClick);
     $('#poe_purge_chat').on('click', onPurgeChatClick);
+    $('#poe_suggest').on('input', onSuggestInput);
+    $(document).on('click', '.suggested_reply', onSuggestedReplyClick);
 });

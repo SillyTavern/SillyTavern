@@ -148,6 +148,7 @@ import {
 } from "./scripts/secrets.js";
 import { EventEmitter } from './scripts/eventemitter.js';
 import { context_settings, loadContextTemplatesFromSettings } from "./scripts/context-template.js";
+import { dinkusExtension } from "./scripts/showdown-dinkus.js";
 
 //exporting functions and vars for mods
 export {
@@ -535,6 +536,14 @@ function reloadMarkdownProcessor(render_formulas = false) {
             emoji: "true",
         });
     }
+
+    // Inject the dinkus extension after creating the converter
+    // Maybe move this into power_user init?
+    setTimeout(() => {
+        if (power_user) {
+            converter.addExtension(dinkusExtension(), 'dinkus');
+        }
+    }, 1)
 
     return converter;
 }
@@ -1778,22 +1787,22 @@ class StreamingProcessor {
             await delay(1); // delay for message to be rendered
         }
 
-        for await (const text of this.generator()) {
-            if (this.isStopped) {
-                this.onStopStreaming();
-                return;
-            }
+        try {
+            for await (const text of this.generator()) {
+                if (this.isStopped) {
+                    this.onStopStreaming();
+                    return;
+                }
 
-            try {
                 this.result = text;
                 this.onProgressStreaming(this.messageId, message_already_generated + text);
             }
-            catch (err) {
-                console.error(err);
-                this.onErrorStreaming();
-                this.isStopped = true;
-                return;
-            }
+        }
+        catch (err) {
+            console.error(err);
+            this.onErrorStreaming();
+            this.isStopped = true;
+            return;
         }
 
         this.isFinished = true;
@@ -6548,7 +6557,7 @@ $(document).ready(function () {
         if (this_chid !== undefined || selected_group) {
             // Previously system messages we're allowed to be edited
             /*const message = $(this).closest(".mes");
-    
+
             if (message.data("isSystem")) {
                 return;
             }*/

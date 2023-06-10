@@ -2368,14 +2368,17 @@ app.post('/generate_poe', jsonParser, async (request, response) => {
 
     if (streaming) {
         try {
-            response.writeHead(200, {
-                'Content-Type': 'text/plain;charset=utf-8',
-                'Transfer-Encoding': 'chunked',
-                'Cache-Control': 'no-transform',
-            });
-
             let reply = '';
             for await (const mes of client.send_message(bot, prompt, false, 30, abortController.signal)) {
+                if (response.headersSent === false) {
+                    response.writeHead(200, {
+                        'Content-Type': 'text/plain;charset=utf-8',
+                        'Transfer-Encoding': 'chunked',
+                        'Cache-Control': 'no-transform',
+                        'X-Message-Id': String(mes.messageId),
+                    });
+                }
+
                 if (isGenerationStopped) {
                     console.error('Streaming stopped by user. Closing websocket...');
                     break;
@@ -2398,11 +2401,14 @@ app.post('/generate_poe', jsonParser, async (request, response) => {
     else {
         try {
             let reply;
+            let messageId;
             for await (const mes of client.send_message(bot, prompt, false, 30, abortController.signal)) {
                 reply = mes.text;
+                messageId = mes.messageId;
             }
             console.log(reply);
             //client.disconnect_ws();
+            response.set('X-Message-Id', String(messageId));
             return response.send({ 'reply': reply });
         }
         catch {
@@ -2410,6 +2416,93 @@ app.post('/generate_poe', jsonParser, async (request, response) => {
             return response.sendStatus(500);
         }
     }
+});
+
+app.post('/poe_suggest', jsonParser, async function(request, response) {
+    const token = readSecret(SECRET_KEYS.POE);
+    const messageId = request.body.messageId;
+
+    if (!messageId) {
+        return response.sendStatus(400);
+    }
+
+    if (!token) {
+        return response.sendStatus(401);
+    }
+
+    try {
+        const bot = request.body.bot ?? POE_DEFAULT_BOT;
+        const client = await getPoeClient(token, true);
+
+        response.writeHead(200, {
+            'Content-Type': 'text/plain;charset=utf-8',
+            'Transfer-Encoding': 'chunked',
+            'Cache-Control': 'no-transform',
+        });
+
+        const botObject = client.bots[bot];
+        const canSuggestReplies = botObject?.defaultBotObject?.hasSuggestedReplies ?? false;
+
+        if (!canSuggestReplies) {
+            return response.end();
+        }
+
+        // Store replies that have already been sent to the user
+        const repliesSent = new Set();
+        // Store the time when the request started
+        const beginAt = Date.now();
+        while (true) {
+            // If more than 5 seconds have passed, stop suggesting replies
+            if (Date.now() - beginAt > 5000) {
+                break;
+            }
+
+            // Get replies array from the Poe client
+            const suggestedReplies = client.suggested_replies[messageId];
+
+            // If the suggested replies array is not an array, wait 100ms and try again
+            if (!Array.isArray(suggestedReplies)) {
+                await delay(100);
+                continue;
+            }
+
+            // If there are no replies, wait 100ms and try again
+            if (suggestedReplies.length === 0) {
+                await delay(100);
+                continue;
+            }
+
+            // Send each reply to the user
+            for (const reply of suggestedReplies) {
+                // If the reply has already been sent, skip it
+                if (repliesSent.has(reply)) {
+                    continue;
+                }
+
+                // Add the reply to the list of replies that have been sent
+                repliesSent.add(reply);
+                // Write SSE event to the response stream
+                response.write(reply + '\n\n');
+            }
+
+            // Wait 100ms before checking for new replies
+            await delay(100);
+        }
+
+        //client.disconnect_ws();
+        return response.end();
+    }
+    catch (err) {
+        console.error(err);
+
+        if (response.headersSent === false) {
+            return response.sendStatus(401);
+        } else {
+            return response.end();
+        }
+    }
+
+
 });
 
 app.get('/discover_extensions', jsonParser, function (_, response) {

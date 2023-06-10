@@ -293,6 +293,8 @@ class Client {
     bots = {};
     active_messages = {};
     message_queues = {};
+    suggested_replies = {};
+    suggested_replies_updated = {};
     bot_names = [];
     ws = null;
     ws_connected = false;
@@ -558,6 +560,9 @@ class Client {
         try {
             const data = JSON.parse(msg);
 
+            // Uncomment to debug websocket messages
+            //console.log(data);
+
             if (!('messages' in data)) {
                 return;
             }
@@ -573,6 +578,11 @@ class Client {
 
                 if (!message) {
                     return;
+                }
+
+                if ("suggestedReplies" in message && Array.isArray(message["suggestedReplies"])) {
+                    this.suggested_replies[message["messageId"]] = [...message["suggestedReplies"]];
+                    this.suggested_replies_updated[message["messageId"]] = Date.now();
                 }
 
                 const copiedDict = Object.assign({}, this.active_messages);
