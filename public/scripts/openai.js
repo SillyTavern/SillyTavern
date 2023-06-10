@@ -19,6 +19,7 @@ import {
     getRequestHeaders,
     system_message_types,
     replaceBiasMarkup,
+    is_send_press,
 } from "../script.js";
 import { groups, selected_group } from "./group-chats.js";
 
@@ -1554,7 +1555,26 @@ function toggleChatCompletionForms() {
     });
 }
 
+async function testApiConnection() {
+    // Check if the previous request is still in progress
+    if (is_send_press) {
+        toastr.info('Please wait for the previous request to complete.');
+        return;
+    }
+
+    try {
+        const reply = await sendOpenAIRequest('quiet', [{ 'role': 'user', 'content': 'Hi' }]);
+        console.log(reply);
+        toastr.success('API connection successful!');
+    }
+    catch (err) {
+        toastr.error('Could not get a reply from API. Check your connection settings / API key and try again.');
+    }
+}
+
 $(document).ready(function () {
+    $('#test_api_button').on('click', testApiConnection);
+
     $(document).on('input', '#temp_openai', function () {
         oai_settings.temp_openai = $(this).val();
         $('#temp_counter_openai').text(Number($(this).val()).toFixed(2));
