@@ -933,6 +933,7 @@ $(document).ready(() => {
     $("#custom_chat_separator").on('input', function () {
         power_user.custom_chat_separator = $(this).val();
         saveSettingsDebounced();
+        reloadMarkdownProcessor(power_user.render_formulas);
     });
 
     $("#multigen").change(function () {
