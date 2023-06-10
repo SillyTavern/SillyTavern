@@ -457,7 +457,7 @@
                                 </div>
                             </div>
                             <div id="range_block_openai">
-                                <div class="range-block">
+                                <div class="range-block" data-source="openai,claude">
                                     <div class="range-block-title justifyLeft" data-i18n="OpenAI Reverse Proxy">
                                         OpenAI / Claude Reverse Proxy
                                     </div>
@@ -482,7 +482,7 @@
                                         <input id="openai_reverse_proxy" type="text" class="text_pole" placeholder="https://api.openai.com/v1" maxlength="100" />
                                     </div>
                                 </div>
-                                <div class="range-block">
+                                <div class="range-block" data-source="openai,claude">
                                     <div class="range-block-title justifyLeft">
                                         <label for="legacy_streaming" class="checkbox_label">
                                             <input id="legacy_streaming" type="checkbox" />
@@ -1446,6 +1446,23 @@
                                         <option value="claude-instant-v1.1-100k">claude-instant-v1.1-100k</option>
                                         <option value="claude-instant-v1.0">claude-instant-v1.0</option>
                                     </optgroup>
+                                </select>
+                            </div>
+                        </form>
+
+                        <form id="windowai_form" data-source="windowai">
+                            <div>
+                                <h4 data-i18n="Window AI Model">Window AI Model</h4>
+                                <select id="model_windowai_select">
+                                    <option value="">Use extension settings</option>
+                                    <option value="openai/gpt-3.5-turbo">openai/gpt-3.5-turbo</option>
+                                    <option value="openai/gpt-4">openai/gpt-4</option>
+                                    <option value="anthropic/claude-instant-v1">anthropic/claude-instant-v1</option>
+                                    <option value="anthropic/claude-instant-v1-100k">anthropic/claude-instant-v1-100k</option>
+                                    <option value="anthropic/claude-v1">anthropic/claude-v1</option>
+                                    <option value="anthropic/claude-v1-100k">anthropic/claude-v1-100k</option>
+                                    <option value="togethercomputer/GPT-NeoXT-Chat-Base-20B">togethercomputer/GPT-NeoXT-Chat-Base-20B</option>
+                                    <option value="cohere/command-nightly">cohere/command-nightly</option>
                                 </select>
                             </div>
                         </form>

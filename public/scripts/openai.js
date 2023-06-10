@@ -81,6 +81,7 @@ const default_bias_presets = {
 
 const gpt3_max = 4095;
 const gpt4_max = 8191;
+const gpt_neox_max = 2048;
 const gpt4_32k_max = 32767;
 const claude_max = 7500;
 const claude_100k_max = 99000;
@@ -121,6 +122,7 @@ const default_settings = {
     wi_format: default_wi_format,
     openai_model: 'gpt-3.5-turbo',
     claude_model: 'claude-instant-v1',
+    windowai_model: '',
     jailbreak_system: false,
     reverse_proxy: '',
     legacy_streaming: false,
@@ -152,6 +154,7 @@ const oai_settings = {
     wi_format: default_wi_format,
     openai_model: 'gpt-3.5-turbo',
     claude_model: 'claude-instant-v1',
+    windowai_model: '',
     jailbreak_system: false,
     reverse_proxy: '',
     legacy_streaming: false,
@@ -608,6 +611,7 @@ async function sendWindowAIRequest(openai_msgs_tosend, signal, stream) {
         {
             temperature: temperature,
             maxTokens: oai_settings.openai_max_tokens,
+            model: oai_settings.windowai_model || null,
             onStreamResult: onStreamResult,
         }
     );
@@ -955,6 +959,7 @@ function loadOpenAISettings(data, settings) {
 
     $(`#model_openai_select option[value="${oai_settings.openai_model}"`).attr('selected', true);
     $(`#model_claude_select option[value="${oai_settings.claude_model}"`).attr('selected', true);
+    $(`#model_windowai_select option[value="${oai_settings.windowai_model}"`).attr('selected', true);
     $('#openai_max_context').val(oai_settings.openai_max_context);
     $('#openai_max_context_counter').text(`${oai_settings.openai_max_context}`);
 
@@ -1130,6 +1135,7 @@ async function saveOpenAIPreset(name, settings) {
         nsfw_avoidance_prompt: settings.nsfw_avoidance_prompt,
         wi_format: settings.wi_format,
         claude_model: settings.claude_model,
+        windowai_model: settings.windowai_model,
         chat_completion_source: settings.chat_completion_source,
     };
 
@@ -1387,6 +1393,7 @@ function onSettingsPresetChange() {
         max_context_unlocked: ['#oai_max_context_unlocked', 'max_context_unlocked', true],
         openai_model: ['#model_openai_select', 'openai_model', false],
         claude_model: ['#model_claude_select', 'claude_model', false],
+        windowai_model: ['#model_windowai_select', 'windowai_model', false],
         openai_max_context: ['#openai_max_context', 'openai_max_context', false],
         openai_max_tokens: ['#openai_max_tokens', 'openai_max_tokens', false],
         nsfw_toggle: ['#nsfw_toggle', 'nsfw_toggle', true],
@@ -1429,6 +1436,11 @@ function onModelChange() {
         oai_settings.claude_model  = value;
     }
 
+    if ($(this).is('#model_windowai_select')) {
+        console.log('WindowAI model changed to', value);
+        oai_settings.windowai_model = value;
+    }
+
     if ($(this).is('#model_openai_select')) {
         console.log('OpenAI model changed to', value);
         oai_settings.openai_model = value;
@@ -1453,7 +1465,44 @@ function onModelChange() {
         $('#temp_openai').attr('max', claude_max_temp).val(oai_settings.temp_openai).trigger('input');
     }
 
-    if (oai_settings.chat_completion_source == chat_completion_sources.OPENAI || oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
+    if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
+        if (oai_settings.max_context_unlocked) {
+            $('#openai_max_context').attr('max', unlocked_max);
+        }
+        else if (value.endsWith('100k')) {
+            $('#openai_max_context').attr('max', claude_100k_max);
+        }
+        else if (value.includes('claude')) {
+            $('#openai_max_context').attr('max', claude_max);
+        }
+        else if (value.includes('gpt-3.5')) {
+            $('#openai_max_context').attr('max', gpt3_max);
+        }
+        else if (value.includes('gpt-4')) {
+            $('#openai_max_context').attr('max', gpt4_max);
+        }
+        else if (value.includes('GPT-NeoXT')) {
+            $('#openai_max_context').attr('max', gpt_neox_max);
+        }
+        else {
+            // default to gpt-3 (4095 tokens)
+            $('#openai_max_context').attr('max', gpt3_max);
+        }
+
+        oai_settings.openai_max_context = Math.max(Number($('#openai_max_context').val()), oai_settings.openai_max_context);
+        $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
+
+        if (value.includes('claude')) {
+            oai_settings.temp_openai = Math.min(claude_max_temp, oai_settings.temp_openai);
+            $('#temp_openai').attr('max', claude_max_temp).val(oai_settings.temp_openai).trigger('input');
+        }
+        else {
+            oai_settings.temp_openai = Math.min(oai_max_temp, oai_settings.temp_openai);
+            $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
+        }
+    }
+
+    if (oai_settings.chat_completion_source == chat_completion_sources.OPENAI) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
         }
@@ -1545,8 +1594,12 @@ async function onConnectButtonClick(e) {
 function toggleChatCompletionForms() {
     if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
         $('#model_claude_select').trigger('change');
-    } else {
+    }
+    else if (oai_settings.chat_completion_source == chat_completion_sources.OPENAI) {
         $('#model_openai_select').trigger('change');
+    }
+    else if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
+        $('#model_windowai_select').trigger('change');
     }
 
     $('[data-source]').each(function () {
@@ -1766,6 +1819,7 @@ $(document).ready(function () {
     $("#openai_reverse_proxy").on("input", onReverseProxyInput);
     $("#model_openai_select").on("change", onModelChange);
     $("#model_claude_select").on("change", onModelChange);
+    $("#model_windowai_select").on("change", onModelChange);
     $("#settings_perset_openai").on("change", onSettingsPresetChange);
     $("#new_oai_preset").on("click", onNewPresetClick);
     $("#delete_oai_preset").on("click", onDeletePresetClick);
