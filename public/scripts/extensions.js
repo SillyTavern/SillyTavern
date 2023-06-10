@@ -82,8 +82,8 @@ async function doExtrasFetch(endpoint, args) {
         args.headers = {}
     }
     Object.assign(args.headers, {
-        'Authorization': `Bearer ${extension_settings.apiKey}`, 
-        'Bypass-Tunnel-Reminder': 'bypass' 
+        'Authorization': `Bearer ${extension_settings.apiKey}`,
+        'Bypass-Tunnel-Reminder': 'bypass'
     });
 
     const response = await fetch(endpoint, args);
@@ -220,7 +220,7 @@ function autoConnectInputHandler() {
 function addExtensionsButtonAndMenu() {
     const buttonHTML =
         `<div id="extensionsMenuButton" class="fa-solid fa-magic-wand-sparkles" title="Extras Extensions" /></div>`;
-    const extensionsMenuHTML = `<div id="extensionsMenu" class="list-group"></div>`;
+    const extensionsMenuHTML = `<div id="extensionsMenu" class="options-content" style="display: none;"></div>`;
 
     $(document.body).append(extensionsMenuHTML);
 
@@ -228,25 +228,41 @@ function addExtensionsButtonAndMenu() {
 
     const button = $('#extensionsMenuButton');
     const dropdown = $('#extensionsMenu');
-    dropdown.hide();
+    //dropdown.hide();
 
     let popper = Popper.createPopper(button.get(0), dropdown.get(0), {
         placement: 'top-end',
     });
 
-    $(document).on('click touchend', function (e) {
-        const target = $(e.target);
-        if (target.is(dropdown)) return;
-        if (target.is(button) && !dropdown.is(":visible")) {
-            e.preventDefault();
+    $(button).on('click', function () {
+        popper.update()
+        dropdown.toggle(200);
+    });
 
-            dropdown.show(200);
-            popper.update();
-        } else {
-            dropdown.hide(200);
+    $("html").on('touchstart mousedown', function (e) {
+        let clickTarget = $(e.target);
+        if (dropdown.is(':visible')
+            && clickTarget.closest(button).length == 0
+            && clickTarget.closest(dropdown).length == 0) {
+            $(dropdown).hide(200);
         }
     });
 }
+
+/*     $(document).on('click', function (e) {
+        const target = $(e.target);
+        if (target.is(dropdown)) return;
+        if (target.is(button) && dropdown.is(':hidden')) {
+            dropdown.toggle(200);
+            popper.update();
+        }
+        if (target !== dropdown &&
+            target !== button &&
+            dropdown.is(":visible")) {
+            dropdown.hide(200);
+        }
+    });
+} */
 
 async function connectToApi(baseUrl) {
     if (!baseUrl) {

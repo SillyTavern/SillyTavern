@@ -237,7 +237,7 @@ function onANMenuItemClick() {
            <span data-i18n="Author's Note">Author's Note</span>
         </a>
     `;
-        $('.options-content').prepend(ANButtonHtml);
+        $('#options .options-content').prepend(ANButtonHtml);
         $('#movingDivs').append(settingsHtml);
         $('#extension_floating_prompt').on('input', onExtensionFloatingPromptInput);
         $('#extension_floating_interval').on('input', onExtensionFloatingIntervalInput);

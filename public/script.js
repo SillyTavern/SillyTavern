@@ -6216,42 +6216,45 @@ $(document).ready(function () {
         }
     });
 
-    let hideOptionsTimeout;
+    let isAnimating = false;
+    const optionsDiv = $("#options");
+    const optionsButtonDiv = $("#options_button");
 
-    function showOptions() {
+    function toggleOptions() {
         showBookmarksButtons();
+        if ((isAnimating) ||
+            (optionsDiv.is(":visible") && optionsDiv.is(":hover"))) {
+            return;
+        }
+        isAnimating = true;
         optionsPopper.update();
-        const optionsDiv = $("#options");
-        const optionsButtonDiv = $("#options_button");
-        const hideOptions = () => {
-            if (!optionsDiv.is(':hover') && !optionsButtonDiv.is(':hover')) {
-                optionsDiv.hide(200);
-            }
-        };
-
-        optionsDiv.on('mouseenter touchstart', () => clearTimeout(hideOptionsTimeout));
-        optionsButtonDiv.on('mouseenter touchstart', () => {
-            clearTimeout(hideOptionsTimeout);
-            hideOptionsTimeout = setTimeout(() => {
-                optionsDiv.show(200);
-            }, 200);
-        });
-        optionsDiv.on('mouseleave', () => hideOptionsTimeout = setTimeout(hideOptions, 500));
-        optionsButtonDiv.on('mouseleave', () => hideOptionsTimeout = setTimeout(hideOptions, 500));
-        //optionsDiv.show(200);
+        optionsDiv.toggle(200, () => isAnimating = false);
     }
 
-    $("#options_button").on('mouseenter click touchstart', showOptions);
+    //show/hide options on hoverstate/click
+    optionsButtonDiv.on('mouseenter click', () => {
+        if (optionsDiv.is(':visible')) return;
+        setTimeout(() => toggleOptions(), 200);
+    });
 
+    optionsButtonDiv.on('mouseleave', () => {
+        if (optionsDiv.is(':hidden')) return;
+        setTimeout(() => toggleOptions(), 200);
+    });
+
+    optionsDiv.on('mouseleave', () => {
+        setTimeout(() => toggleOptions(), 200);
+    })
+
+    //close options menu if open and user clicked outside it and button
     $(document).on('click touchend', (e) => {
         const target = e.target;
-        const optionsDiv = $("#options");
-        const optionsButtonDiv = $("#options_button");
-        if (!$(target).closest(optionsDiv).length && !$(target).closest(optionsButtonDiv).length &&
-            target !== optionsDiv[0] && target !== optionsButtonDiv[0] &&
+        if (![optionsDiv[0], optionsButtonDiv[0]].includes(target) &&
             !optionsDiv.is(':hover') &&
-            !optionsButtonDiv.is(':hover')) {
-            optionsDiv.hide(200);
+            !optionsButtonDiv.is(':hover') &&
+            !isAnimating &&
+            optionsDiv.is(":visible")) {
+            setTimeout(() => toggleOptions(), 200);
         }
     });
 
@@ -6542,7 +6545,7 @@ $(document).ready(function () {
         if (this_chid !== undefined || selected_group) {
             // Previously system messages we're allowed to be edited
             /*const message = $(this).closest(".mes");
-
+    
             if (message.data("isSystem")) {
                 return;
             }*/
