@@ -16,15 +16,20 @@ class EdgeTtsProvider {
     audioElement = document.createElement('audio')
 
     defaultSettings = {
-        voiceMap: {}
+        voiceMap: {},
+        rate: 0,
     }
 
     get settingsHtml() {
-        let html = `Microsoft Edge TTS Provider<br>`
+        let html = `Microsoft Edge TTS Provider<br>
+        <label for="edge_tts_rate">Rate: <span id="edge_tts_rate_output"></span></label>
+        <input id="edge_tts_rate" type="range" value="${this.defaultSettings.rate}" min="-100" max="100" step="1" />`
         return html
     }
 
     onSettingsChange() {
+        this.settings.rate = Number($('#edge_tts_rate').val());
+        $('#edge_tts_rate_output').text(this.settings.rate);
     }
 
     loadSettings(settings) {
@@ -43,6 +48,9 @@ class EdgeTtsProvider {
                 throw `Invalid setting passed to TTS Provider: ${key}`
             }
         }
+
+        $('#edge_tts_rate').val(this.settings.rate || 0);
+        $('#edge_tts_rate_output').text(this.settings.rate || 0);
 
         console.info("Settings loaded")
     }
@@ -123,6 +131,7 @@ class EdgeTtsProvider {
                 body: JSON.stringify({
                     "text": inputText,
                     "voice": voiceId,
+                    "rate": Number(this.settings.rate),
                 })
             }
         )

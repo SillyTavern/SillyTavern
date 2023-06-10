@@ -573,9 +573,24 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai">
+                                <div class="range-block" data-source="claude">
+                                    <div class="range-block-title" data-i18n="Top K">
+                                        Top K
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="top_k_openai" name="volume" min="0" max="200" step="1">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="top_k_openai" id="top_k_counter_openai">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="range-block" data-source="openai,claude">
                                     <div class="range-block-title" data-i18n="Top-p">
-                                        Top-p
+                                        Top P
                                     </div>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
@@ -1435,7 +1450,10 @@
                             </div>
                         </form>
 
-                        <input id="api_button_openai" class="menu_button" type="submit" value="Connect">
+                        <div class="flex-container flex">
+                            <input id="api_button_openai" class="menu_button" type="submit" value="Connect">
+                            <input id="test_api_button" class="menu_button" type="button" value="Test Message" title="Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!">
+                        </div>
                         <div id="api_loading_openai" class=" api-load-icon fa-solid fa-hourglass fa-spin"></div>
                         <div class="online_status4">
                             <div class="online_status_indicator4"></div>

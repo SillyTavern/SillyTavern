@@ -2770,6 +2770,8 @@ async function sendClaudeRequest(request, response) {
                 max_tokens_to_sample: request.body.max_tokens,
                 stop_sequences: ["\n\nHuman:", "\n\nSystem:", "\n\nAssistant:"],
                 temperature: request.body.temperature,
+                top_p: request.body.top_p,
+                top_k: request.body.top_k,
                 stream: request.body.stream,
             }),
             headers: {
