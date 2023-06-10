@@ -573,9 +573,24 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai">
+                                <div class="range-block" data-source="claude">
+                                    <div class="range-block-title" data-i18n="Top K">
+                                        Top K
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="top_k_openai" name="volume" min="0" max="200" step="1">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="top_k_openai" id="top_k_counter_openai">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="range-block" data-source="openai,claude">
                                     <div class="range-block-title" data-i18n="Top-p">
-                                        Top-p
+                                        Top P
                                     </div>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
