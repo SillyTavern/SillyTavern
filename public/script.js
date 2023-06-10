@@ -286,7 +286,7 @@ let currentCroppedAvatar = '';
 const durationSaveEdit = 1000;
 const saveSettingsDebounced = debounce(() => saveSettings(), durationSaveEdit);
 const saveCharacterDebounced = debounce(() => $("#create_button").trigger('click'), durationSaveEdit);
-const getStatusDebounced = debounce(() => getStatus(), 90000);
+const getStatusDebounced = debounce(() => getStatus(), 300_000);
 const saveChatDebounced = debounce(() => saveChatConditional(), durationSaveEdit);
 
 const system_message_types = {
