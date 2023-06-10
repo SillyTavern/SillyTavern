@@ -591,7 +591,7 @@ async function sendWindowAIRequest(openai_msgs_tosend, signal, stream) {
 
     const onStreamResult = (res, err) => {
         if (err) {
-            handleWindowError(err);
+            return;
         }
 
         const thisContent = res?.message?.content;
@@ -624,9 +624,9 @@ async function sendWindowAIRequest(openai_msgs_tosend, signal, stream) {
                 resolve && resolve(content);
             })
             .catch((err) => {
-                handleWindowError(err);
                 finished = true;
                 reject && reject(err);
+                handleWindowError(err);
             });
     };
 
@@ -884,12 +884,7 @@ function countTokens(messages, full = false) {
             token_count += cachedCount;
         }
         else {
-            let model = oai_settings.openai_model;
-
-            // We don't have a Claude tokenizer for JS yet. Turbo 3.5 should be able to handle this.
-            if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
-                model = 'gpt-3.5-turbo';
-            }
+            let model = getTokenizerModel();
 
             jQuery.ajax({
                 async: false,
@@ -909,6 +904,38 @@ function countTokens(messages, full = false) {
     if (!full) token_count -= 2;
 
     return token_count;
+}
+
+function getTokenizerModel() {
+    // OpenAI models always provide their own tokenizer
+    if (oai_settings.chat_completion_source == chat_completion_sources.OPENAI) {
+        return oai_settings.openai_model;
+    }
+
+    const turboTokenizer = 'gpt-3.5-turbo'
+    // Select correct tokenizer for WindowAI proxies
+    if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
+        if (oai_settings.windowai_model.includes('gpt-4')) {
+            return 'gpt-4';
+        }
+        else if (oai_settings.windowai_model.includes('gpt-3.5-turbo')) {
+            return turboTokenizer;
+        }
+        else if (oai_settings.windowai_model.includes('claude')) {
+            return turboTokenizer;
+        }
+        else if (oai_settings.windowai_model.includes('GPT-NeoXT')) {
+            return 'gpt2';
+        }
+    }
+
+    // We don't have a Claude tokenizer for JS yet. Turbo 3.5 should be able to handle this.
+    if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
+        return turboTokenizer;
+    }
+
+    // Default to Turbo 3.5
+    return turboTokenizer;
 }
 
 function loadOpenAISettings(data, settings) {
