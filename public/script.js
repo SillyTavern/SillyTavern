@@ -148,6 +148,7 @@ import {
 } from "./scripts/secrets.js";
 import { EventEmitter } from './scripts/eventemitter.js';
 import { context_settings, loadContextTemplatesFromSettings } from "./scripts/context-template.js";
+import { dinkusExtension } from "./scripts/showdown-dinkus.js";
 
 //exporting functions and vars for mods
 export {
@@ -532,6 +533,14 @@ function reloadMarkdownProcessor(render_formulas = false) {
             emoji: "true",
         });
     }
+
+    // Inject the dinkus extension after creating the converter
+    // Maybe move this into power_user init?
+    setTimeout(() => {
+        if (power_user) {
+            converter.addExtension(dinkusExtension(), 'dinkus');
+        }
+    }, 1)
 
     return converter;
 }
