@@ -1488,6 +1488,30 @@ input[type=search]:focus::-webkit-search-cancel-button {
     display: none;
 }
 
+.suggested_replies {
+    display: none;
+}
+
+.last_mes .suggested_replies {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 5px;
+}
+
+.suggested_reply {
+    display: flex;
+    padding: 5px;
+    margin-right: 5px;
+    border-radius: 5px;
+    font-weight: 500;
+    color: var(--SmartThemeQuoteColor);
+    border: 1px solid var(--white30a);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
 .avatar_div .avatar {
     margin-left: 4px;
     margin-right: 10px;
