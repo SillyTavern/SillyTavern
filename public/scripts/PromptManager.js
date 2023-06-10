@@ -783,12 +783,6 @@ const openAiDefaultPrompts = {
             "identifier": "nsfw"
         },
         {
-            "identifier": "characterInfo",
-            "name": "Character Description",
-            "system_prompt": true,
-            "marker": true,
-        },
-        {
             "identifier": "dialogueExamples",
             "name": "Chat Examples",
             "system_prompt": true,
@@ -838,7 +832,27 @@ const openAiDefaultPrompts = {
             "content": "If you have more knowledge of {{char}}, add to the character\'s lore and personality to enhance them but keep the Character Sheet\'s definitions absolute.",
             "system_prompt": true,
             "marker": false,
-        }
+        },
+        {
+            "identifier": "charDescription",
+            "name": "Char Description",
+            "system_prompt": true,
+            "marker": true,
+        },
+        ,
+        {
+            "identifier": "charPersonality",
+            "name": "Char Personality",
+            "system_prompt": true,
+            "marker": true,
+        },
+        ,
+        {
+            "identifier": "scenario",
+            "name": "Scenario",
+            "system_prompt": true,
+            "marker": true,
+        },
     ]
 };
 
@@ -856,7 +870,15 @@ const openAiDefaultPromptList = [
         "enabled": true
     },
     {
-        "identifier": "characterInfo",
+        "identifier": "charDescription",
+        "enabled": true
+    },
+    {
+        "identifier": "charPersonality",
+        "enabled": true
+    },
+    {
+        "identifier": "scenario",
         "enabled": true
     },
     {
