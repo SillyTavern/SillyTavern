@@ -945,6 +945,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.nsfw_avoidance_prompt = settings.nsfw_avoidance_prompt ?? default_settings.nsfw_avoidance_prompt;
     oai_settings.wi_format = settings.wi_format ?? default_settings.wi_format;
     oai_settings.claude_model = settings.claude_model ?? default_settings.claude_model;
+    oai_settings.windowai_model = settings.windowai_model ?? default_settings.windowai_model;
     oai_settings.chat_completion_source = settings.chat_completion_source ?? default_settings.chat_completion_source;
 
     if (settings.nsfw_toggle !== undefined) oai_settings.nsfw_toggle = !!settings.nsfw_toggle;
