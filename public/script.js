@@ -3998,6 +3998,12 @@ async function bindUserNameToPersona() {
     await getUserAvatars();
 }
 
+function updateUserLockIcon() {
+    const hasLock = !!chat_metadata['persona'];
+    $('#lock_user_name').toggleClass('fa-lock', !hasLock);
+    $('#lock_user_name').toggleClass('fa-unlock', hasLock);
+}
+
 function setUserAvatar() {
     user_avatar = $(this).attr("imgfile");
     reloadUserAvatar();
@@ -4108,8 +4114,15 @@ async function deleteUserAvatar() {
             power_user.default_persona = null;
         }
 
+        if (avatarId === chat_metadata['persona']) {
+            toastr.warning('The locked persona was deleted. You will need to set a new persona for this chat.', 'Persona deleted');
+            delete chat_metadata['persona'];
+            saveMetadata();
+        }
+
         saveSettingsDebounced();
         await getUserAvatars();
+        updateUserLockIcon();
     }
 }
 
@@ -4119,6 +4132,7 @@ function lockUserNameToChat() {
         delete chat_metadata['persona'];
         saveMetadata();
         toastr.info('User persona is now unlocked for this chat. Click the "Lock" again to revert.', 'Persona unlocked');
+        updateUserLockIcon();
         return;
     }
 
@@ -4137,6 +4151,7 @@ function lockUserNameToChat() {
     saveSettingsDebounced();
     console.log(`Locking persona for this chat ${user_avatar}`);
     toastr.success(`User persona is locked to ${name1} in this chat`);
+    updateUserLockIcon();
 }
 
 eventSource.on(event_types.CHAT_CHANGED, () => {
@@ -4166,6 +4181,7 @@ eventSource.on(event_types.CHAT_CHANGED, () => {
     if (chat_metadata['persona'] && personaAvatar.length == 0) {
         console.warn('Persona avatar not found, unlocking persona');
         delete chat_metadata['persona'];
+        updateUserLockIcon();
         return;
     }
 
@@ -4179,6 +4195,7 @@ eventSource.on(event_types.CHAT_CHANGED, () => {
 
     // Persona avatar found, select it
     personaAvatar.trigger('click');
+    updateUserLockIcon();
 });
 
 //***************SETTINGS****************//
