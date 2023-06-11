@@ -267,7 +267,7 @@ async function generatePoe(type, finalPrompt, signal) {
 
     if (max_context > POE_TOKEN_LENGTH) {
         console.debug('Prompt is too long, sending in chunks');
-        const result = await sendChunkedMessage(finalPrompt, !isQuiet, !isQuiet, signal)
+        const result = await sendChunkedMessage(finalPrompt, !isQuiet, signal)
         reply = result.reply;
         messages_to_purge = result.chunks + 1; // +1 for the reply
     }
