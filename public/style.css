@@ -34,6 +34,7 @@
     --orangered: rgb(255, 90, 0);
     --greyCAIbg: rgb(36, 36, 37);
     --ivory: rgb(220, 220, 210);
+    --golden: rgba(212, 175, 55, 1);
 
 
     /*Default Theme, will be changed by ToolCool Color Picker*/
@@ -1239,7 +1240,8 @@ select option:not(:checked) {
 }
 
 #form_character_search_form .menu_button,
-#GroupFavDelOkBack .menu_button {
+#GroupFavDelOkBack .menu_button,
+.avatar-container .menu_button {
     margin: 0;
     height: fit-content;
     padding: 5px;
@@ -1529,12 +1531,26 @@ input[type=search]:focus::-webkit-search-cancel-button {
     pointer-events: all;
 }
 
+.avatar-buttons-bottom {
+    bottom: 0;
+    left: 0;
+}
+
+.avatar-buttons-top {
+    top: 0;
+    left: 0;
+}
+
+/* Ross should be able to handle this later */
+/*.big-avatars .avatar-buttons{
+    justify-content: center;
+    width: fit-content;
+}*/
+
 .avatar-buttons {
     pointer-events: none;
     display: none;
     position: absolute;
-    top: 0;
-    left: 0;
     width: 100%;
     justify-content: space-between;
 }
@@ -2077,6 +2093,11 @@ input[type=search]:focus::-webkit-search-cancel-button {
     margin-right: 12px;
 }
 
+/* Override toastr default styles */
+body #toast-container>div {
+    opacity: 0.95;
+}
+
 #dialogue_del_mes {
     display: none;
 }
@@ -2150,6 +2171,15 @@ input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
 
 #user_avatar_block .avatar:not(.selected) {
     outline: 2px solid transparent;
+}
+
+#user_avatar_block .default_persona .avatar {
+    border: 2px solid var(--golden);
+    box-sizing: content-box;
+}
+
+#user_avatar_block .default_persona .set_default_persona {
+    color: var(--golden);
 }
 
 #user_avatar_block .avatar img {

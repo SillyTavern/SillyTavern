@@ -262,6 +262,7 @@ function executeSlashCommands(text) {
             continue;
         }
 
+        console.debug('Slash command executing:', result);
         result.command.callback(result.args, result.value);
 
         if (result.command.interruptsGeneration) {
