@@ -1461,6 +1461,7 @@ function sendSystemMessage(type, text, extra = {}) {
 
     if (type == system_message_types.HELP) {
         newMessage.mes += getSlashCommandsHelp();
+        newMessage.mes += `<br><b>Still got questions left? The <a target="_blank" href="https://docs.sillytavern.app/">Official SillyTavern Documentation Website</a> has much more information!</b>`;
     }
 
     if (!newMessage.extra) {
