@@ -331,7 +331,7 @@ const system_messages = {
             <li><tt>Escape</tt> = stop AI response generation</li>
             <li><tt>Ctrl+Shift+Up</tt> = Scroll to context line</li>
             <li><tt>Ctrl+Shift+Down</tt> = Scroll chat to bottom</li>
-            
+
             </ul>`
         ]
     },
