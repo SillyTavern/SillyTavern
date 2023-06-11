@@ -1915,7 +1915,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 await sendMessageAsUser(textareaText, messageBias);
             }
         }
-        else if (textareaText == "" && !automatic_trigger && type !== 'quiet' && main_api == 'openai' && oai_settings.send_if_empty.trim().length > 0) {
+        else if (textareaText == "" && !automatic_trigger && type === undefined && main_api == 'openai' && oai_settings.send_if_empty.trim().length > 0) {
+            // Use send_if_empty if set and the user message is empty. Only when sending messages normally
             await sendMessageAsUser(oai_settings.send_if_empty.trim(), messageBias);
         }
 
@@ -3912,11 +3913,14 @@ function highlightSelectedAvatar() {
 }
 
 function appendUserAvatar(name) {
-    $("#user_avatar_block").append(
-        `<div imgfile="${name}" class="avatar">
-            <img src="User Avatars/${name}"
-        </div>`
-    );
+    const template = $('#user_avatar_template .avatar-container').clone();
+    const personaName = power_user.personas[name];
+    if (personaName) {
+        template.attr('title', personaName);
+    }
+    template.find('.avatar').attr('imgfile', name);
+    template.find('img').attr('src', `User Avatars/${name}`);
+    $("#user_avatar_block").append(template);
     highlightSelectedAvatar();
 }
 
@@ -3929,6 +3933,139 @@ function reloadUserAvatar() {
         }
     });
 }
+
+export function setUserName(value) {
+    if (!is_send_press) {
+        name1 = value;
+        if (name1 === undefined || name1 == "")
+            name1 = default_user_name;
+        console.log(name1);
+        $("#your_name").val(name1);
+        toastr.success(`Your messages will now be sent as ${name1}`, 'User Name updated');
+        saveSettings("change_name");
+    } else {
+        toastr.warning('You cannot change your name while sending a message', 'Warning');
+    }
+}
+
+export function autoSelectPersona(name) {
+    for (const [key, value] of Object.entries(power_user.personas)) {
+        if (value === name) {
+            $(`.avatar[imgfile="${key}"]`).trigger('click');
+            return;
+        }
+    }
+}
+
+async function bindUserNameToPersona() {
+    const avatarId = $(this).closest('.avatar-container').find('.avatar').attr('imgfile');
+
+    if (!avatarId) {
+        console.warn('No avatar id found');
+        return;
+    }
+
+    const existingPersona = power_user.personas[avatarId];
+    const personaName = await callPopup('<h3>Enter a name for this persona:</h3>(If empty name is provided, this will unbind the name from this avatar)', 'input', existingPersona || '');
+    if (personaName) {
+        power_user.personas[avatarId] = personaName;
+    } else {
+        delete power_user.personas[avatarId];
+    }
+    saveSettingsDebounced();
+    await getUserAvatars();
+}
+
+function setUserAvatar() {
+    user_avatar = $(this).attr("imgfile");
+    reloadUserAvatar();
+    saveSettingsDebounced();
+    highlightSelectedAvatar();
+
+    const personaName = power_user.personas[user_avatar];
+    if (personaName && name1 !== personaName) {
+        const lockedPersona = chat_metadata['persona'];
+        if (lockedPersona && lockedPersona !== user_avatar) {
+            toastr.warning(
+                'Click the "Lock" to bind again. Otherwise, the selection will be reset when your reload the chat.',
+                `This chat is locked to a different persona (${power_user.personas[lockedPersona]}).`,
+                { timeOut: 10000, extendedTimeOut: 20000 },
+            );
+        }
+
+        setUserName(personaName);
+    }
+}
+
+async function deleteUserAvatar() {
+    const avatarId = $(this).closest('.avatar-container').find('.avatar').attr('imgfile');
+
+    if (!avatarId) {
+        console.warn('No avatar id found');
+        return;
+    }
+
+    if (avatarId == user_avatar) {
+        toastr.warning('You cannot delete the avatar you are currently using', 'Warning');
+        return;
+    }
+
+    const confirm = await callPopup('Are you sure you want to delete this avatar?', 'confirm');
+
+    if (!confirm) {
+        return;
+    }
+
+    const request = await fetch("/deleteuseravatar", {
+        method: "POST",
+        headers: getRequestHeaders(),
+        body: JSON.stringify({
+            "avatar": avatarId,
+        }),
+    });
+
+    if (request.ok) {
+        delete power_user.personas[avatarId];
+        saveSettingsDebounced();
+        await getUserAvatars();
+    }
+}
+
+function lockUserNameToChat() {
+    if (chat_metadata['persona']) {
+        delete chat_metadata['persona'];
+        saveMetadata();
+        toastr.info('User persona is now unlocked for this chat. Click the "Lock" to bind again.', 'Persona unlocked');
+        return;
+    }
+
+    if (!(user_avatar in power_user.personas)) {
+        toastr.info('Creating a new persona for currently selected user name and avatar...', 'Persona not set for this avatar');
+        power_user.personas[user_avatar] = name1;
+    }
+
+    chat_metadata['persona'] = user_avatar;
+    saveMetadata();
+    saveSettingsDebounced();
+    toastr.success(`User persona is locked to ${name1} in this chat`);
+}
+
+eventSource.on(event_types.CHAT_CHANGED, () => {
+    // If persona is locked, select it
+    if (chat_metadata['persona']) {
+        // Find the avatar file
+        const personaAvatar = $(`.avatar[imgfile="${chat_metadata['persona']}"]`).trigger('click');
+
+        // Avatar missing (persona deleted)
+        if (personaAvatar.length == 0) {
+            console.warn('Persona avatar not found, unlocking persona');
+            delete chat_metadata['persona'];
+            return;
+        }
+
+        personaAvatar.trigger('click');
+    }
+});
 
 //***************SETTINGS****************//
 ///////////////////////////////////////////
@@ -4876,6 +5013,7 @@ async function deleteMessageImage() {
     mesBlock.find('.mes_img_container').removeClass('img_extra');
     mesBlock.find('.mes_img').attr('src', '');
     saveChatConditional();
+    updateVisibleDivs('#chat', false);
 }
 
 function enlargeMessageImage() {
@@ -5724,12 +5862,7 @@ $(document).ready(function () {
         }
     });
 
-    $(document).on("click", "#user_avatar_block .avatar", function () {
-        user_avatar = $(this).attr("imgfile");
-        reloadUserAvatar();
-        saveSettingsDebounced();
-        highlightSelectedAvatar();
-    });
+    $(document).on("click", "#user_avatar_block .avatar", setUserAvatar);
     $(document).on("click", "#user_avatar_block .avatar_upload", function () {
         $("#avatar_upload_file").click();
     });
@@ -6770,13 +6903,7 @@ $(document).ready(function () {
     });
 
     $("#your_name_button").click(function () {
-        if (!is_send_press) {
-            name1 = $("#your_name").val();
-            if (name1 === undefined || name1 == "") name1 = default_user_name;
-            console.log(name1);
-            toastr.success(`Your messages will now be sent as ${name1}`, 'User Name updated');
-            saveSettings("change_name");
-        }
+        setUserName($('#your_name').val());
     });
 
     $('#sync_name_button').on('click', async function () {
@@ -6817,6 +6944,10 @@ $(document).ready(function () {
         // Check near immediately rather than waiting for up to 90s
         setTimeout(getStatusNovel, 10);
     });
+
+    $(document).on('click', '.bind_user_name', bindUserNameToPersona);
+    $(document).on('click', '.delete_avatar', deleteUserAvatar);
+    $('#lock_user_name').on('click', lockUserNameToChat);
 
     //**************************CHARACTER IMPORT EXPORT*************************//
     $("#character_import_button").click(function () {

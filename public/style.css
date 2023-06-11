@@ -1514,6 +1514,31 @@ input[type=search]:focus::-webkit-search-cancel-button {
     transition: 0.2s;
 }
 
+.avatar-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.avatar-container:hover .avatar-buttons {
+    display: flex;
+}
+
+.avatar-buttons .menu_button {
+    pointer-events: all;
+}
+
+.avatar-buttons {
+    pointer-events: none;
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    justify-content: space-between;
+}
+
 .avatar_div .avatar {
     margin-left: 4px;
     margin-right: 10px;

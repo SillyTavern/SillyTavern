@@ -143,7 +143,9 @@ let power_user = {
         output_sequence: '### Response:',
         preset: 'Alpaca',
         separator_sequence: '',
-    }
+    },
+
+    personas: {},
 };
 
 let themes = [];

@@ -459,7 +459,7 @@ async function getPrompt(generationType, message, trigger, quiet_prompt) {
             prompt = message || getRawLastMessage();
             break;
         case generationMode.FREE:
-            prompt = processReply(trigger);
+            prompt = trigger.trim();
             break;
         default:
             prompt = await generatePrompt(quiet_prompt);

@@ -1797,7 +1797,7 @@
                 </div>
                 <div id="wi-holder">
                     <h3>
-                        World Info
+                        World Info / Lorebooks
                         <a href="https://docs.sillytavern.app/usage/guidebook/#world-info" class="notes-link" target="_blank">
                             <span class="note-link-span">?</span>
                         </a>
@@ -2142,10 +2142,12 @@
                                     <span class="note-link-span">?</span>
                                 </a>
                             </label>
+
+                            <div id="reload_chat" class="menu_button whitespacenowrap" data-i18n="Reload Chat">
+                                Reload Chat
+                            </div>
                         </div>
 
-                        <div id="reload_chat" class="menu_button whitespacenowrap" data-i18n="Reload Chat">
-                            Reload Chat</div>
                     </div>
 
                     <div name="NameAndAvatar" class="flex-container flexFlowColumn drawer25pWidth">
@@ -2192,12 +2194,14 @@
                                 <input id="your_name" name="your_name" placeholder="Enter your name" class="text_pole wide100p" maxlength="50" value="" autocomplete="off">
                                 <div id="your_name_button" class="menu_button fa-solid fa-check" title="Click to set a new User Name">
                                 </div>
+                                <div id="lock_user_name" class="menu_button fa-solid fa-user-lock" title="Click to bind your selected persona to the current chat. Click again to remove the binding.">
+                                </div>
                                 <div id="sync_name_button" class="menu_button fa-solid fa-sync" title="Click to set user name for all messages">
                                 </div>
                             </div>
                         </div>
                         <div name="AvatarSelector">
-                            <h4 data-i18n="Your Avatar">Your Avatar</h4>
+                            <h4 data-i18n="Your Avatar">Your Persona</h4>
                             <div id="user_avatar_block">
                                 <div class="avatar_upload">+</div>
                             </div>
@@ -3111,6 +3115,22 @@
     </div>
     <div id="rawPromptPopup" class="list-group">
         <div id="rawPromptWrapper" class="tokenItemizingSubclass"></div>
+    </div>
+
+    <div id="user_avatar_template" class="template_element">
+        <div class="avatar-container">
+            <div imgfile="" class="avatar">
+                <img src="" alt="User Avatar">
+            </div>
+            <div class="avatar-buttons">
+                <button class="menu_button bind_user_name" title="Bind user name to that avatar">
+                    <i class="fa-solid fa-user-edit"></i>
+                </button>
+                <button class="menu_button delete_avatar" title="Delete persona">
+                    <i class="fa-solid fa-trash-alt"></i>
+                </button>
+            </div>
+        </div>
     </div>
 
     <script>
