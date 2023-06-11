@@ -6233,46 +6233,39 @@ $(document).ready(function () {
         }
     });
 
-    let isAnimating = false;
-    const optionsDiv = $("#options");
-    const optionsButtonDiv = $("#options_button");
+    var button = $('#options_button');
+    var menu = $('#options');
 
-    function toggleOptions() {
+    function showMenu() {
         showBookmarksButtons();
-        if ((isAnimating) ||
-            (optionsDiv.is(":visible") && optionsDiv.is(":hover"))) {
-            return;
-        }
-        isAnimating = true;
+        menu.stop().fadeIn(250);
         optionsPopper.update();
-        optionsDiv.toggle(200, () => isAnimating = false);
     }
 
-    //show/hide options on hoverstate/click
-    optionsButtonDiv.on('mouseenter click', () => {
-        if (optionsDiv.is(':visible')) return;
-        setTimeout(() => toggleOptions(), 200);
+    function hideMenu() {
+        menu.stop().fadeOut(250);
+        optionsPopper.update();
+    }
+
+    function isMouseOverButtonOrMenu() {
+        return menu.is(':hover') || button.is(':hover');
+    }
+
+    button.on('mouseenter click', function () { showMenu(); });
+    button.on('mouseleave', function () {
+        //delay to prevent menu hiding when mouse leaves button into menu
+        setTimeout(() => {
+            if (!isMouseOverButtonOrMenu()) { hideMenu(); }
+        }, 100)
     });
-
-    optionsButtonDiv.on('mouseleave', () => {
-        if (optionsDiv.is(':hidden')) return;
-        setTimeout(() => toggleOptions(), 200);
+    menu.on('mouseleave', function () {
+        //delay to prevent menu hide when mouseleaves menu into button
+        setTimeout(() => {
+            if (!isMouseOverButtonOrMenu()) { hideMenu(); }
+        }, 100)
     });
-
-    optionsDiv.on('mouseleave', () => {
-        setTimeout(() => toggleOptions(), 200);
-    })
-
-    //close options menu if open and user clicked outside it and button
-    $(document).on('click touchend', (e) => {
-        const target = e.target;
-        if (![optionsDiv[0], optionsButtonDiv[0]].includes(target) &&
-            !optionsDiv.is(':hover') &&
-            !optionsButtonDiv.is(':hover') &&
-            !isAnimating &&
-            optionsDiv.is(":visible")) {
-            setTimeout(() => toggleOptions(), 200);
-        }
+    $(document).on('click', function () {
+        if (!isMouseOverButtonOrMenu() && menu.is(':visible')) { hideMenu(); }
     });
 
     ///////////// OPTIMIZED LISTENERS FOR LEFT SIDE OPTIONS POPUP MENU //////////////////////
@@ -6336,6 +6329,8 @@ $(document).ready(function () {
             }
             is_delete_mode = true;
         }
+        console.log('clicked item, should hide options');
+        hideMenu();
     });
 
     //////////////////////////////////////////////////////////////////////////////////////////////
@@ -6562,7 +6557,7 @@ $(document).ready(function () {
         if (this_chid !== undefined || selected_group) {
             // Previously system messages we're allowed to be edited
             /*const message = $(this).closest(".mes");
-
+    
             if (message.data("isSystem")) {
                 return;
             }*/

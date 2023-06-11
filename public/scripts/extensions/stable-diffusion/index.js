@@ -583,8 +583,9 @@ function addSDGenButtons() {
     `
     const dropdownHtml = `
     <div id="sd_dropdown">
-    <span>Send me a picture of:</span>
+    
         <ul class="list-group">
+        <span>Send me a picture of:</span>
             <li class="list-group-item" id="sd_you" data-value="you">Yourself</li>
             <li class="list-group-item" id="sd_face" data-value="face">Your Face</li>
             <li class="list-group-item" id="sd_me" data-value="me">Me</li>
@@ -608,7 +609,7 @@ function addSDGenButtons() {
     messageButton.hide();
 
     let popper = Popper.createPopper(button.get(0), dropdown.get(0), {
-        placement: 'bottom',
+        placement: 'top',
     });
 
     $(document).on('click', '.sd_message_gen', sdMessageButton);
@@ -619,10 +620,10 @@ function addSDGenButtons() {
         if (target.is(button) && !dropdown.is(":visible") && $("#send_but").css('display') === 'flex') {
             e.preventDefault();
 
-            dropdown.show(200);
+            dropdown.fadeIn(250);
             popper.update();
         } else {
-            dropdown.hide(200);
+            dropdown.fadeOut(250);
         }
     });
 }

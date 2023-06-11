@@ -165,6 +165,9 @@ function onANMenuItemClick() {
             }, 250);
 
         }
+        //duplicate options menu close handler from script.js
+        //because this listener takes priority
+        $("#options").stop().fadeOut(250);
     } else {
         toastr.warning(`Select a character before trying to use Author's Note`, '', { timeOut: 2000 });
     }

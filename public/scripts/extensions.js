@@ -236,7 +236,7 @@ function addExtensionsButtonAndMenu() {
 
     $(button).on('click', function () {
         popper.update()
-        dropdown.toggle(200);
+        dropdown.fadeIn(250);
     });
 
     $("html").on('touchstart mousedown', function (e) {
@@ -244,7 +244,7 @@ function addExtensionsButtonAndMenu() {
         if (dropdown.is(':visible')
             && clickTarget.closest(button).length == 0
             && clickTarget.closest(dropdown).length == 0) {
-            $(dropdown).hide(200);
+            $(dropdown).fadeOut(250);
         }
     });
 }

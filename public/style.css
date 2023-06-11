@@ -562,7 +562,9 @@ hr {
 
 .options-content a,
 #extensionsMenu>div,
-.list-group>div {
+.list-group>div,
+.list-group .list-group-item,
+#sd_dropdown .list-group span {
     color: var(--SmartThemeBodyColor);
     padding: 5px 5px;
     padding-bottom: 5px;
