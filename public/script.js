@@ -2667,14 +2667,13 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             }
             else if (main_api == 'openai') {
                 let [prompt, counts] = await prepareOpenAIMessages({
-                    systemPrompt: systemPrompt,
                     name2: name2,
                     charDescription: charDescription,
                     charPersonality: charPersonality,
                     Scenario: Scenario,
                     worldInfoBefore: worldInfoBefore,
                     worldInfoAfter: worldInfoAfter,
-                    extensionPrompt: afterScenarioAnchor,
+                    extensionPrompts: extension_prompts,
                     bias: promptBias,
                     type: type,
                     quietPrompt: quiet_prompt,
