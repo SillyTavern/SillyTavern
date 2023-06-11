@@ -2,6 +2,7 @@ import { humanizedDateTime, favsToHotswap } from "./scripts/RossAscends-mods.js"
 import { encode } from "../scripts/gpt-2-3-tokenizer/mod.js";
 import { GPT3BrowserTokenizer } from "../scripts/gpt-3-tokenizer/gpt3-tokenizer.js";
 import {
+    generateKoboldWithStreaming,
     kai_settings,
     loadKoboldSettings,
     formatKoboldUrl,
@@ -1586,6 +1587,7 @@ function appendToStoryString(value, prefix) {
 
 function isStreamingEnabled() {
     return ((main_api == 'openai' && oai_settings.stream_openai)
+        || (main_api == 'kobold' && kai_settings.streaming_kobold)
         || (main_api == 'novel' && nai_settings.streaming_novel)
         || (main_api == 'poe' && poe_settings.streaming)
         || (main_api == 'textgenerationwebui' && textgenerationwebui_settings.streaming))
@@ -2366,6 +2368,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             }
             else if (main_api == 'novel' && isStreamingEnabled() && type !== 'quiet') {
                 streamingProcessor.generator = await generateNovelWithStreaming(generate_data, streamingProcessor.abortController.signal);
+            }
+            else if (main_api == 'kobold' && isStreamingEnabled() && type !== 'quiet') {
+                streamingProcessor.generator = await generateKoboldWithStreaming(generate_data, streamingProcessor.abortController.signal);
             }
             else {
                 try {
@@ -6690,7 +6695,7 @@ $(document).ready(function () {
         if (this_chid !== undefined || selected_group) {
             // Previously system messages we're allowed to be edited
             /*const message = $(this).closest(".mes");
-    
+
             if (message.data("isSystem")) {
                 return;
             }*/

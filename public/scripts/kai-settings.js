@@ -1,4 +1,5 @@
 import {
+    getRequestHeaders,
     saveSettingsDebounced,
     getStoppingStrings,
 } from "../script.js";
@@ -23,6 +24,7 @@ const kai_settings = {
     rep_pen_slope: 0.9,
     single_line: false,
     use_stop_sequence: false,
+    streaming_kobold: false,
 };
 
 const MIN_STOP_SEQUENCE_VERSION = '1.2.2';
@@ -58,6 +60,10 @@ function loadKoboldSettings(preset) {
         kai_settings.single_line = preset.single_line;
         $('#single_line').prop('checked', kai_settings.single_line);
     }
+    if (preset.hasOwnProperty('streaming_kobold')) {
+        kai_settings.streaming_kobold = preset.streaming_kobold;
+        $('#streaming_kobold').prop('checked', kai_settings.streaming_kobold);
+    }
 }
 
 function getKoboldGenerationData(finalPromt, this_settings, this_amount_gen, this_max_context, isImpersonate) {
@@ -86,8 +92,51 @@ function getKoboldGenerationData(finalPromt, this_settings, this_amount_gen, thi
         use_world_info: false,
         singleline: kai_settings.single_line,
         stop_sequence: kai_settings.use_stop_sequence ? getStoppingStrings(isImpersonate, false) : undefined,
+        streaming: kai_settings.streaming_kobold,
     };
     return generate_data;
+}
+
+export async function generateKoboldWithStreaming(generate_data, signal) {
+    const response = await fetch('/generate', {
+        headers: getRequestHeaders(),
+        body: JSON.stringify(generate_data),
+        method: 'POST',
+        signal: signal,
+    });
+
+    return async function* streamData() {
+        const decoder = new TextDecoder();
+        const reader = response.body.getReader();
+        let getMessage = '';
+        let messageBuffer = "";
+        while (true) {
+            const { done, value } = await reader.read();
+            let response = decoder.decode(value);
+            let eventList = [];
+
+            // ReadableStream's buffer is not guaranteed to contain full SSE messages as they arrive in chunks
+            // We need to buffer chunks until we have one or more full messages (separated by double newlines)
+            messageBuffer += response;
+            eventList = messageBuffer.split("\n\n");
+            // Last element will be an empty string or a leftover partial message
+            messageBuffer = eventList.pop();
+
+            for (let event of eventList) {
+                for (let subEvent of event.split('\n')) {
+                    if (subEvent.startsWith("data")) {
+                        let data = JSON.parse(subEvent.substring(5));
+                        getMessage += (data?.token || '');
+                        yield getMessage;
+                    }
+                }
+            }
+
+            if (done) {
+                return;
+           }
+        }
+    }
 }
 
 const sliders = [
@@ -174,6 +223,12 @@ $(document).ready(function () {
     $('#single_line').on("input", function () {
         const value = $(this).prop('checked');
         kai_settings.single_line = value;
+        saveSettingsDebounced();
+    });
+
+    $('#streaming_kobold').on("input", function () {
+        const value = $(this).prop('checked');
+        kai_settings.streaming_kobold = value;
         saveSettingsDebounced();
     });
 });
