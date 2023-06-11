@@ -534,6 +534,7 @@ function reloadMarkdownProcessor(render_formulas = false) {
     else {
         converter = new showdown.Converter({
             emoji: "true",
+            literalMidWordUnderscores: "true",
         });
     }
 
