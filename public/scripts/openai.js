@@ -406,7 +406,7 @@ async function prepareOpenAIMessages({ systemPrompt, name2, charDescription, cha
     }
 
     // Handle extension prompt
-    if (extensionPrompt) chatCompletion.insertAfter('worldInfoAfter', 'extensionPrompt', extensionPrompt);
+    if (extensionPrompt) chatCompletion.insertAfter('worldInfoAfter', 'extensionPrompt', chatCompletion.makeSystemMessage(substituteParams(extensionPrompt)));
 
     // Handle bias settings
     if (bias && bias.trim().length) chatCompletion.add(biasMessage);
