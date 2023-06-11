@@ -1104,6 +1104,25 @@ app.post("/getuseravatars", jsonParser, function (request, response) {
     response.send(JSON.stringify(images));
 
 });
+
+app.post('/deleteuseravatar', jsonParser, function (request, response) {
+    if (!request.body) return response.sendStatus(400);
+
+    if (request.body.avatar !== sanitize(request.body.avatar)) {
+        console.error('Malicious avatar name prevented');
+        return response.sendStatus(403);
+    }
+
+    const fileName = path.join(directories.avatars, sanitize(request.body.avatar));
+
+    if (fs.existsSync(fileName)) {
+        fs.rmSync(fileName);
+        return response.send({ result: 'ok' });
+    }
+
+    return response.sendStatus(404);
+});
+
 app.post("/setbackground", jsonParser, function (request, response) {
     var bg = "#bg1 {background-image: url('../backgrounds/" + request.body.bg + "');}";
     fs.writeFile('public/css/bg_load.css', bg, 'utf8', function (err) {
