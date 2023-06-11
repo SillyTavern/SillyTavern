@@ -4001,9 +4001,9 @@ function setUserAvatar() {
         const lockedPersona = chat_metadata['persona'];
         if (lockedPersona && lockedPersona !== user_avatar) {
             toastr.warning(
-                'Click the "Lock" to bind again. Otherwise, the selection will be reset when your reload the chat.',
+                'Unlock and lock the persona again using the "Lock" button. Otherwise, the selection will be reset when your reload the chat.',
                 `This chat is locked to a different persona (${power_user.personas[lockedPersona]}).`,
-                { timeOut: 10000, extendedTimeOut: 20000 },
+                { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true },
             );
         }
 
@@ -4110,7 +4110,7 @@ function lockUserNameToChat() {
         console.log(`Unlocking persona for this chat ${chat_metadata['persona']}`);
         delete chat_metadata['persona'];
         saveMetadata();
-        toastr.info('User persona is now unlocked for this chat. Click the "Lock" to bind again.', 'Persona unlocked');
+        toastr.info('User persona is now unlocked for this chat. Click the "Lock" again to revert.', 'Persona unlocked');
         return;
     }
 
