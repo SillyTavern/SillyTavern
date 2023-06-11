@@ -111,6 +111,7 @@ const default_settings = {
     nsfw_toggle: true,
     enhance_definitions: false,
     wrap_in_quotes: false,
+    send_if_empty: '',
     nsfw_first: false,
     main_prompt: default_main_prompt,
     nsfw_prompt: default_nsfw_prompt,
@@ -143,6 +144,7 @@ const oai_settings = {
     nsfw_toggle: true,
     enhance_definitions: false,
     wrap_in_quotes: false,
+    send_if_empty: '',
     nsfw_first: false,
     main_prompt: default_main_prompt,
     nsfw_prompt: default_nsfw_prompt,
@@ -970,6 +972,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.legacy_streaming = settings.legacy_streaming ?? default_settings.legacy_streaming;
     oai_settings.max_context_unlocked = settings.max_context_unlocked ?? default_settings.max_context_unlocked;
     oai_settings.nsfw_avoidance_prompt = settings.nsfw_avoidance_prompt ?? default_settings.nsfw_avoidance_prompt;
+    oai_settings.send_if_empty = settings.send_if_empty ?? default_settings.send_if_empty;
     oai_settings.wi_format = settings.wi_format ?? default_settings.wi_format;
     oai_settings.claude_model = settings.claude_model ?? default_settings.claude_model;
     oai_settings.windowai_model = settings.windowai_model ?? default_settings.windowai_model;
@@ -1011,6 +1014,7 @@ function loadOpenAISettings(data, settings) {
     $('#impersonation_prompt_textarea').val(oai_settings.impersonation_prompt);
     $('#nsfw_avoidance_prompt_textarea').val(oai_settings.nsfw_avoidance_prompt);
     $('#wi_format_textarea').val(oai_settings.wi_format);
+    $('#send_if_empty_textarea').val(oai_settings.send_if_empty);
 
     $('#temp_openai').val(oai_settings.temp_openai);
     $('#temp_counter_openai').text(Number(oai_settings.temp_openai).toFixed(2));
@@ -1150,6 +1154,7 @@ async function saveOpenAIPreset(name, settings) {
         nsfw_toggle: settings.nsfw_toggle,
         enhance_definitions: settings.enhance_definitions,
         wrap_in_quotes: settings.wrap_in_quotes,
+        send_if_empty: settings.send_if_empty,
         nsfw_first: settings.nsfw_first,
         main_prompt: settings.main_prompt,
         nsfw_prompt: settings.nsfw_prompt,
@@ -1427,6 +1432,7 @@ function onSettingsPresetChange() {
         nsfw_toggle: ['#nsfw_toggle', 'nsfw_toggle', true],
         enhance_definitions: ['#enhance_definitions', 'enhance_definitions', true],
         wrap_in_quotes: ['#wrap_in_quotes', 'wrap_in_quotes', true],
+        send_if_empty: ['#send_if_empty_textarea', 'send_if_empty', false],
         nsfw_first: ['#nsfw_first', 'nsfw_first', true],
         jailbreak_system: ['#jailbreak_system', 'jailbreak_system', true],
         main_prompt: ['#main_prompt_textarea', 'main_prompt', false],
@@ -1715,6 +1721,11 @@ $(document).ready(function () {
 
     $('#wrap_in_quotes').on('change', function () {
         oai_settings.wrap_in_quotes = !!$('#wrap_in_quotes').prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $("#send_if_empty_textarea").on('input', function () {
+        oai_settings.send_if_empty = $('#send_if_empty_textarea').val();
         saveSettingsDebounced();
     });
 
