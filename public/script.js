@@ -1915,6 +1915,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 await sendMessageAsUser(textareaText, messageBias);
             }
         }
+        else if (textareaText == "" && !automatic_trigger && type !== 'quiet' && main_api == 'openai' && oai_settings.send_if_empty.trim().length > 0) {
+            await sendMessageAsUser(oai_settings.send_if_empty.trim(), messageBias);
+        }
+
         ////////////////////////////////////
         const scenarioText = chat_metadata['scenario'] || characters[this_chid].scenario;
         let charDescription = baseChatReplace(characters[this_chid].description.trim(), name1, name2);
