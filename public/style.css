@@ -2283,8 +2283,8 @@ input[type="range"]::-webkit-slider-thumb {
 /*Notes '?' links*/
 
 .note-link-span {
-    color: var(--sienna);
-    border: 1px solid var(--sienna);
+    color: var(--SmartThemeQuoteColor);
+    border: 1px solid var(--SmartThemeQuoteColor);
     border-radius: 10px;
     line-height: var(--mainFontSize);
     font-size: var(--mainFontSize);
