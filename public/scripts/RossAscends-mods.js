@@ -269,7 +269,7 @@ export function RA_CountCharTokens() {
         $("#result_info").html(`
         <span class="neutral_warning">${count_tokens}</span>&nbsp;Tokens (<span class="neutral_warning">${perm_tokens}</span><span>&nbsp;Permanent Tokens)
         <br>
-        <div id="chartokenwarning" class="menu_button whitespacenowrap"><a href="https://docs.sillytavern.app/usage/guidebook/#character-tokens" target="_blank">Learn More About Token 'Limits'</a></div>`);
+        <div id="chartokenwarning" class="menu_button whitespacenowrap"><a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#character-tokens" target="_blank">Learn More About Token 'Limits'</a></div>`);
     } //warn if either are over 1024
 }
 //Auto Load Last Charcter -- (fires when active_character is defined and auto_load_chat is true)
