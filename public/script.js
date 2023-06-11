@@ -3918,6 +3918,8 @@ function appendUserAvatar(name) {
     const personaName = power_user.personas[name];
     if (personaName) {
         template.attr('title', personaName);
+    } else {
+        template.attr('title', '[Unnamed Persona]');
     }
     template.find('.avatar').attr('imgfile', name);
     template.toggleClass('default_persona', name === power_user.default_persona)
@@ -3980,6 +3982,12 @@ async function bindUserNameToPersona() {
         // If the user clicked ok and entered a name, bind the name to the persona
         console.log(`Binding persona ${avatarId} to name ${personaName}`);
         power_user.personas[avatarId] = personaName;
+
+        // If the user is currently using this persona, update the name
+        if (avatarId === user_avatar) {
+            console.log(`Auto-updating user name to ${personaName}`);
+            setUserName(personaName);
+        }
     } else {
         // If the user clicked ok, but didn't enter a name, delete the persona
         console.log(`Unbinding persona ${avatarId}`);
@@ -4000,8 +4008,8 @@ function setUserAvatar() {
     if (personaName && name1 !== personaName) {
         const lockedPersona = chat_metadata['persona'];
         if (lockedPersona && lockedPersona !== user_avatar) {
-            toastr.warning(
-                'Unlock and lock the persona again using the "Lock" button. Otherwise, the selection will be reset when your reload the chat.',
+            toastr.info(
+                `To permanently set "${personaName}" as the selected persona, unlock and relock it using the "Lock" button. Otherwise, the selection resets upon reloading the chat.`,
                 `This chat is locked to a different persona (${power_user.personas[lockedPersona]}).`,
                 { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true },
             );
@@ -4116,7 +4124,11 @@ function lockUserNameToChat() {
 
     if (!(user_avatar in power_user.personas)) {
         console.log(`Creating a new persona ${user_avatar}`);
-        toastr.info('Creating a new persona for currently selected user name and avatar...', 'Persona not set for this avatar');
+        toastr.info(
+            'Creating a new persona for currently selected user name and avatar...',
+            'Persona not set for this avatar',
+            { timeOut: 10000, extendedTimeOut: 20000, },
+        );
         power_user.personas[user_avatar] = name1;
     }
 
