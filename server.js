@@ -1450,6 +1450,8 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
     });
 
     console.log(request.body);
+    const bw = require('./src/bad-words');
+    const bad_words_ids = request.body.model.includes('clio') ? bw.clioBadWordsId : bw.badWordIds;
     const data = {
         "input": request.body.input,
         "model": request.body.model,
@@ -1469,10 +1471,10 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
             "top_k": request.body.top_k,
             "typical_p": request.body.typical_p,
             //"stop_sequences": {{187}},
-            //bad_words_ids = {{50256}, {0}, {1}};
+            "bad_words_ids": bad_words_ids,
             //generate_until_sentence = true;
             "use_cache": request.body.use_cache,
-            //use_string = true;
+            "use_string": true,
             "return_full_text": request.body.return_full_text,
             "prefix": request.body.prefix,
             "order": request.body.order

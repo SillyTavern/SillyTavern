@@ -1,13 +1,17 @@
 {
-   "order": [3, 0],
-   "temperature": 1.7,
+   "order": [3, 4, 5, 2, 0],
+   "temperature": 1.33,
    "max_length": 90,
    "min_length": 1,
-   "tail_free_sampling": 0.66,
-   "repetition_penalty": 1.06,
-   "repetition_penalty_range": 340,
+   "tail_free_sampling": 0.937,
+   "repetition_penalty": 1.05,
+   "repetition_penalty_range": 560,
    "repetition_penalty_frequency": 0,
    "repetition_penalty_presence": 0,
-   "repetition_penalty_slope": 0,
-   "max_context": 2048
+   "repetition_penalty_slope": 0.18,
+   "max_context": 2048,
+   "top_p": 0.88,
+   "top_k": 0,
+   "top_a": 0.085,
+   "typical_p": 0.985
 }

@@ -154,9 +154,9 @@ export function getNovelGenerationData(finalPromt, this_settings, this_amount_ge
         "typical_p": this_settings.typical_p,
         //"stop_sequences": {{187}},
         //bad_words_ids = {{50256}, {0}, {1}};
-        //generate_until_sentence = true;
+        "generate_until_sentence": true,
         "use_cache": false,
-        //use_string = true;
+        "use_string": true,
         "return_full_text": false,
         "prefix": "vanilla",
         "order": this_settings.order,
