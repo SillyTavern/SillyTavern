@@ -9,6 +9,12 @@ export const dinkusExtension = () => {
 
     // Create an escaped sequence so the regex can work with any character
     const savedDinkus = power_user.custom_chat_separator
+
+    // No dinkus? No extension!
+    if (!savedDinkus || savedDinkus.trim().length === 0) {
+        return []
+    }
+
     const escapedDinkus = savedDinkus.split('').map((e) => `\\${e}`).join('');
     const replaceRegex = new RegExp(`^(${escapedDinkus})\n`, "gm")
     return [{
