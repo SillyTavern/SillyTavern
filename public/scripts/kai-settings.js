@@ -94,7 +94,7 @@ function getKoboldGenerationData(finalPromt, this_settings, this_amount_gen, thi
         use_world_info: false,
         singleline: kai_settings.single_line,
         stop_sequence: kai_settings.use_stop_sequence ? getStoppingStrings(isImpersonate, false) : undefined,
-        streaming: kai_settings.streaming_kobold ? canUseKoboldStreaming() : false,
+        streaming: kai_settings.streaming_kobold && kai_settings.can_use_streaming,
     };
     return generate_data;
 }
@@ -212,7 +212,7 @@ function canUseKoboldStopSequence(version) {
 }
 
 function canUseKoboldStreaming(koboldVersion) {
-    if (koboldVersion = 'KoboldCpp') {
+    if (koboldVersion.result = 'KoboldCpp') {
         return (koboldVersion.version || '0.0').localeCompare(MIN_STREAMING_KCPPVERSION, undefined, { numeric: true, sensitivity: 'base' }) > -1;
     } else return false;
 }

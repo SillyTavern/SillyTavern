@@ -745,7 +745,7 @@ async function getStatus() {
                     is_pygmalion = false;
                 }
 
-                // determine if we can use stop sequence
+                // determine if we can use stop sequence and streaming
                 if (main_api === "kobold" || main_api === "koboldhorde") {
                     kai_settings.use_stop_sequence = canUseKoboldStopSequence(data.version);
                     kai_settings.can_use_streaming = canUseKoboldStreaming(data.koboldVersion);
