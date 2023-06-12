@@ -534,16 +534,18 @@ hr {
     border: 1px solid var(--white30a);
     border-radius: 10px;
     z-index: 2000;
+    font-size: calc(var(--mainFontSize) * 1.2);
 }
 
 .options-content i,
 .extensionsMenuExtensionButton {
     height: 20px;
     width: 20px;
-    font-size: var(--mainFontSize);
+    font-size: calc(var(--mainFontSize) * 1.2);
     display: flex;
     align-items: center;
     justify-content: center;
+
 }
 
 .options-content hr {
