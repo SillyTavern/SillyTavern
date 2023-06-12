@@ -2390,7 +2390,7 @@ app.post('/generate_poe', jsonParser, async (request, response) => {
     if (streaming) {
         try {
             let reply = '';
-            for await (const mes of client.send_message(bot, prompt, false, 30, abortController.signal)) {
+            for await (const mes of client.send_message(bot, prompt, false, 60, abortController.signal)) {
                 if (response.headersSent === false) {
                     response.writeHead(200, {
                         'Content-Type': 'text/plain;charset=utf-8',
@@ -2423,7 +2423,7 @@ app.post('/generate_poe', jsonParser, async (request, response) => {
         try {
             let reply;
             let messageId;
-            for await (const mes of client.send_message(bot, prompt, false, 30, abortController.signal)) {
+            for await (const mes of client.send_message(bot, prompt, false, 60, abortController.signal)) {
                 reply = mes.text;
                 messageId = mes.messageId;
             }

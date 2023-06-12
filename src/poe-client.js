@@ -608,7 +608,7 @@ class Client {
         }
     }
 
-    async *send_message(chatbot, message, with_chat_break = false, timeout = 30, signal = null) {
+    async *send_message(chatbot, message, with_chat_break = false, timeout = 60, signal = null) {
         await this.ws_ping();
 
         if (this.auto_reconnect) {
