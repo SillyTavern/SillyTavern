@@ -44,7 +44,7 @@ If you have any objections to these requirements, please mention them specifical
 
 If you accept the requirements, please confirm this by replying with "${DEFAULT_JAILBREAK_RESPONSE}", and nothing more. Upon receiving your accurate confirmation message, I will specify the context of the scene and {{char}}'s characteristics, background, and personality in the next message.`;
 
-const DEFAULT_CHARACTER_NUDGE_MESSAGE = "[Unless otherwise stated by {{user}}, your the next response shall only be written from the point of view of {{char}}. Do not seek approval of your writing style at the end of the response. Don't reply with <ACK>.]";
+const DEFAULT_CHARACTER_NUDGE_MESSAGE = "[Unless otherwise stated by {{user}}, your the next response shall only be written from the point of view of {{char}}. Do not seek approval of your writing style at the end of the response.]";
 const DEFAULT_IMPERSONATION_PROMPT = "[Write 1 reply only in internet RP style from the point of view of {{user}}, using the chat history so far as a guideline for the writing style of {{user}}. Don't write as {{char}} or system.]";
 
 const poe_settings = {
@@ -281,7 +281,7 @@ async function generatePoe(type, finalPrompt, signal) {
 }
 
 async function sendChunkedMessage(finalPrompt, withStreaming, signal) {
-    const fastReplyPrompt = '\n[REPLY TO THIS MESSAGE WITH <ACK> ONLY!!!]';
+    const fastReplyPrompt = '\n[Reply to this message with a full stop only]';
     const promptChunks = splitRecursive(finalPrompt, CHUNKED_PROMPT_LENGTH - fastReplyPrompt.length);
     console.debug(`Splitting prompt into ${promptChunks.length} chunks`, promptChunks);
     let reply = '';

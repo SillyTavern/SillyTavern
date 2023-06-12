@@ -2,11 +2,13 @@ import { humanizedDateTime, favsToHotswap } from "./scripts/RossAscends-mods.js"
 import { encode } from "../scripts/gpt-2-3-tokenizer/mod.js";
 import { GPT3BrowserTokenizer } from "../scripts/gpt-3-tokenizer/gpt3-tokenizer.js";
 import {
+    generateKoboldWithStreaming,
     kai_settings,
     loadKoboldSettings,
     formatKoboldUrl,
     getKoboldGenerationData,
     canUseKoboldStopSequence,
+    canUseKoboldStreaming,
 } from "./scripts/kai-settings.js";
 
 import {
@@ -743,9 +745,10 @@ async function getStatus() {
                     is_pygmalion = false;
                 }
 
-                // determine if we can use stop sequence
+                // determine if we can use stop sequence and streaming
                 if (main_api === "kobold" || main_api === "koboldhorde") {
                     kai_settings.use_stop_sequence = canUseKoboldStopSequence(data.version);
+                    kai_settings.can_use_streaming = canUseKoboldStreaming(data.koboldVersion);
                 }
 
                 //console.log(online_status);
@@ -1587,6 +1590,7 @@ function appendToStoryString(value, prefix) {
 
 function isStreamingEnabled() {
     return ((main_api == 'openai' && oai_settings.stream_openai)
+        || (main_api == 'kobold' && kai_settings.streaming_kobold && kai_settings.can_use_streaming)
         || (main_api == 'novel' && nai_settings.streaming_novel)
         || (main_api == 'poe' && poe_settings.streaming)
         || (main_api == 'textgenerationwebui' && textgenerationwebui_settings.streaming))
@@ -1852,6 +1856,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         toastr.error('Streaming URL is not set. Look it up in the console window when starting TextGen Web UI');
         is_send_press = false;
         return;
+    }
+
+    if (main_api == 'kobold' && kai_settings.streaming_kobold && !kai_settings.can_use_streaming) {
+        toastr.warning('Streaming is enabled, but the version of Kobold used does not support token streaming.', undefined, { timeOut: 10000, preventDuplicates: true, });
     }
 
     if (isHordeGenerationNotAllowed()) {
@@ -2367,6 +2375,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             }
             else if (main_api == 'novel' && isStreamingEnabled() && type !== 'quiet') {
                 streamingProcessor.generator = await generateNovelWithStreaming(generate_data, streamingProcessor.abortController.signal);
+            }
+            else if (main_api == 'kobold' && isStreamingEnabled() && type !== 'quiet') {
+                streamingProcessor.generator = await generateKoboldWithStreaming(generate_data, streamingProcessor.abortController.signal);
             }
             else {
                 try {
