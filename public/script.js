@@ -5144,7 +5144,7 @@ async function deleteMessageImage() {
     mesBlock.find('.mes_img_container').removeClass('img_extra');
     mesBlock.find('.mes_img').attr('src', '');
     saveChatConditional();
-    updateVisibleDivs('#chat', false);
+    /*updateVisibleDivs('#chat', false);*/
 }
 
 function enlargeMessageImage() {
@@ -5824,9 +5824,10 @@ $(document).ready(function () {
         updateVisibleDivs('#rm_print_characters_block', true);
     }, 5));
 
-    $("#chat").on('scroll', debounce(() => {
+    // This does not actually increase performance.
+    /*$("#chat").on('scroll', debounce(() => {
         updateVisibleDivs('#chat', false);
-    }, 10));
+    }, 10));*/
 
     let S_TAFocused = false;
     let S_TAPreviouslyFocused = false;
