@@ -1859,7 +1859,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     }
 
     if (main_api == 'kobold' && kai_settings.streaming_kobold && !kai_settings.can_use_streaming) {
-        toastr.warning('Streaming is enabled, but the version of kobold used does not support token streaming.');
+        toastr.warning('Streaming is enabled, but the version of Kobold used does not support token streaming.', undefined, { timeOut: 10000, preventDuplicates: true, });
     }
 
     if (isHordeGenerationNotAllowed()) {
