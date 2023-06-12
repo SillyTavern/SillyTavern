@@ -95,7 +95,7 @@ declare class AIHorde {
     /**
      * Lookup user details based on their API key.
      * This can be used to verify a user exists
-     * @param options.token - The token of the user; If none given the default from the contructor is used
+     * @param options.token - The token of the user; If none given the default from the constructor is used
      * @param options.fields - Array of fields that will be included in the returned data
      * @returns UserDetails - The user data of the requested user
      */
