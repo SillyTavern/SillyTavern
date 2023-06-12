@@ -8,6 +8,7 @@ import {
     formatKoboldUrl,
     getKoboldGenerationData,
     canUseKoboldStopSequence,
+    canUseKoboldStreaming,
 } from "./scripts/kai-settings.js";
 
 import {
@@ -747,6 +748,7 @@ async function getStatus() {
                 // determine if we can use stop sequence
                 if (main_api === "kobold" || main_api === "koboldhorde") {
                     kai_settings.use_stop_sequence = canUseKoboldStopSequence(data.version);
+                    kai_settings.can_use_streaming = canUseKoboldStreaming(data.koboldVersion);
                 }
 
                 //console.log(online_status);
@@ -1587,7 +1589,7 @@ function appendToStoryString(value, prefix) {
 
 function isStreamingEnabled() {
     return ((main_api == 'openai' && oai_settings.stream_openai)
-        || (main_api == 'kobold' && kai_settings.streaming_kobold)
+        || (main_api == 'kobold' && kai_settings.streaming_kobold && kai_settings.can_use_streaming)
         || (main_api == 'novel' && nai_settings.streaming_novel)
         || (main_api == 'poe' && poe_settings.streaming)
         || (main_api == 'textgenerationwebui' && textgenerationwebui_settings.streaming))
@@ -1853,6 +1855,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         toastr.error('Streaming URL is not set. Look it up in the console window when starting TextGen Web UI');
         is_send_press = false;
         return;
+    }
+
+    if (main_api == 'kobold' && kai_settings.streaming_kobold && !kai_settings.can_use_streaming) {
+        toastr.warning('Streaming is enabled, but the version of kobold used does not support token streaming.');
     }
 
     if (isHordeGenerationNotAllowed()) {

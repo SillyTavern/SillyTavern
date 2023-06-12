@@ -10,6 +10,7 @@ export {
     formatKoboldUrl,
     getKoboldGenerationData,
     canUseKoboldStopSequence,
+    canUseKoboldStreaming,
 };
 
 const kai_settings = {
@@ -28,6 +29,7 @@ const kai_settings = {
 };
 
 const MIN_STOP_SEQUENCE_VERSION = '1.2.2';
+const MIN_STREAMING_KCPPVERSION = '1.30';
 
 function formatKoboldUrl(value) {
     try {
@@ -92,7 +94,7 @@ function getKoboldGenerationData(finalPromt, this_settings, this_amount_gen, thi
         use_world_info: false,
         singleline: kai_settings.single_line,
         stop_sequence: kai_settings.use_stop_sequence ? getStoppingStrings(isImpersonate, false) : undefined,
-        streaming: kai_settings.streaming_kobold,
+        streaming: kai_settings.streaming_kobold ? canUseKoboldStreaming() : false,
     };
     return generate_data;
 }
@@ -207,6 +209,12 @@ const sliders = [
 
 function canUseKoboldStopSequence(version) {
     return (version || '0.0.0').localeCompare(MIN_STOP_SEQUENCE_VERSION, undefined, { numeric: true, sensitivity: 'base' }) > -1;
+}
+
+function canUseKoboldStreaming(koboldVersion) {
+    if (koboldVersion = 'KoboldCpp') {
+        return (koboldVersion.version || '0.0').localeCompare(MIN_STREAMING_KCPPVERSION, undefined, { numeric: true, sensitivity: 'base' }) > -1;
+    } else return false;
 }
 
 $(document).ready(function () {

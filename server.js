@@ -389,7 +389,7 @@ app.post("/generate", jsonParser, async function (request, response_generate = r
         const fetch = require('node-fetch').default;
         const url = request.body.streaming ? `${api_server}/extra/generate/stream` : `${api_server}/v1/generate`;
         const response = await fetch(url, { method: 'POST', timeout: 0, ...args });
-        console.log(response);
+
         if (request.body.streaming) {
             // Pipe remote SSE stream to Express response
             response.body.pipe(response_generate);
@@ -581,12 +581,22 @@ app.post("/getstatus", jsonParser, async function (request, response_getstatus =
     };
     var url = api_server + "/v1/model";
     let version = '';
+    let koboldVersion = {};
     if (main_api == "kobold") {
         try {
             version = (await getAsync(api_server + "/v1/info/version")).result;
         }
         catch {
             version = '0.0.0';
+        }
+        try {
+            koboldVersion = await getAsync(api_server + "/extra/version");
+        }
+        catch {
+            koboldVersion = {
+                result: 'Kobold',
+                version: '0.0',
+            };
         }
     }
     client.get(url, args, function (data, response) {
@@ -595,6 +605,7 @@ app.post("/getstatus", jsonParser, async function (request, response_getstatus =
         }
         if (response.statusCode == 200) {
             data.version = version;
+            data.koboldVersion = koboldVersion;
             if (data.result != "ReadOnly") {
             } else {
                 data.result = "no_connection";
