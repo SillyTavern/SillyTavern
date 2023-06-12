@@ -1143,7 +1143,10 @@ function trySelectPresetByName(name) {
 
 async function saveOpenAIPreset(name, settings) {
     const presetBody = {
+        chat_completion_source: settings.chat_completion_source,
         openai_model: settings.openai_model,
+        claude_model: settings.claude_model,
+        windowai_model: settings.windowai_model,
         temperature: settings.temp_openai,
         frequency_penalty: settings.freq_pen_openai,
         presence_penalty: settings.pres_pen_openai,
@@ -1167,9 +1170,6 @@ async function saveOpenAIPreset(name, settings) {
         max_context_unlocked: settings.max_context_unlocked,
         nsfw_avoidance_prompt: settings.nsfw_avoidance_prompt,
         wi_format: settings.wi_format,
-        claude_model: settings.claude_model,
-        windowai_model: settings.windowai_model,
-        chat_completion_source: settings.chat_completion_source,
     };
 
     const savePresetSettings = await fetch(`/savepreset_openai?name=${name}`, {
@@ -1457,7 +1457,7 @@ function onSettingsPresetChange() {
         }
     }
 
-    $(`#model_openai_select`).trigger('change');
+    $(`#chat_completion_source`).trigger('change');
     $(`#openai_logit_bias_preset`).trigger('change');
     saveSettingsDebounced();
 }
@@ -1850,7 +1850,7 @@ $(document).ready(function () {
 
     $('#oai_max_context_unlocked').on('input', function () {
         oai_settings.max_context_unlocked = !!$(this).prop('checked');
-        $("#model_openai_select").trigger('change');
+        $("#chat_completion_source").trigger('change');
         saveSettingsDebounced();
     });
 
