@@ -1418,6 +1418,14 @@ function onGroupScenarioRemoveClick() {
     $(this).closest('.group_scenario').find('.group_chat_scenario').val('').trigger('input');
 }
 
+function onSendTextareaInput() {
+    if (is_group_automode_enabled) {
+        // Wait for current automode generation to finish
+        is_group_automode_enabled = false;
+        $("#rm_group_automode").prop("checked", false);
+    }
+}
+
 function stopAutoModeGeneration() {
     if (groupAutoModeAbortController) {
         groupAutoModeAbortController.abort();
@@ -1440,4 +1448,5 @@ jQuery(() => {
         is_group_automode_enabled = value;
         eventSource.once(event_types.GENERATION_STOPPED, stopAutoModeGeneration);
     });
+    $("#send_textarea").on("keyup", onSendTextareaInput);
 });
