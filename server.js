@@ -385,35 +385,49 @@ app.post("/generate", jsonParser, async function (request, response_generate = r
         signal: controller.signal,
     };
 
-    try {
-        const fetch = require('node-fetch').default;
-        const url = request.body.streaming ? `${api_server}/extra/generate/stream` : `${api_server}/v1/generate`;
-        const response = await fetch(url, { method: 'POST', timeout: 0, ...args });
+    const MAX_RETRIES = 10;
+    const delayAmount = 3000;
 
-        if (request.body.streaming) {
-            // Pipe remote SSE stream to Express response
-            response.body.pipe(response_generate);
+    let fetch, url, response;
+    for (let i = 0; i < MAX_RETRIES; i++) {
+        try {
+            fetch = require('node-fetch').default;
+            url = request.body.streaming ? `${api_server}/extra/generate/stream` : `${api_server}/v1/generate`;
+            response = await fetch(url, { method: 'POST', timeout: 0, ...args });
 
-            request.socket.on('close', function () {
-                response.body.destroy(); // Close the remote stream
-                response_generate.end(); // End the Express response
-            });
+            if (request.body.streaming) {
 
-            response.body.on('end', function () {
-                console.log("Streaming request finished");
-                response_generate.end();
-            });
-        } else {
-            if (!response.ok) {
-                console.log(`Kobold returned error: ${response.status} ${response.statusText} ${await response.text()}`);
-                return response.status(response.status).send({ error: true });
-             }
+                request.socket.on('close', function () {
+                    response.body.destroy(); // Close the remote stream
+                    response_generate.end(); // End the Express response
+                });
 
-            const data = await response.json();
-            return response_generate.send(data);
-         }
-    } catch (error) {
-        return response_generate.send({ error: true });
+                response.body.on('end', function () {
+                    console.log("Streaming request finished");
+                    response_generate.end();
+                });
+
+                // Pipe remote SSE stream to Express response
+                return response.body.pipe(response_generate);
+            } else {
+                if (!response.ok) {
+                    console.log(`Kobold returned error: ${response.status} ${response.statusText} ${await response.text()}`);
+                    return response.status(response.status).send({ error: true });
+                }
+
+                const data = await response.json();
+                return response_generate.send(data);
+            }
+        } catch (error) {
+            // response
+            switch (error.statusCode) {
+                case 503: // retry in case of temporary service issue, possibly caused by a queue failure?
+                    await delay(delayAmount);
+                    break;
+                default:
+                    return response_generate.send({ error: true });
+            }
+        }
     }
 });
 
@@ -590,7 +604,7 @@ app.post("/getstatus", jsonParser, async function (request, response_getstatus =
             version = '0.0.0';
         }
         try {
-            koboldVersion = await getAsync(api_server + "/extra/version");
+            koboldVersion = (await getAsync(api_server + "/extra/version"));
         }
         catch {
             koboldVersion = {
