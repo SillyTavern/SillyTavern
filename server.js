@@ -385,8 +385,8 @@ app.post("/generate", jsonParser, async function (request, response_generate = r
         headers: { "Content-Type": "application/json" },
     };
 
-    const MAX_RETRIES = 10;
-    const delayAmount = 3000;
+    const MAX_RETRIES = 20;
+    const delayAmount = 5000;
     for (let i = 0; i < MAX_RETRIES; i++) {
         try {
             const data = await postAsync(api_server + "/v1/generate", args);
@@ -400,11 +400,14 @@ app.post("/generate", jsonParser, async function (request, response_generate = r
             }
 
             // response
-            switch (error.statusCode) {
+            switch (error.status) {
+                case 403:
                 case 503:
+                    console.debug(`KoboldAI is busy. Retry attempt ${i+1} of ${MAX_RETRIES}...`);
                     await delay(delayAmount);
                     break;
                 default:
+                    console.log('Status Code from Kobold:', error.status);
                     return response_generate.send({ error: true });
             }
         }
@@ -3120,7 +3123,7 @@ async function postAsync(url, args) {
         return data;
     }
 
-    throw new Error(response);
+    throw response;
 }
 
 function getAsync(url, args) {
