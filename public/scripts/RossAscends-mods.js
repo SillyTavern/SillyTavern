@@ -260,16 +260,23 @@ export function RA_CountCharTokens() {
                 (power_user.pin_examples ? characters[this_chid].mes_example : ''),
             ].join('\n').replace(/\r/gm, '').trim();
             perm_tokens = getTokenCount(perm_string);
-        } else { console.debug("RA_TC -- no valid char found, closing."); }                // if neither, probably safety char or some error in loading
+            // if neither, probably safety char or some error in loading
+        } else { console.debug("RA_TC -- no valid char found, closing."); }
     }
     // display the counted tokens
     if (count_tokens < 1024 && perm_tokens < 1024) {
-        $("#result_info").html(count_tokens + " Tokens (" + perm_tokens + " Permanent)");      //display normal if both counts are under 1024
+        //display normal if both counts are under 1024
+        $("#result_info").html(`<small>${count_tokens} Tokens (${perm_tokens} Permanent)</small>`);
     } else {
         $("#result_info").html(`
-        <span class="neutral_warning">${count_tokens}</span>&nbsp;Tokens (<span class="neutral_warning">${perm_tokens}</span><span>&nbsp;Permanent Tokens)
-        <br>
-        <div id="chartokenwarning" class="menu_button whitespacenowrap"><a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#character-tokens" target="_blank">Learn More About Token 'Limits'</a></div>`);
+        <div class="flex-container flexFlowColumn alignitemscenter">
+            <div class="flex-container flexnowrap flexNoGap">
+                <small class="flex-container flexnowrap flexNoGap">
+                    <div class="neutral_warning">${count_tokens}</div>&nbsp;Tokens (<div class="neutral_warning">${perm_tokens}</div><div>&nbsp;Permanent)</div>
+                </small>
+            </div>
+            <div id="chartokenwarning" class="menu_button whitespacenowrap"><a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#character-tokens" target="_blank">About Token 'Limits'</a></div>
+        </div>`);
     } //warn if either are over 1024
 }
 //Auto Load Last Charcter -- (fires when active_character is defined and auto_load_chat is true)

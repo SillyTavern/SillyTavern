@@ -1277,12 +1277,12 @@
                                 </label>
 
                                 <h4>API key</h4>
-                                <h5>Get it here: <a target="_blank" href="https://horde.koboldai.net/register">Register</a><br>
+                                <small>Get it here: <a target="_blank" href="https://horde.koboldai.net/register">Register</a> (<a id="horde_kudos" href="javascript:void(0);">View my Kudos</a>)<br>
                                     Enter <span class="monospace">0000000000</span> to use anonymous mode.
-                                </h5>
-                                <div>
+                                </small>
+                                <!-- <div>
                                     <a id="horde_kudos" href="javascript:void(0);">View my Kudos</a>
-                                </div>
+                                </div> -->
                                 <div class="flex-container">
                                     <input id="horde_api_key" name="horde_api_key" class="text_pole flex1" maxlength="500" type="text" placeholder="0000000000" autocomplete="off">
                                     <div title="Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_horde"></div>
@@ -1311,7 +1311,7 @@
                         <form action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <div id="kobold_api_block">
                                 <h4>API url</h4>
-                                <h5>Example: http://127.0.0.1:5000/api </h5>
+                                <small>Example: http://127.0.0.1:5000/api </small>
                                 <input id="api_url_text" name="api_url" class="text_pole" placeholder="http://127.0.0.1:5000/api" maxlength="500" value="" autocomplete="off">
                                 <input id="api_button" class="menu_button" type="submit" value="Connect">
                                 <div id="api_loading" class="api-load-icon fa-solid fa-hourglass fa-spin"></div>
@@ -1329,9 +1329,7 @@
                             <span>
                                 <ol>
                                     <li>
-                                        <span data-i18n="Follow">Follow</span> <a href="https://docs.sillytavern.app/usage/api-connections/novelai/" class="notes-link" target="_blank"> <span data-i18n="these directions">these
-                                                directions</span> </a> <span data-i18n="to get your NovelAI API key.">to
-                                            get your NovelAI API key.</span>
+                                        <a href="https://docs.sillytavern.app/usage/api-connections/novelai/" class="notes-link" target="_blank"> <span data-i18n="Get your NovelAI API Key">Get your NovelAI API key</span></a>
                                     </li>
                                     <li><span data-i18n="Enter it in the box below">Enter it in the box below:</span>
                                     </li>
@@ -1363,7 +1361,7 @@
                         </div>
                     </div>
                     <div id="textgenerationwebui_api" style="display: none;position: relative;">
-                        <div class="oobabooga_logo flex-container">
+                        <div class="flex-container">
                             <a href="https://github.com/oobabooga/text-generation-webui" target="_blank">
                                 oobabooga/text-generation-webui
                             </a>
@@ -1372,15 +1370,15 @@
                             </span>
                         </div>
                         <div>
-                            <div class="flex-container">
+                            <div class="flex-container flexFlowColumn">
                                 <div class="flex1">
                                     <h4 data-i18n="Blocking API url">Blocking API url</h4>
-                                    <h5>Example: http://127.0.0.1:5000/</h5>
+                                    <small>Example: http://127.0.0.1:5000/</small>
                                     <input id="textgenerationwebui_api_url_text" name="textgenerationwebui_api_url" class="text_pole wide100p" maxlength="500" value="" autocomplete="off">
                                 </div>
                                 <div class="flex1">
                                     <h4 data-i18n="Streaming API url">Streaming API url</h4>
-                                    <h5>Example: ws://127.0.0.1:5005/api/v1/stream</h5>
+                                    <small>Example: ws://127.0.0.1:5005/api/v1/stream</small>
                                     <input id="streaming_url_textgenerationwebui" type="text" class="text_pole wide100p" maxlength="500" value="" autocomplete="off">
                                 </div>
                             </div>
@@ -1795,7 +1793,7 @@
                         <div class="checked fa-solid fa-lock "></div>
                     </label>
                 </div>
-                <div id="wi-holder">
+                <div id="wi-holder" class="margin5">
                     <h3>
                         World Info / Lorebooks
                         <a href="https://docs.sillytavern.app/usage/core-concepts/worldinfo/" class="notes-link" target="_blank">
@@ -1816,39 +1814,40 @@
                     </div>
 
                     <div class="flex-container alignitemscenter">
-                        <div class="flex1 range-block">
-                            <div class="range-block-title">
-                                <span data-i18n="Scan Depth">Scan Depth</span>
-                            </div>
-                            <div class="range-block-range-and-counter">
-                                <div class="range-block-range">
-                                    <input type="range" id="world_info_depth" name="volume" min="1" max="10" step="1">
+                        <div name="WIScanAndTokens" class="flex1 flex-container flexFlowColumn">
+                            <div class="flex1 range-block">
+                                <div class="range-block-title">
+                                    <span data-i18n="Scan Depth">Scan Depth</span>
                                 </div>
-                                <div class="range-block-counter">
-                                    <div contenteditable="true" data-for="world_info_depth" id="world_info_depth_counter">
-                                        depth
+                                <div class="range-block-range-and-counter">
+                                    <div class="range-block-range">
+                                        <input type="range" id="world_info_depth" name="volume" min="1" max="10" step="1">
+                                    </div>
+                                    <div class="range-block-counter">
+                                        <div contenteditable="true" data-for="world_info_depth" id="world_info_depth_counter">
+                                            depth
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex1 range-block">
+                                <div class="range-block-title">
+                                    <span data-i18n="Token Budget">Token Budget</span>
+                                </div>
+                                <div class="range-block-range-and-counter">
+                                    <div class="range-block-range">
+                                        <input type="range" id="world_info_budget" name="volume" min="32" max="8192" step="1">
+                                    </div>
+                                    <div class="range-block-counter">
+                                        <div contenteditable="true" data-for="world_info_budget" id="world_info_budget_counter">
+                                            budget
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-
-                        <div class="flex1 range-block">
-                            <div class="range-block-title">
-                                <span data-i18n="Token Budget">Token Budget</span>
-                            </div>
-                            <div class="range-block-range-and-counter">
-                                <div class="range-block-range">
-                                    <input type="range" id="world_info_budget" name="volume" min="32" max="8192" step="1">
-                                </div>
-                                <div class="range-block-counter">
-                                    <div contenteditable="true" data-for="world_info_budget" id="world_info_budget_counter">
-                                        budget
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="flex1 range-block flex-container">
+                        <div class="range-block flex-container flexFlowColumn">
                             <label title="Entries can activate other entries by mentioning their keywords" class="checkbox_label">
                                 <input id="world_info_recursive" type="checkbox" />
                                 <span>
@@ -2240,17 +2239,19 @@
             </div>
             <div id="rm_extensions_block" class="drawer-content closedDrawer">
                 <div class="extensions_block flex-container">
-                    <div class="alignitemscenter flex-container justify wide100p" style="justify-content: space-between;">
-                        <h3 class="margin0 flex1">Extensions API:
+                    <div class="alignitemscenter flex-container justifyCenter wide100p" style="justify-content: space-between;">
+                        <h3 class="margin0">Extensions API:
                             <a target="_blank" href="https://github.com/SillyTavern/SillyTavern-extras">
                                 SillyTavern-extras
                             </a>
                         </h3>
-                        <div id="extensions_status">Not Connected</div>
-                        <label for="extensions_autoconnect">
-                            <input id="extensions_autoconnect" type="checkbox">
-                            Auto-connect
-                        </label>
+                        <div class="flex-container">
+                            <div id="extensions_status">Not Connected</div>
+                            <label for="extensions_autoconnect">
+                                <input id="extensions_autoconnect" type="checkbox">
+                                Auto-connect
+                            </label>
+                        </div>
                     </div>
                     <div class="alignitemsflexstart flex-container wide100p">
                         <input id="extensions_url" type="text" class="flex1 heightFitContent text_pole widthNatural" maxlength="250" placeholder="Extensions URL">
@@ -2277,26 +2278,38 @@
                 </div>
             </div>
             <nav id="right-nav-panel" class="drawer-content closedDrawer fillRight gap5px">
-                <div id="right-nav-panelheader" class="fa-solid fa-grip drag-grabber"></div>
+                <div id="right-nav-panelheader" class="fa-solid fa-grip drag-grabber">
 
-                <div id="rm_PinAndTabs">
-                    <div id="rm_button_panel_pin_div" title="Locked = Character Management panel will stay open">
-                        <input type="checkbox" id="rm_button_panel_pin">
-                        <label for="rm_button_panel_pin">
-                            <div class="fa-solid unchecked  fa-unlock" alt=""></div>
-                            <div class="fa-solid checked  fa-lock" alt=""></div>
-                        </label>
-                    </div>
-                    <div id="right-nav-panel-tabs">
+                </div>
+                <div id="CharListButtonAndHotSwaps" class="flex-container flexnowrap">
+                    <div class="flexFlowColumn flex-container">
+                        <div id="rm_button_panel_pin_div" class="alignitemsflexstart" title="Locked = Character Management panel will stay open">
+                            <input type="checkbox" id="rm_button_panel_pin">
+                            <label for="rm_button_panel_pin">
+                                <div class="fa-solid unchecked  fa-unlock" alt=""></div>
+                                <div class="fa-solid checked  fa-lock" alt=""></div>
+                            </label>
+                        </div>
                         <div class="right_menu_button fa-solid fa-list-ul" id="rm_button_characters" title="Select/Create Characters"></div>
+                    </div>
+                    <div name="HotSwapWrapper" class="alignitemscenter flex-container margin0auto">
+                        <div class="hotswap flex-container flex1"></div>
+                    </div>
+
+                </div>
+                <hr>
+                <!-- this div structure must be preserved until group peeking can adjust -->
+                <div id="rm_PinAndTabs">
+                    <div id="right-nav-panel-tabs" class="">
                         <div id="rm_button_selected_ch">
                             <h2></h2>
                         </div>
+
                     </div>
                 </div>
+                <!-- end group peeking cope structure-->
 
-                <div class="hotswap flex-container justifyCenter">
-                </div>
+
 
                 <div name="Solo Char Create/Edit Panel" id="rm_ch_create_block" class="right_menu flex-container flexFlowColumn" style="display: none;">
                     <form id="form_create" action="javascript:void(null);" method="post" enctype="multipart/form-data">
@@ -2306,28 +2319,31 @@
                                 <input id="character_name_pole" name="ch_name" class="text_pole" placeholder="Name this character" maxlength="50" value="" autocomplete="off">
                             </div>
 
-                            <div id="avatar_div" class="avatar_div">
+                            <div id="avatar_div" class="avatar_div alignitemsflexstart justifySpaceBetween">
                                 <div id="avatar_div_div" class="avatar">
                                     <img id="avatar_load_preview" src="img/ai4.png" alt="avatar">
                                 </div>
-                                <div class="form_create_bottom_buttons_block">
-                                    <label for="add_avatar_button" class="menu_button fa-solid fa-file-image " title="Click to select a new avatar for this character">
-                                        <input type="file" id="add_avatar_button" name="avatar" accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp">
-                                    </label>
-                                    <div id="rm_button_back" class="menu_button fa-solid fa-left-long "></div>
-                                    <div id="renameCharButton" class="menu_button fa-solid fa-user-pen" title="Rename Character"></div>
-                                    <div id="favorite_button" class="menu_button fa-solid fa-star" title="Add to Favorites"></div>
-                                    <input type="hidden" id="fav_checkbox" name="fav" />
-                                    <div id="advanced_div" class="menu_button fa-solid fa-book " title="Advanced Definitions"></div>
-                                    <div id="export_button" class="menu_button fa-solid fa-file-export " title="Export and Download"></div>
-                                    <div id="dupe_button" class="menu_button fa-solid fa-clone " title="Duplicate Character"></div>
-                                    <label for="create_button" id="create_button_label" class="menu_button fa-solid fa-user-check" title="Create Character">
-                                        <input type="submit" id="create_button" name="create_button">
-                                    </label>
-                                    <div id="delete_button" class="menu_button fa-solid fa-skull " title="Delete Character"></div>
+                                <div class="flex-container flexFlowColumn">
+                                    <div class="form_create_bottom_buttons_block">
+                                        <label for="add_avatar_button" class="menu_button fa-solid fa-file-image " title="Click to select a new avatar for this character">
+                                            <input type="file" id="add_avatar_button" name="avatar" accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp">
+                                        </label>
+                                        <div id="rm_button_back" class="menu_button fa-solid fa-left-long "></div>
+                                        <div id="renameCharButton" class="menu_button fa-solid fa-user-pen" title="Rename Character"></div>
+                                        <div id="favorite_button" class="menu_button fa-solid fa-star" title="Add to Favorites"></div>
+                                        <input type="hidden" id="fav_checkbox" name="fav" />
+                                        <div id="advanced_div" class="menu_button fa-solid fa-book " title="Advanced Definitions"></div>
+                                        <div id="export_button" class="menu_button fa-solid fa-file-export " title="Export and Download"></div>
+                                        <div id="dupe_button" class="menu_button fa-solid fa-clone " title="Duplicate Character"></div>
+                                        <label for="create_button" id="create_button_label" class="menu_button fa-solid fa-user-check" title="Create Character">
+                                            <input type="submit" id="create_button" name="create_button">
+                                        </label>
+                                        <div id="delete_button" class="menu_button fa-solid fa-skull " title="Delete Character"></div>
+                                    </div>
+                                    <div id="result_info" class="justifyCenter flex-container" title="Token counts may be inaccurate and provided just for reference.">&nbsp;</div>
                                 </div>
                             </div>
-                            <div title="Token counts may be inaccurate and provided just for reference." id="result_info">&nbsp;</div>
+
                         </div>
                         <hr>
 
@@ -2761,11 +2777,11 @@
             <form class="world_entry_form">
                 <div class="inline-drawer wide100p">
                     <div class="inline-drawer-toggle inline-drawer-header">
-                        <div class="world_entry_thin_controls wide100p">
+                        <div class="gap5px world_entry_thin_controls wide100p">
                             <div class="world_entry_form_control">
                                 <label for="key">
                                     <h4><span data-i18n="Keywords">Keywords</span></h4>
-                                    <h5><span data-i18n="Separate with commas">Separate with commas</span></h5>
+                                    <small><span data-i18n="Separate with commas">Separate with commas</span></small>
                                 </label>
                                 <textarea class="text_pole keyprimarytextpole" name="key" rows="1" placeholder="" maxlength="250"></textarea>
                             </div>
@@ -2773,20 +2789,20 @@
                                 <label for="keysecondary">
                                     <h4><span data-i18n="Secondary Required Keywords">Secondary Required Keywords</span>
                                     </h4>
-                                    <h5><span data-i18n="Separate with commas">Separate with commas</span></h5>
+                                    <small><span data-i18n="Separate with commas">Separate with commas</span></small>
                                 </label>
                                 <textarea class="text_pole keysecondarytextpole" name="keysecondary" rows="1" placeholder="(secondary keywords here)" maxlength="250"></textarea>
                             </div>
                         </div>
                         <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                     </div>
-                    <div class="inline-drawer-content">
+                    <div class="inline-drawer-content flex-container">
                         <div class="world_entry_thin_controls  wide100p">
                             <div class="world_entry_form_control">
                                 <label for="content ">
                                     <h4><span data-i18n="Content">Content</span></h4>
-                                    <h5><span data-i18n="What this keyword should mean to the AI">What this keyword
-                                            should mean to the AI</span></h5>
+                                    <small><span data-i18n="What this keyword should mean to the AI">What this keyword
+                                            should mean to the AI</span></small>
                                 </label>
                                 <textarea class="text_pole" name="content" rows="4" placeholder=""></textarea>
                             </div>
@@ -2796,15 +2812,13 @@
                             <div class="world_entry_form_control">
                                 <label for="comment">
                                     <h4><span data-i18n="Memo/Note">Memo/Note</span></h4>
-                                    <h5><span data-i18n="Not sent to AI">Not sent to AI</span></h5>
+                                    <small><span data-i18n="Not sent to AI">Not sent to AI</span></small>
                                 </label>
                                 <textarea class="text_pole" rows="1" name="comment" maxlength="250"></textarea>
                             </div>
                         </div>
-
-
-                        <div class="world_entry_form_control world_entry_form_horizontal">
-                            <div class="flex-container flexFlowColumn flexNoGap  wi-enter-footer-text flex1 ">
+                        <div class="flex-container flex1 justifySpaceBetween world_entry_form_horizontal">
+                            <div class="flex-container flexFlowColumn flexNoGap  wi-enter-footer-text  ">
                                 <label class="checkbox">
                                     <input type="checkbox" name="constant" />
                                     <span data-i18n="Constant">Constant</span>
@@ -2814,7 +2828,7 @@
                                     <span data-i18n="Selective">Selective</span>
                                 </label>
                             </div>
-                            <div class="world_entry_form_control world_entry_form_radios  wi-enter-footer-text flex1">
+                            <div class="world_entry_form_control world_entry_form_radios  wi-enter-footer-text ">
                                 <div>
                                     <label><input type="radio" name="position" value="0">
                                         <span data-i18n="Before Char">Before Char</span>
@@ -2826,19 +2840,13 @@
                                     </label>
                                 </div>
                             </div>
-                            <div class="world_entry_form_control wi-enter-footer-text flex1 flex-container flexNoGap ">
-                                <!-- world_entry_form_control -->
-                                <!-- <label for="order"> -->
-
+                            <div class="world_entry_form_control wi-enter-footer-text  flex-container flexNoGap ">
                                 Insertion Order
-                                <!-- Bigger number = inserted earlier -->
-
-                                <!-- </label> -->
-                                <input class="text_pole" type="number" name="order" placeholder="" />
+                                <input class="text_pole wideMax100px" type="number" name="order" placeholder="" />
                             </div>
 
 
-                            <div class="flex-container flexFlowColumn flexNoGap  wi-enter-footer-text flex1">
+                            <div class="flex-container flexFlowColumn flexNoGap  wi-enter-footer-text ">
                                 <div class="world_entry_form_uid">
                                     UID:
                                     &nbsp;
@@ -2856,7 +2864,6 @@
                                     <span data-i18n="Disable">Disable</span>
                                 </label>
                             </div>
-                            <span class="world_popup_expander">&nbsp;</span>
                             <input class="menu_button delete_entry_button" type="submit" value="Delete Entry" />
                         </div>
                     </div>
