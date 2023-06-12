@@ -654,11 +654,11 @@ function getVersion() {
         pkgVersion = pkgJson.version;
         if (!process.pkg && commandExistsSync('git')) {
             gitRevision = require('child_process')
-                .execSync('git rev-parse --short HEAD', { cwd: process.cwd() })
+                .execSync('git rev-parse --short HEAD', { cwd: process.cwd(), stdio: ['ignore', 'pipe', 'ignore'] })
                 .toString().trim();
 
             gitBranch = require('child_process')
-                .execSync('git rev-parse --abbrev-ref HEAD', { cwd: process.cwd() })
+                .execSync('git rev-parse --abbrev-ref HEAD', { cwd: process.cwd(), stdio: ['ignore', 'pipe', 'ignore'] })
                 .toString().trim();
         }
     }
@@ -3148,6 +3148,10 @@ const autorunUrl = new URL(
 );
 
 const setupTasks = async function () {
+    const version = getVersion();
+
+    console.log(`SillyTavern ${version.pkgVersion}` + (version.gitBranch ? ` '${version.gitBranch}' (${version.gitRevision})` : ''));
+
     migrateSecrets();
     ensurePublicDirectoriesExist();
     await ensureThumbnailCache();
@@ -3165,6 +3169,10 @@ const setupTasks = async function () {
 
     if (autorun) open(autorunUrl.toString());
     console.log('SillyTavern is listening on: ' + tavernUrl);
+
+    if (listen) {
+        console.log('\n0.0.0.0 means SillyTavern is listening on all network interfaces (Wi-Fi, LAN, localhost). If you want to limit it only to internal localhost (127.0.0.1), change the setting in config.conf to “listen=false”\n');
+    }
 }
 
 if (listen && !config.whitelistMode && !config.basicAuthMode) {
