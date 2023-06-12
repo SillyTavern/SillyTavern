@@ -1,4 +1,4 @@
-import { callPopup, eventSource, event_types, extension_prompt_types, saveSettings, saveSettingsDebounced } from "../script.js";
+import { callPopup, eventSource, event_types, saveSettings, saveSettingsDebounced } from "../script.js";
 import { isSubsetOf, debounce } from "./utils.js";
 export {
     getContext,
@@ -68,6 +68,20 @@ let activeExtensions = new Set();
 const getContext = () => window['SillyTavern'].getContext();
 const getApiUrl = () => extension_settings.apiUrl;
 let connectedToApi = false;
+
+function showHideExtensionsMenu() {
+    const hasMenuItems = $('#extensionsMenu').children().length > 0;
+
+    // We have menu items, so we can stop checking
+    if (hasMenuItems) {
+        clearInterval(menuInterval);
+    }
+
+    $('#extensionsMenuButton').toggle(hasMenuItems);
+}
+
+// Periodically check for new extensions
+const menuInterval = setInterval(showHideExtensionsMenu, 1000);
 
 async function doExtrasFetch(endpoint, args) {
     if (!args) {
@@ -219,7 +233,7 @@ function autoConnectInputHandler() {
 
 function addExtensionsButtonAndMenu() {
     const buttonHTML =
-        `<div id="extensionsMenuButton" class="fa-solid fa-magic-wand-sparkles" title="Extras Extensions" /></div>`;
+        `<div id="extensionsMenuButton" style="display: none;" class="fa-solid fa-magic-wand-sparkles" title="Extras Extensions" /></div>`;
     const extensionsMenuHTML = `<div id="extensionsMenu" class="options-content" style="display: none;"></div>`;
 
     $(document.body).append(extensionsMenuHTML);
