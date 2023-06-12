@@ -6,6 +6,7 @@ import { ElevenLabsTtsProvider } from './elevenlabs.js'
 import { SileroTtsProvider } from './silerotts.js'
 import { SystemTtsProvider } from './system.js'
 import { NovelTtsProvider } from './novel.js'
+import { isMobile } from '../../RossAscends-mods.js'
 
 const UPDATE_INTERVAL = 1000
 
@@ -69,6 +70,7 @@ let ttsProvider
 let ttsProviderName
 
 async function onNarrateOneMessage() {
+    audioElement.src = '/sounds/silence.mp3';
     const context = getContext();
     const id = $(this).closest('.mes').attr('mesid');
     const message = context.chat[id];
@@ -170,7 +172,7 @@ function resetTtsPlayback() {
 
     // Reset audio element
     audioElement.currentTime = 0;
-    audioElement.src = '';
+    audioElement.src = '/sounds/silence.mp3';
 
     // Clear any queue items
     ttsJobQueue.splice(0, ttsJobQueue.length);
@@ -217,6 +219,7 @@ window.debugTtsPlayback = debugTtsPlayback
 //##################//
 
 let audioElement = new Audio()
+audioElement.autoplay = true
 
 let audioJobQueue = []
 let currentAudioJob
@@ -295,6 +298,7 @@ function updateUiAudioPlayState() {
 }
 
 function onAudioControlClicked() {
+    audioElement.src = '/sounds/silence.mp3';
     let context = getContext()
     // Not pausing, doing a full stop to anything TTS is doing. Better UX as pause is not as useful
     if (!audioElement.paused || isTtsProcessing()) {
@@ -692,4 +696,26 @@ $(document).ready(function () {
     const wrapper = new ModuleWorkerWrapper(moduleWorker);
     setInterval(wrapper.update.bind(wrapper), UPDATE_INTERVAL) // Init depends on all the things
     eventSource.on(event_types.MESSAGE_SWIPED, resetTtsPlayback);
+
+    // Mobiles need to "activate" the Audio element with click before it can be played
+    if (isMobile()) {
+        console.debug('Activating mobile audio element on first click');
+        let audioActivated = false;
+
+        // Play silence on first click
+        $(document).on('click touchend', function () {
+            // Prevent multiple activations
+            if (audioActivated) {
+                return;
+            }
+
+            console.debug('Activating audio element...');
+            audioActivated = true;
+            audioElement.src = '/sounds/silence.mp3';
+            // Reset volume to 1
+            audioElement.onended = function () {
+                console.debug('Audio element activated');
+            };
+        });
+    }
 })
