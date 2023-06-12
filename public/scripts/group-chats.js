@@ -547,7 +547,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
                 }
 
                 // if not swipe - check if message generated already
-                if (type !== "swipe" && !isMultigenEnabled() && chat.length == messagesBefore) {
+                if (generateType === "group_chat" && !isMultigenEnabled() && chat.length == messagesBefore) {
                     await delay(100);
                 }
                 // if swipe - see if message changed
