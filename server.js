@@ -3568,7 +3568,7 @@ app.post('/novel_tts', jsonParser, async (request, response) => {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
-                'Accept': 'audio/webm',
+                'Accept': 'audio/mpeg',
             },
             timeout: 0,
          });
@@ -3579,7 +3579,7 @@ app.post('/novel_tts', jsonParser, async (request, response) => {
 
         const chunks = await readAllChunks(result.body);
         const buffer = Buffer.concat(chunks);
-        response.setHeader('Content-Type', 'audio/webm');
+        response.setHeader('Content-Type', 'audio/mpeg');
         return response.send(buffer);
     }
     catch (error) {
