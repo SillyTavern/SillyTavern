@@ -1,4 +1,11 @@
-import { chat_metadata, saveSettingsDebounced, this_chid } from "../../../script.js";
+import {
+    chat_metadata,
+    eventSource,
+    event_types,
+    getTokenCount,
+    saveSettingsDebounced,
+    this_chid,
+} from "../../../script.js";
 import { selected_group } from "../../group-chats.js";
 import { ModuleWorkerWrapper, extension_settings, getContext, saveMetadataDebounced } from "../../extensions.js";
 import { registerSlashCommand } from "../../slash-commands.js";
@@ -66,6 +73,7 @@ function setNotePositionCommand(_, text) {
 
 async function onExtensionFloatingPromptInput() {
     chat_metadata[metadata_keys.prompt] = $(this).val();
+    $('#extension_floating_prompt_token_counter').text(getTokenCount(chat_metadata[metadata_keys.prompt]));
     saveMetadataDebounced();
 }
 
@@ -93,6 +101,7 @@ async function onExtensionFloatingPositionInput(e) {
 
 function onExtensionFloatingDefaultInput() {
     extension_settings.note.default = $(this).val();
+    $('#extension_floating_default_token_counter').text(getTokenCount(extension_settings.note.default));
     saveSettingsDebounced();
 }
 
@@ -173,6 +182,13 @@ function onANMenuItemClick() {
     }
 }
 
+function onChatChanged() {
+    const tokenCounter1 = chat_metadata[metadata_keys.prompt] ? getTokenCount(chat_metadata[metadata_keys.prompt]) : 0;
+    const tokenCounter2 = extension_settings.note.default ? getTokenCount(extension_settings.note.default) : 0;
+    $('#extension_floating_prompt_token_counter').text(tokenCounter1);
+    $('#extension_floating_default_token_counter').text(tokenCounter2);
+}
+
 (function () {
     function addExtensionsSettings() {
         const settingsHtml = `
@@ -195,6 +211,7 @@ function onANMenuItemClick() {
                     </small>
 
                     <textarea id="extension_floating_prompt" class="text_pole" rows="8" maxlength="10000"></textarea>
+                    <div class="extension_token_counter">Tokens: <span id="extension_floating_prompt_token_counter">0</small></div>
 
                     <div class="floating_prompt_radio_group">
                         <label>
@@ -228,6 +245,7 @@ function onANMenuItemClick() {
 
                         <textarea id="extension_floating_default" class="text_pole" rows="8" maxlength="10000"
                         placeholder="Example:\n[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
+                        <div class="extension_token_counter">Tokens: <span id="extension_floating_default_token_counter">0</small></div>
                     </div>
                 </div>
             </div>
@@ -265,4 +283,5 @@ function onANMenuItemClick() {
     registerSlashCommand('depth', setNoteDepthCommand, [], "<span class='monospace'>(number)</span> – sets an author's note depth for in-chat positioning", true, true);
     registerSlashCommand('freq', setNoteIntervalCommand, ['interval'], "<span class='monospace'>(number)</span> – sets an author's note insertion frequency", true, true);
     registerSlashCommand('pos', setNotePositionCommand, ['position'], "(<span class='monospace'>chat</span> or <span class='monospace'>scenario</span>) – sets an author's note position", true, true);
+    eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
 })();

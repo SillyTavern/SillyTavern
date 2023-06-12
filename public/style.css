@@ -34,6 +34,7 @@
     --orangered: rgb(255, 90, 0);
     --greyCAIbg: rgb(36, 36, 37);
     --ivory: rgb(220, 220, 210);
+    --golden: rgba(212, 175, 55, 1);
 
 
     /*Default Theme, will be changed by ToolCool Color Picker*/
@@ -296,6 +297,7 @@ hr {
     background-image: linear-gradient(90deg, var(--transparent), var(--white30a), var(--transparent));
     margin: 5px 0;
     height: 1px;
+    min-height: 1px;
     border: 0;
 }
 
@@ -895,6 +897,10 @@ select {
     margin: 5px 0;
 }
 
+.margin5 {
+    margin: 5px;
+}
+
 #description_textarea,
 #firstmessage_textarea {
     height: -webkit-fill-available;
@@ -993,8 +999,15 @@ input[type="file"] {
     gap: 10px;
 }
 
-#right-nav-panel-tabs .right_menu_button {
+#right-nav-panel-tabs .right_menu_button,
+#CharListButtonAndHotSwaps .right_menu_button {
     padding-right: 0;
+}
+
+#chartokenwarning.menu_button {
+    font-size: unset;
+    height: fit-content;
+    aspect-ratio: unset;
 }
 
 /* ##################################################################### */
@@ -1239,7 +1252,8 @@ select option:not(:checked) {
 }
 
 #form_character_search_form .menu_button,
-#GroupFavDelOkBack .menu_button {
+#GroupFavDelOkBack .menu_button,
+.avatar-container .menu_button {
     margin: 0;
     height: fit-content;
     padding: 5px;
@@ -1324,6 +1338,10 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 .wide100pLess70px {
     width: calc(100% - 70px);
+}
+
+.wideMax100px {
+    max-width: 100px;
 }
 
 .widthUnset {
@@ -1432,7 +1450,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     width: 100%;
     flex-wrap: wrap;
     margin-top: 0px;
-    margin-bottom: 6px;
+    /* margin-bottom: 6px; */
     align-items: center;
 }
 
@@ -1446,7 +1464,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     display: flex;
     flex: 0 0 100%;
     flex-wrap: wrap;
-    margin-bottom: 4px;
+    /* margin-bottom: 4px; */
 }
 
 
@@ -1529,21 +1547,35 @@ input[type=search]:focus::-webkit-search-cancel-button {
     pointer-events: all;
 }
 
+.avatar-buttons-bottom {
+    bottom: 0;
+    left: 0;
+}
+
+.avatar-buttons-top {
+    top: 0;
+    left: 0;
+}
+
+/* Ross should be able to handle this later */
+/*.big-avatars .avatar-buttons{
+    justify-content: center;
+    width: fit-content;
+}*/
+
 .avatar-buttons {
     pointer-events: none;
     display: none;
     position: absolute;
-    top: 0;
-    left: 0;
     width: 100%;
     justify-content: space-between;
 }
 
 .avatar_div .avatar {
-    margin-left: 4px;
+    /*     margin-left: 4px;
     margin-right: 10px;
     height: 70px;
-    width: 70px;
+    width: 70px; */
     display: flex;
     justify-content: center;
     align-items: center;
@@ -1612,7 +1644,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 }
 
 #result_info {
-    font-size: calc(var(--mainFontSize) - 0.2rem);
+    font-size: calc(var(--mainFontSize) - 0.1rem);
     font-weight: bold;
 }
 
@@ -1885,27 +1917,6 @@ input[type=search]:focus::-webkit-search-cancel-button {
     opacity: 0.8;
 }
 
-#world_popup_bottom_holder div:not(:first-of-type) {
-    margin-left: 1rem;
-}
-
-#world_info_buttons {
-    margin-left: 1rem;
-}
-
-.world_entry {
-    padding: 0 5px;
-}
-
-.world_entry:not(:last-child)::after {
-    margin-top: 1rem;
-    height: 1px;
-    display: block;
-    width: 100%;
-    content: '';
-    background-image: linear-gradient(270deg, rgba(0, 0, 0, 0), rgba(100, 100, 100, 0.75), rgba(0, 0, 0, 0));
-}
-
 .world_popup_logo_block {
     display: flex;
     align-items: center;
@@ -1980,7 +1991,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 .world_entry_form_control {
     display: flex;
     flex-direction: column;
-    margin: 0 10px;
+    /* margin: 0 10px; */
 }
 
 .world_entry_thin_controls {
@@ -1998,7 +2009,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 .world_entry_form_control label h4 {
     margin-bottom: 0px;
-    margin-top: 0.5rem;
+    margin-top: 5px;
 }
 
 .world_entry_form_control label h5 {
@@ -2010,12 +2021,13 @@ input[type=search]:focus::-webkit-search-cancel-button {
     height: auto;
     /* width: auto; */
     margin-top: 0;
+    margin-bottom: 0;
 }
 
 .world_entry_form_control.world_entry_form_horizontal {
     flex-direction: row;
     align-items: center;
-    margin-top: 5px;
+    /* margin-top: 5px; */
     flex-wrap: wrap;
 }
 
@@ -2075,6 +2087,11 @@ input[type=search]:focus::-webkit-search-cancel-button {
     opacity: 0.7;
     margin-top: 12px;
     margin-right: 12px;
+}
+
+/* Override toastr default styles */
+body #toast-container>div {
+    opacity: 0.95;
 }
 
 #dialogue_del_mes {
@@ -2150,6 +2167,15 @@ input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
 
 #user_avatar_block .avatar:not(.selected) {
     outline: 2px solid transparent;
+}
+
+#user_avatar_block .default_persona .avatar {
+    border: 2px solid var(--golden);
+    box-sizing: content-box;
+}
+
+#user_avatar_block .default_persona .set_default_persona {
+    color: var(--golden);
 }
 
 #user_avatar_block .avatar img {
@@ -2253,8 +2279,8 @@ input[type="range"]::-webkit-slider-thumb {
 /*Notes '?' links*/
 
 .note-link-span {
-    color: var(--sienna);
-    border: 1px solid var(--sienna);
+    color: var(--SmartThemeQuoteColor);
+    border: 1px solid var(--SmartThemeQuoteColor);
     border-radius: 10px;
     line-height: var(--mainFontSize);
     font-size: var(--mainFontSize);
@@ -3852,6 +3878,10 @@ toolcool-color-picker {
     margin: 0;
 }
 
+.margin0auto {
+    margin: 0 auto;
+}
+
 .margin-r5 {
     margin-right: 5px;
 }
@@ -4321,7 +4351,7 @@ body.waifuMode #avatar_zoom_popup {
     }
 
     .world_entry_form_control.world_entry_form_horizontal {
-        flex-direction: column;
+        /* flex-direction: column; */
         align-items: flex-start;
         row-gap: 0.5rem;
     }
@@ -4462,9 +4492,9 @@ body.waifuMode #avatar_zoom_popup {
         font-size: calc(var(--mainFontSize) - .1rem);
     }
 
-    .avatar_div {
+    /*     .avatar_div {
         margin-top: 5px;
-    }
+    } */
 
     #character_popup {
         width: 100%;
@@ -4482,7 +4512,7 @@ body.waifuMode #avatar_zoom_popup {
     }
 
     .drawer25pWidth {
-        flex-basis: max(calc(100% / 4 - 10px), 200px);
+        flex-basis: max(calc(100% / 4 - 10px), 190px);
     }
 
     .expression-holder {
@@ -4550,7 +4580,7 @@ body.waifuMode #avatar_zoom_popup {
 
 @media screen and (max-width: 450px) {
     .drawer25pWidth {
-        flex-basis: max(calc(100% / 2 - 10px), 200px);
+        flex-basis: max(calc(100% / 2 - 10px), 180px);
     }
 }
 

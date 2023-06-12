@@ -385,9 +385,8 @@ app.post("/generate", jsonParser, async function (request, response_generate = r
         signal: controller.signal,
     };
 
-    const MAX_RETRIES = 10;
-    const delayAmount = 3000;
-
+    const MAX_RETRIES = 50;
+    const delayAmount = 2500;
     let fetch, url, response;
     for (let i = 0; i < MAX_RETRIES; i++) {
         try {
@@ -420,15 +419,23 @@ app.post("/generate", jsonParser, async function (request, response_generate = r
             }
         } catch (error) {
             // response
-            switch (error.statusCode) {
+            switch (error?.status) {
+                case 403:
                 case 503: // retry in case of temporary service issue, possibly caused by a queue failure?
+                    console.debug(`KoboldAI is busy. Retry attempt ${i+1} of ${MAX_RETRIES}...`);
                     await delay(delayAmount);
                     break;
                 default:
+                    if ('status' in error) {
+                        console.log('Status Code from Kobold:', error.status);
+                    }
                     return response_generate.send({ error: true });
             }
         }
     }
+
+    console.log('Max retries exceeded. Giving up.');
+    return response_generate.send({ error: true });
 });
 
 //************** Text generation web UI
@@ -685,11 +692,11 @@ function getVersion() {
         pkgVersion = pkgJson.version;
         if (!process.pkg && commandExistsSync('git')) {
             gitRevision = require('child_process')
-                .execSync('git rev-parse --short HEAD', { cwd: process.cwd() })
+                .execSync('git rev-parse --short HEAD', { cwd: process.cwd(), stdio: ['ignore', 'pipe', 'ignore'] })
                 .toString().trim();
 
             gitBranch = require('child_process')
-                .execSync('git rev-parse --abbrev-ref HEAD', { cwd: process.cwd() })
+                .execSync('git rev-parse --abbrev-ref HEAD', { cwd: process.cwd(), stdio: ['ignore', 'pipe', 'ignore'] })
                 .toString().trim();
         }
     }
@@ -2421,7 +2428,7 @@ app.post('/generate_poe', jsonParser, async (request, response) => {
     if (streaming) {
         try {
             let reply = '';
-            for await (const mes of client.send_message(bot, prompt, false, 30, abortController.signal)) {
+            for await (const mes of client.send_message(bot, prompt, false, 60, abortController.signal)) {
                 if (response.headersSent === false) {
                     response.writeHead(200, {
                         'Content-Type': 'text/plain;charset=utf-8',
@@ -2454,7 +2461,7 @@ app.post('/generate_poe', jsonParser, async (request, response) => {
         try {
             let reply;
             let messageId;
-            for await (const mes of client.send_message(bot, prompt, false, 30, abortController.signal)) {
+            for await (const mes of client.send_message(bot, prompt, false, 60, abortController.signal)) {
                 reply = mes.text;
                 messageId = mes.messageId;
             }
@@ -3151,7 +3158,7 @@ async function postAsync(url, args) {
         return data;
     }
 
-    throw new Error(response);
+    throw response;
 }
 
 function getAsync(url, args) {
@@ -3179,6 +3186,10 @@ const autorunUrl = new URL(
 );
 
 const setupTasks = async function () {
+    const version = getVersion();
+
+    console.log(`SillyTavern ${version.pkgVersion}` + (version.gitBranch ? ` '${version.gitBranch}' (${version.gitRevision})` : ''));
+
     migrateSecrets();
     ensurePublicDirectoriesExist();
     await ensureThumbnailCache();
@@ -3196,6 +3207,10 @@ const setupTasks = async function () {
 
     if (autorun) open(autorunUrl.toString());
     console.log('SillyTavern is listening on: ' + tavernUrl);
+
+    if (listen) {
+        console.log('\n0.0.0.0 means SillyTavern is listening on all network interfaces (Wi-Fi, LAN, localhost). If you want to limit it only to internal localhost (127.0.0.1), change the setting in config.conf to “listen=false”\n');
+    }
 }
 
 if (listen && !config.whitelistMode && !config.basicAuthMode) {

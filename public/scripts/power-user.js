@@ -146,6 +146,7 @@ let power_user = {
     },
 
     personas: {},
+    default_persona: null,
 };
 
 let themes = [];

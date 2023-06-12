@@ -547,7 +547,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
                 }
 
                 // if not swipe - check if message generated already
-                if (type !== "swipe" && !isMultigenEnabled() && chat.length == messagesBefore) {
+                if (generateType === "group_chat" && !isMultigenEnabled() && chat.length == messagesBefore) {
                     await delay(100);
                 }
                 // if swipe - see if message changed
@@ -1418,6 +1418,14 @@ function onGroupScenarioRemoveClick() {
     $(this).closest('.group_scenario').find('.group_chat_scenario').val('').trigger('input');
 }
 
+function onSendTextareaInput() {
+    if (is_group_automode_enabled) {
+        // Wait for current automode generation to finish
+        is_group_automode_enabled = false;
+        $("#rm_group_automode").prop("checked", false);
+    }
+}
+
 function stopAutoModeGeneration() {
     if (groupAutoModeAbortController) {
         groupAutoModeAbortController.abort();
@@ -1440,4 +1448,5 @@ jQuery(() => {
         is_group_automode_enabled = value;
         eventSource.once(event_types.GENERATION_STOPPED, stopAutoModeGeneration);
     });
+    $("#send_textarea").on("keyup", onSendTextareaInput);
 });

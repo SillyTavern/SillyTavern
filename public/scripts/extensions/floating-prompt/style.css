@@ -31,6 +31,12 @@
     color: orange;
 }
 
+.extension_token_counter {
+    font-size: calc(var(--mainFontSize) * 0.9);
+    width: 100%;
+    text-align: right;
+}
+
 .floating_prompt_settings textarea {
     font-size: calc(var(--mainFontSize) * 0.9);
     line-height: 1.2;

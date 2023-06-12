@@ -59,7 +59,7 @@ function addDiceRollButton() {
     button.hide();
 
     let popper = Popper.createPopper(button.get(0), dropdown.get(0), {
-        placement: 'bottom',
+        placement: 'top',
     });
 
     $(document).on('click touchend', function (e) {
@@ -68,10 +68,10 @@ function addDiceRollButton() {
         if (target.is(button) && !dropdown.is(":visible")) {
             e.preventDefault();
 
-            dropdown.show(200);
+            dropdown.fadeIn(250);
             popper.update();
         } else {
-            dropdown.hide(200);
+            dropdown.fadeOut(250);
         }
     });
 }
