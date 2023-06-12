@@ -381,28 +381,47 @@ app.post("/generate", jsonParser, async function (request, response_generate = r
     console.log(this_settings);
     const args = {
         body: JSON.stringify(this_settings),
-        signal: controller.signal,
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
     };
 
     const MAX_RETRIES = 50;
     const delayAmount = 2500;
+    let fetch, url, response;
     for (let i = 0; i < MAX_RETRIES; i++) {
         try {
-            const data = await postAsync(api_server + "/v1/generate", args);
-            console.log(data);
-            return response_generate.send(data);
-        }
-        catch (error) {
-            // data
-            if (typeof error['text'] === 'function') {
-                console.log(await error.text());
-            }
+            fetch = require('node-fetch').default;
+            url = request.body.streaming ? `${api_server}/extra/generate/stream` : `${api_server}/v1/generate`;
+            response = await fetch(url, { method: 'POST', timeout: 0, ...args });
 
+            if (request.body.streaming) {
+
+                request.socket.on('close', function () {
+                    response.body.destroy(); // Close the remote stream
+                    response_generate.end(); // End the Express response
+                });
+
+                response.body.on('end', function () {
+                    console.log("Streaming request finished");
+                    response_generate.end();
+                });
+
+                // Pipe remote SSE stream to Express response
+                return response.body.pipe(response_generate);
+            } else {
+                if (!response.ok) {
+                    console.log(`Kobold returned error: ${response.status} ${response.statusText} ${await response.text()}`);
+                    return response.status(response.status).send({ error: true });
+                }
+
+                const data = await response.json();
+                return response_generate.send(data);
+            }
+        } catch (error) {
             // response
             switch (error?.status) {
                 case 403:
-                case 503:
+                case 503: // retry in case of temporary service issue, possibly caused by a queue failure?
                     console.debug(`KoboldAI is busy. Retry attempt ${i+1} of ${MAX_RETRIES}...`);
                     await delay(delayAmount);
                     break;
@@ -583,12 +602,22 @@ app.post("/getstatus", jsonParser, async function (request, response_getstatus =
     };
     var url = api_server + "/v1/model";
     let version = '';
+    let koboldVersion = {};
     if (main_api == "kobold") {
         try {
             version = (await getAsync(api_server + "/v1/info/version")).result;
         }
         catch {
             version = '0.0.0';
+        }
+        try {
+            koboldVersion = (await getAsync(api_server + "/extra/version"));
+        }
+        catch {
+            koboldVersion = {
+                result: 'Kobold',
+                version: '0.0',
+            };
         }
     }
     client.get(url, args, function (data, response) {
@@ -597,6 +626,7 @@ app.post("/getstatus", jsonParser, async function (request, response_getstatus =
         }
         if (response.statusCode == 200) {
             data.version = version;
+            data.koboldVersion = koboldVersion;
             if (data.result != "ReadOnly") {
             } else {
                 data.result = "no_connection";
