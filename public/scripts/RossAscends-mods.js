@@ -831,9 +831,12 @@ $("document").ready(function () {
             }, 300);
         }
 
-        // Ctrl+Enter for Regeneration Last Response
+        // Ctrl+Enter for Regeneration Last Response. If editing, accept the edits instead
         if (event.ctrlKey && event.key == "Enter") {
-            if (is_send_press == false) {
+            const editMesDone = document.querySelector(".mes_edit_buttons[style='display: inline-flex;'] > .mes_edit_done") ;
+            if (editMesDone !== null) {
+                $(editMesDone).click();
+            } else if (is_send_press == false) {
                 $('#option_regenerate').click();
                 $('#options').hide();
             }
