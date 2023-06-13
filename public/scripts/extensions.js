@@ -70,13 +70,15 @@ const getApiUrl = () => extension_settings.apiUrl;
 let connectedToApi = false;
 
 function showHideExtensionsMenu() {
-    const hasMenuItems = $('#extensionsMenu').children().length > 0;
+    // Get the number of menu items that are not hidden
+    const hasMenuItems = $('#extensionsMenu').children().filter((_, child) => $(child).css('display') !== 'none').length > 0;
 
     // We have menu items, so we can stop checking
     if (hasMenuItems) {
         clearInterval(menuInterval);
     }
 
+    // Show or hide the menu button
     $('#extensionsMenuButton').toggle(hasMenuItems);
 }
 
