@@ -28,8 +28,8 @@ let world_info_recursive = false;
 let world_info_case_sensitive = false;
 let world_info_match_whole_words = false;
 let imported_world_name = "";
-const saveWorldDebounced = debounce(async () => await _save(), 500);
-const saveSettingsDebounced = debounce(() => saveSettings(), 500);
+const saveWorldDebounced = debounce(async () => await _save(), 1000);
+const saveSettingsDebounced = debounce(() => saveSettings(), 1000);
 
 const world_info_position = {
     before: 0,
@@ -215,6 +215,14 @@ function appendWorldEntry(entry) {
     //initScrollHeight(commentInput);
 
     // content
+    const countTokensDebounced = debounce(function (that, value) {
+        const numberOfTokens = getTokenCount(value);
+        $(that)
+            .closest(".world_entry")
+            .find(".world_entry_form_token_counter")
+            .text(numberOfTokens);
+    }, 1000);
+
     const contentInput = template.find('textarea[name="content"]');
     contentInput.data("uid", entry.uid);
     contentInput.on("input", function () {
@@ -224,11 +232,7 @@ function appendWorldEntry(entry) {
         saveWorldInfo();
 
         // count tokens
-        const numberOfTokens = getTokenCount(value);
-        $(this)
-            .closest(".world_entry")
-            .find(".world_entry_form_token_counter")
-            .html(numberOfTokens);
+        countTokensDebounced(this, value);
     });
     contentInput.val(entry.content).trigger("input");
     //initScrollHeight(contentInput);
