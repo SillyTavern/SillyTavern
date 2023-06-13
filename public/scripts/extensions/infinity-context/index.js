@@ -12,12 +12,12 @@ const defaultSettings = {
 
     keep_context: 10,
     keep_context_min: 1,
-    keep_context_max: 100,
+    keep_context_max: 500,
     keep_context_step: 1,
 
     n_results: 20,
     n_results_min: 0,
-    n_results_max: 100,
+    n_results_max: 500,
     n_results_step: 1,
 
     split_length: 384,
