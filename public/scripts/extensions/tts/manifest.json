@@ -3,7 +3,8 @@
     "loading_order": 10,
     "requires": [],
     "optional": [
-        "tts"
+        "silero-tts",
+        "edge-tts"
     ],
     "js": "index.js",
     "css": "style.css",
