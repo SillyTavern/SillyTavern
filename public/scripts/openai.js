@@ -1510,6 +1510,9 @@ function onModelChange() {
         else if (value.includes('claude')) {
             $('#openai_max_context').attr('max', claude_max);
         }
+        else if (value.includes('gpt-3.5-turbo-16k')) {
+            $('#openai_max_context').attr('max', gpt3_16k_max);
+        }
         else if (value.includes('gpt-3.5')) {
             $('#openai_max_context').attr('max', gpt3_max);
         }
