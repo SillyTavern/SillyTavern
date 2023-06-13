@@ -158,6 +158,23 @@ async function countSentencepieceTokens(spp, text) {
 
 const tokenizersCache = {};
 
+function getTokenizerModel(requestModel) {
+    if (requestModel.includes('gpt-4-32k')) {
+        return 'gpt-4-32k';
+    }
+
+    if (requestModel.includes('gpt-4')) {
+        return 'gpt-4';
+    }
+
+    if (requestModel.includes('gpt-3.5-turbo')) {
+        return 'gpt-3.5-turbo';
+    }
+
+    // default
+    return 'gpt-3.5-turbo';
+}
+
 function getTiktokenTokenizer(model) {
     if (tokenizersCache[model]) {
         return tokenizersCache[model];
@@ -2787,7 +2804,8 @@ app.post("/openai_bias", jsonParser, async function (request, response) {
 
     let result = {};
 
-    const tokenizer = getTiktokenTokenizer(request.query.model === 'gpt-4-0314' ? 'gpt-4' : request.query.model);
+    const model = getTokenizerModel(String(request.query.model || ''));
+    const tokenizer = getTiktokenTokenizer(model);
 
     for (const entry of request.body) {
         if (!entry || !entry.text) {
@@ -3083,11 +3101,13 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
 app.post("/tokenize_openai", jsonParser, function (request, response_tokenize_openai = response) {
     if (!request.body) return response_tokenize_openai.sendStatus(400);
 
-    const tokensPerName = request.query.model.includes('gpt-4') ? 1 : -1;
-    const tokensPerMessage = request.query.model.includes('gpt-4') ? 3 : 4;
+    const model = getTokenizerModel(String(request.query.model || ''));
+
+    const tokensPerName = model.includes('gpt-4') ? 1 : -1;
+    const tokensPerMessage = model.includes('gpt-4') ? 3 : 4;
     const tokensPadding = 3;
 
-    const tokenizer = getTiktokenTokenizer(request.query.model === 'gpt-4-0314' ? 'gpt-4' : request.query.model);
+    const tokenizer = getTiktokenTokenizer(model);
 
     let num_tokens = 0;
     for (const msg of request.body) {

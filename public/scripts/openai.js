@@ -80,6 +80,7 @@ const default_bias_presets = {
 };
 
 const gpt3_max = 4095;
+const gpt3_16k_max = 16383;
 const gpt4_max = 8191;
 const gpt_neox_max = 2048;
 const gpt4_32k_max = 32767;
@@ -1540,17 +1541,21 @@ function onModelChange() {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
         }
-        else if (value == 'gpt-4' || value == 'gpt-4-0314') {
+        else if (value == 'gpt-4' || value == 'gpt-4-0314' || value == 'gpt-4-0613') {
             $('#openai_max_context').attr('max', gpt4_max);
         }
-        else if (value == 'gpt-4-32k') {
+        else if (value == 'gpt-4-32k' || value == 'gpt-4-32k-0314' || value == 'gpt-4-32k-0613') {
             $('#openai_max_context').attr('max', gpt4_32k_max);
+        }
+        else if (value == 'gpt-3.5-turbo-16k' || value == 'gpt-3.5-turbo-16k-0613') {
+            $('#openai_max_context').attr('max', gpt3_16k_max);
         }
         else {
             $('#openai_max_context').attr('max', gpt3_max);
-            oai_settings.openai_max_context = Math.max(oai_settings.openai_max_context, gpt3_max);
-            $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
         }
+
+        oai_settings.openai_max_context = Math.max(oai_settings.openai_max_context, Number($('#openai_max_context').attr('max')));
+        $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
 
         $('#openai_reverse_proxy').attr('placeholder', 'https://api.openai.com/v1');
 
