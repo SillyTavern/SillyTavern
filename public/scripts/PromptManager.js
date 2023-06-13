@@ -3,102 +3,6 @@ import {DraggablePromptListModule as DraggableList} from "./DraggableList.js";
 import {eventSource, substituteParams} from "../script.js";
 import {TokenHandler} from "./openai.js";
 
-// Thrown by ChatCompletion when a requested prompt couldn't be found.
-class IdentifierNotFoundError extends Error {
-    constructor(identifier) {
-        super(`Identifier ${identifier} not found`);
-        this.name = 'IdentifierNotFoundError';
-    }
-}
-
-/**
- * OpenAI API chat completion representation
- * const map = [{identifier: 'example', message: {role: 'system', content: 'exampleContent'}}, ...];
- *
- * @see https://platform.openai.com/docs/guides/gpt/chat-completions-api
- */
-const ChatCompletion = {
-    new() {
-        return {
-            tokenHandler: null,
-            map: [],
-            add(identifier, message) {
-                this.map.push({identifier, message});
-                return this;
-            },
-            get(identifier) {
-                const index = this.getMessageIndex(identifier);
-                return this.assertIndex(index, identifier).map[index];
-            },
-            insertBefore(identifier, insertIdentifier, insert) {
-                const index = this.getMessageIndex(identifier);
-                this.map.splice(this.assertIndex(index, identifier), 0, {
-                    identifier: insertIdentifier,
-                    message: insert
-                });
-                return this;
-            },
-            insertAfter(identifier, insertIdentifier, insert) {
-                const index = this.getMessageIndex(identifier);
-                this.map.splice(this.assertIndex(index, identifier) + 1, 0, {
-                    identifier: insertIdentifier,
-                    message: insert
-                });
-                return this;
-            },
-            replace(identifier, replacement) {
-                const index = this.getMessageIndex(identifier);
-                this.map[this.assertIndex(index, identifier)] = {identifier, message: replacement};
-                return this;
-            },
-            remove(identifier) {
-                const index = this.getMessageIndex(identifier);
-                this.map.splice(this.assertIndex(index, identifier), 1);
-                return this;
-            },
-            assertIndex(index, identifier) {
-                if (index === -1) {
-                    throw new IdentifierNotFoundError(`Identifier ${identifier} not found`);
-                }
-                return index;
-            },
-            getMessageIndex(identifier) {
-                return this.map.findIndex(message => message.identifier === identifier);
-            },
-            makeSystemMessage(content) {
-                return this.makeMessage('system', content);
-            },
-            makeUserMessage(content) {
-                return this.makeMessage('user', content);
-            },
-            makeAssistantMessage(content) {
-                return this.makeMessage('assistant', content);
-            },
-            makeMessage(role, content) {
-                return {role: role, content: content}
-            },
-            getTokenCounts() {
-                return this.map.reduce((result, message) => {
-                    result[message.identifier] = message.message ? this.tokenHandler?.count(message.message) : 0;
-                    return result;
-                }, {});
-            },
-            getTotalTokenCount() {
-                return Object.values(this.getTokenCounts()).reduce((accumulator, currentValue) => accumulator + currentValue, 0)
-            },
-            getChat() {
-                return this.map.reduce((chat, item) => {
-                    if (!item || !item.message || (false === Array.isArray(item.message) && !item.message.content)) return chat;
-                    if (true === Array.isArray(item.message)) {
-                        if (0 !== item.message.length) chat.push(...item.message);
-                    } else chat.push(item.message);
-                    return chat;
-                }, []);
-            },
-        }
-    }
-};
-
 function PromptManagerModule() {
     this.configuration = {
         prefix: '',
@@ -555,18 +459,16 @@ PromptManagerModule.prototype.clearEditForm = function () {
  * Generates and returns a new ChatCompletion object based on the active character's prompt list.
  * @returns {Object} A ChatCompletion object
  */
-PromptManagerModule.prototype.getChatCompletion = function () {
-    const chatCompletion = ChatCompletion.new();
-    chatCompletion.tokenHandler = this.getTokenHandler();
-
+PromptManagerModule.prototype.getOrderedPromptList = function () {
     const promptList = this.getPromptListByCharacter(this.activeCharacter);
 
+    const assembledPromptList = [];
     promptList.forEach(entry => {
         const chatMessage = this.preparePrompt(this.getPromptById(entry.identifier))
-        if (true === entry.enabled) chatCompletion.add(entry.identifier, chatMessage);
+        if (true === entry.enabled) assembledPromptList.push({identifier: entry.identifier, ...chatMessage});
     })
 
-    return chatCompletion;
+    return assembledPromptList;
 }
 
 // Empties, then re-assembles the container containing the prompt list.
@@ -925,6 +827,5 @@ export {
     PromptManagerModule,
     openAiDefaultPrompts,
     openAiDefaultPromptLists,
-    defaultPromptManagerSettings,
-    IdentifierNotFoundError
+    defaultPromptManagerSettings
 };
