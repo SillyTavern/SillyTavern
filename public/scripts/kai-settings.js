@@ -26,6 +26,8 @@ const kai_settings = {
     single_line: false,
     use_stop_sequence: false,
     streaming_kobold: false,
+    can_use_streaming: false,
+    api_server: 'http://0.0.0.0:5000',
 };
 
 const MIN_STOP_SEQUENCE_VERSION = '1.2.2';
@@ -62,9 +64,14 @@ function loadKoboldSettings(preset) {
         kai_settings.single_line = preset.single_line;
         $('#single_line').prop('checked', kai_settings.single_line);
     }
+
     if (preset.hasOwnProperty('streaming_kobold')) {
         kai_settings.streaming_kobold = preset.streaming_kobold;
         $('#streaming_kobold').prop('checked', kai_settings.streaming_kobold);
+    }
+
+    if (preset.hasOwnProperty('api_server')) {
+        kai_settings.api_server = preset.api_server;
     }
 }
 
@@ -238,5 +245,13 @@ $(document).ready(function () {
         const value = $(this).prop('checked');
         kai_settings.streaming_kobold = value;
         saveSettingsDebounced();
+    });
+
+    $('#mes_stop').on("click", function () {
+        if (kai_settings.streaming_kobold && kai_settings.can_use_streaming) {
+            fetch(`${kai_settings.api_server}/extra/abort`, {
+                method: 'POST'
+            });
+        }
     });
 });
