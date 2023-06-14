@@ -1864,16 +1864,6 @@ input[type=search]:focus::-webkit-search-cancel-button {
     column-gap: 20px;
 }
 
-
-#softprompt {
-    margin-bottom: 10px;
-}
-
-/* hidden until we find out a way to handle it better */
-#softprompt_block {
-    display: none;
-}
-
 .world_info_select_block {
     display: flex;
     flex-direction: row;
