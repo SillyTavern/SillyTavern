@@ -27,7 +27,7 @@ import {
     SECRET_KEYS,
     secret_state,
 } from "./secrets.js";
-import { sortByCssOrder } from "./utils.js";
+import { sortByCssOrder, debounce } from "./utils.js";
 import { chat_completion_sources, oai_settings } from "./openai.js";
 
 var NavToggle = document.getElementById("nav-toggle");
@@ -61,6 +61,7 @@ var retry_delay = 500;
 var RA_AC_retries = 1;
 
 const observerConfig = { childList: true, subtree: true };
+const countTokensDebounced = debounce(RA_CountCharTokens, 1000);
 
 const observer = new MutationObserver(function (mutations) {
     mutations.forEach(function (mutation) {
@@ -71,7 +72,6 @@ const observer = new MutationObserver(function (mutations) {
         } else if (mutation.target.parentNode === SelectedCharacterTab) {
             setTimeout(RA_CountCharTokens, 200);
         }
-
     });
 });
 
@@ -192,9 +192,9 @@ $("#rm_button_create").on("click", function () {                 //when "+New Ch
     $("#result_info").html('Type to start counting tokens!');
 });
 //when any input is made to the create/edit character form textareas
-$("#rm_ch_create_block").on("input", function () { RA_CountCharTokens(); });
+$("#rm_ch_create_block").on("input", function () { countTokensDebounced(); });
 //when any input is made to the advanced editing popup textareas
-$("#character_popup").on("input", function () { RA_CountCharTokens(); });
+$("#character_popup").on("input", function () { countTokensDebounced(); });
 //function:
 export function RA_CountCharTokens() {
     $("#result_info").html("");
