@@ -412,8 +412,20 @@ app.post("/generate", jsonParser, async function (request, response_generate = r
             response = await fetch(url, { method: 'POST', timeout: 0, ...args });
 
             if (request.body.streaming) {
-
-                request.socket.on('close', function () {
+                request.socket.on('close', async function () {
+                    if (controller.signal.aborted) {
+                        try {
+                            // send abort signal to koboldcpp
+                            await fetch(`${api_server}/extra/abort`, {
+                                method: 'POST',
+                            });
+                        } catch {
+                            // likely endpoint not available on older versions of koboldcpp
+                            if ('status' in error) {
+                                console.log('Status Code from Kobold:', error.status);
+                            }
+                        }
+                    }
                     response.body.destroy(); // Close the remote stream
                     response_generate.end(); // End the Express response
                 });
