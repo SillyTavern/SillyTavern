@@ -247,9 +247,9 @@ $(document).ready(function () {
         saveSettingsDebounced();
     });
 
-    $('#mes_stop').on("click", function () {
+    $('#mes_stop').on("click", async function () {
         if (kai_settings.streaming_kobold && kai_settings.can_use_streaming) {
-            fetch(`${kai_settings.api_server}/extra/abort`, {
+            await fetch(`${kai_settings.api_server}/extra/abort`, {
                 method: 'POST'
             });
         }
