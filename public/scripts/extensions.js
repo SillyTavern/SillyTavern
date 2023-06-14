@@ -50,6 +50,7 @@ const extension_settings = {
     memory: {},
     note: {
         default: '',
+        chara: [],
     },
     caption: {},
     expressions: {},

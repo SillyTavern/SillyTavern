@@ -2,7 +2,7 @@ import { callPopup, eventSource, event_types, getRequestHeaders, saveSettingsDeb
 import { dragElement, isMobile } from "../../RossAscends-mods.js";
 import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper, doExtrasFetch } from "../../extensions.js";
 import { power_user } from "../../power-user.js";
-import { onlyUnique, debounce } from "../../utils.js";
+import { onlyUnique, debounce, getCharaFilename } from "../../utils.js";
 export { MODULE_NAME };
 
 const MODULE_NAME = 'expressions';
@@ -437,7 +437,7 @@ function getSpriteFolderName(message) {
         avatarPath = message.original_avatar || context.characters.find(x => message.force_avatar && message.force_avatar.includes(encodeURIComponent(x.avatar)))?.avatar;
     }
     else if (context.characterId) {
-        avatarPath = context.characters[context.characterId].avatar;
+        avatarPath = getCharaFilename();
     }
 
     if (!avatarPath) {
