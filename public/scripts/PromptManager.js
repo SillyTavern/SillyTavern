@@ -1,7 +1,54 @@
-import {countTokens} from "./openai.js";
 import {DraggablePromptListModule as DraggableList} from "./DraggableList.js";
 import {eventSource, substituteParams} from "../script.js";
-import {TokenHandler} from "./openai.js";
+import {IdentifierNotFoundError, TokenHandler} from "./openai.js";
+
+class Prompt {
+    identifier; role; content; name; system_prompt;
+    constructor({identifier, role, content, name, system_prompt} = {}) {
+        this.identifier = identifier;
+        this.role = role;
+        this.content = content;
+        this.name = name;
+        this.system_prompt = system_prompt;
+    }
+}
+
+class PromptCollection {
+    collection = [];
+    constructor(...prompts) {
+        for(let prompt of prompts) {
+            if(!(prompt instanceof Prompt)) {
+                throw new Error('Only Prompt instances can be added to PromptCollection');
+            }
+        }
+
+        this.collection.push(...prompts);
+    }
+
+    add(...prompts) {
+        for(let prompt of prompts) {
+            if(!(prompt instanceof Prompt)) {
+                throw new Error('Only Prompt instances can be added to PromptCollection');
+            }
+        }
+
+        this.collection.push(...prompts);
+    }
+
+    get(identifier) {
+        const index = this.index(identifier);
+        if (0 > index) throw new IdentifierNotFoundError(identifier);
+        return this.collection[index];
+    }
+
+    index (identifier){
+        return this.collection.findIndex(prompt => prompt.identifier === identifier);
+    }
+
+    has(identifier) {
+        return this.collection.some(message => message.identifier === identifier);
+    }
+}
 
 function PromptManagerModule() {
     this.configuration = {
@@ -18,7 +65,6 @@ function PromptManagerModule() {
     this.activeCharacter = null;
 
     this.tokenHandler = null;
-    this.totalActiveTokens = 0;
 
     this.handleToggle = () => { };
     this.handleEdit = () => { };
@@ -81,8 +127,11 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
         const promptId = event.target.dataset.pmPrompt;
         const prompt = this.getPromptById(promptId);
 
-        if (null === prompt) this.addPrompt(prompt, promptId);
-        else this.updatePrompt(prompt);
+        if (null === prompt){
+            this.addPrompt({}, promptId);
+        } else {
+            this.updatePrompt(prompt);
+        }
 
         this.hideEditForm();
         this.clearEditForm(prompt);
@@ -414,8 +463,8 @@ PromptManagerModule.prototype.getPromptIndexById = function (identifier) {
  */
 PromptManagerModule.prototype.preparePrompt = function (prompt) {
     const groupMembers = this.getActiveGroupCharacters();
-    if (0 < groupMembers.length) return {role: prompt.role, content: substituteParams(prompt.content ?? '', null, null, groupMembers.join(', '))}
-    return {role: prompt.role, content: substituteParams(prompt.content ?? '')};
+    if (0 < groupMembers.length) return {role: prompt.role || 'system', content: substituteParams(prompt.content ?? '', null, null, groupMembers.join(', '))}
+    return new Prompt(prompt);
 }
 
 /**
@@ -459,16 +508,15 @@ PromptManagerModule.prototype.clearEditForm = function () {
  * Generates and returns a new ChatCompletion object based on the active character's prompt list.
  * @returns {Object} A ChatCompletion object
  */
-PromptManagerModule.prototype.getOrderedPromptList = function () {
+PromptManagerModule.prototype.getPromptCollection = function () {
     const promptList = this.getPromptListByCharacter(this.activeCharacter);
 
-    const assembledPromptList = [];
+    const promptCollection = new PromptCollection();
     promptList.forEach(entry => {
-        const chatMessage = this.preparePrompt(this.getPromptById(entry.identifier))
-        if (true === entry.enabled) assembledPromptList.push({identifier: entry.identifier, ...chatMessage});
+        if (true === entry.enabled) promptCollection.add(this.preparePrompt(this.getPromptById(entry.identifier)));
     })
 
-    return assembledPromptList;
+    return promptCollection
 }
 
 // Empties, then re-assembles the container containing the prompt list.
@@ -827,5 +875,6 @@ export {
     PromptManagerModule,
     openAiDefaultPrompts,
     openAiDefaultPromptLists,
-    defaultPromptManagerSettings
+    defaultPromptManagerSettings,
+    Prompt
 };
