@@ -780,63 +780,6 @@ function resultCheckStatus() {
     $("#api_button_textgenerationwebui").css("display", "inline-block");
 }
 
-async function getSoftPromptsList() {
-    if (!api_server) {
-        return;
-    }
-
-    const response = await fetch("/getsoftprompts", {
-        method: "POST",
-        headers: getRequestHeaders(),
-        body: JSON.stringify({ api_server: api_server }),
-    });
-
-    if (response.ok) {
-        const data = await response.json();
-        updateSoftPromptsList(data.soft_prompts);
-    }
-}
-
-function clearSoftPromptsList() {
-    $('#softprompt option[value!=""]').each(function () {
-        $(this).remove();
-    });
-}
-
-function updateSoftPromptsList(soft_prompts) {
-    // Delete SPs removed from Kobold
-    $("#softprompt option").each(function () {
-        const value = $(this).attr("value");
-
-        if (value == "") {
-            return;
-        }
-
-        const prompt = soft_prompts.find((x) => x.name === value);
-        if (!prompt) {
-            $(this).remove();
-        }
-    });
-
-    // Add SPs added to Kobold
-    soft_prompts.forEach((prompt) => {
-        if ($(`#softprompt option[value="${prompt.name}"]`).length === 0) {
-            $("#softprompt").append(
-                `<option value="${prompt.name}">${prompt.name}</option>`
-            );
-
-            if (prompt.selected) {
-                $("#softprompt").val(prompt.name);
-            }
-        }
-    });
-
-    // No SP selected or no SPs
-    if (soft_prompts.length === 0 || !soft_prompts.some((x) => x.selected)) {
-        $("#softprompt").val("");
-    }
-}
-
 async function printCharacters() {
     $("#rm_print_characters_block").empty();
     characters.forEach(function (item, i, arr) {
@@ -3773,7 +3716,6 @@ function changeMainAPI() {
             apiRanges: $("#range_block"),
             maxContextElem: $("#max_context_block"),
             amountGenElem: $("#amount_gen_block"),
-            softPromptElem: $("#softprompt_block")
         },
         "kobold": {
             apiSettings: $("#kobold_api-settings"),
@@ -3782,7 +3724,6 @@ function changeMainAPI() {
             apiRanges: $("#range_block"),
             maxContextElem: $("#max_context_block"),
             amountGenElem: $("#amount_gen_block"),
-            softPromptElem: $("#softprompt_block")
         },
         "textgenerationwebui": {
             apiSettings: $("#textgenerationwebui_api-settings"),
@@ -3791,7 +3732,6 @@ function changeMainAPI() {
             apiRanges: $("#range_block_textgenerationwebui"),
             maxContextElem: $("#max_context_block"),
             amountGenElem: $("#amount_gen_block"),
-            softPromptElem: $("#softprompt_block")
         },
         "novel": {
             apiSettings: $("#novel_api-settings"),
@@ -3800,7 +3740,6 @@ function changeMainAPI() {
             apiRanges: $("#range_block_novel"),
             maxContextElem: $("#max_context_block"),
             amountGenElem: $("#amount_gen_block"),
-            softPromptElem: $("#softprompt_block")
         },
         "openai": {
             apiSettings: $("#openai_settings"),
@@ -3809,7 +3748,6 @@ function changeMainAPI() {
             apiRanges: $("#range_block_openai"),
             maxContextElem: $("#max_context_block"),
             amountGenElem: $("#amount_gen_block"),
-            softPromptElem: $("#softprompt_block"),
         },
         "poe": {
             apiSettings: $("#poe_settings"),
@@ -3818,7 +3756,6 @@ function changeMainAPI() {
             apiRanges: $("#range_block_poe"),
             maxContextElem: $("#max_context_block"),
             amountGenElem: $("#amount_gen_block"),
-            softPromptElem: $("#softprompt_block"),
         }
     };
     //console.log('--- apiElements--- ');
@@ -3848,11 +3785,6 @@ function changeMainAPI() {
 
     if (selectedVal === "openai") {
         activeItem.apiPresets.css("display", "flex");
-    }
-
-    if (selectedVal === "kobold" || selectedVal === 'koboldhorde') {
-        //console.log("enabling SP for kobold");
-        $("#softprompt_block").css("display", "block");
     }
 
     if (selectedVal === "textgenerationwebui" || selectedVal === "novel") {
@@ -6481,8 +6413,6 @@ $(document).ready(function () {
             is_get_status = true;
             is_api_button_press = true;
             getStatus();
-            clearSoftPromptsList();
-            getSoftPromptsList();
         }
     });
 
@@ -6713,27 +6643,9 @@ $(document).ready(function () {
         setOpenAIOnlineStatus(false);
         setPoeOnlineStatus(false);
         online_status = "no_connection";
-        clearSoftPromptsList();
         checkOnlineStatus();
         changeMainAPI();
         saveSettingsDebounced();
-    });
-
-    $("#softprompt").change(async function () {
-        if (!api_server) {
-            return;
-        }
-
-        const selected = $("#softprompt").find(":selected").val();
-        const response = await fetch("/setsoftprompt", {
-            method: "POST",
-            headers: getRequestHeaders(),
-            body: JSON.stringify({ name: selected, api_server: api_server }),
-        });
-
-        if (!response.ok) {
-            console.error("Couldn't change soft prompt");
-        }
     });
 
     ////////////////// OPTIMIZED RANGE SLIDER LISTENERS////////////////
