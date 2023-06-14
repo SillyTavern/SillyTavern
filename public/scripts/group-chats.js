@@ -515,7 +515,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
             const bias = getBiasStrings(userInput);
             await sendMessageAsUser(userInput, bias.messageBias);
             await saveChatConditional();
-            $('#send_textarea').val('');
+            $('#send_textarea').val('').trigger('input');
         }
 
         // now the real generation begins: cycle through every activated character
