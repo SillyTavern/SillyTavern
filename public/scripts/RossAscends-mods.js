@@ -833,12 +833,16 @@ $("document").ready(function () {
 
         // Ctrl+Enter for Regeneration Last Response. If editing, accept the edits instead
         if (event.ctrlKey && event.key == "Enter") {
-            const editMesDone = document.querySelector(".mes_edit_buttons[style='display: inline-flex;'] > .mes_edit_done") ;
-            if (editMesDone !== null) {
-                $(editMesDone).click();
+            const editMesDone = $(".mes_edit_done:visible");
+            if (editMesDone.length > 0) {
+                console.debug("Accepting edits with Ctrl+Enter");
+                editMesDone.trigger('click');
             } else if (is_send_press == false) {
+                console.debug("Regenerating with Ctrl+Enter");
                 $('#option_regenerate').click();
                 $('#options').hide();
+            } else {
+                console.debug("Ctrl+Enter ignored");
             }
         }
         //ctrl+left to show all local stored vars (debug)
