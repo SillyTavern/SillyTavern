@@ -3213,7 +3213,6 @@ if (listen && !config.whitelistMode && !config.basicAuthMode) {
         process.exit(1);
     }
 }
-
 if (true === cliArguments.ssl)
     https.createServer(
         {
@@ -3221,13 +3220,13 @@ if (true === cliArguments.ssl)
             key: fs.readFileSync(cliArguments.keyPath)
         }, app)
         .listen(
-            tavernUrl.port,
+            tavernUrl.port || 443,
             tavernUrl.hostname,
             setupTasks
         );
 else
     http.createServer(app).listen(
-        tavernUrl.port,
+        tavernUrl.port || 80,
         tavernUrl.hostname,
         setupTasks
     );
