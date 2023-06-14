@@ -4405,6 +4405,7 @@ body.waifuMode #avatar_zoom_popup {
     #bg_custom {
         height: 100svh !important;
         width: 100svw !important;
+        background-position: center;
 
     }
 
