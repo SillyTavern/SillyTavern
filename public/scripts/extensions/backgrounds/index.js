@@ -164,7 +164,7 @@ $(document).ready(function () {
 
     addSettings();
     setInterval(moduleWorker, UPDATE_INTERVAL);
-    registerSlashCommand('lock', onLockBackgroundClick, [], " – locks a background for the currently selected chat", true, true);
-    registerSlashCommand('unlock', onUnlockBackgroundClick, [], ' – unlocks a background for the currently selected chat', true, true);
+    registerSlashCommand('lockbg', onLockBackgroundClick, ['bglock'], " – locks a background for the currently selected chat", true, true);
+    registerSlashCommand('unlockbg', onUnlockBackgroundClick, ['bgunlock'], ' – unlocks a background for the currently selected chat', true, true);
     registerSlashCommand('autobg', autoBackgroundCommand, ['bgauto'], ' – automatically changes the background based on the chat context using the AI request prompt', true, true);
 });
