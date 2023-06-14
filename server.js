@@ -439,7 +439,7 @@ app.post("/generate", jsonParser, async function (request, response_generate = r
             switch (error?.status) {
                 case 403:
                 case 503: // retry in case of temporary service issue, possibly caused by a queue failure?
-                    console.debug(`KoboldAI is busy. Retry attempt ${i+1} of ${MAX_RETRIES}...`);
+                    console.debug(`KoboldAI is busy. Retry attempt ${i + 1} of ${MAX_RETRIES}...`);
                     await delay(delayAmount);
                     break;
                 default:
@@ -1271,8 +1271,19 @@ app.post("/downloadbackground", urlencodedParser, function (request, response) {
 
 });
 
+
+
 app.post("/savesettings", jsonParser, function (request, response) {
-    fs.writeFile('public/settings.json', JSON.stringify(request.body), 'utf8', function (err) {
+    fs.writeFile('public/settings.json', JSON.stringify(request.body, null, 4), 'utf8', function (err) {
+        if (err) {
+            response.send(err);
+            console.log(err);
+        } else {
+            response.send({ result: "ok" });
+        }
+    });
+
+    /*fs.writeFile('public/settings.json', JSON.stringify(request.body), 'utf8', function (err) {
         if (err) {
             response.send(err);
             return console.log(err);
@@ -1281,7 +1292,7 @@ app.post("/savesettings", jsonParser, function (request, response) {
             //response.redirect("/");
             response.send({ result: "ok" });
         }
-    });
+    });*/
 });
 
 function getCharaCardV2(jsonObject) {
@@ -2494,7 +2505,7 @@ app.post('/generate_poe', jsonParser, async (request, response) => {
     }
 });
 
-app.post('/poe_suggest', jsonParser, async function(request, response) {
+app.post('/poe_suggest', jsonParser, async function (request, response) {
     const token = readSecret(SECRET_KEYS.POE);
     const messageId = request.body.messageId;
 
@@ -3591,7 +3602,7 @@ app.post('/novel_tts', jsonParser, async (request, response) => {
                 'Accept': 'audio/mpeg',
             },
             timeout: 0,
-         });
+        });
 
         if (!result.ok) {
             return response.sendStatus(result.status);
