@@ -332,6 +332,19 @@ function appendWorldEntry(entry) {
         $(this).siblings("input").click();
     });
 
+    const excludeRecursionInput = template.find('input[name="exclude_recursion"]');
+    excludeRecursionInput.data("uid", entry.uid);
+    excludeRecursionInput.on("input", function () {
+        const uid = $(this).data("uid");
+        const value = $(this).prop("checked");
+        world_info_data.entries[uid].excludeRecursion = value;
+        saveWorldInfo();
+    });
+    excludeRecursionInput.prop("checked", entry.excludeRecursion).trigger("input");
+    excludeRecursionInput.siblings(".checkbox_fancy").click(function () {
+        $(this).siblings("input").click();
+    });
+
     // delete button
     const deleteButton = template.find("input.delete_entry_button");
     deleteButton.data("uid", entry.uid);
@@ -366,6 +379,7 @@ function createWorldInfoEntry() {
         order: 100,
         position: 0,
         disable: false,
+        excludeRecursion: false
     };
     const newUid = getFreeWorldEntryUid();
 
@@ -505,6 +519,7 @@ function checkWorldInfo(chat) {
     let worldInfoBefore = "";
     let worldInfoAfter = "";
     let needsToScan = true;
+    let count = 0;
     let allActivatedEntries = new Set();
 
     const sortedEntries = Object.keys(world_info_data.entries)
@@ -512,10 +527,13 @@ function checkWorldInfo(chat) {
         .sort((a, b) => b.order - a.order);
 
     while (needsToScan) {
+        // Track how many times the loop has run
+        count++;
+
         let activatedNow = new Set();
 
         for (let entry of sortedEntries) {
-            if (allActivatedEntries.has(entry.uid) || entry.disable == true) {
+            if (allActivatedEntries.has(entry.uid) || entry.disable == true || (count > 1 && world_info_recursive && entry.excludeRecursion)) {
                 continue;
             }
 
