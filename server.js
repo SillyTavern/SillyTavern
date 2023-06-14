@@ -2743,7 +2743,6 @@ if (listen && !config.whitelistMode && !config.basicAuthMode) {
         process.exit(1);
     }
 }
-// tavernURL.port is empty if port == 443 on HTTPS or port == 80 on HTTP. This causes createServer().listen() to error. To observe error, change port in config.conf to 80 or 443. See https://nodejs.org/api/url.html#urlport. Of course, the user will have to allow node.js to bind to privileged ports before they can host SillyTavern on these ports. I understand if the chosen solution is different, this is simply a proposal.
 if (true === cliArguments.ssl)
     https.createServer(
         {
