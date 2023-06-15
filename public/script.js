@@ -1809,6 +1809,12 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         toastr.warning('Streaming is enabled, but the version of Kobold used does not support token streaming.', undefined, { timeOut: 10000, preventDuplicates: true, });
     }
 
+    if (main_api == 'kobold' && kai_settings.streaming_kobold && power_user.multigen) {
+        toastr.error('Multigen is not supported with Kobold streaming enabled. Disable streaming in "AI Response Configuration" or multigen in "Advanced Formatting" to proceed.', undefined, { timeOut: 10000, preventDuplicates: true, });
+        is_send_press = false;
+        return;
+    }
+
     if (isHordeGenerationNotAllowed()) {
         is_send_press = false;
         return;
