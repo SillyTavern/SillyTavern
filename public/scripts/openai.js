@@ -29,7 +29,7 @@ import {groups, selected_group} from "./group-chats.js";
 import {
     defaultPromptManagerSettings,
     openAiDefaultPromptLists,
-    openAiDefaultPrompts,
+    openAiDefaultPrompts, Prompt,
     PromptManagerModule as PromptManager
 } from "./PromptManager.js";
 
@@ -410,20 +410,33 @@ async function prepareOpenAIMessages({
     });
 
     // Chat History
-    const startNewChat = selected_group ? '[Start a new group chat. Group members: ${names}]' : '[Start a new Chat]';
     chatCompletion.add(new MessageCollection('chatHistory'), prompts.index('chatHistory'));
-    chatCompletion.insert(new Message('system', startNewChat, 'newMainChat'), 'chatHistory');
+    const mainChat = selected_group ? '[Start a new group chat. Group members: ${names}]' : '[Start a new Chat]';
+    const mainChatMessage = new Message('system', mainChat, 'newMainChat');
 
     // Insert chat messages
-    [...openai_msgs].reverse().forEach((prompt, index) => {
-        const chatMessage = new Message(prompt.role, prompt.content, 'chatHistory-' + index);
-        if (chatCompletion.canAfford(chatMessage)) {
-            chatCompletion.insert(chatMessage, 'chatHistory');
-        }
-    });
+    if (chatCompletion.canAfford(mainChatMessage)) {
+        chatCompletion.insert(mainChatMessage, 'chatHistory');
+        [...openai_msgs].reverse().forEach((prompt, index) => {
+            const chatMessage = new Message(prompt.role, prompt.content, 'chatHistory-' + index);
+            if (chatCompletion.canAfford(chatMessage)) {
+                chatCompletion.insert(chatMessage, 'chatHistory');
+            }
+        });
+    }
 
     // Insert chat message examples if there's enough budget
-    //ToDo
+    chatCompletion.add(new MessageCollection('dialogueExamples'), prompts.index('dialogueExamples'));
+    if (chatCompletion.canAfford(mainChatMessage)) {
+        // Insert dialogue examples messages
+        chatCompletion.insert(mainChatMessage, 'dialogueExamples');
+        [...openai_msgs_example].forEach((prompt, index) => {
+            const chatMessage = new Message(prompt[0].role || '', prompt[0].content || '', 'dialogueExamples-' + index);
+            if (chatCompletion.canAfford(chatMessage)) {
+                chatCompletion.insert(chatMessage, 'dialogueExamples');
+            }
+        });
+    }
 
     const chat = chatCompletion.getChat();
     openai_messages_count = chat.filter(x => x.role === "user" || x.role === "assistant").length;
