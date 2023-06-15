@@ -1490,9 +1490,10 @@ function onModelChange() {
         }
         else {
             $('#openai_max_context').attr('max', claude_max);
-            oai_settings.openai_max_context = Math.max(oai_settings.openai_max_context, claude_max);
-            $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
         }
+
+        oai_settings.openai_max_context = Math.min(oai_settings.openai_max_context, Number($('#openai_max_context').attr('max')));
+        $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
 
         $('#openai_reverse_proxy').attr('placeholder', 'https://api.anthropic.com/v1');
 
@@ -1527,7 +1528,7 @@ function onModelChange() {
             $('#openai_max_context').attr('max', gpt3_max);
         }
 
-        oai_settings.openai_max_context = Math.max(Number($('#openai_max_context').val()), oai_settings.openai_max_context);
+        oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
         $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
 
         if (value.includes('claude')) {
@@ -1557,7 +1558,7 @@ function onModelChange() {
             $('#openai_max_context').attr('max', gpt3_max);
         }
 
-        oai_settings.openai_max_context = Math.max(oai_settings.openai_max_context, Number($('#openai_max_context').attr('max')));
+        oai_settings.openai_max_context = Math.min(oai_settings.openai_max_context, Number($('#openai_max_context').attr('max')));
         $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
 
         $('#openai_reverse_proxy').attr('placeholder', 'https://api.openai.com/v1');
