@@ -412,7 +412,6 @@ async function processTtsQueue() {
 
     // Remove character name from start of the line if power user setting is disabled
     if (char && !power_user.allow_name2_display) {
-        debugger;
         const escapedChar = escapeRegex(char);
         text = text.replace(new RegExp(`^${escapedChar}:`, 'gm'), '');
     }
