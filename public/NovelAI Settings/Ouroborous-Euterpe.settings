@@ -1,5 +1,5 @@
 {
-    "order": [1, 0, 3]
+    "order": [1, 0, 3],
     "temperature": 1.07,
     "max_length": 60,
     "min_length": 60,
