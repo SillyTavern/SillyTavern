@@ -1147,7 +1147,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
         var characterName = name1; //set to user's name by default
     } else { var characterName = mes.name }
 
-    var avatarImg = "User Avatars/" + user_avatar;
+    var avatarImg = getUserAvatar(user_avatar);
     const isSystem = mes.is_system;
     const title = mes.title;
     generatedPromtCache = "";
@@ -1301,6 +1301,10 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
         showSwipeButtons();
         scrollChatToBottom();
     }
+}
+
+function getUserAvatar(avatarImg) {
+    return `User Avatars/${avatarImg}`;
 }
 
 function formatGenerationTimer(gen_started, gen_finished) {
@@ -2625,7 +2629,7 @@ export async function sendMessageAsUser(textareaText, messageBias) {
 
     // Lock user avatar to a persona.
     if (user_avatar in power_user.personas) {
-        chat[chat.length - 1]['force_avatar'] = `User Avatars/${user_avatar}`;
+        chat[chat.length - 1]['force_avatar'] = getUserAvatar(user_avatar);
     }
 
     if (messageBias) {
@@ -3906,7 +3910,7 @@ function appendUserAvatar(name) {
     }
     template.find('.avatar').attr('imgfile', name);
     template.toggleClass('default_persona', name === power_user.default_persona)
-    template.find('img').attr('src', `User Avatars/${name}`);
+    template.find('img').attr('src', getUserAvatar(name));
     $("#user_avatar_block").append(template);
     highlightSelectedAvatar();
 }
@@ -3916,7 +3920,7 @@ function reloadUserAvatar() {
         if ($(this).attr("is_user") == 'true' && $(this).attr('force_avatar') == 'false') {
             $(this)
                 .find(".avatar img")
-                .attr("src", `User Avatars/${user_avatar}`);
+                .attr("src", getUserAvatar(user_avatar));
         }
     });
 }
@@ -7024,6 +7028,7 @@ $(document).ready(function () {
         for (const mes of chat) {
             if (mes.is_user) {
                 mes.name = name1;
+                mes.force_avatar = getUserAvatar(user_avatar);
             }
         }
 
