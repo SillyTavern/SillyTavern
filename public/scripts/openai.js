@@ -361,6 +361,26 @@ function formatWorldInfo(value) {
     return stringFormat(oai_settings.wi_format, value);
 }
 
+/**
+ * Take a configuration object and prepares messages for a chat with OpenAI's chat completion API.
+ * Handles prompts, prepares chat history, manages token budget, and processes various user settings.
+ *
+ * @async
+ * @param {Object} options - The options for the function.
+ * @param {string} options.name2 - The second name to be used in the messages.
+ * @param {string} options.charDescription - Description of the character.
+ * @param {string} options.charPersonality - Description of the character's personality.
+ * @param {string} options.Scenario - The scenario or context of the dialogue.
+ * @param {string} options.worldInfoBefore - The world info to be added before the main conversation.
+ * @param {string} options.worldInfoAfter - The world info to be added after the main conversation.
+ * @param {string} options.bias - The bias to be added in the conversation.
+ * @param {string} options.type - The type of the chat, can be 'impersonate'.
+ * @param {string} options.quietPrompt - The quiet prompt to be used in the conversation.
+ * @param {Array} options.extensionPrompts - An array of additional prompts.
+ * @returns {Promise<Array>} An array where the first element is the prepared chat and the second element is a boolean flag.
+ * @throws {TokenBudgetExceededError} If the token budget is exceeded.
+ * @throws {IdentifierNotFoundError} If a specific identifier is not found in the message collection.
+ */
 async function prepareOpenAIMessages({
                                          name2,
                                          charDescription,
@@ -466,90 +486,6 @@ async function prepareOpenAIMessages({
     openai_messages_count = chat.filter(x => x.role === "user" || x.role === "assistant").length;
 
     return [chat, false];
-
-    /**
-    chatCompletion.add(new Message('system', formatWorldInfo(worldInfoBefore), 'worldInfoBefore'));
-
-    console.log(chatCompletion.message);
-    return;
-
-    const newChatMessage = chatCompletion.makeSystemMessage('[Start new chat]');
-    const chatMessages = openai_msgs;
-    const biasMessage = chatCompletion.makeSystemMessage(bias.trim());
-
-    // Prepare context
-    chatCompletion
-        .replace('worldInfoBefore', worldInfoBeforeMessage)
-        .replace('worldInfoAfter', worldInfoAfterMessage)
-        .replace('charDescription', charDescriptionMessage)
-        .replace('charPersonality', charPersonalityMessage)
-        .replace('scenario', scenarioMessage)
-        .replace('newMainChat', newChatMessage)
-        .replace('chatHistory', chatMessages)
-
-    // Handle group chats
-    if (selected_group) {
-        const names = getGroupMembers(groups);
-        const groupChatMessage = chatCompletion.makeSystemMessage(`[Start a new group chat. Group members: ${names}]`);
-        chatCompletion.replace('newMainChat', groupChatMessage)
-    }
-
-    // Handle NSFW prompt
-    try {
-        const nsfwMessage = chatCompletion.get('nsfw');
-    } catch (error) {
-        if (error instanceof IdentifierNotFoundError && oai_settings.nsfw_avoidance_prompt)
-            chatCompletion.insertAfter('main', 'nsfwAvoidance', chatCompletion.makeSystemMessage(oai_settings.nsfw_avoidance_prompt));
-    }
-
-    // Handle extension prompt
-    if (0 < extensionPrompts.length) {
-        const summary = extensionPrompts['1_memory'];
-        if (summary) chatCompletion.insertAfter('scenario', 'extensionSummary', chatCompletion.makeSystemMessage(substituteParams(summary)));
-
-        const authorsNote = extensionPrompts['2_floating_prompt'];
-        if (authorsNote && (extension_prompt_types.AFTER_SCENARIO === authorsNote.position))
-            chatCompletion.insertAfter('scenario', 'extensionAuthorsNote', chatCompletion.makeSystemMessage(substituteParams(authorsNote)));
-        else
-            chatCompletion.insertAfter('chatHistory', 'extensionAuthorsNote', chatCompletion.makeSystemMessage(substituteParams(authorsNote)));
-    }
-
-    // Handle bias settings
-    if (bias && bias.trim().length) chatCompletion.add(biasMessage);
-
-    // Handle chat examples
-    if (openai_msgs_example.length) {
-        const exampleMessagesFlattened = openai_msgs_example.reduce((messages, prompts) => {
-            messages.push(prompts[0]);
-            return messages;
-        }, []);
-
-        chatCompletion.replace('newExampleChat', newChatMessage)
-        chatCompletion.replace('dialogueExamples', exampleMessagesFlattened);
-    }
-
-    // Handle quiet prompt
-    if (quietPrompt) {
-        const quietPromptMessage = chatCompletion.makeSystemMessage(quietPrompt);
-        chatCompletion.insertAfter('main', quietPromptMessage)
-    }
-
-    // Handle impersonation
-    if (type === "impersonate") chatCompletion.replace('main', chatCompletion.makeSystemMessage(substituteParams(oai_settings.impersonation_prompt)));
-
-    const tokenHandler = promptManager.getTokenHandler();
-    tokenHandler?.setCounts(
-        {...tokenHandler.getCounts(), ...chatCompletion.getTokenCounts()}
-    );
-
-    console.log(chatCompletion.map)
-
-    const openai_msgs_tosend = chatCompletion.getChat();
-    console.log(openai_msgs_tosend)
-    openai_messages_count = openai_msgs_tosend.filter(x => x.role === "user" || x.role === "assistant").length;
-
-    return [openai_msgs_tosend, false];
-     **/
 }
 
 function getGroupMembers(activeGroup) {
