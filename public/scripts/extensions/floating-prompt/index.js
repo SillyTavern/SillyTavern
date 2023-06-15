@@ -74,7 +74,7 @@ function setNotePositionCommand(_, text) {
 
 async function onExtensionFloatingPromptInput() {
     chat_metadata[metadata_keys.prompt] = $(this).val();
-    $('#extension_floating_prompt_token_counter').text(getTokenCount(chat_metadata[metadata_keys.prompt]));
+    debounce(() => $('#extension_floating_prompt_token_counter').text(getTokenCount(chat_metadata[metadata_keys.prompt])), 1000);
     saveMetadataDebounced();
 }
 
@@ -108,7 +108,7 @@ function onExtensionFloatingCharaPromptInput() {
         prompt: tempPrompt
     }
 
-    $('#extension_floating_chara_token_counter').text(getTokenCount(tempPrompt));
+    debounce(() => $('#extension_floating_chara_token_counter').text(getTokenCount(tempPrompt)), 1000);
 
     let existingCharaNoteIndex;
     let existingCharaNote;
@@ -159,7 +159,7 @@ function onExtensionFloatingCharaCheckboxChanged() {
 
 function onExtensionFloatingDefaultInput() {
     extension_settings.note.default = $(this).val();
-    $('#extension_floating_default_token_counter').text(getTokenCount(extension_settings.note.default));
+    debounce(() => $('#extension_floating_default_token_counter').text(getTokenCount(extension_settings.note.default)), 1000);
     saveSettingsDebounced();
 }
 
