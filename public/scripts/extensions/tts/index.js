@@ -1,12 +1,13 @@
 import { callPopup, cancelTtsPlay, eventSource, event_types, isMultigenEnabled, is_send_press, saveSettingsDebounced } from '../../../script.js'
 import { ModuleWorkerWrapper, extension_settings, getContext } from '../../extensions.js'
-import { getStringHash } from '../../utils.js'
+import { escapeRegex, getStringHash } from '../../utils.js'
 import { EdgeTtsProvider } from './edge.js'
 import { ElevenLabsTtsProvider } from './elevenlabs.js'
 import { SileroTtsProvider } from './silerotts.js'
 import { SystemTtsProvider } from './system.js'
 import { NovelTtsProvider } from './novel.js'
 import { isMobile } from '../../RossAscends-mods.js'
+import { power_user } from '../../power-user.js'
 
 const UPDATE_INTERVAL = 1000
 
@@ -408,6 +409,13 @@ async function processTtsQueue() {
     }
     console.log(`TTS: ${text}`)
     const char = currentTtsJob.name
+
+    // Remove character name from start of the line if power user setting is disabled
+    if (char && !power_user.allow_name2_display) {
+        debugger;
+        const escapedChar = escapeRegex(char);
+        text = text.replace(new RegExp(`^${escapedChar}:`, 'gm'), '');
+    }
 
     try {
         if (!text) {
