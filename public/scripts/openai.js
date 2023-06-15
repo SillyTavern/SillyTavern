@@ -437,6 +437,11 @@ async function prepareOpenAIMessages({
         }
     });
 
+    // Add enhance definition instruction
+    if (prompts.has('enhanceDefinitions')) {
+        chatCompletion.add(MessageCollection.fromPrompt(prompts.get('enhanceDefinitions')), prompts.index('enhanceDefinitions'));
+    }
+
     // Insert nsfw avoidance prompt into main, if no nsfw prompt is present
     if (false === chatCompletion.has('nsfw') && oai_settings.nsfw_avoidance_prompt) {
         const nsfwAvoidanceMessage = new Message('system', oai_settings.nsfw_avoidance_prompt, 'nsfwAvoidance');
