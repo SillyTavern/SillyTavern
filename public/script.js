@@ -2304,6 +2304,40 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
             showStopButton();
 
+            //set array object for prompt token itemization of this message
+            let currentArrayEntry = Number(thisPromptBits.length - 1);
+            let additionalPromptStuff = {
+                ...thisPromptBits[currentArrayEntry],
+                rawPrompt: generate_data.prompt,
+                mesId: getNextMessageId(type),
+                worldInfoBefore: worldInfoBefore,
+                allAnchors: allAnchors,
+                summarizeString: (extension_prompts['1_memory']?.value || ''),
+                authorsNoteString: (extension_prompts['2_floating_prompt']?.value || ''),
+                worldInfoString: worldInfoString,
+                storyString: storyString,
+                worldInfoAfter: worldInfoAfter,
+                afterScenarioAnchor: afterScenarioAnchor,
+                examplesString: examplesString,
+                mesSendString: mesSendString,
+                generatedPromtCache: generatedPromtCache,
+                promptBias: promptBias,
+                finalPromt: finalPromt,
+                charDescription: charDescription,
+                charPersonality: charPersonality,
+                scenarioText: scenarioText,
+                this_max_context: this_max_context,
+                padding: power_user.token_padding,
+                main_api: main_api,
+            };
+
+            thisPromptBits = additionalPromptStuff;
+
+            console.log(thisPromptBits);
+
+            itemizedPrompts.push(thisPromptBits);
+            console.log(`pushed prompt bits to itemizedPrompts array. Length is now: ${itemizedPrompts.length}`);
+
             if (main_api == 'openai') {
                 if (isStreamingEnabled() && type !== 'quiet') {
                     streamingProcessor.generator = await sendOpenAIRequest(type, generate_data.prompt, streamingProcessor.abortController.signal);
@@ -2352,40 +2386,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     onError(error);
                 }
             }
-
-            //set array object for prompt token itemization of this message
-            let currentArrayEntry = Number(thisPromptBits.length - 1);
-            let additionalPromptStuff = {
-                ...thisPromptBits[currentArrayEntry],
-                rawPrompt: generate_data.prompt,
-                mesId: type == 'swipe' ? Number(count_view_mes - 1) : Number(count_view_mes),
-                worldInfoBefore: worldInfoBefore,
-                allAnchors: allAnchors,
-                summarizeString: (extension_prompts['1_memory']?.value || ''),
-                authorsNoteString: (extension_prompts['2_floating_prompt']?.value || ''),
-                worldInfoString: worldInfoString,
-                storyString: storyString,
-                worldInfoAfter: worldInfoAfter,
-                afterScenarioAnchor: afterScenarioAnchor,
-                examplesString: examplesString,
-                mesSendString: mesSendString,
-                generatedPromtCache: generatedPromtCache,
-                promptBias: promptBias,
-                finalPromt: finalPromt,
-                charDescription: charDescription,
-                charPersonality: charPersonality,
-                scenarioText: scenarioText,
-                this_max_context: this_max_context,
-                padding: power_user.token_padding,
-                main_api: main_api,
-            };
-
-            thisPromptBits = additionalPromptStuff;
-
-            console.log(thisPromptBits);
-
-            itemizedPrompts.push(thisPromptBits);
-            console.log(`pushed prompt bits to itemizedPrompts array. Length is now: ${itemizedPrompts.length}`);
 
             if (isStreamingEnabled() && type !== 'quiet') {
                 hideSwipeButtons();
@@ -2554,6 +2554,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     }
     //console.log('generate ending');
 } //generate ends
+
+function getNextMessageId(type) {
+    return type == 'swipe' ? Number(count_view_mes - 1) : Number(count_view_mes);
+}
 
 export function getBiasStrings(textareaText) {
     let promptBias = '';
