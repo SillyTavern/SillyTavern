@@ -417,6 +417,22 @@ async function prepareOpenAIMessages({
         }
     });
 
+    // Insert nsfw avoidance prompt into main, if no nsfw prompt is present
+    if (false === chatCompletion.has('nsfw') && oai_settings.nsfw_avoidance_prompt) {
+        const nsfwAvoidanceMessage = new Message('system', oai_settings.nsfw_avoidance_prompt, 'nsfwAvoidance');
+        chatCompletion.insert(nsfwAvoidanceMessage, 'main');
+    }
+
+    // Insert quiet prompt into main
+    if (quietPrompt) {
+        const quietPromptMessage = new Message('system', quietPrompt, 'quietPrompt');
+        chatCompletion.insert(quietPromptMessage, 'main')
+    }
+
+    if (bias && bias.trim().length) {
+        addMessageToChatCompletion('system', bias, 'main');
+    }
+
     // Chat History
     chatCompletion.add(new MessageCollection('chatHistory'), prompts.index('chatHistory'));
     const mainChat = selected_group ? '[Start a new group chat. Group members: ${names}]' : '[Start a new Chat]';
