@@ -458,6 +458,22 @@ async function prepareOpenAIMessages({
         addMessageToChatCompletion('system', bias, 'main');
     }
 
+    // Add extension prompts
+    if (0 < extensionPrompts.length) {
+        const summary = extensionPrompts['1_memory'] ?? null;
+        if (summary) {
+            const summaryMessage = new Message('system', summary.content, 'authorsNote');
+            chatCompletion.insert(summaryMessage, 'main')
+        }
+
+        const authorsNote = extensionPrompts['2_floating_prompt'] ?? null;
+        if (authorsNote) {
+            const authorsNoteMessage = new Message('system', authorsNote.content, 'authorsNote');
+            if (extension_prompt_types.AFTER_SCENARIO) chatCompletion.insert(authorsNoteMessage, 'scenario')
+            else chatCompletion.insert(authorsNoteMessage, 'main')
+        }
+    }
+
     // Chat History
     chatCompletion.add(new MessageCollection('chatHistory'), prompts.index('chatHistory'));
     const mainChat = selected_group ? '[Start a new group chat. Group members: ${names}]' : '[Start a new Chat]';
