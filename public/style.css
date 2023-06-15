@@ -1864,6 +1864,10 @@ input[type=search]:focus::-webkit-search-cancel-button {
     display: inline-block;
 }
 
+#horde_model {
+    height: 150px;
+}
+
 .horde_model_title {
     display: flex;
     flex-direction: row;
@@ -4627,5 +4631,9 @@ body.waifuMode #avatar_zoom_popup {
     .scrollableInner {
         overflow-y: auto;
         overflow-x: hidden;
+    }
+
+    #horde_model {
+        height: unset;
     }
 }
