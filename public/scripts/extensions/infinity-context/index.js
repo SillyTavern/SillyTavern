@@ -1,22 +1,23 @@
 import { saveSettingsDebounced, getCurrentChatId, system_message_types, eventSource, event_types } from "../../../script.js";
 import { humanizedDateTime } from "../../RossAscends-mods.js";
-import { getApiUrl, extension_settings, getContext } from "../../extensions.js";
-import { getFileText, onlyUnique, splitRecursive } from "../../utils.js";
+import { getApiUrl, extension_settings, getContext, doExtrasFetch } from "../../extensions.js";
+import { getFileText, onlyUnique, splitRecursive, IndexedDBStore } from "../../utils.js";
 export { MODULE_NAME };
 
 const MODULE_NAME = 'chromadb';
+const dbStore = new IndexedDBStore('SillyTavern', MODULE_NAME);
 
 const defaultSettings = {
     strategy: 'original',
 
     keep_context: 10,
     keep_context_min: 1,
-    keep_context_max: 100,
+    keep_context_max: 500,
     keep_context_step: 1,
 
     n_results: 20,
     n_results_min: 0,
-    n_results_max: 100,
+    n_results_max: 500,
     n_results_step: 1,
 
     split_length: 384,
@@ -35,22 +36,21 @@ const postHeaders = {
     'Bypass-Tunnel-Reminder': 'bypass',
 };
 
-const chatStateFlags = {};
-
-function invalidateMessageSyncState(messageId) {
+async function invalidateMessageSyncState(messageId) {
     console.log('CHROMADB: invalidating message sync state', messageId);
-    const state = getChatSyncState();
-    state[messageId] = false;
+    const state = await getChatSyncState();
+    state[messageId] = 0;
+    await dbStore.put(getCurrentChatId(), state);
 }
 
-function getChatSyncState() {
+async function getChatSyncState() {
     const currentChatId = getCurrentChatId();
     if (!checkChatId(currentChatId)) {
         return;
     }
 
     const context = getContext();
-    const chatState = chatStateFlags[currentChatId] || [];
+    const chatState = (await dbStore.get(currentChatId)) || [];
 
     // if the chat length has decreased, it means that some messages were deleted
     if (chatState.length > context.chat.length) {
@@ -70,10 +70,10 @@ function getChatSyncState() {
     chatState.length = context.chat.length;
     for (let i = 0; i < chatState.length; i++) {
         if (chatState[i] === undefined) {
-            chatState[i] = false;
+            chatState[i] = 0;
         }
     }
-    chatStateFlags[currentChatId] = chatState;
+    await dbStore.put(currentChatId, chatState);
 
     return chatState;
 }
@@ -83,7 +83,7 @@ async function loadSettings() {
         Object.assign(extension_settings.chromadb, defaultSettings);
     }
 
-    console.log(`loading chromadb strat:${extension_settings.chromadb.strategy}`);
+    console.debug(`loading chromadb strat:${extension_settings.chromadb.strategy}`);
     $("#chromadb_strategy option[value=" + extension_settings.chromadb.strategy + "]").attr(
         "selected",
         "true"
@@ -96,7 +96,7 @@ async function loadSettings() {
 }
 
 function onStrategyChange() {
-    console.log('changing chromadb strat');
+    console.debug('changing chromadb strat');
     extension_settings.chromadb.strategy = $('#chromadb_strategy').val();
 
     //$('#chromadb_strategy').select(extension_settings.chromadb.strategy);
@@ -144,12 +144,12 @@ async function addMessages(chat_id, messages) {
     url.pathname = '/api/chromadb';
 
     const messagesDeepCopy = JSON.parse(JSON.stringify(messages));
-    let splittedMessages = [];
+    let splitMessages = [];
 
     let id = 0;
     messagesDeepCopy.forEach((m, index) => {
         const split = splitRecursive(m.mes, extension_settings.chromadb.split_length);
-        splittedMessages.push(...split.map(text => ({
+        splitMessages.push(...split.map(text => ({
             ...m,
             mes: text,
             send_date: id,
@@ -159,14 +159,14 @@ async function addMessages(chat_id, messages) {
         })));
     });
 
-    splittedMessages = filterSyncedMessages(splittedMessages);
+    splitMessages = await filterSyncedMessages(splitMessages);
 
     // no messages to add
-    if (splittedMessages.length === 0) {
+    if (splitMessages.length === 0) {
         return { count: 0 };
     }
 
-    const transformedMessages = splittedMessages.map((m) => ({
+    const transformedMessages = splitMessages.map((m) => ({
         id: m.id,
         role: m.is_user ? 'user' : 'assistant',
         content: m.mes,
@@ -174,7 +174,7 @@ async function addMessages(chat_id, messages) {
         meta: JSON.stringify(m),
     }));
 
-    const addMessagesResult = await fetch(url, {
+    const addMessagesResult = await doExtrasFetch(url, {
         method: 'POST',
         headers: postHeaders,
         body: JSON.stringify({ chat_id, messages: transformedMessages }),
@@ -182,19 +182,18 @@ async function addMessages(chat_id, messages) {
 
     if (addMessagesResult.ok) {
         const addMessagesData = await addMessagesResult.json();
-
         return addMessagesData; // { count: 1 }
     }
 
     return { count: 0 };
 }
 
-function filterSyncedMessages(splittedMessages) {
-    const syncState = getChatSyncState();
+async function filterSyncedMessages(splitMessages) {
+    const syncState = await getChatSyncState();
     const removeIndices = [];
     const syncedIndices = [];
-    for (let i = 0; i < splittedMessages.length; i++) {
-        const index = splittedMessages[i].index;
+    for (let i = 0; i < splitMessages.length; i++) {
+        const index = splitMessages[i].index;
 
         if (syncState[index]) {
             removeIndices.push(i);
@@ -205,19 +204,14 @@ function filterSyncedMessages(splittedMessages) {
     }
 
     for (const index of syncedIndices) {
-        syncState[index] = true;
+        syncState[index] = 1;
     }
 
-    logSyncState(syncState);
+    console.debug('CHROMADB: sync state', syncState.map((v, i) => ({ id: i, synced: v })));
+    await dbStore.put(getCurrentChatId(), syncState);
 
     // remove messages that are already synced
-    return splittedMessages.filter((_, i) => !removeIndices.includes(i));
-}
-
-function logSyncState(syncState) {
-    const chat = getContext().chat;
-    console.log('CHROMADB: sync state');
-    console.table(syncState.map((v, i) => ({ synced: v, name: chat[i].name, message: chat[i].mes })));
+    return splitMessages.filter((_, i) => !removeIndices.includes(i));
 }
 
 async function onPurgeClick() {
@@ -228,14 +222,14 @@ async function onPurgeClick() {
     const url = new URL(getApiUrl());
     url.pathname = '/api/chromadb/purge';
 
-    const purgeResult = await fetch(url, {
+    const purgeResult = await doExtrasFetch(url, {
         method: 'POST',
         headers: postHeaders,
         body: JSON.stringify({ chat_id }),
     });
 
     if (purgeResult.ok) {
-        delete chatStateFlags[chat_id];
+        await dbStore.delete(chat_id);
         toastr.success('ChromaDB context has been successfully cleared');
     }
 }
@@ -248,7 +242,7 @@ async function onExportClick() {
     const url = new URL(getApiUrl());
     url.pathname = '/api/chromadb/export';
 
-    const exportResult = await fetch(url, {
+    const exportResult = await doExtrasFetch(url, {
         method: 'POST',
         headers: postHeaders,
         body: JSON.stringify({ chat_id: currentChatId }),
@@ -291,7 +285,7 @@ async function onSelectImportFile(e) {
         const url = new URL(getApiUrl());
         url.pathname = '/api/chromadb/import';
 
-        const importResult = await fetch(url, {
+        const importResult = await doExtrasFetch(url, {
             method: 'POST',
             headers: postHeaders,
             body: JSON.stringify(imported),
@@ -319,7 +313,7 @@ async function queryMessages(chat_id, query) {
     const url = new URL(getApiUrl());
     url.pathname = '/api/chromadb/query';
 
-    const queryMessagesResult = await fetch(url, {
+    const queryMessagesResult = await doExtrasFetch(url, {
         method: 'POST',
         headers: postHeaders,
         body: JSON.stringify({ chat_id, query, n_results: extension_settings.chromadb.n_results }),
@@ -372,7 +366,7 @@ async function onSelectInjectFile(e) {
         const url = new URL(getApiUrl());
         url.pathname = '/api/chromadb';
 
-        const addMessagesResult = await fetch(url, {
+        const addMessagesResult = await doExtrasFetch(url, {
             method: 'POST',
             headers: postHeaders,
             body: JSON.stringify({ chat_id: currentChatId, messages: messages }),
@@ -427,7 +421,7 @@ window.chromadb_interceptGeneration = async (chat) => {
                             send_date: 0,
                         }
                     );
-                    newChat.push(...queriedMessages.map(m => JSON.parse(m.meta)));
+                    newChat.push(...queriedMessages.map(m => m.meta).filter(onlyUnique).map(JSON.parse));
                     newChat.push(
                         {
                             is_name: false,
@@ -443,7 +437,7 @@ window.chromadb_interceptGeneration = async (chat) => {
                 if (selectedStrategy === 'original') {
                     //removes .length # messages from the start of 'kept messages'
                     //replaces them with chromaDB results (with no separator)
-                    newChat.push(...queriedMessages.map(m => JSON.parse(m.meta)));
+                    newChat.push(...queriedMessages.map(m => m.meta).filter(onlyUnique).map(JSON.parse));
                     chat.splice(0, messagesToStore.length, ...newChat);
 
                 }
@@ -467,19 +461,20 @@ jQuery(async () => {
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
-            <p>This extension rearranges the messages in the current chat to keep more relevant information in the context. Adjust the sliders below based on average amount of messages in your prompt (refer to the chat cut-off line).</p>
-            <span>Memory Injection Strategy</span>
+            <small>This extension rearranges the messages in the current chat to keep more relevant information in the context. Adjust the sliders below based on average amount of messages in your prompt (refer to the chat cut-off line).</small>
+            <span class="wide100p marginTopBot5 displayBlock">Memory Injection Strategy</span>
+            <hr>
             <select id="chromadb_strategy">
                 <option value="original">Replace non-kept chat items with memories</option>
                 <option value="ross">Add memories after chat with a header tag</option>
             </select>
-            <label for="chromadb_keep_context">How many original chat messages to keep: (<span id="chromadb_keep_context_value"></span>) messages</label>
+            <label for="chromadb_keep_context"><small>How many original chat messages to keep: (<span id="chromadb_keep_context_value"></span>) messages</small></label>
             <input id="chromadb_keep_context" type="range" min="${defaultSettings.keep_context_min}" max="${defaultSettings.keep_context_max}" step="${defaultSettings.keep_context_step}" value="${defaultSettings.keep_context}" />
-            <label for="chromadb_n_results">Maximum number of ChromaDB 'memories' to inject: (<span id="chromadb_n_results_value"></span>) messages</label>
+            <label for="chromadb_n_results"><small>Maximum number of ChromaDB 'memories' to inject: (<span id="chromadb_n_results_value"></span>) messages</small></label>
             <input id="chromadb_n_results" type="range" min="${defaultSettings.n_results_min}" max="${defaultSettings.n_results_max}" step="${defaultSettings.n_results_step}" value="${defaultSettings.n_results}" />
-            <label for="chromadb_split_length">Max length for each 'memory' pulled from the current chat history: (<span id="chromadb_split_length_value"></span>) characters</label>
+            <label for="chromadb_split_length"><small>Max length for each 'memory' pulled from the current chat history: (<span id="chromadb_split_length_value"></span>) characters</small></label>
             <input id="chromadb_split_length" type="range" min="${defaultSettings.split_length_min}" max="${defaultSettings.split_length_max}" step="${defaultSettings.split_length_step}" value="${defaultSettings.split_length}" />
-            <label for="chromadb_file_split_length">Max length for each 'memory' pulled from imported text files: (<span id="chromadb_file_split_length_value"></span>) characters</label>
+            <label for="chromadb_file_split_length"><small>Max length for each 'memory' pulled from imported text files: (<span id="chromadb_file_split_length_value"></span>) characters</small></label>
             <input id="chromadb_file_split_length" type="range" min="${defaultSettings.file_split_length_min}" max="${defaultSettings.file_split_length_max}" step="${defaultSettings.file_split_length_step}" value="${defaultSettings.file_split_length}" />
             <label class="checkbox_label" for="chromadb_freeze" title="Pauses the automatic synchronization of new messages with ChromaDB. Older messages and injections will still be pulled as usual." >
                 <input type="checkbox" id="chromadb_freeze" />
@@ -509,7 +504,7 @@ jQuery(async () => {
         <form><input id="chromadb_import_file" type="file" accept="application/json" hidden></form>
     </div>`;
 
-    $('#extensions_settings').append(settingsHtml);
+    $('#extensions_settings2').append(settingsHtml);
     $('#chromadb_strategy').on('change', onStrategyChange);
     $('#chromadb_keep_context').on('input', onKeepContextInput);
     $('#chromadb_n_results').on('input', onNResultsInput);

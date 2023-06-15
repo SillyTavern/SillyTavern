@@ -7,7 +7,7 @@ assignees: ''
 
 ---
 
-**Have you searched for similar [requests](https://github.com/Cohee1207/SillyTavern/issues?q=)?**
+**Have you searched for similar [requests](https://github.com/SillyTavern/SillyTavern/issues?q=)?**
 Yes/No
 
 **Is your feature request related to a problem? Please describe.**

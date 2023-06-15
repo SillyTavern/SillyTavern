@@ -1,21 +1,20 @@
 import { callPopup } from "../../../script.js";
 import { getContext } from "../../extensions.js";
+import { registerSlashCommand } from "../../slash-commands.js";
 export { MODULE_NAME };
 
 const MODULE_NAME = 'dice';
 const UPDATE_INTERVAL = 1000;
 
-function setDiceIcon() {
-    const sendButton = document.getElementById('roll_dice');
-    /* sendButton.style.backgroundImage = `url(/img/dice-solid.svg)`; */
-    //sendButton.classList.remove('spin');
-}
-
-async function doDiceRoll() {
-    let value = $(this).data('value');
+async function doDiceRoll(customDiceFormula) {
+    let value = typeof customDiceFormula === 'string' ? customDiceFormula.trim() : $(this).data('value');
 
     if (value == 'custom') {
-        value = await callPopup('Enter the dice formula:<br><i>(for example, <tt>2d6</tt>)</i>', 'input');
+        value = await callPopup('Enter the dice formula:<br><i>(for example, <tt>2d6</tt>)</i>', 'input');x
+    }
+
+    if (!value) {
+        return;
     }
 
     const isValid = droll.validate(value);
@@ -24,12 +23,14 @@ async function doDiceRoll() {
         const result = droll.roll(value);
         const context = getContext();
         context.sendSystemMessage('generic', `${context.name1} rolls a ${value}. The result is: ${result.total} (${result.rolls})`, { isSmallSys: true });
+    } else {
+        toastr.warning('Invalid dice formula');
     }
 }
 
 function addDiceRollButton() {
     const buttonHtml = `
-    <div id="roll_dice" class="list-group-item flex-container flexGap5">    
+    <div id="roll_dice" class="list-group-item flex-container flexGap5">
         <div class="fa-solid fa-dice extensionsMenuExtensionButton" title="Roll Dice" /></div>
         Roll Dice
     </div>
@@ -58,7 +59,7 @@ function addDiceRollButton() {
     button.hide();
 
     let popper = Popper.createPopper(button.get(0), dropdown.get(0), {
-        placement: 'bottom',
+        placement: 'top',
     });
 
     $(document).on('click touchend', function (e) {
@@ -67,10 +68,10 @@ function addDiceRollButton() {
         if (target.is(button) && !dropdown.is(":visible")) {
             e.preventDefault();
 
-            dropdown.show(200);
+            dropdown.fadeIn(250);
             popper.update();
         } else {
-            dropdown.hide(200);
+            dropdown.fadeOut(250);
         }
     });
 }
@@ -84,17 +85,13 @@ function addDiceScript() {
 }
 
 async function moduleWorker() {
-    const context = getContext();
-
-    context.onlineStatus === 'no_connection'
-        ? $('#roll_dice').hide(200)
-        : $('#roll_dice').show(200);
+    $('#roll_dice').toggle(getContext().onlineStatus !== 'no_connection');
 }
 
-$(document).ready(function () {
+jQuery(function () {
     addDiceScript();
     addDiceRollButton();
-    setDiceIcon();
     moduleWorker();
     setInterval(moduleWorker, UPDATE_INTERVAL);
+    registerSlashCommand('roll', (_, value) => doDiceRoll(value), ['r'], "<span class='monospace'>(dice formula)</span> – roll the dice. For example, /roll 2d6", false, true);
 });

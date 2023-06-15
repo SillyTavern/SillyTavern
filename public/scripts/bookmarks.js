@@ -201,7 +201,7 @@ async function convertSoloToGroupChat() {
     const members = [character.avatar];
     const activationStrategy = group_activation_strategy.NATURAL;
     const allowSelfResponses = false;
-    const favChecked = character.fav == 'true';
+    const favChecked = character.fav || character.fav == 'true';
     const metadata = Object.assign({}, chat_metadata);
     delete metadata.main_chat;
 

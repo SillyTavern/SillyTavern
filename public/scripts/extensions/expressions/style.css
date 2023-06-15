@@ -10,6 +10,27 @@
     width: 100vw;
 }
 
+#visual-novel-wrapper {
+    display: flex;
+    height: calc(100vh - 40px);
+    width: 100vw;
+    position: relative;
+    overflow: hidden;
+}
+
+#visual-novel-wrapper .expression-holder {
+    width: max-content;
+}
+
+#visual-novel-wrapper .hidden {
+    display: none !important;
+    visibility: hidden !important;
+}
+
+/*#visual-novel-wrapper img.expression {
+    object-fit: cover;
+}*/
+
 .expression-holder {
     min-width: 100px;
     min-height: 100px;
@@ -54,6 +75,7 @@ img.expression.default {
 .expression_list_item {
     position: relative;
     max-width: 20%;
+    min-width: 100px;
     max-height: 200px;
     background-color: #515151b0;
     border-radius: 10px;
@@ -87,8 +109,14 @@ img.expression.default {
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    height: 20%;
+    /* height: 20%; */
     padding: 0.25rem;
+}
+
+.menu_button.expression_list_delete,
+.menu_button.expression_list_upload {
+    margin-top: 0;
+    margin-bottom: 0;
 }
 
 .expression_list_image {
@@ -113,11 +141,6 @@ img.expression.default {
 
 #image_list .failure {
     color: red;
-}
-
-.expression_settings p {
-    margin-top: 0.5rem;
-    margin-bottom: 0.5rem;
 }
 
 .expression_settings label {

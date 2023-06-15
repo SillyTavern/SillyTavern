@@ -25,13 +25,43 @@ const path = require('path');
 const http = require('http');
 const https = require('https');
 
-const parent_path = path.resolve(__dirname);
+const directory = __dirname;
+
+function uuidv4() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}
+
+const getSavedDeviceId = (userId) => {
+    const device_id_path = 'poe_device.json';
+    let device_ids = {};
+
+    if (fs.existsSync(device_id_path)) {
+        device_ids = JSON.parse(fs.readFileSync(device_id_path, 'utf8'));
+    }
+
+    if (device_ids.hasOwnProperty(userId)) {
+        return device_ids[userId];
+    }
+
+    const device_id = uuidv4();
+    device_ids[userId] = device_id;
+    fs.writeFileSync(device_id_path, JSON.stringify(device_ids, null, 2));
+
+    return device_id;
+};
+
+const parent_path = path.resolve(directory);
 const queries_path = path.join(parent_path, "poe_graphql");
 let queries = {};
 
 const cached_bots = {};
 
 const logger = console;
+const delay = ms => new Promise(res => setTimeout(res, ms));
 
 const user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36";
 
@@ -202,6 +232,18 @@ function md5() {
     return m;
 }
 
+function generateNonce(length = 16) {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+
+    for (let i = 0; i < length; i++) {
+        const randomIndex = Math.floor(Math.random() * characters.length);
+        result += characters[randomIndex];
+    }
+
+    return result;
+}
+
 function load_queries() {
     const files = fs.readdirSync(queries_path);
     for (const filename of files) {
@@ -246,29 +288,40 @@ class Client {
     settings_url = "https://poe.com/api/settings";
 
     formkey = "";
+    token = "";
     next_data = {};
     bots = {};
     active_messages = {};
     message_queues = {};
+    suggested_replies = {};
+    suggested_replies_updated = {};
     bot_names = [];
     ws = null;
     ws_connected = false;
     auto_reconnect = false;
     use_cached_bots = false;
+    device_id = null;
 
     constructor(auto_reconnect = false, use_cached_bots = false) {
         this.auto_reconnect = auto_reconnect;
         this.use_cached_bots = use_cached_bots;
-        this.abortController = new AbortController();
+    }
+
+    async reconnect() {
+        if (!this.ws_connected) {
+            console.log("WebSocket died. Reconnecting...");
+            this.disconnect_ws();
+            await this.init(this.token, this.proxy);
+        }
     }
 
     async init(token, proxy = null) {
+        this.token = token;
         this.proxy = proxy;
         this.session = axios.default.create({
             timeout: 60000,
             httpAgent: new http.Agent({ keepAlive: true }),
             httpsAgent: new https.Agent({ keepAlive: true }),
-            signal: this.abortController.signal,
         });
         if (proxy) {
             this.session.defaults.proxy = {
@@ -285,18 +338,26 @@ class Client {
             "Cookie": cookies,
         };
         this.session.defaults.headers.common = this.headers;
-        this.next_data = await this.get_next_data();
-        this.channel = await this.get_channel_data();
+        [this.next_data, this.channel] = await Promise.all([this.get_next_data(), this.get_channel_data()]);
         this.bots = await this.get_bots();
         this.bot_names = this.get_bot_names();
-        this.ws_domain = `tch${Math.floor(Math.random() * 1e6)}`;
         this.gql_headers = {
             "poe-formkey": this.formkey,
             "poe-tchannel": this.channel["channel"],
             ...this.headers,
         };
-        await this.connect_ws();
+        if (this.device_id === null) {
+            this.device_id = this.get_device_id();
+        }
         await this.subscribe();
+        await this.connect_ws();
+        console.log('Client initialized.');
+    }
+
+    get_device_id() {
+        const user_id = this.viewer["poeUser"]["id"];
+        const device_id = getSavedDeviceId(user_id);
+        return device_id;
     }
 
     async get_next_data() {
@@ -321,28 +382,37 @@ class Client {
         const botList = viewer.availableBotsConnection.edges.map(x => x.node);
         const retries = 2;
         const bots = {};
+        const promises = [];
         for (const bot of botList.filter(x => x.deletionState == 'not_deleted')) {
-            try {
-                const url = `https://poe.com/_next/data/${this.next_data.buildId}/${bot.displayName}.json`;
-                let r;
+            const promise = new Promise(async (resolve, reject) => {
+                try {
+                    const url = `https://poe.com/_next/data/${this.next_data.buildId}/${bot.displayName}.json`;
+                    let r;
 
-                if (this.use_cached_bots && cached_bots[url]) {
-                    r = cached_bots[url];
-                }
-                else {
-                    logger.info(`Downloading ${url}`);
-                    r = await request_with_retries(() => this.session.get(url), retries);
-                    cached_bots[url] = r;
-                }
+                    if (this.use_cached_bots && cached_bots[url]) {
+                        r = cached_bots[url];
+                    }
+                    else {
+                        logger.info(`Downloading ${url}`);
+                        r = await request_with_retries(() => this.session.get(url), retries);
+                        cached_bots[url] = r;
+                    }
 
-                const chatData = r.data.pageProps.payload.chatOfBotDisplayName;
-                bots[chatData.defaultBotObject.nickname] = chatData;
-            }
-            catch {
-                console.log(`Could not load bot: ${bot.displayName}`);
-            }
+                    const chatData = r.data.pageProps.payload.chatOfBotDisplayName;
+                    bots[chatData.defaultBotObject.nickname] = chatData;
+                    resolve();
+
+                }
+                catch {
+                    console.log(`Could not load bot: ${bot.displayName}`);
+                    reject();
+                }
+            });
+
+            promises.push(promise);
         }
 
+        await Promise.allSettled(promises);
         return bots;
     }
 
@@ -380,9 +450,9 @@ class Client {
             _headers['poe-tag-id'] = md5()(scramblePayload + this.formkey + "WpuLMiXEKKE98j56k");
             _headers['poe-formkey'] = this.formkey;
             const r = await request_with_retries(() => this.session.post(this.gql_url, payload, { headers: this.gql_headers }));
-            if (!r.data.data) {
-                logger.warn(`${queryName} returned an error: ${data.errors[0].message} | Retrying (${i + 1}/20)`);
-                await new Promise((resolve) => setTimeout(resolve, 2000));
+            if (!(r?.data?.data)) {
+                logger.warn(`${queryName} returned an error | Retrying (${i + 1}/20)`);
+                await delay(2000);
                 continue;
             }
 
@@ -390,6 +460,29 @@ class Client {
         }
 
         throw new Error(`${queryName} failed too many times.`);
+    }
+
+    async ws_ping() {
+        const pongPromise = new Promise((resolve) => {
+            if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                this.ws.ping();
+            }
+            this.ws.once('pong', () => {
+                resolve('ok');
+            });
+        });
+
+        const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve('timeout'), 5000));
+        const result = await Promise.race([pongPromise, timeoutPromise]);
+
+        if (result == 'ok') {
+            return true;
+        }
+        else {
+            logger.warn('Websocket ping timed out.');
+            this.ws_connected = false;
+            return false;
+        }
     }
 
     async subscribe() {
@@ -439,10 +532,11 @@ class Client {
     }
 
     async connect_ws() {
+        this.ws_domain = `tch${Math.floor(Math.random() * 1e6)}`;
         this.ws_connected = false;
         this.ws_run_thread();
         while (!this.ws_connected) {
-            await new Promise(resolve => setTimeout(() => { resolve() }, 10));
+            await delay(10);
         }
     }
 
@@ -460,15 +554,14 @@ class Client {
     on_ws_error(ws, error) {
         logger.warn(`Websocket returned error: ${error}`);
         this.disconnect_ws();
-
-        if (this.auto_reconnect) {
-            this.connect_ws();
-        }
     }
 
     async on_message(ws, msg) {
         try {
             const data = JSON.parse(msg);
+
+            // Uncomment to debug websocket messages
+            //console.log(data);
 
             if (!('messages' in data)) {
                 return;
@@ -485,6 +578,11 @@ class Client {
 
                 if (!message) {
                     return;
+                }
+
+                if ("suggestedReplies" in message && Array.isArray(message["suggestedReplies"])) {
+                    this.suggested_replies[message["messageId"]] = [...message["suggestedReplies"]];
+                    this.suggested_replies_updated[message["messageId"]] = Date.now();
                 }
 
                 const copiedDict = Object.assign({}, this.active_messages);
@@ -510,10 +608,16 @@ class Client {
         }
     }
 
-    async *send_message(chatbot, message, with_chat_break = false, timeout = 20) {
+    async *send_message(chatbot, message, with_chat_break = false, timeout = 60, signal = null) {
+        await this.ws_ping();
+
+        if (this.auto_reconnect) {
+            await this.reconnect();
+        }
+
         //if there is another active message, wait until it has finished sending
         while (Object.values(this.active_messages).includes(null)) {
-            await new Promise(resolve => setTimeout(resolve, 10));
+            await delay(10);
         }
 
         //null indicates that a message is still in progress
@@ -526,6 +630,8 @@ class Client {
             "query": message,
             "chatId": this.bots[chatbot]["chatId"],
             "source": null,
+            "clientNonce": generateNonce(),
+            "sdid": this.device_id,
             "withChatBreak": with_chat_break
         });
 
@@ -551,11 +657,18 @@ class Client {
         let messageId;
         while (true) {
             try {
-                this.abortController.signal.throwIfAborted();
+                if (signal instanceof AbortSignal) {
+                    signal.throwIfAborted();
+                }
+
+                if (timeout == 0) {
+                    throw new Error("Response timed out.");
+                }
 
                 const message = this.message_queues[humanMessageId].shift();
                 if (!message) {
-                    await new Promise(resolve => setTimeout(() => resolve(), 1000));
+                    timeout -= 1;
+                    await delay(1000);
                     continue;
                     //throw new Error("Queue is empty");
                 }

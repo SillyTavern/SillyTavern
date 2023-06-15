@@ -1,9 +1,13 @@
 import { callPopup, cancelTtsPlay, eventSource, event_types, isMultigenEnabled, is_send_press, saveSettingsDebounced } from '../../../script.js'
-import { extension_settings, getContext } from '../../extensions.js'
-import { getStringHash } from '../../utils.js'
+import { ModuleWorkerWrapper, extension_settings, getContext } from '../../extensions.js'
+import { escapeRegex, getStringHash } from '../../utils.js'
+import { EdgeTtsProvider } from './edge.js'
 import { ElevenLabsTtsProvider } from './elevenlabs.js'
 import { SileroTtsProvider } from './silerotts.js'
 import { SystemTtsProvider } from './system.js'
+import { NovelTtsProvider } from './novel.js'
+import { isMobile } from '../../RossAscends-mods.js'
+import { power_user } from '../../power-user.js'
 
 const UPDATE_INTERVAL = 1000
 
@@ -15,16 +19,59 @@ let lastGroupId = null
 let lastChatId = null
 let lastMessageHash = null
 
+export function getPreviewString(lang) {
+    const previewStrings = {
+        'en-US': 'The quick brown fox jumps over the lazy dog',
+        'en-GB': 'Sphinx of black quartz, judge my vow',
+        'fr-FR': 'Portez ce vieux whisky au juge blond qui fume',
+        'de-DE': 'Victor jagt zwölf Boxkämpfer quer über den großen Sylter Deich',
+        'it-IT': "Pranzo d'acqua fa volti sghembi",
+        'es-ES': 'Quiere la boca exhausta vid, kiwi, piña y fugaz jamón',
+        'es-MX': 'Fabio me exige, sin tapujos, que añada cerveza al whisky',
+        'ru-RU': 'В чащах юга жил бы цитрус? Да, но фальшивый экземпляр!',
+        'pt-BR': 'Vejo xá gritando que fez show sem playback.',
+        'pt-PR': 'Todo pajé vulgar faz boquinha sexy com kiwi.',
+        'uk-UA': "Фабрикуймо гідність, лящім їжею, ґав хапаймо, з'єднавці чаш!",
+        'pl-PL': 'Pchnąć w tę łódź jeża lub ośm skrzyń fig',
+        'cs-CZ': 'Příliš žluťoučký kůň úpěl ďábelské ódy',
+        'sk-SK': 'Vyhŕňme si rukávy a vyprážajme čínske ryžové cestoviny',
+        'hu-HU': 'Árvíztűrő tükörfúrógép',
+        'tr-TR': 'Pijamalı hasta yağız şoföre çabucak güvendi',
+        'nl-NL': 'De waard heeft een kalfje en een pinkje opgegeten',
+        'sv-SE': 'Yxskaftbud, ge vårbygd, zinkqvarn',
+        'da-DK': 'Quizdeltagerne spiste jordbær med fløde, mens cirkusklovnen Walther spillede på xylofon',
+        'ja-JP': 'いろはにほへと　ちりぬるを　わかよたれそ　つねならむ　うゐのおくやま　けふこえて　あさきゆめみし　ゑひもせす',
+        'ko-KR': '가나다라마바사아자차카타파하',
+        'zh-CN': '我能吞下玻璃而不伤身体',
+        'ro-RO': 'Muzicologă în bej vând whisky și tequila, preț fix',
+        'bg-BG': 'Щъркелите се разпръснаха по цялото небе',
+        'el-GR': 'Ταχίστη αλώπηξ βαφής ψημένη γη, δρασκελίζει υπέρ νωθρού κυνός',
+        'fi-FI': 'Voi veljet, miksi juuri teille myin nämä vehkeet?',
+        'he-IL': 'הקצינים צעקו: "כל הכבוד לצבא הצבאות!"',
+        'id-ID': 'Jangkrik itu memang enak, apalagi kalau digoreng',
+        'ms-MY': 'Muzik penyanyi wanita itu menggambarkan kehidupan yang penuh dengan duka nestapa',
+        'th-TH': 'เป็นไงบ้างครับ ผมชอบกินข้าวผัดกระเพราหมูกรอบ',
+        'vi-VN': 'Cô bé quàng khăn đỏ đang ngồi trên bãi cỏ xanh',
+        'ar-SA': 'أَبْجَدِيَّة عَرَبِيَّة',
+        'hi-IN': 'श्वेता ने श्वेता के श्वेते हाथों में श्वेता का श्वेता चावल पकड़ा',
+    }
+    const fallbackPreview = 'Neque porro quisquam est qui dolorem ipsum quia dolor sit amet'
+
+    return  previewStrings[lang] ?? fallbackPreview;
+}
 
 let ttsProviders = {
     ElevenLabs: ElevenLabsTtsProvider,
     Silero: SileroTtsProvider,
     System: SystemTtsProvider,
+    Edge: EdgeTtsProvider,
+    Novel: NovelTtsProvider,
 }
 let ttsProvider
 let ttsProviderName
 
 async function onNarrateOneMessage() {
+    audioElement.src = '/sounds/silence.mp3';
     const context = getContext();
     const id = $(this).closest('.mes').attr('mesid');
     const message = context.chat[id];
@@ -36,24 +83,6 @@ async function onNarrateOneMessage() {
     resetTtsPlayback()
     ttsJobQueue.push(message);
     moduleWorker();
-}
-
-let isWorkerBusy = false;
-
-async function moduleWorkerWrapper() {
-    // Don't touch me I'm busy...
-    if (isWorkerBusy) {
-        return;
-    }
-
-    // I'm free. Let's update!
-    try {
-        isWorkerBusy = true;
-        await moduleWorker();
-    }
-    finally {
-        isWorkerBusy = false;
-    }
 }
 
 async function moduleWorker() {
@@ -144,7 +173,7 @@ function resetTtsPlayback() {
 
     // Reset audio element
     audioElement.currentTime = 0;
-    audioElement.src = '';
+    audioElement.src = '/sounds/silence.mp3';
 
     // Clear any queue items
     ttsJobQueue.splice(0, ttsJobQueue.length);
@@ -191,6 +220,7 @@ window.debugTtsPlayback = debugTtsPlayback
 //##################//
 
 let audioElement = new Audio()
+audioElement.autoplay = true
 
 let audioJobQueue = []
 let currentAudioJob
@@ -220,7 +250,7 @@ async function playAudioData(audioBlob) {
 window['tts_preview'] = function (id) {
     const audio = document.getElementById(id)
 
-    if (!$(audio).data('disabled')) {
+    if (audio && !$(audio).data('disabled')) {
         audio.play()
     }
     else {
@@ -241,7 +271,9 @@ async function onTtsVoicesClick() {
                 <b class="voice_name">${voice.name}</b>
                 <i onclick="tts_preview('${voice.voice_id}')" class="fa-solid fa-play"></i>
             </div>`
-            popupText += `<audio id="${voice.voice_id}" src="${voice.preview_url}" data-disabled="${voice.preview_url == false}"></audio>`
+            if (voice.preview_url) {
+                popupText += `<audio id="${voice.voice_id}" src="${voice.preview_url}" data-disabled="${voice.preview_url == false}"></audio>`
+            }
         }
     } catch {
         popupText = 'Could not load voices list. Check your API key.'
@@ -267,6 +299,7 @@ function updateUiAudioPlayState() {
 }
 
 function onAudioControlClicked() {
+    audioElement.src = '/sounds/silence.mp3';
     let context = getContext()
     // Not pausing, doing a full stop to anything TTS is doing. Better UX as pause is not as useful
     if (!audioElement.paused || isTtsProcessing()) {
@@ -303,7 +336,7 @@ function completeCurrentAudioJob() {
  */
 async function addAudioJob(response) {
     const audioData = await response.blob()
-    if (!audioData.type in ['audio/mpeg', 'audio/wav', 'audio/x-wav', 'audio/wave']) {
+    if (!audioData.type in ['audio/mpeg', 'audio/wav', 'audio/x-wav', 'audio/wave', 'audio/webm']) {
         throw `TTS received HTTP response with invalid data format. Expecting audio/mpeg, got ${audioData.type}`
     }
     audioJobQueue.push(audioData)
@@ -377,6 +410,13 @@ async function processTtsQueue() {
     console.log(`TTS: ${text}`)
     const char = currentTtsJob.name
 
+    // Remove character name from start of the line if power user setting is disabled
+    if (char && !power_user.allow_name2_display) {
+        debugger;
+        const escapedChar = escapeRegex(char);
+        text = text.replace(new RegExp(`^${escapedChar}:`, 'gm'), '');
+    }
+
     try {
         if (!text) {
             console.warn('Got empty text in TTS queue job.');
@@ -390,6 +430,7 @@ async function processTtsQueue() {
         const voice = await ttsProvider.getVoice((voiceMap[char]))
         const voiceId = voice.voice_id
         if (voiceId == null) {
+            toastr.error(`Specified voice for ${char} was not found. Check the TTS extension settings.`)
             throw `Unable to attain voiceId for ${char}`
         }
         tts(text, voiceId)
@@ -470,7 +511,6 @@ async function voicemapIsValid(parsedVoiceMap) {
 
 async function updateVoiceMap() {
     let isValidResult = false
-    const context = getContext()
 
     const value = $('#tts_voice_map').val()
     const parsedVoiceMap = parseVoiceMap(value)
@@ -661,6 +701,29 @@ $(document).ready(function () {
     loadSettings() // Depends on Extension Controls and loadTtsProvider
     loadTtsProvider(extension_settings.tts.currentProvider) // No dependencies
     addAudioControl() // Depends on Extension Controls
-    setInterval(moduleWorkerWrapper, UPDATE_INTERVAL) // Init depends on all the things
+    const wrapper = new ModuleWorkerWrapper(moduleWorker);
+    setInterval(wrapper.update.bind(wrapper), UPDATE_INTERVAL) // Init depends on all the things
     eventSource.on(event_types.MESSAGE_SWIPED, resetTtsPlayback);
+
+    // Mobiles need to "activate" the Audio element with click before it can be played
+    if (isMobile()) {
+        console.debug('Activating mobile audio element on first click');
+        let audioActivated = false;
+
+        // Play silence on first click
+        $(document).on('click touchend', function () {
+            // Prevent multiple activations
+            if (audioActivated) {
+                return;
+            }
+
+            console.debug('Activating audio element...');
+            audioActivated = true;
+            audioElement.src = '/sounds/silence.mp3';
+            // Reset volume to 1
+            audioElement.onended = function () {
+                console.debug('Audio element activated');
+            };
+        });
+    }
 })

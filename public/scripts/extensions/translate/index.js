@@ -350,7 +350,7 @@ jQuery(() => {
             Translate Chat
         </div>`;
     $('#extensionsMenu').append(buttonHtml);
-    $('#extensions_settings').append(html);
+    $('#extensions_settings2').append(html);
     $('#translate_chat').on('click', onTranslateChatClick);
     $('#translation_clear').on('click', onTranslationsClearClick);
 

@@ -26,9 +26,14 @@ const TAG_LOGIC_AND = true; // switch to false to use OR logic for combining tag
 const CHARACTER_SELECTOR = '#rm_print_characters_block > div';
 
 const ACTIONABLE_TAGS = {
-    VIEW: { id: 2, name: 'Manage tags', color: 'rgba(150, 100, 100, 0.5)', action: onViewTagsListClick, icon: 'fa-solid fa-tags' },
+
     FAV: { id: 1, name: 'Show only favorites', color: 'rgba(255, 255, 0, 0.5)', action: applyFavFilter, icon: 'fa-solid fa-star' },
     GROUP: { id: 0, name: 'Show only groups', color: 'rgba(100, 100, 100, 0.5)', action: filterByGroups, icon: 'fa-solid fa-users' },
+    HINT: { id: 3, name: 'Show Tag List', color: 'rgba(150, 100, 100, 0.5)', action: onTagListHintClick, icon: 'fa-solid fa-tags' },
+}
+
+const InListActionable = {
+    VIEW: { id: 2, name: 'Manage tags', color: 'rgba(150, 100, 100, 0.5)', action: onViewTagsListClick, icon: 'fa-solid fa-gear' },
 }
 
 const DEFAULT_TAGS = [
@@ -59,7 +64,7 @@ function applyFavFilter() {
         }
 
     });
-    updateVisibleDivs();
+    updateVisibleDivs('#rm_print_characters_block', true);
 }
 
 function filterByGroups() {
@@ -71,7 +76,7 @@ function filterByGroups() {
     $(CHARACTER_SELECTOR).each((_, element) => {
         $(element).toggleClass('hiddenByGroup', displayGroupsOnly && !$(element).hasClass('group_select'));
     });
-    updateVisibleDivs();
+    updateVisibleDivs('#rm_print_characters_block', true);
 }
 
 function loadTagsSettings(settings) {
@@ -233,6 +238,9 @@ function appendTagToList(listElement, tag, { removable, selectable, action }) {
         tagElement.on('click', () => action.bind(tagElement)());
         tagElement.addClass('actionable');
     }
+    if (action && tag.id === 2) {
+        tagElement.addClass('innerActionable hidden');
+    }
 
     $(listElement).append(tagElement);
 }
@@ -245,7 +253,7 @@ function onTagFilterClick(listElement) {
 
     const tagIds = [...($(listElement).find(".tag.selected:not(.actionable)").map((_, el) => $(el).attr("id")))];
     $(CHARACTER_SELECTOR).each((_, element) => applyFilterToElement(tagIds, element));
-    updateVisibleDivs();
+    updateVisibleDivs('#rm_print_characters_block', true);
 }
 
 function applyFilterToElement(tagIds, element) {
@@ -291,6 +299,9 @@ function printTags() {
 
     $(FILTER_SELECTOR).find('.actionable').last().addClass('margin-right-10px');
 
+    for (const tag of Object.values(InListActionable)) {
+        appendTagToList(FILTER_SELECTOR, tag, { removable: false, selectable: false, action: tag.action });
+    }
     for (const tag of tagsToDisplay) {
         appendTagToList(FILTER_SELECTOR, tag, { removable: false, selectable: true, });
     }
@@ -426,15 +437,22 @@ function onTagRenameInput() {
 }
 
 function onTagColorize(evt) {
-    console.log(evt);
+    console.debug(evt);
     const id = $(evt.target).closest('.tag_view_item').attr('id');
     const newColor = evt.detail.rgba;
     $(evt.target).parent().parent().find('.tag_view_name').css('background-color', newColor);
     $(`.tag[id="${id}"]`).css('background-color', newColor);
     const tag = tags.find(x => x.id === id);
     tag.color = newColor;
-    console.log(tag);
+    console.debug(tag);
     saveSettingsDebounced();
+}
+
+function onTagListHintClick() {
+    console.log($(this));
+    $(this).toggleClass('selected');
+    $(this).siblings(".tag:not(.actionable)").toggle(100);
+    $(this).siblings(".innerActionable").toggleClass('hidden');
 }
 
 $(document).ready(() => {

@@ -1,4 +1,5 @@
 import {
+    getRequestHeaders,
     saveSettingsDebounced,
 } from "../script.js";
 
@@ -19,6 +20,7 @@ const nai_settings = {
     tail_free_sampling_novel: 0.68,
     model_novel: "euterpe-v2",
     preset_settings_novel: "Classic-Euterpe",
+    streaming_novel: false,
 };
 
 const nai_tiers = {
@@ -65,6 +67,7 @@ function loadNovelSettings(settings) {
     nai_settings.rep_pen_freq_novel = settings.rep_pen_freq_novel;
     nai_settings.rep_pen_presence_novel = settings.rep_pen_presence_novel;
     nai_settings.tail_free_sampling_novel = settings.tail_free_sampling_novel;
+    nai_settings.streaming_novel = !!settings.streaming_novel;
     loadNovelSettingsUi(nai_settings);
 }
 
@@ -83,6 +86,7 @@ function loadNovelSettingsUi(ui_settings) {
     $("#rep_pen_presence_counter_novel").text(Number(ui_settings.rep_pen_presence_novel).toFixed(3));
     $("#tail_free_sampling_novel").val(ui_settings.tail_free_sampling_novel);
     $("#tail_free_sampling_counter_novel").text(Number(ui_settings.tail_free_sampling_novel).toFixed(3));
+    $("#streaming_novel").prop('checked', ui_settings.streaming_novel);
 }
 
 const sliders = [
@@ -150,13 +154,56 @@ export function getNovelGenerationData(finalPromt, this_settings, this_amount_ge
         "typical_p": this_settings.typical_p,
         //"stop_sequences": {{187}},
         //bad_words_ids = {{50256}, {0}, {1}};
-        //generate_until_sentence = true;
+        "generate_until_sentence": true,
         "use_cache": false,
-        //use_string = true;
+        "use_string": true,
         "return_full_text": false,
         "prefix": "vanilla",
-        "order": this_settings.order
+        "order": this_settings.order,
+        "streaming": nai_settings.streaming_novel,
     };
+}
+
+export async function generateNovelWithStreaming(generate_data, signal) {
+    const response = await fetch('/generate_novelai', {
+        headers: getRequestHeaders(),
+        body: JSON.stringify(generate_data),
+        method: 'POST',
+        signal: signal,
+    });
+
+    return async function* streamData() {
+        const decoder = new TextDecoder();
+        const reader = response.body.getReader();
+        let getMessage = '';
+        let messageBuffer = "";
+        while (true) {
+            const { done, value } = await reader.read();
+            let response = decoder.decode(value);
+            let eventList = [];
+
+            // ReadableStream's buffer is not guaranteed to contain full SSE messages as they arrive in chunks
+            // We need to buffer chunks until we have one or more full messages (separated by double newlines)
+            messageBuffer += response;
+            eventList = messageBuffer.split("\n\n");
+            // Last element will be an empty string or a leftover partial message
+            messageBuffer = eventList.pop();
+
+            for (let event of eventList) {
+                for (let subEvent of event.split('\n')) {
+                    if (subEvent.startsWith("data")) {
+                        let data = JSON.parse(subEvent.substring(5));
+                        getMessage += (data?.token || '');
+                        yield getMessage;
+                    }
+                }
+            }
+
+            if (done) {
+                return;
+            }
+        }
+    }
 }
 
 $(document).ready(function () {
@@ -169,6 +216,12 @@ $(document).ready(function () {
             console.log('saving');
             saveSettingsDebounced();
         });
+    });
+
+    $('#streaming_novel').on('input', function () {
+        const value = !!$(this).prop('checked');
+        nai_settings.streaming_novel = value;
+        saveSettingsDebounced();
     });
 
     $("#model_novel_select").change(function () {

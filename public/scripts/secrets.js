@@ -5,6 +5,7 @@ export const SECRET_KEYS = {
     OPENAI: 'api_key_openai',
     POE: 'api_key_poe',
     NOVEL: 'api_key_novel',
+    CLAUDE: 'api_key_claude',
 }
 
 const INPUT_MAP = {
@@ -12,6 +13,7 @@ const INPUT_MAP = {
     [SECRET_KEYS.OPENAI]: '#api_key_openai',
     [SECRET_KEYS.POE]: '#poe_token',
     [SECRET_KEYS.NOVEL]: '#api_key_novel',
+    [SECRET_KEYS.CLAUDE]: '#api_key_claude',
 }
 
 async function clearSecret() {
@@ -20,12 +22,13 @@ async function clearSecret() {
     secret_state[key] = false;
     updateSecretDisplay();
     $(INPUT_MAP[key]).val('');
+    $('#main_api').trigger('change');
 }
 
 function updateSecretDisplay() {
     for (const [secret_key, input_selector] of Object.entries(INPUT_MAP)) {
         const validSecret = !!secret_state[secret_key];
-        const placeholder = validSecret ? '✔️ Key saved' : '❌ Missing key'; 
+        const placeholder = validSecret ? '✔️ Key saved' : '❌ Missing key';
         $(input_selector).attr('placeholder', placeholder);
     }
 }
@@ -50,7 +53,7 @@ async function viewSecrets() {
     const table = document.createElement('table');
     table.classList.add('responsiveTable');
     $(table).append('<thead><th>Key</th><th>Value</th></thead>');
-    
+
     for (const [key,value] of Object.entries(data)) {
         $(table).append(`<tr><td>${DOMPurify.sanitize(key)}</td><td>${DOMPurify.sanitize(value)}</td></tr>`);
     }

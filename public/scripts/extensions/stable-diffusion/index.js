@@ -10,7 +10,7 @@ import {
     eventSource,
     appendImageToMessage
 } from "../../../script.js";
-import { getApiUrl, getContext, extension_settings, defaultRequestArgs, modules } from "../../extensions.js";
+import { getApiUrl, getContext, extension_settings, doExtrasFetch, modules } from "../../extensions.js";
 import { stringFormat, initScrollHeight, resetScrollHeight } from "../../utils.js";
 export { MODULE_NAME };
 
@@ -234,7 +234,7 @@ async function onModelChange() {
 async function updateExtrasRemoteModel() {
     const url = new URL(getApiUrl());
     url.pathname = '/api/image/model';
-    const getCurrentModelResult = await fetch(url, {
+    const getCurrentModelResult = await doExtrasFetch(url, {
         method: 'POST',
         headers: postHeaders,
         body: JSON.stringify({ model: extension_settings.sd.model }),
@@ -285,7 +285,7 @@ async function loadExtrasSamplers() {
 
     const url = new URL(getApiUrl());
     url.pathname = '/api/image/samplers';
-    const result = await fetch(url, defaultRequestArgs);
+    const result = await doExtrasFetch(url);
 
     if (result.ok) {
         const data = await result.json();
@@ -338,7 +338,7 @@ async function loadExtrasModels() {
 
     const url = new URL(getApiUrl());
     url.pathname = '/api/image/model';
-    const getCurrentModelResult = await fetch(url, defaultRequestArgs);
+    const getCurrentModelResult = await doExtrasFetch(url);
 
     if (getCurrentModelResult.ok) {
         const data = await getCurrentModelResult.json();
@@ -346,7 +346,7 @@ async function loadExtrasModels() {
     }
 
     url.pathname = '/api/image/models';
-    const getModelsResult = await fetch(url, defaultRequestArgs);
+    const getModelsResult = await doExtrasFetch(url);
 
     if (getModelsResult.ok) {
         const data = await getModelsResult.json();
@@ -459,7 +459,7 @@ async function getPrompt(generationType, message, trigger, quiet_prompt) {
             prompt = message || getRawLastMessage();
             break;
         case generationMode.FREE:
-            prompt = processReply(trigger);
+            prompt = trigger.trim();
             break;
         default:
             prompt = await generatePrompt(quiet_prompt);
@@ -493,7 +493,7 @@ async function generateExtrasImage(prompt, callback) {
     console.log(extension_settings.sd);
     const url = new URL(getApiUrl());
     url.pathname = '/api/image';
-    const result = await fetch(url, {
+    const result = await doExtrasFetch(url, {
         method: 'POST',
         headers: postHeaders,
         body: JSON.stringify({
@@ -583,8 +583,9 @@ function addSDGenButtons() {
     `
     const dropdownHtml = `
     <div id="sd_dropdown">
-    <span>Send me a picture of:</span>
+    
         <ul class="list-group">
+        <span>Send me a picture of:</span>
             <li class="list-group-item" id="sd_you" data-value="you">Yourself</li>
             <li class="list-group-item" id="sd_face" data-value="face">Your Face</li>
             <li class="list-group-item" id="sd_me" data-value="me">Me</li>
@@ -608,7 +609,7 @@ function addSDGenButtons() {
     messageButton.hide();
 
     let popper = Popper.createPopper(button.get(0), dropdown.get(0), {
-        placement: 'bottom',
+        placement: 'top',
     });
 
     $(document).on('click', '.sd_message_gen', sdMessageButton);
@@ -619,10 +620,10 @@ function addSDGenButtons() {
         if (target.is(button) && !dropdown.is(":visible") && $("#send_but").css('display') === 'flex') {
             e.preventDefault();
 
-            dropdown.show(200);
+            dropdown.fadeIn(250);
             popper.update();
         } else {
-            dropdown.hide(200);
+            dropdown.fadeOut(250);
         }
     });
 }
@@ -633,11 +634,11 @@ function isConnectedToExtras() {
 
 async function moduleWorker() {
     if (isConnectedToExtras() || extension_settings.sd.horde) {
-        $('#sd_gen').show(200);
+        $('#sd_gen').show();
         $('.sd_message_gen').show();
     }
     else {
-        $('#sd_gen').hide(200);
+        $('#sd_gen').hide();
         $('.sd_message_gen').hide();
     }
 }

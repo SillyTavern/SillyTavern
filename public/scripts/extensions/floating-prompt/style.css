@@ -8,6 +8,7 @@
     border: 1px solid var(--white30a);
     position: fixed;
     padding: 10px;
+    padding-top: 25px;
     display: none;
     flex-direction: column;
     box-shadow: 0 0 10px var(--black70a);
@@ -30,7 +31,37 @@
     color: orange;
 }
 
+.extension_token_counter {
+    font-size: calc(var(--mainFontSize) * 0.9);
+    width: 100%;
+    text-align: right;
+}
+
 .floating_prompt_settings textarea {
     font-size: calc(var(--mainFontSize) * 0.9);
     line-height: 1.2;
+}
+
+#ANClose {
+    height: 15px;
+    aspect-ratio: 1 / 1;
+    font-size: 20px;
+    opacity: 0.5;
+    transition: all 250ms;
+}
+
+#ANClose:hover {
+    cursor: pointer;
+    opacity: 1;
+}
+
+.panelControlBar {
+    position: absolute;
+    right: 5px;
+    top: 5px;
+    margin-right: 5px;
+}
+
+#floatingPrompt .drag-grabber {
+    position: unset;
 }

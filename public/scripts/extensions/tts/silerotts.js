@@ -1,4 +1,4 @@
-import { getApiUrl, modules } from "../../extensions.js"
+import { doExtrasFetch, getApiUrl, modules } from "../../extensions.js"
 
 export { SileroTtsProvider }
 
@@ -15,17 +15,17 @@ class SileroTtsProvider {
         provider_endpoint: "http://localhost:8001/tts",
         voiceMap: {}
     }
-    
+
     get settingsHtml() {
         let html = `
         <label for="silero_tts_endpoint">Provider Endpoint:</label>
         <input id="silero_tts_endpoint" type="text" class="text_pole" maxlength="250" value="${this.defaultSettings.provider_endpoint}"/>
         <span>
-        <span>Use <a target="_blank" href="https://github.com/Cohee1207/SillyTavern-extras">SillyTavern Extras API</a> or <a target="_blank" href="https://github.com/ouoertheo/silero-api-server">Silero TTS Server</a>.</span>
+        <span>Use <a target="_blank" href="https://github.com/SillyTavern/SillyTavern-extras">SillyTavern Extras API</a> or <a target="_blank" href="https://github.com/ouoertheo/silero-api-server">Silero TTS Server</a>.</span>
         `
         return html
     }
-    
+
     onSettingsChange() {
         // Used when provider settings are updated from UI
         this.settings.provider_endpoint = $('#silero_tts_endpoint').val()
@@ -50,7 +50,7 @@ class SileroTtsProvider {
 
         const apiCheckInterval = setInterval(() => {
             // Use Extras API if TTS support is enabled
-            if (modules.includes('tts')) {
+            if (modules.includes('tts') || modules.includes('silero-tts')) {
                 const baseUrl = new URL(getApiUrl());
                 baseUrl.pathname = '/api/tts';
                 this.settings.provider_endpoint = baseUrl.toString();
@@ -58,12 +58,12 @@ class SileroTtsProvider {
                 clearInterval(apiCheckInterval);
             }
         }, 2000);
-        
+
         $('#silero_tts_endpoint').val(this.settings.provider_endpoint)
         console.info("Settings loaded")
     }
 
-    
+
     async onApplyClick() {
         return
     }
@@ -71,7 +71,7 @@ class SileroTtsProvider {
     //#################//
     //  TTS Interfaces //
     //#################//
-    
+
     async getVoice(voiceName) {
         if (this.voices.length == 0) {
             this.voices = await this.fetchTtsVoiceIds()
@@ -94,7 +94,7 @@ class SileroTtsProvider {
     // API CALLS //
     //###########//
     async fetchTtsVoiceIds() {
-        const response = await fetch(`${this.settings.provider_endpoint}/speakers`)
+        const response = await doExtrasFetch(`${this.settings.provider_endpoint}/speakers`)
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${await response.json()}`)
         }
@@ -104,7 +104,7 @@ class SileroTtsProvider {
 
     async fetchTtsGeneration(inputText, voiceId) {
         console.info(`Generating new TTS for voice_id ${voiceId}`)
-        const response = await fetch(
+        const response = await doExtrasFetch(
             `${this.settings.provider_endpoint}/generate`,
             {
                 method: 'POST',
@@ -118,25 +118,15 @@ class SileroTtsProvider {
             }
         )
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${await response.json()}`)
+            toastr.error(response.statusText, 'TTS Generation Failed');
+            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
         }
         return response
     }
 
+    // Interface not used by Silero TTS
     async fetchTtsFromHistory(history_item_id) {
-        console.info(`Fetched existing TTS with history_item_id ${history_item_id}`)
-        const response = await fetch(
-            `https://api.elevenlabs.io/v1/history/${history_item_id}/audio`,
-            {
-                headers: {
-                    'xi-api-key': this.API_KEY
-                }
-            }
-        )
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${await response.json()}`)
-        }
-        return response
+        return Promise.resolve(history_item_id);
     }
 
 }

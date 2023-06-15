@@ -53,8 +53,11 @@ import {
     saveChatConditional,
     deactivateSendButtons,
     activateSendButtons,
+    eventSource,
+    event_types,
+    getCurrentChatId,
 } from "../script.js";
-import { appendTagToList, createTagMapFromList, getTagsList, applyTagsOnCharacterSelect } from './tags.js';
+import { appendTagToList, createTagMapFromList, getTagsList, applyTagsOnCharacterSelect, tag_map } from './tags.js';
 
 export {
     selected_group,
@@ -117,7 +120,7 @@ async function regenerateGroup() {
             break;
         }
 
-        deleteLastMessage();
+        await deleteLastMessage();
     }
 
     generateGroupWrapper();
@@ -172,17 +175,28 @@ export async function getGroupChat(groupId) {
     }
 
     await saveGroupChat(groupId, true);
+    eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
 }
 
 function getFirstCharacterMessage(character) {
+    let messageText = character.first_mes;
+
+    // if there are alternate greetings, pick one at random
+    if (Array.isArray(character.data?.alternate_greetings)) {
+        const messageTexts = [character.first_mes, ...character.data.alternate_greetings].filter(x => x);
+        messageText = messageTexts[Math.floor(Math.random() * messageTexts.length)];
+    }
+
     const mes = {};
     mes["is_user"] = false;
     mes["is_system"] = false;
     mes["name"] = character.name;
     mes["is_name"] = true;
     mes["send_date"] = humanizedDateTime();
-    mes["mes"] = character.first_mes
-        ? substituteParams(character.first_mes.trim(), name1, character.name)
+    mes["original_avatar"] = character.avatar;
+    mes["extra"] = { "gen_id": Date.now() * Math.random() * 1000000 };
+    mes["mes"] = messageText
+        ? substituteParams(messageText.trim(), name1, character.name)
         : default_ch_mes;
     mes["force_avatar"] =
         character.avatar != "none"
@@ -382,14 +396,14 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
         return;
     }
 
+    if (is_group_generating) {
+        return false;
+    }
+
     // Auto-navigate back to group menu
     if (menu_type !== "group_edit") {
         select_group_chats(selected_group);
         await delay(1);
-    }
-
-    if (is_group_generating) {
-        return false;
     }
 
     const group = groups.find((x) => x.id === selected_group);
@@ -501,7 +515,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
             const bias = getBiasStrings(userInput);
             await sendMessageAsUser(userInput, bias.messageBias);
             await saveChatConditional();
-            $('#send_textarea').val('');
+            $('#send_textarea').val('').trigger('input');
         }
 
         // now the real generation begins: cycle through every activated character
@@ -533,7 +547,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
                 }
 
                 // if not swipe - check if message generated already
-                if (type !== "swipe" && !isMultigenEnabled() && chat.length == messagesBefore) {
+                if (generateType === "group_chat" && !isMultigenEnabled() && chat.length == messagesBefore) {
                     await delay(100);
                 }
                 // if swipe - see if message changed
@@ -780,6 +794,7 @@ async function deleteGroup(id) {
 
     if (response.ok) {
         selected_group = null;
+        delete tag_map[id];
         resetChatState();
         clearChat();
         printMessages();
@@ -811,6 +826,8 @@ export async function editGroup(id, immediately, reload = true) {
     saveGroupDebounced(group);
 }
 
+let groupAutoModeAbortController = null;
+
 async function groupChatAutoModeWorker() {
     if (!is_group_automode_enabled || online_status === "no_connection") {
         return;
@@ -826,7 +843,8 @@ async function groupChatAutoModeWorker() {
         return;
     }
 
-    await generateGroupWrapper(true);
+    groupAutoModeAbortController = new AbortController();
+    await generateGroupWrapper(true, 'auto', { signal: groupAutoModeAbortController.signal });
 }
 
 async function modifyGroupMember(chat_id, groupMember, isDelete) {
@@ -947,7 +965,7 @@ function select_group_chats(groupId, skipAnimation) {
         template.find(".avatar img").attr("title", character.avatar);
         template.find(".ch_name").text(character.name);
         template.attr("chid", characters.indexOf(character));
-        template.addClass(character.fav == 'true' ? 'is_fav' : '');
+        template.toggleClass('is_fav', character.fav || character.fav == 'true');
 
         if (!group) {
             template.find('[data-action="speak"]').hide();
@@ -995,7 +1013,7 @@ function select_group_chats(groupId, skipAnimation) {
         }
 
         $("#dialogue_popup").data("group_id", groupId);
-        callPopup("<h3>Delete the group?</h3>", "del_group");
+        callPopup('<h3>Delete the group?</h3><p>This will also delete all your chats with that group. If you want to delete a single conversation, select a "View past chats" option in the lower left menu.</p>', "del_group");
     });
 
     updateFavButtonState(group?.fav ?? false);
@@ -1077,6 +1095,7 @@ function select_group_chats(groupId, skipAnimation) {
         }
 
         sortGroupMembers("#rm_group_add_members .group_member");
+        await eventSource.emit(event_types.GROUP_UPDATED);
     });
 }
 
@@ -1399,6 +1418,23 @@ function onGroupScenarioRemoveClick() {
     $(this).closest('.group_scenario').find('.group_chat_scenario').val('').trigger('input');
 }
 
+function onSendTextareaInput() {
+    if (is_group_automode_enabled) {
+        // Wait for current automode generation to finish
+        is_group_automode_enabled = false;
+        $("#rm_group_automode").prop("checked", false);
+    }
+}
+
+function stopAutoModeGeneration() {
+    if (groupAutoModeAbortController) {
+        groupAutoModeAbortController.abort();
+    }
+
+    is_group_automode_enabled = false;
+    $("#rm_group_automode").prop("checked", false);
+}
+
 jQuery(() => {
     $(document).on("click", ".group_select", selectGroup);
     $(document).on("input", ".group_chat_scenario", onGroupScenarioInput);
@@ -1410,5 +1446,7 @@ jQuery(() => {
     $("#rm_group_automode").on("input", function () {
         const value = $(this).prop("checked");
         is_group_automode_enabled = value;
+        eventSource.once(event_types.GENERATION_STOPPED, stopAutoModeGeneration);
     });
+    $("#send_textarea").on("keyup", onSendTextareaInput);
 });

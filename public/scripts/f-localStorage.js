@@ -2,10 +2,10 @@
 
 export function SaveLocal(target, val) {
 	localStorage.setItem(target, val);
-	console.log('SaveLocal -- ' + target + ' : ' + val);
+	console.debug('SaveLocal -- ' + target + ' : ' + val);
 }
 export function LoadLocal(target) {
-	console.log('LoadLocal -- ' + target);
+	console.debug('LoadLocal -- ' + target);
 	return localStorage.getItem(target);
 
 }

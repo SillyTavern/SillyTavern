@@ -1,0 +1,45 @@
+#objective-counter {
+    font-weight: 600;
+    color: orange;
+}
+
+.objective_block {
+    display: flex;
+    align-items: center;
+    column-gap: 5px;
+    flex-wrap: wrap;
+}
+
+.objective_block_control {
+    align-items: baseline;
+}
+
+.objective_block_control small,
+.objective_block_control label {
+    width: max-content;
+}
+
+.objective-task-button {
+    margin: 0;
+    outline: none;
+    border: none;
+    cursor: pointer;
+    transition: 0.3s;
+    opacity: 0.7;
+    align-items: center;
+    justify-content: center;
+
+}
+
+.objective-task-button:hover {
+    opacity: 1;
+}
+
+[id^=objective-task-delete-] {
+    color: #da3f3f;
+}
+
+#objective-tasks span {
+    margin: unset;
+    margin-bottom: 5px !important;
+}

@@ -1,5 +1,6 @@
 import {
     addOneMessage,
+    autoSelectPersona,
     characters,
     chat,
     chat_metadata,
@@ -11,10 +12,13 @@ import {
     replaceBiasMarkup,
     saveChatConditional,
     sendSystemMessage,
+    setUserName,
+    substituteParams,
     system_avatar,
     system_message_types
 } from "../script.js";
 import { humanizedDateTime } from "./RossAscends-mods.js";
+import { power_user } from "./power-user.js";
 export {
     executeSlashCommands,
     registerSlashCommand,
@@ -92,6 +96,9 @@ const registerSlashCommand = parser.addCommand.bind(parser);
 const getSlashCommandsHelp = parser.getHelpString.bind(parser);
 
 parser.addCommand('help', helpCommandCallback, ['?'], ' – displays this help message', true, true);
+parser.addCommand('name', setNameCallback, ['persona'], '<span class="monospace">(name)</span> – sets user name and persona avatar (if set)', true, true);
+parser.addCommand('sync', syncCallback, [], ' – syncs user name in user-attributed messages in the current chat', true, true);
+parser.addCommand('lock', bindCallback, ['bind'], ' – locks/unlocks a persona (name and avatar) to the current chat', true, true);
 parser.addCommand('bg', setBackgroundCallback, ['background'], '<span class="monospace">(filename)</span> – sets a background according to filename, partial names allowed, will set the first one alphabetically if multiple files begin with the provided argument string', false, true);
 parser.addCommand('sendas', sendMessageAs, [], ` – sends message as a specific character.<br>Example:<br><pre><code>/sendas Chloe\nHello, guys!</code></pre>will send "Hello, guys!" from "Chloe".<br>Uses character avatar if it exists in the characters list.`, true, true);
 parser.addCommand('sys', sendNarratorMessage, [], '<span class="monospace">(text)</span> – sends message as a system narrator', false, true);
@@ -99,6 +106,31 @@ parser.addCommand('sysname', setNarratorName, [], '<span class="monospace">(name
 
 const NARRATOR_NAME_KEY = 'narrator_name';
 const NARRATOR_NAME_DEFAULT = 'System';
+
+function syncCallback() {
+    $('#sync_name_button').trigger('click');
+}
+
+function bindCallback() {
+    $('#lock_user_name').trigger('click');
+}
+
+function setNameCallback(_, name) {
+    if (!name) {
+        return;
+    }
+
+    name = name.trim();
+
+    // If the name is a persona, auto-select it
+    if (Object.values(power_user.personas).map(x => x.toLowerCase()).includes(name.toLowerCase())) {
+        autoSelectPersona(name);
+    }
+    // Otherwise, set just the name
+    else {
+        setUserName(name);
+    }
+}
 
 function setNarratorName(_, text) {
     const name = text || NARRATOR_NAME_DEFAULT;
@@ -143,7 +175,7 @@ async function sendMessageAs(_, text) {
         is_name: true,
         is_system: isSystem,
         send_date: humanizedDateTime(),
-        mes: mesText,
+        mes: substituteParams(mesText),
         force_avatar: force_avatar,
         original_avatar: original_avatar,
         extra: {
@@ -174,7 +206,7 @@ async function sendNarratorMessage(_, text) {
         is_name: false,
         is_system: isSystem,
         send_date: humanizedDateTime(),
-        mes: text.trim(),
+        mes: substituteParams(text.trim()),
         force_avatar: system_avatar,
         extra: {
             type: system_message_types.NARRATOR,
@@ -230,6 +262,7 @@ function executeSlashCommands(text) {
             continue;
         }
 
+        console.debug('Slash command executing:', result);
         result.command.callback(result.args, result.value);
 
         if (result.command.interruptsGeneration) {

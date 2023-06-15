@@ -9,12 +9,18 @@ import {
     getRequestHeaders,
     substituteParams,
     updateVisibleDivs,
+    eventSource,
+    event_types,
+    getCurrentChatId,
+    is_send_press,
 } from "../script.js";
 import { favsToHotswap } from "./RossAscends-mods.js";
 import {
     groups,
     selected_group,
 } from "./group-chats.js";
+
+import { registerSlashCommand } from "./slash-commands.js";
 
 export {
     loadPowerUserSettings,
@@ -58,6 +64,8 @@ const tokenizers = {
     GPT3: 1,
     CLASSIC: 2,
     LLAMA: 3,
+    NERD: 4,
+    NERD2: 5,
 }
 
 const send_on_enter_options = {
@@ -124,6 +132,8 @@ let power_user = {
     hotswap_enabled: true,
     timer_enabled: true,
     max_context_unlocked: false,
+    prefer_character_prompt: true,
+    prefer_character_jailbreak: true,
 
     instruct: {
         enabled: false,
@@ -136,7 +146,10 @@ let power_user = {
         output_sequence: '### Response:',
         preset: 'Alpaca',
         separator_sequence: '',
-    }
+    },
+
+    personas: {},
+    default_persona: null,
 };
 
 let themes = [];
@@ -241,9 +254,12 @@ function switchUiMode() {
     $("#fast_ui_mode").prop("checked", power_user.fast_ui_mode);
 }
 
+function toggleWaifu() {
+    $("#waifuMode").trigger("click");
+}
+
 function switchWaifuMode() {
-    const waifuMode = localStorage.getItem(storage_keys.waifuMode);
-    power_user.waifuMode = waifuMode === null ? false : waifuMode == "true";
+    console.log(`switching waifu to ${power_user.waifuMode}`);
     $("body").toggleClass("waifuMode", power_user.waifuMode);
     $("#waifuMode").prop("checked", power_user.waifuMode);
     scrollChatToBottom();
@@ -447,7 +463,6 @@ applyAvatarStyle();
 applyBlurStrength();
 applyShadowWidth();
 applyChatDisplay();
-switchWaifuMode()
 switchMovingUI();
 noShadows();
 switchHotswap();
@@ -469,13 +484,11 @@ function loadPowerUserSettings(settings, data) {
 
     // These are still local storage
     const fastUi = localStorage.getItem(storage_keys.fast_ui_mode);
-    const waifuMode = localStorage.getItem(storage_keys.waifuMode);
     const movingUI = localStorage.getItem(storage_keys.movingUI);
     const noShadows = localStorage.getItem(storage_keys.noShadows);
     const hotswap = localStorage.getItem(storage_keys.hotswap_enabled);
     const timer = localStorage.getItem(storage_keys.timer_enabled);
     power_user.fast_ui_mode = fastUi === null ? true : fastUi == "true";
-    power_user.waifuMode = waifuMode === null ? false : waifuMode == "true";
     power_user.movingUI = movingUI === null ? false : movingUI == "true";
     power_user.noShadows = noShadows === null ? false : noShadows == "true";
     power_user.hotswap_enabled = hotswap === null ? true : hotswap == "true";
@@ -523,6 +536,8 @@ function loadPowerUserSettings(settings, data) {
     $("#allow_name2_display").prop("checked", power_user.allow_name2_display);
     $("#hotswapEnabled").prop("checked", power_user.hotswap_enabled);
     $("#messageTimerEnabled").prop("checked", power_user.timer_enabled);
+    $("#prefer_character_prompt").prop("checked", power_user.prefer_character_prompt);
+    $("#prefer_character_jailbreak").prop("checked", power_user.prefer_character_jailbreak);
     $(`input[name="avatar_style"][value="${power_user.avatar_style}"]`).prop("checked", true);
     $(`input[name="chat_display"][value="${power_user.chat_display}"]`).prop("checked", true);
     $(`input[name="sheld_width"][value="${power_user.sheld_width}"]`).prop("checked", true);
@@ -557,6 +572,7 @@ function loadPowerUserSettings(settings, data) {
     reloadMarkdownProcessor(power_user.render_formulas);
     loadInstructMode();
     loadMaxContextUnlocked();
+    switchWaifuMode();
 }
 
 function loadMaxContextUnlocked() {
@@ -658,11 +674,13 @@ export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvata
     return text;
 }
 
-export function formatInstructStoryString(story) {
+export function formatInstructStoryString(story, systemPrompt) {
+    // If the character has a custom system prompt AND user has it preferred, use that instead of the default
+    systemPrompt = power_user.prefer_character_prompt && systemPrompt ? systemPrompt : power_user.instruct.system_prompt;
     const sequence = power_user.instruct.system_sequence || '';
-    const prompt = substituteParams(power_user.instruct.system_prompt) || '';
+    const prompt = substituteParams(systemPrompt) || '';
     const separator = power_user.instruct.wrap ? '\n' : '';
-    const textArray = [sequence, prompt, story, separator];
+    const textArray = [sequence, prompt + '\n' + story, separator];
     const text = textArray.filter(x => x).join(separator);
     return text;
 }
@@ -729,7 +747,7 @@ function sortCharactersList() {
     for (const item of array) {
         $(`${item.selector}[${item.attribute}="${item.id}"]`).css({ 'order': orderedList.indexOf(item) });
     }
-    updateVisibleDivs();
+    updateVisibleDivs('#rm_print_characters_block', true);
 }
 
 function sortGroupMembers(selector) {
@@ -846,6 +864,25 @@ function resetMovablePanels() {
     document.getElementById("WorldInfo").style.height = '';
     document.getElementById("WorldInfo").style.width = '';
     document.getElementById("WorldInfo").style.margin = '';
+
+    $('*[data-dragged="true"]').removeAttr('data-dragged');
+    eventSource.emit(event_types.MOVABLE_PANELS_RESET);
+}
+
+function doNewChat() {
+    setTimeout(() => {
+        $("#option_start_new_chat").trigger('click');
+    }, 1);
+    //$("#dialogue_popup").hide();
+    setTimeout(() => {
+        $("#dialogue_popup_ok").trigger('click');
+    }, 1);
+}
+
+function doDelMode() {
+    setTimeout(() => {
+        $("#option_delete_mes").trigger('click')
+    }, 1);
 }
 
 $(document).ready(() => {
@@ -920,6 +957,7 @@ $(document).ready(() => {
     $("#custom_chat_separator").on('input', function () {
         power_user.custom_chat_separator = $(this).val();
         saveSettingsDebounced();
+        reloadMarkdownProcessor(power_user.render_formulas);
     });
 
     $("#multigen").change(function () {
@@ -934,9 +972,9 @@ $(document).ready(() => {
         switchUiMode();
     });
 
-    $("#waifuMode").change(function () {
-        power_user.waifuMode = $(this).prop("checked");
-        localStorage.setItem(storage_keys.waifuMode, power_user.waifuMode);
+    $("#waifuMode").on('change', () => {
+        power_user.waifuMode = $('#waifuMode').prop("checked");
+        saveSettingsDebounced();
         switchWaifuMode();
     });
 
@@ -1142,6 +1180,13 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
+    $("#reload_chat").on('click', function () {
+        const currentChatId = getCurrentChatId();
+        if (currentChatId !== undefined && currentChatId !== null) {
+            reloadCurrentChat();
+        }
+    });
+
     $("#allow_name1_display").on("input", function () {
         power_user.allow_name1_display = !!$(this).prop('checked');
         reloadCurrentChat();
@@ -1173,6 +1218,18 @@ $(document).ready(() => {
         switchHotswap();
     });
 
+    $("#prefer_character_prompt").on("input", function () {
+        const value = !!$(this).prop('checked');
+        power_user.prefer_character_prompt = value;
+        saveSettingsDebounced();
+    });
+
+    $("#prefer_character_jailbreak").on("input", function () {
+        const value = !!$(this).prop('checked');
+        power_user.prefer_character_jailbreak = value;
+        saveSettingsDebounced();
+    });
+
     $(window).on('focus', function () {
         browser_has_focus = true;
     });
@@ -1180,4 +1237,8 @@ $(document).ready(() => {
     $(window).on('blur', function () {
         browser_has_focus = false;
     });
+
+    registerSlashCommand('vn', toggleWaifu, ['vn'], ' – swaps Visual Novel Mode On/Off', false, true);
+    registerSlashCommand('newchat', doNewChat, ['newchat'], ' – start a new chat with current character', true, true);
+    registerSlashCommand('delmode', doDelMode, ['delmode'], ' – enter message deletion mode', true, true);
 });

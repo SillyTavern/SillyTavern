@@ -1,34 +1,36 @@
 How to Update SillyTavern
 
+The most recent version can be found here: https://docs.sillytavern.app/usage/update/
+
 This is not an installation guide. If you need installation instructions, look here:
-https://docs.alpindale.dev/pygmalion-extras/sillytavern/#installation
+https://docs.sillytavern.app/installation/windows/
 
 This guide assumes you have already installed SillyTavern once, and know how to run it on your OS.
 
-Linux/Termux: 
+Linux/Termux:
 
 You definitely installed via git, so just 'git pull' inside the SillyTavern directory.
 
-Windows/MacOS: 
+Windows/MacOS:
 
 Method 1 - GIT
 
-We always recommend users install using 'git'. Here's why: 
+We always recommend users install using 'git'. Here's why:
 
-When you have installed via `git clone`, all you have to do to update is type `git pull` in a command line in the ST folder. 
-You can also try running the 'UpdateAndStart.bat' file, which will almost do the same thing. (Windows only) 
+When you have installed via `git clone`, all you have to do to update is type `git pull` in a command line in the ST folder.
+You can also try running the 'UpdateAndStart.bat' file, which will almost do the same thing. (Windows only)
 Alternatively, if the command prompt gives you problems (and you have GitHub Desktop installed), you can use the 'Repository' menu and select 'Pull'.
 The updates are applied automatically and safely.
 
 Method 2 - ZIP
 
-If you insist on installing via a zip, here is the tedious process for doing the update: 
+If you insist on installing via a zip, here is the tedious process for doing the update:
 
 1. Download the new release zip.
 2. Unzip it into a folder OUTSIDE of your current ST installation.
-3. Do the usual setup procedure for your OS to install the NodeJS requirements. 
+3. Do the usual setup procedure for your OS to install the NodeJS requirements.
 
-4. Copy the following files/folders as necessary(*) from your old ST installation: 
+4. Copy the following files/folders as necessary(*) from your old ST installation:
 
   - Backgrounds
   - Characters
@@ -44,13 +46,13 @@ If you insist on installing via a zip, here is the tedious process for doing the
   - Worlds
   - settings.json
 
-  (*) 'As necessary' = "If you made any custom content related to those folders". 
+  (*) 'As necessary' = "If you made any custom content related to those folders".
   None of the folders are mandatory, so only copy what you need.
 
   **NB: DO NOT COPY THE ENTIRE /PUBLIC/ FOLDER.**
   Doing so could break the new install and prevent new features from being present.
 
-5. Paste those items into the /Public/ folder of the new install. 
+5. Paste those items into the /Public/ folder of the new install.
 
 6. Start SillyTavern once again with the method appropriate to your OS, and pray you got it right.
 

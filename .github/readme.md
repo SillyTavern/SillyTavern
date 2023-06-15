@@ -1,4 +1,4 @@
-![image](https://github.com/Cohee1207/SillyTavern/assets/18619528/8c41a061-7f72-4d2b-9d54-e6d058209e7b)
+![image](https://github.com/SillyTavern/SillyTavern/assets/18619528/8c41a061-7f72-4d2b-9d54-e6d058209e7b)
 
 Mobile-friendly, Multi-API (KoboldAI/CPP, Horde, NovelAI, Ooba, OpenAI+proxies, Poe, WindowAI(Claude!)), VN-like Waifu Mode, Horde SD, System TTS, WorldInfo (lorebooks), customizable UI, auto-translate, and more prompt options than you'd ever want or need. Optional Extras server for more SD/TTS options + ChromaDB/Summarize.
 
@@ -6,7 +6,7 @@ Based on a fork of TavernAI 1.2.8
 
 ### Brought to you by Cohee, RossAscends and the SillyTavern community
 
-NOTE: We have added [a FAQ](https://docs.sillytavern.app/usage/faq/) to answer most of your questions and help you get started.
+NOTE: We have created a [Documentation website](https://docs.sillytavern.app/) to answer most of your questions and help you get started.
 
 ### What is SillyTavern or TavernAI?
 
@@ -18,14 +18,14 @@ SillyTavern is a fork of TavernAI 1.2.8 which is under more active development a
 
 SillyTavern is being developed using a two-branch system to ensure a smooth experience for all users.
 
-* main -🌟 **Recommended for most users.** This is the most stable and recommended branch, updated only when major releases are pushed. It's suitable for the majority of users. 
-* dev - ⚠️ **Not recommended for casual use.** This branch has the latest features, but be cautious as it may break at any time. Only for power users and enthusiasts. 
+* main -🌟 **Recommended for most users.** This is the most stable and recommended branch, updated only when major releases are pushed. It's suitable for the majority of users.
+* dev - ⚠️ **Not recommended for casual use.** This branch has the latest features, but be cautious as it may break at any time. Only for power users and enthusiasts.
 
-If you're not familiar with using the git CLI or don't understand what a branch is, don't worry! The main branch is always the preferable option for you. 
+If you're not familiar with using the git CLI or don't understand what a branch is, don't worry! The main branch is always the preferable option for you.
 
 ### What do I need other than Tavern?
 
-On its own Tavern is useless, as it's just a user interface. You have to have access to an AI system backend that can act as the roleplay character. There are various supported backends: OpenAPI API (GPT), KoboldAI (either running locally or on Google Colab), and more. You can read more about this in [the FAQ](faq.md).
+On its own Tavern is useless, as it's just a user interface. You have to have access to an AI system backend that can act as the roleplay character. There are various supported backends: OpenAPI API (GPT), KoboldAI (either running locally or on Google Colab), and more. You can read more about this in [the FAQ](https://docs.sillytavern.app/usage/faq/).
 
 ### Do I need a powerful PC to run Tavern?
 
@@ -55,7 +55,7 @@ Get in touch with the developers directly:
 
 * Discord: Cohee#1207 or RossAscends#1779
 * Reddit: /u/RossAscends or /u/sillylossy
-* [Post a GitHub issue](https://github.com/Cohee1207/SillyTavern/issues)
+* [Post a GitHub issue](https://github.com/SillyTavern/SillyTavern/issues)
 
 ## This version includes
 
@@ -145,8 +145,8 @@ Easy to follow guide with pretty pictures:
   5. Open a Command Prompt inside that folder by clicking in the 'Address Bar' at the top, typing `cmd`, and pressing Enter.
   6. Once the black box (Command Prompt) pops up, type ONE of the following into it and press Enter:
 
-* for Main Branch: `git clone https://github.com/Cohee1207/SillyTavern -b main`
-* for Dev Branch: `git clone https://github.com/Cohee1207/SillyTavern -b dev`
+* for Main Branch: `git clone https://github.com/SillyTavern/SillyTavern -b main`
+* for Dev Branch: `git clone https://github.com/SillyTavern/SillyTavern -b dev`
 
   7. Once everything is cloned, double click `Start.bat` to make NodeJS install its requirements.
   8. The server will then start, and SillyTavern will popup in your browser.
@@ -154,7 +154,7 @@ Easy to follow guide with pretty pictures:
 Installing via zip download
 
   1. Install [NodeJS](https://nodejs.org/en) (latest LTS version is recommended)
-  2. Download the zip from this GitHub repo. (Get the `Source code (zip)` from [Releases](https://github.com/Cohee1207/SillyTavern/releases/latest))
+  2. Download the zip from this GitHub repo. (Get the `Source code (zip)` from [Releases](https://github.com/SillyTavern/SillyTavern/releases/latest))
   3. Unzip it into a folder of your choice
   4. Run `Start.bat` via double-clicking or in a command line.
   5. Once the server has prepared everything for you, it will open a tab in your browser.

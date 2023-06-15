@@ -1,26 +1,56 @@
 import { callPopup, eventSource, event_types, saveSettings, saveSettingsDebounced } from "../script.js";
-import { isSubsetOf } from "./utils.js";
+import { isSubsetOf, debounce } from "./utils.js";
 export {
     getContext,
     getApiUrl,
     loadExtensionSettings,
     runGenerationInterceptors,
-    defaultRequestArgs,
+    doExtrasFetch,
     modules,
     extension_settings,
+    ModuleWorkerWrapper,
 };
 
 let extensionNames = [];
 let manifests = [];
 const defaultUrl = "http://localhost:5100";
+export const saveMetadataDebounced = debounce(async () => await getContext().saveMetadata(), 1000);
+
+// Disables parallel updates
+class ModuleWorkerWrapper {
+    constructor(callback) {
+        this.isBusy = false;
+        this.callback = callback;
+    }
+
+    // Called by the extension
+    async update() {
+        // Don't touch me I'm busy...
+        if (this.isBusy) {
+            return;
+        }
+
+        // I'm free. Let's update!
+        try {
+            this.isBusy = true;
+            await this.callback();
+        }
+        finally {
+            this.isBusy = false;
+        }
+    }
+}
 
 const extension_settings = {
     apiUrl: defaultUrl,
+    apiKey: '',
     autoConnect: false,
     disabledExtensions: [],
+    expressionOverrides: [],
     memory: {},
     note: {
         default: '',
+        chara: [],
     },
     caption: {},
     expressions: {},
@@ -29,6 +59,8 @@ const extension_settings = {
     sd: {},
     chromadb: {},
     translate: {},
+    objective: {},
+    quickReply: {},
 };
 
 let modules = [];
@@ -36,8 +68,44 @@ let activeExtensions = new Set();
 
 const getContext = () => window['SillyTavern'].getContext();
 const getApiUrl = () => extension_settings.apiUrl;
-const defaultRequestArgs = { method: 'GET', headers: { 'Bypass-Tunnel-Reminder': 'bypass' } };
 let connectedToApi = false;
+
+function showHideExtensionsMenu() {
+    // Get the number of menu items that are not hidden
+    const hasMenuItems = $('#extensionsMenu').children().filter((_, child) => $(child).css('display') !== 'none').length > 0;
+
+    // We have menu items, so we can stop checking
+    if (hasMenuItems) {
+        clearInterval(menuInterval);
+    }
+
+    // Show or hide the menu button
+    $('#extensionsMenuButton').toggle(hasMenuItems);
+}
+
+// Periodically check for new extensions
+const menuInterval = setInterval(showHideExtensionsMenu, 1000);
+
+async function doExtrasFetch(endpoint, args) {
+    if (!args) {
+        args = {}
+    }
+
+    if (!args.method) {
+        Object.assign(args, { method: 'GET' });
+    }
+
+    if (!args.headers) {
+        args.headers = {}
+    }
+    Object.assign(args.headers, {
+        'Authorization': `Bearer ${extension_settings.apiKey}`,
+        'Bypass-Tunnel-Reminder': 'bypass'
+    });
+
+    const response = await fetch(endpoint, args);
+    return response;
+}
 
 async function discoverExtensions() {
     try {
@@ -81,19 +149,29 @@ async function disableExtension(name) {
 
 async function getManifests(names) {
     const obj = {};
-    for (const name of names) {
-        const response = await fetch(`/scripts/extensions/${name}/manifest.json`);
+    const promises = [];
 
-        if (response.ok) {
-            const json = await response.json();
-            obj[name] = json;
-        }
+    for (const name of names) {
+        const promise = new Promise((resolve, reject) => {
+            fetch(`/scripts/extensions/${name}/manifest.json`).then(async response => {
+                if (response.ok) {
+                    const json = await response.json();
+                    obj[name] = json;
+                    resolve();
+                }
+            }).catch(err => reject() && console.log('Could not load manifest.json for ' + name, err));
+        });
+
+        promises.push(promise);
     }
+
+    await Promise.allSettled(promises);
     return obj;
 }
 
 async function activateExtensions() {
     const extensions = Object.entries(manifests).sort((a, b) => a[1].loading_order - b[1].loading_order);
+    const promises = [];
 
     for (let entry of extensions) {
         const name = entry[0];
@@ -111,9 +189,11 @@ async function activateExtensions() {
                 const li = document.createElement('li');
 
                 if (!isDisabled) {
-                    await addExtensionScript(name, manifest);
-                    await addExtensionStyle(name, manifest);
-                    activeExtensions.add(name);
+                    const promise = Promise.all([addExtensionScript(name, manifest), addExtensionStyle(name, manifest)]);
+                    promise
+                        .then(() => activeExtensions.add(name))
+                        .catch(err => console.log('Could not activate extension: ' + name, err));
+                    promises.push(promise);
                 }
                 else {
                     li.classList.add('disabled');
@@ -130,11 +210,15 @@ async function activateExtensions() {
             }
         }
     }
+
+    await Promise.allSettled(promises);
 }
 
 async function connectClickHandler() {
     const baseUrl = $("#extensions_url").val();
     extension_settings.apiUrl = baseUrl;
+    const testApiKey = $("#extensions_api_key").val();
+    extension_settings.apiKey = testApiKey;
     saveSettingsDebounced();
     await connectToApi(baseUrl);
 }
@@ -152,8 +236,8 @@ function autoConnectInputHandler() {
 
 function addExtensionsButtonAndMenu() {
     const buttonHTML =
-        `<div id="extensionsMenuButton" class="fa-solid fa-magic-wand-sparkles" title="Extras Extensions" /></div>`;
-    const extensionsMenuHTML = `<div id="extensionsMenu" class="list-group"></div>`;
+        `<div id="extensionsMenuButton" style="display: none;" class="fa-solid fa-magic-wand-sparkles" title="Extras Extensions" /></div>`;
+    const extensionsMenuHTML = `<div id="extensionsMenu" class="options-content" style="display: none;"></div>`;
 
     $(document.body).append(extensionsMenuHTML);
 
@@ -161,25 +245,41 @@ function addExtensionsButtonAndMenu() {
 
     const button = $('#extensionsMenuButton');
     const dropdown = $('#extensionsMenu');
-    dropdown.hide();
+    //dropdown.hide();
 
     let popper = Popper.createPopper(button.get(0), dropdown.get(0), {
         placement: 'top-end',
     });
 
-    $(document).on('click touchend', function (e) {
-        const target = $(e.target);
-        if (target.is(dropdown)) return;
-        if (target.is(button) && !dropdown.is(":visible")) {
-            e.preventDefault();
+    $(button).on('click', function () {
+        popper.update()
+        dropdown.fadeIn(250);
+    });
 
-            dropdown.show(200);
-            popper.update();
-        } else {
-            dropdown.hide(200);
+    $("html").on('touchstart mousedown', function (e) {
+        let clickTarget = $(e.target);
+        if (dropdown.is(':visible')
+            && clickTarget.closest(button).length == 0
+            && clickTarget.closest(dropdown).length == 0) {
+            $(dropdown).fadeOut(250);
         }
     });
 }
+
+/*     $(document).on('click', function (e) {
+        const target = $(e.target);
+        if (target.is(dropdown)) return;
+        if (target.is(button) && dropdown.is(':hidden')) {
+            dropdown.toggle(200);
+            popper.update();
+        }
+        if (target !== dropdown &&
+            target !== button &&
+            dropdown.is(":visible")) {
+            dropdown.hide(200);
+        }
+    });
+} */
 
 async function connectToApi(baseUrl) {
     if (!baseUrl) {
@@ -190,7 +290,7 @@ async function connectToApi(baseUrl) {
     url.pathname = '/api/modules';
 
     try {
-        const getExtensionsResult = await fetch(url, defaultRequestArgs);
+        const getExtensionsResult = await doExtrasFetch(url);
 
         if (getExtensionsResult.ok) {
             const data = await getExtensionsResult.json();
@@ -309,6 +409,7 @@ async function loadExtensionSettings(settings) {
     }
 
     $("#extensions_url").val(extension_settings.apiUrl);
+    $("#extensions_api_key").val(extension_settings.apiKey);
     $("#extensions_autoconnect").prop('checked', extension_settings.autoConnect);
 
     // Activate offline extensions
@@ -326,7 +427,7 @@ async function runGenerationInterceptors(chat) {
         if (typeof window[interceptorKey] === 'function') {
             try {
                 await window[interceptorKey](chat);
-            } catch(e) {
+            } catch (e) {
                 console.error(`Failed running interceptor for ${manifest.display_name}`, e);
             }
         }

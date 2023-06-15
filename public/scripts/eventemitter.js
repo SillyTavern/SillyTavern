@@ -49,6 +49,8 @@ EventEmitter.prototype.removeListener = function (event, listener) {
 };
 
 EventEmitter.prototype.emit = async function (event) {
+    console.debug('Event emitted: ' + event);
+
     var i, listeners, length, args = [].slice.call(arguments, 1);
 
     if (typeof this.events[event] === 'object') {

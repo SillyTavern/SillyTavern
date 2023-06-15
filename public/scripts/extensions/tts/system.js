@@ -1,3 +1,6 @@
+import { isMobile } from "../../RossAscends-mods.js";
+import { getPreviewString } from "./index.js";
+
 export { SystemTtsProvider }
 
 /**
@@ -74,20 +77,6 @@ class SystemTtsProvider {
     // Config //
     //########//
 
-    previewStrings = {
-        'en-US': 'The quick brown fox jumps over the lazy dog',
-        'en-GB': 'Sphinx of black quartz, judge my vow',
-        'fr-FR': 'Portez ce vieux whisky au juge blond qui fume',
-        'de-DE': 'Victor jagt zwölf Boxkämpfer quer über den großen Sylter Deich',
-        'it-IT': "Pranzo d'acqua fa volti sghembi",
-        'es-ES': 'Quiere la boca exhausta vid, kiwi, piña y fugaz jamón',
-        'es-MX': 'Fabio me exige, sin tapujos, que añada cerveza al whisky',
-        'ru-RU': 'В чащах юга жил бы цитрус? Да, но фальшивый экземпляр!',
-        'pt-BR': 'Vejo xá gritando que fez show sem playback.',
-        'pt-PR': 'Todo pajé vulgar faz boquinha sexy com kiwi.',
-        'uk-UA': "Фабрикуймо гідність, лящім їжею, ґав хапаймо, з'єднавці чаш!",
-    }
-    fallbackPreview = 'Neque porro quisquam est qui dolorem ipsum quia dolor sit amet'
     settings
     voices = []
     separator = ' ... '
@@ -122,6 +111,21 @@ class SystemTtsProvider {
         // Populate Provider UI given input settings
         if (Object.keys(settings).length == 0) {
             console.info("Using default TTS Provider settings");
+        }
+
+        // iOS should only allows speech synthesis trigged by user interaction
+        if (isMobile()) {
+            let hasEnabledVoice = false;
+
+            document.addEventListener('click', () => {
+                if (hasEnabledVoice) {
+                    return;
+                }
+                const utterance = new SpeechSynthesisUtterance('hi');
+                utterance.volume = 0;
+                speechSynthesis.speak(utterance);
+                hasEnabledVoice = true;
+            });
         }
 
         // Only accept keys defined in defaultSettings
@@ -172,7 +176,7 @@ class SystemTtsProvider {
         }
 
         speechSynthesis.cancel();
-        const text = this.previewStrings[voice.lang] ?? this.fallbackPreview;
+        const text = getPreviewString(voice.lang);
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.voice = voice;
         utterance.rate = 1;
