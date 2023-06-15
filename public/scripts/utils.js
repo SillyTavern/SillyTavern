@@ -1,3 +1,5 @@
+import { getContext } from "./extensions.js";
+
 export function onlyUnique(value, index, array) {
     return array.indexOf(value) === index;
 }
@@ -419,4 +421,13 @@ export class IndexedDBStore {
 export function isDataURL(str) {
     const regex = /^data:([a-z]+\/[a-z0-9-+.]+(;[a-z-]+=[a-z0-9-]+)*;?)?(base64)?,([a-z0-9!$&',()*+;=\-_%.~:@\/?#]+)?$/i;
     return regex.test(str);
+}
+
+export function getCharaFilename() {
+    const context = getContext();
+    const fileName = context.characters[context.characterId].avatar;
+
+    if (fileName) {
+        return fileName.replace(/\.[^/.]+$/, "")
+    }
 }
