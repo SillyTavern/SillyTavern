@@ -990,6 +990,7 @@ function clearChat() {
     count_view_mes = 0;
     extension_prompts = {};
     $("#chat").children().remove();
+    itemizedPrompts = [];
 }
 
 async function deleteLastMessage() {
@@ -1216,30 +1217,37 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     // don't need prompt button for user
     if (params.isUser === true) {
         newMessage.find(".mes_prompt").hide();
-        //console.log(`hiding prompt for user mesID ${params.mesId}`);
+        console.log(`hiding prompt for user mesID ${params.mesId}`);
     }
 
     //shows or hides the Prompt display button
-    let mesIdToFind = Number(newMessage.attr('mesId'));
-    if (itemizedPrompts.length !== 0) {
-        //console.log(`itemizedPrompt.length = ${itemizedPrompts.length}`)
+    let mesIdToFind = params.mesId;  //Number(newMessage.attr('mesId'));
+
+    //if we have itemized messages, and the array isn't null..
+    if (params.isUser === false && itemizedPrompts.length !== 0 && itemizedPrompts.length !== null) {
+        console.log('looking through itemized prompts...');
+        console.log(`mesIdToFind = ${mesIdToFind} from ${params.avatarImg}`);
+        console.log(`itemizedPrompts.length = ${itemizedPrompts.length}`)
+        console.log(itemizedPrompts);
+
         for (var i = 0; i < itemizedPrompts.length; i++) {
-            if (itemizedPrompts[i].mesId === mesIdToFind) {
+            console.log(`itemized array item ${i} is MesID ${Number(itemizedPrompts[i].mesId)}, does it match ${Number(mesIdToFind)}?`);
+            if (Number(itemizedPrompts[i].mesId) === Number(mesIdToFind)) {
                 newMessage.find(".mes_prompt").show();
+                console.log(`showing button for mesID ${params.mesId} from ${params.characterName}`);
                 break;
-                //console.log(`showing prompt for mesID ${params.mesId} from ${params.characterName}`);
-            } else {
-                //console.log(`no cache obj for mesID ${mesIdToFind}, hiding prompt button and continuing search`);
+
+            } /*else {
+                console.log(`no cache obj for mesID ${mesIdToFind}, hiding this prompt button`);
                 newMessage.find(".mes_prompt").hide();
-                //console.log(itemizedPrompts);
-            }
+                console.log(itemizedPrompts);
+            } */
         }
-    } else if (params.isUser !== true) { //hide all when prompt cache is empty
-        //console.log('saw empty prompt cache, hiding all prompt buttons');
-        $(".mes_prompt").hide();
-        //console.log(itemizedPrompts);
     } else {
-        //console.log('skipping prompt data for User Message');
+        console.log('itemizedprompt array empty null, or user, hiding this prompt buttons');
+        //$(".mes_prompt").hide();
+        newMessage.find(".mes_prompt").hide();
+        console.log(itemizedPrompts);
     }
 
     newMessage.find('.avatar img').on('error', function () {
@@ -2344,7 +2352,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             let additionalPromptStuff = {
                 ...thisPromptBits[currentArrayEntry],
                 rawPrompt: generate_data.prompt,
-                mesId: type == 'swipe' ? Number(count_view_mes - 1) : Number(count_view_mes),
+                mesId: type == 'swipe' ? Number(count_view_mes - 1) : Number(count_view_mes + 1),
                 worldInfoBefore: worldInfoBefore,
                 allAnchors: allAnchors,
                 summarizeString: (extension_prompts['1_memory']?.value || ''),
@@ -2368,10 +2376,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
             thisPromptBits = additionalPromptStuff;
 
-            //console.log(thisPromptBits);
+            console.log(thisPromptBits);
 
             itemizedPrompts.push(thisPromptBits);
-            //console.log(`pushed prompt bits to itemizedPrompts array. Length is now: ${itemizedPrompts.length}`);
+            console.log(`pushed prompt bits to itemizedPrompts array. Length is now: ${itemizedPrompts.length}`);
 
             if (isStreamingEnabled() && type !== 'quiet') {
                 hideSwipeButtons();
@@ -2718,14 +2726,19 @@ function getMultigenAmount() {
 }
 
 function promptItemize(itemizedPrompts, requestedMesId) {
+    console.log('PROMPT ITEMIZE ENTERED');
     var incomingMesId = Number(requestedMesId);
     console.debug(`looking for MesId ${incomingMesId}`);
     var thisPromptSet = undefined;
 
     for (var i = 0; i < itemizedPrompts.length; i++) {
+        console.log(`looking for ${incomingMesId} vs ${itemizedPrompts[i].mesId}`)
         if (itemizedPrompts[i].mesId === incomingMesId) {
+            console.log(`found matching mesID ${i}`);
             thisPromptSet = i;
-            PromptArrayItemForRawPromptDisplay = Number(i);
+            PromptArrayItemForRawPromptDisplay = i;
+            console.log(`wanting to raw display of ArrayItem: ${PromptArrayItemForRawPromptDisplay} which is mesID ${incomingMesId}`);
+            console.log(itemizedPrompts[thisPromptSet]);
         }
     }
 
@@ -6718,6 +6731,7 @@ $(document).ready(function () {
 
     $(document).on("pointerup", ".mes_prompt", function () {
         let mesIdForItemization = $(this).closest('.mes').attr('mesId');
+        console.log(`looking for mesID: ${mesIdForItemization}`);
         if (itemizedPrompts.length !== undefined && itemizedPrompts.length !== 0) {
             promptItemize(itemizedPrompts, mesIdForItemization);
         }
@@ -6725,6 +6739,8 @@ $(document).ready(function () {
 
     $(document).on("pointerup", "#showRawPrompt", function () {
         //console.log(itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt);
+        console.log(PromptArrayItemForRawPromptDisplay);
+        console.log(itemizedPrompts);
         console.log(itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt);
 
         let rawPrompt = itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt;

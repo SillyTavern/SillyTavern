@@ -873,7 +873,7 @@ function doNewChat() {
     setTimeout(() => {
         $("#option_start_new_chat").trigger('click');
     }, 1);
-    $("#dialogue_popup").hide();
+    //$("#dialogue_popup").hide();
     $("#dialogue_popup_ok").trigger('click');
 }
 
