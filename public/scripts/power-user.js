@@ -869,8 +869,10 @@ function resetMovablePanels() {
     eventSource.emit(event_types.MOVABLE_PANELS_RESET);
 }
 
-function doNewchat() {
-    $("#option_start_new_chat").trigger('click');
+function doNewChat() {
+    setTimeout(() => {
+        $("#option_start_new_chat").trigger('click');
+    }, 1);
     $("#dialogue_popup").hide();
     $("#dialogue_popup_ok").trigger('click');
 }
@@ -1235,6 +1237,6 @@ $(document).ready(() => {
     });
 
     registerSlashCommand('vn', toggleWaifu, ['vn'], ' – swaps Visual Novel Mode On/Off', false, true);
-    registerSlashCommand('newchat', doNewchat, ['newchat'], ' – start a new chat with current character', true, true);
+    registerSlashCommand('newchat', doNewChat, ['newchat'], ' – start a new chat with current character', true, true);
     registerSlashCommand('delmode', doDelMode, ['delmode'], ' – enter message deletion mode', true, true);
 });
