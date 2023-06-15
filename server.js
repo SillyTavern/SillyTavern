@@ -354,7 +354,19 @@ app.post("/generate", jsonParser, async function (request, response_generate = r
     const request_prompt = request.body.prompt;
     const controller = new AbortController();
     request.socket.removeAllListeners('close');
-    request.socket.on('close', function () {
+    request.socket.on('close', async function () {
+        if (request.body.can_abort && !response_generate.finished) {
+            try {
+                // send abort signal to koboldcpp
+                await fetch(`${api_server}/extra/abort`, {
+                    method: 'POST',
+                });
+            } catch {
+                if ('status' in error) {
+                    console.log('Status Code from Kobold:', error.status);
+                }
+            }
+        }
         controller.abort();
     });
 
@@ -412,7 +424,6 @@ app.post("/generate", jsonParser, async function (request, response_generate = r
             response = await fetch(url, { method: 'POST', timeout: 0, ...args });
 
             if (request.body.streaming) {
-
                 request.socket.on('close', function () {
                     response.body.destroy(); // Close the remote stream
                     response_generate.end(); // End the Express response
