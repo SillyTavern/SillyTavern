@@ -4427,6 +4427,29 @@ function updateMessage(div) {
     return { mesBlock, text, mes, bias };
 }
 
+function openMessageDelete() {
+    closeMessageEditor();
+    hideSwipeButtons();
+    if ((this_chid != undefined && !is_send_press) || (selected_group && !is_group_generating)) {
+        $("#dialogue_del_mes").css("display", "block");
+        $("#send_form").css("display", "none");
+        $(".del_checkbox").each(function () {
+            if ($(this).parent().attr("mesid") != 0) {
+                $(this).css("display", "block");
+                $(this).parent().children(".for_checkbox").css("display", "none");
+            }
+        });
+    } else {
+        console.debug(`
+            ERR -- could not enter del mode
+            this_chid: ${this_chid}
+            is_send_press: ${is_send_press}
+            selected_group: ${selected_group}
+            is_group_generating: ${is_group_generating}`);
+    }
+    is_delete_mode = true;
+}
+
 function messageEditAuto(div) {
     const { mesBlock, text, mes } = updateMessage(div);
 
@@ -6536,26 +6559,7 @@ $(document).ready(function () {
         }
 
         else if (id == "option_delete_mes") {
-            closeMessageEditor();
-            hideSwipeButtons();
-            if ((this_chid != undefined && !is_send_press) || (selected_group && !is_group_generating)) {
-                $("#dialogue_del_mes").css("display", "block");
-                $("#send_form").css("display", "none");
-                $(".del_checkbox").each(function () {
-                    if ($(this).parent().attr("mesid") != 0) {
-                        $(this).css("display", "block");
-                        $(this).parent().children(".for_checkbox").css("display", "none");
-                    }
-                });
-            } else {
-                console.debug(`
-            ERR -- could not enter del mode
-            this_chid: ${this_chid}
-            is_send_press: ${is_send_press}
-            selected_group: ${selected_group}
-            is_group_generating: ${is_group_generating}`)
-            }
-            is_delete_mode = true;
+            setTimeout(openMessageDelete, animation_duration);
         }
         hideMenu();
     });
