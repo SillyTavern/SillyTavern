@@ -1824,7 +1824,7 @@
                 </div>
                 <div id="wi-holder" class="margin5">
                     <h3>
-                        World Info / Lorebooks
+                        World Selector
                         <a href="https://docs.sillytavern.app/usage/core-concepts/worldinfo/" class="notes-link" target="_blank">
                             <span class="note-link-span">?</span>
                         </a>
@@ -1836,23 +1836,23 @@
                         <select id="world_info" class="flexGrow">
                             <option value="None">None</option>
                         </select>
-                        <div id="world_create_button" class="menu_button fa-solid fa-plus" title="Create"></div>
-                        <div id="world_import_button" class="menu_button fa-solid fa-file-arrow-up" title="Import">
+                        <div id="world_create_button" class="menu_button fa-solid fa-plus faSmallFontSquareFix" title="Create"></div>
+                        <div id="world_import_button" class="menu_button fa-solid fa-file-arrow-up faSmallFontSquareFix" title="Import">
                         </div>
-                        <div id="world_info_edit_button" class="menu_button fa-solid fa-pencil" title="Details"></div>
+                        <div id="world_info_edit_button" class="menu_button fa-solid fa-pencil faSmallFontSquareFix" title="Details"></div>
                     </div>
 
                     <div class="flex-container alignitemscenter">
                         <div name="WIScanAndTokens" class="flex1 flex-container flexFlowColumn">
-                            <div class="flex1 range-block">
-                                <div class="range-block-title">
-                                    <span data-i18n="Scan Depth">Scan Depth</span>
+                            <div class="flex1 gap5px range-block">
+                                <div class="wide10pMinFit">
+                                    <small data-i18n="Scan Depth">Scan Depth</small>
                                 </div>
                                 <div class="range-block-range-and-counter">
-                                    <div class="range-block-range">
+                                    <div class="range-block-range paddingLeftRight5">
                                         <input type="range" id="world_info_depth" name="volume" min="1" max="10" step="1">
                                     </div>
-                                    <div class="range-block-counter">
+                                    <div class="range-block-counter margin0">
                                         <div contenteditable="true" data-for="world_info_depth" id="world_info_depth_counter">
                                             depth
                                         </div>
@@ -1860,15 +1860,15 @@
                                 </div>
                             </div>
 
-                            <div class="flex1 range-block">
-                                <div class="range-block-title">
-                                    <span data-i18n="Token Budget">Token Budget</span>
+                            <div class="flex1 gap5px range-block">
+                                <div class="wide10pMinFit">
+                                    <small data-i18n="Token Budget">Max Tokens</small>
                                 </div>
-                                <div class="range-block-range-and-counter">
-                                    <div class="range-block-range">
+                                <div class="range-block-range-and-counter ">
+                                    <div class="range-block-range paddingLeftRight5">
                                         <input type="range" id="world_info_budget" name="volume" min="32" max="8192" step="1">
                                     </div>
-                                    <div class="range-block-counter">
+                                    <div class="range-block-counter margin0">
                                         <div contenteditable="true" data-for="world_info_budget" id="world_info_budget_counter">
                                             budget
                                         </div>
@@ -1879,20 +1879,21 @@
                         <div class="range-block flex-container flexFlowColumn">
                             <label title="Entries can activate other entries by mentioning their keywords" class="checkbox_label">
                                 <input id="world_info_recursive" type="checkbox" />
-                                <span>
+                                <small>
                                     Recursive scanning
-                                </span>
+                                </small>
                             </label>
                             <label title="Lookup for the entry keys in the context will respect the case" class="checkbox_label">
                                 <input id="world_info_case_sensitive" type="checkbox" />
-                                <span>
+                                <small>
                                     Case-sensitive keys
-                                </span>
+                                </small>
                             </label>
                             <label title="If the entry key consists of only one word, it would not be matched as part of other words" class="checkbox_label">
                                 <input id="world_info_match_whole_words" type="checkbox" />
-                                <span>
+                                <small>
                                     Match whole words
+                                </small>
                             </label>
                         </div>
                     </div>
@@ -1903,26 +1904,30 @@
                             <div id="world_popup_header" class="flex-container flexGap5">
                                 <div class="world_popup_logo_block">
                                     <h3>
-                                        World Info Editor
+                                        World Editor
                                         <a href="https://docs.sillytavern.app/usage/core-concepts/worldinfo/#world-info-entry" class="notes-link" target="_blank"><span class="note-link-span">?</span></a>
                                     </h3>
                                 </div>
                                 <div id="OpenAllWIEntries" class="menu_button fa-solid fa-expand"></div>
                                 <div id="CloseAllWIEntries" class="menu_button fa-solid fa-compress"></div>
-                                <form id="form_rename_world" action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                                    <input id="world_popup_name" name="world_popup_name" class="text_pole" maxlength="99" size="32" value="" autocomplete="off">
-                                    <input id="world_popup_name_button" class="menu_button" type="submit" value="Rename">
-                                </form>
+                                <div class="flex-container">
+                                    <form id="form_rename_world" action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                                        <input id="world_popup_name" name="world_popup_name" class="text_pole" maxlength="99" size="32" value="" autocomplete="off">
+                                        <label for="world_popup_name_button" class="menu_button fa-solid fa-pencil faSmallFontSquareFix">
+                                            <input id="world_popup_name_button" type="submit" value="">
+                                        </label>
+                                        <div id="world_popup_bottom_holder" class="flex-container">
+                                            <div id="world_popup_new" class="menu_button fa-solid fa-plus margin0 faSmallFontSquareFix"></div>
+                                            <div id="world_popup_export" class="menu_button fa-solid fa-file-export margin0 faSmallFontSquareFix"></div>
+                                            <div id="world_popup_delete" class="menu_button fa-solid fa-trash-can redWarningBG margin0 faSmallFontSquareFix"></div>
+                                        </div>
+                                    </form>
+
+                                </div>
                             </div>
                         </div>
 
                         <div id="world_popup_entries_list">
-                        </div>
-
-                        <div id="world_popup_bottom_holder">
-                            <div id="world_popup_new" class="menu_button">New Entry</div>
-                            <div id="world_popup_export" class="menu_button">Export</div>
-                            <div id="world_popup_delete" class="menu_button">Delete World</div>
                         </div>
                     </div>
                 </div>
@@ -2797,78 +2802,79 @@
         <div class="world_entry">
             <form class="world_entry_form">
                 <div class="inline-drawer wide100p">
-                    <div class="inline-drawer-toggle inline-drawer-header">
+                    <div class="inline-drawer-toggle inline-drawer-header gap5px">
                         <div class="gap5px world_entry_thin_controls wide100p">
                             <div class="world_entry_form_control">
                                 <label for="key">
-                                    <h4>
+                                    <small>
                                         <span data-i18n="Keywords">
                                             Keywords
                                         </span>
-                                    </h4>
-                                    <small>
+                                    </small>
+                                    <small class="displayNone">
                                         <span data-i18n="Separate with commas">
                                             Separate with commas
                                         </span>
                                     </small>
                                 </label>
-                                <textarea class="text_pole keyprimarytextpole" name="key" rows="1" placeholder="" maxlength="1000"></textarea>
+                                <textarea class="text_pole keyprimarytextpole" name="key" rows="1" placeholder="Separate with commas" maxlength="1000"></textarea>
                             </div>
                             <div class="world_entry_form_control keysecondary">
                                 <label for="keysecondary">
-                                    <h4>
+                                    <small>
                                         <span data-i18n="Secondary Required Keywords">
                                             Secondary Required Keywords
                                         </span>
-                                    </h4>
-                                    <small>
+                                    </small>
+                                    <small class="displayNone">
                                         <span data-i18n="Separate with commas">
                                             Separate with commas
                                         </span>
                                     </small>
                                 </label>
-                                <textarea class="text_pole keysecondarytextpole" name="keysecondary" rows="1" placeholder="(secondary keywords here)" maxlength="1000"></textarea>
+                                <textarea class="text_pole keysecondarytextpole" name="keysecondary" rows="1" placeholder="Separate with commas" maxlength="1000"></textarea>
                             </div>
                         </div>
                         <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                     </div>
                     <div class="inline-drawer-content flex-container">
-                        <div class="world_entry_thin_controls  wide100p">
-                            <div class="world_entry_form_control">
-                                <label for="content ">
-                                    <h4>
-                                        <span data-i18n="Content">
-                                            Content
-                                        </span>
-                                    </h4>
-                                    <small>
-                                        <span data-i18n="What this keyword should mean to the AI">
-                                            What this keyword should mean to the AI
-                                        </span>
-                                    </small>
-                                </label>
-                                <textarea class="text_pole" name="content" rows="4" placeholder=""></textarea>
+                        <div class="WIEntryContentAndMemo flex-container">
+                            <div class="world_entry_thin_controls">
+                                <div class="world_entry_form_control">
+                                    <label for="content ">
+                                        <small>
+                                            <span data-i18n="Content">
+                                                Content
+                                            </span>
+                                        </small>
+                                        <small class="displayNone">
+                                            <span data-i18n="What this keyword should mean to the AI">
+                                                What this keyword should mean to the AI, sent verbatim
+                                            </span>
+                                        </small>
+                                    </label>
+                                    <textarea class="text_pole" name="content" rows="4" placeholder="What this keyword should mean to the AI, sent verbatim"></textarea>
+                                </div>
+                            </div>
+                            <div class="world_entry_thin_controls">
+                                <div class="world_entry_form_control">
+                                    <label for="comment">
+                                        <small>
+                                            <span data-i18n="Memo/Note">
+                                                Memo/Note
+                                            </span>
+                                        </small>
+                                        <small class="displayNone">
+                                            <span data-i18n="Not sent to AI">
+                                                Not sent to AI
+                                            </span>
+                                        </small>
+                                    </label>
+                                    <textarea class="text_pole" rows="4" name="comment" maxlength="2000" placeholder="Not sent to AI"></textarea>
+                                </div>
                             </div>
                         </div>
-                        <div class="world_entry_thin_controls  wide100p">
-
-                            <div class="world_entry_form_control">
-                                <label for="comment">
-                                    <h4>
-                                        <span data-i18n="Memo/Note">
-                                            Memo/Note
-                                        </span>
-                                    </h4>
-                                    <small>
-                                        <span data-i18n="Not sent to AI">
-                                            Not sent to AI
-                                        </span>
-                                    </small>
-                                </label>
-                                <textarea class="text_pole" rows="1" name="comment" maxlength="2000"></textarea>
-                            </div>
-                        </div>
-                        <div class="flex-container flex1 justifySpaceBetween world_entry_form_horizontal">
+                        <div name="WIEntryBottomControls" class="flex-container flex1 justifySpaceBetween world_entry_form_horizontal">
                             <div class="flex-container flexFlowColumn flexNoGap  wi-enter-footer-text  ">
                                 <label class="checkbox">
                                     <input type="checkbox" name="constant" />

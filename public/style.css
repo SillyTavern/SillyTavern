@@ -1338,6 +1338,11 @@ input[type=search]:focus::-webkit-search-cancel-button {
     gap: 5px !important;
 }
 
+.wide10pMinFit {
+    width: 10%;
+    min-width: fit-content;
+}
+
 .wide100pLess70px {
     width: calc(100% - 70px);
 }
@@ -1637,12 +1642,14 @@ input[type=search]:focus::-webkit-search-cancel-button {
     margin-right: auto;
 }
 
-#delete_button {
-    background-color: var(--crimson70a);
+#delete_button,
+.redWarningBG {
+    background-color: var(--crimson70a) !important;
 }
 
-#delete_button:hover {
-    background-color: var(--fullred);
+#delete_button:hover,
+.redWarningBG:hover {
+    background-color: var(--fullred) !important;
 }
 
 #result_info {
@@ -1873,37 +1880,36 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 #world_popup {
     display: none;
-    /*     background-color: var(--SmartThemeBlurTintColor);
-    backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2)); */
-    /* max-width: var(--sheldWidth); */
-    /* max-height: calc(100% - 100px); */
     min-height: 100px;
     min-width: 100px;
-    /* position: absolute; */
-    /*     margin-left: auto;
-    margin-right: auto; */
     left: 0;
     right: 0;
-    /* top: 40px; */
-    /* box-shadow: 0 0 2px rgba(0, 0, 0, 0.5); */
-    /* padding: 10px; */
     flex-direction: column;
     z-index: 3010;
-    border-radius: 0 0 20px 20px;
     overflow-y: hidden;
 }
 
+.WIEntryContentAndMemo {
+    width: 100% !important;
+    flex-wrap: nowrap !important;
+}
+
+.WIEntryContentAndMemo .world_entry_thin_controls {
+    width: 50%;
+}
+
+#world_popup_name_button {
+    display: none;
+}
+
 #world_popup_bottom_holder {
-    /*     padding: 0.5rem 0;
-    margin: 0 18px; */
     display: flex;
-    flex-direction: row;
+    flex-flow: row;
     justify-content: space-evenly;
     align-items: center;
 }
 
 #world_popup_bottom_holder div {
-    cursor: pointer;
     width: fit-content;
     user-select: none;
     opacity: 0.8;
@@ -1918,7 +1924,6 @@ input[type=search]:focus::-webkit-search-cancel-button {
     display: flex;
     flex-direction: row;
     align-items: center;
-    /* margin-left: 18px; */
 }
 
 #world_popup_header h3 {
@@ -1944,10 +1949,6 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 #form_world_import {
     display: none;
-}
-
-#form_rename_world input:not(:last-child) {
-    margin-right: 10px;
 }
 
 #world_popup_header h5 {
@@ -1983,7 +1984,6 @@ input[type=search]:focus::-webkit-search-cancel-button {
 .world_entry_form_control {
     display: flex;
     flex-direction: column;
-    /* margin: 0 10px; */
 }
 
 .world_entry_thin_controls {
@@ -2000,8 +2000,8 @@ input[type=search]:focus::-webkit-search-cancel-button {
 }
 
 .world_entry_form_control label h4 {
-    margin-bottom: 0px;
-    margin-top: 5px;
+    margin-bottom: 0;
+    margin-top: 0;
 }
 
 .world_entry_form_control label h5 {
@@ -2011,7 +2011,6 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 .world_entry_form_control textarea {
     height: auto;
-    /* width: auto; */
     margin-top: 0;
     margin-bottom: 0;
 }
@@ -2019,7 +2018,6 @@ input[type=search]:focus::-webkit-search-cancel-button {
 .world_entry_form_control.world_entry_form_horizontal {
     flex-direction: row;
     align-items: center;
-    /* margin-top: 5px; */
     flex-wrap: wrap;
 }
 
@@ -2292,28 +2290,6 @@ input[type="range"]::-webkit-slider-thumb {
     background-color: var(--orangered);
     opacity: 1;
 }
-
-/* #tips_popup {
-
-    width: 500px;
-    height: 600px;
-    position: absolute;
-    z-index: 2060;
-    background-color: var(--cobalt30a);
-    margin-left: auto;
-    margin-right: auto;
-    left: 0;
-    right: 0;
-    text-align: center;
-    margin-top: 15vh;
-    box-shadow: 5px 5px var(--black30a);
-    padding: 4px;
-    backdrop-filter: blur(var(--SmartThemeBlurStrength));
-    background-color: var(--black70a);
-    -webkit-backdrop-filter: blur(var(--SmartThemeBlurStrength));
-    border-radius: 10px;
-    padding-top: 30px;
-} */
 
 .nice-link {
     color: var(--SmartThemeBodyColor);
@@ -4340,6 +4316,14 @@ body.waifuMode #avatar_zoom_popup {
 
     .world_entry_thin_controls {
         flex-direction: column;
+    }
+
+    .WIEntryContentAndMemo {
+        flex-flow: column;
+    }
+
+    .WIEntryContentAndMemo .world_entry_thin_controls {
+        width: 100%;
     }
 
     .world_entry_form_control.world_entry_form_horizontal {
