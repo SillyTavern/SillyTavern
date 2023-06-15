@@ -19,6 +19,8 @@ import {
     selected_group,
 } from "./group-chats.js";
 
+import { registerSlashCommand } from "./slash-commands.js";
+
 export {
     loadPowerUserSettings,
     collapseNewlines,
@@ -251,9 +253,12 @@ function switchUiMode() {
     $("#fast_ui_mode").prop("checked", power_user.fast_ui_mode);
 }
 
+function toggleWaifu() {
+    $("#waifuMode").trigger("click");
+}
+
 function switchWaifuMode() {
-    const waifuMode = localStorage.getItem(storage_keys.waifuMode);
-    power_user.waifuMode = waifuMode === null ? false : waifuMode == "true";
+    console.log(`switching waifu to ${power_user.waifuMode}`);
     $("body").toggleClass("waifuMode", power_user.waifuMode);
     $("#waifuMode").prop("checked", power_user.waifuMode);
     scrollChatToBottom();
@@ -457,7 +462,6 @@ applyAvatarStyle();
 applyBlurStrength();
 applyShadowWidth();
 applyChatDisplay();
-switchWaifuMode()
 switchMovingUI();
 noShadows();
 switchHotswap();
@@ -479,13 +483,11 @@ function loadPowerUserSettings(settings, data) {
 
     // These are still local storage
     const fastUi = localStorage.getItem(storage_keys.fast_ui_mode);
-    const waifuMode = localStorage.getItem(storage_keys.waifuMode);
     const movingUI = localStorage.getItem(storage_keys.movingUI);
     const noShadows = localStorage.getItem(storage_keys.noShadows);
     const hotswap = localStorage.getItem(storage_keys.hotswap_enabled);
     const timer = localStorage.getItem(storage_keys.timer_enabled);
     power_user.fast_ui_mode = fastUi === null ? true : fastUi == "true";
-    power_user.waifuMode = waifuMode === null ? false : waifuMode == "true";
     power_user.movingUI = movingUI === null ? false : movingUI == "true";
     power_user.noShadows = noShadows === null ? false : noShadows == "true";
     power_user.hotswap_enabled = hotswap === null ? true : hotswap == "true";
@@ -569,6 +571,7 @@ function loadPowerUserSettings(settings, data) {
     reloadMarkdownProcessor(power_user.render_formulas);
     loadInstructMode();
     loadMaxContextUnlocked();
+    switchWaifuMode();
 }
 
 function loadMaxContextUnlocked() {
@@ -952,9 +955,9 @@ $(document).ready(() => {
         switchUiMode();
     });
 
-    $("#waifuMode").change(function () {
-        power_user.waifuMode = $(this).prop("checked");
-        localStorage.setItem(storage_keys.waifuMode, power_user.waifuMode);
+    $("#waifuMode").on('change', () => {
+        power_user.waifuMode = $('#waifuMode').prop("checked");
+        saveSettingsDebounced();
         switchWaifuMode();
     });
 
@@ -1217,4 +1220,6 @@ $(document).ready(() => {
     $(window).on('blur', function () {
         browser_has_focus = false;
     });
+
+    registerSlashCommand('vn', toggleWaifu, ['vn'], ' – swaps Visual Novel Mode On/Off', true, true);
 });
