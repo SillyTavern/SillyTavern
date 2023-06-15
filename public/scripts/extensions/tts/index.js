@@ -173,7 +173,7 @@ function resetTtsPlayback() {
 
     // Reset audio element
     audioElement.currentTime = 0;
-    audioElement.src = '/sounds/silence.mp3';
+    audioElement.src = '';
 
     // Clear any queue items
     ttsJobQueue.splice(0, ttsJobQueue.length);
@@ -704,26 +704,4 @@ $(document).ready(function () {
     const wrapper = new ModuleWorkerWrapper(moduleWorker);
     setInterval(wrapper.update.bind(wrapper), UPDATE_INTERVAL) // Init depends on all the things
     eventSource.on(event_types.MESSAGE_SWIPED, resetTtsPlayback);
-
-    // Mobiles need to "activate" the Audio element with click before it can be played
-    if (isMobile()) {
-        console.debug('Activating mobile audio element on first click');
-        let audioActivated = false;
-
-        // Play silence on first click
-        $(document).on('click touchend', function () {
-            // Prevent multiple activations
-            if (audioActivated) {
-                return;
-            }
-
-            console.debug('Activating audio element...');
-            audioActivated = true;
-            audioElement.src = '/sounds/silence.mp3';
-            // Reset volume to 1
-            audioElement.onended = function () {
-                console.debug('Audio element activated');
-            };
-        });
-    }
 })
