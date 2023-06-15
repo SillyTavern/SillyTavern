@@ -1066,7 +1066,19 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
     return mes;
 }
 
-function getMessageFromTemplate({ mesId, characterName, isUser, avatarImg, bias, isSystem, title, timerValue, timerTitle, bookmarkLink } = {}) {
+function getMessageFromTemplate({
+    mesId,
+    characterName,
+    isUser,
+    avatarImg,
+    bias,
+    isSystem,
+    title,
+    timerValue,
+    timerTitle,
+    bookmarkLink,
+    forceAvatar,
+} = {}) {
     const mes = $('#message_template .mes').clone();
     mes.attr({
         'mesid': mesId,
@@ -1074,6 +1086,7 @@ function getMessageFromTemplate({ mesId, characterName, isUser, avatarImg, bias,
         'is_user': isUser,
         'is_system': !!isSystem,
         'bookmark_link': bookmarkLink,
+        'force_avatar': !!forceAvatar,
     });
     mes.find('.avatar img').attr('src', avatarImg);
     mes.find('.ch_name .name_text').text(characterName);
@@ -1159,7 +1172,9 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
         //if messge is from sytem, use the name provided in the message JSONL to proceed,
         //if not system message, use name2 (char's name) to proceed
         //characterName = mes.is_system || mes.force_avatar ? mes.name : name2;
-
+    } else if (mes["is_user"] && mes["force_avatar"]) {
+        // Special case for persona images.
+        avatarImg = mes["force_avatar"];
     }
 
     if (count_view_mes == 0) {
@@ -1183,6 +1198,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
         isSystem: isSystem,
         title: title,
         bookmarkLink: bookmarkLink,
+        forceAvatar: mes.force_avatar,
         ...formatGenerationTimer(mes.gen_started, mes.gen_finished),
     };
 
@@ -2607,6 +2623,11 @@ export async function sendMessageAsUser(textareaText, messageBias) {
     chat[chat.length - 1]['mes'] = substituteParams(textareaText);
     chat[chat.length - 1]['extra'] = {};
 
+    // Lock user avatar to a persona.
+    if (user_avatar in power_user.personas) {
+        chat[chat.length - 1]['force_avatar'] = `User Avatars/${user_avatar}`;
+    }
+
     if (messageBias) {
         console.debug('checking bias');
         chat[chat.length - 1]['extra']['bias'] = messageBias;
@@ -3892,7 +3913,7 @@ function appendUserAvatar(name) {
 
 function reloadUserAvatar() {
     $(".mes").each(function () {
-        if ($(this).attr("is_user") == 'true') {
+        if ($(this).attr("is_user") == 'true' && $(this).attr('force_avatar') == 'false') {
             $(this)
                 .find(".avatar img")
                 .attr("src", `User Avatars/${user_avatar}`);
