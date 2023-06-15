@@ -1221,7 +1221,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     }
 
     //shows or hides the Prompt display button
-    let mesIdToFind = params.mesId;  //Number(newMessage.attr('mesId'));
+    let mesIdToFind = type == 'swipe' ? params.mesId - 1 : params.mesId;  //Number(newMessage.attr('mesId'));
 
     //if we have itemized messages, and the array isn't null..
     if (params.isUser === false && itemizedPrompts.length !== 0 && itemizedPrompts.length !== null) {
@@ -2358,7 +2358,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             let additionalPromptStuff = {
                 ...thisPromptBits[currentArrayEntry],
                 rawPrompt: generate_data.prompt,
-                mesId: type == 'swipe' ? Number(count_view_mes - 1) : Number(count_view_mes + 1),
+                mesId: type == 'swipe' ? Number(count_view_mes - 1) : Number(count_view_mes),
                 worldInfoBefore: worldInfoBefore,
                 allAnchors: allAnchors,
                 summarizeString: (extension_prompts['1_memory']?.value || ''),
