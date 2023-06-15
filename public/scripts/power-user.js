@@ -874,7 +874,9 @@ function doNewChat() {
         $("#option_start_new_chat").trigger('click');
     }, 1);
     //$("#dialogue_popup").hide();
-    $("#dialogue_popup_ok").trigger('click');
+    setTimeout(() => {
+        $("#dialogue_popup_ok").trigger('click');
+    }, 1);
 }
 
 function doDelMode() {
