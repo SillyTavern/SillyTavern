@@ -6528,10 +6528,16 @@ $(document).ready(function () {
                         $(this).parent().children(".for_checkbox").css("display", "none");
                     }
                 });
+            } else {
+                console.debug(`
+            ERR -- could not enter del mode
+            this_chid: ${this_chid}
+            is_send_press: ${is_send_press}
+            selected_group: ${selected_group}
+            is_group_generating: ${is_group_generating}`)
             }
             is_delete_mode = true;
         }
-        console.log('clicked item, should hide options');
         hideMenu();
     });
 

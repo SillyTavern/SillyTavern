@@ -12,6 +12,7 @@ import {
     eventSource,
     event_types,
     getCurrentChatId,
+    is_send_press,
 } from "../script.js";
 import { favsToHotswap } from "./RossAscends-mods.js";
 import {
@@ -874,6 +875,12 @@ function doNewchat() {
     $("#dialogue_popup_ok").trigger('click');
 }
 
+function doDelMode() {
+    setTimeout(() => {
+        $("#option_delete_mes").trigger('click')
+    }, 1);
+}
+
 $(document).ready(() => {
     // Settings that go to settings.json
     $("#collapse-newlines-checkbox").change(function () {
@@ -1227,6 +1234,7 @@ $(document).ready(() => {
         browser_has_focus = false;
     });
 
-    registerSlashCommand('vn', toggleWaifu, ['vn'], ' – swaps Visual Novel Mode On/Off', true, true);
+    registerSlashCommand('vn', toggleWaifu, ['vn'], ' – swaps Visual Novel Mode On/Off', false, true);
     registerSlashCommand('newchat', doNewchat, ['newchat'], ' – start a new chat with current character', true, true);
+    registerSlashCommand('delmode', doDelMode, ['delmode'], ' – enter message deletion mode', true, true);
 });
