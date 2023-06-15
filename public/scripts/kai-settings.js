@@ -95,6 +95,7 @@ function getKoboldGenerationData(finalPromt, this_settings, this_amount_gen, thi
         singleline: kai_settings.single_line,
         stop_sequence: kai_settings.use_stop_sequence ? getStoppingStrings(isImpersonate, false) : undefined,
         streaming: kai_settings.streaming_kobold && kai_settings.can_use_streaming,
+        can_abort: kai_settings.can_use_streaming,
     };
     return generate_data;
 }
