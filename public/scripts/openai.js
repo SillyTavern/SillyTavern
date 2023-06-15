@@ -394,7 +394,16 @@ async function prepareOpenAIMessages({
     addMessageToChatCompletion('system', `${name2}'s personality: ${substituteParams(charPersonality)}`, 'charPersonality');
     addMessageToChatCompletion('system', `Circumstances and context of the dialogue: ${substituteParams(Scenario)}`, 'scenario');
 
-    const optionalSystemPrompts = ['nsfw', 'jailbreak'];
+    // Add main prompt
+    if (type === "impersonate") {
+        const impersonate = substituteParams(oai_settings.impersonation_prompt);
+        addMessageToChatCompletion('system', impersonate, 'main');
+    } else {
+        addMessageToChatCompletion('system', prompts.get('main').content, 'main');
+    }
+
+    // Add managed system and user prompts
+    const systemPrompts = ['nsfw', 'jailbreak'];
     const userPrompts = prompts.collection
         .filter((prompt) => false === prompt.system_prompt)
         .reduce((acc, prompt) => {
@@ -402,8 +411,7 @@ async function prepareOpenAIMessages({
             return acc;
         }, []);
 
-    // Add optional prompts if they exist
-    [...optionalSystemPrompts, ...userPrompts].forEach(identifier => {
+    [...systemPrompts, ...userPrompts].forEach(identifier => {
         if (prompts.has(identifier)) {
             chatCompletion.add(MessageCollection.fromPrompt(prompts.get(identifier)), prompts.index(identifier));
         }
