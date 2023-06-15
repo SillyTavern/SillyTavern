@@ -9,7 +9,7 @@ import {
 import { selected_group } from "../../group-chats.js";
 import { ModuleWorkerWrapper, extension_settings, getContext, saveMetadataDebounced } from "../../extensions.js";
 import { registerSlashCommand } from "../../slash-commands.js";
-import { getCharaFilename } from "../../utils.js";
+import { getCharaFilename, debounce } from "../../utils.js";
 export { MODULE_NAME };
 
 const MODULE_NAME = '2_floating_prompt'; // <= Deliberate, for sorting lower than memory
@@ -72,9 +72,13 @@ function setNotePositionCommand(_, text) {
     toastr.info("Author's Note position updated");
 }
 
+const setMainPromptTokenCounterDebounced = debounce((value) => $('#extension_floating_prompt_token_counter').text(getTokenCount(value)), 1000);
+const setCharaPromptTokenCounterDebounced = debounce((value) => $('#extension_floating_chara_token_counter').text(getTokenCount(value)), 1000);
+const setDefaultPromptTokenCounterDebounced = debounce((value) => $('#extension_floating_default_token_counter').text(getTokenCount(value)), 1000);
+
 async function onExtensionFloatingPromptInput() {
     chat_metadata[metadata_keys.prompt] = $(this).val();
-    debounce(() => $('#extension_floating_prompt_token_counter').text(getTokenCount(chat_metadata[metadata_keys.prompt])), 1000);
+    setMainPromptTokenCounterDebounced(chat_metadata[metadata_keys.prompt]);
     saveMetadataDebounced();
 }
 
@@ -108,7 +112,7 @@ function onExtensionFloatingCharaPromptInput() {
         prompt: tempPrompt
     }
 
-    debounce(() => $('#extension_floating_chara_token_counter').text(getTokenCount(tempPrompt)), 1000);
+    setCharaPromptTokenCounterDebounced(tempPrompt);
 
     let existingCharaNoteIndex;
     let existingCharaNote;
@@ -118,8 +122,8 @@ function onExtensionFloatingCharaPromptInput() {
         existingCharaNote = extension_settings.note.chara[existingCharaNoteIndex]
     }
 
-    if (tempPrompt.length === 0 && 
-        extension_settings.note.chara && 
+    if (tempPrompt.length === 0 &&
+        extension_settings.note.chara &&
         existingCharaNote &&
         !existingCharaNote.useChara
     ) {
@@ -127,7 +131,7 @@ function onExtensionFloatingCharaPromptInput() {
     }
     else if (extension_settings.note.chara && existingCharaNote) {
         Object.assign(existingCharaNote, tempCharaNote);
-    } 
+    }
     else if (avatarName && tempPrompt.length > 0) {
         if (!extension_settings.note.chara) {
             extension_settings.note.chara = []
@@ -159,7 +163,7 @@ function onExtensionFloatingCharaCheckboxChanged() {
 
 function onExtensionFloatingDefaultInput() {
     extension_settings.note.default = $(this).val();
-    debounce(() => $('#extension_floating_default_token_counter').text(getTokenCount(extension_settings.note.default)), 1000);
+    setDefaultPromptTokenCounterDebounced(extension_settings.note.default);
     saveSettingsDebounced();
 }
 
