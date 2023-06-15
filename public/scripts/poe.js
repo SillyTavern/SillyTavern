@@ -263,24 +263,25 @@ async function generatePoe(type, finalPrompt, signal) {
     }
 
     const isQuiet = type === 'quiet';
+    const isImpersonate = type === 'impersonate';
     let reply = '';
 
     if (max_context > POE_TOKEN_LENGTH && poe_settings.bot !== 'a2_100k') {
         console.debug('Prompt is too long, sending in chunks');
-        const result = await sendChunkedMessage(finalPrompt, !isQuiet, signal)
+        const result = await sendChunkedMessage(finalPrompt, !isQuiet, !isQuiet && !isImpersonate, signal)
         reply = result.reply;
         messages_to_purge = result.chunks + 1; // +1 for the reply
     }
     else {
         console.debug('Sending prompt in one message');
-        reply = await sendMessage(finalPrompt, !isQuiet, !isQuiet, signal);
+        reply = await sendMessage(finalPrompt, !isQuiet, !isQuiet && !isImpersonate, signal);
         messages_to_purge = 2; // prompt and the reply
     }
 
     return reply;
 }
 
-async function sendChunkedMessage(finalPrompt, withStreaming, signal) {
+async function sendChunkedMessage(finalPrompt, withStreaming, withSuggestions, signal) {
     const fastReplyPrompt = '\n[Reply to this message with a full stop only]';
     const promptChunks = splitRecursive(finalPrompt, CHUNKED_PROMPT_LENGTH - fastReplyPrompt.length);
     console.debug(`Splitting prompt into ${promptChunks.length} chunks`, promptChunks);
@@ -291,7 +292,7 @@ async function sendChunkedMessage(finalPrompt, withStreaming, signal) {
         console.debug(`Sending chunk ${i + 1}/${promptChunks.length}: ${promptChunk}`);
         if (i == promptChunks.length - 1) {
             // Extract reply of the last chunk
-            reply = await sendMessage(promptChunk, withStreaming, true, signal);
+            reply = await sendMessage(promptChunk, withStreaming, withSuggestions, signal);
         } else {
             // Add fast reply prompt to the chunk
             promptChunk += fastReplyPrompt;
