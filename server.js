@@ -357,14 +357,17 @@ app.post("/generate", jsonParser, async function (request, response_generate = r
     request.socket.on('close', async function () {
         if (request.body.can_abort && !response_generate.finished) {
             try {
+                console.log('Aborting Kobold generation...');
                 // send abort signal to koboldcpp
-                await fetch(`${api_server}/extra/abort`, {
+                const abortResponse = await fetch(`${api_server}/extra/abort`, {
                     method: 'POST',
                 });
-            } catch {
-                if ('status' in error) {
-                    console.log('Status Code from Kobold:', error.status);
+
+                if (!abortResponse.ok) {
+                    console.log('Error sending abort request to Kobold:', abortResponse.status);
                 }
+            } catch (error) {
+                console.log(error);
             }
         }
         controller.abort();
