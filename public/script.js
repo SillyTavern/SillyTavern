@@ -2279,7 +2279,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
                 if (preset_settings != 'gui') {
                     const maxContext = (adjustedParams && horde_settings.auto_adjust_context_length) ? adjustedParams.maxContextLength : max_context;
-                    generate_data = getKoboldGenerationData(finalPromt, this_settings, this_amount_gen, maxContext, isImpersonate);
+                    generate_data = getKoboldGenerationData(finalPromt, this_settings, this_amount_gen, maxContext, isImpersonate, type);
                 }
             }
             else if (main_api == 'textgenerationwebui') {
