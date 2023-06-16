@@ -403,23 +403,25 @@ async function prepareOpenAIMessages({
     if (power_user.console_log_prompts) chatCompletion.enableLogging();
 
     // Helper functions
-    const createMessageCollection = (role, content, identifier) => MessageCollection.fromPrompt(new Prompt({role, content, identifier}));
-    const addMessageToChatCompletion = (role, content, identifier) => {
-        chatCompletion.add(createMessageCollection(role, content, identifier), prompts.index(identifier));
+    const addToChatCompletion = (role, content, identifier = null) => {
+        const collection = new MessageCollection(identifier)
+        if (role && content) collection.addItem(new Message(role, content, identifier));
+        const index = identifier ? prompts.index(identifier) : null;
+        chatCompletion.add(collection, index);
     };
 
-    addMessageToChatCompletion('system', formatWorldInfo(worldInfoBefore), 'worldInfoBefore');
-    addMessageToChatCompletion('system', formatWorldInfo(worldInfoAfter), 'worldInfoAfter');
-    addMessageToChatCompletion('system', substituteParams(charDescription), 'charDescription');
-    addMessageToChatCompletion('system', `${name2}'s personality: ${substituteParams(charPersonality)}`, 'charPersonality');
-    addMessageToChatCompletion('system', `Circumstances and context of the dialogue: ${substituteParams(Scenario)}`, 'scenario');
+    addToChatCompletion('system', formatWorldInfo(worldInfoBefore), 'worldInfoBefore');
+    addToChatCompletion('system', formatWorldInfo(worldInfoAfter), 'worldInfoAfter');
+    addToChatCompletion('system', substituteParams(charDescription), 'charDescription');
+    addToChatCompletion('system', `${name2}'s personality: ${substituteParams(charPersonality)}`, 'charPersonality');
+    addToChatCompletion('system', `Circumstances and context of the dialogue: ${substituteParams(Scenario)}`, 'scenario');
 
     // Add main prompt
     if (type === "impersonate") {
         const impersonate = substituteParams(oai_settings.impersonation_prompt);
-        addMessageToChatCompletion('system', impersonate, 'main');
+        addToChatCompletion('system', impersonate, 'main');
     } else {
-        addMessageToChatCompletion('system', prompts.get('main').content, 'main');
+        addToChatCompletion('system', prompts.get('main').content, 'main');
     }
 
     // Add managed system and user prompts
@@ -433,14 +435,16 @@ async function prepareOpenAIMessages({
 
     [...systemPrompts, ...userPrompts].forEach(identifier => {
         if (prompts.has(identifier)) {
-            chatCompletion.add(MessageCollection.fromPrompt(prompts.get(identifier)), prompts.index(identifier));
+            const prompt = prompts.get(identifier);
+            addToChatCompletion(prompt.role, prompt.content, identifier);
         }
     });
 
     // Add enhance definition instruction
     if (prompts.has('enhanceDefinitions')) {
-        chatCompletion.add(MessageCollection.fromPrompt(prompts.get('enhanceDefinitions')), prompts.index('enhanceDefinitions'));
-    }
+        const prompt = prompts.get('enhanceDefinitions');
+        addToChatCompletion(prompt.role, prompt.content, identifier);
+     }
 
     // Insert nsfw avoidance prompt into main, if no nsfw prompt is present
     if (false === chatCompletion.has('nsfw') && oai_settings.nsfw_avoidance_prompt) {
@@ -451,11 +455,11 @@ async function prepareOpenAIMessages({
     // Insert quiet prompt into main
     if (quietPrompt) {
         const quietPromptMessage = new Message('system', quietPrompt, 'quietPrompt');
-        chatCompletion.insert(quietPromptMessage, 'main')
+        chatCompletion.insert(quietPromptMessage, 'main');
     }
 
     if (bias && bias.trim().length) {
-        addMessageToChatCompletion('system', bias, 'main');
+        addToChatCompletion('system', bias, 'main');
     }
 
     // Add extension prompts
@@ -475,7 +479,7 @@ async function prepareOpenAIMessages({
     }
 
     // Chat History
-    chatCompletion.add(new MessageCollection('chatHistory'), prompts.index('chatHistory'));
+    addToChatCompletion(null, null, 'chatHistory');
     const mainChat = selected_group ? '[Start a new group chat. Group members: ${names}]' : '[Start a new Chat]';
     const mainChatMessage = new Message('system', mainChat, 'newMainChat');
 
@@ -491,7 +495,7 @@ async function prepareOpenAIMessages({
     }
 
     // Insert chat message examples if there's enough budget
-    chatCompletion.add(new MessageCollection('dialogueExamples'), prompts.index('dialogueExamples'));
+    addToChatCompletion(null, null, 'dialogueExamples');
     if (chatCompletion.canAfford(mainChatMessage)) {
         // Insert dialogue examples messages
         chatCompletion.insert(mainChatMessage, 'dialogueExamples');
@@ -1015,10 +1019,6 @@ class Message {
     }
 
     getTokens() {return this.tokens};
-
-    static fromPrompt(prompt) {
-        return new Message(prompt.role, prompt.content, prompt.identifier);
-    }
 }
 
 class MessageCollection  {
@@ -1035,12 +1035,12 @@ class MessageCollection  {
         this.identifier = identifier;
     }
 
-    getTokens() {
-        return this.collection.reduce((tokens, message) => tokens + message.getTokens(), 0);
+    addItem(item) {
+        this.collection.push(item);
     }
 
-    static fromPrompt(prompt) {
-        return new MessageCollection(prompt.identifier, Message.fromPrompt(prompt));
+    getTokens() {
+        return this.collection.reduce((tokens, message) => tokens + message.getTokens(), 0);
     }
 }
 
