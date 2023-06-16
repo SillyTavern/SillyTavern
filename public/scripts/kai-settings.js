@@ -68,7 +68,7 @@ function loadKoboldSettings(preset) {
     }
 }
 
-function getKoboldGenerationData(finalPromt, this_settings, this_amount_gen, this_max_context, isImpersonate) {
+function getKoboldGenerationData(finalPromt, this_settings, this_amount_gen, this_max_context, isImpersonate, type) {
     let generate_data = {
         prompt: finalPromt,
         gui_settings: false,
@@ -94,7 +94,7 @@ function getKoboldGenerationData(finalPromt, this_settings, this_amount_gen, thi
         use_world_info: false,
         singleline: kai_settings.single_line,
         stop_sequence: kai_settings.use_stop_sequence ? getStoppingStrings(isImpersonate, false) : undefined,
-        streaming: kai_settings.streaming_kobold && kai_settings.can_use_streaming,
+        streaming: kai_settings.streaming_kobold && kai_settings.can_use_streaming && type !== 'quiet',
         can_abort: kai_settings.can_use_streaming,
     };
     return generate_data;
