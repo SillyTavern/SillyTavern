@@ -790,7 +790,7 @@ $("document").ready(function () {
     function isInputElementInFocus() {
         //return $(document.activeElement).is(":input");
         var focused = $(':focus');
-        if (focused.is('input') || focused.is('textarea') || focused.attr('contenteditable') == 'true') {
+        if (focused.is('input') || focused.is('textarea') || focused.prop('contenteditable') == 'true') {
             if (focused.attr('id') === 'send_textarea') {
                 return false;
             }
