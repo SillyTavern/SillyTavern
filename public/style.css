@@ -1899,8 +1899,9 @@ input[type=search]:focus::-webkit-search-cancel-button {
 }
 
 .WIEntryContentAndMemo .world_entry_thin_controls {
-    width: 50%;
+    flex: 1;
 }
+
 
 #world_popup_name_button {
     display: none;
@@ -3863,7 +3864,7 @@ toolcool-color-picker {
 }
 
 .flex2 {
-    flex: 2;
+    flex: 2 !important;
 }
 
 .flexFlowColumn {

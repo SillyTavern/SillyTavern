@@ -204,6 +204,7 @@ function appendWorldEntry(entry) {
 
     // comment
     const commentInput = template.find('textarea[name="comment"]');
+    const commentToggle = template.find('input[name="addMemo"]');
     commentInput.data("uid", entry.uid);
     commentInput.on("input", function () {
         const uid = $(this).data("uid");
@@ -211,8 +212,24 @@ function appendWorldEntry(entry) {
         world_info_data.entries[uid].comment = value;
         saveWorldInfo();
     });
+    commentToggle.data("uid", entry.uid);
+    commentToggle.on("input", function () {
+        const uid = $(this).data("uid");
+        const value = $(this).prop("checked");
+        console.log(value)
+        const commentContainer = $(this)
+            .closest(".world_entry")
+            .find(".commentContainer");
+        world_info_data.entries[uid].addMemo = value;
+        saveWorldInfo();
+        value ? commentContainer.show() : commentContainer.hide();
+    });
+
     commentInput.val(entry.comment).trigger("input");
-    //initScrollHeight(commentInput);
+    commentToggle.prop("checked", entry.selective).trigger("input");
+    commentToggle.siblings(".checkbox_fancy").click(function () {
+        $(this).siblings("input").click();
+    });
 
     // content
     const countTokensDebounced = debounce(function (that, value) {
@@ -377,6 +394,7 @@ function createWorldInfoEntry() {
         content: "",
         constant: false,
         selective: false,
+        addMemo: false,
         order: 100,
         position: 0,
         disable: false,

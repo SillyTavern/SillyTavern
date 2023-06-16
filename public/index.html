@@ -2839,7 +2839,7 @@
                     </div>
                     <div class="inline-drawer-content flex-container">
                         <div class="WIEntryContentAndMemo flex-container">
-                            <div class="world_entry_thin_controls">
+                            <div class="world_entry_thin_controls flex2">
                                 <div class="world_entry_form_control">
                                     <label for="content ">
                                         <small>
@@ -2856,7 +2856,7 @@
                                     <textarea class="text_pole" name="content" rows="4" placeholder="What this keyword should mean to the AI, sent verbatim"></textarea>
                                 </div>
                             </div>
-                            <div class="world_entry_thin_controls">
+                            <div class="world_entry_thin_controls commentContainer">
                                 <div class="world_entry_form_control">
                                     <label for="comment">
                                         <small>
@@ -2876,14 +2876,19 @@
                         </div>
                         <div name="WIEntryBottomControls" class="flex-container flex1 justifySpaceBetween world_entry_form_horizontal">
                             <div class="flex-container flexFlowColumn flexNoGap  wi-enter-footer-text  ">
-                                <label class="checkbox">
+                                <label class="checkbox flex-container">
                                     <input type="checkbox" name="constant" />
                                     <span data-i18n="Constant">Constant</span>
                                 </label>
-                                <label class="checkbox">
+                                <label class="checkbox flex-container">
                                     <input type="checkbox" name="selective" />
                                     <span data-i18n="Selective">Selective</span>
                                 </label>
+                                <label class="checkbox flex-container">
+                                    <input type="checkbox" name="addMemo">
+                                    <span data-i18n="Add Memo">Add Memo</span>
+                                </label>
+
                             </div>
                             <div class="world_entry_form_control world_entry_form_radios  wi-enter-footer-text ">
                                 <div>
@@ -2896,6 +2901,7 @@
                                         <span data-i18n="After Char">After Char</span>
                                     </label>
                                 </div>
+
                             </div>
                             <div class="world_entry_form_control wi-enter-footer-text  flex-container flexNoGap ">
                                 Insertion Order
