@@ -14,7 +14,7 @@ import {
     secret_state,
     writeSecret,
 } from "./secrets.js";
-import { delay, splitRecursive } from "./utils.js";
+import { RateLimiter, delay, splitRecursive } from "./utils.js";
 
 export {
     is_get_status_poe,
@@ -65,6 +65,8 @@ let messages_to_purge = 0;
 let is_get_status_poe = false;
 let is_poe_button_press = false;
 let abortControllerSuggest = null;
+
+const rateLimiter = new RateLimiter((60 / 10 * 1000)); // 10 requests per minute
 
 function loadPoeSettings(settings) {
     if (settings.poe_settings) {
@@ -333,6 +335,8 @@ async function sendMessage(prompt, withStreaming, withSuggestions, signal) {
     if (!signal) {
         signal = new AbortController().signal;
     }
+
+    await rateLimiter.waitForResolve(signal);
 
     const body = JSON.stringify({
         bot: poe_settings.bot,
