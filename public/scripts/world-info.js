@@ -356,6 +356,7 @@ function appendWorldEntry(entry) {
     });
 
     template.appendTo("#world_popup_entries_list");
+    template.find('.inline-drawer-content').css('display', 'none'); //entries start collapsed
 
     return template;
 }
