@@ -1,5 +1,6 @@
 import { saveSettings, callPopup, substituteParams, getTokenCount, getRequestHeaders } from "../script.js";
 import { download, debounce, delay, initScrollHeight, resetScrollHeight } from "./utils.js";
+import { getContext } from "./extensions.js";
 
 export {
     world_info,
@@ -34,6 +35,7 @@ const saveSettingsDebounced = debounce(() => saveSettings(), 1000);
 const world_info_position = {
     before: 0,
     after: 1,
+    authorsnote: 2,
 };
 
 function getWorldInfoPrompt(chat2) {
@@ -216,7 +218,7 @@ function appendWorldEntry(entry) {
     commentToggle.on("input", function () {
         const uid = $(this).data("uid");
         const value = $(this).prop("checked");
-        console.log(value)
+        //console.log(value)
         const commentContainer = $(this)
             .closest(".world_entry")
             .find(".commentContainer");
@@ -533,6 +535,7 @@ function checkWorldInfo(chat) {
         return "";
     }
 
+    const context = getContext();
     const messagesToLookBack = world_info_depth * 2;
     let textToScan = transformString(chat.slice(0, messagesToLookBack).join(""));
     let worldInfoBefore = "";
@@ -595,10 +598,14 @@ function checkWorldInfo(chat) {
                 worldInfoAfter = `${substituteParams(
                     entry.content
                 )}\n${worldInfoAfter}`;
-            } else {
+            } else if (entry.position === world_info_position.before) {
                 worldInfoBefore = `${substituteParams(
                     entry.content
                 )}\n${worldInfoBefore}`;
+            } else {
+                let originalAN = context.extensionPrompts['2_floating_prompt'].value;
+                let ANWithWI = originalAN + "\n" + entry.content;
+                context.extensionPrompts['2_floating_prompt'].value = ANWithWI;
             }
 
             if (
