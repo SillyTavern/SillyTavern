@@ -1547,7 +1547,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 }
 
 grammarly-extension {
-    z-index: 1;
+    z-index: 35;
 }
 
 .avatar-container:hover .avatar-buttons {
