@@ -1424,7 +1424,7 @@ app.post('/savetheme', jsonParser, (request, response) => {
     }
 
     const filename = path.join(directories.themes, sanitize(request.body.name) + '.json');
-    fs.writeFileSync(filename, JSON.stringify(request.body), 'utf8');
+    fs.writeFileSync(filename, JSON.stringify(request.body, null, 4), 'utf8');
 
     return response.sendStatus(200);
 });
@@ -3121,7 +3121,7 @@ app.post("/savepreset_openai", jsonParser, function (request, response) {
 
     const filename = `${name}.settings`;
     const fullpath = path.join(directories.openAI_Settings, filename);
-    fs.writeFileSync(fullpath, JSON.stringify(request.body), 'utf-8');
+    fs.writeFileSync(fullpath, JSON.stringify(request.body, null, 4), 'utf-8');
     return response.send({ name });
 });
 
