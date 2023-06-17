@@ -1637,10 +1637,13 @@ class StreamingProcessor {
         let isName = result.this_mes_is_name;
         processedText = result.getMessage;
 
-        // Predict unbalanced asterisks during streaming
-        if (!isFinal && isOdd(countOccurrences(processedText, '*'))) {
-            // Add asterisk at the end to balance it
-            processedText = processedText.trimEnd() + '*';
+        // Predict unbalanced asterisks / quotes during streaming
+        const charsToBalance = ['*', '"'];
+        for (const char of charsToBalance) {
+            if (!isFinal && isOdd(countOccurrences(processedText, char))) {
+                // Add character at the end to balance it
+                processedText = processedText.trimEnd() + char;
+            }
         }
 
         if (isImpersonate) {
