@@ -218,7 +218,8 @@ export {
     talkativeness_default,
     default_ch_mes,
     extension_prompt_types,
-    updateVisibleDivs
+    updateVisibleDivs,
+    mesForShowdownParse,
 }
 
 // API OBJECT FOR EXTERNAL WIRING
@@ -228,6 +229,7 @@ const gpt3 = new GPT3BrowserTokenizer({ type: 'gpt3' });
 hljs.addPlugin({ "before:highlightElement": ({ el }) => { el.textContent = el.innerText } });
 
 // Markdown converter
+let mesForShowdownParse; //intended to be used as a context to compare showdown strings against
 let converter;
 reloadMarkdownProcessor();
 
@@ -1017,6 +1019,10 @@ export async function reloadCurrentChat() {
 }
 
 function messageFormatting(mes, ch_name, isSystem, isUser) {
+    if (mes) {
+        mesForShowdownParse = mes;
+    }
+
     if (!mes) {
         mes = '';
     }
@@ -1233,7 +1239,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     // don't need prompt button for user
     if (params.isUser === true) {
         newMessage.find(".mes_prompt").hide();
-        console.log(`hiding prompt for user mesID ${params.mesId}`);
+        //console.log(`hiding prompt for user mesID ${params.mesId}`);
     }
 
     //shows or hides the Prompt display button
@@ -1241,16 +1247,16 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
 
     //if we have itemized messages, and the array isn't null..
     if (params.isUser === false && itemizedPrompts.length !== 0 && itemizedPrompts.length !== null) {
-        console.log('looking through itemized prompts...');
-        console.log(`mesIdToFind = ${mesIdToFind} from ${params.avatarImg}`);
-        console.log(`itemizedPrompts.length = ${itemizedPrompts.length}`)
-        console.log(itemizedPrompts);
+        // console.log('looking through itemized prompts...');
+        //console.log(`mesIdToFind = ${mesIdToFind} from ${params.avatarImg}`);
+        //console.log(`itemizedPrompts.length = ${itemizedPrompts.length}`)
+        //console.log(itemizedPrompts);
 
         for (var i = 0; i < itemizedPrompts.length; i++) {
-            console.log(`itemized array item ${i} is MesID ${Number(itemizedPrompts[i].mesId)}, does it match ${Number(mesIdToFind)}?`);
+            //console.log(`itemized array item ${i} is MesID ${Number(itemizedPrompts[i].mesId)}, does it match ${Number(mesIdToFind)}?`);
             if (Number(itemizedPrompts[i].mesId) === Number(mesIdToFind)) {
                 newMessage.find(".mes_prompt").show();
-                console.log(`showing button for mesID ${params.mesId} from ${params.characterName}`);
+                //console.log(`showing button for mesID ${params.mesId} from ${params.characterName}`);
                 break;
 
             } /*else {
@@ -1260,10 +1266,10 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
             } */
         }
     } else {
-        console.log('itemizedprompt array empty null, or user, hiding this prompt buttons');
+        //console.log('itemizedprompt array empty null, or user, hiding this prompt buttons');
         //$(".mes_prompt").hide();
         newMessage.find(".mes_prompt").hide();
-        console.log(itemizedPrompts);
+        //console.log(itemizedPrompts);
     }
 
     newMessage.find('.avatar img').on('error', function () {
@@ -2353,7 +2359,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
             thisPromptBits = additionalPromptStuff;
 
-            console.log(thisPromptBits);
+            //console.log(thisPromptBits);
 
             itemizedPrompts.push(thisPromptBits);
             console.log(`pushed prompt bits to itemizedPrompts array. Length is now: ${itemizedPrompts.length}`);
