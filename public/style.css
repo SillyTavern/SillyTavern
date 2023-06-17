@@ -1546,6 +1546,10 @@ input[type=search]:focus::-webkit-search-cancel-button {
     align-items: center;
 }
 
+grammarly-extension {
+    z-index: 1;
+}
+
 .avatar-container:hover .avatar-buttons {
     display: flex;
 }
