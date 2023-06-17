@@ -1134,6 +1134,11 @@ function trySelectPresetByName(name) {
         }
     }
 
+    // Don't change if the current preset is the same
+    if (preset_found && preset_found === oai_settings.preset_settings_openai) {
+        return;
+    }
+
     if (preset_found) {
         oai_settings.preset_settings_openai = preset_found;
         const value = openai_setting_names[preset_found]
