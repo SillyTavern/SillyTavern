@@ -57,7 +57,7 @@ export function getPreviewString(lang) {
     }
     const fallbackPreview = 'Neque porro quisquam est qui dolorem ipsum quia dolor sit amet'
 
-    return  previewStrings[lang] ?? fallbackPreview;
+    return previewStrings[lang] ?? fallbackPreview;
 }
 
 let ttsProviders = {
@@ -645,23 +645,23 @@ $(document).ready(function () {
                     <div>
                         <label class="checkbox_label" for="tts_enabled">
                             <input type="checkbox" id="tts_enabled" name="tts_enabled">
-                            Enabled
+                            <small>Enabled</small>
                         </label>
                         <label class="checkbox_label" for="tts_auto_generation">
                             <input type="checkbox" id="tts_auto_generation">
-                            Auto Generation
-                        </label>
-                        <label class="checkbox_label" for="tts_narrate_dialogues">
-                            <input type="checkbox" id="tts_narrate_dialogues">
-                            Narrate dialogues only
+                            <small>Auto Generation</small>
                         </label>
                         <label class="checkbox_label" for="tts_narrate_quoted">
                             <input type="checkbox" id="tts_narrate_quoted">
-                            Narrate quoted only
+                            <small>Only narrate "quotes"</small>
+                        </label>
+                        <label class="checkbox_label" for="tts_narrate_dialogues">
+                            <input type="checkbox" id="tts_narrate_dialogues">
+                            <small>Ignore *text, even "quotes", inside asterisks*</small>
                         </label>
                         <label class="checkbox_label" for="tts_narrate_translated_only">
                             <input type="checkbox" id="tts_narrate_translated_only">
-                            Narrate only the translated text
+                            <small>Narrate only the translated text</small>
                         </label>
                     </div>
                     <label>Voice Map</label>
