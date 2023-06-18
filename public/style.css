@@ -30,8 +30,6 @@
     --crimson70a: rgba(100, 0, 0, 0.7);
     --okGreen70a: rgba(0, 100, 0, 0.7);
     --cobalt30a: rgba(100, 100, 255, 0.3);
-    --sienna: rgb(210, 100, 40);
-    --orangered: rgb(255, 90, 0);
     --greyCAIbg: rgb(36, 36, 37);
     --ivory: rgb(220, 220, 210);
     --golden: rgba(212, 175, 55, 1);
@@ -39,10 +37,12 @@
 
     /*Default Theme, will be changed by ToolCool Color Picker*/
     --SmartThemeBodyColor: rgb(220, 220, 210);
-    --SmartThemeEmColor: rgb(175, 175, 175);
-    --SmartThemeQuoteColor: rgb(220, 220, 210);
-    --SmartThemeFastUIBGColor: rgba(0, 0, 0, 0.9);
-    --SmartThemeBlurTintColor: rgba(0, 0, 0, 0.5);
+    --SmartThemeEmColor: rgb(145, 145, 145);
+    --SmartThemeQuoteColor: rgb(225, 138, 36);
+    /* --SmartThemeFastUIBGColor: rgba(0, 0, 0, 0.9); */
+    --SmartThemeBlurTintColor: rgba(23, 23, 23, 1);
+    --SmartThemeUserMesBlurTintColor: rgba(0, 0, 0, 0.3);
+    --SmartThemeBotMesBlurTintColor: rgba(60, 60, 60, 0.3);
     --SmartThemeBlurStrength: calc(var(--blurStrength) * 1px);
     --SmartThemeShadowColor: rgba(0, 0, 0, 0.5);
 
@@ -2287,16 +2287,15 @@ input[type="range"]::-webkit-slider-thumb {
     width: calc(var(--mainFontSize) + 0.2rem);
     height: calc(var(--mainFontSize) + 0.2rem);
     display: inline-block;
-    opacity: 0.7;
+    opacity: 0.5;
     margin: 0 5px;
     text-align: center;
     box-shadow: 0 0 3px black;
+    transition: all 250ms;
 }
 
 
 .note-link-span:hover {
-    color: var(--white100);
-    background-color: var(--orangered);
     opacity: 1;
 }
 
@@ -3629,7 +3628,6 @@ label[for="extensions_autoconnect"] {
 
 #extensions_settings .inline-drawer-toggle.inline-drawer-header,
 #extensions_settings2 .inline-drawer-toggle.inline-drawer-header {
-    /* background-color: var(--SmartThemeBlurTintColor); */
     background-image: linear-gradient(348deg, var(--white30a)2%, var(--grey30a)10%, var(--black70a)95%, var(--SmartThemeQuoteColor)100%);
     margin-bottom: 5px;
     border-radius: 10px;
@@ -4090,9 +4088,13 @@ toolcool-color-picker {
 body.bubblechat .mes {
     padding: 10px;
     border-radius: 10px;
-    background-color: var(--SmartThemeBlurTintColor);
+    background-color: var(--SmartThemeBotMesBlurTintColor);
     margin-bottom: 5px;
     border: 1px solid var(--white30a);
+}
+
+body.bubblechat .mes[is_user="true"] {
+    background-color: var(--SmartThemeUserMesBlurTintColor);
 }
 
 body.w1000px #sheld {
@@ -4105,8 +4107,6 @@ body.no-blur * {
     backdrop-filter: unset !important;
 }
 
-
-
 body.no-blur #send_form.no-connection {
     background-color: rgba(100, 0, 0, 0.9) !important;
 }
@@ -4117,19 +4117,23 @@ body.no-blur #bg_custom {
 
 }
 
-body.no-blur .drawer-content,
 body:not(.bubblechat).no-blur #chat,
-body.bubblechat.no-blur .mes,
 body.no-blur #top-bar,
+body.no-blur #send_form {
+    background-color: var(--SmartThemeBlurTintColor) !important;
+}
+
+body.no-blur #options,
+body.no-blur .ui-widget-content,
+body.no-blur #floatingPrompt,
+body.no-blur #extensionsMenu,
+body.no-blur .list-group,
 body.no-blur #character_popup,
 body.no-blur #world_popup,
 body.no-blur #dialogue_popup,
 body.no-blur #select_chat_popup,
-body.no-blur .options-content,
-body.no-blur #send_form,
-body.no-blur .list-group,
-body.no-blur .ui-widget-content {
-    background-color: var(--SmartThemeFastUIBGColor) !important;
+body.no-blur .drawer-content {
+    background-color: black !important;
 }
 
 /* wAIfu mode*/
