@@ -661,14 +661,14 @@ class Client {
                     signal.throwIfAborted();
                 }
 
-                if (timeout == 0) {
+                if (timeout <= 0) {
                     throw new Error("Response timed out.");
                 }
 
                 const message = this.message_queues[humanMessageId].shift();
                 if (!message) {
-                    timeout -= 1;
-                    await delay(1000);
+                    timeout -= 0.1;
+                    await delay(100);
                     continue;
                     //throw new Error("Queue is empty");
                 }
