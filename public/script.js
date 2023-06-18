@@ -938,7 +938,7 @@ async function delChat(chatfile) {
         headers: getRequestHeaders(),
         body: JSON.stringify({
             chatfile: chatfile,
-            id: characters[this_chid].name
+            avatar_url: characters[this_chid].avatar,
         }),
     });
     if (response.ok === true) {
