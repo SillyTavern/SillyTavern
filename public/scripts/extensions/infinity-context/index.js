@@ -423,11 +423,11 @@ function doAutoAdjust(chat, maxContext) {
     // Round up to nearest 10
     const contextMessagesRounded = Math.ceil(contextMessages / 10) * 10;
     console.debug('CHROMADB: Estimated context messages (rounded): %o', contextMessagesRounded);
-    // Messages to keep (proportional, rounded to nearest 5, minimum 10)
-    const messagesToKeep = Math.max(10, Math.ceil(contextMessagesRounded * extension_settings.chromadb.keep_context_proportion / 5) * 5);
+    // Messages to keep (proportional, rounded to nearest 5, minimum 10, maximum 500)
+    const messagesToKeep = Math.min(defaultSettings.keep_context_max, Math.max(10, Math.ceil(contextMessagesRounded * extension_settings.chromadb.keep_context_proportion / 5) * 5));
     console.debug('CHROMADB: Estimated messages to keep: %o', messagesToKeep);
-    // Messages to query (rounded)
-    const messagesToQuery = contextMessagesRounded - messagesToKeep;
+    // Messages to query (rounded, maximum 500)
+    const messagesToQuery = Math.min(defaultSettings.n_results_max, contextMessagesRounded - messagesToKeep);
     console.debug('CHROMADB: Estimated messages to query: %o', messagesToQuery);
     // Set extension settings
     extension_settings.chromadb.keep_context = messagesToKeep;
