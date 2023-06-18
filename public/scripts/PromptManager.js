@@ -37,7 +37,7 @@ class PromptCollection {
 
     get(identifier) {
         const index = this.index(identifier);
-        if (0 > index) throw new IdentifierNotFoundError(identifier);
+        if (0 > index) return null;
         return this.collection[index];
     }
 
@@ -63,8 +63,8 @@ function PromptManagerModule() {
     this.containerElement = null;
     this.listElement = null;
     this.activeCharacter = null;
-
     this.tokenHandler = null;
+    this.error = null;
 
     this.handleToggle = () => { };
     this.handleEdit = () => { };
@@ -95,7 +95,9 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
     this.handleToggle = (event) => {
         const promptID = event.target.closest('.' + this.configuration.prefix + 'prompt_manager_prompt').dataset.pmIdentifier;
         const promptListEntry = this.getPromptListEntry(this.activeCharacter, promptID);
+        const counts = this.tokenHandler.getCounts();
 
+        counts[promptID] = null;
         promptListEntry.enabled = !promptListEntry.enabled;
         this.saveServiceSettings().then(() => this.render());
     };
@@ -191,17 +193,25 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
         this.saveServiceSettings().then(() => this.render());
     });
 
+    document.getElementById('openai_max_context').addEventListener('change', (event) => {
+        if (this.activeCharacter) this.render();
+    });
+
+    document.getElementById('openai_max_tokens').addEventListener('change', (event) => {
+        if (this.activeCharacter) this.render();
+    });
+
     // Prepare prompt edit form save and close button.
     document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_save').addEventListener('click', this.handleSavePrompt);
     document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_close').addEventListener('click', () => {
         this.hideEditForm();
         this.clearEditForm();
     });
-
 };
 
 PromptManagerModule.prototype.render = function () {
     if (null === this.activeCharacter) return;
+    this.error = null;
     this.tryGenerate().then(() => {
         this.renderPromptManager();
         this.renderPromptManagerListItems()
@@ -464,6 +474,8 @@ PromptManagerModule.prototype.getPromptIndexById = function (identifier) {
 PromptManagerModule.prototype.preparePrompt = function (prompt) {
     const groupMembers = this.getActiveGroupCharacters();
     if (0 < groupMembers.length) return {role: prompt.role || 'system', content: substituteParams(prompt.content ?? '', null, null, groupMembers.join(', '))}
+    prompt.content = substituteParams(prompt.content);
+
     return new Prompt(prompt);
 }
 
@@ -519,6 +531,13 @@ PromptManagerModule.prototype.getPromptCollection = function () {
     return promptCollection
 }
 
+PromptManagerModule.prototype.populateTokenHandler = function(messageCollection) {
+    const counts = this.tokenHandler.getCounts();
+    messageCollection.getCollection().forEach((message) => {
+        counts[message.identifier] = message.getTokens();
+    });
+}
+
 // Empties, then re-assembles the container containing the prompt list.
 PromptManagerModule.prototype.renderPromptManager = function () {
     const promptManagerDiv = this.containerElement;
@@ -526,6 +545,13 @@ PromptManagerModule.prototype.renderPromptManager = function () {
 
     const showAdvancedSettings = this.serviceSettings.prompt_manager_settings.showAdvancedSettings;
     const checkSpanClass = showAdvancedSettings ? 'fa-solid fa-toggle-on' : 'fa-solid fa-toggle-off';
+
+    const errorDiv = `
+            <div class="${this.configuration.prefix}prompt_manager_error">
+                <span class="fa-solid tooltip fa-triangle-exclamation text_danger"></span> ${this.error}
+            </div>
+    `;
+    const activeTokenInfo = `<span class="tooltip fa-solid fa-info-circle" title="Including tokens from hidden prompts"></span>`;
     const totalActiveTokens = this.tokenHandler?.getTotal();
 
     promptManagerDiv.insertAdjacentHTML('beforeend', `
@@ -536,12 +562,13 @@ PromptManagerModule.prototype.renderPromptManager = function () {
             </a>
         </div>
         <div class="range-block">
+            ${this.error ? errorDiv : ''}
             <div class="${this.configuration.prefix}prompt_manager_header">
                 <div class="${this.configuration.prefix}prompt_manager_header_advanced">
                     <span class="${checkSpanClass}"></span>
                     <span class="checkbox_label" data-i18n="Show advanced options">Show advanced options</span>
                 </div>
-                <div>Total Tokens: ${totalActiveTokens}</div>
+                <div>Total Tokens: ${totalActiveTokens} ${ showAdvancedSettings ? '' : activeTokenInfo} </div>
             </div>
             <ul id="${this.configuration.prefix}prompt_manager_list" class="text_pole"></ul>
         </div>
@@ -614,7 +641,21 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
         const enabledClass = listEntry.enabled ? '' : `${prefix}prompt_manager_prompt_disabled`;
         const draggableClass = draggableEnabled ? 'draggable' : prompt.marker ? 'droppable' : '';
         const markerClass = prompt.marker ? `${prefix}prompt_manager_marker` : '';
-        const calculatedTokens = this.tokenHandler?.getCounts()[prompt.identifier] ?? '';
+        const tokens = this.tokenHandler?.getCounts()[prompt.identifier] ?? 0;
+
+        let warningClass = '';
+        let warningTitle = '';
+        if ('chatHistory' === prompt.identifier) {
+            if (500 >= tokens) {
+                warningClass = 'fa-solid tooltip fa-triangle-exclamation text_danger';
+                warningTitle = 'Very little of your chat history is being sent, consider deactivating some other prompts.';
+            } else if (1000 >= tokens) {
+                warningClass = 'fa-solid tooltip fa-triangle-exclamation text_warning';
+                warningTitle = 'Only a few messages worth chat history are being sent.';
+            }
+        }
+
+        const calculatedTokens = tokens ? tokens : '-';
 
         let detachSpanHtml = '';
         if (this.isPromptDeletionAllowed(prompt)) {
@@ -638,7 +679,7 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
                         </span>
                     </span>
                 `}
-                <span class="prompt_manager_prompt_tokens" data-pm-tokens="${calculatedTokens}">${calculatedTokens}</span>
+                <span class="prompt_manager_prompt_tokens" data-pm-tokens="${calculatedTokens}"><span class="${warningClass}" title="${warningTitle}"> </span>${calculatedTokens}</span>
             </li>
         `;
     });
@@ -752,18 +793,6 @@ const openAiDefaultPrompts = {
             "marker": true,
         },
         {
-            "identifier": "newMainChat",
-            "name": "Start Chat",
-            "system_prompt": true,
-            "marker": true,
-        },
-        {
-            "identifier": "newExampleChat",
-            "name": "Start Chat",
-            "system_prompt": true,
-            "marker": true,
-        },
-        {
             "identifier": "worldInfoAfter",
             "name": "World Info (after)",
             "system_prompt": true,
@@ -844,15 +873,7 @@ const openAiDefaultPromptList = [
         "enabled": true
     },
     {
-        "identifier": "newExampleChat",
-        "enabled": true
-    },
-    {
         "identifier": "dialogueExamples",
-        "enabled": true
-    },
-    {
-        "identifier": "newMainChat",
         "enabled": true
     },
     {
