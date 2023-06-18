@@ -1,6 +1,7 @@
-import { saveSettings, callPopup, substituteParams, getTokenCount, getRequestHeaders } from "../script.js";
+import { saveSettings, callPopup, substituteParams, getTokenCount, getRequestHeaders, chat_metadata } from "../script.js";
 import { download, debounce, delay, initScrollHeight, resetScrollHeight } from "./utils.js";
 import { getContext } from "./extensions.js";
+import { metadata_keys } from "./extensions/floating-prompt/index.js";
 
 export {
     world_info,
@@ -35,7 +36,9 @@ const saveSettingsDebounced = debounce(() => saveSettings(), 1000);
 const world_info_position = {
     before: 0,
     after: 1,
-    authorsnote: 2,
+    ANTop: 2,
+    ANBottom: 3,
+
 };
 
 function getWorldInfoPrompt(chat2) {
@@ -592,8 +595,11 @@ function checkWorldInfo(chat) {
         const newEntries = [...activatedNow]
             .map((x) => world_info_data.entries[x])
             .sort((a, b) => sortedEntries.indexOf(a) - sortedEntries.indexOf(b));
-
+        let ANInjectionTokens = 0;
         for (const entry of newEntries) {
+            let ANWithWI;
+
+            let originalAN = context.extensionPrompts['2_floating_prompt'].value;
             if (entry.position === world_info_position.after) {
                 worldInfoAfter = `${substituteParams(
                     entry.content
@@ -602,14 +608,20 @@ function checkWorldInfo(chat) {
                 worldInfoBefore = `${substituteParams(
                     entry.content
                 )}\n${worldInfoBefore}`;
-            } else {
-                let originalAN = context.extensionPrompts['2_floating_prompt'].value;
-                let ANWithWI = originalAN + "\n" + entry.content;
-                context.extensionPrompts['2_floating_prompt'].value = ANWithWI;
+
+                //WI must hijack AN to inject before the prompt is set.
+            } else if (entry.position === world_info_position.ANBottom) {
+                ANWithWI = originalAN + "\n" + entry.content;
+                ANInjectionTokens = ANInjectionTokens + getTokenCount(ANWithWI) - getTokenCount(originalAN);
+                context.setExtensionPrompt('2_floating_prompt', ANWithWI, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth]);
+            } else if (entry.position === world_info_position.ANTop) {
+                ANWithWI = entry.content + "\n" + originalAN;
+                ANInjectionTokens = ANInjectionTokens + getTokenCount(ANWithWI) - getTokenCount(originalAN);
+                context.setExtensionPrompt('2_floating_prompt', ANWithWI, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth]);
             }
 
             if (
-                getTokenCount(worldInfoBefore + worldInfoAfter) >= world_info_budget
+                (getTokenCount(worldInfoBefore + worldInfoAfter) + ANInjectionTokens) >= world_info_budget
             ) {
                 needsToScan = false;
                 break;

@@ -19,7 +19,7 @@ const DEFAULT_DEPTH = 4;
 const DEFAULT_POSITION = 1;
 const DEFAULT_INTERVAL = 1;
 
-const metadata_keys = {
+export const metadata_keys = {
     prompt: 'note_prompt',
     interval: 'note_interval',
     depth: 'note_depth',
@@ -283,7 +283,10 @@ function onChatChanged() {
     $('#extension_floating_default_token_counter').text(tokenCounter3);
 }
 
-(function () {
+//for some reason exporting metadata_keys for WI usage caused this to throw errors
+//"accessing eventSource before initialization"
+//putting it on a 1ms Timeout solved this.
+setTimeout(function () {
     function addExtensionsSettings() {
         const settingsHtml = `
         <div id="floatingPrompt" class="drawer-content flexGap5">
@@ -399,4 +402,4 @@ function onChatChanged() {
     registerSlashCommand('freq', setNoteIntervalCommand, ['interval'], "<span class='monospace'>(number)</span> – sets an author's note insertion frequency", true, true);
     registerSlashCommand('pos', setNotePositionCommand, ['position'], "(<span class='monospace'>chat</span> or <span class='monospace'>scenario</span>) – sets an author's note position", true, true);
     eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
-})();
+}, 1);

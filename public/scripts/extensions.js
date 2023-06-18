@@ -51,6 +51,7 @@ const extension_settings = {
     note: {
         default: '',
         chara: [],
+        wiAddition: [],
     },
     caption: {},
     expressions: {},
