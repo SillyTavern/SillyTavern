@@ -4755,6 +4755,9 @@ export function select_selected_character(chid) {
     $("#dupe_button").show();
     $("#create_button_label").css("display", "none");
 
+    // Hide the chat scenario button if we're peeking the group member defs
+    $('#set_chat_scenario').toggle(!selected_group);
+
     // Don't update the navbar name if we're peeking the group member defs
     if (!selected_group) {
         $("#rm_button_selected_ch").children("h2").text(display_name);
@@ -4814,6 +4817,8 @@ function select_rm_create() {
     selectRightMenuWithAnimation('rm_ch_create_block');
     setRightTabSelectedClass();
 
+
+    $('#set_chat_scenario').hide();
     $("#delete_button_div").css("display", "none");
     $("#delete_button").css("display", "none");
     $("#export_button").css("display", "none");
