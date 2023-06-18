@@ -186,11 +186,35 @@ async function translateProviderGoogle(text, lang) {
     throw new Error(response.statusText);
 }
 
+async function translateProviderOneRing(text, lang) {
+    var from_lang = ""
+    if (lang == extension_settings.translate.internal_language) {
+        from_lang = extension_settings.translate.target_language
+    } else {
+        from_lang = extension_settings.translate.internal_language
+    }
+
+    const response = await fetch('/one_ring_translator', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({ text: text, from_lang: from_lang, to_lang: lang }),
+    });
+
+    if (response.ok) {
+        const result = await response.text();
+        return result;
+    }
+
+    throw new Error(response.statusText);
+}
+
 async function translate(text, lang) {
     try {
         switch (extension_settings.translate.provider) {
             case 'google':
                 return await translateProviderGoogle(text, lang);
+            case 'oneringtranslator':
+                return await translateProviderOneRing(text, lang);
             default:
                 console.error('Unknown translation provider', extension_settings.translate.provider);
                 return text;
@@ -333,6 +357,7 @@ jQuery(() => {
                 <label for="translation_provider">Provider</label>
                 <select id="translation_provider" name="provider">
                     <option value="google">Google</option>
+                    <option value="oneringtranslator">OneRingTranslator</option>
                 <select>
                 <label for="translation_target_language">Target Language</label>
                 <select id="translation_target_language" name="target_language"></select>

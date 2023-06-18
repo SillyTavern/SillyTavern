@@ -3552,6 +3552,42 @@ app.post('/google_translate', jsonParser, async (request, response) => {
     });
 });
 
+app.post('/one_ring_translator', jsonParser, async (request, response) => {
+    const text = request.body.text;
+    const from_lang = request.body.from_lang;
+    const to_lang = request.body.to_lang;
+
+    if (!text || !from_lang || !to_lang) {
+        return response.sendStatus(400);
+    }
+
+    console.log('Input text OneRing: ' + text);
+
+    const url = 'http://'+`127.0.0.1:4990/translate?text=${text}&from_lang=${from_lang}&to_lang=${to_lang}`;
+    //generateRequestUrl(text, { to: lang });
+
+    http.get(url, (resp) => {
+        let data = '';
+
+        resp.on('data', (chunk) => {
+            data += chunk;
+        });
+
+        resp.on('end', () => {
+            //const result = normaliseResponse();
+            console.log(data)
+            const res = JSON.parse(data)
+
+            console.log('Translated text: ' + res.result);
+            return response.send(res.result);
+        });
+    }).on("error", (err) => {
+        console.log("Translation error: " + err.message);
+        return response.sendStatus(500);
+    });
+});
+
+
 app.post('/novel_tts', jsonParser, async (request, response) => {
     const token = readSecret(SECRET_KEYS.NOVEL);
 
