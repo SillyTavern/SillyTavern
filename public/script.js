@@ -811,6 +811,7 @@ async function printCharacters() {
     favsToHotswap();
     await delay(300);
     updateVisibleDivs('#rm_print_characters_block', true);
+    displayOverrideWarnings();
 
 }
 
@@ -5765,7 +5766,9 @@ function updateVisibleDivs(containerSelector, resizecontainer) {
 }
 
 function displayOverrideWarnings() {
-    if (!this_chid) {
+    if (!this_chid || !selected_group) {
+        $('.prompt_overridden').hide();
+        $('.jailbreak_overridden').hide();
         return;
     }
 

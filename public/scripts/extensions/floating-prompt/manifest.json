@@ -3,6 +3,7 @@
     "loading_order": 1,
     "requires": [],
     "optional": [],
+    "generate_interceptor": "AuthorNote_generateInterceptor",
     "js": "index.js",
     "css": "style.css",
     "author": "Cohee#1207",
