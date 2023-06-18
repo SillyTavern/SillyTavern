@@ -1625,7 +1625,18 @@
                                 <input id="custom_chat_separator" class="text_pole textarea_compact" type="text" placeholder="&lt;START&gt;" maxlength="100" />
                             </div>
                         </div>
+                        <!--
                         <div>
+                            <h4 data-i18n="Non-markdown strings">
+                                Non-markdown strings
+                            </h4>
+                            <div>
+                                <input id="markdown_escape_strings" class="text_pole textarea_compact" type="text" placeholder="separate with commas w/o space between" maxlength="100" />
+                            </div>
+                        </div>
+                        -->
+                        <div>
+
                             <h4 data-i18n="Instruct mode">Instruct mode
                                 <a href="https://docs.sillytavern.app/usage/core-concepts/instructmode/" class="notes-link" target="_blank">
                                     <span class="note-link-span">?</span>
@@ -2051,15 +2062,23 @@
                             </div>
                             <div class="flex-container">
                                 <toolcool-color-picker id="shadow-color-picker"></toolcool-color-picker>
-                                <span data-i18n="Shadow Color">Shadow Color</span>
+                                <span data-i18n="Shadow Color">Text Shadow</span>
                             </div>
-                            <div class="flex-container">
+                            <!--                             <div class="flex-container">
                                 <toolcool-color-picker id="fastui-bg-color-picker"></toolcool-color-picker>
                                 <span data-i18n="FastUI BG">FastUI BG</span>
-                            </div>
+                            </div> -->
                             <div class="flex-container">
                                 <toolcool-color-picker id="blur-tint-color-picker"></toolcool-color-picker>
-                                <span data-i18n="Blur Tint">Blur Tint</span>
+                                <span data-i18n="Blur Tint">UI Background</span>
+                            </div>
+                            <div class="flex-container">
+                                <toolcool-color-picker id="user-mes-blur-tint-color-picker"></toolcool-color-picker>
+                                <span data-i18n="User Message Blur Tint">User Message</span>
+                            </div>
+                            <div class="flex-container">
+                                <toolcool-color-picker id="bot-mes-blur-tint-color-picker"></toolcool-color-picker>
+                                <span data-i18n="AI Message Blur Tint">AI Message</span>
                             </div>
                             <div id="font-blur-UIpresets-block" class="flex-container flexFlowColumn">
                                 <div id="font-scale-block" class="range-block">
@@ -2345,7 +2364,7 @@
                                 <input id="character_name_pole" name="ch_name" class="text_pole" placeholder="Name this character" maxlength="50" value="" autocomplete="off">
                             </div>
 
-                            <div id="avatar_div" class="avatar_div alignitemsflexstart justifySpaceBetween">
+                            <div id="avatar_div" class="avatar_div alignitemsflexstart justifySpaceBetween flexnowrap flexGap5">
                                 <div id="avatar_div_div" class="avatar">
                                     <img id="avatar_load_preview" src="img/ai4.png" alt="avatar">
                                 </div>
@@ -2360,6 +2379,7 @@
                                         <input type="hidden" id="fav_checkbox" name="fav" />
                                         <div id="advanced_div" class="menu_button fa-solid fa-book " title="Advanced Definitions"></div>
                                         <div id="export_button" class="menu_button fa-solid fa-file-export " title="Export and Download"></div>
+                                        <div id="set_chat_scenario" class="menu_button fa-solid fa-scroll" title="Set a chat scenario override"></div>
                                         <div id="dupe_button" class="menu_button fa-solid fa-clone " title="Duplicate Character"></div>
                                         <label for="create_button" id="create_button_label" class="menu_button fa-solid fa-user-check" title="Create Character">
                                             <input type="submit" id="create_button" name="create_button">
@@ -2745,19 +2765,20 @@
         </div>
     </div>
 
-    <div id="group_scenario_template" class="template_element">
-        <div class="group_scenario range-block flexFlowColumn flex-container">
+    <div id="scenario_override_template" class="template_element">
+        <div class="scenario_override range-block flexFlowColumn flex-container">
             <div class="range-block-title title_restorable">
-                <h3><span data-i18n="Group Chat Scenario Override">Group Chat Scenario Override</span></h3>
+                <h3><span data-i18n="Chat Scenario Override">Chat Scenario Override</span></h3>
                 <div title="Remove" class="menu_button fa-solid fa-trash-can remove_scenario_override"></div>
             </div>
             <div class="range-block-counter justifyLeft flex-container flexFlowColumn">
-                <strong>Unique to this chat.</strong> All group members will use the following scenario text instead of
-                what is specified in their character cards.
-                Bookmarks inherit the scenario from their parent, and can be changed individually after that.
+                <strong>Unique to this chat.</strong>
+                <span data-group="true">All group members will use the following scenario text instead of what is specified in their character cards.</span>
+                <span data-character="true">The following scenario text will be used instead of the value set in the character card.</span>
+                Bookmarks inherit the scenario override from their parent, and can be changed individually after that.
             </div>
             <div class="range-block-range wide100p">
-                <textarea class="wide100p group_chat_scenario" class="text_pole" rows="15" placeholder="Type here..."></textarea>
+                <textarea class="wide100p chat_scenario" class="text_pole" rows="15" placeholder="Type here..."></textarea>
             </div>
         </div>
     </div>
@@ -2839,7 +2860,7 @@
                     </div>
                     <div class="inline-drawer-content flex-container">
                         <div class="WIEntryContentAndMemo flex-container">
-                            <div class="world_entry_thin_controls">
+                            <div class="world_entry_thin_controls flex2">
                                 <div class="world_entry_form_control">
                                     <label for="content ">
                                         <small>
@@ -2856,7 +2877,7 @@
                                     <textarea class="text_pole" name="content" rows="4" placeholder="What this keyword should mean to the AI, sent verbatim"></textarea>
                                 </div>
                             </div>
-                            <div class="world_entry_thin_controls">
+                            <div class="world_entry_thin_controls commentContainer">
                                 <div class="world_entry_form_control">
                                     <label for="comment">
                                         <small>
@@ -2876,16 +2897,22 @@
                         </div>
                         <div name="WIEntryBottomControls" class="flex-container flex1 justifySpaceBetween world_entry_form_horizontal">
                             <div class="flex-container flexFlowColumn flexNoGap  wi-enter-footer-text  ">
-                                <label class="checkbox">
+                                <label class="checkbox flex-container">
                                     <input type="checkbox" name="constant" />
                                     <span data-i18n="Constant">Constant</span>
                                 </label>
-                                <label class="checkbox">
+                                <label class="checkbox flex-container">
                                     <input type="checkbox" name="selective" />
                                     <span data-i18n="Selective">Selective</span>
                                 </label>
+                                <label class="checkbox flex-container">
+                                    <input type="checkbox" name="addMemo">
+                                    <span data-i18n="Add Memo">Add Memo</span>
+                                </label>
+
                             </div>
                             <div class="world_entry_form_control world_entry_form_radios  wi-enter-footer-text ">
+                                <small>Placement</small>
                                 <div>
                                     <label><input type="radio" name="position" value="0">
                                         <span data-i18n="Before Char">Before Char</span>
@@ -2896,6 +2923,17 @@
                                         <span data-i18n="After Char">After Char</span>
                                     </label>
                                 </div>
+                                <div>
+                                    <label><input type="radio" name="position" value="2">
+                                        <span data-i18n="Author's Note">Author's Note Top</span>
+                                    </label>
+                                </div>
+                                <div>
+                                    <label><input type="radio" name="position" value="3">
+                                        <span data-i18n="Author's Note">Author's Note Bottom</span>
+                                    </label>
+                                </div>
+
                             </div>
                             <div class="world_entry_form_control wi-enter-footer-text  flex-container flexNoGap ">
                                 Insertion Order

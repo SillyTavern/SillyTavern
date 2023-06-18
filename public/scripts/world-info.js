@@ -1,5 +1,7 @@
-import { saveSettings, callPopup, substituteParams, getTokenCount, getRequestHeaders } from "../script.js";
+import { saveSettings, callPopup, substituteParams, getTokenCount, getRequestHeaders, chat_metadata } from "../script.js";
 import { download, debounce, delay, initScrollHeight, resetScrollHeight } from "./utils.js";
+import { getContext } from "./extensions.js";
+import { metadata_keys } from "./extensions/floating-prompt/index.js";
 
 export {
     world_info,
@@ -34,6 +36,9 @@ const saveSettingsDebounced = debounce(() => saveSettings(), 1000);
 const world_info_position = {
     before: 0,
     after: 1,
+    ANTop: 2,
+    ANBottom: 3,
+
 };
 
 function getWorldInfoPrompt(chat2) {
@@ -204,6 +209,7 @@ function appendWorldEntry(entry) {
 
     // comment
     const commentInput = template.find('textarea[name="comment"]');
+    const commentToggle = template.find('input[name="addMemo"]');
     commentInput.data("uid", entry.uid);
     commentInput.on("input", function () {
         const uid = $(this).data("uid");
@@ -211,8 +217,24 @@ function appendWorldEntry(entry) {
         world_info_data.entries[uid].comment = value;
         saveWorldInfo();
     });
+    commentToggle.data("uid", entry.uid);
+    commentToggle.on("input", function () {
+        const uid = $(this).data("uid");
+        const value = $(this).prop("checked");
+        //console.log(value)
+        const commentContainer = $(this)
+            .closest(".world_entry")
+            .find(".commentContainer");
+        world_info_data.entries[uid].addMemo = value;
+        saveWorldInfo();
+        value ? commentContainer.show() : commentContainer.hide();
+    });
+
     commentInput.val(entry.comment).trigger("input");
-    //initScrollHeight(commentInput);
+    commentToggle.prop("checked", entry.selective).trigger("input");
+    commentToggle.siblings(".checkbox_fancy").click(function () {
+        $(this).siblings("input").click();
+    });
 
     // content
     const countTokensDebounced = debounce(function (that, value) {
@@ -356,6 +378,7 @@ function appendWorldEntry(entry) {
     });
 
     template.appendTo("#world_popup_entries_list");
+    template.find('.inline-drawer-content').css('display', 'none'); //entries start collapsed
 
     return template;
 }
@@ -376,6 +399,7 @@ function createWorldInfoEntry() {
         content: "",
         constant: false,
         selective: false,
+        addMemo: false,
         order: 100,
         position: 0,
         disable: false,
@@ -514,6 +538,7 @@ function checkWorldInfo(chat) {
         return "";
     }
 
+    const context = getContext();
     const messagesToLookBack = world_info_depth * 2;
     let textToScan = transformString(chat.slice(0, messagesToLookBack).join(""));
     let worldInfoBefore = "";
@@ -570,20 +595,33 @@ function checkWorldInfo(chat) {
         const newEntries = [...activatedNow]
             .map((x) => world_info_data.entries[x])
             .sort((a, b) => sortedEntries.indexOf(a) - sortedEntries.indexOf(b));
-
+        let ANInjectionTokens = 0;
         for (const entry of newEntries) {
+            let ANWithWI;
+
+            let originalAN = context.extensionPrompts['2_floating_prompt'].value;
             if (entry.position === world_info_position.after) {
                 worldInfoAfter = `${substituteParams(
                     entry.content
                 )}\n${worldInfoAfter}`;
-            } else {
+            } else if (entry.position === world_info_position.before) {
                 worldInfoBefore = `${substituteParams(
                     entry.content
                 )}\n${worldInfoBefore}`;
+
+                //WI must hijack AN to inject before the prompt is set.
+            } else if (entry.position === world_info_position.ANBottom) {
+                ANWithWI = originalAN + "\n" + entry.content;
+                ANInjectionTokens = ANInjectionTokens + getTokenCount(ANWithWI) - getTokenCount(originalAN);
+                context.setExtensionPrompt('2_floating_prompt', ANWithWI, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth]);
+            } else if (entry.position === world_info_position.ANTop) {
+                ANWithWI = entry.content + "\n" + originalAN;
+                ANInjectionTokens = ANInjectionTokens + getTokenCount(ANWithWI) - getTokenCount(originalAN);
+                context.setExtensionPrompt('2_floating_prompt', ANWithWI, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth]);
             }
 
             if (
-                getTokenCount(worldInfoBefore + worldInfoAfter) >= world_info_budget
+                (getTokenCount(worldInfoBefore + worldInfoAfter) + ANInjectionTokens) >= world_info_budget
             ) {
                 needsToScan = false;
                 break;

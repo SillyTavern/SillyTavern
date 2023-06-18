@@ -56,6 +56,7 @@ import {
     eventSource,
     event_types,
     getCurrentChatId,
+    setScenarioOverride,
 } from "../script.js";
 import { appendTagToList, createTagMapFromList, getTagsList, applyTagsOnCharacterSelect, tag_map } from './tags.js';
 
@@ -1397,27 +1398,6 @@ export async function saveGroupBookmarkChat(groupId, name, metadata) {
     });
 }
 
-function setGroupScenario() {
-    if (!selected_group) {
-        return;
-    }
-
-    const template = $('#group_scenario_template .group_scenario').clone();
-    const metadataValue = chat_metadata['scenario'] || '';
-    template.find('.group_chat_scenario').text(metadataValue);
-    callPopup(template.get(0).outerHTML, 'text');
-}
-
-function onGroupScenarioInput() {
-    const value = $(this).val();
-    const metadata = { scenario: value, };
-    updateChatMetadata(metadata, false);
-}
-
-function onGroupScenarioRemoveClick() {
-    $(this).closest('.group_scenario').find('.group_chat_scenario').val('').trigger('input');
-}
-
 function onSendTextareaInput() {
     if (is_group_automode_enabled) {
         // Wait for current automode generation to finish
@@ -1437,12 +1417,10 @@ function stopAutoModeGeneration() {
 
 jQuery(() => {
     $(document).on("click", ".group_select", selectGroup);
-    $(document).on("input", ".group_chat_scenario", onGroupScenarioInput);
-    $(document).on("click", ".remove_scenario_override", onGroupScenarioRemoveClick);
     $("#rm_group_filter").on("input", filterGroupMembers);
     $("#group_fav_filter").on("click", toggleFilterByFavorites);
     $("#rm_group_submit").on("click", createGroup);
-    $("#rm_group_scenario").on("click", setGroupScenario);
+    $("#rm_group_scenario").on("click", setScenarioOverride);
     $("#rm_group_automode").on("input", function () {
         const value = $(this).prop("checked");
         is_group_automode_enabled = value;

@@ -51,6 +51,7 @@ const extension_settings = {
     note: {
         default: '',
         chara: [],
+        wiAddition: [],
     },
     caption: {},
     expressions: {},
@@ -421,12 +422,12 @@ async function loadExtensionSettings(settings) {
     }
 }
 
-async function runGenerationInterceptors(chat) {
+async function runGenerationInterceptors(chat, contextSize) {
     for (const manifest of Object.values(manifests)) {
         const interceptorKey = manifest.generate_interceptor;
         if (typeof window[interceptorKey] === 'function') {
             try {
-                await window[interceptorKey](chat);
+                await window[interceptorKey](chat, contextSize);
             } catch (e) {
                 console.error(`Failed running interceptor for ${manifest.display_name}`, e);
             }

@@ -435,3 +435,39 @@ export function getCharaFilename() {
 export function escapeRegex(string) {
     return string.replace(/[/\-\\^$*+?.()|[\]{}]/g, '\\$&');
 }
+
+export class RateLimiter {
+    constructor(intervalMillis) {
+        this._intervalMillis = intervalMillis;
+        this._lastResolveTime = 0;
+        this._pendingResolve = Promise.resolve();
+    }
+
+    _waitRemainingTime(abortSignal) {
+        const currentTime = Date.now();
+        const elapsedTime = currentTime - this._lastResolveTime;
+        const remainingTime = Math.max(0, this._intervalMillis - elapsedTime);
+
+        return new Promise((resolve, reject) => {
+            const timeoutId = setTimeout(() => {
+                resolve();
+            }, remainingTime);
+
+            if (abortSignal) {
+                abortSignal.addEventListener('abort', () => {
+                    clearTimeout(timeoutId);
+                    reject(new Error('Aborted'));
+                });
+            }
+        });
+    }
+
+    async waitForResolve(abortSignal) {
+        await this._pendingResolve;
+        this._pendingResolve = this._waitRemainingTime(abortSignal);
+
+        // Update the last resolve time
+        this._lastResolveTime = Date.now() + this._intervalMillis;
+        console.debug(`RateLimiter.waitForResolve() ${this._lastResolveTime}`);
+    }
+}

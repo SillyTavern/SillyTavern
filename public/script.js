@@ -130,7 +130,7 @@ import {
     isDataURL,
 } from "./scripts/utils.js";
 
-import { extension_settings, loadExtensionSettings, runGenerationInterceptors } from "./scripts/extensions.js";
+import { extension_settings, loadExtensionSettings, runGenerationInterceptors, saveMetadataDebounced } from "./scripts/extensions.js";
 import { executeSlashCommands, getSlashCommandsHelp, registerSlashCommand } from "./scripts/slash-commands.js";
 import {
     tag_map,
@@ -218,7 +218,8 @@ export {
     talkativeness_default,
     default_ch_mes,
     extension_prompt_types,
-    updateVisibleDivs
+    updateVisibleDivs,
+    mesForShowdownParse,
 }
 
 // API OBJECT FOR EXTERNAL WIRING
@@ -228,6 +229,7 @@ const gpt3 = new GPT3BrowserTokenizer({ type: 'gpt3' });
 hljs.addPlugin({ "before:highlightElement": ({ el }) => { el.textContent = el.innerText } });
 
 // Markdown converter
+let mesForShowdownParse; //intended to be used as a context to compare showdown strings against
 let converter;
 reloadMarkdownProcessor();
 
@@ -556,7 +558,7 @@ function getCurrentChatId() {
     }
 }
 
-const CHARACTERS_PER_TOKEN_RATIO = 3.35;
+export const CHARACTERS_PER_TOKEN_RATIO = 3.35;
 const talkativeness_default = 0.5;
 
 var is_advanced_char_open = false;
@@ -809,6 +811,7 @@ async function printCharacters() {
     favsToHotswap();
     await delay(300);
     updateVisibleDivs('#rm_print_characters_block', true);
+    displayOverrideWarnings();
 
 }
 
@@ -938,7 +941,7 @@ async function delChat(chatfile) {
         headers: getRequestHeaders(),
         body: JSON.stringify({
             chatfile: chatfile,
-            id: characters[this_chid].name
+            avatar_url: characters[this_chid].avatar,
         }),
     });
     if (response.ok === true) {
@@ -1017,6 +1020,10 @@ export async function reloadCurrentChat() {
 }
 
 function messageFormatting(mes, ch_name, isSystem, isUser) {
+    if (mes) {
+        mesForShowdownParse = mes;
+    }
+
     if (!mes) {
         mes = '';
     }
@@ -1233,7 +1240,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     // don't need prompt button for user
     if (params.isUser === true) {
         newMessage.find(".mes_prompt").hide();
-        console.log(`hiding prompt for user mesID ${params.mesId}`);
+        //console.log(`hiding prompt for user mesID ${params.mesId}`);
     }
 
     //shows or hides the Prompt display button
@@ -1241,16 +1248,16 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
 
     //if we have itemized messages, and the array isn't null..
     if (params.isUser === false && itemizedPrompts.length !== 0 && itemizedPrompts.length !== null) {
-        console.log('looking through itemized prompts...');
-        console.log(`mesIdToFind = ${mesIdToFind} from ${params.avatarImg}`);
-        console.log(`itemizedPrompts.length = ${itemizedPrompts.length}`)
-        console.log(itemizedPrompts);
+        // console.log('looking through itemized prompts...');
+        //console.log(`mesIdToFind = ${mesIdToFind} from ${params.avatarImg}`);
+        //console.log(`itemizedPrompts.length = ${itemizedPrompts.length}`)
+        //console.log(itemizedPrompts);
 
         for (var i = 0; i < itemizedPrompts.length; i++) {
-            console.log(`itemized array item ${i} is MesID ${Number(itemizedPrompts[i].mesId)}, does it match ${Number(mesIdToFind)}?`);
+            //console.log(`itemized array item ${i} is MesID ${Number(itemizedPrompts[i].mesId)}, does it match ${Number(mesIdToFind)}?`);
             if (Number(itemizedPrompts[i].mesId) === Number(mesIdToFind)) {
                 newMessage.find(".mes_prompt").show();
-                console.log(`showing button for mesID ${params.mesId} from ${params.characterName}`);
+                //console.log(`showing button for mesID ${params.mesId} from ${params.characterName}`);
                 break;
 
             } /*else {
@@ -1260,10 +1267,10 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
             } */
         }
     } else {
-        console.log('itemizedprompt array empty null, or user, hiding this prompt buttons');
+        //console.log('itemizedprompt array empty null, or user, hiding this prompt buttons');
         //$(".mes_prompt").hide();
         newMessage.find(".mes_prompt").hide();
-        console.log(itemizedPrompts);
+        //console.log(itemizedPrompts);
     }
 
     newMessage.find('.avatar img').on('error', function () {
@@ -1631,10 +1638,13 @@ class StreamingProcessor {
         let isName = result.this_mes_is_name;
         processedText = result.getMessage;
 
-        // Predict unbalanced asterisks during streaming
-        if (!isFinal && isOdd(countOccurrences(processedText, '*'))) {
-            // Add asterisk at the end to balance it
-            processedText = processedText.trimEnd() + '*';
+        // Predict unbalanced asterisks / quotes during streaming
+        const charsToBalance = ['*', '"'];
+        for (const char of charsToBalance) {
+            if (!isFinal && isOdd(countOccurrences(processedText, char))) {
+                // Add character at the end to balance it
+                processedText = processedText.trimEnd() + char;
+            }
         }
 
         if (isImpersonate) {
@@ -1936,8 +1946,11 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             coreChat.pop();
         }
 
+        // Determine token limit
+        let this_max_context = getMaxContextSize();
+
         if (extension_settings.chromadb.n_results !== 0) {
-            await runGenerationInterceptors(coreChat);
+            await runGenerationInterceptors(coreChat, this_max_context);
             console.log(`Core/all messages: ${coreChat.length}/${chat.length}`);
         }
 
@@ -1984,9 +1997,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             chat2[i] = formatMessageHistoryItem(coreChat[j], isInstruct);
         }
 
-        // Determine token limit
-        let this_max_context = getMaxContextSize();
-
         // Adjust token limit for Horde
         let adjustedParams;
         if (main_api == 'koboldhorde' && (horde_settings.auto_adjust_context_length || horde_settings.auto_adjust_response_length)) {
@@ -2003,10 +2013,11 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         }
 
         // Extension added strings
+        //WI moved to top in order to allow it to hijack AN if necessary
+        let { worldInfoString, worldInfoBefore, worldInfoAfter } = getWorldInfoPrompt(chat2);
         let allAnchors = getAllExtensionPrompts();
         const afterScenarioAnchor = getExtensionPrompt(extension_prompt_types.AFTER_SCENARIO);
         let zeroDepthAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, 0, ' ');
-        let { worldInfoString, worldInfoBefore, worldInfoAfter } = getWorldInfoPrompt(chat2);
 
         // Moved here to not overflow the Poe context with added prompt bits
         if (main_api == 'poe') {
@@ -2353,7 +2364,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
             thisPromptBits = additionalPromptStuff;
 
-            console.log(thisPromptBits);
+            //console.log(thisPromptBits);
 
             itemizedPrompts.push(thisPromptBits);
             console.log(`pushed prompt bits to itemizedPrompts array. Length is now: ${itemizedPrompts.length}`);
@@ -4744,6 +4755,9 @@ export function select_selected_character(chid) {
     $("#dupe_button").show();
     $("#create_button_label").css("display", "none");
 
+    // Hide the chat scenario button if we're peeking the group member defs
+    $('#set_chat_scenario').toggle(!selected_group);
+
     // Don't update the navbar name if we're peeking the group member defs
     if (!selected_group) {
         $("#rm_button_selected_ch").children("h2").text(display_name);
@@ -4803,6 +4817,8 @@ function select_rm_create() {
     selectRightMenuWithAnimation('rm_ch_create_block');
     setRightTabSelectedClass();
 
+
+    $('#set_chat_scenario').hide();
     $("#delete_button_div").css("display", "none");
     $("#delete_button").css("display", "none");
     $("#export_button").css("display", "none");
@@ -4858,6 +4874,33 @@ function updateFavButtonState(state) {
     $("#fav_checkbox").val(fav_ch_checked);
     $("#favorite_button").toggleClass('fav_on', fav_ch_checked);
     $("#favorite_button").toggleClass('fav_off', !fav_ch_checked);
+}
+
+export function setScenarioOverride() {
+    if (!selected_group && !this_chid) {
+        console.warn('setScenarioOverride() -- no selected group or character');
+        return;
+    }
+
+    const template = $('#scenario_override_template .scenario_override').clone();
+    const metadataValue = chat_metadata['scenario'] || '';
+    const isGroup = !!selected_group;
+    template.find('[data-group="true"]').toggle(isGroup);
+    template.find('[data-character="true"]').toggle(!isGroup);
+    template.find('.chat_scenario').text(metadataValue).on('input', onScenarioOverrideInput);
+    template.find('.remove_scenario_override').on('click', onScenarioOverrideRemoveClick);
+    callPopup(template, 'text');
+}
+
+function onScenarioOverrideInput() {
+    const value = $(this).val();
+    const metadata = { scenario: value, };
+    updateChatMetadata(metadata, false);
+    saveMetadataDebounced();
+}
+
+function onScenarioOverrideRemoveClick() {
+    $(this).closest('.scenario_override').find('.chat_scenario').val('').trigger('input');
 }
 
 function callPopup(text, type, inputValue = '') {
@@ -5755,7 +5798,9 @@ function updateVisibleDivs(containerSelector, resizecontainer) {
 }
 
 function displayOverrideWarnings() {
-    if (!this_chid) {
+    if (!this_chid || !selected_group) {
+        $('.prompt_overridden').hide();
+        $('.jailbreak_overridden').hide();
         return;
     }
 
@@ -6540,6 +6585,8 @@ $(document).ready(function () {
     $(document).on('click', function () {
         if (!isMouseOverButtonOrMenu() && menu.is(':visible')) { hideMenu(); }
     });
+
+    $('#set_chat_scenario').on('click', setScenarioOverride);
 
     ///////////// OPTIMIZED LISTENERS FOR LEFT SIDE OPTIONS POPUP MENU //////////////////////
 

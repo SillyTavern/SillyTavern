@@ -92,6 +92,7 @@ let power_user = {
     multigen_first_chunk: 50,
     multigen_next_chunks: 30,
     custom_chat_separator: '',
+    // markdown_escape_strings: '',
     fast_ui_mode: true,
     avatar_style: avatar_styles.ROUND,
     chat_display: chat_styles.DEFAULT,
@@ -109,14 +110,16 @@ let power_user = {
     main_text_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBodyColor').trim()}`,
     italics_text_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeEmColor').trim()}`,
     quote_text_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeQuoteColor').trim()}`,
-    fastui_bg_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeFastUIBGColor').trim()}`,
+    //fastui_bg_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeFastUIBGColor').trim()}`,
     blur_tint_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBlurTintColor').trim()}`,
+    user_mes_blur_tint_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeUserMesBlurTintColor').trim()}`,
+    bot_mes_blur_tint_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBotMesBlurTintColor').trim()}`,
     shadow_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeShadowColor').trim()}`,
 
     waifuMode: false,
     movingUI: false,
     noShadows: false,
-    theme: 'Default (Dark)',
+    theme: 'Default (Dark) 1.7.1',
 
     auto_swipe: false,
     auto_swipe_minimum_length: 0,
@@ -165,8 +168,10 @@ const storage_keys = {
     main_text_color: "TavernAI_main_text_color",
     italics_text_color: "TavernAI_italics_text_color",
     quote_text_color: "TavernAI_quote_text_color",
-    fastui_bg_color: "TavernAI_fastui_bg_color",
+    //fastui_bg_color: "TavernAI_fastui_bg_color",
     blur_tint_color: "TavernAI_blur_tint_color",
+    user_mes_blur_tint_color: "TavernAI_user_mes_blur_tint_color",
+    bot_mes_blur_tint_color: "TavernAI_bot_mes_blur_tint_color",
     blur_strength: "TavernAI_blur_strength",
     shadow_color: "TavernAI_shadow_color",
     shadow_width: "TavernAI_shadow_width",
@@ -259,7 +264,7 @@ function toggleWaifu() {
 }
 
 function switchWaifuMode() {
-    console.log(`switching waifu to ${power_user.waifuMode}`);
+    //console.log(`switching waifu to ${power_user.waifuMode}`);
     $("body").toggleClass("waifuMode", power_user.waifuMode);
     $("#waifuMode").prop("checked", power_user.waifuMode);
     scrollChatToBottom();
@@ -316,11 +321,17 @@ async function applyThemeColor(type) {
     if (type === 'quote') {
         document.documentElement.style.setProperty('--SmartThemeQuoteColor', power_user.quote_text_color);
     }
-    if (type === 'fastUIBG') {
-        document.documentElement.style.setProperty('--SmartThemeFastUIBGColor', power_user.fastui_bg_color);
-    }
+    /*     if (type === 'fastUIBG') {
+            document.documentElement.style.setProperty('--SmartThemeFastUIBGColor', power_user.fastui_bg_color);
+        } */
     if (type === 'blurTint') {
         document.documentElement.style.setProperty('--SmartThemeBlurTintColor', power_user.blur_tint_color);
+    }
+    if (type === 'userMesBlurTint') {
+        document.documentElement.style.setProperty('--SmartThemeUserMesBlurTintColor', power_user.user_mes_blur_tint_color);
+    }
+    if (type === 'botMesBlurTint') {
+        document.documentElement.style.setProperty('--SmartThemeBotMesBlurTintColor', power_user.bot_mes_blur_tint_color);
     }
     if (type === 'shadow') {
         document.documentElement.style.setProperty('--SmartThemeShadowColor', power_user.shadow_color);
@@ -361,8 +372,10 @@ async function applyTheme(name) {
         { key: 'main_text_color', selector: '#main-text-color-picker', type: 'main' },
         { key: 'italics_text_color', selector: '#italics-color-picker', type: 'italics' },
         { key: 'quote_text_color', selector: '#quote-color-picker', type: 'quote' },
-        { key: 'fastui_bg_color', selector: '#fastui-bg-color-picker', type: 'fastUIBG' },
+        //{ key: 'fastui_bg_color', selector: '#fastui-bg-color-picker', type: 'fastUIBG' },
         { key: 'blur_tint_color', selector: '#blur-tint-color-picker', type: 'blurTint' },
+        { key: 'user_mes_blur_tint_color', selector: '#user-mes-blur-tint-color-picker', type: 'userMesBlurTint' },
+        { key: 'bot_mes_blur_tint_color', selector: '#bot-mes-blur-tint-color-picker', type: 'botMesBlurTint' },
         { key: 'shadow_color', selector: '#shadow-color-picker', type: 'shadow' },
         {
             key: 'blur_strength',
@@ -449,6 +462,10 @@ async function applyTheme(name) {
             if (selector) $(selector).attr('color', power_user[key]);
             if (type) await applyThemeColor(type);
             if (action) await action();
+        } else {
+            if (selector) { $(selector).attr('color', 'rgba(0,0,0,0)') };
+            console.debug(`Empty theme key: ${key}`);
+            power_user[key] = '';
         }
     }
 
@@ -522,6 +539,7 @@ function loadPowerUserSettings(settings, data) {
     $("#include_newline_checkbox").prop("checked", power_user.include_newline);
     $('#render_formulas').prop("checked", power_user.render_formulas);
     $("#custom_chat_separator").val(power_user.custom_chat_separator);
+    //$("#markdown_escape_strings").val(power_user.markdown_escape_strings);
     $("#fast_ui_mode").prop("checked", power_user.fast_ui_mode);
     $("#waifuMode").prop("checked", power_user.waifuMode);
     $("#movingUImode").prop("checked", power_user.movingUI);
@@ -555,8 +573,10 @@ function loadPowerUserSettings(settings, data) {
     $("#main-text-color-picker").attr('color', power_user.main_text_color);
     $("#italics-color-picker").attr('color', power_user.italics_text_color);
     $("#quote-color-picker").attr('color', power_user.quote_text_color);
-    $("#fastui-bg-color-picker").attr('color', power_user.fastui_bg_color);
+    //$("#fastui-bg-color-picker").attr('color', power_user.fastui_bg_color);
     $("#blur-tint-color-picker").attr('color', power_user.blur_tint_color);
+    $("#user-mes-blur-tint-color-picker").attr('color', power_user.user_mes_blur_tint_color);
+    $("#bot-mes-blur-tint-color-picker").attr('color', power_user.bot_mes_blur_tint_color);
     $("#shadow-color-picker").attr('color', power_user.shadow_color);
 
     for (const theme of themes) {
@@ -775,8 +795,10 @@ async function saveTheme() {
         main_text_color: power_user.main_text_color,
         italics_text_color: power_user.italics_text_color,
         quote_text_color: power_user.quote_text_color,
-        fastui_bg_color: power_user.fastui_bg_color,
+        //fastui_bg_color: power_user.fastui_bg_color,
         blur_tint_color: power_user.blur_tint_color,
+        user_mes_blur_tint_color: power_user.user_mes_blur_tint_color,
+        bot_mes_blur_tint_color: power_user.bot_mes_blur_tint_color,
         shadow_color: power_user.shadow_color,
         shadow_width: power_user.shadow_width,
         font_scale: power_user.font_scale,
@@ -959,7 +981,13 @@ $(document).ready(() => {
         saveSettingsDebounced();
         reloadMarkdownProcessor(power_user.render_formulas);
     });
-
+    /* 
+        $("#markdown_escape_strings").on('input', function () {
+            power_user.markdown_escape_strings = $(this).val();
+            saveSettingsDebounced();
+            reloadMarkdownProcessor(power_user.render_formulas);
+        });
+     */
     $("#multigen").change(function () {
         power_user.multigen = $(this).prop("checked");
         saveSettingsDebounced();
@@ -1050,15 +1078,27 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
-    $("#fastui-bg-color-picker").on('change', (evt) => {
-        power_user.fastui_bg_color = evt.detail.rgba;
-        applyThemeColor('fastUIBG');
-        saveSettingsDebounced();
-    });
+    /*     $("#fastui-bg-color-picker").on('change', (evt) => {
+            power_user.fastui_bg_color = evt.detail.rgba;
+            applyThemeColor('fastUIBG');
+            saveSettingsDebounced();
+        }); */
 
     $("#blur-tint-color-picker").on('change', (evt) => {
         power_user.blur_tint_color = evt.detail.rgba;
         applyThemeColor('blurTint');
+        saveSettingsDebounced();
+    });
+
+    $("#user-mes-blur-tint-color-picker").on('change', (evt) => {
+        power_user.user_mes_blur_tint_color = evt.detail.rgba;
+        applyThemeColor('userMesBlurTint');
+        saveSettingsDebounced();
+    });
+
+    $("#bot-mes-blur-tint-color-picker").on('change', (evt) => {
+        power_user.bot_mes_blur_tint_color = evt.detail.rgba;
+        applyThemeColor('botMesBlurTint');
         saveSettingsDebounced();
     });
 
