@@ -130,7 +130,7 @@ import {
     isDataURL,
 } from "./scripts/utils.js";
 
-import { extension_settings, loadExtensionSettings, runGenerationInterceptors } from "./scripts/extensions.js";
+import { extension_settings, loadExtensionSettings, runGenerationInterceptors, saveMetadataDebounced } from "./scripts/extensions.js";
 import { executeSlashCommands, getSlashCommandsHelp, registerSlashCommand } from "./scripts/slash-commands.js";
 import {
     tag_map,
@@ -4871,6 +4871,33 @@ function updateFavButtonState(state) {
     $("#favorite_button").toggleClass('fav_off', !fav_ch_checked);
 }
 
+export function setScenarioOverride() {
+    if (!selected_group && !this_chid) {
+        console.warn('setScenarioOverride() -- no selected group or character');
+        return;
+    }
+
+    const template = $('#scenario_override_template .scenario_override').clone();
+    const metadataValue = chat_metadata['scenario'] || '';
+    const isGroup = !!selected_group;
+    template.find('[data-group="true"]').toggle(isGroup);
+    template.find('[data-character="true"]').toggle(!isGroup);
+    template.find('.chat_scenario').text(metadataValue).on('input', onScenarioOverrideInput);
+    template.find('.remove_scenario_override').on('click', onScenarioOverrideRemoveClick);
+    callPopup(template, 'text');
+}
+
+function onScenarioOverrideInput() {
+    const value = $(this).val();
+    const metadata = { scenario: value, };
+    updateChatMetadata(metadata, false);
+    saveMetadataDebounced();
+}
+
+function onScenarioOverrideRemoveClick() {
+    $(this).closest('.scenario_override').find('.chat_scenario').val('').trigger('input');
+}
+
 function callPopup(text, type, inputValue = '') {
     if (type) {
         popup_type = type;
@@ -6553,6 +6580,8 @@ $(document).ready(function () {
     $(document).on('click', function () {
         if (!isMouseOverButtonOrMenu() && menu.is(':visible')) { hideMenu(); }
     });
+
+    $('#set_chat_scenario').on('click', setScenarioOverride);
 
     ///////////// OPTIMIZED LISTENERS FOR LEFT SIDE OPTIONS POPUP MENU //////////////////////
 

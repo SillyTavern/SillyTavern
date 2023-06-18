@@ -1625,7 +1625,7 @@
                                 <input id="custom_chat_separator" class="text_pole textarea_compact" type="text" placeholder="&lt;START&gt;" maxlength="100" />
                             </div>
                         </div>
-                        <!--                         
+                        <!--
                         <div>
                             <h4 data-i18n="Non-markdown strings">
                                 Non-markdown strings
@@ -2364,7 +2364,7 @@
                                 <input id="character_name_pole" name="ch_name" class="text_pole" placeholder="Name this character" maxlength="50" value="" autocomplete="off">
                             </div>
 
-                            <div id="avatar_div" class="avatar_div alignitemsflexstart justifySpaceBetween">
+                            <div id="avatar_div" class="avatar_div alignitemsflexstart justifySpaceBetween flexnowrap flexGap5">
                                 <div id="avatar_div_div" class="avatar">
                                     <img id="avatar_load_preview" src="img/ai4.png" alt="avatar">
                                 </div>
@@ -2379,6 +2379,7 @@
                                         <input type="hidden" id="fav_checkbox" name="fav" />
                                         <div id="advanced_div" class="menu_button fa-solid fa-book " title="Advanced Definitions"></div>
                                         <div id="export_button" class="menu_button fa-solid fa-file-export " title="Export and Download"></div>
+                                        <div id="set_chat_scenario" class="menu_button fa-solid fa-scroll" title="Set a chat scenario override"></div>
                                         <div id="dupe_button" class="menu_button fa-solid fa-clone " title="Duplicate Character"></div>
                                         <label for="create_button" id="create_button_label" class="menu_button fa-solid fa-user-check" title="Create Character">
                                             <input type="submit" id="create_button" name="create_button">
@@ -2764,19 +2765,20 @@
         </div>
     </div>
 
-    <div id="group_scenario_template" class="template_element">
-        <div class="group_scenario range-block flexFlowColumn flex-container">
+    <div id="scenario_override_template" class="template_element">
+        <div class="scenario_override range-block flexFlowColumn flex-container">
             <div class="range-block-title title_restorable">
-                <h3><span data-i18n="Group Chat Scenario Override">Group Chat Scenario Override</span></h3>
+                <h3><span data-i18n="Chat Scenario Override">Chat Scenario Override</span></h3>
                 <div title="Remove" class="menu_button fa-solid fa-trash-can remove_scenario_override"></div>
             </div>
             <div class="range-block-counter justifyLeft flex-container flexFlowColumn">
-                <strong>Unique to this chat.</strong> All group members will use the following scenario text instead of
-                what is specified in their character cards.
-                Bookmarks inherit the scenario from their parent, and can be changed individually after that.
+                <strong>Unique to this chat.</strong>
+                <span data-group="true">All group members will use the following scenario text instead of what is specified in their character cards.</span>
+                <span data-character="true">The following scenario text will be used instead of the value set in the character card.</span>
+                Bookmarks inherit the scenario override from their parent, and can be changed individually after that.
             </div>
             <div class="range-block-range wide100p">
-                <textarea class="wide100p group_chat_scenario" class="text_pole" rows="15" placeholder="Type here..."></textarea>
+                <textarea class="wide100p chat_scenario" class="text_pole" rows="15" placeholder="Type here..."></textarea>
             </div>
         </div>
     </div>
