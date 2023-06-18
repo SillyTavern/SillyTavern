@@ -192,6 +192,18 @@ table.responsiveTable {
     color: var(--white50a);
 }
 
+.text_warning {
+    color: var(--orangered);
+}
+
+.text_danger {
+    color: var(--fullred);
+}
+
+.tooltip {
+    cursor: help;
+}
+
 .mes_text p {
     margin-top: 0;
     margin-bottom: 10px;

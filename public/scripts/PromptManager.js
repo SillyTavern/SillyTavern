@@ -1,5 +1,5 @@
 import {DraggablePromptListModule as DraggableList} from "./DraggableList.js";
-import {eventSource, substituteParams} from "../script.js";
+import {event_types, eventSource, substituteParams} from "../script.js";
 import {IdentifierNotFoundError, TokenHandler} from "./openai.js";
 
 class Prompt {
@@ -35,6 +35,14 @@ class PromptCollection {
         this.collection.push(...prompts);
     }
 
+    set(prompt, position) {
+        if(!(prompt instanceof Prompt)) {
+            throw new Error('Only Prompt instances can be added to PromptCollection');
+        }
+
+        this.collection[position] = prompt;
+    }
+
     get(identifier) {
         const index = this.index(identifier);
         if (0 > index) return null;
@@ -66,6 +74,9 @@ function PromptManagerModule() {
     this.tokenHandler = null;
     this.error = null;
 
+    this.tryGenerate = () => { };
+    this.saveServiceSettings = () => { };
+
     this.handleToggle = () => { };
     this.handleEdit = () => { };
     this.handleDetach = () => { };
@@ -73,8 +84,6 @@ function PromptManagerModule() {
     this.handleNewPrompt = () => { };
     this.handleDeletePrompt = () => { };
     this.handleAppendPrompt = () => { };
-    this.saveServiceSettings = () => { };
-    this.tryGenerate = () => { };
     this.handleAdvancedSettingsToggle = () => { };
 }
 
@@ -193,6 +202,24 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
         this.saveServiceSettings().then(() => this.render());
     });
 
+    // Apply character specific overrides for prompts
+    eventSource.on(event_types.OAI_BEFORE_CHATCOMPLETION, (prompts) => {
+        const systemPromptOverride = this.activeCharacter.data.system_prompt ?? null;
+        if (systemPromptOverride) {
+            const override = prompts.get('main');
+            override.content = systemPromptOverride;
+            prompts.set(override, prompts.index('main'));
+        }
+
+        const jailbreakPromptOverride = this.activeCharacter.data.system_prompt ?? null;
+        if (jailbreakPromptOverride) {
+            const override = prompts.get('jailbreak');
+            override.content = jailbreakPromptOverride;
+            prompts.set(override, prompts.index('jailbreak'));
+        }
+    });
+
+    // Trigger re-render when token settings are changed
     document.getElementById('openai_max_context').addEventListener('change', (event) => {
         if (this.activeCharacter) this.render();
     });
