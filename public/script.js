@@ -558,7 +558,7 @@ function getCurrentChatId() {
     }
 }
 
-const CHARACTERS_PER_TOKEN_RATIO = 3.35;
+export const CHARACTERS_PER_TOKEN_RATIO = 3.35;
 const talkativeness_default = 0.5;
 
 var is_advanced_char_open = false;
@@ -940,7 +940,7 @@ async function delChat(chatfile) {
         headers: getRequestHeaders(),
         body: JSON.stringify({
             chatfile: chatfile,
-            id: characters[this_chid].name
+            avatar_url: characters[this_chid].avatar,
         }),
     });
     if (response.ok === true) {
@@ -1945,8 +1945,11 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             coreChat.pop();
         }
 
+        // Determine token limit
+        let this_max_context = getMaxContextSize();
+
         if (extension_settings.chromadb.n_results !== 0) {
-            await runGenerationInterceptors(coreChat);
+            await runGenerationInterceptors(coreChat, this_max_context);
             console.log(`Core/all messages: ${coreChat.length}/${chat.length}`);
         }
 
@@ -1992,9 +1995,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
             chat2[i] = formatMessageHistoryItem(coreChat[j], isInstruct);
         }
-
-        // Determine token limit
-        let this_max_context = getMaxContextSize();
 
         // Adjust token limit for Horde
         let adjustedParams;
