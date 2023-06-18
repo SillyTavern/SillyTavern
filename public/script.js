@@ -4806,7 +4806,7 @@ export function select_selected_character(chid) {
     $("#renameCharButton").css("display", "");
     $('.open_alternate_greetings').data('chid', chid);
     $('#set_character_world').data('chid', chid);
-    const world = characters[chid].data?.extensions?.world;
+    const world = !!(characters[chid].data?.extensions?.world);
     $('#set_character_world').toggleClass('world_set', world && world_names.includes(world));
 
     $("#form_create").attr("actiontype", "editcharacter");
