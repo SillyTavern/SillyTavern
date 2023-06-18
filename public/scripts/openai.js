@@ -569,6 +569,7 @@ async function prepareOpenAIMessages({
     try {
         populateChatCompletion(prompts, chatCompletion, {bias, quietPrompt, type});
     } catch (error) {
+        toastr.error('An error occurred while counting tokens.')
         if (error instanceof TokenBudgetExceededError) {
             chatCompletion.log('Token budget exceeded.');
             promptManager.error = 'Not enough free tokens for mandatory prompts. Raise your token Limit or disable custom prompts.';
