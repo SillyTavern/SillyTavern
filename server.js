@@ -578,7 +578,7 @@ app.post("/savechat", jsonParser, function (request, response) {
         var dir_name = String(request.body.avatar_url).replace('.png', '');
         let chat_data = request.body.chat;
         let jsonlData = chat_data.map(JSON.stringify).join('\n');
-        fs.writeFileSync(`${chatsPath + dir_name}/${sanitize(String(request.body.file_name))}.jsonl`, jsonlData, 'utf8');
+        fs.writeFileSync(`${chatsPath + sanitize(dir_name)}/${sanitize(String(request.body.file_name))}.jsonl`, jsonlData, 'utf8');
         return response.send({ result: "ok" });
     } catch (error) {
         response.send(error);
@@ -1198,9 +1198,10 @@ app.post("/delchat", jsonParser, function (request, response) {
         return response.sendStatus(403);
     }
 
-    const fileName = path.join(directories.chats, '/', sanitize(request.body.id), '/', sanitize(request.body.chatfile));
+	var dirName = String(request.body.avatar_url).replace('.png', '');
+    const fileName = path.join(directories.chats, '/', sanitize(dirName), '/', sanitize(request.body.chatfile));
     if (!fs.existsSync(fileName)) {
-        console.log('Chat file not found');
+        console.log(`Chat file not found '${fileName}'`);
         return response.sendStatus(400);
     } else {
         console.log('found the chat file: ' + fileName);
