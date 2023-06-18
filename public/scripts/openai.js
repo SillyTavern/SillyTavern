@@ -362,6 +362,108 @@ function formatWorldInfo(value) {
 }
 
 /**
+ * Populate a chat conversation by adding prompts to the conversation and managing system and user prompts.
+ *
+ * @param {Map} prompts - Map object containing all prompts where the key is the prompt identifier and the value is the prompt object.
+ * @param {ChatCompletion} chatCompletion - An instance of ChatCompletion class that will be populated with the prompts.
+ * @param {Object} options - An object with optional settings.
+ * @param {string} options.bias - A bias to be added in the conversation.
+ * @param {string} options.quietPrompt - A quiet prompt to be used in the conversation.
+ * @param {string} options.type - The type of the chat, can be 'impersonate'.
+ */
+function populateChatCompletion (prompts, chatCompletion, {bias, quietPrompt, type} = {}) {
+    const addToChatCompletion = (source, target = null) => {
+        if (false === prompts.has(source)) return;
+
+        const prompt = prompts.get(source);
+        const index = target ? prompts.index(target) : prompts.index(source);
+        const collection = new MessageCollection(source);
+        collection.addItem(Message.fromPrompt(prompt));
+        chatCompletion.add(collection, index);
+    };
+
+    addToChatCompletion('worldInfoBefore');
+    addToChatCompletion('worldInfoAfter');
+    addToChatCompletion('charDescription');
+    addToChatCompletion('charPersonality');
+    addToChatCompletion('scenario');
+
+    // Add main prompt
+    if (type === "impersonate") addToChatCompletion('impersonate', 'main');
+    else addToChatCompletion('main');
+
+    // Add managed system and user prompts
+    const systemPrompts = ['nsfw', 'jailbreak'];
+    const userPrompts = prompts.collection
+        .filter((prompt) => false === prompt.system_prompt)
+        .reduce((acc, prompt) => {
+            acc.push(prompt.identifier)
+            return acc;
+        }, []);
+
+    [...systemPrompts, ...userPrompts].forEach(identifier => addToChatCompletion(identifier));
+
+    // Add enhance definition instruction
+    if (prompts.has('scenario')) addToChatCompletion('enhanceDefinitions');
+
+    // Insert nsfw avoidance prompt into main, if no nsfw prompt is present
+    if (false === chatCompletion.has('nsfw') && oai_settings.nsfw_avoidance_prompt)
+        if (prompts.has('nsfwAvoidance')) chatCompletion.insert(prompts.get('nsfwAvoidance'), 'main');
+
+    // Insert quiet prompt into main
+    if (quietPrompt) {
+        const quietPromptMessage = Message.fromPrompt(prompts.get('quietPrompt'));
+        chatCompletion.insert(quietPromptMessage, 'main');
+    }
+
+    if (bias && bias.trim().length) addToChatCompletion('bias');
+
+    if (prompts.has('summary')) chatCompletion.insert(Message.fromPrompt(prompts.get('summary')), 'main');
+
+    if (prompts.has('authorsNote')) {
+        const authorsNote = Message.fromPrompt(prompts.get('authorsNote'));
+        if (extension_prompt_types.AFTER_SCENARIO) chatCompletion.insert(authorsNote, 'scenario');
+        else chatCompletion.insert(authorsNote, 'main')
+    }
+
+    // Chat History
+    chatCompletion.add( new MessageCollection('chatHistory'), prompts.index('chatHistory'));
+    const mainChat = selected_group ? '[Start a new group chat. Group members: ${names}]' : '[Start a new Chat]';
+    const mainChatMessage = new Message('system', mainChat, 'newMainChat');
+    // Insert chat messages
+    if (chatCompletion.canAfford(mainChatMessage)) {
+        chatCompletion.insert(mainChatMessage, 'chatHistory');
+
+        [...openai_msgs].forEach((prompt, index) => {
+            const chatMessage = new Message(prompt.role, prompt.content, 'chatHistory-' + index);
+            if (chatCompletion.canAfford(chatMessage)) {
+                chatCompletion.insert(chatMessage, 'chatHistory');
+            }
+        });
+    }
+
+    chatCompletion.add( new MessageCollection('dialogueExamples'), prompts.index('dialogueExamples'));
+    if (openai_msgs_example.length) {
+        // Insert chat message examples if there's enough budget if there is enough budget left for at least one example.
+        const dialogueExampleChat = new Message('system', '[Start a new Chat]', 'newChat');
+        const prompt = openai_msgs_example[0];
+        const dialogueExample = new Message(prompt[0].role || '', prompt[0].content || '', 'dialogueExampleTest');
+
+        if (chatCompletion.canAfford(dialogueExampleChat) &&
+            chatCompletion.canAfford(dialogueExample)) {
+            chatCompletion.insert(dialogueExampleChat, 'dialogueExamples');
+
+            [...openai_msgs_example].forEach((prompt, index) => {
+                const chatMessage = new Message(prompt[0].role || '', prompt[0].content || '', 'dialogueExamples-' + index);
+                if (chatCompletion.canAfford(chatMessage)) {
+                    chatCompletion.insert(chatMessage, 'dialogueExamples');
+                }
+            });
+        }
+    }
+}
+
+/**
  * Take a configuration object and prepares messages for a chat with OpenAI's chat completion API.
  * Handles prompts, prepares chat history, manages token budget, and processes various user settings.
  *
@@ -378,8 +480,6 @@ function formatWorldInfo(value) {
  * @param {string} options.quietPrompt - The quiet prompt to be used in the conversation.
  * @param {Array} options.extensionPrompts - An array of additional prompts.
  * @returns {Promise<Array>} An array where the first element is the prepared chat and the second element is a boolean flag.
- * @throws {TokenBudgetExceededError} If the token budget is exceeded.
- * @throws {IdentifierNotFoundError} If a specific identifier is not found in the message collection.
  */
 async function prepareOpenAIMessages({
                                          name2,
@@ -394,118 +494,61 @@ async function prepareOpenAIMessages({
                                          extensionPrompts,
                                          cyclePrompt
                                      } = {}) {
-
     const prompts = promptManager.getPromptCollection();
     const chatCompletion = new ChatCompletion();
-
-    chatCompletion.tokenBudget = promptManager.serviceSettings.openai_max_context - promptManager.serviceSettings.amount_gen;
+    chatCompletion.setTokenBudget(oai_settings.openai_max_context - oai_settings.openai_max_tokens);
 
     if (power_user.console_log_prompts) chatCompletion.enableLogging();
 
-    // Helper functions
-    const addToChatCompletion = (role, content, identifier = null) => {
-        const collection = new MessageCollection(identifier)
-        if (role && content) collection.addItem(new Message(role, content, identifier));
-        const index = identifier ? prompts.index(identifier) : null;
-        chatCompletion.add(collection, index);
-    };
+    // Merge items to send that are managed by the prompt manager with items from other places in silly tavern
+    // While the position in this array matters for positioning items inside the chat completion, further elements
+    // may be added for later reference, as long as the initial order is not altered.
+    const mappedPrompts = [
+        // Ordered prompts for which a marker should exist
+        {role: 'system', content: formatWorldInfo(worldInfoBefore), identifier: 'worldInfoBefore'},
+        {role: 'system', content: formatWorldInfo(worldInfoAfter), identifier: 'worldInfoAfter'},
+        {role: 'system', content: charDescription, identifier: 'charDescription'},
+        {role: 'system', content: `${name2}'s personality: ${charPersonality}`, identifier: 'charPersonality'},
+        {role: 'system', content: `Circumstances and context of the dialogue: ${Scenario}`, identifier: 'scenario'},
+        // Unordered prompts without marker
+        {role: 'system', content: oai_settings.nsfw_avoidance_prompt, identifier: 'nsfwAvoidance'},
+        {role: 'system', content: oai_settings.impersonation_prompt, identifier: 'impersonate'},
+        {role: 'system', content: quietPrompt, identifier: 'quietPrompt'},
+        {role: 'system', content: bias, identifier: 'bias'}
+    ];
 
-    addToChatCompletion('system', formatWorldInfo(worldInfoBefore), 'worldInfoBefore');
-    addToChatCompletion('system', formatWorldInfo(worldInfoAfter), 'worldInfoAfter');
-    addToChatCompletion('system', substituteParams(charDescription), 'charDescription');
-    addToChatCompletion('system', `${name2}'s personality: ${substituteParams(charPersonality)}`, 'charPersonality');
-    addToChatCompletion('system', `Circumstances and context of the dialogue: ${substituteParams(Scenario)}`, 'scenario');
+    // Tavern Extras - Summary
+    const summary = extensionPrompts['1_memory'];
+    if (summary) mappedPrompts.push({role: 'system', content: summary.content, identifier: 'summary'});
 
-    // Add main prompt
-    if (type === "impersonate") {
-        const impersonate = substituteParams(oai_settings.impersonation_prompt);
-        addToChatCompletion('system', impersonate, 'main');
-    } else {
-        addToChatCompletion('system', prompts.get('main').content, 'main');
-    }
+    // Authors Note
+    const authorsNote = extensionPrompts['2_floating_prompt'];
+    if (authorsNote) mappedPrompts.push({role: 'system', content: authorsNote.content, identifier: 'authorsNote'});
 
-    // Add managed system and user prompts
-    const systemPrompts = ['nsfw', 'jailbreak'];
-    const userPrompts = prompts.collection
-        .filter((prompt) => false === prompt.system_prompt)
-        .reduce((acc, prompt) => {
-            acc.push(prompt.identifier)
-            return acc;
-        }, []);
+    mappedPrompts.forEach((prompt) => {
+        const newPrompt = promptManager.preparePrompt(prompt);
+        const markerIndex = prompts.index(prompt.identifier);
 
-    [...systemPrompts, ...userPrompts].forEach(identifier => {
-        if (prompts.has(identifier)) {
-            const prompt = prompts.get(identifier);
-            addToChatCompletion(prompt.role, prompt.content, identifier);
-        }
+        if (-1 !== markerIndex) prompts.collection[markerIndex] = newPrompt;
+        else prompts.add(newPrompt);
     });
 
-    // Add enhance definition instruction
-    if (prompts.has('enhanceDefinitions')) {
-        const prompt = prompts.get('enhanceDefinitions');
-        addToChatCompletion(prompt.role, prompt.content, identifier);
-     }
+    // Allow subscribers to manipulate the prompts object
+    await eventSource.emit(event_types.OAI_BEFORE_CHATCOMPLETION, prompts);
 
-    // Insert nsfw avoidance prompt into main, if no nsfw prompt is present
-    if (false === chatCompletion.has('nsfw') && oai_settings.nsfw_avoidance_prompt) {
-        const nsfwAvoidanceMessage = new Message('system', oai_settings.nsfw_avoidance_prompt, 'nsfwAvoidance');
-        chatCompletion.insert(nsfwAvoidanceMessage, 'main');
-    }
-
-    // Insert quiet prompt into main
-    if (quietPrompt) {
-        const quietPromptMessage = new Message('system', quietPrompt, 'quietPrompt');
-        chatCompletion.insert(quietPromptMessage, 'main');
-    }
-
-    if (bias && bias.trim().length) {
-        addToChatCompletion('system', bias, 'main');
-    }
-
-    // Add extension prompts
-    if (0 < extensionPrompts.length) {
-        const summary = extensionPrompts['1_memory'] ?? null;
-        if (summary) {
-            const summaryMessage = new Message('system', summary.content, 'authorsNote');
-            chatCompletion.insert(summaryMessage, 'main')
-        }
-
-        const authorsNote = extensionPrompts['2_floating_prompt'] ?? null;
-        if (authorsNote) {
-            const authorsNoteMessage = new Message('system', authorsNote.content, 'authorsNote');
-            if (extension_prompt_types.AFTER_SCENARIO) chatCompletion.insert(authorsNoteMessage, 'scenario')
-            else chatCompletion.insert(authorsNoteMessage, 'main')
+    try {
+        populateChatCompletion(prompts, chatCompletion, {bias, quietPrompt, type});
+    } catch (error) {
+        if (error instanceof TokenBudgetExceededError) {
+            chatCompletion.log('Token budget exceeded.');
+            promptManager.error = 'Not enough free tokens for mandatory prompts. Raise your token Limit or disable custom prompts.';
+        } else {
+            chatCompletion.log('Unexpected error:');
+            chatCompletion.log(error);
         }
     }
 
-    // Chat History
-    addToChatCompletion(null, null, 'chatHistory');
-    const mainChat = selected_group ? '[Start a new group chat. Group members: ${names}]' : '[Start a new Chat]';
-    const mainChatMessage = new Message('system', mainChat, 'newMainChat');
-
-    // Insert chat messages
-    if (chatCompletion.canAfford(mainChatMessage)) {
-        chatCompletion.insert(mainChatMessage, 'chatHistory');
-        [...openai_msgs].reverse().forEach((prompt, index) => {
-            const chatMessage = new Message(prompt.role, prompt.content, 'chatHistory-' + index);
-            if (chatCompletion.canAfford(chatMessage)) {
-                chatCompletion.insert(chatMessage, 'chatHistory');
-            }
-        });
-    }
-
-    // Insert chat message examples if there's enough budget
-    addToChatCompletion(null, null, 'dialogueExamples');
-    if (chatCompletion.canAfford(mainChatMessage)) {
-        // Insert dialogue examples messages
-        chatCompletion.insert(mainChatMessage, 'dialogueExamples');
-        [...openai_msgs_example].forEach((prompt, index) => {
-            const chatMessage = new Message(prompt[0].role || '', prompt[0].content || '', 'dialogueExamples-' + index);
-            if (chatCompletion.canAfford(chatMessage)) {
-                chatCompletion.insert(chatMessage, 'dialogueExamples');
-            }
-        });
-    }
+    promptManager.populateTokenHandler(chatCompletion.getMessages());
 
     const chat = chatCompletion.getChat();
     openai_messages_count = chat.filter(x => x.role === "user" || x.role === "assistant").length;
@@ -930,7 +973,7 @@ class TokenHandler {
     }
 
     getTotal() {
-        return Object.values(this.counts).reduce((a, b) => a + b);
+        return Object.values(this.counts).reduce((a, b) => a + (isNaN(b) ? 0 : b), 0);
     }
 
     log() {
@@ -1018,6 +1061,10 @@ class Message {
         this.tokens = tokenHandler.count(this);
     }
 
+    static fromPrompt(prompt) {
+        return new Message(prompt.role, prompt.content, prompt.identifier);
+    }
+
     getTokens() {return this.tokens};
 }
 
@@ -1033,6 +1080,10 @@ class MessageCollection  {
 
         this.collection.push(...items);
         this.identifier = identifier;
+    }
+
+    getCollection() {
+        return this.collection;
     }
 
     addItem(item) {
@@ -1055,6 +1106,15 @@ class ChatCompletion {
         this.tokenBudget = 0;
         this.messages = new MessageCollection();
         this.loggingEnabled = false;
+    }
+
+    getMessages() {
+        return this.messages;
+    }
+
+    setTokenBudget(tokenBudget) {
+        this.tokenBudget = tokenBudget;
+        console.log(`Token budget: ${this.tokenBudget}`);
     }
 
     add(collection, position = null) {
@@ -1081,7 +1141,7 @@ class ChatCompletion {
         if (message.content) {
             this.messages.collection[index].collection.push(message);
             this.decreaseTokenBudgetBy(message.getTokens());
-            this.log(`Added ${message.identifier}. Remaining tokens: ${this.tokenBudget}`);
+            this.log(`Inserted ${message.identifier} into ${identifier}. Remaining tokens: ${this.tokenBudget}`);
         }
     }
 
