@@ -362,6 +362,58 @@ function formatWorldInfo(value) {
 }
 
 /**
+ * Populates the chat history of the conversation.
+ *
+ * @param {Map} prompts - Map object containing all prompts where the key is the prompt identifier and the value is the prompt object.
+ * @param {ChatCompletion} chatCompletion - An instance of ChatCompletion class that will be populated with the prompts.
+ */
+function populateChatHistory(prompts, chatCompletion) {
+    // Chat History
+    chatCompletion.add( new MessageCollection('chatHistory'), prompts.index('chatHistory'));
+    const mainChat = selected_group ? '[Start a new group chat. Group members: ${names}]' : '[Start a new Chat]';
+    const mainChatMessage = new Message('system', mainChat, 'newMainChat');
+    // Insert chat messages
+    if (chatCompletion.canAfford(mainChatMessage)) {
+        chatCompletion.insert(mainChatMessage, 'chatHistory');
+
+        [...openai_msgs].forEach((prompt, index) => {
+            const chatMessage = new Message(prompt.role, prompt.content, 'chatHistory-' + index);
+            if (chatCompletion.canAfford(chatMessage)) {
+                chatCompletion.insert(chatMessage, 'chatHistory');
+            }
+        });
+    }
+}
+
+/**
+ * This function populates the dialogue examples in the conversation.
+ *
+ * @param {Map} prompts - Map object containing all prompts where the key is the prompt identifier and the value is the prompt object.
+ * @param {ChatCompletion} chatCompletion - An instance of ChatCompletion class that will be populated with the prompts.
+ */
+function populateDialogueExamples(prompts, chatCompletion) {
+    chatCompletion.add( new MessageCollection('dialogueExamples'), prompts.index('dialogueExamples'));
+    if (openai_msgs_example.length) {
+        // Insert chat message examples if there's enough budget if there is enough budget left for at least one example.
+        const dialogueExampleChat = new Message('system', '[Start a new Chat]', 'newChat');
+        const prompt = openai_msgs_example[0];
+        const dialogueExample = new Message(prompt[0].role || '', prompt[0].content || '', 'dialogueExampleTest');
+
+        if (chatCompletion.canAfford(dialogueExampleChat) &&
+            chatCompletion.canAfford(dialogueExample)) {
+            chatCompletion.insert(dialogueExampleChat, 'dialogueExamples');
+
+            [...openai_msgs_example].forEach((prompt, index) => {
+                const chatMessage = new Message(prompt[0].role || '', prompt[0].content || '', 'dialogueExamples-' + index);
+                if (chatCompletion.canAfford(chatMessage)) {
+                    chatCompletion.insert(chatMessage, 'dialogueExamples');
+                }
+            });
+        }
+    }
+}
+
+/**
  * Populate a chat conversation by adding prompts to the conversation and managing system and user prompts.
  *
  * @param {Map} prompts - Map object containing all prompts where the key is the prompt identifier and the value is the prompt object.
@@ -372,6 +424,7 @@ function formatWorldInfo(value) {
  * @param {string} options.type - The type of the chat, can be 'impersonate'.
  */
 function populateChatCompletion (prompts, chatCompletion, {bias, quietPrompt, type} = {}) {
+    //Helper function for the recurring task of preparing a prompt for the chat completion
     const addToChatCompletion = (source, target = null) => {
         if (false === prompts.has(source)) return;
 
@@ -382,6 +435,7 @@ function populateChatCompletion (prompts, chatCompletion, {bias, quietPrompt, ty
         chatCompletion.add(collection, index);
     };
 
+    // Character and world information
     addToChatCompletion('worldInfoBefore');
     addToChatCompletion('worldInfoAfter');
     addToChatCompletion('charDescription');
@@ -416,50 +470,26 @@ function populateChatCompletion (prompts, chatCompletion, {bias, quietPrompt, ty
         chatCompletion.insert(quietPromptMessage, 'main');
     }
 
+    // Bias
     if (bias && bias.trim().length) addToChatCompletion('bias');
 
+    // Tavern Extras - Summary
     if (prompts.has('summary')) chatCompletion.insert(Message.fromPrompt(prompts.get('summary')), 'main');
 
+    // Authors Note
     if (prompts.has('authorsNote')) {
         const authorsNote = Message.fromPrompt(prompts.get('authorsNote'));
         if (extension_prompt_types.AFTER_SCENARIO) chatCompletion.insert(authorsNote, 'scenario');
         else chatCompletion.insert(authorsNote, 'main')
     }
 
-    // Chat History
-    chatCompletion.add( new MessageCollection('chatHistory'), prompts.index('chatHistory'));
-    const mainChat = selected_group ? '[Start a new group chat. Group members: ${names}]' : '[Start a new Chat]';
-    const mainChatMessage = new Message('system', mainChat, 'newMainChat');
-    // Insert chat messages
-    if (chatCompletion.canAfford(mainChatMessage)) {
-        chatCompletion.insert(mainChatMessage, 'chatHistory');
-
-        [...openai_msgs].forEach((prompt, index) => {
-            const chatMessage = new Message(prompt.role, prompt.content, 'chatHistory-' + index);
-            if (chatCompletion.canAfford(chatMessage)) {
-                chatCompletion.insert(chatMessage, 'chatHistory');
-            }
-        });
-    }
-
-    chatCompletion.add( new MessageCollection('dialogueExamples'), prompts.index('dialogueExamples'));
-    if (openai_msgs_example.length) {
-        // Insert chat message examples if there's enough budget if there is enough budget left for at least one example.
-        const dialogueExampleChat = new Message('system', '[Start a new Chat]', 'newChat');
-        const prompt = openai_msgs_example[0];
-        const dialogueExample = new Message(prompt[0].role || '', prompt[0].content || '', 'dialogueExampleTest');
-
-        if (chatCompletion.canAfford(dialogueExampleChat) &&
-            chatCompletion.canAfford(dialogueExample)) {
-            chatCompletion.insert(dialogueExampleChat, 'dialogueExamples');
-
-            [...openai_msgs_example].forEach((prompt, index) => {
-                const chatMessage = new Message(prompt[0].role || '', prompt[0].content || '', 'dialogueExamples-' + index);
-                if (chatCompletion.canAfford(chatMessage)) {
-                    chatCompletion.insert(chatMessage, 'dialogueExamples');
-                }
-            });
-        }
+    // Decide whether dialogue examples should always be added
+    if (power_user.pin_examples) {
+        populateDialogueExamples(prompts, chatCompletion);
+        populateChatHistory(prompts, chatCompletion);
+    } else {
+        populateChatHistory(prompts, chatCompletion);
+        populateDialogueExamples(prompts, chatCompletion);
     }
 }
 
