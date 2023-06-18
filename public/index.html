@@ -1835,7 +1835,7 @@
                 </div>
                 <div id="wi-holder" class="margin5">
                     <h3>
-                        World Selector
+                        Global World Info / Lorebook Selector
                         <a href="https://docs.sillytavern.app/usage/core-concepts/worldinfo/" class="notes-link" target="_blank">
                             <span class="note-link-span">?</span>
                         </a>
@@ -1853,7 +1853,7 @@
                         <div id="world_info_edit_button" class="menu_button fa-solid fa-pencil faSmallFontSquareFix" title="Details"></div>
                     </div>
 
-                    <div class="flex-container alignitemscenter">
+                    <div class="flex-container gap10px alignitemscenter">
                         <div name="WIScanAndTokens" class="flex1 flex-container flexFlowColumn">
                             <div class="flex1 gap5px range-block">
                                 <div class="wide10pMinFit">
@@ -1885,6 +1885,18 @@
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                        <div class="flex1 flex-container flexFlowColumn">
+                            <div class="flex gap5px range-block">
+                                <label for="world_info_character_strategy">
+                                    Character Lore Insertion Strategy
+                                </label>
+                                <select id="world_info_character_strategy" class="flexGrow">
+                                    <option value="0">Sorted Evenly</option>
+                                    <option value="1">Character Lore First</option>
+                                    <option value="2">Global Lore First</option>
+                                </select>
                             </div>
                         </div>
                         <div class="range-block flex-container flexFlowColumn">
@@ -1919,18 +1931,18 @@
                                         <a href="https://docs.sillytavern.app/usage/core-concepts/worldinfo/#world-info-entry" class="notes-link" target="_blank"><span class="note-link-span">?</span></a>
                                     </h3>
                                 </div>
-                                <div id="OpenAllWIEntries" class="menu_button fa-solid fa-expand"></div>
-                                <div id="CloseAllWIEntries" class="menu_button fa-solid fa-compress"></div>
+                                <div id="OpenAllWIEntries" class="menu_button fa-solid fa-expand" title="Open all Entries"></div>
+                                <div id="CloseAllWIEntries" class="menu_button fa-solid fa-compress" title="Close all Entries"></div>
                                 <div class="flex-container">
                                     <form id="form_rename_world" action="javascript:void(null);" method="post" enctype="multipart/form-data">
                                         <input id="world_popup_name" name="world_popup_name" class="text_pole" maxlength="99" size="32" value="" autocomplete="off">
-                                        <label for="world_popup_name_button" class="menu_button fa-solid fa-pencil faSmallFontSquareFix">
+                                        <label for="world_popup_name_button" class="menu_button fa-solid fa-pencil faSmallFontSquareFix" title="Rename World Info">
                                             <input id="world_popup_name_button" type="submit" value="">
                                         </label>
                                         <div id="world_popup_bottom_holder" class="flex-container">
-                                            <div id="world_popup_new" class="menu_button fa-solid fa-plus margin0 faSmallFontSquareFix"></div>
-                                            <div id="world_popup_export" class="menu_button fa-solid fa-file-export margin0 faSmallFontSquareFix"></div>
-                                            <div id="world_popup_delete" class="menu_button fa-solid fa-trash-can redWarningBG margin0 faSmallFontSquareFix"></div>
+                                            <div id="world_popup_new" class="menu_button fa-solid fa-plus margin0 faSmallFontSquareFix" title="New Entry"></div>
+                                            <div id="world_popup_export" class="menu_button fa-solid fa-file-export margin0 faSmallFontSquareFix" title="Export World Info"></div>
+                                            <div id="world_popup_delete" class="menu_button fa-solid fa-trash-can redWarningBG margin0 faSmallFontSquareFix" title="Delete World Info"></div>
                                         </div>
                                     </form>
 
@@ -2380,6 +2392,7 @@
                                         <div id="advanced_div" class="menu_button fa-solid fa-book " title="Advanced Definitions"></div>
                                         <div id="export_button" class="menu_button fa-solid fa-file-export " title="Export and Download"></div>
                                         <div id="set_chat_scenario" class="menu_button fa-solid fa-scroll" title="Set a chat scenario override"></div>
+                                        <div id="set_character_world" class="menu_button fa-solid fa-globe" title="Set a character World Info / Lorebook"></div>
                                         <div id="dupe_button" class="menu_button fa-solid fa-clone " title="Duplicate Character"></div>
                                         <label for="create_button" id="create_button_label" class="menu_button fa-solid fa-user-check" title="Create Character">
                                             <input type="submit" id="create_button" name="create_button">
@@ -2430,6 +2443,7 @@
                             <input id="selected_chat_pole" name="chat" type="hidden">
                             <input id="create_date_pole" name="create_date" type="hidden">
                             <input id="last_mes_pole" name="last_mes" type="hidden">
+                            <input id="character_world" name="world" type="hidden">
                         </div>
 
                         <!-- now back to normal divs for display purposes-->
@@ -2779,6 +2793,27 @@
             </div>
             <div class="range-block-range wide100p">
                 <textarea class="wide100p chat_scenario" class="text_pole" rows="15" placeholder="Type here..."></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div id="character_world_template" class="template_element">
+        <div class="character_world range-block flexFlowColumn flex-container">
+            <div class="range-block-title">
+                <h3>
+                    Select a World Info file for <span class="character_name"></span>:
+                </h3>
+            </div>
+            <div class="range-block-counter justifyLeft flex-container flexFlowColumn margin-bot-10px">
+                A selected World Info / Lorebook will be bound to this character.
+                When generating an AI reply, it will be combined with the entries from a global World Info / Lorebook selector.
+                <!-- Telling lies? Uncomment when actually implemented. -->
+                <!-- Exporting a character would also export the selected World Info file embedded in the JSON data. -->
+            </div>
+            <div class="range-block-range wide100p">
+                <select class="character_world_info_selector">
+                    <option value="">--- None ---</option>
+                </select>
             </div>
         </div>
     </div>

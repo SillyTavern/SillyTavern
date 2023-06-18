@@ -1,4 +1,4 @@
-import { saveSettings, callPopup, substituteParams, getTokenCount, getRequestHeaders, chat_metadata } from "../script.js";
+import { saveSettings, callPopup, substituteParams, getTokenCount, getRequestHeaders, chat_metadata, this_chid, characters } from "../script.js";
 import { download, debounce, delay, initScrollHeight, resetScrollHeight } from "./utils.js";
 import { getContext } from "./extensions.js";
 import { metadata_keys } from "./extensions/floating-prompt/index.js";
@@ -11,6 +11,7 @@ export {
     world_info_recursive,
     world_info_case_sensitive,
     world_info_match_whole_words,
+    world_info_character_strategy,
     world_names,
     imported_world_name,
     checkWorldInfo,
@@ -18,6 +19,12 @@ export {
     selectImportedWorldInfo,
     setWorldInfoSettings,
     getWorldInfoPrompt,
+}
+
+const world_info_insertion_strategy = {
+    evenly: 0,
+    character_first: 1,
+    global_first: 2,
 }
 
 let world_info = null;
@@ -29,6 +36,7 @@ let is_world_edit_open = false;
 let world_info_recursive = false;
 let world_info_case_sensitive = false;
 let world_info_match_whole_words = false;
+let world_info_character_strategy = world_info_insertion_strategy.evenly;
 let imported_world_name = "";
 const saveWorldDebounced = debounce(async () => await _save(), 1000);
 const saveSettingsDebounced = debounce(() => saveSettings(), 1000);
@@ -41,15 +49,14 @@ const world_info_position = {
 
 };
 
-function getWorldInfoPrompt(chat2) {
+async function getWorldInfoPrompt(chat2) {
     let worldInfoString = "", worldInfoBefore = "", worldInfoAfter = "";
 
-    if (world_info && world_info_data) {
-        const activatedWorldInfo = checkWorldInfo(chat2);
-        worldInfoBefore = activatedWorldInfo.worldInfoBefore;
-        worldInfoAfter = activatedWorldInfo.worldInfoAfter;
-        worldInfoString = worldInfoBefore + worldInfoAfter;
-    }
+    const activatedWorldInfo = await checkWorldInfo(chat2);
+    worldInfoBefore = activatedWorldInfo.worldInfoBefore;
+    worldInfoAfter = activatedWorldInfo.worldInfoAfter;
+    worldInfoString = worldInfoBefore + worldInfoAfter;
+
     return { worldInfoString, worldInfoBefore, worldInfoAfter };
 }
 
@@ -64,6 +71,8 @@ function setWorldInfoSettings(settings, data) {
         world_info_case_sensitive = Boolean(settings.world_info_case_sensitive);
     if (settings.world_info_match_whole_words !== undefined)
         world_info_match_whole_words = Boolean(settings.world_info_match_whole_words);
+    if (settings.world_info_character_strategy !== undefined)
+        world_info_character_strategy = Number(settings.world_info_character_strategy);
 
     $("#world_info_depth_counter").text(world_info_depth);
     $("#world_info_depth").val(world_info_depth);
@@ -74,6 +83,9 @@ function setWorldInfoSettings(settings, data) {
     $("#world_info_recursive").prop('checked', world_info_recursive);
     $("#world_info_case_sensitive").prop('checked', world_info_case_sensitive);
     $("#world_info_match_whole_words").prop('checked', world_info_match_whole_words);
+
+    $(`#world_info_character_strategy option[value='${world_info_character_strategy}']`).prop('selected', true);
+    $("#world_info_character_strategy").val(world_info_character_strategy);
 
     world_names = data.world_names?.length ? data.world_names : [];
 
@@ -102,24 +114,27 @@ async function showWorldEditor() {
     is_world_edit_open = true;
     $("#world_popup_name").val(world_info);
     $("#world_popup").css("display", "flex");
-    await loadWorldInfoData();
+    world_info_data = await loadWorldInfoData(world_info);
     displayWorldEntries(world_info_data);
 }
 
-async function loadWorldInfoData() {
-    if (!world_info) {
+async function loadWorldInfoData(name) {
+    if (!name) {
         return;
     }
 
     const response = await fetch("/getworldinfo", {
         method: "POST",
         headers: getRequestHeaders(),
-        body: JSON.stringify({ name: world_info }),
+        body: JSON.stringify({ name: name }),
     });
 
     if (response.ok) {
-        world_info_data = await response.json();
+        const data = await response.json();
+        return data;
     }
+
+    return null;
 }
 
 async function updateWorldInfoList(importedWorldName) {
@@ -533,11 +548,70 @@ function transformString(str) {
     return world_info_case_sensitive ? str : str.toLowerCase();
 }
 
-function checkWorldInfo(chat) {
-    if (world_info_data.entries.length == 0) {
-        return "";
+async function getCharacterLore() {
+    const name = characters[this_chid]?.data?.extensions?.world;
+
+    if (!name) {
+        return [];
     }
 
+    if (!world_names.includes(name)) {
+        console.warn(`Character ${characters[this_chid]?.name} has invalid world info name: ${name}`);
+        return [];
+    }
+
+    const data = await loadWorldInfoData(name);
+    const entries = data ? Object.keys(data.entries).map((x) => data.entries[x]) : [];
+    console.debug(`Character ${characters[this_chid]?.name} lore (${name}) has ${entries.length} world info entries`);
+    return entries;
+}
+
+function getGlobalLore() {
+    if (!world_info || !world_info_data) {
+        return [];
+    }
+
+    const entries = Object.keys(world_info_data.entries).map((x) => world_info_data.entries[x]);
+    console.debug(`Global world info has ${entries.length} entries`);
+    return entries;
+}
+
+
+async function getSortedEntries() {
+    try {
+        const globalLore = getGlobalLore();
+        const characterLore = await getCharacterLore();
+
+        let entries;
+        const sortFn = (a, b) => b.order - a.order;
+
+        switch (world_info_character_strategy) {
+            case world_info_insertion_strategy.evenly:
+                entries = [...globalLore, ...characterLore].sort(sortFn);
+                break;
+            case world_info_insertion_strategy.character_first:
+                entries = [...characterLore.sort(sortFn), ...globalLore.sort(sortFn)];
+                break;
+            case world_info_insertion_strategy.global_first:
+                entries = [...globalLore.sort(sortFn), ...characterLore.sort(sortFn)];
+                break;
+            default:
+                console.error(`Unknown insertion strategy: ${world_info_character_strategy}`);
+                entries = [...globalLore, ...characterLore].sort(sortFn);
+                break;
+        }
+
+        console.debug(`Sorted ${entries.length} world lore entries using strategy ${world_info_character_strategy}`);
+
+        return entries;
+    }
+    catch (e) {
+        console.error(e);
+        return [];
+    }
+}
+
+async function checkWorldInfo(chat) {
     const context = getContext();
     const messagesToLookBack = world_info_depth * 2;
     let textToScan = transformString(chat.slice(0, messagesToLookBack).join(""));
@@ -547,9 +621,11 @@ function checkWorldInfo(chat) {
     let count = 0;
     let allActivatedEntries = new Set();
 
-    const sortedEntries = Object.keys(world_info_data.entries)
-        .map((x) => world_info_data.entries[x])
-        .sort((a, b) => b.order - a.order);
+    const sortedEntries = await getSortedEntries();
+
+    if (sortedEntries.length === 0) {
+        return  { worldInfoBefore, worldInfoAfter };
+    }
 
     while (needsToScan) {
         // Track how many times the loop has run
@@ -558,12 +634,13 @@ function checkWorldInfo(chat) {
         let activatedNow = new Set();
 
         for (let entry of sortedEntries) {
-            if (allActivatedEntries.has(entry.uid) || entry.disable == true || (count > 1 && world_info_recursive && entry.excludeRecursion)) {
+            if (allActivatedEntries.has(entry) || entry.disable == true || (count > 1 && world_info_recursive && entry.excludeRecursion)) {
                 continue;
             }
 
             if (entry.constant) {
-                activatedNow.add(entry.uid);
+                activatedNow.add(entry);
+                continue;
             }
 
             if (Array.isArray(entry.key) && entry.key.length) {
@@ -578,12 +655,12 @@ function checkWorldInfo(chat) {
                             secondary: for (let keysecondary of entry.keysecondary) {
                                 const secondarySubstituted = substituteParams(keysecondary);
                                 if (secondarySubstituted && matchKeys(textToScan, secondarySubstituted.trim())) {
-                                    activatedNow.add(entry.uid);
+                                    activatedNow.add(entry);
                                     break secondary;
                                 }
                             }
                         } else {
-                            activatedNow.add(entry.uid);
+                            activatedNow.add(entry);
                             break primary;
                         }
                     }
@@ -593,7 +670,6 @@ function checkWorldInfo(chat) {
 
         needsToScan = world_info_recursive && activatedNow.size > 0;
         const newEntries = [...activatedNow]
-            .map((x) => world_info_data.entries[x])
             .sort((a, b) => sortedEntries.indexOf(a) - sortedEntries.indexOf(b));
         let ANInjectionTokens = 0;
         for (const entry of newEntries) {
@@ -683,7 +759,7 @@ jQuery(() => {
         if (selectedWorld !== "None") {
             const worldIndex = Number(selectedWorld);
             world_info = !isNaN(worldIndex) ? world_names[worldIndex] : null;
-            await loadWorldInfoData();
+            world_info_data = await loadWorldInfoData(world_info);
         }
 
         if (selectedWorld === "None") { hideWorldEditor(); }
@@ -759,8 +835,12 @@ jQuery(() => {
         renameWorldInfo();
     });
 
-    $("#world_create_button").click(() => {
-        createNewWorldInfo();
+    $("#world_create_button").on('click', async () => {
+        const confirm = await callPopup("<h3>Create a new World Info?</h3>", "confirm");
+
+        if (confirm) {
+            await createNewWorldInfo();
+        }
     });
 
     $(document).on("input", "#world_info_depth", function () {
@@ -789,4 +869,9 @@ jQuery(() => {
         world_info_match_whole_words = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
+
+    $('#world_info_character_strategy').on('change', function () {
+        world_info_character_strategy = $(this).val();
+        saveSettingsDebounced();
+    })
 });

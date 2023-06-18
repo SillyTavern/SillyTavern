@@ -830,6 +830,7 @@ function charaFormatData(data) {
     // ST extension fields to V2 object
     _.set(char, 'data.extensions.talkativeness', data.talkativeness);
     _.set(char, 'data.extensions.fav', data.fav == 'true');
+    _.set(char, 'data.extensions.world', data.world || '');
     //_.set(char, 'data.extensions.create_date', humanizedISO8601DateTime());
     //_.set(char, 'data.extensions.avatar', 'none');
     //_.set(char, 'data.extensions.chat', data.ch_name + ' - ' + humanizedISO8601DateTime());

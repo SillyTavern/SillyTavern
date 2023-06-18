@@ -1190,6 +1190,10 @@ select option:not(:checked) {
     color: #c5b457 !important;
 }
 
+.world_set {
+    color: #4b9c00 !important;
+}
+
 .displayBlock {
     display: block !important;
 }
@@ -1336,6 +1340,10 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 .gap5px {
     gap: 5px !important;
+}
+
+.gap10px {
+    gap: 10px !important;
 }
 
 .wide10pMinFit {
