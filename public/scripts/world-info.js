@@ -555,8 +555,13 @@ async function getCharacterLore() {
         return [];
     }
 
+    if (name === world_info) {
+        console.debug(`Character ${characters[this_chid]?.name} world info is the same as global: ${name}. Skipping...`);
+        return [];
+    }
+
     if (!world_names.includes(name)) {
-        console.warn(`Character ${characters[this_chid]?.name} has invalid world info name: ${name}`);
+        console.log(`Character ${characters[this_chid]?.name} world info does not exist: ${name}`);
         return [];
     }
 
