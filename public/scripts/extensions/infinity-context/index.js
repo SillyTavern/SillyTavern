@@ -103,6 +103,7 @@ async function loadSettings() {
     $('#chromadb_keep_context_proportion').val(extension_settings.chromadb.keep_context_proportion).trigger('input');
     $('#chromadb_auto_adjust').prop('checked', extension_settings.chromadb.auto_adjust);
     $('#chromadb_freeze').prop('checked', extension_settings.chromadb.freeze);
+    enableDisableSliders();
 }
 
 function onStrategyChange() {
@@ -508,7 +509,21 @@ function onFreezeInput() {
 
 function onAutoAdjustInput() {
     extension_settings.chromadb.auto_adjust = $('#chromadb_auto_adjust').is(':checked');
+    enableDisableSliders();
     saveSettingsDebounced();
+}
+
+function enableDisableSliders() {
+    if (extension_settings.chromadb.auto_adjust) {
+        $('#chromadb_keep_context').prop('disabled', true).css('opacity', 0.5);
+        $('#chromadb_n_results').prop('disabled', true).css('opacity', 0.5);
+        $('#chromadb_keep_context_proportion').prop('disabled', false).css('opacity', 1);
+    }
+    else {
+        $('#chromadb_keep_context').prop('disabled', false).css('opacity', 1);
+        $('#chromadb_n_results').prop('disabled', false).css('opacity', 1);
+        $('#chromadb_keep_context_proportion').prop('disabled', true).css('opacity', 0.5);
+    }
 }
 
 function onKeepContextProportionInput() {
@@ -537,7 +552,7 @@ jQuery(async () => {
             <input id="chromadb_keep_context" type="range" min="${defaultSettings.keep_context_min}" max="${defaultSettings.keep_context_max}" step="${defaultSettings.keep_context_step}" value="${defaultSettings.keep_context}" />
             <label for="chromadb_n_results"><small>Maximum number of ChromaDB 'memories' to inject: (<span id="chromadb_n_results_value"></span>) messages</small></label>
             <input id="chromadb_n_results" type="range" min="${defaultSettings.n_results_min}" max="${defaultSettings.n_results_max}" step="${defaultSettings.n_results_step}" value="${defaultSettings.n_results}" />
-            <label for="chromadb_keep_context_proportion"><small>Auto-adjust proportion of messages to keep / inject: (<span id="chromadb_keep_context_proportion_value"></span>% kept)</small></label>
+            <label for="chromadb_keep_context_proportion"><small>Keep <span id="chromadb_keep_context_proportion_value"></span>% of in-context chat messages; replace the rest with memories</small></label>
             <input id="chromadb_keep_context_proportion" type="range" min="${defaultSettings.keep_context_proportion_min}" max="${defaultSettings.keep_context_proportion_max}" step="${defaultSettings.keep_context_proportion_step}" value="${defaultSettings.keep_context_proportion}" />
             <label for="chromadb_split_length"><small>Max length for each 'memory' pulled from the current chat history: (<span id="chromadb_split_length_value"></span>) characters</small></label>
             <input id="chromadb_split_length" type="range" min="${defaultSettings.split_length_min}" max="${defaultSettings.split_length_max}" step="${defaultSettings.split_length_step}" value="${defaultSettings.split_length}" />
@@ -549,7 +564,7 @@ jQuery(async () => {
             </label>
             <label class="checkbox_label for="chromadb_auto_adjust" title="Automatically adjusts the number of messages to keep based on the average number of messages in the current chat and the chosen proportion.">
                 <input type="checkbox" id="chromadb_auto_adjust" />
-                <span>Auto-adjust number of messages to keep / query</span>
+                <span>Use % strategy</span>
             </label>
             <div class="flex-container spaceEvenly">
                 <div id="chromadb_inject" title="Upload custom textual data to use in the context of the current chat" class="menu_button">
