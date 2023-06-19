@@ -2891,8 +2891,13 @@ h5 {
 
 .tag.excluded {
     opacity: 1 !important;
-    filter: none !important;
+    filter: saturate(0.5) !important;
     text-decoration: line-through;
+    text-decoration-thickness: 2px;
+    text-decoration-color: var(--white70a);
+    outline-color: red;
+    outline-style: solid;
+    outline-width: 2px;
 }
 
 #avatarCropWrap {
