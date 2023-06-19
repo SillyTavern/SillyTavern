@@ -6551,15 +6551,19 @@ $(document).ready(function () {
         }
     });
 
-    $(document).on("click", ".exportChatButton", async function () {
+    $(document).on("click", ".exportChatButton, .exportRawChatButton", async function () {
+        const format = $(this).data('format') || 'txt';
         await saveChatConditional();
         const filenamefull = $(this).closest('.select_chat_block_wrapper').find('.select_chat_block_filename').text();
+        console.log(`exporting ${filenamefull} in ${format} format`);
+
         const filename = filenamefull.replace('.jsonl', '');
         const body = {
             is_group: !!selected_group,
             avatar_url: characters[this_chid]?.avatar,
             file: `${filename}.jsonl`,
-            exportfilename: `${filename}.txt`,
+            exportfilename: `${filename}.${format}`,
+            format: format,
         }
         console.log(body);
         try {
@@ -6576,11 +6580,12 @@ $(document).ready(function () {
                 toastr.error(`Error: ${data.message}`);
                 return;
             } else {
+                const mimeType = format == 'txt' ? 'text/plain' : 'application/json';
                 // success, handle response data
                 console.log(data);
                 await delay(250);
                 toastr.success(data.message);
-                download(data.result, body.exportfilename, 'text/plain');
+                download(data.result, body.exportfilename, mimeType);
             }
         } catch (error) {
             // display error message

@@ -1847,8 +1847,29 @@ app.post("/exportchat", jsonParser, async function (request, response) {
         return response.status(404).json(errorMessage);
     }
     try {
+        // Short path for JSONL files
+        if (request.body.format == 'jsonl') {
+            try {
+                const rawFile = fs.readFileSync(filename, 'utf8');
+                const successMessage = {
+                    message: `Chat saved to ${exportfilename}`,
+                    result: rawFile,
+                }
+
+                console.log(`Chat exported as ${exportfilename}`);
+                return response.status(200).json(successMessage);
+            }
+            catch (err) {
+                console.error(err);
+                const errorMessage = {
+                    message: `Could not read JSONL file to export. Source chat file: ${filename}.`
+                }
+                console.log(errorMessage.message);
+                return response.status(500).json(errorMessage);
+            }
+        }
+
         const readline = require('readline');
-        const fs = require('fs');
         const readStream = fs.createReadStream(filename);
         const rl = readline.createInterface({
             input: readStream,

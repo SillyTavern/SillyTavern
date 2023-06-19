@@ -2689,6 +2689,7 @@ h5 {
 }
 
 .renameChatButton,
+.exportRawChatButton,
 .exportChatButton {
     cursor: pointer;
 }
