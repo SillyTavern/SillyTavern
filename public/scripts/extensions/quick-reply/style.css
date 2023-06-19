@@ -10,6 +10,8 @@
     justify-content: center;
     width: 100%;
     display: none;
+    max-width: 100%;
+    overflow-x: scroll;
 }
 
 #quickReplies {

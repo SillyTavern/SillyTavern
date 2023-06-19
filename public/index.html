@@ -2381,23 +2381,48 @@
                                     <img id="avatar_load_preview" src="img/ai4.png" alt="avatar">
                                 </div>
                                 <div class="flex-container flexFlowColumn">
+                                    <label for="char-management-dropdown">
+                                        <select id="char-management-dropdown">
+                                            <option value="default" disabled selected>Options</option>
+                                            <option id="set_character_world">
+                                                <i class="fa-solid fa-globe"></i> Link to World Info
+                                            </option>
+                                            <option id="set_chat_scenario">
+                                                Scenario Override
+                                            </option>
+                                            <option id="renameCharButton">
+                                                Rename
+                                            </option>
+                                            <option id="dupe_button">
+                                                Duplicate
+                                            </option>
+                                            <option id="export_button">
+                                                Export
+                                            </option>
+                                            <option id="delete_button">
+                                                Delete
+                                            </option>
+                                        </select>
+                                    </label>
+
                                     <div class="form_create_bottom_buttons_block">
                                         <label for="add_avatar_button" class="menu_button fa-solid fa-file-image " title="Click to select a new avatar for this character">
                                             <input type="file" id="add_avatar_button" name="avatar" accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp">
                                         </label>
                                         <div id="rm_button_back" class="menu_button fa-solid fa-left-long "></div>
-                                        <div id="renameCharButton" class="menu_button fa-solid fa-user-pen" title="Rename Character"></div>
+
+                                        <!-- <div id="renameCharButton" class="menu_button fa-solid fa-user-pen" title="Rename Character"></div> -->
                                         <div id="favorite_button" class="menu_button fa-solid fa-star" title="Add to Favorites"></div>
                                         <input type="hidden" id="fav_checkbox" name="fav" />
                                         <div id="advanced_div" class="menu_button fa-solid fa-book " title="Advanced Definitions"></div>
-                                        <div id="export_button" class="menu_button fa-solid fa-file-export " title="Export and Download"></div>
-                                        <div id="set_chat_scenario" class="menu_button fa-solid fa-scroll" title="Set a chat scenario override"></div>
-                                        <div id="set_character_world" class="menu_button fa-solid fa-globe" title="Set a character World Info / Lorebook"></div>
-                                        <div id="dupe_button" class="menu_button fa-solid fa-clone " title="Duplicate Character"></div>
+                                        <!-- <div id="export_button" class="menu_button fa-solid fa-file-export " title="Export and Download"></div> -->
+                                        <!-- <div id="set_chat_scenario" class="menu_button fa-solid fa-scroll" title="Set a chat scenario override"></div> -->
+                                        <!-- <div id="set_character_world" class="menu_button fa-solid fa-globe" title="Set a character World Info / Lorebook"></div> -->
+                                        <!-- <div id="dupe_button" class="menu_button fa-solid fa-clone " title="Duplicate Character"></div> -->
                                         <label for="create_button" id="create_button_label" class="menu_button fa-solid fa-user-check" title="Create Character">
                                             <input type="submit" id="create_button" name="create_button">
                                         </label>
-                                        <div id="delete_button" class="menu_button fa-solid fa-skull " title="Delete Character"></div>
+                                        <!-- <div id="delete_button" class="menu_button fa-solid fa-skull " title="Delete Character"></div> -->
                                     </div>
                                     <div id="result_info" class="justifyCenter flex-container" title="Token counts may be inaccurate and provided just for reference.">&nbsp;</div>
                                 </div>

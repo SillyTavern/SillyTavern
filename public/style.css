@@ -4431,6 +4431,7 @@ body.waifuMode #avatar_zoom_popup {
     #send_form {
         border: 1px solid var(--grey30);
         backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
+        max-width: 100dvw;
     }
 
     #chat {

@@ -273,7 +273,7 @@ let is_mes_reload_avatar = false;
 let optionsPopper = Popper.createPopper(document.getElementById('options_button'), document.getElementById('options'), {
     placement: 'top-start'
 });
-let exportPopper = Popper.createPopper(document.getElementById('export_button'), document.getElementById('export_format_popup'), {
+let exportPopper = Popper.createPopper(document.getElementById('char-management-dropdown'), document.getElementById('export_format_popup'), {
     placement: 'left'
 });
 let rawPromptPopper = Popper.createPopper(document.getElementById('dialogue_popup'), document.getElementById('rawPromptPopup'), {
@@ -2774,6 +2774,19 @@ function getMultigenAmount() {
         }
     }
     return this_amount_gen;
+}
+
+async function DupeChar() {
+    const body = { avatar_url: characters[this_chid].avatar };
+    const response = await fetch('/dupecharacter', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify(body),
+    });
+    if (response.ok) {
+        toastr.success("Character Duplicated");
+        getCharacters();
+    }
 }
 
 function promptItemize(itemizedPrompts, requestedMesId) {
@@ -6405,15 +6418,15 @@ $(document).ready(function () {
 
     $("#form_create").submit(createOrEditCharacter);
 
-    $("#delete_button").click(function () {
-        popup_type = "del_ch";
-        callPopup(`
-            <h3>Delete the character?</h3>
-            <b>THIS IS PERMANENT!<br><br>
-            THIS WILL ALSO DELETE ALL<br>
-            OF THE CHARACTER'S CHAT FILES.<br><br></b>`
-        );
-    });
+    /*     $("#delete_button").click(function () {
+            popup_type = "del_ch";
+            callPopup(`
+                <h3>Delete the character?</h3>
+                <b>THIS IS PERMANENT!<br><br>
+                THIS WILL ALSO DELETE ALL<br>
+                OF THE CHARACTER'S CHAT FILES.<br><br></b>`
+            );
+        }); */
 
     $("#rm_info_button").click(function () {
         $("#rm_info_avatar").html("");
@@ -6460,7 +6473,7 @@ $(document).ready(function () {
         }
     });
 
-    $("#renameCharButton").on('click', renameCharacter);
+    /* $("#renameCharButton").on('click', renameCharacter); */
 
     $(document).on("click", ".renameChatButton", async function () {
         const old_filenamefull = $(this).closest('.select_chat_block_wrapper').find('.select_chat_block_filename').text();
@@ -6644,7 +6657,7 @@ $(document).ready(function () {
         if (!isMouseOverButtonOrMenu() && menu.is(':visible')) { hideMenu(); }
     });
 
-    $('#set_chat_scenario').on('click', setScenarioOverride);
+    /* $('#set_chat_scenario').on('click', setScenarioOverride); */
 
     ///////////// OPTIMIZED LISTENERS FOR LEFT SIDE OPTIONS POPUP MENU //////////////////////
 
@@ -7183,10 +7196,10 @@ $(document).ready(function () {
             importCharacter(file);
         }
     });
-    $("#export_button").click(function (e) {
-        $('#export_format_popup').toggle();
-        exportPopper.update();
-    });
+    /*     $("#export_button").click(function (e) {
+            $('#export_format_popup').toggle();
+            exportPopper.update();
+        }); */
     $(document).on('click', '.export_format', async function () {
         const format = $(this).data('format');
 
@@ -7266,19 +7279,19 @@ $(document).ready(function () {
         select_rm_characters();
     });
 
-    $("#dupe_button").click(async function () {
-
-        const body = { avatar_url: characters[this_chid].avatar };
-        const response = await fetch('/dupecharacter', {
-            method: 'POST',
-            headers: getRequestHeaders(),
-            body: JSON.stringify(body),
-        });
-        if (response.ok) {
-            toastr.success("Character Duplicated");
-            getCharacters();
-        }
-    });
+    /*     $("#dupe_button").click(async function () {
+    
+            const body = { avatar_url: characters[this_chid].avatar };
+            const response = await fetch('/dupecharacter', {
+                method: 'POST',
+                headers: getRequestHeaders(),
+                body: JSON.stringify(body),
+            });
+            if (response.ok) {
+                toastr.success("Character Duplicated");
+                getCharacters();
+            }
+        }); */
 
     $(document).on("click", ".select_chat_block, .bookmark_link, .mes_bookmark", async function () {
         let file_name = $(this).hasClass('mes_bookmark')
@@ -7431,7 +7444,7 @@ $(document).ready(function () {
         $("#world_popup_entries_list").children().find('.up').click()
     });
     $(document).on('click', '.open_alternate_greetings', openAlternateGreetings);
-    $('#set_character_world').on('click', openCharacterWorldPopup);
+    /* $('#set_character_world').on('click', openCharacterWorldPopup); */
 
     $(document).keyup(function (e) {
         if (e.key === "Escape") {
@@ -7463,6 +7476,39 @@ $(document).ready(function () {
             }
         });
     });
+
+    $("#char-management-dropdown").on('change', (e) => {
+        let target = $(e.target.selectedOptions).attr('id');
+        switch (target) {
+            case 'set_character_world':
+                openCharacterWorldPopup();
+                break;
+            case 'set_chat_scenario':
+                setScenarioOverride();
+                break;
+            case 'renameCharButton':
+                renameCharacter();
+                break;
+            case 'dupe_button':
+                DupeChar();
+                break;
+            case 'export_button':
+                $('#export_format_popup').toggle();
+                exportPopper.update();
+                break;
+            case 'delete_button':
+                popup_type = "del_ch";
+                callPopup(`
+                        <h3>Delete the character?</h3>
+                        <b>THIS IS PERMANENT!<br><br>
+                        THIS WILL ALSO DELETE ALL<br>
+                        OF THE CHARACTER'S CHAT FILES.<br><br></b>`
+                );
+                break;
+        }
+        $("#char-management-dropdown").prop('selectedIndex', 0);
+    });
+
 
     $(document).on('click', '.mes_img_enlarge', enlargeMessageImage);
     $(document).on('click', '.mes_img_delete', deleteMessageImage);
