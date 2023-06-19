@@ -1153,7 +1153,8 @@ export function addCopyToCodeBlocks(messageElement) {
 
 function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true } = {}) {
     var messageText = mes["mes"];
-    var timestamp = mes.send_date;
+    const momentDate = timestampToMoment(mes.send_date);
+    const timestamp = momentDate.isValid() ? momentDate.format('LL LT') : '';
 
     if (mes?.extra?.display_text) {
         messageText = mes.extra.display_text;
@@ -5494,6 +5495,7 @@ async function createOrEditCharacter(e) {
                         chat[0]["is_name"] = true;
                         chat[0]["mes"] = this_ch_mes;
                         chat[0]["extra"] = {};
+                        chat[0]["send_date"] = getMessageTimeStamp();
 
                         const alternateGreetings = characters[this_chid]?.data?.alternate_greetings;
 

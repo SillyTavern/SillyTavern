@@ -273,6 +273,10 @@ export function isOdd(number) {
 }
 
 export function timestampToMoment(timestamp) {
+    if (!timestamp) {
+        return moment.invalid();
+    }
+
     // Unix time (legacy TAI)
     if (typeof timestamp === 'number') {
         return moment(timestamp);
