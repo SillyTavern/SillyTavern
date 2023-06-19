@@ -768,6 +768,10 @@ body.no-timer .mes_timer {
     display: none !important;
 }
 
+body.no-timestamps .timestamp {
+    display: none !important;
+}
+
 body.big-avatars .avatar {
     width: 60px;
     height: 90px;
@@ -4303,6 +4307,11 @@ body.waifuMode #avatar_zoom_popup {
 
 .flexGap5 {
     gap: 5px;
+}
+
+.timestamp {
+    font-size: calc(var(--mainFontSize) * 0.7);
+    font-weight: 400;
 }
 
 

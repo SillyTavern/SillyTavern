@@ -134,6 +134,7 @@ let power_user = {
     allow_name2_display: false,
     hotswap_enabled: true,
     timer_enabled: true,
+    timestamps_enabled: true,
     max_context_unlocked: false,
     prefer_character_prompt: true,
     prefer_character_jailbreak: true,
@@ -182,6 +183,7 @@ const storage_keys = {
 
     hotswap_enabled: 'HotswapEnabled',
     timer_enabled: 'TimerEnabled',
+    timestamps_enabled: 'TimestampsEnabled',
 };
 
 let browser_has_focus = true;
@@ -250,6 +252,13 @@ function switchTimer() {
     power_user.timer_enabled = value === null ? true : value == "true";
     $("body").toggleClass("no-timer", !power_user.timer_enabled);
     $("#messageTimerEnabled").prop("checked", power_user.timer_enabled);
+}
+
+function switchTimestamps() {
+    const value = localStorage.getItem(storage_keys.timestamps_enabled);
+    power_user.timestamps_enabled = value === null ? true : value == "true";
+    $("body").toggleClass("no-timestamps", !power_user.timestamps_enabled);
+    $("#messageTimestampsEnabled").prop("checked", power_user.timestamps_enabled);
 }
 
 function switchUiMode() {
@@ -448,6 +457,13 @@ async function applyTheme(name) {
             }
         },
         {
+            key: 'timestamps_enabled',
+            action: async () => {
+                localStorage.setItem(storage_keys.timestamps_enabled, power_user.timestamps_enabled);
+                switchTimestamps();
+            }
+        },
+        {
             key: 'hotswap_enabled',
             action: async () => {
                 localStorage.setItem(storage_keys.hotswap_enabled, power_user.hotswap_enabled);
@@ -484,6 +500,7 @@ switchMovingUI();
 noShadows();
 switchHotswap();
 switchTimer();
+switchTimestamps();
 
 function loadPowerUserSettings(settings, data) {
     // Load from settings.json
@@ -505,11 +522,13 @@ function loadPowerUserSettings(settings, data) {
     const noShadows = localStorage.getItem(storage_keys.noShadows);
     const hotswap = localStorage.getItem(storage_keys.hotswap_enabled);
     const timer = localStorage.getItem(storage_keys.timer_enabled);
+    const timestamps = localStorage.getItem(storage_keys.timestamps_enabled);
     power_user.fast_ui_mode = fastUi === null ? true : fastUi == "true";
     power_user.movingUI = movingUI === null ? false : movingUI == "true";
     power_user.noShadows = noShadows === null ? false : noShadows == "true";
     power_user.hotswap_enabled = hotswap === null ? true : hotswap == "true";
     power_user.timer_enabled = timer === null ? true : timer == "true";
+    power_user.timestamps_enabled = timestamps === null ? true : timestamps == "true";
     power_user.avatar_style = Number(localStorage.getItem(storage_keys.avatar_style) ?? avatar_styles.ROUND);
     power_user.chat_display = Number(localStorage.getItem(storage_keys.chat_display) ?? chat_styles.DEFAULT);
     power_user.sheld_width = Number(localStorage.getItem(storage_keys.sheld_width) ?? sheld_width.DEFAULT);
@@ -554,6 +573,7 @@ function loadPowerUserSettings(settings, data) {
     $("#allow_name2_display").prop("checked", power_user.allow_name2_display);
     $("#hotswapEnabled").prop("checked", power_user.hotswap_enabled);
     $("#messageTimerEnabled").prop("checked", power_user.timer_enabled);
+    $("#messageTimestampsEnabled").prop("checked", power_user.timestamps_enabled);
     $("#prefer_character_prompt").prop("checked", power_user.prefer_character_prompt);
     $("#prefer_character_jailbreak").prop("checked", power_user.prefer_character_jailbreak);
     $(`input[name="avatar_style"][value="${power_user.avatar_style}"]`).prop("checked", true);
@@ -809,6 +829,7 @@ async function saveTheme() {
         noShadows: power_user.noShadows,
         sheld_width: power_user.sheld_width,
         timer_enabled: power_user.timer_enabled,
+        timestamps_enabled: power_user.timestamps_enabled,
         hotswap_enabled: power_user.hotswap_enabled,
 
     };
@@ -1249,6 +1270,13 @@ $(document).ready(() => {
         power_user.timer_enabled = value;
         localStorage.setItem(storage_keys.timer_enabled, power_user.timer_enabled);
         switchTimer();
+    });
+
+    $("#messageTimestampsEnabled").on("input", function () {
+        const value = !!$(this).prop('checked');
+        power_user.timestamps_enabled = value;
+        localStorage.setItem(storage_keys.timestamps_enabled, power_user.timestamps_enabled);
+        switchTimestamps();
     });
 
     $("#hotswapEnabled").on("input", function () {

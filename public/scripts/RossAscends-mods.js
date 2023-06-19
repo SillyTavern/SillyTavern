@@ -177,6 +177,29 @@ export function humanizedDateTime() {
     return HumanizedDateTime;
 }
 
+//this is a common format version to display a timestamp on each chat message
+//returns something like: June 19, 2023 2:20pm
+export function getMessageTimeStamp() {
+    const date = Date.now();
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const d = new Date(date);
+    const month = months[d.getMonth()];
+    const day = d.getDate();
+    const year = d.getFullYear();
+    let hours = d.getHours();
+    const minutes = ('0' + d.getMinutes()).slice(-2);
+    let meridiem = 'am';
+    if (hours >= 12) {
+        meridiem = 'pm';
+        hours -= 12;
+    }
+    if (hours === 0) {
+        hours = 12;
+    }
+    const formattedDate = month + ' ' + day + ', ' + year + ' ' + hours + ':' + minutes + meridiem;
+    return formattedDate;
+}
+
 
 // triggers:
 $("#rm_button_create").on("click", function () {                 //when "+New Character" is clicked

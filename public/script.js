@@ -1,4 +1,4 @@
-import { humanizedDateTime, favsToHotswap } from "./scripts/RossAscends-mods.js";
+import { humanizedDateTime, favsToHotswap, getMessageTimeStamp } from "./scripts/RossAscends-mods.js";
 import { encode } from "../scripts/gpt-2-3-tokenizer/mod.js";
 import { GPT3BrowserTokenizer } from "../scripts/gpt-3-tokenizer/gpt3-tokenizer.js";
 import {
@@ -1090,6 +1090,7 @@ function getMessageFromTemplate({
     timerTitle,
     bookmarkLink,
     forceAvatar,
+    timestamp,
 } = {}) {
     const mes = $('#message_template .mes').clone();
     mes.attr({
@@ -1099,10 +1100,12 @@ function getMessageFromTemplate({
         'is_system': !!isSystem,
         'bookmark_link': bookmarkLink,
         'force_avatar': !!forceAvatar,
+        'timestamp': timestamp,
     });
     mes.find('.avatar img').attr('src', avatarImg);
     mes.find('.ch_name .name_text').text(characterName);
     mes.find('.mes_bias').html(bias);
+    mes.find('.timestamp').text(timestamp);
     title && mes.attr('title', title);
     timerValue && mes.find('.mes_timer').attr('title', timerTitle).text(timerValue);
 
@@ -1150,6 +1153,7 @@ export function addCopyToCodeBlocks(messageElement) {
 
 function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true } = {}) {
     var messageText = mes["mes"];
+    var timestamp = mes.send_date;
 
     if (mes?.extra?.display_text) {
         messageText = mes.extra.display_text;
@@ -1211,6 +1215,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
         title: title,
         bookmarkLink: bookmarkLink,
         forceAvatar: mes.force_avatar,
+        timestamp: timestamp,
         ...formatGenerationTimer(mes.gen_started, mes.gen_finished),
     };
 
@@ -2639,7 +2644,7 @@ export async function sendMessageAsUser(textareaText, messageBias) {
     chat[chat.length - 1]['name'] = name1;
     chat[chat.length - 1]['is_user'] = true;
     chat[chat.length - 1]['is_name'] = true;
-    chat[chat.length - 1]['send_date'] = humanizedDateTime();
+    chat[chat.length - 1]['send_date'] = getMessageTimeStamp();
     chat[chat.length - 1]['mes'] = substituteParams(textareaText);
     chat[chat.length - 1]['extra'] = {};
 
@@ -3343,7 +3348,7 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         chat[chat.length - 1]['name'] = name2;
         chat[chat.length - 1]['is_user'] = false;
         chat[chat.length - 1]['is_name'] = this_mes_is_name;
-        chat[chat.length - 1]['send_date'] = humanizedDateTime();
+        chat[chat.length - 1]['send_date'] = getMessageTimeStamp();
         getMessage = $.trim(getMessage);
         chat[chat.length - 1]['mes'] = getMessage;
         chat[chat.length - 1]['title'] = title;
@@ -3742,7 +3747,7 @@ async function getChatResult() {
             name: name2,
             is_user: false,
             is_name: true,
-            send_date: humanizedDateTime(),
+            send_date: getMessageTimeStamp(),
             mes: firstMes,
         };
 

@@ -2036,6 +2036,11 @@
                                     <span data-i18n="Message Timer">Message Timer</span>
                                 </label>
 
+                                <label for="messageTimestampsEnabled" class="checkbox_label">
+                                    <input id="messageTimestampsEnabled" type="checkbox" />
+                                    <span data-i18n="Chat Timestamps">Chat Timestamps</span>
+                                </label>
+
                                 <label for="auto_scroll_chat_to_bottom" class="checkbox_label">
                                     <input id="auto_scroll_chat_to_bottom" type="checkbox" />
                                     <span data-i18n="Auto-scroll Chat">Auto-scroll Chat</span>
@@ -3072,7 +3077,10 @@
             <div class="swipe_left fa-solid fa-chevron-left"></div>
             <div class="mes_block">
                 <div class="ch_name flex-container justifySpaceBetween">
-                    <span class="name_text">${characterName}</span>
+                    <div class="flex-container flex1 alignitemscenter">
+                        <span class="name_text">${characterName}</span>
+                        <small class="timestamp"></small>
+                    </div>
 
                     <div class="mes_buttons">
                         <div class="extraMesButtonsHint fa-solid fa-ellipsis"></div>
