@@ -72,6 +72,7 @@ function PromptManagerModule() {
     this.listElement = null;
     this.activeCharacter = null;
     this.tokenHandler = null;
+    this.tokenCache = 0;
     this.error = null;
 
     this.tryGenerate = () => { };
@@ -221,10 +222,12 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
 
     // Trigger re-render when token settings are changed
     document.getElementById('openai_max_context').addEventListener('change', (event) => {
+        this.serviceSettings.openai_max_context = event.target.value;
         if (this.activeCharacter) this.render();
     });
 
     document.getElementById('openai_max_tokens').addEventListener('change', (event) => {
+        this.serviceSettings.openai_max_tokens = event.target.value;
         if (this.activeCharacter) this.render();
     });
 
@@ -351,6 +354,7 @@ PromptManagerModule.prototype.sanitizeServiceSettings = function () {
         this.serviceSettings.prompt_manager_settings = Object.assign({}, defaultPromptManagerSettings);
     }
 
+    // Add identifiers if there are none assigned to a prompt
     this.serviceSettings.prompts.forEach((prompt => prompt && (prompt.identifier = prompt.identifier || this.getUuidv4())));
 };
 
@@ -501,7 +505,9 @@ PromptManagerModule.prototype.getPromptIndexById = function (identifier) {
 PromptManagerModule.prototype.preparePrompt = function (prompt) {
     const groupMembers = this.getActiveGroupCharacters();
     if (0 < groupMembers.length) return {role: prompt.role || 'system', content: substituteParams(prompt.content ?? '', null, null, groupMembers.join(', '))}
-    prompt.content = substituteParams(prompt.content);
+
+    const preparedPrompt = new Prompt(prompt);
+    preparedPrompt.content = substituteParams(prompt.content);
 
     return new Prompt(prompt);
 }
@@ -563,6 +569,8 @@ PromptManagerModule.prototype.populateTokenHandler = function(messageCollection)
     messageCollection.getCollection().forEach((message) => {
         counts[message.identifier] = message.getTokens();
     });
+
+    this.tokenCache = this.tokenHandler.getTotal();
 }
 
 // Empties, then re-assembles the container containing the prompt list.
@@ -579,7 +587,7 @@ PromptManagerModule.prototype.renderPromptManager = function () {
             </div>
     `;
     const activeTokenInfo = `<span class="tooltip fa-solid fa-info-circle" title="Including tokens from hidden prompts"></span>`;
-    const totalActiveTokens = this.tokenHandler?.getTotal();
+    const totalActiveTokens = this.tokenCache;
 
     promptManagerDiv.insertAdjacentHTML('beforeend', `
         <div class="range-block-title" data-i18n="Prompts">
@@ -654,6 +662,8 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
     `;
 
     this.getPromptsForCharacter(this.activeCharacter).forEach(prompt => {
+        if (!prompt) return;
+
         const advancedEnabled = this.serviceSettings.prompt_manager_settings.showAdvancedSettings;
         let draggableEnabled = true;
         if (prompt.system_prompt && !advancedEnabled) draggableEnabled = false;
@@ -670,13 +680,22 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
         const markerClass = prompt.marker ? `${prefix}prompt_manager_marker` : '';
         const tokens = this.tokenHandler?.getCounts()[prompt.identifier] ?? 0;
 
+        // Warn the user if the chat history uses less than 30% of the total context
+        // To calculate the warning, at least 90% of the token budget has to be used up
         let warningClass = '';
         let warningTitle = '';
-        if ('chatHistory' === prompt.identifier) {
-            if (500 >= tokens) {
+
+        const tokenBudget = this.serviceSettings.openai_max_context - this.serviceSettings.openai_max_tokens;
+        const tokenThreshold = tokenBudget * 0.9;
+        if (this.tokenCache >= tokenThreshold &&
+            'chatHistory' === prompt.identifier) {
+            const warningThreshold = tokenBudget * 0.40;
+            const dangerThreshold = tokenBudget * 0.20;
+
+            if (tokens <= dangerThreshold) {
                 warningClass = 'fa-solid tooltip fa-triangle-exclamation text_danger';
                 warningTitle = 'Very little of your chat history is being sent, consider deactivating some other prompts.';
-            } else if (1000 >= tokens) {
+            } else if (tokens <= warningThreshold) {
                 warningClass = 'fa-solid tooltip fa-triangle-exclamation text_warning';
                 warningTitle = 'Only a few messages worth chat history are being sent.';
             }
