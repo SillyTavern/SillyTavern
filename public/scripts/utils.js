@@ -279,12 +279,29 @@ export function timestampToMoment(timestamp) {
     }
 
     // ST "humanized" format pattern
-    const pattern = /(\d{4})-(\d{1,2})-(\d{1,2}) @(\d{1,2})h (\d{1,2})m (\d{1,2})s (\d{1,3})ms/;
-    const replacement = (match, year, month, day, hour, minute, second, millisecond) => {
+    const pattern1 = /(\d{4})-(\d{1,2})-(\d{1,2}) @(\d{1,2})h (\d{1,2})m (\d{1,2})s (\d{1,3})ms/;
+    const replacement1 = (match, year, month, day, hour, minute, second, millisecond) => {
         return `${year.padStart(4, "0")}-${month.padStart(2, "0")}-${day.padStart(2, "0")}T${hour.padStart(2, "0")}:${minute.padStart(2, "0")}:${second.padStart(2, "0")}.${millisecond.padStart(3, "0")}Z`;
     };
-    const isoTimestamp = timestamp.replace(pattern, replacement);
-    return moment(isoTimestamp);
+    const isoTimestamp1 = timestamp.replace(pattern1, replacement1);
+    if (moment(isoTimestamp1).isValid()) {
+        return moment(isoTimestamp1);
+    }
+
+    // New format pattern: "June 19, 2023 4:13pm"
+    const pattern2 = /(\w+)\s(\d{1,2}),\s(\d{4})\s(\d{1,2}):(\d{1,2})(am|pm)/i;
+    const replacement2 = (match, month, day, year, hour, minute, meridiem) => {
+        const monthNum = moment().month(month).format("MM");
+        const hour24 = meridiem.toLowerCase() === 'pm' ? (parseInt(hour, 10) % 12) + 12 : parseInt(hour, 10) % 12;
+        return `${year}-${monthNum}-${day.padStart(2, "0")}T${hour24.toString().padStart(2, "0")}:${minute.padStart(2, "0")}:00`;
+    };
+    const isoTimestamp2 = timestamp.replace(pattern2, replacement2);
+    if (moment(isoTimestamp2).isValid()) {
+        return moment(isoTimestamp2);
+    }
+
+    // If none of the patterns match, return an invalid moment object
+    return moment.invalid();
 }
 
 export function sortMoments(a, b) {
