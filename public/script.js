@@ -4824,8 +4824,9 @@ export function select_selected_character(chid) {
     $("#renameCharButton").css("display", "");
     $('.open_alternate_greetings').data('chid', chid);
     $('#set_character_world').data('chid', chid);
-    const world = !!(characters[chid].data?.extensions?.world);
-    $('#set_character_world').toggleClass('world_set', world && world_names.includes(world));
+    const world = characters[chid]?.data?.extensions?.world;
+    const worldSet = world && world_names.includes(world);
+    $('#set_character_world').toggleClass('world_set', worldSet);
 
     $("#form_create").attr("actiontype", "editcharacter");
     saveSettingsDebounced();
@@ -5263,7 +5264,7 @@ function openCharacterWorldPopup() {
 
     function onSelectCharacterWorld() {
         const value = $(this).find('option:selected').val();
-        const worldIndex = Number(value);
+        const worldIndex = value !== '' ? Number(value) : NaN;
         const name = !isNaN(worldIndex) ? world_names[worldIndex] : '';
 
         $('#character_world').val(name);
@@ -7285,7 +7286,7 @@ $(document).ready(function () {
     });
 
     /*     $("#dupe_button").click(async function () {
-    
+
             const body = { avatar_url: characters[this_chid].avatar };
             const response = await fetch('/dupecharacter', {
                 method: 'POST',
