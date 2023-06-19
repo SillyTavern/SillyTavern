@@ -11,7 +11,7 @@ import {
     appendImageToMessage
 } from "../../../script.js";
 import { getApiUrl, getContext, extension_settings, doExtrasFetch, modules } from "../../extensions.js";
-import { stringFormat, initScrollHeight, resetScrollHeight } from "../../utils.js";
+import { stringFormat, initScrollHeight, resetScrollHeight, timestampToMoment } from "../../utils.js";
 export { MODULE_NAME };
 
 // Wraps a string into monospace font-face span
@@ -557,7 +557,7 @@ async function sendMessage(prompt, image) {
         is_system: context.groupId ? true : false,
         is_user: false,
         is_name: true,
-        send_date: Date.now(),
+        send_date: timestampToMoment(Date.now()).format('LL LT'),
         mes: context.groupId ? p(messageText) : messageText,
         extra: {
             image: image,
