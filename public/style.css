@@ -2889,6 +2889,12 @@ h5 {
     filter: none !important;
 }
 
+.tag.excluded {
+    opacity: 1 !important;
+    filter: none !important;
+    text-decoration: line-through;
+}
+
 #avatarCropWrap {
     margin: 10px auto;
     max-height: 90%;

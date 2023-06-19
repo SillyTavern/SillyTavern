@@ -246,27 +246,38 @@ function appendTagToList(listElement, tag, { removable, selectable, action }) {
 }
 
 function onTagFilterClick(listElement) {
-    const wasSelected = $(this).hasClass('selected');
-    $(CHARACTER_SELECTOR).removeClass('hiddenByTag');
-
-    $(this).toggleClass('selected', !wasSelected);
+    if ($(this).hasClass('selected')) {
+        $(this).removeClass('selected');
+        $(this).addClass('excluded');
+    }
+    else if ($(this).hasClass('excluded')) {
+        $(this).removeClass('excluded');
+    }
+    else {
+        $(this).addClass('selected');
+    }
 
     const tagIds = [...($(listElement).find(".tag.selected:not(.actionable)").map((_, el) => $(el).attr("id")))];
-    $(CHARACTER_SELECTOR).each((_, element) => applyFilterToElement(tagIds, element));
+    const excludedTagIds = [...($(listElement).find(".tag.excluded:not(.actionable)").map((_, el) => $(el).attr("id")))];
+    $(CHARACTER_SELECTOR).each((_, element) => applyFilterToElement(tagIds, excludedTagIds, element));
     updateVisibleDivs('#rm_print_characters_block', true);
 }
 
-function applyFilterToElement(tagIds, element) {
-    if (tagIds.length === 0) {
-        $(element).removeClass('hiddenByTag');
-        return;
-    }
-
+function applyFilterToElement(tagIds, excludedTagIds, element) {
     const tagFlags = tagIds.map(tagId => isElementTagged(element, tagId));
     const trueFlags = tagFlags.filter(x => x);
     const isTagged = TAG_LOGIC_AND ? tagFlags.length === trueFlags.length : trueFlags.length > 0;
 
-    $(element).toggleClass('hiddenByTag', !isTagged);
+    const excludedTagFlags = excludedTagIds.map(tagId => isElementTagged(element, tagId));
+    const isExcluded = excludedTagFlags.includes(true);
+
+    if (isExcluded) {
+        $(element).addClass('hiddenByTag');
+    } else if (tagIds.length > 0 && !isTagged) {
+        $(element).addClass('hiddenByTag');
+    } else {
+        $(element).removeClass('hiddenByTag');
+    }
 }
 
 function isElementTagged(element, tagId) {
