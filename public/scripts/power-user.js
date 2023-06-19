@@ -97,6 +97,7 @@ let power_user = {
     avatar_style: avatar_styles.ROUND,
     chat_display: chat_styles.DEFAULT,
     sheld_width: sheld_width.DEFAULT,
+	never_resize_avatars: false,
     play_message_sound: false,
     play_sound_unfocused: true,
     auto_save_msg_edits: false,
@@ -568,6 +569,7 @@ function loadPowerUserSettings(settings, data) {
     $("#multigen_next_chunks").val(power_user.multigen_next_chunks);
     $("#play_message_sound").prop("checked", power_user.play_message_sound);
     $("#play_sound_unfocused").prop("checked", power_user.play_sound_unfocused);
+    $("#never_resize_avatars").prop("checked", power_user.never_resize_avatars);
     $("#auto_save_msg_edits").prop("checked", power_user.auto_save_msg_edits);
     $("#allow_name1_display").prop("checked", power_user.allow_name1_display);
     $("#allow_name2_display").prop("checked", power_user.allow_name2_display);
@@ -1138,6 +1140,11 @@ $(document).ready(() => {
 
     $("#ui-preset-save-button").on('click', saveTheme);
 
+    $("#never_resize_avatars").on('input', function () {
+        power_user.never_resize_avatars = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
     $("#play_message_sound").on('input', function () {
         power_user.play_message_sound = !!$(this).prop('checked');
         saveSettingsDebounced();
@@ -1152,7 +1159,7 @@ $(document).ready(() => {
         power_user.auto_save_msg_edits = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
-
+	
     $("#character_sort_order").on('change', function () {
         power_user.sort_field = $(this).find(":selected").data('field');
         power_user.sort_order = $(this).find(":selected").data('order');

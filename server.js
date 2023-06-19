@@ -1033,13 +1033,19 @@ async function charaWrite(img_url, data, target_img, response = undefined, mes =
 async function tryReadImage(img_url, crop) {
     try {
         let rawImg = await jimp.read(img_url);
+		let final_width = rawImg.bitmap.width, final_height = rawImg.bitmap.height
 
         // Apply crop if defined
         if (typeof crop == 'object' && [crop.x, crop.y, crop.width, crop.height].every(x => typeof x === 'number')) {
             rawImg = rawImg.crop(crop.x, crop.y, crop.width, crop.height);
+			// Apply standard resize if requested
+			if (crop.want_resize) {
+				final_width = AVATAR_WIDTH
+				final_height = AVATAR_HEIGHT
+			}
         }
 
-        const image = await rawImg.cover(AVATAR_WIDTH, AVATAR_HEIGHT).getBufferAsync(jimp.MIME_PNG);
+		const image = await rawImg.cover(final_width, final_height).getBufferAsync(jimp.MIME_PNG);
         return image;
     }
     // If it's an unsupported type of image (APNG) - just read the file as buffer

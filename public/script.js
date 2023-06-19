@@ -3651,6 +3651,9 @@ async function read_avatar_load(input) {
         $('#dialogue_popup').addClass('large_dialogue_popup wide_dialogue_popup');
 
         const croppedImage = await callPopup(getCropPopup(e.target.result), 'avatarToCrop');
+		if (!croppedImage) {
+			return;
+		}
 
         $("#avatar_load_preview").attr("src", croppedImage || e.target.result);
 
@@ -4943,8 +4946,8 @@ function callPopup(text, type, inputValue = '') {
     $("#dialogue_popup_cancel").css("display", "inline-block");
     switch (popup_type) {
         case "avatarToCrop":
-            $("#dialogue_popup_ok").text("Ok");
-            $("#dialogue_popup_cancel").css("display", "none");
+            $("#dialogue_popup_ok").text("Accept");
+            break;
         case "text":
         case "alternate_greeting":
         case "char_not_selected":
@@ -4990,6 +4993,7 @@ function callPopup(text, type, inputValue = '') {
             rotatable: false,
             crop: function (event) {
                 crop_data = event.detail;
+				crop_data.want_resize = !power_user.never_resize_avatars
             }
         });
     }
@@ -6147,7 +6151,10 @@ $(document).ready(function () {
         });
 
         $('#dialogue_popup').addClass('large_dialogue_popup wide_dialogue_popup');
-        await callPopup(getCropPopup(dataUrl.target.result), 'avatarToCrop');
+        const confirmation = await callPopup(getCropPopup(dataUrl.target.result), 'avatarToCrop');
+		if (!confirmation) {
+			return;
+		}
 
         let url = "/uploaduseravatar";
 
