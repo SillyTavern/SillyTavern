@@ -364,31 +364,33 @@ function formatWorldInfo(value) {
 /**
  * Populates the chat history of the conversation.
  *
- * @param {Map} prompts - Map object containing all prompts where the key is the prompt identifier and the value is the prompt object.
+ * @param {PromptCollection} prompts - Map object containing all prompts where the key is the prompt identifier and the value is the prompt object.
  * @param {ChatCompletion} chatCompletion - An instance of ChatCompletion class that will be populated with the prompts.
  */
 function populateChatHistory(prompts, chatCompletion) {
     // Chat History
-    chatCompletion.add( new MessageCollection('chatHistory'), prompts.index('chatHistory'));
+    chatCompletion.add(new MessageCollection('chatHistory'), prompts.index('chatHistory'));
     const mainChat = selected_group ? '[Start a new group chat. Group members: ${names}]' : '[Start a new Chat]';
     const mainChatMessage = new Message('system', mainChat, 'newMainChat');
-    // Insert chat messages
-    if (chatCompletion.canAfford(mainChatMessage)) {
-        chatCompletion.insert(mainChatMessage, 'chatHistory');
 
-        [...openai_msgs].forEach((prompt, index) => {
-            const chatMessage = new Message(prompt.role, prompt.content, 'chatHistory-' + index);
-            if (chatCompletion.canAfford(chatMessage)) {
-                chatCompletion.insert(chatMessage, 'chatHistory');
-            }
-        });
-    }
+    chatCompletion.reserveBudget(mainChatMessage);
+
+    // Insert chat messages as long as there is budget available
+    [...openai_msgs].reverse().every((prompt, index) => {
+        const chatMessage = new Message(prompt.role, prompt.content, 'chatHistory-' + index);
+        if (chatCompletion.canAfford(chatMessage)) chatCompletion.insertAtStart(chatMessage, 'chatHistory');
+        else return false;
+        return true;
+    });
+
+    chatCompletion.freeBudget(mainChatMessage);
+    chatCompletion.insertAtStart(mainChatMessage, 'chatHistory');
 }
 
 /**
  * This function populates the dialogue examples in the conversation.
  *
- * @param {Map} prompts - Map object containing all prompts where the key is the prompt identifier and the value is the prompt object.
+ * @param {PromptCollection} prompts - Map object containing all prompts where the key is the prompt identifier and the value is the prompt object.
  * @param {ChatCompletion} chatCompletion - An instance of ChatCompletion class that will be populated with the prompts.
  */
 function populateDialogueExamples(prompts, chatCompletion) {
@@ -526,7 +528,9 @@ async function prepareOpenAIMessages({
                                      } = {}) {
     const prompts = promptManager.getPromptCollection();
     const chatCompletion = new ChatCompletion();
-    chatCompletion.setTokenBudget(oai_settings.openai_max_context - oai_settings.openai_max_tokens);
+    const userSettings = promptManager.serviceSettings;
+
+    chatCompletion.setTokenBudget(userSettings.openai_max_context, userSettings.openai_max_tokens);
 
     if (power_user.console_log_prompts) chatCompletion.enableLogging();
 
@@ -549,12 +553,13 @@ async function prepareOpenAIMessages({
 
     // Tavern Extras - Summary
     const summary = extensionPrompts['1_memory'];
-    if (summary) mappedPrompts.push({role: 'system', content: summary.content, identifier: 'summary'});
+    if (summary && summary.content) mappedPrompts.push({role: 'system', content: summary.content, identifier: 'summary'});
 
     // Authors Note
     const authorsNote = extensionPrompts['2_floating_prompt'];
-    if (authorsNote) mappedPrompts.push({role: 'system', content: authorsNote.content, identifier: 'authorsNote'});
+    if (authorsNote && authorsNote.content) mappedPrompts.push({role: 'system', content: authorsNote.content, identifier: 'authorsNote'});
 
+    // Create prompt objects and substitute markers
     mappedPrompts.forEach((prompt) => {
         const newPrompt = promptManager.preparePrompt(prompt);
         const markerIndex = prompts.index(prompt.identifier);
@@ -564,7 +569,7 @@ async function prepareOpenAIMessages({
     });
 
     // Allow subscribers to manipulate the prompts object
-    await eventSource.emit(event_types.OAI_BEFORE_CHATCOMPLETION, prompts);
+    eventSource.emit(event_types.OAI_BEFORE_CHATCOMPLETION, prompts);
 
     try {
         populateChatCompletion(prompts, chatCompletion, {bias, quietPrompt, type});
@@ -577,9 +582,9 @@ async function prepareOpenAIMessages({
             chatCompletion.log('Unexpected error:');
             chatCompletion.log(error);
         }
+    } finally {
+        promptManager.populateTokenHandler(chatCompletion.getMessages());
     }
-
-    promptManager.populateTokenHandler(chatCompletion.getMessages());
 
     const chat = chatCompletion.getChat();
     openai_messages_count = chat.filter(x => x.role === "user" || x.role === "assistant").length;
@@ -1143,8 +1148,12 @@ class ChatCompletion {
         return this.messages;
     }
 
-    setTokenBudget(tokenBudget) {
-        this.tokenBudget = tokenBudget;
+    setTokenBudget(context, response) {
+        console.log(`Context size: ${context}`);
+        console.log(`Response size: ${response}`);
+
+        this.tokenBudget = context - response;
+
         console.log(`Token budget: ${this.tokenBudget}`);
     }
 
@@ -1164,13 +1173,23 @@ class ChatCompletion {
         return this;
     }
 
-    insert(message, identifier) {
+    insertAtStart(message, identifier) {
+        this.insert(message, identifier, 'start');
+    }
+
+    insertAtEnd(message, identifier) {
+        this.insert(message, identifier, 'end');
+    }
+
+    insert(message, identifier, position = 'end') {
         this.validateMessage(message);
         this.checkTokenBudget(message, message.identifier);
 
         const index = this.findMessageIndex(identifier);
         if (message.content) {
-            this.messages.collection[index].collection.push(message);
+            if ('start' === position) this.messages.collection[index].collection.unshift(message);
+            else if ('end' === position) this.messages.collection[index].collection.push(message);
+
             this.decreaseTokenBudgetBy(message.getTokens());
             this.log(`Inserted ${message.identifier} into ${identifier}. Remaining tokens: ${this.tokenBudget}`);
         }
@@ -1233,6 +1252,13 @@ class ChatCompletion {
         }
     }
 
+    reserveBudget(message) { this.decreaseTokenBudgetBy(message.getTokens()) };
+
+    freeBudget(message) { this.increaseTokenBudgetBy(message.getTokens()) };
+
+    increaseTokenBudgetBy(tokens) {
+        this.tokenBudget += tokens;
+    }
     decreaseTokenBudgetBy(tokens) {
         this.tokenBudget -= tokens;
     }
