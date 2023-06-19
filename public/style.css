@@ -2891,13 +2891,26 @@ h5 {
 
 .tag.excluded {
     opacity: 1 !important;
-    filter: saturate(0.5) !important;
-    text-decoration: line-through;
-    text-decoration-thickness: 2px;
-    text-decoration-color: var(--white70a);
-    outline-color: red;
-    outline-style: solid;
-    outline-width: 2px;
+    filter: saturate(0.4) !important;
+    border: 1px solid red;
+}
+
+.tag.excluded:after {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    content: "\d7";
+    font-size: calc(var(--mainFontSize) *3);
+    color: red;
+    line-height: calc(var(--mainFontSize)*1.3);
+    text-align: center;
+    text-shadow: 1px 1px 0px black,
+        -1px -1px 0px black,
+        -1px 1px 0px black,
+        1px -1px 0px black;
+    opacity: 1;
 }
 
 #avatarCropWrap {
