@@ -23,9 +23,7 @@ import {
     world_info_depth,
     world_info,
     getWorldInfoPrompt,
-    selectImportedWorldInfo,
     setWorldInfoSettings,
-    deleteWorldInfo,
     world_info_recursive,
     world_info_case_sensitive,
     world_info_match_whole_words,
@@ -4958,12 +4956,10 @@ function callPopup(text, type, inputValue = '') {
             $("#dialogue_popup_ok").text("Ok");
             $("#dialogue_popup_cancel").css("display", "none");
             break;
-        case "world_imported":
         case "new_chat":
         case "confirm":
             $("#dialogue_popup_ok").text("Yes");
             break;
-        case "del_world":
         case "del_group":
         case "rename_chat":
         case "del_chat":
@@ -6347,14 +6343,8 @@ $(document).ready(function () {
                 },
             });
         }
-        if (popup_type === "world_imported") {
-            selectImportedWorldInfo();
-        }
         if (popup_type == "alternate_greeting" && menu_type !== "create") {
             createOrEditCharacter();
-        }
-        if (popup_type === "del_world" && world_info) {
-            deleteWorldInfo(world_info);
         }
         if (popup_type === "del_group") {
             const groupId = $("#dialogue_popup").data("group_id");

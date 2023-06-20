@@ -1826,34 +1826,48 @@
             </div>
             <div id="WorldInfo" class="drawer-content closedDrawer">
                 <div id="WorldInfoheader" class="fa-solid fa-grip drag-grabber"></div>
-                <div id="WI_panel_pin_div" title="Locked = World Editor will stay open">
+                <div id="WI_panel_pin_div" class="flex-container alignitemscenter gap10px" title="Locked = World Editor will stay open">
                     <input type="checkbox" id="WI_panel_pin">
                     <label for="WI_panel_pin">
                         <div class="unchecked fa-solid fa-unlock "></div>
                         <div class="checked fa-solid fa-lock "></div>
                     </label>
-                </div>
-                <div id="wi-holder" class="margin5">
                     <h3>
-                        Global World Info / Lorebook Selector
+                        Worlds/Lorebooks
                         <a href="https://docs.sillytavern.app/usage/core-concepts/worldinfo/" class="notes-link" target="_blank">
                             <span class="note-link-span">?</span>
                         </a>
                     </h3>
-                    <form id="form_world_import" action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                        <input type="file" id="world_import_file" accept=".json" name="avatar" hidden>
-                    </form>
-                    <div class="world_info_select_block">
-                        <select id="world_info" class="flexGrow">
-                            <option value="None">None</option>
-                        </select>
-                        <div id="world_create_button" class="menu_button fa-solid fa-plus faSmallFontSquareFix" title="Create"></div>
-                        <div id="world_import_button" class="menu_button fa-solid fa-file-arrow-up faSmallFontSquareFix" title="Import">
+                </div>
+                <div id="wi-holder" class="margin5">
+                    <div class="wi-settings flex-container gap10px alignitemscenter">
+                        <div class="flex1 flex-container flexFlowColumn">
+                            <div class="flex range-block">
+                                <div class="range-block-title justifyLeft">
+                                    <small>Active World</small>
+                                </div>
+                                <div class="range-block-range">
+                                    <select id="world_info" class="flexGrow margin0">
+                                        <option value="None">None</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="flex range-block">
+                                <div class="range-block-title justifyLeft">
+                                    <label for="world_info_character_strategy">
+                                        <small>Character Lore Insertion Strategy</small>
+                                    </label>
+                                </div>
+                                <div class="range-block-range">
+                                    <select id="world_info_character_strategy" class="flexGrow margin0">
+                                        <option value="0">Sorted Evenly</option>
+                                        <option value="1">Character Lore First</option>
+                                        <option value="2">Global Lore First</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
-                        <div id="world_info_edit_button" class="menu_button fa-solid fa-pencil faSmallFontSquareFix" title="Details"></div>
-                    </div>
 
-                    <div class="flex-container gap10px alignitemscenter">
                         <div name="WIScanAndTokens" class="flex1 flex-container flexFlowColumn">
                             <div class="flex1 gap5px range-block">
                                 <div class="wide10pMinFit">
@@ -1861,7 +1875,7 @@
                                 </div>
                                 <div class="range-block-range-and-counter">
                                     <div class="range-block-range paddingLeftRight5">
-                                        <input type="range" id="world_info_depth" name="volume" min="1" max="10" step="1">
+                                        <input type="range" id="world_info_depth" name="volume" min="0" max="10" step="1">
                                     </div>
                                     <div class="range-block-counter margin0">
                                         <div contenteditable="true" data-for="world_info_depth" id="world_info_depth_counter">
@@ -1885,18 +1899,6 @@
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                        <div class="flex1 flex-container flexFlowColumn">
-                            <div class="flex gap5px range-block">
-                                <label for="world_info_character_strategy">
-                                    Character Lore Insertion Strategy
-                                </label>
-                                <select id="world_info_character_strategy" class="flexGrow">
-                                    <option value="0">Sorted Evenly</option>
-                                    <option value="1">Character Lore First</option>
-                                    <option value="2">Global Lore First</option>
-                                </select>
                             </div>
                         </div>
                         <div class="range-block flex-container flexFlowColumn">
@@ -1927,23 +1929,25 @@
                             <div id="world_popup_header" class="flex-container flexGap5">
                                 <div class="world_popup_logo_block">
                                     <h3>
-                                        World Editor
+                                        World/Lore Editor
                                         <a href="https://docs.sillytavern.app/usage/core-concepts/worldinfo/#world-info-entry" class="notes-link" target="_blank"><span class="note-link-span">?</span></a>
                                     </h3>
                                 </div>
                                 <div id="OpenAllWIEntries" class="menu_button fa-solid fa-expand" title="Open all Entries"></div>
                                 <div id="CloseAllWIEntries" class="menu_button fa-solid fa-compress" title="Close all Entries"></div>
+                                <div id="world_popup_new" class="menu_button fa-solid fa-plus" title="New Entry"></div>
                                 <div class="flex-container">
+                                    <form id="form_world_import" action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                                        <input type="file" id="world_import_file" accept=".json" name="avatar" hidden>
+                                    </form>
                                     <form id="form_rename_world" action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                                        <input id="world_popup_name" name="world_popup_name" class="text_pole" maxlength="99" size="32" value="" autocomplete="off">
-                                        <label for="world_popup_name_button" class="menu_button fa-solid fa-pencil faSmallFontSquareFix" title="Rename World Info">
-                                            <input id="world_popup_name_button" type="submit" value="">
-                                        </label>
-                                        <div id="world_popup_bottom_holder" class="flex-container">
-                                            <div id="world_popup_new" class="menu_button fa-solid fa-plus margin0 faSmallFontSquareFix" title="New Entry"></div>
-                                            <div id="world_popup_export" class="menu_button fa-solid fa-file-export margin0 faSmallFontSquareFix" title="Export World Info"></div>
-                                            <div id="world_popup_delete" class="menu_button fa-solid fa-trash-can redWarningBG margin0 faSmallFontSquareFix" title="Delete World Info"></div>
-                                        </div>
+                                        <div id="world_create_button" class="menu_button fa-solid fa-globe fa-fw" title="Create"></div>
+                                        <div id="world_import_button" class="menu_button fa-solid fa-file-import fa-fw" title="Import World Info"></div>
+                                        <div id="world_popup_export" class="menu_button fa-solid fa-file-export margin0 fa-fw" title="Export World Info"></div>
+                                        <div id="world_popup_delete" class="menu_button fa-solid fa-trash-can redWarningBG margin0 fa-fw" title="Delete World Info"></div>
+                                        <span>&nbsp;Editing:</span>
+                                        <select id="world_editor_select" class="margin0"></select>
+                                        <div id="world_popup_name_button" class="menu_button fa-solid fa-i-cursor fa-fw" title="Rename World Info"></div>
                                     </form>
 
                                 </div>

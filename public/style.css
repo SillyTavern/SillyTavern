@@ -1900,7 +1900,6 @@ grammarly-extension {
 }
 
 #world_popup {
-    display: none;
     min-height: 100px;
     min-width: 100px;
     left: 0;
@@ -1917,11 +1916,6 @@ grammarly-extension {
 
 .WIEntryContentAndMemo .world_entry_thin_controls {
     flex: 1;
-}
-
-
-#world_popup_name_button {
-    display: none;
 }
 
 #world_popup_bottom_holder {
@@ -4456,6 +4450,10 @@ body.waifuMode #avatar_zoom_popup {
         left: 0 !important;
         resize: none !important;
         top: 40px;
+    }
+
+    .wi-settings {
+        flex-direction: column;
     }
 
     #character_popup,

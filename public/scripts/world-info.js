@@ -1,5 +1,5 @@
 import { saveSettings, callPopup, substituteParams, getTokenCount, getRequestHeaders, chat_metadata, this_chid, characters } from "../script.js";
-import { download, debounce, delay, initScrollHeight, resetScrollHeight } from "./utils.js";
+import { download, debounce, initScrollHeight, resetScrollHeight } from "./utils.js";
 import { getContext } from "./extensions.js";
 import { metadata_keys, shouldWIAddPrompt } from "./extensions/floating-prompt/index.js";
 
@@ -12,10 +12,8 @@ export {
     world_info_match_whole_words,
     world_info_character_strategy,
     world_names,
-    imported_world_name,
     checkWorldInfo,
     deleteWorldInfo,
-    selectImportedWorldInfo,
     setWorldInfoSettings,
     getWorldInfoPrompt,
 }
@@ -30,12 +28,10 @@ let world_info = null;
 let world_names;
 let world_info_depth = 2;
 let world_info_budget = 128;
-let is_world_edit_open = false;
 let world_info_recursive = false;
 let world_info_case_sensitive = false;
 let world_info_match_whole_words = false;
 let world_info_character_strategy = world_info_insertion_strategy.evenly;
-let imported_world_name = "";
 const saveWorldDebounced = debounce(async (name, data) => await _save(name, data), 1000);
 const saveSettingsDebounced = debounce(() => saveSettings(), 1000);
 
@@ -95,23 +91,23 @@ function setWorldInfoSettings(settings, data) {
 
     world_names.forEach((item, i) => {
         $("#world_info").append(`<option value='${i}'>${item}</option>`);
+        $("#world_editor_select").append(`<option value='${i}'>${item}</option>`);
         // preselect world if saved
         if (item == world_info) {
-            $("#world_info").val(i).change();
+            $("#world_info").val(i).trigger('change');
         }
     });
+
+    $("#world_editor_select").trigger("change");
 }
 
 // World Info Editor
 async function showWorldEditor(name) {
     if (!name) {
-        toastr.warning("Select a world info first!");
+        hideWorldEditor();
         return;
     }
 
-    is_world_edit_open = true;
-    $("#world_popup_name").val(name);
-    $("#world_popup").css("display", "flex");
     const wiData = await loadWorldInfoData(name);
     displayWorldEntries(name, wiData);
 }
@@ -146,29 +142,36 @@ async function updateWorldInfoList(importedWorldName) {
         var data = await result.json();
         world_names = data.world_names?.length ? data.world_names : [];
         $("#world_info").find('option[value!="None"]').remove();
+        $("#world_editor_select").empty();
 
         world_names.forEach((item, i) => {
             $("#world_info").append(`<option value='${i}'>${item}</option>`);
+            $("#world_editor_select").append(`<option value='${i}'>${item}</option>`);
         });
 
         if (importedWorldName) {
             const indexOf = world_names.indexOf(world_info);
             $("#world_info").val(indexOf);
-
-            callPopup("<h3>World imported successfully! Select it now?</h3>", "world_imported");
         }
     }
 }
 
 function hideWorldEditor() {
-    is_world_edit_open = false;
-    $("#world_popup").css("display", "none");
+    displayWorldEntries(null, null);
+}
+
+function nullWorldInfo() {
+    toastr.info("Create or import a new World Info file first.", "World Info is not set", { timeOut: 10000, preventDuplicates: true });
 }
 
 function displayWorldEntries(name, data) {
     $("#world_popup_entries_list").empty();
 
     if (!data || !("entries" in data)) {
+        $("#world_popup_new").off('click').on('click', nullWorldInfo);
+        $("#world_popup_name_button").off('click').on('click', nullWorldInfo);
+        $("#world_popup_export").off('click').on('click', nullWorldInfo);
+        $("#world_popup_delete").off('click').on('click', nullWorldInfo);
         return;
     }
 
@@ -181,8 +184,8 @@ function displayWorldEntries(name, data) {
         createWorldInfoEntry(name, data);
     });
 
-    $("#world_popup_name_button").off('click').on('click', () => {
-        renameWorldInfo(name, data);
+    $("#world_popup_name_button").off('click').on('click', async () => {
+        await renameWorldInfo(name, data);
     });
 
     $("#world_popup_export").off('click').on('click', () => {
@@ -191,6 +194,16 @@ function displayWorldEntries(name, data) {
             const fileName = `${name}.json`;
             download(jsonValue, fileName, "application/json");
         }
+    });
+
+    $("#world_popup_delete").off('click').on('click', async () => {
+        const confirmation = await callPopup(`<h3>Delete the World/Lorebook: "${name}"?</h3>This action is irreversible!`, "confirm");
+
+        if (!confirmation) {
+            return;
+        }
+
+        await deleteWorldInfo(name, world_info);
     });
 }
 
@@ -457,18 +470,31 @@ async function saveWorldInfo(name, data, immediately) {
 
 async function renameWorldInfo(name, data) {
     const oldName = name;
-    const newName = $("#world_popup_name").val().trim();
+    const newName = await callPopup("<h3>Rename World Info</h3>Enter a new name:", 'input', oldName);
 
     if (oldName === newName || !newName) {
+        console.debug("World info rename cancelled");
         return;
     }
 
-    if (oldName == world_info) {
+    let selectNewName = null;
+    if (oldName === world_info) {
+        console.debug("Renaming current world info");
         world_info = newName;
+        selectNewName = newName;
+    }
+    else {
+        console.debug("Renaming non-current world info");
+        selectNewName = world_info;
     }
 
     await saveWorldInfo(newName, data, true);
-    await deleteWorldInfo(oldName, newName);
+    await deleteWorldInfo(oldName, selectNewName);
+
+    const selectedIndex = world_names.indexOf(newName);
+    if (selectedIndex !== -1) {
+        $('#world_editor_select').val(selectedIndex).trigger('change');
+    }
 }
 
 async function deleteWorldInfo(worldInfoName, selectWorldName) {
@@ -492,7 +518,7 @@ async function deleteWorldInfo(worldInfoName, selectWorldName) {
             $("#world_info").val("None").trigger('change');
         }
 
-        hideWorldEditor();
+        $('#world_editor_select').trigger('change');
     }
 }
 
@@ -525,9 +551,8 @@ function getFreeWorldName() {
     return undefined;
 }
 
-async function createNewWorldInfo() {
+async function createNewWorldInfo(worldInfoName) {
     const worldInfoTemplate = { entries: {} };
-    const worldInfoName = getFreeWorldName();
 
     if (!worldInfoName) {
         return;
@@ -540,8 +565,10 @@ async function createNewWorldInfo() {
     const selectedIndex = world_names.indexOf(worldInfoName);
     if (selectedIndex !== -1) {
         $("#world_info").val(selectedIndex).trigger('change');
+        $('#world_editor_select').val(selectedIndex).trigger('change');
     } else {
         $("#world_info").val("None").trigger('change');
+        hideWorldEditor();
     }
 }
 
@@ -629,7 +656,7 @@ async function getSortedEntries() {
 
 async function checkWorldInfo(chat) {
     const context = getContext();
-    const messagesToLookBack = world_info_depth * 2;
+    const messagesToLookBack = world_info_depth * 2 || 1;
     let textToScan = transformString(chat.slice(0, messagesToLookBack).join(""));
     let worldInfoBefore = "";
     let worldInfoAfter = "";
@@ -753,21 +780,8 @@ function matchKeys(haystack, needle) {
     return false;
 }
 
-function selectImportedWorldInfo() {
-    if (!imported_world_name) {
-        return;
-    }
-
-    world_names.forEach((item, i) => {
-        if (item === imported_world_name) {
-            $("#world_info").val(i).change();
-        }
-    });
-    imported_world_name = "";
-}
-
 jQuery(() => {
-    $("#world_info").change(async function () {
+    $("#world_info").on('change', async function () {
         const selectedWorld = $("#world_info").find(":selected").val();
         world_info = null;
 
@@ -776,14 +790,12 @@ jQuery(() => {
             world_info = !isNaN(worldIndex) ? world_names[worldIndex] : null;
         }
 
-        if (selectedWorld === "None") { hideWorldEditor(); }
-        if (is_world_edit_open && selectedWorld !== "None") { showWorldEditor(world_info) };
         saveSettingsDebounced();
     });
 
     //**************************WORLD INFO IMPORT EXPORT*************************//
-    $("#world_import_button").click(function () {
-        $("#world_import_file").click();
+    $("#world_import_button").on('click', function () {
+        $("#world_import_file").trigger('click');
     });
 
     $("#world_import_file").on("change", function (e) {
@@ -808,10 +820,16 @@ jQuery(() => {
             cache: false,
             contentType: false,
             processData: false,
-            success: function (data) {
+            success: async function (data) {
                 if (data.name) {
-                    imported_world_name = data.name;
-                    updateWorldInfoList(imported_world_name);
+                    await updateWorldInfoList(data.name);
+
+                    const newIndex = world_names.indexOf(data.name);
+                    if (newIndex >= 0) {
+                        $("#world_editor_select").val(newIndex).trigger('change');
+                    }
+
+                    toastr.info(`World Info "${data.name}" imported successfully!`);
                 }
             },
             error: (jqXHR, exception) => { },
@@ -821,24 +839,23 @@ jQuery(() => {
         $("#form_world_import").trigger("reset");
     });
 
-    $("#world_info_edit_button").click(() => {
-        is_world_edit_open ? hideWorldEditor() : showWorldEditor(world_info);
-    });
-
-    $("#world_popup_delete").click(() => {
-        callPopup("<h3>Delete the World Info?</h3>", "del_world");
-    });
-
     $("#world_cross").click(() => {
         hideWorldEditor();
     });
 
     $("#world_create_button").on('click', async () => {
-        const confirm = await callPopup("<h3>Create a new World Info?</h3>", "confirm");
+        const tempName = getFreeWorldName();
+        const finalName = await callPopup("<h3>Create a new World Info?</h3>Enter a name for the new file:", "input", tempName);
 
-        if (confirm) {
-            await createNewWorldInfo();
+        if (finalName) {
+            await createNewWorldInfo(finalName);
         }
+    });
+
+    $("#world_editor_select").on('change', async () => {
+        const selectedIndex = $("#world_editor_select").find(":selected").val();
+        const worldName = world_names[selectedIndex];
+        showWorldEditor(worldName);
     });
 
     $(document).on("input", "#world_info_depth", function () {
