@@ -5,7 +5,6 @@ import { metadata_keys, shouldWIAddPrompt } from "./extensions/floating-prompt/i
 
 export {
     world_info,
-    world_info_data,
     world_info_budget,
     world_info_depth,
     world_info_recursive,
@@ -29,7 +28,6 @@ const world_info_insertion_strategy = {
 
 let world_info = null;
 let world_names;
-let world_info_data = null;
 let world_info_depth = 2;
 let world_info_budget = 128;
 let is_world_edit_open = false;
@@ -38,7 +36,7 @@ let world_info_case_sensitive = false;
 let world_info_match_whole_words = false;
 let world_info_character_strategy = world_info_insertion_strategy.evenly;
 let imported_world_name = "";
-const saveWorldDebounced = debounce(async () => await _save(), 1000);
+const saveWorldDebounced = debounce(async (name, data) => await _save(name, data), 1000);
 const saveSettingsDebounced = debounce(() => saveSettings(), 1000);
 
 const world_info_position = {
@@ -105,17 +103,17 @@ function setWorldInfoSettings(settings, data) {
 }
 
 // World Info Editor
-async function showWorldEditor() {
-    if (!world_info) {
+async function showWorldEditor(name) {
+    if (!name) {
         toastr.warning("Select a world info first!");
         return;
     }
 
     is_world_edit_open = true;
-    $("#world_popup_name").val(world_info);
+    $("#world_popup_name").val(name);
     $("#world_popup").css("display", "flex");
-    world_info_data = await loadWorldInfoData(world_info);
-    displayWorldEntries(world_info_data);
+    const wiData = await loadWorldInfoData(name);
+    displayWorldEntries(name, wiData);
 }
 
 async function loadWorldInfoData(name) {
@@ -167,7 +165,7 @@ function hideWorldEditor() {
     $("#world_popup").css("display", "none");
 }
 
-function displayWorldEntries(data) {
+function displayWorldEntries(name, data) {
     $("#world_popup_entries_list").empty();
 
     if (!data || !("entries" in data)) {
@@ -176,11 +174,27 @@ function displayWorldEntries(data) {
 
     for (const entryUid in data.entries) {
         const entry = data.entries[entryUid];
-        appendWorldEntry(entry);
+        appendWorldEntry(name, data, entry);
     }
+
+    $("#world_popup_new").off('click').on('click', () => {
+        createWorldInfoEntry(name, data);
+    });
+
+    $("#world_popup_name_button").off('click').on('click', () => {
+        renameWorldInfo(name, data);
+    });
+
+    $("#world_popup_export").off('click').on('click', () => {
+        if (name && data) {
+            const jsonValue = JSON.stringify(data);
+            const fileName = `${name}.json`;
+            download(jsonValue, fileName, "application/json");
+        }
+    });
 }
 
-function appendWorldEntry(entry) {
+function appendWorldEntry(name, data, entry) {
     const template = $("#entry_edit_template .world_entry").clone();
     template.data("uid", entry.uid);
 
@@ -196,11 +210,11 @@ function appendWorldEntry(entry) {
         const uid = $(this).data("uid");
         const value = $(this).val();
         resetScrollHeight(this);
-        world_info_data.entries[uid].key = value
+        data.entries[uid].key = value
             .split(",")
             .map((x) => x.trim())
             .filter((x) => x);
-        saveWorldInfo();
+        saveWorldInfo(name, data);
     });
     keyInput.val(entry.key.join(",")).trigger("input");
     initScrollHeight(keyInput);
@@ -212,11 +226,11 @@ function appendWorldEntry(entry) {
         const uid = $(this).data("uid");
         const value = $(this).val();
         resetScrollHeight(this);
-        world_info_data.entries[uid].keysecondary = value
+        data.entries[uid].keysecondary = value
             .split(",")
             .map((x) => x.trim())
             .filter((x) => x);
-        saveWorldInfo();
+        saveWorldInfo(name, data);
     });
 
     keySecondaryInput.val(entry.keysecondary.join(",")).trigger("input");
@@ -229,8 +243,8 @@ function appendWorldEntry(entry) {
     commentInput.on("input", function () {
         const uid = $(this).data("uid");
         const value = $(this).val();
-        world_info_data.entries[uid].comment = value;
-        saveWorldInfo();
+        data.entries[uid].comment = value;
+        saveWorldInfo(name, data);
     });
     commentToggle.data("uid", entry.uid);
     commentToggle.on("input", function () {
@@ -240,8 +254,8 @@ function appendWorldEntry(entry) {
         const commentContainer = $(this)
             .closest(".world_entry")
             .find(".commentContainer");
-        world_info_data.entries[uid].addMemo = value;
-        saveWorldInfo();
+        data.entries[uid].addMemo = value;
+        saveWorldInfo(name, data);
         value ? commentContainer.show() : commentContainer.hide();
     });
 
@@ -265,8 +279,8 @@ function appendWorldEntry(entry) {
     contentInput.on("input", function () {
         const uid = $(this).data("uid");
         const value = $(this).val();
-        world_info_data.entries[uid].content = value;
-        saveWorldInfo();
+        data.entries[uid].content = value;
+        saveWorldInfo(name, data);
 
         // count tokens
         countTokensDebounced(this, value);
@@ -280,8 +294,8 @@ function appendWorldEntry(entry) {
     selectiveInput.on("input", function () {
         const uid = $(this).data("uid");
         const value = $(this).prop("checked");
-        world_info_data.entries[uid].selective = value;
-        saveWorldInfo();
+        data.entries[uid].selective = value;
+        saveWorldInfo(name, data);
 
         const keysecondary = $(this)
             .closest(".world_entry")
@@ -302,9 +316,6 @@ function appendWorldEntry(entry) {
 
     });
     selectiveInput.prop("checked", entry.selective).trigger("input");
-    selectiveInput.siblings(".checkbox_fancy").click(function () {
-        $(this).siblings("input").click();
-    });
 
 
     // constant
@@ -313,13 +324,10 @@ function appendWorldEntry(entry) {
     constantInput.on("input", function () {
         const uid = $(this).data("uid");
         const value = $(this).prop("checked");
-        world_info_data.entries[uid].constant = value;
-        saveWorldInfo();
+        data.entries[uid].constant = value;
+        saveWorldInfo(name, data);
     });
     constantInput.prop("checked", entry.constant).trigger("input");
-    constantInput.siblings(".checkbox_fancy").click(function () {
-        $(this).siblings("input").click();
-    });
 
     // order
     const orderInput = template.find('input[name="order"]');
@@ -328,8 +336,8 @@ function appendWorldEntry(entry) {
         const uid = $(this).data("uid");
         const value = Number($(this).val());
 
-        world_info_data.entries[uid].order = !isNaN(value) ? value : 0;
-        saveWorldInfo();
+        data.entries[uid].order = !isNaN(value) ? value : 0;
+        saveWorldInfo(name, data);
     });
     orderInput.val(entry.order).trigger("input");
 
@@ -343,8 +351,8 @@ function appendWorldEntry(entry) {
     positionInput.on("input", function () {
         const uid = $(this).data("uid");
         const value = Number($(this).val());
-        world_info_data.entries[uid].position = !isNaN(value) ? value : 0;
-        saveWorldInfo();
+        data.entries[uid].position = !isNaN(value) ? value : 0;
+        saveWorldInfo(name, data);
     });
     template
         .find(`input[name="position"][value=${entry.position}]`)
@@ -360,36 +368,29 @@ function appendWorldEntry(entry) {
     disableInput.on("input", function () {
         const uid = $(this).data("uid");
         const value = $(this).prop("checked");
-        world_info_data.entries[uid].disable = value;
-        saveWorldInfo();
-        //console.log(`WI #${entry.uid} disabled? ${world_info_data.entries[uid].disable}`);
+        data.entries[uid].disable = value;
+        saveWorldInfo(name, data);
     });
     disableInput.prop("checked", entry.disable).trigger("input");
-    disableInput.siblings(".checkbox_fancy").click(function () {
-        $(this).siblings("input").click();
-    });
 
     const excludeRecursionInput = template.find('input[name="exclude_recursion"]');
     excludeRecursionInput.data("uid", entry.uid);
     excludeRecursionInput.on("input", function () {
         const uid = $(this).data("uid");
         const value = $(this).prop("checked");
-        world_info_data.entries[uid].excludeRecursion = value;
-        saveWorldInfo();
+        data.entries[uid].excludeRecursion = value;
+        saveWorldInfo(name, data);
     });
     excludeRecursionInput.prop("checked", entry.excludeRecursion).trigger("input");
-    excludeRecursionInput.siblings(".checkbox_fancy").click(function () {
-        $(this).siblings("input").click();
-    });
 
     // delete button
     const deleteButton = template.find("input.delete_entry_button");
     deleteButton.data("uid", entry.uid);
     deleteButton.on("click", function () {
         const uid = $(this).data("uid");
-        deleteWorldInfoEntry(uid);
+        deleteWorldInfoEntry(data, uid);
         $(this).closest(".world_entry").remove();
-        saveWorldInfo();
+        saveWorldInfo(name, data);
     });
 
     template.appendTo("#world_popup_entries_list");
@@ -398,15 +399,15 @@ function appendWorldEntry(entry) {
     return template;
 }
 
-async function deleteWorldInfoEntry(uid) {
-    if (!world_info_data || !("entries" in world_info_data)) {
+async function deleteWorldInfoEntry(data, uid) {
+    if (!data || !("entries" in data)) {
         return;
     }
 
-    delete world_info_data.entries[uid];
+    delete data.entries[uid];
 }
 
-function createWorldInfoEntry() {
+function createWorldInfoEntry(name, data) {
     const newEntryTemplate = {
         key: [],
         keysecondary: [],
@@ -420,7 +421,7 @@ function createWorldInfoEntry() {
         disable: false,
         excludeRecursion: false
     };
-    const newUid = getFreeWorldEntryUid();
+    const newUid = getFreeWorldEntryUid(data);
 
     if (!Number.isInteger(newUid)) {
         console.error("Couldn't assign UID to a new entry");
@@ -428,43 +429,45 @@ function createWorldInfoEntry() {
     }
 
     const newEntry = { uid: newUid, ...newEntryTemplate };
-    world_info_data.entries[newUid] = newEntry;
+    data.entries[newUid] = newEntry;
 
-    const entryTemplate = appendWorldEntry(newEntry);
+    const entryTemplate = appendWorldEntry(name, data, newEntry);
     entryTemplate.get(0).scrollIntoView({ behavior: "smooth" });
 }
 
-async function _save() {
+async function _save(name, data) {
     const response = await fetch("/editworldinfo", {
         method: "POST",
         headers: getRequestHeaders(),
-        body: JSON.stringify({ name: world_info, data: world_info_data }),
+        body: JSON.stringify({ name: name, data: data }),
     });
 }
 
-async function saveWorldInfo(immediately) {
-    if (!world_info || !world_info_data) {
+async function saveWorldInfo(name, data, immediately) {
+    if (!name || !data) {
         return;
     }
 
-
     if (immediately) {
-        return await _save();
+        return await _save(name, data);
     }
 
-    saveWorldDebounced();
+    saveWorldDebounced(name, data);
 }
 
-async function renameWorldInfo() {
-    const oldName = world_info;
+async function renameWorldInfo(name, data) {
+    const oldName = name;
     const newName = $("#world_popup_name").val().trim();
 
     if (oldName === newName || !newName) {
         return;
     }
 
-    world_info = newName;
-    await saveWorldInfo(true);
+    if (oldName == world_info) {
+        world_info = newName;
+    }
+
+    await saveWorldInfo(newName, data, true);
     await deleteWorldInfo(oldName, newName);
 }
 
@@ -484,23 +487,23 @@ async function deleteWorldInfo(worldInfoName, selectWorldName) {
 
         const selectedIndex = world_names.indexOf(selectWorldName);
         if (selectedIndex !== -1) {
-            $("#world_info").val(selectedIndex).change();
+            $("#world_info").val(selectedIndex).trigger('change');
         } else {
-            $("#world_info").val("None").change();
+            $("#world_info").val("None").trigger('change');
         }
 
         hideWorldEditor();
     }
 }
 
-function getFreeWorldEntryUid() {
-    if (!world_info_data || !("entries" in world_info_data)) {
+function getFreeWorldEntryUid(data) {
+    if (!data || !("entries" in data)) {
         return null;
     }
 
     const MAX_UID = 1_000_000; // <- should be safe enough :)
     for (let uid = 0; uid < MAX_UID; uid++) {
-        if (uid in world_info_data.entries) {
+        if (uid in data.entries) {
             continue;
         }
         return uid;
@@ -531,15 +534,14 @@ async function createNewWorldInfo() {
     }
 
     world_info = worldInfoName;
-    world_info_data = { ...worldInfoTemplate };
-    await saveWorldInfo(true);
+    await saveWorldInfo(world_info, worldInfoTemplate, true);
     await updateWorldInfoList();
 
     const selectedIndex = world_names.indexOf(worldInfoName);
     if (selectedIndex !== -1) {
-        $("#world_info").val(selectedIndex).change();
+        $("#world_info").val(selectedIndex).trigger('change');
     } else {
-        $("#world_info").val("None").change();
+        $("#world_info").val("None").trigger('change');
     }
 }
 
@@ -571,20 +573,26 @@ async function getCharacterLore() {
     return entries;
 }
 
-function getGlobalLore() {
-    if (!world_info || !world_info_data) {
+async function getGlobalLore() {
+    if (!world_info) {
         return [];
     }
 
-    const entries = Object.keys(world_info_data.entries).map((x) => world_info_data.entries[x]);
+    if (!world_names.includes(world_info)) {
+        console.log(`Global ${characters[this_chid]?.name} world info does not exist: ${world_info}`);
+        return [];
+    }
+
+    const data = await loadWorldInfoData(world_info);
+    const entries = data ? Object.keys(data.entries).map((x) => data.entries[x]) : [];
     console.debug(`Global world info has ${entries.length} entries`);
+
     return entries;
 }
 
-
 async function getSortedEntries() {
     try {
-        const globalLore = getGlobalLore();
+        const globalLore = await getGlobalLore();
         const characterLore = await getCharacterLore();
 
         let entries;
@@ -762,16 +770,14 @@ jQuery(() => {
     $("#world_info").change(async function () {
         const selectedWorld = $("#world_info").find(":selected").val();
         world_info = null;
-        world_info_data = null;
 
         if (selectedWorld !== "None") {
             const worldIndex = Number(selectedWorld);
             world_info = !isNaN(worldIndex) ? world_names[worldIndex] : null;
-            world_info_data = await loadWorldInfoData(world_info);
         }
 
         if (selectedWorld === "None") { hideWorldEditor(); }
-        if (is_world_edit_open && selectedWorld !== "None") { showWorldEditor() };
+        if (is_world_edit_open && selectedWorld !== "None") { showWorldEditor(world_info) };
         saveSettingsDebounced();
     });
 
@@ -816,31 +822,15 @@ jQuery(() => {
     });
 
     $("#world_info_edit_button").click(() => {
-        is_world_edit_open ? hideWorldEditor() : showWorldEditor();
-    });
-
-    $("#world_popup_export").click(() => {
-        if (world_info && world_info_data) {
-            const jsonValue = JSON.stringify(world_info_data);
-            const fileName = `${world_info}.json`;
-            download(jsonValue, fileName, "application/json");
-        }
+        is_world_edit_open ? hideWorldEditor() : showWorldEditor(world_info);
     });
 
     $("#world_popup_delete").click(() => {
         callPopup("<h3>Delete the World Info?</h3>", "del_world");
     });
 
-    $("#world_popup_new").click(() => {
-        createWorldInfoEntry();
-    });
-
     $("#world_cross").click(() => {
         hideWorldEditor();
-    });
-
-    $("#world_popup_name_button").click(() => {
-        renameWorldInfo();
     });
 
     $("#world_create_button").on('click', async () => {

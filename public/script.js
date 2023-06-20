@@ -20,7 +20,6 @@ import {
 
 import {
     world_info_budget,
-    world_info_data,
     world_info_depth,
     world_info,
     getWorldInfoPrompt,
@@ -5544,7 +5543,6 @@ window["SillyTavern"].getContext = function () {
         chat: chat,
         characters: characters,
         groups: groups,
-        worldInfo: world_info_data,
         name1: name1,
         name2: name2,
         characterId: this_chid,

@@ -2154,7 +2154,7 @@ app.post('/editworldinfo', jsonParser, (request, response) => {
     const filename = `${request.body.name}.json`;
     const pathToFile = path.join(directories.worlds, filename);
 
-    fs.writeFileSync(pathToFile, JSON.stringify(request.body.data));
+    fs.writeFileSync(pathToFile, JSON.stringify(request.body.data, null, 4));
 
     return response.send({ ok: true });
 });

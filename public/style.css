@@ -2017,10 +2017,6 @@ grammarly-extension {
     flex: 1;
 }
 
-.checkbox_fancy {
-    cursor: pointer;
-}
-
 .world_entry_form_control label h4 {
     margin-bottom: 0;
     margin-top: 0;
@@ -2035,6 +2031,10 @@ grammarly-extension {
     height: auto;
     margin-top: 0;
     margin-bottom: 0;
+}
+
+.delete_entry_button {
+    align-self: center;
 }
 
 .world_entry_form_control.world_entry_form_horizontal {
