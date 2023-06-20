@@ -55,7 +55,7 @@
                 $("[data-i18n]").each(function () {
                     //read the translation from the language data
                     const key = $(this).data("i18n");
-                    const text = data?.language?.key;
+                    const text = data?.[language]?.[key];    // Ensure that the translated text is loaded correctly.
                     if (text) {
                         $(this).text(text);
                     }
