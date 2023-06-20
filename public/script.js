@@ -6016,7 +6016,7 @@ $(document).ready(function () {
 
         if (!searchValue) {
             $(selector).removeClass('hiddenBySearch');
-            updateVisibleDivs('#rm_print_characters_block', false);
+            updateVisibleDivs('#rm_print_characters_block', true);
         } else {
             $(selector).each(function () {
                 const isValidSearch = $(this)
@@ -6027,7 +6027,7 @@ $(document).ready(function () {
 
                 $(this).toggleClass('hiddenBySearch', !isValidSearch);
             });
-            updateVisibleDivs('#rm_print_characters_block', false);
+            updateVisibleDivs('#rm_print_characters_block', true);
         }
 
     });
