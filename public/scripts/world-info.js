@@ -27,7 +27,7 @@ const world_info_insertion_strategy = {
 let world_info = null;
 let world_names;
 let world_info_depth = 2;
-let world_info_budget = 128;
+let world_info_budget = 25;
 let world_info_recursive = false;
 let world_info_case_sensitive = false;
 let world_info_match_whole_words = false;
@@ -43,10 +43,10 @@ const world_info_position = {
 
 };
 
-async function getWorldInfoPrompt(chat2) {
+async function getWorldInfoPrompt(chat2, maxContext) {
     let worldInfoString = "", worldInfoBefore = "", worldInfoAfter = "";
 
-    const activatedWorldInfo = await checkWorldInfo(chat2);
+    const activatedWorldInfo = await checkWorldInfo(chat2, maxContext);
     worldInfoBefore = activatedWorldInfo.worldInfoBefore;
     worldInfoAfter = activatedWorldInfo.worldInfoAfter;
     worldInfoString = worldInfoBefore + worldInfoAfter;
@@ -67,6 +67,11 @@ function setWorldInfoSettings(settings, data) {
         world_info_match_whole_words = Boolean(settings.world_info_match_whole_words);
     if (settings.world_info_character_strategy !== undefined)
         world_info_character_strategy = Number(settings.world_info_character_strategy);
+
+    // Migrate old settings
+    if (world_info_budget > 100) {
+        world_info_budget = 25;
+    }
 
     $("#world_info_depth_counter").text(world_info_depth);
     $("#world_info_depth").val(world_info_depth);
@@ -141,8 +146,8 @@ async function updateWorldInfoList(importedWorldName) {
     if (result.ok) {
         var data = await result.json();
         world_names = data.world_names?.length ? data.world_names : [];
-        $("#world_info").find('option[value!="None"]').remove();
-        $("#world_editor_select").empty();
+        $("#world_info").find('option[value!=""]').remove();
+        $("#world_editor_select").find('option[value!=""]').remove();
 
         world_names.forEach((item, i) => {
             $("#world_info").append(`<option value='${i}'>${item}</option>`);
@@ -165,13 +170,14 @@ function nullWorldInfo() {
 }
 
 function displayWorldEntries(name, data) {
-    $("#world_popup_entries_list").empty();
+    $("#world_popup_entries_list").empty().show();
 
     if (!data || !("entries" in data)) {
         $("#world_popup_new").off('click').on('click', nullWorldInfo);
         $("#world_popup_name_button").off('click').on('click', nullWorldInfo);
         $("#world_popup_export").off('click').on('click', nullWorldInfo);
         $("#world_popup_delete").off('click').on('click', nullWorldInfo);
+        $("#world_popup_entries_list").hide();
         return;
     }
 
@@ -515,7 +521,7 @@ async function deleteWorldInfo(worldInfoName, selectWorldName) {
         if (selectedIndex !== -1) {
             $("#world_info").val(selectedIndex).trigger('change');
         } else {
-            $("#world_info").val("None").trigger('change');
+            $("#world_info").val("").trigger('change');
         }
 
         $('#world_editor_select').trigger('change');
@@ -567,7 +573,7 @@ async function createNewWorldInfo(worldInfoName) {
         $("#world_info").val(selectedIndex).trigger('change');
         $('#world_editor_select').val(selectedIndex).trigger('change');
     } else {
-        $("#world_info").val("None").trigger('change');
+        $("#world_info").val("").trigger('change');
         hideWorldEditor();
     }
 }
@@ -654,7 +660,7 @@ async function getSortedEntries() {
     }
 }
 
-async function checkWorldInfo(chat) {
+async function checkWorldInfo(chat, maxContext) {
     const context = getContext();
     const messagesToLookBack = world_info_depth * 2 || 1;
     let textToScan = transformString(chat.slice(0, messagesToLookBack).join(""));
@@ -664,6 +670,8 @@ async function checkWorldInfo(chat) {
     let count = 0;
     let allActivatedEntries = new Set();
 
+    const budget = Math.round(world_info_budget * maxContext / 100) || 1;
+    console.debug(`Context size: ${maxContext}; WI budget: ${budget} (${world_info_budget}%)`);
     const sortedEntries = await getSortedEntries();
 
     if (sortedEntries.length === 0) {
@@ -737,8 +745,9 @@ async function checkWorldInfo(chat) {
                 }
 
                 if (
-                    (getTokenCount(worldInfoBefore + worldInfoAfter) + ANInjectionTokens) >= world_info_budget
+                    (getTokenCount(worldInfoBefore + worldInfoAfter) + ANInjectionTokens) >= budget
                 ) {
+                    console.debug(`WI budget reached, stopping`);
                     needsToScan = false;
                     break;
                 }
@@ -785,7 +794,7 @@ jQuery(() => {
         const selectedWorld = $("#world_info").find(":selected").val();
         world_info = null;
 
-        if (selectedWorld !== "None") {
+        if (selectedWorld !== "") {
             const worldIndex = Number(selectedWorld);
             world_info = !isNaN(worldIndex) ? world_names[worldIndex] : null;
         }
@@ -854,8 +863,13 @@ jQuery(() => {
 
     $("#world_editor_select").on('change', async () => {
         const selectedIndex = $("#world_editor_select").find(":selected").val();
-        const worldName = world_names[selectedIndex];
-        showWorldEditor(worldName);
+
+        if (selectedIndex === "") {
+            hideWorldEditor();
+        } else {
+            const worldName = world_names[selectedIndex];
+            showWorldEditor(worldName);
+        }
     });
 
     $(document).on("input", "#world_info_depth", function () {

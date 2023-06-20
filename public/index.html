@@ -1848,7 +1848,7 @@
                                 </div>
                                 <div class="range-block-range">
                                     <select id="world_info" class="flexGrow margin0">
-                                        <option value="None">None</option>
+                                        <option value="">--- None ---</option>
                                     </select>
                                 </div>
                             </div>
@@ -1887,11 +1887,11 @@
 
                             <div class="flex1 gap5px range-block">
                                 <div class="wide10pMinFit">
-                                    <small data-i18n="Token Budget">Max Tokens</small>
+                                    <small data-i18n="Token Budget">Context %</small>
                                 </div>
                                 <div class="range-block-range-and-counter ">
                                     <div class="range-block-range paddingLeftRight5">
-                                        <input type="range" id="world_info_budget" name="volume" min="32" max="8192" step="1">
+                                        <input type="range" id="world_info_budget" name="volume" min="1" max="100" step="1">
                                     </div>
                                     <div class="range-block-counter margin0">
                                         <div contenteditable="true" data-for="world_info_budget" id="world_info_budget_counter">
@@ -1946,7 +1946,9 @@
                                         <div id="world_popup_export" class="menu_button fa-solid fa-file-export margin0 fa-fw" title="Export World Info"></div>
                                         <div id="world_popup_delete" class="menu_button fa-solid fa-trash-can redWarningBG margin0 fa-fw" title="Delete World Info"></div>
                                         <span>&nbsp;Editing:</span>
-                                        <select id="world_editor_select" class="margin0"></select>
+                                        <select id="world_editor_select" class="margin0">
+                                            <option value="">--- None ---</option>
+                                        </select>
                                         <div id="world_popup_name_button" class="menu_button fa-solid fa-i-cursor fa-fw" title="Rename World Info"></div>
                                     </form>
 
