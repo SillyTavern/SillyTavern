@@ -722,7 +722,7 @@ export function formatInstructStoryString(story, systemPrompt) {
     const sequence = power_user.instruct.system_sequence || '';
     const prompt = substituteParams(systemPrompt) || '';
     const separator = power_user.instruct.wrap ? '\n' : '';
-    const textArray = [sequence, prompt + '\n' + story, separator];
+    const textArray = [sequence, prompt + '\n' + story];
     const text = textArray.filter(x => x).join(separator);
     return text;
 }
@@ -1004,7 +1004,7 @@ $(document).ready(() => {
         saveSettingsDebounced();
         reloadMarkdownProcessor(power_user.render_formulas);
     });
-    /* 
+    /*
         $("#markdown_escape_strings").on('input', function () {
             power_user.markdown_escape_strings = $(this).val();
             saveSettingsDebounced();
@@ -1159,7 +1159,7 @@ $(document).ready(() => {
         power_user.auto_save_msg_edits = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
-	
+
     $("#character_sort_order").on('change', function () {
         power_user.sort_field = $(this).find(":selected").data('field');
         power_user.sort_order = $(this).find(":selected").data('order');
