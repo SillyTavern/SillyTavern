@@ -35,6 +35,7 @@ import {
 import {
     delay,
     download,
+    getFileText,
     getStringHash,
     parseJsonFile,
     stringFormat,
@@ -764,7 +765,7 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
 function getStreamingReply(getMessage, data) {
     if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
         getMessage = data.completion || "";
-    } else{
+    } else {
         getMessage += data.choices[0]["delta"]["content"] || "";
     }
     return getMessage;
@@ -1204,6 +1205,8 @@ async function saveOpenAIPreset(name, settings) {
             option.innerText = data.name;
             $('#settings_perset_openai').append(option).trigger('change');
         }
+    } else {
+        toastr.error('Failed to save preset');
     }
 }
 
@@ -1317,6 +1320,74 @@ function onLogitBiasPresetImportClick() {
     $('#openai_logit_bias_import_file').trigger('click');
 }
 
+async function onPresetImportFileChange(e) {
+    const file = e.target.files[0];
+
+    if (!file) {
+        return;
+    }
+
+    const name = file.name.replace(/\.[^/.]+$/, "");
+    const importedFile = await getFileText(file);
+    let presetBody;
+    e.target.value = '';
+
+    try {
+        presetBody = JSON.parse(importedFile);
+    } catch (err) {
+        toastr.error('Invalid file');
+        return;
+    }
+
+    if (name in openai_setting_names) {
+        const confirm = await callPopup('Preset name already exists. Overwrite?', 'confirm');
+
+        if (!confirm) {
+            return;
+        }
+    }
+
+    const savePresetSettings = await fetch(`/savepreset_openai?name=${name}`, {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: importedFile,
+    });
+
+    if (!savePresetSettings.ok) {
+        toastr.error('Failed to save preset');
+        return;
+    }
+
+    const data = await savePresetSettings.json();
+
+    if (Object.keys(openai_setting_names).includes(data.name)) {
+        oai_settings.preset_settings_openai = data.name;
+        const value = openai_setting_names[data.name];
+        Object.assign(openai_settings[value], presetBody);
+        $(`#settings_perset_openai option[value="${value}"]`).attr('selected', true);
+        $('#settings_perset_openai').trigger('change');
+    } else {
+        openai_settings.push(presetBody);
+        openai_setting_names[data.name] = openai_settings.length - 1;
+        const option = document.createElement('option');
+        option.selected = true;
+        option.value = openai_settings.length - 1;
+        option.innerText = data.name;
+        $('#settings_perset_openai').append(option).trigger('change');
+    }
+}
+
+async function onExportPresetClick() {
+    if (!oai_settings.preset_settings_openai) {
+        toastr.error('No preset selected');
+        return;
+    }
+
+    const preset = openai_settings[openai_setting_names[oai_settings.preset_settings_openai]];
+    const presetJsonString = JSON.stringify(preset, null, 4);
+    download(presetJsonString, oai_settings.preset_settings_openai, 'application/json');
+}
+
 async function onLogitBiasPresetImportFileChange(e) {
     const file = e.target.files[0];
 
@@ -1361,7 +1432,7 @@ function onLogitBiasPresetExportClick() {
         return;
     }
 
-    const presetJsonString = JSON.stringify(oai_settings.bias_presets[oai_settings.bias_preset_selected]);
+    const presetJsonString = JSON.stringify(oai_settings.bias_presets[oai_settings.bias_preset_selected], null, 4);
     download(presetJsonString, oai_settings.bias_preset_selected, 'application/json');
 }
 
@@ -1479,7 +1550,7 @@ function onModelChange() {
 
     if ($(this).is('#model_claude_select')) {
         console.log('Claude model changed to', value);
-        oai_settings.claude_model  = value;
+        oai_settings.claude_model = value;
     }
 
     if ($(this).is('#model_windowai_select')) {
@@ -1887,6 +1958,8 @@ $(document).ready(function () {
     $("#openai_logit_bias_new_preset").on("click", createNewLogitBiasPreset);
     $("#openai_logit_bias_new_entry").on("click", createNewLogitBiasEntry);
     $("#openai_logit_bias_import_file").on("input", onLogitBiasPresetImportFileChange);
+    $("#openai_preset_import_file").on("input", onPresetImportFileChange);
+    $("#export_oai_preset").on("click", onExportPresetClick);
     $("#openai_logit_bias_import_preset").on("click", onLogitBiasPresetImportClick);
     $("#openai_logit_bias_export_preset").on("click", onLogitBiasPresetExportClick);
     $("#openai_logit_bias_delete_preset").on("click", onLogitBiasPresetDeleteClick);
