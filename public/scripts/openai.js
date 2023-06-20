@@ -1176,6 +1176,7 @@ async function saveOpenAIPreset(name, settings) {
         max_context_unlocked: settings.max_context_unlocked,
         nsfw_avoidance_prompt: settings.nsfw_avoidance_prompt,
         wi_format: settings.wi_format,
+        stream_openai: settings.stream_openai,
     };
 
     const savePresetSettings = await fetch(`/savepreset_openai?name=${name}`, {
@@ -1450,6 +1451,7 @@ function onSettingsPresetChange() {
         legacy_streaming: ['#legacy_streaming', 'legacy_streaming', true],
         nsfw_avoidance_prompt: ['#nsfw_avoidance_prompt_textarea', 'nsfw_avoidance_prompt', false],
         wi_format: ['#wi_format_textarea', 'wi_format', false],
+        stream_openai: ['#stream_toggle', 'stream_openai', true],
     };
 
     for (const [key, [selector, setting, isCheckbox]] of Object.entries(settingsToUpdate)) {
