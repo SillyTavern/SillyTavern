@@ -153,6 +153,7 @@ import {
 import { EventEmitter } from './scripts/eventemitter.js';
 import { context_settings, loadContextTemplatesFromSettings } from "./scripts/context-template.js";
 import { dinkusExtension } from "./scripts/showdown-dinkus.js";
+import { setFloatingPrompt } from "./scripts/extensions/floating-prompt/index.js";
 
 //exporting functions and vars for mods
 export {
@@ -2024,8 +2025,11 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         }
 
         // Extension added strings
-        //WI moved to top in order to allow it to hijack AN if necessary
+        //set non-WI AN
+        setFloatingPrompt();
+        //add WI to prompt (and also inject WI to AN value via hijack)
         let { worldInfoString, worldInfoBefore, worldInfoAfter } = await getWorldInfoPrompt(chat2);
+        // call combined AN into Generate
         let allAnchors = getAllExtensionPrompts();
         const afterScenarioAnchor = getExtensionPrompt(extension_prompt_types.AFTER_SCENARIO);
         let zeroDepthAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, 0, ' ');
@@ -3652,9 +3656,9 @@ async function read_avatar_load(input) {
         $('#dialogue_popup').addClass('large_dialogue_popup wide_dialogue_popup');
 
         const croppedImage = await callPopup(getCropPopup(e.target.result), 'avatarToCrop');
-		if (!croppedImage) {
-			return;
-		}
+        if (!croppedImage) {
+            return;
+        }
 
         $("#avatar_load_preview").attr("src", croppedImage || e.target.result);
 
@@ -4994,7 +4998,7 @@ function callPopup(text, type, inputValue = '') {
             rotatable: false,
             crop: function (event) {
                 crop_data = event.detail;
-				crop_data.want_resize = !power_user.never_resize_avatars
+                crop_data.want_resize = !power_user.never_resize_avatars
             }
         });
     }
@@ -6154,9 +6158,9 @@ $(document).ready(function () {
 
         $('#dialogue_popup').addClass('large_dialogue_popup wide_dialogue_popup');
         const confirmation = await callPopup(getCropPopup(dataUrl.target.result), 'avatarToCrop');
-		if (!confirmation) {
-			return;
-		}
+        if (!confirmation) {
+            return;
+        }
 
         let url = "/uploaduseravatar";
 

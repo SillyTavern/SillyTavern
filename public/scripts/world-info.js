@@ -1,7 +1,7 @@
 import { saveSettings, callPopup, substituteParams, getTokenCount, getRequestHeaders, chat_metadata, this_chid, characters } from "../script.js";
 import { download, debounce, delay, initScrollHeight, resetScrollHeight } from "./utils.js";
 import { getContext } from "./extensions.js";
-import { metadata_keys } from "./extensions/floating-prompt/index.js";
+import { metadata_keys, shouldWIAddPrompt } from "./extensions/floating-prompt/index.js";
 
 export {
     world_info,
@@ -25,7 +25,7 @@ const world_info_insertion_strategy = {
     evenly: 0,
     character_first: 1,
     global_first: 2,
-}
+};
 
 let world_info = null;
 let world_names;
@@ -590,18 +590,21 @@ async function getSortedEntries() {
         let entries;
         const sortFn = (a, b) => b.order - a.order;
 
-        switch (world_info_character_strategy) {
+        switch (Number(world_info_character_strategy)) {
             case world_info_insertion_strategy.evenly:
+                console.debug('WI using evenly')
                 entries = [...globalLore, ...characterLore].sort(sortFn);
                 break;
             case world_info_insertion_strategy.character_first:
+                console.debug('WI using char first')
                 entries = [...characterLore.sort(sortFn), ...globalLore.sort(sortFn)];
                 break;
             case world_info_insertion_strategy.global_first:
+                console.debug('WI using global first')
                 entries = [...globalLore.sort(sortFn), ...characterLore.sort(sortFn)];
                 break;
             default:
-                console.error(`Unknown insertion strategy: ${world_info_character_strategy}`);
+                console.error("Unknown WI insertion strategy: ", world_info_character_strategy, "defaulting to evenly");
                 entries = [...globalLore, ...characterLore].sort(sortFn);
                 break;
         }
@@ -629,7 +632,7 @@ async function checkWorldInfo(chat) {
     const sortedEntries = await getSortedEntries();
 
     if (sortedEntries.length === 0) {
-        return  { worldInfoBefore, worldInfoAfter };
+        return { worldInfoBefore, worldInfoAfter };
     }
 
     while (needsToScan) {
@@ -676,43 +679,43 @@ async function checkWorldInfo(chat) {
         needsToScan = world_info_recursive && activatedNow.size > 0;
         const newEntries = [...activatedNow]
             .sort((a, b) => sortedEntries.indexOf(a) - sortedEntries.indexOf(b));
-        let ANInjectionTokens = 0;
-        for (const entry of newEntries) {
-            let ANWithWI;
+        if (shouldWIAddPrompt) {
+            let ANInjectionTokens = 0;
+            let ANTopInjection = [];
+            let ANBottomInjection = [];
+            for (const entry of newEntries) {
+                if (entry.position === world_info_position.after) {
+                    worldInfoAfter = `${substituteParams(
+                        entry.content
+                    )}\n${worldInfoAfter}`;
+                } else if (entry.position === world_info_position.before) {
+                    worldInfoBefore = `${substituteParams(
+                        entry.content
+                    )}\n${worldInfoBefore}`;
 
-            let originalAN = context.extensionPrompts['2_floating_prompt'].value;
-            if (entry.position === world_info_position.after) {
-                worldInfoAfter = `${substituteParams(
-                    entry.content
-                )}\n${worldInfoAfter}`;
-            } else if (entry.position === world_info_position.before) {
-                worldInfoBefore = `${substituteParams(
-                    entry.content
-                )}\n${worldInfoBefore}`;
+                } else if (entry.position === world_info_position.ANBottom) {
+                    ANBottomInjection.push(entry.content);
+                    ANInjectionTokens += getTokenCount(entry.content);
+                } else if (entry.position === world_info_position.ANTop) {
+                    ANTopInjection.push(entry.content);
+                    ANInjectionTokens = getTokenCount(entry.content);
+                }
 
-                //WI must hijack AN to inject before the prompt is set.
-            } else if (entry.position === world_info_position.ANBottom) {
-                ANWithWI = originalAN + "\n" + entry.content;
-                ANInjectionTokens = ANInjectionTokens + getTokenCount(ANWithWI) - getTokenCount(originalAN);
-                context.setExtensionPrompt('2_floating_prompt', ANWithWI, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth]);
-            } else if (entry.position === world_info_position.ANTop) {
-                ANWithWI = entry.content + "\n" + originalAN;
-                ANInjectionTokens = ANInjectionTokens + getTokenCount(ANWithWI) - getTokenCount(originalAN);
-                context.setExtensionPrompt('2_floating_prompt', ANWithWI, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth]);
+                if (
+                    (getTokenCount(worldInfoBefore + worldInfoAfter) + ANInjectionTokens) >= world_info_budget
+                ) {
+                    needsToScan = false;
+                    break;
+                }
+            }
+            if (needsToScan) {
+                textToScan = (transformString(newEntries.map(x => x.content).join('\n')) + textToScan);
             }
 
-            if (
-                (getTokenCount(worldInfoBefore + worldInfoAfter) + ANInjectionTokens) >= world_info_budget
-            ) {
-                needsToScan = false;
-                break;
-            }
+            const originalAN = context.extensionPrompts['2_floating_prompt'].value;
+            const ANWithWI = `\n${ANTopInjection.join("\n")} \n${originalAN} \n${ANBottomInjection.reverse().join("\n")}`
+            context.setExtensionPrompt('2_floating_prompt', ANWithWI, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth]);
         }
-
-        if (needsToScan) {
-            textToScan = (transformString(newEntries.map(x => x.content).join('\n')) + textToScan);
-        }
-
         allActivatedEntries = new Set([...allActivatedEntries, ...activatedNow]);
     }
 
