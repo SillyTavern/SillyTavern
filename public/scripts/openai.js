@@ -1309,8 +1309,12 @@ function addLogitBiasPresetOption(name) {
     $('#openai_logit_bias_preset').trigger('change');
 }
 
+function onImportPresetClick() {
+    $('#openai_preset_import_file').trigger('click');
+}
+
 function onLogitBiasPresetImportClick() {
-    $('#openai_logit_bias_import_file').click();
+    $('#openai_logit_bias_import_file').trigger('click');
 }
 
 async function onLogitBiasPresetImportFileChange(e) {
@@ -1886,4 +1890,5 @@ $(document).ready(function () {
     $("#openai_logit_bias_import_preset").on("click", onLogitBiasPresetImportClick);
     $("#openai_logit_bias_export_preset").on("click", onLogitBiasPresetExportClick);
     $("#openai_logit_bias_delete_preset").on("click", onLogitBiasPresetDeleteClick);
+    $("#import_oai_preset").on("click", onImportPresetClick);
 });
