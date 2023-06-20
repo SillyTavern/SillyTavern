@@ -2022,11 +2022,12 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         }
 
         // Extension added strings
-        //set non-WI AN
+
+        // Set non-WI AN
         setFloatingPrompt();
-        //add WI to prompt (and also inject WI to AN value via hijack)
+        // Add WI to prompt (and also inject WI to AN value via hijack)
         let { worldInfoString, worldInfoBefore, worldInfoAfter } = await getWorldInfoPrompt(chat2);
-        // call combined AN into Generate
+        // Call combined AN into Generate
         let allAnchors = getAllExtensionPrompts();
         const afterScenarioAnchor = getExtensionPrompt(extension_prompt_types.AFTER_SCENARIO);
         let zeroDepthAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, 0, ' ');

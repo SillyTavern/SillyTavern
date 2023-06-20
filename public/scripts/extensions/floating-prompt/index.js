@@ -199,7 +199,6 @@ function loadSettings() {
 
 export function setFloatingPrompt() {
     const context = getContext();
-    console.log(context.characterId, context.groupId)
     if (!context.groupId && context.characterId === undefined) {
         return;
     }
@@ -230,7 +229,6 @@ export function setFloatingPrompt() {
         : (chat_metadata[metadata_keys.interval] - lastMessageNumber);
     const shouldAddPrompt = messagesTillInsertion == 0;
     shouldWIAddPrompt = shouldAddPrompt;
-    console.debug(shouldAddPrompt, messagesTillInsertion);
 
     let prompt = shouldAddPrompt ? $('#extension_floating_prompt').val() : '';
     if (shouldAddPrompt && extension_settings.note.chara && getContext().characterId) {
