@@ -802,6 +802,14 @@ async function printCharacters() {
         template.toggleClass('is_fav', item.fav || item.fav == 'true');
         template.find('.ch_fav').val(item.fav);
 
+        const description = item.data?.creator_notes || '';
+        if (description) {
+            template.find('.ch_description').text(description);
+        }
+        else {
+            template.find('.ch_description').hide();
+        }
+
         // Display inline tags
         const tags = getTagsList(item.avatar);
         const tagsElement = template.find('.tags');

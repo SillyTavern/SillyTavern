@@ -1002,9 +1002,9 @@ input[type="file"] {
 #right-nav-panel-tabs {
     display: flex;
     align-items: center;
-    flex: 1;
     gap: 10px;
     overflow: hidden;
+    width: fit-content;
 }
 
 #rm_PinAndTabs {
@@ -1324,6 +1324,19 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 .ch_name {
     font-weight: bolder;
+}
+
+.character_select .avatar {
+    align-self: center;
+}
+
+.ch_description {
+    font-size: calc(var(--mainFontSize) * 0.8);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    width: 100%;
+    margin-top: -5px;
 }
 
 .justifySpaceBetween {
