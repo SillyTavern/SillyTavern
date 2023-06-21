@@ -509,7 +509,7 @@ PromptManagerModule.prototype.preparePrompt = function (prompt) {
     const preparedPrompt = new Prompt(prompt);
     preparedPrompt.content = substituteParams(prompt.content);
 
-    return new Prompt(prompt);
+    return preparedPrompt;
 }
 
 /**
