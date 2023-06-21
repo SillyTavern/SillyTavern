@@ -271,6 +271,7 @@ function setupOpenAIPromptManager(openAiSettings) {
         prefix: 'openai_',
         containerIdentifier: 'openai_prompt_manager',
         listIdentifier: 'openai_prompt_manager_list',
+        toggleDisabled: ['main'],
         draggable: true
     };
 
@@ -574,11 +575,12 @@ async function prepareOpenAIMessages({
     try {
         populateChatCompletion(prompts, chatCompletion, {bias, quietPrompt, type});
     } catch (error) {
-        toastr.error('An error occurred while counting tokens.')
         if (error instanceof TokenBudgetExceededError) {
+            toastr.error('An error occurred while counting tokens: Token budget exceeded.')
             chatCompletion.log('Token budget exceeded.');
             promptManager.error = 'Not enough free tokens for mandatory prompts. Raise your token Limit or disable custom prompts.';
         } else {
+            toastr.error('An unknown error occurred while counting tokens. Further info available in console.')
             chatCompletion.log('Unexpected error:');
             chatCompletion.log(error);
         }
