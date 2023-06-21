@@ -14,6 +14,7 @@ import {
     sendSystemMessage,
     setUserName,
     substituteParams,
+    comment_avatar,
     system_avatar,
     system_message_types
 } from "../script.js";
@@ -103,9 +104,11 @@ parser.addCommand('bg', setBackgroundCallback, ['background'], '<span class="mon
 parser.addCommand('sendas', sendMessageAs, [], ` – sends message as a specific character.<br>Example:<br><pre><code>/sendas Chloe\nHello, guys!</code></pre>will send "Hello, guys!" from "Chloe".<br>Uses character avatar if it exists in the characters list.`, true, true);
 parser.addCommand('sys', sendNarratorMessage, [], '<span class="monospace">(text)</span> – sends message as a system narrator', false, true);
 parser.addCommand('sysname', setNarratorName, [], '<span class="monospace">(name)</span> – sets a name for future system narrator messages in this chat (display only). Default: System. Leave empty to reset.', true, true);
+parser.addCommand('comment', sendCommentMessage, [], '<span class="monospace">(text)</span> – adds a note/comment message not part of the chat', false, true);
 
 const NARRATOR_NAME_KEY = 'narrator_name';
 const NARRATOR_NAME_DEFAULT = 'System';
+const COMMENT_NAME_DEFAULT = 'Note';
 
 function syncCallback() {
     $('#sync_name_button').trigger('click');
@@ -211,6 +214,31 @@ async function sendNarratorMessage(_, text) {
         extra: {
             type: system_message_types.NARRATOR,
             bias: bias.trim().length ? bias : null,
+            gen_id: Date.now(),
+        },
+    };
+
+    chat.push(message);
+    addOneMessage(message);
+    await eventSource.emit(event_types.MESSAGE_SENT, (chat.length - 1));
+    saveChatConditional();
+}
+
+async function sendCommentMessage(_, text) {
+    if (!text) {
+        return;
+    }
+
+    const message = {
+        name: COMMENT_NAME_DEFAULT,
+        is_user: false,
+        is_name: true,
+        is_system: true,
+        send_date: humanizedDateTime(),
+        mes: substituteParams(text.trim()),
+        force_avatar: comment_avatar,
+        extra: {
+            type: system_message_types.COMMENT,
             gen_id: Date.now(),
         },
     };

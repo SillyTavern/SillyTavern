@@ -264,6 +264,7 @@ let this_chid;
 let backgrounds = [];
 const default_avatar = "img/ai4.png";
 export const system_avatar = "img/five.png";
+export const comment_avatar = "img/quill.png";
 export let CLIENT_VERSION = 'SillyTavern:UNKNOWN:Cohee#1207'; // For Horde header
 let is_colab = false;
 let is_checked_colab = false;
@@ -303,6 +304,7 @@ const system_message_types = {
     BOOKMARK_CREATED: "bookmark_created",
     BOOKMARK_BACK: "bookmark_back",
     NARRATOR: "narrator",
+    COMMENT: "comment",
 };
 
 const extension_prompt_types = {
