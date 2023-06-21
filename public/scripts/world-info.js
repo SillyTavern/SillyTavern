@@ -136,7 +136,7 @@ async function loadWorldInfoData(name) {
     return null;
 }
 
-async function updateWorldInfoList(importedWorldName) {
+async function updateWorldInfoList() {
     var result = await fetch("/getsettings", {
         method: "POST",
         headers: getRequestHeaders(),
@@ -153,11 +153,6 @@ async function updateWorldInfoList(importedWorldName) {
             $("#world_info").append(`<option value='${i}'>${item}</option>`);
             $("#world_editor_select").append(`<option value='${i}'>${item}</option>`);
         });
-
-        if (importedWorldName) {
-            const indexOf = world_names.indexOf(world_info);
-            $("#world_info").val(indexOf);
-        }
     }
 }
 
@@ -831,7 +826,7 @@ jQuery(() => {
             processData: false,
             success: async function (data) {
                 if (data.name) {
-                    await updateWorldInfoList(data.name);
+                    await updateWorldInfoList();
 
                     const newIndex = world_names.indexOf(data.name);
                     if (newIndex >= 0) {
