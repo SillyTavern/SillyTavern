@@ -20,6 +20,7 @@ import {
     system_message_types,
     replaceBiasMarkup,
     is_send_press,
+    main_api,
 } from "../script.js";
 import { groups, selected_group } from "./group-chats.js";
 
@@ -1750,6 +1751,12 @@ async function testApiConnection() {
     }
 }
 
+function reconnectOpenAi() {
+    setOnlineStatus('no_connection');
+    resultCheckStatusOpen();
+    $('#api_button_openai').trigger('click');
+}
+
 $(document).ready(function () {
     $('#test_api_button').on('click', testApiConnection);
 
@@ -1933,10 +1940,11 @@ $(document).ready(function () {
     $('#chat_completion_source').on('change', function () {
         oai_settings.chat_completion_source = $(this).find(":selected").val();
         toggleChatCompletionForms();
-        setOnlineStatus('no_connection');
-        resultCheckStatusOpen();
-        $('#api_button_openai').trigger('click');
         saveSettingsDebounced();
+
+        if (main_api == 'openai') {
+            reconnectOpenAi();
+        }
     });
 
     $('#oai_max_context_unlocked').on('input', function () {
