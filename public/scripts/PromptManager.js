@@ -64,6 +64,7 @@ function PromptManagerModule() {
         containerIdentifier: '',
         listIdentifier: '',
         listItemTemplateIdentifier: '',
+        toggleDisabled: [],
         draggable: true
     };
 
@@ -365,6 +366,24 @@ PromptManagerModule.prototype.sanitizeServiceSettings = function () {
  */
 PromptManagerModule.prototype.isPromptDeletionAllowed = function (prompt) {
     return false === prompt.system_prompt;
+}
+
+/**
+ * Check whether a prompt can be edited.
+ * @param {object} prompt - The prompt to check.
+ * @returns {boolean} True if the prompt can be deleted, false otherwise.
+ */
+PromptManagerModule.prototype.isPromptEditAllowed = function (prompt) {
+    return true;
+}
+
+/**
+ * Check whether a prompt can be toggled on or off.
+ * @param {object} prompt - The prompt to check.
+ * @returns {boolean} True if the prompt can be deleted, false otherwise.
+ */
+PromptManagerModule.prototype.isPromptToggleAllowed = function (prompt) {
+    return !this.configuration.toggleDisabled.includes(prompt.identifier);
 }
 
 /**
@@ -706,7 +725,21 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
         let detachSpanHtml = '';
         if (this.isPromptDeletionAllowed(prompt)) {
             detachSpanHtml = `
-                <span title="delete" class="caution fa-solid fa-x"></span>
+                <span title="delete" class="prompt-manager-detach-action caution fa-solid fa-x"></span>
+            `;
+        }
+
+        let editSpanHtml = '';
+        if (this.isPromptEditAllowed(prompt)) {
+            editSpanHtml = `
+                <span title="edit" class="prompt-manager-edit-action fa-solid fa-pencil"></span>
+            `;
+        }
+
+        let toggleSpanHtml = '';
+        if (this.isPromptToggleAllowed(prompt)) {
+            toggleSpanHtml = `
+                <span class="prompt-manager-toggle-action ${listEntry.enabled ? 'fa-solid fa-toggle-on' : 'fa-solid fa-toggle-off'}"></span>
             `;
         }
 
@@ -720,8 +753,8 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
                     <span>
                         <span class="prompt_manager_prompt_controls">
                             ${detachSpanHtml}
-                            <span title="edit" class="fa-solid fa-pencil"></span>
-                            <span class="${listEntry.enabled ? 'fa-solid fa-toggle-on' : 'fa-solid fa-toggle-off'}"></span>
+                            ${editSpanHtml}
+                            ${toggleSpanHtml}
                         </span>
                     </span>
                 `}
@@ -733,15 +766,15 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
     promptManagerList.insertAdjacentHTML('beforeend', listItemHtml);
 
     // Now that the new elements are in the DOM, you can add the event listeners.
-    Array.from(promptManagerList.getElementsByClassName('fa-x')).forEach(el => {
+    Array.from(promptManagerList.getElementsByClassName('prompt-manager-detach-action')).forEach(el => {
         el.addEventListener('click', this.handleDetach);
     });
 
-    Array.from(promptManagerList.getElementsByClassName('fa-pencil')).forEach(el => {
+    Array.from(promptManagerList.getElementsByClassName('prompt-manager-edit-action')).forEach(el => {
         el.addEventListener('click', this.handleEdit);
     });
 
-    Array.from(promptManagerList.querySelectorAll('.prompt_manager_prompt_controls span:last-child')).forEach(el => {
+    Array.from(promptManagerList.querySelectorAll('.prompt-manager-toggle-action')).forEach(el => {
         el.addEventListener('click', this.handleToggle);
     });
 };
