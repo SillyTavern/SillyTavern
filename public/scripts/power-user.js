@@ -12,7 +12,6 @@ import {
     eventSource,
     event_types,
     getCurrentChatId,
-    is_send_press,
 } from "../script.js";
 import { favsToHotswap } from "./RossAscends-mods.js";
 import {
@@ -97,7 +96,7 @@ let power_user = {
     avatar_style: avatar_styles.ROUND,
     chat_display: chat_styles.DEFAULT,
     sheld_width: sheld_width.DEFAULT,
-	never_resize_avatars: false,
+    never_resize_avatars: false,
     play_message_sound: false,
     play_sound_unfocused: true,
     auto_save_msg_edits: false,
@@ -151,6 +150,7 @@ let power_user = {
         output_sequence: '### Response:',
         preset: 'Alpaca',
         separator_sequence: '',
+        macro: false,
     },
 
     personas: {},
@@ -649,6 +649,7 @@ function loadInstructMode() {
         { id: "instruct_output_sequence", property: "output_sequence", isCheckbox: false },
         { id: "instruct_stop_sequence", property: "stop_sequence", isCheckbox: false },
         { id: "instruct_names", property: "names", isCheckbox: true },
+        { id: "instruct_macro", property: "macro", isCheckbox: true },
     ];
 
     controls.forEach(control => {
@@ -701,11 +702,11 @@ function loadInstructMode() {
 
 export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvatar, name1, name2) {
     const includeNames = isNarrator ? false : (power_user.instruct.names || !!selected_group || !!forceAvatar);
-    const sequence = substituteParams(
-        (isUser || isNarrator) ? power_user.instruct.input_sequence : power_user.instruct.output_sequence,
-        name1,
-        name2
-    );
+    let sequence = (isUser || isNarrator) ? power_user.instruct.input_sequence : power_user.instruct.output_sequence;
+
+    if (power_user.instruct.macro) {
+        sequence = substituteParams(sequence, name1, name2);
+    }
 
     const separator = power_user.instruct.wrap ? '\n' : '';
     const separatorSequence = power_user.instruct.separator_sequence && !isUser
@@ -729,11 +730,11 @@ export function formatInstructStoryString(story, systemPrompt) {
 
 export function formatInstructModePrompt(name, isImpersonate, promptBias, name1, name2) {
     const includeNames = power_user.instruct.names || !!selected_group;
-    const sequence = substituteParams(
-        isImpersonate ? power_user.instruct.input_sequence : power_user.instruct.output_sequence,
-        name1,
-        name2
-    );
+    let sequence = isImpersonate ? power_user.instruct.input_sequence : power_user.instruct.output_sequence;
+
+    if (power_user.instruct.macro) {
+        sequence = substituteParams(sequence, name1, name2);
+    }
 
     const separator = power_user.instruct.wrap ? '\n' : '';
     let text = includeNames ? (separator + sequence + separator + `${name}:`) : (separator + sequence);
