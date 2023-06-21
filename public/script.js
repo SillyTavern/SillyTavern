@@ -29,6 +29,7 @@ import {
     world_info_match_whole_words,
     world_names,
     world_info_character_strategy,
+    importEmbeddedWorldInfo,
 } from "./scripts/world-info.js";
 
 import {
@@ -4835,9 +4836,33 @@ export function select_selected_character(chid) {
     const world = characters[chid]?.data?.extensions?.world;
     const worldSet = world && world_names.includes(world);
     $('#set_character_world').toggleClass('world_set', worldSet);
+    checkEmbeddedWorld(chid);
 
     $("#form_create").attr("actiontype", "editcharacter");
     saveSettingsDebounced();
+}
+
+function checkEmbeddedWorld(chid) {
+    $('#import_character_info').hide();
+
+    if (chid === undefined) {
+        return;
+    }
+
+    if (characters[chid]?.data?.character_book) {
+        $('#import_character_info').data('chid', chid).show();
+
+        // Only show the alert once per character
+        const checkKey = `AlertWI_${characters[chid].avatar}`;
+        if (!localStorage.getItem(checkKey) && !(characters[chid]?.data?.extensions?.world)) {
+            toastr.info(
+                'To import and use it, select "Import Embedded World Info" in the Options menu.',
+                `${characters[chid].name} has an embedded World/Lorebook`,
+                { timeOut: 10000, extendedTimeOut: 20000, positionClass: 'toast-top-center' },
+            );
+            localStorage.setItem(checkKey, 1);
+        }
+    }
 }
 
 function select_rm_create() {
@@ -4890,6 +4915,7 @@ function select_rm_create() {
     $('#set_character_world').data('chid', undefined);
     $('#set_character_world').toggleClass('world_set', !!create_save.world);
     updateFavButtonState(false);
+    checkEmbeddedWorld();
 
     $("#form_create").attr("actiontype", "createcharacter");
 }
@@ -7492,7 +7518,7 @@ $(document).ready(function () {
         });
     });
 
-    $("#char-management-dropdown").on('change', (e) => {
+    $("#char-management-dropdown").on('change', async (e) => {
         let target = $(e.target.selectedOptions).attr('id');
         switch (target) {
             case 'set_character_world':
@@ -7510,6 +7536,10 @@ $(document).ready(function () {
             case 'export_button':
                 $('#export_format_popup').toggle();
                 exportPopper.update();
+                break;
+            case 'import_character_info':
+                await importEmbeddedWorldInfo();
+                saveCharacterDebounced();
                 break;
             case 'delete_button':
                 popup_type = "del_ch";

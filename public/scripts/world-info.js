@@ -274,10 +274,7 @@ function appendWorldEntry(name, data, entry) {
     });
 
     commentInput.val(entry.comment).trigger("input");
-    commentToggle.prop("checked", entry.selective).trigger("input");
-    commentToggle.siblings(".checkbox_fancy").click(function () {
-        $(this).siblings("input").click();
-    });
+    commentToggle.prop("checked", entry.addMemo).trigger("input");
 
     // content
     const countTokensDebounced = debounce(function (that, value) {
@@ -782,6 +779,58 @@ function matchKeys(haystack, needle) {
     }
 
     return false;
+}
+
+function convertCharacterBook(characterBook) {
+    const result = { entries: {} };
+
+    characterBook.entries.forEach((entry, index) => {
+        result.entries[index] = {
+            uid: entry.id || index,
+            key: entry.keys,
+            keysecondary: entry.secondary_keys || [],
+            comment: entry.comment || "",
+            content: entry.content,
+            constant: entry.constant || false,
+            selective: entry.selective || false,
+            order: entry.insertion_order,
+            position: entry.position === "before_char" ? world_info_position.before : world_info_position.after,
+            disable: !entry.enabled,
+            addMemo: entry.comment ? true : false,
+        };
+    });
+
+    return result;
+}
+
+export async function importEmbeddedWorldInfo() {
+    const chid = $('#import_character_info').data('chid');
+
+    if (chid === undefined) {
+        return;
+    }
+
+    const bookName = characters[chid]?.data?.character_book?.name || `${characters[chid]?.name}'s Lorebook`;
+    const confirmationText = (`<h3>Are you sure you want to import "${bookName}"?</h3>`) + (world_names.includes(bookName) ? 'It will overwrite the World/Lorebook with the same name.' : '');
+
+    const confirmation = await callPopup(confirmationText, 'confirm');
+
+    if (!confirmation) {
+        return;
+    }
+
+    const convertedBook = convertCharacterBook(characters[chid].data.character_book);
+
+    await saveWorldInfo(bookName, convertedBook, true);
+    await updateWorldInfoList();
+    $('#character_world').val(bookName).trigger('change');
+
+    toastr.success(`The world "${bookName}" has been imported and linked to the character successfully.`, 'World/Lorebook imported');
+
+    const newIndex = world_names.indexOf(bookName);
+    if (newIndex >= 0) {
+        $("#world_editor_select").val(newIndex).trigger('change');
+    }
 }
 
 jQuery(() => {
