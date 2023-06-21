@@ -616,7 +616,7 @@ PromptManagerModule.prototype.renderPromptManager = function () {
 
     if (null !== this.activeCharacter) {
         const prompts = [...this.serviceSettings.prompts]
-            .filter(prompt => !prompt?.system_prompt)
+            .filter(prompt => prompt && !prompt?.system_prompt)
             .sort((promptA, promptB) => promptA.name.localeCompare(promptB.name))
             .reduce((acc, prompt) => acc + `<option value="${prompt.identifier}">${prompt.name}</option>`, '');
 
