@@ -2398,9 +2398,11 @@
                             </div>
 
                             <div id="avatar_div" class="avatar_div alignitemsflexstart justifySpaceBetween flexnowrap flexGap5">
-                                <div id="avatar_div_div" class="avatar">
+                                <label id="avatar_div_div" for="add_avatar_button" class="avatar" title="Click to select a new avatar for this character">
                                     <img id="avatar_load_preview" src="img/ai4.png" alt="avatar">
-                                </div>
+                                    <input hidden type="file" id="add_avatar_button" name="avatar" accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp">
+                                </label>
+
                                 <div class="flex-container flexFlowColumn">
                                     <label for="char-management-dropdown">
                                         <select id="char-management-dropdown">
@@ -2430,9 +2432,6 @@
                                     </label>
 
                                     <div class="form_create_bottom_buttons_block">
-                                        <label for="add_avatar_button" class="menu_button fa-solid fa-file-image " title="Click to select a new avatar for this character">
-                                            <input type="file" id="add_avatar_button" name="avatar" accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp">
-                                        </label>
                                         <div id="rm_button_back" class="menu_button fa-solid fa-left-long "></div>
 
                                         <!-- <div id="renameCharButton" class="menu_button fa-solid fa-user-pen" title="Rename Character"></div> -->

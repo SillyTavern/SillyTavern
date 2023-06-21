@@ -687,7 +687,16 @@ hr {
     gap: 5px;
 }
 
+#avatar_div_div {
+    border: 2px solid var(--SmartThemeBodyColor);
+    margin: 2px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
 
+#avatar_div_div:hover {
+    filter: drop-shadow(0px 0px 5px var(--SmartThemeQuoteColor));
+}
 
 .avatar {
     width: 50px;

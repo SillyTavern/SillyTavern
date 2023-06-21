@@ -4834,7 +4834,7 @@ export function select_selected_character(chid) {
     $('.open_alternate_greetings').data('chid', chid);
     $('#set_character_world').data('chid', chid);
     const world = characters[chid]?.data?.extensions?.world;
-    const worldSet = world && world_names.includes(world);
+    const worldSet = Boolean(world && world_names.includes(world));
     $('#set_character_world').toggleClass('world_set', worldSet);
     checkEmbeddedWorld(chid);
 
