@@ -20,6 +20,6 @@ export const dinkusExtension = () => {
     return [{
         type: "lang",
         regex: replaceRegex,
-        replace: (match) => match.replace(replaceRegex, `<div>${savedDinkus}</div>`).trim()
+        replace: (match) => match.replace(replaceRegex, `\u0000${savedDinkus} \n`)
     }];
 }
