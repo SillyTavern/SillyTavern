@@ -1062,12 +1062,18 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
                 return match;
             }
         });
+
         mes = mes.replaceAll('\\begin{align*}', '$$');
         mes = mes.replaceAll('\\end{align*}', '$$');
         mes = converter.makeHtml(mes);
         mes = mes.replace(/{{(\*?.*\*?)}}/g, "");
 
+		mes = mes.replace(/<code(.*)>[\s\S]*?<\/code>/g, function (match) {
+			// Firefox creates extra newlines from <br>s in code blocks, so we replace them before converting newlines to <br>s.
+			return match.replace(/\n/gm, '\u0000');
+		})
         mes = mes.replace(/\n/g, "<br/>");
+        mes = mes.replace(/\u0000/g, "\n"); // Restore converted newlines
         mes = mes.trim();
 
         mes = mes.replace(/<code(.*)>[\s\S]*?<\/code>/g, function (match) {
