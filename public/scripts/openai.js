@@ -23,6 +23,8 @@ import {
     saveSettings,
     Generate,
     main_api,
+    eventSource,
+    event_types,
 } from "../script.js";
 import {groups, selected_group} from "./group-chats.js";
 
