@@ -1922,6 +1922,10 @@ grammarly-extension {
     column-gap: 20px;
 }
 
+.drag-handle {
+    cursor: grab;
+}
+
 .world_info_select_block {
     display: flex;
     flex-direction: row;

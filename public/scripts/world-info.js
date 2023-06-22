@@ -126,6 +126,7 @@ async function loadWorldInfoData(name) {
         method: "POST",
         headers: getRequestHeaders(),
         body: JSON.stringify({ name: name }),
+        cache: 'no-cache',
     });
 
     if (response.ok) {
@@ -176,8 +177,18 @@ function displayWorldEntries(name, data) {
         return;
     }
 
-    for (const entryUid in data.entries) {
-        const entry = data.entries[entryUid];
+    // Convert the data.entries object into an array
+    const entriesArray = Object.keys(data.entries).map(uid => {
+        const entry = data.entries[uid];
+        entry.displayIndex = entry.displayIndex ?? entry.uid;
+        return entry;
+    });
+
+    // Sort the entries array by displayIndex and uid
+    entriesArray.sort((a, b) => a.displayIndex - b.displayIndex || a.uid - b.uid);
+
+    // Loop through the sorted array and call appendWorldEntry
+    for (const entry of entriesArray) {
         appendWorldEntry(name, data, entry);
     }
 
@@ -206,6 +217,36 @@ function displayWorldEntries(name, data) {
 
         await deleteWorldInfo(name, world_info);
     });
+
+    // Check if a sortable instance exists
+    if ($('#world_popup_entries_list').sortable('instance') !== undefined) {
+        // Destroy the instance
+        $('#world_popup_entries_list').sortable('destroy');
+    }
+
+    $("#world_popup_entries_list").sortable({
+        handle: ".drag-handle",
+        stop: async function (event, ui) {
+            $('#world_popup_entries_list .world_entry').each(function (index) {
+                const uid = $(this).data('uid');
+
+                // Update the display index in the data array
+                const item = data.entries[uid];
+
+                if (!item) {
+                    console.debug(`Could not find entry with uid ${uid}`);
+                    return;
+                }
+
+                item.displayIndex = index;
+            });
+
+            console.table(Object.keys(data.entries).map(uid => data.entries[uid]).map(x => ({ uid: x.uid, key: x.key.join(','), displayIndex: x.displayIndex })));
+
+            await saveWorldInfo(name, data, true);
+        }
+    });
+    $("#world_popup_entries_list").disableSelection();
 }
 
 function appendWorldEntry(name, data, entry) {
