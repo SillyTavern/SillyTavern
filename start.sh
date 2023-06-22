@@ -3,8 +3,8 @@
 if ! command -v npm &> /dev/null
 then
     read -p "npm is not installed. Do you want to install nodejs and npm? (y/n)" choice
-    case "$choice" in 
-      y|Y ) 
+    case "$choice" in
+      y|Y )
         echo "Installing nvm..."
         export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
         [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
@@ -12,10 +12,10 @@ then
         source ~/.bashrc
         nvm install --lts
         nvm use --lts;;
-      n|N ) 
+      n|N )
         echo "Nodejs and npm will not be installed."
         exit;;
-      * ) 
+      * )
         echo "Invalid option. Nodejs and npm will not be installed."
         exit;;
     esac
@@ -28,7 +28,7 @@ if [ ! -z "$REPL_ID" ]; then
 fi
 
 echo "Installing Node Modules..."
-npm i
+npm i --no-audit
 
 echo "Entering SillyTavern..."
 node "$(dirname "$0")/server.js"
