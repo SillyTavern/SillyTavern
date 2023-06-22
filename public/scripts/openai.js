@@ -1098,7 +1098,12 @@ class Message {
         this.identifier = identifier;
         this.role = role;
         this.content = content;
-        this.tokens = tokenHandler.count(this);
+
+        if (this.content) {
+            this.tokens = tokenHandler.count({role: this.role, content: this.content})
+        } else {
+            this.tokens = 0;
+        }
     }
 
     static fromPrompt(prompt) {
@@ -1153,8 +1158,8 @@ class ChatCompletion {
     }
 
     setTokenBudget(context, response) {
-        console.log(`Context size: ${context}`);
-        console.log(`Response size: ${response}`);
+        console.log(`Prompt tokens: ${context}`);
+        console.log(`Completion tokens: ${response}`);
 
         this.tokenBudget = context - response;
 
@@ -1172,6 +1177,7 @@ class ChatCompletion {
         }
 
         this.decreaseTokenBudgetBy(collection.getTokens());
+
         this.log(`Added ${collection.identifier}. Remaining tokens: ${this.tokenBudget}`);
 
         return this;
@@ -1195,12 +1201,13 @@ class ChatCompletion {
             else if ('end' === position) this.messages.collection[index].collection.push(message);
 
             this.decreaseTokenBudgetBy(message.getTokens());
+
             this.log(`Inserted ${message.identifier} into ${identifier}. Remaining tokens: ${this.tokenBudget}`);
         }
     }
 
     canAfford(message) {
-        return 0 < this.tokenBudget - message.getTokens();
+        return 0 <= this.tokenBudget - message.getTokens();
     }
 
     has(identifier) {
