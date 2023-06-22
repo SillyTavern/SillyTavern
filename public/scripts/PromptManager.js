@@ -745,9 +745,9 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
 
         listItemHtml += `
             <li class="${prefix}prompt_manager_prompt ${draggableClass} ${enabledClass} ${markerClass}" draggable="${draggableEnabled}" data-pm-identifier="${prompt.identifier}">
-                <span data-pm-name="${prompt.name}">
+                <span class="${prefix}prompt_manager_prompt_name" data-pm-name="${prompt.name}">
                     ${prompt.marker ? '<span class="fa-solid fa-thumb-tack"></span>' : ''}
-                    <span>${prompt.name}</span>
+                    ${prompt.name}
                 </span>
                 ${prompt.marker ? '<span></span>' : `
                     <span>
