@@ -10,8 +10,8 @@ then
         [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
         curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
         source ~/.bashrc
-        nvm install lts
-        nvm use lts;;
+        nvm install --lts
+        nvm use --lts;;
       n|N ) 
         echo "Nodejs and npm will not be installed."
         exit;;
