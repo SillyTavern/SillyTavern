@@ -1377,11 +1377,18 @@ function scrollChatToBottom() {
     }
 }
 
-function substituteParams(content, _name1, _name2) {
+function substituteParams(content, _name1, _name2, _original) {
     _name1 = _name1 ?? name1;
     _name2 = _name2 ?? name2;
     if (!content) {
         return ''
+    }
+
+    // Replace {{original}} with the original message
+    // Note: only replace the first instance of {{original}}
+    // This will hopefully prevent the abuse
+    if (_original) {
+        content = content.replace(/{{original}}/i, _original);
     }
 
     content = content.replace(/{{user}}/gi, _name1);

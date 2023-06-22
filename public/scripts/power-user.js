@@ -12,6 +12,8 @@ import {
     eventSource,
     event_types,
     getCurrentChatId,
+    name1,
+    name2,
 } from "../script.js";
 import { favsToHotswap } from "./RossAscends-mods.js";
 import {
@@ -723,7 +725,7 @@ export function formatInstructStoryString(story, systemPrompt) {
     // If the character has a custom system prompt AND user has it preferred, use that instead of the default
     systemPrompt = power_user.prefer_character_prompt && systemPrompt ? systemPrompt : power_user.instruct.system_prompt;
     const sequence = power_user.instruct.system_sequence || '';
-    const prompt = substituteParams(systemPrompt) || '';
+    const prompt = substituteParams(systemPrompt, name1, name2, power_user.instruct.system_prompt) || '';
     const separator = power_user.instruct.wrap ? '\n' : '';
     const textArray = [sequence, prompt + '\n' + story];
     const text = textArray.filter(x => x).join(separator);

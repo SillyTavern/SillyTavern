@@ -338,7 +338,7 @@ async function prepareOpenAIMessages({ systemPrompt, name2, storyString, worldIn
     let whole_prompt = getSystemPrompt(systemPrompt, nsfw_toggle_prompt, enhance_definitions_prompt, wiBefore, storyString, wiAfter, extensionPrompt, isImpersonate);
 
     // Join by a space and replace placeholders with real user/char names
-    storyString = substituteParams(whole_prompt.join("\n")).replace(/\r/gm, '').trim();
+    storyString = substituteParams(whole_prompt.join("\n"), name1, name2, oai_settings.main_prompt).replace(/\r/gm, '').trim();
 
     let prompt_msg = { "role": "system", "content": storyString }
     let examples_tosend = [];
@@ -387,7 +387,7 @@ async function prepareOpenAIMessages({ systemPrompt, name2, storyString, worldIn
 
     const jailbreak = power_user.prefer_character_jailbreak && jailbreakPrompt ? jailbreakPrompt : oai_settings.jailbreak_prompt;
     if (oai_settings.jailbreak_system && jailbreak) {
-        const jailbreakMessage = { "role": "system", "content": substituteParams(jailbreak) };
+        const jailbreakMessage = { "role": "system", "content": substituteParams(jailbreak, name1, name2, oai_settings.jailbreak_prompt) };
         openai_msgs.push(jailbreakMessage);
 
         total_count += handler_instance.count([jailbreakMessage], true, 'jailbreak');

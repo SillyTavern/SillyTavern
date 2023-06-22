@@ -2670,11 +2670,11 @@
             <div class="inline-drawer-content">
                 <div>
                     <h4>System Prompt</h4>
-                    <textarea id="system_prompt_textarea" name="system_prompt" placeholder="(Overrides the main prompt for Chat Completion and/or system prompt for Instruct Mode if not empty)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="20000"></textarea>
+                    <textarea id="system_prompt_textarea" name="system_prompt" placeholder="(Overrides the main prompt for Chat Completion and/or system prompt for Instruct Mode if not empty. Use {{original}} macro to insert the original prompt.)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="20000"></textarea>
                 </div>
                 <div>
                     <h4>Post History Instructions</h4>
-                    <textarea id="post_history_instructions_textarea" name="post_history_instructions" placeholder="(Overrides the default jailbreak for Chat Completion if not empty)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="20000"></textarea>
+                    <textarea id="post_history_instructions_textarea" name="post_history_instructions" placeholder="(Overrides the default jailbreak for Chat Completion if not empty. Use {{original}} macro to insert the original jailbreak.)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="20000"></textarea>
                 </div>
             </div>
         </div>
