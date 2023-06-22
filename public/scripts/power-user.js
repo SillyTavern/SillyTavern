@@ -132,6 +132,7 @@ let power_user = {
     render_formulas: false,
     allow_name1_display: false,
     allow_name2_display: false,
+    //removeXML: false,
     hotswap_enabled: true,
     timer_enabled: true,
     timestamps_enabled: true,
@@ -573,6 +574,7 @@ function loadPowerUserSettings(settings, data) {
     $("#auto_save_msg_edits").prop("checked", power_user.auto_save_msg_edits);
     $("#allow_name1_display").prop("checked", power_user.allow_name1_display);
     $("#allow_name2_display").prop("checked", power_user.allow_name2_display);
+    //$("#removeXML").prop("checked", power_user.removeXML);
     $("#hotswapEnabled").prop("checked", power_user.hotswap_enabled);
     $("#messageTimerEnabled").prop("checked", power_user.timer_enabled);
     $("#messageTimestampsEnabled").prop("checked", power_user.timestamps_enabled);
@@ -1267,6 +1269,12 @@ $(document).ready(() => {
         reloadCurrentChat();
         saveSettingsDebounced();
     });
+
+    /*     $("#removeXML").on("input", function () {
+            power_user.removeXML = !!$(this).prop('checked');
+            reloadCurrentChat();
+            saveSettingsDebounced();
+        }); */
 
     $("#token_padding").on("input", function () {
         power_user.token_padding = Number($(this).val());

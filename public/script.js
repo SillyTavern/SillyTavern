@@ -1084,6 +1084,17 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
         mes = mes.replaceAll(`${ch_name}:`, "");
     }
 
+    //function to hide any <tags> from AI response output
+    /*  if (power_user.removeXML && ch_name && !isUser && !isSystem) {
+         //console.log('incoming mes')
+         //console.log(mes)
+         mes = mes.replaceAll(/&lt;/g, "<");
+         mes = mes.replaceAll(/&gt;/g, ">");
+         mes = mes.replaceAll(/<<[^>>]+>>/g, "");
+         //console.log('mes after removed <tags>')
+         //console.log(mes)
+     } */
+
     return mes;
 }
 
@@ -2796,6 +2807,11 @@ function getMultigenAmount() {
 }
 
 async function DupeChar() {
+    if (!this_chid) {
+        toastr.warning('You must first select a character to duplicate!')
+        return;
+    }
+
     const body = { avatar_url: characters[this_chid].avatar };
     const response = await fetch('/dupecharacter', {
         method: 'POST',
@@ -5986,6 +6002,8 @@ if (isPwaMode) { $("body").addClass('PWA') }
 
 $(document).ready(function () {
     //////////INPUT BAR FOCUS-KEEPING LOGIC/////////////
+
+    registerSlashCommand('dupe', DupeChar, [], "– duplicates the currently selected character", true, true);
 
     setTimeout(function () {
         $("#groupControlsToggle").trigger('click');
