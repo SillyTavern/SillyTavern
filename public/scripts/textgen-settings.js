@@ -17,6 +17,8 @@ let textgenerationwebui_settings = {
     top_k: 40,
     top_a: 0,
     tfs: 1,
+    epsilon_cutoff: 0,
+    eta_cutoff: 0,
     typical_p: 1,
     rep_pen: 1.2,
     no_repeat_ngram_size: 0,
@@ -49,6 +51,8 @@ const setting_names = [
     "top_p",
     "top_a",
     "tfs",
+    "epsilon_cutoff",
+    "eta_cutoff",
     "typical_p",
     "penalty_alpha",
     "num_beams",
@@ -218,5 +222,7 @@ export function getTextGenGenerationData(finalPromt, this_amount_gen, isImperson
         'skip_special_tokens': textgenerationwebui_settings.skip_special_tokens,
         'top_a': textgenerationwebui_settings.top_a,
         'tfs': textgenerationwebui_settings.tfs,
+        'epsilon_cutoff': textgenerationwebui_settings.epsilon_cutoff,
+        'eta_cutoff': textgenerationwebui_settings.eta_cutoff,
     };
 }
