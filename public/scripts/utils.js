@@ -50,6 +50,19 @@ export function getFileText(file) {
     });
 }
 
+export function getFileBuffer(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsArrayBuffer(file);
+        reader.onload = function () {
+            resolve(reader.result);
+        };
+        reader.onerror = function (error) {
+            reject(error);
+        };
+    });
+}
+
 export function getBase64Async(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -490,5 +503,116 @@ export class RateLimiter {
         // Update the last resolve time
         this._lastResolveTime = Date.now() + this._intervalMillis;
         console.debug(`RateLimiter.waitForResolve() ${this._lastResolveTime}`);
+    }
+}
+
+// Taken from https://github.com/LostRuins/lite.koboldai.net/blob/main/index.html
+//import tavern png data. adapted from png-chunks-extract under MIT license
+//accepts png input data, and returns the extracted JSON
+export function extractDataFromPng(data, identifier = 'chara') {
+    console.log("Attempting PNG import...");
+    let uint8 = new Uint8Array(4);
+    let uint32 = new Uint32Array(uint8.buffer);
+
+    //check if png header is valid
+    if (!data || data[0] !== 0x89 || data[1] !== 0x50 || data[2] !== 0x4E || data[3] !== 0x47 || data[4] !== 0x0D || data[5] !== 0x0A || data[6] !== 0x1A || data[7] !== 0x0A) {
+        console.log("PNG header invalid")
+        return null;
+    }
+
+    let ended = false;
+    let chunks = [];
+    let idx = 8;
+
+    while (idx < data.length) {
+        // Read the length of the current chunk,
+        // which is stored as a Uint32.
+        uint8[3] = data[idx++];
+        uint8[2] = data[idx++];
+        uint8[1] = data[idx++];
+        uint8[0] = data[idx++];
+
+        // Chunk includes name/type for CRC check (see below).
+        let length = uint32[0] + 4;
+        let chunk = new Uint8Array(length);
+        chunk[0] = data[idx++];
+        chunk[1] = data[idx++];
+        chunk[2] = data[idx++];
+        chunk[3] = data[idx++];
+
+        // Get the name in ASCII for identification.
+        let name = (
+            String.fromCharCode(chunk[0]) +
+            String.fromCharCode(chunk[1]) +
+            String.fromCharCode(chunk[2]) +
+            String.fromCharCode(chunk[3])
+        );
+
+        // The IHDR header MUST come first.
+        if (!chunks.length && name !== 'IHDR') {
+            console.log('Warning: IHDR header missing');
+        }
+
+        // The IEND header marks the end of the file,
+        // so on discovering it break out of the loop.
+        if (name === 'IEND') {
+            ended = true;
+            chunks.push({
+                name: name,
+                data: new Uint8Array(0)
+            });
+            break;
+        }
+
+        // Read the contents of the chunk out of the main buffer.
+        for (let i = 4; i < length; i++) {
+            chunk[i] = data[idx++];
+        }
+
+        // Read out the CRC value for comparison.
+        // It's stored as an Int32.
+        uint8[3] = data[idx++];
+        uint8[2] = data[idx++];
+        uint8[1] = data[idx++];
+        uint8[0] = data[idx++];
+
+
+        // The chunk data is now copied to remove the 4 preceding
+        // bytes used for the chunk name/type.
+        let chunkData = new Uint8Array(chunk.buffer.slice(4));
+
+        chunks.push({
+            name: name,
+            data: chunkData
+        });
+    }
+
+    if (!ended) {
+        console.log('.png file ended prematurely: no IEND header was found');
+    }
+
+    //find the chunk with the chara name, just check first and last letter
+    let found = chunks.filter(x => (
+        x.name == "tEXt"
+        && x.data.length > identifier.length
+        && x.data.slice(0, identifier.length).every((v, i) => String.fromCharCode(v) == identifier[i])));
+
+    if (found.length == 0) {
+        console.log('PNG Image contains no data');
+        return null;
+    } else {
+        try {
+            let b64buf = "";
+            let bytes = found[0].data; //skip the chara
+            for (let i = identifier.length + 1; i < bytes.length; i++) {
+                b64buf += String.fromCharCode(bytes[i]);
+            }
+            let decoded = JSON.parse(atob(b64buf));
+            console.log(decoded);
+            return decoded;
+        } catch (e) {
+            console.log("Error decoding b64 in image: " + e);
+            return null;
+        }
     }
 }

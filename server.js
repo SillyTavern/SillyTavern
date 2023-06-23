@@ -329,7 +329,7 @@ app.use('/characters', (req, res) => {
         res.send(data);
     });
 });
-app.use(multer({ dest: "uploads" }).single("avatar"));
+app.use(multer({ dest: "uploads", limits: { fieldSize: 10 * 1024 * 1024 } }).single("avatar"));
 app.get("/", function (request, response) {
     response.sendFile(process.cwd() + "/public/index.html");
 });

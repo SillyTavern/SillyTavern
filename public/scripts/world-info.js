@@ -1,5 +1,5 @@
 import { saveSettings, callPopup, substituteParams, getTokenCount, getRequestHeaders, chat_metadata, this_chid, characters } from "../script.js";
-import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile } from "./utils.js";
+import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer } from "./utils.js";
 import { getContext } from "./extensions.js";
 import { metadata_keys, shouldWIAddPrompt } from "./extensions/floating-prompt/index.js";
 import { registerSlashCommand } from "./slash-commands.js";
@@ -952,14 +952,25 @@ jQuery(() => {
         const formData = new FormData($("#form_world_import").get(0));
 
         try {
-            // File should be a JSON file
-            const jsonData = await parseJsonFile(file);
+            let jsonData;
+
+            if (file.name.endsWith('.png')) {
+                const buffer = new Uint8Array(await getFileBuffer(file));
+                jsonData = extractDataFromPng(buffer, 'naidata');
+            } else {
+                // File should be a JSON file
+                jsonData = await parseJsonFile(file);
+            }
+
+            if (jsonData === undefined || jsonData === null) {
+                toastr.error(`File is not valid: ${file.name}`);
+                return;
+            }
 
             // Convert Novel Lorebook
             if (jsonData.lorebookVersion !== undefined) {
                 formData.append('convertedData', JSON.stringify(convertNovelLorebook(jsonData)));
             }
-
         } catch (error) {
             toastr.error(`Error parsing file: ${error}`);
             return;
