@@ -93,7 +93,7 @@ let power_user = {
     multigen_first_chunk: 50,
     multigen_next_chunks: 30,
     custom_chat_separator: '',
-    // markdown_escape_strings: '',
+    markdown_escape_strings: '',
     fast_ui_mode: true,
     avatar_style: avatar_styles.ROUND,
     chat_display: chat_styles.DEFAULT,
@@ -562,7 +562,7 @@ function loadPowerUserSettings(settings, data) {
     $("#include_newline_checkbox").prop("checked", power_user.include_newline);
     $('#render_formulas').prop("checked", power_user.render_formulas);
     $("#custom_chat_separator").val(power_user.custom_chat_separator);
-    //$("#markdown_escape_strings").val(power_user.markdown_escape_strings);
+    $("#markdown_escape_strings").val(power_user.markdown_escape_strings);
     $("#fast_ui_mode").prop("checked", power_user.fast_ui_mode);
     $("#waifuMode").prop("checked", power_user.waifuMode);
     $("#movingUImode").prop("checked", power_user.movingUI);
@@ -1009,13 +1009,13 @@ $(document).ready(() => {
         saveSettingsDebounced();
         reloadMarkdownProcessor(power_user.render_formulas);
     });
-    /*
-        $("#markdown_escape_strings").on('input', function () {
-            power_user.markdown_escape_strings = $(this).val();
-            saveSettingsDebounced();
-            reloadMarkdownProcessor(power_user.render_formulas);
-        });
-     */
+
+    $("#markdown_escape_strings").on('input', function () {
+        power_user.markdown_escape_strings = $(this).val();
+        saveSettingsDebounced();
+        reloadMarkdownProcessor(power_user.render_formulas);
+    });
+
     $("#multigen").change(function () {
         power_user.multigen = $(this).prop("checked");
         saveSettingsDebounced();
