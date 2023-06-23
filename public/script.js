@@ -1068,10 +1068,10 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
         mes = converter.makeHtml(mes);
         mes = mes.replace(/{{(\*?.*\*?)}}/g, "");
 
-		mes = mes.replace(/<code(.*)>[\s\S]*?<\/code>/g, function (match) {
-			// Firefox creates extra newlines from <br>s in code blocks, so we replace them before converting newlines to <br>s.
-			return match.replace(/\n/gm, '\u0000');
-		})
+        mes = mes.replace(/<code(.*)>[\s\S]*?<\/code>/g, function (match) {
+            // Firefox creates extra newlines from <br>s in code blocks, so we replace them before converting newlines to <br>s.
+            return match.replace(/\n/gm, '\u0000');
+        })
         mes = mes.replace(/\n/g, "<br/>");
         mes = mes.replace(/\u0000/g, "\n"); // Restore converted newlines
         mes = mes.trim();
@@ -5955,6 +5955,64 @@ function displayOverrideWarnings() {
     $('.jailbreak_overridden').toggle(!!(characters[this_chid]?.data?.post_history_instructions));
 }
 
+function connectAPISlash(_, text) {
+    if (!text) return;
+
+    const apiMap = {
+        'kobold': {
+            button: '#api_button',
+        },
+        'horde': {
+            selected: 'koboldhorde',
+        },
+        'novel': {
+            button: '#api_button_novel',
+        },
+        'ooba': {
+            button: '#api_button_textgenerationwebui',
+        },
+        'oai': {
+            selected: 'openai',
+            source: 'openai',
+            button: '#api_button_openai',
+        },
+        'claude': {
+            selected: 'openai',
+            source: 'claude',
+            button: '#api_button_openai',
+        },
+        'windowai': {
+            selected: 'openai',
+            source: 'windowai',
+            button: '#api_button_openai',
+        },
+        'poe': {
+            button: '#poe_connect',
+        },
+    };
+
+    const apiConfig = apiMap[text];
+    if (!apiConfig) {
+        toastr.error(`Error: ${text} is not a valid API`);
+        return;
+    }
+
+    $("#main_api option[value='" + (apiConfig.selected || text) + "']").prop("selected", true);
+    $("#main_api").trigger('change');
+
+    if (apiConfig.source) {
+        $("#chat_completion_source option[value='" + apiConfig.source + "']").prop("selected", true);
+        $("#chat_completion_source").trigger('change');
+    }
+
+    if (apiConfig.button) {
+        $(apiConfig.button).trigger('click');
+    }
+
+    toastr.info(`API set to ${text}, trying to connect..`);
+}
+
+
 // Check for override warnings every 5 seconds...
 setInterval(displayOverrideWarnings, 5000);
 // ...or when the chat changes
@@ -6017,6 +6075,7 @@ $(document).ready(function () {
     //////////INPUT BAR FOCUS-KEEPING LOGIC/////////////
 
     registerSlashCommand('dupe', DupeChar, [], "– duplicates the currently selected character", true, true);
+    registerSlashCommand('api', connectAPISlash, [], "– connect to an API", true, true);
 
     setTimeout(function () {
         $("#groupControlsToggle").trigger('click');
