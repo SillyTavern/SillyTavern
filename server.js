@@ -1221,9 +1221,11 @@ app.post("/delchat", jsonParser, function (request, response) {
         return response.sendStatus(403);
     }
 
-	var dirName = String(request.body.avatar_url).replace('.png', '');
-    const fileName = path.join(directories.chats, '/', sanitize(dirName), '/', sanitize(request.body.chatfile));
-    if (!fs.existsSync(fileName)) {
+    const dirName = String(request.body.avatar_url).replace('.png', '');
+    const fileName = `${chatsPath + dirName}/${sanitize(String(request.body.chatfile))}`;
+    const chatFileExists = fs.existsSync(fileName);
+
+    if (!chatFileExists) {
         console.log(`Chat file not found '${fileName}'`);
         return response.sendStatus(400);
     } else {
