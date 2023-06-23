@@ -91,7 +91,7 @@ function addQuickReplyBar(numButtons) {
     $('#send_form').prepend(quickReplyBarFullHtml);
 
     $('.quickReplyButton').on('click', function () {
-        console.log('got quick reply click');
+        //console.log('got quick reply click');
         let quickReplyButtonID = $(this).attr('id');
         sendQuickReply(quickReplyButtonID);
     });
