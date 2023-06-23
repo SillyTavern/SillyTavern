@@ -1,5 +1,5 @@
 import { saveSettings, callPopup, substituteParams, getTokenCount, getRequestHeaders, chat_metadata, this_chid, characters } from "../script.js";
-import { download, debounce, initScrollHeight, resetScrollHeight } from "./utils.js";
+import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile } from "./utils.js";
 import { getContext } from "./extensions.js";
 import { metadata_keys, shouldWIAddPrompt } from "./extensions/floating-prompt/index.js";
 import { registerSlashCommand } from "./slash-commands.js";
@@ -823,6 +823,35 @@ function matchKeys(haystack, needle) {
     return false;
 }
 
+function convertNovelLorebook(inputObj) {
+    const outputObj = {
+        entries: {}
+    };
+
+    inputObj.entries.forEach((entry, index) => {
+        const displayName = entry.displayName;
+        const addMemo = displayName !== undefined && displayName.trim() !== '';
+
+        outputObj.entries[index] = {
+            uid: index,
+            key: entry.keys,
+            keysecondary: [],
+            comment: displayName || '',
+            content: entry.text,
+            constant: false,
+            selective: false,
+            order: entry.contextConfig?.budgetPriority ?? 0,
+            position: 0,
+            disable: !entry.enabled,
+            addMemo: addMemo,
+            excludeRecursion: false,
+            displayIndex: index,
+        };
+    });
+
+    return outputObj;
+}
+
 function convertCharacterBook(characterBook) {
     const result = { entries: {} };
 
@@ -913,19 +942,28 @@ jQuery(() => {
         $("#world_import_file").trigger('click');
     });
 
-    $("#world_import_file").on("change", function (e) {
-        var file = e.target.files[0];
+    $("#world_import_file").on("change", async function (e) {
+        const file = e.target.files[0];
 
         if (!file) {
             return;
         }
 
-        const ext = file.name.match(/\.(\w+)$/);
-        if (!ext || ext[1].toLowerCase() !== "json") {
+        const formData = new FormData($("#form_world_import").get(0));
+
+        try {
+            // File should be a JSON file
+            const jsonData = await parseJsonFile(file);
+
+            // Convert Novel Lorebook
+            if (jsonData.lorebookVersion !== undefined) {
+                formData.append('convertedData', JSON.stringify(convertNovelLorebook(jsonData)));
+            }
+
+        } catch (error) {
+            toastr.error(`Error parsing file: ${error}`);
             return;
         }
-
-        const formData = new FormData($("#form_world_import").get(0));
 
         jQuery.ajax({
             type: "POST",
