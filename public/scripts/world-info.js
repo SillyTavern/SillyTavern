@@ -2,6 +2,7 @@ import { saveSettings, callPopup, substituteParams, getTokenCount, getRequestHea
 import { download, debounce, initScrollHeight, resetScrollHeight } from "./utils.js";
 import { getContext } from "./extensions.js";
 import { metadata_keys, shouldWIAddPrompt } from "./extensions/floating-prompt/index.js";
+import { registerSlashCommand } from "./slash-commands.js";
 
 export {
     world_info,
@@ -874,18 +875,38 @@ export async function importEmbeddedWorldInfo() {
     }
 }
 
-jQuery(() => {
-    $("#world_info").on('change', async function () {
-        const selectedWorld = $("#world_info").find(":selected").val();
-        world_info = null;
-
-        if (selectedWorld !== "") {
-            const worldIndex = Number(selectedWorld);
-            world_info = !isNaN(worldIndex) ? world_names[worldIndex] : null;
+function onWorldInfoChange(_, text) {
+    let selectedWorld;
+    if (_ !== '__notSlashCommand__') { //if it's a slash command
+        if (text !== undefined) { //and args are provided
+            let slashInputWorld = text.toLowerCase();
+            $("#world_info").find(`option`).filter(function () {
+                return $(this).text().toLowerCase() === slashInputWorld;
+            }).prop('selected', true); //matches arg with worldnames and selects; if none found, unsets world
+            let setWorldName = $("#world_info").find(":selected").text(); //only for toastr display
+            toastr.success(`Active world: ${setWorldName}`);
+            selectedWorld = $("#world_info").find(":selected").val();
+        } else { //if no args, unset world
+            toastr.success('Deselected World')
+            $("#world_info").val("");
         }
+    } else { //if it's a pointer selection
+        selectedWorld = $("#world_info").find(":selected").val();
+    }
+    world_info = null;
+    if (selectedWorld !== "") {
+        const worldIndex = Number(selectedWorld);
+        world_info = !isNaN(worldIndex) ? world_names[worldIndex] : null;
+    }
+    saveSettingsDebounced();
+}
 
-        saveSettingsDebounced();
-    });
+jQuery(() => {
+
+    $(document).ready(function () {
+        registerSlashCommand('world', onWorldInfoChange, [], "– sets active World, or unsets if no args provided", true, true);
+    })
+    $("#world_info").on('change', async function () { onWorldInfoChange('__notSlashCommand__') });
 
     //**************************WORLD INFO IMPORT EXPORT*************************//
     $("#world_import_button").on('click', function () {
