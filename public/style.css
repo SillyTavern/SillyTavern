@@ -691,7 +691,7 @@ hr {
     border: 2px solid var(--SmartThemeBodyColor);
     margin: 2px;
     cursor: pointer;
-    transition: all 0.2s ease-in-out;
+    transition: filter 0.2s ease-in-out;
 }
 
 #avatar_div_div:hover {
