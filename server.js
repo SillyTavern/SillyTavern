@@ -835,8 +835,24 @@ function charaFormatData(data) {
     //_.set(char, 'data.extensions.avatar', 'none');
     //_.set(char, 'data.extensions.chat', data.ch_name + ' - ' + humanizedISO8601DateTime());
 
-    // TODO: Character book
-    _//.set(char, 'data.character_book', undefined);
+    if (data.world) {
+        try {
+            const file = readWorldInfoFile(data.world);
+
+            // File was imported - save it to the character book
+            if (file && file.originalData) {
+                _.set(char, 'data.character_book', file.originalData);
+            }
+
+            // File was not imported - convert the world info to the character book
+            if (file && file.entries) {
+                _.set(char, 'data.character_book', convertWorldInfoToCharacterBook(data.world, file.entries));
+            }
+
+        } catch {
+            console.debug(`Failed to read world info file: ${data.world}. Character book will not be available.`);
+        }
+    }
 
     return char;
 }
@@ -1436,6 +1452,35 @@ app.post('/savetheme', jsonParser, (request, response) => {
 
     return response.sendStatus(200);
 });
+
+function convertWorldInfoToCharacterBook(name, entries) {
+    const result = { entries: [], name };
+
+    for (const index in entries) {
+        const entry = entries[index];
+
+        const originalEntry = {
+            id: entry.uid,
+            keys: entry.key,
+            secondary_keys: entry.keysecondary,
+            comment: entry.comment,
+            content: entry.content,
+            constant: entry.constant,
+            selective: entry.selective,
+            insertion_order: entry.order,
+            enabled: !entry.disable,
+            position: entry.position == 0 ? 'before_char' : 'after_char',
+            extensions: {
+                position: entry.position,
+                exclude_recursion: entry.excludeRecursion,
+            }
+        };
+
+        result.entries.push(originalEntry);
+    }
+
+    return result;
+}
 
 function readWorldInfoFile(worldInfoName) {
     if (!worldInfoName) {

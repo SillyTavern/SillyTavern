@@ -250,6 +250,41 @@ function displayWorldEntries(name, data) {
     $("#world_popup_entries_list").disableSelection();
 }
 
+function setOriginalDataValue(data, uid, key, value) {
+    if (data.originalData && Array.isArray(data.originalData.entries)) {
+        let originalEntry = data.originalData.entries.find(x => x.uid === uid);
+
+        if (!originalEntry) {
+            return;
+        }
+
+        const keyParts = key.split('.');
+        let currentObject = originalEntry;
+
+        for (let i = 0; i < keyParts.length - 1; i++) {
+            const part = keyParts[i];
+
+            if (!currentObject.hasOwnProperty(part)) {
+                currentObject[part] = {};
+            }
+
+            currentObject = currentObject[part];
+        }
+
+        currentObject[keyParts[keyParts.length - 1]] = value;
+    }
+}
+
+function deleteOriginalDataValue(data, uid) {
+    if (data.originalData && Array.isArray(data.originalData.entries)) {
+        const originalIndex = data.originalData.entries.findIndex(x => x.uid === uid);
+
+        if (originalIndex >= 0) {
+            data.originalData.entries.splice(originalIndex, 1);
+        }
+    }
+}
+
 function appendWorldEntry(name, data, entry) {
     const template = $("#entry_edit_template .world_entry").clone();
     template.data("uid", entry.uid);
@@ -270,6 +305,8 @@ function appendWorldEntry(name, data, entry) {
             .split(",")
             .map((x) => x.trim())
             .filter((x) => x);
+
+        setOriginalDataValue(data, uid, "keys", data.entries[uid].key);
         saveWorldInfo(name, data);
     });
     keyInput.val(entry.key.join(",")).trigger("input");
@@ -286,6 +323,8 @@ function appendWorldEntry(name, data, entry) {
             .split(",")
             .map((x) => x.trim())
             .filter((x) => x);
+
+        setOriginalDataValue(data, uid, "secondary_keys", data.entries[uid].keysecondary);
         saveWorldInfo(name, data);
     });
 
@@ -300,6 +339,8 @@ function appendWorldEntry(name, data, entry) {
         const uid = $(this).data("uid");
         const value = $(this).val();
         data.entries[uid].comment = value;
+
+        setOriginalDataValue(data, uid, "comment", data.entries[uid].comment);
         saveWorldInfo(name, data);
     });
     commentToggle.data("uid", entry.uid);
@@ -333,6 +374,8 @@ function appendWorldEntry(name, data, entry) {
         const uid = $(this).data("uid");
         const value = $(this).val();
         data.entries[uid].content = value;
+
+        setOriginalDataValue(data, uid, "content", data.entries[uid].content);
         saveWorldInfo(name, data);
 
         // count tokens
@@ -348,6 +391,8 @@ function appendWorldEntry(name, data, entry) {
         const uid = $(this).data("uid");
         const value = $(this).prop("checked");
         data.entries[uid].selective = value;
+
+        setOriginalDataValue(data, uid, "selective", data.entries[uid].selective);
         saveWorldInfo(name, data);
 
         const keysecondary = $(this)
@@ -378,6 +423,7 @@ function appendWorldEntry(name, data, entry) {
         const uid = $(this).data("uid");
         const value = $(this).prop("checked");
         data.entries[uid].constant = value;
+        setOriginalDataValue(data, uid, "constant", data.entries[uid].constant);
         saveWorldInfo(name, data);
     });
     constantInput.prop("checked", entry.constant).trigger("input");
@@ -390,6 +436,7 @@ function appendWorldEntry(name, data, entry) {
         const value = Number($(this).val());
 
         data.entries[uid].order = !isNaN(value) ? value : 0;
+        setOriginalDataValue(data, uid, "insertion_order", data.entries[uid].order);
         saveWorldInfo(name, data);
     });
     orderInput.val(entry.order).trigger("input");
@@ -405,6 +452,10 @@ function appendWorldEntry(name, data, entry) {
         const uid = $(this).data("uid");
         const value = Number($(this).val());
         data.entries[uid].position = !isNaN(value) ? value : 0;
+        // Spec v2 only supports before_char and after_char
+        setOriginalDataValue(data, uid, "position", data.entries[uid].position == 0 ? 'before_char' : 'after_char');
+        // Write the original value as extensions field
+        setOriginalDataValue(data, uid, "extensions.position", data.entries[uid].position);
         saveWorldInfo(name, data);
     });
     template
@@ -422,6 +473,7 @@ function appendWorldEntry(name, data, entry) {
         const uid = $(this).data("uid");
         const value = $(this).prop("checked");
         data.entries[uid].disable = value;
+        setOriginalDataValue(data, uid, "enabled", !data.entries[uid].disable);
         saveWorldInfo(name, data);
     });
     disableInput.prop("checked", entry.disable).trigger("input");
@@ -432,6 +484,7 @@ function appendWorldEntry(name, data, entry) {
         const uid = $(this).data("uid");
         const value = $(this).prop("checked");
         data.entries[uid].excludeRecursion = value;
+        setOriginalDataValue(data, uid, "extensions.exclude_recursion", data.entries[uid].excludeRecursion);
         saveWorldInfo(name, data);
     });
     excludeRecursionInput.prop("checked", entry.excludeRecursion).trigger("input");
@@ -442,6 +495,7 @@ function appendWorldEntry(name, data, entry) {
     deleteButton.on("click", function () {
         const uid = $(this).data("uid");
         deleteWorldInfoEntry(data, uid);
+        deleteOriginalDataValue(data, uid);
         $(this).closest(".world_entry").remove();
         saveWorldInfo(name, data);
     });
@@ -877,9 +931,14 @@ function convertNovelLorebook(inputObj) {
 }
 
 function convertCharacterBook(characterBook) {
-    const result = { entries: {} };
+    const result = { entries: {}, originalData: characterBook };
 
     characterBook.entries.forEach((entry, index) => {
+        // Not in the spec, but this is needed to find the entry in the original data
+        if (entry.id === undefined) {
+            entry.id = index;
+        }
+
         result.entries[index] = {
             uid: entry.id || index,
             key: entry.keys,
@@ -889,7 +948,8 @@ function convertCharacterBook(characterBook) {
             constant: entry.constant || false,
             selective: entry.selective || false,
             order: entry.insertion_order,
-            position: entry.position === "before_char" ? world_info_position.before : world_info_position.after,
+            position: entry.extensions?.position ?? (entry.position === "before_char" ? world_info_position.before : world_info_position.after),
+            excludeRecursion: entry.extensions?.exclude_recursion ?? false,
             disable: !entry.enabled,
             addMemo: entry.comment ? true : false,
         };

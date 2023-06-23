@@ -4891,7 +4891,8 @@ function checkEmbeddedWorld(chid) {
 
         // Only show the alert once per character
         const checkKey = `AlertWI_${characters[chid].avatar}`;
-        if (!localStorage.getItem(checkKey) && !(characters[chid]?.data?.extensions?.world)) {
+        const worldName = characters[chid]?.data?.extensions?.world;
+        if (!localStorage.getItem(checkKey) && (!worldName || !world_names.includes(worldName))) {
             toastr.info(
                 'To import and use it, select "Import Embedded World Info" in the Options menu.',
                 `${characters[chid].name} has an embedded World/Lorebook`,
