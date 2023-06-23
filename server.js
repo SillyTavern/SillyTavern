@@ -2105,14 +2105,16 @@ app.post("/importchat", urlencodedParser, function (request, response) {
 app.post('/importworldinfo', urlencodedParser, (request, response) => {
     if (!request.file) return response.sendStatus(400);
 
-    const filename = sanitize(request.file.originalname);
+    const filename = `${path.parse(sanitize(request.file.originalname)).name}.json`;
 
-    if (path.parse(filename).ext.toLowerCase() !== '.json') {
-        return response.status(400).send('Only JSON files are supported.')
+    let fileContents = null;
+
+    if (request.body.convertedData) {
+        fileContents = request.body.convertedData;
+    } else {
+        const pathToUpload = path.join('./uploads/', request.file.filename);
+        fileContents = fs.readFileSync(pathToUpload, 'utf8');
     }
-
-    const pathToUpload = path.join('./uploads/', request.file.filename);
-    const fileContents = fs.readFileSync(pathToUpload, 'utf8');
 
     try {
         const worldContent = json5.parse(fileContents);
