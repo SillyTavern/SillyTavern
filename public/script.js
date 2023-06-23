@@ -150,7 +150,7 @@ import {
 } from "./scripts/secrets.js";
 import { EventEmitter } from './scripts/eventemitter.js';
 import { context_settings, loadContextTemplatesFromSettings } from "./scripts/context-template.js";
-import { dinkusExtension } from "./scripts/showdown-dinkus.js";
+import { markdownExclusionExt } from "./scripts/showdown-exclusion.js";
 import { setFloatingPrompt } from "./scripts/extensions/floating-prompt/index.js";
 
 //exporting functions and vars for mods
@@ -545,7 +545,7 @@ function reloadMarkdownProcessor(render_formulas = false) {
     // Maybe move this into power_user init?
     setTimeout(() => {
         if (power_user) {
-            converter.addExtension(dinkusExtension(), 'dinkus');
+            converter.addExtension(markdownExclusionExt(), 'exclusion');
         }
     }, 1)
 
