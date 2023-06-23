@@ -823,6 +823,30 @@ function matchKeys(haystack, needle) {
     return false;
 }
 
+function convertAgnaiMemoryBook(inputObj) {
+    const outputObj = { entries: {} };
+
+    inputObj.entries.forEach((entry, index) => {
+        outputObj.entries[index] = {
+            uid: index,
+            key: entry.keywords,
+            keysecondary: [],
+            comment: entry.name,
+            content: entry.entry,
+            constant: false,
+            selective: false,
+            order: entry.weight,
+            position: 0,
+            disable: !entry.enabled,
+            addMemo: !!entry.name,
+            excludeRecursion: false,
+            displayIndex: index,
+        };
+    });
+
+    return outputObj;
+}
+
 function convertNovelLorebook(inputObj) {
     const outputObj = {
         entries: {}
@@ -970,6 +994,11 @@ jQuery(() => {
             // Convert Novel Lorebook
             if (jsonData.lorebookVersion !== undefined) {
                 formData.append('convertedData', JSON.stringify(convertNovelLorebook(jsonData)));
+            }
+
+            // Convert Agnai Memory Book
+            if (jsonData.kind === 'memory') {
+                formData.append('convertedData', JSON.stringify(convertAgnaiMemoryBook(jsonData)));
             }
         } catch (error) {
             toastr.error(`Error parsing file: ${error}`);
