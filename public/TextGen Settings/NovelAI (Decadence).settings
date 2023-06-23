@@ -6,6 +6,8 @@
     "rep_pen": 1,
     "top_a": 0,
     "tfs": 1,
+    "epsilon_cutoff": 0,
+    "eta_cutoff": 0,
     "no_repeat_ngram_size": 0,
     "penalty_alpha": 0,
     "num_beams": 1,
