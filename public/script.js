@@ -2080,7 +2080,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
         let examplesString = '';
         let chatString = '';
-        function canFitMessages() {
+        function getMessagesTokenCount() {
             const encodeString = [
                 worldInfoString,
                 storyString,
@@ -2089,7 +2089,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 allAnchors,
                 quiet_prompt,
             ].join('').replace(/\r/gm, '');
-            return getTokenCount(encodeString, power_user.token_padding) < this_max_context;
+            return getTokenCount(encodeString, power_user.token_padding);
         }
 
         // Force pinned examples into the context
@@ -2100,14 +2100,16 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
         // Collect enough messages to fill the context
         let arrMes = [];
+        let tokenCount = getMessagesTokenCount();
         for (let item of chat2) {
             // not needed for OAI prompting
             if (main_api == 'openai') {
                 break;
             }
 
+            tokenCount += getTokenCount(item.replace(/\r/gm, ''))
             chatString = item + chatString;
-            if (canFitMessages()) {
+            if (tokenCount < this_max_context) {
                 arrMes[arrMes.length] = item;
             } else {
                 break;
@@ -2122,11 +2124,13 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         }
 
         // Estimate how many unpinned example messages fit in the context
+        tokenCount = getMessagesTokenCount();
         let count_exm_add = 0;
         if (!power_user.pin_examples) {
             for (let example of mesExamplesArray) {
+                tokenCount += getTokenCount(example.replace(/\r/gm, ''))
                 examplesString += example;
-                if (canFitMessages()) {
+                if (tokenCount < this_max_context) {
                     count_exm_add++;
                 } else {
                     break;
