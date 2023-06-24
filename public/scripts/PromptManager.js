@@ -207,17 +207,17 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
     // Apply character specific overrides for prompts
     eventSource.on(event_types.OAI_BEFORE_CHATCOMPLETION, (prompts) => {
         const systemPromptOverride = this.activeCharacter.data.system_prompt ?? null;
+        const systemPrompt = prompts.get('main') ?? null;
         if (systemPromptOverride) {
-            const override = prompts.get('main');
-            override.content = systemPromptOverride;
-            prompts.set(override, prompts.index('main'));
+            systemPrompt.content = systemPromptOverride;
+            prompts.set(systemPrompt, prompts.index('main'));
         }
 
         const jailbreakPromptOverride = this.activeCharacter.data.system_prompt ?? null;
-        if (jailbreakPromptOverride) {
-            const override = prompts.get('jailbreak');
-            override.content = jailbreakPromptOverride;
-            prompts.set(override, prompts.index('jailbreak'));
+        const jailbreakPrompt = prompts.get('jailbreak') ?? null;
+        if (jailbreakPromptOverride && jailbreakPrompt) {
+            jailbreakPrompt.content = jailbreakPromptOverride;
+            prompts.set(jailbreakPrompt, prompts.index('jailbreak'));
         }
     });
 
@@ -584,7 +584,7 @@ PromptManagerModule.prototype.getPromptCollection = function () {
     const promptCollection = new PromptCollection();
     promptList.forEach(entry => {
         if (true === entry.enabled) promptCollection.add(this.preparePrompt(this.getPromptById(entry.identifier)));
-    })
+    });
 
     return promptCollection
 }
