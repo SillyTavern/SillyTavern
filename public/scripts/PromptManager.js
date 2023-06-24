@@ -519,14 +519,20 @@ PromptManagerModule.prototype.getPromptIndexById = function (identifier) {
 /**
  * Prepares a prompt by creating a new object with its role and content.
  * @param {Object} prompt - Prompt object
+ * @param original
  * @returns {Object} An object with "role" and "content" properties
  */
-PromptManagerModule.prototype.preparePrompt = function (prompt) {
+PromptManagerModule.prototype.preparePrompt = function (prompt, original = null) {
     const groupMembers = this.getActiveGroupCharacters();
-    if (0 < groupMembers.length) return {role: prompt.role || 'system', content: substituteParams(prompt.content ?? '', null, null, groupMembers.join(', '))}
-
     const preparedPrompt = new Prompt(prompt);
-    preparedPrompt.content = substituteParams(prompt.content);
+
+    if (original) {
+        if (0 < groupMembers.length) preparedPrompt.content = substituteParams(prompt.content ?? '', null, null, original, groupMembers.join(', '));
+        else preparedPrompt.content = substituteParams(prompt.content, null, null, original);
+    } else {
+        if (0 < groupMembers.length) preparedPrompt.content = substituteParams(prompt.content ?? '', null, null, null, groupMembers.join(', '));
+        else preparedPrompt.content = substituteParams(prompt.content);
+    }
 
     return preparedPrompt;
 }
