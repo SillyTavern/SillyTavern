@@ -35,6 +35,7 @@ let world_info_match_whole_words = false;
 let world_info_character_strategy = world_info_insertion_strategy.evenly;
 const saveWorldDebounced = debounce(async (name, data) => await _save(name, data), 1000);
 const saveSettingsDebounced = debounce(() => saveSettings(), 1000);
+const sortFn = (a, b) => b.order - a.order;
 
 const world_info_position = {
     before: 0,
@@ -240,6 +241,7 @@ function displayWorldEntries(name, data) {
                 }
 
                 item.displayIndex = index;
+                setOriginalDataValue(data, uid, 'extensions.display_index', index);
             });
 
             console.table(Object.keys(data.entries).map(uid => data.entries[uid]).map(x => ({ uid: x.uid, key: x.key.join(','), displayIndex: x.displayIndex })));
@@ -717,7 +719,6 @@ async function getSortedEntries() {
         const characterLore = await getCharacterLore();
 
         let entries;
-        const sortFn = (a, b) => b.order - a.order;
 
         switch (Number(world_info_character_strategy)) {
             case world_info_insertion_strategy.evenly:
@@ -752,8 +753,6 @@ async function checkWorldInfo(chat, maxContext) {
     const context = getContext();
     const messagesToLookBack = world_info_depth * 2 || 1;
     let textToScan = transformString(chat.slice(0, messagesToLookBack).join(""));
-    let worldInfoBefore = "";
-    let worldInfoAfter = "";
     let needsToScan = true;
     let count = 0;
     let allActivatedEntries = new Set();
@@ -763,7 +762,7 @@ async function checkWorldInfo(chat, maxContext) {
     const sortedEntries = await getSortedEntries();
 
     if (sortedEntries.length === 0) {
-        return { worldInfoBefore, worldInfoAfter };
+        return { worldInfoBefore: '', worldInfoAfter: '' };
     }
 
     while (needsToScan) {
@@ -810,45 +809,47 @@ async function checkWorldInfo(chat, maxContext) {
         needsToScan = world_info_recursive && activatedNow.size > 0;
         const newEntries = [...activatedNow]
             .sort((a, b) => sortedEntries.indexOf(a) - sortedEntries.indexOf(b));
-        if (shouldWIAddPrompt) {
-            let ANInjectionTokens = 0;
-            let ANTopInjection = [];
-            let ANBottomInjection = [];
-            for (const entry of newEntries) {
-                if (entry.position === world_info_position.after) {
-                    worldInfoAfter = `${substituteParams(
-                        entry.content
-                    )}\n${worldInfoAfter}`;
-                } else if (entry.position === world_info_position.before) {
-                    worldInfoBefore = `${substituteParams(
-                        entry.content
-                    )}\n${worldInfoBefore}`;
+        let newContent = "";
 
-                } else if (entry.position === world_info_position.ANBottom) {
-                    ANBottomInjection.push(entry.content);
-                    ANInjectionTokens += getTokenCount(entry.content);
-                } else if (entry.position === world_info_position.ANTop) {
-                    ANTopInjection.push(entry.content);
-                    ANInjectionTokens = getTokenCount(entry.content);
-                }
+        for (const entry of newEntries) {
+            newContent += `${substituteParams(entry.content)}\n`;
 
-                if (
-                    (getTokenCount(worldInfoBefore + worldInfoAfter) + ANInjectionTokens) >= budget
-                ) {
-                    console.debug(`WI budget reached, stopping`);
-                    needsToScan = false;
-                    break;
-                }
-            }
-            if (needsToScan) {
-                textToScan = (transformString(newEntries.map(x => x.content).join('\n')) + textToScan);
+            if (getTokenCount(textToScan + newContent) >= budget) {
+                console.debug(`WI budget reached, stopping`);
+                needsToScan = false;
+                break;
             }
 
-            const originalAN = context.extensionPrompts['2_floating_prompt'].value;
-            const ANWithWI = `\n${ANTopInjection.join("\n")} \n${originalAN} \n${ANBottomInjection.reverse().join("\n")}`
-            context.setExtensionPrompt('2_floating_prompt', ANWithWI, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth]);
+            allActivatedEntries.add(entry);
         }
-        allActivatedEntries = new Set([...allActivatedEntries, ...activatedNow]);
+
+        if (needsToScan) {
+            textToScan = (transformString(newEntries.map(x => x.content).join('\n')) + textToScan);
+        }
+    }
+
+    let worldInfoBefore = "";
+    let worldInfoAfter = "";
+
+    const ANTopInjection = [];
+    const ANBottomInjection = [];
+
+    [...allActivatedEntries].sort(sortFn).forEach((entry) => {
+        if (entry.position === world_info_position.before) {
+            worldInfoBefore = `${substituteParams(entry.content)}\n${worldInfoBefore}`;
+        } else if (entry.position === world_info_position.after) {
+            worldInfoAfter = `${substituteParams(entry.content)}\n${worldInfoAfter}`;
+        } else if (entry.position === world_info_position.ANTop) {
+            ANTopInjection.push(entry.content);
+        } else if (entry.position === world_info_position.ANBottom) {
+            ANBottomInjection.push(entry.content);
+        }
+    });
+
+    if (shouldWIAddPrompt) {
+        const originalAN = context.extensionPrompts['2_floating_prompt'].value;
+        const ANWithWI = `\n${ANTopInjection.join("\n")} \n${originalAN} \n${ANBottomInjection.reverse().join("\n")}`
+        context.setExtensionPrompt('2_floating_prompt', ANWithWI, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth]);
     }
 
     return { worldInfoBefore, worldInfoAfter };
@@ -952,6 +953,7 @@ function convertCharacterBook(characterBook) {
             excludeRecursion: entry.extensions?.exclude_recursion ?? false,
             disable: !entry.enabled,
             addMemo: entry.comment ? true : false,
+            displayIndex: entry.extensions?.display_index ?? index,
         };
     });
 

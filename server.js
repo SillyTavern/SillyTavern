@@ -1475,6 +1475,7 @@ function convertWorldInfoToCharacterBook(name, entries) {
             extensions: {
                 position: entry.position,
                 exclude_recursion: entry.excludeRecursion,
+                display_index: entry.displayIndex,
             }
         };
 
