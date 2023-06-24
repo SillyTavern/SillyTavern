@@ -87,11 +87,13 @@ async function onExtensionFloatingPromptInput() {
     chat_metadata[metadata_keys.prompt] = $(this).val();
     setMainPromptTokenCounterDebounced(chat_metadata[metadata_keys.prompt]);
     updateSettings();
+    saveMetadataDebounced();
 }
 
 async function onExtensionFloatingIntervalInput() {
     chat_metadata[metadata_keys.interval] = Number($(this).val());
     updateSettings();
+    saveMetadataDebounced();
 }
 
 async function onExtensionFloatingDepthInput() {
@@ -104,11 +106,13 @@ async function onExtensionFloatingDepthInput() {
 
     chat_metadata[metadata_keys.depth] = value;
     updateSettings();
+    saveMetadataDebounced();
 }
 
 async function onExtensionFloatingPositionInput(e) {
     chat_metadata[metadata_keys.position] = e.target.value;
     updateSettings();
+    saveMetadataDebounced();
 }
 
 function onExtensionFloatingCharaPromptInput() {
