@@ -3742,7 +3742,7 @@ async function read_avatar_load(input) {
     }
 }
 
-function getCropPopup(src) {
+export function getCropPopup(src) {
     return `<h3>Set the crop position of the avatar image and click Ok to confirm.</h3>
             <div id='avatarCropWrap'>
                 <img id='avatarToCrop' src='${src}'>

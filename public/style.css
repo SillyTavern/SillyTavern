@@ -687,14 +687,14 @@ hr {
     gap: 5px;
 }
 
-#avatar_div_div {
+.add_avatar {
     border: 2px solid var(--SmartThemeBodyColor);
     margin: 2px;
     cursor: pointer;
     transition: filter 0.2s ease-in-out;
 }
 
-#avatar_div_div:hover {
+.add_avatar:hover {
     filter: drop-shadow(0px 0px 5px var(--SmartThemeQuoteColor));
 }
 

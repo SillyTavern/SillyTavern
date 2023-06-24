@@ -2430,7 +2430,7 @@
                             </div>
 
                             <div id="avatar_div" class="avatar_div alignitemsflexstart justifySpaceBetween flexnowrap flexGap5">
-                                <label id="avatar_div_div" for="add_avatar_button" class="avatar" title="Click to select a new avatar for this character">
+                                <label id="avatar_div_div" class="add_avatar avatar" for="add_avatar_button" title="Click to select a new avatar for this character">
                                     <img id="avatar_load_preview" src="img/ai4.png" alt="avatar">
                                     <input hidden type="file" id="add_avatar_button" name="avatar" accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp">
                                 </label>
@@ -2547,8 +2547,18 @@
                                     </div>
                                     <div id="groupTagList" class="tags paddingTopBot5"></div>
                                 </div>
-                                <div id="rm_group_top_bar" class="flex-container spaceBetween width100p">
-                                    <div name="GroupStragegyAndOrder" id="rm_group_buttons" class="fontsize80p flex-container paddingLeftRight5">
+                                <div id="rm_group_top_bar" class="flex-container alignitemscenter spaceBetween width100p">
+                                    <div class="flex1 flex-container alignitemscenter justifyCenter">
+                                        <label class="add_avatar avatar" for="group_avatar_button" title="Click to select a new avatar for this group">
+                                            <div id="group_avatar_preview">
+                                                <div class="avatar">
+                                                    <img src="img/ai4.png" alt="avatar">
+                                                </div>
+                                            </div>
+                                            <input hidden type="file" id="group_avatar_button" name="avatar" accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp">
+                                        </label>
+                                    </div>
+                                    <div name="GroupStragegyAndOrder" id="rm_group_buttons" class="fontsize80p flex-container paddingLeftRight5 flex2">
                                         <div class="">
                                             <div class="flex-container flexnowrap width100p whitespacenowrap">
                                                 <span data-i18n="Group reply strategy">Group reply strategy</span>
@@ -2576,12 +2586,13 @@
                                             </label>
                                         </div>
                                     </div>
-                                    <div id="GroupFavDelOkBack" class="flex-container flexGap5 spaceEvenly">
+                                    <div id="GroupFavDelOkBack" class="flex-container flexGap5 spaceEvenly flex1">
                                         <div id="rm_button_back_from_group" class="heightFitContent margin0 menu_button fa-solid fa-left-long"></div>
                                         <div id="rm_group_scenario" class="heightFitContent margin0 menu_button fa-solid fa-scroll" title="Set a group chat scenario"></div>
                                         <div id="group_favorite_button" class="heightFitContent margin0 menu_button fa-solid fa-star" title="Add to Favorites"></div>
                                         <input id="rm_group_fav" type="hidden" />
                                         <div id="rm_group_submit" class="heightFitContent margin0 menu_button fa-solid fa-check" title="Create"></div>
+                                        <div id="rm_group_restore_avatar" class="heightFitContent margin0 menu_button fa-solid fa-images" title="Restore collage avatar"></div>
                                         <div id="rm_group_delete" class="heightFitContent margin0 menu_button fa-solid fa-trash-can" title="Delete"></div>
                                     </div>
 
@@ -3207,7 +3218,7 @@
                     <div title="Move up" data-action="up" class="right_menu_button fa-solid fa-chevron-up"></div>
                     <div title="Move down" data-action="down" class="right_menu_button fa-solid fa-chevron-down"></div>
                 </div>
-                <div title="View character card" data-action="view" class="right_menu_button fa-solid fa-xl fa-id-badge"></div>
+                <div title="View character card" data-action="view" class="right_menu_button fa-solid fa-xl fa-image-portrait"></div>
                 <div title="Remove from group" data-action="remove" class="right_menu_button fa-solid fa-2xl fa-xmark">
                 </div>
                 <div title="Add to group" data-action="add" class="right_menu_button fa-solid fa-2xl fa-plus"></div>

@@ -616,3 +616,38 @@ export function extractDataFromPng(data, identifier = 'chara') {
         }
     }
 }
+
+export function createThumbnail(dataUrl, maxWidth, maxHeight) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.src = dataUrl;
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Calculate the thumbnail dimensions while maintaining the aspect ratio
+            const aspectRatio = img.width / img.height;
+            let thumbnailWidth = maxWidth;
+            let thumbnailHeight = maxHeight;
+
+            if (img.width > img.height) {
+                thumbnailHeight = maxWidth / aspectRatio;
+            } else {
+                thumbnailWidth = maxHeight * aspectRatio;
+            }
+
+            // Set the canvas dimensions and draw the resized image
+            canvas.width = thumbnailWidth;
+            canvas.height = thumbnailHeight;
+            ctx.drawImage(img, 0, 0, thumbnailWidth, thumbnailHeight);
+
+            // Convert the canvas to a data URL and resolve the promise
+            const thumbnailDataUrl = canvas.toDataURL('image/jpeg');
+            resolve(thumbnailDataUrl);
+        };
+
+        img.onerror = () => {
+            reject(new Error('Failed to load the image.'));
+        };
+    });
+}
