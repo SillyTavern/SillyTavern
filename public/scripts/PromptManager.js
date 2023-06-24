@@ -1,6 +1,6 @@
 import {DraggablePromptListModule as DraggableList} from "./DraggableList.js";
 import {event_types, eventSource, substituteParams} from "../script.js";
-import {IdentifierNotFoundError, TokenHandler} from "./openai.js";
+import {TokenHandler} from "./openai.js";
 
 class Prompt {
     identifier; role; content; name; system_prompt;
@@ -240,14 +240,26 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
     });
 };
 
-PromptManagerModule.prototype.render = function () {
+/**
+ * Main rendering function
+ *
+ * @param afterTryGenerate - Whether a dry run should be attempted before rendering
+ */
+PromptManagerModule.prototype.render = function (afterTryGenerate = true) {
     if (null === this.activeCharacter) return;
     this.error = null;
-    this.tryGenerate().then(() => {
+
+    if (true === afterTryGenerate) {
+        this.tryGenerate().then(() => {
+            this.renderPromptManager();
+            this.renderPromptManagerListItems()
+            this.makeDraggable();
+        });
+    } else {
         this.renderPromptManager();
         this.renderPromptManagerListItems()
         this.makeDraggable();
-    });
+    }
 }
 
 /**
@@ -590,6 +602,7 @@ PromptManagerModule.prototype.getPromptCollection = function () {
 }
 
 PromptManagerModule.prototype.populateTokenHandler = function(messageCollection) {
+    this.tokenHandler.resetCounts();
     const counts = this.tokenHandler.getCounts();
     messageCollection.getCollection().forEach((message) => {
         counts[message.identifier] = message.getTokens();
