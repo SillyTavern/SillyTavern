@@ -27,6 +27,12 @@ export const metadata_keys = {
     position: 'note_position',
 }
 
+const chara_note_position = {
+    replace: 0,
+    before: 1,
+    after: 2,
+}
+
 function setNoteTextCommand(_, text) {
     $('#extension_floating_prompt').val(text).trigger('input');
     toastr.success("Author's Note text updated");
@@ -115,6 +121,16 @@ async function onExtensionFloatingPositionInput(e) {
     saveMetadataDebounced();
 }
 
+async function onExtensionFloatingCharPositionInput(e) {
+    const value = e.target.value;
+    const charaNote = extension_settings.note.chara.find((e) => e.name === getCharaFilename());
+
+    if (charaNote) {
+        charaNote.position = Number(value);
+        updateSettings();
+    }
+}
+
 function onExtensionFloatingCharaPromptInput() {
     const tempPrompt = $(this).val();
     const avatarName = getCharaFilename();
@@ -147,7 +163,7 @@ function onExtensionFloatingCharaPromptInput() {
         if (!extension_settings.note.chara) {
             extension_settings.note.chara = []
         }
-        Object.assign(tempCharaNote, { useChara: false })
+        Object.assign(tempCharaNote, { useChara: false, position: chara_note_position.replace })
 
         extension_settings.note.chara.push(tempCharaNote);
     } else {
@@ -193,9 +209,11 @@ function loadSettings() {
 
         $('#extension_floating_chara').val(charaNote ? charaNote.prompt : '');
         $('#extension_use_floating_chara').prop('checked', charaNote ? charaNote.useChara : false);
+        $(`input[name="extension_floating_char_position"][value="${charaNote?.position ?? chara_note_position.replace}"]`).prop('checked', true);
     } else {
         $('#extension_floating_chara').val('');
         $('#extension_use_floating_chara').prop('checked', false);
+        $(`input[name="extension_floating_char_position"][value="${chara_note_position.replace}"]`).prop('checked', true);
     }
 
     $('#extension_floating_default').val(extension_settings.note.default);
@@ -240,7 +258,17 @@ export function setFloatingPrompt() {
 
         // Only replace with the chara note if the user checked the box
         if (charaNote && charaNote.useChara) {
-            prompt = charaNote.prompt;
+            switch (charaNote.position) {
+                case chara_note_position.before:
+                    prompt = charaNote.prompt + '\n' + prompt;
+                    break;
+                case chara_note_position.after:
+                    prompt = prompt + '\n' + charaNote.prompt;
+                    break;
+                default:
+                    prompt = charaNote.prompt;
+                    break;
+            }
         }
     }
     context.setExtensionPrompt(MODULE_NAME, prompt, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth]);
@@ -371,8 +399,22 @@ setTimeout(function () {
 
                         <label class="checkbox_label" for="extension_use_floating_chara">
                             <input id="extension_use_floating_chara" type="checkbox" />
-                        <span data-i18n="Use character author's note">Use character author's note</span>
-                    </label>
+                            <span data-i18n="Use character author's note">Use character author's note</span>
+                        </label>
+                        <div class="floating_prompt_radio_group">
+                            <label>
+                                <input type="radio" name="extension_floating_char_position" value="0" />
+                                Replace Author's Note
+                            </label>
+                            <label>
+                                <input type="radio" name="extension_floating_char_position" value="1" />
+                                Top of Author's Note
+                            </label>
+                            <label>
+                                <input type="radio" name="extension_floating_char_position" value="2" />
+                                Bottom of Author's Note
+                            </label>
+                        </div>
                     </div>
                 </div>
                 <hr class="sysHR">
@@ -408,6 +450,7 @@ setTimeout(function () {
         $('#extension_use_floating_chara').on('input', onExtensionFloatingCharaCheckboxChanged);
         $('#extension_floating_default').on('input', onExtensionFloatingDefaultInput);
         $('input[name="extension_floating_position"]').on('change', onExtensionFloatingPositionInput);
+        $('input[name="extension_floating_char_position"]').on('change', onExtensionFloatingCharPositionInput);
         $('#ANClose').on('click', function () {
             $("#floatingPrompt").transition({
                 opacity: 0,
