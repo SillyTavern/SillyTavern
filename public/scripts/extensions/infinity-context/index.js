@@ -1,4 +1,4 @@
-import { saveSettingsDebounced, getCurrentChatId, system_message_types, eventSource, event_types, CHARACTERS_PER_TOKEN_RATIO } from "../../../script.js";
+import { saveSettingsDebounced, getCurrentChatId, system_message_types, eventSource, event_types, getRequestHeaders, CHARACTERS_PER_TOKEN_RATIO } from "../../../script.js";
 import { humanizedDateTime } from "../../RossAscends-mods.js";
 import { getApiUrl, extension_settings, getContext, doExtrasFetch } from "../../extensions.js";
 import { getFileText, onlyUnique, splitRecursive, IndexedDBStore } from "../../utils.js";
@@ -111,6 +111,13 @@ function onStrategyChange() {
     extension_settings.chromadb.strategy = $('#chromadb_strategy').val();
 
     //$('#chromadb_strategy').select(extension_settings.chromadb.strategy);
+    saveSettingsDebounced();
+}
+
+function onRecallStrategyChange() {
+    console.log('changing chromadb recall strat');
+    extension_settings.chromadb.recall_strategy = $('#chromadb_recall_strategy').val();
+
     saveSettingsDebounced();
 }
 
@@ -339,6 +346,40 @@ async function queryMessages(chat_id, query) {
     return [];
 }
 
+async function queryMultiMessages(chat_id, query) {
+    const context = getContext();
+    const response = await fetch("/getallchatsofcharacter", {
+        method: 'POST',
+        body: JSON.stringify({ avatar_url: context.characters[context.characterId].avatar}),
+        headers: getRequestHeaders(),
+    });
+    if (!response.ok) {
+        return;
+    }
+    let data = await response.json();
+    data = Object.values(data);
+    let chat_list = data.sort((a, b) => a["file_name"].localeCompare(b["file_name"])).reverse();
+
+    // Extracting chat_ids from the chat_list
+    chat_list = chat_list.map(chat => chat.file_name.replace(/\.[^/.]+$/, ""));
+    const url = new URL(getApiUrl());
+    url.pathname = '/api/chromadb/multiquery';
+
+    const queryMessagesResult = await fetch(url, {
+        method: 'POST',  
+        body: JSON.stringify({ chat_list, query, n_results: extension_settings.chromadb.n_results }),
+        headers: postHeaders,
+    });
+
+    if (queryMessagesResult.ok) {
+        const queryMessagesData = await queryMessagesResult.json();
+
+        return queryMessagesData;
+    }
+
+    return [];
+}
+
 async function onSelectInjectFile(e) {
     const file = e.target.files[0];
     const currentChatId = getCurrentChatId();
@@ -448,6 +489,7 @@ window.chromadb_interceptGeneration = async (chat, maxContext) => {
 
     const currentChatId = getCurrentChatId();
     const selectedStrategy = extension_settings.chromadb.strategy;
+    const recallStrategy = extension_settings.chromadb.recall_strategy;
     if (currentChatId) {
         const messagesToStore = chat.slice(0, -extension_settings.chromadb.keep_context);
 
@@ -456,8 +498,16 @@ window.chromadb_interceptGeneration = async (chat, maxContext) => {
 
             const lastMessage = chat[chat.length - 1];
 
+            let queriedMessages;
+            console.debug(recallStrategy)
             if (lastMessage) {
-                const queriedMessages = await queryMessages(currentChatId, lastMessage.mes);
+                if (recallStrategy === 'multichat'){
+                    console.log("Utilizing multichat")
+                    queriedMessages = await queryMultiMessages(currentChatId, lastMessage.mes);
+                }
+                else{
+                    queriedMessages = await queryMessages(currentChatId, lastMessage.mes);
+                }
 
                 queriedMessages.sort((a, b) => a.date - b.date);
 
@@ -548,6 +598,12 @@ jQuery(async () => {
                 <option value="original">Replace non-kept chat items with memories</option>
                 <option value="ross">Add memories after chat with a header tag</option>
             </select>
+            <span>Memory Recall Strategy</span>
+            <select id="chromadb_recall_strategy">
+                <option value="original">Recall only from this chat</option>
+                <option value="multichat">Recall from all card chats (experimental)</option>
+            </select>
+            <label for="chromadb_keep_context">How many original chat messages to keep: (<span id="chromadb_keep_context_value"></span>) messages</label>
             <label for="chromadb_keep_context"><small>How many original chat messages to keep: (<span id="chromadb_keep_context_value"></span>) messages</small></label>
             <input id="chromadb_keep_context" type="range" min="${defaultSettings.keep_context_min}" max="${defaultSettings.keep_context_max}" step="${defaultSettings.keep_context_step}" value="${defaultSettings.keep_context}" />
             <label for="chromadb_n_results"><small>Maximum number of ChromaDB 'memories' to inject: (<span id="chromadb_n_results_value"></span>) messages</small></label>
@@ -592,6 +648,7 @@ jQuery(async () => {
 
     $('#extensions_settings2').append(settingsHtml);
     $('#chromadb_strategy').on('change', onStrategyChange);
+    $('#chromadb_recall_strategy').on('change', onRecallStrategyChange);
     $('#chromadb_keep_context').on('input', onKeepContextInput);
     $('#chromadb_n_results').on('input', onNResultsInput);
     $('#chromadb_split_length').on('input', onSplitLengthInput);
