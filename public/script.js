@@ -2666,7 +2666,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 generate_data = getNovelGenerationData(finalPromt, this_settings, this_amount_gen);
             }
             else if (main_api == 'openai') {
-                let [prompt, counts] = await prepareOpenAIMessages({
+                let [prompt, counts] = prepareOpenAIMessages({
                     name2: name2,
                     charDescription: charDescription,
                     charPersonality: charPersonality,

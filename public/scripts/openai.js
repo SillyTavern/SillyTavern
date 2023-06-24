@@ -516,9 +516,9 @@ function populateChatCompletion (prompts, chatCompletion, {bias, quietPrompt, ty
  * @param {string} options.type - The type of the chat, can be 'impersonate'.
  * @param {string} options.quietPrompt - The quiet prompt to be used in the conversation.
  * @param {Array} options.extensionPrompts - An array of additional prompts.
- * @returns {Promise<Array>} An array where the first element is the prepared chat and the second element is a boolean flag.
+ * @returns {(*[]|boolean)[]} An array where the first element is the prepared chat and the second element is a boolean flag.
  */
-async function prepareOpenAIMessages({
+function prepareOpenAIMessages({
                                          name2,
                                          charDescription,
                                          charPersonality,
