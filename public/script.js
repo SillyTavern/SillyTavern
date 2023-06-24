@@ -7351,6 +7351,8 @@ $(document).ready(function () {
             return;
         }
 
+        // Save before exporting
+        await createOrEditCharacter();
         const body = { format, avatar_url: characters[this_chid].avatar };
 
         const response = await fetch('/exportcharacter', {
