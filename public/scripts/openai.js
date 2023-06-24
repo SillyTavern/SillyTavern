@@ -565,7 +565,7 @@ function prepareOpenAIMessages({
     if (authorsNote && authorsNote.content) mappedPrompts.push({role: 'system', content: authorsNote.content, identifier: 'authorsNote'});
 
     // Create prompt objects and substitute markers
-    mappedPrompts.forEach((prompt) => {
+    mappedPrompts.forEach(prompt => {
         const newPrompt = promptManager.preparePrompt(prompt);
         const markerIndex = prompts.index(prompt.identifier);
 
