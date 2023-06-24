@@ -45,6 +45,8 @@ const world_info_position = {
 
 };
 
+const worldInfoCache = {};
+
 async function getWorldInfoPrompt(chat2, maxContext) {
     let worldInfoString = "", worldInfoBefore = "", worldInfoAfter = "";
 
@@ -124,6 +126,10 @@ async function loadWorldInfoData(name) {
         return;
     }
 
+    if (worldInfoCache[name]) {
+        return worldInfoCache[name];
+    }
+
     const response = await fetch("/getworldinfo", {
         method: "POST",
         headers: getRequestHeaders(),
@@ -133,6 +139,7 @@ async function loadWorldInfoData(name) {
 
     if (response.ok) {
         const data = await response.json();
+        worldInfoCache[name] = data;
         return data;
     }
 
@@ -556,6 +563,8 @@ async function saveWorldInfo(name, data, immediately) {
     if (!name || !data) {
         return;
     }
+
+    delete worldInfoCache[name];
 
     if (immediately) {
         return await _save(name, data);
