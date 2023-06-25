@@ -2033,7 +2033,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         let chat2 = [];
         for (let i = coreChat.length - 1, j = 0; i >= 0; i--, j++) {
             // For OpenAI it's only used in WI
-            if (main_api == 'openai' && !world_info) {
+            if (main_api == 'openai' && (!world_info || world_info.length === 0)) {
                 console.debug('No WI, skipping chat2 for OAI');
                 break;
             }

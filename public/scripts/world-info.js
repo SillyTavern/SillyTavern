@@ -1,8 +1,9 @@
 import { saveSettings, callPopup, substituteParams, getTokenCount, getRequestHeaders, chat_metadata, this_chid, characters } from "../script.js";
-import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer } from "./utils.js";
+import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, delay } from "./utils.js";
 import { getContext } from "./extensions.js";
 import { metadata_keys, shouldWIAddPrompt } from "./extensions/floating-prompt/index.js";
 import { registerSlashCommand } from "./slash-commands.js";
+import { deviceInfo } from "./RossAscends-mods.js";
 
 export {
     world_info,
@@ -25,7 +26,7 @@ const world_info_insertion_strategy = {
     global_first: 2,
 };
 
-let world_info = null;
+let world_info = [];
 let world_names;
 let world_info_depth = 2;
 let world_info_budget = 25;
@@ -77,6 +78,12 @@ function setWorldInfoSettings(settings, data) {
         world_info_budget = 25;
     }
 
+    // Reset selected world from old string
+    if (typeof settings.world_info === "string") {
+        const existingWorldInfo = settings.world_info;
+        settings.world_info = [existingWorldInfo];
+    }
+
     $("#world_info_depth_counter").text(world_info_depth);
     $("#world_info_depth").val(world_info_depth);
 
@@ -91,20 +98,15 @@ function setWorldInfoSettings(settings, data) {
     $("#world_info_character_strategy").val(world_info_character_strategy);
 
     world_names = data.world_names?.length ? data.world_names : [];
+    world_info = settings.world_info?.filter((e) => world_names.includes(e)) ?? [];
 
-    if (settings.world_info != undefined) {
-        if (world_names.includes(settings.world_info)) {
-            world_info = settings.world_info;
-        }
+    if (world_names.length > 0) {
+        $("#world_info").empty();
     }
 
     world_names.forEach((item, i) => {
-        $("#world_info").append(`<option value='${i}'>${item}</option>`);
+        $("#world_info").append(`<option value='${i}'${world_info.includes(item) ? ' selected' : ''}>${item}</option>`);
         $("#world_editor_select").append(`<option value='${i}'>${item}</option>`);
-        // preselect world if saved
-        if (item == world_info) {
-            $("#world_info").val(i).trigger('change');
-        }
     });
 
     $("#world_editor_select").trigger("change");
@@ -160,7 +162,7 @@ async function updateWorldInfoList() {
         $("#world_editor_select").find('option[value!=""]').remove();
 
         world_names.forEach((item, i) => {
-            $("#world_info").append(`<option value='${i}'>${item}</option>`);
+            $("#world_info").append(`<option value='${i}'${world_info.includes(item) ? ' selected' : ''}>${item}</option>`);
             $("#world_editor_select").append(`<option value='${i}'>${item}</option>`);
         });
     }
@@ -168,6 +170,14 @@ async function updateWorldInfoList() {
 
 function hideWorldEditor() {
     displayWorldEntries(null, null);
+}
+
+function getWIElement(name) {
+    const wiElement = $("#world_info").children().filter(function() {
+        return $(this).text().toLowerCase() === name.toLowerCase()
+    });
+
+    return wiElement;
 }
 
 function nullWorldInfo() {
@@ -224,7 +234,8 @@ function displayWorldEntries(name, data) {
             return;
         }
 
-        await deleteWorldInfo(name, world_info);
+        // Selected world_info automatically refreshes
+        await deleteWorldInfo(name);
     });
 
     // Check if a sortable instance exists
@@ -582,19 +593,16 @@ async function renameWorldInfo(name, data) {
         return;
     }
 
-    let selectNewName = null;
-    if (oldName === world_info) {
-        console.debug("Renaming current world info");
-        world_info = newName;
-        selectNewName = newName;
-    }
-    else {
-        console.debug("Renaming non-current world info");
-        selectNewName = world_info;
-    }
+    const entryPreviouslySelected = world_info.findIndex((e) => e === oldName);
 
     await saveWorldInfo(newName, data, true);
-    await deleteWorldInfo(oldName, selectNewName);
+    await deleteWorldInfo(oldName);
+
+    if (entryPreviouslySelected !== -1) {
+        const wiElement = getWIElement(newName);
+        wiElement.prop("selected", true);
+        $("#world_info").trigger('change');
+    }
 
     const selectedIndex = world_names.indexOf(newName);
     if (selectedIndex !== -1) {
@@ -602,7 +610,7 @@ async function renameWorldInfo(name, data) {
     }
 }
 
-async function deleteWorldInfo(worldInfoName, selectWorldName) {
+async function deleteWorldInfo(worldInfoName) {
     if (!world_names.includes(worldInfoName)) {
         return;
     }
@@ -614,15 +622,13 @@ async function deleteWorldInfo(worldInfoName, selectWorldName) {
     });
 
     if (response.ok) {
-        await updateWorldInfoList();
-
-        const selectedIndex = world_names.indexOf(selectWorldName);
-        if (selectedIndex !== -1) {
-            $("#world_info").val(selectedIndex).trigger('change');
-        } else {
-            $("#world_info").val("").trigger('change');
+        const existingWorldIndex = world_info.findIndex((e) => e === worldInfoName);
+        if (existingWorldIndex !== -1) {
+            world_info.splice(existingWorldIndex, 1);
+            saveSettingsDebounced();
         }
 
+        await updateWorldInfoList();
         $('#world_editor_select').trigger('change');
     }
 }
@@ -663,16 +669,13 @@ async function createNewWorldInfo(worldInfoName) {
         return;
     }
 
-    world_info = worldInfoName;
-    await saveWorldInfo(world_info, worldInfoTemplate, true);
+    await saveWorldInfo(worldInfoName, worldInfoTemplate, true);
     await updateWorldInfoList();
 
     const selectedIndex = world_names.indexOf(worldInfoName);
     if (selectedIndex !== -1) {
-        $("#world_info").val(selectedIndex).trigger('change');
         $('#world_editor_select').val(selectedIndex).trigger('change');
     } else {
-        $("#world_info").val("").trigger('change');
         hideWorldEditor();
     }
 }
@@ -689,7 +692,7 @@ async function getCharacterLore() {
         return [];
     }
 
-    if (name === world_info) {
+    if (world_info.includes(name)) {
         console.debug(`Character ${characters[this_chid]?.name} world info is the same as global: ${name}. Skipping...`);
         return [];
     }
@@ -710,13 +713,13 @@ async function getGlobalLore() {
         return [];
     }
 
-    if (!world_names.includes(world_info)) {
-        console.log(`Global ${characters[this_chid]?.name} world info does not exist: ${world_info}`);
-        return [];
+    let entries = [];
+    for (const worldName of world_info) {
+        const data = await loadWorldInfoData(worldName);
+        const newEntries = data ? Object.keys(data.entries).map((x) => data.entries[x]) : [];
+        entries = entries.concat(newEntries);
     }
 
-    const data = await loadWorldInfoData(world_info);
-    const entries = data ? Object.keys(data.entries).map((x) => data.entries[x]) : [];
     console.debug(`Global world info has ${entries.length} entries`);
 
     return entries;
@@ -819,11 +822,12 @@ async function checkWorldInfo(chat, maxContext) {
         const newEntries = [...activatedNow]
             .sort((a, b) => sortedEntries.indexOf(a) - sortedEntries.indexOf(b));
         let newContent = "";
+        const textToScanTokens = getTokenCount(textToScan);
 
         for (const entry of newEntries) {
             newContent += `${substituteParams(entry.content)}\n`;
 
-            if (getTokenCount(textToScan + newContent) >= budget) {
+            if (textToScanTokens + getTokenCount(newContent) >= budget) {
                 console.debug(`WI budget reached, stopping`);
                 needsToScan = false;
                 break;
@@ -844,20 +848,27 @@ async function checkWorldInfo(chat, maxContext) {
     const ANBottomInjection = [];
 
     [...allActivatedEntries].sort(sortFn).forEach((entry) => {
-        if (entry.position === world_info_position.before) {
-            worldInfoBefore = `${substituteParams(entry.content)}\n${worldInfoBefore}`;
-        } else if (entry.position === world_info_position.after) {
-            worldInfoAfter = `${substituteParams(entry.content)}\n${worldInfoAfter}`;
-        } else if (entry.position === world_info_position.ANTop) {
-            ANTopInjection.push(entry.content);
-        } else if (entry.position === world_info_position.ANBottom) {
-            ANBottomInjection.push(entry.content);
+        switch (entry.position) {
+            case world_info_position.before:
+                worldInfoBefore = `${substituteParams(entry.content)}\n${worldInfoBefore}`;
+                break;
+            case world_info_position.after:
+                worldInfoAfter = `${substituteParams(entry.content)}\n${worldInfoAfter}`;
+                break;
+            case world_info_position.ANTop:
+                ANTopInjection.push(entry.content);
+                break;
+            case world_info_position.ANBottom:
+                ANBottomInjection.push(entry.content);
+                break;
+            default:
+                break;
         }
     });
 
     if (shouldWIAddPrompt) {
         const originalAN = context.extensionPrompts['2_floating_prompt'].value;
-        const ANWithWI = `\n${ANTopInjection.join("\n")} \n${originalAN} \n${ANBottomInjection.reverse().join("\n")}`
+        const ANWithWI = `\n${ANTopInjection.join("\n")}\n${originalAN}\n${ANBottomInjection.reverse().join("\n")}`
         context.setExtensionPrompt('2_floating_prompt', ANWithWI, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth]);
     }
 
@@ -1024,28 +1035,44 @@ export async function importEmbeddedWorldInfo() {
 }
 
 function onWorldInfoChange(_, text) {
-    let selectedWorld;
-    if (_ !== '__notSlashCommand__') { //if it's a slash command
-        if (text !== undefined) { //and args are provided
-            let slashInputWorld = text.toLowerCase();
-            $("#world_info").find(`option`).filter(function () {
-                return $(this).text().toLowerCase() === slashInputWorld;
-            }).prop('selected', true); //matches arg with worldnames and selects; if none found, unsets world
-            let setWorldName = $("#world_info").find(":selected").text(); //only for toastr display
-            toastr.success(`Active world: ${setWorldName}`);
-            selectedWorld = $("#world_info").find(":selected").val();
-        } else { //if no args, unset world
-            toastr.success('Deselected World')
+    let selectedWorlds;
+    if (_ !== '__notSlashCommand__') { // if it's a slash command
+        if (text !== undefined) { // and args are provided
+            const slashInputSplitText = text.trim().toLowerCase().split(",");
+            console.log(slashInputSplitText);
+
+            slashInputSplitText.forEach((worldName) => {
+                const wiElement = getWIElement(worldName);
+                if (wiElement.length > 0) {
+                    wiElement.prop("selected", true);
+                    toastr.success(`Activated world: ${wiElement.text()}`);
+                } else {
+                    toastr.error(`No world found named: ${worldName}`);
+                }  
+            })
+        } else { // if no args, unset all worlds
+            toastr.success('Deactivated all worlds');
+            world_info = [];
             $("#world_info").val("");
         }
     } else { //if it's a pointer selection
-        selectedWorld = $("#world_info").find(":selected").val();
+        let tempWorldInfo = [];
+        let selectedWorlds = $("#world_info").val().map((e) => Number(e)).filter((e) => !isNaN(e));
+        if (selectedWorlds.length > 0) {
+            selectedWorlds.forEach((worldIndex) => {
+                const existingWorldName = world_names[worldIndex];
+                if (existingWorldName) {
+                    tempWorldInfo.push(existingWorldName);
+                } else {
+                    const wiElement = getWIElement(existingWorldName);
+                    wiElement.prop("selected", false);
+                    toastr.error(`The world with ${existingWorldName} is invalid or corrupted.`);
+                }
+            });
+        }
+        world_info = tempWorldInfo;
     }
-    world_info = null;
-    if (selectedWorld !== "") {
-        const worldIndex = Number(selectedWorld);
-        world_info = !isNaN(worldIndex) ? world_names[worldIndex] : null;
-    }
+
     saveSettingsDebounced();
 }
 
@@ -1054,7 +1081,16 @@ jQuery(() => {
     $(document).ready(function () {
         registerSlashCommand('world', onWorldInfoChange, [], "– sets active World, or unsets if no args provided", true, true);
     })
-    $("#world_info").on('change', async function () { onWorldInfoChange('__notSlashCommand__') });
+    $("#world_info").on('mousedown change', async function (e) {
+        if (deviceInfo.device.type === 'desktop') {
+            e.preventDefault();
+            const option = $(e.target);
+            option.prop('selected', !option.prop('selected'));
+            await delay(1);
+        }
+
+        onWorldInfoChange('__notSlashCommand__');
+    });
 
     //**************************WORLD INFO IMPORT EXPORT*************************//
     $("#world_import_button").on('click', function () {

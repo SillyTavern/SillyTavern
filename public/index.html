@@ -1876,17 +1876,17 @@
                 </div>
                 <div id="wi-holder" class="margin5">
                     <div class="wi-settings flex-container gap10px alignitemscenter">
-                        <div class="flex1 flex-container flexFlowColumn">
-                            <div class="flex range-block">
-                                <div class="range-block-title justifyLeft">
-                                    <small>Active World</small>
-                                </div>
-                                <div class="range-block-range">
-                                    <select id="world_info" class="flexGrow margin0">
-                                        <option value="">--- None ---</option>
-                                    </select>
-                                </div>
+                        <div class="flex range-block">
+                            <div class="range-block-title justifyLeft">
+                                <small>Active World</small>
                             </div>
+                            <div class="range-block-range">
+                                <select id="world_info" multiple>
+                                    <option value="">-- World Info not found --</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="flex1 flex-container flexFlowColumn">
                             <div class="flex range-block">
                                 <div class="range-block-title justifyLeft">
                                     <label for="world_info_character_strategy">
@@ -1901,41 +1901,42 @@
                                     </select>
                                 </div>
                             </div>
-                        </div>
 
-                        <div name="WIScanAndTokens" class="flex1 flex-container flexFlowColumn">
-                            <div class="flex1 gap5px range-block">
-                                <div class="wide10pMinFit">
-                                    <small data-i18n="Scan Depth">Scan Depth</small>
-                                </div>
-                                <div class="range-block-range-and-counter">
-                                    <div class="range-block-range paddingLeftRight5">
-                                        <input type="range" id="world_info_depth" name="volume" min="0" max="10" step="1">
+                            <div name="WIScanAndTokens" class="flex1 flex-container flexFlowColumn">
+                                <div class="flex1 gap5px range-block">
+                                    <div class="wide10pMinFit">
+                                        <small data-i18n="Scan Depth">Scan Depth</small>
                                     </div>
-                                    <div class="range-block-counter margin0">
-                                        <div contenteditable="true" data-for="world_info_depth" id="world_info_depth_counter">
-                                            depth
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range paddingLeftRight5">
+                                            <input type="range" id="world_info_depth" name="volume" min="0" max="10" step="1">
+                                        </div>
+                                        <div class="range-block-counter margin0">
+                                            <div contenteditable="true" data-for="world_info_depth" id="world_info_depth_counter">
+                                                depth
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+    
+                                <div class="flex1 gap5px range-block">
+                                    <div class="wide10pMinFit">
+                                        <small data-i18n="Token Budget">Context %</small>
+                                    </div>
+                                    <div class="range-block-range-and-counter ">
+                                        <div class="range-block-range paddingLeftRight5">
+                                            <input type="range" id="world_info_budget" name="volume" min="1" max="100" step="1">
+                                        </div>
+                                        <div class="range-block-counter margin0">
+                                            <div contenteditable="true" data-for="world_info_budget" id="world_info_budget_counter">
+                                                budget
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-
-                            <div class="flex1 gap5px range-block">
-                                <div class="wide10pMinFit">
-                                    <small data-i18n="Token Budget">Context %</small>
-                                </div>
-                                <div class="range-block-range-and-counter ">
-                                    <div class="range-block-range paddingLeftRight5">
-                                        <input type="range" id="world_info_budget" name="volume" min="1" max="100" step="1">
-                                    </div>
-                                    <div class="range-block-counter margin0">
-                                        <div contenteditable="true" data-for="world_info_budget" id="world_info_budget_counter">
-                                            budget
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
+
                         <div class="range-block flex-container flexFlowColumn">
                             <label title="Entries can activate other entries by mentioning their keywords" class="checkbox_label">
                                 <input id="world_info_recursive" type="checkbox" />
