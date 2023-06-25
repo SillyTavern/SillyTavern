@@ -1,4 +1,4 @@
-import { saveSettingsDebounced, getCurrentChatId, system_message_types, eventSource, event_types, getRequestHeaders, CHARACTERS_PER_TOKEN_RATIO } from "../../../script.js";
+import { saveSettingsDebounced, getCurrentChatId, system_message_types, eventSource, event_types, getRequestHeaders, CHARACTERS_PER_TOKEN_RATIO, substituteParams, } from "../../../script.js";
 import { humanizedDateTime } from "../../RossAscends-mods.js";
 import { getApiUrl, extension_settings, getContext, doExtrasFetch } from "../../extensions.js";
 import { getFileText, onlyUnique, splitRecursive, IndexedDBStore } from "../../utils.js";
@@ -25,6 +25,7 @@ const defaultSettings = {
     chroma_depth_min: -1,
     chroma_depth_max: 500,
     chroma_depth_step: 1,
+    chroma_default_msg: "In a past conversation:  {{memories}}",
 
     split_length: 384,
     split_length_min: 64,
@@ -529,7 +530,7 @@ window.chromadb_interceptGeneration = async (chat, maxContext) => {
     const currentChatId = getCurrentChatId();
     const selectedStrategy = extension_settings.chromadb.strategy;
     const recallStrategy = extension_settings.chromadb.recall_strategy;
-    const recallMsg = extension_settings.chromadb.recall_msg;
+    let recallMsg = extension_settings.chromadb.recall_msg || defaultSettings.chroma_default_msg;
     const chromaDepth = extension_settings.chromadb.chroma_depth;
     const chromaSortStrategy = extension_settings.chromadb.sort_strategy;
     if (currentChatId) {
@@ -588,12 +589,16 @@ window.chromadb_interceptGeneration = async (chat, maxContext) => {
                 }
                 if (selectedStrategy === 'custom') {
                     const context = getContext();
-                    const charname = context.name2;
+                    recallMsg = substituteParams(recallMsg, context.name1, context.name2);
+                    console.log(recallMsg)
+                    let recallStart = recallMsg.split('{{memories}}')[0]
+                    let recallEnd = recallMsg.split('{{memories}}')[1]
+
                     newChat.push(
                         {
                             is_name: false,
                             is_user: false,
-                            mes: recallMsg + " [",
+                            mes: recallStart,
                             name: "system",
                             send_date: 0,
                         }
@@ -603,7 +608,7 @@ window.chromadb_interceptGeneration = async (chat, maxContext) => {
                         {
                             is_name: false,
                             is_user: false,
-                            mes: `]\n`,
+                            mes: recallEnd + `\n`,
                             name: "system",
                             send_date: 0,
                         }
@@ -682,7 +687,7 @@ jQuery(async () => {
                 <option value="custom">Add memories at custom depth with custom msg</option>
             </select>
             <label for="chromadb_custom_msg" hidden><small>Custom injection message:</small></label>
-            <textarea id="chromadb_custom_msg" hidden class="text_pole textarea_compact" rows="2" style="height: 61px; display: none;"></textarea>
+            <textarea id="chromadb_custom_msg" hidden class="text_pole textarea_compact" rows="2" placeholder="${defaultSettings.chroma_default_msg}" style="height: 61px; display: none;"></textarea>
             <label for="chromadb_custom_depth" hidden><small>How deep should the memory messages be injected?: (<span id="chromadb_custom_depth_value"></span>)</small></label>
             <input id="chromadb_custom_depth" type="range" min="${defaultSettings.chroma_depth_min}" max="${defaultSettings.chroma_depth_max}" step="${defaultSettings.chroma_depth_step}" value="${defaultSettings.chroma_depth}" hidden/>
             <span>Memory Recall Strategy</span>
