@@ -1562,9 +1562,9 @@ function getPersonaDescription(storyString) {
 
     switch (power_user.persona_description_position) {
         case persona_description_positions.BEFORE_CHAR:
-            return `${power_user.persona_description}\n${storyString}`;
+            return `${substituteParams(power_user.persona_description)}\n${storyString}`;
         case persona_description_positions.AFTER_CHAR:
-            return `${storyString}\n${power_user.persona_description}`;
+            return `${storyString}\n${substituteParams(power_user.persona_description)}`;
         default:
             if (shouldWIAddPrompt) {
                 const originalAN = extension_prompts[NOTE_MODULE_NAME].value
