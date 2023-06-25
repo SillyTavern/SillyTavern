@@ -480,7 +480,7 @@ function populateChatCompletion (prompts, chatCompletion, {bias, quietPrompt, ty
 
     // Insert nsfw avoidance prompt into main, if no nsfw prompt is present
     if (false === chatCompletion.has('nsfw') && oai_settings.nsfw_avoidance_prompt)
-        if (prompts.has('nsfwAvoidance')) chatCompletion.insert(prompts.get('nsfwAvoidance'), 'main');
+        if (prompts.has('nsfwAvoidance')) chatCompletion.insert(Message.fromPrompt(prompts.get('nsfwAvoidance')), 'main');
 
     // Insert quiet prompt into main
     if (quietPrompt) {
@@ -1283,12 +1283,14 @@ class ChatCompletion {
     // Move validation to its own method for readability
     validateMessageCollection(collection) {
         if (!(collection instanceof MessageCollection)) {
+            console.log(collection);
             throw new Error('Argument must be an instance of MessageCollection');
         }
     }
 
     validateMessage(message) {
         if (!(message instanceof Message)) {
+            console.log(message);
             throw new Error('Argument must be an instance of Message');
         }
     }
