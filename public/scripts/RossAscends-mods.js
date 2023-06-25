@@ -11,8 +11,7 @@ import {
     is_send_press,
     getTokenCount,
     menu_type,
-
-
+    max_context,
 } from "../script.js";
 
 
@@ -287,8 +286,8 @@ export function RA_CountCharTokens() {
         } else { console.debug("RA_TC -- no valid char found, closing."); }
     }
     // display the counted tokens
-    if (count_tokens < 1024 && perm_tokens < 1024) {
-        //display normal if both counts are under 1024
+    const tokenLimit = Math.max(((main_api !== 'openai' ? max_context : oai_settings.openai_max_context) / 2), 1024);
+    if (count_tokens < tokenLimit && perm_tokens < tokenLimit) {
         $("#result_info").html(`<small>${count_tokens} Tokens (${perm_tokens} Permanent)</small>`);
     } else {
         $("#result_info").html(`
