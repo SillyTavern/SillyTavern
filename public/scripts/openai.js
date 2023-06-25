@@ -244,7 +244,8 @@ function setOpenAIMessages(chat) {
 
         // Apply the "wrap in quotes" option
         if (role == 'user' && oai_settings.wrap_in_quotes) content = `"${content}"`;
-        openai_msgs[i] = { "role": role, "content": content };
+        const name = chat[j]['name'];
+        openai_msgs[i] = { "role": role, "content": content, name: name};
         j++;
     }
 
@@ -387,7 +388,7 @@ function populateChatHistory(prompts, chatCompletion) {
 
     // Insert chat messages as long as there is budget available
     [...openai_msgs].reverse().every((prompt, index) => {
-        const chatMessage = new Message(prompt.role, prompt.content, 'chatHistory-' + index);
+        const chatMessage = new Message(prompt.role, prompt.content, 'chatHistory-' + index, prompt.name);
         if (chatCompletion.canAfford(chatMessage)) chatCompletion.insertAtStart(chatMessage, 'chatHistory');
         else return false;
         return true;
@@ -609,6 +610,8 @@ function prepareOpenAIMessages({
         }
     } finally {
         promptManager.populateTokenHandler(chatCompletion.getMessages());
+
+        // All information are up-to-date, render without dry-run.
         promptManager.render(false);
     }
 
@@ -1120,10 +1123,11 @@ class TokenBudgetExceededError extends Error {
 
 class Message {
     tokens; identifier; role; content;
-    constructor(role, content, identifier) {
+    constructor(role, content, identifier, name = '') {
         this.identifier = identifier;
         this.role = role;
         this.content = content;
+        this.name = name;
 
         if (this.content) {
             this.tokens = tokenHandler.count({role: this.role, content: this.content})
@@ -1249,7 +1253,8 @@ class ChatCompletion {
         for (let item of this.messages.collection) {
             if (item instanceof MessageCollection) {
                 const messages = item.collection.reduce((acc, message) => {
-                    if (message.content) acc.push({role: message.role, content: message.content});
+                    const name = message.name;
+                    if (message.content) acc.push({role: message.role, ...(name && { name }), content: message.content});
                     return acc;
                 }, []);
                 chat.push(...messages);
