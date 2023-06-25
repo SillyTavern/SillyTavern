@@ -1048,7 +1048,7 @@ function onWorldInfoChange(_, text) {
                     toastr.success(`Activated world: ${wiElement.text()}`);
                 } else {
                     toastr.error(`No world found named: ${worldName}`);
-                }  
+                }
             })
         } else { // if no args, unset all worlds
             toastr.success('Deactivated all worlds');
@@ -1081,12 +1081,18 @@ jQuery(() => {
     $(document).ready(function () {
         registerSlashCommand('world', onWorldInfoChange, [], "– sets active World, or unsets if no args provided", true, true);
     })
+
+    let selectScrollTop = null;
+
     $("#world_info").on('mousedown change', async function (e) {
         if (deviceInfo.device.type === 'desktop') {
             e.preventDefault();
             const option = $(e.target);
+            const selectElement = $(this)[0];
+            selectScrollTop = selectElement.scrollTop;
             option.prop('selected', !option.prop('selected'));
             await delay(1);
+            selectElement.scrollTop = selectScrollTop;
         }
 
         onWorldInfoChange('__notSlashCommand__');
