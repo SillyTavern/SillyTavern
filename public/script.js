@@ -4071,8 +4071,8 @@ async function bindUserNameToPersona() {
 
 function updateUserLockIcon() {
     const hasLock = !!chat_metadata['persona'];
-    $('#lock_user_name').toggleClass('fa-lock', !hasLock);
-    $('#lock_user_name').toggleClass('fa-unlock', hasLock);
+    $('#lock_user_name').toggleClass('fa-unlock', !hasLock);
+    $('#lock_user_name').toggleClass('fa-lock', hasLock);
 }
 
 function setUserAvatar() {
