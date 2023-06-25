@@ -546,8 +546,6 @@ PromptManagerModule.prototype.preparePrompt = function (prompt, original = null)
         else preparedPrompt.content = substituteParams(prompt.content);
     }
 
-    if (prompt.name && this.isValidName(prompt.name)) preparedPrompt.name = prompt.name;
-
     return preparedPrompt;
 }
 

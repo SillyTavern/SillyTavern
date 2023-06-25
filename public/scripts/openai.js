@@ -137,6 +137,7 @@ const default_settings = {
     openai_max_context: max_4k,
     openai_max_tokens: 300,
     wrap_in_quotes: false,
+    names_in_completion: false,
     ...openAiDefaultPrompts,
     ...openAiDefaultPromptLists,
     ...defaultPromptManagerSettings,
@@ -171,6 +172,7 @@ const oai_settings = {
     openai_max_context: max_4k,
     openai_max_tokens: 300,
     wrap_in_quotes: false,
+    names_in_completion: false,
     ...openAiDefaultPrompts,
     ...openAiDefaultPromptLists,
     ...defaultPromptManagerSettings,
@@ -399,7 +401,14 @@ function populateChatHistory(prompts, chatCompletion) {
 
     // Insert chat messages as long as there is budget available
     [...openai_msgs].reverse().every((prompt, index) => {
-        const chatMessage = new Message(prompt.role, prompt.content, 'chatHistory-' + index, prompt.name);
+        prompt.identifier = 'chatHistory-' + index;
+        const chatMessage = Message.fromPrompt(promptManager.preparePrompt(prompt));
+
+        if (true === promptManager.serviceSettings.names_in_completion &&
+            prompt.name &&
+            promptManager.isValidName(prompt.name))
+            chatMessage.name = prompt.name;
+
         if (chatCompletion.canAfford(chatMessage)) chatCompletion.insertAtStart(chatMessage, 'chatHistory');
         else return false;
         return true;
@@ -1193,12 +1202,11 @@ class TokenBudgetExceededError extends Error {
 }
 
 class Message {
-    tokens; identifier; role; content;
-    constructor(role, content, identifier, name = '') {
+    tokens; identifier; role; content; name;
+    constructor(role, content, identifier) {
         this.identifier = identifier;
         this.role = role;
         this.content = content;
-        this.name = name;
 
         if (this.content) {
             this.tokens = tokenHandler.count({role: this.role, content: this.content})
@@ -1492,6 +1500,7 @@ function loadOpenAISettings(data, settings) {
 
     if (settings.keep_example_dialogue !== undefined) oai_settings.keep_example_dialogue = !!settings.keep_example_dialogue;
     if (settings.wrap_in_quotes !== undefined) oai_settings.wrap_in_quotes = !!settings.wrap_in_quotes;
+    if (settings.names_in_completion !== undefined) oai_settings.names_in_completion = !!settings.names_in_completion;
     if (settings.openai_model !== undefined) oai_settings.openai_model = settings.openai_model;
 
     $('#stream_toggle').prop('checked', oai_settings.stream_openai);
@@ -1514,6 +1523,7 @@ function loadOpenAISettings(data, settings) {
     $('#nsfw_toggle').prop('checked', oai_settings.nsfw_toggle);
     $('#keep_example_dialogue').prop('checked', oai_settings.keep_example_dialogue);
     $('#wrap_in_quotes').prop('checked', oai_settings.wrap_in_quotes);
+    $('#names_in_completion').prop('checked', oai_settings.names_in_completion);
     $('#nsfw_first').prop('checked', oai_settings.nsfw_first);
     $('#jailbreak_system').prop('checked', oai_settings.jailbreak_system);
     $('#legacy_streaming').prop('checked', oai_settings.legacy_streaming);
@@ -1677,6 +1687,7 @@ async function saveOpenAIPreset(name, settings) {
         openai_max_context: settings.openai_max_context,
         openai_max_tokens: settings.openai_max_tokens,
         wrap_in_quotes: settings.wrap_in_quotes,
+        names_in_completion: settings.names_in_completion,
         send_if_empty: settings.send_if_empty,
         jailbreak_prompt: settings.jailbreak_prompt,
         jailbreak_system: settings.jailbreak_system,
@@ -2007,6 +2018,7 @@ function onSettingsPresetChange() {
         openai_max_context: ['#openai_max_context', 'openai_max_context', false],
         openai_max_tokens: ['#openai_max_tokens', 'openai_max_tokens', false],
         wrap_in_quotes: ['#wrap_in_quotes', 'wrap_in_quotes', true],
+        names_in_completion: ['#names_in_completion', 'names_in_completion', true],
         send_if_empty: ['#send_if_empty_textarea', 'send_if_empty', false],
         impersonation_prompt: ['#impersonation_prompt_textarea', 'impersonation_prompt', false],
         bias_preset_selected: ['#openai_logit_bias_preset', 'bias_preset_selected', false],
@@ -2415,6 +2427,11 @@ $(document).ready(function () {
 
     $('#wrap_in_quotes').on('change', function () {
         oai_settings.wrap_in_quotes = !!$('#wrap_in_quotes').prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $('#names_in_completion').on('change', function () {
+        oai_settings.names_in_completion = !!$('#names_in_completion').prop('checked');
         saveSettingsDebounced();
     });
 
