@@ -1372,6 +1372,10 @@ body.big-avatars .ch_description {
     align-items: flex-start !important;
 }
 
+.alignSelfStart {
+    align-self: start;
+}
+
 .gap5px {
     gap: 5px !important;
 }
@@ -3970,6 +3974,10 @@ toolcool-color-picker {
     margin: 0 auto;
 }
 
+.justifyContentSpaceAround {
+    justify-content: space-around;
+}
+
 .spaceEvenly {
     justify-content: space-evenly;
 }
@@ -4403,6 +4411,10 @@ body.waifuMode #avatar_zoom_popup {
 
     .world_entry_thin_controls {
         flex-direction: column;
+    }
+
+    #WIMultiSelector {
+        align-self: normal;
     }
 
     .WIEntryContentAndMemo {
