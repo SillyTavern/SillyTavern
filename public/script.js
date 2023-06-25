@@ -4338,7 +4338,7 @@ async function deleteUserAvatar() {
         return;
     }
 
-    const confirm = await callPopup('Are you sure you want to delete this avatar?', 'confirm');
+    const confirm = await callPopup('<h3>Are you sure you want to delete this avatar?</h3>All information associated with its linked persona will be lost.', 'confirm');
 
     if (!confirm) {
         console.debug('User cancelled deleting avatar');
