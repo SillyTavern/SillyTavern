@@ -822,11 +822,12 @@ async function checkWorldInfo(chat, maxContext) {
         const newEntries = [...activatedNow]
             .sort((a, b) => sortedEntries.indexOf(a) - sortedEntries.indexOf(b));
         let newContent = "";
+        const textToScanTokens = getTokenCount(textToScan);
 
         for (const entry of newEntries) {
             newContent += `${substituteParams(entry.content)}\n`;
 
-            if (getTokenCount(textToScan + newContent) >= budget) {
+            if (textToScanTokens + getTokenCount(newContent) >= budget) {
                 console.debug(`WI budget reached, stopping`);
                 needsToScan = false;
                 break;
@@ -847,20 +848,27 @@ async function checkWorldInfo(chat, maxContext) {
     const ANBottomInjection = [];
 
     [...allActivatedEntries].sort(sortFn).forEach((entry) => {
-        if (entry.position === world_info_position.before) {
-            worldInfoBefore = `${substituteParams(entry.content)}\n${worldInfoBefore}`;
-        } else if (entry.position === world_info_position.after) {
-            worldInfoAfter = `${substituteParams(entry.content)}\n${worldInfoAfter}`;
-        } else if (entry.position === world_info_position.ANTop) {
-            ANTopInjection.push(entry.content);
-        } else if (entry.position === world_info_position.ANBottom) {
-            ANBottomInjection.push(entry.content);
+        switch (entry.position) {
+            case world_info_position.before:
+                worldInfoBefore = `${substituteParams(entry.content)}\n${worldInfoBefore}`;
+                break;
+            case world_info_position.after:
+                worldInfoAfter = `${substituteParams(entry.content)}\n${worldInfoAfter}`;
+                break;
+            case world_info_position.ANTop:
+                ANTopInjection.push(entry.content);
+                break;
+            case world_info_position.ANBottom:
+                ANBottomInjection.push(entry.content);
+                break;
+            default:
+                break;
         }
     });
 
     if (shouldWIAddPrompt) {
         const originalAN = context.extensionPrompts['2_floating_prompt'].value;
-        const ANWithWI = `\n${ANTopInjection.join("\n")} \n${originalAN} \n${ANBottomInjection.reverse().join("\n")}`
+        const ANWithWI = `\n${ANTopInjection.join("\n")}\n${originalAN}\n${ANBottomInjection.reverse().join("\n")}`
         context.setExtensionPrompt('2_floating_prompt', ANWithWI, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth]);
     }
 
