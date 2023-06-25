@@ -30,6 +30,8 @@ import {
     world_names,
     world_info_character_strategy,
     importEmbeddedWorldInfo,
+    checkEmbeddedWorld,
+    setWorldInfoButtonClass,
 } from "./scripts/world-info.js";
 
 import {
@@ -293,7 +295,7 @@ let currentCroppedAvatar = '';
 
 const durationSaveEdit = 1000;
 const saveSettingsDebounced = debounce(() => saveSettings(), durationSaveEdit);
-const saveCharacterDebounced = debounce(() => $("#create_button").trigger('click'), durationSaveEdit);
+export const saveCharacterDebounced = debounce(() => $("#create_button").trigger('click'), durationSaveEdit);
 const getStatusDebounced = debounce(() => getStatus(), 300_000);
 const saveChatDebounced = debounce(() => saveChatConditional(), durationSaveEdit);
 
@@ -5052,37 +5054,11 @@ export function select_selected_character(chid) {
     $("#renameCharButton").css("display", "");
     $('.open_alternate_greetings').data('chid', chid);
     $('#set_character_world').data('chid', chid);
-    const world = characters[chid]?.data?.extensions?.world;
-    const worldSet = Boolean(world && world_names.includes(world));
-    $('#set_character_world').toggleClass('world_set', worldSet);
+    setWorldInfoButtonClass(chid);
     checkEmbeddedWorld(chid);
 
     $("#form_create").attr("actiontype", "editcharacter");
     saveSettingsDebounced();
-}
-
-function checkEmbeddedWorld(chid) {
-    $('#import_character_info').hide();
-
-    if (chid === undefined) {
-        return;
-    }
-
-    if (characters[chid]?.data?.character_book) {
-        $('#import_character_info').data('chid', chid).show();
-
-        // Only show the alert once per character
-        const checkKey = `AlertWI_${characters[chid].avatar}`;
-        const worldName = characters[chid]?.data?.extensions?.world;
-        if (!localStorage.getItem(checkKey) && (!worldName || !world_names.includes(worldName))) {
-            toastr.info(
-                'To import and use it, select "Import Embedded World Info" in the Options dropdown menu on the character panel.',
-                `${characters[chid].name} has an embedded World/Lorebook`,
-                { timeOut: 10000, extendedTimeOut: 20000, positionClass: 'toast-top-center' },
-            );
-            localStorage.setItem(checkKey, 1);
-        }
-    }
 }
 
 function select_rm_create() {
@@ -5133,7 +5109,7 @@ function select_rm_create() {
     $("#name_div").addClass('displayBlock');
     $('.open_alternate_greetings').data('chid', undefined);
     $('#set_character_world').data('chid', undefined);
-    $('#set_character_world').toggleClass('world_set', !!create_save.world);
+    setWorldInfoButtonClass(undefined, !!create_save.world);
     updateFavButtonState(false);
     checkEmbeddedWorld();
 
@@ -5530,7 +5506,7 @@ function openCharacterWorldPopup() {
             createOrEditCharacter();
         }
 
-        $('#set_character_world').toggleClass('world_set', !!value);
+        setWorldInfoButtonClass(undefined, !!value);
     }
 
     const name = (menu_type == 'create' ? create_save.name : characters[chid]?.data?.name) || 'Nameless';

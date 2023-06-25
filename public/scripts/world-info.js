@@ -1,4 +1,4 @@
-import { saveSettings, callPopup, substituteParams, getTokenCount, getRequestHeaders, chat_metadata, this_chid, characters } from "../script.js";
+import { saveSettings, callPopup, substituteParams, getTokenCount, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type } from "../script.js";
 import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, delay } from "./utils.js";
 import { getContext } from "./extensions.js";
 import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from "./extensions/floating-prompt/index.js";
@@ -173,7 +173,7 @@ function hideWorldEditor() {
 }
 
 function getWIElement(name) {
-    const wiElement = $("#world_info").children().filter(function() {
+    const wiElement = $("#world_info").children().filter(function () {
         return $(this).text().toLowerCase() === name.toLowerCase()
     });
 
@@ -630,6 +630,14 @@ async function deleteWorldInfo(worldInfoName) {
 
         await updateWorldInfoList();
         $('#world_editor_select').trigger('change');
+
+        if ($('#character_world').val() === worldInfoName) {
+            $('#character_world').val('').trigger('change');
+            setWorldInfoButtonClass(undefined, false);
+            if (menu_type != 'create') {
+                saveCharacterDebounced();
+            }
+        }
     }
 }
 
@@ -1004,6 +1012,48 @@ function convertCharacterBook(characterBook) {
     return result;
 }
 
+export function setWorldInfoButtonClass(chid, forceValue = undefined) {
+    if (forceValue !== undefined) {
+        $('#set_character_world, #world_button').toggleClass('world_set', forceValue);
+        return;
+    }
+
+    if (!chid) {
+        return;
+    }
+
+    const world = characters[chid]?.data?.extensions?.world;
+    const worldSet = Boolean(world && world_names.includes(world));
+    $('#set_character_world, #world_button').toggleClass('world_set', worldSet);
+}
+
+export function checkEmbeddedWorld(chid) {
+    $('#import_character_info').hide();
+
+    if (chid === undefined) {
+        return false;
+    }
+
+    if (characters[chid]?.data?.character_book) {
+        $('#import_character_info').data('chid', chid).show();
+
+        // Only show the alert once per character
+        const checkKey = `AlertWI_${characters[chid].avatar}`;
+        const worldName = characters[chid]?.data?.extensions?.world;
+        if (!localStorage.getItem(checkKey) && (!worldName || !world_names.includes(worldName))) {
+            toastr.info(
+                'To import and use it, select "Import Embedded World Info" in the Options dropdown menu on the character panel.',
+                `${characters[chid].name} has an embedded World/Lorebook`,
+                { timeOut: 10000, extendedTimeOut: 20000, positionClass: 'toast-top-center' },
+            );
+            localStorage.setItem(checkKey, 1);
+        }
+        return true;
+    }
+
+    return false;
+}
+
 export async function importEmbeddedWorldInfo() {
     const chid = $('#import_character_info').data('chid');
 
@@ -1032,6 +1082,8 @@ export async function importEmbeddedWorldInfo() {
     if (newIndex >= 0) {
         $("#world_editor_select").val(newIndex).trigger('change');
     }
+
+    setWorldInfoButtonClass(chid, true);
 }
 
 function onWorldInfoChange(_, text) {
@@ -1231,5 +1283,27 @@ jQuery(() => {
     $('#world_info_character_strategy').on('change', function () {
         world_info_character_strategy = $(this).val();
         saveSettingsDebounced();
-    })
+    });
+
+    $('#world_button').on('click', async function () {
+        const chid = $('#set_character_world').data('chid');
+
+        if (chid) {
+            const worldName = characters[chid]?.data?.extensions?.world;
+            const hasEmbed = checkEmbeddedWorld(chid);
+            if (worldName && world_names.includes(worldName)) {
+                if (!$('#WorldInfo').is(':visible')) {
+                    $('#WIDrawerIcon').trigger('click');
+                }
+                const index = world_names.indexOf(worldName);
+                $("#world_editor_select").val(index).trigger('change');
+            } else if (hasEmbed) {
+                await importEmbeddedWorldInfo();
+                saveCharacterDebounced();
+            }
+            else {
+                $('#char-management-dropdown').val($('#set_character_world').val()).trigger('change');
+            }
+        }
+    });
 });
