@@ -1,19 +1,21 @@
-#openai_prompt_manager {
+/* OpenAI */
+
+#completion_prompt_manager {
     margin: 0.5em 0.25em;
 }
 
-#openai_prompt_manager .caution {
+#completion_prompt_manager .caution {
     color: var(--fullred);
 }
 
-#openai_prompt_manager #openai_prompt_manager_list {
+#completion_prompt_manager #completion_prompt_manager_list {
     display: flex;
     flex-direction: column;
     min-height: 300px;
     max-height: 800px;
 }
 
-#openai_prompt_manager .openai_prompt_manager_list_separator hr {
+#completion_prompt_manager .completion_prompt_manager_list_separator hr {
     grid-column-start: 1;
     grid-column-end: 4;
     width: 100%;
@@ -22,48 +24,48 @@
     min-height: 1px;
 }
 
-#openai_prompt_manager #openai_prompt_manager_list li {
+#completion_prompt_manager #completion_prompt_manager_list li {
     display: grid;
     grid-template-columns: 4fr 80px 60px;
     margin-bottom: 0.5em;
     width: 100%
 }
 
-#openai_prompt_manager #openai_prompt_manager_list .openai_prompt_manager_marker span span {
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_marker span span {
     /** TODO: Introduce classes to avoid this */
     display: inline !important;
 }
 
-#openai_prompt_manager #openai_prompt_manager_list .openai_prompt_manager_marker .fa-thumb-tack {
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_marker .fa-thumb-tack {
     padding: 0 0.5em;
     color: var(--white50a);
 }
 
-#openai_prompt_manager #openai_prompt_manager_list li.openai_prompt_manager_list_head .prompt_manager_prompt_tokens,
-#openai_prompt_manager #openai_prompt_manager_list li.openai_prompt_manager_prompt .prompt_manager_prompt_tokens {
+#completion_prompt_manager #completion_prompt_manager_list li.completion_prompt_manager_list_head .prompt_manager_prompt_tokens,
+#completion_prompt_manager #completion_prompt_manager_list li.completion_prompt_manager_prompt .prompt_manager_prompt_tokens {
     text-align: right;
 }
 
-#openai_prompt_manager #openai_prompt_manager_list .openai_prompt_manager_prompt .prompt_manager_prompt_controls {
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt .prompt_manager_prompt_controls {
     text-align: right;
 }
 
-#openai_prompt_manager .openai_prompt_manager_list_head {
+#completion_prompt_manager .completion_prompt_manager_list_head {
     padding: 0.5em;
 }
 
-#openai_prompt_manager #openai_prompt_manager_list li.openai_prompt_manager_prompt {
+#completion_prompt_manager #completion_prompt_manager_list li.completion_prompt_manager_prompt {
     align-items: center;
     padding: 0.5em;
     border: 1px solid var(--white30a);
 }
 
-#openai_prompt_manager #openai_prompt_manager_list li.openai_prompt_manager_prompt .prompt_manager_prompt_controls {
+#completion_prompt_manager #completion_prompt_manager_list li.completion_prompt_manager_prompt .prompt_manager_prompt_controls {
     display: flex;
     justify-content: end;
 }
 
-#openai_prompt_manager #openai_prompt_manager_list li.openai_prompt_manager_prompt span span span {
+#completion_prompt_manager #completion_prompt_manager_list li.completion_prompt_manager_prompt span span span {
     flex-direction: column;
     justify-content: center;
     margin-left: 0.25em;
@@ -75,63 +77,63 @@
     opacity: 0.2;
 }
 
-#openai_prompt_manager #openai_prompt_manager_list li.openai_prompt_manager_prompt span span:hover {
+#completion_prompt_manager #completion_prompt_manager_list li.completion_prompt_manager_prompt span span:hover {
     opacity: 1;
 }
 
-#openai_prompt_manager_popup .openai_prompt_manager_popup_entry {
+#completion_prompt_manager_popup .completion_prompt_manager_popup_entry {
     margin-top:2em;
 }
 
-#openai_prompt_manager_popup .openai_prompt_manager_popup_entry .openai_prompt_manager_popup_entry_form_control {
+#completion_prompt_manager_popup .completion_prompt_manager_popup_entry .completion_prompt_manager_popup_entry_form_control {
     margin-top:1em;
 }
 
-#openai_prompt_manager_popup #openai_prompt_manager_popup_entry_form_footer #openai_prompt_manager_popup_entry_form_close,
-#openai_prompt_manager_popup #openai_prompt_manager_popup_entry_form_footer #openai_prompt_manager_popup_entry_form_save {
+#completion_prompt_manager_popup #completion_prompt_manager_popup_entry_form_footer #completion_prompt_manager_popup_entry_form_close,
+#completion_prompt_manager_popup #completion_prompt_manager_popup_entry_form_footer #completion_prompt_manager_popup_entry_form_save {
     font-size: 1.25em;
     padding: 0.5em;
 }
 
-#openai_prompt_manager_popup .openai_prompt_manager_popup_entry_form_control #openai_prompt_manager_popup_entry_form_prompt {
+#completion_prompt_manager_popup .completion_prompt_manager_popup_entry_form_control #completion_prompt_manager_popup_entry_form_prompt {
     min-height: 200px;
 }
 
-#openai_prompt_manager_popup .openai_prompt_manager_popup_entry #openai_prompt_manager_popup_entry_form_footer {
+#completion_prompt_manager_popup .completion_prompt_manager_popup_entry #completion_prompt_manager_popup_entry_form_footer {
     display: flex;
     justify-content: space-between;
     margin-top: 1em;
 }
 
-#openai_prompt_manager #openai_prompt_manager_list .openai_prompt_manager_prompt.draggable {
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt.draggable {
     cursor: grab;
 }
 
-#openai_prompt_manager #openai_prompt_manager_list .openai_prompt_manager_prompt_name {
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt_name {
     white-space: nowrap;
     overflow: hidden;
 }
 
-#openai_prompt_manager #openai_prompt_manager_list .openai_prompt_manager_prompt.openai_prompt_manager_prompt_disabled {
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt.completion_prompt_manager_prompt_disabled {
     border: 1px solid var(--white20a);
 }
 
-#openai_prompt_manager #openai_prompt_manager_list .openai_prompt_manager_prompt_disabled .openai_prompt_manager_prompt_name {
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt_disabled .completion_prompt_manager_prompt_name {
     color: var(--white30a);
 }
 
-#openai_prompt_manager #openai_prompt_manager_list li.openai_prompt_manager_prompt .mes_edit {
+#completion_prompt_manager #completion_prompt_manager_list li.completion_prompt_manager_prompt .mes_edit {
     margin-left: 0.5em;
 }
 
-#openai_prompt_manager .openai_prompt_manager_error {
+#completion_prompt_manager .completion_prompt_manager_error {
     padding: 1em;
     border: 3px solid var(--fullred);
     margin-top: 1em;
     margin-bottom: 0.5em;
 }
 
-#openai_prompt_manager .openai_prompt_manager_header {
+#completion_prompt_manager .completion_prompt_manager_header {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
@@ -141,17 +143,17 @@
     width: 100%
 }
 
-#openai_prompt_manager .openai_prompt_manager_header div {
+#completion_prompt_manager .completion_prompt_manager_header div {
     margin-top: 0.5em;
     width: fit-content;
 }
 
-#openai_prompt_manager .openai_prompt_manager_header_advanced {
+#completion_prompt_manager .completion_prompt_manager_header_advanced {
     display: flex;
     margin-right: 0.25em;
 }
 
-#openai_prompt_manager .openai_prompt_manager_header_advanced span {
+#completion_prompt_manager .completion_prompt_manager_header_advanced span {
     flex-direction: column;
     justify-content: center;
     margin-left: 0.25em;
@@ -160,11 +162,11 @@
     filter: drop-shadow(0px 0px 2px black);
 }
 
-#openai_prompt_manager .openai_prompt_manager_header_advanced span.fa-solid {
+#completion_prompt_manager .completion_prompt_manager_header_advanced span.fa-solid {
     display: inherit;
 }
 
-#openai_prompt_manager .openai_prompt_manager_footer {
+#completion_prompt_manager .completion_prompt_manager_footer {
     display: flex;
     flex-direction: row;
     justify-content: flex-end;
@@ -173,15 +175,15 @@
     width: 100%
 }
 
-#openai_prompt_manager .openai_prompt_manager_footer a {
+#completion_prompt_manager .completion_prompt_manager_footer a {
     padding: 5px 5px;
 }
 
-#openai_prompt_manager_popup {
+#completion_prompt_manager_popup {
     margin-top: 0;
 }
 
-#openai_prompt_manager_popup {
+#completion_prompt_manager_popup {
     max-width: var(--sheldWidth);
     height: calc(100% - 40px);
     position: absolute;
@@ -200,11 +202,10 @@
 }
 
 @media screen and (max-width: 412px) {
-    #openai_prompt_manager #openai_prompt_manager_list {
+    #completion_prompt_manager #completion_prompt_manager_list {
         font-size: 1.25em !important;
     }
-    #openai_prompt_manager #openai_prompt_manager_list li.openai_prompt_manager_prompt span span span {
+    #completion_prompt_manager #completion_prompt_manager_list li.completion_prompt_manager_prompt span span span {
         margin-left: 0.5em;
     }
-
 }
