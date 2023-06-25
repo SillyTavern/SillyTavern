@@ -546,9 +546,22 @@ PromptManagerModule.prototype.preparePrompt = function (prompt, original = null)
         else preparedPrompt.content = substituteParams(prompt.content);
     }
 
-    if (prompt.name) preparedPrompt.name = prompt.name;
+    if (prompt.name && this.isValidName(prompt.name)) preparedPrompt.name = prompt.name;
 
     return preparedPrompt;
+}
+
+/**
+ * Checks if a given name is accepted by OpenAi API
+ * @link https://platform.openai.com/docs/api-reference/chat/create
+ *
+ * @param name
+ * @returns {boolean}
+ */
+PromptManagerModule.prototype.isValidName = function(name) {
+    const regex = /^[a-zA-Z0-9_]{1,64}$/;
+
+    return regex.test(name);
 }
 
 /**
