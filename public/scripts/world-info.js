@@ -267,7 +267,7 @@ function displayWorldEntries(name, data) {
             await saveWorldInfo(name, data, true);
         }
     });
-    $("#world_popup_entries_list").disableSelection();
+    //$("#world_popup_entries_list").disableSelection();
 }
 
 function setOriginalDataValue(data, uid, key, value) {
@@ -1227,10 +1227,6 @@ jQuery(() => {
 
         // Will allow to select the same file twice in a row
         $("#form_world_import").trigger("reset");
-    });
-
-    $("#world_cross").click(() => {
-        hideWorldEditor();
     });
 
     $("#world_create_button").on('click', async () => {
