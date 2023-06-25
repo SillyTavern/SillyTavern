@@ -1625,7 +1625,7 @@ body.big-avatars #avatar_div_div.avatar img {
 .avatar-container {
     position: relative;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
 }
 
