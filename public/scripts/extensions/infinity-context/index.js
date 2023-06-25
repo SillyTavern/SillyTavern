@@ -9,6 +9,7 @@ const dbStore = new IndexedDBStore('SillyTavern', MODULE_NAME);
 
 const defaultSettings = {
     strategy: 'original',
+    sort_strategy: 'date',
 
     keep_context: 10,
     keep_context_min: 1,
@@ -101,6 +102,10 @@ async function loadSettings() {
         "selected",
         "true"
     );
+    $("#chromadb_sort_strategy option[value=" + extension_settings.chromadb.sort_strategy + "]").attr(
+        "selected",
+        "true"
+    );
     $('#chromadb_keep_context').val(extension_settings.chromadb.keep_context).trigger('input');
     $('#chromadb_n_results').val(extension_settings.chromadb.n_results).trigger('input');
     $('#chromadb_split_length').val(extension_settings.chromadb.split_length).trigger('input');
@@ -134,6 +139,13 @@ function onStrategyChange() {
 function onRecallStrategyChange() {
     console.log('changing chromadb recall strat');
     extension_settings.chromadb.recall_strategy = $('#chromadb_recall_strategy').val();
+
+    saveSettingsDebounced();
+}
+
+function onSortStrategyChange() {
+    console.log('changing chromadb sort strat');
+    extension_settings.chromadb.sort_strategy = $('#chromadb_sort_strategy').val();
 
     saveSettingsDebounced();
 }
@@ -401,7 +413,6 @@ async function queryMultiMessages(chat_id, query) {
 
     if (queryMessagesResult.ok) {
         const queryMessagesData = await queryMessagesResult.json();
-
         return queryMessagesData;
     }
 
@@ -520,6 +531,7 @@ window.chromadb_interceptGeneration = async (chat, maxContext) => {
     const recallStrategy = extension_settings.chromadb.recall_strategy;
     const recallMsg = extension_settings.chromadb.recall_msg;
     const chromaDepth = extension_settings.chromadb.chroma_depth;
+    const chromaSortStrategy = extension_settings.chromadb.sort_strategy;
     if (currentChatId) {
         const messagesToStore = chat.slice(0, -extension_settings.chromadb.keep_context);
 
@@ -539,9 +551,15 @@ window.chromadb_interceptGeneration = async (chat, maxContext) => {
                     queriedMessages = await queryMessages(currentChatId, lastMessage.mes);
                 }
 
-                queriedMessages.sort((a, b) => a.date - b.date);
+                if(chromaSortStrategy === "date"){
+                    queriedMessages.sort((a, b) => a.date - b.date);
+                }
+                else{
+                    queriedMessages.sort((a, b) => b.distance - a.distance);
+                }
 
-                const newChat = [];
+
+                let newChat = [];
 
                 if (selectedStrategy === 'ross') {
                     //adds chroma to the end of chat and allows Generate() to cull old messages naturally.
@@ -590,8 +608,13 @@ window.chromadb_interceptGeneration = async (chat, maxContext) => {
                             send_date: 0,
                         }
                     );
+
+                    //prototype chroma duplicate removal
+                    let chatset = new Set(chat.map(obj => obj.mes));
+                    newChat = newChat.filter(obj => !chatset.has(obj.mes));
+                    
                     if(chromaDepth === -1){
-                        chat.splice(messagesToStore.length, 0, ...newChat);
+                        chat.splice(chat.length, 0, ...newChat);
                     }
                     else{
                         chat.splice(chromaDepth, 0, ...newChat);
@@ -665,7 +688,12 @@ jQuery(async () => {
             <span>Memory Recall Strategy</span>
             <select id="chromadb_recall_strategy">
                 <option value="original">Recall only from this chat</option>
-                <option value="multichat">Recall from all card chats (experimental)</option>
+                <option value="multichat">Recall from all character chats (experimental)</option>
+            </select>
+            <span>Memory Sort Strategy</span>
+            <select id="chromadb_sort_strategy">
+                <option value="date">Sort memories by date</option>
+                <option value="distance">Sort memories by relevance</option>
             </select>
             <label for="chromadb_keep_context">How many original chat messages to keep: (<span id="chromadb_keep_context_value"></span>) messages</label>
             <label for="chromadb_keep_context"><small>How many original chat messages to keep: (<span id="chromadb_keep_context_value"></span>) messages</small></label>
@@ -713,6 +741,7 @@ jQuery(async () => {
     $('#extensions_settings2').append(settingsHtml);
     $('#chromadb_strategy').on('change', onStrategyChange);
     $('#chromadb_recall_strategy').on('change', onRecallStrategyChange);
+    $('#chromadb_sort_strategy').on('change', onSortStrategyChange);
     $('#chromadb_keep_context').on('input', onKeepContextInput);
     $('#chromadb_n_results').on('input', onNResultsInput);
     $('#chromadb_custom_depth').on('input', onChromaDepthInput);
