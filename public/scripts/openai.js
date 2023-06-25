@@ -61,6 +61,7 @@ export {
     setOpenAIMessages,
     setOpenAIMessageExamples,
     setupOpenAIPromptManager,
+    setupClaudePromptManager,
     generateOpenAIPromptCache,
     prepareOpenAIMessages,
     sendOpenAIRequest,
@@ -272,9 +273,9 @@ function setOpenAIMessageExamples(mesExamplesArray) {
 function setupOpenAIPromptManager(openAiSettings) {
     promptManager = new PromptManager();
     const configuration = {
-        prefix: 'openai_',
-        containerIdentifier: 'openai_prompt_manager',
-        listIdentifier: 'openai_prompt_manager_list',
+        prefix: 'completion_',
+        containerIdentifier: 'completion_prompt_manager',
+        listIdentifier: 'completion_prompt_manager_list',
         toggleDisabled: ['main'],
         draggable: true
     };
@@ -291,6 +292,10 @@ function setupOpenAIPromptManager(openAiSettings) {
 
     promptManager.init(configuration, openAiSettings);
     promptManager.render();
+}
+
+function setupClaudePromptManager(claudeSettings) {
+    setupOpenAIPromptManager(claudeSettings);
 }
 
 function generateOpenAIPromptCache() {
@@ -2028,6 +2033,7 @@ async function onModelChange() {
     if ($(this).is('#model_claude_select')) {
         console.log('Claude model changed to', value);
         oai_settings.claude_model = value;
+        //setupOpenAIPromptManager(openai_settings);
     }
 
     if ($(this).is('#model_windowai_select')) {
@@ -2038,6 +2044,7 @@ async function onModelChange() {
     if ($(this).is('#model_openai_select')) {
         console.log('OpenAI model changed to', value);
         oai_settings.openai_model = value;
+        setupOpenAIPromptManager(openai_settings);
     }
 
     if ($(this).is('#model_openrouter_select')) {

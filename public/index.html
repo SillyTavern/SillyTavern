@@ -1117,7 +1117,7 @@
                                         </div>
                                     </div>
                                     <div class="range-block">
-                                        <div id="openai_prompt_manager"></div>
+                                        <div id="completion_prompt_manager"></div>
                                     </div>
                                     <div class="range-block">
                                         <div class="range-block-title justifyLeft">
@@ -3389,39 +3389,39 @@
             </div>
         </div>
     </div>
-    <div id="openai_prompt_manager_popup" style="display:none;">
+    <div id="completion_prompt_manager_popup" style="display:none;">
         <h3>OpenAI Prompt Manager Settings</h3>
-        <div class="openai_prompt_manager_popup_entry">
-            <form class="openai_prompt_manager_popup_entry_form">
-                <div class="openai_prompt_manager_popup_entry_form_control">
-                    <label for="openai_prompt_manager_popup_entry_form_name">
+        <div class="completion_prompt_manager_popup_entry">
+            <form class="completion_prompt_manager_popup_entry_form">
+                <div class="completion_prompt_manager_popup_entry_form_control">
+                    <label for="completion_prompt_manager_popup_entry_form_name">
                         <span>Name</span>
                     </label>
                     <div class="text_muted">A name for this prompt.</div>
-                    <input id="openai_prompt_manager_popup_entry_form_name" class="text_pole" type="text" name="name" />
+                    <input id="completion_prompt_manager_popup_entry_form_name" class="text_pole" type="text" name="name" />
                 </div>
-                <div class="openai_prompt_manager_popup_entry_form_control">
-                    <label for="openai_prompt_manager_popup_entry_form_role">
+                <div class="completion_prompt_manager_popup_entry_form_control">
+                    <label for="completion_prompt_manager_popup_entry_form_role">
                         <span>Role</span>
                     </label>
                     <div class="text_muted">To whom this message will be attributed.</div>
-                    <select id="openai_prompt_manager_popup_entry_form_role" class="text_pole" name="role">
+                    <select id="completion_prompt_manager_popup_entry_form_role" class="text_pole" name="role">
                         <option value="system">System</option>
                         <option value="user">User</option>
                         <option value="assistant">AI Assistant</option>
                     </select>
                 </div>
-                <div class="openai_prompt_manager_popup_entry_form_control">
-                    <label for="openai_prompt_manager_popup_entry_form_prompt">
+                <div class="completion_prompt_manager_popup_entry_form_control">
+                    <label for="completion_prompt_manager_popup_entry_form_prompt">
                         <span>Prompt</span>
                     </label>
                     <div class="text_muted">The prompt to be sent.</div>
-                    <textarea id="openai_prompt_manager_popup_entry_form_prompt" class="text_pole" name="prompt">
+                    <textarea id="completion_prompt_manager_popup_entry_form_prompt" class="text_pole" name="prompt">
                     </textarea>
                 </div>
-                <div id="openai_prompt_manager_popup_entry_form_footer" >
-                    <a id="openai_prompt_manager_popup_entry_form_close" class="fa-solid fa-close menu_button"></a>
-                    <a id="openai_prompt_manager_popup_entry_form_save" class="fa-solid fa-save menu_button" data-pm-prompt=""></a>
+                <div id="completion_prompt_manager_popup_entry_form_footer" >
+                    <a id="completion_prompt_manager_popup_entry_form_close" class="fa-solid fa-close menu_button"></a>
+                    <a id="completion_prompt_manager_popup_entry_form_save" class="fa-solid fa-save menu_button" data-pm-prompt=""></a>
                 </div>
             </form>
         </div>
