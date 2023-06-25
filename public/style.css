@@ -913,7 +913,7 @@ select {
 }
 
 #rm_ch_create_block textarea {
-    min-height: 175px;
+    min-height: 190px;
 }
 
 .margin-bot-10px,
@@ -4615,7 +4615,7 @@ body.waifuMode #avatar_zoom_popup {
     }
 
     #rm_ch_create_block textarea {
-        max-height: 180px;
+        max-height: 190px;
     }
 
     #talkativeness_hint span {
