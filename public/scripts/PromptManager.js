@@ -140,7 +140,7 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
         const promptId = event.target.dataset.pmPrompt;
         const prompt = this.getPromptById(promptId);
 
-        if (null === prompt){
+        if (null === prompt) {
             this.addPrompt({}, promptId);
         } else {
             this.updatePrompt(prompt);
