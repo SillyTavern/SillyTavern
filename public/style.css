@@ -1521,7 +1521,7 @@ body.big-avatars .ch_description {
     height: 100%;
     overflow-y: auto;
     grid-template-rows:
-        [avatar] min-content [hr] min-content [search block] min-content [descriptionHeader] min-content [description] auto [firstmessageHeader] min-content [firstMessage] auto [hidden] min-content;
+        [avatar] min-content [hr] min-content [descriptionHeader] min-content [description] auto [firstmessageHeader] min-content [firstMessage] auto [hidden] min-content;
 }
 
 .avatar_div {
