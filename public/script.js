@@ -4074,12 +4074,15 @@ function appendUserAvatar(name) {
     highlightSelectedAvatar();
 }
 
-function reloadUserAvatar() {
+function reloadUserAvatar(force = false) {
     $(".mes").each(function () {
+        const avatarImg = $(this).find(".avatar img");
+        if (force) {
+            avatarImg.attr("src", avatarImg.attr("src"));
+        }
+
         if ($(this).attr("is_user") == 'true' && $(this).attr('force_avatar') == 'false') {
-            $(this)
-                .find(".avatar img")
-                .attr("src", getUserAvatar(user_avatar));
+            avatarImg.attr("src", getUserAvatar(user_avatar));
         }
     });
 }
@@ -4260,7 +4263,7 @@ async function uploadUserAvatar(e) {
             const name = formData.get("overwrite_name");
             if (name) {
                 await fetch(getUserAvatar(name), { cache: "no-cache" });
-                reloadUserAvatar();
+                reloadUserAvatar(true);
             }
 
             crop_data = undefined;
