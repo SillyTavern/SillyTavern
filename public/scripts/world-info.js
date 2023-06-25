@@ -45,6 +45,8 @@ const world_info_position = {
 
 };
 
+const worldInfoCache = {};
+
 async function getWorldInfoPrompt(chat2, maxContext) {
     let worldInfoString = "", worldInfoBefore = "", worldInfoAfter = "";
 
@@ -124,6 +126,10 @@ async function loadWorldInfoData(name) {
         return;
     }
 
+    if (worldInfoCache[name]) {
+        return worldInfoCache[name];
+    }
+
     const response = await fetch("/getworldinfo", {
         method: "POST",
         headers: getRequestHeaders(),
@@ -133,6 +139,7 @@ async function loadWorldInfoData(name) {
 
     if (response.ok) {
         const data = await response.json();
+        worldInfoCache[name] = data;
         return data;
     }
 
@@ -557,6 +564,8 @@ async function saveWorldInfo(name, data, immediately) {
         return;
     }
 
+    delete worldInfoCache[name];
+
     if (immediately) {
         return await _save(name, data);
     }
@@ -902,6 +911,30 @@ function convertAgnaiMemoryBook(inputObj) {
     return outputObj;
 }
 
+function convertRisuLorebook(inputObj) {
+    const outputObj = { entries: {} };
+
+    inputObj.data.forEach((entry, index) => {
+        outputObj.entries[index] = {
+            uid: index,
+            key: entry.key.split(',').map(x => x.trim()),
+            keysecondary: entry.secondkey ? entry.secondkey.split(',').map(x => x.trim()) : [],
+            comment: entry.comment,
+            content: entry.content,
+            constant: entry.alwaysActive,
+            selective: entry.selective,
+            order: entry.insertorder,
+            position: world_info_position.before,
+            disable: false,
+            addMemo: true,
+            excludeRecursion: false,
+            displayIndex: index,
+        };
+    });
+
+    return outputObj;
+}
+
 function convertNovelLorebook(inputObj) {
     const outputObj = {
         entries: {}
@@ -1055,12 +1088,20 @@ jQuery(() => {
 
             // Convert Novel Lorebook
             if (jsonData.lorebookVersion !== undefined) {
+                console.log('Converting Novel Lorebook');
                 formData.append('convertedData', JSON.stringify(convertNovelLorebook(jsonData)));
             }
 
             // Convert Agnai Memory Book
             if (jsonData.kind === 'memory') {
+                console.log('Converting Agnai Memory Book');
                 formData.append('convertedData', JSON.stringify(convertAgnaiMemoryBook(jsonData)));
+            }
+
+            // Convert Risu Lorebook
+            if (jsonData.type === 'risu') {
+                console.log('Converting Risu Lorebook');
+                formData.append('convertedData', JSON.stringify(convertRisuLorebook(jsonData)));
             }
         } catch (error) {
             toastr.error(`Error parsing file: ${error}`);
