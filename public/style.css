@@ -702,6 +702,7 @@ hr {
     width: 50px;
     height: 50px;
     border-style: none;
+    flex: 1;
 }
 
 .last_mes .mesAvatarWrapper {
@@ -769,6 +770,27 @@ hr {
     box-shadow: 0 0 5px var(--black50a);
 }
 
+.character_select .avatar,
+body.big-avatars .character_select .avatar {
+    flex: unset;
+}
+
+/*
+.character_select .avatar img {
+    flex: unset;
+    width: 50px;
+    height: 50px;
+    width: unset;
+    aspect-ratio: 1 / 1;
+}
+
+,
+body.big-avatars .character_select .avatar img {
+    min-width: 60px;
+    aspect-ratio: unset;
+}
+
+ */
 body.no-hotswap .hotswap {
     display: none !important;
 }
@@ -784,13 +806,16 @@ body.no-timestamps .timestamp {
 body.big-avatars .avatar {
     width: 60px;
     height: 90px;
+    /* width: unset; */
     border-style: none;
     display: flex;
     justify-content: center;
     flex-direction: column;
     align-items: center;
+    /* align-self: unset; */
     overflow: visible;
     border-radius: 10px;
+    flex: 1
 }
 
 body.big-avatars #user_avatar_block .avatar,
@@ -806,8 +831,8 @@ body.big-avatars #user_avatar_block .avatar img {
 }
 
 body.big-avatars .avatar img {
-    width: 100%;
-    height: 100%;
+    width: 60px;
+    height: 90px;
     object-fit: cover;
     object-position: center;
     border: 1px solid var(--black30a);
@@ -1503,10 +1528,21 @@ body.big-avatars .ch_description {
     width: 100%;
     flex-wrap: wrap;
     margin-top: 0px;
-    /* margin-bottom: 6px; */
     align-items: center;
 }
 
+/* #avatar_div_div.avatar img {
+    height: 90%;
+    width: unset;
+    aspect-ratio: 1/1;
+}
+
+body.big-avatars #avatar_div_div.avatar img {
+    height: 90%;
+    width: unset;
+    aspect-ratio: 2 / 3;
+}
+ */
 #user-settings-block h4,
 #user-settings-block h3 {
     margin: 5px 0;
@@ -1706,6 +1742,7 @@ grammarly-extension {
 #result_info {
     font-size: calc(var(--mainFontSize) - 0.1rem);
     font-weight: bold;
+    margin-bottom: 5px;
 }
 
 /* Focus */
@@ -2360,6 +2397,12 @@ input[type="range"]::-webkit-slider-thumb {
 
 #chartokenwarning a {
     color: var(--SmartThemeBodyColor);
+}
+
+#char-management-dropdown,
+#tagInput {
+    height: 35px;
+    margin-bottom: 0;
 }
 
 .nice-link:hover {
@@ -3973,7 +4016,6 @@ toolcool-color-picker {
     width: 30% !important;
 }
 
-
 .justifyLeft {
     text-align: start;
     justify-content: left;
@@ -3987,6 +4029,10 @@ toolcool-color-picker {
 
 .justifyContentSpaceAround {
     justify-content: space-around;
+}
+
+.justifyContentFlexEnd {
+    justify-content: flex-end;
 }
 
 .spaceEvenly {
@@ -4420,7 +4466,8 @@ body.waifuMode #avatar_zoom_popup {
         aspect-ratio: 2 / 3;
     }
 
-    .world_entry_thin_controls, #persona-management-block {
+    .world_entry_thin_controls,
+    #persona-management-block {
         flex-direction: column;
     }
 
@@ -4678,6 +4725,7 @@ body.waifuMode #avatar_zoom_popup {
     .drawer25pWidth {
         flex-basis: max(calc(100% / 2 - 10px), 180px);
     }
+
     .drawer33pWidth {
         flex-basis: max(calc(100% / 2 - 10px), 180px);
     }

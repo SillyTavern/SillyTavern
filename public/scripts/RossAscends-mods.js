@@ -292,7 +292,7 @@ export function RA_CountCharTokens() {
         $("#result_info").html(`<small>${count_tokens} Tokens (${perm_tokens} Permanent)</small>`);
     } else {
         $("#result_info").html(`
-        <div class="flex-container flexFlowColumn alignitemscenter">
+        <div class="flex-container alignitemscenter">
             <div class="flex-container flexnowrap flexNoGap">
                 <small class="flex-container flexnowrap flexNoGap">
                     <div class="neutral_warning">${count_tokens}</div>&nbsp;Tokens (<div class="neutral_warning">${perm_tokens}</div><div>&nbsp;Permanent)</div>
