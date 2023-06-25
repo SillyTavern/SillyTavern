@@ -276,7 +276,7 @@ let is_mes_reload_avatar = false;
 let optionsPopper = Popper.createPopper(document.getElementById('options_button'), document.getElementById('options'), {
     placement: 'top-start'
 });
-let exportPopper = Popper.createPopper(document.getElementById('char-management-dropdown'), document.getElementById('export_format_popup'), {
+let exportPopper = Popper.createPopper(document.getElementById('export_button'), document.getElementById('export_format_popup'), {
     placement: 'left'
 });
 let rawPromptPopper = Popper.createPopper(document.getElementById('dialogue_popup'), document.getElementById('rawPromptPopup'), {
@@ -6676,7 +6676,7 @@ $(document).ready(function () {
 
     $("#form_create").submit(createOrEditCharacter);
 
-    /*     $("#delete_button").click(function () {
+    $("#delete_button").on('click', function () {
             popup_type = "del_ch";
             callPopup(`
                 <h3>Delete the character?</h3>
@@ -6684,9 +6684,9 @@ $(document).ready(function () {
                 THIS WILL ALSO DELETE ALL<br>
                 OF THE CHARACTER'S CHAT FILES.<br><br></b>`
             );
-        }); */
+    });
 
-    $("#rm_info_button").click(function () {
+    $("#rm_info_button").on('click', function () {
         $("#rm_info_avatar").html("");
         select_rm_characters();
     });
@@ -7462,10 +7462,10 @@ $(document).ready(function () {
             importCharacter(file);
         }
     });
-    /*     $("#export_button").click(function (e) {
+    $("#export_button").on('click', function (e) {
             $('#export_format_popup').toggle();
             exportPopper.update();
-        }); */
+    });
     $(document).on('click', '.export_format', async function () {
         const format = $(this).data('format');
 
@@ -7547,7 +7547,7 @@ $(document).ready(function () {
         select_rm_characters();
     });
 
-    /*     $("#dupe_button").click(async function () {
+    $("#dupe_button").click(async function () {
 
             const body = { avatar_url: characters[this_chid].avatar };
             const response = await fetch('/dupecharacter', {
@@ -7559,7 +7559,7 @@ $(document).ready(function () {
                 toastr.success("Character Duplicated");
                 getCharacters();
             }
-        }); */
+    });
 
     $(document).on("click", ".select_chat_block, .bookmark_link, .mes_bookmark", async function () {
         let file_name = $(this).hasClass('mes_bookmark')
@@ -7757,18 +7757,19 @@ $(document).ready(function () {
             case 'renameCharButton':
                 renameCharacter();
                 break;
-            case 'dupe_button':
+            /*case 'dupe_button':
                 DupeChar();
                 break;
             case 'export_button':
                 $('#export_format_popup').toggle();
                 exportPopper.update();
                 break;
+            */
             case 'import_character_info':
                 await importEmbeddedWorldInfo();
                 saveCharacterDebounced();
                 break;
-            case 'delete_button':
+            /*case 'delete_button':
                 popup_type = "del_ch";
                 callPopup(`
                         <h3>Delete the character?</h3>
@@ -7776,7 +7777,7 @@ $(document).ready(function () {
                         THIS WILL ALSO DELETE ALL<br>
                         OF THE CHARACTER'S CHAT FILES.<br><br></b>`
                 );
-                break;
+                break;*/
         }
         $("#char-management-dropdown").prop('selectedIndex', 0);
     });
