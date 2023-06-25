@@ -830,7 +830,7 @@ PromptManagerModule.prototype.makeDraggable = function () {
  * @returns {void}
  */
 PromptManagerModule.prototype.showEditForm = function () {
-    $('#openai_prompt_manager_popup').first()
+    $('#'+this.configuration.prefix +'prompt_manager_popup').first()
         .slideDown(200, "swing")
         .addClass('openDrawer');
 }
@@ -840,7 +840,7 @@ PromptManagerModule.prototype.showEditForm = function () {
  * @returns {void}
  */
 PromptManagerModule.prototype.hideEditForm = function () {
-    $('#openai_prompt_manager_popup').first()
+    $('#'+this.configuration.prefix +'prompt_manager_popup').first()
         .slideUp(200, "swing")
         .removeClass('openDrawer');
 }
