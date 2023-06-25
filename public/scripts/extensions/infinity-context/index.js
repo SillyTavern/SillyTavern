@@ -25,7 +25,7 @@ const defaultSettings = {
     chroma_depth_min: -1,
     chroma_depth_max: 500,
     chroma_depth_step: 1,
-    chroma_default_msg: "In a past conversation:  {{memories}}",
+    chroma_default_msg: "In a past conversation:  [{{memories}}]",
 
     split_length: 384,
     split_length_min: 64,
@@ -590,7 +590,9 @@ window.chromadb_interceptGeneration = async (chat, maxContext) => {
                 if (selectedStrategy === 'custom') {
                     const context = getContext();
                     recallMsg = substituteParams(recallMsg, context.name1, context.name2);
-                    console.log(recallMsg)
+                    if (!text.includes("{{memories}}")) {
+                        text += " {{memories}}";
+                    }
                     let recallStart = recallMsg.split('{{memories}}')[0]
                     let recallEnd = recallMsg.split('{{memories}}')[1]
 
