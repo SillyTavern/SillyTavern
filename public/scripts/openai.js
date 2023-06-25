@@ -62,6 +62,7 @@ export {
     setOpenAIMessageExamples,
     setupOpenAIPromptManager,
     setupClaudePromptManager,
+    setupWindowAiPromptManager,
     generateOpenAIPromptCache,
     prepareOpenAIMessages,
     sendOpenAIRequest,
@@ -297,6 +298,10 @@ function setupOpenAIPromptManager(openAiSettings) {
 
 function setupClaudePromptManager(claudeSettings) {
     setupOpenAIPromptManager(claudeSettings);
+}
+
+function setupWindowAiPromptManager(windowAiSettings) {
+    setupOpenAIPromptManager(windowAiSettings);
 }
 
 function generateOpenAIPromptCache() {
