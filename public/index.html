@@ -2001,7 +2001,7 @@
 
         <div id="user-settings-button" class="drawer">
             <div class="drawer-toggle">
-                <div class="drawer-icon fa-solid fa-face-smile closedIcon" title="User Settings"></div>
+                <div class="drawer-icon fa-solid fa-user-cog closedIcon" title="User Settings"></div>
             </div>
             <div id="user-settings-block" class="drawer-content closedDrawer">
                 <div class="flex-container wide100p alignitemscenter spaceBetween">
@@ -2009,7 +2009,7 @@
                     <div id="version_display"></div>
                 </div>
                 <div class="flex-container spaceEvenly">
-                    <div name="UI Customization" class="flex-container drawer25pWidth">
+                    <div name="UI Customization" class="flex-container drawer33pWidth">
                         <div class="ui-settings">
                             <h4><span data-i18n="UI Customization">UI Customization</span></h4>
                             <div>
@@ -2098,13 +2098,25 @@
                                     <span data-i18n="Movable UI Panels">Movable UI Panels</span>
                                 </label>
 
+                                <div class="flex-container flexFlowColumn">
+                                    <h4 data-i18n="Send on Enter">
+                                        Send on Enter
+                                    </h4>
+                                    <select id="send_on_enter">
+                                        <option value="-1"><span data-i18n="Always disabled">Always disabled</span></option>
+                                        <option value="0"><span data-i18n="Automatic (desktop)">Automatic (desktop)</span>
+                                        </option>
+                                        <option value="1"><span data-i18n="Always enabled">Always enabled</span></option>
+                                    </select>
+                                </div>
+
                                 <div id="movingUIreset" class="menu_button whitespacenowrap" data-i18n="Reset Panels">
                                     Reset Panels</div>
                             </div>
                         </div>
 
                     </div>
-                    <div id="UI-Theme-Block" class="flex-container flexFlowColumn drawer25pWidth">
+                    <div id="UI-Theme-Block" class="flex-container flexFlowColumn drawer33pWidth">
                         <div id="color-picker-block" class="flex-container flexFlowColumn">
                             <h4><span data-i18n="UI Colors">UI Colors</span></h4>
                             <div class="flex-container">
@@ -2201,7 +2213,7 @@
                         </div>
 
                     </div>
-                    <div id="power-user-options-block" class="flex-container drawer25pWidth">
+                    <div id="power-user-options-block" class="flex-container drawer33pWidth">
                         <div id="power-user-option-checkboxes">
                             <h4 data-i18n="Power User Options">Power User Options</h4>
                             <label for="swipes-checkbox">
@@ -2253,73 +2265,32 @@
                                 <span data-i18n="Never Resize Avatars">Never Resize Avatars</span>
                             </label>
 
+                            <div class="inline-drawer wide100p flexFlowColumn">
+                                <div class="inline-drawer-toggle inline-drawer-header">
+                                    <b>Auto-swipe</b>
+                                    <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+                                </div>
+                                <div class="inline-drawer-content">
+                                    <label class="checkbox_label" for="auto_swipe">
+                                        <input id="auto_swipe" type="checkbox" />
+                                        Enabled
+                                    </label>
+                                    <div>Minimum generated message length</div>
+                                    <input id="auto_swipe_minimum_length" name="auto_swipe_minimum_length" type="number" min="0" step="1" value="0" class="text_pole">
+                                    <div>Blacklisted words</div>
+                                    <div class="auto_swipe">
+                                        <textarea id="auto_swipe_blacklist" name="auto_swipe_blacklist" placeholder="words you dont want generated separated by comma ','" class="text_pole textarea_compact" maxlength="5000" value="" autocomplete="off" rows="3"></textarea>
+                                        <div>Blacklisted word count to swipe</div>
+                                        <input id="auto_swipe_blacklist_threshold" name="auto_swipe_blacklist_threshold" type="number" min="0" step="1" value="1" class="text_pole">
+                                    </div>
+                                </div>
+                            </div>
+
                             <div id="reload_chat" class="menu_button whitespacenowrap" data-i18n="Reload Chat">
                                 Reload Chat
                             </div>
                         </div>
 
-                    </div>
-
-                    <div name="NameAndAvatar" class="flex-container flexFlowColumn drawer25pWidth">
-
-
-                        <div class="inline-drawer wide100p flexFlowColumn">
-
-                            <div class="flex-container flexFlowColumn">
-                                <h4 data-i18n="Send on Enter">
-                                    Send on Enter
-                                </h4>
-                                <select id="send_on_enter">
-                                    <option value="-1"><span data-i18n="Always disabled">Always disabled</span></option>
-                                    <option value="0"><span data-i18n="Automatic (desktop)">Automatic (desktop)</span>
-                                    </option>
-                                    <option value="1"><span data-i18n="Always enabled">Always enabled</span></option>
-                                </select>
-                            </div>
-
-                            <div class="inline-drawer-toggle inline-drawer-header">
-                                <b>Auto-swipe</b>
-                                <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
-                            </div>
-                            <div class="inline-drawer-content">
-
-                                <label class="checkbox_label" for="auto_swipe">
-                                    <input id="auto_swipe" type="checkbox" />
-                                    Enabled
-                                </label>
-                                <div>Minimum generated message length</div>
-                                <input id="auto_swipe_minimum_length" name="auto_swipe_minimum_length" type="number" min="0" step="1" value="0" class="text_pole">
-                                <div>Blacklisted words</div>
-                                <div class="auto_swipe">
-                                    <textarea id="auto_swipe_blacklist" name="auto_swipe_blacklist" placeholder="words you dont want generated separated by comma ','" class="text_pole textarea_compact" maxlength="5000" value="" autocomplete="off" rows="3"></textarea>
-                                    <div>Blacklisted word count to swipe</div>
-                                    <input id="auto_swipe_blacklist_threshold" name="auto_swipe_blacklist_threshold" type="number" min="0" step="1" value="1" class="text_pole">
-                                </div>
-                            </div>
-                        </div>
-
-                        <div name="NameChanger">
-                            <h4 data-i18n="Name">Name</h4>
-                            <div class="change_name">
-                                <input id="your_name" name="your_name" placeholder="Enter your name" class="text_pole wide100p" maxlength="50" value="" autocomplete="off">
-                                <div id="your_name_button" class="menu_button fa-solid fa-check" title="Click to set a new User Name">
-                                </div>
-                                <div id="lock_user_name" class="menu_button fa-solid fa-unlock" title="Click to lock your selected persona to the current chat. Click again to remove the lock.">
-                                </div>
-                                <div id="sync_name_button" class="menu_button fa-solid fa-sync" title="Click to set user name for all messages">
-                                </div>
-                            </div>
-                        </div>
-                        <div name="AvatarSelector">
-                            <h4 data-i18n="Your Avatar">Your Persona</h4>
-                            <div id="user_avatar_block">
-                                <div class="avatar_upload">+</div>
-                            </div>
-
-                            <form id="form_upload_avatar" action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                                <input type="file" id="avatar_upload_file" accept="image/*" name="avatar">
-                            </form>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -2379,6 +2350,60 @@
                     <div id="extensions_settings2" class="flex1 widthNatural">
                     </div>
 
+                </div>
+            </div>
+        </div>
+
+        <div id="persona-management-button" class="drawer">
+            <div class="drawer-toggle">
+                <div class="drawer-icon fa-solid fa-face-smile closedIcon" title="Persona Management"></div>
+            </div>
+            <div class="drawer-content closedDrawer">
+                <div class="flex-container wide100p alignitemscenter spaceBetween">
+                    <h3><span data-i18n="Persona Management">Persona Management</span></h3>
+
+                    <div id="persona-management-block" class="flex-container wide100p">
+                        <div class="flex1">
+                            <h4 data-i18n="Name">Name</h4>
+                            <div class="change_name">
+                                <input id="your_name" name="your_name" placeholder="Enter your name" class="text_pole wide100p" maxlength="50" value="" autocomplete="off">
+                                <div id="your_name_button" class="menu_button fa-solid fa-check" title="Click to set a new User Name">
+                                </div>
+                                <div id="lock_user_name" class="menu_button fa-solid fa-unlock" title="Click to lock your selected persona to the current chat. Click again to remove the lock.">
+                                </div>
+                                <div id="sync_name_button" class="menu_button fa-solid fa-sync" title="Click to set user name for all messages">
+                                </div>
+                            </div>
+                            <div>
+                                <h4 data-i18n="Name">Persona Description</h4>
+                                <textarea id="persona_description" name="persona_description" placeholder="Example:&#10;[{{user}} is a 28-year-old Romanian cat girl.]" class="text_pole textarea_compact" maxlength="5000" value="" autocomplete="off" rows="4"></textarea>
+                                <label for="persona_description_position">Position:</label>
+                                <select id="persona_description_position">
+                                    <option value="0">Before Character Card</option>
+                                    <option value="1">After Character Card</option>
+                                    <option value="2">Top of Author's Note</option>
+                                    <option value="3">Bottom of Author's Note</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="flex1">
+                            <h4 data-i18n="Your Avatar" class="title_restorable">
+                                <span>Your Persona</span>
+                                <div id="create_dummy_persona" class="menu_button menu_button_icon" title="Create a dummy persona">
+                                    <i class="fa-solid fa-person-circle-question fa-fw"></i>
+                                    <span>Blank</span>
+                                </div>
+                            </h4>
+                            <div id="user_avatar_block">
+                                <div class="avatar_upload">+</div>
+                            </div>
+
+                            <form id="form_upload_avatar" action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                                <input type="file" id="avatar_upload_file" accept="image/*" name="avatar">
+                                <input type="hidden" id="avatar_upload_overwrite" name="overwrite_name" value="">
+                            </form>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -3369,8 +3394,8 @@
                 </button>
             </div>
             <div class="avatar-buttons avatar-buttons-bottom">
-                <button class="menu_button set_user_info" title="Under construction">
-                    <i class="fa-solid fa-circle-user"></i>
+                <button class="menu_button set_persona_image" title="Change persona image">
+                    <i class="fa-solid fa-image"></i>
                 </button>
 
                 <button class="menu_button delete_avatar" title="Delete persona">

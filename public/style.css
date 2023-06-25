@@ -3734,6 +3734,13 @@ label[for="extensions_autoconnect"] {
     flex-grow: 1;
 }
 
+.menu_button_icon {
+    display: flex;
+    align-items: center;
+    width: fit-content;
+    gap: 5px;
+}
+
 /*------------ TOP SIDE SETTINGS ----------------*/
 
 #top-settings-holder {
@@ -3743,10 +3750,10 @@ label[for="extensions_autoconnect"] {
     max-width: var(--sheldWidth);
     justify-content: center;
     display: grid;
-    grid-template-columns: 10% 10% 10% 10% 10% 10% 10% 10%;
+    grid-template-columns: 10% 10% 10% 10% 10% 10% 10% 10% 10%;
     z-index: 3000;
     position: relative;
-    grid-gap: 2%;
+    grid-gap: 1%;
 
 }
 
@@ -3822,6 +3829,10 @@ label[for="extensions_autoconnect"] {
 
 .drawer25pWidth {
     flex-basis: calc((var(--sheldWidth) / 4) - 16px);
+}
+
+.drawer33pWidth {
+    flex-basis: calc((var(--sheldWidth) / 3) - 16px);
 }
 
 .drawer-content {
@@ -4409,7 +4420,7 @@ body.waifuMode #avatar_zoom_popup {
         aspect-ratio: 2 / 3;
     }
 
-    .world_entry_thin_controls {
+    .world_entry_thin_controls, #persona-management-block {
         flex-direction: column;
     }
 
@@ -4596,6 +4607,10 @@ body.waifuMode #avatar_zoom_popup {
         flex-basis: max(calc(100% / 4 - 10px), 190px);
     }
 
+    .drawer33pWidth {
+        flex-basis: max(calc(100% / 3 - 10px), 190px);
+    }
+
     .expression-holder {
         display: none;
     }
@@ -4661,6 +4676,9 @@ body.waifuMode #avatar_zoom_popup {
 
 @media screen and (max-width: 450px) {
     .drawer25pWidth {
+        flex-basis: max(calc(100% / 2 - 10px), 180px);
+    }
+    .drawer33pWidth {
         flex-basis: max(calc(100% / 2 - 10px), 180px);
     }
 }

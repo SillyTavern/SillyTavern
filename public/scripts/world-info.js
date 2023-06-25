@@ -1,7 +1,7 @@
 import { saveSettings, callPopup, substituteParams, getTokenCount, getRequestHeaders, chat_metadata, this_chid, characters } from "../script.js";
 import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, delay } from "./utils.js";
 import { getContext } from "./extensions.js";
-import { metadata_keys, shouldWIAddPrompt } from "./extensions/floating-prompt/index.js";
+import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from "./extensions/floating-prompt/index.js";
 import { registerSlashCommand } from "./slash-commands.js";
 import { deviceInfo } from "./RossAscends-mods.js";
 
@@ -867,9 +867,9 @@ async function checkWorldInfo(chat, maxContext) {
     });
 
     if (shouldWIAddPrompt) {
-        const originalAN = context.extensionPrompts['2_floating_prompt'].value;
+        const originalAN = context.extensionPrompts[NOTE_MODULE_NAME].value;
         const ANWithWI = `\n${ANTopInjection.join("\n")}\n${originalAN}\n${ANBottomInjection.reverse().join("\n")}`
-        context.setExtensionPrompt('2_floating_prompt', ANWithWI, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth]);
+        context.setExtensionPrompt(NOTE_MODULE_NAME, ANWithWI, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth]);
     }
 
     return { worldInfoBefore, worldInfoAfter };

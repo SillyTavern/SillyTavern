@@ -69,6 +69,7 @@ import {
     formatInstructModeChat,
     formatInstructStoryString,
     formatInstructModePrompt,
+    persona_description_positions,
 } from "./scripts/power-user.js";
 
 import {
@@ -151,7 +152,7 @@ import {
 import { EventEmitter } from './scripts/eventemitter.js';
 import { context_settings, loadContextTemplatesFromSettings } from "./scripts/context-template.js";
 import { markdownExclusionExt } from "./scripts/showdown-exclusion.js";
-import { setFloatingPrompt } from "./scripts/extensions/floating-prompt/index.js";
+import { NOTE_MODULE_NAME, metadata_keys, setFloatingPrompt, shouldWIAddPrompt } from "./scripts/extensions/floating-prompt/index.js";
 
 //exporting functions and vars for mods
 export {
@@ -1554,6 +1555,28 @@ function cleanGroupMessage(getMessage) {
     return getMessage;
 }
 
+function getPersonaDescription(storyString) {
+    if (!power_user.persona_description) {
+        return storyString;
+    }
+
+    switch (power_user.persona_description_position) {
+        case persona_description_positions.BEFORE_CHAR:
+            return `${power_user.persona_description}\n${storyString}`;
+        case persona_description_positions.AFTER_CHAR:
+            return `${storyString}\n${power_user.persona_description}`;
+        default:
+            if (shouldWIAddPrompt) {
+                const originalAN = extension_prompts[NOTE_MODULE_NAME].value
+                const ANWithDesc = persona_description_positions.TOP_AN
+                    ? `${power_user.persona_description}\n${originalAN}`
+                    : `${originalAN}\n${power_user.persona_description}`;
+                setExtensionPrompt(NOTE_MODULE_NAME, ANWithDesc, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth]);
+            }
+            return storyString;
+    }
+}
+
 function getAllExtensionPrompts() {
     const value = Object
         .values(extension_prompts)
@@ -1998,12 +2021,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             console.log(`Core/all messages: ${coreChat.length}/${chat.length}`);
         }
 
-        if (main_api === 'openai') {
-            message_already_generated = ''; // OpenAI doesn't have multigen
-            setOpenAIMessages(coreChat);
-            setOpenAIMessageExamples(mesExamplesArray);
-        }
-
         let storyString = "";
 
         if (is_pygmalion) {
@@ -2062,10 +2079,18 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         setFloatingPrompt();
         // Add WI to prompt (and also inject WI to AN value via hijack)
         let { worldInfoString, worldInfoBefore, worldInfoAfter } = await getWorldInfoPrompt(chat2, this_max_context);
+        // Add persona description to prompt
+        storyString = getPersonaDescription(storyString);
         // Call combined AN into Generate
         let allAnchors = getAllExtensionPrompts();
         const afterScenarioAnchor = getExtensionPrompt(extension_prompt_types.AFTER_SCENARIO);
         let zeroDepthAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, 0, ' ');
+
+        if (main_api === 'openai') {
+            message_already_generated = ''; // OpenAI doesn't have multigen
+            setOpenAIMessages(coreChat);
+            setOpenAIMessageExamples(mesExamplesArray);
+        }
 
         // Moved here to not overflow the Poe context with added prompt bits
         if (main_api == 'poe') {
@@ -3954,8 +3979,6 @@ function changeMainAPI() {
 ////////////////////////////////////////////////////
 
 async function getUserAvatars() {
-    $("#user_avatar_block").html(""); //RossAscends: necessary to avoid doubling avatars each refresh.
-    $("#user_avatar_block").append('<div class="avatar_upload">+</div>');
     const response = await fetch("/getuseravatars", {
         method: "POST",
         headers: getRequestHeaders(),
@@ -3967,6 +3990,8 @@ async function getUserAvatars() {
         const getData = await response.json();
         //background = getData;
         //console.log(getData.length);
+        $("#user_avatar_block").html(""); //RossAscends: necessary to avoid doubling avatars each refresh.
+        $("#user_avatar_block").append('<div class="avatar_upload">+</div>');
 
         for (var i = 0; i < getData.length; i++) {
             //console.log(1);
@@ -3975,6 +4000,56 @@ async function getUserAvatars() {
         //var aa = JSON.parse(getData[0]);
         //const load_ch_coint = Object.getOwnPropertyNames(getData);
     }
+}
+
+function setPersonaDescription() {
+    $("#persona_description").val(power_user.persona_description);
+    $("#persona_description_position")
+        .val(power_user.persona_description_position)
+        .find(`option[value='${power_user.persona_description_position}']`)
+        .attr("selected", true);
+}
+
+function onPersonaDescriptionPositionInput() {
+    power_user.persona_description_position = Number(
+        $("#persona_description_position").find(":selected").val()
+    );
+
+    if (power_user.personas[user_avatar]) {
+        let object = power_user.persona_descriptions[user_avatar];
+
+        if (!object) {
+            object = {
+                description: power_user.persona_description,
+                position: power_user.persona_description_position,
+            };
+            power_user.persona_descriptions[user_avatar] = object;
+        }
+
+        object.position = power_user.persona_description_position;
+    }
+
+    saveSettingsDebounced();
+}
+
+function onPersonaDescriptionInput() {
+    power_user.persona_description = $("#persona_description").val();
+
+    if (power_user.personas[user_avatar]) {
+        let object = power_user.persona_descriptions[user_avatar];
+
+        if (!object) {
+            object = {
+                description: power_user.persona_description,
+                position: Number($("#persona_description_position").find(":selected").val()),
+            };
+            power_user.persona_descriptions[user_avatar] = object;
+        }
+
+        object.description = power_user.persona_description;
+    }
+
+    saveSettingsDebounced();
 }
 
 function highlightSelectedAvatar() {
@@ -4053,9 +4128,20 @@ async function bindUserNameToPersona() {
         // If the user clicked ok and entered a name, bind the name to the persona
         console.log(`Binding persona ${avatarId} to name ${personaName}`);
         power_user.personas[avatarId] = personaName;
+        const descriptor = power_user.persona_descriptions[avatarId];
+        const isCurrentPersona = avatarId === user_avatar;
+
+        // Create a description object if it doesn't exist
+        if (!descriptor) {
+            // If the user is currently using this persona, set the description to the current description
+            power_user.persona_descriptions[avatarId] = {
+                description: isCurrentPersona ? power_user.persona_description : '',
+                position: isCurrentPersona ? power_user.persona_description_position : persona_description_positions.BEFORE_CHAR,
+            };
+        }
 
         // If the user is currently using this persona, update the name
-        if (avatarId === user_avatar) {
+        if (isCurrentPersona) {
             console.log(`Auto-updating user name to ${personaName}`);
             setUserName(personaName);
         }
@@ -4063,10 +4149,33 @@ async function bindUserNameToPersona() {
         // If the user clicked ok, but didn't enter a name, delete the persona
         console.log(`Unbinding persona ${avatarId}`);
         delete power_user.personas[avatarId];
+        delete power_user.persona_descriptions[avatarId];
     }
 
     saveSettingsDebounced();
     await getUserAvatars();
+    setPersonaDescription();
+}
+
+async function createDummyPersona() {
+    const fetchResult = await fetch(default_avatar);
+    const blob = await fetchResult.blob();
+    const file = new File([blob], "avatar.png", { type: "image/png" });
+    const formData = new FormData();
+    formData.append("avatar", file);
+
+    jQuery.ajax({
+        type: "POST",
+        url: "/uploaduseravatar",
+        data: formData,
+        beforeSend: () => { },
+        cache: false,
+        contentType: false,
+        processData: false,
+        success: async function (data) {
+            await getUserAvatars();
+        },
+    });
 }
 
 function updateUserLockIcon() {
@@ -4093,12 +4202,75 @@ function setUserAvatar() {
         }
 
         setUserName(personaName);
+
+        const descriptor = power_user.persona_descriptions[user_avatar];
+
+        if (descriptor) {
+            power_user.persona_description = descriptor.description;
+            power_user.persona_description_position = descriptor.position;
+        } else {
+            power_user.persona_description = '';
+            power_user.persona_description_position = persona_description_positions.BEFORE_CHAR;
+            power_user.persona_descriptions[user_avatar] = { description: '', position: persona_description_positions.BEFORE_CHAR };
+        }
+
+        setPersonaDescription();
     }
 }
 
-async function setUserInfo() {
-    // TODO Replace with actual implementation
-    callPopup('This functionality is under development.<br>Please check back later.', 'text');
+async function uploadUserAvatar(e) {
+    const file = e.target.files[0];
+
+    if (!file) {
+        $("#form_upload_avatar").trigger("reset");
+        return;
+    }
+
+    const formData = new FormData($("#form_upload_avatar").get(0));
+
+    const dataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = resolve;
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+
+    $('#dialogue_popup').addClass('large_dialogue_popup wide_dialogue_popup');
+    const confirmation = await callPopup(getCropPopup(dataUrl.target.result), 'avatarToCrop');
+    if (!confirmation) {
+        return;
+    }
+
+    let url = "/uploaduseravatar";
+
+    if (crop_data !== undefined) {
+        url += `?crop=${encodeURIComponent(JSON.stringify(crop_data))}`;
+    }
+
+    jQuery.ajax({
+        type: "POST",
+        url: url,
+        data: formData,
+        beforeSend: () => { },
+        cache: false,
+        contentType: false,
+        processData: false,
+        success: async function () {
+            // If the user uploaded a new avatar, we want to make sure it's not cached
+            const name = formData.get("overwrite_name");
+            if (name) {
+                await fetch(getUserAvatar(name), { cache: "no-cache" });
+                reloadUserAvatar();
+            }
+
+            crop_data = undefined;
+            await getUserAvatars();
+        },
+        error: (jqXHR, exception) => { },
+    });
+
+    // Will allow to select the same file twice in a row
+    $("#form_upload_avatar").trigger("reset");
 }
 
 async function setDefaultPersona() {
@@ -4179,6 +4351,7 @@ async function deleteUserAvatar() {
     if (request.ok) {
         console.log(`Deleted avatar ${avatarId}`);
         delete power_user.personas[avatarId];
+        delete power_user.persona_descriptions[avatarId];
 
         if (avatarId === power_user.default_persona) {
             toastr.warning('The default persona was deleted. You will need to set a new default persona.', 'Default persona deleted');
@@ -4215,6 +4388,7 @@ function lockUserNameToChat() {
             { timeOut: 10000, extendedTimeOut: 20000, },
         );
         power_user.personas[user_avatar] = name1;
+        power_user.persona_descriptions[user_avatar] =  { description: '', position: persona_description_positions.BEFORE_CHAR };
     }
 
     chat_metadata['persona'] = user_avatar;
@@ -4412,6 +4586,7 @@ async function getSettings(type) {
         user_avatar = settings.user_avatar;
         reloadUserAvatar();
         highlightSelectedAvatar();
+        setPersonaDescription();
 
         //Load the API server URL from settings
         api_server = settings.api_server;
@@ -6264,56 +6439,21 @@ $(document).ready(function () {
 
     $(document).on("click", "#user_avatar_block .avatar", setUserAvatar);
     $(document).on("click", "#user_avatar_block .avatar_upload", function () {
-        $("#avatar_upload_file").click();
+        $("#avatar_upload_overwrite").val("");
+        $("#avatar_upload_file").trigger('click');
     });
-    $("#avatar_upload_file").on("change", async function (e) {
-        const file = e.target.files[0];
+    $(document).on("click", "#user_avatar_block .set_persona_image", function () {
+        const avatarId = $(this).closest('.avatar-container').find('.avatar').attr('imgfile');
 
-        if (!file) {
+        if (!avatarId) {
+            console.log('no imgfile');
             return;
         }
 
-        const formData = new FormData($("#form_upload_avatar").get(0));
-
-        const dataUrl = await new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = resolve;
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-        });
-
-        $('#dialogue_popup').addClass('large_dialogue_popup wide_dialogue_popup');
-        const confirmation = await callPopup(getCropPopup(dataUrl.target.result), 'avatarToCrop');
-        if (!confirmation) {
-            return;
-        }
-
-        let url = "/uploaduseravatar";
-
-        if (crop_data !== undefined) {
-            url += `?crop=${encodeURIComponent(JSON.stringify(crop_data))}`;
-        }
-
-        jQuery.ajax({
-            type: "POST",
-            url: url,
-            data: formData,
-            beforeSend: () => { },
-            cache: false,
-            contentType: false,
-            processData: false,
-            success: function (data) {
-                if (data.path) {
-                    appendUserAvatar(data.path);
-                }
-                crop_data = undefined;
-            },
-            error: (jqXHR, exception) => { },
-        });
-
-        // Will allow to select the same file twice in a row
-        $("#form_upload_avatar").trigger("reset");
+        $("#avatar_upload_overwrite").val(avatarId);
+        $("#avatar_upload_file").trigger('click');
     });
+    $("#avatar_upload_file").on("change", uploadUserAvatar);
 
     $(document).on("click", ".bg_example", async function () {
         //when user clicks on a BG thumbnail...
@@ -7280,6 +7420,8 @@ $(document).ready(function () {
         setUserName($('#your_name').val());
     });
 
+    $("#create_dummy_persona").on('click', createDummyPersona);
+
     $('#sync_name_button').on('click', async function () {
         const confirmation = await callPopup(`<h3>Are you sure?</h3>All user-sent messages in this chat will be attributed to ${name1}.`, 'confirm');
 
@@ -7323,8 +7465,9 @@ $(document).ready(function () {
     $(document).on('click', '.bind_user_name', bindUserNameToPersona);
     $(document).on('click', '.delete_avatar', deleteUserAvatar);
     $(document).on('click', '.set_default_persona', setDefaultPersona);
-    $(document).on('click', '.set_user_info', setUserInfo);
     $('#lock_user_name').on('click', lockUserNameToChat);
+    $('#persona_description').on('input', onPersonaDescriptionInput);
+    $('#persona_description_position').on('input', onPersonaDescriptionPositionInput);
 
     //**************************CHARACTER IMPORT EXPORT*************************//
     $("#character_import_button").click(function () {

@@ -75,6 +75,13 @@ const send_on_enter_options = {
     ENABLED: 1,
 }
 
+export const persona_description_positions = {
+    BEFORE_CHAR: 0,
+    AFTER_CHAR: 1,
+    TOP_AN: 2,
+    BOTTOM_AN: 3,
+}
+
 let power_user = {
     tokenizer: tokenizers.CLASSIC,
     token_padding: 64,
@@ -158,6 +165,10 @@ let power_user = {
 
     personas: {},
     default_persona: null,
+    persona_descriptions: {},
+
+    persona_description: '',
+    persona_description_position: persona_description_positions.BEFORE_CHAR,
 };
 
 let themes = [];

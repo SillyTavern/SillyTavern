@@ -2223,7 +2223,7 @@ app.post('/uploaduseravatar', urlencodedParser, async (request, response) => {
 
         const image = await rawImg.cover(AVATAR_WIDTH, AVATAR_HEIGHT).getBufferAsync(jimp.MIME_PNG);
 
-        const filename = `${Date.now()}.png`;
+        const filename = request.body.overwrite_name ?? `${Date.now()}.png`;
         const pathToNewFile = path.join(directories.avatars, filename);
         fs.writeFileSync(pathToNewFile, image);
         fs.rmSync(pathToUpload);
