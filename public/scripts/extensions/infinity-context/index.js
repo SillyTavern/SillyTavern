@@ -1,4 +1,4 @@
-import { saveSettingsDebounced, getCurrentChatId, system_message_types, eventSource, event_types, CHARACTERS_PER_TOKEN_RATIO } from "../../../script.js";
+import { saveSettingsDebounced, getCurrentChatId, system_message_types, eventSource, event_types, getRequestHeaders, CHARACTERS_PER_TOKEN_RATIO, substituteParams, } from "../../../script.js";
 import { humanizedDateTime } from "../../RossAscends-mods.js";
 import { getApiUrl, extension_settings, getContext, doExtrasFetch } from "../../extensions.js";
 import { getFileText, onlyUnique, splitRecursive, IndexedDBStore } from "../../utils.js";
@@ -9,6 +9,7 @@ const dbStore = new IndexedDBStore('SillyTavern', MODULE_NAME);
 
 const defaultSettings = {
     strategy: 'original',
+    sort_strategy: 'date',
 
     keep_context: 10,
     keep_context_min: 1,
@@ -19,6 +20,12 @@ const defaultSettings = {
     n_results_min: 0,
     n_results_max: 500,
     n_results_step: 1,
+
+    chroma_depth: 20,
+    chroma_depth_min: -1,
+    chroma_depth_max: 500,
+    chroma_depth_step: 1,
+    chroma_default_msg: "In a past conversation:  [{{memories}}]",
 
     split_length: 384,
     split_length_min: 64,
@@ -96,21 +103,51 @@ async function loadSettings() {
         "selected",
         "true"
     );
+    $("#chromadb_sort_strategy option[value=" + extension_settings.chromadb.sort_strategy + "]").attr(
+        "selected",
+        "true"
+    );
     $('#chromadb_keep_context').val(extension_settings.chromadb.keep_context).trigger('input');
     $('#chromadb_n_results').val(extension_settings.chromadb.n_results).trigger('input');
     $('#chromadb_split_length').val(extension_settings.chromadb.split_length).trigger('input');
     $('#chromadb_file_split_length').val(extension_settings.chromadb.file_split_length).trigger('input');
-    $('#chromadb_keep_context_proportion').val(extension_settings.chromadb.keep_context_proportion).trigger('input');
+    $('#chromadb_keep_context_proportion').val(extension_settings.chromadb.keep_context_proportion).trigger('input');  
+    $('#chromadb_custom_depth').val(extension_settings.chromadb.chroma_depth).trigger('input'); 
+    $('#chromadb_custom_msg').val(extension_settings.chromadb.recall_msg).trigger('input'); 
     $('#chromadb_auto_adjust').prop('checked', extension_settings.chromadb.auto_adjust);
     $('#chromadb_freeze').prop('checked', extension_settings.chromadb.freeze);
     enableDisableSliders();
+    onStrategyChange();
 }
 
 function onStrategyChange() {
     console.debug('changing chromadb strat');
     extension_settings.chromadb.strategy = $('#chromadb_strategy').val();
+    if(extension_settings.chromadb.strategy === "custom"){
+        $('#chromadb_custom_depth').show();
+        $('label[for="chromadb_custom_depth"]').show();
+        $('#chromadb_custom_msg').show();
+        $('label[for="chromadb_custom_msg"]').show();
+    } else {
+        $('#chromadb_custom_depth').hide();
+        $('label[for="chromadb_custom_depth"]').hide();
+        $('#chromadb_custom_msg').hide();
+        $('label[for="chromadb_custom_msg"]').hide();
+    }
+    saveSettingsDebounced();
+}
 
-    //$('#chromadb_strategy').select(extension_settings.chromadb.strategy);
+function onRecallStrategyChange() {
+    console.log('changing chromadb recall strat');
+    extension_settings.chromadb.recall_strategy = $('#chromadb_recall_strategy').val();
+
+    saveSettingsDebounced();
+}
+
+function onSortStrategyChange() {
+    console.log('changing chromadb sort strat');
+    extension_settings.chromadb.sort_strategy = $('#chromadb_sort_strategy').val();
+
     saveSettingsDebounced();
 }
 
@@ -123,6 +160,17 @@ function onKeepContextInput() {
 function onNResultsInput() {
     extension_settings.chromadb.n_results = Number($('#chromadb_n_results').val());
     $('#chromadb_n_results_value').text(extension_settings.chromadb.n_results);
+    saveSettingsDebounced();
+}
+
+function onChromaDepthInput() {
+    extension_settings.chromadb.chroma_depth = Number($('#chromadb_custom_depth').val());
+    $('#chromadb_custom_depth_value').text(extension_settings.chromadb.chroma_depth);
+    saveSettingsDebounced();
+}
+
+function onChromaMsgInput() {
+    extension_settings.chromadb.recall_msg = $('#chromadb_custom_msg').val();
     saveSettingsDebounced();
 }
 
@@ -339,6 +387,39 @@ async function queryMessages(chat_id, query) {
     return [];
 }
 
+async function queryMultiMessages(chat_id, query) {
+    const context = getContext();
+    const response = await fetch("/getallchatsofcharacter", {
+        method: 'POST',
+        body: JSON.stringify({ avatar_url: context.characters[context.characterId].avatar}),
+        headers: getRequestHeaders(),
+    });
+    if (!response.ok) {
+        return;
+    }
+    let data = await response.json();
+    data = Object.values(data);
+    let chat_list = data.sort((a, b) => a["file_name"].localeCompare(b["file_name"])).reverse();
+
+    // Extracting chat_ids from the chat_list
+    chat_list = chat_list.map(chat => chat.file_name.replace(/\.[^/.]+$/, ""));
+    const url = new URL(getApiUrl());
+    url.pathname = '/api/chromadb/multiquery';
+
+    const queryMessagesResult = await fetch(url, {
+        method: 'POST',  
+        body: JSON.stringify({ chat_list, query, n_results: extension_settings.chromadb.n_results }),
+        headers: postHeaders,
+    });
+
+    if (queryMessagesResult.ok) {
+        const queryMessagesData = await queryMessagesResult.json();
+        return queryMessagesData;
+    }
+
+    return [];
+}
+
 async function onSelectInjectFile(e) {
     const file = e.target.files[0];
     const currentChatId = getCurrentChatId();
@@ -448,6 +529,10 @@ window.chromadb_interceptGeneration = async (chat, maxContext) => {
 
     const currentChatId = getCurrentChatId();
     const selectedStrategy = extension_settings.chromadb.strategy;
+    const recallStrategy = extension_settings.chromadb.recall_strategy;
+    let recallMsg = extension_settings.chromadb.recall_msg || defaultSettings.chroma_default_msg;
+    const chromaDepth = extension_settings.chromadb.chroma_depth;
+    const chromaSortStrategy = extension_settings.chromadb.sort_strategy;
     if (currentChatId) {
         const messagesToStore = chat.slice(0, -extension_settings.chromadb.keep_context);
 
@@ -456,12 +541,26 @@ window.chromadb_interceptGeneration = async (chat, maxContext) => {
 
             const lastMessage = chat[chat.length - 1];
 
+            let queriedMessages;
+            console.debug(recallStrategy)
             if (lastMessage) {
-                const queriedMessages = await queryMessages(currentChatId, lastMessage.mes);
+                if (recallStrategy === 'multichat'){
+                    console.log("Utilizing multichat")
+                    queriedMessages = await queryMultiMessages(currentChatId, lastMessage.mes);
+                }
+                else{
+                    queriedMessages = await queryMessages(currentChatId, lastMessage.mes);
+                }
 
-                queriedMessages.sort((a, b) => a.date - b.date);
+                if(chromaSortStrategy === "date"){
+                    queriedMessages.sort((a, b) => a.date - b.date);
+                }
+                else{
+                    queriedMessages.sort((a, b) => b.distance - a.distance);
+                }
 
-                const newChat = [];
+
+                let newChat = [];
 
                 if (selectedStrategy === 'ross') {
                     //adds chroma to the end of chat and allows Generate() to cull old messages naturally.
@@ -488,7 +587,46 @@ window.chromadb_interceptGeneration = async (chat, maxContext) => {
                     );
                     chat.splice(chat.length, 0, ...newChat);
                 }
+                if (selectedStrategy === 'custom') {
+                    const context = getContext();
+                    recallMsg = substituteParams(recallMsg, context.name1, context.name2);
+                    if (!text.includes("{{memories}}")) {
+                        text += " {{memories}}";
+                    }
+                    let recallStart = recallMsg.split('{{memories}}')[0]
+                    let recallEnd = recallMsg.split('{{memories}}')[1]
 
+                    newChat.push(
+                        {
+                            is_name: false,
+                            is_user: false,
+                            mes: recallStart,
+                            name: "system",
+                            send_date: 0,
+                        }
+                    );
+                    newChat.push(...queriedMessages.map(m => m.meta).filter(onlyUnique).map(JSON.parse));
+                    newChat.push(
+                        {
+                            is_name: false,
+                            is_user: false,
+                            mes: recallEnd + `\n`,
+                            name: "system",
+                            send_date: 0,
+                        }
+                    );
+
+                    //prototype chroma duplicate removal
+                    let chatset = new Set(chat.map(obj => obj.mes));
+                    newChat = newChat.filter(obj => !chatset.has(obj.mes));
+                    
+                    if(chromaDepth === -1){
+                        chat.splice(chat.length, 0, ...newChat);
+                    }
+                    else{
+                        chat.splice(chromaDepth, 0, ...newChat);
+                    }
+                }
                 if (selectedStrategy === 'original') {
                     //removes .length # messages from the start of 'kept messages'
                     //replaces them with chromaDB results (with no separator)
@@ -501,6 +639,7 @@ window.chromadb_interceptGeneration = async (chat, maxContext) => {
         }
     }
 }
+
 
 function onFreezeInput() {
     extension_settings.chromadb.freeze = $('#chromadb_freeze').is(':checked');
@@ -547,7 +686,23 @@ jQuery(async () => {
             <select id="chromadb_strategy">
                 <option value="original">Replace non-kept chat items with memories</option>
                 <option value="ross">Add memories after chat with a header tag</option>
+                <option value="custom">Add memories at custom depth with custom msg</option>
             </select>
+            <label for="chromadb_custom_msg" hidden><small>Custom injection message:</small></label>
+            <textarea id="chromadb_custom_msg" hidden class="text_pole textarea_compact" rows="2" placeholder="${defaultSettings.chroma_default_msg}" style="height: 61px; display: none;"></textarea>
+            <label for="chromadb_custom_depth" hidden><small>How deep should the memory messages be injected?: (<span id="chromadb_custom_depth_value"></span>)</small></label>
+            <input id="chromadb_custom_depth" type="range" min="${defaultSettings.chroma_depth_min}" max="${defaultSettings.chroma_depth_max}" step="${defaultSettings.chroma_depth_step}" value="${defaultSettings.chroma_depth}" hidden/>
+            <span>Memory Recall Strategy</span>
+            <select id="chromadb_recall_strategy">
+                <option value="original">Recall only from this chat</option>
+                <option value="multichat">Recall from all character chats (experimental)</option>
+            </select>
+            <span>Memory Sort Strategy</span>
+            <select id="chromadb_sort_strategy">
+                <option value="date">Sort memories by date</option>
+                <option value="distance">Sort memories by relevance</option>
+            </select>
+            <label for="chromadb_keep_context">How many original chat messages to keep: (<span id="chromadb_keep_context_value"></span>) messages</label>
             <label for="chromadb_keep_context"><small>How many original chat messages to keep: (<span id="chromadb_keep_context_value"></span>) messages</small></label>
             <input id="chromadb_keep_context" type="range" min="${defaultSettings.keep_context_min}" max="${defaultSettings.keep_context_max}" step="${defaultSettings.keep_context_step}" value="${defaultSettings.keep_context}" />
             <label for="chromadb_n_results"><small>Maximum number of ChromaDB 'memories' to inject: (<span id="chromadb_n_results_value"></span>) messages</small></label>
@@ -592,8 +747,12 @@ jQuery(async () => {
 
     $('#extensions_settings2').append(settingsHtml);
     $('#chromadb_strategy').on('change', onStrategyChange);
+    $('#chromadb_recall_strategy').on('change', onRecallStrategyChange);
+    $('#chromadb_sort_strategy').on('change', onSortStrategyChange);
     $('#chromadb_keep_context').on('input', onKeepContextInput);
     $('#chromadb_n_results').on('input', onNResultsInput);
+    $('#chromadb_custom_depth').on('input', onChromaDepthInput);
+    $('#chromadb_custom_msg').on('input', onChromaMsgInput);
     $('#chromadb_split_length').on('input', onSplitLengthInput);
     $('#chromadb_file_split_length').on('input', onFileSplitLengthInput);
     $('#chromadb_inject').on('click', () => $('#chromadb_inject_file').trigger('click'));
