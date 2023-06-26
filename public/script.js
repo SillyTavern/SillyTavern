@@ -291,6 +291,7 @@ let streamingProcessor = null;
 let crop_data = undefined;
 let is_delete_mode = false;
 let fav_ch_checked = false;
+let scrollLock = false;
 
 //initialize global var for future cropped blobs
 let currentCroppedAvatar = '';
@@ -1745,7 +1746,9 @@ class StreamingProcessor {
             this.setFirstSwipe(messageId);
         }
 
-        scrollChatToBottom();
+        if (!scrollLock) {
+            scrollChatToBottom();
+        }
     }
 
     onFinishStreaming(messageId, text) {
@@ -1839,6 +1842,7 @@ class StreamingProcessor {
         if (this.messageId == -1) {
             this.messageId = this.onStartStreaming(this.firstMessageText);
             await delay(1); // delay for message to be rendered
+            scrollLock = false;
         }
 
         try {
@@ -6318,10 +6322,9 @@ $(document).ready(function () {
         updateVisibleDivs('#rm_print_characters_block', true);
     }, 5));
 
-    // This does not actually increase performance.
-    /*$("#chat").on('scroll', debounce(() => {
-        updateVisibleDivs('#chat', false);
-    }, 10));*/
+    $("#chat").on('mousewheel', () => {
+        scrollLock = true;
+    });
 
     let S_TAFocused = false;
     let S_TAPreviouslyFocused = false;
