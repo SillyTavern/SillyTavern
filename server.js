@@ -1772,7 +1772,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                     jsonData = readFromV2(jsonData);
                     png_name = getPngName(jsonData.data?.name || jsonData.name);
                     let char = JSON.stringify(jsonData);
-                    importRisuSprites(png_name, jsonData);
+                    importRisuSprites(jsonData);
                     charaWrite(defaultAvatarPath, char, png_name, response, { file_name: png_name });
                 } else if (jsonData.name !== undefined) {
                     console.log('importing from v1 json');
@@ -1843,7 +1843,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
 
                 if (jsonData.spec !== undefined) {
                     console.log('Found a v2 character file.');
-                    importRisuSprites(png_name, jsonData);
+                    importRisuSprites(jsonData);
                     jsonData = readFromV2(jsonData);
                     let char = JSON.stringify(jsonData);
                     charaWrite(uploadPath, char, png_name, response, { file_name: png_name });
@@ -3849,12 +3849,13 @@ app.post('/upload_sprite', urlencodedParser, async (request, response) => {
     }
 });
 
-function importRisuSprites(name, data) {
+function importRisuSprites(data) {
     try {
+        const name = data?.data?.name;
         const risuData = data?.data?.extensions?.risuai;
 
         // Not a Risu AI character
-        if (!risuData || !(risuData?.additionalAssets) || !(risuData?.emotions)) {
+        if (!risuData || !name) {
             return;
         }
 
@@ -3868,6 +3869,11 @@ function importRisuSprites(name, data) {
             images = images.concat(risuData.emotions);
         }
 
+        // No sprites to import
+        if (images.length === 0) {
+            return;
+        }
+
         // Create sprites folder if it doesn't exist
         const spritesPath = path.join(directories.characters, name);
         if (!fs.existsSync(spritesPath)) {
@@ -3879,15 +3885,15 @@ function importRisuSprites(name, data) {
             return;
         }
 
-        console.log(`RisuAI: Found ${images.length} sprites for ${name}. Writing to disk.`)
+        console.log(`RisuAI: Found ${images.length} sprites for ${name}. Writing to disk.`);
         const files = fs.readdirSync(spritesPath);
 
-        for (const [label, fileBase64] of images) {
-
+        outer: for (const [label, fileBase64] of images) {
             // Remove existing sprite with the same label
             for (const file of files) {
                 if (path.parse(file).name === label) {
-                    fs.rmSync(path.join(spritesPath, file));
+                    console.log(`RisuAI: The sprite ${label} for ${name} already exists. Skipping.`);
+                    continue outer;
                 }
             }
 
