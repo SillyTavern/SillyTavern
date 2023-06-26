@@ -457,9 +457,9 @@ export function isDataURL(str) {
     return regex.test(str);
 }
 
-export function getCharaFilename() {
+export function getCharaFilename(chid) {
     const context = getContext();
-    const fileName = context.characters[context.characterId].avatar;
+    const fileName = context.characters[chid ?? context.characterId].avatar;
 
     if (fileName) {
         return fileName.replace(/\.[^/.]+$/, "")

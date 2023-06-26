@@ -1,5 +1,5 @@
 import { saveSettings, callPopup, substituteParams, getTokenCount, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type } from "../script.js";
-import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, delay } from "./utils.js";
+import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, delay, getCharaFilename } from "./utils.js";
 import { getContext } from "./extensions.js";
 import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from "./extensions/floating-prompt/index.js";
 import { registerSlashCommand } from "./slash-commands.js";
@@ -26,7 +26,8 @@ const world_info_insertion_strategy = {
     global_first: 2,
 };
 
-let world_info = [];
+let world_info = {};
+let selected_world_info = [];
 let world_names;
 let world_info_depth = 2;
 let world_info_budget = 25;
@@ -35,7 +36,10 @@ let world_info_case_sensitive = false;
 let world_info_match_whole_words = false;
 let world_info_character_strategy = world_info_insertion_strategy.evenly;
 const saveWorldDebounced = debounce(async (name, data) => await _save(name, data), 1000);
-const saveSettingsDebounced = debounce(() => saveSettings(), 1000);
+const saveSettingsDebounced = debounce(() => {
+    Object.assign(world_info, { globalSelect: selected_world_info })
+    saveSettings()
+}, 1000);
 const sortFn = (a, b) => b.order - a.order;
 
 const world_info_position = {
@@ -78,11 +82,18 @@ function setWorldInfoSettings(settings, data) {
         world_info_budget = 25;
     }
 
-    // Reset selected world from old string
-    if (typeof settings.world_info === "string") {
-        const existingWorldInfo = settings.world_info;
-        settings.world_info = [existingWorldInfo];
+    // Reset selected world from old string and delete old keys
+    // TODO: Remove next release
+    const existingWorldInfo = settings.world_info;
+    if (typeof existingWorldInfo === "string") {
+        delete settings.world_info;
+        selected_world_info = [existingWorldInfo];
+    } else if (Array.isArray(existingWorldInfo)) {
+        delete settings.world_info;
+        selected_world_info = existingWorldInfo;
     }
+
+    world_info = settings.world_info ?? {}
 
     $("#world_info_depth_counter").text(world_info_depth);
     $("#world_info_depth").val(world_info_depth);
@@ -98,18 +109,23 @@ function setWorldInfoSettings(settings, data) {
     $("#world_info_character_strategy").val(world_info_character_strategy);
 
     world_names = data.world_names?.length ? data.world_names : [];
-    world_info = settings.world_info?.filter((e) => world_names.includes(e)) ?? [];
+
+    // Add to existing selected WI if it exists
+    selected_world_info = selected_world_info.concat(settings.world_info?.globalSelect?.filter((e) => world_names.includes(e)) ?? []);
 
     if (world_names.length > 0) {
         $("#world_info").empty();
     }
 
     world_names.forEach((item, i) => {
-        $("#world_info").append(`<option value='${i}'${world_info.includes(item) ? ' selected' : ''}>${item}</option>`);
+        $("#world_info").append(`<option value='${i}'${selected_world_info.includes(item) ? ' selected' : ''}>${item}</option>`);
         $("#world_editor_select").append(`<option value='${i}'>${item}</option>`);
     });
 
     $("#world_editor_select").trigger("change");
+
+    // Update settings
+    saveSettingsDebounced();
 }
 
 // World Info Editor
@@ -162,7 +178,7 @@ async function updateWorldInfoList() {
         $("#world_editor_select").find('option[value!=""]').remove();
 
         world_names.forEach((item, i) => {
-            $("#world_info").append(`<option value='${i}'${world_info.includes(item) ? ' selected' : ''}>${item}</option>`);
+            $("#world_info").append(`<option value='${i}'${selected_world_info.includes(item) ? ' selected' : ''}>${item}</option>`);
             $("#world_editor_select").append(`<option value='${i}'>${item}</option>`);
         });
     }
@@ -232,6 +248,19 @@ function displayWorldEntries(name, data) {
 
         if (!confirmation) {
             return;
+        }
+
+        const existingCharLores = world_info.charLore.filter((e) => e.extraBooks.includes(name));
+        if (existingCharLores && existingCharLores.length > 0) {
+            existingCharLores.forEach((charLore) => {
+                const tempCharLore = charLore.extraBooks.filter((e) => e !== name);
+                if (tempCharLore.length === 0) {
+                    world_info.charLore.splice(charLore, 1);
+                } else {
+                    charLore.extraBooks = tempCharLore;
+                }
+            });
+            saveSettingsDebounced();
         }
 
         // Selected world_info automatically refreshes
@@ -593,10 +622,20 @@ async function renameWorldInfo(name, data) {
         return;
     }
 
-    const entryPreviouslySelected = world_info.findIndex((e) => e === oldName);
+    const entryPreviouslySelected = selected_world_info.findIndex((e) => e === oldName);
 
     await saveWorldInfo(newName, data, true);
     await deleteWorldInfo(oldName);
+
+    const existingCharLores = world_info.charLore.filter((e) => e.extraBooks.includes(oldName));
+    if (existingCharLores && existingCharLores.length > 0) {
+        existingCharLores.forEach((charLore) => {
+            const tempCharLore = charLore.extraBooks.filter((e) => e !== oldName);
+            tempCharLore.push(newName);
+            charLore.extraBooks = tempCharLore;
+        });
+        saveSettingsDebounced();
+    }
 
     if (entryPreviouslySelected !== -1) {
         const wiElement = getWIElement(newName);
@@ -622,9 +661,9 @@ async function deleteWorldInfo(worldInfoName) {
     });
 
     if (response.ok) {
-        const existingWorldIndex = world_info.findIndex((e) => e === worldInfoName);
+        const existingWorldIndex = selected_world_info.findIndex((e) => e === worldInfoName);
         if (existingWorldIndex !== -1) {
-            world_info.splice(existingWorldIndex, 1);
+            selected_world_info.splice(existingWorldIndex, 1);
             saveSettingsDebounced();
         }
 
@@ -694,35 +733,48 @@ function transformString(str) {
 }
 
 async function getCharacterLore() {
-    const name = characters[this_chid]?.data?.extensions?.world;
+    const character = characters[this_chid];
+    const name = character?.name;
+    let worldsToSearch = new Set();
 
-    if (!name) {
+    const baseWorldName = character?.data?.extensions?.world;
+    if (baseWorldName) {
+        worldsToSearch.add(baseWorldName);
+    } else {
+        console.debug(`Character ${name}'s base world could not be found or is empty! Skipping...`)
         return [];
     }
 
-    if (world_info.includes(name)) {
-        console.debug(`Character ${characters[this_chid]?.name} world info is the same as global: ${name}. Skipping...`);
-        return [];
+    // TODO: Maybe make the utility function not use the window context?
+    const fileName = getCharaFilename(this_chid);
+    const extraCharLore = world_info.charLore.find((e) => e.name === fileName);
+    if (extraCharLore) {
+        worldsToSearch = new Set([...worldsToSearch, ...extraCharLore.extraBooks]);
     }
 
-    if (!world_names.includes(name)) {
-        console.log(`Character ${characters[this_chid]?.name} world info does not exist: ${name}`);
-        return [];
+    let entries = [];
+    for (const worldName of worldsToSearch) {
+        if (selected_world_info.includes(worldName)) {
+            console.debug(`Character ${name}'s world ${worldName} is already activated in global world info! Skipping...`);
+            continue;
+        }
+
+        const data = await loadWorldInfoData(worldName);
+        const newEntries = data ? Object.keys(data.entries).map((x) => data.entries[x]) : [];
+        entries = entries.concat(newEntries);
     }
 
-    const data = await loadWorldInfoData(name);
-    const entries = data ? Object.keys(data.entries).map((x) => data.entries[x]) : [];
-    console.debug(`Character ${characters[this_chid]?.name} lore (${name}) has ${entries.length} world info entries`);
+    console.debug(`Character ${characters[this_chid]?.name} lore (${baseWorldName}) has ${entries.length} world info entries`);
     return entries;
 }
 
 async function getGlobalLore() {
-    if (!world_info) {
+    if (!selected_world_info) {
         return [];
     }
 
     let entries = [];
-    for (const worldName of world_info) {
+    for (const worldName of selected_world_info) {
         const data = await loadWorldInfoData(worldName);
         const newEntries = data ? Object.keys(data.entries).map((x) => data.entries[x]) : [];
         entries = entries.concat(newEntries);
@@ -849,34 +901,38 @@ async function checkWorldInfo(chat, maxContext) {
         }
     }
 
-    let worldInfoBefore = "";
-    let worldInfoAfter = "";
+    // Forward-sorted list of entries for joining
+    const WIBeforeEntries = [];
+    const WIAfterEntries = [];
+    const ANTopEntries = [];
+    const ANBottomEntries = [];
 
-    const ANTopInjection = [];
-    const ANBottomInjection = [];
-
+    // Appends from insertion order 999 to 1. Use unshift for this purpose
     [...allActivatedEntries].sort(sortFn).forEach((entry) => {
         switch (entry.position) {
             case world_info_position.before:
-                worldInfoBefore = `${substituteParams(entry.content)}\n${worldInfoBefore}`;
+                WIBeforeEntries.unshift(substituteParams(entry.content));
                 break;
             case world_info_position.after:
-                worldInfoAfter = `${substituteParams(entry.content)}\n${worldInfoAfter}`;
+                WIAfterEntries.unshift(substituteParams(entry.content));
                 break;
             case world_info_position.ANTop:
-                ANTopInjection.push(entry.content);
+                ANTopEntries.unshift(entry.content);
                 break;
             case world_info_position.ANBottom:
-                ANBottomInjection.push(entry.content);
+                ANBottomEntries.unshift(entry.content);
                 break;
             default:
                 break;
         }
     });
 
+    const worldInfoBefore = `${WIBeforeEntries.join("\n")}\n`
+    const worldInfoAfter = `${WIAfterEntries.join("\n")}\n`
+
     if (shouldWIAddPrompt) {
         const originalAN = context.extensionPrompts[NOTE_MODULE_NAME].value;
-        const ANWithWI = `\n${ANTopInjection.join("\n")}\n${originalAN}\n${ANBottomInjection.reverse().join("\n")}`
+        const ANWithWI = `${ANTopEntries.join("\n")}\n${originalAN}\n${ANBottomEntries.join("\n")}`
         context.setExtensionPrompt(NOTE_MODULE_NAME, ANWithWI, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth]);
     }
 
@@ -1091,7 +1147,6 @@ function onWorldInfoChange(_, text) {
     if (_ !== '__notSlashCommand__') { // if it's a slash command
         if (text !== undefined) { // and args are provided
             const slashInputSplitText = text.trim().toLowerCase().split(",");
-            console.log(slashInputSplitText);
 
             slashInputSplitText.forEach((worldName) => {
                 const wiElement = getWIElement(worldName);
@@ -1104,7 +1159,7 @@ function onWorldInfoChange(_, text) {
             })
         } else { // if no args, unset all worlds
             toastr.success('Deactivated all worlds');
-            world_info = [];
+            selected_world_info = [];
             $("#world_info").val("");
         }
     } else { //if it's a pointer selection
@@ -1122,7 +1177,7 @@ function onWorldInfoChange(_, text) {
                 }
             });
         }
-        world_info = tempWorldInfo;
+        selected_world_info = tempWorldInfo;
     }
 
     saveSettingsDebounced();
@@ -1137,6 +1192,12 @@ jQuery(() => {
     let selectScrollTop = null;
 
     $("#world_info").on('mousedown change', async function (e) {
+        // If there's no world names, don't do anything
+        if (world_names.length === 0) {
+            e.preventDefault();
+            return;
+        }
+
         if (deviceInfo.device.type === 'desktop') {
             e.preventDefault();
             const option = $(e.target);
