@@ -250,6 +250,19 @@ function displayWorldEntries(name, data) {
             return;
         }
 
+        const existingCharLores = world_info.charLore.filter((e) => e.extraBooks.includes(name));
+        if (existingCharLores && existingCharLores.length > 0) {
+            existingCharLores.forEach((charLore) => {
+                const tempCharLore = charLore.extraBooks.filter((e) => e !== name);
+                if (tempCharLore.length === 0) {
+                    world_info.charLore.splice(charLore, 1);
+                } else {
+                    charLore.extraBooks = tempCharLore;
+                }
+            });
+            saveSettingsDebounced();
+        }
+
         // Selected world_info automatically refreshes
         await deleteWorldInfo(name);
     });
@@ -613,6 +626,16 @@ async function renameWorldInfo(name, data) {
 
     await saveWorldInfo(newName, data, true);
     await deleteWorldInfo(oldName);
+
+    const existingCharLores = world_info.charLore.filter((e) => e.extraBooks.includes(oldName));
+    if (existingCharLores && existingCharLores.length > 0) {
+        existingCharLores.forEach((charLore) => {
+            const tempCharLore = charLore.extraBooks.filter((e) => e !== oldName);
+            tempCharLore.push(newName);
+            charLore.extraBooks = tempCharLore;
+        });
+        saveSettingsDebounced();
+    }
 
     if (entryPreviouslySelected !== -1) {
         const wiElement = getWIElement(newName);
