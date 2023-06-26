@@ -131,6 +131,7 @@ import {
     timestampToMoment,
     download,
     isDataURL,
+    getCharaFilename,
 } from "./scripts/utils.js";
 
 import { extension_settings, loadExtensionSettings, runGenerationInterceptors, saveMetadataDebounced } from "./scripts/extensions.js";
@@ -155,6 +156,7 @@ import { EventEmitter } from './scripts/eventemitter.js';
 import { context_settings, loadContextTemplatesFromSettings } from "./scripts/context-template.js";
 import { markdownExclusionExt } from "./scripts/showdown-exclusion.js";
 import { NOTE_MODULE_NAME, metadata_keys, setFloatingPrompt, shouldWIAddPrompt } from "./scripts/extensions/floating-prompt/index.js";
+import { deviceInfo } from "./scripts/RossAscends-mods.js";
 
 //exporting functions and vars for mods
 export {
@@ -5492,7 +5494,7 @@ function openCharacterWorldPopup() {
     }
 
     function onSelectCharacterWorld() {
-        const value = $(this).find('option:selected').val();
+        const value = $('.character_world_info_selector').find('option:selected').val();
         const worldIndex = value !== '' ? Number(value) : NaN;
         const name = !isNaN(worldIndex) ? world_names[worldIndex] : '';
 
@@ -5509,12 +5511,42 @@ function openCharacterWorldPopup() {
         setWorldInfoButtonClass(undefined, !!value);
     }
 
-    const name = (menu_type == 'create' ? create_save.name : characters[chid]?.data?.name) || 'Nameless';
-    const worldId = (menu_type == 'create' ? create_save.world : characters[chid]?.data?.extensions?.world) || '';
+    function onExtraWorldInfoChanged() {
+        const selectedWorlds = $('.character_extra_world_info_selector').val();
+        let charLore = world_info.charLore ?? [];
+
+        // TODO: Maybe make this utility function not use the window context?
+        const fileName = getCharaFilename(chid);
+        const tempExtraBooks = selectedWorlds.map((index) => world_names[index]).filter((e) => e !== undefined);
+
+        const existingCharLore = charLore.find((e) => e.name === fileName);
+        if (existingCharLore) {
+            if (tempExtraBooks.length === 0) {
+                charLore.splice(existingCharLore, 1);
+            } else {
+                existingCharLore.extraBooks = tempExtraBooks;
+            }
+        } else {
+            const newCharLoreEntry = {
+                name: fileName,
+                extraBooks: tempExtraBooks
+            }
+
+            charLore.push(newCharLoreEntry);
+        }
+        Object.assign(world_info, { charLore: charLore });
+        saveSettingsDebounced();
+    }
+
     const template = $('#character_world_template .character_world').clone();
     const select = template.find('.character_world_info_selector');
+    const extraSelect = template.find('.character_extra_world_info_selector');
+    const name = (menu_type == 'create' ? create_save.name : characters[chid]?.data?.name) || 'Nameless';
+    const worldId = (menu_type == 'create' ? create_save.world : characters[chid]?.data?.extensions?.world) || '';
     template.find('.character_name').text(name);
 
+
+    // Apped to base dropdown
     world_names.forEach((item, i) => {
         const option = document.createElement('option');
         option.value = i;
@@ -5523,7 +5555,42 @@ function openCharacterWorldPopup() {
         select.append(option);
     });
 
+    // Append to extras dropdown
+    if (world_names.length > 0) {
+        extraSelect.empty();
+    }
+    world_names.forEach((item, i) => {
+        const option = document.createElement('option');
+        option.value = i;
+        option.innerText = item;
+
+        const existingCharLore = world_info.charLore?.find((e) => e.name === getCharaFilename());
+        if (existingCharLore) {
+            option.selected = existingCharLore.extraBooks.includes(item);
+        } else {
+            option.selected = false;
+        }
+        extraSelect.append(option);
+    });
+
     select.on('change', onSelectCharacterWorld);
+    extraSelect.on('mousedown change', async function (e) {
+        // If there's no world names, don't do anything
+        if (world_names.length === 0) {
+            e.preventDefault();
+            return;
+        }
+
+        if (deviceInfo && deviceInfo.device.type === 'desktop') {
+            e.preventDefault();
+            const option = $(e.target);
+            option.prop('selected', !option.prop('selected'));
+            await delay(1);
+        }
+
+        onExtraWorldInfoChanged();
+    });
+
     callPopup(template, 'text');
 }
 
