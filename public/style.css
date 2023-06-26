@@ -3211,6 +3211,10 @@ body .ui-widget-content li:hover {
     background-color: var(--white30a);
 }
 
+.group_select .avatar {
+    flex: 0;
+}
+
 .group_select .group_icon {
     width: 20px;
     height: 20px;
