@@ -1772,6 +1772,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                     jsonData = readFromV2(jsonData);
                     png_name = getPngName(jsonData.data?.name || jsonData.name);
                     let char = JSON.stringify(jsonData);
+                    importRisuSprites(png_name, jsonData);
                     charaWrite(defaultAvatarPath, char, png_name, response, { file_name: png_name });
                 } else if (jsonData.name !== undefined) {
                     console.log('importing from v1 json');
@@ -1842,6 +1843,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
 
                 if (jsonData.spec !== undefined) {
                     console.log('Found a v2 character file.');
+                    importRisuSprites(png_name, jsonData);
                     jsonData = readFromV2(jsonData);
                     let char = JSON.stringify(jsonData);
                     charaWrite(uploadPath, char, png_name, response, { file_name: png_name });
@@ -3846,6 +3848,61 @@ app.post('/upload_sprite', urlencodedParser, async (request, response) => {
         return response.sendStatus(500);
     }
 });
+
+function importRisuSprites(name, data) {
+    try {
+        const risuData = data?.data?.extensions?.risuai;
+
+        // Not a Risu AI character
+        if (!(risuData?.additionalAssets) || !(risuData?.emotions)) {
+            return;
+        }
+
+        let images = [];
+
+        if (Array.isArray(risuData.additionalAssets)) {
+            images = images.concat(risuData.additionalAssets);
+        }
+
+        if (Array.isArray(risuData.emotions)) {
+            images = images.concat(risuData.emotions);
+        }
+
+        // Create sprites folder if it doesn't exist
+        const spritesPath = path.join(directories.characters, name);
+        if (!fs.existsSync(spritesPath)) {
+            fs.mkdirSync(spritesPath);
+        }
+
+        // Path to sprites is not a directory. This should never happen.
+        if (!fs.statSync(spritesPath).isDirectory()) {
+            return response.sendStatus(404);
+        }
+
+        console.log(`RisuAI: Found ${images.length} sprites for ${name}. Writing to disk.`)
+        const files = fs.readdirSync(spritesPath);
+
+        for (const [label, fileBase64] of images) {
+
+            // Remove existing sprite with the same label
+            for (const file of files) {
+                if (path.parse(file).name === label) {
+                    fs.rmSync(path.join(spritesPath, file));
+                }
+            }
+
+            const filename = label + '.png';
+            const pathToFile = path.join(spritesPath, filename);
+            fs.writeFileSync(pathToFile, fileBase64, { encoding: 'base64' });
+        }
+
+        // Remove additionalAssets and emotions from data (they are now in the sprites folder)
+        delete data.data.extensions.risuai.additionalAssets;
+        delete data.data.extensions.risuai.emotions;
+    } catch (error) {
+        console.error(error);
+    }
+}
 
 function writeSecret(key, value) {
     if (!fs.existsSync(SECRETS_FILE)) {
