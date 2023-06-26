@@ -901,34 +901,38 @@ async function checkWorldInfo(chat, maxContext) {
         }
     }
 
-    let worldInfoBefore = "";
-    let worldInfoAfter = "";
+    // Forward-sorted list of entries for joining
+    const WIBeforeEntries = [];
+    const WIAfterEntries = [];
+    const ANTopEntries = [];
+    const ANBottomEntries = [];
 
-    const ANTopInjection = [];
-    const ANBottomInjection = [];
-
+    // Appends from insertion order 999 to 1. Use unshift for this purpose
     [...allActivatedEntries].sort(sortFn).forEach((entry) => {
         switch (entry.position) {
             case world_info_position.before:
-                worldInfoBefore = `${substituteParams(entry.content)}\n${worldInfoBefore}`;
+                WIBeforeEntries.unshift(substituteParams(entry.content));
                 break;
             case world_info_position.after:
-                worldInfoAfter = `${substituteParams(entry.content)}\n${worldInfoAfter}`;
+                WIAfterEntries.unshift(substituteParams(entry.content));
                 break;
             case world_info_position.ANTop:
-                ANTopInjection.push(entry.content);
+                ANTopEntries.unshift(entry.content);
                 break;
             case world_info_position.ANBottom:
-                ANBottomInjection.push(entry.content);
+                ANBottomEntries.unshift(entry.content);
                 break;
             default:
                 break;
         }
     });
 
+    const worldInfoBefore = `${WIBeforeEntries.join("\n")}\n`
+    const worldInfoAfter = `${WIAfterEntries.join("\n")}\n`
+
     if (shouldWIAddPrompt) {
         const originalAN = context.extensionPrompts[NOTE_MODULE_NAME].value;
-        const ANWithWI = `\n${ANTopInjection.join("\n")}\n${originalAN}\n${ANBottomInjection.reverse().join("\n")}`
+        const ANWithWI = `${ANTopEntries.join("\n")}\n${originalAN}\n${ANBottomEntries.join("\n")}`
         context.setExtensionPrompt(NOTE_MODULE_NAME, ANWithWI, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth]);
     }
 
