@@ -758,6 +758,12 @@ function convertToV2(char) {
     return result;
 }
 
+function unsetFavFlag(char) {
+    const _ = require('lodash');
+    _.set(char, 'fav', false);
+    _.set(char, 'data.extensions.fav', false);
+}
+
 function readFromV2(char) {
     const _ = require('lodash');
     if (_.isUndefined(char.data)) {
@@ -1769,10 +1775,11 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
 
                 if (jsonData.spec !== undefined) {
                     console.log('importing from v2 json');
+                    importRisuSprites(jsonData);
+                    unsetFavFlag(jsonData);
                     jsonData = readFromV2(jsonData);
                     png_name = getPngName(jsonData.data?.name || jsonData.name);
                     let char = JSON.stringify(jsonData);
-                    importRisuSprites(jsonData);
                     charaWrite(defaultAvatarPath, char, png_name, response, { file_name: png_name });
                 } else if (jsonData.name !== undefined) {
                     console.log('importing from v1 json');
@@ -1844,6 +1851,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                 if (jsonData.spec !== undefined) {
                     console.log('Found a v2 character file.');
                     importRisuSprites(jsonData);
+                    unsetFavFlag(jsonData);
                     jsonData = readFromV2(jsonData);
                     let char = JSON.stringify(jsonData);
                     charaWrite(uploadPath, char, png_name, response, { file_name: png_name });
