@@ -3854,7 +3854,7 @@ function importRisuSprites(name, data) {
         const risuData = data?.data?.extensions?.risuai;
 
         // Not a Risu AI character
-        if (!(risuData?.additionalAssets) || !(risuData?.emotions)) {
+        if (!risuData || !(risuData?.additionalAssets) || !(risuData?.emotions)) {
             return;
         }
 
@@ -3876,7 +3876,7 @@ function importRisuSprites(name, data) {
 
         // Path to sprites is not a directory. This should never happen.
         if (!fs.statSync(spritesPath).isDirectory()) {
-            return response.sendStatus(404);
+            return;
         }
 
         console.log(`RisuAI: Found ${images.length} sprites for ${name}. Writing to disk.`)
