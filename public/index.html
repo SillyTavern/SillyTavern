@@ -2927,28 +2927,29 @@
                     Select a World Info file for <span class="character_name"></span>:
                 </h3>
             </div>
+            <h4>Primary Lorebook</h4>
             <div class="range-block-counter justifyLeft flex-container flexFlowColumn margin-bot-10px">
                 A selected World Info / Lorebook will be bound to this character.
                 When generating an AI reply, it will be combined with the entries from a global World Info / Lorebook selector.
                 Exporting a character would also export the selected World Info file embedded in the JSON data.
             </div>
             <div class="range-block-range wide100p">
-                <select class="character_world_info_selector">
+                <select class="character_world_info_selector wide100p">
                     <option value="">--- None ---</option>
                 </select>
             </div>
 
             <div class="range-block-title">
                 <h4>
-                    Associate extra world info
+                    Additional Lorebooks
                 </h4>
             </div>
             <div class="range-block-counter justifyLeft flex-container flexFlowColumn margin-bot-10px">
-                Associate extra lorebooks with this character.
+                Associate one or more auxillary lorebooks with this character.<br>
                 NOTE: These choices are optional and won't be preserved on character export!
             </div>
             <div class="range-block-range wide100p">
-                <select class="character_extra_world_info_selector" multiple>
+                <select class="character_extra_world_info_selector wide100p" multiple>
                     <option value="">-- World Info not found --</option>
                 </select>
             </div>

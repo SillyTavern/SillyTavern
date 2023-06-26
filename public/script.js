@@ -5581,11 +5581,16 @@ function openCharacterWorldPopup() {
             return;
         }
 
+        let selectScrollTop = null;
+
         if (deviceInfo && deviceInfo.device.type === 'desktop') {
             e.preventDefault();
             const option = $(e.target);
+            const selectElement = $(extraSelect)[0];
+            selectScrollTop = selectElement.scrollTop;
             option.prop('selected', !option.prop('selected'));
             await delay(1);
+            selectElement.scrollTop = selectScrollTop;
         }
 
         onExtraWorldInfoChanged();
