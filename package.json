@@ -1,6 +1,7 @@
 {
     "dependencies": {
         "@dqbd/tiktoken": "^1.0.2",
+        "@mlc-ai/web-tokenizers": "^0.1.0",
         "axios": "^1.4.0",
         "command-exists": "^1.2.9",
         "compression": "^1",
