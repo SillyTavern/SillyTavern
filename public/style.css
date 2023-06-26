@@ -1353,6 +1353,10 @@ input[type=search]:focus::-webkit-search-cancel-button {
     font-weight: bolder;
 }
 
+.ch_avatar_url {
+    float: right;
+}
+
 .character_select .avatar {
     align-self: center;
 }
