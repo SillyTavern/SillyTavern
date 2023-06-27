@@ -2830,6 +2830,7 @@ h5 {
     display: flex;
     flex-direction: row;
     align-items: center;
+    position: relative;
     gap: 10px;
     width: fit-content;
     min-width: 0;
@@ -4700,6 +4701,11 @@ body.waifuMode #avatar_zoom_popup {
     body.waifuMode img.expression {
         object-fit: contain;
     }
+
+    .tag.excluded:after {
+        top: unset;
+        bottom: unset;
+    }
 }
 
 @media screen and (max-width: 450px) {
@@ -4709,6 +4715,11 @@ body.waifuMode #avatar_zoom_popup {
 
     .drawer33pWidth {
         flex-basis: max(calc(100% / 2 - 10px), 180px);
+    }
+
+    .tag.excluded:after {
+        top: unset;
+        bottom: unset;
     }
 }
 
