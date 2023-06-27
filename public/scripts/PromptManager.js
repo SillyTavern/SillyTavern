@@ -770,8 +770,8 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
         const tokenThreshold = tokenBudget * 0.9;
         if (this.tokenCache >= tokenThreshold &&
             'chatHistory' === prompt.identifier) {
-            const warningThreshold = tokenBudget * 0.40;
-            const dangerThreshold = tokenBudget * 0.20;
+            const warningThreshold = tokenBudget * 0.50;
+            const dangerThreshold = tokenBudget * 0.30;
 
             if (tokens <= dangerThreshold) {
                 warningClass = 'fa-solid tooltip fa-triangle-exclamation text_danger';
