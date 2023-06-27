@@ -2810,7 +2810,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     quietPrompt: quiet_prompt,
                     jailbreakPrompt: jailbreakPrompt,
                     cyclePrompt: cyclePrompt,
-                });
+                }, dryRun);
                 generate_data = { prompt: prompt };
 
                 // counts will return false if the user has not enabled the token breakdown feature
