@@ -239,7 +239,7 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
             prompts.set(systemPrompt, prompts.index('main'));
         }
 
-        const jailbreakPromptOverride = this.activeCharacter.data?.jailbreak_prompt ?? null;
+        const jailbreakPromptOverride = this.activeCharacter.data?.post_history_instructions ?? null;
         const jailbreakPrompt = prompts.get('jailbreak') ?? null;
         if (jailbreakPromptOverride && jailbreakPrompt) {
             jailbreakPrompt.content = jailbreakPromptOverride;
@@ -606,6 +606,9 @@ PromptManagerModule.prototype.loadPromptIntoEditForm = function (prompt) {
         false === this.serviceSettings.prompt_manager_settings.showAdvancedSettings) {
         roleField.disabled = true;
     }
+
+    const resetPromptButton = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_reset');
+    resetPromptButton.dataset.pmPrompt = prompt.identifier;
 
     const savePromptButton = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_save');
     savePromptButton.dataset.pmPrompt = prompt.identifier;
