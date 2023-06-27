@@ -256,6 +256,7 @@ const directories = {
     extensions: 'public/scripts/extensions',
     instruct: 'public/instruct',
     context: 'public/context',
+    backups: 'backups/',
 };
 
 // CSRF Protection //
@@ -3335,6 +3336,7 @@ const setupTasks = async function () {
 
     console.log(`SillyTavern ${version.pkgVersion}` + (version.gitBranch ? ` '${version.gitBranch}' (${version.gitRevision})` : ''));
 
+    backupSettings();
     migrateSecrets();
     ensurePublicDirectoriesExist();
     await ensureThumbnailCache();
@@ -3423,6 +3425,41 @@ async function convertWebp() {
         } catch (err) {
             console.log(err);
         }
+    }
+}
+
+function backupSettings() {
+    const MAX_BACKUPS = 25;
+
+    function generateTimestamp() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+
+        return `${year}${month}${day}-${hours}${minutes}${seconds}`;
+    }
+
+    try {
+        if (!fs.existsSync(directories.backups)) {
+            fs.mkdirSync(directories.backups);
+        }
+
+        const backupFile = path.join(directories.backups, `settings_${generateTimestamp()}.json`);
+        fs.copyFileSync(SETTINGS_FILE, backupFile);
+
+        let files = fs.readdirSync(directories.backups);
+        if (files.length > MAX_BACKUPS) {
+            files = files.map(f => path.join(directories.backups, f));
+            files.sort((a, b) => fs.statSync(a).mtimeMs - fs.statSync(b).mtimeMs);
+
+            fs.rmSync(files[0]);
+        }
+    } catch (err) {
+        console.log('Could not backup settings file', err);
     }
 }
 
