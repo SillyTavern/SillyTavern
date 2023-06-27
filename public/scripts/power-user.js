@@ -107,7 +107,7 @@ let power_user = {
     chat_display: chat_styles.DEFAULT,
     sheld_width: sheld_width.DEFAULT,
     never_resize_avatars: false,
-    show_card_avatar_urls: true,
+    show_card_avatar_urls: false,
     play_message_sound: false,
     play_sound_unfocused: true,
     auto_save_msg_edits: false,
