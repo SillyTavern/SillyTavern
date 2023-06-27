@@ -2831,6 +2831,7 @@ h5 {
     display: flex;
     flex-direction: row;
     align-items: center;
+    position: relative;
     gap: 10px;
     width: fit-content;
     min-width: 0;
@@ -4702,6 +4703,11 @@ body.waifuMode .zoomed_avatar {
     body.waifuMode img.expression {
         object-fit: contain;
     }
+
+    .tag.excluded:after {
+        top: unset;
+        bottom: unset;
+    }
 }
 
 @media screen and (max-width: 450px) {
@@ -4715,6 +4721,11 @@ body.waifuMode .zoomed_avatar {
 
     .BGSampleTitle {
         display: none;
+    }
+
+    .tag.excluded:after {
+        top: unset;
+        bottom: unset;
     }
 }
 
