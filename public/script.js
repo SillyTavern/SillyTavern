@@ -6327,7 +6327,13 @@ const isPwaMode = window.navigator.standalone;
 if (isPwaMode) { $("body").addClass('PWA') }
 
 $(document).ready(function () {
-    //////////INPUT BAR FOCUS-KEEPING LOGIC/////////////
+
+    if (isMobile() === true) {
+        console.debug('hiding movingUI and sheldWidth toggles for mobile')
+        $("#sheldWidthToggleBlock").hide();
+        $("#movingUIModeCheckBlock").hide();
+
+    }
 
     registerSlashCommand('dupe', DupeChar, [], "– duplicates the currently selected character", true, true);
     registerSlashCommand('api', connectAPISlash, [], "– connect to an API", true, true);
@@ -6346,6 +6352,7 @@ $(document).ready(function () {
         scrollLock = true;
     });
 
+    //////////INPUT BAR FOCUS-KEEPING LOGIC/////////////
     let S_TAFocused = false;
     let S_TAPreviouslyFocused = false;
     $('#send_textarea').on('focusin focus click', () => {

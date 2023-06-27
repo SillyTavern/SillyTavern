@@ -4712,7 +4712,12 @@ body.waifuMode .zoomed_avatar {
     .drawer33pWidth {
         flex-basis: max(calc(100% / 2 - 10px), 180px);
     }
+
+    .BGSampleTitle {
+        display: none;
+    }
 }
+
 
 /*this part only only applies to iOS devices*/
 
