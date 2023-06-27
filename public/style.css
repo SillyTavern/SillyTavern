@@ -4719,11 +4719,16 @@ body.waifuMode .zoomed_avatar {
         flex-basis: max(calc(100% / 2 - 10px), 180px);
     }
 
+    .BGSampleTitle {
+        display: none;
+    }
+
     .tag.excluded:after {
         top: unset;
         bottom: unset;
     }
 }
+
 
 /*this part only only applies to iOS devices*/
 

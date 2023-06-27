@@ -630,13 +630,13 @@ $("document").ready(function () {
 
     // initial status check
     setTimeout(() => {
-
-        dragElement($("#sheld"));
-        dragElement($("#left-nav-panel"));
-        dragElement($("#right-nav-panel"));
-        dragElement($("#WorldInfo"));
-        dragElement($("#floatingPrompt"));
-
+        if (isMobile === false) {
+            dragElement($("#sheld"));
+            dragElement($("#left-nav-panel"));
+            dragElement($("#right-nav-panel"));
+            dragElement($("#WorldInfo"));
+            dragElement($("#floatingPrompt"));
+        }
         RA_checkOnlineStatus
     }
         , 100);

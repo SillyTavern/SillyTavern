@@ -647,7 +647,7 @@ function loadPowerUserSettings(settings, data) {
 }
 
 function loadMovingUIState() {
-    if (power_user.movingUIState) {
+    if (isMobile() === false && power_user.movingUIState) {
         for (var elmntName of Object.keys(power_user.movingUIState)) {
             var elmntState = power_user.movingUIState[elmntName];
             try {
@@ -662,6 +662,9 @@ function loadMovingUIState() {
                 console.debug(`error occurred while processing ${elmntName}: ${err}`)
             }
         }
+    } else {
+        console.debug('skipping movingUI state load for mobile')
+        return
     }
 }
 
@@ -1213,7 +1216,7 @@ $(document).ready(() => {
         printCharacters();
         saveSettingsDebounced();
     });
-    
+
     $("#play_message_sound").on('input', function () {
         power_user.play_message_sound = !!$(this).prop('checked');
         saveSettingsDebounced();
