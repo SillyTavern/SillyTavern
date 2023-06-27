@@ -1,4 +1,4 @@
-import { humanizedDateTime, favsToHotswap, getMessageTimeStamp } from "./scripts/RossAscends-mods.js";
+import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile } from "./scripts/RossAscends-mods.js";
 import { encode } from "../scripts/gpt-2-3-tokenizer/mod.js";
 import { GPT3BrowserTokenizer } from "../scripts/gpt-3-tokenizer/gpt3-tokenizer.js";
 import {
@@ -72,6 +72,7 @@ import {
     formatInstructStoryString,
     formatInstructModePrompt,
     persona_description_positions,
+    loadMovingUIState,
 } from "./scripts/power-user.js";
 
 import {
@@ -1013,6 +1014,10 @@ function clearChat() {
     count_view_mes = 0;
     extension_prompts = {};
     $("#chat").children().remove();
+    if ($('.zoomed_avatar[forChar]').length) {
+        console.debug('saw avatars to remove')
+        $('.zoomed_avatar[forChar]').remove();
+    } else { console.debug('saw no avatars') }
     itemizedPrompts = [];
 }
 
@@ -4409,7 +4414,7 @@ function lockUserNameToChat() {
             { timeOut: 10000, extendedTimeOut: 20000, },
         );
         power_user.personas[user_avatar] = name1;
-        power_user.persona_descriptions[user_avatar] =  { description: '', position: persona_description_positions.BEFORE_CHAR };
+        power_user.persona_descriptions[user_avatar] = { description: '', position: persona_description_positions.BEFORE_CHAR };
     }
 
     chat_metadata['persona'] = user_avatar;
@@ -6351,7 +6356,8 @@ $(document).ready(function () {
     });
     $(document).click(event => {
         if ($(':focus').attr('id') !== 'send_textarea') {
-            if (!$(event.target.id).is("#options_button, #send_but, #send_textarea, #option_regenerate")) {
+            var validIDs = ["options_button", "send_but", "send_textarea", "option_regenerate"];
+            if ($(event.target).attr('id') !== validIDs) {
                 S_TAFocused = false;
                 S_TAPreviouslyFocused = false;
             }
@@ -6762,13 +6768,13 @@ $(document).ready(function () {
     $("#form_create").submit(createOrEditCharacter);
 
     $("#delete_button").on('click', function () {
-            popup_type = "del_ch";
-            callPopup(`
+        popup_type = "del_ch";
+        callPopup(`
                 <h3>Delete the character?</h3>
                 <b>THIS IS PERMANENT!<br><br>
                 THIS WILL ALSO DELETE ALL<br>
                 OF THE CHARACTER'S CHAT FILES.<br><br></b>`
-            );
+        );
     });
 
     $("#rm_info_button").on('click', function () {
@@ -7548,8 +7554,8 @@ $(document).ready(function () {
         }
     });
     $("#export_button").on('click', function (e) {
-            $('#export_format_popup').toggle();
-            exportPopper.update();
+        $('#export_format_popup').toggle();
+        exportPopper.update();
     });
     $(document).on('click', '.export_format', async function () {
         const format = $(this).data('format');
@@ -7634,16 +7640,16 @@ $(document).ready(function () {
 
     $("#dupe_button").click(async function () {
 
-            const body = { avatar_url: characters[this_chid].avatar };
-            const response = await fetch('/dupecharacter', {
-                method: 'POST',
-                headers: getRequestHeaders(),
-                body: JSON.stringify(body),
-            });
-            if (response.ok) {
-                toastr.success("Character Duplicated");
-                getCharacters();
-            }
+        const body = { avatar_url: characters[this_chid].avatar };
+        const response = await fetch('/dupecharacter', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify(body),
+        });
+        if (response.ok) {
+            toastr.success("Character Duplicated");
+            getCharacters();
+        }
     });
 
     $(document).on("click", ".select_chat_block, .bookmark_link, .mes_bookmark", async function () {
@@ -7682,12 +7688,15 @@ $(document).ready(function () {
     $('.drawer-toggle').click(function () {
         var icon = $(this).find('.drawer-icon');
         var drawer = $(this).parent().find('.drawer-content');
+        if (drawer.hasClass('resizing')) { return }
         var drawerWasOpenAlready = $(this).parent().find('.drawer-content').hasClass('openDrawer');
         let targetDrawerID = $(this).parent().find('.drawer-content').attr('id');
         const pinnedDrawerClicked = drawer.hasClass('pinnedOpen');
 
-        if (!drawerWasOpenAlready) {
-            $('.openDrawer').not('.pinnedOpen').slideToggle(200, "swing");
+        if (!drawerWasOpenAlready) { //to open the drawer
+            $('.openDrawer').not('.pinnedOpen').addClass('resizing').slideToggle(200, "swing", function () {
+                $(this).closest('.drawer-content').removeClass('resizing');
+            });
             $('.openIcon').toggleClass('closedIcon openIcon');
             $('.openDrawer').not('.pinnedOpen').toggleClass('closedDrawer openDrawer');
             icon.toggleClass('openIcon closedIcon');
@@ -7695,29 +7704,36 @@ $(document).ready(function () {
 
             //console.log(targetDrawerID);
             if (targetDrawerID === 'right-nav-panel') {
-                $(this).closest('.drawer').find('.drawer-content').slideToggle({
+                $(this).closest('.drawer').find('.drawer-content').addClass('resizing').slideToggle({
                     duration: 200,
                     easing: "swing",
                     start: function () {
                         jQuery(this).css('display', 'flex');
                     },
                     complete: function () {
+                        $(this).closest('.drawer-content').removeClass('resizing');
                         $("#rm_print_characters_block").trigger("scroll");
                     }
                 })
             } else {
-                $(this).closest('.drawer').find('.drawer-content').slideToggle(200, "swing");
+                $(this).closest('.drawer').find('.drawer-content').addClass('resizing').slideToggle(200, "swing", function () {
+                    $(this).closest('.drawer-content').removeClass('resizing');
+                });
             }
 
 
-        } else if (drawerWasOpenAlready) {
+        } else if (drawerWasOpenAlready) { //to close
             icon.toggleClass('closedIcon openIcon');
 
             if (pinnedDrawerClicked) {
-                $(drawer).slideToggle(200, "swing");
+                $(drawer).addClass('resizing').slideToggle(200, "swing", function () {
+                    $(this).removeClass('resizing');
+                });
             }
             else {
-                $('.openDrawer').not('.pinnedOpen').slideToggle(200, "swing");
+                $('.openDrawer').not('.pinnedOpen').addClass('resizing').slideToggle(200, "swing", function () {
+                    $(this).closest('.drawer-content').removeClass('resizing');
+                });
             }
 
             drawer.toggleClass('closedDrawer openDrawer');
@@ -7772,22 +7788,44 @@ $(document).ready(function () {
     });
 
     $(document).on('click', '.mes .avatar', function () {
+
+        console.log(isMobile());
+        console.log($('body').hasClass('waifuMode'));
+
+        if (isMobile() === true && !$('body').hasClass('waifuMode')) {
+            console.debug('saw mobile regular mode, returning');
+            return;
+        } else { console.debug('saw valid env for zoomed display') }
+
         let thumbURL = $(this).children('img').attr('src');
         let charsPath = '/characters/'
         let targetAvatarImg = thumbURL.substring(thumbURL.lastIndexOf("=") + 1);
+        let charname = targetAvatarImg.replace('.png', '');
 
         let avatarSrc = isDataURL(thumbURL) ? thumbURL : charsPath + targetAvatarImg;
-        console.log(avatarSrc);
-        if ($(this).parent().parent().attr('is_user') == 'true') { //handle user avatars
-            $("#zoomed_avatar").attr('src', thumbURL);
-        } else if ($(this).parent().parent().attr('is_system') == 'true') { //handle system avatars
-            $("#zoomed_avatar").attr('src', thumbURL);
-        } else if ($(this).parent().parent().attr('is_user') == 'false') { //handle char avatars
-            $("#zoomed_avatar").attr('src', avatarSrc);
-        }
-        $('#avatar_zoom_popup').toggle();
+        if ($(`.zoomed_avatar[forChar="${charname}"]`).length) {
+            console.debug('removing container as it already existed')
+            $(`.zoomed_avatar[forChar="${charname}"]`).remove();
+        } else {
+            console.debug('making new container from template')
+            const template = $('#zoomed_avatar_template').html();
+            const newElement = $(template);
+            newElement.attr('forChar', charname);
+            newElement.attr('id', `zoomFor_${charname}`);
+            newElement.find('.drag-grabber').attr('id', `zoomFor_${charname}header`);
 
-        //} else { return; }
+            $('body').append(newElement);
+            if ($(this).parent().parent().attr('is_user') == 'true') { //handle user avatars
+                $(`.zoomed_avatar[forChar="${charname}"] img`).attr('src', thumbURL);
+            } else if ($(this).parent().parent().attr('is_system') == 'true') { //handle system avatars
+                $(`.zoomed_avatar[forChar="${charname}"] img`).attr('src', thumbURL);
+            } else if ($(this).parent().parent().attr('is_user') == 'false') { //handle char avatars
+                $(`.zoomed_avatar[forChar="${charname}"] img`).attr('src', avatarSrc);
+            }
+            loadMovingUIState();
+            $(`.zoomed_avatar[forChar="${charname}"]`).css('display', 'block');
+            dragElement(newElement)
+        }
     });
 
     $(document).on('click', '#OpenAllWIEntries', function () {

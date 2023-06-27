@@ -15,7 +15,7 @@ import {
     name1,
     name2,
 } from "../script.js";
-import { favsToHotswap } from "./RossAscends-mods.js";
+import { favsToHotswap, isMobile } from "./RossAscends-mods.js";
 import {
     groups,
     selected_group,
@@ -25,6 +25,7 @@ import { registerSlashCommand } from "./slash-commands.js";
 
 export {
     loadPowerUserSettings,
+    loadMovingUIState,
     collapseNewlines,
     playMessageSound,
     sortGroupMembers,
@@ -289,9 +290,15 @@ function toggleWaifu() {
 }
 
 function switchWaifuMode() {
-    //console.log(`switching waifu to ${power_user.waifuMode}`);
     $("body").toggleClass("waifuMode", power_user.waifuMode);
     $("#waifuMode").prop("checked", power_user.waifuMode);
+    if (isMobile() && !$('body').hasClass('waifuMode')) {
+        console.debug('saw mobile regular mode, removing ZoomedAvatars');
+        if ($('.zoomed_avatar[forChar]').length) {
+            $('.zoomed_avatar[forChar]').remove();
+        }
+        return;
+    }
     scrollChatToBottom();
 }
 
@@ -633,15 +640,24 @@ function loadPowerUserSettings(settings, data) {
     switchWaifuMode();
     loadMovingUIState();
 
-    console.log(power_user)
+    //console.log(power_user)
 }
 
 function loadMovingUIState() {
     if (power_user.movingUIState) {
         for (var elmntName of Object.keys(power_user.movingUIState)) {
             var elmntState = power_user.movingUIState[elmntName];
-            var elmnt = $('#' + elmntName);
-            elmnt.css(elmntState);
+            try {
+                var elmnt = $('#' + $.escapeSelector(elmntName));
+                if (elmnt.length) {
+                    console.debug(`loading state for ${elmntName}`)
+                    elmnt.css(elmntState);
+                } else {
+                    console.debug(`skipping ${elmntName} because it doesn't exist in the DOM`)
+                }
+            } catch (err) {
+                console.debug(`error occurred while processing ${elmntName}: ${err}`)
+            }
         }
     }
 }
@@ -926,13 +942,16 @@ function resetMovablePanels() {
         document.getElementById("expression-holder").style.margin = '';
     }
 
-    document.getElementById("avatar_zoom_popup").style.top = '';
-    document.getElementById("avatar_zoom_popup").style.left = '';
-    document.getElementById("avatar_zoom_popup").style.right = '';
-    document.getElementById("avatar_zoom_popup").style.bottom = '';
-    document.getElementById("avatar_zoom_popup").style.height = '';
-    document.getElementById("avatar_zoom_popup").style.width = '';
-    document.getElementById("avatar_zoom_popup").style.margin = '';
+    if ($(".zoomed_avatar")) {
+        $(".zoomed_avatar").css('top', '');
+        $(".zoomed_avatar").css('left', '');
+        $(".zoomed_avatar").css('right', '');
+        $(".zoomed_avatar").css('bottom', '');
+        $(".zoomed_avatar").css('width', '');
+        $(".zoomed_avatar").css('height', '');
+        $(".zoomed_avatar").css('margin', '');
+    }
+
 
     document.getElementById("WorldInfo").style.top = '';
     document.getElementById("WorldInfo").style.left = '';

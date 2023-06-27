@@ -4288,7 +4288,7 @@ body.movingUI .drag-grabber {
 body.movingUI #sheld,
 body.movingUI .drawer-content,
 body.movingUI #expression-holder,
-body.movingUI #avatar_zoom_popup,
+body.movingUI .zoomed_avatar,
 body.movingUI #floatingPrompt {
     resize: both;
 }
@@ -4315,7 +4315,7 @@ body.noShadows * {
     color: var(--SmartThemeBodyColor);
 }
 
-#avatar_zoom_popup {
+.zoomed_avatar {
     min-width: 100px;
     min-height: 100px;
     max-height: 90vh;
@@ -4331,7 +4331,7 @@ body.noShadows * {
     aspect-ratio: 2 / 3;
 }
 
-body.waifuMode #avatar_zoom_popup {
+body.waifuMode .zoomed_avatar {
     min-width: 100px;
     min-height: 100px;
     max-height: 90vh;
@@ -4350,7 +4350,7 @@ body.waifuMode #avatar_zoom_popup {
     aspect-ratio: 2 / 3;
 }
 
-#zoomed_avatar {
+.zoomed_avatar img {
     border: 1px solid var(--white50a);
     border-radius: 20px;
     height: 100%;
@@ -4424,7 +4424,7 @@ body.waifuMode #avatar_zoom_popup {
         min-width: 100% !important;
     }
 
-    #avatar_zoom_popup {
+    .zoomed_avatar {
         min-width: 100px;
         min-height: 100px;
         max-height: 90vh;
@@ -4665,13 +4665,14 @@ body.waifuMode #avatar_zoom_popup {
         object-fit: cover;
     }
 
-    body:not(.waifuMode) #avatar_zoom_popup {
-        z-index: 999;
+    body:not(.waifuMode) .zoomed_avatar {
+        display: none;
+        /*         z-index: 999;
         width: fit-content;
-        max-height: calc(60svh - 60px);
+        max-height: calc(60svh - 60px); */
     }
 
-    body.waifuMode #avatar_zoom_popup {
+    body.waifuMode .zoomed_avatar {
         width: fit-content;
         max-height: calc(60svh - 60px);
         max-width: 90svw;
