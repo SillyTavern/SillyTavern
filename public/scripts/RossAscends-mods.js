@@ -12,6 +12,7 @@ import {
     getTokenCount,
     menu_type,
     max_context,
+    saveSettingsDebounced,
 } from "../script.js";
 
 
@@ -478,11 +479,12 @@ dragElement(document.getElementById("right-nav-panel"));
 dragElement(document.getElementById("avatar_zoom_popup"));
 dragElement(document.getElementById("WorldInfo"));
 
-
-
 export function dragElement(elmnt) {
 
     var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    var draggableHeight, draggableWidth, draggableTop, draggableLeft;
+    var elmntName = $(elmnt).attr('id');
+
     if (document.getElementById(elmnt.id + "header")) { //ex: id="sheldheader"
         // if present, the header is where you move the DIV from, but this overrides everything else:
         document.getElementById(elmnt.id + "header").onmousedown = dragMouseDown;
@@ -506,17 +508,19 @@ export function dragElement(elmnt) {
     function elementDrag(e) {
         //disable scrollbars when dragging to prevent jitter
         $("body").css("overflow", "hidden");
-
+        if (!power_user.movingUIState[elmntName]) {
+            power_user.movingUIState[elmntName] = {};
+        }
 
         //get window size
         let winWidth = window.innerWidth;
         let winHeight = window.innerHeight;
 
         //get necessary data for calculating element footprint
-        let draggableHeight = parseInt(getComputedStyle(elmnt).getPropertyValue('height').slice(0, -2));
-        let draggableWidth = parseInt(getComputedStyle(elmnt).getPropertyValue('width').slice(0, -2));
-        let draggableTop = parseInt(getComputedStyle(elmnt).getPropertyValue('top').slice(0, -2));
-        let draggableLeft = parseInt(getComputedStyle(elmnt).getPropertyValue('left').slice(0, -2));
+        draggableHeight = parseInt(getComputedStyle(elmnt).getPropertyValue('height').slice(0, -2));
+        draggableWidth = parseInt(getComputedStyle(elmnt).getPropertyValue('width').slice(0, -2));
+        draggableTop = parseInt(getComputedStyle(elmnt).getPropertyValue('top').slice(0, -2));
+        draggableLeft = parseInt(getComputedStyle(elmnt).getPropertyValue('left').slice(0, -2));
         let sheldWidth = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sheldWidth').slice(0, -2));
         let topBarFirstX = (winWidth - sheldWidth) / 2;
         let topBarLastX = topBarFirstX + sheldWidth;
@@ -616,7 +620,15 @@ export function dragElement(elmnt) {
         document.onmousemove = null;
         //revert scrolling to normal after drag to allow recovery of vastly misplaced elements
         $("body").css("overflow", "auto");
+        saveMovingUIState();
+    }
 
+    function saveMovingUIState() {
+        power_user.movingUIState[elmntName].top = draggableTop;
+        power_user.movingUIState[elmntName].left = draggableLeft;
+        power_user.movingUIState[elmntName].width = draggableWidth;
+        power_user.movingUIState[elmntName].height = draggableHeight;
+        saveSettingsDebounced();
     }
 }
 

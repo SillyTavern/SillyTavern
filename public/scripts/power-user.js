@@ -127,6 +127,7 @@ let power_user = {
 
     waifuMode: false,
     movingUI: false,
+    movingUIState: {},
     noShadows: false,
     theme: 'Default (Dark) 1.7.1',
 
@@ -630,6 +631,19 @@ function loadPowerUserSettings(settings, data) {
     loadInstructMode();
     loadMaxContextUnlocked();
     switchWaifuMode();
+    loadMovingUIState();
+
+    console.log(power_user)
+}
+
+function loadMovingUIState() {
+    if (power_user.movingUIState) {
+        for (var elmntName of Object.keys(power_user.movingUIState)) {
+            var elmntState = power_user.movingUIState[elmntName];
+            var elmnt = $('#' + elmntName);
+            elmnt.css(elmntState);
+        }
+    }
 }
 
 function loadMaxContextUnlocked() {
@@ -902,13 +916,15 @@ function resetMovablePanels() {
     document.getElementById("right-nav-panel").style.width = '';
     document.getElementById("right-nav-panel").style.margin = '';
 
-    document.getElementById("expression-holder").style.top = '';
-    document.getElementById("expression-holder").style.left = '';
-    document.getElementById("expression-holder").style.right = '';
-    document.getElementById("expression-holder").style.bottom = '';
-    document.getElementById("expression-holder").style.height = '';
-    document.getElementById("expression-holder").style.width = '';
-    document.getElementById("expression-holder").style.margin = '';
+    if ($("#expression-holder")) {
+        document.getElementById("expression-holder").style.top = '';
+        document.getElementById("expression-holder").style.left = '';
+        document.getElementById("expression-holder").style.right = '';
+        document.getElementById("expression-holder").style.bottom = '';
+        document.getElementById("expression-holder").style.height = '';
+        document.getElementById("expression-holder").style.width = '';
+        document.getElementById("expression-holder").style.margin = '';
+    }
 
     document.getElementById("avatar_zoom_popup").style.top = '';
     document.getElementById("avatar_zoom_popup").style.left = '';
@@ -927,6 +943,8 @@ function resetMovablePanels() {
     document.getElementById("WorldInfo").style.margin = '';
 
     $('*[data-dragged="true"]').removeAttr('data-dragged');
+    power_user.movingUIState = {}
+    saveSettingsDebounced();
     eventSource.emit(event_types.MOVABLE_PANELS_RESET);
 }
 
