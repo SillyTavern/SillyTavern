@@ -250,7 +250,7 @@ function displayWorldEntries(name, data) {
             return;
         }
 
-        const existingCharLores = world_info.charLore.filter((e) => e.extraBooks.includes(name));
+        const existingCharLores = world_info.charLore?.filter((e) => e.extraBooks.includes(name));
         if (existingCharLores && existingCharLores.length > 0) {
             existingCharLores.forEach((charLore) => {
                 const tempCharLore = charLore.extraBooks.filter((e) => e !== name);
@@ -627,7 +627,7 @@ async function renameWorldInfo(name, data) {
     await saveWorldInfo(newName, data, true);
     await deleteWorldInfo(oldName);
 
-    const existingCharLores = world_info.charLore.filter((e) => e.extraBooks.includes(oldName));
+    const existingCharLores = world_info.charLore?.filter((e) => e.extraBooks.includes(oldName));
     if (existingCharLores && existingCharLores.length > 0) {
         existingCharLores.forEach((charLore) => {
             const tempCharLore = charLore.extraBooks.filter((e) => e !== oldName);
@@ -747,7 +747,7 @@ async function getCharacterLore() {
 
     // TODO: Maybe make the utility function not use the window context?
     const fileName = getCharaFilename(this_chid);
-    const extraCharLore = world_info.charLore.find((e) => e.name === fileName);
+    const extraCharLore = world_info.charLore?.find((e) => e.name === fileName);
     if (extraCharLore) {
         worldsToSearch = new Set([...worldsToSearch, ...extraCharLore.extraBooks]);
     }
