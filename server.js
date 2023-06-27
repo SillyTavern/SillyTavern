@@ -1085,19 +1085,19 @@ async function charaWrite(img_url, data, target_img, response = undefined, mes =
 async function tryReadImage(img_url, crop) {
     try {
         let rawImg = await jimp.read(img_url);
-		let final_width = rawImg.bitmap.width, final_height = rawImg.bitmap.height
+        let final_width = rawImg.bitmap.width, final_height = rawImg.bitmap.height
 
         // Apply crop if defined
         if (typeof crop == 'object' && [crop.x, crop.y, crop.width, crop.height].every(x => typeof x === 'number')) {
             rawImg = rawImg.crop(crop.x, crop.y, crop.width, crop.height);
-			// Apply standard resize if requested
-			if (crop.want_resize) {
-				final_width = AVATAR_WIDTH
-				final_height = AVATAR_HEIGHT
-			}
+            // Apply standard resize if requested
+            if (crop.want_resize) {
+                final_width = AVATAR_WIDTH
+                final_height = AVATAR_HEIGHT
+            }
         }
 
-		const image = await rawImg.cover(final_width, final_height).getBufferAsync(jimp.MIME_PNG);
+        const image = await rawImg.cover(final_width, final_height).getBufferAsync(jimp.MIME_PNG);
         return image;
     }
     // If it's an unsupported type of image (APNG) - just read the file as buffer
@@ -3856,6 +3856,116 @@ app.post('/upload_sprite', urlencodedParser, async (request, response) => {
         return response.sendStatus(500);
     }
 });
+
+app.post('/import_custom', jsonParser, async (request, response) => {
+    if (!request.body.url) {
+        return response.sendStatus(400);
+    }
+
+    try {
+        const url = request.body.url;
+        let result;
+
+        const chubParsed = parseChubUrl(url);
+
+        if (chubParsed?.type === 'character') {
+            console.log('Downloading chub character:', chubParsed.id);
+            result = await downloadChubCharacter(chubParsed.id);
+        }
+        else if (chubParsed?.type === 'lorebook') {
+            console.log('Downloading chub lorebook:', chubParsed.id);
+            result = await downloadChubLorebook(chubParsed.id);
+        }
+        else {
+            return response.sendStatus(404);
+        }
+
+        response.set('Content-Type', result.fileType);
+        response.set('Content-Disposition', `attachment; filename="${result.fileName}"`);
+        response.set('X-Custom-Content-Type', chubParsed?.type);
+        return response.send(result.buffer);
+    } catch (error) {
+        console.log('Importing custom content failed', error);
+        return response.sendStatus(500);
+    }
+});
+
+async function downloadChubLorebook(id) {
+    const fetch = require('node-fetch').default;
+
+    const result = await fetch('https://api.chub.ai/api/lorebooks/download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            "fullPath": id,
+            "format": "SILLYTAVERN",
+        }),
+    });
+
+    if (!result.ok) {
+        throw new Error('Failed to download lorebook');
+    }
+
+    const name = id.split('/').pop();
+    const buffer = await result.buffer();
+    const fileName = `${sanitize(name)}.json`;
+    const fileType = result.headers.get('content-type');
+
+    return { buffer, fileName, fileType };
+}
+
+async function downloadChubCharacter(id) {
+    const fetch = require('node-fetch').default;
+
+    const result = await fetch('https://api.chub.ai/api/characters/download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            "format": "tavern",
+            "fullPath": id,
+        })
+    });
+
+    if (!result.ok) {
+        throw new Error('Failed to download character');
+    }
+
+    const buffer = await result.buffer();
+    const fileName = result.headers.get('content-disposition').split('filename=')[1];
+    const fileType = result.headers.get('content-type');
+
+    return { buffer, fileName, fileType };
+}
+
+function parseChubUrl(str) {
+    const splitStr = str.split('/');
+    const length = splitStr.length;
+
+    if (length < 2) {
+        return null;
+    }
+
+    const domainIndex = splitStr.indexOf('chub.ai');
+    const lastTwo = domainIndex !== -1 ? splitStr.slice(domainIndex + 1) : splitStr;
+
+    const firstPart = lastTwo[0].toLowerCase();
+
+    if (firstPart === 'characters' || firstPart === 'lorebooks') {
+        const type = firstPart === 'characters' ? 'character' : 'lorebook';
+        const id = type === 'character' ? lastTwo.slice(1).join('/') : lastTwo.join('/');
+        return {
+            id: id,
+            type: type
+        };
+    } else if (length === 2) {
+        return {
+            id: lastTwo.join('/'),
+            type: 'character'
+        };
+    }
+
+    return null;
+}
 
 function importRisuSprites(data) {
     try {
