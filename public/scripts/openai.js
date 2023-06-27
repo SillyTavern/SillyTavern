@@ -35,6 +35,7 @@ import {
 } from "./PromptManager.js";
 
 import {
+    persona_description_positions,
     power_user,
 } from "./power-user.js";
 import {
@@ -515,6 +516,34 @@ function populateChatCompletion (prompts, chatCompletion, {bias, quietPrompt, ty
         else chatCompletion.insert(authorsNote, 'main')
     }
 
+    // Persona Description
+    if(power_user.persona_description) {
+        const personaDescription = Message.fromPrompt(prompts.get('personaDescription'));
+
+        try {
+            switch (power_user.persona_description_position) {
+                case persona_description_positions.BEFORE_CHAR:
+                    chatCompletion.insertAtStart(personaDescription, 'charDescription');
+                    break;
+                case persona_description_positions.AFTER_CHAR:
+                    chatCompletion.insertAtEnd(personaDescription, 'charDescription');
+                    break;
+                case persona_description_positions.TOP_AN:
+                    chatCompletion.insertAtStart(personaDescription, 'authorsNote');
+                    break;
+                case persona_description_positions.BOTTOM_AN:
+                    chatCompletion.insertAtEnd(personaDescription, 'authorsNote');
+                    break;
+            }
+        } catch (error) {
+            if (error instanceof IdentifierNotFoundError) {
+                // Error is acceptable in this context
+            } else {
+                throw error;
+            }
+        }
+    }
+
     // Decide whether dialogue examples should always be added
     if (power_user.pin_examples) {
         populateDialogueExamples(prompts, chatCompletion);
@@ -588,6 +617,11 @@ function prepareOpenAIMessages({
     // Authors Note
     const authorsNote = extensionPrompts['2_floating_prompt'];
     if (authorsNote && authorsNote.content) mappedPrompts.push({role: 'system', content: authorsNote.content, identifier: 'authorsNote'});
+
+    // Persona Description
+    if (power_user.persona_description) {
+        mappedPrompts.push({role: 'system', content: power_user.persona_description, identifier: 'personaDescription'});
+    }
 
     // Create prompt objects and substitute markers
     mappedPrompts.forEach(prompt => {
