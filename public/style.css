@@ -193,7 +193,7 @@ table.responsiveTable {
 }
 
 .text_warning {
-    color: var(--orangered);
+    color: rgb(220 173 16);
 }
 
 .text_danger {
@@ -5281,6 +5281,7 @@ body.waifuMode .zoomed_avatar {
         height: unset;
     }
 }
+
 
 /* Customize the Select2 container */
 .select2-container {
