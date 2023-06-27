@@ -3442,6 +3442,7 @@ const SECRET_KEYS = {
     POE: 'api_key_poe',
     NOVEL: 'api_key_novel',
     CLAUDE: 'api_key_claude',
+    DEEPL: 'deepl',
 }
 
 function migrateSecrets() {
@@ -3690,6 +3691,53 @@ app.post('/google_translate', jsonParser, async (request, response) => {
         console.log("Translation error: " + err.message);
         return response.sendStatus(500);
     });
+});
+
+app.post('/deepl_translate', jsonParser, async (request, response) => {
+    const key = readSecret(SECRET_KEYS.DEEPL);
+
+    if (!key) {
+        return response.sendStatus(401);
+    }
+
+    const text = request.body.text;
+    const lang = request.body.lang;
+
+    if (!text || !lang) {
+        return response.sendStatus(400);
+    }
+
+    console.log('Input text: ' + text);
+
+    const fetch = require('node-fetch').default;
+    const params = new URLSearchParams();
+    params.append('text', text);
+    params.append('target_lang', lang);
+
+    try {
+        const result = await fetch('https://api-free.deepl.com/v2/translate', {
+            method: 'POST',
+            body: params,
+            headers: {
+                'Accept': 'application/json',
+                'Authorization': `DeepL-Auth-Key ${key}`,
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            timeout: 0,
+        });
+
+        if (!result.ok) {
+            return response.sendStatus(result.status);
+        }
+
+        const json = await result.json();
+        console.log('Translated text: ' + json.translations[0].text);
+
+        return response.send(json.translations[0].text);
+    } catch (error) {
+        console.log("Translation error: " + error.message);
+        return response.sendStatus(500);
+    }
 });
 
 app.post('/novel_tts', jsonParser, async (request, response) => {

@@ -9,6 +9,7 @@ import {
     updateMessageBlock,
 } from "../../../script.js";
 import { extension_settings, getContext } from "../../extensions.js";
+import { secret_state, writeSecret } from "../../secrets.js";
 
 const autoModeOptions = {
     NONE: 'none',
@@ -134,6 +135,14 @@ const languageCodes = {
     'Zulu': 'zu',
 };
 
+const KEY_REQUIRED = ['deepl'];
+
+function showKeyButton() {
+    const providerRequiresKey = KEY_REQUIRED.includes(extension_settings.translate.provider);
+    $("#translate_key_button").toggle(providerRequiresKey);
+    $("#translate_key_button").toggleClass('success', Boolean(secret_state[extension_settings.translate.provider]));
+}
+
 function loadSettings() {
     for (const key in defaultSettings) {
         if (!extension_settings.translate.hasOwnProperty(key)) {
@@ -144,6 +153,7 @@ function loadSettings() {
     $(`#translation_provider option[value="${extension_settings.translate.provider}"]`).attr('selected', true);
     $(`#translation_target_language option[value="${extension_settings.translate.target_language}"]`).attr('selected', true);
     $(`#translation_auto_mode option[value="${extension_settings.translate.auto_mode}"]`).attr('selected', true);
+    showKeyButton();
 }
 
 async function translateImpersonate(text) {
@@ -186,18 +196,39 @@ async function translateProviderGoogle(text, lang) {
     throw new Error(response.statusText);
 }
 
+async function translateProviderDeepl(text, lang) {
+    if (!secret_state.deepl) {
+        throw new Error('No DeepL API key');
+    }
+
+    const response = await fetch('/deepl_translate', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({ text: text, lang: lang }),
+    });
+
+    if (response.ok) {
+        const result = await response.text();
+        return result;
+    }
+
+    throw new Error(response.statusText);
+}
+
 async function translate(text, lang) {
     try {
         switch (extension_settings.translate.provider) {
             case 'google':
                 return await translateProviderGoogle(text, lang);
+            case 'deepl':
+                return await translateProviderDeepl(text, lang);
             default:
                 console.error('Unknown translation provider', extension_settings.translate.provider);
                 return text;
         }
     } catch (error) {
         console.log(error);
-        toastr.error('Failed to translate message');
+        toastr.error(String(error), 'Failed to translate message');
     }
 }
 
@@ -331,9 +362,13 @@ jQuery(() => {
                     <option value="both">Translate both</option>
                 </select>
                 <label for="translation_provider">Provider</label>
-                <select id="translation_provider" name="provider">
-                    <option value="google">Google</option>
-                <select>
+                <div class="flex-container gap5px flexnowrap marginBot5">
+                    <select id="translation_provider" name="provider" class="margin0">
+                        <option value="google">Google</option>
+                        <option value="deepl">DeepL</option>
+                    <select>
+                    <div id="translate_key_button" class="menu_button fa-solid fa-key margin0"></div>
+                </div>
                 <label for="translation_target_language">Target Language</label>
                 <select id="translation_target_language" name="target_language"></select>
                 <div id="translation_clear" class="menu_button">
@@ -364,6 +399,7 @@ jQuery(() => {
     });
     $('#translation_provider').on('change', (event) => {
         extension_settings.translate.provider = event.target.value;
+        showKeyButton();
         saveSettingsDebounced();
     });
     $('#translation_target_language').on('change', (event) => {
@@ -371,6 +407,17 @@ jQuery(() => {
         saveSettingsDebounced();
     });
     $(document).on('click', '.mes_translate', onMessageTranslateClick);
+    $('#translate_key_button').on('click', async () => {
+        const optionText = $('#translation_provider option:selected').text();
+        const key = await callPopup(`<h3>${optionText} API Key</h3>`, 'input');
+
+        if (key == false) {
+            return;
+        }
+
+        await writeSecret(extension_settings.translate.provider, key);
+        toastr.success('API Key saved');
+    });
 
     loadSettings();
 
