@@ -281,7 +281,12 @@ function setupOpenAIPromptManager(openAiSettings) {
         containerIdentifier: 'completion_prompt_manager',
         listIdentifier: 'completion_prompt_manager_list',
         toggleDisabled: ['main'],
-        draggable: true
+        draggable: true,
+        defaultPrompts: {
+            main: default_main_prompt,
+            nsfw: default_nsfw_prompt,
+            jailbreak: default_jailbreak_prompt
+        }
     };
 
     promptManager.saveServiceSettings = () => {
