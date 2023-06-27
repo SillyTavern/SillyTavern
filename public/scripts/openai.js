@@ -593,9 +593,9 @@ function prepareOpenAIMessages({
 
     if (power_user.console_log_prompts) chatCompletion.enableLogging();
 
-    // Merge items to send that are managed by the prompt manager with items from other places in silly tavern
-    // While the position in this array matters for positioning items inside the chat completion, further elements
-    // may be added for later reference, as long as the initial order is not altered.
+    // Merge items to send, whose are managed by the prompt manager, with items from other places in silly tavern
+    // While the position in this array matters for positioning items inside the chat completion, elements
+    // may simply be appended for later reference, as long as the initial order is not altered.
     const mappedPrompts = [
         // Ordered prompts for which a marker should exist
         {role: 'system', content: formatWorldInfo(worldInfoBefore), identifier: 'worldInfoBefore'},
