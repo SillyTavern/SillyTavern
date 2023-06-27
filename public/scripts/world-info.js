@@ -250,7 +250,7 @@ function displayWorldEntries(name, data) {
             return;
         }
 
-        const existingCharLores = world_info.charLore.filter((e) => e.extraBooks.includes(name));
+        const existingCharLores = world_info.charLore?.filter((e) => e.extraBooks.includes(name));
         if (existingCharLores && existingCharLores.length > 0) {
             existingCharLores.forEach((charLore) => {
                 const tempCharLore = charLore.extraBooks.filter((e) => e !== name);
@@ -627,7 +627,7 @@ async function renameWorldInfo(name, data) {
     await saveWorldInfo(newName, data, true);
     await deleteWorldInfo(oldName);
 
-    const existingCharLores = world_info.charLore.filter((e) => e.extraBooks.includes(oldName));
+    const existingCharLores = world_info.charLore?.filter((e) => e.extraBooks.includes(oldName));
     if (existingCharLores && existingCharLores.length > 0) {
         existingCharLores.forEach((charLore) => {
             const tempCharLore = charLore.extraBooks.filter((e) => e !== oldName);
@@ -747,7 +747,7 @@ async function getCharacterLore() {
 
     // TODO: Maybe make the utility function not use the window context?
     const fileName = getCharaFilename(this_chid);
-    const extraCharLore = world_info.charLore.find((e) => e.name === fileName);
+    const extraCharLore = world_info.charLore?.find((e) => e.name === fileName);
     if (extraCharLore) {
         worldsToSearch = new Set([...worldsToSearch, ...extraCharLore.extraBooks]);
     }
@@ -1183,6 +1183,76 @@ function onWorldInfoChange(_, text) {
     saveSettingsDebounced();
 }
 
+export async function importWorldInfo(file) {
+    if (!file) {
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    try {
+        let jsonData;
+
+        if (file.name.endsWith('.png')) {
+            const buffer = new Uint8Array(await getFileBuffer(file));
+            jsonData = extractDataFromPng(buffer, 'naidata');
+        } else {
+            // File should be a JSON file
+            jsonData = await parseJsonFile(file);
+        }
+
+        if (jsonData === undefined || jsonData === null) {
+            toastr.error(`File is not valid: ${file.name}`);
+            return;
+        }
+
+        // Convert Novel Lorebook
+        if (jsonData.lorebookVersion !== undefined) {
+            console.log('Converting Novel Lorebook');
+            formData.append('convertedData', JSON.stringify(convertNovelLorebook(jsonData)));
+        }
+
+        // Convert Agnai Memory Book
+        if (jsonData.kind === 'memory') {
+            console.log('Converting Agnai Memory Book');
+            formData.append('convertedData', JSON.stringify(convertAgnaiMemoryBook(jsonData)));
+        }
+
+        // Convert Risu Lorebook
+        if (jsonData.type === 'risu') {
+            console.log('Converting Risu Lorebook');
+            formData.append('convertedData', JSON.stringify(convertRisuLorebook(jsonData)));
+        }
+    } catch (error) {
+        toastr.error(`Error parsing file: ${error}`);
+        return;
+    }
+
+    jQuery.ajax({
+        type: "POST",
+        url: "/importworldinfo",
+        data: formData,
+        beforeSend: () => { },
+        cache: false,
+        contentType: false,
+        processData: false,
+        success: async function (data) {
+            if (data.name) {
+                await updateWorldInfoList();
+
+                const newIndex = world_names.indexOf(data.name);
+                if (newIndex >= 0) {
+                    $("#world_editor_select").val(newIndex).trigger('change');
+                }
+
+                toastr.info(`World Info "${data.name}" imported successfully!`);
+            }
+        },
+        error: (jqXHR, exception) => { },
+    });
+}
+
 jQuery(() => {
 
     $(document).ready(function () {
@@ -1219,72 +1289,7 @@ jQuery(() => {
     $("#world_import_file").on("change", async function (e) {
         const file = e.target.files[0];
 
-        if (!file) {
-            return;
-        }
-
-        const formData = new FormData($("#form_world_import").get(0));
-
-        try {
-            let jsonData;
-
-            if (file.name.endsWith('.png')) {
-                const buffer = new Uint8Array(await getFileBuffer(file));
-                jsonData = extractDataFromPng(buffer, 'naidata');
-            } else {
-                // File should be a JSON file
-                jsonData = await parseJsonFile(file);
-            }
-
-            if (jsonData === undefined || jsonData === null) {
-                toastr.error(`File is not valid: ${file.name}`);
-                return;
-            }
-
-            // Convert Novel Lorebook
-            if (jsonData.lorebookVersion !== undefined) {
-                console.log('Converting Novel Lorebook');
-                formData.append('convertedData', JSON.stringify(convertNovelLorebook(jsonData)));
-            }
-
-            // Convert Agnai Memory Book
-            if (jsonData.kind === 'memory') {
-                console.log('Converting Agnai Memory Book');
-                formData.append('convertedData', JSON.stringify(convertAgnaiMemoryBook(jsonData)));
-            }
-
-            // Convert Risu Lorebook
-            if (jsonData.type === 'risu') {
-                console.log('Converting Risu Lorebook');
-                formData.append('convertedData', JSON.stringify(convertRisuLorebook(jsonData)));
-            }
-        } catch (error) {
-            toastr.error(`Error parsing file: ${error}`);
-            return;
-        }
-
-        jQuery.ajax({
-            type: "POST",
-            url: "/importworldinfo",
-            data: formData,
-            beforeSend: () => { },
-            cache: false,
-            contentType: false,
-            processData: false,
-            success: async function (data) {
-                if (data.name) {
-                    await updateWorldInfoList();
-
-                    const newIndex = world_names.indexOf(data.name);
-                    if (newIndex >= 0) {
-                        $("#world_editor_select").val(newIndex).trigger('change');
-                    }
-
-                    toastr.info(`World Info "${data.name}" imported successfully!`);
-                }
-            },
-            error: (jqXHR, exception) => { },
-        });
+        await importWorldInfo(file);
 
         // Will allow to select the same file twice in a row
         $("#form_world_import").trigger("reset");

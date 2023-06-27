@@ -12,6 +12,7 @@ import {
     eventSource,
     event_types,
     getCurrentChatId,
+    printCharacters,
     name1,
     name2,
 } from "../script.js";
@@ -107,6 +108,7 @@ let power_user = {
     chat_display: chat_styles.DEFAULT,
     sheld_width: sheld_width.DEFAULT,
     never_resize_avatars: false,
+    show_card_avatar_urls: false,
     play_message_sound: false,
     play_sound_unfocused: true,
     auto_save_msg_edits: false,
@@ -592,6 +594,7 @@ function loadPowerUserSettings(settings, data) {
     $("#play_message_sound").prop("checked", power_user.play_message_sound);
     $("#play_sound_unfocused").prop("checked", power_user.play_sound_unfocused);
     $("#never_resize_avatars").prop("checked", power_user.never_resize_avatars);
+    $("#show_card_avatar_urls").prop("checked", power_user.show_card_avatar_urls);
     $("#auto_save_msg_edits").prop("checked", power_user.auto_save_msg_edits);
     $("#allow_name1_display").prop("checked", power_user.allow_name1_display);
     $("#allow_name2_display").prop("checked", power_user.allow_name2_display);
@@ -1205,7 +1208,12 @@ $(document).ready(() => {
         power_user.never_resize_avatars = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
-
+    $("#show_card_avatar_urls").on('input', function () {
+        power_user.show_card_avatar_urls = !!$(this).prop('checked');
+        printCharacters();
+        saveSettingsDebounced();
+    });
+    
     $("#play_message_sound").on('input', function () {
         power_user.play_message_sound = !!$(this).prop('checked');
         saveSettingsDebounced();

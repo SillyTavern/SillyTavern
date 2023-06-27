@@ -1311,13 +1311,14 @@ select option:not(:checked) {
     margin: 0;
     flex: 1;
     border-radius: 7px;
+    height: auto;
 }
 
 #character_search_bar {
     margin: 0;
     flex: 1;
     /* padding-left: 0.75em; */
-    height: fit-content;
+    height: auto;
 }
 
 input[type=search]::-webkit-search-cancel-button {
@@ -1351,6 +1352,10 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 .ch_name {
     font-weight: bolder;
+}
+
+.ch_avatar_url {
+    float: right;
 }
 
 .character_select .avatar {

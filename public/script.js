@@ -32,6 +32,7 @@ import {
     importEmbeddedWorldInfo,
     checkEmbeddedWorld,
     setWorldInfoButtonClass,
+    importWorldInfo,
 } from "./scripts/world-info.js";
 
 import {
@@ -227,6 +228,7 @@ export {
     extension_prompt_types,
     updateVisibleDivs,
     mesForShowdownParse,
+    printCharacters,
 }
 
 // API OBJECT FOR EXTERNAL WIRING
@@ -805,6 +807,9 @@ async function printCharacters() {
         template.find('img').attr('src', this_avatar);
         template.find('.avatar').attr('title', item.avatar);
         template.find('.ch_name').text(item.name);
+        if (power_user.show_card_avatar_urls) {
+            template.find('.ch_avatar_url').text(item.avatar);
+        }
         template.find('.ch_fav_icon').css("display", 'none');
         template.toggleClass('is_fav', item.fav || item.fav == 'true');
         template.find('.ch_fav').val(item.fav);
@@ -7956,6 +7961,55 @@ $(document).ready(function () {
         console.debug('Label value OK, setting to the master input control', myText);
         $(masterElement).val(myValue).trigger('input');
         restoreCaretPosition($(this).get(0), caretPosition);
+    });
+
+    $('#external_import_button').on('click', async () => {
+        const html = `<h3>Enter the URL of the content to import</h3>
+        Supported sources:<br>
+        <ul class="justifyLeft">
+            <li>Chub characters (direct link or id)<br>Example: <tt>lorebooks/bartleby/example-lorebook</tt></li>
+            <li>Chub lorebooks (direct link or id)<br>Example: <tt>Anonymous/example-character</tt></li>
+            <li>More coming soon...</li>
+        <ul>`
+        const input = await callPopup(html, 'input');
+
+        if (!input) {
+            console.debug('Custom content import cancelled');
+            return;
+        }
+
+        const url = input.trim();
+        console.debug('Custom content import started', url);
+
+        const request = await fetch('/import_custom', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ url }),
+        });
+
+        if (!request.ok) {
+            toastr.info(request.statusText, 'Custom content import failed');
+            console.error('Custom content import failed', request.status, request.statusText);
+            return;
+        }
+
+        const data = await request.blob();
+        const customContentType = request.headers.get('X-Custom-Content-Type');
+        const fileName = request.headers.get('Content-Disposition').split('filename=')[1].replace(/"/g, '');
+        const file = new File([data], fileName, { type: data.type });
+
+        switch (customContentType) {
+            case 'character':
+                processDroppedFiles([file]);
+                break;
+            case 'lorebook':
+                await importWorldInfo(file);
+                break;
+            default:
+                toastr.warn('Unknown content type');
+                console.error('Unknown content type', customContentType);
+                break;
+        }
     });
 
     const $dropzone = $(document.body);

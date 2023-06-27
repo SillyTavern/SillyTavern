@@ -2262,7 +2262,10 @@
                                 </a>
                             </label>
                             <label for="never_resize_avatars"><input id="never_resize_avatars" type="checkbox" />
-                                <span data-i18n="Never Resize Avatars">Never Resize Avatars</span>
+                                <span data-i18n="Never resize avatars">Never resize avatars</span>
+                            </label>
+                            <label for="show_card_avatar_urls"><input id="show_card_avatar_urls" type="checkbox" />
+                                <span data-i18n="Show avatar filenames">Show avatar filenames</span>
                             </label>
 
                             <div class="inline-drawer wide100p flexFlowColumn">
@@ -2673,6 +2676,7 @@
                         <form id="form_character_search_form" action="javascript:void(null);">
                             <div id="rm_button_create" title="Create New Character" class="menu_button fa-solid fa-user-plus "></div>
                             <div id="character_import_button" title="Import Character from File" class="menu_button fa-solid fa-file-arrow-up faSmallFontSquareFix"></div>
+                            <div id="external_import_button" title="Import content from external URL" class="menu_button fa-solid fa-cloud-arrow-down faSmallFontSquareFix"></div>
                             <div id="rm_button_group_chats" title="Create New Chat Group" class="menu_button fa-solid fa-users-gear "></div>
                             <input id="character_search_bar" class="text_pole width100p" type="search" placeholder="Search..." maxlength="50" />
                             <select id="character_sort_order" title="Characters sorting order">
@@ -3151,7 +3155,7 @@
                 <img src="">
             </div>
             <div class="flex-container wide100pLess70px">
-                <div class="ch_name"></div>
+                <div class="wide100p"><span class="ch_name"></span> <i class="ch_avatar_url"></i></div>
                 <i class="ch_fav_icon fa-solid fa-star"></i>
                 <input class="ch_fav" value="" hidden />
                 <div class="ch_description"></div>
