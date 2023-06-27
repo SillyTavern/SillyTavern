@@ -767,11 +767,10 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
         let warningTitle = '';
 
         const tokenBudget = this.serviceSettings.openai_max_context - this.serviceSettings.openai_max_tokens;
-        const tokenThreshold = tokenBudget * 0.9;
-        if (this.tokenCache >= tokenThreshold &&
+        if (
             'chatHistory' === prompt.identifier) {
-            const warningThreshold = tokenBudget * 0.50;
-            const dangerThreshold = tokenBudget * 0.30;
+            const warningThreshold = tokenBudget * 0.60;
+            const dangerThreshold = tokenBudget * 0.35;
 
             if (tokens <= dangerThreshold) {
                 warningClass = 'fa-solid tooltip fa-triangle-exclamation text_danger';
