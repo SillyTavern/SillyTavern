@@ -942,6 +942,14 @@ function resetMovablePanels() {
     document.getElementById("WorldInfo").style.width = '';
     document.getElementById("WorldInfo").style.margin = '';
 
+    document.getElementById("floatingPrompt").style.top = '';
+    document.getElementById("floatingPrompt").style.left = '';
+    document.getElementById("floatingPrompt").style.right = '';
+    document.getElementById("floatingPrompt").style.bottom = '';
+    document.getElementById("floatingPrompt").style.height = '';
+    document.getElementById("floatingPrompt").style.width = '';
+    document.getElementById("floatingPrompt").style.margin = '';
+
     $('*[data-dragged="true"]').removeAttr('data-dragged');
     power_user.movingUIState = {}
     saveSettingsDebounced();
