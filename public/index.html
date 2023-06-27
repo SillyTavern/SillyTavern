@@ -1121,7 +1121,7 @@
                                             <input id="names_in_completion" type="checkbox" /><span data-i18n="Add names to chat history">Add character names to chat history</span>
                                         </label>
                                         <div class="toggle-description justifyLeft">
-                                            <span data-i18n="Adds character and user names to each message. May help the AI to understand the context. Only character and usernames with up to 64 letters or numbers are supported. No whitespaces or special characters.">May help the AI to understand the context. Only character and usernames with up to 64 letters or numbers are supported. No whitespaces or special characters.</span>
+                                            <span data-i18n="Helps the AI to understand the context better during group chats. Names may only contain letters or numbers.">Helps the AI to understand the context better during group chats. Names may only contain letters or numbers.</span>
                                         </div>
                                     </div>
                                     <div class="range-block">
@@ -3428,8 +3428,9 @@
                     </textarea>
                 </div>
                 <div id="completion_prompt_manager_popup_entry_form_footer" >
-                    <a id="completion_prompt_manager_popup_entry_form_close" class="fa-solid fa-close menu_button"></a>
-                    <a id="completion_prompt_manager_popup_entry_form_save" class="fa-solid fa-save menu_button" data-pm-prompt=""></a>
+                    <a id="completion_prompt_manager_popup_entry_form_close" title="close" class="fa-solid fa-close menu_button"></a>
+                    <a id="completion_prompt_manager_popup_entry_form_reset" title="reset" class="fa-solid fa-undo menu_button"></a>
+                    <a id="completion_prompt_manager_popup_entry_form_save" title="save" class="fa-solid fa-save menu_button" data-pm-prompt=""></a>
                 </div>
             </form>
         </div>

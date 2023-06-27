@@ -65,7 +65,12 @@ function PromptManagerModule() {
         listIdentifier: '',
         listItemTemplateIdentifier: '',
         toggleDisabled: [],
-        draggable: true
+        draggable: true,
+        defaultPrompts: {
+            main: '',
+            nsfw: '',
+            jailbreak: ''
+        }
     };
 
     this.serviceSettings = null;
@@ -83,6 +88,7 @@ function PromptManagerModule() {
     this.handleEdit = () => { };
     this.handleDetach = () => { };
     this.handleSavePrompt = () => { };
+    this.handleResetPrompt = () => { };
     this.handleNewPrompt = () => { };
     this.handleDeletePrompt = () => { };
     this.handleAppendPrompt = () => { };
@@ -149,6 +155,26 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
         this.hideEditForm();
         this.clearEditForm(prompt);
         this.saveServiceSettings().then(() => this.render());
+    }
+
+    // Reset prompt should it be a system prompt
+    this.handleResetPrompt = (event) => {
+        const promptId = event.target.dataset.pmPrompt;
+        const prompt = this.getPromptById(promptId);
+
+        switch (promptId) {
+            case 'main':
+                prompt.content = this.configuration.defaultPrompts.main;
+                break;
+            case 'nsfw':
+                prompt.content = this.configuration.defaultPrompts.nsfw;
+                break;
+            case 'jailbreak':
+                prompt.content = this.configuration.defaultPrompts.jailbreak;
+                break;
+        }
+
+        document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_prompt').value = prompt.content;
     }
 
     this.handleAppendPrompt = (event) => {
@@ -232,8 +258,9 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
         if (this.activeCharacter) this.render();
     });
 
-    // Prepare prompt edit form save and close button.
+    // Prepare prompt edit form buttons
     document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_save').addEventListener('click', this.handleSavePrompt);
+    document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_reset').addEventListener('click', this.handleResetPrompt);
     document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_close').addEventListener('click', () => {
         this.hideEditForm();
         this.clearEditForm();
