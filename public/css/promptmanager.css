@@ -89,7 +89,12 @@
     margin-top:1em;
 }
 
+#completion_prompt_manager_popup #completion_prompt_manager_popup_entry_form_footer #completion_prompt_manager_popup_entry_form_reset {
+    color: rgb(220 173 16);
+}
+
 #completion_prompt_manager_popup #completion_prompt_manager_popup_entry_form_footer #completion_prompt_manager_popup_entry_form_close,
+#completion_prompt_manager_popup #completion_prompt_manager_popup_entry_form_footer #completion_prompt_manager_popup_entry_form_reset,
 #completion_prompt_manager_popup #completion_prompt_manager_popup_entry_form_footer #completion_prompt_manager_popup_entry_form_save {
     font-size: 1.25em;
     padding: 0.5em;
