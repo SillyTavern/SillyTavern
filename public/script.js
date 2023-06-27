@@ -226,6 +226,7 @@ export {
     extension_prompt_types,
     updateVisibleDivs,
     mesForShowdownParse,
+    printCharacters,
 }
 
 // API OBJECT FOR EXTERNAL WIRING
@@ -804,6 +805,9 @@ async function printCharacters() {
         template.find('img').attr('src', this_avatar);
         template.find('.avatar').attr('title', item.avatar);
         template.find('.ch_name').text(item.name);
+        if (power_user.show_card_avatar_urls) {
+            template.find('.ch_avatar_url').text(item.avatar);
+        }
         template.find('.ch_fav_icon').css("display", 'none');
         template.toggleClass('is_fav', item.fav || item.fav == 'true');
         template.find('.ch_fav').val(item.fav);

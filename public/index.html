@@ -2262,9 +2262,12 @@
                                 </a>
                             </label>
                             <label for="never_resize_avatars"><input id="never_resize_avatars" type="checkbox" />
-                                <span data-i18n="Never Resize Avatars">Never Resize Avatars</span>
+                                <span data-i18n="Never resize avatars">Never resize avatars</span>
                             </label>
-
+                            <label for="show_card_avatar_urls"><input id="show_card_avatar_urls" type="checkbox" />
+                                <span data-i18n="Show avatar filenames">Show avatar filenames</span>
+                            </label>
+                            
                             <div class="inline-drawer wide100p flexFlowColumn">
                                 <div class="inline-drawer-toggle inline-drawer-header">
                                     <b>Auto-swipe</b>
@@ -3151,7 +3154,7 @@
                 <img src="">
             </div>
             <div class="flex-container wide100pLess70px">
-                <div class="ch_name"></div>
+                <div class="wide100p"><span class="ch_name"></span> <i class="ch_avatar_url"></i></div>
                 <i class="ch_fav_icon fa-solid fa-star"></i>
                 <input class="ch_fav" value="" hidden />
                 <div class="ch_description"></div>
