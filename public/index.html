@@ -2740,23 +2740,24 @@
 
         <div class="inline-drawer">
             <div class="inline-drawer-toggle inline-drawer-header">
-                <h4>
-                    AI Prompt Overrides
-                    <small>(Affects the generation)</small>
-                </h4>
+                <h4>Prompt Overrides <small>(For OpenAI/Claude APIs, and Instruct mode)</small></h4>
+
+
                 <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
             </div>
             <div class="inline-drawer-content">
+                <small>Insert {{original}} into either box to include the respective default prompt from system settings.</small>
                 <div>
-                    <h4>System Prompt</h4>
-                    <textarea id="system_prompt_textarea" name="system_prompt" placeholder="(Overrides the main prompt for Chat Completion and/or system prompt for Instruct Mode if not empty. Use {{original}} macro to insert the original prompt.)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="20000"></textarea>
+                    <h4>Main Prompt</h4>
+                    <textarea id="system_prompt_textarea" name="system_prompt" placeholder="Any contents here will replace the default Main Prompt used for this character.&#10;(v2 spec: system_prompt)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="20000"></textarea>
                 </div>
                 <div>
-                    <h4>Post History Instructions</h4>
-                    <textarea id="post_history_instructions_textarea" name="post_history_instructions" placeholder="(Overrides the default jailbreak for Chat Completion if not empty. Use {{original}} macro to insert the original jailbreak.)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="20000"></textarea>
+                    <h4>Jailbreak</h4>
+                    <textarea id="post_history_instructions_textarea" name="post_history_instructions" placeholder="Any contents here will replace the default Jailbreak Prompt used for this character.&#10;(v2 spec: post_history_instructions)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="20000"></textarea>
                 </div>
             </div>
         </div>
+        <hr>
         <div class="inline-drawer">
             <div class="inline-drawer-toggle inline-drawer-header">
                 <h4>
@@ -2766,25 +2767,30 @@
                 <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
             </div>
             <div class="inline-drawer-content">
-                <div>
-                    <h4>Creator's Name</h4>
-                    <textarea id="creator_textarea" name="creator" placeholder="(Botmaker's name / Contact info)" form="form_create" class="text_pole" autocomplete="off" rows="1" maxlength="2000"></textarea>
+                <small>Everything here is optional</small>
+                <div class="flex-container flexnowrap">
+                    <div class="flex1">
+                        <h4>Created by</h4>
+                        <textarea id="creator_textarea" name="creator" placeholder="(Botmaker's name / Contact info)" form="form_create" class="text_pole" autocomplete="off" rows="2" maxlength="2000"></textarea>
+                    </div>
+                    <div class="flex1">
+                        <h4>Character Version</h4>
+                        <textarea id="character_version_textarea" name="character_version" placeholder="(If you want to track character versions)" form="form_create" class="text_pole" autocomplete="off" rows="2" maxlength="200"></textarea>
+                    </div>
                 </div>
-                <div>
-                    <h4>Creator's Notes</h4>
-                    <textarea id="creator_notes_textarea" name="creator_notes" placeholder="(Displays in the characters list. Describe the bot to the user, list the chat models it has been tested on, and any other useful tips)" form="form_create" class="text_pole" autocomplete="off" rows="2" maxlength="20000"></textarea>
-                </div>
-                <div>
-                    <h4>Creator's Tags</h4>
-                    <textarea id="tags_textarea" name="tags" placeholder="(List of freeform comma-separated tags)" form="form_create" class="text_pole" autocomplete="off" rows="1" maxlength="2000"></textarea>
-                </div>
-                <div>
-                    <h4>Character Version</h4>
-                    <textarea id="character_version_textarea" name="character_version" placeholder="(Optional string to track character versions)" form="form_create" class="text_pole" autocomplete="off" rows="1" maxlength="2000"></textarea>
+                <div class="flex-container flexnowrap">
+                    <div class="flex1">
+                        <h4>Creator's Notes</h4>
+                        <textarea id="creator_notes_textarea" name="creator_notes" placeholder="(Describe the bot, give use tips, or list the chat models it has been tested on. This will be displayed in the character list.)" form="form_create" class="text_pole" autocomplete="off" rows="4" maxlength="20000"></textarea>
+                    </div>
+                    <div class="flex1">
+                        <h4>Tags to Embed</h4>
+                        <textarea id="tags_textarea" name="tags" placeholder="(Write a comma-separated list of tags)" form="form_create" class="text_pole" autocomplete="off" rows="4" maxlength="2000"></textarea>
+                    </div>
                 </div>
             </div>
         </div>
-
+        <hr>
         <div id="personality_div">
             <h4>
                 <span data-i18n="Personality summary">Personality summary</span>

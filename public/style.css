@@ -4452,7 +4452,8 @@ body.waifuMode .zoomed_avatar {
     }
 
     .world_entry_thin_controls,
-    #persona-management-block {
+    #persona-management-block,
+    #character_popup .flex-container {
         flex-direction: column;
     }
 
