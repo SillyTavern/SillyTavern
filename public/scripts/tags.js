@@ -5,6 +5,7 @@ import {
     callPopup,
     menu_type,
     updateVisibleDivs,
+    getCharacters,
 } from "../script.js";
 
 import { selected_group } from "./group-chats.js";
@@ -202,24 +203,42 @@ function selectTag(event, ui, listSelector) {
     return false;
 }
 
-function importTags(imported_char) {
-    //Ignore the tags ROOT and TAVERN
+function getExistingTags(new_tags) {
+    let existing_tags = [];
+    for (let tag of new_tags) {
+        if (tags.find(t => t.name === tag)) {
+            existing_tags.push(tag);
+        }
+    }
+    return existing_tags
+}
+
+
+async function importTags(imported_char) {
     let imported_tags = imported_char.tags.filter(t => t !== "ROOT" && t !== "TAVERN");
-    for (let tagName of imported_tags) {
+    let existingTags = await getExistingTags(imported_tags);
+    let newTags = imported_tags.filter(t => !existingTags.includes(t));
+    let selected_tags = "";
+    if(newTags.length === 0) {
+        await callPopup(`<h3>Importing Tags</h3><p>${existingTags.length} exisiting tags have been found.</p>`, 'text'); 
+    } else {
+        selected_tags = await callPopup(`<h3>Importing Tags</h3><p>${existingTags.length} exisiting tags have been found.</p><p>The following ${newTags.length} new tags will be imported.</p>`, 'input', newTags.join(', '));
+    }
+    selected_tags = existingTags.concat(selected_tags.split(', '));
+    selected_tags = selected_tags.filter(t => t !== "");
+    for (let tagName of selected_tags) {
         let tag = tags.find(t => t.name === tagName);
 
-        // create new tag if it doesn't exist
         if (!tag) {
             tag = createNewTag(tagName);
         }
 
-        // add tag to the UI and internal map
-        //appendTagToList(listSelector, tag, { removable: true });
         addTagToMap(tag.id);
         tag_map[imported_char.avatar].push(tag.id);
     };
     saveSettingsDebounced();
     printTags();
+    getCharacters();
 
     // need to return false to keep the input clear
     return false;

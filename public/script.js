@@ -6319,7 +6319,7 @@ function importCharacter(file) {
                     let currentContext = getContext();
                     let avatarFileName = `${data.file_name}.png`;
                     let importedCharacter = currentContext.characters.find(character => character.avatar === avatarFileName);
-                    importTags(importedCharacter);
+                    await importTags(importedCharacter);
                 }
                 $("#rm_info_block").transition({ opacity: 1, duration: 1000 });
             }
