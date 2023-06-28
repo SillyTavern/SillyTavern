@@ -5521,11 +5521,12 @@ function openCharacterWorldPopup() {
         return;
     }
 
-    function onSelectCharacterWorld() {
+    async function onSelectCharacterWorld() {
         const value = $('.character_world_info_selector').find('option:selected').val();
         const worldIndex = value !== '' ? Number(value) : NaN;
         const name = !isNaN(worldIndex) ? world_names[worldIndex] : '';
 
+        const previousValue = $('#character_world').val();
         $('#character_world').val(name);
 
         console.debug('Character world selected:', name);
@@ -5533,7 +5534,23 @@ function openCharacterWorldPopup() {
         if (menu_type == 'create') {
             create_save.world = name;
         } else {
-            createOrEditCharacter();
+            if (previousValue && !name) {
+                try {
+                    // Dirty hack to remove embedded lorebook from character JSON data.
+                    const data = JSON.parse($('#character_json_data').val());
+
+                    if (data?.data?.character_book) {
+                        data.data.character_book = undefined;
+                    }
+
+                    $('#character_json_data').val(JSON.stringify(data));
+                    toastr.info('Embedded lorebook will be removed from this character.');
+                } catch {
+                    console.error('Failed to parse character JSON data.');
+                }
+            }
+
+            await createOrEditCharacter();
         }
 
         setWorldInfoButtonClass(undefined, !!value);
