@@ -4249,7 +4249,8 @@ body.no-blur #character_popup,
 body.no-blur #world_popup,
 body.no-blur #dialogue_popup,
 body.no-blur #select_chat_popup,
-body.no-blur .drawer-content {
+body.no-blur .drawer-content,
+body.no-blur .select2-results__options {
     background-color: black !important;
 }
 
