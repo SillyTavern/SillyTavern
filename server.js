@@ -822,7 +822,6 @@ function charaFormatData(data) {
     // This is supposed to save all the foreign keys that ST doesn't care about
     const _ = require('lodash');
     const char = tryParse(data.json_data) || {};
-    console.log(data.tags);
 
     // This function uses _.cond() to create a series of conditional checks that return the desired output based on the input data.
     // It checks if data.alternate_greetings is an array, a string, or neither, and acts accordingly.
@@ -1865,7 +1864,6 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                     charaWrite(uploadPath, char, png_name, response, { file_name: png_name });
                 } else if (jsonData.name !== undefined) {
                     console.log('Found a v1 character file.');
-                    console.log(jsonData);
                     let char = {
                         "name": jsonData.name,
                         "description": jsonData.description ?? '',
