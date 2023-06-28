@@ -2546,7 +2546,7 @@ input[type="range"]::-webkit-slider-thumb {
 
 #character_popup {
     display: none;
-    background-color: var(--black30a);
+    background-color: var(--SmartThemeBlurTintColor);
     backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)*2));
     -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)*2));
 
