@@ -250,16 +250,18 @@ function displayWorldEntries(name, data) {
             return;
         }
 
-        const existingCharLores = world_info.charLore?.filter((e) => e.extraBooks.includes(name));
-        if (existingCharLores && existingCharLores.length > 0) {
-            existingCharLores.forEach((charLore) => {
-                const tempCharLore = charLore.extraBooks.filter((e) => e !== name);
-                if (tempCharLore.length === 0) {
-                    world_info.charLore.splice(charLore, 1);
-                } else {
-                    charLore.extraBooks = tempCharLore;
+        if (world_info.charLore) {
+            world_info.charLore.forEach((charLore, index) => {
+                if (charLore.extraBooks?.includes(name)) {
+                    const tempCharLore = charLore.extraBooks.filter((e) => e !== name);
+                    if (tempCharLore.length === 0) {
+                        world_info.charLore.splice(index, 1);
+                    } else {
+                        charLore.extraBooks = tempCharLore;
+                    }
                 }
             });
+
             saveSettingsDebounced();
         }
 
