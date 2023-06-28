@@ -14,6 +14,8 @@ import {
     getCurrentChatId,
     name1,
     name2,
+    replaceCurrentChat,
+    setCharacterId
 } from "../script.js";
 import { favsToHotswap } from "./RossAscends-mods.js";
 import {
@@ -929,6 +931,14 @@ function doNewChat() {
     }, 1);
 }
 
+function doRandomChat() {
+    setCharacterId(Math.floor(Math.random() * characters.length));
+    setTimeout(() => {
+        replaceCurrentChat();
+    }, 1);
+
+}
+
 function doDelMode() {
     setTimeout(() => {
         $("#option_delete_mes").trigger('click')
@@ -1326,5 +1336,6 @@ $(document).ready(() => {
 
     registerSlashCommand('vn', toggleWaifu, ['vn'], ' – swaps Visual Novel Mode On/Off', false, true);
     registerSlashCommand('newchat', doNewChat, ['newchat'], ' – start a new chat with current character', true, true);
+    registerSlashCommand('random', doRandomChat, ['random'], ' – start a new chat with a random character', true, true);
     registerSlashCommand('delmode', doDelMode, ['delmode'], ' – enter message deletion mode', true, true);
 });
