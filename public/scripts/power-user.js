@@ -21,6 +21,7 @@ import {
 import { favsToHotswap, isMobile } from "./RossAscends-mods.js";
 import {
     groups,
+    resetSelectedGroup,
     selected_group,
 } from "./group-chats.js";
 
@@ -994,6 +995,7 @@ function doNewChat() {
 }
 
 function doRandomChat() {
+    resetSelectedGroup();
     setCharacterId(Math.floor(Math.random() * characters.length));
     setTimeout(() => {
         replaceCurrentChat();
