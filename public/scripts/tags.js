@@ -203,8 +203,9 @@ function selectTag(event, ui, listSelector) {
 }
 
 function importTags(imported_char) {
-    
-    for (let tagName of imported_char.data.tags) {
+    //Ignore the tags ROOT and TAVERN
+    let imported_tags = imported_char.tags.filter(t => t !== "ROOT" && t !== "TAVERN");
+    for (let tagName of imported_tags) {
         let tag = tags.find(t => t.name === tagName);
 
         // create new tag if it doesn't exist
