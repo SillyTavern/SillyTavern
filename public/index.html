@@ -2659,7 +2659,9 @@
                             <div name="Unadded Char List" class="flex-container flexFlowColumn overflowYAuto flex1">
                                 <div id="rm_group_add_members_header">
                                     <input id="rm_group_filter" class="text_pole margin0" type="search" placeholder="Filter..." maxlength="100" />
-                                    <div id="group_fav_filter" class="menu_button fa-solid fa-ranking-star margin0" title="Show only favorites"></div>
+                                </div>
+                                <div class="rm_tag_controls">
+                                    <div class="tags rm_tag_filter"></div>
                                 </div>
                                 <div id="rm_group_add_members" class="overflowYAuto flex-container"></div>
                             </div>
@@ -2695,7 +2697,7 @@
                             </select>
                         </form>
                         <div class="rm_tag_controls">
-                            <div id="rm_tag_filter" class="tags"></div>
+                            <div class="tags rm_tag_filter"></div>
                         </div>
                     </div>
                     <div id="rm_print_characters_block"></div>
@@ -3265,7 +3267,11 @@
             <div class="avatar">
                 <img alt="Avatar" src="" />
             </div>
-            <div class="ch_name"></div>
+            <div class="group_member_name">
+                <div class="ch_name"></div>
+                <div class="tags tags_inline"></div>
+            </div>
+            <input class="ch_fav" value="" hidden />
             <div class="group_member_icon">
                 <div title="Temporarily disable automatic replies from this character" data-action="disable" class="right_menu_button fa-solid fa-lg fa-comment-slash"></div>
                 <div title="Enable automatic replies from this character" data-action="enable" class="right_menu_button fa-solid fa-lg fa-comment-slash"></div>

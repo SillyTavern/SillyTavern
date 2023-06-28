@@ -142,11 +142,12 @@ import {
     tag_map,
     tags,
     loadTagsSettings,
-    printTags,
+    printTagFilters,
     getTagsList,
     appendTagToList,
     createTagMapFromList,
     renameTagKey,
+    tag_filter_types,
 } from "./scripts/tags.js";
 import {
     SECRET_KEYS,
@@ -832,7 +833,8 @@ async function printCharacters() {
         $("#rm_print_characters_block").append(template);
     });
 
-    printTags();
+    printTagFilters(tag_filter_types.character);
+    printTagFilters(tag_filter_types.group_member);
     printGroups();
     sortCharactersList();
     favsToHotswap();
