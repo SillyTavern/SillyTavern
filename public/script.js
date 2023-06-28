@@ -6303,6 +6303,7 @@ function importCharacter(file) {
         processData: false,
         success: async function (data) {
             if (data.file_name !== undefined) {
+                $('#character_search_bar').val('').trigger('input');
                 $("#rm_info_block").transition({ opacity: 0, duration: 0 });
                 var $prev_img = $("#avatar_div_div").clone();
                 $prev_img
