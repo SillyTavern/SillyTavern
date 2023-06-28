@@ -31,7 +31,32 @@ async function downloadCharacter(fullPath) {
 
 // Function to filter out topics like "ROOT" and "Tavern"
 function filterTopics(topics) {
-    return topics.filter(topic => topic !== "ROOT" && topic !== "Tavern");
+    return topics.filter(topic => topic !== "ROOT" && topic !== "TAVERN");
+}
+
+function addTagsToChar(character, tagsToAdd) {
+    for (let add of tagsToAdd) {
+
+        let tagName = ui.item.value;
+        let tag = tags.find(t => t.name === tagName);
+
+        // create new tag if it doesn't exist
+        if (!tag) {
+            tag = createNewTag(tagName);
+        }
+
+        // add tag to the UI and internal map
+        appendTagToList(listSelector, tag, { removable: true });
+        appendTagToList(getInlineListSelector(), tag, { removable: false });
+        addTagToMap(tag.id);
+    }
+
+
+    saveSettingsDebounced();
+    printTags();
+
+    // need to return false to keep the input clear
+    return false;
 }
 
 // Function to execute on button click
@@ -47,15 +72,22 @@ async function onButtonClick() {
                 //Check if character.data.description and character.scenerio are in downloadedCharacter.description
                 const downloadDesc = downloadedCharacter.description.replace("\"", "");
                 const isPersonalityMatch = character.personality.includes(downloadedCharacter.title);
+                const isDescriptionMatch = character.data.description.includes(downloadedCharacter.description);
+                const isScenarioMatch = character.scenario.includes(downloadedCharacter.definition);
+                const isGreetingMatch = character.data.first_mes.includes(downloadedCharacter.greeting);
+
                 console.log(downloadedCharacter.title);
                 console.log(character.personality);
                 //const isTaglineMatch = character.tagline === downloadedCharacter.tagline;
                 ///const isTopicsMatch = JSON.stringify(character.topics.sort()) === JSON.stringify(downloadedCharacter.topics.sort());
 
-                if (isPersonalityMatch) {
+                if (isPersonalityMatch || isDescriptionMatch || isScenarioMatch || isGreetingMatch) {
                     console.log(`Character ${character.name} matches.`);
+
                     let tags = filterTopics(searchedCharacter.topics);
-                    applyTagsOnCharacterSelect(character, tags);
+                    console.log(tags);
+                    //applyTagsOnCharacterSelect(character, tags);
+                    
 
                 } else {
                     console.log(`Character ${character.name} does not match.`);
