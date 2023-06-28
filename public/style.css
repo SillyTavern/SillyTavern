@@ -4250,7 +4250,8 @@ body.no-blur #character_popup,
 body.no-blur #world_popup,
 body.no-blur #dialogue_popup,
 body.no-blur #select_chat_popup,
-body.no-blur .drawer-content {
+body.no-blur .drawer-content,
+body.no-blur .select2-results__options {
     background-color: black !important;
 }
 
@@ -4870,6 +4871,10 @@ body.waifuMode .zoomed_avatar {
     padding: 3px 5px;
 }
 
+.select2-container.select2-container--focus .select2-selection--multiple {
+    border: 1px solid var(--white30a);
+}
+
 .select2-container .select2-selection--multiple .select2-selection__choice {
     border-radius: 5px;
     border-style: solid;
@@ -4916,6 +4921,10 @@ body.waifuMode .zoomed_avatar {
     border: 1px solid var(--white30a);
     background-color: var(--SmartThemeBlurTintColor);
     border-radius: 2px;
+}
+
+.select2-container .select2-selection--multiple .select2-selection__choice__remove {
+    color: var(--SmartThemeBodyColor);
 }
 
 /* Add the custom checkbox checkmark */
