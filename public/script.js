@@ -6312,8 +6312,6 @@ function importCharacter(file) {
                 if (this_chid != undefined && this_chid != "invalid-safety-id") {
                     oldSelectedChar = characters[this_chid].avatar;
                 }
-                console.log("importing tags");
-                console.log(data);
 
                 await getCharacters();
                 select_rm_info(`char_import`, data.file_name, oldSelectedChar);
