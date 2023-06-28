@@ -271,6 +271,14 @@ jQuery(function () {
             placeholder: 'Select Horde models',
             allowClear: true,
             closeOnSelect: false,
+            templateSelection: function(data) {
+                // Customize the pillbox text by shortening the full text
+                return data.id;
+            },
+            templateResult: function(data) {
+                // Return the full text for the dropdown
+                return data.text;
+            },
         });
     }
 })
