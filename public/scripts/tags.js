@@ -390,32 +390,6 @@ export function applyTagsOnCharacterSelect() {
     }
 }
 
-export function applyTagsOnImport() {
-    //clearTagsFilter();
-    const chid = Number($(this).attr('chid'));
-    const key = characters[chid].avatar;
-    const tags = getTagsList(key);
-
-    $("#tagList").empty();
-
-    for (const tag of tags) {
-        appendTagToList("#tagList", tag, { removable: true });
-    }
-}
-
-// export function applyTagsOnCharacterSelect(character, tags) {
-//     //clearTagsFilter();
-//     const chid = character.id;
-//     const key = characters[chid].avatar;
-//     const tags = getTagsList(key);
-
-//     $("#tagList").empty();
-
-//     for (const tag of tags) {
-//         appendTagToList("#tagList", tag, { removable: true });
-//     }
-// }
-
 function applyTagsOnGroupSelect() {
     //clearTagsFilter();
     const key = $(this).attr('grid');
