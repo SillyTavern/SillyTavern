@@ -161,7 +161,7 @@ async function visualNovelSetCharacterSprites(container, name, expression) {
             template.attr('data-avatar', avatar);
             template.find('.drag-grabber').attr('id', `expression-${avatar}header`);
             $('#visual-novel-wrapper').append(template);
-            dragElement(template[0]);
+            dragElement($(template[0]));
             template.toggleClass('hidden', noSprites);
             setImage(template.find('img'), defaultSpritePath || '');
             const fadeInPromise = new Promise(resolve => {
