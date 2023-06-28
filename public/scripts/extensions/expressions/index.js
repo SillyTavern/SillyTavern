@@ -533,6 +533,11 @@ function drawSpritesList(character, labels, sprites) {
     $('.expression_settings').show();
     $('#image_list').empty();
     $('#image_list').data('name', character);
+
+    if (!Array.isArray(labels)) {
+        return [];
+    }
+
     labels.sort().forEach((item) => {
         const sprite = sprites.find(x => x.label == item);
 

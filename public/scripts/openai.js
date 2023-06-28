@@ -990,8 +990,11 @@ function loadOpenAISettings(data, settings) {
 
     $('#stream_toggle').prop('checked', oai_settings.stream_openai);
 
+    $('#model_openai_select').val(oai_settings.openai_model);
     $(`#model_openai_select option[value="${oai_settings.openai_model}"`).attr('selected', true);
+    $('#model_claude_select').val(oai_settings.claude_model);
     $(`#model_claude_select option[value="${oai_settings.claude_model}"`).attr('selected', true);
+    $('#model_windowai_select').val(oai_settings.windowai_model);
     $(`#model_windowai_select option[value="${oai_settings.windowai_model}"`).attr('selected', true);
     $('#openai_max_context').val(oai_settings.openai_max_context);
     $('#openai_max_context_counter').text(`${oai_settings.openai_max_context}`);
