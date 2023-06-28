@@ -4650,7 +4650,7 @@ function selectKoboldGuiPreset() {
 
 async function saveSettings(type) {
     //console.log('Entering settings with name1 = '+name1);
-    eventSource.emit(event_types.SETTINGS_UPDATED);
+
     return jQuery.ajax({
         type: "POST",
         url: "/savesettings",
@@ -4698,6 +4698,7 @@ async function saveSettings(type) {
         //processData: false,
         success: function (data) {
             //online_status = data.result;
+            eventSource.emit(event_types.SETTINGS_UPDATED);
             if (type == "change_name") {
                 clearChat();
                 printMessages();
