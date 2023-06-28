@@ -481,6 +481,7 @@ export function dragElement(elmnt) {
     var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     var height, width, top, left;
     var elmntName = elmnt.attr('id');
+    console.debug(`init drag for ${elmntName}`)
     const elmntNameEscaped = $.escapeSelector(elmntName);
     const elmntHeader = $(`#${elmntNameEscaped}header`);
     if (elmntHeader.length) {
@@ -498,10 +499,13 @@ export function dragElement(elmnt) {
             || Number((String(target.height).replace('px', ''))) < 50
             || Number((String(target.width).replace('px', ''))) < 50
             || isMobile() === true
-        ) { return }
+        ) {
+            console.debug('aborting mutator')
+            return
+        }
 
         const style = getComputedStyle(target);
-        console.log(style.top, style.left)
+        //console.log(style.top, style.left)
         height = target.offsetHeight;
         width = target.offsetWidth;
         top = parseInt(style.top);
@@ -514,6 +518,7 @@ export function dragElement(elmnt) {
                         left=${left}`); */
 
         if (!power_user.movingUIState[elmntName]) {
+            console.debug(`adding config property for ${elmntName}`)
             power_user.movingUIState[elmntName] = {};
         }
 
@@ -525,12 +530,13 @@ export function dragElement(elmnt) {
         power_user.movingUIState[elmntName].bottom = 'unset';
         power_user.movingUIState[elmntName].margin = 'unset';
         saveSettingsDebounced();
-        saveSettingsDebounced();
+
 
 
         // Check if the element header exists and set the listener on the grabber
         if (elmntHeader.length) {
             elmntHeader.off('mousedown').on('mousedown', (e) => {
+                console.debug('listener started from header')
                 dragMouseDown(e);
             });
         } else {
@@ -541,6 +547,7 @@ export function dragElement(elmnt) {
     observer.observe(elmnt.get(0), { attributes: true, attributeFilter: ['style'] });
 
     function dragMouseDown(e) {
+
         if (e) {
             e.preventDefault();
             pos3 = e.clientX; //mouse X at click
@@ -615,6 +622,7 @@ export function dragElement(elmnt) {
     }
 
     function closeDragElement() {
+        console.debug('drag finished')
         $(document).off('mouseup', closeDragElement);
         $(document).off('mousemove', elementDrag);
         $("body").css("overflow", "");
@@ -630,7 +638,9 @@ $("document").ready(function () {
 
     // initial status check
     setTimeout(() => {
-        if (isMobile === false) {
+
+        if (isMobile() === false) {
+            console.debug('START MOVING UI')
             dragElement($("#sheld"));
             dragElement($("#left-nav-panel"));
             dragElement($("#right-nav-panel"));
