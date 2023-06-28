@@ -752,6 +752,7 @@ function convertToV2(char) {
         creator_notes: char.creatorcomment,
         talkativeness: char.talkativeness,
         fav: char.fav,
+        creator: char.creator,
     });
 
     result.chat = char.chat;
@@ -1790,7 +1791,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                     let char = {
                         "name": jsonData.name,
                         "description": jsonData.description ?? '',
-                        "creatorcomment": jsonData.creatorcomment ?? '',
+                        "creatorcomment": jsonData.creatorcomment ?? jsonData.creator_notes ?? '',
                         "personality": jsonData.personality ?? '',
                         "first_mes": jsonData.first_mes ?? '',
                         "avatar": 'none',
@@ -1798,7 +1799,8 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                         "mes_example": jsonData.mes_example ?? '',
                         "scenario": jsonData.scenario ?? '',
                         "create_date": humanizedISO8601DateTime(),
-                        "talkativeness": jsonData.talkativeness ?? 0.5
+                        "talkativeness": jsonData.talkativeness ?? 0.5,
+                        "creator": jsonData.creator ?? '',
                     };
                     char = convertToV2(char);
                     char = JSON.stringify(char);
@@ -1811,7 +1813,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                     let char = {
                         "name": jsonData.char_name,
                         "description": jsonData.char_persona ?? '',
-                        "creatorcomment": '',
+                        "creatorcomment": jsonData.creatorcomment ?? jsonData.creator_notes ?? '',
                         "personality": '',
                         "first_mes": jsonData.char_greeting ?? '',
                         "avatar": 'none',
@@ -1819,7 +1821,8 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                         "mes_example": jsonData.example_dialogue ?? '',
                         "scenario": jsonData.world_scenario ?? '',
                         "create_date": humanizedISO8601DateTime(),
-                        "talkativeness": jsonData.talkativeness ?? 0.5
+                        "talkativeness": jsonData.talkativeness ?? 0.5,
+                        "creator": jsonData.creator ?? '',
                     };
                     char = convertToV2(char);
                     char = JSON.stringify(char);
@@ -1858,10 +1861,11 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                     charaWrite(uploadPath, char, png_name, response, { file_name: png_name });
                 } else if (jsonData.name !== undefined) {
                     console.log('Found a v1 character file.');
+                    console.log(jsonData);
                     let char = {
                         "name": jsonData.name,
                         "description": jsonData.description ?? '',
-                        "creatorcomment": jsonData.creatorcomment ?? '',
+                        "creatorcomment": jsonData.creatorcomment ?? jsonData.creator_notes ?? '',
                         "personality": jsonData.personality ?? '',
                         "first_mes": jsonData.first_mes ?? '',
                         "avatar": 'none',
@@ -1869,7 +1873,8 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                         "mes_example": jsonData.mes_example ?? '',
                         "scenario": jsonData.scenario ?? '',
                         "create_date": humanizedISO8601DateTime(),
-                        "talkativeness": jsonData.talkativeness ?? 0.5
+                        "talkativeness": jsonData.talkativeness ?? 0.5,
+                        "creator": jsonData.creator ?? '',
                     };
                     char = convertToV2(char);
                     char = JSON.stringify(char);
