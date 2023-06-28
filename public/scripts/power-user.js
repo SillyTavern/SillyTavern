@@ -12,12 +12,13 @@ import {
     eventSource,
     event_types,
     getCurrentChatId,
+    printCharacters,
     name1,
     name2,
     replaceCurrentChat,
     setCharacterId
 } from "../script.js";
-import { favsToHotswap } from "./RossAscends-mods.js";
+import { favsToHotswap, isMobile } from "./RossAscends-mods.js";
 import {
     groups,
     selected_group,
@@ -27,6 +28,7 @@ import { registerSlashCommand } from "./slash-commands.js";
 
 export {
     loadPowerUserSettings,
+    loadMovingUIState,
     collapseNewlines,
     playMessageSound,
     sortGroupMembers,
@@ -77,6 +79,13 @@ const send_on_enter_options = {
     ENABLED: 1,
 }
 
+export const persona_description_positions = {
+    BEFORE_CHAR: 0,
+    AFTER_CHAR: 1,
+    TOP_AN: 2,
+    BOTTOM_AN: 3,
+}
+
 let power_user = {
     tokenizer: tokenizers.CLASSIC,
     token_padding: 64,
@@ -101,6 +110,7 @@ let power_user = {
     chat_display: chat_styles.DEFAULT,
     sheld_width: sheld_width.DEFAULT,
     never_resize_avatars: false,
+    show_card_avatar_urls: false,
     play_message_sound: false,
     play_sound_unfocused: true,
     auto_save_msg_edits: false,
@@ -122,6 +132,7 @@ let power_user = {
 
     waifuMode: false,
     movingUI: false,
+    movingUIState: {},
     noShadows: false,
     theme: 'Default (Dark) 1.7.1',
 
@@ -160,6 +171,10 @@ let power_user = {
 
     personas: {},
     default_persona: null,
+    persona_descriptions: {},
+
+    persona_description: '',
+    persona_description_position: persona_description_positions.BEFORE_CHAR,
 };
 
 let themes = [];
@@ -279,9 +294,15 @@ function toggleWaifu() {
 }
 
 function switchWaifuMode() {
-    //console.log(`switching waifu to ${power_user.waifuMode}`);
     $("body").toggleClass("waifuMode", power_user.waifuMode);
     $("#waifuMode").prop("checked", power_user.waifuMode);
+    if (isMobile() && !$('body').hasClass('waifuMode')) {
+        console.debug('saw mobile regular mode, removing ZoomedAvatars');
+        if ($('.zoomed_avatar[forChar]').length) {
+            $('.zoomed_avatar[forChar]').remove();
+        }
+        return;
+    }
     scrollChatToBottom();
 }
 
@@ -575,6 +596,7 @@ function loadPowerUserSettings(settings, data) {
     $("#play_message_sound").prop("checked", power_user.play_message_sound);
     $("#play_sound_unfocused").prop("checked", power_user.play_sound_unfocused);
     $("#never_resize_avatars").prop("checked", power_user.never_resize_avatars);
+    $("#show_card_avatar_urls").prop("checked", power_user.show_card_avatar_urls);
     $("#auto_save_msg_edits").prop("checked", power_user.auto_save_msg_edits);
     $("#allow_name1_display").prop("checked", power_user.allow_name1_display);
     $("#allow_name2_display").prop("checked", power_user.allow_name2_display);
@@ -621,6 +643,31 @@ function loadPowerUserSettings(settings, data) {
     loadInstructMode();
     loadMaxContextUnlocked();
     switchWaifuMode();
+    loadMovingUIState();
+
+    //console.log(power_user)
+}
+
+function loadMovingUIState() {
+    if (isMobile() === false && power_user.movingUIState) {
+        for (var elmntName of Object.keys(power_user.movingUIState)) {
+            var elmntState = power_user.movingUIState[elmntName];
+            try {
+                var elmnt = $('#' + $.escapeSelector(elmntName));
+                if (elmnt.length) {
+                    console.debug(`loading state for ${elmntName}`)
+                    elmnt.css(elmntState);
+                } else {
+                    console.debug(`skipping ${elmntName} because it doesn't exist in the DOM`)
+                }
+            } catch (err) {
+                console.debug(`error occurred while processing ${elmntName}: ${err}`)
+            }
+        }
+    } else {
+        console.debug('skipping movingUI state load for mobile')
+        return
+    }
 }
 
 function loadMaxContextUnlocked() {
@@ -893,21 +940,26 @@ function resetMovablePanels() {
     document.getElementById("right-nav-panel").style.width = '';
     document.getElementById("right-nav-panel").style.margin = '';
 
-    document.getElementById("expression-holder").style.top = '';
-    document.getElementById("expression-holder").style.left = '';
-    document.getElementById("expression-holder").style.right = '';
-    document.getElementById("expression-holder").style.bottom = '';
-    document.getElementById("expression-holder").style.height = '';
-    document.getElementById("expression-holder").style.width = '';
-    document.getElementById("expression-holder").style.margin = '';
+    if ($("#expression-holder")) {
+        document.getElementById("expression-holder").style.top = '';
+        document.getElementById("expression-holder").style.left = '';
+        document.getElementById("expression-holder").style.right = '';
+        document.getElementById("expression-holder").style.bottom = '';
+        document.getElementById("expression-holder").style.height = '';
+        document.getElementById("expression-holder").style.width = '';
+        document.getElementById("expression-holder").style.margin = '';
+    }
 
-    document.getElementById("avatar_zoom_popup").style.top = '';
-    document.getElementById("avatar_zoom_popup").style.left = '';
-    document.getElementById("avatar_zoom_popup").style.right = '';
-    document.getElementById("avatar_zoom_popup").style.bottom = '';
-    document.getElementById("avatar_zoom_popup").style.height = '';
-    document.getElementById("avatar_zoom_popup").style.width = '';
-    document.getElementById("avatar_zoom_popup").style.margin = '';
+    if ($(".zoomed_avatar")) {
+        $(".zoomed_avatar").css('top', '');
+        $(".zoomed_avatar").css('left', '');
+        $(".zoomed_avatar").css('right', '');
+        $(".zoomed_avatar").css('bottom', '');
+        $(".zoomed_avatar").css('width', '');
+        $(".zoomed_avatar").css('height', '');
+        $(".zoomed_avatar").css('margin', '');
+    }
+
 
     document.getElementById("WorldInfo").style.top = '';
     document.getElementById("WorldInfo").style.left = '';
@@ -917,7 +969,17 @@ function resetMovablePanels() {
     document.getElementById("WorldInfo").style.width = '';
     document.getElementById("WorldInfo").style.margin = '';
 
+    document.getElementById("floatingPrompt").style.top = '';
+    document.getElementById("floatingPrompt").style.left = '';
+    document.getElementById("floatingPrompt").style.right = '';
+    document.getElementById("floatingPrompt").style.bottom = '';
+    document.getElementById("floatingPrompt").style.height = '';
+    document.getElementById("floatingPrompt").style.width = '';
+    document.getElementById("floatingPrompt").style.margin = '';
+
     $('*[data-dragged="true"]').removeAttr('data-dragged');
+    power_user.movingUIState = {}
+    saveSettingsDebounced();
     eventSource.emit(event_types.MOVABLE_PANELS_RESET);
 }
 
@@ -1157,6 +1219,11 @@ $(document).ready(() => {
 
     $("#never_resize_avatars").on('input', function () {
         power_user.never_resize_avatars = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+    $("#show_card_avatar_urls").on('input', function () {
+        power_user.show_card_avatar_urls = !!$(this).prop('checked');
+        printCharacters();
         saveSettingsDebounced();
     });
 

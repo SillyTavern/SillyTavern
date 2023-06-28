@@ -10,7 +10,7 @@ import { selected_group } from "../../group-chats.js";
 import { ModuleWorkerWrapper, extension_settings, getContext, saveMetadataDebounced } from "../../extensions.js";
 import { registerSlashCommand } from "../../slash-commands.js";
 import { getCharaFilename, debounce } from "../../utils.js";
-export { MODULE_NAME };
+export { MODULE_NAME as NOTE_MODULE_NAME };
 
 const MODULE_NAME = '2_floating_prompt'; // <= Deliberate, for sorting lower than memory
 const UPDATE_INTERVAL = 1000;
@@ -222,6 +222,8 @@ function loadSettings() {
 export function setFloatingPrompt() {
     const context = getContext();
     if (!context.groupId && context.characterId === undefined) {
+        console.debug('setFloatingPrompt: Not in a chat. Skipping.');
+        shouldWIAddPrompt = false;
         return;
     }
 
@@ -243,6 +245,7 @@ export function setFloatingPrompt() {
     if (lastMessageNumber <= 0 || chat_metadata[metadata_keys.interval] <= 0) {
         context.setExtensionPrompt(MODULE_NAME, '');
         $('#extension_floating_counter').text('(disabled)');
+        shouldWIAddPrompt = false;
         return;
     }
 

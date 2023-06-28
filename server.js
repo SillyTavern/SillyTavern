@@ -128,10 +128,13 @@ let response_getstatus;
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 
 const { SentencePieceProcessor, cleanText } = require("sentencepiece-js");
+const { Tokenizer } = require('@mlc-ai/web-tokenizers');
+const CHARS_PER_TOKEN = 3.35;
 
 let spp_llama;
 let spp_nerd;
 let spp_nerd_v2;
+let claude_tokenizer;
 
 async function loadSentencepieceTokenizer(modelPath) {
     try {
@@ -147,7 +150,7 @@ async function loadSentencepieceTokenizer(modelPath) {
 async function countSentencepieceTokens(spp, text) {
     // Fallback to strlen estimation
     if (!spp) {
-        return Math.ceil(text.length / 3.35);
+        return Math.ceil(text.length / CHARS_PER_TOKEN);
     }
 
     let cleaned = cleanText(text);
@@ -156,9 +159,36 @@ async function countSentencepieceTokens(spp, text) {
     return ids.length;
 }
 
+async function loadClaudeTokenizer(modelPath) {
+    try {
+        const arrayBuffer = fs.readFileSync(modelPath).buffer;
+        const instance = await Tokenizer.fromJSON(arrayBuffer);
+        return instance;
+    } catch (error) {
+        console.error("Claude tokenizer failed to load: " + modelPath, error);
+        return null;
+    }
+}
+
+function countClaudeTokens(tokenizer, messages) {
+    const convertedPrompt = convertClaudePrompt(messages, false, false);
+
+    // Fallback to strlen estimation
+    if (!tokenizer) {
+        return Math.ceil(convertedPrompt.length / CHARS_PER_TOKEN);
+    }
+
+    const count = tokenizer.encode(convertedPrompt).length;
+    return count;
+}
+
 const tokenizersCache = {};
 
 function getTokenizerModel(requestModel) {
+    if (requestModel.includes('claude')) {
+        return 'claude';
+    }
+
     if (requestModel.includes('gpt-4-32k')) {
         return 'gpt-4-32k';
     }
@@ -226,6 +256,7 @@ const directories = {
     extensions: 'public/scripts/extensions',
     instruct: 'public/instruct',
     context: 'public/context',
+    backups: 'backups/',
 };
 
 // CSRF Protection //
@@ -728,6 +759,12 @@ function convertToV2(char) {
     return result;
 }
 
+function unsetFavFlag(char) {
+    const _ = require('lodash');
+    _.set(char, 'fav', false);
+    _.set(char, 'data.extensions.fav', false);
+}
+
 function readFromV2(char) {
     const _ = require('lodash');
     if (_.isUndefined(char.data)) {
@@ -1049,19 +1086,19 @@ async function charaWrite(img_url, data, target_img, response = undefined, mes =
 async function tryReadImage(img_url, crop) {
     try {
         let rawImg = await jimp.read(img_url);
-		let final_width = rawImg.bitmap.width, final_height = rawImg.bitmap.height
+        let final_width = rawImg.bitmap.width, final_height = rawImg.bitmap.height
 
         // Apply crop if defined
         if (typeof crop == 'object' && [crop.x, crop.y, crop.width, crop.height].every(x => typeof x === 'number')) {
             rawImg = rawImg.crop(crop.x, crop.y, crop.width, crop.height);
-			// Apply standard resize if requested
-			if (crop.want_resize) {
-				final_width = AVATAR_WIDTH
-				final_height = AVATAR_HEIGHT
-			}
+            // Apply standard resize if requested
+            if (crop.want_resize) {
+                final_width = AVATAR_WIDTH
+                final_height = AVATAR_HEIGHT
+            }
         }
 
-		const image = await rawImg.cover(final_width, final_height).getBufferAsync(jimp.MIME_PNG);
+        const image = await rawImg.cover(final_width, final_height).getBufferAsync(jimp.MIME_PNG);
         return image;
     }
     // If it's an unsupported type of image (APNG) - just read the file as buffer
@@ -1739,6 +1776,8 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
 
                 if (jsonData.spec !== undefined) {
                     console.log('importing from v2 json');
+                    importRisuSprites(jsonData);
+                    unsetFavFlag(jsonData);
                     jsonData = readFromV2(jsonData);
                     png_name = getPngName(jsonData.data?.name || jsonData.name);
                     let char = JSON.stringify(jsonData);
@@ -1812,6 +1851,8 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
 
                 if (jsonData.spec !== undefined) {
                     console.log('Found a v2 character file.');
+                    importRisuSprites(jsonData);
+                    unsetFavFlag(jsonData);
                     jsonData = readFromV2(jsonData);
                     let char = JSON.stringify(jsonData);
                     charaWrite(uploadPath, char, png_name, response, { file_name: png_name });
@@ -2223,7 +2264,7 @@ app.post('/uploaduseravatar', urlencodedParser, async (request, response) => {
 
         const image = await rawImg.cover(AVATAR_WIDTH, AVATAR_HEIGHT).getBufferAsync(jimp.MIME_PNG);
 
-        const filename = `${Date.now()}.png`;
+        const filename = request.body.overwrite_name ?? `${Date.now()}.png`;
         const pathToNewFile = path.join(directories.avatars, filename);
         fs.writeFileSync(pathToNewFile, image);
         fs.rmSync(pathToUpload);
@@ -2870,6 +2911,12 @@ app.post("/openai_bias", jsonParser, async function (request, response) {
     let result = {};
 
     const model = getTokenizerModel(String(request.query.model || ''));
+
+    // no bias for claude
+    if (model == 'claude') {
+        return response.send(result);
+    }
+
     const tokenizer = getTiktokenTokenizer(model);
 
     for (const entry of request.body) {
@@ -2942,7 +2989,7 @@ app.post("/deletepreset_openai", jsonParser, function (request, response) {
 });
 
 // Prompt Conversion script taken from RisuAI by @kwaroran (GPLv3).
-function convertClaudePrompt(messages) {
+function convertClaudePrompt(messages, addHumanPrefix, addAssistantPostfix) {
     // Claude doesn't support message names, so we'll just add them to the message content.
     for (const message of messages) {
         if (message.name && message.role !== "system") {
@@ -2972,7 +3019,16 @@ function convertClaudePrompt(messages) {
                 break
         }
         return prefix + v.content;
-    }).join('') + '\n\nAssistant: ';
+    }).join('');
+
+    if (addHumanPrefix) {
+        requestPrompt = "\n\nHuman: " + requestPrompt;
+    }
+
+    if (addAssistantPostfix) {
+        requestPrompt = requestPrompt + '\n\nAssistant: ';
+    }
+
     return requestPrompt;
 }
 
@@ -2993,14 +3049,14 @@ async function sendClaudeRequest(request, response) {
             controller.abort();
         });
 
-        const requestPrompt = convertClaudePrompt(request.body.messages);
+        const requestPrompt = convertClaudePrompt(request.body.messages, true, true);
         console.log('Claude request:', requestPrompt);
 
         const generateResponse = await fetch(api_url + '/complete', {
             method: "POST",
             signal: controller.signal,
             body: JSON.stringify({
-                prompt: "\n\nHuman: " + requestPrompt,
+                prompt: requestPrompt,
                 model: request.body.model,
                 max_tokens_to_sample: request.body.max_tokens,
                 stop_sequences: ["\n\nHuman:", "\n\nSystem:", "\n\nAssistant:"],
@@ -3166,7 +3222,13 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
 app.post("/tokenize_openai", jsonParser, function (request, response_tokenize_openai = response) {
     if (!request.body) return response_tokenize_openai.sendStatus(400);
 
+    let num_tokens = 0;
     const model = getTokenizerModel(String(request.query.model || ''));
+
+    if (model == 'claude') {
+        num_tokens = countClaudeTokens(claude_tokenizer, request.body);
+        return response_tokenize_openai.send({ "token_count": num_tokens });
+    }
 
     const tokensPerName = model.includes('gpt-4') ? 1 : -1;
     const tokensPerMessage = model.includes('gpt-4') ? 3 : 4;
@@ -3174,7 +3236,6 @@ app.post("/tokenize_openai", jsonParser, function (request, response_tokenize_op
 
     const tokenizer = getTiktokenTokenizer(model);
 
-    let num_tokens = 0;
     for (const msg of request.body) {
         num_tokens += tokensPerMessage;
         for (const [key, value] of Object.entries(msg)) {
@@ -3275,6 +3336,7 @@ const setupTasks = async function () {
 
     console.log(`SillyTavern ${version.pkgVersion}` + (version.gitBranch ? ` '${version.gitBranch}' (${version.gitRevision})` : ''));
 
+    backupSettings();
     migrateSecrets();
     ensurePublicDirectoriesExist();
     await ensureThumbnailCache();
@@ -3282,10 +3344,11 @@ const setupTasks = async function () {
     // Colab users could run the embedded tool
     if (!is_colab) await convertWebp();
 
-    [spp_llama, spp_nerd, spp_nerd_v2] = await Promise.all([
+    [spp_llama, spp_nerd, spp_nerd_v2, claude_tokenizer] = await Promise.all([
         loadSentencepieceTokenizer('src/sentencepiece/tokenizer.model'),
         loadSentencepieceTokenizer('src/sentencepiece/nerdstash.model'),
         loadSentencepieceTokenizer('src/sentencepiece/nerdstash_v2.model'),
+        loadClaudeTokenizer('src/claude.json'),
     ]);
 
     console.log('Launching...');
@@ -3365,6 +3428,41 @@ async function convertWebp() {
     }
 }
 
+function backupSettings() {
+    const MAX_BACKUPS = 25;
+
+    function generateTimestamp() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+
+        return `${year}${month}${day}-${hours}${minutes}${seconds}`;
+    }
+
+    try {
+        if (!fs.existsSync(directories.backups)) {
+            fs.mkdirSync(directories.backups);
+        }
+
+        const backupFile = path.join(directories.backups, `settings_${generateTimestamp()}.json`);
+        fs.copyFileSync(SETTINGS_FILE, backupFile);
+
+        let files = fs.readdirSync(directories.backups);
+        if (files.length > MAX_BACKUPS) {
+            files = files.map(f => path.join(directories.backups, f));
+            files.sort((a, b) => fs.statSync(a).mtimeMs - fs.statSync(b).mtimeMs);
+
+            fs.rmSync(files[0]);
+        }
+    } catch (err) {
+        console.log('Could not backup settings file', err);
+    }
+}
+
 function ensurePublicDirectoriesExist() {
     for (const dir of Object.values(directories)) {
         if (!fs.existsSync(dir)) {
@@ -3381,6 +3479,7 @@ const SECRET_KEYS = {
     POE: 'api_key_poe',
     NOVEL: 'api_key_novel',
     CLAUDE: 'api_key_claude',
+    DEEPL: 'deepl',
 }
 
 function migrateSecrets() {
@@ -3631,6 +3730,53 @@ app.post('/google_translate', jsonParser, async (request, response) => {
     });
 });
 
+app.post('/deepl_translate', jsonParser, async (request, response) => {
+    const key = readSecret(SECRET_KEYS.DEEPL);
+
+    if (!key) {
+        return response.sendStatus(401);
+    }
+
+    const text = request.body.text;
+    const lang = request.body.lang;
+
+    if (!text || !lang) {
+        return response.sendStatus(400);
+    }
+
+    console.log('Input text: ' + text);
+
+    const fetch = require('node-fetch').default;
+    const params = new URLSearchParams();
+    params.append('text', text);
+    params.append('target_lang', lang);
+
+    try {
+        const result = await fetch('https://api-free.deepl.com/v2/translate', {
+            method: 'POST',
+            body: params,
+            headers: {
+                'Accept': 'application/json',
+                'Authorization': `DeepL-Auth-Key ${key}`,
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            timeout: 0,
+        });
+
+        if (!result.ok) {
+            return response.sendStatus(result.status);
+        }
+
+        const json = await result.json();
+        console.log('Translated text: ' + json.translations[0].text);
+
+        return response.send(json.translations[0].text);
+    } catch (error) {
+        console.log("Translation error: " + error.message);
+        return response.sendStatus(500);
+    }
+});
+
 app.post('/novel_tts', jsonParser, async (request, response) => {
     const token = readSecret(SECRET_KEYS.NOVEL);
 
@@ -3795,6 +3941,177 @@ app.post('/upload_sprite', urlencodedParser, async (request, response) => {
         return response.sendStatus(500);
     }
 });
+
+app.post('/import_custom', jsonParser, async (request, response) => {
+    if (!request.body.url) {
+        return response.sendStatus(400);
+    }
+
+    try {
+        const url = request.body.url;
+        let result;
+
+        const chubParsed = parseChubUrl(url);
+
+        if (chubParsed?.type === 'character') {
+            console.log('Downloading chub character:', chubParsed.id);
+            result = await downloadChubCharacter(chubParsed.id);
+        }
+        else if (chubParsed?.type === 'lorebook') {
+            console.log('Downloading chub lorebook:', chubParsed.id);
+            result = await downloadChubLorebook(chubParsed.id);
+        }
+        else {
+            return response.sendStatus(404);
+        }
+
+        response.set('Content-Type', result.fileType);
+        response.set('Content-Disposition', `attachment; filename="${result.fileName}"`);
+        response.set('X-Custom-Content-Type', chubParsed?.type);
+        return response.send(result.buffer);
+    } catch (error) {
+        console.log('Importing custom content failed', error);
+        return response.sendStatus(500);
+    }
+});
+
+async function downloadChubLorebook(id) {
+    const fetch = require('node-fetch').default;
+
+    const result = await fetch('https://api.chub.ai/api/lorebooks/download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            "fullPath": id,
+            "format": "SILLYTAVERN",
+        }),
+    });
+
+    if (!result.ok) {
+        throw new Error('Failed to download lorebook');
+    }
+
+    const name = id.split('/').pop();
+    const buffer = await result.buffer();
+    const fileName = `${sanitize(name)}.json`;
+    const fileType = result.headers.get('content-type');
+
+    return { buffer, fileName, fileType };
+}
+
+async function downloadChubCharacter(id) {
+    const fetch = require('node-fetch').default;
+
+    const result = await fetch('https://api.chub.ai/api/characters/download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            "format": "tavern",
+            "fullPath": id,
+        })
+    });
+
+    if (!result.ok) {
+        throw new Error('Failed to download character');
+    }
+
+    const buffer = await result.buffer();
+    const fileName = result.headers.get('content-disposition').split('filename=')[1];
+    const fileType = result.headers.get('content-type');
+
+    return { buffer, fileName, fileType };
+}
+
+function parseChubUrl(str) {
+    const splitStr = str.split('/');
+    const length = splitStr.length;
+
+    if (length < 2) {
+        return null;
+    }
+
+    const domainIndex = splitStr.indexOf('chub.ai');
+    const lastTwo = domainIndex !== -1 ? splitStr.slice(domainIndex + 1) : splitStr;
+
+    const firstPart = lastTwo[0].toLowerCase();
+
+    if (firstPart === 'characters' || firstPart === 'lorebooks') {
+        const type = firstPart === 'characters' ? 'character' : 'lorebook';
+        const id = type === 'character' ? lastTwo.slice(1).join('/') : lastTwo.join('/');
+        return {
+            id: id,
+            type: type
+        };
+    } else if (length === 2) {
+        return {
+            id: lastTwo.join('/'),
+            type: 'character'
+        };
+    }
+
+    return null;
+}
+
+function importRisuSprites(data) {
+    try {
+        const name = data?.data?.name;
+        const risuData = data?.data?.extensions?.risuai;
+
+        // Not a Risu AI character
+        if (!risuData || !name) {
+            return;
+        }
+
+        let images = [];
+
+        if (Array.isArray(risuData.additionalAssets)) {
+            images = images.concat(risuData.additionalAssets);
+        }
+
+        if (Array.isArray(risuData.emotions)) {
+            images = images.concat(risuData.emotions);
+        }
+
+        // No sprites to import
+        if (images.length === 0) {
+            return;
+        }
+
+        // Create sprites folder if it doesn't exist
+        const spritesPath = path.join(directories.characters, name);
+        if (!fs.existsSync(spritesPath)) {
+            fs.mkdirSync(spritesPath);
+        }
+
+        // Path to sprites is not a directory. This should never happen.
+        if (!fs.statSync(spritesPath).isDirectory()) {
+            return;
+        }
+
+        console.log(`RisuAI: Found ${images.length} sprites for ${name}. Writing to disk.`);
+        const files = fs.readdirSync(spritesPath);
+
+        outer: for (const [label, fileBase64] of images) {
+            // Remove existing sprite with the same label
+            for (const file of files) {
+                if (path.parse(file).name === label) {
+                    console.log(`RisuAI: The sprite ${label} for ${name} already exists. Skipping.`);
+                    continue outer;
+                }
+            }
+
+            const filename = label + '.png';
+            const pathToFile = path.join(spritesPath, filename);
+            fs.writeFileSync(pathToFile, fileBase64, { encoding: 'base64' });
+        }
+
+        // Remove additionalAssets and emotions from data (they are now in the sprites folder)
+        delete data.data.extensions.risuai.additionalAssets;
+        delete data.data.extensions.risuai.emotions;
+    } catch (error) {
+        console.error(error);
+    }
+}
 
 function writeSecret(key, value) {
     if (!fs.existsSync(SECRETS_FILE)) {

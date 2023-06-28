@@ -11,8 +11,8 @@ import {
     is_send_press,
     getTokenCount,
     menu_type,
-
-
+    max_context,
+    saveSettingsDebounced,
 } from "../script.js";
 
 
@@ -287,18 +287,18 @@ export function RA_CountCharTokens() {
         } else { console.debug("RA_TC -- no valid char found, closing."); }
     }
     // display the counted tokens
-    if (count_tokens < 1024 && perm_tokens < 1024) {
-        //display normal if both counts are under 1024
+    const tokenLimit = Math.max(((main_api !== 'openai' ? max_context : oai_settings.openai_max_context) / 2), 1024);
+    if (count_tokens < tokenLimit && perm_tokens < tokenLimit) {
         $("#result_info").html(`<small>${count_tokens} Tokens (${perm_tokens} Permanent)</small>`);
     } else {
         $("#result_info").html(`
-        <div class="flex-container flexFlowColumn alignitemscenter">
+        <div class="flex-container alignitemscenter">
             <div class="flex-container flexnowrap flexNoGap">
                 <small class="flex-container flexnowrap flexNoGap">
                     <div class="neutral_warning">${count_tokens}</div>&nbsp;Tokens (<div class="neutral_warning">${perm_tokens}</div><div>&nbsp;Permanent)</div>
                 </small>
             </div>
-            <div id="chartokenwarning" class="menu_button whitespacenowrap"><a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#character-tokens" target="_blank">About Token 'Limits'</a></div>
+            <div id="chartokenwarning" class="menu_button margin0 whitespacenowrap"><a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#character-tokens" target="_blank">About Token 'Limits'</a></div>
         </div>`);
     } //warn if either are over 1024
 }
@@ -473,60 +473,97 @@ function OpenNavPanels() {
 
 
 // Make the DIV element draggable:
-dragElement(document.getElementById("sheld"));
-dragElement(document.getElementById("left-nav-panel"));
-dragElement(document.getElementById("right-nav-panel"));
-dragElement(document.getElementById("avatar_zoom_popup"));
-dragElement(document.getElementById("WorldInfo"));
 
 
+// SECOND UPDATE AIMING FOR MUTATIONS ONLY
 
 export function dragElement(elmnt) {
-
     var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-    if (document.getElementById(elmnt.id + "header")) { //ex: id="sheldheader"
-        // if present, the header is where you move the DIV from, but this overrides everything else:
-        document.getElementById(elmnt.id + "header").onmousedown = dragMouseDown;
+    var height, width, top, left;
+    var elmntName = elmnt.attr('id');
+    const elmntNameEscaped = $.escapeSelector(elmntName);
+    const elmntHeader = $(`#${elmntNameEscaped}header`);
+    if (elmntHeader.length) {
+        elmntHeader.off('mousedown').on('mousedown', (e) => {
+            dragMouseDown(e);
+        });
     } else {
-        // otherwise, move the DIV from anywhere inside the DIV, b:
-        elmnt.onmousedown = dragMouseDown;
+        elmnt.off('mousedown').on('mousedown', dragMouseDown);
     }
 
+    const observer = new MutationObserver((mutations) => {
+        const target = mutations[0].target;
+        if (!$(target).is(':visible')
+            || $(target).hasClass('resizing')
+            || Number((String(target.height).replace('px', ''))) < 50
+            || Number((String(target.width).replace('px', ''))) < 50
+            || isMobile() === true
+        ) { return }
+
+        const style = getComputedStyle(target);
+        console.log(style.top, style.left)
+        height = target.offsetHeight;
+        width = target.offsetWidth;
+        top = parseInt(style.top);
+        left = parseInt(style.left);
+
+        /*         console.log(`
+                        height=${height}, 
+                        width=${width}, 
+                        top=${top}, 
+                        left=${left}`); */
+
+        if (!power_user.movingUIState[elmntName]) {
+            power_user.movingUIState[elmntName] = {};
+        }
+
+        power_user.movingUIState[elmntName].top = top;
+        power_user.movingUIState[elmntName].left = left;
+        power_user.movingUIState[elmntName].width = width;
+        power_user.movingUIState[elmntName].height = height;
+        power_user.movingUIState[elmntName].right = 'unset';
+        power_user.movingUIState[elmntName].bottom = 'unset';
+        power_user.movingUIState[elmntName].margin = 'unset';
+        saveSettingsDebounced();
+        saveSettingsDebounced();
+
+
+        // Check if the element header exists and set the listener on the grabber
+        if (elmntHeader.length) {
+            elmntHeader.off('mousedown').on('mousedown', (e) => {
+                dragMouseDown(e);
+            });
+        } else {
+            elmnt.off('mousedown').on('mousedown', dragMouseDown);
+        }
+    });
+
+    observer.observe(elmnt.get(0), { attributes: true, attributeFilter: ['style'] });
+
     function dragMouseDown(e) {
-        //console.log(e);
-        e = e || window.event;
-        e.preventDefault();
-        // get the mouse cursor position at startup:
-        pos3 = e.clientX; //mouse X at click
-        pos4 = e.clientY; //mouse Y at click
-        document.onmouseup = closeDragElement;
-        // call a function whenever the cursor moves:
-        document.onmousemove = elementDrag;
+        if (e) {
+            e.preventDefault();
+            pos3 = e.clientX; //mouse X at click
+            pos4 = e.clientY; //mouse Y at click
+        }
+        $(document).on('mouseup', closeDragElement);
+        $(document).on('mousemove', elementDrag);
     }
 
     function elementDrag(e) {
-        //disable scrollbars when dragging to prevent jitter
         $("body").css("overflow", "hidden");
+        if (!power_user.movingUIState[elmntName]) {
+            power_user.movingUIState[elmntName] = {};
+        }
 
-
-        //get window size
         let winWidth = window.innerWidth;
         let winHeight = window.innerHeight;
-
-        //get necessary data for calculating element footprint
-        let draggableHeight = parseInt(getComputedStyle(elmnt).getPropertyValue('height').slice(0, -2));
-        let draggableWidth = parseInt(getComputedStyle(elmnt).getPropertyValue('width').slice(0, -2));
-        let draggableTop = parseInt(getComputedStyle(elmnt).getPropertyValue('top').slice(0, -2));
-        let draggableLeft = parseInt(getComputedStyle(elmnt).getPropertyValue('left').slice(0, -2));
-        let sheldWidth = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sheldWidth').slice(0, -2));
+        let sheldWidth = parseInt($('html').css('--sheldWidth').slice(0, -2));
         let topBarFirstX = (winWidth - sheldWidth) / 2;
         let topBarLastX = topBarFirstX + sheldWidth;
+        let maxX = (width + left);
+        let maxY = (height + top);
 
-        //set the lowest and most-right pixel the element touches
-        let maxX = (draggableWidth + draggableLeft);
-        let maxY = (draggableHeight + draggableTop);
-
-        // calculate the new cursor position:
         e = e || window.event;
         e.preventDefault();
 
@@ -535,88 +572,54 @@ export function dragElement(elmnt) {
         pos3 = e.clientX;   //new mouse X
         pos4 = e.clientY;   //new mouse Y
 
-        elmnt.setAttribute('data-dragged', 'true');
+        elmnt.attr('data-dragged', 'true');
 
-        //fix over/underflows:
-
-        setTimeout(function () {
-            if (elmnt.offsetTop < 40) {
-                /* console.log('6'); */
-                if (maxX > topBarFirstX && maxX < topBarLastX) {
-                    /* console.log('maxX inside topBar!'); */
-                    elmnt.style.top = "42px";
-                }
-                if (elmnt.offsetLeft < topBarLastX && elmnt.offsetLeft > topBarFirstX) {
-                    /* console.log('offsetLeft inside TopBar!'); */
-                    elmnt.style.top = "42px";
-                }
+        if (elmnt.offset().top < 40) {
+            if (maxX > topBarFirstX && maxX < topBarLastX) {
+                elmnt.css('top', '42px');
             }
-
-            if (elmnt.offsetTop - pos2 <= 0) {
-                /* console.log('1'); */
-                //prevent going out of window top + 42px barrier for TopBar (can hide grabber)
-                elmnt.style.top = "0px";
+            if (elmnt.offset().left < topBarLastX && elmnt.offset().left > topBarFirstX) {
+                elmnt.css('top', '42px');
             }
-
-            if (elmnt.offsetLeft - pos1 <= 0) {
-                /* console.log('2'); */
-                //prevent moving out of window left
-                elmnt.style.left = "0px";
+        }
+        if (elmnt.offset().top - pos2 <= 0) {
+            elmnt.css('top', '0px');
+        }
+        if (elmnt.offset().left - pos1 <= 0) {
+            elmnt.css('left', '0px');
+        }
+        if (maxX >= winWidth) {
+            elmnt.css('left', elmnt.offset().left - 10 + "px");
+        }
+        if (maxY >= winHeight) {
+            elmnt.css('top', elmnt.offset().top - 10 + "px");
+            if (elmnt.offset().top - pos2 <= 40) {
+                elmnt.css('top', '20px');
             }
+        }
+        elmnt.css('left', (elmnt.offset().left - pos1) + "px");
+        elmnt.css("top", (elmnt.offset().top - pos2) + "px");
+        elmnt.css('margin', 'unset');
 
-            if (maxX >= winWidth) {
-                /* console.log('3'); */
-                //bounce off right
-                elmnt.style.left = elmnt.offsetLeft - 10 + "px";
-            }
-
-            if (maxY >= winHeight) {
-                /* console.log('4'); */
-                //bounce off bottom
-                elmnt.style.top = elmnt.offsetTop - 10 + "px";
-                if (elmnt.offsetTop - pos2 <= 40) {
-                    /* console.log('5'); */
-                    //prevent going out of window top + 42px barrier for TopBar (can hide grabber)
-                    /* console.log('caught Y bounce to <40Y top'); */
-                    elmnt.style.top = "20px";
-                }
-            }
-            // if no problems, set element's new position
-            /* console.log('7'); */
-
-            elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
-            elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
-            $(elmnt).css("bottom", "unset");
-            $(elmnt).css("right", "unset");
-            $(elmnt).css("margin", "unset");
-
-            /*             console.log(`
-                                        offsetLeft: ${elmnt.offsetLeft}, offsetTop: ${elmnt.offsetTop}
-                                        winWidth: ${winWidth}, winHeight: ${winHeight}
-                                        sheldWidth: ${sheldWidth}
-                                        X: ${elmnt.style.left}
-                                        Y: ${elmnt.style.top}
-                                        MaxX: ${maxX}, MaxY: ${maxY}
-                                        Topbar 1st X: ${((winWidth - sheldWidth) / 2)}
-                                        TopBar lastX: ${((winWidth - sheldWidth) / 2) + sheldWidth}
-                                            `); */
-
-
-
-        }, 50)
-
-        /* console.log("left/top: " + (elmnt.offsetLeft - pos1) + "/" + (elmnt.offsetTop - pos2) +
-            ", win: " + winWidth + "/" + winHeight +
-            ", max X / Y: " + maxX + " / " + maxY); */
-
+        /*
+        console.log(`
+            winWidth: ${winWidth}, winHeight: ${winHeight}
+            sheldWidth: ${sheldWidth}
+            X: ${$(elmnt).css('left')}
+            Y: ${$(elmnt).css('top')}
+            MaxX: ${maxX}, MaxY: ${maxY}
+            Topbar 1st X: ${((winWidth - sheldWidth) / 2)}
+            TopBar lastX: ${((winWidth - sheldWidth) / 2) + sheldWidth}
+            `);
+        */
     }
 
     function closeDragElement() {
-        // stop moving when mouse button is released:
-        document.onmouseup = null;
-        document.onmousemove = null;
-        //revert scrolling to normal after drag to allow recovery of vastly misplaced elements
-        $("body").css("overflow", "auto");
+        $(document).off('mouseup', closeDragElement);
+        $(document).off('mousemove', elementDrag);
+        $("body").css("overflow", "");
+        // Clear the "data-dragged" attribute
+        elmnt.attr('data-dragged', 'false');
 
     }
 }
@@ -626,7 +629,22 @@ export function dragElement(elmnt) {
 $("document").ready(function () {
 
     // initial status check
-    setTimeout(RA_checkOnlineStatus, 100);
+    setTimeout(() => {
+        if (isMobile === false) {
+            dragElement($("#sheld"));
+            dragElement($("#left-nav-panel"));
+            dragElement($("#right-nav-panel"));
+            dragElement($("#WorldInfo"));
+            dragElement($("#floatingPrompt"));
+        }
+        RA_checkOnlineStatus
+    }
+        , 100);
+
+
+
+
+    //$('div').on('resize', saveMovingUIState());
 
     // read the state of AutoConnect and AutoLoadChat.
     $(AutoConnectCheckbox).prop("checked", LoadLocalBool("AutoConnectEnabled"));

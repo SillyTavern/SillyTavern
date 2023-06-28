@@ -120,7 +120,7 @@ $(document).ready(function () {
         <div class="background_settings">
             <div class="inline-drawer">
                 <div class="inline-drawer-toggle inline-drawer-header">
-                    <b>Character Backgrounds</b>
+                    <b>Chat Backgrounds</b>
                     <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
                 </div>
                 <div class="inline-drawer-content">

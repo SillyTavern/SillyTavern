@@ -20,3 +20,4 @@ whitelist.txt
 secrets.json
 /dist
 poe_device.json
+/backups/

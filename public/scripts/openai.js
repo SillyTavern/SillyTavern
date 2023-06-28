@@ -927,16 +927,15 @@ function getTokenizerModel() {
             return turboTokenizer;
         }
         else if (oai_settings.windowai_model.includes('claude')) {
-            return turboTokenizer;
+            return 'claude';
         }
         else if (oai_settings.windowai_model.includes('GPT-NeoXT')) {
             return 'gpt2';
         }
     }
 
-    // We don't have a Claude tokenizer for JS yet. Turbo 3.5 should be able to handle this.
     if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
-        return turboTokenizer;
+        return 'claude';
     }
 
     // Default to Turbo 3.5

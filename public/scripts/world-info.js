@@ -1,8 +1,9 @@
-import { saveSettings, callPopup, substituteParams, getTokenCount, getRequestHeaders, chat_metadata, this_chid, characters } from "../script.js";
-import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer } from "./utils.js";
+import { saveSettings, callPopup, substituteParams, getTokenCount, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type } from "../script.js";
+import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, delay, getCharaFilename } from "./utils.js";
 import { getContext } from "./extensions.js";
-import { metadata_keys, shouldWIAddPrompt } from "./extensions/floating-prompt/index.js";
+import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from "./extensions/floating-prompt/index.js";
 import { registerSlashCommand } from "./slash-commands.js";
+import { deviceInfo } from "./RossAscends-mods.js";
 
 export {
     world_info,
@@ -25,7 +26,8 @@ const world_info_insertion_strategy = {
     global_first: 2,
 };
 
-let world_info = null;
+let world_info = {};
+let selected_world_info = [];
 let world_names;
 let world_info_depth = 2;
 let world_info_budget = 25;
@@ -34,7 +36,10 @@ let world_info_case_sensitive = false;
 let world_info_match_whole_words = false;
 let world_info_character_strategy = world_info_insertion_strategy.evenly;
 const saveWorldDebounced = debounce(async (name, data) => await _save(name, data), 1000);
-const saveSettingsDebounced = debounce(() => saveSettings(), 1000);
+const saveSettingsDebounced = debounce(() => {
+    Object.assign(world_info, { globalSelect: selected_world_info })
+    saveSettings()
+}, 1000);
 const sortFn = (a, b) => b.order - a.order;
 
 const world_info_position = {
@@ -77,6 +82,19 @@ function setWorldInfoSettings(settings, data) {
         world_info_budget = 25;
     }
 
+    // Reset selected world from old string and delete old keys
+    // TODO: Remove next release
+    const existingWorldInfo = settings.world_info;
+    if (typeof existingWorldInfo === "string") {
+        delete settings.world_info;
+        selected_world_info = [existingWorldInfo];
+    } else if (Array.isArray(existingWorldInfo)) {
+        delete settings.world_info;
+        selected_world_info = existingWorldInfo;
+    }
+
+    world_info = settings.world_info ?? {}
+
     $("#world_info_depth_counter").text(world_info_depth);
     $("#world_info_depth").val(world_info_depth);
 
@@ -92,22 +110,22 @@ function setWorldInfoSettings(settings, data) {
 
     world_names = data.world_names?.length ? data.world_names : [];
 
-    if (settings.world_info != undefined) {
-        if (world_names.includes(settings.world_info)) {
-            world_info = settings.world_info;
-        }
+    // Add to existing selected WI if it exists
+    selected_world_info = selected_world_info.concat(settings.world_info?.globalSelect?.filter((e) => world_names.includes(e)) ?? []);
+
+    if (world_names.length > 0) {
+        $("#world_info").empty();
     }
 
     world_names.forEach((item, i) => {
-        $("#world_info").append(`<option value='${i}'>${item}</option>`);
+        $("#world_info").append(`<option value='${i}'${selected_world_info.includes(item) ? ' selected' : ''}>${item}</option>`);
         $("#world_editor_select").append(`<option value='${i}'>${item}</option>`);
-        // preselect world if saved
-        if (item == world_info) {
-            $("#world_info").val(i).trigger('change');
-        }
     });
 
     $("#world_editor_select").trigger("change");
+
+    // Update settings
+    saveSettingsDebounced();
 }
 
 // World Info Editor
@@ -160,7 +178,7 @@ async function updateWorldInfoList() {
         $("#world_editor_select").find('option[value!=""]').remove();
 
         world_names.forEach((item, i) => {
-            $("#world_info").append(`<option value='${i}'>${item}</option>`);
+            $("#world_info").append(`<option value='${i}'${selected_world_info.includes(item) ? ' selected' : ''}>${item}</option>`);
             $("#world_editor_select").append(`<option value='${i}'>${item}</option>`);
         });
     }
@@ -168,6 +186,14 @@ async function updateWorldInfoList() {
 
 function hideWorldEditor() {
     displayWorldEntries(null, null);
+}
+
+function getWIElement(name) {
+    const wiElement = $("#world_info").children().filter(function () {
+        return $(this).text().toLowerCase() === name.toLowerCase()
+    });
+
+    return wiElement;
 }
 
 function nullWorldInfo() {
@@ -224,7 +250,21 @@ function displayWorldEntries(name, data) {
             return;
         }
 
-        await deleteWorldInfo(name, world_info);
+        const existingCharLores = world_info.charLore?.filter((e) => e.extraBooks.includes(name));
+        if (existingCharLores && existingCharLores.length > 0) {
+            existingCharLores.forEach((charLore) => {
+                const tempCharLore = charLore.extraBooks.filter((e) => e !== name);
+                if (tempCharLore.length === 0) {
+                    world_info.charLore.splice(charLore, 1);
+                } else {
+                    charLore.extraBooks = tempCharLore;
+                }
+            });
+            saveSettingsDebounced();
+        }
+
+        // Selected world_info automatically refreshes
+        await deleteWorldInfo(name);
     });
 
     // Check if a sortable instance exists
@@ -256,7 +296,7 @@ function displayWorldEntries(name, data) {
             await saveWorldInfo(name, data, true);
         }
     });
-    $("#world_popup_entries_list").disableSelection();
+    //$("#world_popup_entries_list").disableSelection();
 }
 
 function setOriginalDataValue(data, uid, key, value) {
@@ -582,19 +622,26 @@ async function renameWorldInfo(name, data) {
         return;
     }
 
-    let selectNewName = null;
-    if (oldName === world_info) {
-        console.debug("Renaming current world info");
-        world_info = newName;
-        selectNewName = newName;
-    }
-    else {
-        console.debug("Renaming non-current world info");
-        selectNewName = world_info;
-    }
+    const entryPreviouslySelected = selected_world_info.findIndex((e) => e === oldName);
 
     await saveWorldInfo(newName, data, true);
-    await deleteWorldInfo(oldName, selectNewName);
+    await deleteWorldInfo(oldName);
+
+    const existingCharLores = world_info.charLore?.filter((e) => e.extraBooks.includes(oldName));
+    if (existingCharLores && existingCharLores.length > 0) {
+        existingCharLores.forEach((charLore) => {
+            const tempCharLore = charLore.extraBooks.filter((e) => e !== oldName);
+            tempCharLore.push(newName);
+            charLore.extraBooks = tempCharLore;
+        });
+        saveSettingsDebounced();
+    }
+
+    if (entryPreviouslySelected !== -1) {
+        const wiElement = getWIElement(newName);
+        wiElement.prop("selected", true);
+        $("#world_info").trigger('change');
+    }
 
     const selectedIndex = world_names.indexOf(newName);
     if (selectedIndex !== -1) {
@@ -602,7 +649,7 @@ async function renameWorldInfo(name, data) {
     }
 }
 
-async function deleteWorldInfo(worldInfoName, selectWorldName) {
+async function deleteWorldInfo(worldInfoName) {
     if (!world_names.includes(worldInfoName)) {
         return;
     }
@@ -614,16 +661,22 @@ async function deleteWorldInfo(worldInfoName, selectWorldName) {
     });
 
     if (response.ok) {
-        await updateWorldInfoList();
-
-        const selectedIndex = world_names.indexOf(selectWorldName);
-        if (selectedIndex !== -1) {
-            $("#world_info").val(selectedIndex).trigger('change');
-        } else {
-            $("#world_info").val("").trigger('change');
+        const existingWorldIndex = selected_world_info.findIndex((e) => e === worldInfoName);
+        if (existingWorldIndex !== -1) {
+            selected_world_info.splice(existingWorldIndex, 1);
+            saveSettingsDebounced();
         }
 
+        await updateWorldInfoList();
         $('#world_editor_select').trigger('change');
+
+        if ($('#character_world').val() === worldInfoName) {
+            $('#character_world').val('').trigger('change');
+            setWorldInfoButtonClass(undefined, false);
+            if (menu_type != 'create') {
+                saveCharacterDebounced();
+            }
+        }
     }
 }
 
@@ -663,16 +716,13 @@ async function createNewWorldInfo(worldInfoName) {
         return;
     }
 
-    world_info = worldInfoName;
-    await saveWorldInfo(world_info, worldInfoTemplate, true);
+    await saveWorldInfo(worldInfoName, worldInfoTemplate, true);
     await updateWorldInfoList();
 
     const selectedIndex = world_names.indexOf(worldInfoName);
     if (selectedIndex !== -1) {
-        $("#world_info").val(selectedIndex).trigger('change');
         $('#world_editor_select').val(selectedIndex).trigger('change');
     } else {
-        $("#world_info").val("").trigger('change');
         hideWorldEditor();
     }
 }
@@ -683,40 +733,53 @@ function transformString(str) {
 }
 
 async function getCharacterLore() {
-    const name = characters[this_chid]?.data?.extensions?.world;
+    const character = characters[this_chid];
+    const name = character?.name;
+    let worldsToSearch = new Set();
 
-    if (!name) {
+    const baseWorldName = character?.data?.extensions?.world;
+    if (baseWorldName) {
+        worldsToSearch.add(baseWorldName);
+    } else {
+        console.debug(`Character ${name}'s base world could not be found or is empty! Skipping...`)
         return [];
     }
 
-    if (name === world_info) {
-        console.debug(`Character ${characters[this_chid]?.name} world info is the same as global: ${name}. Skipping...`);
-        return [];
+    // TODO: Maybe make the utility function not use the window context?
+    const fileName = getCharaFilename(this_chid);
+    const extraCharLore = world_info.charLore?.find((e) => e.name === fileName);
+    if (extraCharLore) {
+        worldsToSearch = new Set([...worldsToSearch, ...extraCharLore.extraBooks]);
     }
 
-    if (!world_names.includes(name)) {
-        console.log(`Character ${characters[this_chid]?.name} world info does not exist: ${name}`);
-        return [];
+    let entries = [];
+    for (const worldName of worldsToSearch) {
+        if (selected_world_info.includes(worldName)) {
+            console.debug(`Character ${name}'s world ${worldName} is already activated in global world info! Skipping...`);
+            continue;
+        }
+
+        const data = await loadWorldInfoData(worldName);
+        const newEntries = data ? Object.keys(data.entries).map((x) => data.entries[x]) : [];
+        entries = entries.concat(newEntries);
     }
 
-    const data = await loadWorldInfoData(name);
-    const entries = data ? Object.keys(data.entries).map((x) => data.entries[x]) : [];
-    console.debug(`Character ${characters[this_chid]?.name} lore (${name}) has ${entries.length} world info entries`);
+    console.debug(`Character ${characters[this_chid]?.name} lore (${baseWorldName}) has ${entries.length} world info entries`);
     return entries;
 }
 
 async function getGlobalLore() {
-    if (!world_info) {
+    if (!selected_world_info) {
         return [];
     }
 
-    if (!world_names.includes(world_info)) {
-        console.log(`Global ${characters[this_chid]?.name} world info does not exist: ${world_info}`);
-        return [];
+    let entries = [];
+    for (const worldName of selected_world_info) {
+        const data = await loadWorldInfoData(worldName);
+        const newEntries = data ? Object.keys(data.entries).map((x) => data.entries[x]) : [];
+        entries = entries.concat(newEntries);
     }
 
-    const data = await loadWorldInfoData(world_info);
-    const entries = data ? Object.keys(data.entries).map((x) => data.entries[x]) : [];
     console.debug(`Global world info has ${entries.length} entries`);
 
     return entries;
@@ -819,11 +882,12 @@ async function checkWorldInfo(chat, maxContext) {
         const newEntries = [...activatedNow]
             .sort((a, b) => sortedEntries.indexOf(a) - sortedEntries.indexOf(b));
         let newContent = "";
+        const textToScanTokens = getTokenCount(textToScan);
 
         for (const entry of newEntries) {
             newContent += `${substituteParams(entry.content)}\n`;
 
-            if (getTokenCount(textToScan + newContent) >= budget) {
+            if (textToScanTokens + getTokenCount(newContent) >= budget) {
                 console.debug(`WI budget reached, stopping`);
                 needsToScan = false;
                 break;
@@ -837,28 +901,39 @@ async function checkWorldInfo(chat, maxContext) {
         }
     }
 
-    let worldInfoBefore = "";
-    let worldInfoAfter = "";
+    // Forward-sorted list of entries for joining
+    const WIBeforeEntries = [];
+    const WIAfterEntries = [];
+    const ANTopEntries = [];
+    const ANBottomEntries = [];
 
-    const ANTopInjection = [];
-    const ANBottomInjection = [];
-
+    // Appends from insertion order 999 to 1. Use unshift for this purpose
     [...allActivatedEntries].sort(sortFn).forEach((entry) => {
-        if (entry.position === world_info_position.before) {
-            worldInfoBefore = `${substituteParams(entry.content)}\n${worldInfoBefore}`;
-        } else if (entry.position === world_info_position.after) {
-            worldInfoAfter = `${substituteParams(entry.content)}\n${worldInfoAfter}`;
-        } else if (entry.position === world_info_position.ANTop) {
-            ANTopInjection.push(entry.content);
-        } else if (entry.position === world_info_position.ANBottom) {
-            ANBottomInjection.push(entry.content);
+        switch (entry.position) {
+            case world_info_position.before:
+                WIBeforeEntries.unshift(substituteParams(entry.content));
+                break;
+            case world_info_position.after:
+                WIAfterEntries.unshift(substituteParams(entry.content));
+                break;
+            case world_info_position.ANTop:
+                ANTopEntries.unshift(entry.content);
+                break;
+            case world_info_position.ANBottom:
+                ANBottomEntries.unshift(entry.content);
+                break;
+            default:
+                break;
         }
     });
 
+    const worldInfoBefore = `${WIBeforeEntries.join("\n")}\n`
+    const worldInfoAfter = `${WIAfterEntries.join("\n")}\n`
+
     if (shouldWIAddPrompt) {
-        const originalAN = context.extensionPrompts['2_floating_prompt'].value;
-        const ANWithWI = `\n${ANTopInjection.join("\n")} \n${originalAN} \n${ANBottomInjection.reverse().join("\n")}`
-        context.setExtensionPrompt('2_floating_prompt', ANWithWI, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth]);
+        const originalAN = context.extensionPrompts[NOTE_MODULE_NAME].value;
+        const ANWithWI = `${ANTopEntries.join("\n")}\n${originalAN}\n${ANBottomEntries.join("\n")}`
+        context.setExtensionPrompt(NOTE_MODULE_NAME, ANWithWI, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth]);
     }
 
     return { worldInfoBefore, worldInfoAfter };
@@ -993,6 +1068,48 @@ function convertCharacterBook(characterBook) {
     return result;
 }
 
+export function setWorldInfoButtonClass(chid, forceValue = undefined) {
+    if (forceValue !== undefined) {
+        $('#set_character_world, #world_button').toggleClass('world_set', forceValue);
+        return;
+    }
+
+    if (!chid) {
+        return;
+    }
+
+    const world = characters[chid]?.data?.extensions?.world;
+    const worldSet = Boolean(world && world_names.includes(world));
+    $('#set_character_world, #world_button').toggleClass('world_set', worldSet);
+}
+
+export function checkEmbeddedWorld(chid) {
+    $('#import_character_info').hide();
+
+    if (chid === undefined) {
+        return false;
+    }
+
+    if (characters[chid]?.data?.character_book) {
+        $('#import_character_info').data('chid', chid).show();
+
+        // Only show the alert once per character
+        const checkKey = `AlertWI_${characters[chid].avatar}`;
+        const worldName = characters[chid]?.data?.extensions?.world;
+        if (!localStorage.getItem(checkKey) && (!worldName || !world_names.includes(worldName))) {
+            toastr.info(
+                'To import and use it, select "Import Embedded World Info" in the Options dropdown menu on the character panel.',
+                `${characters[chid].name} has an embedded World/Lorebook`,
+                { timeOut: 10000, extendedTimeOut: 20000, positionClass: 'toast-top-center' },
+            );
+            localStorage.setItem(checkKey, 1);
+        }
+        return true;
+    }
+
+    return false;
+}
+
 export async function importEmbeddedWorldInfo() {
     const chid = $('#import_character_info').data('chid');
 
@@ -1021,32 +1138,119 @@ export async function importEmbeddedWorldInfo() {
     if (newIndex >= 0) {
         $("#world_editor_select").val(newIndex).trigger('change');
     }
+
+    setWorldInfoButtonClass(chid, true);
 }
 
 function onWorldInfoChange(_, text) {
-    let selectedWorld;
-    if (_ !== '__notSlashCommand__') { //if it's a slash command
-        if (text !== undefined) { //and args are provided
-            let slashInputWorld = text.toLowerCase();
-            $("#world_info").find(`option`).filter(function () {
-                return $(this).text().toLowerCase() === slashInputWorld;
-            }).prop('selected', true); //matches arg with worldnames and selects; if none found, unsets world
-            let setWorldName = $("#world_info").find(":selected").text(); //only for toastr display
-            toastr.success(`Active world: ${setWorldName}`);
-            selectedWorld = $("#world_info").find(":selected").val();
-        } else { //if no args, unset world
-            toastr.success('Deselected World')
+    let selectedWorlds;
+    if (_ !== '__notSlashCommand__') { // if it's a slash command
+        if (text !== undefined) { // and args are provided
+            const slashInputSplitText = text.trim().toLowerCase().split(",");
+
+            slashInputSplitText.forEach((worldName) => {
+                const wiElement = getWIElement(worldName);
+                if (wiElement.length > 0) {
+                    wiElement.prop("selected", true);
+                    toastr.success(`Activated world: ${wiElement.text()}`);
+                } else {
+                    toastr.error(`No world found named: ${worldName}`);
+                }
+            })
+        } else { // if no args, unset all worlds
+            toastr.success('Deactivated all worlds');
+            selected_world_info = [];
             $("#world_info").val("");
         }
     } else { //if it's a pointer selection
-        selectedWorld = $("#world_info").find(":selected").val();
+        let tempWorldInfo = [];
+        let selectedWorlds = $("#world_info").val().map((e) => Number(e)).filter((e) => !isNaN(e));
+        if (selectedWorlds.length > 0) {
+            selectedWorlds.forEach((worldIndex) => {
+                const existingWorldName = world_names[worldIndex];
+                if (existingWorldName) {
+                    tempWorldInfo.push(existingWorldName);
+                } else {
+                    const wiElement = getWIElement(existingWorldName);
+                    wiElement.prop("selected", false);
+                    toastr.error(`The world with ${existingWorldName} is invalid or corrupted.`);
+                }
+            });
+        }
+        selected_world_info = tempWorldInfo;
     }
-    world_info = null;
-    if (selectedWorld !== "") {
-        const worldIndex = Number(selectedWorld);
-        world_info = !isNaN(worldIndex) ? world_names[worldIndex] : null;
-    }
+
     saveSettingsDebounced();
+}
+
+export async function importWorldInfo(file) {
+    if (!file) {
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    try {
+        let jsonData;
+
+        if (file.name.endsWith('.png')) {
+            const buffer = new Uint8Array(await getFileBuffer(file));
+            jsonData = extractDataFromPng(buffer, 'naidata');
+        } else {
+            // File should be a JSON file
+            jsonData = await parseJsonFile(file);
+        }
+
+        if (jsonData === undefined || jsonData === null) {
+            toastr.error(`File is not valid: ${file.name}`);
+            return;
+        }
+
+        // Convert Novel Lorebook
+        if (jsonData.lorebookVersion !== undefined) {
+            console.log('Converting Novel Lorebook');
+            formData.append('convertedData', JSON.stringify(convertNovelLorebook(jsonData)));
+        }
+
+        // Convert Agnai Memory Book
+        if (jsonData.kind === 'memory') {
+            console.log('Converting Agnai Memory Book');
+            formData.append('convertedData', JSON.stringify(convertAgnaiMemoryBook(jsonData)));
+        }
+
+        // Convert Risu Lorebook
+        if (jsonData.type === 'risu') {
+            console.log('Converting Risu Lorebook');
+            formData.append('convertedData', JSON.stringify(convertRisuLorebook(jsonData)));
+        }
+    } catch (error) {
+        toastr.error(`Error parsing file: ${error}`);
+        return;
+    }
+
+    jQuery.ajax({
+        type: "POST",
+        url: "/importworldinfo",
+        data: formData,
+        beforeSend: () => { },
+        cache: false,
+        contentType: false,
+        processData: false,
+        success: async function (data) {
+            if (data.name) {
+                await updateWorldInfoList();
+
+                const newIndex = world_names.indexOf(data.name);
+                if (newIndex >= 0) {
+                    $("#world_editor_select").val(newIndex).trigger('change');
+                }
+
+                toastr.info(`World Info "${data.name}" imported successfully!`);
+            }
+        },
+        error: (jqXHR, exception) => { },
+    });
 }
 
 jQuery(() => {
@@ -1054,7 +1258,28 @@ jQuery(() => {
     $(document).ready(function () {
         registerSlashCommand('world', onWorldInfoChange, [], "– sets active World, or unsets if no args provided", true, true);
     })
-    $("#world_info").on('change', async function () { onWorldInfoChange('__notSlashCommand__') });
+
+    let selectScrollTop = null;
+
+    $("#world_info").on('mousedown change', async function (e) {
+        // If there's no world names, don't do anything
+        if (world_names.length === 0) {
+            e.preventDefault();
+            return;
+        }
+
+        if (deviceInfo.device.type === 'desktop') {
+            e.preventDefault();
+            const option = $(e.target);
+            const selectElement = $(this)[0];
+            selectScrollTop = selectElement.scrollTop;
+            option.prop('selected', !option.prop('selected'));
+            await delay(1);
+            selectElement.scrollTop = selectScrollTop;
+        }
+
+        onWorldInfoChange('__notSlashCommand__');
+    });
 
     //**************************WORLD INFO IMPORT EXPORT*************************//
     $("#world_import_button").on('click', function () {
@@ -1064,79 +1289,10 @@ jQuery(() => {
     $("#world_import_file").on("change", async function (e) {
         const file = e.target.files[0];
 
-        if (!file) {
-            return;
-        }
-
-        const formData = new FormData($("#form_world_import").get(0));
-
-        try {
-            let jsonData;
-
-            if (file.name.endsWith('.png')) {
-                const buffer = new Uint8Array(await getFileBuffer(file));
-                jsonData = extractDataFromPng(buffer, 'naidata');
-            } else {
-                // File should be a JSON file
-                jsonData = await parseJsonFile(file);
-            }
-
-            if (jsonData === undefined || jsonData === null) {
-                toastr.error(`File is not valid: ${file.name}`);
-                return;
-            }
-
-            // Convert Novel Lorebook
-            if (jsonData.lorebookVersion !== undefined) {
-                console.log('Converting Novel Lorebook');
-                formData.append('convertedData', JSON.stringify(convertNovelLorebook(jsonData)));
-            }
-
-            // Convert Agnai Memory Book
-            if (jsonData.kind === 'memory') {
-                console.log('Converting Agnai Memory Book');
-                formData.append('convertedData', JSON.stringify(convertAgnaiMemoryBook(jsonData)));
-            }
-
-            // Convert Risu Lorebook
-            if (jsonData.type === 'risu') {
-                console.log('Converting Risu Lorebook');
-                formData.append('convertedData', JSON.stringify(convertRisuLorebook(jsonData)));
-            }
-        } catch (error) {
-            toastr.error(`Error parsing file: ${error}`);
-            return;
-        }
-
-        jQuery.ajax({
-            type: "POST",
-            url: "/importworldinfo",
-            data: formData,
-            beforeSend: () => { },
-            cache: false,
-            contentType: false,
-            processData: false,
-            success: async function (data) {
-                if (data.name) {
-                    await updateWorldInfoList();
-
-                    const newIndex = world_names.indexOf(data.name);
-                    if (newIndex >= 0) {
-                        $("#world_editor_select").val(newIndex).trigger('change');
-                    }
-
-                    toastr.info(`World Info "${data.name}" imported successfully!`);
-                }
-            },
-            error: (jqXHR, exception) => { },
-        });
+        await importWorldInfo(file);
 
         // Will allow to select the same file twice in a row
         $("#form_world_import").trigger("reset");
-    });
-
-    $("#world_cross").click(() => {
-        hideWorldEditor();
     });
 
     $("#world_create_button").on('click', async () => {
@@ -1189,5 +1345,27 @@ jQuery(() => {
     $('#world_info_character_strategy').on('change', function () {
         world_info_character_strategy = $(this).val();
         saveSettingsDebounced();
-    })
+    });
+
+    $('#world_button').on('click', async function () {
+        const chid = $('#set_character_world').data('chid');
+
+        if (chid) {
+            const worldName = characters[chid]?.data?.extensions?.world;
+            const hasEmbed = checkEmbeddedWorld(chid);
+            if (worldName && world_names.includes(worldName)) {
+                if (!$('#WorldInfo').is(':visible')) {
+                    $('#WIDrawerIcon').trigger('click');
+                }
+                const index = world_names.indexOf(worldName);
+                $("#world_editor_select").val(index).trigger('change');
+            } else if (hasEmbed) {
+                await importEmbeddedWorldInfo();
+                saveCharacterDebounced();
+            }
+            else {
+                $('#char-management-dropdown').val($('#set_character_world').val()).trigger('change');
+            }
+        }
+    });
 });
