@@ -180,6 +180,7 @@ export {
     select_rm_info,
     setCharacterId,
     setCharacterName,
+    replaceCurrentChat,
     setOnlineStatus,
     checkOnlineStatus,
     setEditedMessageId,
@@ -5544,21 +5545,20 @@ function openCharacterWorldPopup() {
         const fileName = getCharaFilename(chid);
         const tempExtraBooks = selectedWorlds.map((index) => world_names[index]).filter((e) => e !== undefined);
 
-        const existingCharLore = charLore.find((e) => e.name === fileName);
-        if (existingCharLore) {
-            if (tempExtraBooks.length === 0) {
-                charLore.splice(existingCharLore, 1);
-            } else {
-                existingCharLore.extraBooks = tempExtraBooks;
-            }
-        } else {
+        const existingCharIndex = charLore.findIndex((e) => e.name === fileName);
+        if (existingCharIndex === -1) {
             const newCharLoreEntry = {
                 name: fileName,
                 extraBooks: tempExtraBooks
             }
 
             charLore.push(newCharLoreEntry);
+        } else if (tempExtraBooks.length === 0) {
+            charLore.splice(existingCharIndex, 1);
+        } else {
+            charLore[existingCharIndex].extraBooks = tempExtraBooks;
         }
+
         Object.assign(world_info, { charLore: charLore });
         saveSettingsDebounced();
     }
@@ -7704,7 +7704,7 @@ $(document).ready(function () {
         eventSource.emit(event_types.GENERATION_STOPPED);
     });
 
-    $('.drawer-toggle').click(function () {
+    $('.drawer-toggle').on('click', function () {
         var icon = $(this).find('.drawer-icon');
         var drawer = $(this).parent().find('.drawer-content');
         if (drawer.hasClass('resizing')) { return }
@@ -7741,7 +7741,7 @@ $(document).ready(function () {
             }
 
 
-        } else if (drawerWasOpenAlready) { //to close
+        } else if (drawerWasOpenAlready) { //to close manually
             icon.toggleClass('closedIcon openIcon');
 
             if (pinnedDrawerClicked) {
@@ -7787,7 +7787,9 @@ $(document).ready(function () {
             if (jQuery.find('.openDrawer').length !== 0) {
                 if (targetParentHasOpenDrawer === 0) {
                     //console.log($('.openDrawer').not('.pinnedOpen').length);
-                    $('.openDrawer').not('.pinnedOpen').slideToggle(200, "swing");
+                    $('.openDrawer').not('.pinnedOpen').addClass('resizing').slideToggle(200, "swing", function () {
+                        $(this).closest('.drawer-content').removeClass('resizing')
+                    });
                     $('.openIcon').toggleClass('closedIcon openIcon');
                     $('.openDrawer').not('.pinnedOpen').toggleClass('closedDrawer openDrawer');
 
@@ -7981,8 +7983,8 @@ $(document).ready(function () {
         const html = `<h3>Enter the URL of the content to import</h3>
         Supported sources:<br>
         <ul class="justifyLeft">
-            <li>Chub characters (direct link or id)<br>Example: <tt>lorebooks/bartleby/example-lorebook</tt></li>
-            <li>Chub lorebooks (direct link or id)<br>Example: <tt>Anonymous/example-character</tt></li>
+            <li>Chub characters (direct link or id)<br>Example: <tt></tt>Anonymous/example-character</li>
+            <li>Chub lorebooks (direct link or id)<br>Example: <tt>lorebooks/bartleby/example-lorebook</tt></li>
             <li>More coming soon...</li>
         <ul>`
         const input = await callPopup(html, 'input');
