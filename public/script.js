@@ -179,6 +179,7 @@ export {
     select_rm_info,
     setCharacterId,
     setCharacterName,
+    replaceCurrentChat,
     setOnlineStatus,
     checkOnlineStatus,
     setEditedMessageId,
