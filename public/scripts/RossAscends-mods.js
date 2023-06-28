@@ -561,8 +561,8 @@ B: ${oldBottom}>> ${bottom}
 ---`)
             power_user.movingUIState[elmntName].margin = 'unset';
         } else {
-            console.log('skipped unsetting margins')
-            console.log(oldTop, top, oldLeft, left)
+            console.debug('skipped unsetting margins')
+            //console.debug(oldTop, top, oldLeft, left)
         }
         saveSettingsDebounced();
 
