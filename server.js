@@ -4024,7 +4024,7 @@ async function downloadChubCharacter(id) {
     }
 
     const buffer = await result.buffer();
-    const fileName = result.headers.get('content-disposition').split('filename=')[1];
+    const fileName = result.headers.get('content-disposition')?.split('filename=')[1] || `${sanitize(id)}.png`;
     const fileType = result.headers.get('content-type');
 
     return { buffer, fileName, fileType };
