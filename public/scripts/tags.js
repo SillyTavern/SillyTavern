@@ -226,6 +226,10 @@ async function importTags(imported_char) {
     }
     selected_tags = existingTags.concat(selected_tags.split(', '));
     selected_tags = selected_tags.filter(t => t !== "");
+    //Anti-troll measure
+    if (selected_tags.length > 15) {
+        selected_tags = selected_tags.slice(0, 15);
+    }
     for (let tagName of selected_tags) {
         let tag = tags.find(t => t.name === tagName);
 
