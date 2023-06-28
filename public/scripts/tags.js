@@ -19,6 +19,7 @@ export {
     appendTagToList,
     createTagMapFromList,
     renameTagKey,
+    importTags,
 };
 
 const random_id = () => Math.round(Date.now() * Math.random()).toString();
@@ -201,6 +202,28 @@ function selectTag(event, ui, listSelector) {
     return false;
 }
 
+function importTags(imported_char) {
+    
+    for (let tagName of imported_char.data.tags) {
+        let tag = tags.find(t => t.name === tagName);
+
+        // create new tag if it doesn't exist
+        if (!tag) {
+            tag = createNewTag(tagName);
+        }
+
+        // add tag to the UI and internal map
+        //appendTagToList(listSelector, tag, { removable: true });
+        addTagToMap(tag.id);
+    };
+    saveSettingsDebounced();
+    printTags();
+
+    // need to return false to keep the input clear
+    return false;
+}
+
+
 function createNewTag(tagName) {
     const tag = {
         id: random_id(),
@@ -364,6 +387,32 @@ export function applyTagsOnCharacterSelect() {
         appendTagToList("#tagList", tag, { removable: true });
     }
 }
+
+export function applyTagsOnImport() {
+    //clearTagsFilter();
+    const chid = Number($(this).attr('chid'));
+    const key = characters[chid].avatar;
+    const tags = getTagsList(key);
+
+    $("#tagList").empty();
+
+    for (const tag of tags) {
+        appendTagToList("#tagList", tag, { removable: true });
+    }
+}
+
+// export function applyTagsOnCharacterSelect(character, tags) {
+//     //clearTagsFilter();
+//     const chid = character.id;
+//     const key = characters[chid].avatar;
+//     const tags = getTagsList(key);
+
+//     $("#tagList").empty();
+
+//     for (const tag of tags) {
+//         appendTagToList("#tagList", tag, { removable: true });
+//     }
+// }
 
 function applyTagsOnGroupSelect() {
     //clearTagsFilter();

@@ -781,6 +781,7 @@ function readFromV2(char) {
         mes_example: 'mes_example',
         talkativeness: 'extensions.talkativeness',
         fav: 'extensions.fav',
+        tags: 'tags',
     };
 
     _.forEach(fieldMappings, (v2Path, charField) => {

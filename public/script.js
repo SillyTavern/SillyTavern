@@ -136,7 +136,7 @@ import {
     getCharaFilename,
 } from "./scripts/utils.js";
 
-import { extension_settings, loadExtensionSettings, runGenerationInterceptors, saveMetadataDebounced } from "./scripts/extensions.js";
+import { extension_settings, getContext, loadExtensionSettings, runGenerationInterceptors, saveMetadataDebounced } from "./scripts/extensions.js";
 import { executeSlashCommands, getSlashCommandsHelp, registerSlashCommand } from "./scripts/slash-commands.js";
 import {
     tag_map,
@@ -147,6 +147,7 @@ import {
     appendTagToList,
     createTagMapFromList,
     renameTagKey,
+    importTags,
 } from "./scripts/tags.js";
 import {
     SECRET_KEYS,
@@ -6311,9 +6312,18 @@ function importCharacter(file) {
                 if (this_chid != undefined && this_chid != "invalid-safety-id") {
                     oldSelectedChar = characters[this_chid].avatar;
                 }
+                console.log("importing tags");
+                console.log(data);
 
                 await getCharacters();
                 select_rm_info(`char_import`, data.file_name, oldSelectedChar);
+                let cur_context = getContext();
+                console.log(cur_context);
+                //Find index of imported character base
+                let cur_index = cur_context.characters.findIndex(item => item.avatar === data.file_name + ".png");
+                console.log(cur_index);
+                let imported_char = cur_context.characters[cur_index];
+                importTags(imported_char);
                 $("#rm_info_block").transition({ opacity: 1, duration: 1000 });
             }
         },
