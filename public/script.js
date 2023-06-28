@@ -5544,21 +5544,20 @@ function openCharacterWorldPopup() {
         const fileName = getCharaFilename(chid);
         const tempExtraBooks = selectedWorlds.map((index) => world_names[index]).filter((e) => e !== undefined);
 
-        const existingCharLore = charLore.find((e) => e.name === fileName);
-        if (existingCharLore) {
-            if (tempExtraBooks.length === 0) {
-                charLore.splice(existingCharLore, 1);
-            } else {
-                existingCharLore.extraBooks = tempExtraBooks;
-            }
-        } else {
+        const existingCharIndex = charLore.findIndex((e) => e.name === fileName);
+        if (existingCharIndex === -1) {
             const newCharLoreEntry = {
                 name: fileName,
                 extraBooks: tempExtraBooks
             }
 
             charLore.push(newCharLoreEntry);
+        } else if (tempExtraBooks.length === 0) {
+            charLore.splice(existingCharIndex, 1);
+        } else {
+            charLore[existingCharIndex].extraBooks = tempExtraBooks;
         }
+
         Object.assign(world_info, { charLore: charLore });
         saveSettingsDebounced();
     }
