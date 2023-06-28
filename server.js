@@ -753,6 +753,7 @@ function convertToV2(char) {
         talkativeness: char.talkativeness,
         fav: char.fav,
         creator: char.creator,
+        tags: char.tags,
     });
 
     result.chat = char.chat;
@@ -821,6 +822,7 @@ function charaFormatData(data) {
     // This is supposed to save all the foreign keys that ST doesn't care about
     const _ = require('lodash');
     const char = tryParse(data.json_data) || {};
+    console.log(data.tags);
 
     // This function uses _.cond() to create a series of conditional checks that return the desired output based on the input data.
     // It checks if data.alternate_greetings is an array, a string, or neither, and acts accordingly.
@@ -860,7 +862,7 @@ function charaFormatData(data) {
     _.set(char, 'data.creator_notes', data.creator_notes || '');
     _.set(char, 'data.system_prompt', data.system_prompt || '');
     _.set(char, 'data.post_history_instructions', data.post_history_instructions || '');
-    _.set(char, 'data.tags', typeof data.tags == 'string' ? (data.tags.split(',').map(x => x.trim()).filter(x => x)) : []);
+    _.set(char, 'data.tags', typeof data.tags == 'string' ? (data.tags.split(',').map(x => x.trim()).filter(x => x)) : data.tags || []);
     _.set(char, 'data.creator', data.creator || '');
     _.set(char, 'data.character_version', data.character_version || '');
     _.set(char, 'data.alternate_greetings', getAlternateGreetings(data));
@@ -1801,6 +1803,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                         "create_date": humanizedISO8601DateTime(),
                         "talkativeness": jsonData.talkativeness ?? 0.5,
                         "creator": jsonData.creator ?? '',
+                        "tags": jsonData.tags ?? '',
                     };
                     char = convertToV2(char);
                     char = JSON.stringify(char);
@@ -1823,6 +1826,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                         "create_date": humanizedISO8601DateTime(),
                         "talkativeness": jsonData.talkativeness ?? 0.5,
                         "creator": jsonData.creator ?? '',
+                        "tags": jsonData.tags ?? '',
                     };
                     char = convertToV2(char);
                     char = JSON.stringify(char);
@@ -1875,6 +1879,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                         "create_date": humanizedISO8601DateTime(),
                         "talkativeness": jsonData.talkativeness ?? 0.5,
                         "creator": jsonData.creator ?? '',
+                        "tags": jsonData.tags ?? '',
                     };
                     char = convertToV2(char);
                     char = JSON.stringify(char);
