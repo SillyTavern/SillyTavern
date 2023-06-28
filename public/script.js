@@ -6317,13 +6317,12 @@ function importCharacter(file) {
 
                 await getCharacters();
                 select_rm_info(`char_import`, data.file_name, oldSelectedChar);
-                let cur_context = getContext();
-                console.log(cur_context);
-                //Find index of imported character base
-                let cur_index = cur_context.characters.findIndex(item => item.avatar === data.file_name + ".png");
-                console.log(cur_index);
-                let imported_char = cur_context.characters[cur_index];
-                importTags(imported_char);
+                if(power_user.import_card_tags){
+                    let currentContext = getContext();
+                    let avatarFileName = `${data.file_name}.png`;
+                    let importedCharacter = currentContext.characters.find(character => character.avatar === avatarFileName);
+                    importTags(importedCharacter);
+                }
                 $("#rm_info_block").transition({ opacity: 1, duration: 1000 });
             }
         },

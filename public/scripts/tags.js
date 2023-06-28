@@ -215,6 +215,7 @@ function importTags(imported_char) {
         // add tag to the UI and internal map
         //appendTagToList(listSelector, tag, { removable: true });
         addTagToMap(tag.id);
+        tag_map[imported_char.avatar].push(tag.id);
     };
     saveSettingsDebounced();
     printTags();

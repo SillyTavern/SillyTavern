@@ -571,7 +571,7 @@ function loadPowerUserSettings(settings, data) {
     $(`#tokenizer option[value="${power_user.tokenizer}"]`).attr('selected', true);
     $(`#pygmalion_formatting option[value=${power_user.pygmalion_formatting}]`).attr("selected", true);
     $(`#send_on_enter option[value=${power_user.send_on_enter}]`).attr("selected", true);
-    $("#show_card_tags").prop("checked", power_user.show_card_tags);
+    $("#import_card_tags").prop("checked", power_user.import_card_tags);
     $("#collapse-newlines-checkbox").prop("checked", power_user.collapse_newlines);
     $("#pin-examples-checkbox").prop("checked", power_user.pin_examples);
     $("#disable-description-formatting-checkbox").prop("checked", power_user.disable_description_formatting);
@@ -1314,8 +1314,8 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
-    $("#show_card_tags").on('input', function () {
-        power_user.show_card_tags = !!$(this).prop('checked');
+    $("#import_card_tags").on('input', function () {
+        power_user.import_card_tags = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 
