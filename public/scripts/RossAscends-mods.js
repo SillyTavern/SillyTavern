@@ -27,7 +27,7 @@ import {
     SECRET_KEYS,
     secret_state,
 } from "./secrets.js";
-import { sortByCssOrder, debounce } from "./utils.js";
+import { sortByCssOrder, debounce, delay } from "./utils.js";
 import { chat_completion_sources, oai_settings } from "./openai.js";
 
 var NavToggle = document.getElementById("nav-toggle");
@@ -479,13 +479,30 @@ function OpenNavPanels() {
 
 export function dragElement(elmnt) {
     var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-    var height, width, top, left;
+    var height, width, top, left, right, bottom;
+
+    var oldTop = Number((String($(elmnt).css('top')).replace('px', '')))
+    var oldLeft = Number((String($(elmnt).css('left')).replace('px', '')))
+    var oldWidth = Number((String($(elmnt).css('width')).replace('px', '')))
+    var oldHeight = Number((String($(elmnt).css('width')).replace('px', '')))
+    var oldRight = Number((String($(elmnt).css('right')).replace('px', '')))
+    var oldBottom = Number((String($(elmnt).css('bottom')).replace('px', '')))
     var elmntName = elmnt.attr('id');
-    console.debug(`init drag for ${elmntName}`)
+    console.debug(`${elmntName} init state: 
+T: ${$(elmnt).css('top')}
+L: ${$(elmnt).css('left')}
+W: ${$(elmnt).css('width')}
+H: ${$(elmnt).css('height')}
+R: ${$(elmnt).css('right')}
+B: ${$(elmnt).css('bottom')}
+---`);
+
+
     const elmntNameEscaped = $.escapeSelector(elmntName);
     const elmntHeader = $(`#${elmntNameEscaped}header`);
     if (elmntHeader.length) {
         elmntHeader.off('mousedown').on('mousedown', (e) => {
+
             dragMouseDown(e);
         });
     } else {
@@ -498,6 +515,7 @@ export function dragElement(elmnt) {
             || $(target).hasClass('resizing')
             || Number((String(target.height).replace('px', ''))) < 50
             || Number((String(target.width).replace('px', ''))) < 50
+            || power_user.movingUI === false
             || isMobile() === true
         ) {
             console.debug('aborting mutator')
@@ -510,12 +528,8 @@ export function dragElement(elmnt) {
         width = target.offsetWidth;
         top = parseInt(style.top);
         left = parseInt(style.left);
-
-        /*         console.log(`
-                        height=${height}, 
-                        width=${width}, 
-                        top=${top}, 
-                        left=${left}`); */
+        right = parseInt(style.right);
+        bottom = parseInt(style.bottom);
 
         if (!power_user.movingUIState[elmntName]) {
             console.debug(`adding config property for ${elmntName}`)
@@ -524,11 +538,32 @@ export function dragElement(elmnt) {
 
         power_user.movingUIState[elmntName].top = top;
         power_user.movingUIState[elmntName].left = left;
-        power_user.movingUIState[elmntName].width = width;
-        power_user.movingUIState[elmntName].height = height;
-        power_user.movingUIState[elmntName].right = 'unset';
-        power_user.movingUIState[elmntName].bottom = 'unset';
-        power_user.movingUIState[elmntName].margin = 'unset';
+
+        if (!isNaN(oldWidth)
+            && !isNaN(oldHeight)
+            && (oldHeight !== height || oldWidth !== width)) {
+            power_user.movingUIState[elmntName].width = width;
+            power_user.movingUIState[elmntName].height = height;
+        } else {
+            console.debug('skipping W/H setting')
+        }
+        power_user.movingUIState[elmntName].right = right;
+        power_user.movingUIState[elmntName].bottom = bottom;
+        if (!isNaN(oldTop) && !isNaN(oldLeft) && (oldTop !== top || oldLeft !== left)) {
+            console.debug('unsetting margin due to custom position')
+            console.debug(`${elmntName}:
+T: ${oldTop}>>${top}
+L: ${oldLeft}>> ${left}
+H: ${oldHeight} >> ${height}
+W: ${oldWidth}>> ${width}
+R: ${oldRight} >> ${right}
+B: ${oldBottom}>> ${bottom}
+---`)
+            power_user.movingUIState[elmntName].margin = 'unset';
+        } else {
+            console.log('skipped unsetting margins')
+            console.log(oldTop, top, oldLeft, left)
+        }
         saveSettingsDebounced();
 
 
@@ -632,29 +667,28 @@ export function dragElement(elmnt) {
     }
 }
 
+export async function initMovingUI() {
+    if (isMobile() === false && power_user.movingUI === true) {
+        console.debug('START MOVING UI')
+        dragElement($("#sheld"));
+        dragElement($("#left-nav-panel"));
+        dragElement($("#right-nav-panel"));
+        dragElement($("#WorldInfo"));
+        await delay(1000)
+        console.debug('loading AN draggable function')
+        dragElement($("#floatingPrompt"))
+
+    }
+}
+
 // ---------------------------------------------------
 
 $("document").ready(function () {
 
     // initial status check
     setTimeout(() => {
-
-        if (isMobile() === false) {
-            console.debug('START MOVING UI')
-            dragElement($("#sheld"));
-            dragElement($("#left-nav-panel"));
-            dragElement($("#right-nav-panel"));
-            dragElement($("#WorldInfo"));
-            dragElement($("#floatingPrompt"));
-        }
-        RA_checkOnlineStatus
-    }
-        , 100);
-
-
-
-
-    //$('div').on('resize', saveMovingUIState());
+        RA_checkOnlineStatus();
+    }, 100);
 
     // read the state of AutoConnect and AutoLoadChat.
     $(AutoConnectCheckbox).prop("checked", LoadLocalBool("AutoConnectEnabled"));

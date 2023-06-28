@@ -18,7 +18,7 @@ import {
     replaceCurrentChat,
     setCharacterId
 } from "../script.js";
-import { favsToHotswap, isMobile } from "./RossAscends-mods.js";
+import { favsToHotswap, isMobile, initMovingUI } from "./RossAscends-mods.js";
 import {
     groups,
     selected_group,
@@ -310,7 +310,13 @@ function switchMovingUI() {
     const movingUI = localStorage.getItem(storage_keys.movingUI);
     power_user.movingUI = movingUI === null ? false : movingUI == "true";
     $("body").toggleClass("movingUI", power_user.movingUI);
-    scrollChatToBottom();
+    if (power_user.movingUI === true) {
+        initMovingUI()
+        if (power_user.movingUIState) {
+            loadMovingUIState();
+        }
+    };
+    //scrollChatToBottom();
 }
 
 function noShadows() {
@@ -649,7 +655,10 @@ function loadPowerUserSettings(settings, data) {
 }
 
 function loadMovingUIState() {
-    if (isMobile() === false && power_user.movingUIState) {
+    if (isMobile() === false
+        && power_user.movingUIState
+        && power_user.movingUI === true) {
+        console.debug('loading movingUI state')
         for (var elmntName of Object.keys(power_user.movingUIState)) {
             var elmntState = power_user.movingUIState[elmntName];
             try {
@@ -665,7 +674,7 @@ function loadMovingUIState() {
             }
         }
     } else {
-        console.debug('skipping movingUI state load for mobile')
+        console.debug('skipping movingUI state load')
         return
     }
 }
@@ -940,6 +949,22 @@ function resetMovablePanels() {
     document.getElementById("right-nav-panel").style.width = '';
     document.getElementById("right-nav-panel").style.margin = '';
 
+    document.getElementById("WorldInfo").style.top = '';
+    document.getElementById("WorldInfo").style.left = '';
+    document.getElementById("WorldInfo").style.right = '';
+    document.getElementById("WorldInfo").style.bottom = '';
+    document.getElementById("WorldInfo").style.height = '';
+    document.getElementById("WorldInfo").style.width = '';
+    document.getElementById("WorldInfo").style.margin = '';
+
+    document.getElementById("floatingPrompt").style.top = '';
+    document.getElementById("floatingPrompt").style.left = '';
+    document.getElementById("floatingPrompt").style.right = '';
+    document.getElementById("floatingPrompt").style.bottom = '';
+    document.getElementById("floatingPrompt").style.height = '';
+    document.getElementById("floatingPrompt").style.width = '';
+    document.getElementById("floatingPrompt").style.margin = '';
+
     if ($("#expression-holder")) {
         document.getElementById("expression-holder").style.top = '';
         document.getElementById("expression-holder").style.left = '';
@@ -959,23 +984,6 @@ function resetMovablePanels() {
         $(".zoomed_avatar").css('height', '');
         $(".zoomed_avatar").css('margin', '');
     }
-
-
-    document.getElementById("WorldInfo").style.top = '';
-    document.getElementById("WorldInfo").style.left = '';
-    document.getElementById("WorldInfo").style.right = '';
-    document.getElementById("WorldInfo").style.bottom = '';
-    document.getElementById("WorldInfo").style.height = '';
-    document.getElementById("WorldInfo").style.width = '';
-    document.getElementById("WorldInfo").style.margin = '';
-
-    document.getElementById("floatingPrompt").style.top = '';
-    document.getElementById("floatingPrompt").style.left = '';
-    document.getElementById("floatingPrompt").style.right = '';
-    document.getElementById("floatingPrompt").style.bottom = '';
-    document.getElementById("floatingPrompt").style.height = '';
-    document.getElementById("floatingPrompt").style.width = '';
-    document.getElementById("floatingPrompt").style.margin = '';
 
     $('*[data-dragged="true"]').removeAttr('data-dragged');
     power_user.movingUIState = {}

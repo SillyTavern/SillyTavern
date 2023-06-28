@@ -3874,9 +3874,10 @@ label[for="extensions_autoconnect"] {
     max-height: calc(100svh - 70px);
     display: none;
     position: absolute;
+    top: 41px;
     left: 0;
     right: 0;
-    margin: 35px auto 0 auto;
+    margin: 0 auto;
     backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
     -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
     z-index: 9999 !important;

@@ -1370,4 +1370,21 @@ jQuery(() => {
             }
         }
     });
-});
+
+    $("#world_info").on('mousewheel', function (e) {
+        e.preventDefault();
+        if ($(this).is(':animated')) {
+            return; //dont force multiple scroll animations
+        }
+        var wheelDelta = e.originalEvent.wheelDelta.toFixed(0);
+        var DeltaPosNeg = (wheelDelta >= 0) ? 1 : -1; //determine if scrolling up or down
+        var containerHeight = $(this).height().toFixed(0);
+        var optionHeight = $(this).find('option').first().height().toFixed(0);
+        var visibleOptions = (containerHeight / optionHeight).toFixed(0); //how many options we can see
+        var pixelsToScroll = (optionHeight * visibleOptions * DeltaPosNeg).toFixed(0); //scroll a full container height
+        var scrollTop = ($(this).scrollTop() - pixelsToScroll).toFixed(0);
+
+        $(this).animate({ scrollTop: scrollTop }, 200);
+    });
+
+})
