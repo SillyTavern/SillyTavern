@@ -580,6 +580,7 @@ function loadPowerUserSettings(settings, data) {
     $(`#tokenizer option[value="${power_user.tokenizer}"]`).attr('selected', true);
     $(`#pygmalion_formatting option[value=${power_user.pygmalion_formatting}]`).attr("selected", true);
     $(`#send_on_enter option[value=${power_user.send_on_enter}]`).attr("selected", true);
+    $("#import_card_tags").prop("checked", power_user.import_card_tags);
     $("#collapse-newlines-checkbox").prop("checked", power_user.collapse_newlines);
     $("#pin-examples-checkbox").prop("checked", power_user.pin_examples);
     $("#disable-description-formatting-checkbox").prop("checked", power_user.disable_description_formatting);
@@ -1305,6 +1306,11 @@ $(document).ready(() => {
     $("#send_on_enter").on('change', function () {
         const value = $(this).find(':selected').val();
         power_user.send_on_enter = Number(value);
+        saveSettingsDebounced();
+    });
+
+    $("#import_card_tags").on('input', function () {
+        power_user.import_card_tags = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 

@@ -783,6 +783,7 @@ function readFromV2(char) {
         mes_example: 'mes_example',
         talkativeness: 'extensions.talkativeness',
         fav: 'extensions.fav',
+        tags: 'tags',
     };
 
     _.forEach(fieldMappings, (v2Path, charField) => {
@@ -808,7 +809,7 @@ function readFromV2(char) {
                 return;
             }
         }
-        if (!_.isUndefined(char[charField]) && !_.isUndefined(v2Value) && char[charField] !== v2Value) {
+        if (!_.isUndefined(char[charField]) && !_.isUndefined(v2Value) && String(char[charField]) !== String(v2Value)) {
             console.debug(`Spec v2 data mismatch with Spec v1 for field: ${charField}`, char[charField], v2Value);
         }
         char[charField] = v2Value;

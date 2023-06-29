@@ -136,7 +136,7 @@ import {
     getCharaFilename,
 } from "./scripts/utils.js";
 
-import { extension_settings, loadExtensionSettings, runGenerationInterceptors, saveMetadataDebounced } from "./scripts/extensions.js";
+import { extension_settings, getContext, loadExtensionSettings, runGenerationInterceptors, saveMetadataDebounced } from "./scripts/extensions.js";
 import { executeSlashCommands, getSlashCommandsHelp, registerSlashCommand } from "./scripts/slash-commands.js";
 import {
     tag_map,
@@ -147,6 +147,7 @@ import {
     appendTagToList,
     createTagMapFromList,
     renameTagKey,
+    importTags,
     tag_filter_types,
 } from "./scripts/tags.js";
 import {
@@ -6335,6 +6336,12 @@ function importCharacter(file) {
 
                 await getCharacters();
                 select_rm_info(`char_import`, data.file_name, oldSelectedChar);
+                if(power_user.import_card_tags){
+                    let currentContext = getContext();
+                    let avatarFileName = `${data.file_name}.png`;
+                    let importedCharacter = currentContext.characters.find(character => character.avatar === avatarFileName);
+                    await importTags(importedCharacter);
+                }
                 $("#rm_info_block").transition({ opacity: 1, duration: 1000 });
             }
         },

@@ -5,6 +5,7 @@ import {
     callPopup,
     menu_type,
     updateVisibleDivs,
+    getCharacters,
 } from "../script.js";
 
 import { selected_group } from "./group-chats.js";
@@ -19,6 +20,7 @@ export {
     appendTagToList,
     createTagMapFromList,
     renameTagKey,
+    importTags,
 };
 
 const random_id = () => Math.round(Date.now() * Math.random()).toString();
@@ -217,6 +219,52 @@ function selectTag(event, ui, listSelector) {
     // need to return false to keep the input clear
     return false;
 }
+
+function getExistingTags(new_tags) {
+    let existing_tags = [];
+    for (let tag of new_tags) {
+        if (tags.find(t => t.name === tag)) {
+            existing_tags.push(tag);
+        }
+    }
+    return existing_tags
+}
+
+
+async function importTags(imported_char) {
+    let imported_tags = imported_char.tags.filter(t => t !== "ROOT" && t !== "TAVERN");
+    let existingTags = await getExistingTags(imported_tags);
+    let newTags = imported_tags.filter(t => !existingTags.includes(t));
+    let selected_tags = "";
+    if(newTags.length === 0) {
+        await callPopup(`<h3>Importing Tags</h3><p>${existingTags.length} exisiting tags have been found.</p>`, 'text'); 
+    } else {
+        selected_tags = await callPopup(`<h3>Importing Tags</h3><p>${existingTags.length} exisiting tags have been found.</p><p>The following ${newTags.length} new tags will be imported.</p>`, 'input', newTags.join(', '));
+    }
+    selected_tags = existingTags.concat(selected_tags.split(', '));
+    selected_tags = selected_tags.filter(t => t !== "");
+    //Anti-troll measure
+    if (selected_tags.length > 15) {
+        selected_tags = selected_tags.slice(0, 15);
+    }
+    for (let tagName of selected_tags) {
+        let tag = tags.find(t => t.name === tagName);
+
+        if (!tag) {
+            tag = createNewTag(tagName);
+        }
+
+        addTagToMap(tag.id);
+        tag_map[imported_char.avatar].push(tag.id);
+    };
+    saveSettingsDebounced();
+    printTags();
+    getCharacters();
+
+    // need to return false to keep the input clear
+    return false;
+}
+
 
 function createNewTag(tagName) {
     const tag = {
