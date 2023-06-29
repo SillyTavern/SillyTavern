@@ -1571,8 +1571,8 @@ function onSettingsPresetChange() {
     saveSettingsDebounced();
 }
 
-function onModelChange() {
-    const value = $(this).val();
+async function onModelChange() {
+    let value = $(this).val();
 
     if ($(this).is('#model_claude_select')) {
         console.log('Claude model changed to', value);
@@ -1610,6 +1610,10 @@ function onModelChange() {
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
+        if (value == '' && 'ai' in window) {
+            value = await window.ai.getCurrentModel();
+        }
+
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
         }
