@@ -395,6 +395,7 @@ class Client {
         //if API changes in the future, just change these to find the new path
         const viewerKeyName = 'viewer'
         const botNameKeyName = 'chatOfBotDisplayName'
+        const defaultBotKeyName = 'defaultBotNickname'
 
         const r = await request_with_retries(() => this.session.get(this.home_url));
         const jsonRegex = /<script id="__NEXT_DATA__" type="application\/json">(.+?)<\/script>/;
@@ -403,6 +404,8 @@ class Client {
 
         const viewerPath = findKey(nextData, viewerKeyName);
         const botNamePath = findKey(nextData, botNameKeyName);
+        const defaultBotPath = findKey(nextData, defaultBotKeyName);
+        console.log(`DefaultBot found at: ${defaultBotPath.join('.')}`)
 
         let viewer = null;
         if (viewerPath) {
@@ -411,13 +414,13 @@ class Client {
 
         //if the API changes, these reports will tell us how it changed
         if (viewerPath) {
-            console.log(`'viewer' key: ${viewerPath.join('.')}`);
+            console.log(`'${viewerKeyName}' key: ${viewerPath.join('.')}`);
         } else {
             console.log(`ERROR: '${viewerKeyName}' key not found.`);
             //console.log(logObjectStructure(nextData, 0, 2));
         }
         if (botNamePath) {
-            console.log(`'chatOfBotDisplayName' key: ${botNamePath.join('.')}`);
+            console.log(`'${botNameKeyName}' key: ${botNamePath.join('.')}`);
         } else {
             console.log(`ERROR: '${botNameKeyName}' key not found.`);
             //console.log(logObjectStructure(nextData, 0, 2));
