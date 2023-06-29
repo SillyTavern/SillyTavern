@@ -405,7 +405,6 @@ class Client {
         const viewerPath = findKey(nextData, viewerKeyName);
         const botNamePath = findKey(nextData, botNameKeyName);
         const defaultBotPath = findKey(nextData, defaultBotKeyName);
-        console.log(`DefaultBot found at: ${defaultBotPath.join('.')}`)
 
         let viewer = null;
         if (viewerPath) {
@@ -423,6 +422,13 @@ class Client {
             console.log(`'${botNameKeyName}' key: ${botNamePath.join('.')}`);
         } else {
             console.log(`ERROR: '${botNameKeyName}' key not found.`);
+            //console.log(logObjectStructure(nextData, 0, 2));
+        }
+
+        if (defaultBotPath) {
+            console.log(`'${defaultBotKeyName}' key: ${defaultBotPath.join('.')}`);
+        } else {
+            console.log(`ERROR: '${defaultBotKeyName}' key not found.`);
             //console.log(logObjectStructure(nextData, 0, 2));
         }
 
