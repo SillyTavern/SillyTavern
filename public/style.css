@@ -1913,6 +1913,40 @@ grammarly-extension {
     background-color: red;
 }
 
+#kobold_order {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    width: 100%;
+    padding: 5px;
+}
+
+#kobold_order > div {
+    padding: 5px;
+    padding-left: 25px;
+    width: 100%;
+    border-radius: 5px;
+    color: var(--SmartThemeBodyColor);
+    background-color: var(--black30a);
+    border: 1px solid var(--white30a);
+    cursor: grab;
+    transition: background-color 200ms ease-in-out;
+    position: relative;
+    user-select: none;
+}
+
+#kobold_order > div:hover {
+    background-color: var(--grey30a);
+}
+
+#kobold_order > div::after {
+    content: "☰";
+    left: 5px;
+    position: absolute;
+}
+
 /* ------ online status indicators and texts. 2 = kobold AI, 3 = Novel AI  ----------*/
 #online_status2,
 #online_status_horde,

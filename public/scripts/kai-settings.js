@@ -26,6 +26,7 @@ const kai_settings = {
     single_line: false,
     use_stop_sequence: false,
     streaming_kobold: false,
+    sampler_order: [0, 1, 2, 3, 4, 5, 6],
 };
 
 const MIN_STOP_SEQUENCE_VERSION = '1.2.2';
@@ -69,10 +70,11 @@ function loadKoboldSettings(preset) {
 }
 
 function getKoboldGenerationData(finalPromt, this_settings, this_amount_gen, this_max_context, isImpersonate, type) {
+    const sampler_order = kai_settings.sampler_order || this_settings.sampler_order;
     let generate_data = {
         prompt: finalPromt,
         gui_settings: false,
-        sampler_order: this_settings.sampler_order,
+        sampler_order: sampler_order,
         max_context_length: parseInt(this_max_context),
         max_length: this_amount_gen,
         rep_pen: parseFloat(kai_settings.rep_pen),
@@ -84,13 +86,13 @@ function getKoboldGenerationData(finalPromt, this_settings, this_amount_gen, thi
         top_k: kai_settings.top_k,
         top_p: kai_settings.top_p,
         typical: kai_settings.typical,
-        s1: this_settings.sampler_order[0],
-        s2: this_settings.sampler_order[1],
-        s3: this_settings.sampler_order[2],
-        s4: this_settings.sampler_order[3],
-        s5: this_settings.sampler_order[4],
-        s6: this_settings.sampler_order[5],
-        s7: this_settings.sampler_order[6],
+        s1: sampler_order[0],
+        s2: sampler_order[1],
+        s3: sampler_order[2],
+        s4: sampler_order[3],
+        s5: sampler_order[4],
+        s6: sampler_order[5],
+        s7: sampler_order[6],
         use_world_info: false,
         singleline: kai_settings.single_line,
         stop_sequence: kai_settings.use_stop_sequence ? getStoppingStrings(isImpersonate, false) : undefined,
@@ -206,6 +208,13 @@ const sliders = [
         format: (val) => val,
         setValue: (val) => { kai_settings.rep_pen_slope = Number(val); },
     },
+    {
+        name: "sampler_order",
+        sliderId: "#no_op_selector",
+        counterId: "#no_op_selector",
+        format: (val) => val,
+        setValue: (val) => { sortItemsByOrder(val); },
+    }
 ];
 
 function canUseKoboldStopSequence(version) {
@@ -216,6 +225,17 @@ function canUseKoboldStreaming(koboldVersion) {
     if (koboldVersion && koboldVersion.result == 'KoboldCpp') {
         return (koboldVersion.version || '0.0').localeCompare(MIN_STREAMING_KCPPVERSION, undefined, { numeric: true, sensitivity: 'base' }) > -1;
     } else return false;
+}
+
+function sortItemsByOrder(orderArray) {
+    console.debug('Preset samplers order: ' + orderArray);
+    const $draggableItems = $("#kobold_order");
+
+    for (let i = 0; i < orderArray.length; i++) {
+        const index = orderArray[i];
+        const $item = $draggableItems.find(`[data-id="${index}"]`).detach();
+        $draggableItems.append($item);
+    }
 }
 
 $(document).ready(function () {
@@ -239,5 +259,17 @@ $(document).ready(function () {
         const value = $(this).prop('checked');
         kai_settings.streaming_kobold = value;
         saveSettingsDebounced();
+    });
+
+    $('#kobold_order').sortable({
+        stop: function () {
+            const order = [];
+            $('#kobold_order').children().each(function () {
+                order.push($(this).data('id'));
+            });
+            kai_settings.sampler_order = order;
+            console.log('Samplers reordered:', kai_settings.sampler_order);
+            saveSettingsDebounced();
+        },
     });
 });
