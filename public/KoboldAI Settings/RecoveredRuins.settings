@@ -1,5 +1,5 @@
 {
-    "max_length": 2048,
+    "max_length": 100,
     "temp": 1,
     "genamt": 100,
     "top_k": 0,
@@ -8,7 +8,7 @@
     "typical": 1,
     "tfs": 1,
     "rep_pen": 1.1,
-    "rep_pen_range": 2048,
+    "rep_pen_range": 600,
     "rep_pen_slope": 0,
     "sampler_order": [
         6,
