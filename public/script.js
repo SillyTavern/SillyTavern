@@ -2649,20 +2649,16 @@ function getMaxContextSize() {
         this_max_context = (max_context - amount_gen);
     }
     if (main_api == 'novel') {
-        if (novel_tier === 1) {
-            this_max_context = 1024;
-        } else {
-            this_max_context = Number(max_context);
-            if (nai_settings.model_novel == 'krake-v2') {
-                // Krake has a max context of 2048
-                // Should be used with nerdstash tokenizer for best results
-                this_max_context = Math.min(max_context, 2048);
-            }
-            if (nai_settings.model_novel == 'clio-v1') {
-                // Clio has a max context of 8192
-                // Should be used with nerdstash_v2 tokenizer for best results
-                this_max_context = Math.min(max_context, 8192);
-            }
+        this_max_context = Number(max_context);
+        if (nai_settings.model_novel == 'krake-v2' || nai_settings.model_novel == 'euterpe-v2') {
+            // Krake and Euterpe have a max context of 2048
+            // Should be used with nerdstash tokenizer for best results
+            this_max_context = Math.min(max_context, 2048);
+        }
+        if (nai_settings.model_novel == 'clio-v1') {
+            // Clio has a max context of 8192
+            // Should be used with nerdstash_v2 tokenizer for best results
+            this_max_context = Math.min(max_context, 8192);
         }
     }
     if (main_api == 'openai') {
