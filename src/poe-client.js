@@ -431,7 +431,16 @@ class Client {
             console.log(`'${defaultBotKeyName}' key: ${defaultBotPath.join('.')}`);
         } else {
             console.log(`ERROR: '${defaultBotKeyName}' key not found.`);
-            //console.log(logObjectStructure(nextData, 0, 2));
+
+        }
+
+        if (!viewerPath || !botNamePath || !defaultBotPath) {
+            console.log('-----------------')
+            console.log("ERROR READING POE API! THIS IS THE RESPONSE STRUCTURE:")
+            console.log("SEARCH THIS LIST FOR 'chatOfBotDisplayName', 'viewer', AND 'defaultBotNickname'...")
+            console.log("-----------------")
+            console.log(logObjectStructure(nextData, 0, 4));
+            console.log("-----------------")
         }
 
         this.formkey = extractFormKey(r.data);
