@@ -236,10 +236,10 @@ async function importTags(imported_char) {
     let existingTags = await getExistingTags(imported_tags);
     let newTags = imported_tags.filter(t => !existingTags.includes(t));
     let selected_tags = "";
-    if(newTags.length === 0) {
-        await callPopup(`<h3>Importing Tags</h3><p>${existingTags.length} exisiting tags have been found.</p>`, 'text'); 
+    if (newTags.length === 0) {
+        await callPopup(`<h3>Importing Tags</h3><p>${existingTags.length} existing tags have been found.</p>`, 'text');
     } else {
-        selected_tags = await callPopup(`<h3>Importing Tags</h3><p>${existingTags.length} exisiting tags have been found.</p><p>The following ${newTags.length} new tags will be imported.</p>`, 'input', newTags.join(', '));
+        selected_tags = await callPopup(`<h3>Importing Tags</h3><p>${existingTags.length} existing tags have been found.</p><p>The following ${newTags.length} new tags will be imported.</p>`, 'input', newTags.join(', '));
     }
     selected_tags = existingTags.concat(selected_tags.split(', '));
     selected_tags = selected_tags.filter(t => t !== "");
@@ -258,8 +258,9 @@ async function importTags(imported_char) {
         tag_map[imported_char.avatar].push(tag.id);
     };
     saveSettingsDebounced();
-    printTags();
-    getCharacters();
+    await getCharacters();
+    printTagFilters(tag_filter_types.character);
+    printTagFilters(tag_filter_types.group_member);
 
     // need to return false to keep the input clear
     return false;

@@ -6336,7 +6336,7 @@ function importCharacter(file) {
 
                 await getCharacters();
                 select_rm_info(`char_import`, data.file_name, oldSelectedChar);
-                if(power_user.import_card_tags){
+                if (power_user.import_card_tags) {
                     let currentContext = getContext();
                     let avatarFileName = `${data.file_name}.png`;
                     let importedCharacter = currentContext.characters.find(character => character.avatar === avatarFileName);
