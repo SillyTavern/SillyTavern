@@ -4859,7 +4859,7 @@ body.waifuMode .zoomed_avatar {
     text-shadow: 0px 0px calc(var(--shadowWidth) * 1px) var(--SmartThemeShadowColor);
     backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)*2));
     color: var(--SmartThemeBodyColor);
-    z-index: 4000;
+    z-index: 40000;
 }
 
 .select2-selection__clear {

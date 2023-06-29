@@ -5586,6 +5586,15 @@ function openCharacterWorldPopup() {
     const worldId = (menu_type == 'create' ? create_save.world : characters[chid]?.data?.extensions?.world) || '';
     template.find('.character_name').text(name);
 
+    // Not needed on mobile
+    if (deviceInfo && deviceInfo.device.type === 'desktop') {
+        $(extraSelect).select2({
+            width: '100%',
+            placeholder: 'No auxillary Lorebooks set. Click here to select.',
+            allowClear: true,
+            closeOnSelect: false,
+        });
+    }
 
     // Apped to base dropdown
     world_names.forEach((item, i) => {
@@ -5622,7 +5631,7 @@ function openCharacterWorldPopup() {
             return;
         }
 
-        let selectScrollTop = null;
+        /*let selectScrollTop = null;
 
         if (deviceInfo && deviceInfo.device.type === 'desktop') {
             e.preventDefault();
@@ -5632,7 +5641,7 @@ function openCharacterWorldPopup() {
             option.prop('selected', !option.prop('selected'));
             await delay(1);
             selectElement.scrollTop = selectScrollTop;
-        }
+        }*/
 
         onExtraWorldInfoChanged();
     });
