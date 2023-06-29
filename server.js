@@ -2889,15 +2889,30 @@ app.get('/thumbnail', jsonParser, async function (request, response) {
 app.post("/getstatus_openai", jsonParser, function (request, response_getstatus_openai = response) {
     if (!request.body) return response_getstatus_openai.sendStatus(400);
 
-    const api_key_openai = readSecret(SECRET_KEYS.OPENAI);
+    let api_url;
+    let api_key_openai;
+    let headers;
 
-    if (!api_key_openai) {
-        return response_getstatus_openai.sendStatus(401);
+    if (request.body.use_openrouter == false) {
+        api_url = new URL(request.body.reverse_proxy || api_openai).toString();
+        api_key_openai = readSecret(SECRET_KEYS.OPENAI);
+        headers = {};
+    } else {
+        api_url = 'https://openrouter.ai/api/v1';
+        api_key_openai = readSecret(SECRET_KEYS.OPENROUTER);
+        // OpenRouter needs to pass the referer: https://openrouter.ai/docs
+        headers = { 'HTTP-Referer': request.headers.referer };
     }
 
-    const api_url = new URL(request.body.reverse_proxy || api_openai).toString();
+    if (!api_key_openai) {
+        return response_getstatus_openai.status(401).send({ error: true });
+    }
+
     const args = {
-        headers: { "Authorization": "Bearer " + api_key_openai }
+        headers: {
+            "Authorization": "Bearer " + api_key_openai,
+            ...headers,
+        },
     };
     client.get(api_url + "/models", args, function (data, response) {
         if (response.statusCode == 200) {
@@ -3132,9 +3147,20 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
         return sendClaudeRequest(request, response_generate_openai);
     }
 
-    const api_url = new URL(request.body.reverse_proxy || api_openai).toString();
+    let api_url;
+    let api_key_openai;
+    let headers;
 
-    const api_key_openai = readSecret(SECRET_KEYS.OPENAI);
+    if (request.body.use_openrouter == false) {
+        api_url = new URL(request.body.reverse_proxy || api_openai).toString();
+        api_key_openai = readSecret(SECRET_KEYS.OPENAI);
+        headers = {};
+    } else {
+        api_url = 'https://openrouter.ai/api/v1';
+        api_key_openai = readSecret(SECRET_KEYS.OPENROUTER);
+        // OpenRouter needs to pass the referer: https://openrouter.ai/docs
+        headers = { 'HTTP-Referer': request.headers.referer };
+    }
 
     if (!api_key_openai) {
         return response_generate_openai.status(401).send({ error: true });
@@ -3152,7 +3178,8 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
         url: api_url + '/chat/completions',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + api_key_openai
+            'Authorization': 'Bearer ' + api_key_openai,
+            ...headers,
         },
         data: {
             "messages": request.body.messages,
@@ -3498,6 +3525,7 @@ const SECRET_KEYS = {
     NOVEL: 'api_key_novel',
     CLAUDE: 'api_key_claude',
     DEEPL: 'deepl',
+    OPENROUTER: 'api_key_openrouter',
 }
 
 function migrateSecrets() {

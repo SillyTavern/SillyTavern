@@ -1318,7 +1318,7 @@
                             <option value="koboldhorde">KoboldAI Horde</option>
                             <option value="textgenerationwebui">Text Gen WebUI (ooba)</option>
                             <option value="novel">NovelAI</option>
-                            <option value="openai">Chat Completion (OpenAI, Claude, Window.ai)</option>
+                            <option value="openai">Chat Completion (OpenAI, Claude, Window/OpenRouter)</option>
                             <option value="poe">Poe</option>
                         </select>
                     </div>
@@ -1366,8 +1366,8 @@
                                     <input id="horde_api_key" name="horde_api_key" class="text_pole flex1" maxlength="500" type="text" placeholder="0000000000" autocomplete="off">
                                     <div title="Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_horde"></div>
                                 </div>
-                                <div class="neutral_warning">For privacy reasons, your API key will be hidden after you
-                                    reload the page.</div>
+                                <div data-for="horde_api_key" class="neutral_warning">
+                                    For privacy reasons, your API key will be hidden after you reload the page.</div>
                                 <h4 class="horde_model_title">
                                     Models
                                     <div id="horde_refresh" title="Refresh models" class="right_menu_button">
@@ -1417,8 +1417,9 @@
                                 <div title="Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_novel">
                                 </div>
                             </div>
-                            <div class="neutral_warning">For privacy reasons, your API key will be hidden after you
-                                reload the page.</div>
+                            <div data-for="api_key_novel" class="neutral_warning">
+                                For privacy reasons, your API key will be hidden after you reload the page.
+                            </div>
                             <input id="api_button_novel" class="menu_button" type="submit" value="Connect">
                             <div id="api_loading_novel" class="api-load-icon fa-solid fa-hourglass fa-spin"></div>
                             <h4><span data-i18n="Novel AI Model">Novel AI Model</span>
@@ -1473,7 +1474,7 @@
                         </h3>
                         <select id="chat_completion_source">
                             <option value="openai">OpenAI</option>
-                            <option value="windowai">Window.ai</option>
+                            <option value="windowai">Window AI / OpenRouter</option>
                             <option value="claude">Claude</option>
                         </select>
                         <form id="openai_form" data-source="openai">
@@ -1491,8 +1492,9 @@
                                 <input id="api_key_openai" name="api_key_openai" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
                                 <div title="Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_openai"></div>
                             </div>
-                            <div class="neutral_warning">For privacy reasons, your API key will be hidden after you
-                                reload the page.</div>
+                            <div data-for="api_key_openai" class="neutral_warning">
+                                For privacy reasons, your API key will be hidden after you reload the page.
+                            </div>
                             <div>
                                 <h4 data-i18n="OpenAI Model">OpenAI Model</h4>
                                 <select id="model_openai_select">
@@ -1527,8 +1529,9 @@
                                 <input id="api_key_claude" name="api_key_claude" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
                                 <div title="Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_claude"></div>
                             </div>
-                            <div class="neutral_warning">For privacy reasons, your API key will be hidden after you
-                                reload the page.</div>
+                            <div data-for="api_key_claude" class="neutral_warning">
+                                For privacy reasons, your API key will be hidden after you reload the page.
+                            </div>
                             <div>
                                 <h4 data-i18n="Claude Model">Claude Model</h4>
                                 <select id="model_claude_select">
@@ -1563,10 +1566,29 @@
                                     <option value="anthropic/claude-instant-v1-100k">anthropic/claude-instant-v1-100k</option>
                                     <option value="anthropic/claude-v1">anthropic/claude-v1</option>
                                     <option value="anthropic/claude-v1-100k">anthropic/claude-v1-100k</option>
+                                    <option value="google/palm-2-chat-bison">google/palm-2-chat-bison</option>
+                                    <option value="google/palm-2-codechat-bison">google/palm-2-codechat-bison</option>
                                     <option value="togethercomputer/GPT-NeoXT-Chat-Base-20B">togethercomputer/GPT-NeoXT-Chat-Base-20B</option>
                                     <option value="cohere/command-nightly">cohere/command-nightly</option>
                                 </select>
                             </div>
+                            <h4 data-i18n="OpenRouter API Key">OpenRouter API Key</h4>
+                            <div>
+                                <small>
+                                    Get your key from <a target="_blank" href="https://openrouter.ai/keys/">OpenRouter</a>.
+                                </small>
+                            </div>
+                            <div class="flex-container">
+                                <input id="api_key_openrouter" name="api_key_openrouter" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
+                                <div title="Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_openrouter"></div>
+                            </div>
+                            <div data-for="api_key_openrouter" class="neutral_warning">
+                                For privacy reasons, your API key will be hidden after you reload the page.
+                            </div>
+                            <label class="checkbox_label" for="use_openrouter">
+                                <input id="use_openrouter" type="checkbox" />
+                                <span data-i18n="Use OpenRouter">Use OpenRouter directly</span>
+                            </label>
                         </form>
 
                         <div class="flex-container flex">
@@ -1598,8 +1620,9 @@
                                 <div title="Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_poe">
                                 </div>
                             </div>
-                            <div class="neutral_warning">For privacy reasons, your API key will be hidden after you
-                                reload the page.</div>
+                            <div data-for="poe_token" class="neutral_warning">
+                                For privacy reasons, your API key will be hidden after you reload the page.
+                            </div>
                         </div>
 
                         <input id="poe_connect" class="menu_button" type="button" value="Connect" />

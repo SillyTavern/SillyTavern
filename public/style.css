@@ -4223,6 +4223,10 @@ toolcool-color-picker {
     font-weight: 800;
 }
 
+.neutral_warning[data-for] {
+    display: none;
+}
+
 .max_context_unlocked_block .checkbox_label {
     flex-wrap: wrap;
 }

@@ -6,6 +6,7 @@ export const SECRET_KEYS = {
     POE: 'api_key_poe',
     NOVEL: 'api_key_novel',
     CLAUDE: 'api_key_claude',
+    OPENROUTER: 'api_key_openrouter',
 }
 
 const INPUT_MAP = {
@@ -14,6 +15,7 @@ const INPUT_MAP = {
     [SECRET_KEYS.POE]: '#poe_token',
     [SECRET_KEYS.NOVEL]: '#api_key_novel',
     [SECRET_KEYS.CLAUDE]: '#api_key_claude',
+    [SECRET_KEYS.OPENROUTER]: '#api_key_openrouter',
 }
 
 async function clearSecret() {
@@ -103,4 +105,10 @@ export async function readSecretState() {
 jQuery(() => {
     $('#viewSecrets').on('click', viewSecrets);
     $(document).on('click', '.clear-api-key', clearSecret);
+    $(document).on('input', Object.values(INPUT_MAP).join(','), function() {
+        const id = $(this).attr('id');
+        const value = $(this).val();
+        const warningElement = $(`[data-for="${id}"]`);
+        warningElement.toggle(value.length > 0);
+    });
 });
