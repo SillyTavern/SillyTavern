@@ -1788,7 +1788,9 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                 } else if (jsonData.name !== undefined) {
                     console.log('importing from v1 json');
                     jsonData.name = sanitize(jsonData.name);
-
+					if (jsonData.creator_notes) {
+						jsonData.creator_notes = jsonData.creator_notes.replace("Creator's notes go here.", "");
+					}
                     png_name = getPngName(jsonData.name);
                     let char = {
                         "name": jsonData.name,
@@ -1811,7 +1813,9 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                 } else if (jsonData.char_name !== undefined) {//json Pygmalion notepad
                     console.log('importing from gradio json');
                     jsonData.char_name = sanitize(jsonData.char_name);
-
+					if (jsonData.creator_notes) {
+						jsonData.creator_notes = jsonData.creator_notes.replace("Creator's notes go here.", "");
+					}
                     png_name = getPngName(jsonData.char_name);
                     let char = {
                         "name": jsonData.char_name,
@@ -1865,6 +1869,11 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                     charaWrite(uploadPath, char, png_name, response, { file_name: png_name });
                 } else if (jsonData.name !== undefined) {
                     console.log('Found a v1 character file.');
+
+					if (jsonData.creator_notes) {
+						jsonData.creator_notes = jsonData.creator_notes.replace("Creator's notes go here.", "");
+					}
+
                     let char = {
                         "name": jsonData.name,
                         "description": jsonData.description ?? '',
