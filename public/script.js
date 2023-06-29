@@ -7171,6 +7171,7 @@ $(document).ready(function () {
             $("#amount_gen_block").find('input').prop("disabled", false);
 
             $("#amount_gen_block").css("opacity", 1.0);
+            $("#kobold_order").sortable("enable");
         } else {
             //$('.button').disableSelection();
             preset_settings = "gui";
@@ -7182,6 +7183,7 @@ $(document).ready(function () {
             $("#amount_gen_block").find('input').prop("disabled", true);
 
             $("#amount_gen_block").css("opacity", 0.45);
+            $("#kobold_order").sortable("disable");
         }
         saveSettingsDebounced();
     });
