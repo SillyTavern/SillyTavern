@@ -163,6 +163,7 @@ import { context_settings, loadContextTemplatesFromSettings } from "./scripts/co
 import { markdownExclusionExt } from "./scripts/showdown-exclusion.js";
 import { NOTE_MODULE_NAME, metadata_keys, setFloatingPrompt, shouldWIAddPrompt } from "./scripts/authors-note.js";
 import { deviceInfo } from "./scripts/RossAscends-mods.js";
+import {registerPromptManagerMigration} from "./scripts/PromptManager.js";
 import { getRegexedString, regex_placement } from "./scripts/extensions/regex/engine.js";
 
 //exporting functions and vars for mods
@@ -533,6 +534,11 @@ this
         mes: `Click here to return to the previous chat: <a class="bookmark_link" file_name="{0}" href="javascript:void(null);">Return</a>`,
     },
 };
+
+export const eventSource = new EventEmitter();
+
+// Register configuration migrations
+registerPromptManagerMigration();
 
 $(document).ajaxError(function myErrorHandler(_, xhr) {
     if (xhr.status == 403) {

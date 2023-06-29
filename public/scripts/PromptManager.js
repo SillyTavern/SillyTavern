@@ -2,6 +2,54 @@ import {DraggablePromptListModule as DraggableList} from "./DraggableList.js";
 import {event_types, eventSource, substituteParams} from "../script.js";
 import {TokenHandler} from "./openai.js";
 
+const registerPromptManagerMigration = () => {
+    const migrate = (settings) => {
+        if (settings.main_prompt || settings.nsfw_prompt || settings.jailbreak_prompt) {
+            console.log('Running configuration migration for prompt manager.')
+            if (settings.prompts === undefined) settings.prompts = [];
+
+            if (settings.main_prompt) {
+                settings.prompts.push({
+                    identifier: null, // Will be assigned by prompt manager during sanitization
+                    name: 'Legacy Main Prompt',
+                    role: 'system',
+                    content: settings.main_prompt,
+                    system_prompt: false,
+                    enabled: false,
+                });
+                delete settings.main_prompt;
+            }
+
+            if (settings.nsfw_prompt) {
+                settings.prompts.push({
+                    identifier: null,
+                    name: 'Legacy NSFW Prompt',
+                    role: 'system',
+                    content: settings.nsfw_prompt,
+                    system_prompt: false,
+                    enabled: false,
+                });
+                delete settings.nsfw_prompt;
+            }
+
+            if (settings.jailbreak_prompt) {
+                settings.prompts.push({
+                    identifier: null,
+                    name: 'Legacy Jailbreak',
+                    role: 'system',
+                    content: settings.jailbreak_prompt,
+                    system_prompt: false,
+                    enabled: false,
+                });
+                delete settings.jailbreak_prompt;
+            }
+        }
+    };
+
+    eventSource.on(event_types.SETTINGS_LOADED_BEFORE, settings => migrate(settings));
+    eventSource.on(event_types.OAI_PRESET_CHANGED, settings => migrate(settings));
+}
+
 class Prompt {
     identifier; role; content; name; system_prompt;
     constructor({identifier, role, content, name, system_prompt} = {}) {
@@ -66,6 +114,8 @@ function PromptManagerModule() {
         listItemTemplateIdentifier: '',
         toggleDisabled: [],
         draggable: true,
+        warningTokenThreshold: 1500,
+        dangerTokenThreshold: 500,
         defaultPrompts: {
             main: '',
             nsfw: '',
@@ -265,6 +315,9 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
         this.hideEditForm();
         this.clearEditForm();
     });
+
+    // Re-render Prompt manager on openai preset change
+    eventSource.on(event_types.OAI_PRESET_CHANGED, settings => this.render());
 };
 
 /**
@@ -365,7 +418,6 @@ PromptManagerModule.prototype.addPrompt = function (prompt, identifier) {
         identifier: identifier,
         system_prompt: false,
         enabled: false,
-        available_for: [],
         ...prompt
     }
 
@@ -388,6 +440,7 @@ PromptManagerModule.prototype.sanitizeServiceSettings = function () {
 
     // Check whether the referenced prompts are present.
     if (0 === this.serviceSettings.prompts.length) this.setPrompts(openAiDefaultPrompts.prompts);
+    else this.checkForMissingPrompts(this.serviceSettings.prompts);
 
     // Check whether the prompt manager settings are present.
     if (this.serviceSettings.prompt_manager_settings === undefined) {
@@ -396,6 +449,20 @@ PromptManagerModule.prototype.sanitizeServiceSettings = function () {
 
     // Add identifiers if there are none assigned to a prompt
     this.serviceSettings.prompts.forEach((prompt => prompt && (prompt.identifier = prompt.identifier || this.getUuidv4())));
+};
+
+PromptManagerModule.prototype.checkForMissingPrompts = function(prompts) {
+    const defaultPromptIdentifiers = openAiDefaultPrompts.prompts.reduce((list, prompt) => { list.push(prompt.identifier); return list;}, []);
+
+    const missingIdentifiers = defaultPromptIdentifiers.filter(identifier =>
+        !prompts.some(prompt =>prompt.identifier === identifier)
+    );
+
+    missingIdentifiers.forEach(identifier => {
+        console.log('[PromptManager] Missing system prompt: ' + identifier + '. Adding default.');
+        const defaultPrompt = openAiDefaultPrompts.prompts.find(prompt => prompt?.identifier === identifier);
+        if (defaultPrompt) prompts.push(defaultPrompt);
+    });
 };
 
 /**
@@ -761,16 +828,15 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
         const markerClass = prompt.marker ? `${prefix}prompt_manager_marker` : '';
         const tokens = this.tokenHandler?.getCounts()[prompt.identifier] ?? 0;
 
-        // Warn the user if the chat history uses less than 30% of the total context
-        // To calculate the warning, at least 90% of the token budget has to be used up
+        // Warn the user if the chat history goes under certain token thresholds.
         let warningClass = '';
         let warningTitle = '';
 
         const tokenBudget = this.serviceSettings.openai_max_context - this.serviceSettings.openai_max_tokens;
         if (
             'chatHistory' === prompt.identifier) {
-            const warningThreshold = tokenBudget * 0.60;
-            const dangerThreshold = tokenBudget * 0.35;
+            const warningThreshold = this.configuration.warningTokenThreshold;
+            const dangerThreshold = this.configuration.dangerTokenThreshold;
 
             if (tokens <= dangerThreshold) {
                 warningClass = 'fa-solid tooltip fa-triangle-exclamation text_danger';
@@ -1034,6 +1100,7 @@ const defaultPromptManagerSettings = {
 
 export {
     PromptManagerModule,
+    registerPromptManagerMigration,
     openAiDefaultPrompts,
     openAiDefaultPromptLists,
     defaultPromptManagerSettings,
