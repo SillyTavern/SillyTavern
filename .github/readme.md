@@ -69,7 +69,6 @@ Get in touch with the developers directly:
 * [Oobabooga's TextGen WebUI](https://github.com/oobabooga/text-generation-webui) API connection
 * [AI Horde](https://horde.koboldai.net/) connection
 * [Poe.com](https://poe.com) (ChatGPT / Claude) connection
-* Soft prompts selector for KoboldAI
 * Prompt generation formatting tweaking
 * webp character card interoperability (PNG is still an internal format)
 
@@ -78,11 +77,12 @@ Get in touch with the developers directly:
 SillyTavern has extensibility support, with some additional AI modules hosted via [SillyTavern Extras API](https://github.com/SillyTavern/SillyTavern-extras)
 
 * Author's Note / Character Bias
-* Character emotional expressions
+* Character emotional expressions (sprites)
 * Auto-Summary of the chat history
-* Sending images to chat, and the AI interpreting the content.
+* Sending images to chat, and the AI interpreting the content
 * Stable Diffusion image generation (5 chat-related presets plus 'free mode')
 * Text-to-speech for AI response messages (via ElevenLabs, Silero, or the OS's System TTS)
+* ChromaDB vector storage for smarter chat prompt formatting
 
 A full list of included extensions and tutorials on how to use them can be found in the [Docs](https://docs.sillytavern.app/extras/extensions/).
 
