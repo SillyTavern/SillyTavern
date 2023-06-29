@@ -369,13 +369,13 @@ class Client {
         const nextData = JSON.parse(jsonText);
 
         this.formkey = extractFormKey(r.data);
-        this.viewer = nextData.props.pageProps.data.viewer;
+        this.viewer = nextData.props.pageProps.payload.viewer;
 
         return nextData;
     }
 
     async get_bots() {
-        const viewer = this.next_data.props.pageProps.data.viewer;
+        const viewer = this.next_data.props.pageProps.payload.viewer;
         if (!viewer.availableBotsConnection) {
             throw new Error('Invalid token.');
         }
@@ -398,7 +398,7 @@ class Client {
                         cached_bots[url] = r;
                     }
 
-                    const chatData = r.data.pageProps.data.chatOfBotDisplayName;
+                    const chatData = r.data.pageProps.payload.chatOfBotDisplayName;
                     bots[chatData.defaultBotObject.nickname] = chatData;
                     resolve();
 
