@@ -1261,7 +1261,6 @@ jQuery(() => {
         registerSlashCommand('world', onWorldInfoChange, [], "– sets active World, or unsets if no args provided", true, true);
     })
 
-    let selectScrollTop = null;
 
     $("#world_info").on('mousedown change', async function (e) {
         // If there's no world names, don't do anything
@@ -1270,7 +1269,9 @@ jQuery(() => {
             return;
         }
 
+        /*
         if (deviceInfo.device.type === 'desktop') {
+            let selectScrollTop = null;
             e.preventDefault();
             const option = $(e.target);
             const selectElement = $(this)[0];
@@ -1279,6 +1280,7 @@ jQuery(() => {
             await delay(1);
             selectElement.scrollTop = selectScrollTop;
         }
+        */
 
         onWorldInfoChange('__notSlashCommand__');
     });
@@ -1371,6 +1373,7 @@ jQuery(() => {
         }
     });
 
+    /*
     $("#world_info").on('mousewheel', function (e) {
         e.preventDefault();
         if ($(this).is(':animated')) {
@@ -1386,5 +1389,15 @@ jQuery(() => {
 
         $(this).animate({ scrollTop: scrollTop }, 200);
     });
+    */
 
+    // Not needed on mobile
+    if (deviceInfo.device.type === 'desktop') {
+        $('#world_info').select2({
+            width: '100%',
+            placeholder: 'No Worlds active. Click here to select.',
+            allowClear: true,
+            closeOnSelect: false,
+        });
+    }
 })
