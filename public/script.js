@@ -4960,6 +4960,9 @@ async function getSettings(type) {
         // Load context templates
         loadContextTemplatesFromSettings(data, settings);
 
+        // Allow subscribers to mutate settings
+        eventSource.emit(event_types.SETTINGS_LOADED_AFTER, settings);
+
         // Set context size after loading power user (may override the max value)
         $("#max_context").val(max_context);
         $("#max_context_counter").text(`${max_context}`);
