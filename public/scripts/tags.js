@@ -236,13 +236,14 @@ async function importTags(imported_char) {
     let existingTags = await getExistingTags(imported_tags);
     let newTags = imported_tags.filter(t => !existingTags.includes(t));
     let selected_tags = "";
+    const existingTagsString = existingTags.length ? (': ' + existingTags.join(', ')) : '';
     if (newTags.length === 0) {
-        await callPopup(`<h3>Importing Tags</h3><p>${existingTags.length} existing tags have been found.</p>`, 'text');
+        await callPopup(`<h3>Importing Tags</h3><p>${existingTags.length} existing tags have been found${existingTagsString}.</p>`, 'text');
     } else {
-        selected_tags = await callPopup(`<h3>Importing Tags</h3><p>${existingTags.length} existing tags have been found.</p><p>The following ${newTags.length} new tags will be imported.</p>`, 'input', newTags.join(', '));
+        selected_tags = await callPopup(`<h3>Importing Tags</h3><p>${existingTags.length} existing tags have been found${existingTagsString}.</p><p>The following ${newTags.length} new tags will be imported.</p>`, 'input', newTags.join(', '));
     }
-    selected_tags = existingTags.concat(selected_tags.split(', '));
-    selected_tags = selected_tags.filter(t => t !== "");
+    selected_tags = existingTags.concat(selected_tags.split(','));
+    selected_tags = selected_tags.map(t => t.trim()).filter(t => t !== "");
     //Anti-troll measure
     if (selected_tags.length > 15) {
         selected_tags = selected_tags.slice(0, 15);
