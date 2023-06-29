@@ -371,10 +371,10 @@ class Client {
 
         this.formkey = extractFormKey(r.data);
         this.viewer = nextData.props.pageProps.payload?.viewer || nextData.props.pageProps.data?.viewer;
-        console.log('PAYLOAD')
-        console.log(nextData.props.pageProps.payload)
-        console.log('DATA')
-        console.log(nextData.props.pageProps.data)
+        //console.log('PAYLOAD')
+        //console.log(nextData.props.pageProps.payload)
+        //console.log('DATA')
+        //console.log(nextData.props.pageProps.data)
 
         return nextData;
     }
