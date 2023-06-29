@@ -219,6 +219,7 @@ class SystemTtsProvider {
                 chunkLength: 200,
             }, function () {
                 //some code to execute when done
+                resolve(silence);
                 console.log('System TTS done');
             });
         });
