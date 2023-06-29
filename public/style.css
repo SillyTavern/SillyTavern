@@ -4868,6 +4868,9 @@ body.waifuMode .zoomed_avatar {
 
 .select2-container .select2-selection--multiple .select2-selection__choice__remove {
     padding: revert;
+    border-right: 1px solid var(--white30a);
+    font-size: 1.1em;
+
 }
 
 .select2-container .select2-selection--multiple .select2-selection__choice__display {
@@ -4922,7 +4925,7 @@ body.waifuMode .zoomed_avatar {
     box-sizing: border-box;
     color: var(--SmartThemeBodyColor);
     background-color: var(--black30a);
-    border-color: var(--white50a);
+    border-color: var(--white30a);
     font-size: calc(var(--mainFontSize) - 5%);
     text-shadow: none !important;
 }
