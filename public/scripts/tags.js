@@ -223,8 +223,9 @@ function selectTag(event, ui, listSelector) {
 function getExistingTags(new_tags) {
     let existing_tags = [];
     for (let tag of new_tags) {
-        if (tags.find(t => t.name === tag)) {
-            existing_tags.push(tag);
+        let foundTag = tags.find(t => t.name.toLowerCase() === tag.toLowerCase())
+        if (foundTag) {
+            existing_tags.push(foundTag.name);
         }
     }
     return existing_tags
@@ -234,7 +235,8 @@ function getExistingTags(new_tags) {
 async function importTags(imported_char) {
     let imported_tags = imported_char.tags.filter(t => t !== "ROOT" && t !== "TAVERN");
     let existingTags = await getExistingTags(imported_tags);
-    let newTags = imported_tags.filter(t => !existingTags.includes(t));
+    //make this case insensitive
+    let newTags = imported_tags.filter(t => !existingTags.some(existingTag => existingTag.toLowerCase() === t.toLowerCase()));
     let selected_tags = "";
     const existingTagsString = existingTags.length ? (': ' + existingTags.join(', ')) : '';
     if (newTags.length === 0) {
