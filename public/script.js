@@ -8011,7 +8011,7 @@ $(document).ready(function () {
         const html = `<h3>Enter the URL of the content to import</h3>
         Supported sources:<br>
         <ul class="justifyLeft">
-            <li>Chub characters (direct link or id)<br>Example: <tt></tt>Anonymous/example-character</li>
+            <li>Chub characters (direct link or id)<br>Example: <tt>Anonymous/example-character</tt></li>
             <li>Chub lorebooks (direct link or id)<br>Example: <tt>lorebooks/bartleby/example-lorebook</tt></li>
             <li>More coming soon...</li>
         <ul>`
