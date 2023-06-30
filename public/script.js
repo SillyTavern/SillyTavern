@@ -7838,13 +7838,13 @@ $(document).ready(function () {
 
     $(document).on('click', '.mes .avatar', function () {
 
-        console.log(isMobile());
-        console.log($('body').hasClass('waifuMode'));
+        //console.log(isMobile());
+        //console.log($('body').hasClass('waifuMode'));
 
-        if (isMobile() === true && !$('body').hasClass('waifuMode')) {
+        /* if (isMobile() === true && !$('body').hasClass('waifuMode')) {
             console.debug('saw mobile regular mode, returning');
             return;
-        } else { console.debug('saw valid env for zoomed display') }
+        } else { console.debug('saw valid env for zoomed display') } */
 
         let thumbURL = $(this).children('img').attr('src');
         let charsPath = '/characters/'

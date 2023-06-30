@@ -297,13 +297,13 @@ function toggleWaifu() {
 function switchWaifuMode() {
     $("body").toggleClass("waifuMode", power_user.waifuMode);
     $("#waifuMode").prop("checked", power_user.waifuMode);
-    if (isMobile() && !$('body').hasClass('waifuMode')) {
-        console.debug('saw mobile regular mode, removing ZoomedAvatars');
-        if ($('.zoomed_avatar[forChar]').length) {
-            $('.zoomed_avatar[forChar]').remove();
-        }
-        return;
-    }
+    /*     if (isMobile() && !$('body').hasClass('waifuMode')) {
+            console.debug('saw mobile regular mode, removing ZoomedAvatars');
+            if ($('.zoomed_avatar[forChar]').length) {
+                $('.zoomed_avatar[forChar]').remove();
+            }
+            return;
+        } */
     scrollChatToBottom();
 }
 
