@@ -8,7 +8,10 @@ import {
     eventSource,
     event_types,
     scrollChatToBottom,
+    name1,
+    name2,
 } from "../script.js";
+import { power_user } from "./power-user.js";
 import {
     SECRET_KEYS,
     secret_state,
@@ -186,13 +189,16 @@ function onBotChange() {
     saveSettingsDebounced();
 }
 
-export function appendPoeAnchors(type, prompt) {
+export function appendPoeAnchors(type, prompt, jailbreakPrompt) {
     const isImpersonate = type === 'impersonate';
     const isQuiet = type === 'quiet';
 
     if (poe_settings.character_nudge && !isQuiet && !isImpersonate) {
-        let characterNudge = '\n' + substituteParams(poe_settings.character_nudge_message);
-        prompt += characterNudge;
+        if (power_user.prefer_character_jailbreak && jailbreakPrompt) {
+            prompt += '\n' + substituteParams(jailbreakPrompt, name1, name2, poe_settings.character_nudge_message);
+        } else {
+            prompt += '\n' + substituteParams(poe_settings.character_nudge_message);
+        }
     }
 
     if (poe_settings.impersonation_prompt && isImpersonate) {

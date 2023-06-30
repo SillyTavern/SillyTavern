@@ -2126,8 +2126,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
         // Moved here to not overflow the Poe context with added prompt bits
         if (main_api == 'poe') {
-            allAnchors = appendPoeAnchors(type, allAnchors);
-            zeroDepthAnchor = appendPoeAnchors(type, zeroDepthAnchor);
+            allAnchors = appendPoeAnchors(type, allAnchors, jailbreakPrompt);
+            zeroDepthAnchor = appendPoeAnchors(type, zeroDepthAnchor, jailbreakPrompt);
         }
 
         // hack for regeneration of the first message
@@ -2710,7 +2710,7 @@ export function getBiasStrings(textareaText, type) {
             if (type === 'swipe' && chat.length - 1 === i) {
                 continue;
             }
-            if (mes && (mes.is_user || mes.is_system || mes.extra.type === system_message_types.NARRATOR)) {
+            if (mes && (mes.is_user || mes.is_system || mes.extra?.type === system_message_types.NARRATOR)) {
                 if (mes.extra?.bias?.trim()?.length > 0) {
                     promptBias = mes.extra.bias;
                 }
