@@ -4476,15 +4476,15 @@ body.waifuMode .zoomed_avatar {
     }
 
     .zoomed_avatar {
-        min-width: 100px;
+        min-width: 210px;
         min-height: 100px;
         max-height: 90vh;
-        max-width: 90vh;
-        width: calc((100vw - var(--sheldWidth)) /2);
+        max-width: 35vh;
+        width: calc((100vw - var(--sheldWidth)/4));
         position: absolute;
         padding: 0;
         filter: drop-shadow(2px 2px 2px #51515199);
-        z-index: 2;
+        z-index: 30;
         overflow: hidden;
         display: none;
         left: 0;
