@@ -34,7 +34,7 @@ let world_info_budget = 25;
 let world_info_recursive = false;
 let world_info_case_sensitive = false;
 let world_info_match_whole_words = false;
-let world_info_character_strategy = world_info_insertion_strategy.evenly;
+let world_info_character_strategy = world_info_insertion_strategy.character_first;
 const saveWorldDebounced = debounce(async (name, data) => await _save(name, data), 1000);
 const saveSettingsDebounced = debounce(() => {
     Object.assign(world_info, { globalSelect: selected_world_info })
@@ -830,6 +830,7 @@ async function checkWorldInfo(chat, maxContext) {
     let needsToScan = true;
     let count = 0;
     let allActivatedEntries = new Set();
+    let allActivatedText = '';
 
     const budget = Math.round(world_info_budget * maxContext / 100) || 1;
     console.debug(`Context size: ${maxContext}; WI budget: ${budget} (${world_info_budget}%)`);
@@ -884,7 +885,7 @@ async function checkWorldInfo(chat, maxContext) {
         const newEntries = [...activatedNow]
             .sort((a, b) => sortedEntries.indexOf(a) - sortedEntries.indexOf(b));
         let newContent = "";
-        const textToScanTokens = getTokenCount(textToScan);
+        const textToScanTokens = getTokenCount(allActivatedText);
 
         for (const entry of newEntries) {
             newContent += `${substituteParams(entry.content)}\n`;
@@ -896,10 +897,13 @@ async function checkWorldInfo(chat, maxContext) {
             }
 
             allActivatedEntries.add(entry);
+            console.debug('WI entry activated:', entry);
         }
 
         if (needsToScan) {
-            textToScan = (transformString(newEntries.map(x => x.content).join('\n')) + textToScan);
+            const currentlyActivatedText = transformString(newEntries.map(x => x.content).join('\n'));
+            textToScan = (currentlyActivatedText + '\n' + textToScan);
+            allActivatedText = (currentlyActivatedText + '\n' + allActivatedText);
         }
     }
 
