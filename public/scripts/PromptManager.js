@@ -1023,14 +1023,12 @@ const openAiDefaultPrompts = {
             "system_prompt": true,
             "marker": true,
         },
-        ,
         {
             "identifier": "charPersonality",
             "name": "Char Personality",
             "system_prompt": true,
             "marker": true,
         },
-        ,
         {
             "identifier": "scenario",
             "name": "Scenario",
