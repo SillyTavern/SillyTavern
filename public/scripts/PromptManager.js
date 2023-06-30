@@ -197,9 +197,11 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
         const prompt = this.getPromptById(promptId);
 
         if (null === prompt) {
-            this.addPrompt({}, promptId);
+            const newPrompt = {};
+            this.updatePromptWithPromptEditForm(newPrompt);
+            this.addPrompt(newPrompt, promptId);
         } else {
-            this.updatePrompt(prompt);
+            this.updatePromptWithPromptEditForm(prompt);
         }
 
         this.hideEditForm();
@@ -347,7 +349,7 @@ PromptManagerModule.prototype.render = function (afterTryGenerate = true) {
  * @param {object} prompt - The prompt to be updated.
  * @returns {void}
  */
-PromptManagerModule.prototype.updatePrompt = function (prompt) {
+PromptManagerModule.prototype.updatePromptWithPromptEditForm = function (prompt) {
     prompt.name = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_name').value;
     prompt.role = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_role').value;
     prompt.content = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_prompt').value;
@@ -414,6 +416,9 @@ PromptManagerModule.prototype.detachPrompt = function (prompt, character) {
  * @returns {void}
  */
 PromptManagerModule.prototype.addPrompt = function (prompt, identifier) {
+
+    if (typeof prompt !== 'object' || prompt === null) throw new Error('Object is not a prompt');
+
     const newPrompt = {
         identifier: identifier,
         system_prompt: false,
@@ -421,7 +426,6 @@ PromptManagerModule.prototype.addPrompt = function (prompt, identifier) {
         ...prompt
     }
 
-    this.updatePrompt(newPrompt);
     this.serviceSettings.prompts.push(newPrompt);
 }
 
@@ -430,25 +434,18 @@ PromptManagerModule.prototype.addPrompt = function (prompt, identifier) {
  * @returns {void}
  */
 PromptManagerModule.prototype.sanitizeServiceSettings = function () {
-    if (this.serviceSettings.prompts === undefined) {
-        this.serviceSettings.prompts = [];
-    }
-
-    if (this.serviceSettings.prompt_lists === undefined) {
-        this.serviceSettings.prompt_lists = [];
-    }
+    this.serviceSettings.prompts = this.serviceSettings.prompts ?? [];
+    this.serviceSettings.prompt_lists = this.serviceSettings.prompt_lists ?? [];
 
     // Check whether the referenced prompts are present.
-    if (0 === this.serviceSettings.prompts.length) this.setPrompts(openAiDefaultPrompts.prompts);
-    else this.checkForMissingPrompts(this.serviceSettings.prompts);
+    this.serviceSettings.prompts.length === 0
+        ? this.setPrompts(openAiDefaultPrompts.prompts)
+        : this.checkForMissingPrompts(this.serviceSettings.prompts);
 
-    // Check whether the prompt manager settings are present.
-    if (this.serviceSettings.prompt_manager_settings === undefined) {
-        this.serviceSettings.prompt_manager_settings = Object.assign({}, defaultPromptManagerSettings);
-    }
+    this.serviceSettings.prompt_manager_settings = this.serviceSettings.prompt_manager_settings ?? {...defaultPromptManagerSettings};
 
     // Add identifiers if there are none assigned to a prompt
-    this.serviceSettings.prompts.forEach((prompt => prompt && (prompt.identifier = prompt.identifier || this.getUuidv4())));
+    this.serviceSettings.prompts.forEach(prompt => prompt && (prompt.identifier = prompt.identifier ?? this.getUuidv4()));
 };
 
 PromptManagerModule.prototype.checkForMissingPrompts = function(prompts) {
@@ -459,9 +456,11 @@ PromptManagerModule.prototype.checkForMissingPrompts = function(prompts) {
     );
 
     missingIdentifiers.forEach(identifier => {
-        console.log('[PromptManager] Missing system prompt: ' + identifier + '. Adding default.');
         const defaultPrompt = openAiDefaultPrompts.prompts.find(prompt => prompt?.identifier === identifier);
-        if (defaultPrompt) prompts.push(defaultPrompt);
+        if (defaultPrompt) {
+            prompts.push(defaultPrompt);
+            console.log(`[PromptManager] Missing system prompt: ${defaultPrompt.identifier}. Added default.`);
+        }
     });
 };
 
