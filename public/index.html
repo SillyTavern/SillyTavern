@@ -1577,7 +1577,7 @@
                             <h4 data-i18n="OpenRouter API Key">OpenRouter API Key</h4>
                             <div>
                                 <small>
-                                    Click <a id="openrouter_authorize" href="javascript:void(0)">here</a> to authorize or get your key from <a target="_blank" href="https://openrouter.ai/keys/">OpenRouter</a>.
+                                    Click "Authorize" below or get the key from <a target="_blank" href="https://openrouter.ai/keys/">OpenRouter</a>.
                                 </small>
                             </div>
                             <div class="flex-container">
@@ -1595,6 +1595,7 @@
 
                         <div class="flex-container flex">
                             <input id="api_button_openai" class="menu_button" type="submit" value="Connect">
+                            <input data-source="windowai" id="openrouter_authorize" class="menu_button" type="button" value="Authorize" title="Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai">
                             <input id="test_api_button" class="menu_button" type="button" value="Test Message" title="Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!">
                         </div>
                         <div id="api_loading_openai" class=" api-load-icon fa-solid fa-hourglass fa-spin"></div>
@@ -2874,7 +2875,7 @@
                 <h4><span data-i18n="Examples of dialogue">Examples of dialogue</span></h4>
                 <h5>Important to set the character's writing style. <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#examples-of-dialogue" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
             </div>
-            <textarea id="mes_example_textarea" class="flexGrow" name="mes_example" placeholder="(Examples of chat dialog. Begin each example with <start> on a new line.)" form="form_create" maxlength="20000" rows="6"></textarea>
+            <textarea id="mes_example_textarea" class="flexGrow" name="mes_example" placeholder="(Examples of chat dialog. Begin each example with &lt;START&gt; on a new line.)" form="form_create" maxlength="20000" rows="6"></textarea>
         </div>
         <div id="character_popup_ok" class="menu_button">Save</div>
 
