@@ -280,7 +280,7 @@ function createNewTag(tagName) {
     return tag;
 }
 
-function appendTagToList(listElement, tag, { removable, selectable, action }) {
+function appendTagToList(listElement, tag, { removable, selectable, action, isGeneralList }) {
     if (!listElement) {
         return;
     }
@@ -305,6 +305,10 @@ function appendTagToList(listElement, tag, { removable, selectable, action }) {
         tagElement.find('.tag_name').text('').attr('title', tag.name).addClass(tag.icon);
     }
 
+    if (tag.excluded) {
+        isGeneralList ? $(tagElement).addClass('excluded') : $(listElement).parent().parent().addClass('hiddenByTag');
+    }
+
     if (selectable) {
         tagElement.on('click', () => onTagFilterClick.bind(tagElement)(listElement, characterSelector));
     }
@@ -320,18 +324,33 @@ function appendTagToList(listElement, tag, { removable, selectable, action }) {
     $(listElement).append(tagElement);
 }
 
-function onTagFilterClick(listElement, characterSelector) {
+function onTagFilterClick(listElement, characterSelector) { 
+    let excludeTag;
     if ($(this).hasClass('selected')) {
         $(this).removeClass('selected');
         $(this).addClass('excluded');
+        excludeTag = true
     }
     else if ($(this).hasClass('excluded')) {
         $(this).removeClass('excluded');
+        excludeTag = false;
     }
     else {
         $(this).addClass('selected');
     }
 
+    // Manual undefined check required for three-state boolean
+    if (excludeTag !== undefined) {
+        const tagId = $(this).attr('id');
+        const existingTag = tags.find((tag) => tag.id === tagId);
+        if (existingTag) {
+            existingTag.excluded = excludeTag;
+
+            saveSettingsDebounced();
+        }
+    }
+
+    // TODO: Overhaul this somehow to use settings tag IDs instead
     const tagIds = [...($(listElement).find(".tag.selected:not(.actionable)").map((_, el) => $(el).attr("id")))];
     const excludedTagIds = [...($(listElement).find(".tag.excluded:not(.actionable)").map((_, el) => $(el).attr("id")))];
     $(characterSelector).each((_, element) => applyFilterToElement(tagIds, excludedTagIds, element));
@@ -380,16 +399,16 @@ function printTagFilters(type = tag_filter_types.character) {
         .sort((a, b) => a.name.localeCompare(b.name));
 
     for (const tag of Object.values(ACTIONABLE_TAGS)) {
-        appendTagToList(FILTER_SELECTOR, tag, { removable: false, selectable: false, action: tag.action });
+        appendTagToList(FILTER_SELECTOR, tag, { removable: false, selectable: false, action: tag.action, isGeneralList: true });
     }
 
     $(FILTER_SELECTOR).find('.actionable').last().addClass('margin-right-10px');
 
     for (const tag of Object.values(InListActionable)) {
-        appendTagToList(FILTER_SELECTOR, tag, { removable: false, selectable: false, action: tag.action });
+        appendTagToList(FILTER_SELECTOR, tag, { removable: false, selectable: false, action: tag.action, isGeneralList: true });
     }
     for (const tag of tagsToDisplay) {
-        appendTagToList(FILTER_SELECTOR, tag, { removable: false, selectable: true, });
+        appendTagToList(FILTER_SELECTOR, tag, { removable: false, selectable: true, isGeneralList: true });
     }
 
     for (const tagId of selectedTagIds) {
