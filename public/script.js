@@ -1990,7 +1990,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
         deactivateSendButtons();
 
-        let { messageBias, promptBias } = getBiasStrings(textareaText);
+        let { messageBias, promptBias } = getBiasStrings(textareaText, type);
 
         //*********************************
         //PRE FORMATING STRING
@@ -2699,17 +2699,23 @@ function getNextMessageId(type) {
     return type == 'swipe' ? Number(count_view_mes - 1) : Number(count_view_mes);
 }
 
-export function getBiasStrings(textareaText) {
+export function getBiasStrings(textareaText, type) {
     let promptBias = '';
     let messageBias = extractMessageBias(textareaText);
 
-    // gets bias of the latest message where it was applied
-    for (let mes of chat.slice().reverse()) {
-        if (mes && mes.extra && (mes.is_user || mes.is_system || mes.extra.type === system_message_types.NARRATOR)) {
-            if (mes.extra.bias && mes.extra.bias.trim().length > 0) {
-                promptBias = mes.extra.bias;
+    // If user input is not provided, retrieve the bias of the most recent relevant message
+    if (!textareaText) {
+        for (let i = chat.length - 1; i >= 0; i--) {
+            const mes = chat[i];
+            if (type === 'swipe' && chat.length - 1 === i) {
+                continue;
             }
-            break;
+            if (mes && (mes.is_user || mes.is_system || mes.extra.type === system_message_types.NARRATOR)) {
+                if (mes.extra?.bias?.trim()?.length > 0) {
+                    promptBias = mes.extra.bias;
+                }
+                break;
+            }
         }
     }
 
