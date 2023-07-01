@@ -193,7 +193,7 @@ table.responsiveTable {
     text-align: right;
 }
 
-.mes_text br {
+.mes_text br, .mes_bias br {
     content: ' ';
 }
 

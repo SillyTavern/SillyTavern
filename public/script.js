@@ -1086,7 +1086,7 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
         mes = mes.replaceAll('\\begin{align*}', '$$');
         mes = mes.replaceAll('\\end{align*}', '$$');
         mes = converter.makeHtml(mes);
-        mes = mes.replace(/{{(\*?.*\*?)}}/g, "");
+        mes = replaceBiasMarkup(mes);
 
         mes = mes.replace(/<code(.*)>[\s\S]*?<\/code>/g, function (match) {
             // Firefox creates extra newlines from <br>s in code blocks, so we replace them before converting newlines to <br>s.
@@ -1101,10 +1101,12 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
         });
     }
 
+    /*
     // Hides bias from empty messages send with slash commands
     if (isSystem) {
-        mes = mes.replace(/{{(\*?.*\*?)}}/g, "");
+        mes = mes.replace(/\{\{[\s\S]*?\}\}/gm, "");
     }
+    */
 
     if (!power_user.allow_name2_display && ch_name && !isUser && !isSystem) {
         mes = mes.replaceAll(`${ch_name}:`, "");
@@ -1534,7 +1536,7 @@ export function extractMessageBias(message) {
 
     const forbiddenMatches = ['user', 'char', 'time', 'date'];
     const found = [];
-    const rxp = /\{\{(.+?)\}\}/g;
+    const rxp = /\{\{([\s\S]+?)\}\}/gm;
     //const rxp = /{([^}]+)}/g;
     let curMatch;
 
@@ -2741,7 +2743,7 @@ function formatMessageHistoryItem(chatItem, isInstruct) {
 }
 
 export function replaceBiasMarkup(str) {
-    return (str ?? '').replace(/{{(\*?.*\*?)}}/g, '');
+    return (str ?? '').replace(/\{\{[\s\S]*?\}\}/gm, '');
 }
 
 export async function sendMessageAsUser(textareaText, messageBias) {
