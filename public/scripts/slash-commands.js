@@ -129,22 +129,15 @@ function setNameCallback(_, name) {
     name = name.trim();
 
     // If the name is a persona, auto-select it
-    if (Object.values(power_user.personas).map(x => x.toLowerCase()).includes(name.toLowerCase())) {
-        autoSelectPersona(name);
+    for (let persona of Object.values(power_user.personas)) {
+        if (persona.toLowerCase() === name.toLowerCase()) {
+            autoSelectPersona(name);
+            return;
+        }
     }
+
     // Otherwise, set just the name
-    else {
-        //setUserName(name); //this prevented quickReply usage
-        let changeablename1 = name1
-        console.log(name1)
-        changeablename1 = name
-        if (changeablename1 === undefined || changeablename1 == "")
-            changeablename1 = default_user_name;
-        console.log(`User name changed to ${changeablename1}`);
-        $("#your_name").val(changeablename1);
-        toastr.success(`Your messages will now be sent as ${changeablename1}`, 'Current persona updated');
-        saveSettings("change_name");
-    }
+    setUserName(name); //this prevented quickReply usage
 }
 
 function setNarratorName(_, text) {

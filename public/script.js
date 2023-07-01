@@ -4124,17 +4124,13 @@ function reloadUserAvatar(force = false) {
 }
 
 export function setUserName(value) {
-    if (!is_send_press) {
-        name1 = value;
-        if (name1 === undefined || name1 == "")
-            name1 = default_user_name;
-        console.log(`User name changed to ${name1}`);
-        $("#your_name").val(name1);
-        toastr.success(`Your messages will now be sent as ${name1}`, 'Current persona updated');
-        saveSettings("change_name");
-    } else {
-        toastr.warning('You cannot change your name while sending a message', 'Warning');
-    }
+    name1 = value;
+    if (name1 === undefined || name1 == "")
+        name1 = default_user_name;
+    console.log(`User name changed to ${name1}`);
+    $("#your_name").val(name1);
+    toastr.success(`Your messages will now be sent as ${name1}`, 'Current persona updated');
+    saveSettings("change_name");
 }
 
 export function autoSelectPersona(name) {
