@@ -101,6 +101,8 @@ let power_user = {
     trim_sentences: false,
     include_newline: false,
     always_force_name2: false,
+    user_prompt_bias: '',
+    show_user_prompt_bias: true,
     multigen: false,
     multigen_first_chunk: 50,
     multigen_next_chunks: 30,
@@ -598,6 +600,8 @@ function loadPowerUserSettings(settings, data) {
     $("#waifuMode").prop("checked", power_user.waifuMode);
     $("#movingUImode").prop("checked", power_user.movingUI);
     $("#noShadowsmode").prop("checked", power_user.noShadows);
+    $("#start_reply_with").val(power_user.user_prompt_bias);
+    $("#chat-show-reply-prefix-checkbox").prop("checked", power_user.show_user_prompt_bias);
     $("#multigen").prop("checked", power_user.multigen);
     $("#multigen_first_chunk").val(power_user.multigen_first_chunk);
     $("#multigen_next_chunks").val(power_user.multigen_next_chunks);
@@ -1073,6 +1077,17 @@ $(document).ready(() => {
         saveSettingsDebounced();
         reloadMarkdownProcessor(power_user.render_formulas);
     });
+
+    $("#start_reply_with").on('input', function() {
+        power_user.user_prompt_bias = $(this).val();
+        saveSettingsDebounced();
+    });
+
+    $("#chat-show-reply-prefix-checkbox").change(function () {
+        power_user.show_user_prompt_bias = !!$(this).prop("checked");
+        reloadCurrentChat();
+        saveSettingsDebounced();
+    })
 
     $("#multigen").change(function () {
         power_user.multigen = $(this).prop("checked");
