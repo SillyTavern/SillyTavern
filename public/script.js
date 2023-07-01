@@ -1841,7 +1841,7 @@ class StreamingProcessor {
         if (this.type !== 'swipe' && this.type !== 'impersonate') {
             if (Array.isArray(chat[messageId]['swipes']) && chat[messageId]['swipes'].length === 1 && chat[messageId]['swipe_id'] === 0) {
                 chat[messageId]['swipes'][0] = chat[messageId]['mes'];
-                chat[messageId]['swipe_info'][0] = [chat[messageId]['gen_started'], chat[messageId]['gen_finished']];
+                chat[messageId]['swipe_info'][0] = { 'send_date': chat[messageId]['send_date'], 'gen_started': chat[messageId]['gen_started'], 'gen_finished': chat[messageId]['gen_finished'] };
             }
         }
     }
@@ -6067,7 +6067,7 @@ const swipe_right = () => {
         chat[chat.length - 1]['swipes'] = [];                         // empty the array
         chat[chat.length - 1]['swipe_info'] = []; 
         chat[chat.length - 1]['swipes'][0] = chat[chat.length - 1]['mes'];  //assign swipe array with last message from chat
-        chat[chat.length - 1]['swipe_info'][0] = [chat[chat.length - 1]['gen_started'], chat[chat.length - 1]['gen_finished']]; //assign swipe info array with last message from chat
+        chat[chat.length - 1]['swipe_info'][0] = { 'send_date': chat[chat.length - 1]['send_date'], 'gen_started': chat[chat.length - 1]['gen_started'], 'gen_finished': chat[chat.length - 1]['gen_finished'] }; //assign swipe info array with last message from chat
     }
     chat[chat.length - 1]['swipe_id']++;                                      //make new slot in array
     if (chat[chat.length - 1].extra) {
@@ -6137,8 +6137,7 @@ const swipe_right = () => {
                     /* } */
                 } else {
                     //console.log('showing previously generated swipe candidate, or "..."');
-                    console.log('onclick right swipe calling addOneMessage');
-                    console.log(chat);
+                    //console.log('onclick right swipe calling addOneMessage');
                     addOneMessage(chat[chat.length - 1], { type: 'swipe' });
                 }
                 let new_height = this_mes_div_height - (this_mes_block_height - this_mes_block[0].scrollHeight);
