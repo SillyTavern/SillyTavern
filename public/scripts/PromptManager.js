@@ -1,6 +1,7 @@
 import {DraggablePromptListModule as DraggableList} from "./DraggableList.js";
 import {event_types, eventSource, substituteParams} from "../script.js";
 import {TokenHandler} from "./openai.js";
+import {power_user} from "./power-user.js";
 
 const registerPromptManagerMigration = () => {
     const migrate = (settings) => {
@@ -204,6 +205,8 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
             this.updatePromptWithPromptEditForm(prompt);
         }
 
+        this.log('Saved prompt: ' + prompt.identifier);
+
         this.hideEditForm();
         this.clearEditForm(prompt);
         this.saveServiceSettings().then(() => this.render());
@@ -233,18 +236,23 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
         const promptID = document.getElementById(this.configuration.prefix + 'prompt_manager_footer_append_prompt').value;
         const prompt = this.getPromptById(promptID);
 
-        this.appendPrompt(prompt, this.activeCharacter);
-        this.saveServiceSettings().then(() => this.render());
+        if (prompt){
+            this.appendPrompt(prompt, this.activeCharacter);
+            this.saveServiceSettings().then(() => this.render());
+        }
     }
 
     // Delete selected prompt from list form and close edit form
     this.handleDeletePrompt = (event) => {
-        const promptID = document.getElementById(this.configuration.prefix + 'prompt_manager_footer_append_prompt').value;
+        const promptID =  document.getElementById(this.configuration.prefix + 'prompt_manager_footer_append_prompt').value;
         const prompt = this.getPromptById(promptID);
 
-        if (true === this.isPromptDeletionAllowed(prompt)) {
+        if (prompt && true === this.isPromptDeletionAllowed(prompt)) {
             const promptIndex = this.getPromptIndexById(promptID);
             this.serviceSettings.prompts.splice(Number(promptIndex), 1);
+
+            this.log('Deleted prompt: ' + prompt.identifier);
+
             this.hideEditForm();
             this.clearEditForm();
             this.saveServiceSettings().then(() => this.render());
@@ -320,6 +328,8 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
 
     // Re-render Prompt manager on openai preset change
     eventSource.on(event_types.OAI_PRESET_CHANGED, settings => this.render());
+
+    this.log('Initialized')
 };
 
 /**
@@ -442,10 +452,22 @@ PromptManagerModule.prototype.sanitizeServiceSettings = function () {
         ? this.setPrompts(openAiDefaultPrompts.prompts)
         : this.checkForMissingPrompts(this.serviceSettings.prompts);
 
+    // Add prompt manager settings if not present
     this.serviceSettings.prompt_manager_settings = this.serviceSettings.prompt_manager_settings ?? {...defaultPromptManagerSettings};
 
     // Add identifiers if there are none assigned to a prompt
     this.serviceSettings.prompts.forEach(prompt => prompt && (prompt.identifier = prompt.identifier ?? this.getUuidv4()));
+
+    if (this.activeCharacter) {
+        const promptReferences = this.getPromptListByCharacter(this.activeCharacter);
+        for(let i = promptReferences.length - 1; i >= 0; i--) {
+            const reference =  promptReferences[i];
+            if(-1 === this.serviceSettings.prompts.findIndex(prompt => prompt.identifier === reference.identifier)) {
+                promptReferences.splice(i, 1);
+                this.log('Removed unused reference: ' +  reference.identifier);
+            }
+        }
+    }
 };
 
 PromptManagerModule.prototype.checkForMissingPrompts = function(prompts) {
@@ -459,7 +481,7 @@ PromptManagerModule.prototype.checkForMissingPrompts = function(prompts) {
         const defaultPrompt = openAiDefaultPrompts.prompts.find(prompt => prompt?.identifier === identifier);
         if (defaultPrompt) {
             prompts.push(defaultPrompt);
-            console.log(`[PromptManager] Missing system prompt: ${defaultPrompt.identifier}. Added default.`);
+            this.log(`Missing system prompt: ${defaultPrompt.identifier}. Added default.`);
         }
     });
 };
@@ -696,18 +718,21 @@ PromptManagerModule.prototype.clearEditForm = function () {
 }
 
 /**
- * Generates and returns a new ChatCompletion object based on the active character's prompt list.
- * @returns {Object} A ChatCompletion object
+ * Returns a full list of prompts whose content markers have been substituted.
+ * @returns {PromptCollection} A PromptCollection object
  */
 PromptManagerModule.prototype.getPromptCollection = function () {
     const promptList = this.getPromptListByCharacter(this.activeCharacter);
 
     const promptCollection = new PromptCollection();
     promptList.forEach(entry => {
-        if (true === entry.enabled) promptCollection.add(this.preparePrompt(this.getPromptById(entry.identifier)));
+        if (true === entry.enabled) {
+            const prompt = this.getPromptById(entry.identifier);
+            if (prompt) promptCollection.add(this.preparePrompt(prompt));
+        }
     });
 
-    return promptCollection
+    return promptCollection;
 }
 
 PromptManagerModule.prototype.populateTokenHandler = function(messageCollection) {
@@ -718,6 +743,8 @@ PromptManagerModule.prototype.populateTokenHandler = function(messageCollection)
     });
 
     this.tokenCache = this.tokenHandler.getTotal();
+
+    this.log('Updated token cache with ' + this.tokenCache);
 }
 
 // Empties, then re-assembles the container containing the prompt list.
@@ -961,6 +988,22 @@ PromptManagerModule.prototype.getUuidv4 = function () {
         return v.toString(16);
     });
 }
+
+PromptManagerModule.prototype.log = function (output) {
+    if (power_user.console_log_prompts) console.log('[PromptManager] ' + output);
+}
+
+PromptManagerModule.prototype.profileStart = function (identifier) {
+    if (power_user.console_log_prompts) console.time(identifier);
+}
+
+PromptManagerModule.prototype.profileEnd = function (identifier) {
+    if (power_user.console_log_prompts) {
+        this.log('Profiling of "' + identifier + '" finished. Result below.');
+        console.timeEnd(identifier);
+    }
+}
+
 
 const openAiDefaultPrompts = {
     "prompts": [
