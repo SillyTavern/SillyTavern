@@ -1996,7 +1996,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
         deactivateSendButtons();
 
-        let { messageBias, promptBias } = getBiasStrings(textareaText, type);
+        let { messageBias, promptBias, isUserPromptBias } = getBiasStrings(textareaText, type);
 
         //*********************************
         //PRE FORMATING STRING
@@ -2071,7 +2071,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             storyString += appendToStoryString(Scenario, power_user.disable_scenario_formatting ? '' : 'Circumstances and context of the dialogue: ');
         }
 
-        if (promptBias || power_user.always_force_name2 || is_pygmalion) {
+        // kingbri MARK: - Make sure the prompt bias isn't the same as the user bias
+        if ((promptBias && !isUserPromptBias) || power_user.always_force_name2 || is_pygmalion) {
             force_name2 = true;
         }
 
@@ -2313,15 +2314,19 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         mesSendString += '\n';
                     }
 
-                    let addedPromptBias = promptBias || substituteParams(power_user.user_prompt_bias) || '';
-
                     // Add a leading space to the prompt bias if applicable
-                    if (addedPromptBias.length !== 0 && !addedPromptBias.startsWith(' ')) {
-                        addedPromptBias = ` ${addedPromptBias}`
+                    if (!promptBias || promptBias.length === 0) {
+                        console.debug("No prompt bias was found.");
+                        mesSendString += `${name2}:`;
+                    } else if (promptBias.startsWith(' ')) {
+                        console.debug(`A prompt bias with a leading space was found: ${promptBias}`);
+                        mesSendString += `${name2}:${promptBias}`
+                    } else {
+                        console.debug(`A prompt bias was found: ${promptBias}`);
+                        mesSendString += `${name2}: ${promptBias}`;
                     }
-
-                    mesSendString += (`${name2}:${addedPromptBias}`);
                 } else if (power_user.user_prompt_bias) {
+                    console.debug(`A prompt bias was found without character's name appended: ${promptBias}`);
                     mesSendString += substituteParams(power_user.user_prompt_bias);
                 }
 
@@ -2735,8 +2740,14 @@ export function getBiasStrings(textareaText, type) {
         }
     }
 
-    promptBias = messageBias || promptBias || '';
-    return { messageBias, promptBias };
+    promptBias = messageBias || promptBias || power_user.user_prompt_bias || '';
+    const isUserPromptBias = promptBias === power_user.user_prompt_bias;
+
+    // Substitute params for everything
+    messageBias = substituteParams(messageBias);
+    promptBias = substituteParams(promptBias);
+
+    return { messageBias, promptBias, isUserPromptBias };
 }
 
 function formatMessageHistoryItem(chatItem, isInstruct) {
