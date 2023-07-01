@@ -205,10 +205,10 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
             this.updatePromptWithPromptEditForm(prompt);
         }
 
-        this.log('Saved prompt: ' + prompt.identifier);
+        this.log('Saved prompt: ' + promptId);
 
         this.hideEditForm();
-        this.clearEditForm(prompt);
+        this.clearEditForm();
         this.saveServiceSettings().then(() => this.render());
     }
 
