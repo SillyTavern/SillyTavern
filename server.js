@@ -762,23 +762,51 @@ function convertToV2(char) {
     return result;
 }
 
-function calculateTotalGenTime(char_dir, chat) {
+function calculateTotalGenTimeAndWordCount(char_dir, chat) {
     let filepath = path.join(char_dir, chat);
     let file = fs.readFileSync(filepath, 'utf8');
     let lines = file.split('\n');
     let totalGenTime = 0;
-    for(let line of lines) {
-        if(line.length) {
+    let userWordCount = 0;
+    let nonUserWordCount = 0;
+    for (let line of lines) {
+        if (line.length) {
             let json = JSON.parse(line);
-            if(json.gen_started && json.gen_finished) {
+            if (json.gen_started && json.gen_finished) {
                 let gen_started = new Date(json.gen_started);
                 let gen_finished = new Date(json.gen_finished);
                 let gen_time = gen_finished - gen_started;
                 totalGenTime += gen_time;
             }
+            if (json.mes) {
+                if (json.is_user) {
+                    userWordCount += json.mes.split(" ").length;
+                } else {
+                    nonUserWordCount += json.mes.split(" ").length;
+                }
+            }
+            if (json.swipes) {
+                for (let swipeText of json.swipes) {
+                    if (json.is_user) {
+                        userWordCount += swipeText.split(" ").length;
+                    } else {
+                        nonUserWordCount += swipeText.split(" ").length;
+                    }
+                }
+            }
+            if (json.swipe_info) {
+                for (let swipe of json.swipe_info) {
+                    if (swipe.gen_started && swipe.gen_finished) {
+                        let gen_started = new Date(swipe.gen_started);
+                        let gen_finished = new Date(swipe.gen_finished);
+                        let gen_time = gen_finished - gen_started;
+                        totalGenTime += gen_time;
+                    }
+                }
+            }
         }
     }
-    return totalGenTime;
+    return { totalGenTime, userWordCount, nonUserWordCount };
 }
 
 
@@ -1172,10 +1200,21 @@ app.post("/getcharacters", jsonParser, function (request, response) {
                                 //open the jsonl file and read the lines
                                 //extract the gen_started and gen_finished from each line, calculating the difference and adding it to a running total
                                 if (first_run) {
-                                    let totalGenTime = calculateTotalGenTime(char_dir, chat);
-                                    if (totalGenTime) {
-                                        console.log(`Total gen time for ${item} is ${totalGenTime}`)
-                                        characters[i]['total_gen_time'] = totalGenTime;
+                                    let result = calculateTotalGenTimeAndWordCount(char_dir, chat);
+                                    if (result.totalGenTime) {
+                                        //console.debug(`Total gen time for ${item} is ${result.totalGenTime}`)
+                                        characters[i]['total_gen_time'] = characters[i]['total_gen_time'] ?
+                                            characters[i]['total_gen_time'] + result.totalGenTime : result.totalGenTime;
+                                    }
+                                    if (result.userWordCount) {
+                                        //console.debug(`User word count for ${item} is ${result.userWordCount}`)
+                                        characters[i]['user_word_count'] = characters[i]['user_word_count'] ?
+                                            characters[i]['user_word_count'] + result.userWordCount : result.userWordCount;
+                                    }
+                                    if (result.nonUserWordCount) {
+                                        //console.debug(`Non-user word count for ${item} is ${result.nonUserWordCount}`)
+                                        characters[i]['word_count'] = characters[i]['word_count'] ?
+                                            characters[i]['word_count'] + result.nonUserWordCount : result.nonUserWordCount;
                                     }
 
                             }
@@ -1185,8 +1224,11 @@ app.post("/getcharacters", jsonParser, function (request, response) {
                                 date_last_chat = Math.max(date_last_chat, chatStat.mtimeMs);
                             }
                         }
-                        first_run = false;
                     }
+                    //log the total gen time and word counts to the console
+                    console.debug(`Total gen time for ${item} is ${characters[i]['total_gen_time']}`)
+                    console.debug(`User word count for ${item} is ${characters[i]['user_word_count']}`)
+                    console.debug(`Non-user word count for ${item} is ${characters[i]['word_count']}`)
 
                     characters[i]['date_last_chat'] = date_last_chat;
                     characters[i]['chat_size'] = chat_size;
@@ -1207,6 +1249,7 @@ app.post("/getcharacters", jsonParser, function (request, response) {
                 }
             }
         };
+        first_run = false;
         //console.log(characters);
         response.send(JSON.stringify(characters));
     });
