@@ -6963,7 +6963,7 @@ $(document).ready(function () {
                 toastr.error(`Error: ${data.message}`);
                 return;
             } else {
-                const mimeType = format == 'txt' ? 'text/plain' : 'application/json';
+                const mimeType = format == 'txt' ? 'text/plain' : 'application/octet-stream';
                 // success, handle response data
                 console.log(data);
                 await delay(250);
