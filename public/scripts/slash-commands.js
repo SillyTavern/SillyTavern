@@ -16,7 +16,9 @@ import {
     substituteParams,
     comment_avatar,
     system_avatar,
-    system_message_types
+    system_message_types,
+    name1,
+    saveSettings,
 } from "../script.js";
 import { humanizedDateTime } from "./RossAscends-mods.js";
 import { power_user } from "./power-user.js";
@@ -120,6 +122,7 @@ function bindCallback() {
 
 function setNameCallback(_, name) {
     if (!name) {
+        toastr.warning('you must specify a name to change to')
         return;
     }
 
@@ -131,7 +134,16 @@ function setNameCallback(_, name) {
     }
     // Otherwise, set just the name
     else {
-        setUserName(name);
+        //setUserName(name); //this prevented quickReply usage
+        let changeablename1 = name1
+        console.log(name1)
+        changeablename1 = name
+        if (changeablename1 === undefined || changeablename1 == "")
+            changeablename1 = default_user_name;
+        console.log(`User name changed to ${changeablename1}`);
+        $("#your_name").val(changeablename1);
+        toastr.success(`Your messages will now be sent as ${changeablename1}`, 'Current persona updated');
+        saveSettings("change_name");
     }
 }
 
