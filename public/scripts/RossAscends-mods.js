@@ -121,6 +121,37 @@ waitForElement("#floatingPrompt", 10000).then(function () {
     console.log("floating prompt box not loaded yet");
 });
 
+//humanize character generation time
+export function humanizeGenTime(character) {
+    //convert time_spent to humanized format of "_ Hours, _ Minutes, _ Seconds" from milliseconds
+    let time_spent = character.total_gen_time
+    time_spent = Math.floor(time_spent / 1000);
+    let seconds = time_spent % 60;
+    time_spent = Math.floor(time_spent / 60);
+    let minutes = time_spent % 60;
+    time_spent = Math.floor(time_spent / 60);
+    let hours = time_spent % 24;
+    time_spent = Math.floor(time_spent / 24);
+    let days = time_spent;
+    time_spent = "";
+    if (days > 0) { time_spent += `${days} Days, `; }
+    if (hours > 0) { time_spent += `${hours} Hours, `; }
+    if (minutes > 0) { time_spent += `${minutes} Minutes, `; }
+    time_spent += `${seconds} Seconds`;
+    return time_spent;
+}
+
+export function AA_CountCharTime(chid){
+    console.log("AA_CountCharTime");
+    if (chid !== undefined && chid !== "invalid-safety-id") {    // if we are counting a valid pre-saved char
+        let selected_character = characters[chid];
+        let timeStirng = humanizeGenTime(selected_character);
+        console.log("Time spent generating: " + timeStirng)
+        //append to #result_info html
+        $("#result_info").append(`<div class="result_info_item"><span class="result_info_item_title"></span><small class="result_info_item_value">${timeStirng}</small></div>`);
+    }
+}
+
 // Device detection
 export const deviceInfo = await getDeviceInfo();
 
@@ -286,10 +317,11 @@ export function RA_CountCharTokens() {
             // if neither, probably safety char or some error in loading
         } else { console.debug("RA_TC -- no valid char found, closing."); }
     }
+    $("#result_info").html(`<small>${count_tokens} Tokens dumb (${perm_tokens} Permanent)</small>`);
     // display the counted tokens
     const tokenLimit = Math.max(((main_api !== 'openai' ? max_context : oai_settings.openai_max_context) / 2), 1024);
     if (count_tokens < tokenLimit && perm_tokens < tokenLimit) {
-        $("#result_info").html(`<small>${count_tokens} Tokens (${perm_tokens} Permanent)</small>`);
+
     } else {
         $("#result_info").html(`
         <div class="flex-container alignitemscenter">

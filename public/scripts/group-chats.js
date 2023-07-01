@@ -6,7 +6,7 @@ import {
     isDataURL,
     createThumbnail,
 } from './utils.js';
-import { RA_CountCharTokens, humanizedDateTime } from "./RossAscends-mods.js";
+import { RA_CountCharTokens, humanizedDateTime, AA_CountCharTime } from "./RossAscends-mods.js";
 import { sortCharactersList, sortGroupMembers } from './power-user.js';
 
 import {
@@ -1223,6 +1223,7 @@ function openCharacterDefinition(characterSelect) {
     select_selected_character(chid);
     // Gentle nudge to recalculate tokens
     RA_CountCharTokens();
+    AA_CountCharTime(chid);
     // Do a little tomfoolery to spoof the tag selector
     applyTagsOnCharacterSelect.call(characterSelect);
 }

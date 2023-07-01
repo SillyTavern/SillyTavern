@@ -1148,6 +1148,31 @@ app.post("/getcharacters", jsonParser, function (request, response) {
 
                         if (Array.isArray(chats) && chats.length) {
                             for (const chat of chats) {
+                                //open the jsonl file and read the lines
+                                //extract the gen_started and gen_finished from each line, calculating the difference and adding it to a running total
+
+                                let filepath = path.join(char_dir, chat);
+                                let file = fs.readFileSync(filepath, 'utf8');
+                                let lines = file.split('\n');
+                                let totalGenTime = 0;
+                                for(let line of lines) {
+                                    if(line.length) {
+                                        let json = JSON.parse(line);
+                                        if(json.gen_started && json.gen_finished) {
+                                            //convert json.get_started and json.gen_finished to Date objects
+                                            //calculate the difference between the two and add it to totalGenTime
+                                            let gen_started = new Date(json.gen_started);
+                                            let gen_finished = new Date(json.gen_finished);
+                                            let gen_time = gen_finished - gen_started;
+                                            totalGenTime += gen_time;
+                                        }
+                                    }
+                                }
+                                if(totalGenTime) {
+                                    console.log(`Total gen time for ${item} is ${totalGenTime}`)
+                                    characters[i]['total_gen_time'] = totalGenTime;
+                                }
+                                
                                 const chatStat = fs.statSync(path.join(char_dir, chat));
                                 chat_size += chatStat.size;
                                 date_last_chat = Math.max(date_last_chat, chatStat.mtimeMs);

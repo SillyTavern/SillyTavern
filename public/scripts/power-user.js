@@ -19,6 +19,7 @@ import {
     setCharacterId
 } from "../script.js";
 import { favsToHotswap, isMobile, initMovingUI } from "./RossAscends-mods.js";
+import { getContext } from "./extensions.js";
 import {
     groups,
     resetSelectedGroup,
@@ -653,7 +654,7 @@ function loadPowerUserSettings(settings, data) {
     switchWaifuMode();
     loadMovingUIState();
 
-    //console.log(power_user)
+    console.log(power_user);
 }
 
 function loadMovingUIState() {
@@ -830,6 +831,8 @@ const compareFunc = (first, second) => {
 };
 
 function sortCharactersList() {
+    console.log(characters);
+    console.log(getContext());
     const arr1 = groups.map(x => ({
         item: x,
         id: x.id,

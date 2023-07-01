@@ -1,4 +1,4 @@
-import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile } from "./scripts/RossAscends-mods.js";
+import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, AA_CountCharTime } from "./scripts/RossAscends-mods.js";
 import { encode } from "../scripts/gpt-2-3-tokenizer/mod.js";
 import { GPT3BrowserTokenizer } from "../scripts/gpt-3-tokenizer/gpt3-tokenizer.js";
 import {
@@ -872,8 +872,11 @@ async function getCharacters() {
         if (this_chid != undefined && this_chid != "invalid-safety-id") {
             $("#avatar_url_pole").val(characters[this_chid].avatar);
         }
+        console.log(characters);
         await getGroups();
         await printCharacters();
+        await AA_CountCharTime(this_chid);
+
     }
 }
 
@@ -3824,12 +3827,18 @@ async function getChat() {
             chat.push(...response);
             chat_create_date = chat[0]['create_date'];
             chat_metadata = chat[0]['chat_metadata'] ?? {};
+            console.log(chat_metadata);
             chat.shift();
         } else {
             chat_create_date = humanizedDateTime();
         }
         await getChatResult();
         await saveChat();
+        console.log('Chat loaded');
+        //loop through chats and get both chat[messageId]['gen_started'] and chat[messageId]['gen_finished'] 
+        //add up the difference of all of them and print it in seconds
+        let totalTime = 0;
+
         setTimeout(function () {
             $('#send_textarea').click();
             $('#send_textarea').focus();
