@@ -959,6 +959,14 @@ PromptManagerModule.prototype.makeDraggable = function () {
         const newIndex = originIndex < targetIndex ? (insertAfter ? targetIndex : targetIndex - 1) : (insertAfter ? targetIndex + 1 : targetIndex);
         promptList.splice(newIndex, 0, entry);
 
+        if (power_user.console_log_prompts) {
+            // For debugging purpose, fetch the actual position instead of using calculations.
+            const targetDebug = promptList.findIndex(prompt => prompt.identifier === target.dataset.pmIdentifier);
+            const originDebug = promptList.findIndex(prompt => prompt.identifier === origin.dataset.pmIdentifier);
+
+            this.log(`Moved ${origin.dataset.pmIdentifier} from position ${originIndex + 1} to position ${originDebug + 1} ${direction} ${target.dataset.pmIdentifier}, which now has position ${targetDebug + 1}`);
+
+        }
         this.saveServiceSettings();
     };
 
