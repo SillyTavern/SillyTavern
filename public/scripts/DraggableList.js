@@ -45,9 +45,9 @@ DraggableListModule.prototype.init = function () {
             const overLocation = event.clientY - rect.top;
             const halfHeight = rect.height / 2;
             if (overLocation < halfHeight) {
-                draggable.style.background = "linear-gradient(to top, transparent, transparent 60%, rgb(20,20,20) 75%, rgb(40,40,40) 85%, var(--white50a))";
+                draggable.style.background = "linear-gradient(to top, transparent, transparent 75%, rgb(225, 138, 36))";
             } else {
-                draggable.style.background = "linear-gradient(to bottom, transparent, transparent 60%, rgb(20,20,20) 75%, rgb(40,40,40) 85%, var(--white50a))";
+                draggable.style.background = "linear-gradient(to bottom, transparent, transparent 75%, rgb(225, 138, 36))";
             }
         }
     }, false);
@@ -56,6 +56,7 @@ DraggableListModule.prototype.init = function () {
         event.preventDefault();
         const draggable = this.getClosestDraggable(event.target) || this.getClosestDroppable(event.target);
         if (draggable) draggable.style.background = "";
+
     }, false);
 
     this.list.addEventListener("drop", (event) => {
@@ -100,7 +101,6 @@ DraggableListModule.prototype.insertBefore = function (target, origin) {
 
 DraggableListModule.prototype.insertAfter = function (target, origin) {
     if (!target || !origin) return;
-    console.log("after")
     target.style.background = "";
     origin.style.opacity = "";
 
