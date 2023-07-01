@@ -404,10 +404,9 @@ function populateChatHistory(prompts, chatCompletion) {
         prompt.identifier = 'chatHistory-' + index;
         const chatMessage = Message.fromPrompt(promptManager.preparePrompt(prompt));
 
-        if (true === promptManager.serviceSettings.names_in_completion &&
-            prompt.name &&
-            promptManager.isValidName(prompt.name))
-            chatMessage.name = prompt.name;
+        if (true === promptManager.serviceSettings.names_in_completion && prompt.name)
+            if (promptManager.isValidName(prompt.name)) chatMessage.name = prompt.name;
+            else throw InvalidCharacterNameError();
 
         if (chatCompletion.canAfford(chatMessage)) chatCompletion.insertAtStart(chatMessage, 'chatHistory');
         else return false;
@@ -657,6 +656,10 @@ function prepareOpenAIMessages({
             toastr.error('An error occurred while counting tokens: Token budget exceeded.')
             chatCompletion.log('Token budget exceeded.');
             promptManager.error = 'Not enough free tokens for mandatory prompts. Raise your token Limit or disable custom prompts.';
+        } else if (error instanceof  InvalidCharacterNameError) {
+            toastr.error('An error occurred while counting tokens: Invalid character name')
+            chatCompletion.log('Invalid character name');
+            promptManager.error = 'The name of at least one character contained whitespaces or special characters. Please check your user and character name';
         } else {
             toastr.error('An unknown error occurred while counting tokens. Further info available in console.')
             chatCompletion.log('Unexpected error:');
@@ -1168,12 +1171,22 @@ class IdentifierNotFoundError extends Error {
     }
 }
 
+// Thrown by ChatCompletion when the token budget is unexpectedly exceeded
 class TokenBudgetExceededError extends Error {
     constructor(identifier = '') {
         super(`Token budged exceeded. Message: ${identifier}`);
         this.name = 'TokenBudgetExceeded';
     }
 }
+
+// Thrown when a character name is invalid
+class InvalidCharacterNameError extends Error {
+    constructor(identifier = '') {
+        super(`Invalid character name. Message: ${identifier}`);
+        this.name = 'InvalidCharacterName';
+    }
+}
+
 
 class Message {
     tokens; identifier; role; content; name;
