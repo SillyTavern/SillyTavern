@@ -342,15 +342,23 @@ PromptManagerModule.prototype.render = function (afterTryGenerate = true) {
     this.error = null;
 
     if (true === afterTryGenerate) {
+        // Executed during dry-run for determining context composition
+        this.profileStart('filling context');
         this.tryGenerate().then(() => {
+            this.profileEnd('filling context');
+            this.profileStart('render');
             this.renderPromptManager();
             this.renderPromptManagerListItems()
             this.makeDraggable();
+            this.profileEnd('render');
         });
     } else {
+        // Executed during live communication
+        this.profileStart('render');
         this.renderPromptManager();
         this.renderPromptManagerListItems()
         this.makeDraggable();
+        this.profileEnd('render');
     }
 }
 
