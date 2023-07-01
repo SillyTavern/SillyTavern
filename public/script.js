@@ -1089,7 +1089,7 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
         mes = mes.replaceAll('\\begin{align*}', '$$');
         mes = mes.replaceAll('\\end{align*}', '$$');
         mes = converter.makeHtml(mes);
-        mes = mes.replace(/{{(\*?.*\*?)}}/g, "");
+        mes = replaceBiasMarkup(mes);
 
         mes = mes.replace(/<code(.*)>[\s\S]*?<\/code>/g, function (match) {
             // Firefox creates extra newlines from <br>s in code blocks, so we replace them before converting newlines to <br>s.
@@ -1104,10 +1104,12 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
         });
     }
 
+    /*
     // Hides bias from empty messages send with slash commands
     if (isSystem) {
-        mes = mes.replace(/{{(\*?.*\*?)}}/g, "");
+        mes = mes.replace(/\{\{[\s\S]*?\}\}/gm, "");
     }
+    */
 
     if (!power_user.allow_name2_display && ch_name && !isUser && !isSystem) {
         mes = mes.replaceAll(`${ch_name}:`, "");
@@ -1537,7 +1539,7 @@ export function extractMessageBias(message) {
 
     const forbiddenMatches = ['user', 'char', 'time', 'date'];
     const found = [];
-    const rxp = /\{\{(.+?)\}\}/g;
+    const rxp = /\{\{([\s\S]+?)\}\}/gm;
     //const rxp = /{([^}]+)}/g;
     let curMatch;
 
@@ -1993,7 +1995,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
         deactivateSendButtons();
 
-        let { messageBias, promptBias } = getBiasStrings(textareaText);
+        let { messageBias, promptBias } = getBiasStrings(textareaText, type);
 
         //*********************************
         //PRE FORMATING STRING
@@ -2129,8 +2131,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
         // Moved here to not overflow the Poe context with added prompt bits
         if (main_api == 'poe') {
-            allAnchors = appendPoeAnchors(type, allAnchors);
-            zeroDepthAnchor = appendPoeAnchors(type, zeroDepthAnchor);
+            allAnchors = appendPoeAnchors(type, allAnchors, jailbreakPrompt);
+            zeroDepthAnchor = appendPoeAnchors(type, zeroDepthAnchor, jailbreakPrompt);
         }
 
         // hack for regeneration of the first message
@@ -2702,17 +2704,23 @@ function getNextMessageId(type) {
     return type == 'swipe' ? Number(count_view_mes - 1) : Number(count_view_mes);
 }
 
-export function getBiasStrings(textareaText) {
+export function getBiasStrings(textareaText, type) {
     let promptBias = '';
     let messageBias = extractMessageBias(textareaText);
 
-    // gets bias of the latest message where it was applied
-    for (let mes of chat.slice().reverse()) {
-        if (mes && mes.extra && (mes.is_user || mes.is_system || mes.extra.type === system_message_types.NARRATOR)) {
-            if (mes.extra.bias && mes.extra.bias.trim().length > 0) {
-                promptBias = mes.extra.bias;
+    // If user input is not provided, retrieve the bias of the most recent relevant message
+    if (!textareaText) {
+        for (let i = chat.length - 1; i >= 0; i--) {
+            const mes = chat[i];
+            if (type === 'swipe' && chat.length - 1 === i) {
+                continue;
             }
-            break;
+            if (mes && (mes.is_user || mes.is_system || mes.extra?.type === system_message_types.NARRATOR)) {
+                if (mes.extra?.bias?.trim()?.length > 0) {
+                    promptBias = mes.extra.bias;
+                }
+                break;
+            }
         }
     }
 
@@ -2738,7 +2746,7 @@ function formatMessageHistoryItem(chatItem, isInstruct) {
 }
 
 export function replaceBiasMarkup(str) {
-    return (str ?? '').replace(/{{(\*?.*\*?)}}/g, '');
+    return (str ?? '').replace(/\{\{[\s\S]*?\}\}/gm, '');
 }
 
 export async function sendMessageAsUser(textareaText, messageBias) {
@@ -4125,17 +4133,13 @@ function reloadUserAvatar(force = false) {
 }
 
 export function setUserName(value) {
-    if (!is_send_press) {
-        name1 = value;
-        if (name1 === undefined || name1 == "")
-            name1 = default_user_name;
-        console.log(`User name changed to ${name1}`);
-        $("#your_name").val(name1);
-        toastr.success(`Your messages will now be sent as ${name1}`, 'Current persona updated');
-        saveSettings("change_name");
-    } else {
-        toastr.warning('You cannot change your name while sending a message', 'Warning');
-    }
+    name1 = value;
+    if (name1 === undefined || name1 == "")
+        name1 = default_user_name;
+    console.log(`User name changed to ${name1}`);
+    $("#your_name").val(name1);
+    toastr.success(`Your messages will now be sent as ${name1}`, 'Current persona updated');
+    saveSettings("change_name");
 }
 
 export function autoSelectPersona(name) {
@@ -7847,13 +7851,13 @@ $(document).ready(function () {
 
     $(document).on('click', '.mes .avatar', function () {
 
-        console.log(isMobile());
-        console.log($('body').hasClass('waifuMode'));
+        //console.log(isMobile());
+        //console.log($('body').hasClass('waifuMode'));
 
-        if (isMobile() === true && !$('body').hasClass('waifuMode')) {
+        /* if (isMobile() === true && !$('body').hasClass('waifuMode')) {
             console.debug('saw mobile regular mode, returning');
             return;
-        } else { console.debug('saw valid env for zoomed display') }
+        } else { console.debug('saw valid env for zoomed display') } */
 
         let thumbURL = $(this).children('img').attr('src');
         let charsPath = '/characters/'
@@ -8020,7 +8024,7 @@ $(document).ready(function () {
         const html = `<h3>Enter the URL of the content to import</h3>
         Supported sources:<br>
         <ul class="justifyLeft">
-            <li>Chub characters (direct link or id)<br>Example: <tt></tt>Anonymous/example-character</li>
+            <li>Chub characters (direct link or id)<br>Example: <tt>Anonymous/example-character</tt></li>
             <li>Chub lorebooks (direct link or id)<br>Example: <tt>lorebooks/bartleby/example-lorebook</tt></li>
             <li>More coming soon...</li>
         <ul>`

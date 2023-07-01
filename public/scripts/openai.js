@@ -1611,7 +1611,7 @@ async function onModelChange() {
 
     if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
         if (value == '' && 'ai' in window) {
-            value = await window.ai.getCurrentModel();
+            value = (await window.ai.getCurrentModel()) || '';
         }
 
         if (oai_settings.max_context_unlocked) {
@@ -1628,6 +1628,9 @@ async function onModelChange() {
         }
         else if (value.includes('gpt-3.5')) {
             $('#openai_max_context').attr('max', gpt3_max);
+        }
+        else if (value.includes('gpt-4-32k')) {
+            $('#openai_max_context').attr('max', gpt4_32k_max);
         }
         else if (value.includes('gpt-4')) {
             $('#openai_max_context').attr('max', gpt4_max);

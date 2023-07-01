@@ -193,7 +193,7 @@ table.responsiveTable {
     text-align: right;
 }
 
-.mes_text br {
+.mes_text br, .mes_bias br {
     content: ' ';
 }
 
@@ -1923,9 +1923,9 @@ grammarly-extension {
     padding: 5px;
 }
 
-#kobold_order > div {
+#kobold_order>div {
     padding: 5px;
-    padding-left: 25px;
+    padding-left: 30px;
     width: 100%;
     border-radius: 5px;
     color: var(--SmartThemeBodyColor);
@@ -1937,13 +1937,13 @@ grammarly-extension {
     user-select: none;
 }
 
-#kobold_order > div:hover {
+#kobold_order>div:hover {
     background-color: var(--grey30a);
 }
 
-#kobold_order > div::after {
+#kobold_order>div::after {
     content: "☰";
-    left: 5px;
+    left: 8px;
     position: absolute;
 }
 
@@ -4475,23 +4475,22 @@ body.waifuMode .zoomed_avatar {
         min-width: 100% !important;
     }
 
-    .zoomed_avatar {
+    body:not(.waifuMode) .zoomed_avatar {
         min-width: 100px;
         min-height: 100px;
-        max-height: 90vh;
-        max-width: 90vh;
-        width: calc((100vw - var(--sheldWidth)) /2);
         position: absolute;
         padding: 0;
         filter: drop-shadow(2px 2px 2px #51515199);
-        z-index: 2;
+        z-index: 30;
         overflow: hidden;
-        display: none;
         left: 0;
         right: 0;
         margin: 0 auto;
         top: 50px;
         aspect-ratio: 2 / 3;
+        width: fit-content;
+        max-height: calc(60svh - 60px);
+        max-width: 90svw;
     }
 
     .world_entry_thin_controls,
@@ -4717,13 +4716,6 @@ body.waifuMode .zoomed_avatar {
         object-fit: cover;
     }
 
-    body:not(.waifuMode) .zoomed_avatar {
-        display: none;
-        /*         z-index: 999;
-        width: fit-content;
-        max-height: calc(60svh - 60px); */
-    }
-
     body.waifuMode .zoomed_avatar {
         width: fit-content;
         max-height: calc(60svh - 60px);
@@ -4754,9 +4746,36 @@ body.waifuMode .zoomed_avatar {
         top: unset;
         bottom: unset;
     }
+
+    body:not(.waifuMode) .zoomed_avatar {
+
+        width: fit-content;
+        max-height: calc(60svh - 60px);
+        max-width: 90svw;
+    }
 }
 
 @media screen and (max-width: 450px) {
+
+    body:not(.waifuMode) .zoomed_avatar {
+        min-width: 100px;
+        min-height: 100px;
+        max-height: 50vh;
+        max-width: 50vh;
+        width: 50vw;
+        position: absolute;
+        padding: 0;
+        filter: drop-shadow(2px 2px 2px #51515199);
+        z-index: 30;
+        overflow: hidden;
+        display: none;
+        left: 0;
+        right: 0;
+        margin: 0 auto;
+        top: 50px;
+        aspect-ratio: 2 / 3;
+    }
+
     .drawer25pWidth {
         flex-basis: max(calc(100% / 2 - 10px), 180px);
     }

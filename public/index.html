@@ -1563,6 +1563,7 @@
                                     <option value="openai/gpt-3.5-turbo">openai/gpt-3.5-turbo</option>
                                     <option value="openai/gpt-3.5-turbo-16k">openai/gpt-3.5-turbo-16k</option>
                                     <option value="openai/gpt-4">openai/gpt-4</option>
+                                    <option value="openai/gpt-4-32k">openai/gpt-4-32k</option>
                                     <option value="anthropic/claude-instant-v1">anthropic/claude-instant-v1</option>
                                     <option value="anthropic/claude-instant-v1-100k">anthropic/claude-instant-v1-100k</option>
                                     <option value="anthropic/claude-v1">anthropic/claude-v1</option>
@@ -1576,7 +1577,7 @@
                             <h4 data-i18n="OpenRouter API Key">OpenRouter API Key</h4>
                             <div>
                                 <small>
-                                    Get your key from <a target="_blank" href="https://openrouter.ai/keys/">OpenRouter</a>.
+                                    Click "Authorize" below or get the key from <a target="_blank" href="https://openrouter.ai/keys/">OpenRouter</a>.
                                 </small>
                             </div>
                             <div class="flex-container">
@@ -1594,6 +1595,7 @@
 
                         <div class="flex-container flex">
                             <input id="api_button_openai" class="menu_button" type="submit" value="Connect">
+                            <input data-source="windowai" id="openrouter_authorize" class="menu_button" type="button" value="Authorize" title="Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai">
                             <input id="test_api_button" class="menu_button" type="button" value="Test Message" title="Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!">
                         </div>
                         <div id="api_loading_openai" class=" api-load-icon fa-solid fa-hourglass fa-spin"></div>
@@ -2787,7 +2789,7 @@
 
         <div class="inline-drawer">
             <div class="inline-drawer-toggle inline-drawer-header">
-                <h4>Prompt Overrides <small>(For OpenAI/Claude APIs, and Instruct mode)</small></h4>
+                <h4>Prompt Overrides <small>(For OpenAI/Claude APIs, Window/OpenRouter, Poe, and Instruct mode)</small></h4>
 
 
                 <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
@@ -2800,7 +2802,7 @@
                 </div>
                 <div>
                     <h4>Jailbreak</h4>
-                    <textarea id="post_history_instructions_textarea" name="post_history_instructions" placeholder="Any contents here will replace the default Jailbreak Prompt used for this character.&#10;(v2 spec: post_history_instructions)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="20000"></textarea>
+                    <textarea id="post_history_instructions_textarea" name="post_history_instructions" placeholder="Any contents here will replace the default Jailbreak Prompt (Character Note for Poe) used for this character.&#10;(v2 spec: post_history_instructions)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="20000"></textarea>
                 </div>
             </div>
         </div>
@@ -2873,7 +2875,7 @@
                 <h4><span data-i18n="Examples of dialogue">Examples of dialogue</span></h4>
                 <h5>Important to set the character's writing style. <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#examples-of-dialogue" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
             </div>
-            <textarea id="mes_example_textarea" class="flexGrow" name="mes_example" placeholder="(Examples of chat dialog. Begin each example with <start> on a new line.)" form="form_create" maxlength="20000" rows="6"></textarea>
+            <textarea id="mes_example_textarea" class="flexGrow" name="mes_example" placeholder="(Examples of chat dialog. Begin each example with &lt;START&gt; on a new line.)" form="form_create" maxlength="20000" rows="6"></textarea>
         </div>
         <div id="character_popup_ok" class="menu_button">Save</div>
 
@@ -3142,6 +3144,10 @@
                                     <span data-i18n="Selective">Selective</span>
                                 </label>
                                 <label class="checkbox flex-container">
+                                    <input type="checkbox" name="useProbability" />
+                                    <span data-i18n="Use Probability">Use Probability</span>
+                                </label>
+                                <label class="checkbox flex-container">
                                     <input type="checkbox" name="addMemo">
                                     <span data-i18n="Add Memo">Add Memo</span>
                                 </label>
@@ -3169,13 +3175,19 @@
                                         <span data-i18n="Author's Note">Author's Note Bottom</span>
                                     </label>
                                 </div>
-
-                            </div>
-                            <div class="world_entry_form_control wi-enter-footer-text  flex-container flexNoGap ">
-                                Insertion Order
-                                <input class="text_pole wideMax100px" type="number" name="order" placeholder="" />
                             </div>
 
+                            <div class="container flexFlowColumn flexNoGap">
+                                <div class="world_entry_form_control wi-enter-footer-text  flex-container flexNoGap ">
+                                    Insertion Order
+                                    <input class="text_pole wideMax100px" type="number" name="order" placeholder="" />
+                                </div>
+
+                                <div class="world_entry_form_control wi-enter-footer-text flex-container flexNoGap probabilityContainer">
+                                    Probability (%)
+                                    <input class="text_pole wideMax100px" type="number" name="probability" placeholder="" min="0" max="100" />
+                                </div>
+                            </div>
 
                             <div class="flex-container flexFlowColumn flexNoGap  wi-enter-footer-text ">
                                 <div class="world_entry_form_uid">

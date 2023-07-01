@@ -16,7 +16,9 @@ import {
     substituteParams,
     comment_avatar,
     system_avatar,
-    system_message_types
+    system_message_types,
+    name1,
+    saveSettings,
 } from "../script.js";
 import { humanizedDateTime } from "./RossAscends-mods.js";
 import { power_user } from "./power-user.js";
@@ -120,19 +122,22 @@ function bindCallback() {
 
 function setNameCallback(_, name) {
     if (!name) {
+        toastr.warning('you must specify a name to change to')
         return;
     }
 
     name = name.trim();
 
     // If the name is a persona, auto-select it
-    if (Object.values(power_user.personas).map(x => x.toLowerCase()).includes(name.toLowerCase())) {
-        autoSelectPersona(name);
+    for (let persona of Object.values(power_user.personas)) {
+        if (persona.toLowerCase() === name.toLowerCase()) {
+            autoSelectPersona(name);
+            return;
+        }
     }
+
     // Otherwise, set just the name
-    else {
-        setUserName(name);
-    }
+    setUserName(name); //this prevented quickReply usage
 }
 
 function setNarratorName(_, text) {

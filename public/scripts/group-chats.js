@@ -524,7 +524,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
             toastr.warning('All group members are disabled. Enable at least one to get a reply.');
 
             // Send user message as is
-            const bias = getBiasStrings(userInput);
+            const bias = getBiasStrings(userInput, type);
             await sendMessageAsUser(userInput, bias.messageBias);
             await saveChatConditional();
             $('#send_textarea').val('').trigger('input');

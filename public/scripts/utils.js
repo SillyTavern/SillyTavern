@@ -651,3 +651,20 @@ export function createThumbnail(dataUrl, maxWidth, maxHeight) {
         };
     });
 }
+
+export async function waitUntilCondition(condition, timeout = 1000, interval = 100) {
+    return new Promise((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+            clearInterval(intervalId);
+            reject(new Error('Timed out waiting for condition to be true'));
+        }, timeout);
+
+        const intervalId = setInterval(() => {
+            if (condition()) {
+                clearTimeout(timeoutId);
+                clearInterval(intervalId);
+                resolve();
+            }
+        }, interval);
+    });
+}
