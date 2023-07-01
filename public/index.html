@@ -3144,6 +3144,10 @@
                                     <span data-i18n="Selective">Selective</span>
                                 </label>
                                 <label class="checkbox flex-container">
+                                    <input type="checkbox" name="useProbability" />
+                                    <span data-i18n="Use Probability">Use Probability</span>
+                                </label>
+                                <label class="checkbox flex-container">
                                     <input type="checkbox" name="addMemo">
                                     <span data-i18n="Add Memo">Add Memo</span>
                                 </label>
@@ -3171,13 +3175,19 @@
                                         <span data-i18n="Author's Note">Author's Note Bottom</span>
                                     </label>
                                 </div>
-
-                            </div>
-                            <div class="world_entry_form_control wi-enter-footer-text  flex-container flexNoGap ">
-                                Insertion Order
-                                <input class="text_pole wideMax100px" type="number" name="order" placeholder="" />
                             </div>
 
+                            <div class="container flexFlowColumn flexNoGap">
+                                <div class="world_entry_form_control wi-enter-footer-text  flex-container flexNoGap ">
+                                    Insertion Order
+                                    <input class="text_pole wideMax100px" type="number" name="order" placeholder="" />
+                                </div>
+
+                                <div class="world_entry_form_control wi-enter-footer-text flex-container flexNoGap probabilityContainer">
+                                    Probability (%)
+                                    <input class="text_pole wideMax100px" type="number" name="probability" placeholder="" min="0" max="100" />
+                                </div>
+                            </div>
 
                             <div class="flex-container flexFlowColumn flexNoGap  wi-enter-footer-text ">
                                 <div class="world_entry_form_uid">

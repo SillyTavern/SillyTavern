@@ -492,6 +492,62 @@ function appendWorldEntry(name, data, entry) {
     });
     orderInput.val(entry.order).trigger("input");
 
+    // probability
+    if (entry.probability === undefined) {
+        entry.probability = null;
+    }
+
+    const probabilityInput = template.find('input[name="probability"]');
+    probabilityInput.data("uid", entry.uid);
+    probabilityInput.on("input", function () {
+        const uid = $(this).data("uid");
+        const value = parseInt($(this).val());
+
+        data.entries[uid].probability = !isNaN(value) ? value : null;
+
+        // Clamp probability to 0-100
+        if (data.entries[uid].probability !== null) {
+            data.entries[uid].probability = Math.min(100, Math.max(0, data.entries[uid].probability));
+
+            if (data.entries[uid].probability !== value) {
+                $(this).val(data.entries[uid].probability);
+            }
+        }
+
+        setOriginalDataValue(data, uid, "extensions.probability", data.entries[uid].probability);
+        saveWorldInfo(name, data);
+    });
+    probabilityInput.val(entry.probability).trigger("input");
+
+    // probability toggle
+    if (entry.useProbability === undefined) {
+        entry.useProbability = false;
+    }
+
+    const probabilityToggle = template.find('input[name="useProbability"]');
+    probabilityToggle.data("uid", entry.uid);
+    probabilityToggle.on("input", function () {
+        const uid = $(this).data("uid");
+        const value = $(this).prop("checked");
+        data.entries[uid].useProbability = value;
+        const probabilityContainer = $(this)
+            .closest(".world_entry")
+            .find(".probabilityContainer");
+        saveWorldInfo(name, data);
+        value ? probabilityContainer.show() : probabilityContainer.hide();
+
+        if (value && data.entries[uid].probability === null) {
+            data.entries[uid].probability = 50;
+        }
+
+        if (!value) {
+            data.entries[uid].probability = null;
+        }
+
+        probabilityInput.val(data.entries[uid].probability).trigger("input");
+    });
+    probabilityToggle.prop("checked", entry.useProbability).trigger("input");
+
     // position
     if (entry.position === undefined) {
         entry.position = 0;
@@ -577,7 +633,9 @@ function createWorldInfoEntry(name, data) {
         order: 100,
         position: 0,
         disable: false,
-        excludeRecursion: false
+        excludeRecursion: false,
+        probability: null,
+        useProbability: false,
     };
     const newUid = getFreeWorldEntryUid(data);
 
@@ -830,6 +888,7 @@ async function checkWorldInfo(chat, maxContext) {
     let needsToScan = true;
     let count = 0;
     let allActivatedEntries = new Set();
+    let failedProbabilityChecks = new Set();
     let allActivatedText = '';
 
     const budget = Math.round(world_info_budget * maxContext / 100) || 1;
@@ -847,6 +906,10 @@ async function checkWorldInfo(chat, maxContext) {
         let activatedNow = new Set();
 
         for (let entry of sortedEntries) {
+            if (failedProbabilityChecks.has(entry)) {
+                continue;
+            }
+
             if (allActivatedEntries.has(entry) || entry.disable == true || (count > 1 && world_info_recursive && entry.excludeRecursion)) {
                 continue;
             }
@@ -886,8 +949,17 @@ async function checkWorldInfo(chat, maxContext) {
             .sort((a, b) => sortedEntries.indexOf(a) - sortedEntries.indexOf(b));
         let newContent = "";
         const textToScanTokens = getTokenCount(allActivatedText);
+        const probabilityChecksBefore = failedProbabilityChecks.size;
 
         for (const entry of newEntries) {
+            const rollValue = Math.random() * 100;
+
+            if (entry.useProbability && rollValue > entry.probability) {
+                console.debug(`WI entry ${entry.key} failed probability check, skipping`);
+                failedProbabilityChecks.add(entry);
+                continue;
+            }
+
             newContent += `${substituteParams(entry.content)}\n`;
 
             if (textToScanTokens + getTokenCount(newContent) >= budget) {
@@ -900,8 +972,18 @@ async function checkWorldInfo(chat, maxContext) {
             console.debug('WI entry activated:', entry);
         }
 
+        const probabilityChecksAfter = failedProbabilityChecks.size;
+
+        if ((probabilityChecksAfter - probabilityChecksBefore) === activatedNow.size) {
+            console.debug(`WI probability checks failed for all activated entries, stopping`);
+            needsToScan = false;
+        }
+
         if (needsToScan) {
-            const currentlyActivatedText = transformString(newEntries.map(x => x.content).join('\n'));
+            const text = newEntries
+                .filter(x => !failedProbabilityChecks.has(x))
+                .map(x => x.content).join('\n');
+            const currentlyActivatedText = transformString(text);
             textToScan = (currentlyActivatedText + '\n' + textToScan);
             allActivatedText = (currentlyActivatedText + '\n' + allActivatedText);
         }
@@ -986,6 +1068,8 @@ function convertAgnaiMemoryBook(inputObj) {
             addMemo: !!entry.name,
             excludeRecursion: false,
             displayIndex: index,
+            probability: null,
+            useProbability: false,
         };
     });
 
@@ -1010,6 +1094,8 @@ function convertRisuLorebook(inputObj) {
             addMemo: true,
             excludeRecursion: false,
             displayIndex: index,
+            probability: entry.activationPercent ?? null,
+            useProbability: entry.activationPercent ?? false,
         };
     });
 
@@ -1039,6 +1125,8 @@ function convertNovelLorebook(inputObj) {
             addMemo: addMemo,
             excludeRecursion: false,
             displayIndex: index,
+            probability: null,
+            useProbability: false,
         };
     });
 
@@ -1068,6 +1156,8 @@ function convertCharacterBook(characterBook) {
             disable: !entry.enabled,
             addMemo: entry.comment ? true : false,
             displayIndex: entry.extensions?.display_index ?? index,
+            probability: entry.extensions?.probability ?? null,
+            useProbability: entry.extensions?.useProbability ?? false,
         };
     });
 
