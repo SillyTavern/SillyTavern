@@ -429,14 +429,14 @@ function populateDialogueExamples(prompts, chatCompletion) {
         // Insert chat message examples if there's enough budget if there is enough budget left for at least one example.
         const dialogueExampleChat = new Message('system', '[Start a new Chat]', 'newChat');
         const prompt = openai_msgs_example[0];
-        const dialogueExample = new Message(prompt[0].role || '', prompt[0].content || '', 'dialogueExampleTest');
+        const dialogueExample = new Message(prompt[0]?.role || 'system', prompt[0]?.content || '', 'dialogueExampleTest');
 
         if (chatCompletion.canAfford(dialogueExampleChat) &&
             chatCompletion.canAfford(dialogueExample)) {
             chatCompletion.insert(dialogueExampleChat, 'dialogueExamples');
 
             [...openai_msgs_example].forEach((prompt, index) => {
-                const chatMessage = new Message(prompt[0].role || '', prompt[0].content || '', 'dialogueExamples-' + index);
+                const chatMessage = new Message(prompt[0]?.role || 'system', prompt[0]?.content || '', 'dialogueExamples-' + index);
                 if (chatCompletion.canAfford(chatMessage)) {
                     chatCompletion.insert(chatMessage, 'dialogueExamples');
                 }
