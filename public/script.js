@@ -7139,7 +7139,8 @@ $(document).ready(function () {
 
     ///////////// OPTIMIZED LISTENERS FOR LEFT SIDE OPTIONS POPUP MENU //////////////////////
 
-    $("#options [id]").on("click", function () {
+    $("#options [id]").on("click", function (event, customData) {
+        const fromSlashCommand = customData?.fromSlashCommand || false;
         var id = $(this).attr("id");
 
         if (id == "option_select_chat") {
@@ -7184,7 +7185,7 @@ $(document).ready(function () {
         }
 
         else if (id == 'option_continue') {
-            if (is_send_press == false) {
+            if (is_send_press == false || fromSlashCommand) {
                 is_send_press = true;
                 Generate("continue");
             }
