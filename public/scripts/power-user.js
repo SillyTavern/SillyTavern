@@ -54,6 +54,7 @@ const avatar_styles = {
 const chat_styles = {
     DEFAULT: 0,
     BUBBLES: 1,
+    DOCUMENT: 2,
 }
 
 const sheld_width = {
@@ -108,6 +109,7 @@ let power_user = {
     multigen_next_chunks: 30,
     custom_chat_separator: '',
     markdown_escape_strings: '',
+
     fast_ui_mode: true,
     avatar_style: avatar_styles.ROUND,
     chat_display: chat_styles.DEFAULT,
@@ -117,6 +119,7 @@ let power_user = {
     play_message_sound: false,
     play_sound_unfocused: true,
     auto_save_msg_edits: false,
+
     sort_field: 'name',
     sort_order: 'asc',
     sort_rule: null,
@@ -127,7 +130,6 @@ let power_user = {
     main_text_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBodyColor').trim()}`,
     italics_text_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeEmColor').trim()}`,
     quote_text_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeQuoteColor').trim()}`,
-    //fastui_bg_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeFastUIBGColor').trim()}`,
     blur_tint_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBlurTintColor').trim()}`,
     user_mes_blur_tint_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeUserMesBlurTintColor').trim()}`,
     bot_mes_blur_tint_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBotMesBlurTintColor').trim()}`,
@@ -194,7 +196,6 @@ const storage_keys = {
     main_text_color: "TavernAI_main_text_color",
     italics_text_color: "TavernAI_italics_text_color",
     quote_text_color: "TavernAI_quote_text_color",
-    //fastui_bg_color: "TavernAI_fastui_bg_color",
     blur_tint_color: "TavernAI_blur_tint_color",
     user_mes_blur_tint_color: "TavernAI_user_mes_blur_tint_color",
     bot_mes_blur_tint_color: "TavernAI_bot_mes_blur_tint_color",
@@ -308,13 +309,6 @@ function toggleWaifu() {
 function switchWaifuMode() {
     $("body").toggleClass("waifuMode", power_user.waifuMode);
     $("#waifuMode").prop("checked", power_user.waifuMode);
-    /*     if (isMobile() && !$('body').hasClass('waifuMode')) {
-            console.debug('saw mobile regular mode, removing ZoomedAvatars');
-            if ($('.zoomed_avatar[forChar]').length) {
-                $('.zoomed_avatar[forChar]').remove();
-            }
-            return;
-        } */
     scrollChatToBottom();
 }
 
@@ -328,7 +322,6 @@ function switchMovingUI() {
             loadMovingUIState();
         }
     };
-    //scrollChatToBottom();
 }
 
 function noShadows() {
@@ -347,10 +340,35 @@ function applyAvatarStyle() {
 }
 
 function applyChatDisplay() {
-    power_user.chat_display = Number(localStorage.getItem(storage_keys.chat_display) ?? chat_styles.DEFAULT);
-    $("body").toggleClass("bubblechat", power_user.chat_display === chat_styles.BUBBLES);
-    $(`input[name="chat_display"][value="${power_user.chat_display}"]`).prop("checked", true);
 
+    if (!power_user.chat_display === (null || undefined)) {
+        console.debug('applyChatDisplay: saw no chat display type defined')
+        return
+    }
+    console.debug(`applyChatDisplay: applying ${power_user.chat_display}`)
+
+    $(`#chat_display option[value=${power_user.chat_display}]`).attr("selected", true)
+
+    switch (power_user.chat_display) {
+        case 0: {
+            console.log('applying default chat')
+            $("body").removeClass("bubblechat");
+            $("body").removeClass("documentstyle");
+            break
+        }
+        case 1: {
+            console.log('applying bubblechat')
+            $("body").addClass("bubblechat");
+            $("body").removeClass("documentstyle");
+            break
+        }
+        case 2: {
+            console.log('applying document style')
+            $("body").removeClass("bubblechat");
+            $("body").addClass("documentstyle");
+            break
+        }
+    }
 }
 
 function applySheldWidth() {
@@ -426,7 +444,6 @@ async function applyTheme(name) {
         { key: 'main_text_color', selector: '#main-text-color-picker', type: 'main' },
         { key: 'italics_text_color', selector: '#italics-color-picker', type: 'italics' },
         { key: 'quote_text_color', selector: '#quote-color-picker', type: 'quote' },
-        //{ key: 'fastui_bg_color', selector: '#fastui-bg-color-picker', type: 'fastUIBG' },
         { key: 'blur_tint_color', selector: '#blur-tint-color-picker', type: 'blurTint' },
         { key: 'user_mes_blur_tint_color', selector: '#user-mes-blur-tint-color-picker', type: 'userMesBlurTint' },
         { key: 'bot_mes_blur_tint_color', selector: '#bot-mes-blur-tint-color-picker', type: 'botMesBlurTint' },
@@ -547,7 +564,6 @@ applySheldWidth();
 applyAvatarStyle();
 applyBlurStrength();
 applyShadowWidth();
-applyChatDisplay();
 switchMovingUI();
 noShadows();
 switchHotswap();
@@ -585,7 +601,7 @@ function loadPowerUserSettings(settings, data) {
     power_user.timestamps_enabled = timestamps === null ? true : timestamps == "true";
     power_user.mesIDDisplay_enabled = mesIDDisplay === null ? true : mesIDDisplay == "true";
     power_user.avatar_style = Number(localStorage.getItem(storage_keys.avatar_style) ?? avatar_styles.ROUND);
-    power_user.chat_display = Number(localStorage.getItem(storage_keys.chat_display) ?? chat_styles.DEFAULT);
+    //power_user.chat_display = Number(localStorage.getItem(storage_keys.chat_display) ?? chat_styles.DEFAULT);
     power_user.sheld_width = Number(localStorage.getItem(storage_keys.sheld_width) ?? sheld_width.DEFAULT);
     power_user.font_scale = Number(localStorage.getItem(storage_keys.font_scale) ?? 1);
     power_user.blur_strength = Number(localStorage.getItem(storage_keys.blur_strength) ?? 10);
@@ -637,7 +653,7 @@ function loadPowerUserSettings(settings, data) {
     $("#prefer_character_prompt").prop("checked", power_user.prefer_character_prompt);
     $("#prefer_character_jailbreak").prop("checked", power_user.prefer_character_jailbreak);
     $(`input[name="avatar_style"][value="${power_user.avatar_style}"]`).prop("checked", true);
-    $(`input[name="chat_display"][value="${power_user.chat_display}"]`).prop("checked", true);
+    $(`#chat_display option[value=${power_user.chat_display}]`).attr("selected", true).trigger('change');
     $(`input[name="sheld_width"][value="${power_user.sheld_width}"]`).prop("checked", true);
     $("#token_padding").val(power_user.token_padding);
 
@@ -1200,10 +1216,13 @@ $(document).ready(() => {
         applyAvatarStyle();
     });
 
-    $(`input[name="chat_display"]`).on('input', function (e) {
-        power_user.chat_display = Number(e.target.value);
-        localStorage.setItem(storage_keys.chat_display, power_user.chat_display);
+    $("#chat_display").on('change', function () {
+        console.debug('###CHAT DISPLAY SELECTOR CHANGE###')
+        const value = $(this).find(':selected').val();
+        power_user.chat_display = Number(value);
+        saveSettingsDebounced();
         applyChatDisplay();
+
     });
 
     $(`input[name="sheld_width"]`).on('input', function (e) {
@@ -1251,12 +1270,6 @@ $(document).ready(() => {
         applyThemeColor('quote');
         saveSettingsDebounced();
     });
-
-    /*     $("#fastui-bg-color-picker").on('change', (evt) => {
-            power_user.fastui_bg_color = evt.detail.rgba;
-            applyThemeColor('fastUIBG');
-            saveSettingsDebounced();
-        }); */
 
     $("#blur-tint-color-picker").on('change', (evt) => {
         power_user.blur_tint_color = evt.detail.rgba;

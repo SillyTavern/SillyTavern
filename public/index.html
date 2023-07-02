@@ -2072,15 +2072,12 @@
                                 </label>
                             </div>
                             <div>
-                                <span data-i18n="Chat Style:">Chat Style:</span><br>
-                                <label>
-                                    <input name="chat_display" type="radio" value="0" />
-                                    <span data-i18n="Default">Default</span>
-                                </label>
-                                <label>
-                                    <input name="chat_display" type="radio" value="1" />
-                                    <span data-i18n="Bubbles">Bubbles</span>
-                                </label>
+                                <span data-i18n="Chat Style:">Message Style:</span><br>
+                                <select id="chat_display">
+                                    <option value="0" data-i18n="Default">Flat Chat</span>
+                                    <option value="1" data-i18n="Bubbles">Bubble Chat</option>
+                                    <option value="2" data-i18n="Document">Single Document</option>
+                                </select>
                             </div>
                             <div id="sheldWidthToggleBlock">
                                 <span data-i18n="Chat Width (PC):">Chat Width (PC):</span><br>

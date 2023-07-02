@@ -4265,6 +4265,42 @@ body.w1000px #sheld {
     max-width: 1000px !important;
 }
 
+/* Document Style */
+
+body.documentstyle #chat .mes:not(.last_mes) {
+    padding: 0 10px;
+}
+
+body.documentstyle .last_mes {
+    padding-top: 0;
+}
+
+body.documentstyle #chat .mes .mes_text {
+    padding: 0;
+}
+
+body.documentstyle #chat .last_mes .mes_text {
+    margin-left: 20px;
+}
+
+body.documentstyle #chat .last_mes:has(> .del_checkbox[style*="display: block"]) .mes_text {
+    margin-left: 0px;
+}
+
+body.documentstyle #chat .last_mes .swipe_left {
+    left: 5px;
+}
+
+body.documentstyle #chat .mes .mesAvatarWrapper,
+body.documentstyle #chat .mes .mes_block .ch_name .name_text,
+body.documentstyle #chat .mes .mes_block .ch_name .timestamp,
+body.documentstyle .mes:not(.last_mes) .ch_name .mes_buttons {
+    display: none !important;
+}
+
+
+
+
 /*FastUI blur removal*/
 
 body.no-blur * {
