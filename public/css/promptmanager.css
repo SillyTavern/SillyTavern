@@ -96,6 +96,7 @@
 
 #completion_prompt_manager_popup #completion_prompt_manager_popup_entry_form_inspect_list {
     margin-top: 1em;
+    padding: 1em;
 }
 
 #completion_prompt_manager_popup .completion_prompt_manager_prompt {

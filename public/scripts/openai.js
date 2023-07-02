@@ -448,7 +448,7 @@ function populateDialogueExamples(prompts, chatCompletion) {
 /**
  * Populate a chat conversation by adding prompts to the conversation and managing system and user prompts.
  *
- * @param {Map} prompts - Map object containing all prompts where the key is the prompt identifier and the value is the prompt object.
+ * @param {PromptCollection} prompts - PromptCollection containing all prompts where the key is the prompt identifier and the value is the prompt object.
  * @param {ChatCompletion} chatCompletion - An instance of ChatCompletion class that will be populated with the prompts.
  * @param {Object} options - An object with optional settings.
  * @param {string} options.bias - A bias to be added in the conversation.
@@ -490,7 +490,7 @@ function populateChatCompletion (prompts, chatCompletion, {bias, quietPrompt, ty
     [...systemPrompts, ...userPrompts].forEach(identifier => addToChatCompletion(identifier));
 
     // Add enhance definition instruction
-    if (prompts.has('scenario')) addToChatCompletion('enhanceDefinitions');
+    if (prompts.has('enhanceDefinitions')) addToChatCompletion('enhanceDefinitions');
 
     // Insert nsfw avoidance prompt into main, if no nsfw prompt is present
     if (false === chatCompletion.has('nsfw') && oai_settings.nsfw_avoidance_prompt)
