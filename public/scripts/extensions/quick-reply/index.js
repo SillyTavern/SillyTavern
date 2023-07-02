@@ -113,17 +113,18 @@ async function moduleWorker() {
 }
 
 async function onQuickReplyNumberOfSlotsInput() {
-    let numberOfSlots = Number($(this).val());
+    const $input = $('#quickReplyNumberOfSlots');
+    let numberOfSlots = Number($input.val());
 
     if (isNaN(numberOfSlots)) {
         numberOfSlots = defaultSettings.numberOfSlots;
     }
 
     // Clamp min and max values (from input attributes)
-    if (numberOfSlots < Number($(this).attr('min'))) {
-        numberOfSlots = Number($(this).attr('min'));
-    } else if (numberOfSlots > Number($(this).attr('max'))) {
-        numberOfSlots = Number($(this).attr('max'));
+    if (numberOfSlots < Number($input.attr('min'))) {
+        numberOfSlots = Number($input.attr('min'));
+    } else if (numberOfSlots > Number($input.attr('max'))) {
+        numberOfSlots = Number($input.attr('max'));
     }
 
     extension_settings.quickReply.numberOfSlots = numberOfSlots;
@@ -184,12 +185,18 @@ jQuery(async () => {
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
-            <label class="checkbox_label">
+            <label class="checkbox_label marginBot10">
                 <input id="quickReplyEnabled" type="checkbox" />
                     Enable Quick Replies
             </label>
             <label for="quickReplyNumberOfSlots">Number of slots:</label>
-            <input id="quickReplyNumberOfSlots" class="text_pole" type="number" min="1" max="100" value="" />
+            <div class="flex-container flexGap5 flexnowrap">
+                <input id="quickReplyNumberOfSlots" class="text_pole" type="number" min="1" max="100" value="" />
+                <div class="menu_button menu_button_icon" id="quickReplyNumberOfSlotsApply">
+                    <div class="fa-solid fa-check"></div>
+                    <span>Apply</span>
+                </div>
+            </div>
             <small><i>Customize your Quick Replies:</i></small><br>
             <div id="quickReplyContainer">
             </div>
@@ -199,7 +206,7 @@ jQuery(async () => {
     $('#extensions_settings2').append(settingsHtml);
 
     $('#quickReplyEnabled').on('input', onQuickReplyEnabledInput);
-    $('#quickReplyNumberOfSlots').on('input', onQuickReplyNumberOfSlotsInput);
+    $('#quickReplyNumberOfSlotsApply').on('click', onQuickReplyNumberOfSlotsInput);
 
     await loadSettings();
     addQuickReplyBar();
