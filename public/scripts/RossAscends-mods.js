@@ -146,9 +146,17 @@ export function AA_CountCharTime(chid){
     if (chid !== undefined && chid !== "invalid-safety-id") {    // if we are counting a valid pre-saved char
         let selected_character = characters[chid];
         let timeStirng = humanizeGenTime(selected_character);
+        //get total word counts
+        let user_words = selected_character.user_word_count;
+        let char_words = selected_character.word_count;
+
+
+
         console.log("Time spent generating: " + timeStirng)
         //append to #result_info html
-        $("#result_info").append(`<div class="result_info_item"><span class="result_info_item_title"></span><small class="result_info_item_value">${timeStirng}</small></div>`);
+        $("#result_info").append(`<div class="result_info_item"><span class="result_info_item_title"></span><small class="result_info_item_value">Chat time: ${timeStirng}</small></div>`);
+        $("#result_info").append(`<div class="result_info_item"><span class="result_info_item_title"></span><small class="result_info_item_value">Total words: ${user_words} / ${char_words}</small></div>`);
+
     }
 }
 
@@ -317,7 +325,7 @@ export function RA_CountCharTokens() {
             // if neither, probably safety char or some error in loading
         } else { console.debug("RA_TC -- no valid char found, closing."); }
     }
-    $("#result_info").html(`<small>${count_tokens} Tokens dumb (${perm_tokens} Permanent)</small>`);
+    $("#result_info").html(`<small>${count_tokens} Tokens (${perm_tokens} Permanent)</small>`);
     // display the counted tokens
     const tokenLimit = Math.max(((main_api !== 'openai' ? max_context : oai_settings.openai_max_context) / 2), 1024);
     if (count_tokens < tokenLimit && perm_tokens < tokenLimit) {

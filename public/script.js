@@ -872,10 +872,11 @@ async function getCharacters() {
         if (this_chid != undefined && this_chid != "invalid-safety-id") {
             $("#avatar_url_pole").val(characters[this_chid].avatar);
         }
-        console.log(characters);
+
         await getGroups();
         await printCharacters();
         await AA_CountCharTime(this_chid);
+
 
     }
 }
@@ -3424,7 +3425,7 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         chat[chat.length - 1]['is_user'])) {
         type = 'normal';
     }
-
+    console.log(chat);
     const generationFinished = new Date();
     const img = extractImageFromMessage(getMessage);
     getMessage = img.getMessage;
@@ -3844,17 +3845,14 @@ async function getChat() {
             chat.push(...response);
             chat_create_date = chat[0]['create_date'];
             chat_metadata = chat[0]['chat_metadata'] ?? {};
-            console.log(chat_metadata);
+
             chat.shift();
         } else {
             chat_create_date = humanizedDateTime();
         }
         await getChatResult();
         await saveChat();
-        console.log('Chat loaded');
-        //loop through chats and get both chat[messageId]['gen_started'] and chat[messageId]['gen_finished'] 
-        //add up the difference of all of them and print it in seconds
-        let totalTime = 0;
+
 
         setTimeout(function () {
             $('#send_textarea').click();
@@ -4699,7 +4697,7 @@ async function saveSettings(type) {
             extension_settings: extension_settings,
             context_settings: context_settings,
             tags: tags,
-            tag_map: tag_map,
+            tag_map: tag_map,           
             ...nai_settings,
             ...kai_settings,
             ...oai_settings,

@@ -654,7 +654,6 @@ function loadPowerUserSettings(settings, data) {
     switchWaifuMode();
     loadMovingUIState();
 
-    console.log(power_user);
 }
 
 function loadMovingUIState() {
@@ -831,8 +830,6 @@ const compareFunc = (first, second) => {
 };
 
 function sortCharactersList() {
-    console.log(characters);
-    console.log(getContext());
     const arr1 = groups.map(x => ({
         item: x,
         id: x.id,
