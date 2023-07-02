@@ -27,6 +27,8 @@ import {
 
 import { registerSlashCommand } from "./slash-commands.js";
 
+import { delay } from "./utils.js";
+
 export {
     loadPowerUserSettings,
     loadMovingUIState,
@@ -987,11 +989,46 @@ function doRandomChat() {
 
 }
 
-function doDelMode() {
-    setTimeout(() => {
-        $("#option_delete_mes").trigger('click')
-    }, 1);
+async function doDelMode(_, text) {
+
+    //first enter delmode
+    $("#option_delete_mes").trigger('click')
+
+    //reject invalid args
+    if (text && isNaN(text)) {
+        toastr.warning('Must enter a number or nothing.')
+        await delay(300) //unsure why 300 is neccessary here, but any shorter and it wont see the delmode UI
+        $("#dialogue_del_mes_cancel").trigger('click');
+        return
+    }
+
+    //parse valid args
+    if (text) {
+        await delay(300) //same as above, need event signal for 'entered del mode'
+        console.debug('parsing msgs to del')
+        let numMesToDel = Number(text).toFixed(0)
+        let lastMesID = $('.last_mes').attr('mesid')
+        let oldestMesIDToDel = lastMesID - numMesToDel + 1;
+
+        //disallow targeting first message 
+        if (oldestMesIDToDel <= 0) {
+            oldestMesIDToDel = 1
+        }
+
+        let oldestMesToDel = $('#chat').find(`.mes[mesid=${oldestMesIDToDel}]`)
+        let oldestDelMesCheckbox = $(oldestMesToDel).find('.del_checkbox');
+        let newLastMesID = oldestMesIDToDel - 1;
+        console.debug(`DelMesReport -- numMesToDel:  ${numMesToDel}, lastMesID: ${lastMesID}, oldestMesIDToDel:${oldestMesIDToDel}, newLastMesID: ${newLastMesID}`)
+        oldestDelMesCheckbox.trigger('click');
+        let trueNumberOfDeletedMessage = lastMesID - oldestMesIDToDel + 1
+
+        //await delay(1)
+        $('#dialogue_del_mes_ok').trigger('click');
+        toastr.success(`Deleted ${trueNumberOfDeletedMessage} messages.`)
+        return
+    }
 }
+
 
 $(document).ready(() => {
     // Settings that go to settings.json
@@ -1395,5 +1432,5 @@ $(document).ready(() => {
     registerSlashCommand('vn', toggleWaifu, ['vn'], ' – swaps Visual Novel Mode On/Off', false, true);
     registerSlashCommand('newchat', doNewChat, ['newchat'], ' – start a new chat with current character', true, true);
     registerSlashCommand('random', doRandomChat, ['random'], ' – start a new chat with a random character', true, true);
-    registerSlashCommand('delmode', doDelMode, ['delmode'], ' – enter message deletion mode', true, true);
+    registerSlashCommand('delmode', doDelMode, ['del'], ' – enter message deletion mode', true, true);
 });
