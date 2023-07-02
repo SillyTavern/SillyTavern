@@ -4279,6 +4279,14 @@ body.documentstyle #chat .mes .mes_text {
     padding: 0;
 }
 
+body.documentstyle #chat .mes .mes_block {
+    margin-right: 30px;
+}
+
+body.documentstyle #chat .mes .mes_text {
+    margin-left: 20px;
+}
+
 body.documentstyle #chat .last_mes .mes_text {
     margin-left: 20px;
     min-height: 70px;
