@@ -1014,7 +1014,7 @@ async function doMesCut(_, text) {
 
     //reject invalid args or no args
     if (text && isNaN(text) || !text) {
-        toastr.error('Must enter a message ID number.')
+        toastr.error(`Must enter a single number only, non-number characters disallowed.`)
         return
     }
 
