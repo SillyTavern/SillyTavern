@@ -1077,6 +1077,9 @@ async function doDelMode(_, text) {
     }
 }
 
+function doResetPanels() {
+    $("#movingUIreset").trigger('click');
+}
 
 $(document).ready(() => {
     // Settings that go to settings.json
@@ -1489,4 +1492,5 @@ $(document).ready(() => {
     registerSlashCommand('random', doRandomChat, ['random'], ' – start a new chat with a random character', true, true);
     registerSlashCommand('delmode', doDelMode, ['del'], '<span class="monospace">(optional number)</span> – enter message deletion mode, and auto-deletes N messages if numeric argument is provided', true, true);
     registerSlashCommand('cut', doMesCut, [], ' <span class="monospace">(requred number)</span> – cuts the specified message from the chat', true, true);
+    registerSlashCommand('resetpanels', doResetPanels, ['resetui'], ' – resets UI panels to original state.', true, true);
 });
