@@ -1154,6 +1154,7 @@ function getMessageFromTemplate({
     mes.find('.ch_name .name_text').text(characterName);
     mes.find('.mes_bias').html(bias);
     mes.find('.timestamp').text(timestamp);
+    mes.find('.mesIDDisplay').text(`#${mesId}`);
     title && mes.attr('title', title);
     timerValue && mes.find('.mes_timer').attr('title', timerTitle).text(timerValue);
 
@@ -5413,6 +5414,7 @@ async function importCharacterChat(formData) {
 function updateViewMessageIds() {
     $('#chat').find(".mes").each(function (index, element) {
         $(element).attr("mesid", index);
+        $(element).find('.mesIDDisplay').text(`#${index}`);
     });
 
     $('#chat .mes').removeClass('last_mes');

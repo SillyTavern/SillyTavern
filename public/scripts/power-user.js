@@ -154,6 +154,7 @@ let power_user = {
     hotswap_enabled: true,
     timer_enabled: true,
     timestamps_enabled: true,
+    mesIDDisplay_enabled: false,
     max_context_unlocked: false,
     prefer_character_prompt: true,
     prefer_character_jailbreak: true,
@@ -208,6 +209,7 @@ const storage_keys = {
     hotswap_enabled: 'HotswapEnabled',
     timer_enabled: 'TimerEnabled',
     timestamps_enabled: 'TimestampsEnabled',
+    mesIDDisplay_enabled: 'mesIDDisplayEnabled',
 };
 
 let browser_has_focus = true;
@@ -283,6 +285,13 @@ function switchTimestamps() {
     power_user.timestamps_enabled = value === null ? true : value == "true";
     $("body").toggleClass("no-timestamps", !power_user.timestamps_enabled);
     $("#messageTimestampsEnabled").prop("checked", power_user.timestamps_enabled);
+}
+
+function switchMesIDDisplay() {
+    const value = localStorage.getItem(storage_keys.mesIDDisplay_enabled);
+    power_user.mesIDDisplay_enabled = value === null ? true : value == "true";
+    $("body").toggleClass("no-mesIDDisplay", !power_user.mesIDDisplay_enabled);
+    $("#MesIDDisplayEnabled").prop("checked", power_user.mesIDDisplay_enabled);
 }
 
 function switchUiMode() {
@@ -500,6 +509,13 @@ async function applyTheme(name) {
             }
         },
         {
+            key: 'mesIDDisplay_enabled',
+            action: async () => {
+                localStorage.setItem(storage_keys.mesIDDisplay_enabled, power_user.mesIDDisplay_enabled);
+                switchMesIDDisplay();
+            }
+        },
+        {
             key: 'hotswap_enabled',
             action: async () => {
                 localStorage.setItem(storage_keys.hotswap_enabled, power_user.hotswap_enabled);
@@ -537,6 +553,7 @@ noShadows();
 switchHotswap();
 switchTimer();
 switchTimestamps();
+switchMesIDDisplay();
 
 function loadPowerUserSettings(settings, data) {
     // Load from settings.json
@@ -559,12 +576,14 @@ function loadPowerUserSettings(settings, data) {
     const hotswap = localStorage.getItem(storage_keys.hotswap_enabled);
     const timer = localStorage.getItem(storage_keys.timer_enabled);
     const timestamps = localStorage.getItem(storage_keys.timestamps_enabled);
+    const mesIDDisplay = localStorage.getItem(storage_keys.mesIDDisplay_enabled);
     power_user.fast_ui_mode = fastUi === null ? true : fastUi == "true";
     power_user.movingUI = movingUI === null ? false : movingUI == "true";
     power_user.noShadows = noShadows === null ? false : noShadows == "true";
     power_user.hotswap_enabled = hotswap === null ? true : hotswap == "true";
     power_user.timer_enabled = timer === null ? true : timer == "true";
     power_user.timestamps_enabled = timestamps === null ? true : timestamps == "true";
+    power_user.mesIDDisplay_enabled = mesIDDisplay === null ? true : mesIDDisplay == "true";
     power_user.avatar_style = Number(localStorage.getItem(storage_keys.avatar_style) ?? avatar_styles.ROUND);
     power_user.chat_display = Number(localStorage.getItem(storage_keys.chat_display) ?? chat_styles.DEFAULT);
     power_user.sheld_width = Number(localStorage.getItem(storage_keys.sheld_width) ?? sheld_width.DEFAULT);
@@ -614,6 +633,7 @@ function loadPowerUserSettings(settings, data) {
     $("#hotswapEnabled").prop("checked", power_user.hotswap_enabled);
     $("#messageTimerEnabled").prop("checked", power_user.timer_enabled);
     $("#messageTimestampsEnabled").prop("checked", power_user.timestamps_enabled);
+    $("#mesIDDisplayEnabled").prop("checked", power_user.mesIDDisplay_enabled);
     $("#prefer_character_prompt").prop("checked", power_user.prefer_character_prompt);
     $("#prefer_character_jailbreak").prop("checked", power_user.prefer_character_jailbreak);
     $(`input[name="avatar_style"][value="${power_user.avatar_style}"]`).prop("checked", true);
@@ -899,6 +919,7 @@ async function saveTheme() {
         sheld_width: power_user.sheld_width,
         timer_enabled: power_user.timer_enabled,
         timestamps_enabled: power_user.timestamps_enabled,
+        mesIDDisplay_enabled: power_user.mesIDDisplay_enabled,
         hotswap_enabled: power_user.hotswap_enabled,
 
     };
@@ -988,6 +1009,33 @@ function doRandomChat() {
     }, 1);
 
 }
+
+async function doMesCut(_, text) {
+
+    //reject invalid args or no args
+    if (text && isNaN(text) || !text) {
+        toastr.error('Must enter a message ID number.')
+        return
+    }
+
+    //reject attempts to delete firstmes
+    if (text === 0) {
+        toastr.error('Cannot delete the First Message')
+        return
+    }
+
+    let mesIDToCut = Number(text).toFixed(0)
+    let mesToCut = $("#chat").find(`.mes[mesid=${mesIDToCut}]`)
+
+    if (!mesToCut.length) {
+        toastr.error(`Could not find message with ID: ${mesIDToCut}`)
+        return
+    }
+
+    mesToCut.find('.mes_edit_delete').trigger('click');
+    $('#dialogue_popup_ok').trigger('click');
+}
+
 
 async function doDelMode(_, text) {
 
@@ -1402,6 +1450,13 @@ $(document).ready(() => {
         switchTimestamps();
     });
 
+    $("#mesIDDisplayEnabled").on("input", function () {
+        const value = !!$(this).prop('checked');
+        power_user.mesIDDisplay_enabled = value;
+        localStorage.setItem(storage_keys.mesIDDisplay_enabled, power_user.mesIDDisplay_enabled);
+        switchMesIDDisplay();
+    });
+
     $("#hotswapEnabled").on("input", function () {
         const value = !!$(this).prop('checked');
         power_user.hotswap_enabled = value;
@@ -1429,8 +1484,9 @@ $(document).ready(() => {
         browser_has_focus = false;
     });
 
-    registerSlashCommand('vn', toggleWaifu, ['vn'], ' – swaps Visual Novel Mode On/Off', false, true);
+    registerSlashCommand('vn', toggleWaifu, [], ' – swaps Visual Novel Mode On/Off', false, true);
     registerSlashCommand('newchat', doNewChat, ['newchat'], ' – start a new chat with current character', true, true);
     registerSlashCommand('random', doRandomChat, ['random'], ' – start a new chat with a random character', true, true);
-    registerSlashCommand('delmode', doDelMode, ['del'], ' – enter message deletion mode', true, true);
+    registerSlashCommand('delmode', doDelMode, ['del'], '<span class="monospace">(optional number)</span> – enter message deletion mode, and auto-deletes N messages if numeric argument is provided', true, true);
+    registerSlashCommand('cut', doMesCut, [], ' <span class="monospace">(requred number)</span> – cuts the specified message from the chat', true, true);
 });

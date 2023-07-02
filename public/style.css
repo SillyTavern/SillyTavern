@@ -193,7 +193,8 @@ table.responsiveTable {
     text-align: right;
 }
 
-.mes_text br, .mes_bias br {
+.mes_text br,
+.mes_bias br {
     content: ' ';
 }
 
@@ -230,7 +231,8 @@ table.responsiveTable {
     padding: 1em;
 }
 
-.mes .mes_timer {
+.mes .mes_timer,
+.mes .mesIDDisplay {
     cursor: default;
     opacity: 0.7;
     font-size: calc(var(--mainFontSize) * 0.9);
@@ -800,7 +802,8 @@ body.no-timer .mes_timer {
     display: none !important;
 }
 
-body.no-timestamps .timestamp {
+body.no-timestamps .timestamp,
+body.no-mesIDDisplay .mesIDDisplay {
     display: none !important;
 }
 
