@@ -21,7 +21,7 @@ import {
     saveSettings,
 } from "../script.js";
 import { humanizedDateTime } from "./RossAscends-mods.js";
-import { power_user } from "./power-user.js";
+import { chat_styles, power_user } from "./power-user.js";
 export {
     executeSlashCommands,
     registerSlashCommand,
@@ -107,10 +107,18 @@ parser.addCommand('sendas', sendMessageAs, [], ` – sends message as a specific
 parser.addCommand('sys', sendNarratorMessage, [], '<span class="monospace">(text)</span> – sends message as a system narrator', false, true);
 parser.addCommand('sysname', setNarratorName, [], '<span class="monospace">(name)</span> – sets a name for future system narrator messages in this chat (display only). Default: System. Leave empty to reset.', true, true);
 parser.addCommand('comment', sendCommentMessage, [], '<span class="monospace">(text)</span> – adds a note/comment message not part of the chat', false, true);
+parser.addCommand('single', setStoryModeCallback, ['story'], ' – sets the message style to single document mode without names or avatars visible', true, true);
+parser.addCommand('bubble', setBubbleModeCallback, ['bubbles'], ' – sets the message style to bubble chat mode', true, true);
+parser.addCommand('flat', setFlatModeCallback, ['default'], ' – sets the message style to flat chat mode', true, true);
+parser.addCommand('continue', continueChatCallback, ['cont'], ' – continues the last message in the chat', true, true);
 
 const NARRATOR_NAME_KEY = 'narrator_name';
 const NARRATOR_NAME_DEFAULT = 'System';
 const COMMENT_NAME_DEFAULT = 'Note';
+
+function continueChatCallback() {
+    $('#option_continue').trigger('click');
+}
 
 function syncCallback() {
     $('#sync_name_button').trigger('click');
@@ -118,6 +126,18 @@ function syncCallback() {
 
 function bindCallback() {
     $('#lock_user_name').trigger('click');
+}
+
+function setStoryModeCallback() {
+    $('#chat_display').val(chat_styles.DOCUMENT).trigger('change');
+}
+
+function setBubbleModeCallback() {
+    $('#chat_display').val(chat_styles.BUBBLES).trigger('change');
+}
+
+function setFlatModeCallback() {
+    $('#chat_display').val(chat_styles.DEFAULT).trigger('change');
 }
 
 function setNameCallback(_, name) {

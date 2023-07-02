@@ -1213,6 +1213,13 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
         messageText = mes.extra.display_text;
     }
 
+    // Forbidden black magic
+    // This allows to use "continue" on user messages
+    if (type === 'swipe' && mes.swipe_id === undefined) {
+        mes.swipe_id = 0;
+        mes.swipes = [mes.mes];
+    }
+
     if (mes.name === name1) {
         var characterName = name1; //set to user's name by default
     } else { var characterName = mes.name }

@@ -51,7 +51,7 @@ const avatar_styles = {
     RECTANGULAR: 1,
 }
 
-const chat_styles = {
+export const chat_styles = {
     DEFAULT: 0,
     BUBBLES: 1,
     DOCUMENT: 2,
