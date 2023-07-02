@@ -3398,41 +3398,60 @@
         </div>
     </div>
     <div id="completion_prompt_manager_popup" style="display:none;">
-        <h3>OpenAI Prompt Manager Settings</h3>
-        <div class="completion_prompt_manager_popup_entry">
-            <form class="completion_prompt_manager_popup_entry_form">
-                <div class="completion_prompt_manager_popup_entry_form_control">
-                    <label for="completion_prompt_manager_popup_entry_form_name">
-                        <span>Name</span>
-                    </label>
-                    <div class="text_muted">A name for this prompt.</div>
-                    <input id="completion_prompt_manager_popup_entry_form_name" class="text_pole" type="text" name="name" />
-                </div>
-                <div class="completion_prompt_manager_popup_entry_form_control">
-                    <label for="completion_prompt_manager_popup_entry_form_role">
-                        <span>Role</span>
-                    </label>
-                    <div class="text_muted">To whom this message will be attributed.</div>
-                    <select id="completion_prompt_manager_popup_entry_form_role" class="text_pole" name="role">
-                        <option value="system">System</option>
-                        <option value="user">User</option>
-                        <option value="assistant">AI Assistant</option>
-                    </select>
-                </div>
-                <div class="completion_prompt_manager_popup_entry_form_control">
-                    <label for="completion_prompt_manager_popup_entry_form_prompt">
-                        <span>Prompt</span>
-                    </label>
-                    <div class="text_muted">The prompt to be sent.</div>
-                    <textarea id="completion_prompt_manager_popup_entry_form_prompt" class="text_pole" name="prompt">
+        <div id="completion_prompt_manager_popup_inspect">
+            <h3>Inspect</h3>
+            <div class="completion_prompt_manager_popup_entry">
+                <form class="completion_prompt_manager_popup_entry_form">
+                    <div class="completion_prompt_manager_popup_entry_form_control">
+                        <div class="completion_prompt_manager_popup_header">
+                            <label for="completion_prompt_manager_popup_entry_form_prompt">
+                                <span>Prompt List</span>
+                            </label>
+                            <a id="completion_prompt_manager_popup_close_button" title="close" class="fa-solid fa-close menu_button"></a>
+                        </div>
+                        <div class="text_muted">The list of prompts associated with this marker.</div>
+                        <div id="completion_prompt_manager_popup_entry_form_inspect_list" class="text_pole"></div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div id="completion_prompt_manager_popup_edit">
+            <h3>Edit</h3>
+            <div class="completion_prompt_manager_popup_entry">
+                <form class="completion_prompt_manager_popup_entry_form">
+                    <div class="completion_prompt_manager_popup_entry_form_control">
+                        <label for="completion_prompt_manager_popup_entry_form_name">
+                            <span>Name</span>
+                        </label>
+                        <div class="text_muted">A name for this prompt.</div>
+                        <input id="completion_prompt_manager_popup_entry_form_name" class="text_pole" type="text" name="name" />
+                    </div>
+                    <div class="completion_prompt_manager_popup_entry_form_control">
+                        <label for="completion_prompt_manager_popup_entry_form_role">
+                            <span>Role</span>
+                        </label>
+                        <div class="text_muted">To whom this message will be attributed.</div>
+                        <select id="completion_prompt_manager_popup_entry_form_role" class="text_pole" name="role">
+                            <option value="system">System</option>
+                            <option value="user">User</option>
+                            <option value="assistant">AI Assistant</option>
+                        </select>
+                    </div>
+                    <div class="completion_prompt_manager_popup_entry_form_control">
+                        <label for="completion_prompt_manager_popup_entry_form_prompt">
+                            <span>Prompt</span>
+                        </label>
+                        <div class="text_muted">The prompt to be sent.</div>
+                        <textarea id="completion_prompt_manager_popup_entry_form_prompt" class="text_pole" name="prompt">
                     </textarea>
-                </div>
-                <div id="completion_prompt_manager_popup_entry_form_footer" >
-                    <a id="completion_prompt_manager_popup_entry_form_close" title="close" class="fa-solid fa-close menu_button"></a>
-                    <a id="completion_prompt_manager_popup_entry_form_reset" title="reset" class="fa-solid fa-undo menu_button"></a>
-                    <a id="completion_prompt_manager_popup_entry_form_save" title="save" class="fa-solid fa-save menu_button" data-pm-prompt=""></a>
-                </div>
-            </form>
+                    </div>
+                    <div id="completion_prompt_manager_popup_entry_form_footer" >
+                        <a id="completion_prompt_manager_popup_entry_form_close" title="close" class="fa-solid fa-close menu_button"></a>
+                        <a id="completion_prompt_manager_popup_entry_form_reset" title="reset" class="fa-solid fa-undo menu_button"></a>
+                        <a id="completion_prompt_manager_popup_entry_form_save" title="save" class="fa-solid fa-save menu_button" data-pm-prompt=""></a>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
     <div id="shadow_select_chat_popup">
