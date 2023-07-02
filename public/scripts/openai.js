@@ -657,11 +657,11 @@ function prepareOpenAIMessages({
             chatCompletion.log('Token budget exceeded.');
             promptManager.error = 'Not enough free tokens for mandatory prompts. Raise your token Limit or disable custom prompts.';
         } else if (error instanceof  InvalidCharacterNameError) {
-            toastr.error('An error occurred while counting tokens: Invalid character name')
+            toastr.warning('An error occurred while counting tokens: Invalid character name')
             chatCompletion.log('Invalid character name');
             promptManager.error = 'The name of at least one character contained whitespaces or special characters. Please check your user and character name';
         } else {
-            toastr.error('An unknown error occurred while counting tokens. Further info available in console.')
+            toastr.error('An unknown error occurred while counting tokens. Further information available in console.')
             chatCompletion.log('Unexpected error:');
             chatCompletion.log(error);
         }
