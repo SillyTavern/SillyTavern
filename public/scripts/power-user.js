@@ -163,6 +163,7 @@ let power_user = {
     prefer_character_prompt: true,
     prefer_character_jailbreak: true,
     continue_on_send: false,
+    trim_spaces: true,
 
     instruct: {
         enabled: false,
@@ -609,6 +610,7 @@ function loadPowerUserSettings(settings, data) {
     power_user.font_scale = Number(localStorage.getItem(storage_keys.font_scale) ?? 1);
     power_user.blur_strength = Number(localStorage.getItem(storage_keys.blur_strength) ?? 10);
 
+    $('#trim_spaces').prop("checked", power_user.trim_spaces);
     $('#continue_on_send').prop("checked", power_user.continue_on_send);
     $('#auto_swipe').prop("checked", power_user.auto_swipe);
     $('#auto_swipe_minimum_length').val(power_user.auto_swipe_minimum_length);
@@ -1512,6 +1514,12 @@ $(document).ready(() => {
     $("#continue_on_send").on("input", function () {
         const value = !!$(this).prop('checked');
         power_user.continue_on_send = value;
+        saveSettingsDebounced();
+    });
+
+    $("#trim_spaces").on("input", function () {
+        const value = !!$(this).prop('checked');
+        power_user.trim_spaces = value;
         saveSettingsDebounced();
     });
 

@@ -3408,7 +3408,9 @@ function cleanUpMessage(getMessage, isImpersonate, displayIncompleteSentences = 
         getMessage = collapseNewlines(getMessage);
     }
 
-    getMessage = $.trim(getMessage);
+    if (power_user.trim_spaces) {
+        getMessage = getMessage.trim();
+    }
     // trailing invisible whitespace before every newlines, on a multiline string
     // "trailing whitespace on newlines       \nevery line of the string    \n?sample text" ->
     // "trailing whitespace on newlines\nevery line of the string\nsample text"
@@ -3522,7 +3524,9 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         chat[chat.length - 1]['is_user'] = false;
         chat[chat.length - 1]['is_name'] = this_mes_is_name;
         chat[chat.length - 1]['send_date'] = getMessageTimeStamp();
-        getMessage = $.trim(getMessage);
+        if (power_user.trim_spaces) {
+            getMessage = getMessage.trim();
+        }
         chat[chat.length - 1]['mes'] = getMessage;
         chat[chat.length - 1]['title'] = title;
         chat[chat.length - 1]['gen_started'] = generation_started;
@@ -4795,7 +4799,12 @@ function setCharacterBlockHeight() {
 // Common code for message editor done and auto-save
 function updateMessage(div) {
     const mesBlock = div.closest(".mes_block");
-    const text = mesBlock.find(".edit_textarea").val().trim();
+    let text = mesBlock.find(".edit_textarea").val();
+
+    if (power_user.trim_spaces) {
+        text = text.trim();
+    }
+
     const bias = extractMessageBias(text);
     const mes = chat[this_edit_mes_id];
     mes["mes"] = text;
@@ -7432,7 +7441,9 @@ $(document).ready(function () {
             } else {
                 this_edit_mes_chname = name2;
             }
-            text = text.trim();
+            if (power_user.trim_spaces) {
+                text = text.trim();
+            }
             $(this)
                 .closest(".mes_block")
                 .find(".mes_text")
@@ -7570,7 +7581,11 @@ $(document).ready(function () {
         let oldScroll = $('#chat')[0].scrollTop;
         const clone = JSON.parse(JSON.stringify(chat[this_edit_mes_id])); // quick and dirty clone
         clone.send_date = Date.now();
-        clone.mes = $(this).closest(".mes").find('.edit_textarea').val().trim();
+        clone.mes = $(this).closest(".mes").find('.edit_textarea').val();
+
+        if (power_user.trim_spaces) {
+            clone.mes = clone.mes.trim();
+        }
 
         chat.splice(Number(this_edit_mes_id) + 1, 0, clone);
         addOneMessage(clone, { insertAfter: this_edit_mes_id });
