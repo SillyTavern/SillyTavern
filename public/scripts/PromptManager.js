@@ -128,14 +128,16 @@ function PromptManagerModule() {
     this.containerElement = null;
     this.listElement = null;
     this.activeCharacter = null;
+    this.messages = null;
     this.tokenHandler = null;
-    this.tokenCache = 0;
+    this.tokenUsage = 0;
     this.error = null;
 
     this.tryGenerate = () => { };
     this.saveServiceSettings = () => { };
 
     this.handleToggle = () => { };
+    this.handleInspect = () => { };
     this.handleEdit = () => { };
     this.handleDetach = () => { };
     this.handleSavePrompt = () => { };
@@ -172,12 +174,30 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
 
     // Open edit form and load selected prompt
     this.handleEdit = (event) => {
+        this.clearInspectForm();
+        this.clearEditForm();
+
         const promptID = event.target.closest('.' + this.configuration.prefix + 'prompt_manager_prompt').dataset.pmIdentifier;
         const prompt = this.getPromptById(promptID);
 
         this.loadPromptIntoEditForm(prompt);
 
-        this.showEditForm();
+        this.showPopup();
+    }
+
+    // Open edit form and load selected prompt
+    this.handleInspect = (event) => {
+        this.clearInspectForm();
+        this.clearEditForm();
+
+        const promptID = event.target.closest('.' + this.configuration.prefix + 'prompt_manager_prompt').dataset.pmIdentifier;
+        if (true === this.messages.hasItemWithIdentifier(promptID)) {
+            const messages = this.messages.getItemByIdentifier(promptID);
+
+            this.loadMessagesIntoInspectForm(messages);
+
+            this.showPopup('inspect');
+        }
     }
 
     // Detach selected prompt from list form and close edit form
@@ -187,7 +207,7 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
         const prompt = this.getPromptById(promptID);
 
         this.detachPrompt(prompt, this.activeCharacter);
-        this.hideEditForm();
+        this.hidePopup();
         this.clearEditForm();
         this.saveServiceSettings().then(() => this.render());
     };
@@ -207,7 +227,7 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
 
         this.log('Saved prompt: ' + promptId);
 
-        this.hideEditForm();
+        this.hidePopup();
         this.clearEditForm();
         this.saveServiceSettings().then(() => this.render());
     }
@@ -253,7 +273,7 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
 
             this.log('Deleted prompt: ' + prompt.identifier);
 
-            this.hideEditForm();
+            this.hidePopup();
             this.clearEditForm();
             this.saveServiceSettings().then(() => this.render());
         }
@@ -269,7 +289,7 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
         }
 
         this.loadPromptIntoEditForm(prompt);
-        this.showEditForm();
+        this.showPopup();
     }
 
     // Re-render when the character changes.
@@ -321,10 +341,15 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
     // Prepare prompt edit form buttons
     document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_save').addEventListener('click', this.handleSavePrompt);
     document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_reset').addEventListener('click', this.handleResetPrompt);
-    document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_close').addEventListener('click', () => {
-        this.hideEditForm();
+
+    const closeAndClearPopup = () =>  {
+        this.hidePopup();
+        this.clearInspectForm();
         this.clearEditForm();
-    });
+    };
+
+    document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_close').addEventListener('click', closeAndClearPopup);
+    document.getElementById(this.configuration.prefix + 'prompt_manager_popup_close_button').addEventListener('click', closeAndClearPopup);
 
     // Re-render Prompt manager on openai preset change
     eventSource.on(event_types.OAI_PRESET_CHANGED, settings => this.render());
@@ -495,6 +520,15 @@ PromptManagerModule.prototype.checkForMissingPrompts = function(prompts) {
 };
 
 /**
+ * Check whether a prompt is a marker.
+ * @param {object} prompt - The prompt to check.
+ * @returns {boolean} True if the prompt is a marker, false otherwise.
+ */
+PromptManagerModule.prototype.isStPromptMarker = function (prompt) {
+    return true === prompt.marker;
+}
+
+/**
  * Check whether a prompt can be deleted. System prompts cannot be deleted.
  * @param {object} prompt - The prompt to check.
  * @returns {boolean} True if the prompt can be deleted, false otherwise.
@@ -506,7 +540,7 @@ PromptManagerModule.prototype.isPromptDeletionAllowed = function (prompt) {
 /**
  * Check whether a prompt can be edited.
  * @param {object} prompt - The prompt to check.
- * @returns {boolean} True if the prompt can be deleted, false otherwise.
+ * @returns {boolean} True if the prompt can be edited, false otherwise.
  */
 PromptManagerModule.prototype.isPromptEditAllowed = function (prompt) {
     return true;
@@ -711,9 +745,47 @@ PromptManagerModule.prototype.loadPromptIntoEditForm = function (prompt) {
 }
 
 /**
+ * Loads a given prompt into the inspect form
+ * @param {MessageCollection} messages - Prompt object with properties 'name', 'role', 'content', and 'system_prompt'
+ */
+PromptManagerModule.prototype.loadMessagesIntoInspectForm = function (messages) {
+    if (!messages) return;
+
+    const createInlineDrawer = (title, content) => {
+        let drawerHTML = `
+    <div class="inline-drawer completion_prompt_manager_prompt">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <span>${title}</span>
+            <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+        </div>
+        <div class="inline-drawer-content">
+            ${content}
+        </div>
+    </div>
+    `;
+
+        let template = document.createElement('template');
+        template.innerHTML = drawerHTML.trim();
+        return template.content.firstChild;
+    }
+
+    const messageList = document.getElementById('completion_prompt_manager_popup_entry_form_inspect_list');
+
+    if (0 === messages.getCollection().length) messageList.innerHTML = `<span>This marker does not contain any prompts.</span>`;
+
+    messages.getCollection().forEach(message => {
+        const truncatedTitle = message.content.length > 32 ? message.content.slice(0, 32) + '...' : message.content;
+        messageList.append(createInlineDrawer(message.title || truncatedTitle, message.content || 'No Content'));
+    });
+}
+
+/**
  * Clears all input fields in the edit form.
  */
 PromptManagerModule.prototype.clearEditForm = function () {
+    const editArea = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_edit');
+    editArea.style.display = 'none';
+
     const nameField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_name');
     const roleField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_role');
     const promptField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_prompt');
@@ -723,6 +795,13 @@ PromptManagerModule.prototype.clearEditForm = function () {
     promptField.value = '';
 
     roleField.disabled = false;
+}
+
+PromptManagerModule.prototype.clearInspectForm = function() {
+    const inspectArea = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_inspect');
+    inspectArea.style.display = 'none';
+    const messageList = document.getElementById('completion_prompt_manager_popup_entry_form_inspect_list');
+    messageList.innerHTML = '';
 }
 
 /**
@@ -743,16 +822,20 @@ PromptManagerModule.prototype.getPromptCollection = function () {
     return promptCollection;
 }
 
+PromptManagerModule.prototype.setMessages = function (messages) {
+    this.messages = messages;
+};
+
 PromptManagerModule.prototype.populateTokenHandler = function(messageCollection) {
     this.tokenHandler.resetCounts();
     const counts = this.tokenHandler.getCounts();
-    messageCollection.getCollection().forEach((message) => {
+    messageCollection.getCollection().forEach(message => {
         counts[message.identifier] = message.getTokens();
     });
 
-    this.tokenCache = this.tokenHandler.getTotal();
+    this.tokenUsage = this.tokenHandler.getTotal();
 
-    this.log('Updated token cache with ' + this.tokenCache);
+    this.log('Updated token cache with ' + this.tokenUsage);
 }
 
 // Empties, then re-assembles the container containing the prompt list.
@@ -769,7 +852,7 @@ PromptManagerModule.prototype.renderPromptManager = function () {
             </div>
     `;
     const activeTokenInfo = `<span class="tooltip fa-solid fa-info-circle" title="Including tokens from hidden prompts"></span>`;
-    const totalActiveTokens = this.tokenCache;
+    const totalActiveTokens = this.tokenUsage;
 
     promptManagerDiv.insertAdjacentHTML('beforeend', `
         <div class="range-block-title" data-i18n="Prompts">
@@ -862,7 +945,7 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
         const markerClass = prompt.marker ? `${prefix}prompt_manager_marker` : '';
         const tokens = this.tokenHandler?.getCounts()[prompt.identifier] ?? 0;
 
-        // Warn the user if the chat history goes under certain token thresholds.
+        // Warn the user if the chat history goes below certain token thresholds.
         let warningClass = '';
         let warningTitle = '';
 
@@ -897,11 +980,20 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
             `;
         }
 
+        let inspectSpanHtml = '';
+        if (this.isStPromptMarker(prompt)) {
+            inspectSpanHtml = `
+                <span title="inspect" class="prompt-manager-inspect-action fa-solid fa-magnifying-glass"></span>
+            `;
+        }
+
         let toggleSpanHtml = '';
         if (this.isPromptToggleAllowed(prompt)) {
             toggleSpanHtml = `
                 <span class="prompt-manager-toggle-action ${listEntry.enabled ? 'fa-solid fa-toggle-on' : 'fa-solid fa-toggle-off'}"></span>
             `;
+        } else {
+            toggleSpanHtml = `<span class="fa-solid'"></span>`;
         }
 
         listItemHtml += `
@@ -910,8 +1002,14 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
                     ${prompt.marker ? '<span class="fa-solid fa-thumb-tack"></span>' : ''}
                     ${prompt.name}
                 </span>
-                ${prompt.marker ? '<span></span>' : `
-                    <span>
+                ${prompt.marker
+                ? `<span>
+                      <span class="prompt_manager_prompt_controls">
+                      <span></span>
+                        ${inspectSpanHtml}
+                      </span>
+                   </span>`
+                : `<span>
                         <span class="prompt_manager_prompt_controls">
                             ${detachSpanHtml}
                             ${editSpanHtml}
@@ -929,6 +1027,10 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
     // Now that the new elements are in the DOM, you can add the event listeners.
     Array.from(promptManagerList.getElementsByClassName('prompt-manager-detach-action')).forEach(el => {
         el.addEventListener('click', this.handleDetach);
+    });
+
+    Array.from(promptManagerList.getElementsByClassName('prompt-manager-inspect-action')).forEach(el => {
+        el.addEventListener('click', this.handleInspect);
     });
 
     Array.from(promptManagerList.getElementsByClassName('prompt-manager-edit-action')).forEach(el => {
@@ -977,7 +1079,10 @@ PromptManagerModule.prototype.makeDraggable = function () {
  * Slides down the edit form and adds the class 'openDrawer' to the first element of '#openai_prompt_manager_popup'.
  * @returns {void}
  */
-PromptManagerModule.prototype.showEditForm = function () {
+PromptManagerModule.prototype.showPopup = function (area = 'edit') {
+    const areaElement = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_' + area);
+    areaElement.style.display = 'block';
+
     $('#'+this.configuration.prefix +'prompt_manager_popup').first()
         .slideDown(200, "swing")
         .addClass('openDrawer');
@@ -987,7 +1092,7 @@ PromptManagerModule.prototype.showEditForm = function () {
  * Slides up the edit form and removes the class 'openDrawer' from the first element of '#openai_prompt_manager_popup'.
  * @returns {void}
  */
-PromptManagerModule.prototype.hideEditForm = function () {
+PromptManagerModule.prototype.hidePopup = function () {
     $('#'+this.configuration.prefix +'prompt_manager_popup').first()
         .slideUp(200, "swing")
         .removeClass('openDrawer');
