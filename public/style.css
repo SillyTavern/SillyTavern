@@ -4281,6 +4281,7 @@ body.documentstyle #chat .mes .mes_text {
 
 body.documentstyle #chat .last_mes .mes_text {
     margin-left: 20px;
+    min-height: 70px;
 }
 
 body.documentstyle #chat .last_mes:has(> .del_checkbox[style*="display: block"]) .mes_text {
