@@ -64,46 +64,39 @@ class Prompt {
 
 class PromptCollection {
     collection = [];
+
     constructor(...prompts) {
+        this.add(...prompts);
+    }
+
+    checkPromptInstance(...prompts) {
         for(let prompt of prompts) {
             if(!(prompt instanceof Prompt)) {
                 throw new Error('Only Prompt instances can be added to PromptCollection');
             }
         }
-
-        this.collection.push(...prompts);
     }
 
     add(...prompts) {
-        for(let prompt of prompts) {
-            if(!(prompt instanceof Prompt)) {
-                throw new Error('Only Prompt instances can be added to PromptCollection');
-            }
-        }
-
+        this.checkPromptInstance(...prompts);
         this.collection.push(...prompts);
     }
 
     set(prompt, position) {
-        if(!(prompt instanceof Prompt)) {
-            throw new Error('Only Prompt instances can be added to PromptCollection');
-        }
-
+        this.checkPromptInstance(prompt);
         this.collection[position] = prompt;
     }
 
     get(identifier) {
-        const index = this.index(identifier);
-        if (0 > index) return null;
-        return this.collection[index];
+        return this.collection.find(prompt => prompt.identifier === identifier);
     }
 
-    index (identifier){
+    index(identifier) {
         return this.collection.findIndex(prompt => prompt.identifier === identifier);
     }
 
     has(identifier) {
-        return this.collection.some(message => message.identifier === identifier);
+        return this.index(identifier) !== -1;
     }
 }
 
@@ -520,12 +513,12 @@ PromptManagerModule.prototype.checkForMissingPrompts = function(prompts) {
 };
 
 /**
- * Check whether a prompt is a marker.
+ * Check whether a prompt can be inspected.
  * @param {object} prompt - The prompt to check.
  * @returns {boolean} True if the prompt is a marker, false otherwise.
  */
-PromptManagerModule.prototype.isStPromptMarker = function (prompt) {
-    return true === prompt.marker;
+PromptManagerModule.prototype.isPromptInspectionAllowed = function (prompt) {
+    return  true === prompt.marker;
 }
 
 /**
@@ -576,10 +569,7 @@ PromptManagerModule.prototype.handleCharacterSelected = function (event) {
 
     // ToDo: These should be passed as parameter or attached to the manager as a set of default options.
     // Set default prompts and order for character.
-    if (0 === promptList.length) this.addPromptListForCharacter(this.activeCharacter, openAiDefaultPromptList)
-    // Check whether the referenced prompts are present.
-    if (0 === this.serviceSettings.prompts.length) this.setPrompts(openAiDefaultPrompts.prompts);
-
+    if (0 === promptList.length) this.addPromptListForCharacter(this.activeCharacter, openAiDefaultPromptList);
 }
 
 PromptManagerModule.prototype.handleGroupSelected = function (event) {
@@ -588,8 +578,6 @@ PromptManagerModule.prototype.handleGroupSelected = function (event) {
     const promptList = this.getPromptListByCharacter(characterDummy);
 
     if (0 === promptList.length) this.addPromptListForCharacter(characterDummy, openAiDefaultPromptList)
-    if (0 === this.serviceSettings.prompts.length) this.setPrompts(openAiDefaultPrompts.prompts);
-
 }
 
 PromptManagerModule.prototype.getActiveGroupCharacters = function() {
@@ -645,7 +633,7 @@ PromptManagerModule.prototype.removePromptListForCharacter = function (character
 PromptManagerModule.prototype.addPromptListForCharacter = function (character, promptList) {
     this.serviceSettings.prompt_lists.push({
         character_id: character.id,
-        list: promptList
+        list: JSON.parse(JSON.stringify(promptList))
     });
 }
 
@@ -775,7 +763,7 @@ PromptManagerModule.prototype.loadMessagesIntoInspectForm = function (messages) 
 
     messages.getCollection().forEach(message => {
         const truncatedTitle = message.content.length > 32 ? message.content.slice(0, 32) + '...' : message.content;
-        messageList.append(createInlineDrawer(message.title || truncatedTitle, message.content || 'No Content'));
+        messageList.append(createInlineDrawer(message.identifier || truncatedTitle, message.content || 'No Content'));
     });
 }
 
@@ -981,7 +969,7 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
         }
 
         let inspectSpanHtml = '';
-        if (this.isStPromptMarker(prompt)) {
+        if (this.isPromptInspectionAllowed(prompt)) {
             inspectSpanHtml = `
                 <span title="inspect" class="prompt-manager-inspect-action fa-solid fa-magnifying-glass"></span>
             `;
