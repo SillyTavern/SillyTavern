@@ -1062,6 +1062,11 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
         mes = '';
     }
 
+    // Prompt bias replacement should be applied on the raw message
+    if (!power_user.show_user_prompt_bias && ch_name && !isUser && !isSystem) {
+        mes = mes.replaceAll(substituteParams(power_user.user_prompt_bias), "");
+    }
+
     if (power_user.auto_fix_generated_markdown) {
         mes = fixMarkdown(mes);
     }
@@ -1122,7 +1127,6 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
          //console.log('mes after removed <tags>')
          //console.log(mes)
      } */
-
     return mes;
 }
 
@@ -1993,7 +1997,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
         deactivateSendButtons();
 
-        let { messageBias, promptBias } = getBiasStrings(textareaText, type);
+        let { messageBias, promptBias, isUserPromptBias } = getBiasStrings(textareaText, type);
 
         //*********************************
         //PRE FORMATING STRING
@@ -2068,7 +2072,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             storyString += appendToStoryString(Scenario, power_user.disable_scenario_formatting ? '' : 'Circumstances and context of the dialogue: ');
         }
 
-        if (promptBias || power_user.always_force_name2 || is_pygmalion) {
+        // kingbri MARK: - Make sure the prompt bias isn't the same as the user bias
+        if ((promptBias && !isUserPromptBias) || power_user.always_force_name2 || is_pygmalion) {
             force_name2 = true;
         }
 
@@ -2309,7 +2314,21 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     if (!mesSendString.endsWith('\n')) {
                         mesSendString += '\n';
                     }
-                    mesSendString += (`${name2}:${promptBias || ''}`);
+
+                    // Add a leading space to the prompt bias if applicable
+                    if (!promptBias || promptBias.length === 0) {
+                        console.debug("No prompt bias was found.");
+                        mesSendString += `${name2}:`;
+                    } else if (promptBias.startsWith(' ')) {
+                        console.debug(`A prompt bias with a leading space was found: ${promptBias}`);
+                        mesSendString += `${name2}:${promptBias}`
+                    } else {
+                        console.debug(`A prompt bias was found: ${promptBias}`);
+                        mesSendString += `${name2}: ${promptBias}`;
+                    }
+                } else if (power_user.user_prompt_bias) {
+                    console.debug(`A prompt bias was found without character's name appended: ${promptBias}`);
+                    mesSendString += substituteParams(power_user.user_prompt_bias);
                 }
 
                 return mesSendString;
@@ -2722,8 +2741,14 @@ export function getBiasStrings(textareaText, type) {
         }
     }
 
-    promptBias = messageBias || promptBias || '';
-    return { messageBias, promptBias };
+    promptBias = messageBias || promptBias || power_user.user_prompt_bias || '';
+    const isUserPromptBias = promptBias === power_user.user_prompt_bias;
+
+    // Substitute params for everything
+    messageBias = substituteParams(messageBias);
+    promptBias = substituteParams(promptBias);
+
+    return { messageBias, promptBias, isUserPromptBias };
 }
 
 function formatMessageHistoryItem(chatItem, isInstruct) {
@@ -3310,32 +3335,29 @@ function extractTitleFromData(data) {
 }
 
 function extractMessageFromData(data) {
-    let getMessage = "";
-
-    if (main_api == 'kobold') {
-        getMessage = data.results[0].text;
+    switch (main_api) {
+        case 'kobold':
+            return data.results[0].text;
+        case 'koboldhorde':
+            return data.text;
+        case 'textgenerationwebui':
+            return data.results[0].text;
+        case 'novel':
+            return data.output;
+        case 'openai':
+        case 'poe':
+            return data;
+        default:
+            return ''
     }
-
-    if (main_api == 'koboldhorde') {
-        getMessage = data.text;
-    }
-
-    if (main_api == 'textgenerationwebui') {
-        getMessage = data.results[0].text;
-    }
-
-    if (main_api == 'novel') {
-        getMessage = data.output;
-    }
-
-    if (main_api == 'openai' || main_api == 'poe') {
-        getMessage = data;
-    }
-
-    return getMessage;
 }
 
 function cleanUpMessage(getMessage, isImpersonate, displayIncompleteSentences = false) {
+    // Append the user bias first before trimming anything else
+    if (power_user.user_prompt_bias && power_user.user_prompt_bias.length !== 0) {
+        getMessage = substituteParams(power_user.user_prompt_bias) + getMessage;
+    }
+
     if (!displayIncompleteSentences && power_user.trim_sentences) {
         getMessage = end_trim_to_sentence(getMessage, power_user.include_newline);
     }
