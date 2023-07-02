@@ -2224,7 +2224,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
         if (type == 'continue') {
             // Coping mechanism for OAI spacing
-            if (main_api === 'openai' && !cyclePrompt.endsWith(' ')) {
+            if ((main_api === 'openai' || main_api === 'poe') && !cyclePrompt.endsWith(' ')) {
                 cyclePrompt += ' ';
             }
 
