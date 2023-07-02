@@ -501,7 +501,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
                 activatedMembers = activateListOrder(group.members.slice(0, 1));
             }
         }
-        else if (type === "swipe") {
+        else if (type === "swipe" || type === 'continue') {
             activatedMembers = activateSwipe(group.members);
 
             if (activatedMembers.length === 0) {
@@ -534,7 +534,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
         for (const chId of activatedMembers) {
             deactivateSendButtons();
             isGenerationDone = false;
-            const generateType = type == "swipe" || type == "impersonate" || type == "quiet" ? type : "group_chat";
+            const generateType = type == "swipe" || type == "impersonate" || type == "quiet" || type == 'continue' ? type : "group_chat";
             setCharacterId(chId);
             setCharacterName(characters[chId].name)
 

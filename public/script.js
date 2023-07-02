@@ -1995,6 +1995,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             }
         }
 
+        if (!type && !textareaText && power_user.continue_on_send && !selected_group && chat.length && !chat[chat.length - 1]['is_user']) {
+            type = 'continue';
+        }
+
         deactivateSendButtons();
 
         let { messageBias, promptBias, isUserPromptBias } = getBiasStrings(textareaText, type);
@@ -2096,6 +2100,11 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             }
 
             chat2[i] = formatMessageHistoryItem(coreChat[j], isInstruct);
+
+            // Do not format the message for continuation
+            if (i === 0 && type == 'continue') {
+                chat2[i] = coreChat[j].mes;
+            }
         }
 
         // Adjust token limit for Horde
@@ -2163,6 +2172,11 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             pinExmString = examplesString = mesExamplesArray.join('');
         }
 
+        let cyclePrompt = '';
+        if (type == 'continue') {
+            cyclePrompt = chat2.shift();
+        }
+
         // Collect enough messages to fill the context
         let arrMes = [];
         let tokenCount = getMessagesTokenCount();
@@ -2207,13 +2221,25 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         let mesSend = [];
         console.debug('calling runGenerate');
         streamingProcessor = isStreamingEnabled() ? new StreamingProcessor(type, force_name2) : false;
-        runGenerate();
+
+        if (type == 'continue') {
+            // Coping mechanism for OAI spacing
+            if (main_api === 'openai' && !cyclePrompt.endsWith(' ')) {
+                cyclePrompt += ' ';
+            }
+
+            streamingProcessor && (streamingProcessor.firstMessageText = cyclePrompt);
+            message_already_generated = cyclePrompt;
+            tokens_already_generated = 1; // Multigen copium
+        }
+
+        runGenerate(cyclePrompt);
 
         async function runGenerate(cycleGenerationPromt = '') {
             is_send_press = true;
 
             generatedPromtCache += cycleGenerationPromt;
-            if (generatedPromtCache.length == 0) {
+            if (generatedPromtCache.length == 0 || type === 'continue') {
                 if (main_api === 'openai') {
                     generateOpenAIPromptCache();
                 }
@@ -2553,6 +2579,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 hideSwipeButtons();
                 let getMessage = await streamingProcessor.generate();
 
+                if (type == 'continue') {
+                    getMessage = message_already_generated + getMessage;
+                }
+
                 if (streamingProcessor && !streamingProcessor.isStopped && streamingProcessor.isFinished) {
                     streamingProcessor.onFinishStreaming(streamingProcessor.messageId, getMessage);
                     streamingProcessor = null;
@@ -2607,7 +2637,12 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
                         tokens_already_generated = 0;
                         generatedPromtCache = "";
-                        getMessage = message_already_generated.substring(magFirst.length);
+                        const substringStart = type !== 'continue' ? magFirst.length : 0;
+                        getMessage = message_already_generated.substring(substringStart);
+                    }
+
+                    if (type == 'continue') {
+                        getMessage = message_already_generated + getMessage;
                     }
 
                     //Formating
@@ -3252,7 +3287,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
 function setInContextMessages(lastmsg, type) {
     $("#chat .mes").removeClass('lastInContext');
 
-    if (type === 'swipe' || type === 'regenerate') {
+    if (type === 'swipe' || type === 'regenerate' || type === 'continue') {
         lastmsg++;
     }
 
@@ -3437,7 +3472,7 @@ function cleanUpMessage(getMessage, isImpersonate, displayIncompleteSentences = 
 }
 
 function saveReply(type, getMessage, this_mes_is_name, title) {
-    if (type != 'append' && type != 'appendFinal' && chat.length && (chat[chat.length - 1]['swipe_id'] === undefined ||
+    if (type != 'append' && type != 'continue' && type != 'appendFinal' && chat.length && (chat[chat.length - 1]['swipe_id'] === undefined ||
         chat[chat.length - 1]['is_user'])) {
         type = 'normal';
     }
@@ -3457,7 +3492,7 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         } else {
             chat[chat.length - 1]['mes'] = getMessage;
         }
-    } else if (type === 'append') {
+    } else if (type === 'append' || type === 'continue') {
         console.debug("Trying to append.")
         chat[chat.length - 1]['title'] = title;
         chat[chat.length - 1]['mes'] += getMessage;
@@ -7129,6 +7164,13 @@ $(document).ready(function () {
             if (is_send_press == false) {
                 is_send_press = true;
                 Generate("impersonate");
+            }
+        }
+
+        else if (id == 'option_continue') {
+            if (is_send_press == false) {
+                is_send_press = true;
+                Generate("continue");
             }
         }
 

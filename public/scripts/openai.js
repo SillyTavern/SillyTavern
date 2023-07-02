@@ -411,6 +411,14 @@ async function prepareOpenAIMessages({ systemPrompt, name2, storyString, worldIn
         await delay(1);
     }
 
+    if (type == 'continue') {
+        const continueNudge = { "role": "system", "content": '[Continue the last assistant message]' };
+        openai_msgs.push(continueNudge);
+
+        total_count += handler_instance.count([continueNudge], true, 'continue');
+        await delay(1);
+    }
+
     // The user wants to always have all example messages in the context
     if (power_user.pin_examples) {
         // first we send *all* example messages

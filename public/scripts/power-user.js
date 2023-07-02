@@ -162,6 +162,7 @@ let power_user = {
     max_context_unlocked: false,
     prefer_character_prompt: true,
     prefer_character_jailbreak: true,
+    continue_on_send: false,
 
     instruct: {
         enabled: false,
@@ -608,6 +609,7 @@ function loadPowerUserSettings(settings, data) {
     power_user.font_scale = Number(localStorage.getItem(storage_keys.font_scale) ?? 1);
     power_user.blur_strength = Number(localStorage.getItem(storage_keys.blur_strength) ?? 10);
 
+    $('#continue_on_send').prop("checked", power_user.continue_on_send);
     $('#auto_swipe').prop("checked", power_user.auto_swipe);
     $('#auto_swipe_minimum_length').val(power_user.auto_swipe_minimum_length);
     $('#auto_swipe_blacklist').val(power_user.auto_swipe_blacklist.join(", "));
@@ -1078,7 +1080,7 @@ async function doDelMode(_, text) {
         let lastMesID = $('.last_mes').attr('mesid')
         let oldestMesIDToDel = lastMesID - numMesToDel + 1;
 
-        //disallow targeting first message 
+        //disallow targeting first message
         if (oldestMesIDToDel <= 0) {
             oldestMesIDToDel = 1
         }
@@ -1504,6 +1506,12 @@ $(document).ready(() => {
     $("#prefer_character_jailbreak").on("input", function () {
         const value = !!$(this).prop('checked');
         power_user.prefer_character_jailbreak = value;
+        saveSettingsDebounced();
+    });
+
+    $("#continue_on_send").on("input", function () {
+        const value = !!$(this).prop('checked');
+        power_user.continue_on_send = value;
         saveSettingsDebounced();
     });
 
