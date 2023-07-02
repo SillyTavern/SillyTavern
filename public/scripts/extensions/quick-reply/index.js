@@ -68,8 +68,14 @@ async function onQuickReplyEnabledInput() {
     saveSettingsDebounced();
 }
 
-async function sendQuickReply(id) {
-    var prompt = extension_settings.quickReply[`${id}Mes`];
+async function sendQuickReply(index) {
+    const prompt = extension_settings.quickReply.quickReplySlots[index]?.mes || '';
+
+    if (!prompt) {
+        console.warn(`Quick reply slot ${index} is empty! Aborting.`);
+        return;
+    }
+
     $("#send_textarea").val(prompt);
     $("#send_but").trigger('click');
 }
@@ -81,7 +87,7 @@ function addQuickReplyBar() {
     for (let i = 0; i < extension_settings.quickReply.numberOfSlots; i++) {
         let quickReplyMes = extension_settings.quickReply.quickReplySlots[i]?.mes || '';
         let quickReplyLabel = extension_settings.quickReply.quickReplySlots[i]?.label || '';
-        quickReplyButtonHtml += `<div title="${quickReplyMes}" class="quickReplyButton" id="quickReply${i + 1}">${quickReplyLabel}</div>`;
+        quickReplyButtonHtml += `<div title="${quickReplyMes}" class="quickReplyButton" data-index="${i}" id="quickReply${i + 1}">${quickReplyLabel}</div>`;
     }
 
     const quickReplyBarFullHtml = `
@@ -95,8 +101,8 @@ function addQuickReplyBar() {
     $('#send_form').prepend(quickReplyBarFullHtml);
 
     $('.quickReplyButton').on('click', function () {
-        let quickReplyButtonID = $(this).attr('id');
-        sendQuickReply(quickReplyButtonID);
+        let index = $(this).data('index');
+        sendQuickReply(index);
     });
 }
 
