@@ -399,8 +399,16 @@ function populateChatHistory(prompts, chatCompletion) {
 
     chatCompletion.reserveBudget(mainChatMessage);
 
+    const lastChatPrompt = openai_msgs[openai_msgs.length - 1];
+    const message = new Message('user', oai_settings.send_if_empty, 'emptyUserMessageReplacement');
+    if (lastChatPrompt && lastChatPrompt.role === 'assistant' && oai_settings.send_if_empty && chatCompletion.canAfford(message)) {
+        chatCompletion.insert(message, 'chatHistory');
+    }
+
     // Insert chat messages as long as there is budget available
-    [...openai_msgs].reverse().every((prompt, index) => {
+    [...openai_msgs].reverse().every((chatPrompt, index) => {
+        // We do not want to mutate the prompt
+        const prompt = new Prompt(chatPrompt);
         prompt.identifier = 'chatHistory-' + index;
         const chatMessage = Message.fromPrompt(promptManager.preparePrompt(prompt));
 
@@ -669,7 +677,6 @@ function prepareOpenAIMessages({
         const messages = chatCompletion.getMessages();
         promptManager.populateTokenHandler(messages);
         promptManager.setMessages(messages);
-        console.log(messages)
 
         // All information are up-to-date, render without dry-run.
         if (false === dryRun) promptManager.render(false);
