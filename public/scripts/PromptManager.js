@@ -941,7 +941,7 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
         let warningTitle = '';
 
         const tokenBudget = this.serviceSettings.openai_max_context - this.serviceSettings.openai_max_tokens;
-        if (
+        if ( this.tokenUsage > tokenBudget * 0.8 &&
             'chatHistory' === prompt.identifier) {
             const warningThreshold = this.configuration.warningTokenThreshold;
             const dangerThreshold = this.configuration.dangerTokenThreshold;
