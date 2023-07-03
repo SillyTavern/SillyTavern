@@ -683,7 +683,7 @@ function prepareOpenAIMessages({
     }
 
     const chat = chatCompletion.getChat();
-    openai_messages_count = chat.filter(x => x.role === "user" || x.role === "assistant").length;
+    openai_messages_count = chat.filter(x => x?.role === "user" || x?.role === "assistant")?.length || 0;
 
     return [chat, false];
 }
