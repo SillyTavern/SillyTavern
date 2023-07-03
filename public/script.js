@@ -6439,7 +6439,7 @@ $(document).ready(function () {
     }
 
     registerSlashCommand('dupe', DupeChar, [], "– duplicates the currently selected character", true, true);
-    registerSlashCommand('api', connectAPISlash, [], "– connect to an API", true, true);
+    registerSlashCommand('api', connectAPISlash, [], "(kobold, horde, novel, ooba, oai, claude, poe, windowai) – connect to an API", true, true);
 
     setTimeout(function () {
         $("#groupControlsToggle").trigger('click');
