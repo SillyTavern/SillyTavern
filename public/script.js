@@ -5330,7 +5330,7 @@ function onScenarioOverrideRemoveClick() {
     $(this).closest('.scenario_override').find('.chat_scenario').val('').trigger('input');
 }
 
-function callPopup(text, type, inputValue = '') {
+function callPopup(text, type, inputValue = '', okButton) {
     if (type) {
         popup_type = type;
     }
@@ -5338,30 +5338,30 @@ function callPopup(text, type, inputValue = '') {
     $("#dialogue_popup_cancel").css("display", "inline-block");
     switch (popup_type) {
         case "avatarToCrop":
-            $("#dialogue_popup_ok").text("Accept");
+            $("#dialogue_popup_ok").text(okButton ?? "Accept");
             break;
         case "text":
         case "alternate_greeting":
         case "char_not_selected":
-            $("#dialogue_popup_ok").text("Ok");
+            $("#dialogue_popup_ok").text(okButton ?? "Ok");
             $("#dialogue_popup_cancel").css("display", "none");
             break;
         case "new_chat":
         case "confirm":
-            $("#dialogue_popup_ok").text("Yes");
+            $("#dialogue_popup_ok").text(okButton ?? "Yes");
             break;
         case "del_group":
         case "rename_chat":
         case "del_chat":
         default:
-            $("#dialogue_popup_ok").text("Delete");
+            $("#dialogue_popup_ok").text(okButton ?? "Delete");
     }
 
     $("#dialogue_popup_input").val(inputValue);
 
     if (popup_type == 'input') {
         $("#dialogue_popup_input").css("display", "block");
-        $("#dialogue_popup_ok").text("Save");
+        $("#dialogue_popup_ok").text(okButton ?? "Save");
     }
     else {
         $("#dialogue_popup_input").css("display", "none");
