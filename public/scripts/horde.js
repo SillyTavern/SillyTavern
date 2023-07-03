@@ -225,12 +225,10 @@ async function showKudos() {
 }
 
 jQuery(function () {
-
-    let hordeModelSelectScrollTop = null;
-
     $("#horde_model").on('mousedown change', async function (e) {
         //desktop-only routine for multi-select without CTRL
-        if (deviceInfo.device.type === 'desktop') {
+        /*if (deviceInfo.device.type === 'desktop') {
+            let hordeModelSelectScrollTop = null;
             e.preventDefault();
             const option = $(e.target);
             const selectElement = $(this)[0];
@@ -238,7 +236,7 @@ jQuery(function () {
             option.prop('selected', !option.prop('selected'));
             await delay(1);
             selectElement.scrollTop = hordeModelSelectScrollTop;
-        }
+        }*/
         horde_settings.models = $('#horde_model').val();
         console.log('Updated Horde models', horde_settings.models);
     });
@@ -265,4 +263,22 @@ jQuery(function () {
 
     $("#horde_refresh").on("click", getHordeModels);
     $("#horde_kudos").on("click", showKudos);
+
+    // Not needed on mobile
+    if (deviceInfo.device.type === 'desktop') {
+        $('#horde_model').select2({
+            width: '100%',
+            placeholder: 'Select Horde models',
+            allowClear: true,
+            closeOnSelect: false,
+            templateSelection: function(data) {
+                // Customize the pillbox text by shortening the full text
+                return data.id;
+            },
+            templateResult: function(data) {
+                // Return the full text for the dropdown
+                return data.text;
+            },
+        });
+    }
 })

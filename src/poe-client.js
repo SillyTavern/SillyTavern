@@ -81,7 +81,7 @@ function extractFormKey(html) {
     }
     const formKey = formKeyList.join("");
 
-    return formKey;
+    return formKey.slice(0, -1);
 }
 
 
@@ -394,7 +394,7 @@ class Client {
         //these keys are used as of June 29, 2023
         //if API changes in the future, just change these to find the new path
         const viewerKeyName = 'viewer'
-        const botNameKeyName = 'chatOfBotDisplayName'
+        const botNameKeyName = 'chatOfBotHandle'
         const defaultBotKeyName = 'defaultBotNickname'
 
         const r = await request_with_retries(() => this.session.get(this.home_url));
@@ -405,6 +405,8 @@ class Client {
         const viewerPath = findKey(nextData, viewerKeyName);
         const botNamePath = findKey(nextData, botNameKeyName);
         const defaultBotPath = findKey(nextData, defaultBotKeyName);
+
+
 
         let viewer = null;
         if (viewerPath) {
@@ -429,7 +431,16 @@ class Client {
             console.log(`'${defaultBotKeyName}' key: ${defaultBotPath.join('.')}`);
         } else {
             console.log(`ERROR: '${defaultBotKeyName}' key not found.`);
-            //console.log(logObjectStructure(nextData, 0, 2));
+
+        }
+
+        if (!viewerPath || !botNamePath || !defaultBotPath) {
+            console.log('-----------------')
+            console.log("ERROR READING POE API! THIS IS THE RESPONSE STRUCTURE:")
+            console.log("SEARCH THIS LIST FOR 'chatOfBotDisplayName', 'viewer', AND 'defaultBotNickname'...")
+            console.log("-----------------")
+            console.log(logObjectStructure(nextData, 0, 4));
+            console.log("-----------------")
         }
 
         this.formkey = extractFormKey(r.data);
@@ -465,7 +476,7 @@ class Client {
                         cached_bots[url] = r;
                     }
 
-                    const chatData = r.data.pageProps.payload?.chatOfBotDisplayName || r.data.pageProps.data?.chatOfBotDisplayName;
+                    const chatData = r.data.pageProps.payload?.chatOfBotDisplayName || r.data.pageProps.data?.chatOfBotHandle;
                     bots[chatData.defaultBotObject.nickname] = chatData;
                     resolve();
 

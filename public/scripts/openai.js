@@ -20,6 +20,7 @@ import {
     system_message_types,
     replaceBiasMarkup,
     is_send_press,
+    main_api,
 } from "../script.js";
 import { groups, selected_group } from "./group-chats.js";
 
@@ -35,6 +36,7 @@ import {
 import {
     delay,
     download,
+    getFileText,
     getStringHash,
     parseJsonFile,
     stringFormat,
@@ -84,7 +86,8 @@ const gpt3_16k_max = 16383;
 const gpt4_max = 8191;
 const gpt_neox_max = 2048;
 const gpt4_32k_max = 32767;
-const claude_max = 7500;
+const claude_max = 8000; // We have a proper tokenizer, so theoretically could be larger (up to 9k)
+const palm2_max = 7500; // The real context window is 8192, spare some for padding due to using turbo tokenizer
 const claude_100k_max = 99000;
 const unlocked_max = 100 * 1024;
 const oai_max_temp = 2.0;
@@ -130,6 +133,7 @@ const default_settings = {
     legacy_streaming: false,
     chat_completion_source: chat_completion_sources.OPENAI,
     max_context_unlocked: false,
+    use_openrouter: false,
 };
 
 const oai_settings = {
@@ -163,6 +167,7 @@ const oai_settings = {
     legacy_streaming: false,
     chat_completion_source: chat_completion_sources.OPENAI,
     max_context_unlocked: false,
+    use_openrouter: false,
 };
 
 let openai_setting_names;
@@ -209,7 +214,7 @@ function setOpenAIMessages(chat) {
         }
 
         // for groups or sendas command - prepend a character's name
-        if (selected_group || chat[j].force_avatar) {
+        if (selected_group || (chat[j].force_avatar && chat[j].name !== name1)) {
             content = `${chat[j].name}: ${content}`;
         }
 
@@ -319,7 +324,7 @@ function formatWorldInfo(value) {
     return stringFormat(oai_settings.wi_format, value);
 }
 
-async function prepareOpenAIMessages({ systemPrompt, name2, storyString, worldInfoBefore, worldInfoAfter, extensionPrompt, bias, type, quietPrompt, jailbreakPrompt } = {}) {
+async function prepareOpenAIMessages({ systemPrompt, name2, storyString, worldInfoBefore, worldInfoAfter, extensionPrompt, bias, type, quietPrompt, jailbreakPrompt, cyclePrompt } = {}) {
     const isImpersonate = type == "impersonate";
     let this_max_context = oai_settings.openai_max_context;
     let enhance_definitions_prompt = "";
@@ -336,7 +341,7 @@ async function prepareOpenAIMessages({ systemPrompt, name2, storyString, worldIn
     let whole_prompt = getSystemPrompt(systemPrompt, nsfw_toggle_prompt, enhance_definitions_prompt, wiBefore, storyString, wiAfter, extensionPrompt, isImpersonate);
 
     // Join by a space and replace placeholders with real user/char names
-    storyString = substituteParams(whole_prompt.join("\n")).replace(/\r/gm, '').trim();
+    storyString = substituteParams(whole_prompt.join("\n"), name1, name2, oai_settings.main_prompt).replace(/\r/gm, '').trim();
 
     let prompt_msg = { "role": "system", "content": storyString }
     let examples_tosend = [];
@@ -385,7 +390,7 @@ async function prepareOpenAIMessages({ systemPrompt, name2, storyString, worldIn
 
     const jailbreak = power_user.prefer_character_jailbreak && jailbreakPrompt ? jailbreakPrompt : oai_settings.jailbreak_prompt;
     if (oai_settings.jailbreak_system && jailbreak) {
-        const jailbreakMessage = { "role": "system", "content": substituteParams(jailbreak) };
+        const jailbreakMessage = { "role": "system", "content": substituteParams(jailbreak, name1, name2, oai_settings.jailbreak_prompt) };
         openai_msgs.push(jailbreakMessage);
 
         total_count += handler_instance.count([jailbreakMessage], true, 'jailbreak');
@@ -403,6 +408,14 @@ async function prepareOpenAIMessages({ systemPrompt, name2, storyString, worldIn
         openai_msgs.push(impersonateMessage);
 
         total_count += handler_instance.count([impersonateMessage], true, 'impersonate');
+        await delay(1);
+    }
+
+    if (type == 'continue') {
+        const continueNudge = { "role": "system", "content": stringFormat('[Continue the following message. Do not include ANY parts of the original message. Use capitalization and punctuation as if your reply is a part of the original message:\n\n{0}]', cyclePrompt || '') };
+        openai_msgs.push(continueNudge);
+
+        total_count += handler_instance.count([continueNudge], true, 'continue');
         await delay(1);
     }
 
@@ -566,8 +579,8 @@ async function sendWindowAIRequest(openai_msgs_tosend, signal, stream) {
     const currentModel = await window.ai.getCurrentModel();
     let temperature = parseFloat(oai_settings.temp_openai);
 
-    if (currentModel.includes('claude') && temperature > claude_max_temp) {
-        console.warn(`Claude model only supports temperature up to ${claude_max_temp}. Clamping ${temperature} to ${claude_max_temp}.`);
+    if ((currentModel.includes('claude') || currentModel.includes('palm-2')) && temperature > claude_max_temp) {
+        console.warn(`Claude and PaLM models only supports temperature up to ${claude_max_temp}. Clamping ${temperature} to ${claude_max_temp}.`);
         temperature = claude_max_temp;
     }
 
@@ -647,6 +660,19 @@ async function sendWindowAIRequest(openai_msgs_tosend, signal, stream) {
     }
 }
 
+function getChatCompletionModel() {
+    switch (oai_settings.chat_completion_source) {
+        case chat_completion_sources.CLAUDE:
+            return oai_settings.claude_model;
+        case chat_completion_sources.OPENAI:
+            return oai_settings.openai_model;
+        case chat_completion_sources.WINDOWAI:
+            return oai_settings.windowai_model;
+        default:
+            throw new Error(`Unknown chat completion source: ${oai_settings.chat_completion_source}`);
+    }
+}
+
 async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
     // Provide default abort signal
     if (!signal) {
@@ -659,23 +685,24 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
 
     let logit_bias = {};
     const isClaude = oai_settings.chat_completion_source == chat_completion_sources.CLAUDE;
+    const isOpenRouter = oai_settings.use_openrouter && oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI;
     const stream = type !== 'quiet' && oai_settings.stream_openai;
 
     // If we're using the window.ai extension, use that instead
     // Doesn't support logit bias yet
-    if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
+    if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI && !oai_settings.use_openrouter) {
         return sendWindowAIRequest(openai_msgs_tosend, signal, stream);
     }
 
     if (oai_settings.bias_preset_selected
-        && !isClaude // Claude doesn't support logit bias
+        && oai_settings.chat_completion_source == chat_completion_sources.OPENAI
         && Array.isArray(oai_settings.bias_presets[oai_settings.bias_preset_selected])
         && oai_settings.bias_presets[oai_settings.bias_preset_selected].length) {
         logit_bias = biasCache || await calculateLogitBias();
         biasCache = logit_bias;
     }
 
-    const model = isClaude ? oai_settings.claude_model : oai_settings.openai_model;
+    const model = getChatCompletionModel();
     const generate_data = {
         "messages": openai_msgs_tosend,
         "model": model,
@@ -689,6 +716,7 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
         "reverse_proxy": oai_settings.reverse_proxy,
         "logit_bias": logit_bias,
         "use_claude": isClaude,
+        "use_openrouter": isOpenRouter,
     };
 
     const generate_url = '/generate_openai';
@@ -764,8 +792,8 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
 function getStreamingReply(getMessage, data) {
     if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
         getMessage = data.completion || "";
-    } else{
-        getMessage += data.choices[0]["delta"]["content"] || "";
+    } else {
+        getMessage += data.choices[0]?.delta?.content || data.choices[0]?.message?.content || "";
     }
     return getMessage;
 }
@@ -925,16 +953,15 @@ function getTokenizerModel() {
             return turboTokenizer;
         }
         else if (oai_settings.windowai_model.includes('claude')) {
-            return turboTokenizer;
+            return 'claude';
         }
         else if (oai_settings.windowai_model.includes('GPT-NeoXT')) {
             return 'gpt2';
         }
     }
 
-    // We don't have a Claude tokenizer for JS yet. Turbo 3.5 should be able to handle this.
     if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
-        return turboTokenizer;
+        return 'claude';
     }
 
     // Default to Turbo 3.5
@@ -978,6 +1005,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.claude_model = settings.claude_model ?? default_settings.claude_model;
     oai_settings.windowai_model = settings.windowai_model ?? default_settings.windowai_model;
     oai_settings.chat_completion_source = settings.chat_completion_source ?? default_settings.chat_completion_source;
+    oai_settings.use_openrouter = settings.use_openrouter ?? default_settings.use_openrouter;
 
     if (settings.nsfw_toggle !== undefined) oai_settings.nsfw_toggle = !!settings.nsfw_toggle;
     if (settings.keep_example_dialogue !== undefined) oai_settings.keep_example_dialogue = !!settings.keep_example_dialogue;
@@ -989,8 +1017,11 @@ function loadOpenAISettings(data, settings) {
 
     $('#stream_toggle').prop('checked', oai_settings.stream_openai);
 
+    $('#model_openai_select').val(oai_settings.openai_model);
     $(`#model_openai_select option[value="${oai_settings.openai_model}"`).attr('selected', true);
+    $('#model_claude_select').val(oai_settings.claude_model);
     $(`#model_claude_select option[value="${oai_settings.claude_model}"`).attr('selected', true);
+    $('#model_windowai_select').val(oai_settings.windowai_model);
     $(`#model_windowai_select option[value="${oai_settings.windowai_model}"`).attr('selected', true);
     $('#openai_max_context').val(oai_settings.openai_max_context);
     $('#openai_max_context_counter').text(`${oai_settings.openai_max_context}`);
@@ -1051,11 +1082,12 @@ function loadOpenAISettings(data, settings) {
 
     $('#chat_completion_source').val(oai_settings.chat_completion_source).trigger('change');
     $('#oai_max_context_unlocked').prop('checked', oai_settings.max_context_unlocked);
+    $('#use_openrouter').prop('checked', oai_settings.use_openrouter);
 }
 
 async function getStatusOpen() {
     if (is_get_status_openai) {
-        if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
+        if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI && !oai_settings.use_openrouter) {
             let status;
 
             if ('ai' in window) {
@@ -1078,6 +1110,7 @@ async function getStatusOpen() {
 
         let data = {
             reverse_proxy: oai_settings.reverse_proxy,
+            use_openrouter: oai_settings.use_openrouter && oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI,
         };
 
         return jQuery.ajax({
@@ -1085,7 +1118,7 @@ async function getStatusOpen() {
             url: '/getstatus_openai', //
             data: JSON.stringify(data),
             beforeSend: function () {
-                if (oai_settings.reverse_proxy) {
+                if (oai_settings.reverse_proxy && !data.use_openrouter) {
                     validateReverseProxy();
                 }
             },
@@ -1134,6 +1167,11 @@ function trySelectPresetByName(name) {
         }
     }
 
+    // Don't change if the current preset is the same
+    if (preset_found && preset_found === oai_settings.preset_settings_openai) {
+        return;
+    }
+
     if (preset_found) {
         oai_settings.preset_settings_openai = preset_found;
         const value = openai_setting_names[preset_found]
@@ -1148,6 +1186,7 @@ async function saveOpenAIPreset(name, settings) {
         openai_model: settings.openai_model,
         claude_model: settings.claude_model,
         windowai_model: settings.windowai_model,
+        use_openrouter: settings.use_openrouter,
         temperature: settings.temp_openai,
         frequency_penalty: settings.freq_pen_openai,
         presence_penalty: settings.pres_pen_openai,
@@ -1171,6 +1210,7 @@ async function saveOpenAIPreset(name, settings) {
         max_context_unlocked: settings.max_context_unlocked,
         nsfw_avoidance_prompt: settings.nsfw_avoidance_prompt,
         wi_format: settings.wi_format,
+        stream_openai: settings.stream_openai,
     };
 
     const savePresetSettings = await fetch(`/savepreset_openai?name=${name}`, {
@@ -1198,6 +1238,8 @@ async function saveOpenAIPreset(name, settings) {
             option.innerText = data.name;
             $('#settings_perset_openai').append(option).trigger('change');
         }
+    } else {
+        toastr.error('Failed to save preset');
     }
 }
 
@@ -1303,8 +1345,80 @@ function addLogitBiasPresetOption(name) {
     $('#openai_logit_bias_preset').trigger('change');
 }
 
+function onImportPresetClick() {
+    $('#openai_preset_import_file').trigger('click');
+}
+
 function onLogitBiasPresetImportClick() {
-    $('#openai_logit_bias_import_file').click();
+    $('#openai_logit_bias_import_file').trigger('click');
+}
+
+async function onPresetImportFileChange(e) {
+    const file = e.target.files[0];
+
+    if (!file) {
+        return;
+    }
+
+    const name = file.name.replace(/\.[^/.]+$/, "");
+    const importedFile = await getFileText(file);
+    let presetBody;
+    e.target.value = '';
+
+    try {
+        presetBody = JSON.parse(importedFile);
+    } catch (err) {
+        toastr.error('Invalid file');
+        return;
+    }
+
+    if (name in openai_setting_names) {
+        const confirm = await callPopup('Preset name already exists. Overwrite?', 'confirm');
+
+        if (!confirm) {
+            return;
+        }
+    }
+
+    const savePresetSettings = await fetch(`/savepreset_openai?name=${name}`, {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: importedFile,
+    });
+
+    if (!savePresetSettings.ok) {
+        toastr.error('Failed to save preset');
+        return;
+    }
+
+    const data = await savePresetSettings.json();
+
+    if (Object.keys(openai_setting_names).includes(data.name)) {
+        oai_settings.preset_settings_openai = data.name;
+        const value = openai_setting_names[data.name];
+        Object.assign(openai_settings[value], presetBody);
+        $(`#settings_perset_openai option[value="${value}"]`).attr('selected', true);
+        $('#settings_perset_openai').trigger('change');
+    } else {
+        openai_settings.push(presetBody);
+        openai_setting_names[data.name] = openai_settings.length - 1;
+        const option = document.createElement('option');
+        option.selected = true;
+        option.value = openai_settings.length - 1;
+        option.innerText = data.name;
+        $('#settings_perset_openai').append(option).trigger('change');
+    }
+}
+
+async function onExportPresetClick() {
+    if (!oai_settings.preset_settings_openai) {
+        toastr.error('No preset selected');
+        return;
+    }
+
+    const preset = openai_settings[openai_setting_names[oai_settings.preset_settings_openai]];
+    const presetJsonString = JSON.stringify(preset, null, 4);
+    download(presetJsonString, oai_settings.preset_settings_openai, 'application/json');
 }
 
 async function onLogitBiasPresetImportFileChange(e) {
@@ -1351,7 +1465,7 @@ function onLogitBiasPresetExportClick() {
         return;
     }
 
-    const presetJsonString = JSON.stringify(oai_settings.bias_presets[oai_settings.bias_preset_selected]);
+    const presetJsonString = JSON.stringify(oai_settings.bias_presets[oai_settings.bias_preset_selected], null, 4);
     download(presetJsonString, oai_settings.bias_preset_selected, 'application/json');
 }
 
@@ -1445,6 +1559,8 @@ function onSettingsPresetChange() {
         legacy_streaming: ['#legacy_streaming', 'legacy_streaming', true],
         nsfw_avoidance_prompt: ['#nsfw_avoidance_prompt_textarea', 'nsfw_avoidance_prompt', false],
         wi_format: ['#wi_format_textarea', 'wi_format', false],
+        stream_openai: ['#stream_toggle', 'stream_openai', true],
+        use_openrouter: ['#use_openrouter', 'use_openrouter', true],
     };
 
     for (const [key, [selector, setting, isCheckbox]] of Object.entries(settingsToUpdate)) {
@@ -1463,12 +1579,12 @@ function onSettingsPresetChange() {
     saveSettingsDebounced();
 }
 
-function onModelChange() {
-    const value = $(this).val();
+async function onModelChange() {
+    let value = $(this).val();
 
     if ($(this).is('#model_claude_select')) {
         console.log('Claude model changed to', value);
-        oai_settings.claude_model  = value;
+        oai_settings.claude_model = value;
     }
 
     if ($(this).is('#model_windowai_select')) {
@@ -1502,6 +1618,10 @@ function onModelChange() {
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
+        if (value == '' && 'ai' in window) {
+            value = (await window.ai.getCurrentModel()) || '';
+        }
+
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
         }
@@ -1517,8 +1637,14 @@ function onModelChange() {
         else if (value.includes('gpt-3.5')) {
             $('#openai_max_context').attr('max', gpt3_max);
         }
+        else if (value.includes('gpt-4-32k')) {
+            $('#openai_max_context').attr('max', gpt4_32k_max);
+        }
         else if (value.includes('gpt-4')) {
             $('#openai_max_context').attr('max', gpt4_max);
+        }
+        else if (value.includes('palm-2')) {
+            $('#openai_max_context').attr('max', palm2_max);
         }
         else if (value.includes('GPT-NeoXT')) {
             $('#openai_max_context').attr('max', gpt_neox_max);
@@ -1531,7 +1657,7 @@ function onModelChange() {
         oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
         $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
 
-        if (value.includes('claude')) {
+        if (value.includes('claude') || value.includes('palm-2')) {
             oai_settings.temp_openai = Math.min(claude_max_temp, oai_settings.temp_openai);
             $('#temp_openai').attr('max', claude_max_temp).val(oai_settings.temp_openai).trigger('input');
         }
@@ -1597,6 +1723,17 @@ async function onConnectButtonClick(e) {
     if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
         is_get_status_openai = true;
         is_api_button_press_openai = true;
+        const api_key_openrouter = $('#api_key_openrouter').val().trim();
+
+        if (api_key_openrouter.length) {
+            await writeSecret(SECRET_KEYS.OPENROUTER, api_key_openrouter);
+        }
+
+        if (oai_settings.use_openrouter && !secret_state[SECRET_KEYS.OPENROUTER]) {
+            console.log('No secret key saved for OpenRouter');
+            return;
+        }
+
         return await getStatusOpen();
     }
 
@@ -1666,6 +1803,12 @@ async function testApiConnection() {
     catch (err) {
         toastr.error('Could not get a reply from API. Check your connection settings / API key and try again.');
     }
+}
+
+function reconnectOpenAi() {
+    setOnlineStatus('no_connection');
+    resultCheckStatusOpen();
+    $('#api_button_openai').trigger('click');
 }
 
 $(document).ready(function () {
@@ -1851,15 +1994,22 @@ $(document).ready(function () {
     $('#chat_completion_source').on('change', function () {
         oai_settings.chat_completion_source = $(this).find(":selected").val();
         toggleChatCompletionForms();
-        setOnlineStatus('no_connection');
-        resultCheckStatusOpen();
-        $('#api_button_openai').trigger('click');
         saveSettingsDebounced();
+
+        if (main_api == 'openai') {
+            reconnectOpenAi();
+        }
     });
 
     $('#oai_max_context_unlocked').on('input', function () {
         oai_settings.max_context_unlocked = !!$(this).prop('checked');
         $("#chat_completion_source").trigger('change');
+        saveSettingsDebounced();
+    });
+
+    $('#use_openrouter').on('input', function () {
+        oai_settings.use_openrouter = !!$(this).prop('checked');
+        reconnectOpenAi();
         saveSettingsDebounced();
     });
 
@@ -1876,7 +2026,10 @@ $(document).ready(function () {
     $("#openai_logit_bias_new_preset").on("click", createNewLogitBiasPreset);
     $("#openai_logit_bias_new_entry").on("click", createNewLogitBiasEntry);
     $("#openai_logit_bias_import_file").on("input", onLogitBiasPresetImportFileChange);
+    $("#openai_preset_import_file").on("input", onPresetImportFileChange);
+    $("#export_oai_preset").on("click", onExportPresetClick);
     $("#openai_logit_bias_import_preset").on("click", onLogitBiasPresetImportClick);
     $("#openai_logit_bias_export_preset").on("click", onLogitBiasPresetExportClick);
     $("#openai_logit_bias_delete_preset").on("click", onLogitBiasPresetDeleteClick);
+    $("#import_oai_preset").on("click", onImportPresetClick);
 });

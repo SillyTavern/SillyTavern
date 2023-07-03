@@ -10,6 +10,8 @@
     justify-content: center;
     width: 100%;
     display: none;
+    max-width: 100%;
+    overflow-x: auto;
 }
 
 #quickReplies {
@@ -17,7 +19,7 @@
     padding: 0;
     display: flex;
     justify-content: center;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     gap: 5px;
     width: 100%;
 }

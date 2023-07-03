@@ -1,6 +1,7 @@
 {
     "dependencies": {
         "@dqbd/tiktoken": "^1.0.2",
+        "@mlc-ai/web-tokenizers": "^0.1.0",
         "axios": "^1.4.0",
         "command-exists": "^1.2.9",
         "compression": "^1",
@@ -48,7 +49,7 @@
         "type": "git",
         "url": "https://github.com/SillyTavern/SillyTavern.git"
     },
-    "version": "1.7.3",
+    "version": "1.8.0",
     "scripts": {
         "start": "node server.js",
         "pkg": "pkg --compress Gzip --no-bytecode --public ."

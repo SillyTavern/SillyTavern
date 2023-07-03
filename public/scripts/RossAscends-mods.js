@@ -11,8 +11,8 @@ import {
     is_send_press,
     getTokenCount,
     menu_type,
-
-
+    max_context,
+    saveSettingsDebounced,
 } from "../script.js";
 
 
@@ -27,7 +27,7 @@ import {
     SECRET_KEYS,
     secret_state,
 } from "./secrets.js";
-import { sortByCssOrder, debounce } from "./utils.js";
+import { sortByCssOrder, debounce, delay } from "./utils.js";
 import { chat_completion_sources, oai_settings } from "./openai.js";
 
 var NavToggle = document.getElementById("nav-toggle");
@@ -177,6 +177,29 @@ export function humanizedDateTime() {
     return HumanizedDateTime;
 }
 
+//this is a common format version to display a timestamp on each chat message
+//returns something like: June 19, 2023 2:20pm
+export function getMessageTimeStamp() {
+    const date = Date.now();
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const d = new Date(date);
+    const month = months[d.getMonth()];
+    const day = d.getDate();
+    const year = d.getFullYear();
+    let hours = d.getHours();
+    const minutes = ('0' + d.getMinutes()).slice(-2);
+    let meridiem = 'am';
+    if (hours >= 12) {
+        meridiem = 'pm';
+        hours -= 12;
+    }
+    if (hours === 0) {
+        hours = 12;
+    }
+    const formattedDate = month + ' ' + day + ', ' + year + ' ' + hours + ':' + minutes + meridiem;
+    return formattedDate;
+}
+
 
 // triggers:
 $("#rm_button_create").on("click", function () {                 //when "+New Character" is clicked
@@ -264,18 +287,18 @@ export function RA_CountCharTokens() {
         } else { console.debug("RA_TC -- no valid char found, closing."); }
     }
     // display the counted tokens
-    if (count_tokens < 1024 && perm_tokens < 1024) {
-        //display normal if both counts are under 1024
+    const tokenLimit = Math.max(((main_api !== 'openai' ? max_context : oai_settings.openai_max_context) / 2), 1024);
+    if (count_tokens < tokenLimit && perm_tokens < tokenLimit) {
         $("#result_info").html(`<small>${count_tokens} Tokens (${perm_tokens} Permanent)</small>`);
     } else {
         $("#result_info").html(`
-        <div class="flex-container flexFlowColumn alignitemscenter">
+        <div class="flex-container alignitemscenter">
             <div class="flex-container flexnowrap flexNoGap">
                 <small class="flex-container flexnowrap flexNoGap">
                     <div class="neutral_warning">${count_tokens}</div>&nbsp;Tokens (<div class="neutral_warning">${perm_tokens}</div><div>&nbsp;Permanent)</div>
                 </small>
             </div>
-            <div id="chartokenwarning" class="menu_button whitespacenowrap"><a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#character-tokens" target="_blank">About Token 'Limits'</a></div>
+            <div id="chartokenwarning" class="menu_button margin0 whitespacenowrap"><a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#character-tokens" target="_blank">About Token 'Limits'</a></div>
         </div>`);
     } //warn if either are over 1024
 }
@@ -450,60 +473,139 @@ function OpenNavPanels() {
 
 
 // Make the DIV element draggable:
-dragElement(document.getElementById("sheld"));
-dragElement(document.getElementById("left-nav-panel"));
-dragElement(document.getElementById("right-nav-panel"));
-dragElement(document.getElementById("avatar_zoom_popup"));
-dragElement(document.getElementById("WorldInfo"));
 
 
+// SECOND UPDATE AIMING FOR MUTATIONS ONLY
 
 export function dragElement(elmnt) {
-
     var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-    if (document.getElementById(elmnt.id + "header")) { //ex: id="sheldheader"
-        // if present, the header is where you move the DIV from, but this overrides everything else:
-        document.getElementById(elmnt.id + "header").onmousedown = dragMouseDown;
+    var height, width, top, left, right, bottom;
+
+    var oldTop = Number((String($(elmnt).css('top')).replace('px', '')))
+    var oldLeft = Number((String($(elmnt).css('left')).replace('px', '')))
+    var oldWidth = Number((String($(elmnt).css('width')).replace('px', '')))
+    var oldHeight = Number((String($(elmnt).css('width')).replace('px', '')))
+    var oldRight = Number((String($(elmnt).css('right')).replace('px', '')))
+    var oldBottom = Number((String($(elmnt).css('bottom')).replace('px', '')))
+    var elmntName = elmnt.attr('id');
+    console.debug(`${elmntName} init state: 
+T: ${$(elmnt).css('top')}
+L: ${$(elmnt).css('left')}
+W: ${$(elmnt).css('width')}
+H: ${$(elmnt).css('height')}
+R: ${$(elmnt).css('right')}
+B: ${$(elmnt).css('bottom')}
+---`);
+
+
+    const elmntNameEscaped = $.escapeSelector(elmntName);
+    const elmntHeader = $(`#${elmntNameEscaped}header`);
+    if (elmntHeader.length) {
+        elmntHeader.off('mousedown').on('mousedown', (e) => {
+
+            dragMouseDown(e);
+        });
     } else {
-        // otherwise, move the DIV from anywhere inside the DIV, b:
-        elmnt.onmousedown = dragMouseDown;
+        elmnt.off('mousedown').on('mousedown', dragMouseDown);
     }
 
+    const observer = new MutationObserver((mutations) => {
+        const target = mutations[0].target;
+        if (!$(target).is(':visible')
+            || $(target).hasClass('resizing')
+            || Number((String(target.height).replace('px', ''))) < 50
+            || Number((String(target.width).replace('px', ''))) < 50
+            || power_user.movingUI === false
+            || isMobile() === true
+        ) {
+            console.debug('aborting mutator')
+            return
+        }
+
+        const style = getComputedStyle(target);
+        //console.log(style.top, style.left)
+        height = target.offsetHeight;
+        width = target.offsetWidth;
+        top = parseInt(style.top);
+        left = parseInt(style.left);
+        right = parseInt(style.right);
+        bottom = parseInt(style.bottom);
+
+        if (!power_user.movingUIState[elmntName]) {
+            console.debug(`adding config property for ${elmntName}`)
+            power_user.movingUIState[elmntName] = {};
+        }
+
+        power_user.movingUIState[elmntName].top = top;
+        power_user.movingUIState[elmntName].left = left;
+
+        if (!isNaN(oldWidth)
+            && !isNaN(oldHeight)
+            && (oldHeight !== height || oldWidth !== width)) {
+            power_user.movingUIState[elmntName].width = width;
+            power_user.movingUIState[elmntName].height = height;
+        } else {
+            console.debug('skipping W/H setting')
+        }
+        power_user.movingUIState[elmntName].right = right;
+        power_user.movingUIState[elmntName].bottom = bottom;
+        if (!isNaN(oldTop) && !isNaN(oldLeft) && (oldTop !== top || oldLeft !== left)) {
+            console.debug('unsetting margin due to custom position')
+            console.debug(`${elmntName}:
+T: ${oldTop}>>${top}
+L: ${oldLeft}>> ${left}
+H: ${oldHeight} >> ${height}
+W: ${oldWidth}>> ${width}
+R: ${oldRight} >> ${right}
+B: ${oldBottom}>> ${bottom}
+---`)
+            power_user.movingUIState[elmntName].margin = 'unset';
+        } else {
+            console.debug('skipped unsetting margins')
+            //console.debug(oldTop, top, oldLeft, left)
+        }
+        saveSettingsDebounced();
+
+
+
+        // Check if the element header exists and set the listener on the grabber
+        if (elmntHeader.length) {
+            elmntHeader.off('mousedown').on('mousedown', (e) => {
+                console.debug('listener started from header')
+                dragMouseDown(e);
+            });
+        } else {
+            elmnt.off('mousedown').on('mousedown', dragMouseDown);
+        }
+    });
+
+    observer.observe(elmnt.get(0), { attributes: true, attributeFilter: ['style'] });
+
     function dragMouseDown(e) {
-        //console.log(e);
-        e = e || window.event;
-        e.preventDefault();
-        // get the mouse cursor position at startup:
-        pos3 = e.clientX; //mouse X at click
-        pos4 = e.clientY; //mouse Y at click
-        document.onmouseup = closeDragElement;
-        // call a function whenever the cursor moves:
-        document.onmousemove = elementDrag;
+
+        if (e) {
+            e.preventDefault();
+            pos3 = e.clientX; //mouse X at click
+            pos4 = e.clientY; //mouse Y at click
+        }
+        $(document).on('mouseup', closeDragElement);
+        $(document).on('mousemove', elementDrag);
     }
 
     function elementDrag(e) {
-        //disable scrollbars when dragging to prevent jitter
         $("body").css("overflow", "hidden");
+        if (!power_user.movingUIState[elmntName]) {
+            power_user.movingUIState[elmntName] = {};
+        }
 
-
-        //get window size
         let winWidth = window.innerWidth;
         let winHeight = window.innerHeight;
-
-        //get necessary data for calculating element footprint
-        let draggableHeight = parseInt(getComputedStyle(elmnt).getPropertyValue('height').slice(0, -2));
-        let draggableWidth = parseInt(getComputedStyle(elmnt).getPropertyValue('width').slice(0, -2));
-        let draggableTop = parseInt(getComputedStyle(elmnt).getPropertyValue('top').slice(0, -2));
-        let draggableLeft = parseInt(getComputedStyle(elmnt).getPropertyValue('left').slice(0, -2));
-        let sheldWidth = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sheldWidth').slice(0, -2));
+        let sheldWidth = parseInt($('html').css('--sheldWidth').slice(0, -2));
         let topBarFirstX = (winWidth - sheldWidth) / 2;
         let topBarLastX = topBarFirstX + sheldWidth;
+        let maxX = (width + left);
+        let maxY = (height + top);
 
-        //set the lowest and most-right pixel the element touches
-        let maxX = (draggableWidth + draggableLeft);
-        let maxY = (draggableHeight + draggableTop);
-
-        // calculate the new cursor position:
         e = e || window.event;
         e.preventDefault();
 
@@ -512,88 +614,69 @@ export function dragElement(elmnt) {
         pos3 = e.clientX;   //new mouse X
         pos4 = e.clientY;   //new mouse Y
 
-        elmnt.setAttribute('data-dragged', 'true');
+        elmnt.attr('data-dragged', 'true');
 
-        //fix over/underflows:
-
-        setTimeout(function () {
-            if (elmnt.offsetTop < 40) {
-                /* console.log('6'); */
-                if (maxX > topBarFirstX && maxX < topBarLastX) {
-                    /* console.log('maxX inside topBar!'); */
-                    elmnt.style.top = "42px";
-                }
-                if (elmnt.offsetLeft < topBarLastX && elmnt.offsetLeft > topBarFirstX) {
-                    /* console.log('offsetLeft inside TopBar!'); */
-                    elmnt.style.top = "42px";
-                }
+        if (elmnt.offset().top < 40) {
+            if (maxX > topBarFirstX && maxX < topBarLastX) {
+                elmnt.css('top', '42px');
             }
-
-            if (elmnt.offsetTop - pos2 <= 0) {
-                /* console.log('1'); */
-                //prevent going out of window top + 42px barrier for TopBar (can hide grabber)
-                elmnt.style.top = "0px";
+            if (elmnt.offset().left < topBarLastX && elmnt.offset().left > topBarFirstX) {
+                elmnt.css('top', '42px');
             }
-
-            if (elmnt.offsetLeft - pos1 <= 0) {
-                /* console.log('2'); */
-                //prevent moving out of window left
-                elmnt.style.left = "0px";
+        }
+        if (elmnt.offset().top - pos2 <= 0) {
+            elmnt.css('top', '0px');
+        }
+        if (elmnt.offset().left - pos1 <= 0) {
+            elmnt.css('left', '0px');
+        }
+        if (maxX >= winWidth) {
+            elmnt.css('left', elmnt.offset().left - 10 + "px");
+        }
+        if (maxY >= winHeight) {
+            elmnt.css('top', elmnt.offset().top - 10 + "px");
+            if (elmnt.offset().top - pos2 <= 40) {
+                elmnt.css('top', '20px');
             }
+        }
+        elmnt.css('left', (elmnt.offset().left - pos1) + "px");
+        elmnt.css("top", (elmnt.offset().top - pos2) + "px");
+        elmnt.css('margin', 'unset');
 
-            if (maxX >= winWidth) {
-                /* console.log('3'); */
-                //bounce off right
-                elmnt.style.left = elmnt.offsetLeft - 10 + "px";
-            }
-
-            if (maxY >= winHeight) {
-                /* console.log('4'); */
-                //bounce off bottom
-                elmnt.style.top = elmnt.offsetTop - 10 + "px";
-                if (elmnt.offsetTop - pos2 <= 40) {
-                    /* console.log('5'); */
-                    //prevent going out of window top + 42px barrier for TopBar (can hide grabber)
-                    /* console.log('caught Y bounce to <40Y top'); */
-                    elmnt.style.top = "20px";
-                }
-            }
-            // if no problems, set element's new position
-            /* console.log('7'); */
-
-            elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
-            elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
-            $(elmnt).css("bottom", "unset");
-            $(elmnt).css("right", "unset");
-            $(elmnt).css("margin", "unset");
-
-            /*             console.log(`
-                                        offsetLeft: ${elmnt.offsetLeft}, offsetTop: ${elmnt.offsetTop}
-                                        winWidth: ${winWidth}, winHeight: ${winHeight}
-                                        sheldWidth: ${sheldWidth}
-                                        X: ${elmnt.style.left}
-                                        Y: ${elmnt.style.top}
-                                        MaxX: ${maxX}, MaxY: ${maxY}
-                                        Topbar 1st X: ${((winWidth - sheldWidth) / 2)}
-                                        TopBar lastX: ${((winWidth - sheldWidth) / 2) + sheldWidth}
-                                            `); */
-
-
-
-        }, 50)
-
-        /* console.log("left/top: " + (elmnt.offsetLeft - pos1) + "/" + (elmnt.offsetTop - pos2) +
-            ", win: " + winWidth + "/" + winHeight +
-            ", max X / Y: " + maxX + " / " + maxY); */
-
+        /*
+        console.log(`
+            winWidth: ${winWidth}, winHeight: ${winHeight}
+            sheldWidth: ${sheldWidth}
+            X: ${$(elmnt).css('left')}
+            Y: ${$(elmnt).css('top')}
+            MaxX: ${maxX}, MaxY: ${maxY}
+            Topbar 1st X: ${((winWidth - sheldWidth) / 2)}
+            TopBar lastX: ${((winWidth - sheldWidth) / 2) + sheldWidth}
+            `);
+        */
     }
 
     function closeDragElement() {
-        // stop moving when mouse button is released:
-        document.onmouseup = null;
-        document.onmousemove = null;
-        //revert scrolling to normal after drag to allow recovery of vastly misplaced elements
-        $("body").css("overflow", "auto");
+        console.debug('drag finished')
+        $(document).off('mouseup', closeDragElement);
+        $(document).off('mousemove', elementDrag);
+        $("body").css("overflow", "");
+        // Clear the "data-dragged" attribute
+        elmnt.attr('data-dragged', 'false');
+
+    }
+}
+
+export async function initMovingUI() {
+    if (isMobile() === false && power_user.movingUI === true) {
+        console.debug('START MOVING UI')
+        dragElement($("#sheld"));
+        dragElement($("#left-nav-panel"));
+        dragElement($("#right-nav-panel"));
+        dragElement($("#WorldInfo"));
+        await delay(1000)
+        console.debug('loading AN draggable function')
+        dragElement($("#floatingPrompt"))
 
     }
 }
@@ -603,7 +686,9 @@ export function dragElement(elmnt) {
 $("document").ready(function () {
 
     // initial status check
-    setTimeout(RA_checkOnlineStatus, 100);
+    setTimeout(() => {
+        RA_checkOnlineStatus();
+    }, 100);
 
     // read the state of AutoConnect and AutoLoadChat.
     $(AutoConnectCheckbox).prop("checked", LoadLocalBool("AutoConnectEnabled"));
@@ -790,7 +875,7 @@ $("document").ready(function () {
     function isInputElementInFocus() {
         //return $(document.activeElement).is(":input");
         var focused = $(':focus');
-        if (focused.is('input') || focused.is('textarea') || focused.attr('contenteditable') == 'true') {
+        if (focused.is('input') || focused.is('textarea') || focused.prop('contenteditable') == 'true') {
             if (focused.attr('id') === 'send_textarea') {
                 return false;
             }

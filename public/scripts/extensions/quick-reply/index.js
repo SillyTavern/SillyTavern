@@ -8,17 +8,9 @@ const MODULE_NAME = 'quick-reply';
 const UPDATE_INTERVAL = 1000;
 
 const defaultSettings = {
-    quickReply1Mes: '',
-    quickReply1Label: '',
-    quickReply2Mes: '',
-    quickReply2Label: '',
-    quickReply3Mes: '',
-    quickReply3Label: '',
-    quickReply4Mes: '',
-    quickReply4Label: '',
-    quickReply5Mes: '',
-    quickReply5Label: '',
     quickReplyEnabled: false,
+    numberOfSlots: 5,
+    quickReplySlots: [],
 }
 
 async function loadSettings() {
@@ -26,33 +18,43 @@ async function loadSettings() {
         Object.assign(extension_settings.quickReply, defaultSettings);
     }
 
+    // If the user has an old version of the extension, update it
+    if (!Array.isArray(extension_settings.quickReply.quickReplySlots)) {
+        extension_settings.quickReply.quickReplySlots = [];
+        extension_settings.quickReply.numberOfSlots = defaultSettings.numberOfSlots;
+
+        for (let i = 1; i <= extension_settings.quickReply.numberOfSlots; i++) {
+            extension_settings.quickReply.quickReplySlots.push({
+                mes: extension_settings.quickReply[`quickReply${i}Mes`],
+                label: extension_settings.quickReply[`quickReply${i}Label`],
+                enabled: true,
+            });
+
+            delete extension_settings.quickReply[`quickReply${i}Mes`];
+            delete extension_settings.quickReply[`quickReply${i}Label`];
+        }
+    }
+
+    generateQuickReplyElements();
+
+    for (let i = 1; i <= extension_settings.quickReply.numberOfSlots; i++) {
+        $(`#quickReply${i}Mes`).val(extension_settings.quickReply.quickReplySlots[i - 1]?.mes).trigger('input');
+        $(`#quickReply${i}Label`).val(extension_settings.quickReply.quickReplySlots[i - 1]?.label).trigger('input');
+    }
+
     $('#quickReplyEnabled').prop('checked', extension_settings.quickReply.quickReplyEnabled);
-
-    $('#quickReply1Mes').val(extension_settings.quickReply.quickReply1Mes).trigger('input');
-    $('#quickReply1Label').val(extension_settings.quickReply.quickReply1Label).trigger('input');
-
-    $('#quickReply2Mes').val(extension_settings.quickReply.quickReply2Mes).trigger('input');
-    $('#quickReply2Label').val(extension_settings.quickReply.quickReply2Label).trigger('input');
-
-    $('#quickReply3Mes').val(extension_settings.quickReply.quickReply3Mes).trigger('input');
-    $('#quickReply3Label').val(extension_settings.quickReply.quickReply3Label).trigger('input');
-
-    $('#quickReply4Mes').val(extension_settings.quickReply.quickReply4Mes).trigger('input');
-    $('#quickReply4Label').val(extension_settings.quickReply.quickReply4Label).trigger('input');
-
-    $('#quickReply5Mes').val(extension_settings.quickReply.quickReply5Mes).trigger('input');
-    $('#quickReply5Label').val(extension_settings.quickReply.quickReply5Label).trigger('input');
+    $('#quickReplyNumberOfSlots').val(extension_settings.quickReply.numberOfSlots);
 }
 
 function onQuickReplyInput(id) {
-    extension_settings.quickReply[`quickReply${id}Mes`] = $(`#quickReply${id}Mes`).val();
+    extension_settings.quickReply.quickReplySlots[id - 1].mes = $(`#quickReply${id}Mes`).val();
     $(`#quickReply${id}`).attr('title', ($(`#quickReply${id}Mes`).val()));
     resetScrollHeight($(`#quickReply${id}Mes`));
     saveSettingsDebounced();
 }
 
 function onQuickReplyLabelInput(id) {
-    extension_settings.quickReply[`quickReply${id}Label`] = $(`#quickReply${id}Label`).val();
+    extension_settings.quickReply.quickReplySlots[id - 1].label = $(`#quickReply${id}Label`).val();
     $(`#quickReply${id}`).text($(`#quickReply${id}Label`).val());
     saveSettingsDebounced();
 }
@@ -66,42 +68,109 @@ async function onQuickReplyEnabledInput() {
     saveSettingsDebounced();
 }
 
-async function sendQuickReply(id) {
-    var prompt = extension_settings.quickReply[`${id}Mes`];
+async function sendQuickReply(index) {
+    const prompt = extension_settings.quickReply.quickReplySlots[index]?.mes || '';
+
+    if (!prompt) {
+        console.warn(`Quick reply slot ${index} is empty! Aborting.`);
+        return;
+    }
+
     $("#send_textarea").val(prompt);
     $("#send_but").trigger('click');
 }
 
-function addQuickReplyBar(numButtons) {
-    var numButtons = 5;
-    const quickReplyBarStartHtml = `
-    <div id="quickReplyBar" class="flex-container flexGap5">
-        <div id="quickReplies">
-        `;
+function addQuickReplyBar() {
+    $('#quickReplyBar').remove();
     let quickReplyButtonHtml = '';
-    for (let i = 0; i < numButtons; i++) {
-        let quickReplyMes = extension_settings.quickReply[`quickReply${i + 1}Mes`];
-        let quickReplyLabel = extension_settings.quickReply[`quickReply${i + 1}Label`];
-        //console.log(quickReplyMes);
-        quickReplyButtonHtml += `<div title="${quickReplyMes}" class="quickReplyButton" id="quickReply${i + 1}">${quickReplyLabel}</div>`;
+
+    for (let i = 0; i < extension_settings.quickReply.numberOfSlots; i++) {
+        let quickReplyMes = extension_settings.quickReply.quickReplySlots[i]?.mes || '';
+        let quickReplyLabel = extension_settings.quickReply.quickReplySlots[i]?.label || '';
+        quickReplyButtonHtml += `<div title="${quickReplyMes}" class="quickReplyButton" data-index="${i}" id="quickReply${i + 1}">${quickReplyLabel}</div>`;
     }
-    const quickReplyEndHtml = `</div></div>`
-    const quickReplyBarFullHtml = [quickReplyBarStartHtml, quickReplyButtonHtml, quickReplyEndHtml].join('');
+
+    const quickReplyBarFullHtml = `
+        <div id="quickReplyBar" class="flex-container flexGap5">
+            <div id="quickReplies">
+                ${quickReplyButtonHtml}
+            </div>
+        </div>
+    `;
 
     $('#send_form').prepend(quickReplyBarFullHtml);
 
     $('.quickReplyButton').on('click', function () {
-        console.log('got quick reply click');
-        let quickReplyButtonID = $(this).attr('id');
-        sendQuickReply(quickReplyButtonID);
+        let index = $(this).data('index');
+        sendQuickReply(index);
     });
 }
-
 
 async function moduleWorker() {
     if (extension_settings.quickReply.quickReplyEnabled === true) {
         $('#quickReplyBar').toggle(getContext().onlineStatus !== 'no_connection');
     }
+}
+
+async function onQuickReplyNumberOfSlotsInput() {
+    const $input = $('#quickReplyNumberOfSlots');
+    let numberOfSlots = Number($input.val());
+
+    if (isNaN(numberOfSlots)) {
+        numberOfSlots = defaultSettings.numberOfSlots;
+    }
+
+    // Clamp min and max values (from input attributes)
+    if (numberOfSlots < Number($input.attr('min'))) {
+        numberOfSlots = Number($input.attr('min'));
+    } else if (numberOfSlots > Number($input.attr('max'))) {
+        numberOfSlots = Number($input.attr('max'));
+    }
+
+    extension_settings.quickReply.numberOfSlots = numberOfSlots;
+    extension_settings.quickReply.quickReplySlots.length = numberOfSlots;
+
+    // Initialize new slots
+    for (let i = 0; i < numberOfSlots; i++) {
+        if (!extension_settings.quickReply.quickReplySlots[i]) {
+            extension_settings.quickReply.quickReplySlots[i] = {
+                mes: '',
+                label: '',
+                enabled: true,
+            };
+        }
+    }
+
+    await loadSettings();
+    addQuickReplyBar();
+    moduleWorker();
+    saveSettingsDebounced();
+}
+
+function generateQuickReplyElements() {
+    let quickReplyHtml = '';
+
+    for (let i = 1; i <= extension_settings.quickReply.numberOfSlots; i++) {
+        quickReplyHtml += `
+        <div class="flex-container alignitemsflexstart">
+            <input class="text_pole wide30p" id="quickReply${i}Label" placeholder="(Add a button label)">
+            <textarea id="quickReply${i}Mes" placeholder="(custom message here)" class="text_pole widthUnset flex1" rows="2"></textarea>
+        </div>
+        `;
+    }
+
+    $('#quickReplyContainer').empty().append(quickReplyHtml);
+
+    for (let i = 1; i <= extension_settings.quickReply.numberOfSlots; i++) {
+        $(`#quickReply${i}Mes`).on('input', function () { onQuickReplyInput(i); });
+        $(`#quickReply${i}Label`).on('input', function () { onQuickReplyLabelInput(i); });
+    }
+
+    $('.quickReplySettings .inline-drawer-toggle').off('click').on('click', function () {
+        for (let i = 1; i <= extension_settings.quickReply.numberOfSlots; i++) {
+            initScrollHeight($(`#quickReply${i}Mes`));
+        }
+    });
 }
 
 jQuery(async () => {
@@ -116,57 +185,28 @@ jQuery(async () => {
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
-            <label class="checkbox_label">
+            <label class="checkbox_label marginBot10">
                 <input id="quickReplyEnabled" type="checkbox" />
                     Enable Quick Replies
             </label>
+            <label for="quickReplyNumberOfSlots">Number of slots:</label>
+            <div class="flex-container flexGap5 flexnowrap">
+                <input id="quickReplyNumberOfSlots" class="text_pole" type="number" min="1" max="100" value="" />
+                <div class="menu_button menu_button_icon" id="quickReplyNumberOfSlotsApply">
+                    <div class="fa-solid fa-check"></div>
+                    <span>Apply</span>
+                </div>
+            </div>
             <small><i>Customize your Quick Replies:</i></small><br>
-            <div class="flex-container alignitemsflexstart">
-                <input class="text_pole wide30p" id="quickReply1Label" placeholder="(Add a button label)">
-                <textarea id="quickReply1Mes" placeholder="(custom message here)" class="text_pole textarea_compact widthUnset flex1" rows="2"></textarea>
-            </div>
-            <div class="flex-container alignitemsflexstart">
-                <input class="text_pole wide30p" id="quickReply2Label" placeholder="(Add a button label)">
-                <textarea id="quickReply2Mes"  placeholder="(custom message here)" class="text_pole textarea_compact widthUnset flex1" rows="2"></textarea>
-            </div>
-            <div class="flex-container alignitemsflexstart">
-                <input class="text_pole wide30p" id="quickReply3Label" placeholder="(Add a button label)">
-                <textarea id="quickReply3Mes"  placeholder="(custom message here)" class="text_pole textarea_compact widthUnset flex1" rows="2"></textarea>
-            </div>
-            <div class="flex-container alignitemsflexstart">
-                <input class="text_pole wide30p" id="quickReply4Label" placeholder="(Add a button label)">
-                <textarea id="quickReply4Mes"  placeholder="(custom message here)" class="text_pole textarea_compact widthUnset flex1" rows="2"></textarea>
-            </div>
-            <div class="flex-container alignitemsflexstart">
-                <input class="text_pole wide30p" id="quickReply5Label" placeholder="(Add a button label)">
-                <textarea id="quickReply5Mes"  placeholder="(custom message here)" class="text_pole textarea_compact widthUnset flex1" rows="2"></textarea>
+            <div id="quickReplyContainer">
             </div>
         </div>
     </div>`;
 
     $('#extensions_settings2').append(settingsHtml);
 
-    $('#quickReply1Mes').on('input', function () { onQuickReplyInput(1); });
-    $('#quickReply2Mes').on('input', function () { onQuickReplyInput(2); });
-    $('#quickReply3Mes').on('input', function () { onQuickReplyInput(3); });
-    $('#quickReply4Mes').on('input', function () { onQuickReplyInput(4); });
-    $('#quickReply5Mes').on('input', function () { onQuickReplyInput(5); });
-
-    $('#quickReply1Label').on('input', function () { onQuickReplyLabelInput(1); });
-    $('#quickReply2Label').on('input', function () { onQuickReplyLabelInput(2); });
-    $('#quickReply3Label').on('input', function () { onQuickReplyLabelInput(3); });
-    $('#quickReply4Label').on('input', function () { onQuickReplyLabelInput(4); });
-    $('#quickReply5Label').on('input', function () { onQuickReplyLabelInput(5); });
-
     $('#quickReplyEnabled').on('input', onQuickReplyEnabledInput);
-
-    $('.quickReplySettings .inline-drawer-toggle').on('click', function () {
-        initScrollHeight($("#quickReply1Mes"));
-        initScrollHeight($("#quickReply2Mes"));
-        initScrollHeight($("#quickReply3Mes"));
-        initScrollHeight($("#quickReply4Mes"));
-        initScrollHeight($("#quickReply5Mes"));
-    })
+    $('#quickReplyNumberOfSlotsApply').on('click', onQuickReplyNumberOfSlotsInput);
 
     await loadSettings();
     addQuickReplyBar();

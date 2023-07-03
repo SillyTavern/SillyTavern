@@ -4,3 +4,4 @@ npm-debug.log
 readme*
 Start.bat
 /dist
+/backups/

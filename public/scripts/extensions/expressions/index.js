@@ -161,7 +161,7 @@ async function visualNovelSetCharacterSprites(container, name, expression) {
             template.attr('data-avatar', avatar);
             template.find('.drag-grabber').attr('id', `expression-${avatar}header`);
             $('#visual-novel-wrapper').append(template);
-            dragElement(template[0]);
+            dragElement($(template[0]));
             template.toggleClass('hidden', noSprites);
             setImage(template.find('img'), defaultSpritePath || '');
             const fadeInPromise = new Promise(resolve => {
@@ -533,6 +533,11 @@ function drawSpritesList(character, labels, sprites) {
     $('.expression_settings').show();
     $('#image_list').empty();
     $('#image_list').data('name', character);
+
+    if (!Array.isArray(labels)) {
+        return [];
+    }
+
     labels.sort().forEach((item) => {
         const sprite = sprites.find(x => x.label == item);
 

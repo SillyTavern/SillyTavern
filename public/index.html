@@ -15,6 +15,7 @@
     <link href="css/bright.min.css" rel="stylesheet">
     <link href="css/cropper.min.css" rel="stylesheet">
     <link href="css/toastr.min.css" rel="stylesheet">
+    <link href="css/select2.min.css" rel="stylesheet">
 
     <link rel="apple-touch-icon" sizes="57x57" href="img/apple-icon-57x57.png" />
     <link rel="apple-touch-icon" sizes="72x72" href="img/apple-icon-72x72.png" />
@@ -35,6 +36,7 @@
     <script src="scripts/jquery-cropper.min.js"></script>
     <script src="scripts/toastr.min.js"></script>
     <script src="scripts/fuse.js"></script>
+    <script src="scripts/select2.min.js"></script>
     <script type="module" src="scripts/eventemitter.js"></script>
     <script type="module" src="scripts/power-user.js"></script>
     <script type="module" src="scripts/swiped-events.js"></script>
@@ -55,7 +57,7 @@
                 $("[data-i18n]").each(function () {
                     //read the translation from the language data
                     const key = $(this).data("i18n");
-                    const text = data?.language?.key;
+                    const text = data?.[language]?.[key];    // Ensure that the translated text is loaded correctly.
                     if (text) {
                         $(this).text(text);
                     }
@@ -144,7 +146,10 @@
                                         </select>
                                         <i id="update_oai_preset" class="menu_button fa-solid fa-save" title="Update current preset"></i>
                                         <i id="new_oai_preset" class="menu_button fa-solid fa-plus" title="Create new preset"></i>
+                                        <i title="Import preset" id="import_oai_preset" class="menu_button fa-solid fa-upload"></i>
+                                        <i title="Export preset" id="export_oai_preset" class="menu_button fa-solid fa-download"></i>
                                         <i id="delete_oai_preset" class="menu_button fa-solid fa-trash-can" title="Delete the preset"></i>
+                                        <input id="openai_preset_import_file" type="file" accept=".json,.settings" hidden />
                                     </div>
                                 </div>
                             </div>
@@ -200,14 +205,14 @@
                                     <label class="checkbox_label">
                                         <input id="max_context_unlocked" type="checkbox" />
                                         <span data-i18n="unlocked">Unlocked</span>
-                                        <div id="max_context_unlocked_warning">
-                                            <b class="neutral_warning">ATTENTION!</b>
-                                            <span data-i18n="only select modls support context sizes greater than 2048 tokens. proceed only is you know you're doing">
-                                                Only select models support context sizes greater than 2048 tokens.
-                                                Proceed only if you know what you're doing.
-                                            </span>
-                                        </div>
                                     </label>
+                                    <div id="max_context_unlocked_warning">
+                                        <b class="neutral_warning">ATTENTION!</b>
+                                        <span data-i18n="only select modls support context sizes greater than 2048 tokens. proceed only is you know you're doing">
+                                            Only select models support context sizes greater than 2048 tokens.
+                                            Proceed only if you know what you're doing.
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                             <hr>
@@ -790,6 +795,24 @@
                                                 Single-line mode</span>
                                         </label>
                                     </div>
+                                    <div class="range-block flexFlowColumn">
+                                        <div class="range-block-title" data-i18n="Samplers Order">
+                                            Samplers Order
+                                        </div>
+                                        <div class="toggle-description">
+                                            Samplers will be applied in a top-down order.
+                                            Use with caution.
+                                        </div>
+                                        <div id="kobold_order">
+                                            <div data-id="0">Top K</div>
+                                            <div data-id="1">Top A</div>
+                                            <div data-id="2">Top P</div>
+                                            <div data-id="3">Tail Free Sampling</div>
+                                            <div data-id="4">Typical Sampling</div>
+                                            <div data-id="5">Temperature</div>
+                                            <div data-id="6">Repetition Penalty</div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             <div id="novel_api-settings">
@@ -865,6 +888,36 @@
                                         </div>
                                         <div class="range-block-counter">
                                             <div contenteditable="true" data-for="tfs_textgenerationwebui" id="tfs_counter_textgenerationwebui">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        Epsilon Cutoff
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="epsilon_cutoff_textgenerationwebui" name="volume" min="0" max="9" step="0.01">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="epsilon_cutoff_textgenerationwebui" id="epsilon_cutoff_counter_textgenerationwebui">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        Eta Cutoff
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="eta_cutoff_textgenerationwebui" name="volume" min="0" max="20" step="0.01">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="eta_cutoff_textgenerationwebui" id="eta_cutoff_counter_textgenerationwebui">
                                                 select
                                             </div>
                                         </div>
@@ -1265,7 +1318,7 @@
                             <option value="koboldhorde">KoboldAI Horde</option>
                             <option value="textgenerationwebui">Text Gen WebUI (ooba)</option>
                             <option value="novel">NovelAI</option>
-                            <option value="openai">Chat Completion (OpenAI, Claude, Window.ai)</option>
+                            <option value="openai">Chat Completion (OpenAI, Claude, Window/OpenRouter)</option>
                             <option value="poe">Poe</option>
                         </select>
                     </div>
@@ -1273,6 +1326,10 @@
                         <form action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <div id="kobold_horde_block">
                                 <ul>
+                                    <li>
+                                        Avoid sending sensitive information to the Horde.
+                                        <a target="_blank" href="https://docs.sillytavern.app/usage/api-connections/horde/">Review the Privacy statement</a>
+                                    </li>
                                     <li>
                                         <a target="_blank" href="https://horde.koboldai.net/register">Register a Horde
                                             account for faster queue times</a>
@@ -1309,16 +1366,15 @@
                                     <input id="horde_api_key" name="horde_api_key" class="text_pole flex1" maxlength="500" type="text" placeholder="0000000000" autocomplete="off">
                                     <div title="Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_horde"></div>
                                 </div>
-                                <div class="neutral_warning">For privacy reasons, your API key will be hidden after you
-                                    reload the page.</div>
+                                <div data-for="horde_api_key" class="neutral_warning">
+                                    For privacy reasons, your API key will be hidden after you reload the page.
+                                </div>
                                 <h4 class="horde_model_title">
-                                    Model
+                                    Models
                                     <div id="horde_refresh" title="Refresh models" class="right_menu_button">
                                         <div class="fa-solid fa-repeat "></div>
                                     </div>
                                 </h4>
-                                <small class="horde_multiple_hint">You can select multiple models.<br>Avoid sending
-                                    sensitive information to the Horde. <a id="horde_privacy_disclaimer" target="_blank" href="https://docs.sillytavern.app/usage/api-connections/koboldai/">Learn more</a></small>
                                 <select id="horde_model" multiple>
                                     <option>-- Horde models not loaded --</option>
                                 </select>
@@ -1362,8 +1418,9 @@
                                 <div title="Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_novel">
                                 </div>
                             </div>
-                            <div class="neutral_warning">For privacy reasons, your API key will be hidden after you
-                                reload the page.</div>
+                            <div data-for="api_key_novel" class="neutral_warning">
+                                For privacy reasons, your API key will be hidden after you reload the page.
+                            </div>
                             <input id="api_button_novel" class="menu_button" type="submit" value="Connect">
                             <div id="api_loading_novel" class="api-load-icon fa-solid fa-hourglass fa-spin"></div>
                             <h4><span data-i18n="Novel AI Model">Novel AI Model</span>
@@ -1418,7 +1475,7 @@
                         </h3>
                         <select id="chat_completion_source">
                             <option value="openai">OpenAI</option>
-                            <option value="windowai">Window.ai</option>
+                            <option value="windowai">Window AI / OpenRouter</option>
                             <option value="claude">Claude</option>
                         </select>
                         <form id="openai_form" data-source="openai">
@@ -1436,8 +1493,9 @@
                                 <input id="api_key_openai" name="api_key_openai" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
                                 <div title="Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_openai"></div>
                             </div>
-                            <div class="neutral_warning">For privacy reasons, your API key will be hidden after you
-                                reload the page.</div>
+                            <div data-for="api_key_openai" class="neutral_warning">
+                                For privacy reasons, your API key will be hidden after you reload the page.
+                            </div>
                             <div>
                                 <h4 data-i18n="OpenAI Model">OpenAI Model</h4>
                                 <select id="model_openai_select">
@@ -1472,8 +1530,9 @@
                                 <input id="api_key_claude" name="api_key_claude" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
                                 <div title="Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_claude"></div>
                             </div>
-                            <div class="neutral_warning">For privacy reasons, your API key will be hidden after you
-                                reload the page.</div>
+                            <div data-for="api_key_claude" class="neutral_warning">
+                                For privacy reasons, your API key will be hidden after you reload the page.
+                            </div>
                             <div>
                                 <h4 data-i18n="Claude Model">Claude Model</h4>
                                 <select id="model_claude_select">
@@ -1504,18 +1563,39 @@
                                     <option value="openai/gpt-3.5-turbo">openai/gpt-3.5-turbo</option>
                                     <option value="openai/gpt-3.5-turbo-16k">openai/gpt-3.5-turbo-16k</option>
                                     <option value="openai/gpt-4">openai/gpt-4</option>
+                                    <option value="openai/gpt-4-32k">openai/gpt-4-32k</option>
                                     <option value="anthropic/claude-instant-v1">anthropic/claude-instant-v1</option>
                                     <option value="anthropic/claude-instant-v1-100k">anthropic/claude-instant-v1-100k</option>
                                     <option value="anthropic/claude-v1">anthropic/claude-v1</option>
                                     <option value="anthropic/claude-v1-100k">anthropic/claude-v1-100k</option>
+                                    <option value="google/palm-2-chat-bison">google/palm-2-chat-bison</option>
+                                    <option value="google/palm-2-codechat-bison">google/palm-2-codechat-bison</option>
                                     <option value="togethercomputer/GPT-NeoXT-Chat-Base-20B">togethercomputer/GPT-NeoXT-Chat-Base-20B</option>
                                     <option value="cohere/command-nightly">cohere/command-nightly</option>
                                 </select>
                             </div>
+                            <h4 data-i18n="OpenRouter API Key">OpenRouter API Key</h4>
+                            <div>
+                                <small>
+                                    Click "Authorize" below or get the key from <a target="_blank" href="https://openrouter.ai/keys/">OpenRouter</a>.
+                                </small>
+                            </div>
+                            <div class="flex-container">
+                                <input id="api_key_openrouter" name="api_key_openrouter" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
+                                <div title="Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_openrouter"></div>
+                            </div>
+                            <div data-for="api_key_openrouter" class="neutral_warning">
+                                For privacy reasons, your API key will be hidden after you reload the page.
+                            </div>
+                            <label class="checkbox_label" for="use_openrouter">
+                                <input id="use_openrouter" type="checkbox" />
+                                <span data-i18n="Use OpenRouter">Use OpenRouter directly</span>
+                            </label>
                         </form>
 
                         <div class="flex-container flex">
                             <input id="api_button_openai" class="menu_button" type="submit" value="Connect">
+                            <input data-source="windowai" id="openrouter_authorize" class="menu_button" type="button" value="Authorize" title="Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai">
                             <input id="test_api_button" class="menu_button" type="button" value="Test Message" title="Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!">
                         </div>
                         <div id="api_loading_openai" class=" api-load-icon fa-solid fa-hourglass fa-spin"></div>
@@ -1543,8 +1623,9 @@
                                 <div title="Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_poe">
                                 </div>
                             </div>
-                            <div class="neutral_warning">For privacy reasons, your API key will be hidden after you
-                                reload the page.</div>
+                            <div data-for="poe_token" class="neutral_warning">
+                                For privacy reasons, your API key will be hidden after you reload the page.
+                            </div>
                         </div>
 
                         <input id="poe_connect" class="menu_button" type="button" value="Connect" />
@@ -1608,6 +1689,10 @@
                             <input id="disable-start-formatting-checkbox" type="checkbox" />
                             <span data-i18n="Disable chat start formatting">Disable chat start formatting</span>
                         </label>
+                        <label class="checkbox_label" for="trim_spaces">
+                            <input id="trim_spaces" type="checkbox" />
+                            <span data-i18n="Trim spaces">Trim spaces</span>
+                        </label>
                         <label class="checkbox_label" for="trim_sentences_checkbox">
                             <input id="trim_sentences_checkbox" type="checkbox" />
                             Trim Incomplete Sentences
@@ -1626,6 +1711,15 @@
                             </div>
                         </div>
                         <div>
+                            <h4 data-i18n="Non-markdown strings">
+                                Non-markdown strings
+                            </h4>
+                            <div>
+                                <input id="markdown_escape_strings" class="text_pole textarea_compact" type="text" placeholder="separate with commas w/o space between" maxlength="100" />
+                            </div>
+                        </div>
+                        <div>
+
                             <h4 data-i18n="Instruct mode">Instruct mode
                                 <a href="https://docs.sillytavern.app/usage/core-concepts/instructmode/" class="notes-link" target="_blank">
                                     <span class="note-link-span">?</span>
@@ -1639,6 +1733,10 @@
                                 <label for="instruct_wrap" class="checkbox_label">
                                     <input id="instruct_wrap" type="checkbox" />
                                     <span data-i18n="Wrap Sequences with Newline">Wrap Sequences with Newline</span>
+                                </label>
+                                <label for="instruct_macro" class="checkbox_label">
+                                    <input id="instruct_macro" type="checkbox" />
+                                    <span data-i18n="Replace Macro is Sequences">Replace Macro in Sequences</span>
                                 </label>
                                 <label for="instruct_names" class="checkbox_label">
                                     <input id="instruct_names" type="checkbox" />
@@ -1758,6 +1856,19 @@
                         </div>
                         <div>
                             <h4>
+                                <span data-i18n="Start Reply With">
+                                    Start Reply With
+                                </span>
+                            </h4>
+                            <div>
+                                <textarea id="start_reply_with" rows="2" class="text_pole textarea_compact" placeholder="AI reply prefix"></textarea>
+                            </div>
+                            <label class="checkbox_label" for="chat-show-reply-prefix-checkbox"><input id="chat-show-reply-prefix-checkbox" type="checkbox" />
+                                <span data-i18n="Show reply prefix in chat">
+                                    Show reply prefix in chat
+                                </span>
+                            </label>
+                            <h4>
                                 <span data-i18n="Pygmalion Formatting">
                                     Pygmalion Formatting
                                 </span>
@@ -1815,68 +1926,83 @@
             </div>
             <div id="WorldInfo" class="drawer-content closedDrawer">
                 <div id="WorldInfoheader" class="fa-solid fa-grip drag-grabber"></div>
-                <div id="WI_panel_pin_div" title="Locked = World Editor will stay open">
+                <div id="WI_panel_pin_div" class="flex-container alignitemscenter gap10px" title="Locked = World Editor will stay open">
                     <input type="checkbox" id="WI_panel_pin">
                     <label for="WI_panel_pin">
                         <div class="unchecked fa-solid fa-unlock "></div>
                         <div class="checked fa-solid fa-lock "></div>
                     </label>
-                </div>
-                <div id="wi-holder" class="margin5">
                     <h3>
-                        World Selector
+                        Worlds/Lorebooks
                         <a href="https://docs.sillytavern.app/usage/core-concepts/worldinfo/" class="notes-link" target="_blank">
                             <span class="note-link-span">?</span>
                         </a>
                     </h3>
-                    <form id="form_world_import" action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                        <input type="file" id="world_import_file" accept=".json" name="avatar" hidden>
-                    </form>
-                    <div class="world_info_select_block">
-                        <select id="world_info" class="flexGrow">
-                            <option value="None">None</option>
-                        </select>
-                        <div id="world_create_button" class="menu_button fa-solid fa-plus faSmallFontSquareFix" title="Create"></div>
-                        <div id="world_import_button" class="menu_button fa-solid fa-file-arrow-up faSmallFontSquareFix" title="Import">
+                </div>
+                <div id="wi-holder" class="margin5">
+                    <div class="justifyContentSpaceAround wi-settings flex-container gap10px alignitemscenter">
+                        <div id="WIMultiSelector" class="flex2 flex alignSelfStart range-block">
+                            <div class="range-block-title justifyLeft">
+                                <small>Active World(s)</small>
+                            </div>
+                            <div class="range-block-range">
+                                <select id="world_info" multiple>
+                                    <option value="">-- World Info not found --</option>
+                                </select>
+                            </div>
                         </div>
-                        <div id="world_info_edit_button" class="menu_button fa-solid fa-pencil faSmallFontSquareFix" title="Details"></div>
-                    </div>
-
-                    <div class="flex-container alignitemscenter">
-                        <div name="WIScanAndTokens" class="flex1 flex-container flexFlowColumn">
-                            <div class="flex1 gap5px range-block">
-                                <div class="wide10pMinFit">
-                                    <small data-i18n="Scan Depth">Scan Depth</small>
+                        <div class="flex2 flex-container flexFlowColumn">
+                            <div class="flex range-block">
+                                <div class="range-block-title justifyLeft">
+                                    <label for="world_info_character_strategy">
+                                        <small>Character Lore Insertion Strategy</small>
+                                    </label>
                                 </div>
-                                <div class="range-block-range-and-counter">
-                                    <div class="range-block-range paddingLeftRight5">
-                                        <input type="range" id="world_info_depth" name="volume" min="1" max="10" step="1">
+                                <div class="range-block-range">
+                                    <select id="world_info_character_strategy" class="flexGrow margin0">
+                                        <option value="0">Sorted Evenly</option>
+                                        <option value="1">Character Lore First</option>
+                                        <option value="2">Global Lore First</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div name="WIScanAndTokens" class="flex1 flex-container flexFlowColumn">
+                                <div class="flex1 gap5px range-block">
+                                    <div class="wide10pMinFit">
+                                        <small data-i18n="Scan Depth">Scan Depth</small>
                                     </div>
-                                    <div class="range-block-counter margin0">
-                                        <div contenteditable="true" data-for="world_info_depth" id="world_info_depth_counter">
-                                            depth
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range paddingLeftRight5">
+                                            <input type="range" id="world_info_depth" name="volume" min="0" max="10" step="1">
+                                        </div>
+                                        <div class="range-block-counter margin0">
+                                            <div contenteditable="true" data-for="world_info_depth" id="world_info_depth_counter">
+                                                depth
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="flex1 gap5px range-block">
+                                    <div class="wide10pMinFit">
+                                        <small data-i18n="Token Budget">Context %</small>
+                                    </div>
+                                    <div class="range-block-range-and-counter ">
+                                        <div class="range-block-range paddingLeftRight5">
+                                            <input type="range" id="world_info_budget" name="volume" min="1" max="100" step="1">
+                                        </div>
+                                        <div class="range-block-counter margin0">
+                                            <div contenteditable="true" data-for="world_info_budget" id="world_info_budget_counter">
+                                                budget
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-
-                            <div class="flex1 gap5px range-block">
-                                <div class="wide10pMinFit">
-                                    <small data-i18n="Token Budget">Max Tokens</small>
-                                </div>
-                                <div class="range-block-range-and-counter ">
-                                    <div class="range-block-range paddingLeftRight5">
-                                        <input type="range" id="world_info_budget" name="volume" min="32" max="8192" step="1">
-                                    </div>
-                                    <div class="range-block-counter margin0">
-                                        <div contenteditable="true" data-for="world_info_budget" id="world_info_budget_counter">
-                                            budget
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
-                        <div class="range-block flex-container flexFlowColumn">
+
+                        <div class="flex1 range-block flex-container flexFlowColumn">
                             <label title="Entries can activate other entries by mentioning their keywords" class="checkbox_label">
                                 <input id="world_info_recursive" type="checkbox" />
                                 <small>
@@ -1904,23 +2030,27 @@
                             <div id="world_popup_header" class="flex-container flexGap5">
                                 <div class="world_popup_logo_block">
                                     <h3>
-                                        World Editor
+                                        World/Lore Editor
                                         <a href="https://docs.sillytavern.app/usage/core-concepts/worldinfo/#world-info-entry" class="notes-link" target="_blank"><span class="note-link-span">?</span></a>
                                     </h3>
                                 </div>
-                                <div id="OpenAllWIEntries" class="menu_button fa-solid fa-expand"></div>
-                                <div id="CloseAllWIEntries" class="menu_button fa-solid fa-compress"></div>
+                                <div id="OpenAllWIEntries" class="menu_button fa-solid fa-expand" title="Open all Entries"></div>
+                                <div id="CloseAllWIEntries" class="menu_button fa-solid fa-compress" title="Close all Entries"></div>
+                                <div id="world_popup_new" class="menu_button fa-solid fa-plus" title="New Entry"></div>
                                 <div class="flex-container">
+                                    <form id="form_world_import" action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                                        <input type="file" id="world_import_file" accept=".json,.lorebook,.png" name="avatar" hidden>
+                                    </form>
                                     <form id="form_rename_world" action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                                        <input id="world_popup_name" name="world_popup_name" class="text_pole" maxlength="99" size="32" value="" autocomplete="off">
-                                        <label for="world_popup_name_button" class="menu_button fa-solid fa-pencil faSmallFontSquareFix">
-                                            <input id="world_popup_name_button" type="submit" value="">
-                                        </label>
-                                        <div id="world_popup_bottom_holder" class="flex-container">
-                                            <div id="world_popup_new" class="menu_button fa-solid fa-plus margin0 faSmallFontSquareFix"></div>
-                                            <div id="world_popup_export" class="menu_button fa-solid fa-file-export margin0 faSmallFontSquareFix"></div>
-                                            <div id="world_popup_delete" class="menu_button fa-solid fa-trash-can redWarningBG margin0 faSmallFontSquareFix"></div>
-                                        </div>
+                                        <div id="world_create_button" class="menu_button fa-solid fa-globe fa-fw" title="Create"></div>
+                                        <div id="world_import_button" class="menu_button fa-solid fa-file-import fa-fw" title="Import World Info"></div>
+                                        <div id="world_popup_export" class="menu_button fa-solid fa-file-export margin0 fa-fw" title="Export World Info"></div>
+                                        <div id="world_popup_delete" class="menu_button fa-solid fa-trash-can redWarningBG margin0 fa-fw" title="Delete World Info"></div>
+                                        <span>&nbsp;Editing:</span>
+                                        <select id="world_editor_select" class="margin0">
+                                            <option value="">--- None ---</option>
+                                        </select>
+                                        <div id="world_popup_name_button" class="menu_button fa-solid fa-i-cursor fa-fw" title="Rename World Info"></div>
                                     </form>
 
                                 </div>
@@ -1936,7 +2066,7 @@
 
         <div id="user-settings-button" class="drawer">
             <div class="drawer-toggle">
-                <div class="drawer-icon fa-solid fa-face-smile closedIcon" title="User Settings"></div>
+                <div class="drawer-icon fa-solid fa-user-cog closedIcon" title="User Settings"></div>
             </div>
             <div id="user-settings-block" class="drawer-content closedDrawer">
                 <div class="flex-container wide100p alignitemscenter spaceBetween">
@@ -1944,7 +2074,7 @@
                     <div id="version_display"></div>
                 </div>
                 <div class="flex-container spaceEvenly">
-                    <div name="UI Customization" class="flex-container drawer25pWidth">
+                    <div name="UI Customization" class="flex-container drawer33pWidth">
                         <div class="ui-settings">
                             <h4><span data-i18n="UI Customization">UI Customization</span></h4>
                             <div>
@@ -1959,17 +2089,14 @@
                                 </label>
                             </div>
                             <div>
-                                <span data-i18n="Chat Style:">Chat Style:</span><br>
-                                <label>
-                                    <input name="chat_display" type="radio" value="0" />
-                                    <span data-i18n="Default">Default</span>
-                                </label>
-                                <label>
-                                    <input name="chat_display" type="radio" value="1" />
-                                    <span data-i18n="Bubbles">Bubbles</span>
-                                </label>
+                                <span data-i18n="Chat Style:">Message Style:</span><br>
+                                <select id="chat_display">
+                                    <option value="0" data-i18n="Default">Flat Chat</span>
+                                    <option value="1" data-i18n="Bubbles">Bubble Chat</option>
+                                    <option value="2" data-i18n="Document">Single Document</option>
+                                </select>
                             </div>
-                            <div>
+                            <div id="sheldWidthToggleBlock">
                                 <span data-i18n="Chat Width (PC):">Chat Width (PC):</span><br>
                                 <label>
                                     <input name="sheld_width" type="radio" value="0" />
@@ -2013,6 +2140,16 @@
                                     <span data-i18n="Message Timer">Message Timer</span>
                                 </label>
 
+                                <label for="messageTimestampsEnabled" class="checkbox_label">
+                                    <input id="messageTimestampsEnabled" type="checkbox" />
+                                    <span data-i18n="Chat Timestamps">Chat Timestamps</span>
+                                </label>
+
+                                <label for="mesIDDisplayEnabled" class="checkbox_label">
+                                    <input id="mesIDDisplayEnabled" type="checkbox" />
+                                    <span data-i18n="Message IDs">Show Message IDs</span>
+                                </label>
+
                                 <label for="auto_scroll_chat_to_bottom" class="checkbox_label">
                                     <input id="auto_scroll_chat_to_bottom" type="checkbox" />
                                     <span data-i18n="Auto-scroll Chat">Auto-scroll Chat</span>
@@ -2023,10 +2160,22 @@
                                     <span data-i18n="Characters Hotswap">Characters Hotswap</span>
                                 </label>
 
-                                <label for="movingUImode" class="checkbox_label">
+                                <label id="movingUIModeCheckBlock" for="movingUImode" class="checkbox_label">
                                     <input id="movingUImode" type="checkbox" />
                                     <span data-i18n="Movable UI Panels">Movable UI Panels</span>
                                 </label>
+
+                                <div class="flex-container flexFlowColumn">
+                                    <h4 data-i18n="Send on Enter">
+                                        Send on Enter
+                                    </h4>
+                                    <select id="send_on_enter">
+                                        <option value="-1"><span data-i18n="Always disabled">Always disabled</span></option>
+                                        <option value="0"><span data-i18n="Automatic (desktop)">Automatic (desktop)</span>
+                                        </option>
+                                        <option value="1"><span data-i18n="Always enabled">Always enabled</span></option>
+                                    </select>
+                                </div>
 
                                 <div id="movingUIreset" class="menu_button whitespacenowrap" data-i18n="Reset Panels">
                                     Reset Panels</div>
@@ -2034,7 +2183,7 @@
                         </div>
 
                     </div>
-                    <div id="UI-Theme-Block" class="flex-container flexFlowColumn drawer25pWidth">
+                    <div id="UI-Theme-Block" class="flex-container flexFlowColumn drawer33pWidth">
                         <div id="color-picker-block" class="flex-container flexFlowColumn">
                             <h4><span data-i18n="UI Colors">UI Colors</span></h4>
                             <div class="flex-container">
@@ -2051,15 +2200,23 @@
                             </div>
                             <div class="flex-container">
                                 <toolcool-color-picker id="shadow-color-picker"></toolcool-color-picker>
-                                <span data-i18n="Shadow Color">Shadow Color</span>
+                                <span data-i18n="Shadow Color">Text Shadow</span>
                             </div>
-                            <div class="flex-container">
+                            <!--                             <div class="flex-container">
                                 <toolcool-color-picker id="fastui-bg-color-picker"></toolcool-color-picker>
                                 <span data-i18n="FastUI BG">FastUI BG</span>
-                            </div>
+                            </div> -->
                             <div class="flex-container">
                                 <toolcool-color-picker id="blur-tint-color-picker"></toolcool-color-picker>
-                                <span data-i18n="Blur Tint">Blur Tint</span>
+                                <span data-i18n="Blur Tint">UI Background</span>
+                            </div>
+                            <div class="flex-container">
+                                <toolcool-color-picker id="user-mes-blur-tint-color-picker"></toolcool-color-picker>
+                                <span data-i18n="User Message Blur Tint">User Message</span>
+                            </div>
+                            <div class="flex-container">
+                                <toolcool-color-picker id="bot-mes-blur-tint-color-picker"></toolcool-color-picker>
+                                <span data-i18n="AI Message Blur Tint">AI Message</span>
                             </div>
                             <div id="font-blur-UIpresets-block" class="flex-container flexFlowColumn">
                                 <div id="font-scale-block" class="range-block">
@@ -2123,7 +2280,7 @@
                         </div>
 
                     </div>
-                    <div id="power-user-options-block" class="flex-container drawer25pWidth">
+                    <div id="power-user-options-block" class="flex-container drawer33pWidth">
                         <div id="power-user-option-checkboxes">
                             <h4 data-i18n="Power User Options">Power User Options</h4>
                             <label for="swipes-checkbox">
@@ -2137,6 +2294,12 @@
                             <label data-i18n="Prefer Character Card Jailbreak" for="prefer_character_jailbreak" title="If checked and the character card contains a jailbreak override (Post History Instruction), use that instead." class="checkbox_label">
                                 <input id="prefer_character_jailbreak" type="checkbox" />
                                 Prefer Char. JB
+                            </label>
+                            <label class="checkbox_label" for="continue_on_send">
+                                <input id="continue_on_send" type="checkbox" />
+                                <span data-i18n="Press Send to continue">
+                                    Press "Send" to continue
+                                </span>
                             </label>
                             <label for="auto-load-chat-checkbox"><input id="auto-load-chat-checkbox" type="checkbox" />
                                 <span data-i18n="Auto-load Last Chat">Auto-load Last Chat</span>
@@ -2156,6 +2319,10 @@
                                 <input id="allow_name1_display" type="checkbox" />
                                 <span data-i18n="Allow {{user}}: in bot messages">Show {{user}}: in responses</span>
                             </label>
+                            <!-- <label class="checkbox_label" for="removeXML">
+                                <input id="removeXML" type="checkbox" />
+                                <span data-i18n="Remove XML/HTML tags from responses">Remove &lt;tags&gt; from responses</span>
+                            </label> -->
                             <label for="console_log_prompts">
                                 <input id="console_log_prompts" type="checkbox" />
                                 Log prompts to console
@@ -2167,74 +2334,42 @@
                                     <span class="note-link-span">?</span>
                                 </a>
                             </label>
+                            <label for="never_resize_avatars"><input id="never_resize_avatars" type="checkbox" />
+                                <span data-i18n="Never resize avatars">Never resize avatars</span>
+                            </label>
+                            <label for="show_card_avatar_urls"><input id="show_card_avatar_urls" type="checkbox" />
+                                <span data-i18n="Show avatar filenames">Show avatar filenames</span>
+                            </label>
+                            <label for="import_card_tags"><input id="import_card_tags" type="checkbox" />
+                                <span data-i18n="Import Card Tags">Import Card Tags</span>
+                            </label>
+
+                            <div class="inline-drawer wide100p flexFlowColumn">
+                                <div class="inline-drawer-toggle inline-drawer-header">
+                                    <b>Auto-swipe</b>
+                                    <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+                                </div>
+                                <div class="inline-drawer-content">
+                                    <label class="checkbox_label" for="auto_swipe">
+                                        <input id="auto_swipe" type="checkbox" />
+                                        Enabled
+                                    </label>
+                                    <div>Minimum generated message length</div>
+                                    <input id="auto_swipe_minimum_length" name="auto_swipe_minimum_length" type="number" min="0" step="1" value="0" class="text_pole">
+                                    <div>Blacklisted words</div>
+                                    <div class="auto_swipe">
+                                        <textarea id="auto_swipe_blacklist" name="auto_swipe_blacklist" placeholder="words you dont want generated separated by comma ','" class="text_pole textarea_compact" maxlength="5000" value="" autocomplete="off" rows="3"></textarea>
+                                        <div>Blacklisted word count to swipe</div>
+                                        <input id="auto_swipe_blacklist_threshold" name="auto_swipe_blacklist_threshold" type="number" min="0" step="1" value="1" class="text_pole">
+                                    </div>
+                                </div>
+                            </div>
 
                             <div id="reload_chat" class="menu_button whitespacenowrap" data-i18n="Reload Chat">
                                 Reload Chat
                             </div>
                         </div>
 
-                    </div>
-
-                    <div name="NameAndAvatar" class="flex-container flexFlowColumn drawer25pWidth">
-
-
-                        <div class="inline-drawer wide100p flexFlowColumn">
-
-                            <div class="flex-container flexFlowColumn">
-                                <h4 data-i18n="Send on Enter">
-                                    Send on Enter
-                                </h4>
-                                <select id="send_on_enter">
-                                    <option value="-1"><span data-i18n="Always disabled">Always disabled</span></option>
-                                    <option value="0"><span data-i18n="Automatic (desktop)">Automatic (desktop)</span>
-                                    </option>
-                                    <option value="1"><span data-i18n="Always enabled">Always enabled</span></option>
-                                </select>
-                            </div>
-
-                            <div class="inline-drawer-toggle inline-drawer-header">
-                                <b>Auto-swipe</b>
-                                <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
-                            </div>
-                            <div class="inline-drawer-content">
-
-                                <label class="checkbox_label" for="auto_swipe">
-                                    <input id="auto_swipe" type="checkbox" />
-                                    Enabled
-                                </label>
-                                <div>Minimum generated message length</div>
-                                <input id="auto_swipe_minimum_length" name="auto_swipe_minimum_length" type="number" min="0" step="1" value="0" class="text_pole">
-                                <div>Blacklisted words</div>
-                                <div class="auto_swipe">
-                                    <textarea id="auto_swipe_blacklist" name="auto_swipe_blacklist" placeholder="words you dont want generated separated by comma ','" class="text_pole textarea_compact" maxlength="5000" value="" autocomplete="off" rows="3"></textarea>
-                                    <div>Blacklisted word count to swipe</div>
-                                    <input id="auto_swipe_blacklist_threshold" name="auto_swipe_blacklist_threshold" type="number" min="0" step="1" value="1" class="text_pole">
-                                </div>
-                            </div>
-                        </div>
-
-                        <div name="NameChanger">
-                            <h4 data-i18n="Name">Name</h4>
-                            <div class="change_name">
-                                <input id="your_name" name="your_name" placeholder="Enter your name" class="text_pole wide100p" maxlength="50" value="" autocomplete="off">
-                                <div id="your_name_button" class="menu_button fa-solid fa-check" title="Click to set a new User Name">
-                                </div>
-                                <div id="lock_user_name" class="menu_button fa-solid fa-lock" title="Click to lock your selected persona to the current chat. Click again to remove the lock.">
-                                </div>
-                                <div id="sync_name_button" class="menu_button fa-solid fa-sync" title="Click to set user name for all messages">
-                                </div>
-                            </div>
-                        </div>
-                        <div name="AvatarSelector">
-                            <h4 data-i18n="Your Avatar">Your Persona</h4>
-                            <div id="user_avatar_block">
-                                <div class="avatar_upload">+</div>
-                            </div>
-
-                            <form id="form_upload_avatar" action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                                <input type="file" id="avatar_upload_file" accept="image/*" name="avatar">
-                            </form>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -2298,12 +2433,66 @@
             </div>
         </div>
 
+        <div id="persona-management-button" class="drawer">
+            <div class="drawer-toggle">
+                <div class="drawer-icon fa-solid fa-face-smile closedIcon" title="Persona Management"></div>
+            </div>
+            <div class="drawer-content closedDrawer">
+                <div class="flex-container wide100p alignitemscenter spaceBetween">
+                    <h3><span data-i18n="Persona Management">Persona Management</span></h3>
+
+                    <div id="persona-management-block" class="flex-container wide100p">
+                        <div class="flex1">
+                            <h4 data-i18n="Name">Name</h4>
+                            <div class="change_name">
+                                <input id="your_name" name="your_name" placeholder="Enter your name" class="text_pole wide100p" maxlength="50" value="" autocomplete="off">
+                                <div id="your_name_button" class="menu_button fa-solid fa-check" title="Click to set a new User Name">
+                                </div>
+                                <div id="lock_user_name" class="menu_button fa-solid fa-unlock" title="Click to lock your selected persona to the current chat. Click again to remove the lock.">
+                                </div>
+                                <div id="sync_name_button" class="menu_button fa-solid fa-sync" title="Click to set user name for all messages">
+                                </div>
+                            </div>
+                            <div>
+                                <h4 data-i18n="Name">Persona Description</h4>
+                                <textarea id="persona_description" name="persona_description" placeholder="Example:&#10;[{{user}} is a 28-year-old Romanian cat girl.]" class="text_pole textarea_compact" maxlength="5000" value="" autocomplete="off" rows="4"></textarea>
+                                <label for="persona_description_position">Position:</label>
+                                <select id="persona_description_position">
+                                    <option value="0">Before Character Card</option>
+                                    <option value="1">After Character Card</option>
+                                    <option value="2">Top of Author's Note</option>
+                                    <option value="3">Bottom of Author's Note</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="flex1">
+                            <h4 data-i18n="Your Avatar" class="title_restorable">
+                                <span>Your Persona</span>
+                                <div id="create_dummy_persona" class="menu_button menu_button_icon" title="Create a dummy persona">
+                                    <i class="fa-solid fa-person-circle-question fa-fw"></i>
+                                    <span>Blank</span>
+                                </div>
+                            </h4>
+                            <div id="user_avatar_block">
+                                <div class="avatar_upload">+</div>
+                            </div>
+
+                            <form id="form_upload_avatar" action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                                <input type="file" id="avatar_upload_file" accept="image/*" name="avatar">
+                                <input type="hidden" id="avatar_upload_overwrite" name="overwrite_name" value="">
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div id="rightNavHolder" class="drawer">
             <div id="unimportantYes" class="drawer-toggle drawer-header">
                 <div id="rightNavDrawerIcon" class="drawer-icon fa-solid fa-address-card  closedIcon" title="Character Management">
                 </div>
             </div>
-            <nav id="right-nav-panel" class="drawer-content closedDrawer fillRight gap5px">
+            <nav id="right-nav-panel" class="drawer-content closedDrawer fillRight">
                 <div id="right-nav-panelheader" class="fa-solid fa-grip drag-grabber">
 
                 </div>
@@ -2345,41 +2534,76 @@
                                 <input id="character_name_pole" name="ch_name" class="text_pole" placeholder="Name this character" maxlength="50" value="" autocomplete="off">
                             </div>
 
-                            <div id="avatar_div" class="avatar_div alignitemsflexstart justifySpaceBetween">
-                                <div id="avatar_div_div" class="avatar">
+                            <div id="result_info" class="flex-container" title="Token counts may be inaccurate and provided just for reference.">&nbsp;</div>
+
+                            <div id="avatar_div" class="avatar_div alignitemsflexstart justifySpaceBetween flexnowrap flexGap5">
+                                <label id="avatar_div_div" class="add_avatar avatar" for="add_avatar_button" title="Click to select a new avatar for this character">
                                     <img id="avatar_load_preview" src="img/ai4.png" alt="avatar">
-                                </div>
+                                    <input hidden type="file" id="add_avatar_button" name="avatar" accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp">
+                                </label>
                                 <div class="flex-container flexFlowColumn">
-                                    <div class="form_create_bottom_buttons_block">
-                                        <label for="add_avatar_button" class="menu_button fa-solid fa-file-image " title="Click to select a new avatar for this character">
-                                            <input type="file" id="add_avatar_button" name="avatar" accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp">
-                                        </label>
-                                        <div id="rm_button_back" class="menu_button fa-solid fa-left-long "></div>
-                                        <div id="renameCharButton" class="menu_button fa-solid fa-user-pen" title="Rename Character"></div>
-                                        <div id="favorite_button" class="menu_button fa-solid fa-star" title="Add to Favorites"></div>
-                                        <input type="hidden" id="fav_checkbox" name="fav" />
-                                        <div id="advanced_div" class="menu_button fa-solid fa-book " title="Advanced Definitions"></div>
-                                        <div id="export_button" class="menu_button fa-solid fa-file-export " title="Export and Download"></div>
-                                        <div id="dupe_button" class="menu_button fa-solid fa-clone " title="Duplicate Character"></div>
-                                        <label for="create_button" id="create_button_label" class="menu_button fa-solid fa-user-check" title="Create Character">
-                                            <input type="submit" id="create_button" name="create_button">
-                                        </label>
-                                        <div id="delete_button" class="menu_button fa-solid fa-skull " title="Delete Character"></div>
+                                    <div class="flex-container flexFlowColumn">
+                                        <div class="flex-container justifyContentFlexEnd flexFlowColumn">
+                                            <div class="form_create_bottom_buttons_block">
+                                                <div id="rm_button_back" class="menu_button fa-solid fa-left-long "></div>
+
+                                                <!-- <div id="renameCharButton" class="menu_button fa-solid fa-user-pen" title="Rename Character"></div> -->
+                                                <div id="favorite_button" class="menu_button fa-solid fa-star" title="Add to Favorites"></div>
+                                                <input type="hidden" id="fav_checkbox" name="fav" />
+                                                <div id="advanced_div" class="menu_button fa-solid fa-book " title="Advanced Definitions"></div>
+                                                <div id="world_button" class="menu_button fa-solid fa-globe" title="Character Lore"></div>
+                                                <div id="export_button" class="menu_button fa-solid fa-file-export " title="Export and Download"></div>
+                                                <!-- <div id="set_chat_scenario" class="menu_button fa-solid fa-scroll" title="Set a chat scenario override"></div> -->
+                                                <!-- <div id="set_character_world" class="menu_button fa-solid fa-globe" title="Set a character World Info / Lorebook"></div> -->
+                                                <div id="dupe_button" class="menu_button fa-solid fa-clone " title="Duplicate Character"></div>
+                                                <label for="create_button" id="create_button_label" class="menu_button fa-solid fa-user-check" title="Create Character">
+                                                    <input type="submit" id="create_button" name="create_button">
+                                                </label>
+                                                <div id="delete_button" class="menu_button fa-solid fa-skull " title="Delete Character"></div>
+                                            </div>
+                                            <label class="flex1" for="char-management-dropdown">
+                                                <select id="char-management-dropdown">
+                                                    <option value="default" disabled selected>More...</option>
+                                                    <option id="set_character_world">
+                                                        Link to World Info
+                                                    </option>
+                                                    <option id="import_character_info">
+                                                        Import Card Lore
+                                                    </option>
+                                                    <option id="set_chat_scenario">
+                                                        Scenario Override
+                                                    </option>
+                                                    <option id="renameCharButton">
+                                                        Rename
+                                                    </option>
+                                                    <!--<option id="dupe_button">
+                                                        Duplicate
+                                                    </option>
+                                                    <option id="export_button">
+                                                        Export
+                                                    </option>
+                                                    <option id="delete_button">
+                                                        Delete
+                                                    </option>-->
+                                                </select>
+                                            </label>
+                                        </div>
+
+                                        <div id="tags_div" class="marginBot5">
+                                            <div class="tag_controls">
+                                                <input id="tagInput" class="text_pole tag_input wide100p margin0" placeholder="Search / Create tags" maxlength="25" />
+                                                <div class="tags_view menu_button fa-solid fa-tags" title="View all tags"></div>
+                                            </div>
+                                            <div id="tagList" class="tags"></div>
+                                        </div>
                                     </div>
-                                    <div id="result_info" class="justifyCenter flex-container" title="Token counts may be inaccurate and provided just for reference.">&nbsp;</div>
                                 </div>
                             </div>
 
                         </div>
                         <hr>
 
-                        <div id="tags_div" class="marginBot5">
-                            <div class="tag_controls">
-                                <input id="tagInput" class="text_pole tag_input wide100p margin0" placeholder="Search / Create tags" maxlength="25" />
-                                <div class="tags_view menu_button fa-solid fa-tags" title="View all tags"></div>
-                            </div>
-                            <div id="tagList" class="tags"></div>
-                        </div>
+
 
                         <div id="description_div" class="marginBot5">
                             <span data-i18n="Description">Description</span>
@@ -2410,6 +2634,7 @@
                             <input id="selected_chat_pole" name="chat" type="hidden">
                             <input id="create_date_pole" name="create_date" type="hidden">
                             <input id="last_mes_pole" name="last_mes" type="hidden">
+                            <input id="character_world" name="world" type="hidden">
                         </div>
 
                         <!-- now back to normal divs for display purposes-->
@@ -2433,8 +2658,18 @@
                                     </div>
                                     <div id="groupTagList" class="tags paddingTopBot5"></div>
                                 </div>
-                                <div id="rm_group_top_bar" class="flex-container spaceBetween width100p">
-                                    <div name="GroupStragegyAndOrder" id="rm_group_buttons" class="fontsize80p flex-container paddingLeftRight5">
+                                <div id="rm_group_top_bar" class="flex-container alignitemscenter spaceBetween width100p">
+                                    <div>
+                                        <label class="add_avatar avatar flex-container justifyCenter" for="group_avatar_button" title="Click to select a new avatar for this group">
+                                            <div id="group_avatar_preview">
+                                                <div class="avatar">
+                                                    <img src="img/ai4.png" alt="avatar">
+                                                </div>
+                                            </div>
+                                            <input hidden type="file" id="group_avatar_button" name="avatar" accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp">
+                                        </label>
+                                    </div>
+                                    <div name="GroupStragegyAndOrder" id="rm_group_buttons" class="fontsize80p flex-container paddingLeftRight5 flex2">
                                         <div class="">
                                             <div class="flex-container flexnowrap width100p whitespacenowrap">
                                                 <span data-i18n="Group reply strategy">Group reply strategy</span>
@@ -2462,12 +2697,13 @@
                                             </label>
                                         </div>
                                     </div>
-                                    <div id="GroupFavDelOkBack" class="flex-container flexGap5 spaceEvenly">
+                                    <div id="GroupFavDelOkBack" class="flex-container flexGap5 spaceEvenly flex1">
                                         <div id="rm_button_back_from_group" class="heightFitContent margin0 menu_button fa-solid fa-left-long"></div>
                                         <div id="rm_group_scenario" class="heightFitContent margin0 menu_button fa-solid fa-scroll" title="Set a group chat scenario"></div>
                                         <div id="group_favorite_button" class="heightFitContent margin0 menu_button fa-solid fa-star" title="Add to Favorites"></div>
                                         <input id="rm_group_fav" type="hidden" />
                                         <div id="rm_group_submit" class="heightFitContent margin0 menu_button fa-solid fa-check" title="Create"></div>
+                                        <div id="rm_group_restore_avatar" class="heightFitContent margin0 menu_button fa-solid fa-images" title="Restore collage avatar"></div>
                                         <div id="rm_group_delete" class="heightFitContent margin0 menu_button fa-solid fa-trash-can" title="Delete"></div>
                                     </div>
 
@@ -2495,7 +2731,9 @@
                             <div name="Unadded Char List" class="flex-container flexFlowColumn overflowYAuto flex1">
                                 <div id="rm_group_add_members_header">
                                     <input id="rm_group_filter" class="text_pole margin0" type="search" placeholder="Filter..." maxlength="100" />
-                                    <div id="group_fav_filter" class="menu_button fa-solid fa-ranking-star margin0" title="Show only favorites"></div>
+                                </div>
+                                <div class="rm_tag_controls">
+                                    <div class="tags rm_tag_filter"></div>
                                 </div>
                                 <div id="rm_group_add_members" class="overflowYAuto flex-container"></div>
                             </div>
@@ -2516,6 +2754,7 @@
                         <form id="form_character_search_form" action="javascript:void(null);">
                             <div id="rm_button_create" title="Create New Character" class="menu_button fa-solid fa-user-plus "></div>
                             <div id="character_import_button" title="Import Character from File" class="menu_button fa-solid fa-file-arrow-up faSmallFontSquareFix"></div>
+                            <div id="external_import_button" title="Import content from external URL" class="menu_button fa-solid fa-cloud-arrow-down faSmallFontSquareFix"></div>
                             <div id="rm_button_group_chats" title="Create New Chat Group" class="menu_button fa-solid fa-users-gear "></div>
                             <input id="character_search_bar" class="text_pole width100p" type="search" placeholder="Search..." maxlength="50" />
                             <select id="character_sort_order" title="Characters sorting order">
@@ -2530,7 +2769,7 @@
                             </select>
                         </form>
                         <div class="rm_tag_controls">
-                            <div id="rm_tag_filter" class="tags"></div>
+                            <div class="tags rm_tag_filter"></div>
                         </div>
                     </div>
                     <div id="rm_print_characters_block"></div>
@@ -2568,30 +2807,31 @@
 
         <div id="character_popup_text">
             <h3 id="character_popup_text_h3"></h3> <span data-i18n="Advanced Defininitions">- Advanced
-                Defininitions</span>
+                Definitions</span>
         </div>
         <hr class="margin-bot-10px">
         <div id="character_cross" class="fa-solid fa-circle-xmark"></div>
 
         <div class="inline-drawer">
             <div class="inline-drawer-toggle inline-drawer-header">
-                <h4>
-                    AI Prompt Overrides
-                    <small>(Affects the generation)</small>
-                </h4>
+                <h4>Prompt Overrides <small>(For OpenAI/Claude APIs, Window/OpenRouter, Poe, and Instruct mode)</small></h4>
+
+
                 <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
             </div>
             <div class="inline-drawer-content">
+                <small>Insert {{original}} into either box to include the respective default prompt from system settings.</small>
                 <div>
-                    <h4>System Prompt</h4>
-                    <textarea id="system_prompt_textarea" name="system_prompt" placeholder="(Overrides the main prompt for Chat Completion and/or system prompt for Instruct Mode if not empty)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="20000"></textarea>
+                    <h4>Main Prompt</h4>
+                    <textarea id="system_prompt_textarea" name="system_prompt" placeholder="Any contents here will replace the default Main Prompt used for this character.&#10;(v2 spec: system_prompt)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="20000"></textarea>
                 </div>
                 <div>
-                    <h4>Post History Instructions</h4>
-                    <textarea id="post_history_instructions_textarea" name="post_history_instructions" placeholder="(Overrides the default jailbreak for Chat Completion if not empty)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="20000"></textarea>
+                    <h4>Jailbreak</h4>
+                    <textarea id="post_history_instructions_textarea" name="post_history_instructions" placeholder="Any contents here will replace the default Jailbreak Prompt (Character Note for Poe) used for this character.&#10;(v2 spec: post_history_instructions)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="20000"></textarea>
                 </div>
             </div>
         </div>
+        <hr>
         <div class="inline-drawer">
             <div class="inline-drawer-toggle inline-drawer-header">
                 <h4>
@@ -2601,25 +2841,30 @@
                 <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
             </div>
             <div class="inline-drawer-content">
-                <div>
-                    <h4>Creator's Name</h4>
-                    <textarea id="creator_textarea" name="creator" placeholder="(Botmaker's name / Contact info)" form="form_create" class="text_pole" autocomplete="off" rows="1" maxlength="2000"></textarea>
+                <small>Everything here is optional</small>
+                <div class="flex-container flexnowrap">
+                    <div class="flex1">
+                        <h4>Created by</h4>
+                        <textarea id="creator_textarea" name="creator" placeholder="(Botmaker's name / Contact info)" form="form_create" class="text_pole" autocomplete="off" rows="2" maxlength="2000"></textarea>
+                    </div>
+                    <div class="flex1">
+                        <h4>Character Version</h4>
+                        <textarea id="character_version_textarea" name="character_version" placeholder="(If you want to track character versions)" form="form_create" class="text_pole" autocomplete="off" rows="2" maxlength="200"></textarea>
+                    </div>
                 </div>
-                <div>
-                    <h4>Creator's Notes</h4>
-                    <textarea id="creator_notes_textarea" name="creator_notes" placeholder="(Describe the bot to the user, list the chat models it has been tested on, and any other useful tips)" form="form_create" class="text_pole" autocomplete="off" rows="2" maxlength="20000"></textarea>
-                </div>
-                <div>
-                    <h4>Creators's Tags</h4>
-                    <textarea id="tags_textarea" name="tags" placeholder="(List of freeform comma-separated tags)" form="form_create" class="text_pole" autocomplete="off" rows="1" maxlength="2000"></textarea>
-                </div>
-                <div>
-                    <h4>Character Version</h4>
-                    <textarea id="character_version_textarea" name="character_version" placeholder="(Optional string to track character versions)" form="form_create" class="text_pole" autocomplete="off" rows="1" maxlength="2000"></textarea>
+                <div class="flex-container flexnowrap">
+                    <div class="flex1">
+                        <h4>Creator's Notes</h4>
+                        <textarea id="creator_notes_textarea" name="creator_notes" placeholder="(Describe the bot, give use tips, or list the chat models it has been tested on. This will be displayed in the character list.)" form="form_create" class="text_pole" autocomplete="off" rows="4" maxlength="20000"></textarea>
+                    </div>
+                    <div class="flex1">
+                        <h4>Tags to Embed</h4>
+                        <textarea id="tags_textarea" name="tags" placeholder="(Write a comma-separated list of tags)" form="form_create" class="text_pole" autocomplete="off" rows="4" maxlength="2000"></textarea>
+                    </div>
                 </div>
             </div>
         </div>
-
+        <hr>
         <div id="personality_div">
             <h4>
                 <span data-i18n="Personality summary">Personality summary</span>
@@ -2655,7 +2900,7 @@
                 <h4><span data-i18n="Examples of dialogue">Examples of dialogue</span></h4>
                 <h5>Important to set the character's writing style. <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#examples-of-dialogue" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
             </div>
-            <textarea id="mes_example_textarea" class="flexGrow" name="mes_example" placeholder="(Examples of chat dialog. Begin each example with <start> on a new line.)" form="form_create" maxlength="20000" rows="6"></textarea>
+            <textarea id="mes_example_textarea" class="flexGrow" name="mes_example" placeholder="(Examples of chat dialog. Begin each example with &lt;START&gt; on a new line.)" form="form_create" maxlength="20000" rows="6"></textarea>
         </div>
         <div id="character_popup_ok" class="menu_button">Save</div>
 
@@ -2745,19 +2990,56 @@
         </div>
     </div>
 
-    <div id="group_scenario_template" class="template_element">
-        <div class="group_scenario range-block flexFlowColumn flex-container">
+    <div id="scenario_override_template" class="template_element">
+        <div class="scenario_override range-block flexFlowColumn flex-container">
             <div class="range-block-title title_restorable">
-                <h3><span data-i18n="Group Chat Scenario Override">Group Chat Scenario Override</span></h3>
+                <h3><span data-i18n="Chat Scenario Override">Chat Scenario Override</span></h3>
                 <div title="Remove" class="menu_button fa-solid fa-trash-can remove_scenario_override"></div>
             </div>
             <div class="range-block-counter justifyLeft flex-container flexFlowColumn">
-                <strong>Unique to this chat.</strong> All group members will use the following scenario text instead of
-                what is specified in their character cards.
-                Bookmarks inherit the scenario from their parent, and can be changed individually after that.
+                <strong>Unique to this chat.</strong>
+                <span data-group="true">All group members will use the following scenario text instead of what is specified in their character cards.</span>
+                <span data-character="true">The following scenario text will be used instead of the value set in the character card.</span>
+                Bookmarks inherit the scenario override from their parent, and can be changed individually after that.
             </div>
             <div class="range-block-range wide100p">
-                <textarea class="wide100p group_chat_scenario" class="text_pole" rows="15" placeholder="Type here..."></textarea>
+                <textarea class="wide100p chat_scenario" class="text_pole" rows="15" placeholder="Type here..."></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div id="character_world_template" class="template_element">
+        <div class="character_world range-block flexFlowColumn flex-container">
+            <div class="range-block-title">
+                <h3>
+                    Select a World Info file for <span class="character_name"></span>:
+                </h3>
+            </div>
+            <h4>Primary Lorebook</h4>
+            <div class="range-block-counter justifyLeft flex-container flexFlowColumn margin-bot-10px">
+                A selected World Info will be bound to this character as its own Lorebook.
+                When generating an AI reply, it will be combined with the entries from a global World Info selector.
+                Exporting a character would also export the selected Lorebook file embedded in the JSON data.
+            </div>
+            <div class="range-block-range wide100p">
+                <select class="character_world_info_selector wide100p">
+                    <option value="">--- None ---</option>
+                </select>
+            </div>
+
+            <div class="range-block-title">
+                <h4>
+                    Additional Lorebooks
+                </h4>
+            </div>
+            <div class="range-block-counter justifyLeft flex-container flexFlowColumn margin-bot-10px">
+                Associate one or more auxillary Lorebooks with this character.<br>
+                NOTE: These choices are optional and won't be preserved on character export!
+            </div>
+            <div class="range-block-range wide100p">
+                <select class="character_extra_world_info_selector wide100p" multiple>
+                    <option value="">-- World Info not found --</option>
+                </select>
             </div>
         </div>
     </div>
@@ -2781,9 +3063,10 @@
                 <div class="select_chat_block_mes"></div>
             </div>
             <div class="flex-container height100pSpaceEvenly">
-                <div class="renameChatButton fa-solid fa-pen"></div>
-                <div class="exportChatButton fa-solid fa-file-export"></div>
-                <div file_name="" class="PastChat_cross fa-solid fa-circle-xmark"></div>
+                <div title="Rename chat file" class="renameChatButton fa-solid fa-pen"></div>
+                <div title="Export JSONL chat file" data-format="jsonl" class="exportRawChatButton fa-solid fa-file-export"></div>
+                <div title="Download chat as plain text document" data-format="txt" class="exportChatButton fa-solid fa-file-lines"></div>
+                <div title="Delete chat file" file_name="" class="PastChat_cross fa-solid fa-circle-xmark"></div>
             </div>
         </div>
     </div>
@@ -2803,6 +3086,7 @@
             <form class="world_entry_form">
                 <div class="inline-drawer wide100p">
                     <div class="inline-drawer-toggle inline-drawer-header gap5px">
+                        <span class="drag-handle">&#9776;</span>
                         <div class="gap5px world_entry_thin_controls wide100p">
                             <div class="world_entry_form_control">
                                 <label for="key">
@@ -2839,7 +3123,7 @@
                     </div>
                     <div class="inline-drawer-content flex-container">
                         <div class="WIEntryContentAndMemo flex-container">
-                            <div class="world_entry_thin_controls">
+                            <div class="world_entry_thin_controls flex2">
                                 <div class="world_entry_form_control">
                                     <label for="content ">
                                         <small>
@@ -2856,7 +3140,7 @@
                                     <textarea class="text_pole" name="content" rows="4" placeholder="What this keyword should mean to the AI, sent verbatim"></textarea>
                                 </div>
                             </div>
-                            <div class="world_entry_thin_controls">
+                            <div class="world_entry_thin_controls commentContainer">
                                 <div class="world_entry_form_control">
                                     <label for="comment">
                                         <small>
@@ -2876,16 +3160,26 @@
                         </div>
                         <div name="WIEntryBottomControls" class="flex-container flex1 justifySpaceBetween world_entry_form_horizontal">
                             <div class="flex-container flexFlowColumn flexNoGap  wi-enter-footer-text  ">
-                                <label class="checkbox">
+                                <label class="checkbox flex-container">
                                     <input type="checkbox" name="constant" />
                                     <span data-i18n="Constant">Constant</span>
                                 </label>
-                                <label class="checkbox">
+                                <label class="checkbox flex-container">
                                     <input type="checkbox" name="selective" />
                                     <span data-i18n="Selective">Selective</span>
                                 </label>
+                                <label class="checkbox flex-container">
+                                    <input type="checkbox" name="useProbability" />
+                                    <span data-i18n="Use Probability">Use Probability</span>
+                                </label>
+                                <label class="checkbox flex-container">
+                                    <input type="checkbox" name="addMemo">
+                                    <span data-i18n="Add Memo">Add Memo</span>
+                                </label>
+
                             </div>
                             <div class="world_entry_form_control world_entry_form_radios  wi-enter-footer-text ">
+                                <small>Placement</small>
                                 <div>
                                     <label><input type="radio" name="position" value="0">
                                         <span data-i18n="Before Char">Before Char</span>
@@ -2896,12 +3190,29 @@
                                         <span data-i18n="After Char">After Char</span>
                                     </label>
                                 </div>
-                            </div>
-                            <div class="world_entry_form_control wi-enter-footer-text  flex-container flexNoGap ">
-                                Insertion Order
-                                <input class="text_pole wideMax100px" type="number" name="order" placeholder="" />
+                                <div>
+                                    <label><input type="radio" name="position" value="2">
+                                        <span data-i18n="Author's Note">Author's Note Top</span>
+                                    </label>
+                                </div>
+                                <div>
+                                    <label><input type="radio" name="position" value="3">
+                                        <span data-i18n="Author's Note">Author's Note Bottom</span>
+                                    </label>
+                                </div>
                             </div>
 
+                            <div class="container flexFlowColumn flexNoGap">
+                                <div class="world_entry_form_control wi-enter-footer-text  flex-container flexNoGap ">
+                                    Insertion Order
+                                    <input class="text_pole wideMax100px" type="number" name="order" placeholder="" />
+                                </div>
+
+                                <div class="world_entry_form_control wi-enter-footer-text flex-container flexNoGap probabilityContainer">
+                                    Probability (%)
+                                    <input class="text_pole wideMax100px" type="number" name="probability" placeholder="" min="0" max="100" />
+                                </div>
+                            </div>
 
                             <div class="flex-container flexFlowColumn flexNoGap  wi-enter-footer-text ">
                                 <div class="world_entry_form_uid">
@@ -2937,10 +3248,11 @@
             <div class="avatar" title="">
                 <img src="">
             </div>
-            <div class="flex-container wide100pLess70px gap5px">
-                <div class="ch_name"></div>
+            <div class="flex-container wide100pLess70px">
+                <div class="wide100p"><span class="ch_name"></span> <i class="ch_avatar_url"></i></div>
                 <i class="ch_fav_icon fa-solid fa-star"></i>
                 <input class="ch_fav" value="" hidden />
+                <div class="ch_description"></div>
                 <div class="tags tags_inline"></div>
             </div>
         </div>
@@ -2969,12 +3281,16 @@
                     <img src="">
 
                 </div>
+                <div class="mesIDDisplay"></div>
                 <div class="mes_timer"></div>
             </div>
             <div class="swipe_left fa-solid fa-chevron-left"></div>
             <div class="mes_block">
                 <div class="ch_name flex-container justifySpaceBetween">
-                    <span class="name_text">${characterName}</span>
+                    <div class="flex-container flex1 alignitemscenter">
+                        <span class="name_text">${characterName}</span>
+                        <small class="timestamp"></small>
+                    </div>
 
                     <div class="mes_buttons">
                         <div class="extraMesButtonsHint fa-solid fa-ellipsis"></div>
@@ -3040,7 +3356,11 @@
             <div class="avatar">
                 <img alt="Avatar" src="" />
             </div>
-            <div class="ch_name"></div>
+            <div class="group_member_name">
+                <div class="ch_name"></div>
+                <div class="tags tags_inline"></div>
+            </div>
+            <input class="ch_fav" value="" hidden />
             <div class="group_member_icon">
                 <div title="Temporarily disable automatic replies from this character" data-action="disable" class="right_menu_button fa-solid fa-lg fa-comment-slash"></div>
                 <div title="Enable automatic replies from this character" data-action="enable" class="right_menu_button fa-solid fa-lg fa-comment-slash"></div>
@@ -3049,7 +3369,7 @@
                     <div title="Move up" data-action="up" class="right_menu_button fa-solid fa-chevron-up"></div>
                     <div title="Move down" data-action="down" class="right_menu_button fa-solid fa-chevron-down"></div>
                 </div>
-                <div title="View character card" data-action="view" class="right_menu_button fa-solid fa-xl fa-id-badge"></div>
+                <div title="View character card" data-action="view" class="right_menu_button fa-solid fa-xl fa-image-portrait"></div>
                 <div title="Remove from group" data-action="remove" class="right_menu_button fa-solid fa-2xl fa-xmark">
                 </div>
                 <div title="Add to group" data-action="add" class="right_menu_button fa-solid fa-2xl fa-plus"></div>
@@ -3164,6 +3484,10 @@
                 <i class="fa-lg fa-solid fa-user-secret"></i>
                 <span data-i18n="Impersonate">Impersonate</span>
             </a>
+            <a id="option_continue" title="Continue the last message">
+                <i class="fa-lg fa-solid fa-arrow-right"></i>
+                <span data-i18n="Continue">Continue</span>
+            </a>
             <a id="option_regenerate">
                 <i class="fa-lg fa-solid fa-repeat"></i>
                 <span data-i18n="Regenerate">Regenerate</span>
@@ -3177,10 +3501,13 @@
         <div class="export_format list-group-item" data-format="webp">WEBP</div>
     </div>
 
-    <div id="avatar_zoom_popup">
-        <div id="avatar_zoom_popupheader" class="fa-solid fa-grip drag-grabber"></div>
-        <img id="zoomed_avatar" src="">
+    <div id="zoomed_avatar_template" class="template_element">
+        <div class="zoomed_avatar">
+            <div id="" class="fa-solid fa-grip drag-grabber"></div>
+            <img class="zoomed_avatar_img" src="">
+        </div>
     </div>
+
     <div id="rawPromptPopup" class="list-group">
         <div id="rawPromptWrapper" class="tokenItemizingSubclass"></div>
     </div>
@@ -3199,8 +3526,8 @@
                 </button>
             </div>
             <div class="avatar-buttons avatar-buttons-bottom">
-                <button class="menu_button set_user_info" title="Under construction">
-                    <i class="fa-solid fa-circle-user"></i>
+                <button class="menu_button set_persona_image" title="Change persona image">
+                    <i class="fa-solid fa-image"></i>
                 </button>
 
                 <button class="menu_button delete_avatar" title="Delete persona">
