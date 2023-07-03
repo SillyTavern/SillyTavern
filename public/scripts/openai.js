@@ -463,7 +463,7 @@ function populateDialogueExamples(prompts, chatCompletion) {
  * @param {string} options.quietPrompt - A quiet prompt to be used in the conversation.
  * @param {string} options.type - The type of the chat, can be 'impersonate'.
  */
-function populateChatCompletion (prompts, chatCompletion, {bias, quietPrompt, type} = {}) {
+function populateChatCompletion (prompts, chatCompletion, {bias, quietPrompt, type, cyclePrompt} = {}) {
     //Helper function for the recurring task of preparing a prompt for the chat completion
     const addToChatCompletion = (source, target = null) => {
         if (false === prompts.has(source)) return;
@@ -549,6 +549,18 @@ function populateChatCompletion (prompts, chatCompletion, {bias, quietPrompt, ty
                 throw error;
             }
         }
+    }
+
+    if (type === 'continue') {
+        const continuePrompt = new Prompt({
+            identifier: 'continueNudge',
+            role: 'system,',
+            content: '[Continue the following message. Do not include ANY parts of the original message. Use capitalization and punctuation as if your reply is a part of the original message:\n\n + ' + cyclePrompt + ']',
+            system_prompt: true
+        });
+        const preparedPrompt = promptManager.preparePrompt(continuePrompt);
+        const continueMessage = Message.fromPrompt(preparedPrompt);
+        chatCompletion.insertAtEnd(continueMessage, 'chatHistory')
     }
 
     // Decide whether dialogue examples should always be added
@@ -658,7 +670,7 @@ function prepareOpenAIMessages({
     eventSource.emit(event_types.OAI_BEFORE_CHATCOMPLETION, prompts);
 
     try {
-        populateChatCompletion(prompts, chatCompletion, {bias, quietPrompt, type});
+        populateChatCompletion(prompts, chatCompletion, {bias, quietPrompt, type, cyclePrompt});
     } catch (error) {
         if (error instanceof TokenBudgetExceededError) {
             toastr.error('An error occurred while counting tokens: Token budget exceeded.')
