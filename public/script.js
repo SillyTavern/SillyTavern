@@ -2484,6 +2484,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     type: type,
                     quietPrompt: quiet_prompt,
                     jailbreakPrompt: jailbreakPrompt,
+                    cyclePrompt: cyclePrompt,
                 });
                 generate_data = { prompt: prompt };
 

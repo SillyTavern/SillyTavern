@@ -324,7 +324,7 @@ function formatWorldInfo(value) {
     return stringFormat(oai_settings.wi_format, value);
 }
 
-async function prepareOpenAIMessages({ systemPrompt, name2, storyString, worldInfoBefore, worldInfoAfter, extensionPrompt, bias, type, quietPrompt, jailbreakPrompt } = {}) {
+async function prepareOpenAIMessages({ systemPrompt, name2, storyString, worldInfoBefore, worldInfoAfter, extensionPrompt, bias, type, quietPrompt, jailbreakPrompt, cyclePrompt } = {}) {
     const isImpersonate = type == "impersonate";
     let this_max_context = oai_settings.openai_max_context;
     let enhance_definitions_prompt = "";
@@ -412,7 +412,7 @@ async function prepareOpenAIMessages({ systemPrompt, name2, storyString, worldIn
     }
 
     if (type == 'continue') {
-        const continueNudge = { "role": "system", "content": '[Continue the last assistant message]' };
+        const continueNudge = { "role": "system", "content": stringFormat('[Continue the following message. Do not include ANY parts of the original message. Use capitalization and punctuation as if your reply is a part of the original message:\n\n{0}]', cyclePrompt || '') };
         openai_msgs.push(continueNudge);
 
         total_count += handler_instance.count([continueNudge], true, 'continue');
