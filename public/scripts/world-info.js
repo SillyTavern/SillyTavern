@@ -1015,8 +1015,8 @@ async function checkWorldInfo(chat, maxContext) {
         }
     });
 
-    const worldInfoBefore = `${WIBeforeEntries.join("\n")}\n`
-    const worldInfoAfter = `${WIAfterEntries.join("\n")}\n`
+    const worldInfoBefore = WIBeforeEntries.length ? `${WIBeforeEntries.join("\n")}\n` : '';
+    const worldInfoAfter = WIAfterEntries.length ? `${WIAfterEntries.join("\n")}\n` : '';
 
     if (shouldWIAddPrompt) {
         const originalAN = context.extensionPrompts[NOTE_MODULE_NAME].value;
