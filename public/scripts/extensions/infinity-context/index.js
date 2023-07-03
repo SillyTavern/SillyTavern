@@ -433,8 +433,13 @@ async function onSelectInjectFile(e) {
     try {
         toastr.info('This may take some time, depending on the file size', 'Processing...');
         const text = await getFileText(file);
-
-        const split = splitRecursive(text, extension_settings.chromadb.file_split_length).filter(onlyUnique);
+        extension_settings.chromadb.file_split_type = "newline";
+        //allow splitting on newlines or splitrecursively
+        if(extension_settings.chromadb.file_split_type == "newline"){
+            var split = text.split(/\r?\n/).filter(onlyUnique);
+        } else {
+            const split = splitRecursive(text, extension_settings.chromadb.file_split_length).filter(onlyUnique);
+        }
         const baseDate = Date.now();
 
         const messages = split.map((m, i) => ({
@@ -533,10 +538,19 @@ window.chromadb_interceptGeneration = async (chat, maxContext) => {
     let recallMsg = extension_settings.chromadb.recall_msg || defaultSettings.chroma_default_msg;
     const chromaDepth = extension_settings.chromadb.chroma_depth;
     const chromaSortStrategy = extension_settings.chromadb.sort_strategy;
+
+    //log the current settings
+    console.debug("CHROMADB: Current settings: %o", extension_settings.chromadb);
+
+
     if (currentChatId) {
         const messagesToStore = chat.slice(0, -extension_settings.chromadb.keep_context);
+        //log the messages to store
+        console.debug("CHROMADB: Messages to store: %o", messagesToStore);
 
         if (messagesToStore.length > 0 || extension_settings.chromadb.freeze) {
+            //log the messages to store length vs keep context
+            console.debug("CHROMADB: Messages to store length vs keep context: %o vs %o", messagesToStore.length, extension_settings.chromadb.keep_context);
             await addMessages(currentChatId, messagesToStore);
 
             const lastMessage = chat[chat.length - 1];
@@ -549,13 +563,16 @@ window.chromadb_interceptGeneration = async (chat, maxContext) => {
                     queriedMessages = await queryMultiMessages(currentChatId, lastMessage.mes);
                 }
                 else{
+                    console.log("Utilizing single chat");
                     queriedMessages = await queryMessages(currentChatId, lastMessage.mes);
                 }
 
                 if(chromaSortStrategy === "date"){
+                    console.log("Sorting by date");
                     queriedMessages.sort((a, b) => a.date - b.date);
                 }
                 else{
+                    console.log("Sorting by distance");
                     queriedMessages.sort((a, b) => b.distance - a.distance);
                 }
 
@@ -630,7 +647,11 @@ window.chromadb_interceptGeneration = async (chat, maxContext) => {
                 if (selectedStrategy === 'original') {
                     //removes .length # messages from the start of 'kept messages'
                     //replaces them with chromaDB results (with no separator)
+                    console.log('ChromaDB chat before injection', chat);
+                    console.log('ChromaDB newChat', newChat);
+                    console.log('ChromaDB queriedMessages', queriedMessages);
                     newChat.push(...queriedMessages.map(m => m.meta).filter(onlyUnique).map(JSON.parse));
+                    console.log('ChromaDB newChat after push', newChat);
                     chat.splice(0, messagesToStore.length, ...newChat);
 
                 }
