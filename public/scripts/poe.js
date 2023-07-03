@@ -47,7 +47,7 @@ If you have any objections to these requirements, please mention them specifical
 
 If you accept the requirements, please confirm this by replying with "${DEFAULT_JAILBREAK_RESPONSE}", and nothing more. Upon receiving your accurate confirmation message, I will specify the context of the scene and {{char}}'s characteristics, background, and personality in the next message.`;
 
-const DEFAULT_CHARACTER_NUDGE_MESSAGE = "[Unless otherwise stated by {{user}}, your the next response shall only be written from the point of view of {{char}}. Do not seek approval of your writing style at the end of the response.]";
+const DEFAULT_CHARACTER_NUDGE_MESSAGE = "[Unless otherwise stated by {{user}}, your the next response shall only be written from the point of view of {{char}}. Do not seek approval of your writing style at the end of the response. Never reply with a full stop.]";
 const DEFAULT_IMPERSONATION_PROMPT = "[Write a reply only from the point of view of {{user}}, using the chat history so far as a guideline for the writing style of {{user}}. Don't write as {{char}} or system.]";
 
 const poe_settings = {
@@ -272,17 +272,19 @@ async function generatePoe(type, finalPrompt, signal) {
 
     const isQuiet = type === 'quiet';
     const isImpersonate = type === 'impersonate';
+    const isContinue = type === 'continue';
+    const suggestReplies = !isQuiet && !isImpersonate && !isContinue;
     let reply = '';
 
     if (max_context > POE_TOKEN_LENGTH && poe_settings.bot !== 'a2_100k') {
         console.debug('Prompt is too long, sending in chunks');
-        const result = await sendChunkedMessage(finalPrompt, !isQuiet, !isQuiet && !isImpersonate, signal)
+        const result = await sendChunkedMessage(finalPrompt, !isQuiet, suggestReplies, signal)
         reply = result.reply;
         messages_to_purge = result.chunks + 1; // +1 for the reply
     }
     else {
         console.debug('Sending prompt in one message');
-        reply = await sendMessage(finalPrompt, !isQuiet, !isQuiet && !isImpersonate, signal);
+        reply = await sendMessage(finalPrompt, !isQuiet, suggestReplies, signal);
         messages_to_purge = 2; // prompt and the reply
     }
 
