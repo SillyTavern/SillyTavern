@@ -117,7 +117,9 @@ const NARRATOR_NAME_DEFAULT = 'System';
 const COMMENT_NAME_DEFAULT = 'Note';
 
 function continueChatCallback() {
-    $('#option_continue').trigger('click');
+    // Prevent infinite recursion
+    $('#send_textarea').val('');
+    $('#option_continue').trigger('click', { fromSlashCommand: true });
 }
 
 function syncCallback() {

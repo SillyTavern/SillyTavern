@@ -1354,6 +1354,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
         $("#chat").find(`[mesid="${count_view_mes - 1}"]`).find('.mes_text').append(messageText);
         appendImageToMessage(mes, $("#chat").find(`[mesid="${count_view_mes - 1}"]`));
         $("#chat").find(`[mesid="${count_view_mes - 1}"]`).attr('title', title);
+        $("#chat").find(`[mesid="${count_view_mes - 1}"]`).find('.timestamp').text(timestamp);
 
         if (mes.swipe_id == mes.swipes.length - 1) {
             $("#chat").find(`[mesid="${count_view_mes - 1}"]`).find('.mes_timer').text(params.timerValue);
@@ -1770,6 +1771,7 @@ class StreamingProcessor {
 
             if (this.type == 'swipe' && Array.isArray(chat[messageId]['swipes'])) {
                 chat[messageId]['swipes'][chat[messageId]['swipe_id']] = processedText;
+                chat[messageId]['swipe_info'][chat[messageId]['swipe_id']] = { 'send_date': chat[messageId]['send_date'], 'gen_started': chat[messageId]['gen_started'], 'gen_finished': chat[messageId]['gen_finished'] };
             }
 
             let formattedText = messageFormatting(
@@ -1851,6 +1853,7 @@ class StreamingProcessor {
         if (this.type !== 'swipe' && this.type !== 'impersonate') {
             if (Array.isArray(chat[messageId]['swipes']) && chat[messageId]['swipes'].length === 1 && chat[messageId]['swipe_id'] === 0) {
                 chat[messageId]['swipes'][0] = chat[messageId]['mes'];
+                chat[messageId]['swipe_info'][0] = { 'send_date': chat[messageId]['send_date'], 'gen_started': chat[messageId]['gen_started'], 'gen_finished': chat[messageId]['gen_finished'] };
             }
         }
     }
@@ -1949,7 +1952,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     }
 
     if (main_api == 'kobold' && kai_settings.streaming_kobold && !kai_settings.can_use_streaming) {
-        toastr.warning('Streaming is enabled, but the version of Kobold used does not support token streaming.', undefined, { timeOut: 10000, preventDuplicates: true, });
+        toastr.error('Streaming is enabled, but the version of Kobold used does not support token streaming.', undefined, { timeOut: 10000, preventDuplicates: true, });
+        is_send_press = false;
+        return;
     }
 
     if (main_api == 'kobold' && kai_settings.streaming_kobold && power_user.multigen) {
@@ -2235,11 +2240,14 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 cyclePrompt += ' ';
             }
 
-            streamingProcessor && (streamingProcessor.firstMessageText = cyclePrompt);
+            // Save reply does add cycle text to the prompt, so it's not needed here
+            streamingProcessor && (streamingProcessor.firstMessageText = '');
             message_already_generated = cyclePrompt;
             tokens_already_generated = 1; // Multigen copium
         }
 
+        // Multigen rewrites the type and I don't know why
+        const originalType = type;
         runGenerate(cyclePrompt);
 
         async function runGenerate(cycleGenerationPromt = '') {
@@ -2644,7 +2652,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
                         tokens_already_generated = 0;
                         generatedPromtCache = "";
-                        const substringStart = type !== 'continue' ? magFirst.length : 0;
+                        const substringStart = originalType !== 'continue' ? magFirst.length : 0;
                         getMessage = message_already_generated.substring(substringStart);
                     }
 
@@ -2667,7 +2675,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                             resolve(getMessage);
                         }
                         else {
-                            if (!isMultigenEnabled()) {
+                            // Without streaming we'll be having a full message on continuation. Treat it as a multigen last chunk.
+                            if (!isMultigenEnabled() && originalType !== 'continue') {
                                 ({ type, getMessage } = saveReply(type, getMessage, this_mes_is_name, title));
                             }
                             else {
@@ -3408,7 +3417,9 @@ function cleanUpMessage(getMessage, isImpersonate, displayIncompleteSentences = 
         getMessage = collapseNewlines(getMessage);
     }
 
-    getMessage = $.trim(getMessage);
+    if (power_user.trim_spaces) {
+        getMessage = getMessage.trim();
+    }
     // trailing invisible whitespace before every newlines, on a multiline string
     // "trailing whitespace on newlines       \nevery line of the string    \n?sample text" ->
     // "trailing whitespace on newlines\nevery line of the string\nsample text"
@@ -3495,6 +3506,7 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
             chat[chat.length - 1]['mes'] = getMessage;
             chat[chat.length - 1]['gen_started'] = generation_started;
             chat[chat.length - 1]['gen_finished'] = generationFinished;
+            chat[chat.length - 1]['send_date'] = getMessageTimeStamp();
             addOneMessage(chat[chat.length - 1], { type: 'swipe' });
         } else {
             chat[chat.length - 1]['mes'] = getMessage;
@@ -3505,6 +3517,7 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         chat[chat.length - 1]['mes'] += getMessage;
         chat[chat.length - 1]['gen_started'] = generation_started;
         chat[chat.length - 1]['gen_finished'] = generationFinished;
+        chat[chat.length - 1]['send_date'] = getMessageTimeStamp();
         addOneMessage(chat[chat.length - 1], { type: 'swipe' });
     } else if (type === 'appendFinal') {
         console.debug("Trying to appendFinal.")
@@ -3512,6 +3525,7 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         chat[chat.length - 1]['mes'] = getMessage;
         chat[chat.length - 1]['gen_started'] = generation_started;
         chat[chat.length - 1]['gen_finished'] = generationFinished;
+        chat[chat.length - 1]['send_date'] = getMessageTimeStamp();
         addOneMessage(chat[chat.length - 1], { type: 'swipe' });
 
     } else {
@@ -3522,7 +3536,9 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         chat[chat.length - 1]['is_user'] = false;
         chat[chat.length - 1]['is_name'] = this_mes_is_name;
         chat[chat.length - 1]['send_date'] = getMessageTimeStamp();
-        getMessage = $.trim(getMessage);
+        if (power_user.trim_spaces) {
+            getMessage = getMessage.trim();
+        }
         chat[chat.length - 1]['mes'] = getMessage;
         chat[chat.length - 1]['title'] = title;
         chat[chat.length - 1]['gen_started'] = generation_started;
@@ -3543,16 +3559,19 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         saveImageToMessage(img, chat[chat.length - 1]);
         addOneMessage(chat[chat.length - 1]);
     }
-
     const item = chat[chat.length - 1];
+    if (item['swipe_info'] === undefined) {
+        item['swipe_info'] = [];
+    }
     if (item['swipe_id'] !== undefined) {
         item['swipes'][item['swipes'].length - 1] = item['mes'];
+        item['swipe_info'][item['swipes'].length - 1] = { 'send_date': item['send_date'], 'gen_started': item['gen_started'], 'gen_finished': item['gen_finished'] };
     } else {
         item['swipe_id'] = 0;
         item['swipes'] = [];
         item['swipes'][0] = chat[chat.length - 1]['mes'];
+        item['swipe_info'][0] = { 'send_date': chat[chat.length - 1]['send_date'], 'gen_started': chat[chat.length - 1]['gen_started'], 'gen_finished': chat[chat.length - 1]['gen_finished'] };
     }
-
     return { type, getMessage };
 }
 
@@ -3930,6 +3949,7 @@ async function getChatResult() {
         if (Array.isArray(alternateGreetings) && alternateGreetings.length > 0) {
             chat[0]['swipe_id'] = 0;
             chat[0]['swipes'] = [];
+            chat[0]['swipe_info'] = [];
             chat[0]['swipes'][0] = chat[0]['mes'];
 
             for (let i = 0; i < alternateGreetings.length; i++) {
@@ -4795,7 +4815,12 @@ function setCharacterBlockHeight() {
 // Common code for message editor done and auto-save
 function updateMessage(div) {
     const mesBlock = div.closest(".mes_block");
-    const text = mesBlock.find(".edit_textarea").val().trim();
+    let text = mesBlock.find(".edit_textarea").val();
+
+    if (power_user.trim_spaces) {
+        text = text.trim();
+    }
+
     const bias = extractMessageBias(text);
     const mes = chat[this_edit_mes_id];
     mes["mes"] = text;
@@ -5198,6 +5223,7 @@ function select_rm_create() {
     $("#talkativeness_slider").val(create_save.talkativeness);
     $("#scenario_pole").val(create_save.scenario);
     $("#mes_example_textarea").val(create_save.mes_example.trim().length === 0 ? '<START>' : create_save.mes_example);
+    $('#character_json_data').val('');
     $("#avatar_div").css("display", "flex");
     $("#avatar_load_preview").attr("src", default_avatar);
     $("#renameCharButton").css('display', 'none');
@@ -5918,6 +5944,7 @@ async function createOrEditCharacter(e) {
                         if (Array.isArray(alternateGreetings) && alternateGreetings.length > 0) {
                             chat[0]['swipe_id'] = 0;
                             chat[0]['swipes'] = [];
+                            chat[0]['swipe_info'] = [];
                             chat[0]['swipes'][0] = chat[0]['mes'];
 
                             for (let i = 0; i < alternateGreetings.length; i++) {
@@ -6002,12 +6029,17 @@ function swipe_left() {      // when we swipe left..but no generation.
         if (chat[chat.length - 1]['swipe_id'] === 0) {
             $(this).css('display', 'none');
         }*/ // Just in case
+        if (!Array.isArray(chat[chat.length - 1]['swipe_info'])) {
+            chat[chat.length - 1]['swipe_info'] = [];
+        }
         let this_mes_div = $(this).parent();
         let this_mes_block = $(this).parent().children('.mes_block').children('.mes_text');
         const this_mes_div_height = this_mes_div[0].scrollHeight;
         this_mes_div.css('height', this_mes_div_height);
         const this_mes_block_height = this_mes_block[0].scrollHeight;
         chat[chat.length - 1]['mes'] = chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipe_id']];
+        chat[chat.length - 1]['send_date'] = chat[chat.length - 1].swipe_info[chat[chat.length - 1]['swipe_id']]?.send_date || chat[chat.length - 1].send_date; //load the last mes box with the latest generation
+
         if (chat[chat.length - 1].extra) {
             // if message has memory attached - remove it to allow regen
             if (chat[chat.length - 1].extra.memory) {
@@ -6120,7 +6152,9 @@ const swipe_right = () => {
     if (chat[chat.length - 1]['swipe_id'] === undefined) {              // if there is no swipe-message in the last spot of the chat array
         chat[chat.length - 1]['swipe_id'] = 0;                        // set it to id 0
         chat[chat.length - 1]['swipes'] = [];                         // empty the array
+        chat[chat.length - 1]['swipe_info'] = [];
         chat[chat.length - 1]['swipes'][0] = chat[chat.length - 1]['mes'];  //assign swipe array with last message from chat
+        chat[chat.length - 1]['swipe_info'][0] = { 'send_date': chat[chat.length - 1]['send_date'], 'gen_started': chat[chat.length - 1]['gen_started'], 'gen_finished': chat[chat.length - 1]['gen_finished'] }; //assign swipe info array with last message from chat
     }
     chat[chat.length - 1]['swipe_id']++;                                      //make new slot in array
     if (chat[chat.length - 1].extra) {
@@ -6133,6 +6167,9 @@ const swipe_right = () => {
             delete chat[chat.length - 1].extra.display_text;
         }
     }
+    if (!Array.isArray(chat[chat.length - 1]['swipe_info'])) {
+        chat[chat.length - 1]['swipe_info'] = [];
+    }
     //console.log(chat[chat.length-1]['swipes']);
     if (parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length) { //if swipe id of last message is the same as the length of the 'swipes' array
         delete chat[chat.length - 1].gen_started;
@@ -6140,6 +6177,7 @@ const swipe_right = () => {
         run_generate = true;
     } else if (parseInt(chat[chat.length - 1]['swipe_id']) < chat[chat.length - 1]['swipes'].length) { //otherwise, if the id is less than the number of swipes
         chat[chat.length - 1]['mes'] = chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipe_id']]; //load the last mes box with the latest generation
+        chat[chat.length - 1]['send_date'] = chat[chat.length - 1]?.swipe_info[chat[chat.length - 1]['swipe_id']]?.send_date || chat[chat.length - 1]['send_date']; //update send date
         run_swipe_right = true; //then prepare to do normal right swipe to show next message
     }
 
@@ -7130,7 +7168,8 @@ $(document).ready(function () {
 
     ///////////// OPTIMIZED LISTENERS FOR LEFT SIDE OPTIONS POPUP MENU //////////////////////
 
-    $("#options [id]").on("click", function () {
+    $("#options [id]").on("click", function (event, customData) {
+        const fromSlashCommand = customData?.fromSlashCommand || false;
         var id = $(this).attr("id");
 
         if (id == "option_select_chat") {
@@ -7175,7 +7214,7 @@ $(document).ready(function () {
         }
 
         else if (id == 'option_continue') {
-            if (is_send_press == false) {
+            if (is_send_press == false || fromSlashCommand) {
                 is_send_press = true;
                 Generate("continue");
             }
@@ -7432,7 +7471,9 @@ $(document).ready(function () {
             } else {
                 this_edit_mes_chname = name2;
             }
-            text = text.trim();
+            if (power_user.trim_spaces) {
+                text = text.trim();
+            }
             $(this)
                 .closest(".mes_block")
                 .find(".mes_text")
@@ -7570,7 +7611,11 @@ $(document).ready(function () {
         let oldScroll = $('#chat')[0].scrollTop;
         const clone = JSON.parse(JSON.stringify(chat[this_edit_mes_id])); // quick and dirty clone
         clone.send_date = Date.now();
-        clone.mes = $(this).closest(".mes").find('.edit_textarea').val().trim();
+        clone.mes = $(this).closest(".mes").find('.edit_textarea').val();
+
+        if (power_user.trim_spaces) {
+            clone.mes = clone.mes.trim();
+        }
 
         chat.splice(Number(this_edit_mes_id) + 1, 0, clone);
         addOneMessage(clone, { insertAfter: this_edit_mes_id });
