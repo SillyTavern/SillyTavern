@@ -344,8 +344,11 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
     document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_close').addEventListener('click', closeAndClearPopup);
     document.getElementById(this.configuration.prefix + 'prompt_manager_popup_close_button').addEventListener('click', closeAndClearPopup);
 
-    // Re-render Prompt manager on openai preset change
+    // Re-render prompt manager on openai preset change
     eventSource.on(event_types.OAI_PRESET_CHANGED, settings => this.render());
+
+    // Re-render prompt manager on world settings update
+    eventSource.on(event_types.WORLDINFO_SETTINGS_UPDATED, () => this.render());
 
     this.log('Initialized')
 };
