@@ -18,6 +18,7 @@ export const markdownExclusionExt = () => {
 
     const escapedExclusions = combinedExcludeString
         .split(",")
+        .filter((element) => element.length > 0)
         .map((element) => `(${element.split('').map((char) => `\\${char}`).join('')})`);
 
 

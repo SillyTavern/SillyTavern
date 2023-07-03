@@ -457,9 +457,9 @@ export function isDataURL(str) {
     return regex.test(str);
 }
 
-export function getCharaFilename() {
+export function getCharaFilename(chid) {
     const context = getContext();
-    const fileName = context.characters[context.characterId].avatar;
+    const fileName = context.characters[chid ?? context.characterId].avatar;
 
     if (fileName) {
         return fileName.replace(/\.[^/.]+$/, "")
@@ -649,5 +649,30 @@ export function createThumbnail(dataUrl, maxWidth, maxHeight) {
         img.onerror = () => {
             reject(new Error('Failed to load the image.'));
         };
+    });
+}
+
+export async function waitUntilCondition(condition, timeout = 1000, interval = 100) {
+    return new Promise((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+            clearInterval(intervalId);
+            reject(new Error('Timed out waiting for condition to be true'));
+        }, timeout);
+
+        const intervalId = setInterval(() => {
+            if (condition()) {
+                clearTimeout(timeoutId);
+                clearInterval(intervalId);
+                resolve();
+            }
+        }, interval);
+    });
+}
+
+export function uuidv4() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
     });
 }

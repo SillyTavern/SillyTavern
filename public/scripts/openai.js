@@ -86,7 +86,8 @@ const gpt3_16k_max = 16383;
 const gpt4_max = 8191;
 const gpt_neox_max = 2048;
 const gpt4_32k_max = 32767;
-const claude_max = 7500;
+const claude_max = 8000; // We have a proper tokenizer, so theoretically could be larger (up to 9k)
+const palm2_max = 7500; // The real context window is 8192, spare some for padding due to using turbo tokenizer
 const claude_100k_max = 99000;
 const unlocked_max = 100 * 1024;
 const oai_max_temp = 2.0;
@@ -132,6 +133,7 @@ const default_settings = {
     legacy_streaming: false,
     chat_completion_source: chat_completion_sources.OPENAI,
     max_context_unlocked: false,
+    use_openrouter: false,
 };
 
 const oai_settings = {
@@ -165,6 +167,7 @@ const oai_settings = {
     legacy_streaming: false,
     chat_completion_source: chat_completion_sources.OPENAI,
     max_context_unlocked: false,
+    use_openrouter: false,
 };
 
 let openai_setting_names;
@@ -408,6 +411,14 @@ async function prepareOpenAIMessages({ systemPrompt, name2, storyString, worldIn
         await delay(1);
     }
 
+    if (type == 'continue') {
+        const continueNudge = { "role": "system", "content": '[Continue the last assistant message]' };
+        openai_msgs.push(continueNudge);
+
+        total_count += handler_instance.count([continueNudge], true, 'continue');
+        await delay(1);
+    }
+
     // The user wants to always have all example messages in the context
     if (power_user.pin_examples) {
         // first we send *all* example messages
@@ -568,8 +579,8 @@ async function sendWindowAIRequest(openai_msgs_tosend, signal, stream) {
     const currentModel = await window.ai.getCurrentModel();
     let temperature = parseFloat(oai_settings.temp_openai);
 
-    if (currentModel.includes('claude') && temperature > claude_max_temp) {
-        console.warn(`Claude model only supports temperature up to ${claude_max_temp}. Clamping ${temperature} to ${claude_max_temp}.`);
+    if ((currentModel.includes('claude') || currentModel.includes('palm-2')) && temperature > claude_max_temp) {
+        console.warn(`Claude and PaLM models only supports temperature up to ${claude_max_temp}. Clamping ${temperature} to ${claude_max_temp}.`);
         temperature = claude_max_temp;
     }
 
@@ -649,6 +660,19 @@ async function sendWindowAIRequest(openai_msgs_tosend, signal, stream) {
     }
 }
 
+function getChatCompletionModel() {
+    switch (oai_settings.chat_completion_source) {
+        case chat_completion_sources.CLAUDE:
+            return oai_settings.claude_model;
+        case chat_completion_sources.OPENAI:
+            return oai_settings.openai_model;
+        case chat_completion_sources.WINDOWAI:
+            return oai_settings.windowai_model;
+        default:
+            throw new Error(`Unknown chat completion source: ${oai_settings.chat_completion_source}`);
+    }
+}
+
 async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
     // Provide default abort signal
     if (!signal) {
@@ -661,23 +685,24 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
 
     let logit_bias = {};
     const isClaude = oai_settings.chat_completion_source == chat_completion_sources.CLAUDE;
+    const isOpenRouter = oai_settings.use_openrouter && oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI;
     const stream = type !== 'quiet' && oai_settings.stream_openai;
 
     // If we're using the window.ai extension, use that instead
     // Doesn't support logit bias yet
-    if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
+    if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI && !oai_settings.use_openrouter) {
         return sendWindowAIRequest(openai_msgs_tosend, signal, stream);
     }
 
     if (oai_settings.bias_preset_selected
-        && !isClaude // Claude doesn't support logit bias
+        && oai_settings.chat_completion_source == chat_completion_sources.OPENAI
         && Array.isArray(oai_settings.bias_presets[oai_settings.bias_preset_selected])
         && oai_settings.bias_presets[oai_settings.bias_preset_selected].length) {
         logit_bias = biasCache || await calculateLogitBias();
         biasCache = logit_bias;
     }
 
-    const model = isClaude ? oai_settings.claude_model : oai_settings.openai_model;
+    const model = getChatCompletionModel();
     const generate_data = {
         "messages": openai_msgs_tosend,
         "model": model,
@@ -691,6 +716,7 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
         "reverse_proxy": oai_settings.reverse_proxy,
         "logit_bias": logit_bias,
         "use_claude": isClaude,
+        "use_openrouter": isOpenRouter,
     };
 
     const generate_url = '/generate_openai';
@@ -767,7 +793,7 @@ function getStreamingReply(getMessage, data) {
     if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
         getMessage = data.completion || "";
     } else {
-        getMessage += data.choices[0]["delta"]["content"] || "";
+        getMessage += data.choices[0]?.delta?.content || data.choices[0]?.message?.content || "";
     }
     return getMessage;
 }
@@ -927,16 +953,15 @@ function getTokenizerModel() {
             return turboTokenizer;
         }
         else if (oai_settings.windowai_model.includes('claude')) {
-            return turboTokenizer;
+            return 'claude';
         }
         else if (oai_settings.windowai_model.includes('GPT-NeoXT')) {
             return 'gpt2';
         }
     }
 
-    // We don't have a Claude tokenizer for JS yet. Turbo 3.5 should be able to handle this.
     if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
-        return turboTokenizer;
+        return 'claude';
     }
 
     // Default to Turbo 3.5
@@ -980,6 +1005,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.claude_model = settings.claude_model ?? default_settings.claude_model;
     oai_settings.windowai_model = settings.windowai_model ?? default_settings.windowai_model;
     oai_settings.chat_completion_source = settings.chat_completion_source ?? default_settings.chat_completion_source;
+    oai_settings.use_openrouter = settings.use_openrouter ?? default_settings.use_openrouter;
 
     if (settings.nsfw_toggle !== undefined) oai_settings.nsfw_toggle = !!settings.nsfw_toggle;
     if (settings.keep_example_dialogue !== undefined) oai_settings.keep_example_dialogue = !!settings.keep_example_dialogue;
@@ -991,8 +1017,11 @@ function loadOpenAISettings(data, settings) {
 
     $('#stream_toggle').prop('checked', oai_settings.stream_openai);
 
+    $('#model_openai_select').val(oai_settings.openai_model);
     $(`#model_openai_select option[value="${oai_settings.openai_model}"`).attr('selected', true);
+    $('#model_claude_select').val(oai_settings.claude_model);
     $(`#model_claude_select option[value="${oai_settings.claude_model}"`).attr('selected', true);
+    $('#model_windowai_select').val(oai_settings.windowai_model);
     $(`#model_windowai_select option[value="${oai_settings.windowai_model}"`).attr('selected', true);
     $('#openai_max_context').val(oai_settings.openai_max_context);
     $('#openai_max_context_counter').text(`${oai_settings.openai_max_context}`);
@@ -1053,11 +1082,12 @@ function loadOpenAISettings(data, settings) {
 
     $('#chat_completion_source').val(oai_settings.chat_completion_source).trigger('change');
     $('#oai_max_context_unlocked').prop('checked', oai_settings.max_context_unlocked);
+    $('#use_openrouter').prop('checked', oai_settings.use_openrouter);
 }
 
 async function getStatusOpen() {
     if (is_get_status_openai) {
-        if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
+        if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI && !oai_settings.use_openrouter) {
             let status;
 
             if ('ai' in window) {
@@ -1080,6 +1110,7 @@ async function getStatusOpen() {
 
         let data = {
             reverse_proxy: oai_settings.reverse_proxy,
+            use_openrouter: oai_settings.use_openrouter && oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI,
         };
 
         return jQuery.ajax({
@@ -1087,7 +1118,7 @@ async function getStatusOpen() {
             url: '/getstatus_openai', //
             data: JSON.stringify(data),
             beforeSend: function () {
-                if (oai_settings.reverse_proxy) {
+                if (oai_settings.reverse_proxy && !data.use_openrouter) {
                     validateReverseProxy();
                 }
             },
@@ -1155,6 +1186,7 @@ async function saveOpenAIPreset(name, settings) {
         openai_model: settings.openai_model,
         claude_model: settings.claude_model,
         windowai_model: settings.windowai_model,
+        use_openrouter: settings.use_openrouter,
         temperature: settings.temp_openai,
         frequency_penalty: settings.freq_pen_openai,
         presence_penalty: settings.pres_pen_openai,
@@ -1528,6 +1560,7 @@ function onSettingsPresetChange() {
         nsfw_avoidance_prompt: ['#nsfw_avoidance_prompt_textarea', 'nsfw_avoidance_prompt', false],
         wi_format: ['#wi_format_textarea', 'wi_format', false],
         stream_openai: ['#stream_toggle', 'stream_openai', true],
+        use_openrouter: ['#use_openrouter', 'use_openrouter', true],
     };
 
     for (const [key, [selector, setting, isCheckbox]] of Object.entries(settingsToUpdate)) {
@@ -1546,8 +1579,8 @@ function onSettingsPresetChange() {
     saveSettingsDebounced();
 }
 
-function onModelChange() {
-    const value = $(this).val();
+async function onModelChange() {
+    let value = $(this).val();
 
     if ($(this).is('#model_claude_select')) {
         console.log('Claude model changed to', value);
@@ -1585,6 +1618,10 @@ function onModelChange() {
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
+        if (value == '' && 'ai' in window) {
+            value = (await window.ai.getCurrentModel()) || '';
+        }
+
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
         }
@@ -1600,8 +1637,14 @@ function onModelChange() {
         else if (value.includes('gpt-3.5')) {
             $('#openai_max_context').attr('max', gpt3_max);
         }
+        else if (value.includes('gpt-4-32k')) {
+            $('#openai_max_context').attr('max', gpt4_32k_max);
+        }
         else if (value.includes('gpt-4')) {
             $('#openai_max_context').attr('max', gpt4_max);
+        }
+        else if (value.includes('palm-2')) {
+            $('#openai_max_context').attr('max', palm2_max);
         }
         else if (value.includes('GPT-NeoXT')) {
             $('#openai_max_context').attr('max', gpt_neox_max);
@@ -1614,7 +1657,7 @@ function onModelChange() {
         oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
         $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
 
-        if (value.includes('claude')) {
+        if (value.includes('claude') || value.includes('palm-2')) {
             oai_settings.temp_openai = Math.min(claude_max_temp, oai_settings.temp_openai);
             $('#temp_openai').attr('max', claude_max_temp).val(oai_settings.temp_openai).trigger('input');
         }
@@ -1680,6 +1723,17 @@ async function onConnectButtonClick(e) {
     if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
         is_get_status_openai = true;
         is_api_button_press_openai = true;
+        const api_key_openrouter = $('#api_key_openrouter').val().trim();
+
+        if (api_key_openrouter.length) {
+            await writeSecret(SECRET_KEYS.OPENROUTER, api_key_openrouter);
+        }
+
+        if (oai_settings.use_openrouter && !secret_state[SECRET_KEYS.OPENROUTER]) {
+            console.log('No secret key saved for OpenRouter');
+            return;
+        }
+
         return await getStatusOpen();
     }
 
@@ -1950,6 +2004,12 @@ $(document).ready(function () {
     $('#oai_max_context_unlocked').on('input', function () {
         oai_settings.max_context_unlocked = !!$(this).prop('checked');
         $("#chat_completion_source").trigger('change');
+        saveSettingsDebounced();
+    });
+
+    $('#use_openrouter').on('input', function () {
+        oai_settings.use_openrouter = !!$(this).prop('checked');
+        reconnectOpenAi();
         saveSettingsDebounced();
     });
 

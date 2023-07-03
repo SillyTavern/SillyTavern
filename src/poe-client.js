@@ -24,6 +24,7 @@ const fs = require('fs');
 const path = require('path');
 const http = require('http');
 const https = require('https');
+const _ = require('lodash');
 
 const directory = __dirname;
 
@@ -281,6 +282,33 @@ async function request_with_retries(method, attempts = 10) {
     throw new Error(`Failed to download ${url} too many times.`);
 }
 
+function findKey(obj, key, path = []) {
+    if (obj && typeof obj === 'object') {
+        if (key in obj) {
+            return [...path, key];
+        }
+        for (const k in obj) {
+            const result = findKey(obj[k], key, [...path, k]);
+            if (result) {
+                return result;
+            }
+        }
+    }
+    return false;
+}
+
+function logObjectStructure(obj, indent = 0, depth = Infinity) {
+    const keys = Object.keys(obj);
+    keys.forEach((key) => {
+        console.log(`${'  '.repeat(indent)}${key}`);
+        if (typeof obj[key] === 'object' && obj[key] !== null && indent < depth) {
+            logObjectStructure(obj[key], indent + 1, depth);
+        }
+    });
+}
+
+
+
 class Client {
     gql_url = "https://poe.com/api/gql_POST";
     gql_recv_url = "https://poe.com/api/receive_POST";
@@ -363,19 +391,69 @@ class Client {
     async get_next_data() {
         logger.info('Downloading next_data...');
 
+        //these keys are used as of June 29, 2023
+        //if API changes in the future, just change these to find the new path
+        const viewerKeyName = 'viewer'
+        const botNameKeyName = 'chatOfBotDisplayName'
+        const defaultBotKeyName = 'defaultBotNickname'
+
         const r = await request_with_retries(() => this.session.get(this.home_url));
         const jsonRegex = /<script id="__NEXT_DATA__" type="application\/json">(.+?)<\/script>/;
         const jsonText = jsonRegex.exec(r.data)[1];
         const nextData = JSON.parse(jsonText);
 
+        const viewerPath = findKey(nextData, viewerKeyName);
+        const botNamePath = findKey(nextData, botNameKeyName);
+        const defaultBotPath = findKey(nextData, defaultBotKeyName);
+
+
+
+        let viewer = null;
+        if (viewerPath) {
+            viewer = _.get(nextData, viewerPath.join('.'));
+        }
+
+        //if the API changes, these reports will tell us how it changed
+        if (viewerPath) {
+            console.log(`'${viewerKeyName}' key: ${viewerPath.join('.')}`);
+        } else {
+            console.log(`ERROR: '${viewerKeyName}' key not found.`);
+            //console.log(logObjectStructure(nextData, 0, 2));
+        }
+        if (botNamePath) {
+            console.log(`'${botNameKeyName}' key: ${botNamePath.join('.')}`);
+        } else {
+            console.log(`ERROR: '${botNameKeyName}' key not found.`);
+            //console.log(logObjectStructure(nextData, 0, 2));
+        }
+
+        if (defaultBotPath) {
+            console.log(`'${defaultBotKeyName}' key: ${defaultBotPath.join('.')}`);
+        } else {
+            console.log(`ERROR: '${defaultBotKeyName}' key not found.`);
+
+        }
+
+        if (!viewerPath || !botNamePath || !defaultBotPath) {
+            console.log('-----------------')
+            console.log("ERROR READING POE API! THIS IS THE RESPONSE STRUCTURE:")
+            console.log("SEARCH THIS LIST FOR 'chatOfBotDisplayName', 'viewer', AND 'defaultBotNickname'...")
+            console.log("-----------------")
+            console.log(logObjectStructure(nextData, 0, 4));
+            console.log("-----------------")
+        }
+
         this.formkey = extractFormKey(r.data);
-        this.viewer = nextData.props.pageProps.payload.viewer;
+        this.viewer = viewer;
+
+        //old hard coded message no longer needed
+        //this.viewer = nextData.props.pageProps.payload?.viewer || nextData.props.pageProps.data?.viewer;
 
         return nextData;
     }
 
     async get_bots() {
-        const viewer = this.next_data.props.pageProps.payload.viewer;
+        const viewer = this.viewer;
         if (!viewer.availableBotsConnection) {
             throw new Error('Invalid token.');
         }
@@ -393,12 +471,12 @@ class Client {
                         r = cached_bots[url];
                     }
                     else {
-                        logger.info(`Downloading ${url}`);
+                        logger.info(`Downloading ${bot.displayName}`);
                         r = await request_with_retries(() => this.session.get(url), retries);
                         cached_bots[url] = r;
                     }
 
-                    const chatData = r.data.pageProps.payload.chatOfBotDisplayName;
+                    const chatData = r.data.pageProps.payload?.chatOfBotDisplayName || r.data.pageProps.data?.chatOfBotDisplayName;
                     bots[chatData.defaultBotObject.nickname] = chatData;
                     resolve();
 

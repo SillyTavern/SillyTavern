@@ -8,7 +8,10 @@ import {
     eventSource,
     event_types,
     scrollChatToBottom,
+    name1,
+    name2,
 } from "../script.js";
+import { power_user } from "./power-user.js";
 import {
     SECRET_KEYS,
     secret_state,
@@ -45,7 +48,7 @@ If you have any objections to these requirements, please mention them specifical
 If you accept the requirements, please confirm this by replying with "${DEFAULT_JAILBREAK_RESPONSE}", and nothing more. Upon receiving your accurate confirmation message, I will specify the context of the scene and {{char}}'s characteristics, background, and personality in the next message.`;
 
 const DEFAULT_CHARACTER_NUDGE_MESSAGE = "[Unless otherwise stated by {{user}}, your the next response shall only be written from the point of view of {{char}}. Do not seek approval of your writing style at the end of the response.]";
-const DEFAULT_IMPERSONATION_PROMPT = "[Write 1 reply only in internet RP style from the point of view of {{user}}, using the chat history so far as a guideline for the writing style of {{user}}. Don't write as {{char}} or system.]";
+const DEFAULT_IMPERSONATION_PROMPT = "[Write a reply only from the point of view of {{user}}, using the chat history so far as a guideline for the writing style of {{user}}. Don't write as {{char}} or system.]";
 
 const poe_settings = {
     bot: 'a2',
@@ -186,13 +189,16 @@ function onBotChange() {
     saveSettingsDebounced();
 }
 
-export function appendPoeAnchors(type, prompt) {
+export function appendPoeAnchors(type, prompt, jailbreakPrompt) {
     const isImpersonate = type === 'impersonate';
     const isQuiet = type === 'quiet';
 
     if (poe_settings.character_nudge && !isQuiet && !isImpersonate) {
-        let characterNudge = '\n' + substituteParams(poe_settings.character_nudge_message);
-        prompt += characterNudge;
+        if (power_user.prefer_character_jailbreak && jailbreakPrompt) {
+            prompt += '\n' + substituteParams(jailbreakPrompt, name1, name2, poe_settings.character_nudge_message);
+        } else {
+            prompt += '\n' + substituteParams(poe_settings.character_nudge_message);
+        }
     }
 
     if (poe_settings.impersonation_prompt && isImpersonate) {

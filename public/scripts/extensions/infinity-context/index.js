@@ -111,9 +111,9 @@ async function loadSettings() {
     $('#chromadb_n_results').val(extension_settings.chromadb.n_results).trigger('input');
     $('#chromadb_split_length').val(extension_settings.chromadb.split_length).trigger('input');
     $('#chromadb_file_split_length').val(extension_settings.chromadb.file_split_length).trigger('input');
-    $('#chromadb_keep_context_proportion').val(extension_settings.chromadb.keep_context_proportion).trigger('input');  
-    $('#chromadb_custom_depth').val(extension_settings.chromadb.chroma_depth).trigger('input'); 
-    $('#chromadb_custom_msg').val(extension_settings.chromadb.recall_msg).trigger('input'); 
+    $('#chromadb_keep_context_proportion').val(extension_settings.chromadb.keep_context_proportion).trigger('input');
+    $('#chromadb_custom_depth').val(extension_settings.chromadb.chroma_depth).trigger('input');
+    $('#chromadb_custom_msg').val(extension_settings.chromadb.recall_msg).trigger('input');
     $('#chromadb_auto_adjust').prop('checked', extension_settings.chromadb.auto_adjust);
     $('#chromadb_freeze').prop('checked', extension_settings.chromadb.freeze);
     enableDisableSliders();
@@ -407,7 +407,7 @@ async function queryMultiMessages(chat_id, query) {
     url.pathname = '/api/chromadb/multiquery';
 
     const queryMessagesResult = await fetch(url, {
-        method: 'POST',  
+        method: 'POST',
         body: JSON.stringify({ chat_list, query, n_results: extension_settings.chromadb.n_results }),
         headers: postHeaders,
     });
@@ -619,7 +619,7 @@ window.chromadb_interceptGeneration = async (chat, maxContext) => {
                     //prototype chroma duplicate removal
                     let chatset = new Set(chat.map(obj => obj.mes));
                     newChat = newChat.filter(obj => !chatset.has(obj.mes));
-                    
+
                     if(chromaDepth === -1){
                         chat.splice(chat.length, 0, ...newChat);
                     }
@@ -702,7 +702,6 @@ jQuery(async () => {
                 <option value="date">Sort memories by date</option>
                 <option value="distance">Sort memories by relevance</option>
             </select>
-            <label for="chromadb_keep_context">How many original chat messages to keep: (<span id="chromadb_keep_context_value"></span>) messages</label>
             <label for="chromadb_keep_context"><small>How many original chat messages to keep: (<span id="chromadb_keep_context_value"></span>) messages</small></label>
             <input id="chromadb_keep_context" type="range" min="${defaultSettings.keep_context_min}" max="${defaultSettings.keep_context_max}" step="${defaultSettings.keep_context_step}" value="${defaultSettings.keep_context}" />
             <label for="chromadb_n_results"><small>Maximum number of ChromaDB 'memories' to inject: (<span id="chromadb_n_results_value"></span>) messages</small></label>

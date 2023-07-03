@@ -501,7 +501,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
                 activatedMembers = activateListOrder(group.members.slice(0, 1));
             }
         }
-        else if (type === "swipe") {
+        else if (type === "swipe" || type === 'continue') {
             activatedMembers = activateSwipe(group.members);
 
             if (activatedMembers.length === 0) {
@@ -524,7 +524,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
             toastr.warning('All group members are disabled. Enable at least one to get a reply.');
 
             // Send user message as is
-            const bias = getBiasStrings(userInput);
+            const bias = getBiasStrings(userInput, type);
             await sendMessageAsUser(userInput, bias.messageBias);
             await saveChatConditional();
             $('#send_textarea').val('').trigger('input');
@@ -534,7 +534,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
         for (const chId of activatedMembers) {
             deactivateSendButtons();
             isGenerationDone = false;
-            const generateType = type == "swipe" || type == "impersonate" || type == "quiet" ? type : "group_chat";
+            const generateType = type == "swipe" || type == "impersonate" || type == "quiet" || type == 'continue' ? type : "group_chat";
             setCharacterId(chId);
             setCharacterName(characters[chId].name)
 
@@ -974,12 +974,19 @@ function select_group_chats(groupId, skipAnimation) {
                 ? getThumbnailUrl('avatar', character.avatar)
                 : default_avatar;
         const template = $("#group_member_template .group_member").clone();
+        const isFav = character.fav || character.fav == 'true';
         template.data("id", character.avatar);
         template.find(".avatar img").attr("src", avatar);
         template.find(".avatar img").attr("title", character.avatar);
         template.find(".ch_name").text(character.name);
         template.attr("chid", characters.indexOf(character));
-        template.toggleClass('is_fav', character.fav || character.fav == 'true');
+        template.find('.ch_fav').val(isFav);
+        template.toggleClass('is_fav', isFav);
+
+        // Display inline tags
+        const tags = getTagsList(character.avatar);
+        const tagsElement = template.find('.tags');
+        tags.forEach(tag => appendTagToList(tagsElement, tag, {}));
 
         if (!group) {
             template.find('[data-action="speak"]').hide();
@@ -999,7 +1006,6 @@ function select_group_chats(groupId, skipAnimation) {
     }
 
     sortGroupMembers("#rm_group_add_members .group_member");
-    filterMembersByFavorites(false);
 
     const groupHasMembers = !!$("#rm_group_members").children().length;
     $("#rm_group_submit").prop("disabled", !groupHasMembers);
@@ -1278,24 +1284,6 @@ async function createGroup() {
     }
 }
 
-function toggleFilterByFavorites() {
-    filterMembersByFavorites(!fav_filter_on);
-}
-
-function filterMembersByFavorites(value) {
-    fav_filter_on = value;
-    $('#group_fav_filter').toggleClass('fav_on', fav_filter_on);
-
-    if (!fav_filter_on) {
-        $("#rm_group_add_members .group_member").removeClass('hiddenByFav');
-    } else {
-        $("#rm_group_add_members .group_member").each(function () {
-            const isValidSearch = $(this).hasClass("is_fav");
-            $(this).toggleClass('hiddenByFav', !isValidSearch);
-        });
-    }
-}
-
 export async function createNewGroupChat(groupId) {
     const group = groups.find(x => x.id === groupId);
 
@@ -1491,7 +1479,6 @@ function stopAutoModeGeneration() {
 jQuery(() => {
     $(document).on("click", ".group_select", selectGroup);
     $("#rm_group_filter").on("input", filterGroupMembers);
-    $("#group_fav_filter").on("click", toggleFilterByFavorites);
     $("#rm_group_submit").on("click", createGroup);
     $("#rm_group_scenario").on("click", setScenarioOverride);
     $("#rm_group_automode").on("input", function () {
