@@ -81,7 +81,7 @@ function extractFormKey(html) {
     }
     const formKey = formKeyList.join("");
 
-    return formKey;
+    return formKey.slice(0, -1);
 }
 
 
@@ -394,7 +394,7 @@ class Client {
         //these keys are used as of June 29, 2023
         //if API changes in the future, just change these to find the new path
         const viewerKeyName = 'viewer'
-        const botNameKeyName = 'chatOfBotDisplayName'
+        const botNameKeyName = 'chatOfBotHandle'
         const defaultBotKeyName = 'defaultBotNickname'
 
         const r = await request_with_retries(() => this.session.get(this.home_url));
@@ -476,7 +476,7 @@ class Client {
                         cached_bots[url] = r;
                     }
 
-                    const chatData = r.data.pageProps.payload?.chatOfBotDisplayName || r.data.pageProps.data?.chatOfBotDisplayName;
+                    const chatData = r.data.pageProps.payload?.chatOfBotDisplayName || r.data.pageProps.data?.chatOfBotHandle;
                     bots[chatData.defaultBotObject.nickname] = chatData;
                     resolve();
 
