@@ -12,7 +12,6 @@
     display: flex;
     flex-direction: column;
     min-height: 300px;
-    max-height: 800px;
 }
 
 #completion_prompt_manager .completion_prompt_manager_list_separator hr {
