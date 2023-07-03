@@ -2240,11 +2240,14 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 cyclePrompt += ' ';
             }
 
-            streamingProcessor && (streamingProcessor.firstMessageText = cyclePrompt);
+            // Save reply does add cycle text to the prompt, so it's not needed here
+            streamingProcessor && (streamingProcessor.firstMessageText = '');
             message_already_generated = cyclePrompt;
             tokens_already_generated = 1; // Multigen copium
         }
 
+        // Multigen rewrites the type and I don't know why
+        const originalType = type;
         runGenerate(cyclePrompt);
 
         async function runGenerate(cycleGenerationPromt = '') {
@@ -2649,7 +2652,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
                         tokens_already_generated = 0;
                         generatedPromtCache = "";
-                        const substringStart = type !== 'continue' ? magFirst.length : 0;
+                        const substringStart = originalType !== 'continue' ? magFirst.length : 0;
                         getMessage = message_already_generated.substring(substringStart);
                     }
 
@@ -2672,7 +2675,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                             resolve(getMessage);
                         }
                         else {
-                            if (!isMultigenEnabled()) {
+                            // Without streaming we'll be having a full message on continuation. Treat it as a multigen last chunk.
+                            if (!isMultigenEnabled() && originalType !== 'continue') {
                                 ({ type, getMessage } = saveReply(type, getMessage, this_mes_is_name, title));
                             }
                             else {
