@@ -219,6 +219,15 @@
     font-size: 16px;
 }
 
+#prompt-manager-export-format-popup  {
+    padding: 0.25em;
+    display:none;
+}
+
+#prompt-manager-export-format-popup[data-show]  {
+    display:block;
+}
+
 #completion_prompt_manager_popup {
     margin-top: 0;
 }
