@@ -35,6 +35,7 @@ async function loadSettings() {
         }
     }
 
+    initializeEmptySlots(extension_settings.quickReply.numberOfSlots);
     generateQuickReplyElements();
 
     for (let i = 1; i <= extension_settings.quickReply.numberOfSlots; i++) {
@@ -131,6 +132,15 @@ async function onQuickReplyNumberOfSlotsInput() {
     extension_settings.quickReply.quickReplySlots.length = numberOfSlots;
 
     // Initialize new slots
+    initializeEmptySlots(numberOfSlots);
+
+    await loadSettings();
+    addQuickReplyBar();
+    moduleWorker();
+    saveSettingsDebounced();
+}
+
+function initializeEmptySlots(numberOfSlots) {
     for (let i = 0; i < numberOfSlots; i++) {
         if (!extension_settings.quickReply.quickReplySlots[i]) {
             extension_settings.quickReply.quickReplySlots[i] = {
@@ -140,11 +150,6 @@ async function onQuickReplyNumberOfSlotsInput() {
             };
         }
     }
-
-    await loadSettings();
-    addQuickReplyBar();
-    moduleWorker();
-    saveSettingsDebounced();
 }
 
 function generateQuickReplyElements() {
