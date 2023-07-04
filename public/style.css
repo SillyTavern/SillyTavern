@@ -293,6 +293,7 @@ code {
     padding: 0 3px;
     /* max-width: calc(100svw - 95px); */
     line-height: var(--mainFontSize);
+    color: var(--white70a);
 }
 
 
@@ -745,7 +746,7 @@ hr {
     min-width: 50px !important;
 }
 
-.hotswapAvatar.group_select .avatar img {
+.hotswapAvatar.group_select .avatar.avatar_collage img {
     width: 100%;
     height: 100%;
     object-fit: cover;

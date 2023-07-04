@@ -17,10 +17,11 @@ import {
     comment_avatar,
     system_avatar,
     system_message_types,
-    name1,
-    saveSettings,
+    replaceCurrentChat,
+    setCharacterId,
 } from "../script.js";
 import { humanizedDateTime } from "./RossAscends-mods.js";
+import { resetSelectedGroup } from "./group-chats.js";
 import { chat_styles, power_user } from "./power-user.js";
 export {
     executeSlashCommands,
@@ -111,10 +112,52 @@ parser.addCommand('single', setStoryModeCallback, ['story'], ' – sets the mess
 parser.addCommand('bubble', setBubbleModeCallback, ['bubbles'], ' – sets the message style to bubble chat mode', true, true);
 parser.addCommand('flat', setFlatModeCallback, ['default'], ' – sets the message style to flat chat mode', true, true);
 parser.addCommand('continue', continueChatCallback, ['cont'], ' – continues the last message in the chat', true, true);
+parser.addCommand('go', goToCharacterCallback, ['char'], '<span class="monospace">(name)</span> – opens up a chat with the character by its name', true, true);
 
 const NARRATOR_NAME_KEY = 'narrator_name';
 const NARRATOR_NAME_DEFAULT = 'System';
 const COMMENT_NAME_DEFAULT = 'Note';
+
+function findCharacterIndex(name) {
+    const matchTypes = [
+        (a, b) => a === b,
+        (a, b) => a.startsWith(b),
+        (a, b) => a.includes(b),
+    ];
+
+    for (const matchType of matchTypes) {
+        const index = characters.findIndex(x => matchType(x.name.toLowerCase(), name.toLowerCase()));
+        if (index !== -1) {
+            return index;
+        }
+    }
+
+    return -1;
+}
+
+function goToCharacterCallback(_, name) {
+    if (!name) {
+        console.warn('WARN: No character name provided for /go command');
+        return;
+    }
+
+    name = name.trim();
+    const characterIndex = findCharacterIndex(name);
+
+    if (characterIndex !== -1) {
+        openChat(characterIndex);
+    } else {
+        console.warn(`No matches found for name "${name}"`);
+    }
+}
+
+function openChat(id) {
+    resetSelectedGroup();
+    setCharacterId(id);
+    setTimeout(() => {
+        replaceCurrentChat();
+    }, 1);
+}
 
 function continueChatCallback() {
     // Prevent infinite recursion
@@ -276,9 +319,27 @@ async function sendCommentMessage(_, text) {
     saveChatConditional();
 }
 
-function helpCommandCallback() {
-    sendSystemMessage(system_message_types.HELP);
+function helpCommandCallback(_, type) {
+    switch (type?.trim()) {
+        case 'slash':
+        case '1':
+            sendSystemMessage(system_message_types.SLASH_COMMANDS);
+            break;
+        case 'format':
+        case '2':
+            sendSystemMessage(system_message_types.FORMATTING);
+            break;
+        case 'hotkeys':
+        case '3':
+            sendSystemMessage(system_message_types.HOTKEYS);
+            break;
+        default:
+            sendSystemMessage(system_message_types.HELP);
+            break;
+    }
 }
+
+window['displayHelp'] = (page) => helpCommandCallback(null, page);
 
 function setBackgroundCallback(_, bg) {
     if (!bg) {

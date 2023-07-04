@@ -262,6 +262,7 @@ async function importTags(imported_char) {
     };
     saveSettingsDebounced();
     await getCharacters();
+    await getSettings();
     printTagFilters(tag_filter_types.character);
     printTagFilters(tag_filter_types.group_member);
 

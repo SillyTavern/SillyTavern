@@ -318,6 +318,9 @@ const system_message_types = {
     BOOKMARK_BACK: "bookmark_back",
     NARRATOR: "narrator",
     COMMENT: "comment",
+    SLASH_COMMANDS: "slash_commands",
+    FORMATTING: "formatting",
+    HOTKEYS: "hotkeys",
 };
 
 const extension_prompt_types = {
@@ -333,12 +336,31 @@ const system_messages = {
         is_system: true,
         is_name: true,
         mes: [
-            `Hi there! The following chat formatting commands are supported:
+            `Hello there! Please select the help topic you would like to learn more about:
             <ul>
-            <li><tt>{​{text}​}</tt> - sets a one-time behavioral bias for the AI. Resets when you send the next message.
-            </li>
+            <li><a href="javascript:displayHelp('1')">Slash Commands</a> (or <tt>/help slash</tt>)</li>
+            <li><a href="javascript:displayHelp('2')">Formatting</a> (or <tt>/help format</tt>)</li>
+            <li><a href="javascript:displayHelp('3')">Hotkeys</a> (or <tt>/help hotkeys</tt>)</li>
             </ul>
-            Hotkeys/Keybinds:
+            <br><b>Still got questions left? The <a target="_blank" href="https://docs.sillytavern.app/">Official SillyTavern Documentation Website</a> has much more information!</b>`
+        ]
+    },
+    slash_commands: {
+        name: systemUserName,
+        force_avatar: system_avatar,
+        is_user: false,
+        is_system: true,
+        is_name: true,
+        mes: '',
+    },
+    hotkeys: {
+        name: systemUserName,
+        force_avatar: system_avatar,
+        is_user: false,
+        is_system: true,
+        is_name: true,
+        mes: [
+            `Hotkeys/Keybinds:
             <ul>
             <li><tt>Up</tt> = Edit last message in chat</li>
             <li><tt>Ctrl+Up</tt> = Edit last USER message in chat</li>
@@ -350,7 +372,26 @@ const system_messages = {
             <li><tt>Escape</tt> = stop AI response generation</li>
             <li><tt>Ctrl+Shift+Up</tt> = Scroll to context line</li>
             <li><tt>Ctrl+Shift+Down</tt> = Scroll chat to bottom</li>
-
+            </ul>`
+        ]
+    },
+    formatting: {
+        name: systemUserName,
+        force_avatar: system_avatar,
+        is_user: false,
+        is_system: true,
+        is_name: true,
+        mes: [
+            `Text formatting commands:
+            <ul>
+            <li><tt>{​{text}​}</tt> - sets a one-time behavioral bias for the AI. Resets when you send the next message.</li>
+            <li><tt>*text*</tt> - displays as <i>italics</i></li>
+            <li><tt>**text**</tt> - displays as <b>bold</b></li>
+            <li><tt>***text***</tt> - displays as <b><i>bold italics</i></b></li>
+            <li><tt>` + "```" + `text` + "```" + `</tt> - displays as a code block</li>
+            <li><tt>` + "`" + `text` + "`" + `</tt> - displays as inline code</li>
+            <li><tt>$$ text $$</tt> - renders a LaTeX formula (if enabled)</li>
+            <li><tt>$ text $</tt> - renders an AsciiMath formula (if enabled)</li>
             </ul>`
         ]
     },
@@ -1525,9 +1566,8 @@ function sendSystemMessage(type, text, extra = {}) {
         newMessage.mes = text;
     }
 
-    if (type == system_message_types.HELP) {
-        newMessage.mes += getSlashCommandsHelp();
-        newMessage.mes += `<br><b>Still got questions left? The <a target="_blank" href="https://docs.sillytavern.app/">Official SillyTavern Documentation Website</a> has much more information!</b>`;
+    if (type == system_message_types.SLASH_COMMANDS) {
+        newMessage.mes = getSlashCommandsHelp();
     }
 
     if (!newMessage.extra) {
