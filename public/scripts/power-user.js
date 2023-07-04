@@ -1131,8 +1131,9 @@ $(document).ready(() => {
         const winWidth = window.innerWidth;
         const winHeight = window.innerHeight;
         console.debug(`Zoom: ${zoomLevel}, X:${winWidth}, Y:${winHeight}`);
-
-        resetMovablePanels('resize');
+        if (Object.keys(power_user.movingUIState).length > 0) {
+            resetMovablePanels('resize');
+        }
         // Adjust layout and styling here
     });
 
