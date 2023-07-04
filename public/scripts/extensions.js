@@ -68,6 +68,7 @@ const extension_settings = {
         fluctuation: 0.1,
         enabled: false,
     },
+    stt: {},
 };
 
 let modules = [];
