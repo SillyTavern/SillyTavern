@@ -881,9 +881,11 @@ PromptManagerModule.prototype.renderPromptManager = function () {
                 <select id="${this.configuration.prefix}prompt_manager_footer_append_prompt" class="text_pole" name="append-prompt">
                     ${prompts}
                 </select>
-                <a class="menu_button" data-i18n="Add">Add</a>
-                <a class="caution menu_button" data-i18n="Delete">Delete</a>
-                <a class="menu_button" data-i18n="New">New</a>
+                <a class="menu_button fa-chain fa-solid" title="Add" data-i18n="Add"></a>
+                <a class="caution menu_button fa-x fa-solid" title="Delete" data-i18n="Delete"></a>
+                <a class="menu_button fa-file-arrow-up fa-solid" title="Import" data-i18n="Import"></a>
+                <a class="menu_button fa-file-arrow-down fa-solid" title="Export" data-i18n="Export"></a>
+                <a class="menu_button fa-plus-square fa-solid" title="New" data-i18n="New"></a>
             </div>
         `;
 
@@ -960,7 +962,7 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
         let detachSpanHtml = '';
         if (this.isPromptDeletionAllowed(prompt)) {
             detachSpanHtml = `
-                <span title="delete" class="prompt-manager-detach-action caution fa-solid fa-x"></span>
+                <span title="detach" class="prompt-manager-detach-action caution fa-solid fa-chain-broken"></span>
             `;
         }
 

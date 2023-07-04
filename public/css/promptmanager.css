@@ -211,7 +211,12 @@
 }
 
 #completion_prompt_manager .completion_prompt_manager_footer a {
-    padding: 5px 5px;
+    padding: 0.75em;
+    font-size: 12px;
+}
+
+#completion_prompt_manager_footer_append_prompt {
+    font-size: 16px;
 }
 
 #completion_prompt_manager_popup {
