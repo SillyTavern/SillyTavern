@@ -614,6 +614,10 @@ function loadPowerUserSettings(settings, data) {
         power_user.chat_display = chat_styles.DEFAULT;
     }
 
+    if (power_user.waifuMode === '') {
+        power_user.waifuMode = false;
+    }
+
     $('#trim_spaces').prop("checked", power_user.trim_spaces);
     $('#continue_on_send').prop("checked", power_user.continue_on_send);
     $('#auto_swipe').prop("checked", power_user.auto_swipe);
