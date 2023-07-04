@@ -12,22 +12,38 @@ const REGEX_PLACEMENT = {
 }
 
 async function saveRegexScript(regexScript, existingScriptIndex) {
-    // If the script index is undefined or already exists
-    // Don't fire this if editing an existing script
+    // If not editing
     if (existingScriptIndex === -1) {
+        // Is the script name undefined?
         if (!regexScript.scriptName) {
-            toastr.error(`Could not save regex: The script name was undefined or empty!`);
+            toastr.error(`Could not save regex script: The script name was undefined or empty!`);
             return;
         }
     
+        // Does the script name already exist?
         if (extension_settings.regex.find((e) => e.scriptName === regexScript.scriptName)) {
-            toastr.error(`Could not save regex: The name ${regexScript.scriptName} already exists.`);
+            toastr.error(`Could not save regex script: A script with name ${regexScript.scriptName} already exists.`);
+            return;
+        }
+    } else {
+        // Does the script name already exist somewhere else?
+        // (If this fails, make it a .filter().map() to index array)
+        const foundIndex = extension_settings.regex.findIndex((e) => e.scriptName === regexScript.scriptName);
+        if (foundIndex !== existingScriptIndex && foundIndex !== -1) {
+            toastr.error(`Could not save regex script: A script with name ${regexScript.scriptName} already exists.`);
             return;
         }
     }
 
+    // Is a find regex present?
+    if (regexScript.findRegex.length === 0) {
+        toastr.error(`Could not save regex script: A find regex is required!`);
+        return;
+    }
+
+    // Is there someplace to place results?
     if (regexScript.placement.length === 0) {
-        toastr.error(`Could not save regex: One placement checkbox must be selected!`);
+        toastr.error(`Could not save regex script: One placement checkbox must be selected!`);
         return;
     }
 
