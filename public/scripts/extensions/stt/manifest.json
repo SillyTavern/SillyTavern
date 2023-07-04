@@ -1,0 +1,13 @@
+{
+    "display_name": "STT",
+    "loading_order": 13,
+    "requires": [
+        "vosk-stt"
+    ],
+    "optional": [],
+    "js": "index.js",
+    "css": "style.css",
+    "author": "Tony-sama",
+    "version": "0.1.0",
+    "homePage": "https://github.com/Tony-sama/SillyTavern-extras"
+}
