@@ -87,9 +87,10 @@ async function onRegexEditorOpenClick(existingId) {
             editorHtml.find(`.regex_script_name`).val(existingScript.scriptName);
             editorHtml.find(`.find_regex`).val(existingScript.findRegex);
             editorHtml.find(`.regex_replace_string`).val(existingScript.replaceString);
+            editorHtml.find(`.regex_trim_strings`).val(existingScript.trimStrings?.join("\n") || []);
             editorHtml
                 .find(`input[name="disabled"]`)
-                .prop("checked", existingScript.disabled);
+                .prop("checked", existingScript.disabled ?? false);
             editorHtml
                 .find(`input[name="run_on_edit"]`)
                 .prop("checked", existingScript.runOnEdit);
@@ -116,13 +117,14 @@ async function onRegexEditorOpenClick(existingId) {
             scriptName: editorHtml.find(".regex_script_name").val(),
             findRegex: editorHtml.find(".find_regex").val(),
             replaceString: editorHtml.find(".regex_replace_string").val(),
+            trimStrings: editorHtml.find(".regex_trim_strings").val().split("\n").filter((e) => e.length !== 0) || [],
             placement:
                 editorHtml
                     .find(`input[name="replace_position"]`)
                     .filter(":checked")
                     .map(function() { return parseInt($(this).val()) })
                     .get()
-                    .filter((e) => e !== NaN) ?? [],
+                    .filter((e) => e !== NaN) || [],
             disabled:
                 editorHtml
                     .find(`input[name="disabled"]`)

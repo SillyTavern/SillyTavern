@@ -8,7 +8,7 @@
                     <small data-i18n="Script Name">Script Name</small>
                 </label>
                 <div>
-                    <input class="regex_script_name text_pole textarea_compact" type="text" maxlength="100" />
+                    <input class="regex_script_name text_pole textarea_compact" type="text" />
                 </div>
             </div>
             <div class="flex1">
@@ -16,19 +16,30 @@
                     <small data-i18n="Find Regex">Find Regex</small>
                 </label>
                 <div>
-                    <input class="find_regex text_pole textarea_compact" type="text" maxlength="100" />
+                    <input class="find_regex text_pole textarea_compact" type="text" />
                 </div>
             </div>
             <div class="flex1">
-                <label for="replace_string" class="title_restorable">
+                <label for="regex_replace_string" class="title_restorable">
                     <small data-i18n="Replace With">Replace With</small>
                 </label>
                 <div>
                     <textarea 
                         class="regex_replace_string text_pole wide100p textarea_compact"
-                        placeholder="Use {{match}} to include the matched text from Find Regex"
+                        placeholder="Use {{match}} to include the matched text from the Find Regex"
                         rows="2"
-                        maxlength="100"
+                    ></textarea>
+                </div>
+            </div>
+            <div class="flex1">
+                <label for="regex_trim_strings" class="title_restorable">
+                    <small data-i18n="Trim Out">Trim Out</small>
+                </label>
+                <div>
+                    <textarea 
+                        class="regex_trim_strings text_pole wide100p textarea_compact"
+                        placeholder="Globally trims any unwanted parts from a regex match before replacement. Separate each element by an enter."
+                        rows="3"
                     ></textarea>
                 </div>
             </div>

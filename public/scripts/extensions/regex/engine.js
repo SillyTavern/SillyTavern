@@ -30,9 +30,19 @@ function runRegexScript(regexScript, rawString) {
         const fencedMatch = match[0];
         const capturedMatch = match[1];
 
+        let trimCapturedMatch;
+        let trimFencedMatch;
+        if (capturedMatch) {
+            const tempTrimCapture = filterString(capturedMatch, regexScript.trimStrings);
+            trimFencedMatch = fencedMatch.replaceAll(capturedMatch, tempTrimCapture);
+            trimCapturedMatch = tempTrimCapture;
+        } else {
+            trimFencedMatch = filterString(fencedMatch, regexScript.trimStrings);
+        }
+
         // TODO: Use substrings for replacement. But not necessary at this time.
         // A substring is from match.index to match.index + match[0].length or fencedMatch.length
-        const subReplaceString = substituteRegexParams(regexScript.replaceString, { regexMatch: capturedMatch ?? fencedMatch });
+        const subReplaceString = substituteRegexParams(regexScript.replaceString, trimCapturedMatch ?? trimFencedMatch);
         if (!newString) {
             newString = rawString.replace(fencedMatch, subReplaceString);
         } else {
@@ -48,8 +58,19 @@ function runRegexScript(regexScript, rawString) {
     return newString;
 }
 
-// Substitutes parameters 
-function substituteRegexParams(rawString, { regexMatch }) {
+// Filters anything to trim from the regex match
+function filterString(rawString, trimStrings) {
+    let finalString = rawString;
+    trimStrings.forEach((trimString) => {
+        const subTrimString = substituteParams(trimString);
+        finalString = finalString.replaceAll(subTrimString, "");
+    });
+
+    return finalString;
+}
+
+// Substitutes regex-specific and normal parameters
+function substituteRegexParams(rawString, regexMatch) {
     let finalString = rawString;
     finalString = finalString.replace("{{match}}", regexMatch);
     finalString = substituteParams(finalString);
