@@ -4900,11 +4900,10 @@ function updateMessage(div) {
     const mesBlock = div.closest(".mes_block");
     let text = mesBlock.find(".edit_textarea").val();
     const mes = chat[this_edit_mes_id];
-
     extension_settings.regex.forEach((script) => {
         if (script.runOnEdit && (
-            (script.placement.includes(REGEX_PLACEMENT.aiOutput) && mes.is_name) || 
-            (script.placement.includes(REGEX_PLACEMENT.userInput) && mes.is_user) ||
+            (script.placement.includes(REGEX_PLACEMENT.aiOutput) && (mes.is_name && !mes.is_user)) || 
+            (script.placement.includes(REGEX_PLACEMENT.userInput) && (mes.is_name && mes.is_user)) ||
             (script.placement.includes(REGEX_PLACEMENT.system) && mes.extra?.type === "narrator")
         )) {
             const regexResult = runRegexScript(script, text);
