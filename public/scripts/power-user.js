@@ -27,7 +27,7 @@ import {
 
 import { registerSlashCommand } from "./slash-commands.js";
 
-import { delay } from "./utils.js";
+import { delay, debounce } from "./utils.js";
 
 export {
     loadPowerUserSettings,
@@ -983,7 +983,7 @@ async function saveTheme() {
     }
 }
 
-async function resetMovablePanels() {
+async function resetMovablePanels(type) {
     const panelIds = [
         'sheld',
         'left-nav-panel',
@@ -1025,9 +1025,12 @@ async function resetMovablePanels() {
 
     eventSource.once(event_types.SETTINGS_UPDATED, () => {
         $(".resizing").removeClass('resizing');
-        toastr.success('Panel positions reset');
+        if (type === 'resize') {
+            toastr.warning('Panel positions reset due to zoom/resize');
+        } else {
+            toastr.success('Panel positions reset');
+        }
     });
-
 }
 
 function doNewChat() {
@@ -1121,6 +1124,18 @@ function doResetPanels() {
 }
 
 $(document).ready(() => {
+
+    $(window).on('resize', async () => {
+        //console.log('Window resized!');
+        const zoomLevel = Number(window.devicePixelRatio).toFixed(2);
+        const winWidth = window.innerWidth;
+        const winHeight = window.innerHeight;
+        console.debug(`Zoom: ${zoomLevel}, X:${winWidth}, Y:${winHeight}`);
+
+        resetMovablePanels('resize');
+        // Adjust layout and styling here
+    });
+
     // Settings that go to settings.json
     $("#collapse-newlines-checkbox").change(function () {
         power_user.collapse_newlines = !!$(this).prop("checked");
