@@ -102,6 +102,7 @@ class PromptCollection {
 
 function PromptManagerModule() {
     this.configuration = {
+        version: 1,
         prefix: '',
         containerIdentifier: '',
         listIdentifier: '',
@@ -128,6 +129,9 @@ function PromptManagerModule() {
 
     this.tryGenerate = () => { };
     this.saveServiceSettings = () => { };
+
+    this.handleImport = null;
+    this.handleExport = null;
 
     this.handleToggle = () => { };
     this.handleInspect = () => { };
@@ -881,21 +885,58 @@ PromptManagerModule.prototype.renderPromptManager = function () {
                 <select id="${this.configuration.prefix}prompt_manager_footer_append_prompt" class="text_pole" name="append-prompt">
                     ${prompts}
                 </select>
-                <a class="menu_button fa-chain fa-solid" title="Add" data-i18n="Add"></a>
-                <a class="caution menu_button fa-x fa-solid" title="Delete" data-i18n="Delete"></a>
-                <a class="menu_button fa-file-arrow-up fa-solid" title="Import" data-i18n="Import"></a>
-                <a class="menu_button fa-file-arrow-down fa-solid" title="Export" data-i18n="Export"></a>
-                <a class="menu_button fa-plus-square fa-solid" title="New" data-i18n="New"></a>
+                <a class="menu_button fa-chain fa-solid" title="Attach prompt" data-i18n="Add"></a>
+                <a class="caution menu_button fa-x fa-solid" title="Delete prompt" data-i18n="Delete"></a>
+                <a class="menu_button fa-file-arrow-down fa-solid" id="prompt-manager-export" title="Export this prompt list" data-i18n="Export"></a>
+                <a class="menu_button fa-file-arrow-up fa-solid" id="prompt-manager-import" title="Import a prompt list" data-i18n="Import"></a>
+                <a class="menu_button fa-plus-square fa-solid" title="New prompt" data-i18n="New"></a>
+            </div>
+        `;
+
+        const exportPopup = `
+            <div id="prompt-manager-export-format-popup" class="list-group">
+                <a class="export-promptmanager-prompts-full list-group-item">Export all prompts</a>
+                <a class="export-promptmanager-prompts-character list-group-item">Export user prompts</a>
             </div>
         `;
 
         const rangeBlockDiv = promptManagerDiv.querySelector('.range-block');
         rangeBlockDiv.insertAdjacentHTML('beforeend', footerHtml);
+        rangeBlockDiv.insertAdjacentHTML('beforeend', exportPopup);
+
+        let exportPopper = Popper.createPopper(
+            document.getElementById('prompt-manager-export'),
+            document.getElementById('prompt-manager-export-format-popup'),
+            { placement: 'bottom'}
+        );
+
+        this.handleExport = this.handleExport ?? (() => {
+            const popup = document.getElementById('prompt-manager-export-format-popup');
+            const show = popup.hasAttribute('data-show');
+
+            if (show) popup.removeAttribute('data-show');
+            else popup.setAttribute('data-show','');
+
+            exportPopper.update();
+        })
+
+        const handleCharacterExport = () => {
+            const characterPromptList = this.getPromptListByCharacter(this.activeCharacter);
+            this.export({prompts: this.serviceSettings.prompts, promptList: characterPromptList}, 'character');
+        }
+
+        const handleFullExport = () => {
+            this.export(this.serviceSettings.prompts, 'full');
+        }
+
+        rangeBlockDiv.querySelector('.export-promptmanager-prompts-full').addEventListener('click', handleFullExport);
+        rangeBlockDiv.querySelector('.export-promptmanager-prompts-character').addEventListener('click', handleCharacterExport);
 
         const footerDiv = rangeBlockDiv.querySelector(`.${this.configuration.prefix}prompt_manager_footer`);
         footerDiv.querySelector('.menu_button:nth-child(2)').addEventListener('click', this.handleAppendPrompt);
         footerDiv.querySelector('.caution').addEventListener('click', this.handleDeletePrompt);
         footerDiv.querySelector('.menu_button:last-child').addEventListener('click', this.handleNewPrompt);
+        footerDiv.querySelector('#prompt-manager-export').addEventListener('click', this.handleExport);
     }
 };
 
@@ -1034,6 +1075,50 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
         el.addEventListener('click', this.handleToggle);
     });
 };
+
+PromptManagerModule.prototype.export = function (prompts, type) {
+    const promptExport = {
+        version: this.configuration.version,
+        type: type,
+        data: prompts
+    };
+
+    const serializedObject = JSON.stringify(promptExport);
+
+    const blob = new Blob([serializedObject], {type: "application/json"});
+
+    const url = URL.createObjectURL(blob);
+
+    const downloadLink = document.createElement('a');
+    downloadLink.href = url;
+
+    const dateString = this.getFormattedDate();
+    let filename = '';
+    if ('character' === type) filename = `st_prompts-${this.activeCharacter.name}-${dateString}.json`;
+    else filename = 'st_prompts-${dateString}.json';
+
+    downloadLink.download = filename
+
+    downloadLink.click();
+
+    URL.revokeObjectURL(url);
+};
+
+PromptManagerModule.prototype.import = function () {
+
+};
+
+PromptManagerModule.prototype.getFormattedDate = function() {
+    const date = new Date();
+    let month = String(date.getMonth() + 1);
+    let day = String(date.getDate());
+    const year = String(date.getFullYear());
+
+    if (month.length < 2) month = '0' + month;
+    if (day.length < 2) day = '0' + day;
+
+    return `${month}_${day}_${year}`;
+}
 
 /**
  * Makes the prompt list draggable and handles swapping of two entries in the list.
