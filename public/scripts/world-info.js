@@ -1142,8 +1142,8 @@ function convertCharacterBook(characterBook) {
             entry.id = index;
         }
 
-        result.entries[index] = {
-            uid: entry.id || index,
+        result.entries[entry.id] = {
+            uid: entry.id,
             key: entry.keys,
             keysecondary: entry.secondary_keys || [],
             comment: entry.comment || "",
