@@ -319,9 +319,27 @@ async function sendCommentMessage(_, text) {
     saveChatConditional();
 }
 
-function helpCommandCallback() {
-    sendSystemMessage(system_message_types.HELP);
+function helpCommandCallback(_, type) {
+    switch (type?.trim()) {
+        case 'slash':
+        case '1':
+            sendSystemMessage(system_message_types.SLASH_COMMANDS);
+            break;
+        case 'format':
+        case '2':
+            sendSystemMessage(system_message_types.FORMATTING);
+            break;
+        case 'hotkeys':
+        case '3':
+            sendSystemMessage(system_message_types.HOTKEYS);
+            break;
+        default:
+            sendSystemMessage(system_message_types.HELP);
+            break;
+    }
 }
+
+window['displayHelp'] = (page) => helpCommandCallback(null, page);
 
 function setBackgroundCallback(_, bg) {
     if (!bg) {
