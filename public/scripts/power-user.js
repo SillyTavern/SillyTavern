@@ -975,7 +975,7 @@ async function saveTheme() {
     }
 }
 
-function resetMovablePanels() {
+async function resetMovablePanels() {
     const panelIds = [
         'sheld',
         'left-nav-panel',
@@ -991,25 +991,32 @@ function resetMovablePanels() {
         const panel = document.getElementById(id);
 
         if (panel) {
+            $(panel).addClass('resizing');
             panelStyles.forEach((style) => {
                 panel.style[style] = '';
             });
         }
     });
 
-    const zoomedAvatar = document.querySelector('.zoomed_avatar');
-    if (zoomedAvatar) {
-        panelStyles.forEach((style) => {
-            zoomedAvatar.style[style] = '';
+    const zoomedAvatars = document.querySelectorAll('.zoomed_avatar');
+    if (zoomedAvatars.length > 0) {
+        zoomedAvatars.forEach((avatar) => {
+            avatar.classList.add('resizing');
+            panelStyles.forEach((style) => {
+                avatar.style[style] = '';
+            });
         });
     }
 
     $('[data-dragged="true"]').removeAttr('data-dragged');
+    await delay(50)
+
     power_user.movingUIState = {};
     saveSettingsDebounced();
     eventSource.emit(event_types.MOVABLE_PANELS_RESET);
 
     eventSource.once(event_types.SETTINGS_UPDATED, () => {
+        $(".resizing").removeClass('resizing');
         toastr.success('Panel positions reset');
     });
 
@@ -1186,7 +1193,7 @@ $(document).ready(() => {
         reloadMarkdownProcessor(power_user.render_formulas);
     });
 
-    $("#start_reply_with").on('input', function() {
+    $("#start_reply_with").on('input', function () {
         power_user.user_prompt_bias = $(this).val();
         saveSettingsDebounced();
     });

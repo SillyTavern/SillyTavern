@@ -3925,11 +3925,13 @@ label[for="extensions_autoconnect"] {
     z-index: 9999 !important;
 }
 
+/*to prevent draggables from being made too small to see*/
 .fillRight,
 .fillLeft,
 #WorldInfo,
 #floatingPrompt {
-    min-width: unset;
+    min-width: 100px !important;
+    min-height: 100px !important;
     position: fixed;
 }
 
