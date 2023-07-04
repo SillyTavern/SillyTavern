@@ -1123,9 +1123,104 @@ function doResetPanels() {
     $("#movingUIreset").trigger('click');
 }
 
+
+
+
+function setAvgBG() {
+    const bgimg = new Image();
+    bgimg.src = $('#bg1')
+        .css('background-image')
+        .replace(/^url\(['"]?/, '')
+        .replace(/['"]?\)$/, '');
+
+    const charAvatar = new Image()
+    charAvatar.src = $("#avatar_load_preview")
+        .attr('src')
+        .replace(/^url\(['"]?/, '')
+        .replace(/['"]?\)$/, '');
+
+    const userAvatar = new Image()
+    userAvatar.src = $("#user_avatar_block .avatar.selected img")
+        .attr('src')
+        .replace(/^url\(['"]?/, '')
+        .replace(/['"]?\)$/, '');
+
+
+    bgimg.onload = function () {
+        var rgb = getAverageRGB(bgimg);
+        console.log(`average color of the bg is:`)
+        console.log(rgb);
+        $("#blur-tint-color-picker").attr('color', 'rgb(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ')');
+    }
+
+    charAvatar.onload = function () {
+        var rgb = getAverageRGB(charAvatar);
+        console.log(`average color of the AI avatar is:`);
+        console.log(rgb);
+        $("#bot-mes-blur-tint-color-picker").attr('color', 'rgb(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ')');
+    }
+
+    userAvatar.onload = function () {
+        var rgb = getAverageRGB(userAvatar);
+        console.log(`average color of the user avatar is:`);
+        console.log(rgb);
+        $("#user-mes-blur-tint-color-picker").attr('color', 'rgb(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ')');
+    }
+
+
+
+    function getAverageRGB(imgEl) {
+
+        var blockSize = 5, // only visit every 5 pixels
+            defaultRGB = { r: 0, g: 0, b: 0 }, // for non-supporting envs
+            canvas = document.createElement('canvas'),
+            context = canvas.getContext && canvas.getContext('2d'),
+            data, width, height,
+            i = -4,
+            length,
+            rgb = { r: 0, g: 0, b: 0 },
+            count = 0;
+
+        if (!context) {
+            return defaultRGB;
+        }
+
+        height = canvas.height = imgEl.naturalHeight || imgEl.offsetHeight || imgEl.height;
+        width = canvas.width = imgEl.naturalWidth || imgEl.offsetWidth || imgEl.width;
+        context.drawImage(imgEl, 0, 0);
+
+        try {
+            data = context.getImageData(0, 0, width, height);
+        } catch (e) {
+    /* security error, img on diff domain */alert('x');
+            return defaultRGB;
+        }
+
+        length = data.data.length;
+        while ((i += blockSize * 4) < length) {
+            ++count;
+            rgb.r += data.data[i];
+            rgb.g += data.data[i + 1];
+            rgb.b += data.data[i + 2];
+        }
+
+        // ~~ used to floor values
+        rgb.r = ~~(rgb.r / count);
+        rgb.g = ~~(rgb.g / count);
+        rgb.b = ~~(rgb.b / count);
+
+        return rgb;
+
+    }
+}
+
 $(document).ready(() => {
 
     $(window).on('resize', async () => {
+        if (isMobile()) {
+            return
+        }
+
         //console.log('Window resized!');
         const zoomLevel = Number(window.devicePixelRatio).toFixed(2);
         const winWidth = window.innerWidth;
@@ -1568,4 +1663,5 @@ $(document).ready(() => {
     registerSlashCommand('delmode', doDelMode, ['del'], '<span class="monospace">(optional number)</span> – enter message deletion mode, and auto-deletes N messages if numeric argument is provided', true, true);
     registerSlashCommand('cut', doMesCut, [], ' <span class="monospace">(requred number)</span> – cuts the specified message from the chat', true, true);
     registerSlashCommand('resetpanels', doResetPanels, ['resetui'], ' – resets UI panels to original state.', true, true);
+    registerSlashCommand('bgcol', setAvgBG, [], ' – WIP test of auto-bg avg coloring', true, true);
 });
