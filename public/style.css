@@ -293,6 +293,7 @@ code {
     padding: 0 3px;
     /* max-width: calc(100svw - 95px); */
     line-height: var(--mainFontSize);
+    color: var(--white70a);
 }
 
 

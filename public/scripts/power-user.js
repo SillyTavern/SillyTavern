@@ -1338,7 +1338,7 @@ function setAvgBG() {
 
         // Calculate complementary color based on background color
         const complementaryHue = (h + 0.5) % 1;
-        const complementarySaturation = s > 0.5 ? s - 0.2 : s + 0.2;
+        const complementarySaturation = s > 0.5 ? s - 0.6 : s + 0.6;
         const complementaryLuminance = l > 0.5 ? 0.2 : 0.8;
 
         // Convert complementary color back to RGB
