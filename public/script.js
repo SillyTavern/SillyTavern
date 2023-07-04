@@ -4692,15 +4692,17 @@ async function getSettings(type) {
         $("#amount_gen_counter").text(`${amount_gen}`);
 
         //Load which API we are using
-        if (settings.main_api != undefined) {
-            main_api = settings.main_api;
-            $('#main_api').val(main_api);
-            $("#main_api option[value=" + main_api + "]").attr(
-                "selected",
-                "true"
-            );
-            changeMainAPI();
+        if (settings.main_api == undefined) {
+            settings.main_api = 'kobold';
         }
+
+        main_api = settings.main_api;
+        $('#main_api').val(main_api);
+        $("#main_api option[value=" + main_api + "]").attr(
+            "selected",
+            "true"
+        );
+        changeMainAPI();
 
         //Load User's Name and Avatar
 
