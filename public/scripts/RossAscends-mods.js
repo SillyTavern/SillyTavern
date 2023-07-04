@@ -561,14 +561,14 @@ export function dragElement(elmnt) {
             //prevent dragging offscreen
             if (top <= 0) {
                 elmnt.css('top', '0px');
-            } else if (top + elmnt.height() >= winHeight) {
-                elmnt.css('top', winHeight - elmnt.height() + "px");
+            } else if (maxY >= winHeight) {
+                elmnt.css('top', winHeight - maxY + top - 1 + "px");
             }
 
             if (left <= 0) {
                 elmnt.css('left', '0px');
-            } else if (left + elmnt.width() >= winWidth) {
-                elmnt.css('left', winWidth - elmnt.width() + "px");
+            } else if (maxX >= winWidth) {
+                elmnt.css('left', winWidth - maxX + left - 1 + "px");
             }
 
             //prevent underlap with topbar div
