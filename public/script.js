@@ -161,6 +161,8 @@ import { context_settings, loadContextTemplatesFromSettings } from "./scripts/co
 import { markdownExclusionExt } from "./scripts/showdown-exclusion.js";
 import { NOTE_MODULE_NAME, metadata_keys, setFloatingPrompt, shouldWIAddPrompt } from "./scripts/extensions/floating-prompt/index.js";
 import { deviceInfo } from "./scripts/RossAscends-mods.js";
+import { runRegexScript } from "./scripts/extensions/regex/engine.js";
+import { REGEX_PLACEMENT } from "./scripts/extensions/regex/index.js";
 
 //exporting functions and vars for mods
 export {
@@ -488,6 +490,7 @@ export const event_types = {
     IMPERSONATE_READY: 'impersonate_ready',
     CHAT_CHANGED: 'chat_id_changed',
     GENERATION_STOPPED: 'generation_stopped',
+    SETTINGS_LOADED: 'settings_loaded',
     SETTINGS_UPDATED: 'settings_updated',
     GROUP_UPDATED: 'group_updated',
     MOVABLE_PANELS_RESET: 'movable_panels_reset',
@@ -1107,6 +1110,15 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
     if (!power_user.show_user_prompt_bias && ch_name && !isUser && !isSystem) {
         mes = mes.replaceAll(substituteParams(power_user.user_prompt_bias), "");
     }
+
+    extension_settings.regex.forEach((script) => {
+        if (script.placement.includes(REGEX_PLACEMENT.mdDisplay)) {
+            const regexResult = runRegexScript(script, mes);
+            if (regexResult) {
+                mes = regexResult;
+            }
+        }
+    });
 
     if (power_user.auto_fix_generated_markdown) {
         mes = fixMarkdown(mes);
@@ -2865,6 +2877,15 @@ export function replaceBiasMarkup(str) {
 }
 
 export async function sendMessageAsUser(textareaText, messageBias) {
+    extension_settings.regex.forEach((script) => {
+        if (script.placement.includes(REGEX_PLACEMENT.userInput)) {
+            const regexResult = runRegexScript(script, textareaText);
+            if (regexResult) {
+                textareaText = regexResult;
+            }
+        }
+    });
+
     chat[chat.length] = {};
     chat[chat.length - 1]['name'] = name1;
     chat[chat.length - 1]['is_user'] = true;
@@ -3445,10 +3466,27 @@ function extractMessageFromData(data) {
 }
 
 function cleanUpMessage(getMessage, isImpersonate, displayIncompleteSentences = false) {
-    // Append the user bias first before trimming anything else
-    if (power_user.user_prompt_bias && power_user.user_prompt_bias.length !== 0) {
+    // Add the prompt bias before anything else
+    if (
+        power_user.user_prompt_bias && 
+        !isImpersonate &&
+        power_user.user_prompt_bias.length !== 0
+    ) {
         getMessage = substituteParams(power_user.user_prompt_bias) + getMessage;
     }
+
+    // Regex uses vars, so add before formatting
+    extension_settings.regex.forEach((script) => {
+        if (
+            (script.placement.includes(REGEX_PLACEMENT.aiOutput) && !isImpersonate) ||
+            (script.placement.includes(REGEX_PLACEMENT.userInput) && isImpersonate)
+        ) {
+            const regexResult = runRegexScript(script, getMessage);
+            if (regexResult) {
+                getMessage = regexResult;
+            }
+        }
+    });
 
     if (!displayIncompleteSentences && power_user.trim_sentences) {
         getMessage = end_trim_to_sentence(getMessage, power_user.include_newline);
@@ -4771,6 +4809,8 @@ async function getSettings(type) {
     }
 
     if (!is_checked_colab) isColab();
+
+    eventSource.emit(event_types.SETTINGS_LOADED);
 }
 
 function selectKoboldGuiPreset() {
@@ -4859,13 +4899,26 @@ function setCharacterBlockHeight() {
 function updateMessage(div) {
     const mesBlock = div.closest(".mes_block");
     let text = mesBlock.find(".edit_textarea").val();
+    const mes = chat[this_edit_mes_id];
+
+    extension_settings.regex.forEach((script) => {
+        if (script.runOnEdit && (
+            (script.placement.includes(REGEX_PLACEMENT.aiOutput) && mes.is_name) || 
+            (script.placement.includes(REGEX_PLACEMENT.userInput) && mes.is_user) ||
+            (script.placement.includes(REGEX_PLACEMENT.system) && mes.extra?.type === "narrator")
+        )) {
+            const regexResult = runRegexScript(script, text);
+            if (regexResult) {
+                text = regexResult;
+            }
+        }
+    });
 
     if (power_user.trim_spaces) {
         text = text.trim();
     }
 
     const bias = extractMessageBias(text);
-    const mes = chat[this_edit_mes_id];
     mes["mes"] = text;
     if (mes["swipe_id"] !== undefined) {
         mes["swipes"][mes["swipe_id"]] = text;
@@ -5959,9 +6012,11 @@ async function createOrEditCharacter(e) {
             success: async function (html) {
                 if (chat.length === 1 && !selected_group) {
                     var this_ch_mes = default_ch_mes;
+
                     if ($("#firstmessage_textarea").val() != "") {
                         this_ch_mes = $("#firstmessage_textarea").val();
                     }
+
                     if (
                         this_ch_mes !=
                         $.trim(
@@ -5972,6 +6027,17 @@ async function createOrEditCharacter(e) {
                                 .text()
                         )
                     ) {
+                        // MARK - kingbri: Regex on character greeting message
+                        // May need to be placed somewhere else
+                        extension_settings.regex.forEach((script) => {
+                            if (script.placement.includes(REGEX_PLACEMENT.aiOutput)) {
+                                const regexResult = runRegexScript(script, this_ch_mes);
+                                if (regexResult) {
+                                    this_ch_mes = regexResult
+                                }
+                            }
+                        });
+
                         clearChat();
                         chat.length = 0;
                         chat[0] = {};

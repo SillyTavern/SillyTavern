@@ -56,6 +56,7 @@ const extension_settings = {
     caption: {},
     expressions: {},
     dice: {},
+    regex: [],
     tts: {},
     sd: {},
     chromadb: {},
