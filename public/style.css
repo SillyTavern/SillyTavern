@@ -746,7 +746,7 @@ hr {
     min-width: 50px !important;
 }
 
-.hotswapAvatar.group_select .avatar img {
+.hotswapAvatar.group_select .avatar.avatar_collage img {
     width: 100%;
     height: 100%;
     object-fit: cover;
