@@ -1478,7 +1478,7 @@
                             <option value="windowai">Window AI / OpenRouter</option>
                             <option value="claude">Claude</option>
                         </select>
-                        <form id="openai_form" data-source="openai">
+                        <form id="openai_form" data-source="openai" action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <h4>OpenAI API key</h4>
                             <span>
                                 <ol>
@@ -1516,7 +1516,7 @@
                                 <a id="openai_api_usage" href="javascript:void(0);">View API Usage Metrics</a>
                             </div>
                         </form>
-                        <form id="claude_form" data-source="claude">
+                        <form id="claude_form" data-source="claude" action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <h4>Claude API Key</h4>
                             <div>
                                 Get your key from <a target="_blank" href="https://console.anthropic.com/account/keys">Anthropic's developer console</a>.
@@ -1555,7 +1555,7 @@
                             </div>
                         </form>
 
-                        <form id="windowai_form" data-source="windowai">
+                        <form id="windowai_form" data-source="windowai" action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <div>
                                 <h4 data-i18n="Window AI Model">Window AI Model</h4>
                                 <select id="model_windowai_select">
