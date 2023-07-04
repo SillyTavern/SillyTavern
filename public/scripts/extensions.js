@@ -62,6 +62,7 @@ const extension_settings = {
     translate: {},
     objective: {},
     quickReply: {},
+    stt: {},
 };
 
 let modules = [];
