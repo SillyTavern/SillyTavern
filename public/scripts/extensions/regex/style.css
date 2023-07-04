@@ -25,7 +25,6 @@
     padding: 0 5px;
     margin-top: 1px;
     margin-bottom: 1px;
-    flex-wrap: nowrap;
 }
 
 .align-self-center {
@@ -34,4 +33,14 @@
 
 .flex-grow {
     flex-grow: 1;
+}
+
+.flex-nowrap {
+    flex-wrap: nowrap;
+}
+
+.overflow-hidden {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
