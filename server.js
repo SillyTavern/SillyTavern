@@ -1790,9 +1790,9 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                 } else if (jsonData.name !== undefined) {
                     console.log('importing from v1 json');
                     jsonData.name = sanitize(jsonData.name);
-					if (jsonData.creator_notes) {
-						jsonData.creator_notes = jsonData.creator_notes.replace("Creator's notes go here.", "");
-					}
+                    if (jsonData.creator_notes) {
+                        jsonData.creator_notes = jsonData.creator_notes.replace("Creator's notes go here.", "");
+                    }
                     png_name = getPngName(jsonData.name);
                     let char = {
                         "name": jsonData.name,
@@ -1815,9 +1815,9 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                 } else if (jsonData.char_name !== undefined) {//json Pygmalion notepad
                     console.log('importing from gradio json');
                     jsonData.char_name = sanitize(jsonData.char_name);
-					if (jsonData.creator_notes) {
-						jsonData.creator_notes = jsonData.creator_notes.replace("Creator's notes go here.", "");
-					}
+                    if (jsonData.creator_notes) {
+                        jsonData.creator_notes = jsonData.creator_notes.replace("Creator's notes go here.", "");
+                    }
                     png_name = getPngName(jsonData.char_name);
                     let char = {
                         "name": jsonData.char_name,
@@ -1872,9 +1872,9 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                 } else if (jsonData.name !== undefined) {
                     console.log('Found a v1 character file.');
 
-					if (jsonData.creator_notes) {
-						jsonData.creator_notes = jsonData.creator_notes.replace("Creator's notes go here.", "");
-					}
+                    if (jsonData.creator_notes) {
+                        jsonData.creator_notes = jsonData.creator_notes.replace("Creator's notes go here.", "");
+                    }
 
                     let char = {
                         "name": jsonData.name,
@@ -3198,17 +3198,20 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
         signal: controller.signal,
     };
 
-    if (request.body.stream)
+    if (request.body.stream) {
         config.responseType = 'stream';
+    }
 
-    axios(config)
-        .then(function (response) {
+    async function makeRequest(config, response_generate_openai, request, retries = 5, timeout = 1000) {
+        try {
+            const response = await axios(config);
+
             if (response.status <= 299) {
                 if (request.body.stream) {
-                    console.log("Streaming request in progress")
+                    console.log('Streaming request in progress');
                     response.data.pipe(response_generate_openai);
-                    response.data.on('end', function () {
-                        console.log("Streaming request finished");
+                    response.data.on('end', () => {
+                        console.log('Streaming request finished');
                         response_generate_openai.end();
                     });
                 } else {
@@ -3216,54 +3219,37 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
                     console.log(response.data);
                     console.log(response.data?.choices[0]?.message);
                 }
-            } else if (response.status == 400) {
-                console.log('Validation error');
-                response_generate_openai.send({ error: true });
-            } else if (response.status == 401) {
-                console.log('Access Token is incorrect');
-                response_generate_openai.send({ error: true });
-            } else if (response.status == 402) {
-                console.log('An active subscription is required to access this endpoint');
-                response_generate_openai.send({ error: true });
-            } else if (response.status == 429) {
-                console.log('Out of quota');
-                const quota_error = response?.data?.type === 'insufficient_quota';
-                response_generate_openai.send({ error: true, quota_error, });
-            } else if (response.status == 500 || response.status == 409 || response.status == 504) {
-                if (request.body.stream) {
-                    response.data.on('data', chunk => {
-                        console.log(chunk.toString());
-                    });
-                } else {
-                    console.log(response.data);
-                }
-                response_generate_openai.send({ error: true });
+            } else {
+                handleErrorResponse(response, response_generate_openai, request);
             }
-        })
-        .catch(function (error) {
-            if (error.response) {
-                if (request.body.stream) {
-                    error.response.data.on('data', chunk => {
-                        console.log(chunk.toString());
-                    });
-                } else {
-                    console.log(error.response.data);
-                }
+        } catch (error) {
+            if (error.response && error.response.status === 429 && retries > 0) {
+                console.log('Out of quota, retrying...');
+                setTimeout(() => {
+                    makeRequest(config, response_generate_openai, request, retries - 1);
+                }, timeout);
+            } else {
+                handleError(error, response_generate_openai, request);
             }
-            try {
-                const quota_error = error?.response?.status === 429 && error?.response?.data?.error?.type === 'insufficient_quota';
-                if (!response_generate_openai.headersSent) {
-                    response_generate_openai.send({ error: true, quota_error });
-                }
-            } catch (error) {
-                console.error(error);
-                if (!response_generate_openai.headersSent) {
-                    return response_generate_openai.send({ error: true });
-                }
-            } finally {
-                response_generate_openai.end();
-            }
-        });
+        }
+    }
+
+    function handleErrorResponse(response, response_generate_openai, request) {
+        if (response.status >= 400 && response.status <= 504) {
+            console.log('Error occurred:', response.status, response.data);
+            response_generate_openai.send({ error: true });
+        }
+    }
+
+    function handleError(error, response_generate_openai, request) {
+        console.error('Error:', error.message);
+        const quota_error = error?.response?.status === 429 && error?.response?.data?.error?.type === 'insufficient_quota';
+        if (!response_generate_openai.headersSent) {
+            response_generate_openai.send({ error: true, quota_error: quota_error });
+        }
+    }
+
+    makeRequest(config, response_generate_openai, request);
 });
 
 app.post("/tokenize_openai", jsonParser, function (request, response_tokenize_openai = response) {
