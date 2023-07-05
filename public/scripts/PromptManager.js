@@ -130,9 +130,6 @@ function PromptManagerModule() {
     this.tryGenerate = () => { };
     this.saveServiceSettings = () => { };
 
-    this.handleImport = null;
-    this.handleExport = null;
-
     this.handleToggle = () => { };
     this.handleInspect = () => { };
     this.handleEdit = () => { };
@@ -142,6 +139,9 @@ function PromptManagerModule() {
     this.handleNewPrompt = () => { };
     this.handleDeletePrompt = () => { };
     this.handleAppendPrompt = () => { };
+    this.handleImport = () => { };
+    this.handleFullExport = () => { };
+    this.handleCharacterExport = () => { };
     this.handleAdvancedSettingsToggle = () => { };
 }
 
@@ -289,6 +289,61 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
         this.showPopup();
     }
 
+    this.handleFullExport = () => {
+        const exportPrompts = this.serviceSettings.prompts.reduce((userPrompts, prompt) => {
+            if (false === prompt.system_prompt && false === prompt.marker) userPrompts.push(prompt);
+            return userPrompts;
+        }, []);
+
+        this.export({prompts: exportPrompts}, 'full', 'st-prompts');
+    }
+
+    this.handleCharacterExport = () => {
+        const characterPrompts = this.getPromptsForCharacter(this.activeCharacter).reduce((userPrompts, prompt) => {
+            if (false === prompt.system_prompt && false === prompt.marker) userPrompts.push(prompt);
+            return userPrompts;
+        }, []);
+
+        const characterList = this.getPromptListForCharacter(this.activeCharacter);
+
+        const exportPrompts = {
+            prompts: characterPrompts,
+            promptList: characterList
+        }
+
+        const name = this.activeCharacter.name + '-prompts';
+        this.export(exportPrompts, 'character', name);
+    }
+
+    this.handleImport = () => {
+        const fileOpener = document.createElement('input');
+        fileOpener.type = 'file';
+        fileOpener.accept = '.json';
+
+        fileOpener.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) {
+                return;
+            }
+
+            const reader = new FileReader();
+
+            reader.onload = (event) => {
+                const fileContent = event.target.result;
+                try {
+                    const data = JSON.parse(fileContent);
+                    this.import(data);
+                } catch (err) {
+                    console.error('An error occurred while parsing the file content: ', err);
+                }
+            };
+
+            reader.readAsText(file);
+        });
+
+        fileOpener.click();
+    }
+
     // Re-render when the character changes.
     eventSource.on('chatLoaded', (event) => {
         this.handleCharacterSelected(event)
@@ -432,7 +487,7 @@ PromptManagerModule.prototype.getTokenHandler = function() {
  * @returns {void}
  */
 PromptManagerModule.prototype.appendPrompt = function (prompt, character) {
-    const promptList = this.getPromptListByCharacter(character);
+    const promptList = this.getPromptListForCharacter(character);
     const index = promptList.findIndex(entry => entry.identifier === prompt.identifier);
 
     if (-1 === index) promptList.push({identifier: prompt.identifier, enabled: false});
@@ -446,7 +501,7 @@ PromptManagerModule.prototype.appendPrompt = function (prompt, character) {
  */
 // Remove a prompt from the current characters prompt list
 PromptManagerModule.prototype.detachPrompt = function (prompt, character) {
-    const promptList = this.getPromptListByCharacter(character);
+    const promptList = this.getPromptListForCharacter(character);
     const index = promptList.findIndex(entry => entry.identifier === prompt.identifier);
     if (-1 === index) return;
     promptList.splice(index, 1)
@@ -466,6 +521,7 @@ PromptManagerModule.prototype.addPrompt = function (prompt, identifier) {
         identifier: identifier,
         system_prompt: false,
         enabled: false,
+        marker: false,
         ...prompt
     }
 
@@ -492,7 +548,7 @@ PromptManagerModule.prototype.sanitizeServiceSettings = function () {
     this.serviceSettings.prompts.forEach(prompt => prompt && (prompt.identifier = prompt.identifier ?? this.getUuidv4()));
 
     if (this.activeCharacter) {
-        const promptReferences = this.getPromptListByCharacter(this.activeCharacter);
+        const promptReferences = this.getPromptListForCharacter(this.activeCharacter);
         for(let i = promptReferences.length - 1; i >= 0; i--) {
             const reference =  promptReferences[i];
             if(-1 === this.serviceSettings.prompts.findIndex(prompt => prompt.identifier === reference.identifier)) {
@@ -572,7 +628,7 @@ PromptManagerModule.prototype.handleCharacterDeleted = function (event) {
  */
 PromptManagerModule.prototype.handleCharacterSelected = function (event) {
     this.activeCharacter = {id: event.detail.id, ...event.detail.character};
-    const promptList = this.getPromptListByCharacter(this.activeCharacter);
+    const promptList = this.getPromptListForCharacter(this.activeCharacter);
 
     // ToDo: These should be passed as parameter or attached to the manager as a set of default options.
     // Set default prompts and order for character.
@@ -582,7 +638,7 @@ PromptManagerModule.prototype.handleCharacterSelected = function (event) {
 PromptManagerModule.prototype.handleGroupSelected = function (event) {
     const characterDummy = {id: event.detail.id, group: event.detail.group};
     this.activeCharacter = characterDummy;
-    const promptList = this.getPromptListByCharacter(characterDummy);
+    const promptList = this.getPromptListForCharacter(characterDummy);
 
     if (0 === promptList.length) this.addPromptListForCharacter(characterDummy, openAiDefaultPromptList)
 }
@@ -599,7 +655,7 @@ PromptManagerModule.prototype.getActiveGroupCharacters = function() {
  * @param onlyEnabled
  */
 PromptManagerModule.prototype.getPromptsForCharacter = function (character, onlyEnabled = false) {
-    return this.getPromptListByCharacter(character)
+    return this.getPromptListForCharacter(character)
         .map(item => true === onlyEnabled ? (true === item.enabled ? this.getPromptById(item.identifier) : null) : this.getPromptById(item.identifier))
         .filter(prompt => null !== prompt);
 }
@@ -609,7 +665,7 @@ PromptManagerModule.prototype.getPromptsForCharacter = function (character, only
  * @param {object|null} character - The character to get the prompt list for.
  * @returns {object[]} The prompt list for the character, or an empty array.
  */
-PromptManagerModule.prototype.getPromptListByCharacter = function (character) {
+PromptManagerModule.prototype.getPromptListForCharacter = function (character) {
     return !character ? [] : (this.serviceSettings.prompt_lists.find(list => String(list.character_id) === String(character.id))?.list ?? []);
 }
 
@@ -633,7 +689,7 @@ PromptManagerModule.prototype.removePromptListForCharacter = function (character
 }
 
 /**
- * Sets a new prompt list for a specific character.
+ * Adds a new prompt list for a specific character.
  * @param {Object} character - Object with at least an `id` property
  * @param {Array<Object>} promptList - Array of prompt objects
  */
@@ -645,21 +701,13 @@ PromptManagerModule.prototype.addPromptListForCharacter = function (character, p
 }
 
 /**
- * Retrieves the default prompt list.
- * @returns {Array<Object>} An array of prompt objects
- */
-PromptManagerModule.prototype.getDefaultPromptList = function () {
-    return this.getPromptListByCharacter({id: 'default'});
-}
-
-/**
  * Searches for a prompt list entry for a given character and identifier.
  * @param {Object} character - Character object
  * @param {string} identifier - Identifier of the prompt list entry
  * @returns {Object|null} The prompt list entry object, or null if not found
  */
 PromptManagerModule.prototype.getPromptListEntry = function (character, identifier) {
-    return this.getPromptListByCharacter(character).find(entry => entry.identifier === identifier) ?? null;
+    return this.getPromptListForCharacter(character).find(entry => entry.identifier === identifier) ?? null;
 }
 
 /**
@@ -804,7 +852,7 @@ PromptManagerModule.prototype.clearInspectForm = function() {
  * @returns {PromptCollection} A PromptCollection object
  */
 PromptManagerModule.prototype.getPromptCollection = function () {
-    const promptList = this.getPromptListByCharacter(this.activeCharacter);
+    const promptList = this.getPromptListForCharacter(this.activeCharacter);
 
     const promptCollection = new PromptCollection();
     promptList.forEach(entry => {
@@ -895,8 +943,8 @@ PromptManagerModule.prototype.renderPromptManager = function () {
 
         const exportPopup = `
             <div id="prompt-manager-export-format-popup" class="list-group">
-                <a class="export-promptmanager-prompts-full list-group-item">Export all prompts</a>
-                <a class="export-promptmanager-prompts-character list-group-item">Export user prompts</a>
+                <a class="export-promptmanager-prompts-full list-group-item" data-i18n="Export all">Export all</a>
+                <a class="export-promptmanager-prompts-character list-group-item" data-i18n="Export for character">Export for character</a>
             </div>
         `;
 
@@ -910,7 +958,7 @@ PromptManagerModule.prototype.renderPromptManager = function () {
             { placement: 'bottom'}
         );
 
-        this.handleExport = this.handleExport ?? (() => {
+        const showExportSelection = () => {
             const popup = document.getElementById('prompt-manager-export-format-popup');
             const show = popup.hasAttribute('data-show');
 
@@ -918,25 +966,17 @@ PromptManagerModule.prototype.renderPromptManager = function () {
             else popup.setAttribute('data-show','');
 
             exportPopper.update();
-        })
-
-        const handleCharacterExport = () => {
-            const characterPromptList = this.getPromptListByCharacter(this.activeCharacter);
-            this.export({prompts: this.serviceSettings.prompts, promptList: characterPromptList}, 'character');
         }
 
-        const handleFullExport = () => {
-            this.export(this.serviceSettings.prompts, 'full');
-        }
-
-        rangeBlockDiv.querySelector('.export-promptmanager-prompts-full').addEventListener('click', handleFullExport);
-        rangeBlockDiv.querySelector('.export-promptmanager-prompts-character').addEventListener('click', handleCharacterExport);
+        rangeBlockDiv.querySelector('.export-promptmanager-prompts-full').addEventListener('click', this.handleFullExport);
+        rangeBlockDiv.querySelector('.export-promptmanager-prompts-character').addEventListener('click', this.handleCharacterExport);
 
         const footerDiv = rangeBlockDiv.querySelector(`.${this.configuration.prefix}prompt_manager_footer`);
         footerDiv.querySelector('.menu_button:nth-child(2)').addEventListener('click', this.handleAppendPrompt);
         footerDiv.querySelector('.caution').addEventListener('click', this.handleDeletePrompt);
         footerDiv.querySelector('.menu_button:last-child').addEventListener('click', this.handleNewPrompt);
-        footerDiv.querySelector('#prompt-manager-export').addEventListener('click', this.handleExport);
+        footerDiv.querySelector('#prompt-manager-export').addEventListener('click', showExportSelection);
+        footerDiv.querySelector('#prompt-manager-import').addEventListener('click', this.handleImport);
     }
 };
 
@@ -1076,36 +1116,52 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
     });
 };
 
-PromptManagerModule.prototype.export = function (prompts, type) {
+PromptManagerModule.prototype.export = function (data, type, name = 'export') {
     const promptExport = {
         version: this.configuration.version,
         type: type,
-        data: prompts
+        data: data
     };
 
     const serializedObject = JSON.stringify(promptExport);
-
     const blob = new Blob([serializedObject], {type: "application/json"});
-
     const url = URL.createObjectURL(blob);
-
     const downloadLink = document.createElement('a');
     downloadLink.href = url;
 
     const dateString = this.getFormattedDate();
-    let filename = '';
-    if ('character' === type) filename = `st_prompts-${this.activeCharacter.name}-${dateString}.json`;
-    else filename = 'st_prompts-${dateString}.json';
-
-    downloadLink.download = filename
+    downloadLink.download = `${name}-${dateString}.json`;
 
     downloadLink.click();
 
     URL.revokeObjectURL(url);
 };
 
-PromptManagerModule.prototype.import = function () {
+PromptManagerModule.prototype.import = function (importData) {
+    console.log(importData)
+    const mergeKeepNewer = (prompts, newPrompts) => {
+        let merged = [prompts, newPrompts];
 
+        let map = new Map();
+        for (let obj of merged) {
+            map.set(obj.identifier, obj);
+        }
+
+        merged = Array.from(map.values());
+
+        return merged;
+    }
+
+    const prompts = mergeKeepNewer(this.serviceSettings.prompts, importData.data.prompts);
+console.log(prompts)
+    this.setPrompts(prompts);
+
+    if ('character' === importData.type) {
+        const promptList = this.getPromptListForCharacter(this.activeCharacter);
+        promptList.list = importData.data.promptList;
+    }
+
+    this.saveServiceSettings().then(() => this.render());
 };
 
 PromptManagerModule.prototype.getFormattedDate = function() {
@@ -1128,7 +1184,7 @@ PromptManagerModule.prototype.getFormattedDate = function() {
  */
 PromptManagerModule.prototype.makeDraggable = function () {
     const handleOrderChange = (target, origin, direction) => {
-        const promptList = this.getPromptListByCharacter(this.activeCharacter);
+        const promptList = this.getPromptListForCharacter(this.activeCharacter);
 
         const targetIndex = promptList.findIndex(entry => entry.identifier === target.dataset.pmIdentifier);
         const originIndex = promptList.findIndex(entry => entry.identifier === origin.dataset.pmIdentifier);
