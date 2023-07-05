@@ -316,6 +316,32 @@ function switchWaifuMode() {
     scrollChatToBottom();
 }
 
+function switchSpoilerMode() {
+    if (power_user.spoiler_free_mode) {
+        $("#description_div").hide();
+        $("#description_textarea").hide();
+        $("#firstmessage_textarea").hide();
+        $("#first_message_div").hide();
+        $("#spoiler_free_desc").show();
+    }
+    else {
+        $("#description_div").show();
+        $("#description_textarea").show();
+        $("#firstmessage_textarea").show();
+        $("#first_message_div").show();
+        $("#spoiler_free_desc").hide();
+    }
+}
+
+function peekSpoilerMode() {
+    $("#description_div").toggle();
+    $("#description_textarea").toggle();
+    $("#firstmessage_textarea").toggle();
+    $("#first_message_div").toggle();
+
+}
+
+
 function switchMovingUI() {
     const movingUI = localStorage.getItem(storage_keys.movingUI);
     power_user.movingUI = movingUI === null ? false : movingUI == "true";
@@ -632,6 +658,7 @@ function loadPowerUserSettings(settings, data) {
     $(`#pygmalion_formatting option[value=${power_user.pygmalion_formatting}]`).attr("selected", true);
     $(`#send_on_enter option[value=${power_user.send_on_enter}]`).attr("selected", true);
     $("#import_card_tags").prop("checked", power_user.import_card_tags);
+    $("#spoiler_free_mode").prop("checked", power_user.spoiler_free_mode);
     $("#collapse-newlines-checkbox").prop("checked", power_user.collapse_newlines);
     $("#pin-examples-checkbox").prop("checked", power_user.pin_examples);
     $("#disable-description-formatting-checkbox").prop("checked", power_user.disable_description_formatting);
@@ -705,6 +732,7 @@ function loadPowerUserSettings(settings, data) {
     loadInstructMode();
     loadMaxContextUnlocked();
     switchWaifuMode();
+    switchSpoilerMode();
     loadMovingUIState();
 
     //console.log(power_user)
@@ -1138,7 +1166,7 @@ function setAvgBG() {
             .attr('src')
             .replace(/^url\(['"]?/, '')
             .replace(/['"]?\)$/, '');
-    
+
         const userAvatar = new Image()
         userAvatar.src = $("#user_avatar_block .avatar.selected img")
             .attr('src')
@@ -1157,7 +1185,7 @@ function setAvgBG() {
             .replace('rgb', '')
             .replace('(', '[')
             .replace(')', ']');   //[50, 120, 200, 1]; // Example background color
-        const backgroundColorArray = JSON.parse(backgroundColorString) //[200, 200, 200, 1] 
+        const backgroundColorArray = JSON.parse(backgroundColorString) //[200, 200, 200, 1]
         console.log(backgroundColorArray)
         $("#main-text-color-picker").attr('color', getReadableTextColor(backgroundColorArray));
         console.log($("#main-text-color-picker").attr('color')); // Output: 'rgba(0, 47, 126, 1)'
@@ -1169,7 +1197,7 @@ function setAvgBG() {
             //console.log(rgb);
             $("#bot-mes-blur-tint-color-picker").attr('color', 'rgb(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ')');
         }
-    
+
         userAvatar.onload = function () {
             var rgb = getAverageRGB(userAvatar);
             //console.log(`average color of the user avatar is:`);
@@ -1272,16 +1300,16 @@ function setAvgBG() {
     //this version keeps BG and main text in same hue
     /* function getReadableTextColor(rgb) {
          const [r, g, b] = rgb;
- 
+
          // Convert RGB to HSL
          const rgbToHsl = (r, g, b) => {
              const max = Math.max(r, g, b);
              const min = Math.min(r, g, b);
              const d = max - min;
              const l = (max + min) / 2;
- 
+
              if (d === 0) return [0, 0, l];
- 
+
              const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
              const h = (() => {
                  switch (max) {
@@ -1293,16 +1321,16 @@ function setAvgBG() {
                          return (r - g) / d + 4;
                  }
              })() / 6;
- 
+
              return [h, s, l];
          };
          const [h, s, l] = rgbToHsl(r / 255, g / 255, b / 255);
- 
+
          // Calculate appropriate text color based on background color
          const targetLuminance = l > 0.5 ? 0.2 : 0.8;
          const targetSaturation = s > 0.5 ? s - 0.2 : s + 0.2;
          const [rNew, gNew, bNew] = hslToRgb(h, targetSaturation, targetLuminance);
- 
+
          // Return the text color in RGBA format
          return `rgba(${rNew.toFixed(0)}, ${gNew.toFixed(0)}, ${bNew.toFixed(0)}, 1)`;
      }*/
@@ -1784,6 +1812,17 @@ $(document).ready(() => {
         const value = !!$(this).prop('checked');
         power_user.trim_spaces = value;
         saveSettingsDebounced();
+    });
+
+    $('#spoiler_free_mode').on('input', function () {
+        power_user.spoiler_free_mode = !!$(this).prop('checked');
+        switchSpoilerMode();
+        saveSettingsDebounced();
+    });
+
+    $('#spoiler_free_desc_button').on('click', function () {
+        peekSpoilerMode();
+        $(this).toggleClass('fa-eye fa-eye-slash');
     });
 
     $(window).on('focus', function () {

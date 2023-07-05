@@ -1440,7 +1440,7 @@ export async function importGroupChat(formData) {
     });
 }
 
-export async function saveGroupBookmarkChat(groupId, name, metadata) {
+export async function saveGroupBookmarkChat(groupId, name, metadata, mesId) {
     const group = groups.find(x => x.id === groupId);
 
     if (!group) {
@@ -1450,12 +1450,16 @@ export async function saveGroupBookmarkChat(groupId, name, metadata) {
     group.past_metadata[name] = { ...chat_metadata, ...(metadata || {}) };
     group.chats.push(name);
 
+    const trimmed_chat = (mesId !== undefined && mesId >= 0 && mesId < chat.length)
+        ? chat.slice(0, parseInt(mesId) + 1)
+        : chat;
+
     await editGroup(groupId, true);
 
     await fetch("/savegroupchat", {
         method: "POST",
         headers: getRequestHeaders(),
-        body: JSON.stringify({ id: name, chat: [...chat] }),
+        body: JSON.stringify({ id: name, chat: [...trimmed_chat] }),
     });
 }
 
