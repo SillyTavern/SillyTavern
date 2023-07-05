@@ -89,6 +89,7 @@ import {
     openai_messages_count,
     getTokenCountOpenAI,
     chat_completion_sources,
+    getTokenizerModel,
 } from "./scripts/openai.js";
 
 import {
@@ -3116,7 +3117,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
         var promptBiasTokensPercentage = ((oaiBiasTokens / (finalPromptTokens)) * 100).toFixed(2);
         var worldInfoStringTokensPercentage = ((worldInfoStringTokens / (finalPromptTokens)) * 100).toFixed(2);
         var allAnchorsTokensPercentage = ((allAnchorsTokens / (finalPromptTokens)) * 100).toFixed(2);
-        var selectedTokenizer = `tiktoken (${oai_settings.openai_model})`;
+        var selectedTokenizer = `tiktoken (${getTokenizerModel()})`;
         var oaiSystemTokens = oaiImpersonateTokens + oaiJailbreakTokens + oaiNudgeTokens + oaiStartTokens;
         var oaiSystemTokensPercentage = ((oaiSystemTokens / (finalPromptTokens)) * 100).toFixed(2);
 
@@ -3135,7 +3136,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
         callPopup(
             `
         <h3>Prompt Itemization</h3>
-        Tokenizer: TikToken<br>
+        Tokenizer: ${selectedTokenizer}<br>
         API Used: ${this_main_api}<br>
         <span class="tokenItemizingSubclass">
             Only the white numbers really matter. All numbers are estimates.
