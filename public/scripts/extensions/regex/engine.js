@@ -45,13 +45,14 @@ function getRegexedString(rawString, placement) {
 
 // Runs the provided regex script on the given string
 function runRegexScript(regexScript, rawString) {
-    if (!!(regexScript.disabled)) {
+    if (!regexScript || !!(regexScript.disabled) || !regexScript?.findRegex || !rawString) {
         return;
     }
 
     let match;
     let newString;
-    const findRegex = regexFromString(regexScript.findRegex);
+    console.log(regexScript.substituteRegex ? substituteParams(regexScript.findRegex) : regexScript.findRegex)
+    const findRegex = regexFromString(regexScript.substituteRegex ? substituteParams(regexScript.findRegex) : regexScript.findRegex);
     while ((match = findRegex.exec(rawString)) !== null) {
         const fencedMatch = match[0];
         const capturedMatch = match[1];

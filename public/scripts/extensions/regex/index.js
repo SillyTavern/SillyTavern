@@ -97,16 +97,25 @@ async function onRegexEditorOpenClick(existingId) {
         existingScriptIndex = extension_settings.regex.findIndex((script) => script.scriptName === existingScriptName);
         if (existingScriptIndex !== -1) {
             const existingScript = extension_settings.regex[existingScriptIndex];
-            editorHtml.find(`.regex_script_name`).val(existingScript.scriptName);
-            editorHtml.find(`.find_regex`).val(existingScript.findRegex);
-            editorHtml.find(`.regex_replace_string`).val(existingScript.replaceString);
+            if (existingScript.scriptName) {
+                editorHtml.find(`.regex_script_name`).val(existingScript.scriptName);
+            } else {
+                toastr.error("This script doesn't have a name! Please delete it.")
+                return;
+            }
+
+            editorHtml.find(`.find_regex`).val(existingScript.findRegex || "");
+            editorHtml.find(`.regex_replace_string`).val(existingScript.replaceString || "");
             editorHtml.find(`.regex_trim_strings`).val(existingScript.trimStrings?.join("\n") || []);
             editorHtml
                 .find(`input[name="disabled"]`)
                 .prop("checked", existingScript.disabled ?? false);
             editorHtml
                 .find(`input[name="run_on_edit"]`)
-                .prop("checked", existingScript.runOnEdit);
+                .prop("checked", existingScript.runOnEdit ?? false);
+            editorHtml
+                .find(`input[name="substitute_regex"]`)
+                .prop("checked", existingScript.substituteRegex ?? false);
 
             existingScript.placement.forEach((element) => {
                 editorHtml
@@ -145,6 +154,10 @@ async function onRegexEditorOpenClick(existingId) {
             runOnEdit:
                 editorHtml
                     .find(`input[name="run_on_edit"]`)
+                    .prop("checked"),
+            substituteRegex:
+                editorHtml
+                    .find(`input[name="substitute_regex"]`)
                     .prop("checked")
         };
 
