@@ -940,6 +940,7 @@ async function checkWorldInfo(chat, maxContext) {
             }
 
             if (entry.constant) {
+                entry.content = substituteParams(entry.content)
                 activatedNow.add(entry);
                 continue;
             }
