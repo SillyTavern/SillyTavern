@@ -124,14 +124,26 @@ function showBookmarksButtons() {
     }
 }
 
+async function saveBookmarkMenu() {
+    if (!chat.length) {
+        toastr.warning('The chat is empty.', 'Bookmark creation failed');
+        return;
+    }
+
+    return createNewBookmark(chat.length - 1);
+}
+
 async function createNewBookmark(mesId) {
     if (!chat.length) {
         toastr.warning('The chat is empty.', 'Bookmark creation failed');
         return;
     }
 
-    // Default to last message in chat if no mesId given.
-    mesId = mesId || chat.length - 1;
+    if (mesId < 0 || mesId >= chat.length) {
+        toastr.warning('Invalid message ID.', 'Bookmark creation failed');
+        return;
+    }
+
     const lastMes = chat[mesId];
 
     if (typeof lastMes.extra !== 'object') {
@@ -296,7 +308,7 @@ async function convertSoloToGroupChat() {
 }
 
 $(document).ready(function () {
-    $('#option_new_bookmark').on('click', createNewBookmark);
+    $('#option_new_bookmark').on('click', saveBookmarkMenu);
     $('#option_back_to_main').on('click', backToMainChat);
     $('#option_convert_to_group').on('click', convertSoloToGroupChat);
 });

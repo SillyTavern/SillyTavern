@@ -101,7 +101,7 @@ import {
 } from "./scripts/nai-settings.js";
 
 import { 
-    createNewBookmark, 
+    createNewBookmark,
     showBookmarksButtons 
 } from "./scripts/bookmarks.js";
 
