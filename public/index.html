@@ -3190,6 +3190,14 @@
                                     <span data-i18n="Add Memo">Add Memo</span>
                                 </label>
 
+                                <label class="checkbox flex-container alignitemscenter">
+                                    <input type="checkbox" name="exclude_recursion" />
+                                    <span data-i18n="Exclude from recursion">
+                                        Non-recursable
+                                    </span>
+                                </label>
+
+
                             </div>
 
                             <!--                             <div name="injectioStratBlock" class="world_entry_form_control world_entry_form_radios  wi-enter-footer-text ">
@@ -3215,31 +3223,24 @@
                                 </small>
                             </div>
 
-                            <div class="flex-container flexnowrap">
-                                <div class="world_entry_form_control wi-enter-footer-text  flex-container flexNoGap ">
-                                    <label for="order">Order</label>
-                                    <input class="text_pole wideMax100px" type="number" name="order" placeholder="" />
-                                </div>
 
-                                <div class="world_entry_form_control wi-enter-footer-text flex-container flexNoGap probabilityContainer">
-                                    <label for="probability"></label>Probability</label>
-                                    <input class="text_pole wideMax100px" type="number" name="probability" placeholder="" min="0" max="100" />
-                                </div>
+                            <div class="world_entry_form_control wi-enter-footer-text  flex-container flexNoGap ">
+                                <label for="order">Order:</label>
+                                <input class="text_pole wideMax100px margin0" type="number" name="order" placeholder="" />
+                            </div>
+
+
+
+                            <div class="world_entry_form_control wi-enter-footer-text flex-container flexNoGap probabilityContainer">
+                                <label for="probability"></label>Probability:</label>
+                                <input class="text_pole wideMax100px margin0" type="number" name="probability" placeholder="" min="0" max="100" />
                             </div>
 
                             <div class="flex-container flexFlowColumn flexNoGap wi-enter-footer-text ">
 
 
                             </div>
-                            <div class="wi-enter-footer-text">
 
-                                <label class="checkbox flex-container alignitemscenter">
-                                    <input type="checkbox" name="exclude_recursion" />
-                                    <span data-i18n="Exclude from recursion">
-                                        Non-recursable
-                                    </span>
-                                </label>
-                            </div>
                             <input class="menu_button delete_entry_button" type="submit" value="Delete Entry" />
                         </div>
                     </div>
