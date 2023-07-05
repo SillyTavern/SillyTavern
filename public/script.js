@@ -1652,7 +1652,7 @@ function getPersonaDescription(storyString) {
         default:
             if (shouldWIAddPrompt) {
                 const originalAN = extension_prompts[NOTE_MODULE_NAME].value
-                const ANWithDesc = persona_description_positions.TOP_AN
+                const ANWithDesc = power_user.persona_description_position === persona_description_positions.TOP_AN
                     ? `${power_user.persona_description}\n${originalAN}`
                     : `${originalAN}\n${power_user.persona_description}`;
                 setExtensionPrompt(NOTE_MODULE_NAME, ANWithDesc, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth]);
