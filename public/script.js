@@ -161,8 +161,7 @@ import { context_settings, loadContextTemplatesFromSettings } from "./scripts/co
 import { markdownExclusionExt } from "./scripts/showdown-exclusion.js";
 import { NOTE_MODULE_NAME, metadata_keys, setFloatingPrompt, shouldWIAddPrompt } from "./scripts/extensions/floating-prompt/index.js";
 import { deviceInfo } from "./scripts/RossAscends-mods.js";
-import { runRegexScript } from "./scripts/extensions/regex/engine.js";
-import { REGEX_PLACEMENT } from "./scripts/extensions/regex/index.js";
+import { getRegexedString, regex_placement } from "./scripts/extensions/regex/engine.js";
 
 //exporting functions and vars for mods
 export {
@@ -1113,14 +1112,10 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
         mes = mes.replaceAll(substituteParams(power_user.user_prompt_bias), "");
     }
 
-    extension_settings.regex.forEach((script) => {
-        if (script.placement.includes(REGEX_PLACEMENT.mdDisplay)) {
-            const regexResult = runRegexScript(script, mes);
-            if (regexResult) {
-                mes = regexResult;
-            }
-        }
-    });
+    const regexResult = getRegexedString(mes, regex_placement.MD_DISPLAY);
+    if (regexResult) {
+        mes = regexResult;
+    }
 
     if (power_user.auto_fix_generated_markdown) {
         mes = fixMarkdown(mes);
@@ -2879,14 +2874,10 @@ export function replaceBiasMarkup(str) {
 }
 
 export async function sendMessageAsUser(textareaText, messageBias) {
-    extension_settings.regex.forEach((script) => {
-        if (script.placement.includes(REGEX_PLACEMENT.userInput)) {
-            const regexResult = runRegexScript(script, textareaText);
-            if (regexResult) {
-                textareaText = regexResult;
-            }
-        }
-    });
+    const regexResult = getRegexedString(textareaText, regex_placement.USER_INPUT);
+    if (regexResult) {
+        textareaText = regexResult;
+    }
 
     chat[chat.length] = {};
     chat[chat.length - 1]['name'] = name1;
@@ -3478,17 +3469,10 @@ function cleanUpMessage(getMessage, isImpersonate, displayIncompleteSentences = 
     }
 
     // Regex uses vars, so add before formatting
-    extension_settings.regex.forEach((script) => {
-        if (
-            (script.placement.includes(REGEX_PLACEMENT.aiOutput) && !isImpersonate) ||
-            (script.placement.includes(REGEX_PLACEMENT.userInput) && isImpersonate)
-        ) {
-            const regexResult = runRegexScript(script, getMessage);
-            if (regexResult) {
-                getMessage = regexResult;
-            }
-        }
-    });
+    const regexResult = getRegexedString(getMessage, isImpersonate ? regex_placement.USER_INPUT : regex_placement.AI_OUTPUT);
+    if (regexResult) {
+        getMessage = regexResult;
+    }
 
     if (!displayIncompleteSentences && power_user.trim_sentences) {
         getMessage = end_trim_to_sentence(getMessage, power_user.include_newline);
@@ -4903,18 +4887,19 @@ function updateMessage(div) {
     const mesBlock = div.closest(".mes_block");
     let text = mesBlock.find(".edit_textarea").val();
     const mes = chat[this_edit_mes_id];
-    extension_settings.regex.forEach((script) => {
-        if (script.runOnEdit && (
-            (script.placement.includes(REGEX_PLACEMENT.aiOutput) && (mes.is_name && !mes.is_user)) || 
-            (script.placement.includes(REGEX_PLACEMENT.userInput) && (mes.is_name && mes.is_user)) ||
-            (script.placement.includes(REGEX_PLACEMENT.system) && mes.extra?.type === "narrator")
-        )) {
-            const regexResult = runRegexScript(script, text);
-            if (regexResult) {
-                text = regexResult;
-            }
-        }
-    });
+    let regexPlacement;
+    if (mes.is_name && !mes.is_user) {
+        regexPlacement = regex_placement.AI_OUTPUT;
+    } else if (mes.is_name && mes.is_user) {
+        regexPlacement = regex_placement.USER_INPUT;
+    } else if (mes.extra?.type === "narrator") {
+        regexPlacement = regex_placement.SYSTEM;
+    }
+
+    const regexResult = getRegexedString(text, regexPlacement);
+    if (regexResult) {
+        text = regexResult;
+    }
 
     if (power_user.trim_spaces) {
         text = text.trim();
@@ -6031,14 +6016,10 @@ async function createOrEditCharacter(e) {
                     ) {
                         // MARK - kingbri: Regex on character greeting message
                         // May need to be placed somewhere else
-                        extension_settings.regex.forEach((script) => {
-                            if (script.placement.includes(REGEX_PLACEMENT.aiOutput)) {
-                                const regexResult = runRegexScript(script, this_ch_mes);
-                                if (regexResult) {
-                                    this_ch_mes = regexResult
-                                }
-                            }
-                        });
+                        const regexResult = getRegexedString(this_ch_mes, regex_placement.AI_OUTPUT);
+                        if (regexResult) {
+                            this_ch_mes = regexResult;
+                        }
 
                         clearChat();
                         chat.length = 0;

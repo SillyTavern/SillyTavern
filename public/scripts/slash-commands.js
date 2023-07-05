@@ -23,8 +23,7 @@ import {
 import { humanizedDateTime } from "./RossAscends-mods.js";
 import { resetSelectedGroup } from "./group-chats.js";
 import { extension_settings } from "./extensions.js";
-import { runRegexScript } from "./extensions/regex/engine.js";
-import { REGEX_PLACEMENT } from "./extensions/regex/index.js";
+import { getRegexedString, regex_placement } from "./extensions/regex/engine.js";
 import { chat_styles, power_user } from "./power-user.js";
 export {
     executeSlashCommands,
@@ -228,14 +227,10 @@ async function sendMessageAs(_, text) {
 
     const name = parts.shift().trim();
     let mesText = parts.join('\n').trim();
-    extension_settings.regex.forEach((script) => {
-        if (script.placement.includes(REGEX_PLACEMENT.sendas)) {
-            const regexResult = runRegexScript(script, mesText);
-            if (regexResult) {
-                mesText = regexResult;
-            }
-        }
-    });
+    const regexResult = getRegexedString(mesText, regex_placement.SENDAS);
+    if (regexResult) {
+        mesText = regexResult;
+    }
 
     // Messages that do nothing but set bias will be hidden from the context
     const bias = extractMessageBias(mesText);
@@ -279,14 +274,10 @@ async function sendNarratorMessage(_, text) {
         return;
     }
 
-    extension_settings.regex.forEach((script) => {
-        if (script.placement.includes(REGEX_PLACEMENT.system)) {
-            const regexResult = runRegexScript(script, text);
-            if (regexResult) {
-                text = regexResult;
-            }
-        }
-    });
+    const regexResult = getRegexedString(text, regex_placement.SYSTEM);
+    if (regexResult) {
+        text = regexResult;
+    }
 
     const name = chat_metadata[NARRATOR_NAME_KEY] || NARRATOR_NAME_DEFAULT;
     // Messages that do nothing but set bias will be hidden from the context

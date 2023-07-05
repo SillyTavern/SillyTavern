@@ -1,15 +1,7 @@
-import { callPopup, eventSource, event_types, saveSettingsDebounced } from "../../../script.js";
+import { callPopup, eventSource, event_types, reloadCurrentChat, saveSettingsDebounced } from "../../../script.js";
 import { extension_settings } from "../../extensions.js";
 import { uuidv4, waitUntilCondition } from "../../utils.js";
-export { REGEX_PLACEMENT }
-
-const REGEX_PLACEMENT = {
-    mdDisplay: 0,
-    userInput: 1,
-    aiOutput: 2,
-    system: 3,
-    sendas: 4
-}
+import { regex_placement } from "./engine.js";
 
 async function saveRegexScript(regexScript, existingScriptIndex) {
     // If not editing
@@ -55,6 +47,11 @@ async function saveRegexScript(regexScript, existingScriptIndex) {
 
     saveSettingsDebounced();
     await loadRegexScripts();
+
+    // Markdown is global, so reload the chat.
+    if (regexScript.placement.includes(regex_placement.MD_DISPLAY)) {
+        await reloadCurrentChat();
+    }
 }
 
 async function deleteRegexScript({ existingId }) {
@@ -158,19 +155,17 @@ async function onRegexEditorOpenClick(existingId) {
 // Workaround for loading in sequence with other extensions
 // NOTE: Always puts extension at the top of the list, but this is fine since it's static
 jQuery(async () => {
-    await waitUntilCondition(() => eventSource !== undefined);
-    eventSource.on(event_types.EXTENSIONS_FIRST_LOAD, async () => {
-        // Manually disable the extension since static imports auto-import the JS file
-        if (extension_settings.disabledExtensions.includes("regex")) {
-            return;
-        }
+    console.log("REGEX CALLED")
+    // Manually disable the extension since static imports auto-import the JS file
+    if (extension_settings.disabledExtensions.includes("regex")) {
+        return;
+    }
 
-        const settingsHtml = await $.get("scripts/extensions/regex/dropdown.html");
-        $("#extensions_settings2").append(settingsHtml);
-        $("#open_regex_editor").on("click", function() {
-            onRegexEditorOpenClick(false);
-        });
-
-        await loadRegexScripts();
+    const settingsHtml = await $.get("scripts/extensions/regex/dropdown.html");
+    $("#extensions_settings2").append(settingsHtml);
+    $("#open_regex_editor").on("click", function() {
+        onRegexEditorOpenClick(false);
     });
+
+    await loadRegexScripts();
 });

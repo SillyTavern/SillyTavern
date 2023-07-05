@@ -1,6 +1,17 @@
 import { substituteParams } from "../../../script.js";
+import { extension_settings } from "../../extensions.js";
 export {
+    regex_placement,
+    getRegexedString,
     runRegexScript
+}
+
+const regex_placement = {
+    MD_DISPLAY: 0,
+    USER_INPUT: 1,
+    AI_OUTPUT: 2,
+    SYSTEM: 3,
+    SENDAS: 4
 }
 
 // From: https://github.com/IonicaBizau/regex-parser.js/blob/master/lib/index.js
@@ -15,6 +26,21 @@ function regexFromString(input) {
 
     // Create the regular expression
     return new RegExp(m[2], m[3]);
+}
+
+function getRegexedString(rawString, placement) {
+    if (extension_settings.disabledExtensions.includes("regex") || !rawString || placement === undefined) {
+        return;
+    }
+
+    let finalString;
+    extension_settings.regex.forEach((script) => {
+        if (script.placement.includes(placement)) {
+            finalString = runRegexScript(script, rawString);
+        }
+    });
+
+    return finalString;
 }
 
 // Runs the provided regex script on the given string

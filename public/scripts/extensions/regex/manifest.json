@@ -1,6 +1,6 @@
 {
     "display_name": "Regex",
-    "loading_order": 12,
+    "loading_order": 1,
     "requires": [],
     "optional": [],
     "js": "index.js",
