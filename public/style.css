@@ -293,6 +293,7 @@ code {
     padding: 0 3px;
     /* max-width: calc(100svw - 95px); */
     line-height: var(--mainFontSize);
+    color: var(--white70a);
 }
 
 
@@ -745,7 +746,7 @@ hr {
     min-width: 50px !important;
 }
 
-.hotswapAvatar.group_select .avatar img {
+.hotswapAvatar.group_select .avatar.avatar_collage img {
     width: 100%;
     height: 100%;
     object-fit: cover;
@@ -2148,7 +2149,7 @@ grammarly-extension {
 }
 
 .delete_entry_button {
-    align-self: center;
+    height: min-content;
 }
 
 .world_entry_form_control.world_entry_form_horizontal {
@@ -3925,11 +3926,13 @@ label[for="extensions_autoconnect"] {
     z-index: 9999 !important;
 }
 
+/*to prevent draggables from being made too small to see*/
 .fillRight,
 .fillLeft,
 #WorldInfo,
 #floatingPrompt {
-    min-width: unset;
+    min-width: 100px !important;
+    min-height: 100px !important;
     position: fixed;
 }
 
@@ -4656,8 +4659,14 @@ body.waifuMode .zoomed_avatar {
         align-items: start;
         align-content: start;
         overflow-y: auto;
-        overflow-x: hidden;
+        overflow-x: hidden
     }
+
+    .mes_buttons {
+        font-size: calc(var(--mainFontSize)*1.2)
+    }
+
+    ;
 
     .drag-grabber,
     .pull-tab {

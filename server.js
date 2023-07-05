@@ -2262,7 +2262,7 @@ app.post('/editworldinfo', jsonParser, (request, response) => {
         return response.status(400).send('Is not a valid world info file');
     }
 
-    const filename = `${request.body.name}.json`;
+    const filename = `${sanitize(request.body.name)}.json`;
     const pathToFile = path.join(directories.worlds, filename);
 
     fs.writeFileSync(pathToFile, JSON.stringify(request.body.data, null, 4));

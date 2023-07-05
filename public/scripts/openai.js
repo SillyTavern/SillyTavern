@@ -937,7 +937,7 @@ function countTokens(messages, full = false) {
     return token_count;
 }
 
-function getTokenizerModel() {
+export function getTokenizerModel() {
     // OpenAI models always provide their own tokenizer
     if (oai_settings.chat_completion_source == chat_completion_sources.OPENAI) {
         return oai_settings.openai_model;

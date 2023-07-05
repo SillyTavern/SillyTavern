@@ -1,7 +1,7 @@
 import { callPopup, eventSource, event_types, getRequestHeaders, saveSettingsDebounced } from "../../../script.js";
 import { dragElement, isMobile } from "../../RossAscends-mods.js";
 import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper, doExtrasFetch } from "../../extensions.js";
-import { power_user } from "../../power-user.js";
+import { loadMovingUIState, power_user } from "../../power-user.js";
 import { onlyUnique, debounce, getCharaFilename } from "../../utils.js";
 export { MODULE_NAME };
 
@@ -182,20 +182,20 @@ async function visualNovelUpdateLayers(container) {
     const group = context.groups.find(x => x.id == context.groupId);
     const recentMessages = context.chat.map(x => x.original_avatar).filter(x => x).reverse().filter(onlyUnique);
     const filteredMembers = group.members.filter(x => !group.disabled_members.includes(x));
-    const layerIndices = filteredMembers.slice().sort((a, b) =>  {
+    const layerIndices = filteredMembers.slice().sort((a, b) => {
         const aRecentIndex = recentMessages.indexOf(a);
         const bRecentIndex = recentMessages.indexOf(b);
         const aFilteredIndex = filteredMembers.indexOf(a);
         const bFilteredIndex = filteredMembers.indexOf(b);
 
         if (aRecentIndex !== -1 && bRecentIndex !== -1) {
-          return bRecentIndex - aRecentIndex;
+            return bRecentIndex - aRecentIndex;
         } else if (aRecentIndex !== -1) {
-          return 1;
+            return 1;
         } else if (bRecentIndex !== -1) {
-          return -1;
+            return -1;
         } else {
-          return aFilteredIndex - bFilteredIndex;
+            return aFilteredIndex - bFilteredIndex;
         }
     });
 
@@ -566,7 +566,7 @@ function getListItem(item, imageSrc, textClass) {
             <span class="expression_list_title ${textClass}">${item}</span>
             <img class="expression_list_image" src="${imageSrc}" />
         </div>
-    `;
+        `;
 }
 
 async function getSpritesList(name) {
@@ -905,6 +905,7 @@ function setExpressionOverrideHtml(forceClear = false) {
             </div>
         </div>`;
         $('body').append(html);
+        loadMovingUIState();
     }
     function addVisualNovelMode() {
         const html = `
@@ -959,6 +960,10 @@ function setExpressionOverrideHtml(forceClear = false) {
         $('#expression_upload_pack_button').on('click', onClickExpressionUploadPackButton);
         $('#expressions_show_default').prop('checked', extension_settings.expressions.showDefault).trigger('input');
         $('#expression_override_cleanup_button').on('click', onClickExpressionOverrideRemoveAllButton);
+        $(document).on('dragstart', '.expression', (e) => {
+            e.preventDefault()
+            return false
+        })
         $(document).on('click', '.expression_list_item', onClickExpressionImage);
         $(document).on('click', '.expression_list_upload', onClickExpressionUpload);
         $(document).on('click', '.expression_list_delete', onClickExpressionDelete);
@@ -973,6 +978,7 @@ function setExpressionOverrideHtml(forceClear = false) {
     const updateFunction = wrapper.update.bind(wrapper);
     setInterval(updateFunction, UPDATE_INTERVAL);
     moduleWorker();
+    dragElement($("#expression-holder"))
     eventSource.on(event_types.CHAT_CHANGED, () => {
         setExpressionOverrideHtml();
 

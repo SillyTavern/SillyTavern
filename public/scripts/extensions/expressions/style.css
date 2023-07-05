@@ -31,6 +31,21 @@
     object-fit: cover;
 }*/
 
+/* .expression-holder {
+    min-width: 100px;
+    min-height: 100px;
+    max-height: 90vh;
+    max-width: 90vh;
+    width: calc((100vw - var(--sheldWidth)) /2);
+    position: absolute;
+    padding: 0;
+    filter: drop-shadow(2px 2px 2px #51515199);
+    z-index: 29;
+    overflow: hidden;
+    display: none;
+    bottom: 0;
+} */
+
 .expression-holder {
     min-width: 100px;
     min-height: 100px;
@@ -38,7 +53,7 @@
     max-width: 90vh;
     width: calc((100vw - var(--sheldWidth)) /2);
     position: absolute;
-    bottom: 1px;
+    bottom: 0;
     padding: 0;
     filter: drop-shadow(2px 2px 2px #51515199);
     z-index: 2;

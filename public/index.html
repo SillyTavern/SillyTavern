@@ -2002,17 +2002,17 @@
                             </div>
                         </div>
 
-                        <div class="flex1 range-block flex-container flexFlowColumn">
+                        <div class="alignitemsflexstart flex1 range-block flex-container flexFlowColumn">
                             <label title="Entries can activate other entries by mentioning their keywords" class="checkbox_label">
                                 <input id="world_info_recursive" type="checkbox" />
                                 <small>
-                                    Recursive scanning
+                                    Recursive Scan
                                 </small>
                             </label>
                             <label title="Lookup for the entry keys in the context will respect the case" class="checkbox_label">
                                 <input id="world_info_case_sensitive" type="checkbox" />
                                 <small>
-                                    Case-sensitive keys
+                                    Case-sensitive
                                 </small>
                             </label>
                             <label title="If the entry key consists of only one word, it would not be matched as part of other words" class="checkbox_label">
@@ -2074,6 +2074,103 @@
                     <div id="version_display"></div>
                 </div>
                 <div class="flex-container spaceEvenly">
+                    <div id="UI-Theme-Block" class="flex-container flexFlowColumn drawer33pWidth">
+                        <div id="color-picker-block" class="flex-container flexFlowColumn">
+                            <h4><span data-i18n="UI Colors">UI Colors</span></h4>
+                            <div class="flex-container">
+                                <toolcool-color-picker id="main-text-color-picker"></toolcool-color-picker>
+                                <span data-i18n="Main Text">Main Text</span>
+                            </div>
+                            <div class="flex-container">
+                                <toolcool-color-picker id="italics-color-picker"></toolcool-color-picker>
+                                <span data-i18n="Italics Text">Italics Text</span>
+                            </div>
+                            <div class="flex-container">
+                                <toolcool-color-picker id="quote-color-picker"></toolcool-color-picker>
+                                <span data-i18n="Quote Text">Quote Text</span>
+                            </div>
+                            <div class="flex-container">
+                                <toolcool-color-picker id="shadow-color-picker"></toolcool-color-picker>
+                                <span data-i18n="Shadow Color">Text Shadow</span>
+                            </div>
+                            <!--                             <div class="flex-container">
+                                <toolcool-color-picker id="fastui-bg-color-picker"></toolcool-color-picker>
+                                <span data-i18n="FastUI BG">FastUI BG</span>
+                            </div> -->
+                            <div class="flex-container">
+                                <toolcool-color-picker id="blur-tint-color-picker"></toolcool-color-picker>
+                                <span data-i18n="Blur Tint">UI Background</span>
+                            </div>
+                            <div class="flex-container">
+                                <toolcool-color-picker id="user-mes-blur-tint-color-picker"></toolcool-color-picker>
+                                <span data-i18n="User Message Blur Tint">User Message</span>
+                            </div>
+                            <div class="flex-container">
+                                <toolcool-color-picker id="bot-mes-blur-tint-color-picker"></toolcool-color-picker>
+                                <span data-i18n="AI Message Blur Tint">AI Message</span>
+                            </div>
+                            <div id="font-blur-UIpresets-block" class="flex-container flexFlowColumn">
+                                <div id="font-scale-block" class="range-block">
+                                    <div class="range-block-title" data-i18n="Font Scale">
+                                        Font Scale
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="font_scale" name="font_scale" min="0.8" max="1.2" step="0.05">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="font_scale" id="font_scale_counter">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="blur-strength-block" class="range-block">
+                                    <div class="range-block-title" data-i18n="Blur Strength">
+                                        Blur Strength
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="blur_strength" name="blur_strength" min="0" max="30" step="1">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="blur_strength" id="blur_strength_counter">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="shadow-width-block" class="range-block">
+                                    <div class="range-block-title" data-i18n="Text Shadow Width">
+                                        Text Shadow Width
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="shadow_width" name="shadow_width" min="0" max="5" step="1">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="shadow_width" id="shadow_width_counter">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="UI-presets-block" class="flex-container flexFlowColumn">
+                                <h4>
+                                    <span data-i18n="UI Theme Preset">UI Theme Preset</span>
+                                </h4>
+                                <div class="flex-container flexnowrap alignitemscenter">
+                                    <select id="themes" class="margin0 margin-r5">
+                                    </select>
+                                    <div id="ui-preset-save-button" title="Save changes to a new theme file" class="menu_button padding5 margin0">
+                                        <i class="fa-solid fa-save"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
                     <div name="UI Customization" class="flex-container drawer33pWidth">
                         <div class="ui-settings">
                             <h4><span data-i18n="UI Customization">UI Customization</span></h4>
@@ -2183,103 +2280,7 @@
                         </div>
 
                     </div>
-                    <div id="UI-Theme-Block" class="flex-container flexFlowColumn drawer33pWidth">
-                        <div id="color-picker-block" class="flex-container flexFlowColumn">
-                            <h4><span data-i18n="UI Colors">UI Colors</span></h4>
-                            <div class="flex-container">
-                                <toolcool-color-picker id="main-text-color-picker"></toolcool-color-picker>
-                                <span data-i18n="Main Text">Main Text</span>
-                            </div>
-                            <div class="flex-container">
-                                <toolcool-color-picker id="italics-color-picker"></toolcool-color-picker>
-                                <span data-i18n="Italics Text">Italics Text</span>
-                            </div>
-                            <div class="flex-container">
-                                <toolcool-color-picker id="quote-color-picker"></toolcool-color-picker>
-                                <span data-i18n="Quote Text">Quote Text</span>
-                            </div>
-                            <div class="flex-container">
-                                <toolcool-color-picker id="shadow-color-picker"></toolcool-color-picker>
-                                <span data-i18n="Shadow Color">Text Shadow</span>
-                            </div>
-                            <!--                             <div class="flex-container">
-                                <toolcool-color-picker id="fastui-bg-color-picker"></toolcool-color-picker>
-                                <span data-i18n="FastUI BG">FastUI BG</span>
-                            </div> -->
-                            <div class="flex-container">
-                                <toolcool-color-picker id="blur-tint-color-picker"></toolcool-color-picker>
-                                <span data-i18n="Blur Tint">UI Background</span>
-                            </div>
-                            <div class="flex-container">
-                                <toolcool-color-picker id="user-mes-blur-tint-color-picker"></toolcool-color-picker>
-                                <span data-i18n="User Message Blur Tint">User Message</span>
-                            </div>
-                            <div class="flex-container">
-                                <toolcool-color-picker id="bot-mes-blur-tint-color-picker"></toolcool-color-picker>
-                                <span data-i18n="AI Message Blur Tint">AI Message</span>
-                            </div>
-                            <div id="font-blur-UIpresets-block" class="flex-container flexFlowColumn">
-                                <div id="font-scale-block" class="range-block">
-                                    <div class="range-block-title" data-i18n="Font Scale">
-                                        Font Scale
-                                    </div>
-                                    <div class="range-block-range-and-counter">
-                                        <div class="range-block-range">
-                                            <input type="range" id="font_scale" name="font_scale" min="0.8" max="1.2" step="0.05">
-                                        </div>
-                                        <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="font_scale" id="font_scale_counter">
-                                                select
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div id="blur-strength-block" class="range-block">
-                                    <div class="range-block-title" data-i18n="Blur Strength">
-                                        Blur Strength
-                                    </div>
-                                    <div class="range-block-range-and-counter">
-                                        <div class="range-block-range">
-                                            <input type="range" id="blur_strength" name="blur_strength" min="0" max="30" step="1">
-                                        </div>
-                                        <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="blur_strength" id="blur_strength_counter">
-                                                select
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div id="shadow-width-block" class="range-block">
-                                    <div class="range-block-title" data-i18n="Text Shadow Width">
-                                        Text Shadow Width
-                                    </div>
-                                    <div class="range-block-range-and-counter">
-                                        <div class="range-block-range">
-                                            <input type="range" id="shadow_width" name="shadow_width" min="0" max="5" step="1">
-                                        </div>
-                                        <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="shadow_width" id="shadow_width_counter">
-                                                select
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div id="UI-presets-block" class="flex-container flexFlowColumn">
-                                <h4>
-                                    <span data-i18n="UI Theme Preset">UI Theme Preset</span>
-                                </h4>
-                                <div class="flex-container flexnowrap alignitemscenter">
-                                    <select id="themes" class="margin0 margin-r5">
-                                    </select>
-                                    <div id="ui-preset-save-button" title="Save changes to a new theme file" class="menu_button padding5 margin0">
-                                        <i class="fa-solid fa-save"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
 
-                    </div>
                     <div id="power-user-options-block" class="flex-container drawer33pWidth">
                         <div id="power-user-option-checkboxes">
                             <h4 data-i18n="Power User Options">Power User Options</h4>
@@ -3094,14 +3095,18 @@
                                         <span data-i18n="Keywords">
                                             Keywords
                                         </span>
+                                        <span>(UID:&nbsp;
+                                            <span class="world_entry_form_uid_value"></span>
+                                            )
+                                        </span>
                                     </small>
                                     <small class="displayNone">
-                                        <span data-i18n="Separate with commas">
-                                            Separate with commas
+                                        <span data-i18n="Comma separated (required)">
+                                            Comma separated (required)
                                         </span>
                                     </small>
                                 </label>
-                                <textarea class="text_pole keyprimarytextpole" name="key" rows="1" placeholder="Separate with commas" maxlength="1000"></textarea>
+                                <textarea class="text_pole keyprimarytextpole" name="key" rows="1" placeholder="Comma separated (required)" maxlength="1000"></textarea>
                             </div>
                             <div class="world_entry_form_control keysecondary">
                                 <label for="keysecondary">
@@ -3111,12 +3116,12 @@
                                         </span>
                                     </small>
                                     <small class="displayNone">
-                                        <span data-i18n="Separate with commas">
-                                            Separate with commas
+                                        <span data-i18n="Comma seperated (ignored if empty)">
+                                            Comma seperated (ignored if empty)
                                         </span>
                                     </small>
                                 </label>
-                                <textarea class="text_pole keysecondarytextpole" name="keysecondary" rows="1" placeholder="Separate with commas" maxlength="1000"></textarea>
+                                <textarea class="text_pole keysecondarytextpole" name="keysecondary" rows="1" placeholder="Comma separated (ignored if empty)" maxlength="1000"></textarea>
                             </div>
                         </div>
                         <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
@@ -3129,6 +3134,10 @@
                                         <small>
                                             <span data-i18n="Content">
                                                 Content
+                                                <span>(Tokens:&nbsp;
+                                                    <span class="world_entry_form_token_counter">0</span>
+                                                    )
+                                                </span>
                                             </span>
                                         </small>
                                         <small class="displayNone">
@@ -3164,6 +3173,10 @@
                                     <input type="checkbox" name="constant" />
                                     <span data-i18n="Constant">Constant</span>
                                 </label>
+                                <label class="checkbox flex-container alignitemscenter">
+                                    <input type="checkbox" name="disable" />
+                                    <span data-i18n="Disable">Disable</span>
+                                </label>
                                 <label class="checkbox flex-container">
                                     <input type="checkbox" name="selective" />
                                     <span data-i18n="Selective">Selective</span>
@@ -3177,65 +3190,57 @@
                                     <span data-i18n="Add Memo">Add Memo</span>
                                 </label>
 
-                            </div>
-                            <div class="world_entry_form_control world_entry_form_radios  wi-enter-footer-text ">
-                                <small>Placement</small>
-                                <div>
-                                    <label><input type="radio" name="position" value="0">
-                                        <span data-i18n="Before Char">Before Char</span>
-                                    </label>
-                                </div>
-                                <div>
-                                    <label><input type="radio" name="position" value="1">
-                                        <span data-i18n="After Char">After Char</span>
-                                    </label>
-                                </div>
-                                <div>
-                                    <label><input type="radio" name="position" value="2">
-                                        <span data-i18n="Author's Note">Author's Note Top</span>
-                                    </label>
-                                </div>
-                                <div>
-                                    <label><input type="radio" name="position" value="3">
-                                        <span data-i18n="Author's Note">Author's Note Bottom</span>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div class="container flexFlowColumn flexNoGap">
-                                <div class="world_entry_form_control wi-enter-footer-text  flex-container flexNoGap ">
-                                    Insertion Order
-                                    <input class="text_pole wideMax100px" type="number" name="order" placeholder="" />
-                                </div>
-
-                                <div class="world_entry_form_control wi-enter-footer-text flex-container flexNoGap probabilityContainer">
-                                    Probability (%)
-                                    <input class="text_pole wideMax100px" type="number" name="probability" placeholder="" min="0" max="100" />
-                                </div>
-                            </div>
-
-                            <div class="flex-container flexFlowColumn flexNoGap  wi-enter-footer-text ">
-                                <div class="world_entry_form_uid">
-                                    UID:
-                                    &nbsp;
-                                    <span class="world_entry_form_uid_value"></span>
-                                </div>
-                                <div class="world_entry_form_tokens">
-                                    Tokens:
-                                    &nbsp;
-                                    <span class="world_entry_form_token_counter">0</span>
-                                </div>
-                            </div>
-                            <div class="wi-enter-footer-text">
-                                <label class="checkbox flex-container alignitemscenter">
-                                    <input type="checkbox" name="disable" />
-                                    <span data-i18n="Disable">Disable</span>
-                                </label>
                                 <label class="checkbox flex-container alignitemscenter">
                                     <input type="checkbox" name="exclude_recursion" />
-                                    <span data-i18n="Exclude from recursion">Exclude from recursion</span>
+                                    <span data-i18n="Exclude from recursion">
+                                        Non-recursable
+                                    </span>
                                 </label>
+
+
                             </div>
+
+                            <!--                             <div name="injectioStratBlock" class="world_entry_form_control world_entry_form_radios  wi-enter-footer-text ">
+                                <label for="injectionStrat">Injection:</label>
+                                <small>
+                                    <select name="injectionStrat">
+                                        <option value="0">Normal</option>
+                                        <option value="1">Constant</option>
+                                        <option value="2">Disabled</option>
+                                    </select>
+                                </small>
+                            </div> -->
+
+                            <div name="PositionBlock" class="world_entry_form_control world_entry_form_radios  wi-enter-footer-text ">
+                                <label for="position">Position:</label>
+                                <small>
+                                    <select name="position">
+                                        <option value="0">Before Char Defs</option>
+                                        <option value="1">After Char Defs</option>
+                                        <option value="2">Before AN</option>
+                                        <option value="3">After AN</option>
+                                    </select>
+                                </small>
+                            </div>
+
+
+                            <div class="world_entry_form_control wi-enter-footer-text  flex-container flexNoGap ">
+                                <label for="order">Order:</label>
+                                <input class="text_pole wideMax100px margin0" type="number" name="order" placeholder="" />
+                            </div>
+
+
+
+                            <div class="world_entry_form_control wi-enter-footer-text flex-container flexNoGap probabilityContainer">
+                                <label for="probability"></label>Probability:</label>
+                                <input class="text_pole wideMax100px margin0" type="number" name="probability" placeholder="" min="0" max="100" />
+                            </div>
+
+                            <div class="flex-container flexFlowColumn flexNoGap wi-enter-footer-text ">
+
+
+                            </div>
+
                             <input class="menu_button delete_entry_button" type="submit" value="Delete Entry" />
                         </div>
                     </div>

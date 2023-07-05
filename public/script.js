@@ -89,6 +89,7 @@ import {
     openai_messages_count,
     getTokenCountOpenAI,
     chat_completion_sources,
+    getTokenizerModel,
 } from "./scripts/openai.js";
 
 import {
@@ -318,6 +319,9 @@ const system_message_types = {
     BOOKMARK_BACK: "bookmark_back",
     NARRATOR: "narrator",
     COMMENT: "comment",
+    SLASH_COMMANDS: "slash_commands",
+    FORMATTING: "formatting",
+    HOTKEYS: "hotkeys",
 };
 
 const extension_prompt_types = {
@@ -333,12 +337,31 @@ const system_messages = {
         is_system: true,
         is_name: true,
         mes: [
-            `Hi there! The following chat formatting commands are supported:
+            `Hello there! Please select the help topic you would like to learn more about:
             <ul>
-            <li><tt>{​{text}​}</tt> - sets a one-time behavioral bias for the AI. Resets when you send the next message.
-            </li>
+            <li><a href="javascript:displayHelp('1')">Slash Commands</a> (or <tt>/help slash</tt>)</li>
+            <li><a href="javascript:displayHelp('2')">Formatting</a> (or <tt>/help format</tt>)</li>
+            <li><a href="javascript:displayHelp('3')">Hotkeys</a> (or <tt>/help hotkeys</tt>)</li>
             </ul>
-            Hotkeys/Keybinds:
+            <br><b>Still got questions left? The <a target="_blank" href="https://docs.sillytavern.app/">Official SillyTavern Documentation Website</a> has much more information!</b>`
+        ]
+    },
+    slash_commands: {
+        name: systemUserName,
+        force_avatar: system_avatar,
+        is_user: false,
+        is_system: true,
+        is_name: true,
+        mes: '',
+    },
+    hotkeys: {
+        name: systemUserName,
+        force_avatar: system_avatar,
+        is_user: false,
+        is_system: true,
+        is_name: true,
+        mes: [
+            `Hotkeys/Keybinds:
             <ul>
             <li><tt>Up</tt> = Edit last message in chat</li>
             <li><tt>Ctrl+Up</tt> = Edit last USER message in chat</li>
@@ -350,7 +373,26 @@ const system_messages = {
             <li><tt>Escape</tt> = stop AI response generation</li>
             <li><tt>Ctrl+Shift+Up</tt> = Scroll to context line</li>
             <li><tt>Ctrl+Shift+Down</tt> = Scroll chat to bottom</li>
-
+            </ul>`
+        ]
+    },
+    formatting: {
+        name: systemUserName,
+        force_avatar: system_avatar,
+        is_user: false,
+        is_system: true,
+        is_name: true,
+        mes: [
+            `Text formatting commands:
+            <ul>
+            <li><tt>{​{text}​}</tt> - sets a one-time behavioral bias for the AI. Resets when you send the next message.</li>
+            <li><tt>*text*</tt> - displays as <i>italics</i></li>
+            <li><tt>**text**</tt> - displays as <b>bold</b></li>
+            <li><tt>***text***</tt> - displays as <b><i>bold italics</i></b></li>
+            <li><tt>` + "```" + `text` + "```" + `</tt> - displays as a code block</li>
+            <li><tt>` + "`" + `text` + "`" + `</tt> - displays as inline code</li>
+            <li><tt>$$ text $$</tt> - renders a LaTeX formula (if enabled)</li>
+            <li><tt>$ text $</tt> - renders an AsciiMath formula (if enabled)</li>
             </ul>`
         ]
     },
@@ -1525,9 +1567,8 @@ function sendSystemMessage(type, text, extra = {}) {
         newMessage.mes = text;
     }
 
-    if (type == system_message_types.HELP) {
-        newMessage.mes += getSlashCommandsHelp();
-        newMessage.mes += `<br><b>Still got questions left? The <a target="_blank" href="https://docs.sillytavern.app/">Official SillyTavern Documentation Website</a> has much more information!</b>`;
+    if (type == system_message_types.SLASH_COMMANDS) {
+        newMessage.mes = getSlashCommandsHelp();
     }
 
     if (!newMessage.extra) {
@@ -1612,7 +1653,7 @@ function getPersonaDescription(storyString) {
         default:
             if (shouldWIAddPrompt) {
                 const originalAN = extension_prompts[NOTE_MODULE_NAME].value
-                const ANWithDesc = persona_description_positions.TOP_AN
+                const ANWithDesc = power_user.persona_description_position === persona_description_positions.TOP_AN
                     ? `${power_user.persona_description}\n${originalAN}`
                     : `${originalAN}\n${power_user.persona_description}`;
                 setExtensionPrompt(NOTE_MODULE_NAME, ANWithDesc, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth]);
@@ -3076,7 +3117,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
         var promptBiasTokensPercentage = ((oaiBiasTokens / (finalPromptTokens)) * 100).toFixed(2);
         var worldInfoStringTokensPercentage = ((worldInfoStringTokens / (finalPromptTokens)) * 100).toFixed(2);
         var allAnchorsTokensPercentage = ((allAnchorsTokens / (finalPromptTokens)) * 100).toFixed(2);
-        var selectedTokenizer = `tiktoken (${oai_settings.openai_model})`;
+        var selectedTokenizer = `tiktoken (${getTokenizerModel()})`;
         var oaiSystemTokens = oaiImpersonateTokens + oaiJailbreakTokens + oaiNudgeTokens + oaiStartTokens;
         var oaiSystemTokensPercentage = ((oaiSystemTokens / (finalPromptTokens)) * 100).toFixed(2);
 
@@ -3095,7 +3136,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
         callPopup(
             `
         <h3>Prompt Itemization</h3>
-        Tokenizer: TikToken<br>
+        Tokenizer: ${selectedTokenizer}<br>
         API Used: ${this_main_api}<br>
         <span class="tokenItemizingSubclass">
             Only the white numbers really matter. All numbers are estimates.
@@ -7866,8 +7907,8 @@ $(document).ready(function () {
         const pinnedDrawerClicked = drawer.hasClass('pinnedOpen');
 
         if (!drawerWasOpenAlready) { //to open the drawer
-            $('.openDrawer').not('.pinnedOpen').addClass('resizing').slideToggle(200, "swing", function () {
-                $(this).closest('.drawer-content').removeClass('resizing');
+            $('.openDrawer').not('.pinnedOpen').addClass('resizing').slideToggle(200, "swing", async function () {
+                await delay(50); $(this).closest('.drawer-content').removeClass('resizing');
             });
             $('.openIcon').toggleClass('closedIcon openIcon');
             $('.openDrawer').not('.pinnedOpen').toggleClass('closedDrawer openDrawer');
@@ -7880,16 +7921,17 @@ $(document).ready(function () {
                     duration: 200,
                     easing: "swing",
                     start: function () {
-                        jQuery(this).css('display', 'flex');
+                        jQuery(this).css('display', 'flex'); //flex needed to make charlist scroll
                     },
-                    complete: function () {
+                    complete: async function () {
+                        await delay(50);
                         $(this).closest('.drawer-content').removeClass('resizing');
                         $("#rm_print_characters_block").trigger("scroll");
                     }
                 })
             } else {
-                $(this).closest('.drawer').find('.drawer-content').addClass('resizing').slideToggle(200, "swing", function () {
-                    $(this).closest('.drawer-content').removeClass('resizing');
+                $(this).closest('.drawer').find('.drawer-content').addClass('resizing').slideToggle(200, "swing", async function () {
+                    await delay(50); $(this).closest('.drawer-content').removeClass('resizing');
                 });
             }
 
@@ -7898,13 +7940,13 @@ $(document).ready(function () {
             icon.toggleClass('closedIcon openIcon');
 
             if (pinnedDrawerClicked) {
-                $(drawer).addClass('resizing').slideToggle(200, "swing", function () {
-                    $(this).removeClass('resizing');
+                $(drawer).addClass('resizing').slideToggle(200, "swing", async function () {
+                    await delay(50); $(this).removeClass('resizing');
                 });
             }
             else {
-                $('.openDrawer').not('.pinnedOpen').addClass('resizing').slideToggle(200, "swing", function () {
-                    $(this).closest('.drawer-content').removeClass('resizing');
+                $('.openDrawer').not('.pinnedOpen').addClass('resizing').slideToggle(200, "swing", async function () {
+                    await delay(50); $(this).closest('.drawer-content').removeClass('resizing');
                 });
             }
 
@@ -7999,6 +8041,12 @@ $(document).ready(function () {
             loadMovingUIState();
             $(`.zoomed_avatar[forChar="${charname}"]`).css('display', 'block');
             dragElement(newElement)
+
+            $(`.zoomed_avatar[forChar="${charname}"] img`).on('dragstart', (e) => {
+                console.log('saw drag on avatar!');
+                e.preventDefault();
+                return false;
+            });
         }
     });
 

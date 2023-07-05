@@ -104,22 +104,6 @@ function waitForElement(querySelector, timeout) {
     });
 }
 
-waitForElement("#expression-image", 10000).then(function () {
-
-    dragElement(document.getElementById("expression-holder"));
-    dragElement(document.getElementById("floatingPrompt"));
-
-}).catch(() => {
-    console.log("expression holder not loaded yet");
-});
-
-waitForElement("#floatingPrompt", 10000).then(function () {
-
-    dragElement(document.getElementById("floatingPrompt"));
-
-}).catch(() => {
-    console.log("floating prompt box not loaded yet");
-});
 
 // Device detection
 export const deviceInfo = await getDeviceInfo();
@@ -474,37 +458,28 @@ function OpenNavPanels() {
 
 // Make the DIV element draggable:
 
-
-// SECOND UPDATE AIMING FOR MUTATIONS ONLY
+// THIRD UPDATE, prevent resize window breaks and smartly handle saving
 
 export function dragElement(elmnt) {
+    var hasBeenDraggedByUser = false;
+    var isMouseDown = false;
+
     var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-    var height, width, top, left, right, bottom;
+    var height, width, top, left, right, bottom,
+        maxX, maxY, winHeight, winWidth,
+        topBarFirstX, topBarLastX, sheldWidth;
 
-    var oldTop = Number((String($(elmnt).css('top')).replace('px', '')))
-    var oldLeft = Number((String($(elmnt).css('left')).replace('px', '')))
-    var oldWidth = Number((String($(elmnt).css('width')).replace('px', '')))
-    var oldHeight = Number((String($(elmnt).css('width')).replace('px', '')))
-    var oldRight = Number((String($(elmnt).css('right')).replace('px', '')))
-    var oldBottom = Number((String($(elmnt).css('bottom')).replace('px', '')))
     var elmntName = elmnt.attr('id');
-    console.debug(`${elmntName} init state: 
-T: ${$(elmnt).css('top')}
-L: ${$(elmnt).css('left')}
-W: ${$(elmnt).css('width')}
-H: ${$(elmnt).css('height')}
-R: ${$(elmnt).css('right')}
-B: ${$(elmnt).css('bottom')}
----`);
-
 
     const elmntNameEscaped = $.escapeSelector(elmntName);
     const elmntHeader = $(`#${elmntNameEscaped}header`);
+
     if (elmntHeader.length) {
         elmntHeader.off('mousedown').on('mousedown', (e) => {
 
             dragMouseDown(e);
         });
+        $(elmnt).off('mousedown').on('mousedown', () => { isMouseDown = true })
     } else {
         elmnt.off('mousedown').on('mousedown', dragMouseDown);
     }
@@ -521,52 +496,87 @@ B: ${$(elmnt).css('bottom')}
             console.debug('aborting mutator')
             return
         }
-
-        const style = getComputedStyle(target);
-        //console.log(style.top, style.left)
+        //console.debug(left + width, winWidth, hasBeenDraggedByUser, isMouseDown)
+        const style = getComputedStyle(target); //use computed values because not all CSS are set by default
         height = target.offsetHeight;
         width = target.offsetWidth;
         top = parseInt(style.top);
         left = parseInt(style.left);
         right = parseInt(style.right);
         bottom = parseInt(style.bottom);
+        maxX = parseInt(width + left);
+        maxY = parseInt(height + top);
+        winWidth = window.innerWidth;
+        winHeight = window.innerHeight;
+        sheldWidth = parseInt($('html').css('--sheldWidth').slice(0, -2));
+        topBarFirstX = (winWidth - sheldWidth) / 2;
+        topBarLastX = topBarFirstX + sheldWidth;
 
+        //prepare an empty poweruser object for the item being altered if we don't have one already
         if (!power_user.movingUIState[elmntName]) {
             console.debug(`adding config property for ${elmntName}`)
             power_user.movingUIState[elmntName] = {};
         }
 
-        power_user.movingUIState[elmntName].top = top;
-        power_user.movingUIState[elmntName].left = left;
-
-        if (!isNaN(oldWidth)
-            && !isNaN(oldHeight)
-            && (oldHeight !== height || oldWidth !== width)) {
-            power_user.movingUIState[elmntName].width = width;
-            power_user.movingUIState[elmntName].height = height;
-        } else {
-            console.debug('skipping W/H setting')
-        }
-        power_user.movingUIState[elmntName].right = right;
-        power_user.movingUIState[elmntName].bottom = bottom;
-        if (!isNaN(oldTop) && !isNaN(oldLeft) && (oldTop !== top || oldLeft !== left)) {
-            console.debug('unsetting margin due to custom position')
-            console.debug(`${elmntName}:
-T: ${oldTop}>>${top}
-L: ${oldLeft}>> ${left}
-H: ${oldHeight} >> ${height}
-W: ${oldWidth}>> ${width}
-R: ${oldRight} >> ${right}
-B: ${oldBottom}>> ${bottom}
----`)
+        //only record position changes if caused by a user click-drag
+        if (hasBeenDraggedByUser && isMouseDown) {
+            power_user.movingUIState[elmntName].top = top;
+            power_user.movingUIState[elmntName].left = left;
+            power_user.movingUIState[elmntName].right = right;
+            power_user.movingUIState[elmntName].bottom = bottom;
             power_user.movingUIState[elmntName].margin = 'unset';
-        } else {
-            console.debug('skipped unsetting margins')
-            //console.debug(oldTop, top, oldLeft, left)
         }
-        saveSettingsDebounced();
 
+        //handle resizing
+        if (!hasBeenDraggedByUser && isMouseDown) {
+            console.log('saw resize, NOT header drag')
+            //set css to prevent weird resize behavior (does not save)
+            elmnt.css('left', left)
+            elmnt.css('top', top)
 
+            //prevent resizing offscreen
+            if (top + elmnt.height() >= winHeight) {
+                elmnt.css('height', winHeight - top - 1 + "px");
+            }
+
+            if (left + elmnt.width() >= winWidth) {
+                elmnt.css('width', winWidth - left - 1 + "px");
+            }
+
+            //prevent resizing into the top bar
+            if (top <= 40 && maxX > topBarFirstX) {
+                elmnt.css('width', width - 1 + "px");
+            }
+            //set a listener for mouseup to save new width/height
+            elmnt.off('mouseup').on('mouseup', () => {
+                console.debug(`Saving ${elmntName} Height/Width`)
+                power_user.movingUIState[elmntName].width = width;
+                power_user.movingUIState[elmntName].height = height;
+                saveSettingsDebounced();
+            })
+        }
+
+        //handle dragging hit detection
+        if (hasBeenDraggedByUser && isMouseDown) {
+            //prevent dragging offscreen
+            if (top <= 0) {
+                elmnt.css('top', '0px');
+            } else if (maxY >= winHeight) {
+                elmnt.css('top', winHeight - maxY + top - 1 + "px");
+            }
+
+            if (left <= 0) {
+                elmnt.css('left', '0px');
+            } else if (maxX >= winWidth) {
+                elmnt.css('left', winWidth - maxX + left - 1 + "px");
+            }
+
+            //prevent underlap with topbar div
+            if (top < 40 && (maxX > topBarFirstX && maxX < topBarLastX || left < topBarLastX && left > topBarFirstX)) {
+                console.log('saw topbar hit')
+                elmnt.css('top', '42px');
+            }
+        }
 
         // Check if the element header exists and set the listener on the grabber
         if (elmntHeader.length) {
@@ -584,6 +594,7 @@ B: ${oldBottom}>> ${bottom}
     function dragMouseDown(e) {
 
         if (e) {
+            hasBeenDraggedByUser = true;
             e.preventDefault();
             pos3 = e.clientX; //mouse X at click
             pos4 = e.clientY; //mouse Y at click
@@ -593,76 +604,60 @@ B: ${oldBottom}>> ${bottom}
     }
 
     function elementDrag(e) {
-        $("body").css("overflow", "hidden");
         if (!power_user.movingUIState[elmntName]) {
             power_user.movingUIState[elmntName] = {};
         }
 
-        let winWidth = window.innerWidth;
-        let winHeight = window.innerHeight;
-        let sheldWidth = parseInt($('html').css('--sheldWidth').slice(0, -2));
-        let topBarFirstX = (winWidth - sheldWidth) / 2;
-        let topBarLastX = topBarFirstX + sheldWidth;
-        let maxX = (width + left);
-        let maxY = (height + top);
-
         e = e || window.event;
         e.preventDefault();
 
-        pos1 = pos3 - e.clientX;    //X change amt
-        pos2 = pos4 - e.clientY;    //Y change amt
+        pos1 = pos3 - e.clientX;    //X change amt (-1 or 1)
+        pos2 = pos4 - e.clientY;    //Y change amt (-1 or 1)
         pos3 = e.clientX;   //new mouse X
         pos4 = e.clientY;   //new mouse Y
 
         elmnt.attr('data-dragged', 'true');
 
-        if (elmnt.offset().top < 40) {
-            if (maxX > topBarFirstX && maxX < topBarLastX) {
-                elmnt.css('top', '42px');
-            }
-            if (elmnt.offset().left < topBarLastX && elmnt.offset().left > topBarFirstX) {
-                elmnt.css('top', '42px');
-            }
-        }
-        if (elmnt.offset().top - pos2 <= 0) {
-            elmnt.css('top', '0px');
-        }
-        if (elmnt.offset().left - pos1 <= 0) {
-            elmnt.css('left', '0px');
-        }
-        if (maxX >= winWidth) {
-            elmnt.css('left', elmnt.offset().left - 10 + "px");
-        }
-        if (maxY >= winHeight) {
-            elmnt.css('top', elmnt.offset().top - 10 + "px");
-            if (elmnt.offset().top - pos2 <= 40) {
-                elmnt.css('top', '20px');
-            }
-        }
+        //first set css to computed values to avoid CSS NaN results from 'auto', etc
+        elmnt.css('left', (elmnt.offset().left) + "px");
+        elmnt.css("top", (elmnt.offset().top) + "px");
+
+        //then update element position styles to account for drag changes
+        elmnt.css('margin', 'unset');
         elmnt.css('left', (elmnt.offset().left - pos1) + "px");
         elmnt.css("top", (elmnt.offset().top - pos2) + "px");
-        elmnt.css('margin', 'unset');
+        elmnt.css("right", ((winWidth - maxX) + "px"));
+        elmnt.css("bottom", ((winHeight - maxY) + "px"));
 
-        /*
-        console.log(`
-            winWidth: ${winWidth}, winHeight: ${winHeight}
-            sheldWidth: ${sheldWidth}
-            X: ${$(elmnt).css('left')}
-            Y: ${$(elmnt).css('top')}
-            MaxX: ${maxX}, MaxY: ${maxY}
-            Topbar 1st X: ${((winWidth - sheldWidth) / 2)}
-            TopBar lastX: ${((winWidth - sheldWidth) / 2) + sheldWidth}
-            `);
-        */
+        // Height/Width here are for visuals only, and are not saved to settings
+        // required because some divs do hot have a set width/height..
+        // and will defaults to shrink to min value of 100px set in CSS file
+        elmnt.css('height', height + "px")
+        elmnt.css('width', width + "px")
+
+        /*  console.log(`
+             winWidth: ${winWidth}, winHeight: ${winHeight}
+             sheldWidth: ${sheldWidth}
+             X: ${$(elmnt).css('left')}
+             Y: ${$(elmnt).css('top')}
+             MaxX: ${maxX}, MaxY: ${maxY}
+             Topbar 1st X: ${((winWidth - sheldWidth) / 2)}
+             TopBar lastX: ${((winWidth - sheldWidth) / 2) + sheldWidth}
+             `); */
+        return
     }
 
     function closeDragElement() {
         console.debug('drag finished')
+        hasBeenDraggedByUser = false;
+        isMouseDown = false;
         $(document).off('mouseup', closeDragElement);
         $(document).off('mousemove', elementDrag);
         $("body").css("overflow", "");
         // Clear the "data-dragged" attribute
         elmnt.attr('data-dragged', 'false');
+        console.debug(`Saving ${elmntName} UI position`)
+        saveSettingsDebounced();
 
     }
 }
@@ -677,7 +672,6 @@ export async function initMovingUI() {
         await delay(1000)
         console.debug('loading AN draggable function')
         dragElement($("#floatingPrompt"))
-
     }
 }
 

@@ -408,7 +408,8 @@ function appendWorldEntry(name, data, entry) {
     });
 
     commentInput.val(entry.comment).trigger("input");
-    commentToggle.prop("checked", entry.addMemo).trigger("input");
+    commentToggle.prop("checked", true /* entry.addMemo */).trigger("input");
+    commentToggle.parent().hide()
 
     // content
     const countTokensDebounced = debounce(function (that, value) {
@@ -464,7 +465,8 @@ function appendWorldEntry(name, data, entry) {
         value ? keysecondary.show() : keysecondary.hide();
 
     });
-    selectiveInput.prop("checked", entry.selective).trigger("input");
+    selectiveInput.prop("checked", true /* entry.selective */).trigger("input");
+    selectiveInput.parent().hide();
 
 
     // constant
@@ -537,7 +539,7 @@ function appendWorldEntry(name, data, entry) {
         value ? probabilityContainer.show() : probabilityContainer.hide();
 
         if (value && data.entries[uid].probability === null) {
-            data.entries[uid].probability = 50;
+            data.entries[uid].probability = 100;
         }
 
         if (!value) {
@@ -546,14 +548,15 @@ function appendWorldEntry(name, data, entry) {
 
         probabilityInput.val(data.entries[uid].probability).trigger("input");
     });
-    probabilityToggle.prop("checked", entry.useProbability).trigger("input");
+    probabilityToggle.prop("checked", true /* entry.useProbability */).trigger("input");
+    probabilityToggle.parent().hide();
 
     // position
     if (entry.position === undefined) {
         entry.position = 0;
     }
 
-    const positionInput = template.find('input[name="position"]');
+    const positionInput = template.find('select[name="position"]');
     positionInput.data("uid", entry.uid);
     positionInput.on("input", function () {
         const uid = $(this).data("uid");
@@ -565,9 +568,10 @@ function appendWorldEntry(name, data, entry) {
         setOriginalDataValue(data, uid, "extensions.position", data.entries[uid].position);
         saveWorldInfo(name, data);
     });
+
     template
-        .find(`input[name="position"][value=${entry.position}]`)
-        .prop("checked", true)
+        .find(`select[name="position"] option[value=${entry.position}]`)
+        .prop("selected", true)
         .trigger("input");
 
     // display uid
