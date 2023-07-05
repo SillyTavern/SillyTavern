@@ -171,7 +171,6 @@ async function onRegexEditorOpenClick(existingId) {
 // Workaround for loading in sequence with other extensions
 // NOTE: Always puts extension at the top of the list, but this is fine since it's static
 jQuery(async () => {
-    console.log("REGEX CALLED")
     // Manually disable the extension since static imports auto-import the JS file
     if (extension_settings.disabledExtensions.includes("regex")) {
         return;
