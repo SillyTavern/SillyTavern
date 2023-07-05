@@ -3089,7 +3089,8 @@
                     <div class="inline-drawer-toggle inline-drawer-header gap5px">
                         <span class="drag-handle">&#9776;</span>
                         <div class="gap5px world_entry_thin_controls wide100p">
-                            <div class="world_entry_form_control">
+
+                            <div class="world_entry_form_control flex1">
                                 <label for="key">
                                     <small>
                                         <span data-i18n="Keywords">
@@ -3108,11 +3109,18 @@
                                 </label>
                                 <textarea class="text_pole keyprimarytextpole" name="key" rows="1" placeholder="Comma separated (required)" maxlength="1000"></textarea>
                             </div>
-                            <div class="world_entry_form_control keysecondary">
+                            <div class="flex-container widthFitContent alignItemsFlexEnd">
+                                <select name="entryLogicType" class="height32px widthFitContent margin0">
+                                    <option value="0">AND</option>
+                                    <option value="1">NOT</option>
+                                </select>
+                            </div>
+
+                            <div class="world_entry_form_control keysecondary flex1">
                                 <label for="keysecondary">
                                     <small>
                                         <span data-i18n="Secondary Required Keywords">
-                                            Secondary Required Keywords
+                                            Optional Filter
                                         </span>
                                     </small>
                                     <small class="displayNone">
@@ -3129,7 +3137,7 @@
                     <div class="inline-drawer-content flex-container">
                         <div class="WIEntryContentAndMemo flex-container">
                             <div class="world_entry_thin_controls flex2">
-                                <div class="world_entry_form_control">
+                                <div class="world_entry_form_control flex1">
                                     <label for="content ">
                                         <small>
                                             <span data-i18n="Content">
@@ -3150,7 +3158,7 @@
                                 </div>
                             </div>
                             <div class="world_entry_thin_controls commentContainer">
-                                <div class="world_entry_form_control">
+                                <div class="world_entry_form_control flex1">
                                     <label for="comment">
                                         <small>
                                             <span data-i18n="Memo/Note">
@@ -3189,18 +3197,16 @@
                                     <input type="checkbox" name="addMemo">
                                     <span data-i18n="Add Memo">Add Memo</span>
                                 </label>
-
                                 <label class="checkbox flex-container alignitemscenter">
                                     <input type="checkbox" name="exclude_recursion" />
                                     <span data-i18n="Exclude from recursion">
                                         Non-recursable
                                     </span>
                                 </label>
-
-
                             </div>
 
-                            <!--                             <div name="injectioStratBlock" class="world_entry_form_control world_entry_form_radios  wi-enter-footer-text ">
+                            <!--
+                            <div name="injectioStratBlock" class="world_entry_form_control world_entry_form_radios  wi-enter-footer-text ">
                                 <label for="injectionStrat">Injection:</label>
                                 <small>
                                     <select name="injectionStrat">
@@ -3209,7 +3215,8 @@
                                         <option value="2">Disabled</option>
                                     </select>
                                 </small>
-                            </div> -->
+                            </div>
+                         -->
 
                             <div name="PositionBlock" class="world_entry_form_control world_entry_form_radios  wi-enter-footer-text ">
                                 <label for="position">Position:</label>

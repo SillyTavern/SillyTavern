@@ -1408,6 +1408,10 @@ body.big-avatars .ch_description {
     align-items: flex-start !important;
 }
 
+.alignItemsFlexEnd {
+    align-items: flex-end !important;
+}
+
 .alignSelfStart {
     align-self: start;
 }
@@ -1885,6 +1889,10 @@ grammarly-extension {
     background-color: var(--white30a);
 }
 
+.height32px {
+    height: 32px;
+}
+
 
 
 
@@ -2127,9 +2135,9 @@ grammarly-extension {
     flex-direction: row;
 }
 
-.world_entry_thin_controls>div {
+/* .world_entry_thin_controls>div {
     flex: 1;
-}
+} */
 
 .world_entry_form_control label h4 {
     margin-bottom: 0;
