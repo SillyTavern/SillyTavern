@@ -415,6 +415,7 @@ async function loadExtensionSettings(settings) {
     $("#extensions_autoconnect").prop('checked', extension_settings.autoConnect);
 
     // Activate offline extensions
+    eventSource.emit(event_types.EXTENSIONS_FIRST_LOAD);
     extensionNames = await discoverExtensions();
     manifests = await getManifests(extensionNames)
     await activateExtensions();

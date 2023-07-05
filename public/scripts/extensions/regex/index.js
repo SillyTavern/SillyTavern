@@ -1,6 +1,6 @@
 import { callPopup, eventSource, event_types, saveSettingsDebounced } from "../../../script.js";
 import { extension_settings } from "../../extensions.js";
-import { uuidv4 } from "../../utils.js";
+import { uuidv4, waitUntilCondition } from "../../utils.js";
 export { REGEX_PLACEMENT }
 
 const REGEX_PLACEMENT = {
@@ -155,19 +155,22 @@ async function onRegexEditorOpenClick(existingId) {
     }
 }
 
-function hookToEvents() {
-    eventSource.on(event_types.SETTINGS_LOADED, async function () {
+// Workaround for loading in sequence with other extensions
+// NOTE: Always puts extension at the top of the list, but this is fine since it's static
+jQuery(async () => {
+    await waitUntilCondition(() => eventSource !== undefined);
+    eventSource.on(event_types.EXTENSIONS_FIRST_LOAD, async () => {
+        // Manually disable the extension since static imports auto-import the JS file
+        if (extension_settings.disabledExtensions.includes("regex")) {
+            return;
+        }
+
+        const settingsHtml = await $.get("scripts/extensions/regex/dropdown.html");
+        $("#extensions_settings2").append(settingsHtml);
+        $("#open_regex_editor").on("click", function() {
+            onRegexEditorOpenClick(false);
+        });
+
         await loadRegexScripts();
     });
-}
-
-jQuery(async () => {
-    const settingsHtml = await $.get("scripts/extensions/regex/dropdown.html");
-    $("#extensions_settings2").append(settingsHtml);
-    $("#open_regex_editor").on("click", function() {
-        onRegexEditorOpenClick(false);
-    });
-
-    // Listen to event source after 1ms
-    setTimeout(() => hookToEvents(), 1)
 });
