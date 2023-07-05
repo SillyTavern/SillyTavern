@@ -22,7 +22,6 @@ import {
 } from "../script.js";
 import { humanizedDateTime } from "./RossAscends-mods.js";
 import { resetSelectedGroup } from "./group-chats.js";
-import { extension_settings } from "./extensions.js";
 import { getRegexedString, regex_placement } from "./extensions/regex/engine.js";
 import { chat_styles, power_user } from "./power-user.js";
 export {
@@ -227,7 +226,7 @@ async function sendMessageAs(_, text) {
 
     const name = parts.shift().trim();
     let mesText = parts.join('\n').trim();
-    const regexResult = getRegexedString(mesText, regex_placement.SENDAS);
+    const regexResult = getRegexedString(mesText, regex_placement.SENDAS, { characterOverride: name });
     if (regexResult) {
         mesText = regexResult;
     }

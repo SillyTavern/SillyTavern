@@ -28,7 +28,7 @@ function regexFromString(input) {
     return new RegExp(m[2], m[3]);
 }
 
-function getRegexedString(rawString, placement) {
+function getRegexedString(rawString, placement, { characterOverride } = {}) {
     if (extension_settings.disabledExtensions.includes("regex") || !rawString || placement === undefined) {
         return;
     }
@@ -36,7 +36,7 @@ function getRegexedString(rawString, placement) {
     let finalString;
     extension_settings.regex.forEach((script) => {
         if (script.placement.includes(placement)) {
-            finalString = runRegexScript(script, rawString);
+            finalString = runRegexScript(script, rawString, { characterOverride });
         }
     });
 
@@ -44,14 +44,13 @@ function getRegexedString(rawString, placement) {
 }
 
 // Runs the provided regex script on the given string
-function runRegexScript(regexScript, rawString) {
+function runRegexScript(regexScript, rawString, { characterOverride } = {}) {
     if (!regexScript || !!(regexScript.disabled) || !regexScript?.findRegex || !rawString) {
         return;
     }
 
     let match;
     let newString;
-    console.log(regexScript.substituteRegex ? substituteParams(regexScript.findRegex) : regexScript.findRegex)
     const findRegex = regexFromString(regexScript.substituteRegex ? substituteParams(regexScript.findRegex) : regexScript.findRegex);
     while ((match = findRegex.exec(rawString)) !== null) {
         const fencedMatch = match[0];
@@ -60,16 +59,16 @@ function runRegexScript(regexScript, rawString) {
         let trimCapturedMatch;
         let trimFencedMatch;
         if (capturedMatch) {
-            const tempTrimCapture = filterString(capturedMatch, regexScript.trimStrings);
+            const tempTrimCapture = filterString(capturedMatch, regexScript.trimStrings, { characterOverride });
             trimFencedMatch = fencedMatch.replaceAll(capturedMatch, tempTrimCapture);
             trimCapturedMatch = tempTrimCapture;
         } else {
-            trimFencedMatch = filterString(fencedMatch, regexScript.trimStrings);
+            trimFencedMatch = filterString(fencedMatch, regexScript.trimStrings, { characterOverride });
         }
 
         // TODO: Use substrings for replacement. But not necessary at this time.
         // A substring is from match.index to match.index + match[0].length or fencedMatch.length
-        const subReplaceString = substituteRegexParams(regexScript.replaceString, trimCapturedMatch ?? trimFencedMatch);
+        const subReplaceString = substituteRegexParams(regexScript.replaceString, trimCapturedMatch ?? trimFencedMatch, { characterOverride });
         if (!newString) {
             newString = rawString.replace(fencedMatch, subReplaceString);
         } else {
@@ -86,10 +85,10 @@ function runRegexScript(regexScript, rawString) {
 }
 
 // Filters anything to trim from the regex match
-function filterString(rawString, trimStrings) {
+function filterString(rawString, trimStrings, { characterOverride } = {}) {
     let finalString = rawString;
     trimStrings.forEach((trimString) => {
-        const subTrimString = substituteParams(trimString);
+        const subTrimString = substituteParams(trimString, undefined, characterOverride);
         finalString = finalString.replaceAll(subTrimString, "");
     });
 
@@ -97,10 +96,10 @@ function filterString(rawString, trimStrings) {
 }
 
 // Substitutes regex-specific and normal parameters
-function substituteRegexParams(rawString, regexMatch) {
+function substituteRegexParams(rawString, regexMatch, { characterOverride } = {}) {
     let finalString = rawString;
     finalString = finalString.replace("{{match}}", regexMatch);
-    finalString = substituteParams(finalString);
+    finalString = substituteParams(finalString, undefined, characterOverride);
 
     return finalString;
 }

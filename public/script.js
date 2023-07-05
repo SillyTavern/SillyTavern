@@ -4888,7 +4888,9 @@ function updateMessage(div) {
     let text = mesBlock.find(".edit_textarea").val();
     const mes = chat[this_edit_mes_id];
     let regexPlacement;
-    if (mes.is_name && !mes.is_user) {
+    if (mes.is_name && !mes.is_user && mes.name !== name2) {
+        regexPlacement = regex_placement.SENDAS;
+    } else if (mes.is_name && !mes.is_user) {
         regexPlacement = regex_placement.AI_OUTPUT;
     } else if (mes.is_name && mes.is_user) {
         regexPlacement = regex_placement.USER_INPUT;
@@ -4896,7 +4898,13 @@ function updateMessage(div) {
         regexPlacement = regex_placement.SYSTEM;
     }
 
-    const regexResult = getRegexedString(text, regexPlacement);
+    const regexResult = getRegexedString(
+        text, 
+        regexPlacement, 
+        {
+            characterOverride: regexPlacement === regex_placement.SENDAS ? mes.name : undefined
+        }
+    );
     if (regexResult) {
         text = regexResult;
     }
