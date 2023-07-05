@@ -165,6 +165,7 @@ import { context_settings, loadContextTemplatesFromSettings } from "./scripts/co
 import { markdownExclusionExt } from "./scripts/showdown-exclusion.js";
 import { NOTE_MODULE_NAME, metadata_keys, setFloatingPrompt, shouldWIAddPrompt } from "./scripts/extensions/floating-prompt/index.js";
 import { deviceInfo } from "./scripts/RossAscends-mods.js";
+import { getRegexedString, regex_placement } from "./scripts/extensions/regex/engine.js";
 
 //exporting functions and vars for mods
 export {
@@ -240,6 +241,26 @@ export {
 
 // API OBJECT FOR EXTERNAL WIRING
 window["SillyTavern"] = {};
+
+// Event source init
+export const event_types = {
+    EXTRAS_CONNECTED: 'extras_connected',
+    MESSAGE_SWIPED: 'message_swiped',
+    MESSAGE_SENT: 'message_sent',
+    MESSAGE_RECEIVED: 'message_received',
+    MESSAGE_EDITED: 'message_edited',
+    MESSAGE_DELETED: 'message_deleted',
+    IMPERSONATE_READY: 'impersonate_ready',
+    CHAT_CHANGED: 'chat_id_changed',
+    GENERATION_STOPPED: 'generation_stopped',
+    EXTENSIONS_FIRST_LOAD: 'extensions_first_load',
+    SETTINGS_LOADED: 'settings_loaded',
+    SETTINGS_UPDATED: 'settings_updated',
+    GROUP_UPDATED: 'group_updated',
+    MOVABLE_PANELS_RESET: 'movable_panels_reset',
+}
+
+export const eventSource = new EventEmitter();
 
 const gpt3 = new GPT3BrowserTokenizer({ type: 'gpt3' });
 hljs.addPlugin({ "before:highlightElement": ({ el }) => { el.textContent = el.innerText } });
@@ -481,23 +502,6 @@ const system_messages = {
         mes: `Click here to return to the previous chat: <a class="bookmark_link" file_name="{0}" href="javascript:void(null);">Return</a>`,
     },
 };
-
-export const event_types = {
-    EXTRAS_CONNECTED: 'extras_connected',
-    MESSAGE_SWIPED: 'message_swiped',
-    MESSAGE_SENT: 'message_sent',
-    MESSAGE_RECEIVED: 'message_received',
-    MESSAGE_EDITED: 'message_edited',
-    MESSAGE_DELETED: 'message_deleted',
-    IMPERSONATE_READY: 'impersonate_ready',
-    CHAT_CHANGED: 'chat_id_changed',
-    GENERATION_STOPPED: 'generation_stopped',
-    SETTINGS_UPDATED: 'settings_updated',
-    GROUP_UPDATED: 'group_updated',
-    MOVABLE_PANELS_RESET: 'movable_panels_reset',
-}
-
-export const eventSource = new EventEmitter();
 
 $(document).ajaxError(function myErrorHandler(_, xhr) {
     if (xhr.status == 403) {
@@ -1110,6 +1114,11 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
     // Prompt bias replacement should be applied on the raw message
     if (!power_user.show_user_prompt_bias && ch_name && !isUser && !isSystem) {
         mes = mes.replaceAll(substituteParams(power_user.user_prompt_bias), "");
+    }
+
+    const regexResult = getRegexedString(mes, regex_placement.MD_DISPLAY);
+    if (regexResult) {
+        mes = regexResult;
     }
 
     if (power_user.auto_fix_generated_markdown) {
@@ -2869,6 +2878,11 @@ export function replaceBiasMarkup(str) {
 }
 
 export async function sendMessageAsUser(textareaText, messageBias) {
+    const regexResult = getRegexedString(textareaText, regex_placement.USER_INPUT);
+    if (regexResult) {
+        textareaText = regexResult;
+    }
+
     chat[chat.length] = {};
     chat[chat.length - 1]['name'] = name1;
     chat[chat.length - 1]['is_user'] = true;
@@ -3449,9 +3463,19 @@ function extractMessageFromData(data) {
 }
 
 function cleanUpMessage(getMessage, isImpersonate, displayIncompleteSentences = false) {
-    // Append the user bias first before trimming anything else
-    if (power_user.user_prompt_bias && power_user.user_prompt_bias.length !== 0) {
+    // Add the prompt bias before anything else
+    if (
+        power_user.user_prompt_bias && 
+        !isImpersonate &&
+        power_user.user_prompt_bias.length !== 0
+    ) {
         getMessage = substituteParams(power_user.user_prompt_bias) + getMessage;
+    }
+
+    // Regex uses vars, so add before formatting
+    const regexResult = getRegexedString(getMessage, isImpersonate ? regex_placement.USER_INPUT : regex_placement.AI_OUTPUT);
+    if (regexResult) {
+        getMessage = regexResult;
     }
 
     if (!displayIncompleteSentences && power_user.trim_sentences) {
@@ -4776,10 +4800,13 @@ async function getSettings(type) {
 
         if (data.enable_extensions) {
             await loadExtensionSettings(settings);
+            eventSource.emit(event_types.EXTENSION_SETTINGS_LOADED);
         }
     }
 
     if (!is_checked_colab) isColab();
+
+    eventSource.emit(event_types.SETTINGS_LOADED);
 }
 
 function selectKoboldGuiPreset() {
@@ -4868,13 +4895,34 @@ function setCharacterBlockHeight() {
 function updateMessage(div) {
     const mesBlock = div.closest(".mes_block");
     let text = mesBlock.find(".edit_textarea").val();
+    const mes = chat[this_edit_mes_id];
+    let regexPlacement;
+    if (mes.is_name && !mes.is_user && mes.name !== name2) {
+        regexPlacement = regex_placement.SENDAS;
+    } else if (mes.is_name && !mes.is_user) {
+        regexPlacement = regex_placement.AI_OUTPUT;
+    } else if (mes.is_name && mes.is_user) {
+        regexPlacement = regex_placement.USER_INPUT;
+    } else if (mes.extra?.type === "narrator") {
+        regexPlacement = regex_placement.SYSTEM;
+    }
+
+    const regexResult = getRegexedString(
+        text, 
+        regexPlacement, 
+        {
+            characterOverride: regexPlacement === regex_placement.SENDAS ? mes.name : undefined
+        }
+    );
+    if (regexResult) {
+        text = regexResult;
+    }
 
     if (power_user.trim_spaces) {
         text = text.trim();
     }
 
     const bias = extractMessageBias(text);
-    const mes = chat[this_edit_mes_id];
     mes["mes"] = text;
     if (mes["swipe_id"] !== undefined) {
         mes["swipes"][mes["swipe_id"]] = text;
@@ -5341,7 +5389,7 @@ function onScenarioOverrideRemoveClick() {
     $(this).closest('.scenario_override').find('.chat_scenario').val('').trigger('input');
 }
 
-function callPopup(text, type, inputValue = '') {
+function callPopup(text, type, inputValue = '', okButton) {
     if (type) {
         popup_type = type;
     }
@@ -5349,30 +5397,30 @@ function callPopup(text, type, inputValue = '') {
     $("#dialogue_popup_cancel").css("display", "inline-block");
     switch (popup_type) {
         case "avatarToCrop":
-            $("#dialogue_popup_ok").text("Accept");
+            $("#dialogue_popup_ok").text(okButton ?? "Accept");
             break;
         case "text":
         case "alternate_greeting":
         case "char_not_selected":
-            $("#dialogue_popup_ok").text("Ok");
+            $("#dialogue_popup_ok").text(okButton ?? "Ok");
             $("#dialogue_popup_cancel").css("display", "none");
             break;
         case "new_chat":
         case "confirm":
-            $("#dialogue_popup_ok").text("Yes");
+            $("#dialogue_popup_ok").text(okButton ?? "Yes");
             break;
         case "del_group":
         case "rename_chat":
         case "del_chat":
         default:
-            $("#dialogue_popup_ok").text("Delete");
+            $("#dialogue_popup_ok").text(okButton ?? "Delete");
     }
 
     $("#dialogue_popup_input").val(inputValue);
 
     if (popup_type == 'input') {
         $("#dialogue_popup_input").css("display", "block");
-        $("#dialogue_popup_ok").text("Save");
+        $("#dialogue_popup_ok").text(okButton ?? "Save");
     }
     else {
         $("#dialogue_popup_input").css("display", "none");
@@ -5970,9 +6018,11 @@ async function createOrEditCharacter(e) {
             success: async function (html) {
                 if (chat.length === 1 && !selected_group) {
                     var this_ch_mes = default_ch_mes;
+
                     if ($("#firstmessage_textarea").val() != "") {
                         this_ch_mes = $("#firstmessage_textarea").val();
                     }
+
                     if (
                         this_ch_mes !=
                         $.trim(
@@ -5983,6 +6033,13 @@ async function createOrEditCharacter(e) {
                                 .text()
                         )
                     ) {
+                        // MARK - kingbri: Regex on character greeting message
+                        // May need to be placed somewhere else
+                        const regexResult = getRegexedString(this_ch_mes, regex_placement.AI_OUTPUT);
+                        if (regexResult) {
+                            this_ch_mes = regexResult;
+                        }
+
                         clearChat();
                         chat.length = 0;
                         chat[0] = {};

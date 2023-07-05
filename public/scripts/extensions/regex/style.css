@@ -1,0 +1,20 @@
+.regex_settings .menu_button {
+    width: fit-content;
+    display: flex;
+    gap: 10px;
+    flex-direction: row;
+}
+
+.regex-script-container {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.regex-script-label {
+    align-items: center;
+    border: 1px solid rgba(128, 128, 128, 0.5);
+    border-radius: 10px;
+    padding: 0 5px;
+    margin-top: 1px;
+    margin-bottom: 1px;
+}

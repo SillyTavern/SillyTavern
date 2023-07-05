@@ -3999,6 +3999,16 @@ toolcool-color-picker {
     align-items: center;
 }
 
+.alignitemsstart {
+    align-items: start;
+}
+
+.overflow-hidden {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
 .padding5 {
     padding: 5px;
 }
@@ -4062,6 +4072,10 @@ toolcool-color-picker {
     justify-content: space-around;
 }
 
+.justifyContentFlexStart {
+    justify-content: flex-start;
+}
+
 .justifyContentFlexEnd {
     justify-content: flex-end;
 }
@@ -4087,6 +4101,10 @@ toolcool-color-picker {
 
 .wide100p {
     width: 100%;
+}
+
+.wide50p {
+    width: 50%;
 }
 
 .wide50px {
