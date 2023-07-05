@@ -14,18 +14,22 @@ const regex_placement = {
     SENDAS: 4
 }
 
-// From: https://github.com/IonicaBizau/regex-parser.js/blob/master/lib/index.js
+// Originally from: https://github.com/IonicaBizau/regex-parser.js/blob/master/lib/index.js
 function regexFromString(input) {
-    // Parse input
-    var m = input.match(/(\/?)(.+)\1([a-z]*)/i);
-
-    // Invalid flags
-    if (m[3] && !/^(?!.*?(.).*?\1)[gmixXsuUAJ]+$/.test(m[3])) {
-        return RegExp(input);
+    try {
+        // Parse input
+        var m = input.match(/(\/?)(.+)\1([a-z]*)/i);
+    
+        // Invalid flags
+        if (m[3] && !/^(?!.*?(.).*?\1)[gmixXsuUAJ]+$/.test(m[3])) {
+            return RegExp(input);
+        }
+    
+        // Create the regular expression
+        return new RegExp(m[2], m[3]);
+    } catch {
+        return;
     }
-
-    // Create the regular expression
-    return new RegExp(m[2], m[3]);
 }
 
 function getRegexedString(rawString, placement, { characterOverride } = {}) {
@@ -52,6 +56,12 @@ function runRegexScript(regexScript, rawString, { characterOverride } = {}) {
     let match;
     let newString;
     const findRegex = regexFromString(regexScript.substituteRegex ? substituteParams(regexScript.findRegex) : regexScript.findRegex);
+
+    // The user skill issued. Return with nothing.
+    if (!findRegex) {
+        return;
+    }
+
     while ((match = findRegex.exec(rawString)) !== null) {
         const fencedMatch = match[0];
         const capturedMatch = match[1];

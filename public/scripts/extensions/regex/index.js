@@ -1,4 +1,4 @@
-import { callPopup, eventSource, event_types, reloadCurrentChat, saveSettingsDebounced } from "../../../script.js";
+import { callPopup, eventSource, event_types, getCurrentChatId, reloadCurrentChat, saveSettingsDebounced } from "../../../script.js";
 import { extension_settings } from "../../extensions.js";
 import { uuidv4, waitUntilCondition } from "../../utils.js";
 import { regex_placement } from "./engine.js";
@@ -50,7 +50,10 @@ async function saveRegexScript(regexScript, existingScriptIndex) {
 
     // Markdown is global, so reload the chat.
     if (regexScript.placement.includes(regex_placement.MD_DISPLAY)) {
-        await reloadCurrentChat();
+        const currentChatId = getCurrentChatId();
+        if (currentChatId !== undefined && currentChatId !== null) {
+            await reloadCurrentChat();
+        }
     }
 }
 
