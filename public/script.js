@@ -1510,7 +1510,10 @@ function randomReplace(input, emptyListPlaceholder = '') {
             return emptyListPlaceholder;
         }
 
-        const randomIndex = Math.floor(Math.random() * list.length);
+        var rng = new Math.seedrandom('added entropy.', { entropy: true });
+        const randomIndex = Math.floor(rng() * list.length);
+
+        //const randomIndex = Math.floor(Math.random() * list.length);
         return list[randomIndex];
     });
 }
