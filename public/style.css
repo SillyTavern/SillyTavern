@@ -2149,7 +2149,7 @@ grammarly-extension {
 }
 
 .delete_entry_button {
-    align-self: center;
+    height: min-content;
 }
 
 .world_entry_form_control.world_entry_form_horizontal {
@@ -4659,8 +4659,14 @@ body.waifuMode .zoomed_avatar {
         align-items: start;
         align-content: start;
         overflow-y: auto;
-        overflow-x: hidden;
+        overflow-x: hidden
     }
+
+    .mes_buttons {
+        font-size: calc(var(--mainFontSize)*1.2)
+    }
+
+    ;
 
     .drag-grabber,
     .pull-tab {
