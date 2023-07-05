@@ -316,6 +316,32 @@ function switchWaifuMode() {
     scrollChatToBottom();
 }
 
+function switchSpoilerMode() {
+    if (power_user.spoiler_free_mode) {
+        $("#description_div").hide();
+        $("#description_textarea").hide();
+        $("#firstmessage_textarea").hide();
+        $("#first_message_div").hide();
+        $("#spoiler_free_desc").show();
+    }
+    else {
+        $("#description_div").show();
+        $("#description_textarea").show();
+        $("#firstmessage_textarea").show();
+        $("#first_message_div").show();
+        $("#spoiler_free_desc").hide();
+    }
+}
+
+function peekSpoilerMode(){
+    $("#description_div").toggle();
+    $("#description_textarea").toggle();
+    $("#firstmessage_textarea").toggle();
+    $("#first_message_div").toggle();
+
+}
+
+
 function switchMovingUI() {
     const movingUI = localStorage.getItem(storage_keys.movingUI);
     power_user.movingUI = movingUI === null ? false : movingUI == "true";
@@ -632,6 +658,7 @@ function loadPowerUserSettings(settings, data) {
     $(`#pygmalion_formatting option[value=${power_user.pygmalion_formatting}]`).attr("selected", true);
     $(`#send_on_enter option[value=${power_user.send_on_enter}]`).attr("selected", true);
     $("#import_card_tags").prop("checked", power_user.import_card_tags);
+    $("#spoiler_free_mode").prop("checked", power_user.spoiler_free_mode);
     $("#collapse-newlines-checkbox").prop("checked", power_user.collapse_newlines);
     $("#pin-examples-checkbox").prop("checked", power_user.pin_examples);
     $("#disable-description-formatting-checkbox").prop("checked", power_user.disable_description_formatting);
@@ -705,6 +732,7 @@ function loadPowerUserSettings(settings, data) {
     loadInstructMode();
     loadMaxContextUnlocked();
     switchWaifuMode();
+    switchSpoilerMode();
     loadMovingUIState();
 
     //console.log(power_user)
@@ -1786,6 +1814,17 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
+    $('#spoiler_free_mode').on('input', function () {
+        power_user.spoiler_free_mode = !!$(this).prop('checked');
+        switchSpoilerMode();
+        saveSettingsDebounced();
+    });
+
+    $('#spoiler_free_desc_button').on('click', function () {
+        peekSpoilerMode();
+        $(this).toggleClass('fa-eye fa-eye-slash');
+    });
+    
     $(window).on('focus', function () {
         browser_has_focus = true;
     });

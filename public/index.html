@@ -2344,6 +2344,9 @@
                             <label for="import_card_tags"><input id="import_card_tags" type="checkbox" />
                                 <span data-i18n="Import Card Tags">Import Card Tags</span>
                             </label>
+                            <label for="spoiler_free_mode"><input id="spoiler_free_mode" type="checkbox" />
+                                <span data-i18n="Spoiler Free Mode">Spolier Free Mode</span>
+                            </label>
 
                             <div class="inline-drawer wide100p flexFlowColumn">
                                 <div class="inline-drawer-toggle inline-drawer-header">
@@ -2627,6 +2630,18 @@
                             </div>
                         </div>
                         <textarea id="firstmessage_textarea" placeholder="This will be the first message from the character that starts every chat." class="marginBot5" name="first_mes" placeholder=""></textarea>
+                        <div id="spoiler_free_desc">
+                            <div id="creators_notes_div" class="marginBot5 title_restorable">
+                                <span data-i18n="Creator's Notes">Creator's Notes</span>
+                            <div id="spoiler_free_desc_button" class="menu_button fa-solid fa-eye"
+                                title="Show / Hide Description and First Message"></div>
+                                </a>
+                            </div>
+                            <hr>
+                        
+                            <div id="creator_notes_spoiler" placeholder="Creator's Notes" class="marginBot5" name="creator_notes_spoiler"></div>
+                            <!-- A button to show / hide description_div and description_textarea and first_message_div and firstmessage_textarea-->
+                        </div>
 
                         <!-- these divs are invisible and used for server communication purposes -->
                         <div id="hidden-divs">
