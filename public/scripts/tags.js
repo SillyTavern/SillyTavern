@@ -6,6 +6,7 @@ import {
     menu_type,
     updateVisibleDivs,
     getCharacters,
+    getSettings
 } from "../script.js";
 
 import { selected_group } from "./group-chats.js";
@@ -251,17 +252,26 @@ async function importTags(imported_char) {
         selected_tags = selected_tags.slice(0, 15);
     }
     for (let tagName of selected_tags) {
+        console.log('tagName', tagName);
         let tag = tags.find(t => t.name === tagName);
+        console.log('tag', tag);
 
         if (!tag) {
             tag = createNewTag(tagName);
+            console.log('created tag', tag);
         }
 
         addTagToMap(tag.id);
-        tag_map[imported_char.avatar].push(tag.id);
+        //check if the tag is already in the character's tag map
+        if (!tag_map[imported_char.avatar].includes(tag.id)) {
+            tag_map[imported_char.avatar].push(tag.id);
+            console.log('added tag to map', tag, imported_char.name);
+        }
+            
     };
     saveSettingsDebounced();
     await getCharacters();
+    await getSettings();
     printTagFilters(tag_filter_types.character);
     printTagFilters(tag_filter_types.group_member);
 

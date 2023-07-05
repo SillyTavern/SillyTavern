@@ -1484,11 +1484,15 @@ function getStoppingStrings(isImpersonate, addSpace) {
 
 
 // Background prompt generation
-export async function generateQuietPrompt(quiet_prompt) {
+export async function generateQuietPrompt(quiet_prompt, raw = false) {
     return await new Promise(
         async function promptPromise(resolve, reject) {
             try {
-                await Generate('quiet', { resolve, reject, quiet_prompt, force_name2: true, });
+                if (raw) {
+                    await Generate('quiet', { resolve, reject, quiet_prompt, force_name2: true, raw: true });
+                } else {
+                    await Generate('quiet', { resolve, reject, quiet_prompt, force_name2: true, });
+                }
             }
             catch {
                 reject();
@@ -1909,7 +1913,7 @@ class StreamingProcessor {
     }
 }
 
-async function Generate(type, { automatic_trigger, force_name2, resolve, reject, quiet_prompt, force_chid, signal } = {}) {
+async function Generate(type, { automatic_trigger, force_name2, resolve, reject, quiet_prompt, force_chid, signal, raw } = {}) {
     //console.log('Generate entered');
     setGenerationProgress(0);
     tokens_already_generated = 0;
@@ -1988,7 +1992,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
     if (online_status != 'no_connection' && this_chid != undefined && this_chid !== 'invalid-safety-id') {
         let textareaText;
-        if (type !== 'regenerate' && type !== "swipe" && type !== 'quiet' && !isImpersonate) {
+        if (type !== 'regenerate' && type !== "swipe" && type !== 'quiet'  && !isImpersonate) {
             is_send_press = true;
             textareaText = $("#send_textarea").val();
             $("#send_textarea").val('').trigger('input');
@@ -1997,7 +2001,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             if (chat.length && chat[chat.length - 1]['is_user']) {
                 //do nothing? why does this check exist?
             }
-            else if (type !== 'quiet' && type !== "swipe" && !isImpersonate) {
+            else if (type !== 'quiet' && type !== "swipe"  && !isImpersonate) {
                 chat.length = chat.length - 1;
                 count_view_mes -= 1;
                 $('#chat').children().last().hide(500, function () {
@@ -2020,7 +2024,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         //*********************************
 
         //for normal messages sent from user..
-        if (textareaText != "" && !automatic_trigger && type !== 'quiet') {
+        if (textareaText != "" && !automatic_trigger && type !== 'quiet' ) {
             // If user message contains no text other than bias - send as a system message
             if (messageBias && replaceBiasMarkup(textareaText).trim().length === 0) {
                 sendSystemMessage(system_message_types.GENERIC, ' ', { bias: messageBias });
@@ -2372,6 +2376,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     mesSendString += substituteParams(power_user.user_prompt_bias);
                 }
 
+
                 return mesSendString;
             }
 
@@ -2447,6 +2452,11 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             if (main_api == 'koboldhorde' && horde_settings.auto_adjust_response_length) {
                 this_amount_gen = Math.min(this_amount_gen, adjustedParams.maxLength);
                 this_amount_gen = Math.max(this_amount_gen, MIN_AMOUNT_GEN); // prevent validation errors
+            }
+            if (raw) {
+                console.log('raw mode');
+                finalPromt = quiet_prompt;
+                console.log(finalPromt);
             }
 
             let generate_data;

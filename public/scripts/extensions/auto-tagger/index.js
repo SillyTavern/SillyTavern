@@ -1,5 +1,8 @@
+import { saveCharacterDebounced, this_chid, saveSettingsDebounced, getSettings, getRequestHeaders } from "../../../script.js";
 import { getContext } from "../../extensions.js";
-import { applyTagsOnCharacterSelect } from "../../tags.js";
+import { applyTagsOnCharacterSelect, importTags } from "../../tags.js";
+import { generateQuietPrompt } from "../../../script.js";
+
 
 // Endpoint for API call
 const API_ENDPOINT_SEARCH = "https://api.chub.ai/api/characters/search";
@@ -26,6 +29,46 @@ async function downloadCharacter(fullPath) {
     });
     const data = await response.json();
     return data;
+}
+
+async function tagCharMain(character) {
+    
+
+    //const defaultPrompt = '[Pause your roleplay. Summarize the most important facts and events that have happened in the chat so far. If a summary already exists in your memory, use that as a base and expand with new facts. Limit the summary to {{words}} words or less. Your response should include nothing but the summary.]';
+
+    let prompt = `\n[Using the prior character descriptions, produce a list of 5 tags that describe the character including a content rating(SFW, NSFW, NSFL). Only reply with a comma separated list of tags and nothing else.]`
+
+    let context = getContext();
+    console.log(context);
+    let currentChar = this_chid;
+    let currentCharName = character.name;
+    //get description, personality, scenario, from context.characters[currentChar]
+    console.log(currentChar, context.characters);
+    console.log(context.characters[currentChar]);
+    let description = context.characters[currentChar].description;
+    let personality = context.characters[currentChar].personality;
+    let scenario = context.characters[currentChar].scenario;
+    let greeting = context.characters[currentChar].first_mes;
+
+    //build prompt from description, personality, scenario, greeting
+
+    prompt = description + personality + scenario + greeting + prompt;
+
+
+    const summary = await generateQuietPrompt(prompt, true);
+    console.log(summary);
+    // const newContext = getContext();
+
+    // // something changed during summarization request
+    // if (newContext.groupId !== context.groupId
+    //     || newContext.chatId !== context.chatId
+    //     || (!newContext.groupId && (newContext.characterId !== context.characterId))) {
+    //     console.log('Context changed, summary discarded');
+    //     return;
+    // }
+
+    // setMemoryContext(summary, true);
+    // return summary;
 }
 
 
@@ -63,30 +106,103 @@ function addTagsToChar(character, tagsToAdd) {
 async function onButtonClick() {
     console.log("Comparing characters...")
     const characters = getContext().characters;
+    let context = getContext();
+    let importCreatorInfo = true;
+    console.log(context);
     try {
         for (let character of characters) {
             const searchedCharacter = await fetchCharacterData(character.name);
             if (searchedCharacter) {
                 const downloadedCharacter = await downloadCharacter(searchedCharacter.fullPath);
+                // console.log(downloadedCharacter);
+                // console.log(searchedCharacter);
+                // console.log(character);
 
-                //Check if character.data.description and character.scenerio are in downloadedCharacter.description
+                let author = searchedCharacter.fullPath.split("/")[0];
+                let isAuthorMatch = false;
+                //Check if character.data.description and character.scenerio are in downloadedCharacter.description, log each comparison
                 const downloadDesc = downloadedCharacter.description.replace("\"", "");
                 const isPersonalityMatch = character.personality.includes(downloadedCharacter.title);
                 const isDescriptionMatch = character.data.description.includes(downloadedCharacter.description);
-                const isScenarioMatch = character.scenario.includes(downloadedCharacter.definition);
+                //purge newlines and returns from mes_example and definition during comparison
+                let temp_mes_example = character.mes_example.replace(/(\r\n|\n|\r)/gm, "");
+                let tempDefinition = downloadedCharacter.definition.replace(/(\r\n|\n|\r)/gm, "");
+                const isScenarioMatch = temp_mes_example.includes(tempDefinition);
                 const isGreetingMatch = character.data.first_mes.includes(downloadedCharacter.greeting);
+                if (author && character.creator){
+                    isAuthorMatch = character.creator.includes(author);
+                }
 
-                console.log(downloadedCharacter.title);
-                console.log(character.personality);
-                //const isTaglineMatch = character.tagline === downloadedCharacter.tagline;
-                ///const isTopicsMatch = JSON.stringify(character.topics.sort()) === JSON.stringify(downloadedCharacter.topics.sort());
+                //print if not match
+                // if (!isPersonalityMatch) {
+                //     console.log(`Personality does not match. ${character.personality} vs ${downloadedCharacter.title}`);
+                // }
+                // if (!isDescriptionMatch) {
+                //     console.log(`Description does not match. ${character.data.description} vs ${downloadedCharacter.description}`);
+                // }
+                // if (!isScenarioMatch) {
+                //     console.log(`Scenario does not match. ${character.scenario} vs ${downloadedCharacter.definition}`);
+                // }
+                // if (!isGreetingMatch) {
+                //     console.log(`Greeting does not match. ${character.data.first_mes} vs ${downloadedCharacter.greeting}`);
+                // }
+                // if (!isAuthorMatch) {
+                //     console.log(`Author does not match. ${character.creator} vs ${author}`);
+                // }
 
-                if (isPersonalityMatch || isDescriptionMatch || isScenarioMatch || isGreetingMatch) {
-                    console.log(`Character ${character.name} matches.`);
+                // if any 2 of these are true, add tags, isPersonalityMatch, isDescriptionMatch, isScenarioMatch, isGreetingMatch
 
+                if ([isPersonalityMatch, isDescriptionMatch, isScenarioMatch, isGreetingMatch, isAuthorMatch].filter(value => value === true).length >= 2) {
+
+                    //if we matched with 2 cases, add tags, creator, creator notes
+                    //console.log(`Character ${character.name} matches.`);
+
+                    //add tags
                     let tags = filterTopics(searchedCharacter.topics);
-                    console.log(tags);
-                    //applyTagsOnCharacterSelect(character, tags);
+                    //console.log(tags);
+                    //only add tags if they don't already exist
+                    for (let tag of tags) {
+                        if (!character.tags.includes(tag)) {
+                            character.tags.push(tag);
+                            console.log(`Adding tag ${tag} to ${character.name}.`);
+                        }
+                    }
+
+                    console.log(`Importing ${tags.length} tags for ${character.name}.`);
+                    await importTags(character);
+
+                    
+                    if(importCreatorInfo){
+                        //add creator
+                        if (author && !character.creator) {
+                            character.creator = author;
+                        }
+                        //add creator notes
+                        if (downloadedCharacter.description && !character.creator_notes) {
+                            character.creator_notes = searchedCharacter.description;
+                        }
+                        let url = '/editcharacter';
+                        character.ch_name = character.name;
+
+                        const formData = new FormData();
+                        let headers = getRequestHeaders();
+                        headers["Content-Type"] = "multipart/form-data" + "; boundary=" + formData._boundary
+
+                        for (let key in character) {
+                            formData.append(key, character[key]);
+                        }
+                        const response = await fetch("/editcharacter", {
+                            method: 'POST',
+                            headers: headers,
+                            body: (formData)
+                        });
+                        if (response.ok) {
+                            await getCharacters();
+                            console.log(`Imported creator info for ${character.name}.`);
+                        }
+                        saveSettingsDebounced();
+                    }
+
                     
 
                 } else {
@@ -97,12 +213,6 @@ async function onButtonClick() {
                         console.log(downloadedCharacter);
                         console.log(searchedCharacter);
                     }
-                    // if (!isTaglineMatch) {
-                    //     console.log(`- Tagline does not match. Generated: ${character.tagline}, API: ${downloadedCharacter.tagline}`);
-                    // }
-                    // if (!isTopicsMatch) {
-                    //     console.log(`- Topics do not match. Generated: ${character.topics.join(", ")}, API: ${downloadedCharacter.topics.join(", ")}`);
-                    // }
                 }
             } else {
                 console.log(`Character ${character.name} not found.`);
@@ -127,6 +237,9 @@ jQuery(() => {
             <div class="auto-tagger_block flex-container">
                 <input id="compare-characters" class="menu_button" type="submit" value="Compare Characters" /> <!-- New button for comparison -->
             </div>
+            <div class="auto-tagger_block flex-container">
+                <input id="robo-tag" class="menu_button" type="submit" value="Robo Tag" /> <!-- New button for comparison -->
+            </div>
 
 
 
@@ -140,4 +253,5 @@ jQuery(() => {
     // Append settingsHtml to extensions_settings
     $('#extensions_settings').append(settingsHtml);
     $('#compare-characters').on('click', onButtonClick);
+    $('#robo-tag').on('click', tagCharMain);
 });
