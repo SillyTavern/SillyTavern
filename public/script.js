@@ -101,9 +101,9 @@ import {
     nai_settings,
 } from "./scripts/nai-settings.js";
 
-import { 
+import {
     createNewBookmark,
-    showBookmarksButtons 
+    showBookmarksButtons
 } from "./scripts/bookmarks.js";
 
 import {
@@ -1496,7 +1496,23 @@ function substituteParams(content, _name1, _name2, _original) {
     content = content.replace(/<BOT>/gi, _name2);
     content = content.replace(/{{time}}/gi, moment().format('LT'));
     content = content.replace(/{{date}}/gi, moment().format('LL'));
+    content = randomReplace(content);
     return content;
+}
+
+function randomReplace(input, emptyListPlaceholder = '') {
+    const randomPattern = /{{random:([^}]+)}}/g;
+
+    return input.replace(randomPattern, (match, listString) => {
+        const list = listString.split(',').map(item => item.trim()).filter(item => item.length > 0);
+
+        if (list.length === 0) {
+            return emptyListPlaceholder;
+        }
+
+        const randomIndex = Math.floor(Math.random() * list.length);
+        return list[randomIndex];
+    });
 }
 
 function getStoppingStrings(isImpersonate, addSpace) {
@@ -1600,7 +1616,7 @@ export function extractMessageBias(message) {
         return null;
     }
 
-    const forbiddenMatches = ['user', 'char', 'time', 'date'];
+    const forbiddenMatches = ['user', 'char', 'time', 'date', 'random'];
     const found = [];
     const rxp = /\{\{([\s\S]+?)\}\}/gm;
     //const rxp = /{([^}]+)}/g;
@@ -1609,7 +1625,12 @@ export function extractMessageBias(message) {
     while ((curMatch = rxp.exec(message))) {
         const match = curMatch[1].trim();
 
-        if (forbiddenMatches.includes(match)) {
+        // Ignore random pattern matches
+        if (/^random:.+/i.test(match)) {
+            continue;
+        }
+
+        if (forbiddenMatches.includes(match.toLowerCase())) {
             continue;
         }
 
@@ -3465,7 +3486,7 @@ function extractMessageFromData(data) {
 function cleanUpMessage(getMessage, isImpersonate, displayIncompleteSentences = false) {
     // Add the prompt bias before anything else
     if (
-        power_user.user_prompt_bias && 
+        power_user.user_prompt_bias &&
         !isImpersonate &&
         power_user.user_prompt_bias.length !== 0
     ) {
@@ -4908,8 +4929,8 @@ function updateMessage(div) {
     }
 
     const regexResult = getRegexedString(
-        text, 
-        regexPlacement, 
+        text,
+        regexPlacement,
         {
             characterOverride: regexPlacement === regex_placement.SENDAS ? mes.name : undefined
         }
