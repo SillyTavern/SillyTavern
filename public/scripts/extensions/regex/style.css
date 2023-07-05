@@ -1,16 +1,8 @@
-.align-start {
-    align-items: start;
-}
-
 .regex_settings .menu_button {
     width: fit-content;
     display: flex;
     gap: 10px;
     flex-direction: row;
-}
-
-.align-center {
-    align-items: center;
 }
 
 .regex-script-container {
@@ -25,22 +17,4 @@
     padding: 0 5px;
     margin-top: 1px;
     margin-bottom: 1px;
-}
-
-.align-self-center {
-    align-self: center;
-}
-
-.flex-grow {
-    flex-grow: 1;
-}
-
-.flex-nowrap {
-    flex-wrap: nowrap;
-}
-
-.overflow-hidden {
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
 }

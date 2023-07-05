@@ -3997,6 +3997,16 @@ toolcool-color-picker {
     align-items: center;
 }
 
+.alignitemsstart {
+    align-items: start;
+}
+
+.overflow-hidden {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
 .padding5 {
     padding: 5px;
 }
