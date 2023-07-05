@@ -343,6 +343,10 @@ function helpCommandCallback(_, type) {
         case '3':
             sendSystemMessage(system_message_types.HOTKEYS);
             break;
+        case 'macros':
+        case '4':
+            sendSystemMessage(system_message_types.MACROS);
+            break;
         default:
             sendSystemMessage(system_message_types.HELP);
             break;

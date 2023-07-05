@@ -346,6 +346,7 @@ const system_message_types = {
     SLASH_COMMANDS: "slash_commands",
     FORMATTING: "formatting",
     HOTKEYS: "hotkeys",
+    MACROS: "macros",
 };
 
 const extension_prompt_types = {
@@ -366,6 +367,7 @@ const system_messages = {
             <li><a href="javascript:displayHelp('1')">Slash Commands</a> (or <tt>/help slash</tt>)</li>
             <li><a href="javascript:displayHelp('2')">Formatting</a> (or <tt>/help format</tt>)</li>
             <li><a href="javascript:displayHelp('3')">Hotkeys</a> (or <tt>/help hotkeys</tt>)</li>
+            <li><a href="javascript:displayHelp('4')">{{Macros}}</a> (or <tt>/help macros</tt>)</li>
             </ul>
             <br><b>Still got questions left? The <a target="_blank" href="https://docs.sillytavern.app/">Official SillyTavern Documentation Website</a> has much more information!</b>`
         ]
@@ -417,6 +419,23 @@ const system_messages = {
             <li><tt>` + "`" + `text` + "`" + `</tt> - displays as inline code</li>
             <li><tt>$$ text $$</tt> - renders a LaTeX formula (if enabled)</li>
             <li><tt>$ text $</tt> - renders an AsciiMath formula (if enabled)</li>
+            </ul>`
+        ]
+    },
+    macros: {
+        name: systemUserName,
+        force_avatar: system_avatar,
+        is_user: false,
+        is_system: true,
+        is_name: true,
+        mes: [
+            `System-wide Replacement Macros:
+            <ul>
+            <li><tt>{​{user}​}</tt> - your current Persona username</li>
+            <li><tt>{​{char}​}</tt> - the Character's name</li>
+            <li><tt>{​{time}​}</tt> - the current time</li>
+            <li><tt>{​{date}​}</tt> - the current date</li>
+            <li><tt>{{random:(args)}}</tt> - returns a random item from the list. (ex: {{random:1,2,3,4}} will return 1 of the 4 numbers at random. Works with text lists too.</li>
             </ul>`
         ]
     },
