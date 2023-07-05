@@ -550,7 +550,7 @@
                                         <input type="number" id="openai_max_tokens" name="openai_max_tokens" class="text_pole" min="50" max="1000">
                                     </div>
                                 </div>
-                                <div class="range-block">
+                                <div class="range-block" data-source="openai,claude,windowai">
                                     <div class="range-block-title" data-i18n="Temperature">
                                         Temperature
                                     </div>
@@ -1478,6 +1478,7 @@
                             <option value="openai">OpenAI</option>
                             <option value="windowai">Window AI / OpenRouter</option>
                             <option value="claude">Claude</option>
+                            <option value="scale">Scale</option>
                         </select>
                         <form id="openai_form" data-source="openai" action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <h4>OpenAI API key</h4>
@@ -1592,6 +1593,21 @@
                                 <input id="use_openrouter" type="checkbox" />
                                 <span data-i18n="Use OpenRouter">Use OpenRouter directly</span>
                             </label>
+                        </form>
+
+                        <form id="scale_form" data-source="scale" action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                            <h4>Scale API Key</h4>
+                            <div class="flex-container">
+                                <input id="api_key_scale" name="api_key_scale" class="text_pole flex1" maxlength="500" value="" autocomplete="off">
+                                <div title="Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_scale"></div>
+                            </div>
+                            <div data-for="api_key_scale" class="neutral_warning">
+                                For privacy reasons, your API key will be hidden after you reload the page.
+                            </div>
+                            <h4>Scale API URL</h4>
+                            <input id="api_url_scale" name="api_url_scale" class="text_pole" maxlength="500" value="" autocomplete="off" placeholder="https://dashboard.scale.com/spellbook/api/v2/deploy/xxxxxxx">
+                            <!-- Its only purpose is to trigger max context size check -->
+                            <select id="model_scale_select" class="displayNone"></select>
                         </form>
 
                         <div class="flex-container flex">

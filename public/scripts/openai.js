@@ -86,6 +86,7 @@ const gpt3_16k_max = 16383;
 const gpt4_max = 8191;
 const gpt_neox_max = 2048;
 const gpt4_32k_max = 32767;
+const scale_max = 7900; // Probably more. Save some for the system prompt defined on Scale site.
 const claude_max = 8000; // We have a proper tokenizer, so theoretically could be larger (up to 9k)
 const palm2_max = 7500; // The real context window is 8192, spare some for padding due to using turbo tokenizer
 const claude_100k_max = 99000;
@@ -100,6 +101,7 @@ export const chat_completion_sources = {
     OPENAI: 'openai',
     WINDOWAI: 'windowai',
     CLAUDE: 'claude',
+    SCALE: 'scale',
 };
 
 const default_settings = {
@@ -134,6 +136,7 @@ const default_settings = {
     chat_completion_source: chat_completion_sources.OPENAI,
     max_context_unlocked: false,
     use_openrouter: false,
+    api_url_scale: '',
 };
 
 const oai_settings = {
@@ -168,6 +171,7 @@ const oai_settings = {
     chat_completion_source: chat_completion_sources.OPENAI,
     max_context_unlocked: false,
     use_openrouter: false,
+    api_url_scale: '',
 };
 
 let openai_setting_names;
@@ -668,6 +672,8 @@ function getChatCompletionModel() {
             return oai_settings.openai_model;
         case chat_completion_sources.WINDOWAI:
             return oai_settings.windowai_model;
+        case chat_completion_sources.SCALE:
+            return '';
         default:
             throw new Error(`Unknown chat completion source: ${oai_settings.chat_completion_source}`);
     }
@@ -679,14 +685,11 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
         signal = new AbortController().signal;
     }
 
-    if (oai_settings.reverse_proxy) {
-        validateReverseProxy();
-    }
-
     let logit_bias = {};
     const isClaude = oai_settings.chat_completion_source == chat_completion_sources.CLAUDE;
     const isOpenRouter = oai_settings.use_openrouter && oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI;
-    const stream = type !== 'quiet' && oai_settings.stream_openai;
+    const isScale = oai_settings.chat_completion_source == chat_completion_sources.SCALE;
+    const stream = type !== 'quiet' && oai_settings.stream_openai && !isScale;
 
     // If we're using the window.ai extension, use that instead
     // Doesn't support logit bias yet
@@ -713,11 +716,27 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
         "top_k": parseFloat(oai_settings.top_k_openai),
         "max_tokens": oai_settings.openai_max_tokens,
         "stream": stream,
-        "reverse_proxy": oai_settings.reverse_proxy,
         "logit_bias": logit_bias,
-        "use_claude": isClaude,
-        "use_openrouter": isOpenRouter,
     };
+
+    // Proxy is only supported for Claude and OpenAI
+    if (oai_settings.reverse_proxy && [chat_completion_sources.CLAUDE, chat_completion_sources.OPENAI].includes(oai_settings.chat_completion_source)) {
+        validateReverseProxy();
+        generate_data['reverse_proxy'] = oai_settings.reverse_proxy;
+    }
+
+    if (isClaude) {
+        generate_data['use_claude'] = true;
+    }
+
+    if (isOpenRouter) {
+        generate_data['use_openrouter'] = true;
+    }
+
+    if (isScale) {
+        generate_data['use_scale'] = true;
+        generate_data['api_url_scale'] = oai_settings.api_url_scale;
+    }
 
     const generate_url = '/generate_openai';
     const response = await fetch(generate_url, {
@@ -943,6 +962,11 @@ export function getTokenizerModel() {
         return oai_settings.openai_model;
     }
 
+    // Assuming no one would use it for different models.. right?
+    if (oai_settings.chat_completion_source == chat_completion_sources.SCALE) {
+        return 'gpt-4';
+    }
+
     const turboTokenizer = 'gpt-3.5-turbo'
     // Select correct tokenizer for WindowAI proxies
     if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
@@ -1006,6 +1030,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.windowai_model = settings.windowai_model ?? default_settings.windowai_model;
     oai_settings.chat_completion_source = settings.chat_completion_source ?? default_settings.chat_completion_source;
     oai_settings.use_openrouter = settings.use_openrouter ?? default_settings.use_openrouter;
+    oai_settings.api_url_scale = settings.api_url_scale ?? default_settings.api_url_scale;
 
     if (settings.nsfw_toggle !== undefined) oai_settings.nsfw_toggle = !!settings.nsfw_toggle;
     if (settings.keep_example_dialogue !== undefined) oai_settings.keep_example_dialogue = !!settings.keep_example_dialogue;
@@ -1016,6 +1041,7 @@ function loadOpenAISettings(data, settings) {
     if (settings.jailbreak_system !== undefined) oai_settings.jailbreak_system = !!settings.jailbreak_system;
 
     $('#stream_toggle').prop('checked', oai_settings.stream_openai);
+    $('#api_url_scale').val(oai_settings.api_url_scale);
 
     $('#model_openai_select').val(oai_settings.openai_model);
     $(`#model_openai_select option[value="${oai_settings.openai_model}"`).attr('selected', true);
@@ -1102,7 +1128,7 @@ async function getStatusOpen() {
             return resultCheckStatusOpen();
         }
 
-        if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
+        if (oai_settings.chat_completion_source == chat_completion_sources.SCALE || oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
             let status = 'Unable to verify key; press "Test Message" to validate.';
             setOnlineStatus(status);
             return resultCheckStatusOpen();
@@ -1211,6 +1237,7 @@ async function saveOpenAIPreset(name, settings) {
         nsfw_avoidance_prompt: settings.nsfw_avoidance_prompt,
         wi_format: settings.wi_format,
         stream_openai: settings.stream_openai,
+        api_url_scale: settings.api_url_scale,
     };
 
     const savePresetSettings = await fetch(`/savepreset_openai?name=${name}`, {
@@ -1561,6 +1588,7 @@ function onSettingsPresetChange() {
         wi_format: ['#wi_format_textarea', 'wi_format', false],
         stream_openai: ['#stream_toggle', 'stream_openai', true],
         use_openrouter: ['#use_openrouter', 'use_openrouter', true],
+        api_url_scale: ['#api_url_scale', 'api_url_scale', false],
     };
 
     for (const [key, [selector, setting, isCheckbox]] of Object.entries(settingsToUpdate)) {
@@ -1595,6 +1623,12 @@ async function onModelChange() {
     if ($(this).is('#model_openai_select')) {
         console.log('OpenAI model changed to', value);
         oai_settings.openai_model = value;
+    }
+
+    if (oai_settings.chat_completion_source == chat_completion_sources.SCALE) {
+        $('#openai_max_context').attr('max', scale_max);
+        oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
+        $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
@@ -1737,6 +1771,24 @@ async function onConnectButtonClick(e) {
         return await getStatusOpen();
     }
 
+    if (oai_settings.chat_completion_source == chat_completion_sources.SCALE) {
+        const api_key_scale = $('#api_key_scale').val().trim();
+
+        if (api_key_scale.length) {
+            await writeSecret(SECRET_KEYS.SCALE, api_key_scale);
+        }
+
+        if (!oai_settings.api_url_scale) {
+            console.log('No API URL saved for Scale');
+            return;
+        }
+
+        if (!secret_state[SECRET_KEYS.SCALE]) {
+            console.log('No secret key saved for Scale');
+            return;
+        }
+    }
+
     if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
         const api_key_claude = $('#api_key_claude').val().trim();
 
@@ -1780,6 +1832,9 @@ function toggleChatCompletionForms() {
     }
     else if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
         $('#model_windowai_select').trigger('change');
+    }
+    else if (oai_settings.chat_completion_source == chat_completion_sources.SCALE) {
+        $('#model_scale_select').trigger('change');
     }
 
     $('[data-source]').each(function () {
@@ -2013,11 +2068,17 @@ $(document).ready(function () {
         saveSettingsDebounced();
     });
 
+    $('#api_url_scale').on('input', function () {
+        oai_settings.api_url_scale = $(this).val();
+        saveSettingsDebounced();
+    });
+
     $("#api_button_openai").on("click", onConnectButtonClick);
     $("#openai_reverse_proxy").on("input", onReverseProxyInput);
     $("#model_openai_select").on("change", onModelChange);
     $("#model_claude_select").on("change", onModelChange);
     $("#model_windowai_select").on("change", onModelChange);
+    $("#model_scale_select").on("change", onModelChange);
     $("#settings_perset_openai").on("change", onSettingsPresetChange);
     $("#new_oai_preset").on("click", onNewPresetClick);
     $("#delete_oai_preset").on("click", onDeletePresetClick);

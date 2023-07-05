@@ -3023,6 +3023,22 @@ app.post("/deletepreset_openai", jsonParser, function (request, response) {
     return response.send({ error: true });
 });
 
+function convertScalePrompt(messages) {
+    const messageStrings = [];
+    messages.forEach(m => {
+        if (m.role === 'system' && m.name === undefined) {
+            messageStrings.push("System: " + m.content);
+        }
+        else if (m.role === 'system' && m.name !== undefined) {
+            messageStrings.push(m.name + ": " + m.content);
+        }
+        else {
+            messageStrings.push(m.role + ": " + m.content);
+        }
+    });
+    return messageStrings.join("\n");
+}
+
 // Prompt Conversion script taken from RisuAI by @kwaroran (GPLv3).
 function convertClaudePrompt(messages, addHumanPrefix, addAssistantPostfix) {
     // Claude doesn't support message names, so we'll just add them to the message content.
@@ -3065,6 +3081,54 @@ function convertClaudePrompt(messages, addHumanPrefix, addAssistantPostfix) {
     }
 
     return requestPrompt;
+}
+
+async function sendScaleRequest(request, response) {
+    const fetch = require('node-fetch').default;
+
+    const api_url = new URL(request.body.api_url_scale).toString();
+    const api_key_scale = readSecret(SECRET_KEYS.SCALE);
+
+    if (!api_key_scale) {
+        return response.status(401).send({ error: true });
+    }
+
+    const requestPrompt = convertScalePrompt(request.body.messages);
+    console.log('Scale request:', requestPrompt);
+
+    try {
+        const controller = new AbortController();
+        request.socket.removeAllListeners('close');
+        request.socket.on('close', function () {
+            controller.abort();
+        });
+
+        const generateResponse = await fetch(api_url, {
+            method: "POST",
+            body: JSON.stringify({ input: { input: requestPrompt } }),
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Basic ${api_key_scale}`,
+            },
+            timeout: 0,
+        });
+
+        if (!generateResponse.ok) {
+            console.log(`Scale API returned error: ${generateResponse.status} ${generateResponse.statusText} ${await generateResponse.text()}`);
+            return response.status(generateResponse.status).send({ error: true });
+        }
+
+        const generateResponseJson = await generateResponse.json();
+        console.log('Scale response:', generateResponseJson);
+
+        const reply = { choices: [{ "message": { "content": generateResponseJson.output, } }] };
+        return response.send(reply);
+    } catch (error) {
+        console.log(error);
+        if (!response.headersSent) {
+            return response.status(500).send({ error: true });
+        }
+    }
 }
 
 async function sendClaudeRequest(request, response) {
@@ -3149,11 +3213,15 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
         return sendClaudeRequest(request, response_generate_openai);
     }
 
+    if (request.body.use_scale) {
+        return sendScaleRequest(request, response_generate_openai);
+    }
+
     let api_url;
     let api_key_openai;
     let headers;
 
-    if (request.body.use_openrouter == false) {
+    if (!request.body.use_openrouter) {
         api_url = new URL(request.body.reverse_proxy || api_openai).toString();
         api_key_openai = readSecret(SECRET_KEYS.OPENAI);
         headers = {};
@@ -3514,6 +3582,7 @@ const SECRET_KEYS = {
     CLAUDE: 'api_key_claude',
     DEEPL: 'deepl',
     OPENROUTER: 'api_key_openrouter',
+    SCALE: 'api_key_scale',
 }
 
 function migrateSecrets() {
