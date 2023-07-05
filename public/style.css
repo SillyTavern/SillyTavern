@@ -2470,6 +2470,7 @@ input[type="range"]::-webkit-slider-thumb {
 
 .mes_buttons .mes_edit,
 .mes_buttons .mes_bookmark,
+.mes_buttons .mes_create_bookmark,
 .extraMesButtonsHint,
 .tagListHint,
 .extraMesButtons div {
@@ -2481,6 +2482,7 @@ input[type="range"]::-webkit-slider-thumb {
 
 .mes_buttons .mes_edit:hover,
 .mes_buttons .mes_bookmark:hover,
+.mes_buttons .mes_create_bookmark:hover,
 .extraMesButtonsHint:hover,
 .tagListHint:hover,
 .extraMesButtons div:hover {
