@@ -1501,7 +1501,7 @@ function substituteParams(content, _name1, _name2, _original) {
 }
 
 function randomReplace(input, emptyListPlaceholder = '') {
-    const randomPattern = /{{random:([^}]+)}}/g;
+    const randomPattern = /{{random:([^}]+)}}/gi;
 
     return input.replace(randomPattern, (match, listString) => {
         const list = listString.split(',').map(item => item.trim()).filter(item => item.length > 0);
