@@ -32,6 +32,7 @@ import {
 } from "./utils.js";
 
 export {
+    createNewBookmark,
     showBookmarksButtons,
 }
 
@@ -123,13 +124,14 @@ function showBookmarksButtons() {
     }
 }
 
-async function createNewBookmark() {
+async function createNewBookmark(mesId) {
     if (!chat.length) {
         toastr.warning('The chat is empty.', 'Bookmark creation failed');
         return;
     }
 
-    const mesId = chat.length - 1;
+    // Default to last message in chat if no mesId given.
+    mesId = mesId || chat.length - 1;
     const lastMes = chat[mesId];
 
     if (typeof lastMes.extra !== 'object') {
@@ -155,9 +157,9 @@ async function createNewBookmark() {
     const newMetadata = { main_chat: mainChat };
 
     if (selected_group) {
-        await saveGroupBookmarkChat(selected_group, name, newMetadata);
+        await saveGroupBookmarkChat(selected_group, name, newMetadata, mesId);
     } else {
-        await saveChat(name, newMetadata);
+        await saveChat(name, newMetadata, mesId);
     }
 
     lastMes.extra['bookmark_link'] = name;

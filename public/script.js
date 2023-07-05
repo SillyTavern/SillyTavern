@@ -100,7 +100,10 @@ import {
     nai_settings,
 } from "./scripts/nai-settings.js";
 
-import { showBookmarksButtons } from "./scripts/bookmarks.js";
+import { 
+    createNewBookmark, 
+    showBookmarksButtons 
+} from "./scripts/bookmarks.js";
 
 import {
     horde_settings,
@@ -3815,7 +3818,7 @@ async function renamePastChats(newAvatar, newValue) {
     }
 }
 
-async function saveChat(chat_name, withMetadata) {
+async function saveChat(chat_name, withMetadata, mesId) {
     const metadata = { ...chat_metadata, ...(withMetadata || {}) };
     let file_name = chat_name ?? characters[this_chid].chat;
     characters[this_chid]['date_last_chat'] = Date.now();
@@ -3836,6 +3839,11 @@ async function saveChat(chat_name, withMetadata) {
         }
         */
     });
+
+    const trimmed_chat = (mesId !== undefined && mesId >= 0 && mesId < chat.length)
+        ? chat.slice(0, parseInt(mesId) + 1)
+        : chat;
+
     var save_chat = [
         {
             user_name: name1,
@@ -3843,7 +3851,7 @@ async function saveChat(chat_name, withMetadata) {
             create_date: chat_create_date,
             chat_metadata: metadata,
         },
-        ...chat,
+        ...trimmed_chat,
     ];
     return jQuery.ajax({
         type: "POST",
@@ -7881,6 +7889,13 @@ $(document).ready(function () {
 
         $("#shadow_select_chat_popup").css("display", "none");
         $("#load_select_chat_div").css("display", "block");
+    });
+
+    $(document).on("click", ".mes_create_bookmark", async function () {
+        var selected_mes_id = $(this).closest(".mes").attr("mesid");
+        if (selected_mes_id !== undefined) {
+            createNewBookmark(selected_mes_id);
+        }
     });
 
     $(document).on("click", ".mes_stop", function () {
