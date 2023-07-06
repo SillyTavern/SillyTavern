@@ -6460,12 +6460,7 @@ const swipe_right = () => {
 }
 
 export function updateCharacterCount(characterSelector) {
-    const visibleCharacters = $(characterSelector)
-        .not(".hiddenBySearch")
-        .not(".hiddenByTag")
-        .not(".hiddenByGroup")
-        .not(".hiddenByGroupMember")
-        .not(".hiddenByFav");
+    const visibleCharacters = $(characterSelector).filter(":visible");
     const visibleCharacterCount = visibleCharacters.length;
     const totalCharacterCount = $(characterSelector).length;
 
