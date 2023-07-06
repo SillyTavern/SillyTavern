@@ -942,6 +942,7 @@ async function getCharacters() {
         }
         await getGroups();
         await printCharacters();
+        updateCharacterCount('#rm_print_characters_block > div');
     }
 }
 
@@ -6458,6 +6459,22 @@ const swipe_right = () => {
     }
 }
 
+export function updateCharacterCount(characterSelector) {
+    const visibleCharacters = $(characterSelector)
+        .not(".hiddenBySearch")
+        .not(".hiddenByTag")
+        .not(".hiddenByGroup")
+        .not(".hiddenByGroupMember")
+        .not(".hiddenByFav");
+    const visibleCharacterCount = visibleCharacters.length;
+    const totalCharacterCount = $(characterSelector).length;
+
+    $("#rm_character_count").text(
+        `(${visibleCharacterCount} / ${totalCharacterCount}) Characters`
+    );
+    console.log("visibleCharacters.length: " + visibleCharacters.length);
+}
+
 function updateVisibleDivs(containerSelector, resizecontainer) {
     var $container = $(containerSelector);
     var $children = $container.children();
@@ -6712,6 +6729,8 @@ $(document).ready(function () {
             });
             updateVisibleDivs('#rm_print_characters_block', true);
         }
+        updateCharacterCount(selector);
+
 
     });
 

@@ -1159,6 +1159,12 @@ input[type="file"] {
     filter: brightness(150%);
 }
 
+#rm_character_count {
+    padding: 5px;
+    font-size: calc(var(--mainFontSize) * .8);
+    font-weight: bold;
+}
+
 #rm_print_characters_block {
     /* padding: 5px 0; */
     overflow-y: auto;
@@ -5087,3 +5093,4 @@ body.waifuMode .zoomed_avatar {
     text-align: center;
     line-height: 14px;
 }
+
