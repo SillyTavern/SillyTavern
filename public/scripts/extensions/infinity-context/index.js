@@ -318,7 +318,12 @@ async function onExportClick() {
         link.click();
         document.body.removeChild(link);
     } else {
-        toastr.error('An error occurred while attempting to download the data');
+        //Show the error from the result without the html, only what's in the body paragraph
+        let parser = new DOMParser();
+        let error = await exportResult.text();
+        let doc = parser.parseFromString(error, 'text/html');
+        let errorMessage = doc.querySelector('p').textContent;
+        toastr.error(`An error occurred while attempting to download the data from ChromaDB: ${errorMessage}`);
     }
 }
 

@@ -37,6 +37,7 @@
     <script src="scripts/toastr.min.js"></script>
     <script src="scripts/fuse.js"></script>
     <script src="scripts/select2.min.js"></script>
+    <script src="scripts/seedrandom.min.js"></script>
     <script type="module" src="scripts/eventemitter.js"></script>
     <script type="module" src="scripts/power-user.js"></script>
     <script type="module" src="scripts/swiped-events.js"></script>
@@ -549,7 +550,7 @@
                                         <input type="number" id="openai_max_tokens" name="openai_max_tokens" class="text_pole" min="50" max="1000">
                                     </div>
                                 </div>
-                                <div class="range-block">
+                                <div class="range-block" data-source="openai,claude,windowai">
                                     <div class="range-block-title" data-i18n="Temperature">
                                         Temperature
                                     </div>
@@ -1318,7 +1319,7 @@
                             <option value="koboldhorde">KoboldAI Horde</option>
                             <option value="textgenerationwebui">Text Gen WebUI (ooba)</option>
                             <option value="novel">NovelAI</option>
-                            <option value="openai">Chat Completion (OpenAI, Claude, Window/OpenRouter)</option>
+                            <option value="openai">Chat Completion (OpenAI, Claude, Window/OpenRouter, Scale)</option>
                             <option value="poe">Poe</option>
                         </select>
                     </div>
@@ -1477,6 +1478,7 @@
                             <option value="openai">OpenAI</option>
                             <option value="windowai">Window AI / OpenRouter</option>
                             <option value="claude">Claude</option>
+                            <option value="scale">Scale</option>
                         </select>
                         <form id="openai_form" data-source="openai" action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <h4>OpenAI API key</h4>
@@ -1499,17 +1501,29 @@
                             <div>
                                 <h4 data-i18n="OpenAI Model">OpenAI Model</h4>
                                 <select id="model_openai_select">
-                                    <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
-                                    <option value="gpt-3.5-turbo-16k">gpt-3.5-turbo-16k</option>
-                                    <option value="gpt-3.5-turbo-16k-0613">gpt-3.5-turbo-16k-0613</option>
-                                    <option value="gpt-3.5-turbo-0613">gpt-3.5-turbo-0613</option>
-                                    <option value="gpt-3.5-turbo-0301">gpt-3.5-turbo-0301</option>
-                                    <option value="gpt-4">gpt-4</option>
-                                    <option value="gpt-4-0613">gpt-4-0613</option>
-                                    <option value="gpt-4-0314">gpt-4-0314</option>
-                                    <option value="gpt-4-32k">gpt-4-32k</option>
-                                    <option value="gpt-4-32k-0301">gpt-4-32k-0301</option>
-                                    <option value="gpt-4-32k-0613">gpt-4-32k-0613</option>
+                                    <optgroup label="GPT-3.5 Turbo">
+                                        <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+                                        <option value="gpt-3.5-turbo-16k">gpt-3.5-turbo-16k</option>
+                                        <option value="gpt-3.5-turbo-16k-0613">gpt-3.5-turbo-16k-0613</option>
+                                        <option value="gpt-3.5-turbo-0613">gpt-3.5-turbo-0613</option>
+                                        <option value="gpt-3.5-turbo-0301">gpt-3.5-turbo-0301</option>
+                                    </optgroup>
+                                    <optgroup label="GPT-4">
+                                        <option value="gpt-4">gpt-4</option>
+                                        <option value="gpt-4-0613">gpt-4-0613</option>
+                                        <option value="gpt-4-0314">gpt-4-0314</option>
+                                        <option value="gpt-4-32k">gpt-4-32k</option>
+                                        <option value="gpt-4-32k-0301">gpt-4-32k-0301</option>
+                                        <option value="gpt-4-32k-0613">gpt-4-32k-0613</option>
+                                    </optgroup>
+                                    <optgroup label="Other">
+                                        <option value="text-davinci-003">text-davinci-003</option>
+                                        <option value="text-davinci-002">text-davinci-002</option>
+                                        <option value="text-curie-001">text-curie-001</option>
+                                        <option value="text-babbage-001">text-babbage-001</option>
+                                        <option value="text-ada-001">text-ada-001</option>
+                                        <option value="code-davinci-002">code-davinci-002</option>
+                                    </optgroup>
                                 </select>
                             </div>
                             <div>
@@ -1591,6 +1605,21 @@
                                 <input id="use_openrouter" type="checkbox" />
                                 <span data-i18n="Use OpenRouter">Use OpenRouter directly</span>
                             </label>
+                        </form>
+
+                        <form id="scale_form" data-source="scale" action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                            <h4>Scale API Key</h4>
+                            <div class="flex-container">
+                                <input id="api_key_scale" name="api_key_scale" class="text_pole flex1" maxlength="500" value="" autocomplete="off">
+                                <div title="Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_scale"></div>
+                            </div>
+                            <div data-for="api_key_scale" class="neutral_warning">
+                                For privacy reasons, your API key will be hidden after you reload the page.
+                            </div>
+                            <h4>Scale API URL</h4>
+                            <input id="api_url_scale" name="api_url_scale" class="text_pole" maxlength="500" value="" autocomplete="off" placeholder="https://dashboard.scale.com/spellbook/api/v2/deploy/xxxxxxx">
+                            <!-- Its only purpose is to trigger max context size check -->
+                            <select id="model_scale_select" class="displayNone"></select>
                         </form>
 
                         <div class="flex-container flex">
@@ -2347,6 +2376,9 @@
                             <label for="confirm_message_delete"><input id="confirm_message_delete" type="checkbox" />
                                 <span data-i18n="Confirm message deletion">Confirm message deletion</span>
                             </label>
+                            <label for="spoiler_free_mode"><input id="spoiler_free_mode" type="checkbox" />
+                                <span data-i18n="Spoiler Free Mode">Spolier Free Mode</span>
+                            </label>
 
                             <div class="inline-drawer wide100p flexFlowColumn">
                                 <div class="inline-drawer-toggle inline-drawer-header">
@@ -2428,9 +2460,9 @@
                             <input id="extensions_details" class="alignitemsflexstart menu_button" type="button" value="Manage extensions">
                         </div>
                     </div>
-                    <div id="extensions_settings" class="flex1 widthNatural">
+                    <div id="extensions_settings" class="flex1 wide50p">
                     </div>
-                    <div id="extensions_settings2" class="flex1 widthNatural">
+                    <div id="extensions_settings2" class="flex1 wide50p">
                     </div>
 
                 </div>
@@ -2630,6 +2662,17 @@
                             </div>
                         </div>
                         <textarea id="firstmessage_textarea" placeholder="This will be the first message from the character that starts every chat." class="marginBot5" name="first_mes" placeholder=""></textarea>
+                        <div id="spoiler_free_desc">
+                            <div id="creators_notes_div" class="marginBot5 title_restorable">
+                                <span data-i18n="Creator's Notes">Creator's Notes</span>
+                                <div id="spoiler_free_desc_button" class="menu_button fa-solid fa-eye" title="Show / Hide Description and First Message"></div>
+                                </a>
+                            </div>
+                            <hr>
+
+                            <div id="creator_notes_spoiler" placeholder="Creator's Notes" class="marginBot5" name="creator_notes_spoiler"></div>
+                            <!-- A button to show / hide description_div and description_textarea and first_message_div and firstmessage_textarea-->
+                        </div>
 
                         <!-- these divs are invisible and used for server communication purposes -->
                         <div id="hidden-divs">
@@ -2775,7 +2818,11 @@
                         <div class="rm_tag_controls">
                             <div class="tags rm_tag_filter"></div>
                         </div>
+                        <!-- a div containing a dynamically updated count of characters currently displayed -->
+                        <div id="rm_character_count" ></div>
+                        <hr>
                     </div>
+
                     <div id="rm_print_characters_block"></div>
                 </div>
 
@@ -2818,7 +2865,7 @@
 
         <div class="inline-drawer">
             <div class="inline-drawer-toggle inline-drawer-header">
-                <h4>Prompt Overrides <small>(For OpenAI/Claude APIs, Window/OpenRouter, Poe, and Instruct mode)</small></h4>
+                <h4>Prompt Overrides <small>(For OpenAI/Claude/Scale APIs, Window/OpenRouter, Poe, and Instruct mode)</small></h4>
 
 
                 <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
@@ -3092,7 +3139,8 @@
                     <div class="inline-drawer-toggle inline-drawer-header gap5px">
                         <span class="drag-handle">&#9776;</span>
                         <div class="gap5px world_entry_thin_controls wide100p">
-                            <div class="world_entry_form_control">
+
+                            <div class="world_entry_form_control flex1">
                                 <label for="key">
                                     <small>
                                         <span data-i18n="Keywords">
@@ -3111,11 +3159,18 @@
                                 </label>
                                 <textarea class="text_pole keyprimarytextpole" name="key" rows="1" placeholder="Comma separated (required)" maxlength="1000"></textarea>
                             </div>
-                            <div class="world_entry_form_control keysecondary">
+                            <div class="flex-container widthFitContent alignItemsFlexEnd">
+                                <select name="entryLogicType" class="height32px widthFitContent margin0">
+                                    <option value="0">AND</option>
+                                    <option value="1">NOT</option>
+                                </select>
+                            </div>
+
+                            <div class="world_entry_form_control keysecondary flex1">
                                 <label for="keysecondary">
                                     <small>
                                         <span data-i18n="Secondary Required Keywords">
-                                            Secondary Required Keywords
+                                            Optional Filter
                                         </span>
                                     </small>
                                     <small class="displayNone">
@@ -3132,7 +3187,7 @@
                     <div class="inline-drawer-content flex-container">
                         <div class="WIEntryContentAndMemo flex-container">
                             <div class="world_entry_thin_controls flex2">
-                                <div class="world_entry_form_control">
+                                <div class="world_entry_form_control flex1">
                                     <label for="content ">
                                         <small>
                                             <span data-i18n="Content">
@@ -3153,7 +3208,7 @@
                                 </div>
                             </div>
                             <div class="world_entry_thin_controls commentContainer">
-                                <div class="world_entry_form_control">
+                                <div class="world_entry_form_control flex1">
                                     <label for="comment">
                                         <small>
                                             <span data-i18n="Memo/Note">
@@ -3192,18 +3247,16 @@
                                     <input type="checkbox" name="addMemo">
                                     <span data-i18n="Add Memo">Add Memo</span>
                                 </label>
-
                                 <label class="checkbox flex-container alignitemscenter">
                                     <input type="checkbox" name="exclude_recursion" />
                                     <span data-i18n="Exclude from recursion">
                                         Non-recursable
                                     </span>
                                 </label>
-
-
                             </div>
 
-                            <!--                             <div name="injectioStratBlock" class="world_entry_form_control world_entry_form_radios  wi-enter-footer-text ">
+                            <!--
+                            <div name="injectioStratBlock" class="world_entry_form_control world_entry_form_radios  wi-enter-footer-text ">
                                 <label for="injectionStrat">Injection:</label>
                                 <small>
                                     <select name="injectionStrat">
@@ -3212,7 +3265,8 @@
                                         <option value="2">Disabled</option>
                                     </select>
                                 </small>
-                            </div> -->
+                            </div>
+                         -->
 
                             <div name="PositionBlock" class="world_entry_form_control world_entry_form_radios  wi-enter-footer-text ">
                                 <label for="position">Position:</label>
@@ -3307,6 +3361,7 @@
                             <div title="Generate Image" class="sd_message_gen fa-solid fa-paintbrush"></div>
                             <div title="Narrate" class="mes_narrate fa-solid fa-bullhorn"></div>
                             <div title="Prompt" class="mes_prompt fa-solid fa-square-poll-horizontal "></div>
+                            <div title="Create bookmark" class="mes_create_bookmark fa-regular fa-code-branch"></div>
                             <div title="Copy" class="mes_copy fa-solid fa-copy "></div>
                         </div>
                         <div title="Open bookmark chat" class="mes_bookmark fa-solid fa-bookmark"></div>

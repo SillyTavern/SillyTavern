@@ -237,6 +237,9 @@ async function autoJailbreak() {
             auto_jailbroken = true;
             break;
         }
+
+        // Purge the conversation if we're not jailbroken
+        await purgeConversation(-1);
     }
 }
 
