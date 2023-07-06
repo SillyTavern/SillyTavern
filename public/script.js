@@ -1515,8 +1515,41 @@ function substituteParams(content, _name1, _name2, _original) {
     content = content.replace(/<BOT>/gi, _name2);
     content = content.replace(/{{time}}/gi, moment().format('LT'));
     content = content.replace(/{{date}}/gi, moment().format('LL'));
+    content = content.replace(/{{idle_duration}}/gi, () => getTimeSinceLastMessage());
     content = randomReplace(content);
     return content;
+}
+
+function getTimeSinceLastMessage() {
+    const now = moment();
+
+    if (Array.isArray(chat) && chat.length > 0) {
+        let lastMessage;
+        let takeNext = false;
+
+        for (let i = chat.length - 1; i >= 0; i--) {
+            const message = chat[i];
+
+            if (message.is_system) {
+                continue;
+            }
+
+            if (message.is_user && takeNext) {
+                lastMessage = message;
+                break;
+            }
+
+            takeNext = true;
+        }
+
+        if (lastMessage?.send_date) {
+            const lastMessageDate = timestampToMoment(lastMessage.send_date);
+            const duration = moment.duration(now.diff(lastMessageDate));
+            return duration.humanize();
+        }
+    }
+
+    return 'just now';
 }
 
 function randomReplace(input, emptyListPlaceholder = '') {
@@ -1638,7 +1671,7 @@ export function extractMessageBias(message) {
         return null;
     }
 
-    const forbiddenMatches = ['user', 'char', 'time', 'date', 'random'];
+    const forbiddenMatches = ['user', 'char', 'time', 'date', 'random', 'idle_duration'];
     const found = [];
     const rxp = /\{\{([\s\S]+?)\}\}/gm;
     //const rxp = /{([^}]+)}/g;
