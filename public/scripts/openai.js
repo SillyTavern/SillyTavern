@@ -81,11 +81,11 @@ const default_bias_presets = {
     ]
 };
 
-const gpt3_max = 4095;
-const gpt3_16k_max = 16383;
-const gpt4_max = 8191;
-const gpt_neox_max = 2048;
-const gpt4_32k_max = 32767;
+const max_2k = 2047;
+const max_4k = 4095;
+const max_8k = 8191;
+const max_16k = 16383;
+const max_32k = 32767;
 const scale_max = 7900; // Probably more. Save some for the system prompt defined on Scale site.
 const claude_max = 8000; // We have a proper tokenizer, so theoretically could be larger (up to 9k)
 const palm2_max = 7500; // The real context window is 8192, spare some for padding due to using turbo tokenizer
@@ -112,7 +112,7 @@ const default_settings = {
     top_p_openai: 1.0,
     top_k_openai: 0,
     stream_openai: false,
-    openai_max_context: gpt3_max,
+    openai_max_context: max_4k,
     openai_max_tokens: 300,
     nsfw_toggle: true,
     enhance_definitions: false,
@@ -147,7 +147,7 @@ const oai_settings = {
     top_p_openai: 1.0,
     top_k_openai: 0,
     stream_openai: false,
-    openai_max_context: gpt3_max,
+    openai_max_context: max_4k,
     openai_max_tokens: 300,
     nsfw_toggle: true,
     enhance_definitions: false,
@@ -689,6 +689,7 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
     const isClaude = oai_settings.chat_completion_source == chat_completion_sources.CLAUDE;
     const isOpenRouter = oai_settings.use_openrouter && oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI;
     const isScale = oai_settings.chat_completion_source == chat_completion_sources.SCALE;
+    const isTextCompletion = oai_settings.chat_completion_source == chat_completion_sources.OPENAI && (oai_settings.openai_model.startsWith('text-') || oai_settings.openai_model.startsWith('code-'));
     const stream = type !== 'quiet' && oai_settings.stream_openai && !isScale;
 
     // If we're using the window.ai extension, use that instead
@@ -804,7 +805,7 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
             throw new Error(data);
         }
 
-        return data.choices[0]["message"]["content"];
+        return !isTextCompletion ? data.choices[0]["message"]["content"] : data.choices[0]["text"];
     }
 }
 
@@ -812,7 +813,7 @@ function getStreamingReply(getMessage, data) {
     if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
         getMessage = data.completion || "";
     } else {
-        getMessage += data.choices[0]?.delta?.content || data.choices[0]?.message?.content || "";
+        getMessage += data.choices[0]?.delta?.content || data.choices[0]?.message?.content || data.choices[0]?.text || "";
     }
     return getMessage;
 }
@@ -1670,26 +1671,26 @@ async function onModelChange() {
             $('#openai_max_context').attr('max', claude_max);
         }
         else if (value.includes('gpt-3.5-turbo-16k')) {
-            $('#openai_max_context').attr('max', gpt3_16k_max);
+            $('#openai_max_context').attr('max', max_16k);
         }
         else if (value.includes('gpt-3.5')) {
-            $('#openai_max_context').attr('max', gpt3_max);
+            $('#openai_max_context').attr('max', max_4k);
         }
         else if (value.includes('gpt-4-32k')) {
-            $('#openai_max_context').attr('max', gpt4_32k_max);
+            $('#openai_max_context').attr('max', max_32k);
         }
         else if (value.includes('gpt-4')) {
-            $('#openai_max_context').attr('max', gpt4_max);
+            $('#openai_max_context').attr('max', max_8k);
         }
         else if (value.includes('palm-2')) {
             $('#openai_max_context').attr('max', palm2_max);
         }
         else if (value.includes('GPT-NeoXT')) {
-            $('#openai_max_context').attr('max', gpt_neox_max);
+            $('#openai_max_context').attr('max', max_2k);
         }
         else {
             // default to gpt-3 (4095 tokens)
-            $('#openai_max_context').attr('max', gpt3_max);
+            $('#openai_max_context').attr('max', max_4k);
         }
 
         oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
@@ -1709,17 +1710,23 @@ async function onModelChange() {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
         }
-        else if (value == 'gpt-4' || value == 'gpt-4-0314' || value == 'gpt-4-0613') {
-            $('#openai_max_context').attr('max', gpt4_max);
+        else if (['gpt-4', 'gpt-4-0314', 'gpt-4-0613'].includes(value)) {
+            $('#openai_max_context').attr('max', max_8k);
         }
-        else if (value == 'gpt-4-32k' || value == 'gpt-4-32k-0314' || value == 'gpt-4-32k-0613') {
-            $('#openai_max_context').attr('max', gpt4_32k_max);
+        else if (['gpt-4-32k', 'gpt-4-32k-0314', 'gpt-4-32k-0613'].includes(value)) {
+            $('#openai_max_context').attr('max', max_32k);
         }
-        else if (value == 'gpt-3.5-turbo-16k' || value == 'gpt-3.5-turbo-16k-0613') {
-            $('#openai_max_context').attr('max', gpt3_16k_max);
+        else if (['gpt-3.5-turbo-16k', 'gpt-3.5-turbo-16k-0613'].includes(value)) {
+            $('#openai_max_context').attr('max', max_16k);
+        }
+        else if (value == 'code-davinci-002') {
+            $('#openai_max_context').attr('max', max_8k);
+        }
+        else if (['text-curie-001', 'text-babbage-001', 'text-ada-001'].includes(value)) {
+            $('#openai_max_context').attr('max', max_2k);
         }
         else {
-            $('#openai_max_context').attr('max', gpt3_max);
+            $('#openai_max_context').attr('max', max_4k);
         }
 
         oai_settings.openai_max_context = Math.min(oai_settings.openai_max_context, Number($('#openai_max_context').attr('max')));

@@ -1,4 +1,4 @@
-import { callPopup, eventSource, event_types, reloadCurrentChat, saveSettingsDebounced } from "../../../script.js";
+import { callPopup, eventSource, event_types, getCurrentChatId, reloadCurrentChat, saveSettingsDebounced } from "../../../script.js";
 import { extension_settings } from "../../extensions.js";
 import { uuidv4, waitUntilCondition } from "../../utils.js";
 import { regex_placement } from "./engine.js";
@@ -50,7 +50,10 @@ async function saveRegexScript(regexScript, existingScriptIndex) {
 
     // Markdown is global, so reload the chat.
     if (regexScript.placement.includes(regex_placement.MD_DISPLAY)) {
-        await reloadCurrentChat();
+        const currentChatId = getCurrentChatId();
+        if (currentChatId !== undefined && currentChatId !== null) {
+            await reloadCurrentChat();
+        }
     }
 }
 
@@ -116,6 +119,9 @@ async function onRegexEditorOpenClick(existingId) {
             editorHtml
                 .find(`input[name="substitute_regex"]`)
                 .prop("checked", existingScript.substituteRegex ?? false);
+            editorHtml
+                .find(`select[name="replace_strategy_select"]`)
+                .val(existingScript.replaceStrategy ?? 0);
 
             existingScript.placement.forEach((element) => {
                 editorHtml
@@ -158,7 +164,12 @@ async function onRegexEditorOpenClick(existingId) {
             substituteRegex:
                 editorHtml
                     .find(`input[name="substitute_regex"]`)
-                    .prop("checked")
+                    .prop("checked"),
+            replaceStrategy:
+                parseInt(editorHtml
+                    .find(`select[name="replace_strategy_select"]`)
+                    .find(`:selected`)
+                    .val()) ?? 0
         };
 
         saveRegexScript(newRegexScript, existingScriptIndex);
@@ -168,7 +179,6 @@ async function onRegexEditorOpenClick(existingId) {
 // Workaround for loading in sequence with other extensions
 // NOTE: Always puts extension at the top of the list, but this is fine since it's static
 jQuery(async () => {
-    console.log("REGEX CALLED")
     // Manually disable the extension since static imports auto-import the JS file
     if (extension_settings.disabledExtensions.includes("regex")) {
         return;

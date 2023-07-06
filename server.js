@@ -201,6 +201,10 @@ function getTokenizerModel(requestModel) {
         return 'gpt-3.5-turbo';
     }
 
+    if (requestModel.startsWith('text-') || requestModel.startsWith('code-')) {
+        return requestModel;
+    }
+
     // default
     return 'gpt-3.5-turbo';
 }
@@ -3023,7 +3027,7 @@ app.post("/deletepreset_openai", jsonParser, function (request, response) {
     return response.send({ error: true });
 });
 
-function convertScalePrompt(messages) {
+function convertChatMLPrompt(messages) {
     const messageStrings = [];
     messages.forEach(m => {
         if (m.role === 'system' && m.name === undefined) {
@@ -3093,7 +3097,7 @@ async function sendScaleRequest(request, response) {
         return response.status(401).send({ error: true });
     }
 
-    const requestPrompt = convertScalePrompt(request.body.messages);
+    const requestPrompt = convertChatMLPrompt(request.body.messages);
     console.log('Scale request:', requestPrompt);
 
     try {
@@ -3236,23 +3240,27 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
         return response_generate_openai.status(401).send({ error: true });
     }
 
+    const isTextCompletion = request.body.model.startsWith('text-') || request.body.model.startsWith('code-');
+    const textPrompt = isTextCompletion ? convertChatMLPrompt(request.body.messages) : '';
+    const endpointUrl = isTextCompletion ? `${api_url}/completions` : `${api_url}/chat/completions`;
+
     const controller = new AbortController();
     request.socket.removeAllListeners('close');
     request.socket.on('close', function () {
         controller.abort();
     });
 
-    console.log(request.body);
     const config = {
         method: 'post',
-        url: api_url + '/chat/completions',
+        url: endpointUrl,
         headers: {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer ' + api_key_openai,
             ...headers,
         },
         data: {
-            "messages": request.body.messages,
+            "messages": isTextCompletion === false ? request.body.messages : undefined,
+            "prompt": isTextCompletion === true ? textPrompt : undefined,
             "model": request.body.model,
             "temperature": request.body.temperature,
             "max_tokens": request.body.max_tokens,
@@ -3265,6 +3273,8 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
         },
         signal: controller.signal,
     };
+
+    console.log(config.data);
 
     if (request.body.stream) {
         config.responseType = 'stream';
