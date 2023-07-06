@@ -1234,7 +1234,7 @@ function filterGroupMembers() {
         $("#rm_group_add_members .group_member").removeClass('hiddenBySearch');
     } else {
         $("#rm_group_add_members .group_member").each(function () {
-            const isValidSearch = $(this).children(".ch_name").text().toLowerCase().includes(searchValue);
+            const isValidSearch = $(this).find(".ch_name").text().toLowerCase().includes(searchValue);
             $(this).toggleClass('hiddenBySearch', !isValidSearch);
         });
     }
