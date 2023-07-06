@@ -14,6 +14,11 @@ const regex_placement = {
     SENDAS: 4
 }
 
+const regex_replace_strategy = {
+    REPLACE: 0,
+    OVERLAY: 1
+}
+
 // Originally from: https://github.com/IonicaBizau/regex-parser.js/blob/master/lib/index.js
 function regexFromString(input) {
     try {
@@ -32,6 +37,7 @@ function regexFromString(input) {
     }
 }
 
+// Parent function to fetch a regexed version of a raw string
 function getRegexedString(rawString, placement, { characterOverride } = {}) {
     if (extension_settings.disabledExtensions.includes("regex") || !rawString || placement === undefined) {
         return;
@@ -78,7 +84,14 @@ function runRegexScript(regexScript, rawString, { characterOverride } = {}) {
 
         // TODO: Use substrings for replacement. But not necessary at this time.
         // A substring is from match.index to match.index + match[0].length or fencedMatch.length
-        const subReplaceString = substituteRegexParams(regexScript.replaceString, trimCapturedMatch ?? trimFencedMatch, { characterOverride });
+        const subReplaceString = substituteRegexParams(
+            regexScript.replaceString,
+            trimCapturedMatch ?? trimFencedMatch,
+            { 
+                characterOverride,
+                replaceStrategy: regexScript.replaceStrategy ?? regex_replace_strategy.REPLACE
+            }
+        );
         if (!newString) {
             newString = rawString.replace(fencedMatch, subReplaceString);
         } else {
@@ -106,10 +119,45 @@ function filterString(rawString, trimStrings, { characterOverride } = {}) {
 }
 
 // Substitutes regex-specific and normal parameters
-function substituteRegexParams(rawString, regexMatch, { characterOverride } = {}) {
+function substituteRegexParams(rawString, regexMatch, { characterOverride, replaceStrategy } = {}) {
     let finalString = rawString;
-    finalString = finalString.replace("{{match}}", regexMatch);
     finalString = substituteParams(finalString, undefined, characterOverride);
 
+    let overlaidMatch = regexMatch;
+    if (replaceStrategy === regex_replace_strategy.OVERLAY) {
+        const splitReplace = finalString.split("{{match}}");
+
+        // There's a prefix
+        if (splitReplace[0]) {
+            const splicedPrefix = spliceSymbols(splitReplace[0], false);
+            overlaidMatch = overlaidMatch.replace(splicedPrefix, "").trim();
+        }
+
+        // There's a suffix
+        if (splitReplace[1]) {
+            const splicedSuffix = spliceSymbols(splitReplace[1], true);
+            overlaidMatch = overlaidMatch.replace(new RegExp(`${splicedSuffix}$`), "").trim();
+        }
+    }
+
+    // Only one match is replaced. This is by design
+    finalString = finalString.replace("{{match}}", overlaidMatch) || finalString.replace("{{match}}", regexMatch);
+
     return finalString;
+}
+
+// Splices symbols and whitespace from the beginning and end of a string
+// Using a for loop due to sequential ordering
+function spliceSymbols(rawString, isSuffix) {
+    let offset = 0;
+
+    for (const ch of isSuffix ? rawString.split('').reverse() : rawString) {
+        if (ch.match(/[^\w.,?'!]/)) {
+            offset++;
+        } else {
+            break;
+        }
+    }
+
+    return isSuffix ? rawString.substring(0, rawString.length - offset) : rawString.substring(offset);;
 }

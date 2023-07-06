@@ -119,6 +119,9 @@ async function onRegexEditorOpenClick(existingId) {
             editorHtml
                 .find(`input[name="substitute_regex"]`)
                 .prop("checked", existingScript.substituteRegex ?? false);
+            editorHtml
+                .find(`select[name="replace_strategy_select"]`)
+                .val(existingScript.replaceStrategy ?? 0);
 
             existingScript.placement.forEach((element) => {
                 editorHtml
@@ -161,7 +164,12 @@ async function onRegexEditorOpenClick(existingId) {
             substituteRegex:
                 editorHtml
                     .find(`input[name="substitute_regex"]`)
-                    .prop("checked")
+                    .prop("checked"),
+            replaceStrategy:
+                parseInt(editorHtml
+                    .find(`select[name="replace_strategy_select"]`)
+                    .find(`:selected`)
+                    .val()) ?? 0
         };
 
         saveRegexScript(newRegexScript, existingScriptIndex);
