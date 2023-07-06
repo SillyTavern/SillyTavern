@@ -6460,12 +6460,19 @@ const swipe_right = () => {
 }
 
 export function updateCharacterCount(characterSelector) {
-    const visibleCharacters = $(characterSelector).not('.hiddenBySearch').not('.hiddenByTag').not('.hiddenByGroup').not('.hiddenByGroupMember').not('.hiddenByFav');
+    const visibleCharacters = $(characterSelector)
+        .not(".hiddenBySearch")
+        .not(".hiddenByTag")
+        .not(".hiddenByGroup")
+        .not(".hiddenByGroupMember")
+        .not(".hiddenByFav");
     const visibleCharacterCount = visibleCharacters.length;
     const totalCharacterCount = $(characterSelector).length;
 
-    $('#rm_character_count').text(`(${visibleCharacters.length} / ${totalCharacterCount}) Characters`);
-    console.log('visibleCharacters.length: ' + visibleCharacters.length);
+    $("#rm_character_count").text(
+        `(${visibleCharacterCount} / ${totalCharacterCount}) Characters`
+    );
+    console.log("visibleCharacters.length: " + visibleCharacters.length);
 }
 
 function updateVisibleDivs(containerSelector, resizecontainer) {

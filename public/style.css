@@ -1161,7 +1161,7 @@ input[type="file"] {
 
 #rm_character_count {
     padding: 5px;
-    font-size: 14px;
+    font-size: calc(var(--mainFontSize) * .8);
     font-weight: bold;
 }
 
