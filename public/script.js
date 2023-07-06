@@ -264,6 +264,11 @@ export const event_types = {
     SETTINGS_UPDATED: 'settings_updated',
     GROUP_UPDATED: 'group_updated',
     MOVABLE_PANELS_RESET: 'movable_panels_reset',
+    SETTINGS_LOADED_BEFORE: 'settings_loaded_before',
+    SETTINGS_LOADED_AFTER: 'settings_loaded_after',
+    OAI_BEFORE_CHATCOMPLETION: 'oai_before_chatcompletion',
+    OAI_PRESET_CHANGED: 'oai_preset_changed',
+    WORLDINFO_SETTINGS_UPDATED: 'worldinfo_settings_updated',
 }
 
 export const eventSource = new EventEmitter();
@@ -526,8 +531,6 @@ const system_messages = {
         mes: `Click here to return to the previous chat: <a class="bookmark_link" file_name="{0}" href="javascript:void(null);">Return</a>`,
     },
 };
-
-export const eventSource = new EventEmitter();
 
 // Register configuration migrations
 registerPromptManagerMigration();
