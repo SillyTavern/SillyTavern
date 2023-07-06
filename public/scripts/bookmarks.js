@@ -32,6 +32,7 @@ import {
 } from "./utils.js";
 
 export {
+    createNewBookmark,
     showBookmarksButtons,
 }
 
@@ -123,13 +124,26 @@ function showBookmarksButtons() {
     }
 }
 
-async function createNewBookmark() {
+async function saveBookmarkMenu() {
     if (!chat.length) {
         toastr.warning('The chat is empty.', 'Bookmark creation failed');
         return;
     }
 
-    const mesId = chat.length - 1;
+    return createNewBookmark(chat.length - 1);
+}
+
+async function createNewBookmark(mesId) {
+    if (!chat.length) {
+        toastr.warning('The chat is empty.', 'Bookmark creation failed');
+        return;
+    }
+
+    if (mesId < 0 || mesId >= chat.length) {
+        toastr.warning('Invalid message ID.', 'Bookmark creation failed');
+        return;
+    }
+
     const lastMes = chat[mesId];
 
     if (typeof lastMes.extra !== 'object') {
@@ -155,9 +169,9 @@ async function createNewBookmark() {
     const newMetadata = { main_chat: mainChat };
 
     if (selected_group) {
-        await saveGroupBookmarkChat(selected_group, name, newMetadata);
+        await saveGroupBookmarkChat(selected_group, name, newMetadata, mesId);
     } else {
-        await saveChat(name, newMetadata);
+        await saveChat(name, newMetadata, mesId);
     }
 
     lastMes.extra['bookmark_link'] = name;
@@ -294,7 +308,7 @@ async function convertSoloToGroupChat() {
 }
 
 $(document).ready(function () {
-    $('#option_new_bookmark').on('click', createNewBookmark);
+    $('#option_new_bookmark').on('click', saveBookmarkMenu);
     $('#option_back_to_main').on('click', backToMainChat);
     $('#option_convert_to_group').on('click', convertSoloToGroupChat);
 });
