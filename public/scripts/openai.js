@@ -1717,7 +1717,7 @@ async function saveOpenAIPreset(name, settings) {
         stream_openai: settings.stream_openai,
         prompts: settings.prompts,
         prompt_lists: settings.prompt_lists,
-        prompt_manager_settings: settings.prompt_manager_settings
+        prompt_manager_settings: settings.prompt_manager_settings,
         api_url_scale: settings.api_url_scale,
     };
 
