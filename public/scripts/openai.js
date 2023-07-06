@@ -218,7 +218,7 @@ function setOpenAIMessages(chat) {
         }
 
         // for groups or sendas command - prepend a character's name
-        if (selected_group || (chat[j].force_avatar && chat[j].name !== name1)) {
+        if (selected_group || (chat[j].force_avatar && chat[j].name !== name1 && chat[j].extra?.type !== system_message_types.NARRATOR)) {
             content = `${chat[j].name}: ${content}`;
         }
 

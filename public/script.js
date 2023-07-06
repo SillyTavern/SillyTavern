@@ -435,6 +435,7 @@ const system_messages = {
             <li><tt>{​{char}​}</tt> - the Character's name</li>
             <li><tt>{​{time}​}</tt> - the current time</li>
             <li><tt>{​{date}​}</tt> - the current date</li>
+            <li><tt>{{idle_duration}}</tt> - the time since the last user message was sent</li>
             <li><tt>{{random:(args)}}</tt> - returns a random item from the list. (ex: {{random:1,2,3,4}} will return 1 of the 4 numbers at random. Works with text lists too.</li>
             </ul>`
         ]
