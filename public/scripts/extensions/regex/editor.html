@@ -1,6 +1,15 @@
 <div id="regex_editor_template">
     <div class="regex_editor">
-        <h3><strong>Regex Editor</strong></h3>
+        <h3><strong data-i18n="Regex Editor">Regex Editor</strong>
+            <a href="https://regexr.com/" class="notes-link" target="_blank">
+                <span class="note-link-span">?</span>
+            </a>
+        </h3>
+
+        <small class="flex-container extensions_info">
+            Regex is a tool to find/replace strings using regular expressions. If you want to learn more, click on the ? next to the title.
+        </small>
+        <hr />
 
         <div class="flex-container flexFlowColumn">
             <div class="flex1">
@@ -93,6 +102,13 @@
                     <input type="checkbox" name="substitute_regex" />
                     <span data-i18n="Substitute Regex">Substitute Regex</span>
                 </label>
+            </div>
+            <div class="flex-container flexFlowColumn alignitemsstart">
+                <small>Replacement Strategy</small>
+                <select name="replace_strategy_select" class="margin0">
+                    <option value="0">Replace</option>
+                    <option value="1">Overlay</option>
+                </select>
             </div>
         </div>
     </div>
