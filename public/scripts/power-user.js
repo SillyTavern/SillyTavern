@@ -121,6 +121,7 @@ let power_user = {
     play_message_sound: false,
     play_sound_unfocused: true,
     auto_save_msg_edits: false,
+    confirm_message_delete: true,
 
     sort_field: 'name',
     sort_order: 'asc',
