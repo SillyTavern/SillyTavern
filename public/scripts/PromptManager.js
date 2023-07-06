@@ -1,5 +1,5 @@
 import {DraggablePromptListModule as DraggableList} from "./DraggableList.js";
-import {event_types, eventSource, substituteParams} from "../script.js";
+import {callPopup, event_types, eventSource, substituteParams} from "../script.js";
 import {TokenHandler} from "./openai.js";
 import {power_user} from "./power-user.js";
 
@@ -316,32 +316,38 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
     }
 
     this.handleImport = () => {
-        const fileOpener = document.createElement('input');
-        fileOpener.type = 'file';
-        fileOpener.accept = '.json';
 
-        fileOpener.addEventListener('change', (event) => {
-            const file = event.target.files[0];
-            if (!file) {
-                return;
-            }
+        callPopup('Your prompts will be merged with the import. Imported prompts with the same ID will override existing prompts.', 'confirm',)
+            .then(userChoice => {
+                if (false === userChoice) return;
 
-            const reader = new FileReader();
+                const fileOpener = document.createElement('input');
+                fileOpener.type = 'file';
+                fileOpener.accept = '.json';
 
-            reader.onload = (event) => {
-                const fileContent = event.target.result;
-                try {
-                    const data = JSON.parse(fileContent);
-                    this.import(data);
-                } catch (err) {
-                    console.error('An error occurred while parsing the file content: ', err);
-                }
-            };
+                fileOpener.addEventListener('change', (event) => {
+                    const file = event.target.files[0];
+                    if (!file) return;
 
-            reader.readAsText(file);
+                    const reader = new FileReader();
+
+                    reader.onload = (event) => {
+                        const fileContent = event.target.result;
+
+                        try {
+                            const data = JSON.parse(fileContent);
+                            this.import(data);
+                        } catch (err) {
+                            this.log('An error occurred while importing prompts');
+                            this.log(err.toString());
+                        }
+                    };
+
+                    reader.readAsText(file);
+            });
+
+            fileOpener.click();
         });
-
-        fileOpener.click();
     }
 
     // Re-render when the character changes.
@@ -1138,9 +1144,8 @@ PromptManagerModule.prototype.export = function (data, type, name = 'export') {
 };
 
 PromptManagerModule.prototype.import = function (importData) {
-    console.log(importData)
     const mergeKeepNewer = (prompts, newPrompts) => {
-        let merged = [prompts, newPrompts];
+        let merged = [...prompts, ...newPrompts];
 
         let map = new Map();
         for (let obj of merged) {
@@ -1153,12 +1158,14 @@ PromptManagerModule.prototype.import = function (importData) {
     }
 
     const prompts = mergeKeepNewer(this.serviceSettings.prompts, importData.data.prompts);
-console.log(prompts)
+
     this.setPrompts(prompts);
+    this.log('Prompt import succeeded');
 
     if ('character' === importData.type) {
         const promptList = this.getPromptListForCharacter(this.activeCharacter);
-        promptList.list = importData.data.promptList;
+        Object.assign(promptList, importData.data.promptList);
+        this.log(`Prompt order import for character ${this.activeCharacter.name} completed`);
     }
 
     this.saveServiceSettings().then(() => this.render());
