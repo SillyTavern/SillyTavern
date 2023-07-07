@@ -262,6 +262,7 @@ export const event_types = {
     OAI_BEFORE_CHATCOMPLETION: 'oai_before_chatcompletion',
     OAI_PRESET_CHANGED: 'oai_preset_changed',
     WORLDINFO_SETTINGS_UPDATED: 'worldinfo_settings_updated',
+    CHARACTER_EDITED: 'character_edited',
 }
 
 export const eventSource = new EventEmitter();
@@ -6523,6 +6524,7 @@ async function createOrEditCharacter(e) {
                 );
                 $("#create_button").attr("value", "Save");
                 crop_data = undefined;
+                eventSource.emit(event_types.CHARACTER_EDITED, {detail: {id: this_chid, character: characters[this_chid]}});
             },
             error: function (jqXHR, exception) {
                 $("#create_button").removeAttr("disabled");
