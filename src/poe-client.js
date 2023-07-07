@@ -312,7 +312,7 @@ function logObjectStructure(obj, indent = 0, depth = Infinity) {
 class Client {
     gql_url = "https://poe.com/api/gql_POST";
     gql_recv_url = "https://poe.com/api/receive_POST";
-    home_url = "https://poe.com";
+    home_url = "https://poe.com/Sage";
     settings_url = "https://poe.com/api/settings";
 
     formkey = "";
