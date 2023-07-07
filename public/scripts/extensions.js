@@ -383,6 +383,7 @@ function showExtensionsDetails() {
         const isDisabled = extension_settings.disabledExtensions.includes(name);
 
         const titleClass = isActive ? "extension_enabled" : isDisabled ? "extension_disabled" : "extension_missing";
+        const iconString = isActive ? "\u2705" : isDisabled ? "\u274C" : "";
 
         let toggleElement = `<span title="Cannot enable extension" data-name="${name}" class="extension_missing">Unavailable</span>`;
         if (isActive) {
@@ -391,7 +392,7 @@ function showExtensionsDetails() {
         else if (isDisabled) {
             toggleElement = `<a href="javascript:void" title="Click to enable" data-name="${name}" class="toggle_enable">Enable</a>`;
         }
-        html += `<hr><h4><span class="${titleClass}">${DOMPurify.sanitize(manifest.display_name)}</span> <span style="float:right;">${toggleElement}<span></h4>`;
+        html += `<hr><h4>${iconString} <span class="${titleClass}">${DOMPurify.sanitize(manifest.display_name)}</span> <span style="float:right;">${toggleElement}<span></h4>`;
 
         if (isActive) {
             if (Array.isArray(manifest.optional)) {
