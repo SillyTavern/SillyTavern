@@ -89,6 +89,7 @@ import {
     openai_messages_count,
     getTokenCountOpenAI,
     chat_completion_sources,
+    getTokenizerModel,
 } from "./scripts/openai.js";
 
 import {
@@ -100,7 +101,10 @@ import {
     nai_settings,
 } from "./scripts/nai-settings.js";
 
-import { showBookmarksButtons } from "./scripts/bookmarks.js";
+import {
+    createNewBookmark,
+    showBookmarksButtons
+} from "./scripts/bookmarks.js";
 
 import {
     horde_settings,
@@ -161,6 +165,7 @@ import { context_settings, loadContextTemplatesFromSettings } from "./scripts/co
 import { markdownExclusionExt } from "./scripts/showdown-exclusion.js";
 import { NOTE_MODULE_NAME, metadata_keys, setFloatingPrompt, shouldWIAddPrompt } from "./scripts/extensions/floating-prompt/index.js";
 import { deviceInfo } from "./scripts/RossAscends-mods.js";
+import { getRegexedString, regex_placement } from "./scripts/extensions/regex/engine.js";
 
 //exporting functions and vars for mods
 export {
@@ -236,6 +241,26 @@ export {
 
 // API OBJECT FOR EXTERNAL WIRING
 window["SillyTavern"] = {};
+
+// Event source init
+export const event_types = {
+    EXTRAS_CONNECTED: 'extras_connected',
+    MESSAGE_SWIPED: 'message_swiped',
+    MESSAGE_SENT: 'message_sent',
+    MESSAGE_RECEIVED: 'message_received',
+    MESSAGE_EDITED: 'message_edited',
+    MESSAGE_DELETED: 'message_deleted',
+    IMPERSONATE_READY: 'impersonate_ready',
+    CHAT_CHANGED: 'chat_id_changed',
+    GENERATION_STOPPED: 'generation_stopped',
+    EXTENSIONS_FIRST_LOAD: 'extensions_first_load',
+    SETTINGS_LOADED: 'settings_loaded',
+    SETTINGS_UPDATED: 'settings_updated',
+    GROUP_UPDATED: 'group_updated',
+    MOVABLE_PANELS_RESET: 'movable_panels_reset',
+}
+
+export const eventSource = new EventEmitter();
 
 const gpt3 = new GPT3BrowserTokenizer({ type: 'gpt3' });
 hljs.addPlugin({ "before:highlightElement": ({ el }) => { el.textContent = el.innerText } });
@@ -318,6 +343,10 @@ const system_message_types = {
     BOOKMARK_BACK: "bookmark_back",
     NARRATOR: "narrator",
     COMMENT: "comment",
+    SLASH_COMMANDS: "slash_commands",
+    FORMATTING: "formatting",
+    HOTKEYS: "hotkeys",
+    MACROS: "macros",
 };
 
 const extension_prompt_types = {
@@ -333,12 +362,32 @@ const system_messages = {
         is_system: true,
         is_name: true,
         mes: [
-            `Hi there! The following chat formatting commands are supported:
+            `Hello there! Please select the help topic you would like to learn more about:
             <ul>
-            <li><tt>{​{text}​}</tt> - sets a one-time behavioral bias for the AI. Resets when you send the next message.
-            </li>
+            <li><a href="javascript:displayHelp('1')">Slash Commands</a> (or <tt>/help slash</tt>)</li>
+            <li><a href="javascript:displayHelp('2')">Formatting</a> (or <tt>/help format</tt>)</li>
+            <li><a href="javascript:displayHelp('3')">Hotkeys</a> (or <tt>/help hotkeys</tt>)</li>
+            <li><a href="javascript:displayHelp('4')">{{Macros}}</a> (or <tt>/help macros</tt>)</li>
             </ul>
-            Hotkeys/Keybinds:
+            <br><b>Still got questions left? The <a target="_blank" href="https://docs.sillytavern.app/">Official SillyTavern Documentation Website</a> has much more information!</b>`
+        ]
+    },
+    slash_commands: {
+        name: systemUserName,
+        force_avatar: system_avatar,
+        is_user: false,
+        is_system: true,
+        is_name: true,
+        mes: '',
+    },
+    hotkeys: {
+        name: systemUserName,
+        force_avatar: system_avatar,
+        is_user: false,
+        is_system: true,
+        is_name: true,
+        mes: [
+            `Hotkeys/Keybinds:
             <ul>
             <li><tt>Up</tt> = Edit last message in chat</li>
             <li><tt>Ctrl+Up</tt> = Edit last USER message in chat</li>
@@ -350,7 +399,44 @@ const system_messages = {
             <li><tt>Escape</tt> = stop AI response generation</li>
             <li><tt>Ctrl+Shift+Up</tt> = Scroll to context line</li>
             <li><tt>Ctrl+Shift+Down</tt> = Scroll chat to bottom</li>
-
+            </ul>`
+        ]
+    },
+    formatting: {
+        name: systemUserName,
+        force_avatar: system_avatar,
+        is_user: false,
+        is_system: true,
+        is_name: true,
+        mes: [
+            `Text formatting commands:
+            <ul>
+            <li><tt>{​{text}​}</tt> - sets a one-time behavioral bias for the AI. Resets when you send the next message.</li>
+            <li><tt>*text*</tt> - displays as <i>italics</i></li>
+            <li><tt>**text**</tt> - displays as <b>bold</b></li>
+            <li><tt>***text***</tt> - displays as <b><i>bold italics</i></b></li>
+            <li><tt>` + "```" + `text` + "```" + `</tt> - displays as a code block</li>
+            <li><tt>` + "`" + `text` + "`" + `</tt> - displays as inline code</li>
+            <li><tt>$$ text $$</tt> - renders a LaTeX formula (if enabled)</li>
+            <li><tt>$ text $</tt> - renders an AsciiMath formula (if enabled)</li>
+            </ul>`
+        ]
+    },
+    macros: {
+        name: systemUserName,
+        force_avatar: system_avatar,
+        is_user: false,
+        is_system: true,
+        is_name: true,
+        mes: [
+            `System-wide Replacement Macros:
+            <ul>
+            <li><tt>{​{user}​}</tt> - your current Persona username</li>
+            <li><tt>{​{char}​}</tt> - the Character's name</li>
+            <li><tt>{​{time}​}</tt> - the current time</li>
+            <li><tt>{​{date}​}</tt> - the current date</li>
+            <li><tt>{{idle_duration}}</tt> - the time since the last user message was sent</li>
+            <li><tt>{{random:(args)}}</tt> - returns a random item from the list. (ex: {{random:1,2,3,4}} will return 1 of the 4 numbers at random. Works with text lists too.</li>
             </ul>`
         ]
     },
@@ -436,23 +522,6 @@ const system_messages = {
         mes: `Click here to return to the previous chat: <a class="bookmark_link" file_name="{0}" href="javascript:void(null);">Return</a>`,
     },
 };
-
-export const event_types = {
-    EXTRAS_CONNECTED: 'extras_connected',
-    MESSAGE_SWIPED: 'message_swiped',
-    MESSAGE_SENT: 'message_sent',
-    MESSAGE_RECEIVED: 'message_received',
-    MESSAGE_EDITED: 'message_edited',
-    MESSAGE_DELETED: 'message_deleted',
-    IMPERSONATE_READY: 'impersonate_ready',
-    CHAT_CHANGED: 'chat_id_changed',
-    GENERATION_STOPPED: 'generation_stopped',
-    SETTINGS_UPDATED: 'settings_updated',
-    GROUP_UPDATED: 'group_updated',
-    MOVABLE_PANELS_RESET: 'movable_panels_reset',
-}
-
-export const eventSource = new EventEmitter();
 
 $(document).ajaxError(function myErrorHandler(_, xhr) {
     if (xhr.status == 403) {
@@ -874,6 +943,7 @@ async function getCharacters() {
         }
         await getGroups();
         await printCharacters();
+        updateCharacterCount('#rm_print_characters_block > div');
     }
 }
 
@@ -1065,6 +1135,11 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
     // Prompt bias replacement should be applied on the raw message
     if (!power_user.show_user_prompt_bias && ch_name && !isUser && !isSystem) {
         mes = mes.replaceAll(substituteParams(power_user.user_prompt_bias), "");
+    }
+
+    const regexResult = getRegexedString(mes, regex_placement.MD_DISPLAY);
+    if (regexResult) {
+        mes = regexResult;
     }
 
     if (power_user.auto_fix_generated_markdown) {
@@ -1442,7 +1517,59 @@ function substituteParams(content, _name1, _name2, _original) {
     content = content.replace(/<BOT>/gi, _name2);
     content = content.replace(/{{time}}/gi, moment().format('LT'));
     content = content.replace(/{{date}}/gi, moment().format('LL'));
+    content = content.replace(/{{idle_duration}}/gi, () => getTimeSinceLastMessage());
+    content = randomReplace(content);
     return content;
+}
+
+function getTimeSinceLastMessage() {
+    const now = moment();
+
+    if (Array.isArray(chat) && chat.length > 0) {
+        let lastMessage;
+        let takeNext = false;
+
+        for (let i = chat.length - 1; i >= 0; i--) {
+            const message = chat[i];
+
+            if (message.is_system) {
+                continue;
+            }
+
+            if (message.is_user && takeNext) {
+                lastMessage = message;
+                break;
+            }
+
+            takeNext = true;
+        }
+
+        if (lastMessage?.send_date) {
+            const lastMessageDate = timestampToMoment(lastMessage.send_date);
+            const duration = moment.duration(now.diff(lastMessageDate));
+            return duration.humanize();
+        }
+    }
+
+    return 'just now';
+}
+
+function randomReplace(input, emptyListPlaceholder = '') {
+    const randomPattern = /{{random:([^}]+)}}/gi;
+
+    return input.replace(randomPattern, (match, listString) => {
+        const list = listString.split(',').map(item => item.trim()).filter(item => item.length > 0);
+
+        if (list.length === 0) {
+            return emptyListPlaceholder;
+        }
+
+        var rng = new Math.seedrandom('added entropy.', { entropy: true });
+        const randomIndex = Math.floor(rng() * list.length);
+
+        //const randomIndex = Math.floor(Math.random() * list.length);
+        return list[randomIndex];
+    });
 }
 
 function getStoppingStrings(isImpersonate, addSpace) {
@@ -1525,9 +1652,8 @@ function sendSystemMessage(type, text, extra = {}) {
         newMessage.mes = text;
     }
 
-    if (type == system_message_types.HELP) {
-        newMessage.mes += getSlashCommandsHelp();
-        newMessage.mes += `<br><b>Still got questions left? The <a target="_blank" href="https://docs.sillytavern.app/">Official SillyTavern Documentation Website</a> has much more information!</b>`;
+    if (type == system_message_types.SLASH_COMMANDS) {
+        newMessage.mes = getSlashCommandsHelp();
     }
 
     if (!newMessage.extra) {
@@ -1547,7 +1673,7 @@ export function extractMessageBias(message) {
         return null;
     }
 
-    const forbiddenMatches = ['user', 'char', 'time', 'date'];
+    const forbiddenMatches = ['user', 'char', 'time', 'date', 'random', 'idle_duration'];
     const found = [];
     const rxp = /\{\{([\s\S]+?)\}\}/gm;
     //const rxp = /{([^}]+)}/g;
@@ -1556,7 +1682,12 @@ export function extractMessageBias(message) {
     while ((curMatch = rxp.exec(message))) {
         const match = curMatch[1].trim();
 
-        if (forbiddenMatches.includes(match)) {
+        // Ignore random pattern matches
+        if (/^random:.+/i.test(match)) {
+            continue;
+        }
+
+        if (forbiddenMatches.includes(match.toLowerCase())) {
             continue;
         }
 
@@ -1612,7 +1743,7 @@ function getPersonaDescription(storyString) {
         default:
             if (shouldWIAddPrompt) {
                 const originalAN = extension_prompts[NOTE_MODULE_NAME].value
-                const ANWithDesc = persona_description_positions.TOP_AN
+                const ANWithDesc = power_user.persona_description_position === persona_description_positions.TOP_AN
                     ? `${power_user.persona_description}\n${originalAN}`
                     : `${originalAN}\n${power_user.persona_description}`;
                 setExtensionPrompt(NOTE_MODULE_NAME, ANWithDesc, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth]);
@@ -1674,7 +1805,7 @@ function appendToStoryString(value, prefix) {
 }
 
 function isStreamingEnabled() {
-    return ((main_api == 'openai' && oai_settings.stream_openai)
+    return ((main_api == 'openai' && oai_settings.stream_openai && oai_settings.chat_completion_source !== chat_completion_sources.SCALE)
         || (main_api == 'kobold' && kai_settings.streaming_kobold && kai_settings.can_use_streaming)
         || (main_api == 'novel' && nai_settings.streaming_novel)
         || (main_api == 'poe' && poe_settings.streaming)
@@ -2484,6 +2615,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     type: type,
                     quietPrompt: quiet_prompt,
                     jailbreakPrompt: jailbreakPrompt,
+                    cyclePrompt: cyclePrompt,
                 });
                 generate_data = { prompt: prompt };
 
@@ -2824,6 +2956,11 @@ export function replaceBiasMarkup(str) {
 }
 
 export async function sendMessageAsUser(textareaText, messageBias) {
+    const regexResult = getRegexedString(textareaText, regex_placement.USER_INPUT);
+    if (regexResult) {
+        textareaText = regexResult;
+    }
+
     chat[chat.length] = {};
     chat[chat.length - 1]['name'] = name1;
     chat[chat.length - 1]['is_user'] = true;
@@ -3075,7 +3212,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
         var promptBiasTokensPercentage = ((oaiBiasTokens / (finalPromptTokens)) * 100).toFixed(2);
         var worldInfoStringTokensPercentage = ((worldInfoStringTokens / (finalPromptTokens)) * 100).toFixed(2);
         var allAnchorsTokensPercentage = ((allAnchorsTokens / (finalPromptTokens)) * 100).toFixed(2);
-        var selectedTokenizer = `tiktoken (${oai_settings.openai_model})`;
+        var selectedTokenizer = `tiktoken (${getTokenizerModel()})`;
         var oaiSystemTokens = oaiImpersonateTokens + oaiJailbreakTokens + oaiNudgeTokens + oaiStartTokens;
         var oaiSystemTokensPercentage = ((oaiSystemTokens / (finalPromptTokens)) * 100).toFixed(2);
 
@@ -3094,7 +3231,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
         callPopup(
             `
         <h3>Prompt Itemization</h3>
-        Tokenizer: TikToken<br>
+        Tokenizer: ${selectedTokenizer}<br>
         API Used: ${this_main_api}<br>
         <span class="tokenItemizingSubclass">
             Only the white numbers really matter. All numbers are estimates.
@@ -3404,9 +3541,19 @@ function extractMessageFromData(data) {
 }
 
 function cleanUpMessage(getMessage, isImpersonate, displayIncompleteSentences = false) {
-    // Append the user bias first before trimming anything else
-    if (power_user.user_prompt_bias && power_user.user_prompt_bias.length !== 0) {
+    // Add the prompt bias before anything else
+    if (
+        power_user.user_prompt_bias &&
+        !isImpersonate &&
+        power_user.user_prompt_bias.length !== 0
+    ) {
         getMessage = substituteParams(power_user.user_prompt_bias) + getMessage;
+    }
+
+    // Regex uses vars, so add before formatting
+    const regexResult = getRegexedString(getMessage, isImpersonate ? regex_placement.USER_INPUT : regex_placement.AI_OUTPUT);
+    if (regexResult) {
+        getMessage = regexResult;
     }
 
     if (!displayIncompleteSentences && power_user.trim_sentences) {
@@ -3774,7 +3921,7 @@ async function renamePastChats(newAvatar, newValue) {
     }
 }
 
-async function saveChat(chat_name, withMetadata) {
+async function saveChat(chat_name, withMetadata, mesId) {
     const metadata = { ...chat_metadata, ...(withMetadata || {}) };
     let file_name = chat_name ?? characters[this_chid].chat;
     characters[this_chid]['date_last_chat'] = Date.now();
@@ -3795,6 +3942,11 @@ async function saveChat(chat_name, withMetadata) {
         }
         */
     });
+
+    const trimmed_chat = (mesId !== undefined && mesId >= 0 && mesId < chat.length)
+        ? chat.slice(0, parseInt(mesId) + 1)
+        : chat;
+
     var save_chat = [
         {
             user_name: name1,
@@ -3802,7 +3954,7 @@ async function saveChat(chat_name, withMetadata) {
             create_date: chat_create_date,
             chat_metadata: metadata,
         },
-        ...chat,
+        ...trimmed_chat,
     ];
     return jQuery.ajax({
         type: "POST",
@@ -4691,15 +4843,17 @@ async function getSettings(type) {
         $("#amount_gen_counter").text(`${amount_gen}`);
 
         //Load which API we are using
-        if (settings.main_api != undefined) {
-            main_api = settings.main_api;
-            $('#main_api').val(main_api);
-            $("#main_api option[value=" + main_api + "]").attr(
-                "selected",
-                "true"
-            );
-            changeMainAPI();
+        if (settings.main_api == undefined) {
+            settings.main_api = 'kobold';
         }
+
+        main_api = settings.main_api;
+        $('#main_api').val(main_api);
+        $("#main_api option[value=" + main_api + "]").attr(
+            "selected",
+            "true"
+        );
+        changeMainAPI();
 
         //Load User's Name and Avatar
 
@@ -4724,10 +4878,13 @@ async function getSettings(type) {
 
         if (data.enable_extensions) {
             await loadExtensionSettings(settings);
+            eventSource.emit(event_types.EXTENSION_SETTINGS_LOADED);
         }
     }
 
     if (!is_checked_colab) isColab();
+
+    eventSource.emit(event_types.SETTINGS_LOADED);
 }
 
 function selectKoboldGuiPreset() {
@@ -4816,13 +4973,34 @@ function setCharacterBlockHeight() {
 function updateMessage(div) {
     const mesBlock = div.closest(".mes_block");
     let text = mesBlock.find(".edit_textarea").val();
+    const mes = chat[this_edit_mes_id];
+    let regexPlacement;
+    if (mes.is_name && !mes.is_user && mes.name !== name2) {
+        regexPlacement = regex_placement.SENDAS;
+    } else if (mes.is_name && !mes.is_user) {
+        regexPlacement = regex_placement.AI_OUTPUT;
+    } else if (mes.is_name && mes.is_user) {
+        regexPlacement = regex_placement.USER_INPUT;
+    } else if (mes.extra?.type === "narrator") {
+        regexPlacement = regex_placement.SYSTEM;
+    }
+
+    const regexResult = getRegexedString(
+        text,
+        regexPlacement,
+        {
+            characterOverride: regexPlacement === regex_placement.SENDAS ? mes.name : undefined
+        }
+    );
+    if (regexResult) {
+        text = regexResult;
+    }
 
     if (power_user.trim_spaces) {
         text = text.trim();
     }
 
     const bias = extractMessageBias(text);
-    const mes = chat[this_edit_mes_id];
     mes["mes"] = text;
     if (mes["swipe_id"] !== undefined) {
         mes["swipes"][mes["swipe_id"]] = text;
@@ -5145,6 +5323,7 @@ export function select_selected_character(chid) {
     $("#description_textarea").val(characters[chid].description);
     $("#character_world").val(characters[chid].data?.extensions?.world || '');
     $("#creator_notes_textarea").val(characters[chid].data?.creator_notes || characters[chid].creatorcomment);
+    $("#creator_notes_spoiler").text(characters[chid].data?.creator_notes || characters[chid].creatorcomment);
     $("#character_version_textarea").val(characters[chid].data?.character_version || '');
     $("#system_prompt_textarea").val(characters[chid].data?.system_prompt || '');
     $("#post_history_instructions_textarea").val(characters[chid].data?.post_history_instructions || '');
@@ -5213,6 +5392,7 @@ function select_rm_create() {
     $("#description_textarea").val(create_save.description);
     $('#character_world').val(create_save.world);
     $("#creator_notes_textarea").val(create_save.creator_notes);
+    $("#creator_notes_spoiler").text(create_save.creator_notes);
     $("#post_history_instructions_textarea").val(create_save.post_history_instructions);
     $("#system_prompt_textarea").val(create_save.system_prompt);
     $("#tags_textarea").val(create_save.tags);
@@ -5287,7 +5467,7 @@ function onScenarioOverrideRemoveClick() {
     $(this).closest('.scenario_override').find('.chat_scenario').val('').trigger('input');
 }
 
-function callPopup(text, type, inputValue = '') {
+function callPopup(text, type, inputValue = '', okButton) {
     if (type) {
         popup_type = type;
     }
@@ -5295,30 +5475,30 @@ function callPopup(text, type, inputValue = '') {
     $("#dialogue_popup_cancel").css("display", "inline-block");
     switch (popup_type) {
         case "avatarToCrop":
-            $("#dialogue_popup_ok").text("Accept");
+            $("#dialogue_popup_ok").text(okButton ?? "Accept");
             break;
         case "text":
         case "alternate_greeting":
         case "char_not_selected":
-            $("#dialogue_popup_ok").text("Ok");
+            $("#dialogue_popup_ok").text(okButton ?? "Ok");
             $("#dialogue_popup_cancel").css("display", "none");
             break;
         case "new_chat":
         case "confirm":
-            $("#dialogue_popup_ok").text("Yes");
+            $("#dialogue_popup_ok").text(okButton ?? "Yes");
             break;
         case "del_group":
         case "rename_chat":
         case "del_chat":
         default:
-            $("#dialogue_popup_ok").text("Delete");
+            $("#dialogue_popup_ok").text(okButton ?? "Delete");
     }
 
     $("#dialogue_popup_input").val(inputValue);
 
     if (popup_type == 'input') {
         $("#dialogue_popup_input").css("display", "block");
-        $("#dialogue_popup_ok").text("Save");
+        $("#dialogue_popup_ok").text(okButton ?? "Save");
     }
     else {
         $("#dialogue_popup_input").css("display", "none");
@@ -5916,9 +6096,11 @@ async function createOrEditCharacter(e) {
             success: async function (html) {
                 if (chat.length === 1 && !selected_group) {
                     var this_ch_mes = default_ch_mes;
+
                     if ($("#firstmessage_textarea").val() != "") {
                         this_ch_mes = $("#firstmessage_textarea").val();
                     }
+
                     if (
                         this_ch_mes !=
                         $.trim(
@@ -5929,6 +6111,13 @@ async function createOrEditCharacter(e) {
                                 .text()
                         )
                     ) {
+                        // MARK - kingbri: Regex on character greeting message
+                        // May need to be placed somewhere else
+                        const regexResult = getRegexedString(this_ch_mes, regex_placement.AI_OUTPUT);
+                        if (regexResult) {
+                            this_ch_mes = regexResult;
+                        }
+
                         clearChat();
                         chat.length = 0;
                         chat[0] = {};
@@ -6304,6 +6493,17 @@ const swipe_right = () => {
     }
 }
 
+export function updateCharacterCount(characterSelector) {
+    const visibleCharacters = $(characterSelector).filter(":visible");
+    const visibleCharacterCount = visibleCharacters.length;
+    const totalCharacterCount = $(characterSelector).length;
+
+    $("#rm_character_count").text(
+        `(${visibleCharacterCount} / ${totalCharacterCount}) Characters`
+    );
+    console.log("visibleCharacters.length: " + visibleCharacters.length);
+}
+
 function updateVisibleDivs(containerSelector, resizecontainer) {
     var $container = $(containerSelector);
     var $children = $container.children();
@@ -6477,7 +6677,7 @@ $(document).ready(function () {
     }
 
     registerSlashCommand('dupe', DupeChar, [], "– duplicates the currently selected character", true, true);
-    registerSlashCommand('api', connectAPISlash, [], "– connect to an API", true, true);
+    registerSlashCommand('api', connectAPISlash, [], "(kobold, horde, novel, ooba, oai, claude, poe, windowai) – connect to an API", true, true);
 
     setTimeout(function () {
         $("#groupControlsToggle").trigger('click');
@@ -6489,7 +6689,7 @@ $(document).ready(function () {
         updateVisibleDivs('#rm_print_characters_block', true);
     }, 5));
 
-    $("#chat").on('mousewheel', () => {
+    $("#chat").on('mousewheel touchstart', () => {
         scrollLock = true;
     });
 
@@ -6558,6 +6758,8 @@ $(document).ready(function () {
             });
             updateVisibleDivs('#rm_print_characters_block', true);
         }
+        updateCharacterCount(selector);
+
 
     });
 
@@ -7840,6 +8042,13 @@ $(document).ready(function () {
         $("#load_select_chat_div").css("display", "block");
     });
 
+    $(document).on("click", ".mes_create_bookmark", async function () {
+        var selected_mes_id = $(this).closest(".mes").attr("mesid");
+        if (selected_mes_id !== undefined) {
+            createNewBookmark(selected_mes_id);
+        }
+    });
+
     $(document).on("click", ".mes_stop", function () {
         if (streamingProcessor) {
             streamingProcessor.abortController.abort();
@@ -7863,8 +8072,8 @@ $(document).ready(function () {
         const pinnedDrawerClicked = drawer.hasClass('pinnedOpen');
 
         if (!drawerWasOpenAlready) { //to open the drawer
-            $('.openDrawer').not('.pinnedOpen').addClass('resizing').slideToggle(200, "swing", function () {
-                $(this).closest('.drawer-content').removeClass('resizing');
+            $('.openDrawer').not('.pinnedOpen').addClass('resizing').slideToggle(200, "swing", async function () {
+                await delay(50); $(this).closest('.drawer-content').removeClass('resizing');
             });
             $('.openIcon').toggleClass('closedIcon openIcon');
             $('.openDrawer').not('.pinnedOpen').toggleClass('closedDrawer openDrawer');
@@ -7877,16 +8086,17 @@ $(document).ready(function () {
                     duration: 200,
                     easing: "swing",
                     start: function () {
-                        jQuery(this).css('display', 'flex');
+                        jQuery(this).css('display', 'flex'); //flex needed to make charlist scroll
                     },
-                    complete: function () {
+                    complete: async function () {
+                        await delay(50);
                         $(this).closest('.drawer-content').removeClass('resizing');
                         $("#rm_print_characters_block").trigger("scroll");
                     }
                 })
             } else {
-                $(this).closest('.drawer').find('.drawer-content').addClass('resizing').slideToggle(200, "swing", function () {
-                    $(this).closest('.drawer-content').removeClass('resizing');
+                $(this).closest('.drawer').find('.drawer-content').addClass('resizing').slideToggle(200, "swing", async function () {
+                    await delay(50); $(this).closest('.drawer-content').removeClass('resizing');
                 });
             }
 
@@ -7895,13 +8105,13 @@ $(document).ready(function () {
             icon.toggleClass('closedIcon openIcon');
 
             if (pinnedDrawerClicked) {
-                $(drawer).addClass('resizing').slideToggle(200, "swing", function () {
-                    $(this).removeClass('resizing');
+                $(drawer).addClass('resizing').slideToggle(200, "swing", async function () {
+                    await delay(50); $(this).removeClass('resizing');
                 });
             }
             else {
-                $('.openDrawer').not('.pinnedOpen').addClass('resizing').slideToggle(200, "swing", function () {
-                    $(this).closest('.drawer-content').removeClass('resizing');
+                $('.openDrawer').not('.pinnedOpen').addClass('resizing').slideToggle(200, "swing", async function () {
+                    await delay(50); $(this).closest('.drawer-content').removeClass('resizing');
                 });
             }
 
@@ -7996,6 +8206,12 @@ $(document).ready(function () {
             loadMovingUIState();
             $(`.zoomed_avatar[forChar="${charname}"]`).css('display', 'block');
             dragElement(newElement)
+
+            $(`.zoomed_avatar[forChar="${charname}"] img`).on('dragstart', (e) => {
+                console.log('saw drag on avatar!');
+                e.preventDefault();
+                return false;
+            });
         }
     });
 

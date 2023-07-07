@@ -1,10 +1,10 @@
 import { callPopup, main_api } from "../../../script.js";
 import { getContext } from "../../extensions.js";
-import { oai_settings } from "../../openai.js";
+import { getTokenizerModel } from "../../openai.js";
 
 async function doTokenCounter() {
     const selectedTokenizer = main_api == 'openai'
-        ? `tiktoken (${oai_settings.openai_model})`
+        ? `tiktoken (${getTokenizerModel()})`
         : $("#tokenizer").find(':selected').text();
     const html = `
     <div class="wide100p">

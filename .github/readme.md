@@ -4,13 +4,13 @@ Mobile-friendly, Multi-API (KoboldAI/CPP, Horde, NovelAI, Ooba, OpenAI+proxies, 
 
 Based on a fork of TavernAI 1.2.8
 
-### Brought to you by Cohee, RossAscends and the SillyTavern community
+### Brought to you by Cohee, RossAscends, and the SillyTavern community
 
 NOTE: We have created a [Documentation website](https://docs.sillytavern.app/) to answer most of your questions and help you get started.
 
 ### What is SillyTavern or TavernAI?
 
-Tavern is a user interface you can install on your computer (and Android phones) that allows you to interact with text generation AIs and chat/roleplay with characters you or the community create.
+SillyTavern is a user interface you can install on your computer (and Android phones) that allows you to interact with text generation AIs and chat/roleplay with characters you or the community create.
 
 SillyTavern is a fork of TavernAI 1.2.8 which is under more active development and has added many major features. At this point, they can be thought of as completely independent programs.
 
@@ -53,7 +53,7 @@ Get support, share favorite characters and prompts:
 
 Get in touch with the developers directly:
 
-* Discord: Cohee#1207 or RossAscends#1779
+* Discord: cohee or rossascends
 * Reddit: /u/RossAscends or /u/sillylossy
 * [Post a GitHub issue](https://github.com/SillyTavern/SillyTavern/issues)
 
@@ -64,36 +64,36 @@ Get in touch with the developers directly:
 * Group chats: multi-bot rooms for characters to talk to you or each other
 * Chat bookmarks / branching (duplicates the dialogue in its current state)
 * Advanced KoboldAI / TextGen generation settings with a lot of community-made presets
-* World Info support: create a rich lore or save tokens on your character card
+* World Info support: create rich lore or save tokens on your character card
 * Window AI browser extension support (run models like Claude, GPT 4): https://windowai.io/
 * [Oobabooga's TextGen WebUI](https://github.com/oobabooga/text-generation-webui) API connection
 * [AI Horde](https://horde.koboldai.net/) connection
 * [Poe.com](https://poe.com) (ChatGPT / Claude) connection
-* Soft prompts selector for KoboldAI
 * Prompt generation formatting tweaking
 * webp character card interoperability (PNG is still an internal format)
 
 ## Extensions
 
-SillyTavern has an extensibility support, with some additional AI modules hosted via [SillyTavern Extras API](https://github.com/SillyTavern/SillyTavern-extras)
+SillyTavern has extensibility support, with some additional AI modules hosted via [SillyTavern Extras API](https://github.com/SillyTavern/SillyTavern-extras)
 
 * Author's Note / Character Bias
-* Character emotional expressions
+* Character emotional expressions (sprites)
 * Auto-Summary of the chat history
-* Sending images to chat, and the AI interpreting the content.
+* Sending images to chat, and the AI interpreting the content
 * Stable Diffusion image generation (5 chat-related presets plus 'free mode')
 * Text-to-speech for AI response messages (via ElevenLabs, Silero, or the OS's System TTS)
+* ChromaDB vector storage for smarter chat prompt formatting
 
-Full list of included extenisons and tutorials how to use them can be found on [Wiki](https://github.com/SillyTavern/SillyTavern/wiki).
+A full list of included extensions and tutorials on how to use them can be found in the [Docs](https://docs.sillytavern.app/extras/extensions/).
 
 ## UI/CSS/Quality of Life tweaks by RossAscends
 
-* Mobile UI with optimized for iOS, and supports saving a shortcut to home screen and opening in fullscreen mode.
+* Mobile UI optimized for iOS, and supports saving a shortcut to the home screen and opening in fullscreen mode.
 * HotKeys
   * Up = Edit last message in chat
   * Ctrl+Up = Edit last USER message in chat
   * Left = swipe left
-  * Right = swipe right (NOTE: swipe hotkeys are disabled when chatbar has something typed into it)
+  * Right = swipe right (NOTE: swipe hotkeys are disabled when the chat bar has something typed into it)
   * Ctrl+Left = view locally stored variables (in the browser console window)
   * Enter (with chat bar selected) = send your message to AI
   * Ctrl+Enter = Regenerate the last AI response
@@ -118,7 +118,7 @@ Full list of included extenisons and tutorials how to use them can be found on [
   * Switch between round or rectangle avatar styles
   * Have a wider chat window on the desktop
   * Optional semi-transparent glass-like panels
-  * Customizable page colors for 'main text', 'quoted text' 'italics text'.
+  * Customizable page colors for 'main text', 'quoted text', and 'italics text'.
   * Customizable UI background color and blur amount
 
 ## Installation
@@ -135,8 +135,8 @@ Full list of included extenisons and tutorials how to use them can be found on [
 
 Installing via Git (recommended for easy updating)
 
-Easy to follow guide with pretty pictures:
-<https://docs.alpindale.dev/pygmalion-extras/sillytavern/#windows-installation>
+An easy-to-follow guide with pretty pictures:
+<https://docs.sillytavern.app/installation/windows/>
 
   1. Install [NodeJS](https://nodejs.org/en) (latest LTS version is recommended)
   2. Install [GitHub Desktop](https://central.github.com/deployments/desktop/desktop/latest/win32)
@@ -148,15 +148,15 @@ Easy to follow guide with pretty pictures:
 * for Main Branch: `git clone https://github.com/SillyTavern/SillyTavern -b main`
 * for Dev Branch: `git clone https://github.com/SillyTavern/SillyTavern -b dev`
 
-  7. Once everything is cloned, double click `Start.bat` to make NodeJS install its requirements.
-  8. The server will then start, and SillyTavern will popup in your browser.
+  7. Once everything is cloned, double-click `Start.bat` to make NodeJS install its requirements.
+  8. The server will then start, and SillyTavern will pop up in your browser.
 
-Installing via zip download
+Installing via ZIP download (discouraged)
 
   1. Install [NodeJS](https://nodejs.org/en) (latest LTS version is recommended)
   2. Download the zip from this GitHub repo. (Get the `Source code (zip)` from [Releases](https://github.com/SillyTavern/SillyTavern/releases/latest))
   3. Unzip it into a folder of your choice
-  4. Run `Start.bat` via double-clicking or in a command line.
+  4. Run `Start.bat` by double-clicking or in a command line.
   5. Once the server has prepared everything for you, it will open a tab in your browser.
 
 ### Linux
@@ -168,7 +168,7 @@ Installing via zip download
 
 SillyTavern saves your API keys to a `secrets.json` file in the server directory.
 
-By default they will not be exposed to a frontend after you enter them and reload the page.
+By default, they will not be exposed to a frontend after you enter them and reload the page.
 
 In order to enable viewing your keys by clicking a button in the API block:
 
@@ -186,9 +186,9 @@ However, it can be used to allow remote connections from anywhere as well.
 ### 1. Managing whitelisted IPs
 
 * Create a new text file inside your SillyTavern base install folder called `whitelist.txt`.
-* Open the file in a text editor, add a list of IPs you want to be allowed to connect.
+* Open the file in a text editor, and add a list of IPs you want to be allowed to connect.
 
-*Both indidivual IPs, and wildcard IP ranges are accepted. Examples:*
+*Both individual IPs and wildcard IP ranges are accepted. Examples:*
 
 ```txt
 192.168.0.1
@@ -220,7 +220,7 @@ If the ST-hosting device is on the same wifi network, you will use the ST-host's
 
 * For Windows: windows button > type `cmd.exe` in the search bar > type `ipconfig` in the console, hit Enter > look for `IPv4` listing.
 
-If you (or someone else) wants to connect to your hosted ST while not being on the same network, you will need the public IP of your ST-hosting device.
+If you (or someone else) want to connect to your hosted ST while not being on the same network, you will need the public IP of your ST-hosting device.
 
 * While using the ST-hosting device, access [this page](https://whatismyipaddress.com/) and look for for `IPv4`. This is what you would use to connect from the remote device.
 
@@ -228,7 +228,7 @@ If you (or someone else) wants to connect to your hosted ST while not being on t
 
 Whatever IP you ended up with for your situation, you will put that IP address and port number into the remote device's web browser.
 
-A typical address for an ST host on the same wifi network would look like:
+A typical address for an ST host on the same wifi network would look like this:
 
 `http://192.168.0.5:8000`
 
@@ -238,7 +238,7 @@ Use http:// NOT https://
 
 We do not recommend doing this, but you can open `config.conf` and change `whitelist` to `false`.
 
-You must remove (or rename) `whitelist.txt` in the SillyTavern base install folder, if it exists.
+You must remove (or rename) `whitelist.txt` in the SillyTavern base install folder if it exists.
 
 This is usually an insecure practice, so we require you to set a username and password when you do this.
 
@@ -248,8 +248,8 @@ After restarting your ST server, any device will be able to connect to it, regar
 
 ### Still Unable To Connect?
 
-* Create an inbound/outbound firewall rule for the port found in `config.conf`. Do NOT mistake this for portforwarding on your router, otherwise someone could find your chat logs and that's a big no-no.
-* Enable the Private Network profile type in Settings > Network and Internet > Ethernet. This is VERY important for Windows 11, otherwise you would be unable to connect even with the aforementioned firewall rules.
+* Create an inbound/outbound firewall rule for the port found in `config.conf`. Do NOT mistake this for port-forwarding on your router, otherwise, someone could find your chat logs and that's a big no-no.
+* Enable the Private Network profile type in Settings > Network and Internet > Ethernet. This is VERY important for Windows 11, otherwise, you would be unable to connect even with the aforementioned firewall rules.
 
 ## Performance issues?
 
@@ -271,7 +271,7 @@ Try enabling the No Blur Effect (Fast UI) mode on the User settings panel.
 
 ## Where can I find the old backgrounds?
 
-We're moving to 100% original content only policy, so old background images have been removed from this repository.
+We're moving to a 100% original content only policy, so old background images have been removed from this repository.
 
 You can find them archived here:
 

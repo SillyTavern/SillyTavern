@@ -1,7 +1,7 @@
 {
     "max_length": 1600,
-    "temp": 0.79,
     "genamt": 180,
+    "temp": 0.79,
     "top_k": 0,
     "top_p": 0.9,
     "top_a": 0,
