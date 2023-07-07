@@ -123,7 +123,7 @@ async function loadSettings() {
 function onStrategyChange() {
     console.debug('changing chromadb strat');
     extension_settings.chromadb.strategy = $('#chromadb_strategy').val();
-    if(extension_settings.chromadb.strategy === "custom"){
+    if (extension_settings.chromadb.strategy === "custom") {
         $('#chromadb_custom_depth').show();
         $('label[for="chromadb_custom_depth"]').show();
         $('#chromadb_custom_msg').show();
@@ -188,7 +188,7 @@ function onFileSplitLengthInput() {
 
 function onChunkNLInput() {
     let shouldSplit = $('#onChunkNLInput').is(':checked');
-    if(shouldSplit){
+    if (shouldSplit) {
         extension_settings.chromadb.file_split_type = "newline";
     } else {
         extension_settings.chromadb.file_split_type = "length";
@@ -406,7 +406,7 @@ async function queryMultiMessages(chat_id, query) {
     const context = getContext();
     const response = await fetch("/getallchatsofcharacter", {
         method: 'POST',
-        body: JSON.stringify({ avatar_url: context.characters[context.characterId].avatar}),
+        body: JSON.stringify({ avatar_url: context.characters[context.characterId].avatar }),
         headers: getRequestHeaders(),
     });
     if (!response.ok) {
@@ -451,7 +451,7 @@ async function onSelectInjectFile(e) {
         extension_settings.chromadb.file_split_type = "newline";
         //allow splitting on newlines or splitrecursively
         let split = [];
-        if(extension_settings.chromadb.file_split_type == "newline"){
+        if (extension_settings.chromadb.file_split_type == "newline") {
             split = text.split(/\r?\n/).filter(onlyUnique);
         } else {
             split = splitRecursive(text, extension_settings.chromadb.file_split_length).filter(onlyUnique);
@@ -574,17 +574,17 @@ window.chromadb_interceptGeneration = async (chat, maxContext) => {
             let queriedMessages;
             console.debug(recallStrategy)
             if (lastMessage) {
-                if (recallStrategy === 'multichat'){
+                if (recallStrategy === 'multichat') {
                     queriedMessages = await queryMultiMessages(currentChatId, lastMessage.mes);
                 }
-                else{
+                else {
                     queriedMessages = await queryMessages(currentChatId, lastMessage.mes);
                 }
 
-                if(chromaSortStrategy === "date"){
+                if (chromaSortStrategy === "date") {
                     queriedMessages.sort((a, b) => a.date - b.date);
                 }
-                else{
+                else {
                     queriedMessages.sort((a, b) => b.distance - a.distance);
                 }
 
@@ -649,10 +649,10 @@ window.chromadb_interceptGeneration = async (chat, maxContext) => {
                     let chatset = new Set(chat.map(obj => obj.mes));
                     newChat = newChat.filter(obj => !chatset.has(obj.mes));
 
-                    if(chromaDepth === -1){
+                    if (chromaDepth === -1) {
                         chat.splice(chat.length, 0, ...newChat);
                     }
-                    else{
+                    else {
                         chat.splice(chromaDepth, 0, ...newChat);
                     }
                 }
