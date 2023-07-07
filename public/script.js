@@ -2649,6 +2649,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 allAnchors: allAnchors,
                 summarizeString: (extension_prompts['1_memory']?.value || ''),
                 authorsNoteString: (extension_prompts['2_floating_prompt']?.value || ''),
+                smartContextString: (extension_prompts['chromadb']?.value || ''),
                 worldInfoString: worldInfoString,
                 storyString: storyString,
                 worldInfoAfter: worldInfoAfter,
@@ -3146,6 +3147,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
     var allAnchorsTokens = getTokenCount(itemizedPrompts[thisPromptSet].allAnchors);
     var summarizeStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].summarizeString);
     var authorsNoteStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].authorsNoteString);
+    var smartContextStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].smartContextString);
     var afterScenarioAnchorTokens = getTokenCount(itemizedPrompts[thisPromptSet].afterScenarioAnchor);
     var zeroDepthAnchorTokens = getTokenCount(itemizedPrompts[thisPromptSet].afterScenarioAnchor);
     var worldInfoStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].worldInfoString);
@@ -3320,6 +3322,10 @@ function promptItemize(itemizedPrompts, requestedMesId) {
                             <div  class=" flex1 tokenItemizingSubclass">-- Author's Note:</div>
                             <div  class="tokenItemizingSubclass"> ${authorsNoteStringTokens}</div>
                         </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Smart Context:</div>
+                            <div  class="tokenItemizingSubclass"> ${smartContextStringTokens}</div>
+                        </div>
                     </div>
                     <div class="wide100p flex-container">
                         <div  class="flex1" style="color: mediumpurple;">{{}} Bias:</div><div  class="">${oaiBiasTokens}</div>
@@ -3406,6 +3412,10 @@ function promptItemize(itemizedPrompts, requestedMesId) {
                         <div class="flex-container ">
                             <div  class=" flex1 tokenItemizingSubclass">-- Author's Note:</div>
                             <div  class="tokenItemizingSubclass"> ${authorsNoteStringTokens}</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Smart Context:</div>
+                            <div  class="tokenItemizingSubclass"> ${smartContextStringTokens}</div>
                         </div>
                     </div>
                     <div class="wide100p flex-container">
