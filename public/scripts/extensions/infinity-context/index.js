@@ -450,10 +450,11 @@ async function onSelectInjectFile(e) {
         const text = await getFileText(file);
         extension_settings.chromadb.file_split_type = "newline";
         //allow splitting on newlines or splitrecursively
+        let split = [];
         if(extension_settings.chromadb.file_split_type == "newline"){
-            var split = text.split(/\r?\n/).filter(onlyUnique);
+            split = text.split(/\r?\n/).filter(onlyUnique);
         } else {
-            const split = splitRecursive(text, extension_settings.chromadb.file_split_length).filter(onlyUnique);
+            split = splitRecursive(text, extension_settings.chromadb.file_split_length).filter(onlyUnique);
         }
         const baseDate = Date.now();
 
