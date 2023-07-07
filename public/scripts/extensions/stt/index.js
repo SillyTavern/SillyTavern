@@ -7,7 +7,7 @@ import { VoskSttProvider } from './vosk.js'
 export { MODULE_NAME };
 
 const MODULE_NAME = 'stt';
-const UPDATE_INTERVAL = 2000;
+const UPDATE_INTERVAL = 100;
 
 let inApiCall = false;
 

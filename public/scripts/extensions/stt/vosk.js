@@ -79,7 +79,7 @@ class VoskSttProvider {
         //}
     
         const url = new URL(getApiUrl());
-        url.pathname = '/api/vosk-stt/record';
+        url.pathname = '/api/stt/vosk/record';
     
         const apiResult = await doExtrasFetch(url, {
             method: 'POST',
