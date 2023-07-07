@@ -3773,10 +3773,28 @@ label[for="extensions_autoconnect"] {
 
 .extensions_info p {
     margin-bottom: 0.5em;
+    margin-left: 1em;
 }
 
 .extensions_info .disabled {
     color: lightgray;
+}
+
+.extensions_info .toggle_enable {
+    color: lightgreen;
+}
+.extensions_info .toggle_disable {
+    color: rgb(238, 144, 144);
+}
+
+.extensions_info .extension_enabled {
+    color: green;
+}
+.extensions_info .extension_disabled {
+    color: lightgray;
+}
+.extensions_info .extension_missing {
+    color: gray;
 }
 
 #extensions_list .disabled {

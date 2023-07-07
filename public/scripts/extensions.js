@@ -373,15 +373,28 @@ function addExtensionScript(name, manifest) {
 
 function showExtensionsDetails() {
     let html = '<h3>Modules provided by your Extensions API:</h3>';
-    html += modules.length ? DOMPurify.sanitize(modules.join(', ')) : '<p class="failure">Not connected to the API!</p>';
+    html += modules.length ? `<p>${DOMPurify.sanitize(modules.join(', '))}</p>` : '<p class="failure">Not connected to the API!</p>';
     html += '<h3>Available extensions:</h3>';
 
     Object.entries(manifests).sort((a, b) => a[1].loading_order - b[1].loading_order).forEach(extension => {
         const name = extension[0];
         const manifest = extension[1];
-        html += `<h4>${DOMPurify.sanitize(manifest.display_name)}</h4>`;
-        if (activeExtensions.has(name)) {
-            html += `<p class="success">Extension is active. <a href="javascript:void" data-name="${name}" class="disable_extension">Click to Disable</a></p>`;
+        const isActive = activeExtensions.has(name);
+        const isDisabled = extension_settings.disabledExtensions.includes(name);
+
+        const titleClass = isActive ? "extension_enabled" : isDisabled ? "extension_disabled" : "extension_missing";
+        const iconString = isActive ? "\u2705" : isDisabled ? "\u274C" : "";
+
+        let toggleElement = `<span title="Cannot enable extension" data-name="${name}" class="extension_missing">Unavailable</span>`;
+        if (isActive) {
+            toggleElement = `<a href="javascript:void" title="Click to disable" data-name="${name}" class="toggle_disable">Disable</a>`;
+        }
+        else if (isDisabled) {
+            toggleElement = `<a href="javascript:void" title="Click to enable" data-name="${name}" class="toggle_enable">Enable</a>`;
+        }
+        html += `<hr><h4>${iconString} <span class="${titleClass}">${DOMPurify.sanitize(manifest.display_name)}</span> <span style="float:right;">${toggleElement}<span></h4>`;
+
+        if (isActive) {
             if (Array.isArray(manifest.optional)) {
                 const optional = new Set(manifest.optional);
                 modules.forEach(x => optional.delete(x));
@@ -391,10 +404,7 @@ function showExtensionsDetails() {
                 }
             }
         }
-        else if (extension_settings.disabledExtensions.includes(name)) {
-            html += `<p class="disabled">Extension is disabled. <a href="javascript:void" data-name=${name} class="enable_extension">Click to Enable</a></p>`;
-        }
-        else {
+        else if (!isDisabled) { // Neither active nor disabled
             const requirements = new Set(manifest.requires);
             modules.forEach(x => requirements.delete(x));
             const requirementsString = DOMPurify.sanitize([...requirements].join(', '));
