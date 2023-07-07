@@ -39,14 +39,14 @@ function regexFromString(input) {
 
 // Parent function to fetch a regexed version of a raw string
 function getRegexedString(rawString, placement, { characterOverride } = {}) {
+    let finalString = rawString;
     if (extension_settings.disabledExtensions.includes("regex") || !rawString || placement === undefined) {
-        return;
+        return finalString;
     }
 
-    let finalString;
     extension_settings.regex.forEach((script) => {
         if (script.placement.includes(placement)) {
-            finalString = runRegexScript(script, rawString, { characterOverride });
+            finalString = runRegexScript(script, finalString, { characterOverride });
         }
     });
 
@@ -55,17 +55,17 @@ function getRegexedString(rawString, placement, { characterOverride } = {}) {
 
 // Runs the provided regex script on the given string
 function runRegexScript(regexScript, rawString, { characterOverride } = {}) {
+    let newString = rawString;
     if (!regexScript || !!(regexScript.disabled) || !regexScript?.findRegex || !rawString) {
-        return;
+        return newString;
     }
 
     let match;
-    let newString;
     const findRegex = regexFromString(regexScript.substituteRegex ? substituteParams(regexScript.findRegex) : regexScript.findRegex);
 
     // The user skill issued. Return with nothing.
     if (!findRegex) {
-        return;
+        return newString;
     }
 
     while ((match = findRegex.exec(rawString)) !== null) {
