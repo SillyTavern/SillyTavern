@@ -186,6 +186,16 @@ function onFileSplitLengthInput() {
     saveSettingsDebounced();
 }
 
+function onChunkNLInput() {
+    let shouldSplit = $('#onChunkNLInput').is(':checked');
+    if(shouldSplit){
+        extension_settings.chromadb.file_split_type = "newline";
+    } else {
+        extension_settings.chromadb.file_split_type = "length";
+    }
+    saveSettingsDebounced();
+}
+
 function checkChatId(chat_id) {
     if (!chat_id || chat_id.trim() === '') {
         toastr.error('Please select a character and try again.');
@@ -564,20 +574,16 @@ window.chromadb_interceptGeneration = async (chat, maxContext) => {
             console.debug(recallStrategy)
             if (lastMessage) {
                 if (recallStrategy === 'multichat'){
-                    console.log("Utilizing multichat")
                     queriedMessages = await queryMultiMessages(currentChatId, lastMessage.mes);
                 }
                 else{
-                    console.log("Utilizing single chat");
                     queriedMessages = await queryMessages(currentChatId, lastMessage.mes);
                 }
 
                 if(chromaSortStrategy === "date"){
-                    console.log("Sorting by date");
                     queriedMessages.sort((a, b) => a.date - b.date);
                 }
                 else{
-                    console.log("Sorting by distance");
                     queriedMessages.sort((a, b) => b.distance - a.distance);
                 }
 
@@ -652,15 +658,10 @@ window.chromadb_interceptGeneration = async (chat, maxContext) => {
                 if (selectedStrategy === 'original') {
                     //removes .length # messages from the start of 'kept messages'
                     //replaces them with chromaDB results (with no separator)
-                    console.log('ChromaDB chat before injection', chat);
-                    console.log('ChromaDB newChat', newChat);
-                    console.log('ChromaDB queriedMessages', queriedMessages);
                     newChat.push(...queriedMessages.map(m => m.meta).filter(onlyUnique).map(JSON.parse));
-                    console.log('ChromaDB newChat after push', newChat);
                     chat.splice(0, messagesToStore.length, ...newChat);
 
                 }
-                console.log('ChromaDB chat after injection', chat);
             }
         }
     }
@@ -746,6 +747,10 @@ jQuery(async () => {
                 <input type="checkbox" id="chromadb_auto_adjust" />
                 <span>Use % strategy</span>
             </label>
+            <label class="checkbox_label" for="chromadb_chunk_nl" title="Chunk injected documents on newline instead of at set character size." >
+                <input type="checkbox" id="chromadb_chunk_nl" />
+                <span>Chunk on Newlines</span>
+            </label>
             <div class="flex-container spaceEvenly">
                 <div id="chromadb_inject" title="Upload custom textual data to use in the context of the current chat" class="menu_button">
                     <i class="fa-solid fa-file-arrow-up"></i>
@@ -787,6 +792,7 @@ jQuery(async () => {
     $('#chromadb_purge').on('click', onPurgeClick);
     $('#chromadb_export').on('click', onExportClick);
     $('#chromadb_freeze').on('input', onFreezeInput);
+    $('#chromadb_chunk_nl').on('input', onChunkNLInput);
     $('#chromadb_auto_adjust').on('input', onAutoAdjustInput);
     $('#chromadb_keep_context_proportion').on('input', onKeepContextProportionInput);
     await loadSettings();
