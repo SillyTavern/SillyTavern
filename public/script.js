@@ -7820,9 +7820,11 @@ $(document).ready(function () {
 
 
     $(document).on("click", ".mes_edit_delete", async function () {
-        const confirmation = await callPopup("Are you sure you want to delete this message?", 'confirm');
-        if (!confirmation) {
-            return;
+        if (power_user.confirm_message_delete) {
+            const confirmation = await callPopup("Are you sure you want to delete this message?", 'confirm');
+            if (!confirmation) {
+                return;
+            }
         }
 
         const mes = $(this).closest(".mes");
