@@ -433,6 +433,7 @@ const system_messages = {
             <ul>
             <li><tt>{​{user}​}</tt> - your current Persona username</li>
             <li><tt>{​{char}​}</tt> - the Character's name</li>
+            <li><tt>{​{input}​}</tt> - the user input</li>
             <li><tt>{​{time}​}</tt> - the current time</li>
             <li><tt>{​{date}​}</tt> - the current date</li>
             <li><tt>{{idle_duration}}</tt> - the time since the last user message was sent</li>
@@ -1511,6 +1512,7 @@ function substituteParams(content, _name1, _name2, _original) {
         content = content.replace(/{{original}}/i, _original);
     }
 
+    content = content.replace(/{{input}}/gi, $('#send_textarea').val());
     content = content.replace(/{{user}}/gi, _name1);
     content = content.replace(/{{char}}/gi, _name2);
     content = content.replace(/<USER>/gi, _name1);
