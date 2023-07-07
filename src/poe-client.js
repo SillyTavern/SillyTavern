@@ -277,9 +277,9 @@ async function request_with_retries(method, attempts = 10) {
             logger.warn(`Server returned a status code of ${response.status} while downloading ${url}. Retrying (${i + 1}/${attempts})...`);
         }
         catch (err) {
-            console.log(`-------------------ERROR-------------------`)
+            //console.log(`-------------------ERROR-------------------`)
             //console.log(logObjectStructure(err, 0, 2));
-            console.log(`Retries: ${i}`)
+            console.log(`Error on request attempt ${i + 1}`)
             //console.log(`-------------------------------------------`)
         }
         await delay(100)
@@ -317,7 +317,7 @@ function logObjectStructure(obj, indent = 0, depth = Infinity) {
 class Client {
     gql_url = "https://poe.com/api/gql_POST";
     gql_recv_url = "https://poe.com/api/receive_POST";
-    home_url = "https://poe.com/Sage";
+    home_url = "https://poe.com";
     settings_url = "https://poe.com/api/settings";
 
     formkey = "";
