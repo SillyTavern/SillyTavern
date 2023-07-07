@@ -620,6 +620,8 @@ async function setExpression(character, expression, force) {
     console.debug('entered setExpressions');
     await validateImages(character);
     const img = $('img.expression');
+    const prevExpressionSrc = img.attr('src');
+    const expressionClone = img.clone()
 
     const sprite = (spriteCache[character] && spriteCache[character].find(x => x.label === expression));
     console.debug('checking for expression images to show..');
@@ -643,21 +645,62 @@ async function setExpression(character, expression, force) {
                 }
             }
         }
+        //only swap expressions when necessary
+        if (prevExpressionSrc !== sprite.path
+            && !img.hasClass('expression-animating')) {
+            //clone expression
+            expressionClone.addClass('expression-clone')
+            //make invisible and remove id to prevent double ids
+            //must be made invisible to start because they share the same Z-index
+            expressionClone.attr('id', '').css({ opacity: 0 });
+            //add new sprite path to clone src
+            expressionClone.attr('src', sprite.path);
+            //add invisible clone to html
+            expressionClone.appendTo($("#expression-holder"))
 
-        img.attr('src', sprite.path);
-        img.removeClass('default');
-        img.off('error');
-        img.on('error', function () {
-            console.debug('Expression image error', sprite.path);
-            $(this).attr('src', '');
-            $(this).off('error');
-            if (force && extension_settings.expressions.showDefault) {
+            const duration = 200;
+
+            //add animation flags to both images
+            //to prevent multiple expression changes happening simultaneously
+            img.addClass('expression-animating')
+            //position absolute prevent the original from jumping around during transition
+            img.css('position', 'absolute')
+            expressionClone.addClass('expression-animating')
+            //fade the clone in
+            expressionClone.css({
+                opacity: 0
+            }).animate({
+                opacity: 1
+            }, duration)
+                //when finshed fading in clone, fade out the original
+                .promise().done(function () {
+                    img.animate({
+                        opacity: 0
+                    }, duration);
+                    //remove old expression
+                    img.remove();
+                    //replace ID so it becomes the new 'original' expression for next change
+                    expressionClone.attr('id', 'expression-image')
+                    expressionClone.removeClass('expression-animating')
+                });
+
+
+            expressionClone.removeClass('expression-clone');
+
+            expressionClone.removeClass('default');
+            expressionClone.off('error');
+            expressionClone.on('error', function () {
+                console.debug('Expression image error', sprite.path);
+                $(this).attr('src', '');
+                $(this).off('error');
+                if (force && extension_settings.expressions.showDefault) {
+                    setDefault();
+                }
+            });
+        } else {
+            if (extension_settings.expressions.showDefault) {
                 setDefault();
             }
-        });
-    } else {
-        if (extension_settings.expressions.showDefault) {
-            setDefault();
         }
     }
 
@@ -665,8 +708,8 @@ async function setExpression(character, expression, force) {
         console.debug('setting default');
         const defImgUrl = `/img/default-expressions/${expression}.png`;
         //console.log(defImgUrl);
-        img.attr('src', defImgUrl);
-        img.addClass('default');
+        expressionClone.attr('src', defImgUrl);
+        expressionClone.addClass('default');
     }
     document.getElementById("expression-holder").style.display = '';
 }
