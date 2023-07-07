@@ -1137,10 +1137,7 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
         mes = mes.replaceAll(substituteParams(power_user.user_prompt_bias), "");
     }
 
-    const regexResult = getRegexedString(mes, regex_placement.MD_DISPLAY);
-    if (regexResult) {
-        mes = regexResult;
-    }
+    mes = getRegexedString(mes, regex_placement.MD_DISPLAY);
 
     if (power_user.auto_fix_generated_markdown) {
         mes = fixMarkdown(mes);
@@ -2956,10 +2953,7 @@ export function replaceBiasMarkup(str) {
 }
 
 export async function sendMessageAsUser(textareaText, messageBias) {
-    const regexResult = getRegexedString(textareaText, regex_placement.USER_INPUT);
-    if (regexResult) {
-        textareaText = regexResult;
-    }
+    textareaText = getRegexedString(textareaText, regex_placement.USER_INPUT);
 
     chat[chat.length] = {};
     chat[chat.length - 1]['name'] = name1;
@@ -3551,10 +3545,7 @@ function cleanUpMessage(getMessage, isImpersonate, displayIncompleteSentences = 
     }
 
     // Regex uses vars, so add before formatting
-    const regexResult = getRegexedString(getMessage, isImpersonate ? regex_placement.USER_INPUT : regex_placement.AI_OUTPUT);
-    if (regexResult) {
-        getMessage = regexResult;
-    }
+    getMessage = getRegexedString(getMessage, isImpersonate ? regex_placement.USER_INPUT : regex_placement.AI_OUTPUT);
 
     if (!displayIncompleteSentences && power_user.trim_sentences) {
         getMessage = end_trim_to_sentence(getMessage, power_user.include_newline);
@@ -4985,16 +4976,13 @@ function updateMessage(div) {
         regexPlacement = regex_placement.SYSTEM;
     }
 
-    const regexResult = getRegexedString(
+    text = getRegexedString(
         text,
         regexPlacement,
         {
             characterOverride: regexPlacement === regex_placement.SENDAS ? mes.name : undefined
         }
     );
-    if (regexResult) {
-        text = regexResult;
-    }
 
     if (power_user.trim_spaces) {
         text = text.trim();
@@ -6113,10 +6101,7 @@ async function createOrEditCharacter(e) {
                     ) {
                         // MARK - kingbri: Regex on character greeting message
                         // May need to be placed somewhere else
-                        const regexResult = getRegexedString(this_ch_mes, regex_placement.AI_OUTPUT);
-                        if (regexResult) {
-                            this_ch_mes = regexResult;
-                        }
+                        this_ch_mes = getRegexedString(this_ch_mes, regex_placement.AI_OUTPUT);
 
                         clearChat();
                         chat.length = 0;

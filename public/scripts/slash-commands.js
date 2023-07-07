@@ -226,10 +226,7 @@ async function sendMessageAs(_, text) {
 
     const name = parts.shift().trim();
     let mesText = parts.join('\n').trim();
-    const regexResult = getRegexedString(mesText, regex_placement.SENDAS, { characterOverride: name });
-    if (regexResult) {
-        mesText = regexResult;
-    }
+    mesText = getRegexedString(mesText, regex_placement.SENDAS, { characterOverride: name });
 
     // Messages that do nothing but set bias will be hidden from the context
     const bias = extractMessageBias(mesText);
@@ -273,10 +270,7 @@ async function sendNarratorMessage(_, text) {
         return;
     }
 
-    const regexResult = getRegexedString(text, regex_placement.SYSTEM);
-    if (regexResult) {
-        text = regexResult;
-    }
+    text = getRegexedString(text, regex_placement.SYSTEM);
 
     const name = chat_metadata[NARRATOR_NAME_KEY] || NARRATOR_NAME_DEFAULT;
     // Messages that do nothing but set bias will be hidden from the context
