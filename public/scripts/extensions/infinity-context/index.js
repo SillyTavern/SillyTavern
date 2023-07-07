@@ -133,20 +133,7 @@ async function loadSettings() {
 function onStrategyChange() {
     console.debug('changing chromadb strat');
     extension_settings.chromadb.strategy = $('#chromadb_strategy').val();
-
-    $('#chromadb_custom_depth').hide();
-    $('label[for="chromadb_custom_depth"]').hide();
-    $('#chromadb_custom_msg').hide();
-    $('label[for="chromadb_custom_msg"]').hide();
-
-    $('#chromadb_hhaa_wrapperfmt').hide();
-    $('label[for="chromadb_hhaa_wrapperfmt"]').hide();
-    $('#chromadb_hhaa_memoryfmt').hide();
-    $('label[for="chromadb_hhaa_memoryfmt"]').hide();
-    $('#chromadb_hhaa_token_limit').hide();
-    $('label[for="chromadb_hhaa_token_limit"]').hide();
-
-    if(extension_settings.chromadb.strategy === "custom"){
+    if (extension_settings.chromadb.strategy === "custom") {
         $('#chromadb_custom_depth').show();
         $('label[for="chromadb_custom_depth"]').show();
         $('#chromadb_custom_msg').show();
@@ -223,6 +210,16 @@ function onSplitLengthInput() {
 function onFileSplitLengthInput() {
     extension_settings.chromadb.file_split_length = Number($('#chromadb_file_split_length').val());
     $('#chromadb_file_split_length_value').text(extension_settings.chromadb.file_split_length);
+    saveSettingsDebounced();
+}
+
+function onChunkNLInput() {
+    let shouldSplit = $('#onChunkNLInput').is(':checked');
+    if (shouldSplit) {
+        extension_settings.chromadb.file_split_type = "newline";
+    } else {
+        extension_settings.chromadb.file_split_type = "length";
+    }
     saveSettingsDebounced();
 }
 
@@ -450,7 +447,7 @@ async function queryMultiMessages(chat_id, query) {
     const context = getContext();
     const response = await fetch("/getallchatsofcharacter", {
         method: 'POST',
-        body: JSON.stringify({ avatar_url: context.characters[context.characterId].avatar}),
+        body: JSON.stringify({ avatar_url: context.characters[context.characterId].avatar }),
         headers: getRequestHeaders(),
     });
     if (!response.ok) {
@@ -492,8 +489,14 @@ async function onSelectInjectFile(e) {
     try {
         toastr.info('This may take some time, depending on the file size', 'Processing...');
         const text = await getFileText(file);
-
-        const split = splitRecursive(text, extension_settings.chromadb.file_split_length).filter(onlyUnique);
+        extension_settings.chromadb.file_split_type = "newline";
+        //allow splitting on newlines or splitrecursively
+        let split = [];
+        if (extension_settings.chromadb.file_split_type == "newline") {
+            split = text.split(/\r?\n/).filter(onlyUnique);
+        } else {
+            split = splitRecursive(text, extension_settings.chromadb.file_split_length).filter(onlyUnique);
+        }
         const baseDate = Date.now();
 
         const messages = split.map((m, i) => ({
@@ -590,6 +593,9 @@ window.chromadb_interceptGeneration = async (chat, maxContext) => {
     if (!currentChatId)
         return;
 
+    //log the current settings
+    console.debug("CHROMADB: Current settings: %o", extension_settings.chromadb);
+
     const selectedStrategy = extension_settings.chromadb.strategy;
     const recallStrategy = extension_settings.chromadb.recall_strategy;
     let recallMsg = extension_settings.chromadb.recall_msg || defaultSettings.chroma_default_msg;
@@ -599,6 +605,10 @@ window.chromadb_interceptGeneration = async (chat, maxContext) => {
     const messagesToStore = chat.slice(0, -extension_settings.chromadb.keep_context);
 
     if (messagesToStore.length > 0 && !extension_settings.chromadb.freeze) {
+        //log the messages to store
+        console.debug("CHROMADB: Messages to store: %o", messagesToStore);
+        //log the messages to store length vs keep context
+        console.debug("CHROMADB: Messages to store length vs keep context: %o vs %o", messagesToStore.length, extension_settings.chromadb.keep_context);
         await addMessages(currentChatId, messagesToStore);
     }
     
@@ -618,18 +628,18 @@ window.chromadb_interceptGeneration = async (chat, maxContext) => {
         }
         console.log("ChromDB Query text:", queryBlob);
 
-        if (recallStrategy === 'multichat'){
+        if (recallStrategy === 'multichat') {
             console.log("Utilizing multichat")
             queriedMessages = await queryMultiMessages(currentChatId, queryBlob);
         }
-        else{
+        else {
             queriedMessages = await queryMessages(currentChatId, queryBlob);
         }
 
-        if(chromaSortStrategy === "date"){
+        if (chromaSortStrategy === "date") {
             queriedMessages.sort((a, b) => a.date - b.date);
         }
-        else{
+        else {
             queriedMessages.sort((a, b) => b.distance - a.distance);
         }
         console.log(queriedMessages);
@@ -727,10 +737,10 @@ window.chromadb_interceptGeneration = async (chat, maxContext) => {
             let chatset = new Set(chat.map(obj => obj.mes));
             newChat = newChat.filter(obj => !chatset.has(obj.mes));
 
-            if(chromaDepth === -1){
+            if(chromaDepth === -1) {
                 chat.splice(chat.length, 0, ...newChat);
             }
-            else{
+            else {
                 chat.splice(chromaDepth, 0, ...newChat);
             }
         }
@@ -741,7 +751,6 @@ window.chromadb_interceptGeneration = async (chat, maxContext) => {
             chat.splice(0, messagesToStore.length, ...newChat);
 
         }
-        console.log('ChromaDB chat after injection', chat);
     }
 }
 
@@ -837,6 +846,10 @@ jQuery(async () => {
                 <input type="checkbox" id="chromadb_auto_adjust" />
                 <span>Use % strategy</span>
             </label>
+            <label class="checkbox_label" for="chromadb_chunk_nl" title="Chunk injected documents on newline instead of at set character size." >
+                <input type="checkbox" id="chromadb_chunk_nl" />
+                <span>Chunk on Newlines</span>
+            </label>
             <label class="checkbox_label for="chromadb_query_last_only" title="ChromaDB queries only use the most recent message. (Instead of using all messages still in the context.)">
                 <input type="checkbox" id="chromadb_query_last_only" />
                 <span>Query last message only</span>
@@ -887,6 +900,7 @@ jQuery(async () => {
     $('#chromadb_purge').on('click', onPurgeClick);
     $('#chromadb_export').on('click', onExportClick);
     $('#chromadb_freeze').on('input', onFreezeInput);
+    $('#chromadb_chunk_nl').on('input', onChunkNLInput);
     $('#chromadb_auto_adjust').on('input', onAutoAdjustInput);
     $('#chromadb_query_last_only').on('input', onFullLogQuery);
     $('#chromadb_keep_context_proportion').on('input', onKeepContextProportionInput);

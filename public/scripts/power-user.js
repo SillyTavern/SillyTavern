@@ -121,6 +121,7 @@ let power_user = {
     play_message_sound: false,
     play_sound_unfocused: true,
     auto_save_msg_edits: false,
+    confirm_message_delete: true,
 
     sort_field: 'name',
     sort_order: 'asc',
@@ -658,6 +659,7 @@ function loadPowerUserSettings(settings, data) {
     $(`#pygmalion_formatting option[value=${power_user.pygmalion_formatting}]`).attr("selected", true);
     $(`#send_on_enter option[value=${power_user.send_on_enter}]`).attr("selected", true);
     $("#import_card_tags").prop("checked", power_user.import_card_tags);
+    $("#confirm_message_delete").prop("checked", power_user.confirm_message_delete !== undefined ? !!power_user.confirm_message_delete : true);
     $("#spoiler_free_mode").prop("checked", power_user.spoiler_free_mode);
     $("#collapse-newlines-checkbox").prop("checked", power_user.collapse_newlines);
     $("#pin-examples-checkbox").prop("checked", power_user.pin_examples);
@@ -1722,6 +1724,11 @@ $(document).ready(() => {
 
     $("#import_card_tags").on('input', function () {
         power_user.import_card_tags = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $("#confirm_message_delete").on('input', function () {
+        power_user.confirm_message_delete = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 

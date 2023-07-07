@@ -3784,6 +3784,11 @@ label[for="extensions_autoconnect"] {
     color: lightgray;
 }
 
+/* possible place for WI Entry header styling */
+/* .world_entry_form .inline-drawer-header {
+    background-color: var(--SmartThemeShadowColor);
+} */
+
 #extensions_settings .inline-drawer-toggle.inline-drawer-header,
 #extensions_settings2 .inline-drawer-toggle.inline-drawer-header {
     background-image: linear-gradient(348deg, var(--white30a)2%, var(--grey30a)10%, var(--black70a)95%, var(--SmartThemeQuoteColor)100%);
@@ -4413,6 +4418,9 @@ body.waifuMode .expression-holder {
     bottom: 0;
     filter: drop-shadow(2px 2px 2px #51515199);
     z-index: 2;
+    margin: 0 auto;
+    left: 0;
+    right: 0;
 }
 
 /* movingUI*/
@@ -4789,16 +4797,13 @@ body.waifuMode .zoomed_avatar {
 
     body.waifuMode .expression-holder {
         display: inline;
-        width: unset;
-        max-height: unset;
-        max-width: unset;
-        bottom: unset;
-        left: unset;
-        top: unset;
+
         height: 100vh;
-        width: 100vw;
+        width: max-content;
         margin: 0 auto;
         position: absolute;
+        left: 0;
+        right: 0;
         filter: drop-shadow(2px 2px 2px #51515199);
         z-index: 1;
     }
@@ -5093,4 +5098,3 @@ body.waifuMode .zoomed_avatar {
     text-align: center;
     line-height: 14px;
 }
-
