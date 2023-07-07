@@ -356,6 +356,11 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
         this.saveServiceSettings().then(() => this.render());
     });
 
+    eventSource.on(event_types.CHARACTER_EDITED, (event) => {
+        this.handleCharacterUpdated(event);
+        this.saveServiceSettings().then(() => this.render());
+    })
+
     // Re-render when the group changes.
     eventSource.on('groupSelected', (event) => {
         this.handleGroupSelected(event)
@@ -639,6 +644,12 @@ PromptManagerModule.prototype.handleCharacterSelected = function (event) {
     // ToDo: These should be passed as parameter or attached to the manager as a set of default options.
     // Set default prompts and order for character.
     if (0 === promptList.length) this.addPromptListForCharacter(this.activeCharacter, openAiDefaultPromptList);
+}
+
+PromptManagerModule.prototype.handleCharacterUpdated = function (event) {
+    console.log(event)
+    this.activeCharacter = {id: event.detail.id, ...event.detail.character};
+    console.log(this.activeCharacter);
 }
 
 PromptManagerModule.prototype.handleGroupSelected = function (event) {
