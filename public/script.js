@@ -3745,11 +3745,24 @@ function saveGeneratorToMessage(mes) {
         case 'novel':
             model = settings.model_novel;
             break;
-        case 'claude':
-            model = settings.claude_model;
-            break;
         case 'openai':
-            model = settings.openai_model;
+            switch (settings.chat_completion_source) {
+                case 'scale':
+                    model = settings.openai_model_scale;
+                    break;
+                case 'windowai':
+                    model = settings.windowai_model;
+                    break;
+                case 'claude':
+                    model = settings.claude_model;
+                    break;
+                case 'openai':
+                    model = settings.openai_model;
+                    break;
+                default:
+                    // handle default case
+                    break;
+            }
             break;
         case 'textgenerationwebui':
             model = online_status;
