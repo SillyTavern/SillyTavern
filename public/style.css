@@ -1891,17 +1891,13 @@ grammarly-extension {
     aspect-ratio: 1 / 1;
 }
 
-.menu_button:hover {
+.menu_button:hover, .menu_button.active {
     background-color: var(--white30a);
 }
 
 .height32px {
     height: 32px;
 }
-
-
-
-
 
 #dialogue_del_mes .menu_button {
 
@@ -2340,6 +2336,7 @@ input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
     font-size: calc(var(--mainFontSize) * 0.95);
     color: var(--SmartThemeBodyColor);
     flex: 1;
+    gap: 5px;
     display: flex;
 }
 

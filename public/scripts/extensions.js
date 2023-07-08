@@ -63,6 +63,11 @@ const extension_settings = {
     translate: {},
     objective: {},
     quickReply: {},
+    randomizer: {
+        controls: [],
+        fluctuation: 0.1,
+        enabled: false,
+    },
 };
 
 let modules = [];
