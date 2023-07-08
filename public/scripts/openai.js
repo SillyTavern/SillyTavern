@@ -1209,9 +1209,18 @@ class InvalidCharacterNameError extends Error {
     }
 }
 
-
+/**
+ * Used for creating, managing, and interacting with a specific message object.
+ */
 class Message {
     tokens; identifier; role; content; name;
+
+    /**
+     * @constructor
+     * @param {string} role - The role of the entity creating the message.
+     * @param {string} content - The actual content of the message.
+     * @param {string} identifier - A unique identifier for the message.
+     */
     constructor(role, content, identifier) {
         this.identifier = identifier;
         this.role = role;
@@ -1224,16 +1233,37 @@ class Message {
         }
     }
 
+    /**
+     * Create a new Message instance from a prompt.
+     * @static
+     * @param {Object} prompt - The prompt object.
+     * @returns {Message} A new instance of Message.
+     */
     static fromPrompt(prompt) {
         return new Message(prompt.role, prompt.content, prompt.identifier);
     }
 
+    /**
+     * Returns the number of tokens in the message.
+     * @returns {number} Number of tokens in the message.
+     */
     getTokens() {return this.tokens};
 }
 
+/**
+ * Used for creating, managing, and interacting with a collection of Message instances.
+ *
+ * @class MessageCollection
+ */
 class MessageCollection  {
     collection = [];
     identifier;
+
+    /**
+     * @constructor
+     * @param {string} identifier - A unique identifier for the MessageCollection.
+     * @param {...Object} items - An array of Message or MessageCollection instances to be added to the collection.
+     */
     constructor(identifier, ...items) {
         for(let item of items) {
             if(!(item instanceof Message || item instanceof MessageCollection)) {
@@ -1245,6 +1275,10 @@ class MessageCollection  {
         this.identifier = identifier;
     }
 
+    /**
+     * Get chat in the format of {role, name, content}.
+     * @returns {Array} Array of objects with role, name, and content properties.
+     */
     getChat() {
         return this.collection.reduce((acc, message) => {
             const name = message.name;
@@ -1253,22 +1287,44 @@ class MessageCollection  {
         }, []);
     }
 
+    /**
+     * Method to get the collection of messages.
+     * @returns {Array} The collection of Message instances.
+     */
     getCollection() {
         return this.collection;
     }
 
+    /**
+     * Add a new item to the collection.
+     * @param {Object} item - The Message or MessageCollection instance to be added.
+     */
     addItem(item) {
         this.collection.push(item);
     }
 
+    /**
+     * Get an item from the collection by its identifier.
+     * @param {string} identifier - The identifier of the item to be found.
+     * @returns {Object} The found item, or undefined if no item was found.
+     */
     getItemByIdentifier(identifier) {
         return this.collection.find(item => item.identifier === identifier);
     }
 
+    /**
+     * Check if an item with the given identifier exists in the collection.
+     * @param {string} identifier - The identifier to check.
+     * @returns {boolean} True if an item with the given identifier exists, false otherwise.
+     */
     hasItemWithIdentifier(identifier) {
         return this.collection.some(message => message.identifier === identifier);
     }
 
+    /**
+     * Get the total number of tokens in the collection.
+     * @returns {number} The total number of tokens.
+     */
     getTokens() {
         return this.collection.reduce((tokens, message) => tokens + message.getTokens(), 0);
     }
@@ -1278,19 +1334,39 @@ class MessageCollection  {
  * OpenAI API chat completion representation
  * const map = [{identifier: 'example', message: {role: 'system', content: 'exampleContent'}}, ...];
  *
+ * This class creates a chat context that can be sent to Open AI's api
+ * Includes message management and token budgeting.
+ *
  * @see https://platform.openai.com/docs/guides/gpt/chat-completions-api
+ *
  */
 class ChatCompletion {
+
+    /**
+     * Initializes a new instance of ChatCompletion.
+     * Sets up the initial token budget and a new message collection.
+     */
     constructor() {
         this.tokenBudget = 0;
-        this.messages = new MessageCollection();
+        this.messages = new MessageCollection('root');
         this.loggingEnabled = false;
     }
 
+    /**
+     * Retrieves all messages.
+     *
+     * @returns {MessageCollection} The MessageCollection instance holding all messages.
+     */
     getMessages() {
         return this.messages;
     }
 
+    /**
+     * Calculates and sets the token budget based on context and response.
+     *
+     * @param {number} context - Number of tokens in the context.
+     * @param {number} response - Number of tokens in the response.
+     */
     setTokenBudget(context, response) {
         console.log(`Prompt tokens: ${context}`);
         console.log(`Completion tokens: ${response}`);
@@ -1300,6 +1376,13 @@ class ChatCompletion {
         console.log(`Token budget: ${this.tokenBudget}`);
     }
 
+    /**
+     * Adds a message or message collection to the collection.
+     *
+     * @param {Message|MessageCollection} collection - The message or message collection to add.
+     * @param {number|null} position - The position at which to add the collection.
+     * @returns {ChatCompletion} The current instance for chaining.
+     */
     add(collection, position = null) {
         this.validateMessageCollection(collection);
         this.checkTokenBudget(collection, collection.identifier);
@@ -1317,14 +1400,33 @@ class ChatCompletion {
         return this;
     }
 
+    /**
+     * Inserts a message at the start of the specified collection.
+     *
+     * @param {Message} message - The message to insert.
+     * @param {string} identifier - The identifier of the collection where to insert the message.
+     */
     insertAtStart(message, identifier) {
         this.insert(message, identifier, 'start');
     }
 
+    /**
+     * Inserts a message at the end of the specified collection.
+     *
+     * @param {Message} message - The message to insert.
+     * @param {string} identifier - The identifier of the collection where to insert the message.
+     */
     insertAtEnd(message, identifier) {
         this.insert(message, identifier, 'end');
     }
 
+    /**
+     * Inserts a message at the specified position in the specified collection.
+     *
+     * @param {Message} message - The message to insert.
+     * @param {string} identifier - The identifier of the collection where to insert the message.
+     * @param {string} position - The position at which to insert the message ('start' or 'end').
+     */
     insert(message, identifier, position = 'end') {
         this.validateMessage(message);
         this.checkTokenBudget(message, message.identifier);
@@ -1340,18 +1442,40 @@ class ChatCompletion {
         }
     }
 
+    /**
+     * Checks if the token budget can afford the tokens of the specified message.
+     *
+     * @param {Message} message - The message to check for affordability.
+     * @returns {boolean} True if the budget can afford the message, false otherwise.
+     */
     canAfford(message) {
         return 0 <= this.tokenBudget - message.getTokens();
     }
 
+    /**
+     * Checks if a message with the specified identifier exists in the collection.
+     *
+     * @param {string} identifier - The identifier to check for existence.
+     * @returns {boolean} True if a message with the specified identifier exists, false otherwise.
+     */
     has(identifier) {
         return this.messages.hasItemWithIdentifier(identifier);
     }
 
+    /**
+     * Retrieves the total number of tokens in the collection.
+     *
+     * @returns {number} The total number of tokens.
+     */
     getTotalTokenCount() {
         return this.messages.getTokens();
     }
 
+    /**
+     * Retrieves the chat as a flattened array of messages.
+     *
+     * @returns {Array} The chat messages.
+     */
     getChat() {
         const chat = [];
         for (let item of this.messages.collection) {
@@ -1364,19 +1488,35 @@ class ChatCompletion {
         return chat;
     }
 
+    /**
+     * Logs an output message to the console if logging is enabled.
+     *
+     * @param {string} output - The output message to log.
+     */
     log(output) {
         if (this.loggingEnabled) console.log('[ChatCompletion] ' + output);
     }
 
+    /**
+     * Enables logging of output messages to the console.
+     */
     enableLogging() {
         this.loggingEnabled = true;
     }
 
+    /**
+     * Disables logging of output messages to the console.
+     */
     disableLogging() {
         this.loggingEnabled = false;
     }
 
-    // Move validation to its own method for readability
+    /**
+     * Validates if the given argument is an instance of MessageCollection.
+     * Throws an error if the validation fails.
+     *
+     * @param {MessageCollection} collection - The collection to validate.
+     */
     validateMessageCollection(collection) {
         if (!(collection instanceof MessageCollection)) {
             console.log(collection);
@@ -1384,6 +1524,12 @@ class ChatCompletion {
         }
     }
 
+    /**
+     * Validates if the given argument is an instance of Message.
+     * Throws an error if the validation fails.
+     *
+     * @param {Message} message - The message to validate.
+     */
     validateMessage(message) {
         if (!(message instanceof Message)) {
             console.log(message);
@@ -1391,23 +1537,60 @@ class ChatCompletion {
         }
     }
 
+    /**
+     * Checks if the token budget can afford the tokens of the given message.
+     * Throws an error if the budget can't afford the message.
+     *
+     * @param {Message} message - The message to check.
+     * @param {string} identifier - The identifier of the message.
+     */
     checkTokenBudget(message, identifier) {
         if (!this.canAfford(message)) {
             throw new TokenBudgetExceededError(identifier);
         }
     }
 
+    /**
+     * Reserves the tokens required by the given message from the token budget.
+     *
+     * @param {Message} message - The message whose tokens to reserve.
+     */
     reserveBudget(message) { this.decreaseTokenBudgetBy(message.getTokens()) };
 
+    /**
+     * Frees up the tokens used by the given message from the token budget.
+     *
+     * @param {Message} message - The message whose tokens to free.
+     */
     freeBudget(message) { this.increaseTokenBudgetBy(message.getTokens()) };
 
+    /**
+     * Increases the token budget by the given number of tokens.
+     * This function should be used sparingly, per design the completion should be able to work with its initial budget.
+     *
+     * @param {number} tokens - The number of tokens to increase the budget by.
+     */
     increaseTokenBudgetBy(tokens) {
         this.tokenBudget += tokens;
     }
+
+    /**
+     * Decreases the token budget by the given number of tokens.
+     * This function should be used sparingly, per design the completion should be able to work with its initial budget.
+     *
+     * @param {number} tokens - The number of tokens to decrease the budget by.
+     */
     decreaseTokenBudgetBy(tokens) {
         this.tokenBudget -= tokens;
     }
 
+    /**
+     * Finds the index of a message in the collection by its identifier.
+     * Throws an error if a message with the given identifier is not found.
+     *
+     * @param {string} identifier - The identifier of the message to find.
+     * @returns {number} The index of the message in the collection.
+     */
     findMessageIndex(identifier) {
         const index = this.messages.collection.findIndex(item => item?.identifier === identifier);
         if (index < 0) {
