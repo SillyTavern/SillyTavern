@@ -433,6 +433,7 @@ const system_messages = {
             <ul>
             <li><tt>{​{user}​}</tt> - your current Persona username</li>
             <li><tt>{​{char}​}</tt> - the Character's name</li>
+            <li><tt>{​{input}​}</tt> - the user input</li>
             <li><tt>{​{time}​}</tt> - the current time</li>
             <li><tt>{​{date}​}</tt> - the current date</li>
             <li><tt>{{idle_duration}}</tt> - the time since the last user message was sent</li>
@@ -445,6 +446,7 @@ const system_messages = {
         name: systemUserName,
         force_avatar: system_avatar,
         is_user: false,
+        is_system: true,
         is_name: true,
         mes: [
             '<h3><span id="version_display_welcome">SillyTavern</span><div id="version_display_welcome"></div></h3>',
@@ -1138,7 +1140,20 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
         mes = mes.replaceAll(substituteParams(power_user.user_prompt_bias), "");
     }
 
-    mes = getRegexedString(mes, regex_placement.MD_DISPLAY);
+    if (!isSystem) {
+        let regexPlacement;
+        if (isUser) {
+            regexPlacement = regex_placement.USER_INPUT;
+        } else if (ch_name === "System") {
+            regexPlacement = regex_placement.SYSTEM;
+        } else if (ch_name !== name2) {
+            regexPlacement = regex_placement.SENDAS;
+        } else {
+            regexPlacement = regex_placement.AI_OUTPUT;
+        } 
+
+        mes = getRegexedString(mes, regexPlacement, { isMarkdown: true });
+    }
 
     if (power_user.auto_fix_generated_markdown) {
         mes = fixMarkdown(mes);
@@ -1514,6 +1529,7 @@ function substituteParams(content, _name1, _name2, _original) {
         content = content.replace(/{{original}}/i, _original);
     }
 
+    content = content.replace(/{{input}}/gi, $('#send_textarea').val());
     content = content.replace(/{{user}}/gi, _name1);
     content = content.replace(/{{char}}/gi, _name2);
     content = content.replace(/<USER>/gi, _name1);

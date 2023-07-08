@@ -115,7 +115,7 @@
                     Click slider numbers to input manually.
                 </div>
                 <div class="scrollableInner">
-                    <div class="flex-container">
+                    <div class="flex-container" id="ai_response_configuration">
                         <div id="respective-presets-block" class="width100p">
                             <div id="kobold_api-presets">
                                 <h3><span data-i18n="kobldpresets">Kobold Presets</span>
@@ -178,7 +178,7 @@
                                             <div class="range-block-range">
                                                 <input type="range" id="amount_gen" name="volume" min="16" max="1024" step="1">
                                             </div>
-                                            <div class="range-block-counter">
+                                            <div class="range-block-counter" data-randomization-disabled="true">
                                                 <div contenteditable="true" data-for="amount_gen" id="amount_gen_counter">
                                                     select
                                                 </div>
@@ -194,7 +194,7 @@
                                         <div class="range-block-range">
                                             <input type="range" id="max_context" name="volume" min="512" max="2048" step="1">
                                         </div>
-                                        <div class="range-block-counter">
+                                        <div class="range-block-counter" data-randomization-disabled="true">
                                             <div contenteditable="true" data-for="max_context" id="max_context_counter">
                                                 select
                                             </div>
@@ -535,7 +535,7 @@
                                         <div class="range-block-range">
                                             <input type="range" id="openai_max_context" name="volume" min="512" max="4095" step="1">
                                         </div>
-                                        <div class="range-block-counter">
+                                        <div class="range-block-counter" data-randomization-disabled="true">
                                             <div contenteditable="true" data-for="openai_max_context" id="openai_max_context_counter">
                                                 select
                                             </div>
