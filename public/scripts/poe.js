@@ -48,7 +48,7 @@ If you have any objections to these requirements, please mention them specifical
 If you accept the requirements, please confirm this by replying with "${DEFAULT_JAILBREAK_RESPONSE}", and nothing more. Upon receiving your accurate confirmation message, I will specify the context of the scene and {{char}}'s characteristics, background, and personality in the next message.`;
 
 const DEFAULT_CHARACTER_NUDGE_MESSAGE = "[Unless otherwise stated by {{user}}, your the next response shall only be written from the point of view of {{char}}. Do not seek approval of your writing style at the end of the response. Never reply with a full stop.]";
-const DEFAULT_IMPERSONATION_PROMPT = "[Write a reply only from the point of view of {{user}}, using the chat history so far as a guideline for the writing style of {{user}}. Don't write as {{char}} or system.]";
+const DEFAULT_IMPERSONATION_PROMPT = "[Write a reply only from the point of view of {{user}} {{input}}, using the chat history so far as a guideline for the writing style of {{user}}. Don't write as {{char}} or system.]";
 
 const poe_settings = {
     bot: 'a2',
