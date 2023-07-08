@@ -1216,6 +1216,7 @@ function getMessageFromTemplate({
     bookmarkLink,
     forceAvatar,
     timestamp,
+    extra,
 } = {}) {
     const mes = $('#message_template .mes').clone();
     mes.attr({
@@ -1230,7 +1231,7 @@ function getMessageFromTemplate({
     mes.find('.avatar img').attr('src', avatarImg);
     mes.find('.ch_name .name_text').text(characterName);
     mes.find('.mes_bias').html(bias);
-    mes.find('.timestamp').text(timestamp);
+    mes.find('.timestamp').text(timestamp).attr('title', `${extra.api} - ${extra.model}`);
     mes.find('.mesIDDisplay').text(`#${mesId}`);
     title && mes.attr('title', title);
     timerValue && mes.find('.mes_timer').attr('title', timerTitle).text(timerValue);
@@ -1350,6 +1351,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
         bookmarkLink: bookmarkLink,
         forceAvatar: mes.force_avatar,
         timestamp: timestamp,
+        extra: mes.extra,
         ...formatGenerationTimer(mes.gen_started, mes.gen_finished),
     };
 
@@ -1427,7 +1429,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
         $("#chat").find(`[mesid="${count_view_mes - 1}"]`).find('.mes_text').append(messageText);
         appendImageToMessage(mes, $("#chat").find(`[mesid="${count_view_mes - 1}"]`));
         $("#chat").find(`[mesid="${count_view_mes - 1}"]`).attr('title', title);
-        $("#chat").find(`[mesid="${count_view_mes - 1}"]`).find('.timestamp').text(timestamp);
+        $("#chat").find(`[mesid="${count_view_mes - 1}"]`).find('.timestamp').text(timestamp).attr('title', `${params.extra.api} - ${params.extra.model}`);
 
         if (mes.swipe_id == mes.swipes.length - 1) {
             $("#chat").find(`[mesid="${count_view_mes - 1}"]`).find('.mes_timer').text(params.timerValue);
@@ -6272,6 +6274,7 @@ function swipe_left() {      // when we swipe left..but no generation.
         const this_mes_block_height = this_mes_block[0].scrollHeight;
         chat[chat.length - 1]['mes'] = chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipe_id']];
         chat[chat.length - 1]['send_date'] = chat[chat.length - 1].swipe_info[chat[chat.length - 1]['swipe_id']]?.send_date || chat[chat.length - 1].send_date; //load the last mes box with the latest generation
+        chat[chat.length - 1]['extra'] = chat[chat.length - 1].swipe_info[chat[chat.length - 1]['swipe_id']]?.extra || chat[chat.length - 1].extra;
 
         if (chat[chat.length - 1].extra) {
             // if message has memory attached - remove it to allow regen
@@ -6387,7 +6390,7 @@ const swipe_right = () => {
         chat[chat.length - 1]['swipes'] = [];                         // empty the array
         chat[chat.length - 1]['swipe_info'] = [];
         chat[chat.length - 1]['swipes'][0] = chat[chat.length - 1]['mes'];  //assign swipe array with last message from chat
-        chat[chat.length - 1]['swipe_info'][0] = { 'send_date': chat[chat.length - 1]['send_date'], 'gen_started': chat[chat.length - 1]['gen_started'], 'gen_finished': chat[chat.length - 1]['gen_finished'] }; //assign swipe info array with last message from chat
+        chat[chat.length - 1]['swipe_info'][0] = { 'send_date': chat[chat.length - 1]['send_date'], 'gen_started': chat[chat.length - 1]['gen_started'], 'gen_finished': chat[chat.length - 1]['gen_finished'], 'extra': chat[chat.length - 1]['extra'] }; //assign swipe info array with last message from chat
     }
     chat[chat.length - 1]['swipe_id']++;                                      //make new slot in array
     if (chat[chat.length - 1].extra) {
@@ -6411,6 +6414,7 @@ const swipe_right = () => {
     } else if (parseInt(chat[chat.length - 1]['swipe_id']) < chat[chat.length - 1]['swipes'].length) { //otherwise, if the id is less than the number of swipes
         chat[chat.length - 1]['mes'] = chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipe_id']]; //load the last mes box with the latest generation
         chat[chat.length - 1]['send_date'] = chat[chat.length - 1]?.swipe_info[chat[chat.length - 1]['swipe_id']]?.send_date || chat[chat.length - 1]['send_date']; //update send date
+        chat[chat.length - 1]['extra'] = chat[chat.length - 1].swipe_info[chat[chat.length - 1]['swipe_id']]?.extra || chat[chat.length - 1].extra;
         run_swipe_right = true; //then prepare to do normal right swipe to show next message
     }
 
