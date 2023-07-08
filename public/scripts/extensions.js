@@ -456,6 +456,6 @@ $(document).ready(async function () {
     $("#extensions_connect").on('click', connectClickHandler);
     $("#extensions_autoconnect").on('input', autoConnectInputHandler);
     $("#extensions_details").on('click', showExtensionsDetails);
-    $(document).on('click', '.disable_extension', onDisableExtensionClick);
-    $(document).on('click', '.enable_extension', onEnableExtensionClick);
+    $(document).on('click', '.toggle_disable', onDisableExtensionClick);
+    $(document).on('click', '.toggle_enable', onEnableExtensionClick);
 });

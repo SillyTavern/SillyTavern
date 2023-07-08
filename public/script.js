@@ -2198,10 +2198,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         // Determine token limit
         let this_max_context = getMaxContextSize();
 
-        if (extension_settings.chromadb.n_results !== 0) {
-            await runGenerationInterceptors(coreChat, this_max_context);
-            console.log(`Core/all messages: ${coreChat.length}/${chat.length}`);
-        }
+        // Always run the extension interceptors.
+        await runGenerationInterceptors(coreChat, this_max_context);
+        console.log(`Core/all messages: ${coreChat.length}/${chat.length}`);
 
         let storyString = "";
 
