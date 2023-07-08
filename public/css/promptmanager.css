@@ -250,6 +250,31 @@
     background-color: #000;
 }
 
+#prompt-manager-export-format-popup {
+    display:none;
+}
+
+.prompt-manager-export-format-popup-flex {
+    display: flex;
+    flex-direction: column;
+}
+
+.prompt-manager-export-format-popup-flex .row {
+    display: flex;
+    justify-content: space-between;
+}
+
+.prompt-manager-export-format-popup-flex a,
+.prompt-manager-export-format-popup-flex span {
+    display: flex;
+    margin: auto 0;
+    justify-content: space-between;
+}
+
+#prompt-manager-export-format-popup span {
+    font-size: 16px;
+}
+
 @media screen and (max-width: 412px) {
     #completion_prompt_manager #completion_prompt_manager_list {
         font-size: 1.25em !important;

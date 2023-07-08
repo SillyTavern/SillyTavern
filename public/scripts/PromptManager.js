@@ -316,8 +316,7 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
     }
 
     this.handleImport = () => {
-
-        callPopup('Your prompts will be merged with the import. Imported prompts with the same ID will override existing prompts.', 'confirm',)
+        callPopup('Existing prompts with the same ID will be overridden. Do you want to proceed?', 'confirm',)
             .then(userChoice => {
                 if (false === userChoice) return;
 
@@ -338,8 +337,9 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
                             const data = JSON.parse(fileContent);
                             this.import(data);
                         } catch (err) {
-                            this.log('An error occurred while importing prompts');
-                            this.log(err.toString());
+                            toastr.error('An error occurred while importing prompts. More info available in console.')
+                            console.log('An error occurred while importing prompts');
+                            console.log(err.toString());
                         }
                     };
 
@@ -951,17 +951,26 @@ PromptManagerModule.prototype.renderPromptManager = function () {
                 </select>
                 <a class="menu_button fa-chain fa-solid" title="Attach prompt" data-i18n="Add"></a>
                 <a class="caution menu_button fa-x fa-solid" title="Delete prompt" data-i18n="Delete"></a>
-                <a class="menu_button fa-file-arrow-down fa-solid" id="prompt-manager-export" title="Export this prompt list" data-i18n="Export"></a>
-                <a class="menu_button fa-file-arrow-up fa-solid" id="prompt-manager-import" title="Import a prompt list" data-i18n="Import"></a>
+                ${ this.serviceSettings.prompt_manager_settings.showAdvancedSettings
+                 ? `<a class="menu_button fa-file-arrow-down fa-solid" id="prompt-manager-export" title="Export this prompt list" data-i18n="Export"></a>
+                    <a class="menu_button fa-file-arrow-up fa-solid" id="prompt-manager-import" title="Import a prompt list" data-i18n="Import"></a>` : '' }
                 <a class="menu_button fa-plus-square fa-solid" title="New prompt" data-i18n="New"></a>
             </div>
         `;
 
         const exportPopup = `
             <div id="prompt-manager-export-format-popup" class="list-group">
-                <a class="export-promptmanager-prompts-full list-group-item" data-i18n="Export all">Export all</a>
-                <a class="export-promptmanager-prompts-character list-group-item" data-i18n="Export for character">Export for character</a>
-            </div>
+                <div class="prompt-manager-export-format-popup-flex">
+                    <div class="row">
+                        <a class="export-promptmanager-prompts-full list-group-item" data-i18n="Export all">Export all</a>
+                        <span class="tooltip fa-solid fa-info-circle" title="Export all user prompts to a file"></span>
+                    </div>
+                    <div class="row">
+                        <a class="export-promptmanager-prompts-character list-group-item" data-i18n="Export for character">Export for character</a>
+                        <span class="tooltip fa-solid fa-info-circle" title="Export prompts currently attached to this character, including their order, to a file"></span>
+                    </div>
+                </div>
+           </div>
         `;
 
         const rangeBlockDiv = promptManagerDiv.querySelector('.range-block');
@@ -971,7 +980,7 @@ PromptManagerModule.prototype.renderPromptManager = function () {
         let exportPopper = Popper.createPopper(
             document.getElementById('prompt-manager-export'),
             document.getElementById('prompt-manager-export-format-popup'),
-            { placement: 'bottom'}
+            {placement: 'bottom'}
         );
 
         const showExportSelection = () => {
@@ -984,15 +993,17 @@ PromptManagerModule.prototype.renderPromptManager = function () {
             exportPopper.update();
         }
 
-        rangeBlockDiv.querySelector('.export-promptmanager-prompts-full').addEventListener('click', this.handleFullExport);
-        rangeBlockDiv.querySelector('.export-promptmanager-prompts-character').addEventListener('click', this.handleCharacterExport);
-
         const footerDiv = rangeBlockDiv.querySelector(`.${this.configuration.prefix}prompt_manager_footer`);
         footerDiv.querySelector('.menu_button:nth-child(2)').addEventListener('click', this.handleAppendPrompt);
         footerDiv.querySelector('.caution').addEventListener('click', this.handleDeletePrompt);
         footerDiv.querySelector('.menu_button:last-child').addEventListener('click', this.handleNewPrompt);
-        footerDiv.querySelector('#prompt-manager-export').addEventListener('click', showExportSelection);
-        footerDiv.querySelector('#prompt-manager-import').addEventListener('click', this.handleImport);
+
+        if (true === this.serviceSettings.prompt_manager_settings.showAdvancedSettings) {
+            footerDiv.querySelector('#prompt-manager-import').addEventListener('click', this.handleImport);
+            footerDiv.querySelector('#prompt-manager-export').addEventListener('click', showExportSelection);
+            rangeBlockDiv.querySelector('.export-promptmanager-prompts-full').addEventListener('click', this.handleFullExport);
+            rangeBlockDiv.querySelector('.export-promptmanager-prompts-character').addEventListener('click', this.handleCharacterExport);
+        }
     }
 };
 
