@@ -1159,6 +1159,12 @@ input[type="file"] {
     filter: brightness(150%);
 }
 
+#rm_character_count {
+    padding: 5px;
+    font-size: calc(var(--mainFontSize) * .8);
+    font-weight: bold;
+}
+
 #rm_print_characters_block {
     /* padding: 5px 0; */
     overflow-y: auto;
@@ -1406,6 +1412,10 @@ body.big-avatars .ch_description {
 
 .alignitemsflexstart {
     align-items: flex-start !important;
+}
+
+.alignItemsFlexEnd {
+    align-items: flex-end !important;
 }
 
 .alignSelfStart {
@@ -1885,6 +1895,10 @@ grammarly-extension {
     background-color: var(--white30a);
 }
 
+.height32px {
+    height: 32px;
+}
+
 
 
 
@@ -2127,9 +2141,9 @@ grammarly-extension {
     flex-direction: row;
 }
 
-.world_entry_thin_controls>div {
+/* .world_entry_thin_controls>div {
     flex: 1;
-}
+} */
 
 .world_entry_form_control label h4 {
     margin-bottom: 0;
@@ -2149,7 +2163,7 @@ grammarly-extension {
 }
 
 .delete_entry_button {
-    align-self: center;
+    height: min-content;
 }
 
 .world_entry_form_control.world_entry_form_horizontal {
@@ -2470,6 +2484,7 @@ input[type="range"]::-webkit-slider-thumb {
 
 .mes_buttons .mes_edit,
 .mes_buttons .mes_bookmark,
+.mes_buttons .mes_create_bookmark,
 .extraMesButtonsHint,
 .tagListHint,
 .extraMesButtons div {
@@ -2481,6 +2496,7 @@ input[type="range"]::-webkit-slider-thumb {
 
 .mes_buttons .mes_edit:hover,
 .mes_buttons .mes_bookmark:hover,
+.mes_buttons .mes_create_bookmark:hover,
 .extraMesButtonsHint:hover,
 .tagListHint:hover,
 .extraMesButtons div:hover {
@@ -3757,16 +3773,39 @@ label[for="extensions_autoconnect"] {
 
 .extensions_info p {
     margin-bottom: 0.5em;
+    margin-left: 1em;
 }
 
 .extensions_info .disabled {
     color: lightgray;
 }
 
+.extensions_info .toggle_enable {
+    color: lightgreen;
+}
+.extensions_info .toggle_disable {
+    color: rgb(238, 144, 144);
+}
+
+.extensions_info .extension_enabled {
+    color: green;
+}
+.extensions_info .extension_disabled {
+    color: lightgray;
+}
+.extensions_info .extension_missing {
+    color: gray;
+}
+
 #extensions_list .disabled {
     text-decoration: line-through;
     color: lightgray;
 }
+
+/* possible place for WI Entry header styling */
+/* .world_entry_form .inline-drawer-header {
+    background-color: var(--SmartThemeShadowColor);
+} */
 
 #extensions_settings .inline-drawer-toggle.inline-drawer-header,
 #extensions_settings2 .inline-drawer-toggle.inline-drawer-header {
@@ -3997,6 +4036,16 @@ toolcool-color-picker {
     align-items: center;
 }
 
+.alignitemsstart {
+    align-items: start;
+}
+
+.overflow-hidden {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
 .padding5 {
     padding: 5px;
 }
@@ -4060,6 +4109,10 @@ toolcool-color-picker {
     justify-content: space-around;
 }
 
+.justifyContentFlexStart {
+    justify-content: flex-start;
+}
+
 .justifyContentFlexEnd {
     justify-content: flex-end;
 }
@@ -4085,6 +4138,10 @@ toolcool-color-picker {
 
 .wide100p {
     width: 100%;
+}
+
+.wide50p {
+    width: 50%;
 }
 
 .wide50px {
@@ -4379,6 +4436,9 @@ body.waifuMode .expression-holder {
     bottom: 0;
     filter: drop-shadow(2px 2px 2px #51515199);
     z-index: 2;
+    margin: 0 auto;
+    left: 0;
+    right: 0;
 }
 
 /* movingUI*/
@@ -4659,8 +4719,14 @@ body.waifuMode .zoomed_avatar {
         align-items: start;
         align-content: start;
         overflow-y: auto;
-        overflow-x: hidden;
+        overflow-x: hidden
     }
+
+    .mes_buttons {
+        font-size: calc(var(--mainFontSize)*1.2)
+    }
+
+    ;
 
     .drag-grabber,
     .pull-tab {
@@ -4749,16 +4815,13 @@ body.waifuMode .zoomed_avatar {
 
     body.waifuMode .expression-holder {
         display: inline;
-        width: unset;
-        max-height: unset;
-        max-width: unset;
-        bottom: unset;
-        left: unset;
-        top: unset;
+
         height: 100vh;
-        width: 100vw;
+        width: max-content;
         margin: 0 auto;
         position: absolute;
+        left: 0;
+        right: 0;
         filter: drop-shadow(2px 2px 2px #51515199);
         z-index: 1;
     }

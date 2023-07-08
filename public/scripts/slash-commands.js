@@ -22,6 +22,7 @@ import {
 } from "../script.js";
 import { humanizedDateTime } from "./RossAscends-mods.js";
 import { resetSelectedGroup } from "./group-chats.js";
+import { getRegexedString, regex_placement } from "./extensions/regex/engine.js";
 import { chat_styles, power_user } from "./power-user.js";
 export {
     executeSlashCommands,
@@ -218,14 +219,15 @@ async function sendMessageAs(_, text) {
     }
 
     const parts = text.split('\n');
-
     if (parts.length <= 1) {
         toastr.warning('Both character name and message are required. Separate them with a new line.');
         return;
     }
 
     const name = parts.shift().trim();
-    const mesText = parts.join('\n').trim();
+    let mesText = parts.join('\n').trim();
+    mesText = getRegexedString(mesText, regex_placement.SENDAS, { characterOverride: name });
+
     // Messages that do nothing but set bias will be hidden from the context
     const bias = extractMessageBias(mesText);
     const isSystem = replaceBiasMarkup(mesText).trim().length === 0;
@@ -267,6 +269,8 @@ async function sendNarratorMessage(_, text) {
     if (!text) {
         return;
     }
+
+    text = getRegexedString(text, regex_placement.SYSTEM);
 
     const name = chat_metadata[NARRATOR_NAME_KEY] || NARRATOR_NAME_DEFAULT;
     // Messages that do nothing but set bias will be hidden from the context
@@ -332,6 +336,10 @@ function helpCommandCallback(_, type) {
         case 'hotkeys':
         case '3':
             sendSystemMessage(system_message_types.HOTKEYS);
+            break;
+        case 'macros':
+        case '4':
+            sendSystemMessage(system_message_types.MACROS);
             break;
         default:
             sendSystemMessage(system_message_types.HELP);

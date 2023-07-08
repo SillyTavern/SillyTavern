@@ -1,12 +1,11 @@
 {
-    "display_name": "Author's Note",
+    "display_name": "Regex",
     "loading_order": 1,
     "requires": [],
     "optional": [],
-    "generate_interceptor": "AuthorNote_generateInterceptor",
     "js": "index.js",
     "css": "style.css",
-    "author": "Cohee#1207",
+    "author": "kingbri",
     "version": "1.0.0",
     "homePage": "https://github.com/SillyTavern/SillyTavern"
 }

@@ -268,6 +268,7 @@ function generate_payload(query, variables) {
 async function request_with_retries(method, attempts = 10) {
     const url = '';
     for (let i = 0; i < attempts; i++) {
+        //console.log(method)
         try {
             const response = await method();
             if (response.status === 200) {
@@ -276,8 +277,12 @@ async function request_with_retries(method, attempts = 10) {
             logger.warn(`Server returned a status code of ${response.status} while downloading ${url}. Retrying (${i + 1}/${attempts})...`);
         }
         catch (err) {
-            console.log(err);
+            //console.log(`-------------------ERROR-------------------`)
+            //console.log(logObjectStructure(err, 0, 2));
+            console.log(`Error on request attempt ${i + 1}`)
+            //console.log(`-------------------------------------------`)
         }
+        await delay(100)
     }
     throw new Error(`Failed to download ${url} too many times.`);
 }
@@ -396,7 +401,7 @@ class Client {
         const viewerKeyName = 'viewer'
         const botNameKeyName = 'chatOfBotHandle'
         const defaultBotKeyName = 'defaultBotNickname'
-
+        //console.log('this.session.get(this.home_url)')
         const r = await request_with_retries(() => this.session.get(this.home_url));
         const jsonRegex = /<script id="__NEXT_DATA__" type="application\/json">(.+?)<\/script>/;
         const jsonText = jsonRegex.exec(r.data)[1];
@@ -472,6 +477,7 @@ class Client {
                     }
                     else {
                         logger.info(`Downloading ${bot.displayName}`);
+                        //console.log('this.session.get(url)')
                         r = await request_with_retries(() => this.session.get(url), retries);
                         cached_bots[url] = r;
                     }
@@ -505,6 +511,7 @@ class Client {
 
     async get_channel_data(channel = null) {
         logger.info('Downloading channel data...');
+        //console.log('this.session.get(this.settings_url)')
         const r = await request_with_retries(() => this.session.get(this.settings_url));
         const data = r.data;
 
@@ -527,6 +534,10 @@ class Client {
             const _headers = this.gql_headers;
             _headers['poe-tag-id'] = md5()(scramblePayload + this.formkey + "WpuLMiXEKKE98j56k");
             _headers['poe-formkey'] = this.formkey;
+            //console.log(`------GQL HEADERS-----`)
+            //console.log(this.gql_headers)
+            //console.log(`----------------------`)
+            //console.log('sending query..')
             const r = await request_with_retries(() => this.session.post(this.gql_url, payload, { headers: this.gql_headers }));
             if (!(r?.data?.data)) {
                 logger.warn(`${queryName} returned an error | Retrying (${i + 1}/20)`);

@@ -1,5 +1,5 @@
 import { saveSettings, callPopup, substituteParams, getTokenCount, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type } from "../script.js";
-import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, delay, getCharaFilename } from "./utils.js";
+import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, delay, getCharaFilename, deepClone } from "./utils.js";
 import { getContext } from "./extensions.js";
 import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from "./extensions/floating-prompt/index.js";
 import { registerSlashCommand } from "./slash-commands.js";
@@ -363,6 +363,24 @@ function appendWorldEntry(name, data, entry) {
     keyInput.val(entry.key.join(",")).trigger("input");
     initScrollHeight(keyInput);
 
+    // logic AND/NOT
+    const selectiveLogicDropdown = template.find('select[name="entryLogicType"]');
+    selectiveLogicDropdown.data("uid", entry.uid);
+
+    selectiveLogicDropdown.on("input", function () {
+        const uid = $(this).data("uid");
+        const value = Number($(this).val());
+        console.debug(`logic for ${entry.uid} set to ${value}`)
+        data.entries[uid].selectiveLogic = !isNaN(value) ? value : 0;
+        setOriginalDataValue(data, uid, "selectiveLogic", data.entries[uid].selectiveLogic);
+        saveWorldInfo(name, data);
+
+    });
+    template
+        .find(`select[name="entryLogicType"] option[value=${entry.selectiveLogic}]`)
+        .prop("selected", true)
+        .trigger("input");
+
     // keysecondary
     const keySecondaryInput = template.find('textarea[name="keysecondary"]');
     keySecondaryInput.data("uid", entry.uid);
@@ -408,7 +426,8 @@ function appendWorldEntry(name, data, entry) {
     });
 
     commentInput.val(entry.comment).trigger("input");
-    commentToggle.prop("checked", entry.addMemo).trigger("input");
+    commentToggle.prop("checked", true /* entry.addMemo */).trigger("input");
+    commentToggle.parent().hide()
 
     // content
     const countTokensDebounced = debounce(function (that, value) {
@@ -464,7 +483,9 @@ function appendWorldEntry(name, data, entry) {
         value ? keysecondary.show() : keysecondary.hide();
 
     });
-    selectiveInput.prop("checked", entry.selective).trigger("input");
+    //forced on, ignored if empty
+    selectiveInput.prop("checked", true /* entry.selective */).trigger("input");
+    selectiveInput.parent().hide();
 
 
     // constant
@@ -537,7 +558,7 @@ function appendWorldEntry(name, data, entry) {
         value ? probabilityContainer.show() : probabilityContainer.hide();
 
         if (value && data.entries[uid].probability === null) {
-            data.entries[uid].probability = 50;
+            data.entries[uid].probability = 100;
         }
 
         if (!value) {
@@ -546,14 +567,16 @@ function appendWorldEntry(name, data, entry) {
 
         probabilityInput.val(data.entries[uid].probability).trigger("input");
     });
-    probabilityToggle.prop("checked", entry.useProbability).trigger("input");
+    //forced on, 100% by default
+    probabilityToggle.prop("checked", true /* entry.useProbability */).trigger("input");
+    probabilityToggle.parent().hide();
 
     // position
     if (entry.position === undefined) {
         entry.position = 0;
     }
 
-    const positionInput = template.find('input[name="position"]');
+    const positionInput = template.find('select[name="position"]');
     positionInput.data("uid", entry.uid);
     positionInput.on("input", function () {
         const uid = $(this).data("uid");
@@ -565,9 +588,10 @@ function appendWorldEntry(name, data, entry) {
         setOriginalDataValue(data, uid, "extensions.position", data.entries[uid].position);
         saveWorldInfo(name, data);
     });
+
     template
-        .find(`input[name="position"][value=${entry.position}]`)
-        .prop("checked", true)
+        .find(`select[name="position"] option[value=${entry.position}]`)
+        .prop("selected", true)
         .trigger("input");
 
     // display uid
@@ -628,14 +652,15 @@ function createWorldInfoEntry(name, data) {
         comment: "",
         content: "",
         constant: false,
-        selective: false,
+        selective: true,
+        selectiveLogic: 0,
         addMemo: false,
         order: 100,
         position: 0,
         disable: false,
         excludeRecursion: false,
-        probability: null,
-        useProbability: false,
+        probability: 100,
+        useProbability: true,
     };
     const newUid = getFreeWorldEntryUid(data);
 
@@ -873,7 +898,8 @@ async function getSortedEntries() {
 
         console.debug(`Sorted ${entries.length} world lore entries using strategy ${world_info_character_strategy}`);
 
-        return entries;
+        // Need to deep clone the entries to avoid modifying the cached data
+        return deepClone(entries);
     }
     catch (e) {
         console.error(e);
@@ -915,31 +941,56 @@ async function checkWorldInfo(chat, maxContext) {
             }
 
             if (entry.constant) {
+                entry.content = substituteParams(entry.content)
                 activatedNow.add(entry);
                 continue;
             }
 
-            if (Array.isArray(entry.key) && entry.key.length) {
+            if (Array.isArray(entry.key) && entry.key.length) { //check for keywords existing
                 primary: for (let key of entry.key) {
                     const substituted = substituteParams(key);
+                    console.debug(`${entry.uid}: ${substituted}`)
                     if (substituted && matchKeys(textToScan, substituted.trim())) {
+                        console.debug(`${entry.uid}: got primary match`)
+                        //selective logic begins
                         if (
-                            entry.selective &&
-                            Array.isArray(entry.keysecondary) &&
-                            entry.keysecondary.length
+                            entry.selective && //all entries are selective now
+                            Array.isArray(entry.keysecondary) && //always true
+                            entry.keysecondary.length //ignore empties
                         ) {
+                            console.debug(`uid:${entry.uid}: checking logic: ${entry.selectiveLogic}`)
                             secondary: for (let keysecondary of entry.keysecondary) {
                                 const secondarySubstituted = substituteParams(keysecondary);
-                                if (secondarySubstituted && matchKeys(textToScan, secondarySubstituted.trim())) {
-                                    activatedNow.add(entry);
-                                    break secondary;
+                                console.debug(`uid:${entry.uid}: filtering ${secondarySubstituted}`)
+                                //AND operator
+                                if (entry.selectiveLogic === 0) {
+                                    console.debug('saw AND logic, checking..')
+                                    if (secondarySubstituted && matchKeys(textToScan, secondarySubstituted.trim())) {
+                                        console.log(`activating entry ${entry.uid} with AND found`)
+                                        activatedNow.add(entry);
+                                        break secondary;
+                                    }
+                                }
+                                //NOT operator
+                                if (entry.selectiveLogic === 1) {
+                                    console.debug(`uid ${entry.uid}: checking NOT logic for ${secondarySubstituted}`)
+                                    if (secondarySubstituted && matchKeys(textToScan, secondarySubstituted.trim())) {
+                                        console.debug(`uid ${entry.uid}: canceled; filtered out by ${secondarySubstituted}`)
+                                        break primary;
+                                    } else {
+                                        console.debug(`${entry.uid}: activated; passed NOT filter`)
+                                        activatedNow.add(entry);
+                                        break secondary;
+                                    }
                                 }
                             }
+                            //handle cases where secondary is empty
                         } else {
+                            console.debug(`uid ${entry.uid}: activated without filter logic`)
                             activatedNow.add(entry);
                             break primary;
                         }
-                    }
+                    } else { console.debug('no active entries for logic checks yet') }
                 }
             }
         }
@@ -950,15 +1001,16 @@ async function checkWorldInfo(chat, maxContext) {
         let newContent = "";
         const textToScanTokens = getTokenCount(allActivatedText);
         const probabilityChecksBefore = failedProbabilityChecks.size;
-
+        console.debug(`-- PROBABILITY CHECKS BEGIN --`)
         for (const entry of newEntries) {
             const rollValue = Math.random() * 100;
 
+
             if (entry.useProbability && rollValue > entry.probability) {
-                console.debug(`WI entry ${entry.key} failed probability check, skipping`);
+                console.debug(`WI entry ${entry.uid} ${entry.key} failed probability check, skipping`);
                 failedProbabilityChecks.add(entry);
                 continue;
-            }
+            } else { console.debug(`uid:${entry.uid} passed probability check, inserting to prompt`) }
 
             newContent += `${substituteParams(entry.content)}\n`;
 
