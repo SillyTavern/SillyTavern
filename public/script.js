@@ -1231,7 +1231,8 @@ function getMessageFromTemplate({
     mes.find('.avatar img').attr('src', avatarImg);
     mes.find('.ch_name .name_text').text(characterName);
     mes.find('.mes_bias').html(bias);
-    mes.find('.timestamp').text(timestamp).attr('title', `${extra.api} - ${extra.model}`);
+    console.log('TEst' + extra?.model);
+    mes.find('.timestamp').text(timestamp).attr('title', `${extra?.api ? extra.api + ' - ' : ''}${extra?.model ?? ''}`);
     mes.find('.mesIDDisplay').text(`#${mesId}`);
     title && mes.attr('title', title);
     timerValue && mes.find('.mes_timer').attr('title', timerTitle).text(timerValue);
@@ -1282,6 +1283,8 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     var messageText = mes["mes"];
     const momentDate = timestampToMoment(mes.send_date);
     const timestamp = momentDate.isValid() ? momentDate.format('LL LT') : '';
+    saveGeneratorToMessage(mes);
+
 
     if (mes?.extra?.display_text) {
         messageText = mes.extra.display_text;
@@ -3710,7 +3713,6 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         saveImageToMessage(img, chat[chat.length - 1]);
         addOneMessage(chat[chat.length - 1]);
     }
-    saveGeneratorToMessage(chat[chat.length - 1]);
     const item = chat[chat.length - 1];
     if (item['swipe_info'] === undefined) {
         item['swipe_info'] = [];
