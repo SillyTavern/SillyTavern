@@ -958,47 +958,49 @@ PromptManagerModule.prototype.renderPromptManager = function () {
             </div>
         `;
 
-        const exportPopup = `
-            <div id="prompt-manager-export-format-popup" class="list-group">
-                <div class="prompt-manager-export-format-popup-flex">
-                    <div class="row">
-                        <a class="export-promptmanager-prompts-full list-group-item" data-i18n="Export all">Export all</a>
-                        <span class="tooltip fa-solid fa-info-circle" title="Export all user prompts to a file"></span>
-                    </div>
-                    <div class="row">
-                        <a class="export-promptmanager-prompts-character list-group-item" data-i18n="Export for character">Export for character</a>
-                        <span class="tooltip fa-solid fa-info-circle" title="Export prompts currently attached to this character, including their order, to a file"></span>
-                    </div>
-                </div>
-           </div>
-        `;
-
         const rangeBlockDiv = promptManagerDiv.querySelector('.range-block');
         rangeBlockDiv.insertAdjacentHTML('beforeend', footerHtml);
-        rangeBlockDiv.insertAdjacentHTML('beforeend', exportPopup);
-
-        let exportPopper = Popper.createPopper(
-            document.getElementById('prompt-manager-export'),
-            document.getElementById('prompt-manager-export-format-popup'),
-            {placement: 'bottom'}
-        );
-
-        const showExportSelection = () => {
-            const popup = document.getElementById('prompt-manager-export-format-popup');
-            const show = popup.hasAttribute('data-show');
-
-            if (show) popup.removeAttribute('data-show');
-            else popup.setAttribute('data-show','');
-
-            exportPopper.update();
-        }
 
         const footerDiv = rangeBlockDiv.querySelector(`.${this.configuration.prefix}prompt_manager_footer`);
         footerDiv.querySelector('.menu_button:nth-child(2)').addEventListener('click', this.handleAppendPrompt);
         footerDiv.querySelector('.caution').addEventListener('click', this.handleDeletePrompt);
         footerDiv.querySelector('.menu_button:last-child').addEventListener('click', this.handleNewPrompt);
 
+        // Add prompt export dialogue and options
         if (true === this.serviceSettings.prompt_manager_settings.showAdvancedSettings) {
+            const exportPopup = `
+                <div id="prompt-manager-export-format-popup" class="list-group">
+                    <div class="prompt-manager-export-format-popup-flex">
+                        <div class="row">
+                            <a class="export-promptmanager-prompts-full list-group-item" data-i18n="Export all">Export all</a>
+                            <span class="tooltip fa-solid fa-info-circle" title="Export all user prompts to a file"></span>
+                        </div>
+                        <div class="row">
+                            <a class="export-promptmanager-prompts-character list-group-item" data-i18n="Export for character">Export for character</a>
+                            <span class="tooltip fa-solid fa-info-circle" title="Export prompts currently attached to this character, including their order, to a file"></span>
+                        </div>
+                    </div>
+               </div>
+            `;
+
+            rangeBlockDiv.insertAdjacentHTML('beforeend', exportPopup);
+
+            let exportPopper = Popper.createPopper(
+                document.getElementById('prompt-manager-export'),
+                document.getElementById('prompt-manager-export-format-popup'),
+                {placement: 'bottom'}
+            );
+
+            const showExportSelection = () => {
+                const popup = document.getElementById('prompt-manager-export-format-popup');
+                const show = popup.hasAttribute('data-show');
+
+                if (show) popup.removeAttribute('data-show');
+                else popup.setAttribute('data-show', '');
+
+                exportPopper.update();
+            }
+
             footerDiv.querySelector('#prompt-manager-import').addEventListener('click', this.handleImport);
             footerDiv.querySelector('#prompt-manager-export').addEventListener('click', showExportSelection);
             rangeBlockDiv.querySelector('.export-promptmanager-prompts-full').addEventListener('click', this.handleFullExport);
