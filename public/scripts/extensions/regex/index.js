@@ -48,12 +48,10 @@ async function saveRegexScript(regexScript, existingScriptIndex) {
     saveSettingsDebounced();
     await loadRegexScripts();
 
-    // Markdown is global, so reload the chat.
-    if (regexScript.placement.includes(regex_placement.MD_DISPLAY)) {
-        const currentChatId = getCurrentChatId();
-        if (currentChatId !== undefined && currentChatId !== null) {
-            await reloadCurrentChat();
-        }
+    // Reload the current chat to undo previous markdown
+    const currentChatId = getCurrentChatId();
+    if (currentChatId !== undefined && currentChatId !== null) {
+        await reloadCurrentChat();
     }
 }
 
@@ -114,6 +112,9 @@ async function onRegexEditorOpenClick(existingId) {
                 .find(`input[name="disabled"]`)
                 .prop("checked", existingScript.disabled ?? false);
             editorHtml
+                .find(`input[name="only_format_display"]`)
+                .prop("checked", existingScript.markdownOnly ?? false);
+            editorHtml
                 .find(`input[name="run_on_edit"]`)
                 .prop("checked", existingScript.runOnEdit ?? false);
             editorHtml
@@ -130,6 +131,10 @@ async function onRegexEditorOpenClick(existingId) {
             });
         }
     } else {
+        editorHtml
+            .find(`input[name="only_format_display"]`)
+            .prop("checked", true);
+
         editorHtml
             .find(`input[name="run_on_edit"]`)
             .prop("checked", true);
@@ -157,6 +162,10 @@ async function onRegexEditorOpenClick(existingId) {
                 editorHtml
                     .find(`input[name="disabled"]`)
                     .prop("checked"),
+            markdownOnly:
+                editorHtml
+                    .find(`input[name="only_format_display"]`)
+                    .prop("checked"),
             runOnEdit:
                 editorHtml
                     .find(`input[name="run_on_edit"]`)
@@ -176,9 +185,36 @@ async function onRegexEditorOpenClick(existingId) {
     }
 }
 
+// Common settings migration function. Some parts will eventually be removed
+// TODO: Maybe migrate placement to strings?
+function migrateSettings() {
+    let performSave = false;
+
+    // Current: If MD Display is present in placement, remove it and add new placements/MD option
+    extension_settings.regex.forEach((script) => {
+        if (script.placement.includes(regex_placement.MD_DISPLAY)) {
+            script.placement = script.placement.length === 1 ?
+                Object.values(regex_placement).filter((e) => e !== regex_placement.MD_DISPLAY) :
+                script.placement = script.placement.filter((e) => e !== regex_placement.MD_DISPLAY);
+
+            script.markdownOnly = true
+
+            performSave = true;
+        }
+    });
+
+    if (performSave) {
+        saveSettingsDebounced();
+    }
+}
+
 // Workaround for loading in sequence with other extensions
 // NOTE: Always puts extension at the top of the list, but this is fine since it's static
 jQuery(async () => {
+    if (extension_settings.regex) {
+        migrateSettings();
+    }
+
     // Manually disable the extension since static imports auto-import the JS file
     if (extension_settings.disabledExtensions.includes("regex")) {
         return;

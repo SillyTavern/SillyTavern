@@ -7,6 +7,7 @@ export {
 }
 
 const regex_placement = {
+    // MD Display is deprecated. Do not use.
     MD_DISPLAY: 0,
     USER_INPUT: 1,
     AI_OUTPUT: 2,
@@ -38,13 +39,17 @@ function regexFromString(input) {
 }
 
 // Parent function to fetch a regexed version of a raw string
-function getRegexedString(rawString, placement, { characterOverride } = {}) {
+function getRegexedString(rawString, placement, { characterOverride, isMarkdown } = {}) {
     let finalString = rawString;
     if (extension_settings.disabledExtensions.includes("regex") || !rawString || placement === undefined) {
         return finalString;
     }
 
     extension_settings.regex.forEach((script) => {
+        if (script.markdownOnly && !isMarkdown) {
+            return;
+        }
+
         if (script.placement.includes(placement)) {
             finalString = runRegexScript(script, finalString, { characterOverride });
         }
