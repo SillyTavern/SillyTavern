@@ -12,7 +12,7 @@ const registerPromptManagerMigration = () => {
             if (settings.main_prompt) {
                 settings.prompts.push({
                     identifier: null, // Will be assigned by prompt manager during sanitization
-                    name: 'Legacy Main Prompt',
+                    name: 'My Main Prompt',
                     role: 'system',
                     content: settings.main_prompt,
                     system_prompt: false,
@@ -24,7 +24,7 @@ const registerPromptManagerMigration = () => {
             if (settings.nsfw_prompt) {
                 settings.prompts.push({
                     identifier: null,
-                    name: 'Legacy NSFW Prompt',
+                    name: 'My NSFW Prompt',
                     role: 'system',
                     content: settings.nsfw_prompt,
                     system_prompt: false,
@@ -36,7 +36,7 @@ const registerPromptManagerMigration = () => {
             if (settings.jailbreak_prompt) {
                 settings.prompts.push({
                     identifier: null,
-                    name: 'Legacy Jailbreak',
+                    name: 'My Jailbreak',
                     role: 'system',
                     content: settings.jailbreak_prompt,
                     system_prompt: false,
@@ -1100,7 +1100,8 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
         listItemHtml += `
             <li class="${prefix}prompt_manager_prompt ${draggableClass} ${enabledClass} ${markerClass}" draggable="${draggableEnabled}" data-pm-identifier="${prompt.identifier}">
                 <span class="${prefix}prompt_manager_prompt_name" data-pm-name="${prompt.name}">
-                    ${prompt.marker ? '<span class="fa-solid fa-thumb-tack"></span>' : ''}
+                    ${prompt.marker ? '<span class="fa-solid fa-thumb-tack" title="Prompt Marker"></span>' : ''}
+                    ${!prompt.marker && prompt.system_prompt ? '<span class="fa-solid fa-globe" title="Global Prompt"></span>' : ''}
                     ${prompt.name}
                 </span>
                 ${prompt.marker
