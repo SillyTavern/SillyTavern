@@ -728,6 +728,8 @@ var css_send_form_display = $("<div id=send_form></div>").css("display");
 let generate_loop_counter = 0;
 const MAX_GENERATION_LOOPS = 5;
 
+var kobold_horde_model = "";
+
 let token;
 
 var PromptArrayItemForRawPromptDisplay;
@@ -2740,6 +2742,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     //const getData = await response.json();
                     let getMessage = extractMessageFromData(data);
                     let title = extractTitleFromData(data);
+                    kobold_horde_model = title;
 
                     //Pygmalion run again
                     // to make it continue generating so long as it's under max_amount and hasn't signaled
@@ -3706,6 +3709,7 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         saveImageToMessage(img, chat[chat.length - 1]);
         addOneMessage(chat[chat.length - 1]);
     }
+    saveGeneratorToMessage(chat[chat.length - 1]);
     const item = chat[chat.length - 1];
     if (item['swipe_info'] === undefined) {
         item['swipe_info'] = [];
@@ -3730,6 +3734,40 @@ function saveImageToMessage(img, mes) {
         mes.extra.image = img.image;
         mes.extra.title = img.title;
     }
+}
+
+function saveGeneratorToMessage(mes) {
+    let model = '';
+
+    switch (main_api) {
+        case 'kobold':
+            model = online_status;
+            break;
+        case 'novel':
+            model = settings.model_novel;
+            break;
+        case 'claude':
+            model = settings.claude_model;
+            break;
+        case 'openai':
+            model = settings.openai_model;
+            break;
+        case 'textgenerationwebui':
+            model = online_status;
+            break;
+        case 'koboldhorde':
+            model = kobold_horde_model;
+            break;
+        case 'poe':
+            model = settings.poe_model;
+            break;
+    }
+
+    if (mes && typeof mes.extra !== 'object') {
+        mes.extra = {};
+    }
+    mes.extra.api = main_api;
+    mes.extra.model = model;
 }
 
 function extractImageFromMessage(getMessage) {
