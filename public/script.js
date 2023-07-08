@@ -2200,10 +2200,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         // Determine token limit
         let this_max_context = getMaxContextSize();
 
-        if (extension_settings.chromadb.n_results !== 0) {
-            await runGenerationInterceptors(coreChat, this_max_context);
-            console.log(`Core/all messages: ${coreChat.length}/${chat.length}`);
-        }
+        // Always run the extension interceptors.
+        await runGenerationInterceptors(coreChat, this_max_context);
+        console.log(`Core/all messages: ${coreChat.length}/${chat.length}`);
 
         let storyString = "";
 
@@ -6701,6 +6700,28 @@ function importCharacter(file) {
     });
 }
 
+async function importFromURL(items, files) {
+    for (const item of items) {
+        if (item.type === 'text/uri-list') {
+            const uriList = await new Promise((resolve) => {
+                item.getAsString((uriList) => { resolve(uriList); });
+            });
+            const uris = uriList.split('\n').filter(uri => uri.trim() !== '');
+            try {
+                for (const uri of uris) {
+                    const request = await fetch(uri);
+                    const data = await request.blob();
+                    const fileName = request.headers.get('Content-Disposition')?.split('filename=')[1]?.replace(/"/g, '') || uri.split('/').pop() || 'file.png';
+                    const file = new File([data], fileName, { type: data.type });
+                    files.push(file);
+                }
+            } catch (error) {
+                console.error('Failed to import from URL', error);
+            }
+        }
+    }
+}
+
 const isPwaMode = window.navigator.standalone;
 if (isPwaMode) { $("body").addClass('PWA') }
 
@@ -8447,12 +8468,13 @@ $(document).ready(function () {
         $dropzone.removeClass('dragover');
     });
 
-    $dropzone.on('drop', (event) => {
+    $dropzone.on('drop', async (event) => {
         event.preventDefault();
         event.stopPropagation();
         $dropzone.removeClass('dragover');
 
-        const files = event.originalEvent.dataTransfer.files;
+        const files = Array.from(event.originalEvent.dataTransfer.files);
+        await importFromURL(event.originalEvent.dataTransfer.items, files);
         processDroppedFiles(files);
     });
 
