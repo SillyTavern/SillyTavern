@@ -89,6 +89,8 @@
 }
 
 #completion_prompt_manager_popup #completion_prompt_manager_popup_edit,
+#completion_prompt_manager_popup #completion_prompt_manager_popup_chathistory_edit,
+#completion_prompt_manager_popup #completion_prompt_manager_popup_dialogueexamples_edit,
 #completion_prompt_manager_popup #completion_prompt_manager_popup_inspect {
     display: none;
     padding: 0.5em;
@@ -124,17 +126,17 @@
     padding: 0.5em;
 }
 
-#completion_prompt_manager_popup .completion_prompt_manager_popup_entry .completion_prompt_manager_popup_entry_form_control {
+.completion_prompt_manager_popup_entry_form_control {
     margin-top:1em;
 }
 
-#completion_prompt_manager_popup #completion_prompt_manager_popup_entry_form_footer #completion_prompt_manager_popup_entry_form_reset {
+#completion_prompt_manager_popup .completion_prompt_manager_popup_entry_form_footer #completion_prompt_manager_popup_entry_form_reset {
     color: rgb(220 173 16);
 }
 
-#completion_prompt_manager_popup #completion_prompt_manager_popup_entry_form_footer #completion_prompt_manager_popup_entry_form_close,
-#completion_prompt_manager_popup #completion_prompt_manager_popup_entry_form_footer #completion_prompt_manager_popup_entry_form_reset,
-#completion_prompt_manager_popup #completion_prompt_manager_popup_entry_form_footer #completion_prompt_manager_popup_entry_form_save {
+#completion_prompt_manager_popup .completion_prompt_manager_popup_entry_form_footer #completion_prompt_manager_popup_entry_form_close,
+#completion_prompt_manager_popup .completion_prompt_manager_popup_entry_form_footer #completion_prompt_manager_popup_entry_form_reset,
+#completion_prompt_manager_popup .completion_prompt_manager_popup_entry_form_footer #completion_prompt_manager_popup_entry_form_save {
     font-size: 1.25em;
     padding: 0.5em;
 }
@@ -143,7 +145,7 @@
     min-height: 200px;
 }
 
-#completion_prompt_manager_popup .completion_prompt_manager_popup_entry #completion_prompt_manager_popup_entry_form_footer {
+#completion_prompt_manager_popup .completion_prompt_manager_popup_entry .completion_prompt_manager_popup_entry_form_footer {
     display: flex;
     justify-content: space-between;
     margin-top: 1em;
