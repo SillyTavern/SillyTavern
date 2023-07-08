@@ -397,7 +397,6 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
     });
 
     document.getElementById('openai_max_tokens').addEventListener('change', (event) => {
-        this.serviceSettings.openai_max_tokens = event.target.value;
         if (this.activeCharacter) this.render();
     });
 
