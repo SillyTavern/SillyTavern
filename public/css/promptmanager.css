@@ -39,6 +39,10 @@
     padding: 0 0.5em;
     color: var(--white50a);
 }
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt_name .fa-globe {
+    padding: 0 0.4em;
+    color: var(--white50a);
+}
 
 #completion_prompt_manager #completion_prompt_manager_list li.completion_prompt_manager_list_head .prompt_manager_prompt_tokens,
 #completion_prompt_manager #completion_prompt_manager_list li.completion_prompt_manager_prompt .prompt_manager_prompt_tokens {
