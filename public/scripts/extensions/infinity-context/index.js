@@ -622,11 +622,11 @@ window.chromadb_interceptGeneration = async (chat, maxContext) => {
             queryBlob = lastMessage.mes;
         }
         else {
-            for (let msg of chat) {
+            for (let msg of chat.slice(-extension_settings.chromadb.keep_context)) {
                 queryBlob += `${msg.mes}\n`
             }
         }
-        console.log("ChromDB Query text:", queryBlob);
+        console.log("CHROMADB: Query text:", queryBlob);
 
         if (recallStrategy === 'multichat') {
             console.log("Utilizing multichat")
@@ -642,7 +642,7 @@ window.chromadb_interceptGeneration = async (chat, maxContext) => {
         else {
             queriedMessages.sort((a, b) => b.distance - a.distance);
         }
-        console.log(queriedMessages);
+        console.debug("CHROMADB: Query results: %o", queriedMessages);
 
 
         let newChat = [];
@@ -702,6 +702,7 @@ window.chromadb_interceptGeneration = async (chat, maxContext) => {
             }
 
             const promptBlob = wrapperMsg.replace('{{memories}}', allMemoryBlob);
+            console.debug("CHROMADB: prompt blob: %o", promptBlob);
             context.setExtensionPrompt(MODULE_NAME, promptBlob, extension_prompt_types.AFTER_SCENARIO);
         }
         if (selectedStrategy === 'custom') {
