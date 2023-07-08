@@ -91,19 +91,24 @@
 #completion_prompt_manager_popup #completion_prompt_manager_popup_edit,
 #completion_prompt_manager_popup #completion_prompt_manager_popup_inspect {
     display: none;
+    padding: 0.5em;
 }
 
 #completion_prompt_manager_popup .completion_prompt_manager_popup_entry {
+    padding: 1em;
     margin-top:2em;
+}
+
+#completion_prompt_manager_popup #completion_prompt_manager_popup_inspect .completion_prompt_manager_popup_entry {
+    padding: 1em;
 }
 
 #completion_prompt_manager_popup #completion_prompt_manager_popup_entry_form_inspect_list {
     margin-top: 1em;
-    padding: 1em;
 }
 
 #completion_prompt_manager_popup .completion_prompt_manager_prompt {
-    margin: 1em;
+    margin: 1em 0;
     padding: 0.5em;
     border: 1px solid var(--white30a);
 }
