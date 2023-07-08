@@ -392,9 +392,12 @@ function formatWorldInfo(value) {
  * @param {ChatCompletion} chatCompletion - An instance of ChatCompletion class that will be populated with the prompts.
  */
 function populateChatHistory(prompts, chatCompletion) {
+    const newChat = promptManager.getSettings('utilityPrompts').newChat;
+    const newGroupChat = promptManager.getSettings('utilityPrompts').newGroupChat.replace('{{names}}', '${names}');
+
     // Chat History
     chatCompletion.add(new MessageCollection('chatHistory'), prompts.index('chatHistory'));
-    const mainChat = selected_group ? '[Start a new group chat. Group members: ${names}]' : '[Start a new Chat]';
+    const mainChat = selected_group ? newGroupChat : newChat;
     const mainChatMessage = new Message('system', mainChat, 'newMainChat');
 
     chatCompletion.reserveBudget(mainChatMessage);
@@ -409,7 +412,7 @@ function populateChatHistory(prompts, chatCompletion) {
     [...openai_msgs].reverse().every((chatPrompt, index) => {
         // We do not want to mutate the prompt
         const prompt = new Prompt(chatPrompt);
-        prompt.identifier = 'chatHistory-' + index;
+        prompt.identifier = `chatHistory-${openai_msgs.length - index}`;
         const chatMessage = Message.fromPrompt(promptManager.preparePrompt(prompt));
 
         if (true === promptManager.serviceSettings.names_in_completion && prompt.name)
@@ -434,8 +437,9 @@ function populateChatHistory(prompts, chatCompletion) {
 function populateDialogueExamples(prompts, chatCompletion) {
     chatCompletion.add( new MessageCollection('dialogueExamples'), prompts.index('dialogueExamples'));
     if (openai_msgs_example.length) {
+        const newExampleChat = promptManager.getSettings('utilityPrompts').newExampleChat;
         // Insert chat message examples if there's enough budget if there is enough budget left for at least one example.
-        const dialogueExampleChat = new Message('system', '[Start a new Chat]', 'newChat');
+        const dialogueExampleChat = new Message('system', newExampleChat, 'newChat');
         const prompt = openai_msgs_example[0];
         const dialogueExample = new Message(prompt[0]?.role || 'system', prompt[0]?.content || '', 'dialogueExampleTest');
 
@@ -1309,7 +1313,7 @@ class MessageCollection  {
      * @returns {Object} The found item, or undefined if no item was found.
      */
     getItemByIdentifier(identifier) {
-        return this.collection.find(item => item.identifier === identifier);
+        return this.collection.find(item => item?.identifier === identifier);
     }
 
     /**

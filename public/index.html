@@ -3398,6 +3398,39 @@
         </div>
     </div>
     <div id="completion_prompt_manager_popup" style="display:none;">
+        <div id="completion_prompt_manager_popup_chathistory_edit">
+            <h3>Edit</h3>
+            <div class="completion_prompt_manager_popup_entry_form_control">
+                <label for="completion_prompt_manager_popup_entry_form_name">
+                    <span>New Chat</span>
+                </label>
+                <div class="text_muted">A prompt telling the model that a new chat has started.</div>
+                <input id="completion_prompt_manager_popup_entry_chathistory_newchat" class="text_pole" type="text" name="newchat" />
+            </div>
+            <div class="completion_prompt_manager_popup_entry_form_control">
+                <label for="completion_prompt_manager_popup_entry_form_name">
+                    <span>New Group Chat</span>
+                </label>
+                <div class="text_muted">A prompt telling the model that a new group chat has started.</div>
+                <input id="completion_prompt_manager_popup_entry_chathistory_newgroupchat" class="text_pole" type="text" name="newgroupchat" />
+            </div>
+            <div class="completion_prompt_manager_popup_entry_form_footer" >
+                <a id="completion_prompt_manager_popup_entry_form_chathistory_save" title="save" class="fa-solid fa-save menu_button"></a>
+            </div>
+        </div>
+        <div id="completion_prompt_manager_popup_dialogueexamples_edit">
+            <h3>Edit</h3>
+            <div class="completion_prompt_manager_popup_entry_form_control">
+                <label for="completion_prompt_manager_popup_entry_form_name">
+                    <span>New Example Chat</span>
+                </label>
+                <div class="text_muted">A prompt telling the model that a new example chat has started.</div>
+                <input id="completion_prompt_manager_popup_entry_dialogueexamples_newchat" class="text_pole" type="text" name="newchat" />
+            </div>
+            <div class="completion_prompt_manager_popup_entry_form_footer" >
+                <a id="completion_prompt_manager_popup_entry_form_dialogueexamples_save" title="save" class="fa-solid fa-save menu_button"></a>
+            </div>
+        </div>
         <div id="completion_prompt_manager_popup_inspect">
             <h3>Inspect</h3>
             <div class="completion_prompt_manager_popup_entry">
@@ -3445,7 +3478,7 @@
                         <textarea id="completion_prompt_manager_popup_entry_form_prompt" class="text_pole" name="prompt">
                     </textarea>
                     </div>
-                    <div id="completion_prompt_manager_popup_entry_form_footer" >
+                    <div class="completion_prompt_manager_popup_entry_form_footer" >
                         <a id="completion_prompt_manager_popup_entry_form_close" title="close" class="fa-solid fa-close menu_button"></a>
                         <a id="completion_prompt_manager_popup_entry_form_reset" title="reset" class="fa-solid fa-undo menu_button"></a>
                         <a id="completion_prompt_manager_popup_entry_form_save" title="save" class="fa-solid fa-save menu_button" data-pm-prompt=""></a>
