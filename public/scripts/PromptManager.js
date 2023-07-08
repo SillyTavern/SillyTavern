@@ -1042,7 +1042,7 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
 
         const listEntry = this.getPromptListEntry(this.activeCharacter, prompt.identifier);
         const enabledClass = listEntry.enabled ? '' : `${prefix}prompt_manager_prompt_disabled`;
-        const draggableClass = draggableEnabled ? 'draggable' : prompt.marker ? 'droppable' : '';
+        const draggableClass = draggableEnabled ? 'draggable' : 'droppable';
         const markerClass = prompt.marker ? `${prefix}prompt_manager_marker` : '';
         const tokens = this.tokenHandler?.getCounts()[prompt.identifier] ?? 0;
 
