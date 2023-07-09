@@ -4207,7 +4207,6 @@ input.extension_missing[type="checkbox"] {
     margin: 0;
     left: 0;
     right: auto;
-    padding: 5px;
     border-radius: 10px;
     box-shadow: none;
     overflow: hidden;
@@ -4217,6 +4216,10 @@ input.extension_missing[type="checkbox"] {
 .scrollableInner {
     overflow-x: hidden;
     height: calc(100% - 30px);
+}
+
+.fillLeft .scrollableInner {
+   padding: 0.5em 1em 0.5em 0.5em
 }
 
 .width100p {
