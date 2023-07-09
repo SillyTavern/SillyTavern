@@ -133,10 +133,6 @@ function PromptManagerModule() {
     this.handleToggle = () => { };
     this.handleInspect = () => { };
     this.handleEdit = () => { };
-    this.handleChatHistoryEdit = () => {};
-    this.handleChatHistorySave = () => {};
-    this.handleDialogueExamplesEdit = () => {};
-    this.handleDialogueExamplesSave = () => {};
     this.handleDetach = () => { };
     this.handleSavePrompt = () => { };
     this.handleResetPrompt = () => { };
@@ -175,7 +171,8 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
 
     // Open edit form and load selected prompt
     this.handleEdit = (event) => {
-        this.clearForms();
+        this.clearEditForm();
+        this.clearInspectForm();
 
         const promptID = event.target.closest('.' + this.configuration.prefix + 'prompt_manager_prompt').dataset.pmIdentifier;
         const prompt = this.getPromptById(promptID);
@@ -185,51 +182,10 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
         this.showPopup();
     }
 
-    this.handleChatHistoryEdit = (event) => {
-        this.clearForms();
-
-        const newChatInput = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_chathistory_newchat');
-        newChatInput.value = this.getSettings('utilityPrompts').newChat;
-
-        const newGroupChatInput = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_chathistory_newgroupchat');
-        newGroupChatInput.value = this.getSettings('utilityPrompts').newGroupChat;
-
-        this.showPopup('chathistory_edit');
-    }
-
-    this.handleChatHistorySave = () => {
-        const newChatInput = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_chathistory_newchat');
-        this.serviceSettings.prompt_manager_settings.utilityPrompts.newChat = newChatInput.value;
-
-        const newGroupChatInput = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_chathistory_newgroupchat');
-        this.serviceSettings.prompt_manager_settings.utilityPrompts.newGroupChat = newGroupChatInput.value;
-
-        this.hidePopup();
-        this.clearChatHistoryForm();
-        this.saveServiceSettings().then(() => this.render());
-    }
-
-    this.handleDialogueExamplesEdit = (event) => {
-        this.clearForms();
-
-        const newChatInput = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_dialogueexamples_newchat');
-        newChatInput.value = this.serviceSettings.prompt_manager_settings.utilityPrompts.newExampleChat;
-
-        this.showPopup('dialogueexamples_edit');
-    }
-
-    this.handleDialogueExamplesSave = () => {
-        const newChatInput = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_dialogueexamples_newchat');
-        this.serviceSettings.prompt_manager_settings.utilityPrompts.newExampleChat = newChatInput.value;
-
-        this.hidePopup();
-        this.clearDialogueExamplesForm();
-        this.saveServiceSettings().then(() => this.render());
-    }
-
     // Open edit form and load selected prompt
     this.handleInspect = (event) => {
-        this.clearForms();;
+        this.clearEditForm();
+        this.clearInspectForm();
 
         const promptID = event.target.closest('.' + this.configuration.prefix + 'prompt_manager_prompt').dataset.pmIdentifier;
         if (true === this.messages.hasItemWithIdentifier(promptID)) {
@@ -450,14 +406,12 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
 
     const closeAndClearPopup = () =>  {
         this.hidePopup();
-        this.clearForms();
+        this.clearEditForm();
+        this.clearInspectForm();
     };
 
     document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_close').addEventListener('click', closeAndClearPopup);
     document.getElementById(this.configuration.prefix + 'prompt_manager_popup_close_button').addEventListener('click', closeAndClearPopup);
-
-    document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_chathistory_save').addEventListener('click', this.handleChatHistorySave);
-    document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_dialogueexamples_save').addEventListener('click', this.handleDialogueExamplesSave);
 
     // Re-render prompt manager on openai preset change
     eventSource.on(event_types.OAI_PRESET_CHANGED, settings => this.render());
@@ -890,13 +844,6 @@ PromptManagerModule.prototype.loadMessagesIntoInspectForm = function (messages) 
     });
 }
 
-PromptManagerModule.prototype.clearForms = function () {
-    this.clearEditForm();
-    this.clearInspectForm();
-    this.clearChatHistoryForm();
-    this.clearDialogueExamplesForm();
-}
-
 /**
  * Clears all input fields in the edit form.
  */
@@ -920,16 +867,6 @@ PromptManagerModule.prototype.clearInspectForm = function() {
     inspectArea.style.display = 'none';
     const messageList = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_inspect_list');
     messageList.innerHTML = '';
-}
-
-PromptManagerModule.prototype.clearChatHistoryForm = function() {
-    const chatHistoryArea = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_chathistory_edit');
-    chatHistoryArea.style.display = 'none';
-}
-
-PromptManagerModule.prototype.clearDialogueExamplesForm = function() {
-    const dialogueExamples = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_dialogueexamples_edit');
-    dialogueExamples.style.display = 'none';
 }
 
 /**
@@ -1166,16 +1103,9 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
 
         let editSpanHtml = '';
         if (this.isPromptEditAllowed(prompt)) {
-            switch (prompt.identifier) {
-                case 'chatHistory':
-                    editSpanHtml = `<span title="edit" class="prompt-manager-edit-chathistory-action fa-solid fa-pencil"></span>`;
-                    break;
-                case 'dialogueExamples':
-                    editSpanHtml = `<span title="edit" class="prompt-manager-edit-dialogueexamples-action fa-solid fa-pencil"></span>`;
-                    break;
-                default:
-                    editSpanHtml = `<span title="edit" class="prompt-manager-edit-action fa-solid fa-pencil"></span>`;
-            }
+            editSpanHtml = `
+                <span title="edit" class="prompt-manager-edit-action fa-solid fa-pencil"></span>
+            `;
         }
 
         let inspectSpanHtml = '';
@@ -1206,7 +1136,6 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
                       <span class="prompt_manager_prompt_controls">
                         <span></span>
                         ${inspectSpanHtml}
-                        ${advancedEnabled ? editSpanHtml: ''}
                       </span>
                    </span>`
                 : `<span>
@@ -1235,14 +1164,6 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
 
     Array.from(promptManagerList.getElementsByClassName('prompt-manager-edit-action')).forEach(el => {
         el.addEventListener('click', this.handleEdit);
-    });
-
-    Array.from(promptManagerList.getElementsByClassName('prompt-manager-edit-chathistory-action')).forEach(el => {
-        el.addEventListener('click', this.handleChatHistoryEdit);
-    });
-
-    Array.from(promptManagerList.getElementsByClassName('prompt-manager-edit-dialogueexamples-action')).forEach(el => {
-        el.addEventListener('click', this.handleDialogueExamplesEdit);
     });
 
     Array.from(promptManagerList.querySelectorAll('.prompt-manager-toggle-action')).forEach(el => {
