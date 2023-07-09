@@ -399,14 +399,30 @@ function formatWorldInfo(value) {
  *
  * @param {PromptCollection} prompts - Map object containing all prompts where the key is the prompt identifier and the value is the prompt object.
  * @param {ChatCompletion} chatCompletion - An instance of ChatCompletion class that will be populated with the prompts.
+ * @param type
  */
-function populateChatHistory(prompts, chatCompletion) {
+function populateChatHistory(prompts, chatCompletion, type = null, cyclePrompt = null) {
     // Chat History
     chatCompletion.add(new MessageCollection('chatHistory'), prompts.index('chatHistory'));
-    const mainChat = selected_group ? oai_settings.new_group_chat_prompt : oai_settings.new_chat_prompt;
-    const mainChatMessage = new Message('system', mainChat, 'newMainChat');
 
-    chatCompletion.reserveBudget(mainChatMessage);
+    // Reserve budget for new chat message
+    const newChat = selected_group ? oai_settings.new_group_chat_prompt : oai_settings.new_chat_prompt;
+    const newChatMessage = new Message('system', newChat, 'newMainChat');
+    chatCompletion.reserveBudget(newChatMessage);
+
+    // Reserve budget for continue nudge
+    let continueMessage = null;
+    if (type === 'continue' && cyclePrompt) {
+        const continuePrompt = new Prompt({
+            identifier: 'continueNudge',
+            role: 'system',
+            content: '[Continue the following message. Do not include ANY parts of the original message. Use capitalization and punctuation as if your reply is a part of the original message:\n\n + ' + cyclePrompt + ']',
+            system_prompt: true
+        });
+        const preparedPrompt = promptManager.preparePrompt(continuePrompt);
+        continueMessage = Message.fromPrompt(preparedPrompt);
+        chatCompletion.reserveBudget(continueMessage);
+    }
 
     const lastChatPrompt = openai_msgs[openai_msgs.length - 1];
     const message = new Message('user', oai_settings.send_if_empty, 'emptyUserMessageReplacement');
@@ -430,8 +446,15 @@ function populateChatHistory(prompts, chatCompletion) {
         return true;
     });
 
-    chatCompletion.freeBudget(mainChatMessage);
-    chatCompletion.insertAtStart(mainChatMessage, 'chatHistory');
+    // Insert and free new chat
+    chatCompletion.freeBudget(newChatMessage);
+    chatCompletion.insertAtStart(newChatMessage, 'chatHistory');
+
+    // Insert and free continue nudge
+    if (type === 'continue' && continueMessage) {
+        chatCompletion.freeBudget(continueMessage);
+        chatCompletion.insertAtEnd(continueMessage, 'chatHistory')
+    }
 }
 
 /**
@@ -560,24 +583,12 @@ function populateChatCompletion (prompts, chatCompletion, {bias, quietPrompt, ty
         }
     }
 
-    if (type === 'continue') {
-        const continuePrompt = new Prompt({
-            identifier: 'continueNudge',
-            role: 'system,',
-            content: '[Continue the following message. Do not include ANY parts of the original message. Use capitalization and punctuation as if your reply is a part of the original message:\n\n + ' + cyclePrompt + ']',
-            system_prompt: true
-        });
-        const preparedPrompt = promptManager.preparePrompt(continuePrompt);
-        const continueMessage = Message.fromPrompt(preparedPrompt);
-        chatCompletion.insertAtEnd(continueMessage, 'chatHistory')
-    }
-
     // Decide whether dialogue examples should always be added
     if (power_user.pin_examples) {
         populateDialogueExamples(prompts, chatCompletion);
-        populateChatHistory(prompts, chatCompletion);
+        populateChatHistory(prompts, chatCompletion, type, cyclePrompt);
     } else {
-        populateChatHistory(prompts, chatCompletion);
+        populateChatHistory(prompts, chatCompletion, type, cyclePrompt);
         populateDialogueExamples(prompts, chatCompletion);
     }
 }
