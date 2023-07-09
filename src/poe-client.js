@@ -428,13 +428,13 @@ class Client {
         };
         this.session.defaults.headers.common = this.headers;
         [this.next_data, this.channel] = await Promise.all([this.get_next_data(), this.get_channel_data()]);
-        this.bots = await this.get_bots();
-        this.bot_names = this.get_bot_names();
         this.gql_headers = {
             "poe-formkey": this.formkey,
             "poe-tchannel": this.channel["channel"],
             ...this.headers,
         };
+        this.bots = await this.get_bots();
+        this.bot_names = this.get_bot_names();
         if (this.device_id === null) {
             this.device_id = this.get_device_id();
         }
@@ -519,6 +519,20 @@ class Client {
             throw new Error('Invalid token.');
         }
         const botList = viewer.availableBotsConnection.edges.map(x => x.node);
+
+        try {
+            const botsQuery = await this.send_query('BotSwitcherModalQuery', {});
+            botsQuery.data.viewer.availableBotsConnection.edges.forEach(edge => {
+                const bot = edge.node;
+
+                if (botList.findIndex(x => x.id === bot.id) === -1) {
+                    botList.push(bot);
+                }
+            });
+        } catch (e) {
+            console.log(e);
+        }
+
         const retries = 2;
         const bots = {};
         const promises = [];
