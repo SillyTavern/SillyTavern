@@ -90,6 +90,7 @@ import {
     getTokenCountOpenAI,
     chat_completion_sources,
     getTokenizerModel,
+    getChatCompletionModel,
 } from "./scripts/openai.js";
 
 import {
@@ -3756,32 +3757,15 @@ function saveImageToMessage(img, mes) {
 
 function saveGeneratorToMessage(mes) {
     let model = '';
-
     switch (main_api) {
         case 'kobold':
             model = online_status;
             break;
         case 'novel':
-            model = settings.model_novel;
+            model = nai_settings.model_novel;
             break;
         case 'openai':
-            switch (settings.chat_completion_source) {
-                case 'scale':
-                    model = settings.openai_model_scale;
-                    break;
-                case 'windowai':
-                    model = settings.windowai_model;
-                    break;
-                case 'claude':
-                    model = settings.claude_model;
-                    break;
-                case 'openai':
-                    model = settings.openai_model;
-                    break;
-                default:
-                    // handle default case
-                    break;
-            }
+            model = getChatCompletionModel();
             break;
         case 'textgenerationwebui':
             model = online_status;
@@ -3790,7 +3774,7 @@ function saveGeneratorToMessage(mes) {
             model = kobold_horde_model;
             break;
         case 'poe':
-            model = settings.poe_model;
+            model = poe_settings.bot;
             break;
     }
 

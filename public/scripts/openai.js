@@ -54,6 +54,7 @@ export {
     prepareOpenAIMessages,
     sendOpenAIRequest,
     setOpenAIOnlineStatus,
+    getChatCompletionModel,
 }
 
 let openai_msgs = [];
