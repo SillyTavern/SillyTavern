@@ -1151,7 +1151,7 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
             regexPlacement = regex_placement.SENDAS;
         } else {
             regexPlacement = regex_placement.AI_OUTPUT;
-        } 
+        }
 
         mes = getRegexedString(mes, regexPlacement, { isMarkdown: true });
     }
@@ -3667,7 +3667,6 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
     const generationFinished = new Date();
     const img = extractImageFromMessage(getMessage);
     getMessage = img.getMessage;
-
     if (type === 'swipe') {
         chat[chat.length - 1]['swipes'].length++;
         if (chat[chat.length - 1]['swipe_id'] === chat[chat.length - 1]['swipes'].length - 1) {
@@ -3676,7 +3675,8 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
             chat[chat.length - 1]['gen_started'] = generation_started;
             chat[chat.length - 1]['gen_finished'] = generationFinished;
             chat[chat.length - 1]['send_date'] = getMessageTimeStamp();
-            saveGeneratorToMessage(chat[chat.length - 1]);
+            chat[chat.length - 1]['extra']['api'] = main_api;
+            chat[chat.length - 1]['extra']['model'] = getGeneratorInfo();
             addOneMessage(chat[chat.length - 1], { type: 'swipe' });
         } else {
             chat[chat.length - 1]['mes'] = getMessage;
@@ -3688,7 +3688,8 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         chat[chat.length - 1]['gen_started'] = generation_started;
         chat[chat.length - 1]['gen_finished'] = generationFinished;
         chat[chat.length - 1]['send_date'] = getMessageTimeStamp();
-        saveGeneratorToMessage(chat[chat.length - 1]);
+        chat[chat.length - 1]["extra"]["api"] = main_api;
+        chat[chat.length - 1]["extra"]["model"] = getGeneratorInfo();
         addOneMessage(chat[chat.length - 1], { type: 'swipe' });
     } else if (type === 'appendFinal') {
         console.debug("Trying to appendFinal.")
@@ -3697,7 +3698,8 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         chat[chat.length - 1]['gen_started'] = generation_started;
         chat[chat.length - 1]['gen_finished'] = generationFinished;
         chat[chat.length - 1]['send_date'] = getMessageTimeStamp();
-        saveGeneratorToMessage(chat[chat.length - 1]);
+        chat[chat.length - 1]["extra"]["api"] = main_api;
+        chat[chat.length - 1]["extra"]["model"] = getGeneratorInfo();
         addOneMessage(chat[chat.length - 1], { type: 'swipe' });
 
     } else {
@@ -3708,6 +3710,8 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         chat[chat.length - 1]['is_user'] = false;
         chat[chat.length - 1]['is_name'] = this_mes_is_name;
         chat[chat.length - 1]['send_date'] = getMessageTimeStamp();
+        chat[chat.length - 1]["extra"]["api"] = main_api;
+        chat[chat.length - 1]["extra"]["model"] = getGeneratorInfo();
         if (power_user.trim_spaces) {
             getMessage = getMessage.trim();
         }
@@ -3729,21 +3733,32 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         }
 
         saveImageToMessage(img, chat[chat.length - 1]);
-        saveGeneratorToMessage(chat[chat.length - 1]);
         addOneMessage(chat[chat.length - 1]);
     }
+
     const item = chat[chat.length - 1];
-    if (item['swipe_info'] === undefined) {
-        item['swipe_info'] = [];
+    if (item["swipe_info"] === undefined) {
+        item["swipe_info"] = [];
+        console.log("Create empty swipe info array");
     }
-    if (item['swipe_id'] !== undefined) {
-        item['swipes'][item['swipes'].length - 1] = item['mes'];
-        item['swipe_info'][item['swipes'].length - 1] = { 'send_date': item['send_date'], 'gen_started': item['gen_started'], 'gen_finished': item['gen_finished'], 'extra': item['extra'] };
+    if (item["swipe_id"] !== undefined) {
+        item["swipes"][item["swipes"].length - 1] = item["mes"];
+        item["swipe_info"][item["swipes"].length - 1] = {
+            send_date: item["send_date"],
+            gen_started: item["gen_started"],
+            gen_finished: item["gen_finished"],
+            extra: JSON.parse(JSON.stringify(item["extra"])),
+        };
     } else {
-        item['swipe_id'] = 0;
-        item['swipes'] = [];
-        item['swipes'][0] = chat[chat.length - 1]['mes'];
-        item['swipe_info'][0] = { 'send_date': chat[chat.length - 1]['send_date'], 'gen_started': chat[chat.length - 1]['gen_started'], 'gen_finished': chat[chat.length - 1]['gen_finished'], 'extra': item['extra'] };
+        item["swipe_id"] = 0;
+        item["swipes"] = [];
+        item["swipes"][0] = chat[chat.length - 1]["mes"];
+        item["swipe_info"][0] = {
+            send_date: chat[chat.length - 1]["send_date"],
+            gen_started: chat[chat.length - 1]["gen_started"],
+            gen_finished: chat[chat.length - 1]["gen_finished"],
+            extra: JSON.parse(JSON.stringify(chat[chat.length - 1]["extra"])),
+        };
     }
     return { type, getMessage };
 }
@@ -3758,7 +3773,7 @@ function saveImageToMessage(img, mes) {
     }
 }
 
-function saveGeneratorToMessage(mes) {
+function getGeneratorInfo(mes) {
     let model = '';
     switch (main_api) {
         case 'kobold':
@@ -3780,12 +3795,7 @@ function saveGeneratorToMessage(mes) {
             model = poe_settings.bot;
             break;
     }
-
-    if (mes && typeof mes.extra !== 'object') {
-        mes.extra = {};
-    }
-    mes.extra.api = main_api;
-    mes.extra.model = model;
+    return model
 }
 
 function extractImageFromMessage(getMessage) {
@@ -6278,7 +6288,7 @@ function swipe_left() {      // when we swipe left..but no generation.
         const this_mes_block_height = this_mes_block[0].scrollHeight;
         chat[chat.length - 1]['mes'] = chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipe_id']];
         chat[chat.length - 1]['send_date'] = chat[chat.length - 1].swipe_info[chat[chat.length - 1]['swipe_id']]?.send_date || chat[chat.length - 1].send_date; //load the last mes box with the latest generation
-        chat[chat.length - 1]['extra'] = chat[chat.length - 1].swipe_info[chat[chat.length - 1]['swipe_id']]?.extra || chat[chat.length - 1].extra;
+        chat[chat.length - 1]['extra'] = JSON.parse(JSON.stringify(chat[chat.length - 1].swipe_info[chat[chat.length - 1]['swipe_id']]?.extra || chat[chat.length - 1].extra));
 
         if (chat[chat.length - 1].extra) {
             // if message has memory attached - remove it to allow regen
@@ -6394,7 +6404,9 @@ const swipe_right = () => {
         chat[chat.length - 1]['swipes'] = [];                         // empty the array
         chat[chat.length - 1]['swipe_info'] = [];
         chat[chat.length - 1]['swipes'][0] = chat[chat.length - 1]['mes'];  //assign swipe array with last message from chat
-        chat[chat.length - 1]['swipe_info'][0] = { 'send_date': chat[chat.length - 1]['send_date'], 'gen_started': chat[chat.length - 1]['gen_started'], 'gen_finished': chat[chat.length - 1]['gen_finished'], 'extra': chat[chat.length - 1]['extra'] }; //assign swipe info array with last message from chat
+        chat[chat.length - 1]['swipe_info'][0] = { 'send_date': chat[chat.length - 1]['send_date'], 'gen_started': chat[chat.length - 1]['gen_started'], 'gen_finished': chat[chat.length - 1]['gen_finished'], 'extra': JSON.parse(JSON.stringify(chat[chat.length - 1]['extra'])) };
+        console.log('swipe_info: ' + chat[chat.length - 1]['swipe_info'][0]);
+        //assign swipe info array with last message from chat
     }
     chat[chat.length - 1]['swipe_id']++;                                      //make new slot in array
     if (chat[chat.length - 1].extra) {
