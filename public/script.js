@@ -1298,7 +1298,6 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     var messageText = mes["mes"];
     const momentDate = timestampToMoment(mes.send_date);
     const timestamp = momentDate.isValid() ? momentDate.format('LL LT') : '';
-    saveGeneratorToMessage(mes);
 
 
     if (mes?.extra?.display_text) {
@@ -3677,6 +3676,7 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
             chat[chat.length - 1]['gen_started'] = generation_started;
             chat[chat.length - 1]['gen_finished'] = generationFinished;
             chat[chat.length - 1]['send_date'] = getMessageTimeStamp();
+            saveGeneratorToMessage(chat[chat.length - 1]);
             addOneMessage(chat[chat.length - 1], { type: 'swipe' });
         } else {
             chat[chat.length - 1]['mes'] = getMessage;
@@ -3688,6 +3688,7 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         chat[chat.length - 1]['gen_started'] = generation_started;
         chat[chat.length - 1]['gen_finished'] = generationFinished;
         chat[chat.length - 1]['send_date'] = getMessageTimeStamp();
+        saveGeneratorToMessage(chat[chat.length - 1]);
         addOneMessage(chat[chat.length - 1], { type: 'swipe' });
     } else if (type === 'appendFinal') {
         console.debug("Trying to appendFinal.")
@@ -3696,6 +3697,7 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         chat[chat.length - 1]['gen_started'] = generation_started;
         chat[chat.length - 1]['gen_finished'] = generationFinished;
         chat[chat.length - 1]['send_date'] = getMessageTimeStamp();
+        saveGeneratorToMessage(chat[chat.length - 1]);
         addOneMessage(chat[chat.length - 1], { type: 'swipe' });
 
     } else {
@@ -3727,6 +3729,7 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         }
 
         saveImageToMessage(img, chat[chat.length - 1]);
+        saveGeneratorToMessage(chat[chat.length - 1]);
         addOneMessage(chat[chat.length - 1]);
     }
     const item = chat[chat.length - 1];
