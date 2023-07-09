@@ -1,9 +1,3 @@
-/* OpenAI */
-
-#completion_prompt_manager {
-    margin: 0.5em 0.25em;
-}
-
 #completion_prompt_manager .caution {
     color: var(--fullred);
 }
