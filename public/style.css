@@ -200,6 +200,46 @@ table.responsiveTable {
     color: var(--fullred);
 }
 
+.m-t-1 {
+    margin-top: 1em;
+}
+
+.m-t-2 {
+    margin-top: 2em;
+}
+
+.m-t-3 {
+    margin-top: 3em;
+}
+
+.m-t-4 {
+    margin-top: 4em;
+}
+
+.m-t-5 {
+    margin-top: 5em;
+}
+
+.m-b-1 {
+    margin-bottom: 1em;
+}
+
+.m-b-2 {
+    margin-bottom: 2em;
+}
+
+.m-b-3 {
+    margin-bottom: 3em;
+}
+
+.m-b-4 {
+    margin-bottom: 4em;
+}
+
+.m-b-5 {
+    margin-bottom: 5em;
+}
+
 .tooltip {
     cursor: help;
 }
