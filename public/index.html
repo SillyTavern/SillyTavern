@@ -1127,83 +1127,123 @@
                                     <div class="range-block m-t-1 m-b-1">
                                         <div id="completion_prompt_manager"></div>
                                     </div>
-                                    <div class="range-block">
-                                        <div class="range-block-title justifyLeft">
-                                            <span data-i18n="Replace empty message">
-                                                Replace empty message
-                                            </span>
+                                    <div class="inline-drawer wide100p">
+                                        <div class="inline-drawer-toggle inline-drawer-header">
+                                            <b>Utility Prompts</b>
+                                            <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                                         </div>
-                                        <div class="toggle-description justifyLeft">
+                                        <div class="inline-drawer-content">
+                                            <div class="range-block m-t-1">
+                                                <div class="range-block-title openai_restorable">
+                                                    <span data-i18n="Impersonation prompt">Impersonation prompt</span>
+                                                    <div id="impersonation_prompt_restore" title="Restore default prompt" class="right_menu_button">
+                                                        <div class="fa-solid fa-clock-rotate-left"></div>
+                                                    </div>
+                                                </div>
+                                                <div class="toggle-description justifyLeft" data-i18n="Prompt that is used for Impersonation function">
+                                                    Prompt that is used for Impersonation function
+                                                </div>
+                                                <div class="wide100p">
+                                                    <textarea id="impersonation_prompt_textarea" class="text_pole textarea_compact" name="impersonation_prompt" rows="6" placeholder=""></textarea>
+                                                </div>
+                                            </div>
+                                            <div class="range-block m-t-1">
+                                                <div class="range-block-title openai_restorable">
+                                                    <span>World Info format template</span>
+                                                    <div id="wi_format_restore" title="Restore default format" class="right_menu_button">
+                                                        <div class="fa-solid fa-clock-rotate-left"></div>
+                                                    </div>
+                                                </div>
+                                                <div class="toggle-description justifyLeft">
+                                                    Wraps activated World Info entries before inserting into the prompt. Use
+                                                    <tt>{0}</tt> to mark a place where the content is inserted.
+                                                </div>
+                                                <div class="wide100p">
+                                                    <textarea id="wi_format_textarea" class="text_pole textarea_compact" rows="3" placeholder=""></textarea>
+                                                </div>
+                                            </div>
+                                            <div class="range-block m-t-1">
+                                                <div class="range-block">
+                                                    <div class="range-block-title openai_restorable">
+                                                        <span>NSFW avoidance prompt</span>
+                                                        <div id="nsfw_avoidance_prompt_restore" title="Restore default prompt" data-i18n="[title]Restore default prompt" class="right_menu_button">
+                                                            <div class="fa-solid fa-clock-rotate-left"></div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="toggle-description justifyLeft"
+                                                         data-i18n="Prompt that is used when the NSFW toggle is O">
+                                                        Prompt that is used when the NSFW toggle is OFF
+                                                    </div>
+                                                    <div class="wide100p">
+                                                        <textarea id="nsfw_avoidance_prompt_textarea" class="text_pole textarea_compact" name="nsfw_prompt" rows="2" placeholder=""></textarea>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="range-block m-t-1">
+                                                <div class="range-block-title openai_restorable">
+                                                    <span>New Chat</span>
+                                                    <div id="newchat_prompt_restore" title="Restore new chat prompt" class="right_menu_button">
+                                                        <div class="fa-solid fa-clock-rotate-left"></div>
+                                                    </div>
+                                                </div>
+                                                <div class="toggle-description justifyLeft">
+                                            <span data-i18n="Set at the beginning of the chat history to indicate that a new chat is about to start.">
+                                                Set at the beginning of the chat history to indicate that a new chat is about to start.
+                                            </span>
+                                                </div>
+                                                <div class="wide100p">
+                                                    <textarea id="newchat_prompt_textarea" class="text_pole textarea_compact" name="new_chat" rows="1" placeholder=""></textarea>
+                                                </div>
+                                            </div>
+                                            <div class="range-block m-t-1">
+                                                <div class="range-block-title openai_restorable">
+                                                    <span>New Group Chat</span>
+                                                    <div id="newgroupchat_prompt_restore" title="Restore default prompt" data-i18n="[title]Restore new group chat prompt" class="right_menu_button">
+                                                        <div class="fa-solid fa-clock-rotate-left"></div>
+                                                    </div>
+                                                </div>
+                                                <div class="toggle-description justifyLeft">
+                                            <span data-i18n="Set at the beginning of the chat history to indicate that a new group chat is about to start.">
+                                                Set at the beginning of the chat history to indicate that a new group chat is about to start.
+                                            </span>
+                                                </div>
+                                                <div class="wide100p">
+                                                    <textarea id="newgroupchat_prompt_textarea" class="text_pole textarea_compact" name="new_group_chat" rows="1" placeholder=""></textarea>
+                                                </div>
+                                            </div>
+                                            <div class="range-block m-t-1">
+                                                <div class="range-block-title openai_restorable">
+                                                    <span>New Example Chat</span>
+                                                    <div id="newexamplechat_prompt_restore" title="Restore new example chat prompt" data-i18n="[title]Restore default prompt" class="right_menu_button">
+                                                        <div class="fa-solid fa-clock-rotate-left"></div>
+                                                    </div>
+                                                </div>
+                                                <div class="toggle-description justifyLeft">
+                                            <span data-i18n="Set at the beginning of Dialogue examples to indicate that a new example chat is about to start.">
+                                               Set at the beginning of Dialogue examples to indicate that a new example chat is about to start.
+                                            </span>
+                                                </div>
+                                                <div class="wide100p">
+                                                    <textarea id="newexamplechat_prompt_textarea" class="text_pole textarea_compact" name="new_example_chat" rows="1" placeholder=""></textarea>
+                                                </div>
+                                            </div>
+                                            <div class="range-block m-t-1">
+                                                <div class="range-block-title justifyLeft">
+                                                    Replace empty message
+                                                </div>
+                                                <div class="toggle-description justifyLeft">
                                             <span data-i18n="Send this text instead of nothing when the text box is empty.">
                                                 Send this text instead of nothing when the text box is empty.
                                             </span>
-                                        </div>
-                                        <div class="wide100p">
-                                            <textarea id="send_if_empty_textarea" class="text_pole textarea_compact" name="send_if_empty" rows="1" placeholder=""></textarea>
-                                        </div>
-                                    </div>
-                                </div>
-                                <br>
-                                <div class="range-block">
-                                    <div class="range-block">
-                                        <div class="range-block-title openai_restorable">
-                                            <span data-i18n="NSFW avoidance prompt">NSFW avoidance prompt</span>
-                                            <div id="nsfw_avoidance_prompt_restore" title="Restore default prompt" data-i18n="[title]Restore default prompt" class="right_menu_button">
-                                                <div class="fa-solid fa-clock-rotate-left"></div>
-                                            </div>
-                                        </div>
-                                        <div class="toggle-description justifyLeft"
-                                             data-i18n="Prompt that is used when the NSFW toggle is O">
-                                        <span data-i18n="Prompt that is used when the NSFW toggle is off">
-                                            Prompt that is used when the NSFW toggle is OFF
-                                        </span>
-                                        </div>
-                                        <div class="wide100p">
-                                            <textarea id="nsfw_avoidance_prompt_textarea" class="text_pole textarea_compact" name="nsfw_prompt" rows="2" placeholder=""></textarea>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="inline-drawer wide100p">
-                                    <div class="inline-drawer-toggle inline-drawer-header margin-bot-10px">
-                                        <span data-i18n="Advanced prompt bits"><b>Advanced prompt bits</b></span>
-                                        <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
-                                    </div>
-                                    <div class="inline-drawer-content">
-                                        <div class="range-block">
-                                            <div class="range-block-title openai_restorable">
-                                                <span data-i18n="Impersonation prompt">Impersonation prompt</span>
-                                                <div id="impersonation_prompt_restore" title="Restore default prompt" data-i18n="[title]Restore default prompt" class="right_menu_button">
-                                                    <div class="fa-solid fa-clock-rotate-left"></div>
+                                                </div>
+                                                <div class="wide100p">
+                                                    <textarea id="send_if_empty_textarea" class="text_pole textarea_compact" name="send_if_empty" rows="1" placeholder=""></textarea>
                                                 </div>
                                             </div>
-                                            <div class="toggle-description justifyLeft" data-i18n="Prompt that is used for Impersonation function">
-                                                Prompt that is used for Impersonation function
-                                            </div>
-                                            <div class="wide100p">
-                                                <textarea id="impersonation_prompt_textarea" class="text_pole textarea_compact" name="impersonation_prompt" rows="6" placeholder=""></textarea>
-                                            </div>
-                                        </div>
-                                        <div class="range-block">
-                                            <div class="range-block-title openai_restorable">
-                                                <span data-i18n="World Info format template">World Info format template</span>
-                                                <div id="wi_format_restore" title="Restore default format" data-i18n="[title]Restore default prompt" class="right_menu_button">
-                                                    <div class="fa-solid fa-clock-rotate-left"></div>
-                                                </div>
-                                            </div>
-                                            <div class="toggle-description justifyLeft">
-                                                <span data-i18n="Wraps activated World Info entries before inserting into the prompt. Use {0} to mark a place where the content is inserted.">
-                                                    Wraps activated World Info entries before inserting into the prompt. Use <tt>{0}</tt> to mark a place where the content is inserted.
-                                                </span>
-                                            </div>
-                                            <div class="wide100p">
-                                                <textarea id="wi_format_textarea" class="text_pole textarea_compact" rows="3" placeholder=""></textarea>
-                                            </div>
                                         </div>
                                     </div>
                                 </div>
-
-                                <div class="range-block" data-source="openai,openrouter">
+                                <div class="range-block m-t-1" data-source="openai,openrouter">
                                     <div class="range-block-title openai_restorable" data-i18n="Logit Bias">
                                         Logit Bias
                                     </div>
@@ -1219,7 +1259,6 @@
                                         <i title="Delete preset" id="openai_logit_bias_delete_preset" class="menu_button fa-solid fa-trash-can" data-i18n="[title]Delete preset"></i>
                                         <input id="openai_logit_bias_import_file" type="file" accept=".json" hidden />
                                     </div>
-
                                     <div class="inline-drawer wide100p">
                                         <div class="inline-drawer-toggle inline-drawer-header">
                                             <b data-i18n="View / Edit bias preset">View / Edit bias preset</b>
@@ -3398,39 +3437,6 @@
         </div>
     </div>
     <div id="completion_prompt_manager_popup" style="display:none;">
-        <div id="completion_prompt_manager_popup_chathistory_edit">
-            <h3>Edit</h3>
-            <div class="completion_prompt_manager_popup_entry_form_control">
-                <label for="completion_prompt_manager_popup_entry_form_name">
-                    <span>New Chat</span>
-                </label>
-                <div class="text_muted">A prompt telling the model that a new chat has started.</div>
-                <input id="completion_prompt_manager_popup_entry_chathistory_newchat" class="text_pole" type="text" name="newchat" />
-            </div>
-            <div class="completion_prompt_manager_popup_entry_form_control">
-                <label for="completion_prompt_manager_popup_entry_form_name">
-                    <span>New Group Chat</span>
-                </label>
-                <div class="text_muted">A prompt telling the model that a new group chat has started.</div>
-                <input id="completion_prompt_manager_popup_entry_chathistory_newgroupchat" class="text_pole" type="text" name="newgroupchat" />
-            </div>
-            <div class="completion_prompt_manager_popup_entry_form_footer" >
-                <a id="completion_prompt_manager_popup_entry_form_chathistory_save" title="save" class="fa-solid fa-save menu_button"></a>
-            </div>
-        </div>
-        <div id="completion_prompt_manager_popup_dialogueexamples_edit">
-            <h3>Edit</h3>
-            <div class="completion_prompt_manager_popup_entry_form_control">
-                <label for="completion_prompt_manager_popup_entry_form_name">
-                    <span>New Example Chat</span>
-                </label>
-                <div class="text_muted">A prompt telling the model that a new example chat has started.</div>
-                <input id="completion_prompt_manager_popup_entry_dialogueexamples_newchat" class="text_pole" type="text" name="newchat" />
-            </div>
-            <div class="completion_prompt_manager_popup_entry_form_footer" >
-                <a id="completion_prompt_manager_popup_entry_form_dialogueexamples_save" title="save" class="fa-solid fa-save menu_button"></a>
-            </div>
-        </div>
         <div id="completion_prompt_manager_popup_inspect">
             <h3>Inspect</h3>
             <div class="completion_prompt_manager_popup_entry">
