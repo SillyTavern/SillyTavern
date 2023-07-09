@@ -93,6 +93,7 @@ const default_wi_format = '[Details of the fictional world the RP is set in:\n{0
 const default_new_chat_prompt = '[Start a new Chat]';
 const default_new_group_chat_prompt = '[Start a new group chat. Group members: {{group}}]';
 const default_new_example_chat_prompt = '[Start a new Chat]';
+const default_continue_nudge_prompt = '[Continue the following message. Do not include ANY parts of the original message. Use capitalization and punctuation as if your reply is a part of the original message: {{lastChatMessage}}]';
 const default_bias = 'Default (none)';
 const default_bias_presets = {
     [default_bias]: [],
@@ -150,6 +151,7 @@ const default_settings = {
     new_chat_prompt: default_new_chat_prompt,
     new_group_chat_prompt: default_new_group_chat_prompt,
     new_example_chat_prompt: default_new_example_chat_prompt,
+    continue_nudge_prompt: default_continue_nudge_prompt,
     bias_preset_selected: default_bias,
     bias_presets: default_bias_presets,
     wi_format: default_wi_format,
@@ -185,6 +187,7 @@ const oai_settings = {
     new_chat_prompt: default_new_chat_prompt,
     new_group_chat_prompt: default_new_group_chat_prompt,
     new_example_chat_prompt: default_new_example_chat_prompt,
+    continue_nudge_prompt: default_continue_nudge_prompt,
     bias_preset_selected: default_bias,
     bias_presets: default_bias_presets,
     wi_format: default_wi_format,
@@ -400,6 +403,7 @@ function formatWorldInfo(value) {
  * @param {PromptCollection} prompts - Map object containing all prompts where the key is the prompt identifier and the value is the prompt object.
  * @param {ChatCompletion} chatCompletion - An instance of ChatCompletion class that will be populated with the prompts.
  * @param type
+ * @param cyclePrompt
  */
 function populateChatHistory(prompts, chatCompletion, type = null, cyclePrompt = null) {
     // Chat History
@@ -416,7 +420,7 @@ function populateChatHistory(prompts, chatCompletion, type = null, cyclePrompt =
         const continuePrompt = new Prompt({
             identifier: 'continueNudge',
             role: 'system',
-            content: '[Continue the following message. Do not include ANY parts of the original message. Use capitalization and punctuation as if your reply is a part of the original message:\n\n + ' + cyclePrompt + ']',
+            content: oai_settings.continue_nudge_prompt.replace('{{lastChatMessage}}', cyclePrompt),
             system_prompt: true
         });
         const preparedPrompt = promptManager.preparePrompt(continuePrompt);
@@ -1723,6 +1727,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.new_chat_prompt = settings.new_chat_prompt ?? default_settings.new_chat_prompt;
     oai_settings.new_group_chat_prompt = settings.new_group_chat_prompt ?? default_settings.new_group_chat_prompt;
     oai_settings.new_example_chat_prompt = settings.new_example_chat_prompt ?? default_settings.new_example_chat_prompt;
+    oai_settings.continue_nudge_prompt = settings.continue_nudge_prompt ?? default_settings.continue_nudge_prompt;
 
     if (settings.keep_example_dialogue !== undefined) oai_settings.keep_example_dialogue = !!settings.keep_example_dialogue;
     if (settings.wrap_in_quotes !== undefined) oai_settings.wrap_in_quotes = !!settings.wrap_in_quotes;
@@ -1762,6 +1767,7 @@ function loadOpenAISettings(data, settings) {
     $('#newchat_prompt_textarea').val(oai_settings.new_chat_prompt);
     $('#newgroupchat_prompt_textarea').val(oai_settings.new_group_chat_prompt);
     $('#newexamplechat_prompt_textarea').val(oai_settings.new_example_chat_prompt);
+    $('#continue_nudge_prompt_textarea').val(oai_settings.continue_nudge_prompt);
 
     $('#wi_format_textarea').val(oai_settings.wi_format);
     $('#send_if_empty_textarea').val(oai_settings.send_if_empty);
@@ -1923,6 +1929,7 @@ async function saveOpenAIPreset(name, settings) {
         new_chat_prompt: settings.new_chat_prompt,
         new_group_chat_prompt: settings.new_group_chat_prompt,
         new_example_chat_prompt: settings.new_example_chat_prompt,
+        continue_nudge_prompt: settings.continue_nudge_prompt,
         bias_preset_selected: settings.bias_preset_selected,
         reverse_proxy: settings.reverse_proxy,
         legacy_streaming: settings.legacy_streaming,
@@ -2275,6 +2282,7 @@ function onSettingsPresetChange() {
         new_chat_prompt: ['#newchat_prompt_textarea', 'new_chat_prompt', false],
         new_group_chat_prompt: ['#newgroupchat_prompt_textarea', 'new_group_chat_prompt', false],
         new_example_chat_prompt: ['#newexamplechat_prompt_textarea', 'new_example_chat_prompt', false],
+        continue_nudge_prompt: ['#continue_nudge_prompt_textarea', 'continue_nudge_prompt', false],
         bias_preset_selected: ['#openai_logit_bias_preset', 'bias_preset_selected', false],
         reverse_proxy: ['#openai_reverse_proxy', 'reverse_proxy', false],
         legacy_streaming: ['#legacy_streaming', 'legacy_streaming', true],
@@ -2709,6 +2717,11 @@ $(document).ready(function () {
         saveSettingsDebounced();
     });
 
+    $("#continue_nudge_prompt_textarea").on('input', function () {
+        oai_settings.continue_nudge_prompt = $('#continue_nudge_prompt_textarea').val();
+        saveSettingsDebounced();
+    });
+
     $("#nsfw_avoidance_prompt_textarea").on('input', function () {
         oai_settings.nsfw_avoidance_prompt = $('#nsfw_avoidance_prompt_textarea').val();
         saveSettingsDebounced();
@@ -2775,6 +2788,12 @@ $(document).ready(function () {
     $("#newexamplechat_prompt_restore").on('click', function () {
         oai_settings.new_example_chat_prompt = default_new_example_chat_prompt;
         $('#newexamplechat_prompt_textarea').val(oai_settings.new_example_chat_prompt);
+        saveSettingsDebounced();
+    });
+
+    $("#continue_nudge_prompt_restore").on('click', function () {
+        oai_settings.continue_nudge_prompt = default_continue_nudge_prompt;
+        $('#continue_nudge_prompt_textarea').val(oai_settings.continue_nudge_prompt);
         saveSettingsDebounced();
     });
 
