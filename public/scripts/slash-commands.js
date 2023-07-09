@@ -19,6 +19,7 @@ import {
     system_message_types,
     replaceCurrentChat,
     setCharacterId,
+    generateQuietPrompt,
 } from "../script.js";
 import { humanizedDateTime } from "./RossAscends-mods.js";
 import { resetSelectedGroup } from "./group-chats.js";
@@ -114,6 +115,7 @@ parser.addCommand('bubble', setBubbleModeCallback, ['bubbles'], ' – sets the m
 parser.addCommand('flat', setFlatModeCallback, ['default'], ' – sets the message style to flat chat mode', true, true);
 parser.addCommand('continue', continueChatCallback, ['cont'], ' – continues the last message in the chat', true, true);
 parser.addCommand('go', goToCharacterCallback, ['char'], '<span class="monospace">(name)</span> – opens up a chat with the character by its name', true, true);
+parser.addCommand('sysgen', generateSystemMessage, [], '<span class="monospace">(prompt)</span> – generates a system message using a specified prompt', true, true);
 
 const NARRATOR_NAME_KEY = 'narrator_name';
 const NARRATOR_NAME_DEFAULT = 'System';
@@ -164,6 +166,20 @@ function continueChatCallback() {
     // Prevent infinite recursion
     $('#send_textarea').val('');
     $('#option_continue').trigger('click', { fromSlashCommand: true });
+}
+
+async function generateSystemMessage(_, prompt) {
+    $('#send_textarea').val('');
+
+    if (!prompt) {
+        console.warn('WARN: No prompt provided for /sysgen command');
+        toastr.warning('You must provide a prompt for the system message');
+        return;
+    }
+
+    toastr.info('Please wait', 'Generating...');
+    const message = await generateQuietPrompt(prompt);
+    sendNarratorMessage(_, message);
 }
 
 function syncCallback() {
