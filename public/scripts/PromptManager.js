@@ -51,8 +51,22 @@ const registerPromptManagerMigration = () => {
     eventSource.on(event_types.OAI_PRESET_CHANGED, settings => migrate(settings));
 }
 
+/**
+ * Represents a prompt.
+ */
 class Prompt {
     identifier; role; content; name; system_prompt;
+
+    /**
+     * Create a new Prompt instance.
+     *
+     * @param {Object} param0 - Object containing the properties of the prompt.
+     * @param {string} param0.identifier - The unique identifier of the prompt.
+     * @param {string} param0.role - The role associated with the prompt.
+     * @param {string} param0.content - The content of the prompt.
+     * @param {string} param0.name - The name of the prompt.
+     * @param {boolean} param0.system_prompt - Indicates if the prompt is a system prompt.
+     */
     constructor({identifier, role, content, name, system_prompt} = {}) {
         this.identifier = identifier;
         this.role = role;
@@ -62,13 +76,27 @@ class Prompt {
     }
 }
 
+/**
+ * Representing a collection of prompts.
+ */
 class PromptCollection {
     collection = [];
 
+    /**
+     * Create a new PromptCollection instance.
+     *
+     * @param {...Prompt} prompts - An array of Prompt instances.
+     */
     constructor(...prompts) {
         this.add(...prompts);
     }
 
+    /**
+     * Checks if the provided instances are of the Prompt class.
+     *
+     * @param {...any} prompts - Instances to check.
+     * @throws Will throw an error if one or more instances are not of the Prompt class.
+     */
     checkPromptInstance(...prompts) {
         for(let prompt of prompts) {
             if(!(prompt instanceof Prompt)) {
@@ -77,24 +105,53 @@ class PromptCollection {
         }
     }
 
+    /**
+     * Adds new Prompt instances to the collection.
+     *
+     * @param {...Prompt} prompts - An array of Prompt instances.
+     */
     add(...prompts) {
         this.checkPromptInstance(...prompts);
         this.collection.push(...prompts);
     }
 
+    /**
+     * Sets a Prompt instance at a specific position in the collection.
+     *
+     * @param {Prompt} prompt - The Prompt instance to set.
+     * @param {number} position - The position in the collection to set the Prompt instance.
+     */
     set(prompt, position) {
         this.checkPromptInstance(prompt);
         this.collection[position] = prompt;
     }
 
+    /**
+     * Retrieves a Prompt instance from the collection by its identifier.
+     *
+     * @param {string} identifier - The identifier of the Prompt instance to retrieve.
+     * @returns {Prompt} The Prompt instance with the provided identifier, or undefined if not found.
+     */
     get(identifier) {
         return this.collection.find(prompt => prompt.identifier === identifier);
     }
 
+    /**
+     * Retrieves the index of a Prompt instance in the collection by its identifier.
+     *
+     * @param {string} identifier - The identifier of the Prompt instance to find.
+     * @returns {number} The index of the Prompt instance in the collection, or -1 if not found.
+     */
     index(identifier) {
         return this.collection.findIndex(prompt => prompt.identifier === identifier);
     }
 
+    /**
+     * Checks if a Prompt instance exists in the collection by its identifier.
+     *
+     * @param {string} identifier - The identifier of the Prompt instance to check.
+     * @returns {boolean} true if the Prompt instance exists in the collection, false otherwise.
+     */
     has(identifier) {
         return this.index(identifier) !== -1;
     }
@@ -145,6 +202,15 @@ function PromptManagerModule() {
     this.handleAdvancedSettingsToggle = () => { };
 }
 
+/**
+ * Initializes the PromptManagerModule with provided configuration and service settings.
+ *
+ * Sets up various handlers for user interactions, event listeners and initial rendering of prompts.
+ * It is also responsible for preparing prompt edit form buttons, managing popup form close and clear actions.
+ *
+ * @param {Object} moduleConfiguration - Configuration object for the PromptManagerModule.
+ * @param {Object} serviceSettings - Service settings object for the PromptManagerModule.
+ */
 PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSettings) {
     this.configuration = Object.assign(this.configuration, moduleConfiguration);
     this.tokenHandler = this.tokenHandler || new TokenHandler();
@@ -249,6 +315,7 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
         document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_prompt').value = prompt.content;
     }
 
+    // Append prompt to selected character
     this.handleAppendPrompt = (event) => {
         const promptID = document.getElementById(this.configuration.prefix + 'prompt_manager_footer_append_prompt').value;
         const prompt = this.getPromptById(promptID);
@@ -289,6 +356,7 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
         this.showPopup();
     }
 
+    // Export all user prompts
     this.handleFullExport = () => {
         const exportPrompts = this.serviceSettings.prompts.reduce((userPrompts, prompt) => {
             if (false === prompt.system_prompt && false === prompt.marker) userPrompts.push(prompt);
@@ -298,6 +366,7 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
         this.export({prompts: exportPrompts}, 'full', 'st-prompts');
     }
 
+    // Export user prompts and order for this character
     this.handleCharacterExport = () => {
         const characterPrompts = this.getPromptsForCharacter(this.activeCharacter).reduce((userPrompts, prompt) => {
             if (false === prompt.system_prompt && false === prompt.marker) userPrompts.push(prompt);
@@ -315,6 +384,7 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
         this.export(exportPrompts, 'character', name);
     }
 
+    // Import prompts for the selected character
     this.handleImport = () => {
         callPopup('Existing prompts with the same ID will be overridden. Do you want to proceed?', 'confirm',)
             .then(userChoice => {
@@ -356,6 +426,7 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
         this.saveServiceSettings().then(() => this.render());
     });
 
+    // Re-render when the character gets edited.
     eventSource.on(event_types.CHARACTER_EDITED, (event) => {
         this.handleCharacterUpdated(event);
         this.saveServiceSettings().then(() => this.render());
@@ -410,6 +481,7 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
         this.clearInspectForm();
     };
 
+    // Clear forms on closing the popup
     document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_close').addEventListener('click', closeAndClearPopup);
     document.getElementById(this.configuration.prefix + 'prompt_manager_popup_close_button').addEventListener('click', closeAndClearPopup);
 
@@ -648,9 +720,7 @@ PromptManagerModule.prototype.handleCharacterSelected = function (event) {
 }
 
 PromptManagerModule.prototype.handleCharacterUpdated = function (event) {
-    console.log(event)
     this.activeCharacter = {id: event.detail.id, ...event.detail.character};
-    console.log(this.activeCharacter);
 }
 
 PromptManagerModule.prototype.handleGroupSelected = function (event) {
@@ -887,10 +957,20 @@ PromptManagerModule.prototype.getPromptCollection = function () {
     return promptCollection;
 }
 
+/**
+ * Setter for messages property
+ *
+ * @param messages
+ */
 PromptManagerModule.prototype.setMessages = function (messages) {
     this.messages = messages;
 };
 
+/**
+ * Populates the token handler
+ *
+ * @param messageCollection
+ */
 PromptManagerModule.prototype.populateTokenHandler = function(messageCollection) {
     this.tokenHandler.resetCounts();
     const counts = this.tokenHandler.getCounts();
@@ -922,7 +1002,9 @@ PromptManagerModule.prototype.populateTokenHandler = function(messageCollection)
     this.log('Updated token cache with ' + this.tokenUsage);
 }
 
-// Empties, then re-assembles the container containing the prompt list.
+/**
+ * Empties, then re-assembles the container containing the prompt list.
+ */
 PromptManagerModule.prototype.renderPromptManager = function () {
     const promptManagerDiv = this.containerElement;
     promptManagerDiv.innerHTML = '';
@@ -1034,7 +1116,9 @@ PromptManagerModule.prototype.renderPromptManager = function () {
     }
 };
 
-// Empties, then re-assembles the prompt list.
+/**
+ * Empties, then re-assembles the prompt list
+ */
 PromptManagerModule.prototype.renderPromptManagerListItems = function () {
     if (!this.serviceSettings.prompts) return;
 
@@ -1171,6 +1255,13 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
     });
 };
 
+/**
+ * Writes the passed data to a json file
+ *
+ * @param data
+ * @param type
+ * @param name
+ */
 PromptManagerModule.prototype.export = function (data, type, name = 'export') {
     const promptExport = {
         version: this.configuration.version,
@@ -1192,6 +1283,11 @@ PromptManagerModule.prototype.export = function (data, type, name = 'export') {
     URL.revokeObjectURL(url);
 };
 
+/**
+ * Imports a json file with prompts and an optional prompt list for the active character
+ *
+ * @param importData
+ */
 PromptManagerModule.prototype.import = function (importData) {
     const mergeKeepNewer = (prompts, newPrompts) => {
         let merged = [...prompts, ...newPrompts];
@@ -1300,14 +1396,29 @@ PromptManagerModule.prototype.getUuidv4 = function () {
     });
 }
 
+/**
+ * Write to console with prefix
+ *
+ * @param output
+ */
 PromptManagerModule.prototype.log = function (output) {
     if (power_user.console_log_prompts) console.log('[PromptManager] ' + output);
 }
 
+/**
+ * Start a profiling task
+ *
+ * @param identifier
+ */
 PromptManagerModule.prototype.profileStart = function (identifier) {
     if (power_user.console_log_prompts) console.time(identifier);
 }
 
+/**
+ * End a profiling task
+ *
+ * @param identifier
+ */
 PromptManagerModule.prototype.profileEnd = function (identifier) {
     if (power_user.console_log_prompts) {
         this.log('Profiling of "' + identifier + '" finished. Result below.');

@@ -403,7 +403,6 @@ function formatWorldInfo(value) {
 function populateChatHistory(prompts, chatCompletion) {
     // Chat History
     chatCompletion.add(new MessageCollection('chatHistory'), prompts.index('chatHistory'));
-    console.log(openai_settings)
     const mainChat = selected_group ? oai_settings.new_group_chat_prompt : oai_settings.new_chat_prompt;
     const mainChatMessage = new Message('system', mainChat, 'newMainChat');
 
