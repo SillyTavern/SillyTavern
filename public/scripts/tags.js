@@ -260,12 +260,13 @@ async function importTags(imported_char) {
             tag = createNewTag(tagName);
         }
 
-        addTagToMap(tag.id);
-        tag_map[imported_char.avatar].push(tag.id);
+        if (!tag_map[imported_char.avatar].includes(tag.id)) {
+            tag_map[imported_char.avatar].push(tag.id);
+            console.debug('added tag to map', tag, imported_char.name);
+        }
     };
     saveSettingsDebounced();
     await getCharacters();
-    await getSettings();
     printTagFilters(tag_filter_types.character);
     printTagFilters(tag_filter_types.group_member);
 
