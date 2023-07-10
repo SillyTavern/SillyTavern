@@ -2481,6 +2481,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     const name = is_pygmalion ? 'You' : name1;
                     const quietAppend = isInstruct ? formatInstructModeChat(name, quiet_prompt, false, true, false, name1, name2) : `\n${name}: ${quiet_prompt}`;
                     mesSendString += quietAppend;
+                    // Bail out early
+                    return mesSendString;
                 }
 
                 // Get instruct mode line
