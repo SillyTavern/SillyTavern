@@ -4,22 +4,49 @@ import { applyTagsOnCharacterSelect, importTags } from "../../tags.js";
 import { generateQuietPrompt } from "../../../script.js";
 
 
+function getBigrams(str) {
+    const bigrams = new Set();
+    for (let i = 0; i < str.length - 1; i += 1) {
+        bigrams.add(str.substring(i, i + 2));
+    }
+    return bigrams;
+}
+
+function intersect(set1, set2) {
+    return new Set([...set1].filter((x) => set2.has(x)));
+}
+
+function diceCoefficient(str1, str2) {
+    const bigrams1 = getBigrams(str1);
+    const bigrams2 = getBigrams(str2);
+    return (2 * intersect(bigrams1, bigrams2).size) / (bigrams1.size + bigrams2.size);
+}
+
+
+
 // Endpoint for API call
 const API_ENDPOINT_SEARCH = "https://api.chub.ai/api/characters/search";
 const API_ENDPOINT_DOWNLOAD = "https://api.chub.ai/api/characters/download";
 
 // Function to fetch character data, search for both the name and the first 40 characters of he description
-async function fetchCharacterData(name) {
-    let name_response = await fetch(`${API_ENDPOINT_SEARCH}?search=${encodeURIComponent(name)}&first=5`);
+async function fetchCharacterData(name, description) {
+    let name_response = await fetch(`${API_ENDPOINT_SEARCH}?search=${encodeURIComponent(name)}&first=3&nsfw=true`);
     let name_data = await name_response.json();
 
     // now search for the first 40 characters of the description
-
-    let char_response = await fetch(`${API_ENDPOINT_SEARCH}?search=${encodeURIComponent(name)}&description=${encodeURIComponent(name)}&first=5`);
+    description = description.substring(0, 40);
+    let char_response = await fetch(`${API_ENDPOINT_SEARCH}?search=${encodeURIComponent(description)}&first=3&nsfw=true`);
     let char_data = await char_response.json();
 
-    // merge the name_data and char_data arrays
-    let data = [...name_data.nodes, ...char_data.nodes];
+    let data = [];
+
+    if (name_data.nodes?.length > 0 && char_data.nodes?.length > 0) {
+        data = [...name_data.nodes, ...char_data.nodes];
+    } else if (name_data.nodes?.length > 0) {
+        data = name_data.nodes;
+    } else if (char_data.nodes?.length > 0) {
+        data = char_data.nodes;
+    }
 
     return data;
 }
@@ -123,7 +150,7 @@ async function onButtonClick() {
     try {
         for (let character of characters) {
 
-            const searchedCharacters = await fetchCharacterData(character.name);
+            const searchedCharacters = await fetchCharacterData(character.name, character.description);
             console.log(searchedCharacters.values());
             for (let searchedCharacterKey in searchedCharacters) {
                 let searchedCharacter = searchedCharacters[searchedCharacterKey];
@@ -136,17 +163,18 @@ async function onButtonClick() {
                 let isAuthorMatch = false;
                 //Check if character.data.description and character.scenerio are in downloadedCharacter.description, log each comparison
                 const downloadDesc = downloadedCharacter.description.replace("\"", "");
-                const isPersonalityMatch = character.personality.includes(downloadedCharacter.title);
-                const isDescriptionMatch = character.data.description.includes(downloadedCharacter.description);
+   
+                const isPersonalityMatch = diceCoefficient(character.personality, downloadedCharacter.title) > 0.8;
+                const isDescriptionMatch = diceCoefficient(character.description, downloadedCharacter.description) > .8;
                 //purge newlines and returns from mes_example and definition during comparison
                 let temp_mes_example = character.mes_example.replace(/(\r\n|\n|\r)/gm, "");
                 let tempDefinition = downloadedCharacter.definition.replace(/(\r\n|\n|\r)/gm, "");
-                const isScenarioMatch = temp_mes_example.includes(tempDefinition);
-                const isGreetingMatch = character.data.first_mes.includes(downloadedCharacter.greeting);
+                const isScenarioMatch = diceCoefficient(temp_mes_example, tempDefinition) > 0.8;
+                const isGreetingMatch = diceCoefficient(character.first_mes, downloadedCharacter.greeting) > 0.8;
+
                 if (author && character.creator){
                     isAuthorMatch = character.creator.includes(author);
                 }
-
                 //print if not match
                 // if (!isPersonalityMatch) {
                 //     console.log(`Personality does not match. ${character.personality} vs ${downloadedCharacter.title}`);
@@ -174,19 +202,20 @@ async function onButtonClick() {
                     //add tags
                     let tags = filterTopics(searchedCharacter.topics);
                     //console.log(tags);
+                    //add tags list to character if it doesn't exist
+                    if (!character.tags) {
+                        character.tags = [];
+                    }
                     //only add tags if they don't already exist
                     for (let tag of tags) {
-                        if (!character.tags.includes(tag)) {
+                        if (character.tags && !character.tags.includes(tag)) {
                             character.tags.push(tag);
                             console.log(`Adding tag ${tag} to ${character.name}.`);
                         }
                     }
 
                     console.log(`Importing ${tags.length} tags for ${character.name}.`);
-                    let currentContext = getContext();
-                    let avatarFileName = character.avatar;
-                    let importedCharacter = currentContext.characters.find(character => character.avatar === avatarFileName);
-                    await importTags(importedCharacter);
+                    await importTags(character);
 
                     
                     // if(importCreatorInfo){
@@ -226,7 +255,7 @@ async function onButtonClick() {
                 } else {
                     console.log(`Character ${character.name} does not match.`);
                     if (!isPersonalityMatch) {
-                        console.log(`- Personality does not match. Generated: ${character.data.description}, API: ${downloadedCharacter.description}`);
+                        //console.log(`- Personality does not match. Generated: ${character.data.description}, API: ${downloadedCharacter.description}`);
                         console.log(character);
                         console.log(downloadedCharacter);
                         console.log(searchedCharacter);
