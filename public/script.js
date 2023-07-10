@@ -5531,7 +5531,7 @@ function onScenarioOverrideRemoveClick() {
     $(this).closest('.scenario_override').find('.chat_scenario').val('').trigger('input');
 }
 
-function callPopup(text, type, inputValue = '', okButton) {
+function callPopup(text, type, inputValue = '', { okButton, rows } = {}) {
     if (type) {
         popup_type = type;
     }
@@ -5559,6 +5559,7 @@ function callPopup(text, type, inputValue = '', okButton) {
     }
 
     $("#dialogue_popup_input").val(inputValue);
+    $("#dialogue_popup_input").attr("rows", rows ?? 1);
 
     if (popup_type == 'input') {
         $("#dialogue_popup_input").css("display", "block");
