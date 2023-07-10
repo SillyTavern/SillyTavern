@@ -8,12 +8,23 @@ import { generateQuietPrompt } from "../../../script.js";
 const API_ENDPOINT_SEARCH = "https://api.chub.ai/api/characters/search";
 const API_ENDPOINT_DOWNLOAD = "https://api.chub.ai/api/characters/download";
 
-// Function to fetch character data
+// Function to fetch character data, search for both the name and the first 40 characters of he description
 async function fetchCharacterData(name) {
-    const response = await fetch(`${API_ENDPOINT_SEARCH}?search=${encodeURIComponent(name)}`);
-    const data = await response.json();
-    return data.nodes.find(node => node.name === name);
+    let name_response = await fetch(`${API_ENDPOINT_SEARCH}?search=${encodeURIComponent(name)}&first=5`);
+    let name_data = await name_response.json();
+
+    // now search for the first 40 characters of the description
+
+    let char_response = await fetch(`${API_ENDPOINT_SEARCH}?search=${encodeURIComponent(name)}&description=${encodeURIComponent(name)}&first=5`);
+    let char_data = await char_response.json();
+
+    // merge the name_data and char_data arrays
+    let data = [...name_data.nodes, ...char_data.nodes];
+
+    return data;
 }
+
+
 
 async function downloadCharacter(fullPath) {
     const response = await fetch(API_ENDPOINT_DOWNLOAD, {
@@ -111,8 +122,11 @@ async function onButtonClick() {
     console.log(context);
     try {
         for (let character of characters) {
-            const searchedCharacter = await fetchCharacterData(character.name);
-            if (searchedCharacter) {
+
+            const searchedCharacters = await fetchCharacterData(character.name);
+            console.log(searchedCharacters.values());
+            for (let searchedCharacterKey in searchedCharacters) {
+                let searchedCharacter = searchedCharacters[searchedCharacterKey];
                 const downloadedCharacter = await downloadCharacter(searchedCharacter.fullPath);
                 // console.log(downloadedCharacter);
                 // console.log(searchedCharacter);
@@ -169,39 +183,43 @@ async function onButtonClick() {
                     }
 
                     console.log(`Importing ${tags.length} tags for ${character.name}.`);
-                    await importTags(character);
+                    let currentContext = getContext();
+                    let avatarFileName = character.avatar;
+                    let importedCharacter = currentContext.characters.find(character => character.avatar === avatarFileName);
+                    await importTags(importedCharacter);
 
                     
-                    if(importCreatorInfo){
-                        //add creator
-                        if (author && !character.creator) {
-                            character.creator = author;
-                        }
-                        //add creator notes
-                        if (downloadedCharacter.description && !character.creator_notes) {
-                            character.creator_notes = searchedCharacter.description;
-                        }
-                        let url = '/editcharacter';
-                        character.ch_name = character.name;
+                    // if(importCreatorInfo){
+                    //     //add creator
+                    //     if (author && !character.creator) {
+                    //         character.creator = author;
+                    //     }
+                    //     //add creator notes
+                    //     if (downloadedCharacter.description && !character.creator_notes) {
+                    //         character.creator_notes = searchedCharacter.description;
+                    //     }
+                    //     let url = '/editcharacter';
+                    //     character.ch_name = character.name;
 
-                        const formData = new FormData();
-                        let headers = getRequestHeaders();
-                        headers["Content-Type"] = "multipart/form-data" + "; boundary=" + formData._boundary
+                    //     const formData = new FormData();
+                    //     let headers = getRequestHeaders();
+                    //     headers["Content-Type"] = "multipart/form-data" + "; boundary=" + formData._boundary
 
-                        for (let key in character) {
-                            formData.append(key, character[key]);
-                        }
-                        const response = await fetch("/editcharacter", {
-                            method: 'POST',
-                            headers: headers,
-                            body: (formData)
-                        });
-                        if (response.ok) {
-                            await getCharacters();
-                            console.log(`Imported creator info for ${character.name}.`);
-                        }
-                        saveSettingsDebounced();
-                    }
+                    //     for (let key in character) {
+                    //         formData.append(key, character[key]);
+                    //     }
+                    //     const response = await fetch("/editcharacter", {
+                    //         method: 'POST',
+                    //         headers: headers,
+                    //         body: (formData)
+                    //     });
+                    //     if (response.ok) {
+                    //         await getCharacters();
+                    //         console.log(`Imported creator info for ${character.name}.`);
+                    //     }
+                    //     saveSettingsDebounced();
+                    // }
+                    break;
 
                     
 
@@ -214,8 +232,6 @@ async function onButtonClick() {
                         console.log(searchedCharacter);
                     }
                 }
-            } else {
-                console.log(`Character ${character.name} not found.`);
             }
         }
     } catch (error) {
