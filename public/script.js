@@ -74,6 +74,7 @@ import {
     formatInstructModePrompt,
     persona_description_positions,
     loadMovingUIState,
+    getCustomStoppingStrings,
 } from "./scripts/power-user.js";
 
 import {
@@ -1622,6 +1623,11 @@ function getStoppingStrings(isImpersonate, addSpace) {
         if (power_user.instruct.output_sequence) {
             result.push(substituteParams(wrap(power_user.instruct.output_sequence), name1, name2));
         }
+    }
+
+    if (power_user.custom_stopping_strings) {
+        const customStoppingStrings = getCustomStoppingStrings();
+        result.push(...customStoppingStrings);
     }
 
     return addSpace ? result.map(x => `${x} `) : result;
