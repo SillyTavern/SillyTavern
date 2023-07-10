@@ -3676,7 +3676,7 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
             chat[chat.length - 1]['gen_finished'] = generationFinished;
             chat[chat.length - 1]['send_date'] = getMessageTimeStamp();
             chat[chat.length - 1]['extra']['api'] = main_api;
-            chat[chat.length - 1]['extra']['model'] = getGeneratorInfo();
+            chat[chat.length - 1]['extra']['model'] = getGeneratingModel();
             addOneMessage(chat[chat.length - 1], { type: 'swipe' });
         } else {
             chat[chat.length - 1]['mes'] = getMessage;
@@ -3689,7 +3689,7 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         chat[chat.length - 1]['gen_finished'] = generationFinished;
         chat[chat.length - 1]['send_date'] = getMessageTimeStamp();
         chat[chat.length - 1]["extra"]["api"] = main_api;
-        chat[chat.length - 1]["extra"]["model"] = getGeneratorInfo();
+        chat[chat.length - 1]["extra"]["model"] = getGeneratingModel();
         addOneMessage(chat[chat.length - 1], { type: 'swipe' });
     } else if (type === 'appendFinal') {
         console.debug("Trying to appendFinal.")
@@ -3699,7 +3699,7 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         chat[chat.length - 1]['gen_finished'] = generationFinished;
         chat[chat.length - 1]['send_date'] = getMessageTimeStamp();
         chat[chat.length - 1]["extra"]["api"] = main_api;
-        chat[chat.length - 1]["extra"]["model"] = getGeneratorInfo();
+        chat[chat.length - 1]["extra"]["model"] = getGeneratingModel();
         addOneMessage(chat[chat.length - 1], { type: 'swipe' });
 
     } else {
@@ -3711,7 +3711,7 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         chat[chat.length - 1]['is_name'] = this_mes_is_name;
         chat[chat.length - 1]['send_date'] = getMessageTimeStamp();
         chat[chat.length - 1]["extra"]["api"] = main_api;
-        chat[chat.length - 1]["extra"]["model"] = getGeneratorInfo();
+        chat[chat.length - 1]["extra"]["model"] = getGeneratingModel();
         if (power_user.trim_spaces) {
             getMessage = getMessage.trim();
         }
@@ -3739,7 +3739,6 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
     const item = chat[chat.length - 1];
     if (item["swipe_info"] === undefined) {
         item["swipe_info"] = [];
-        console.log("Create empty swipe info array");
     }
     if (item["swipe_id"] !== undefined) {
         item["swipes"][item["swipes"].length - 1] = item["mes"];
@@ -3773,7 +3772,7 @@ function saveImageToMessage(img, mes) {
     }
 }
 
-function getGeneratorInfo(mes) {
+function getGeneratingModel(mes) {
     let model = '';
     switch (main_api) {
         case 'kobold':
@@ -6405,7 +6404,6 @@ const swipe_right = () => {
         chat[chat.length - 1]['swipe_info'] = [];
         chat[chat.length - 1]['swipes'][0] = chat[chat.length - 1]['mes'];  //assign swipe array with last message from chat
         chat[chat.length - 1]['swipe_info'][0] = { 'send_date': chat[chat.length - 1]['send_date'], 'gen_started': chat[chat.length - 1]['gen_started'], 'gen_finished': chat[chat.length - 1]['gen_finished'], 'extra': JSON.parse(JSON.stringify(chat[chat.length - 1]['extra'])) };
-        console.log('swipe_info: ' + chat[chat.length - 1]['swipe_info'][0]);
         //assign swipe info array with last message from chat
     }
     chat[chat.length - 1]['swipe_id']++;                                      //make new slot in array
