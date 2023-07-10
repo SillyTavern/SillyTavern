@@ -267,7 +267,7 @@ function generate_payload(query, variables) {
 
 async function request_with_retries(method, attempts = 10) {
     for (let i = 0; i < attempts; i++) {
-        var ResponseHasFreeSocket;
+        var ResponseHasFreeSocket = false;
         try {
 
             const response = await method();
@@ -287,7 +287,7 @@ async function request_with_retries(method, attempts = 10) {
                     if (typeof value === 'object' && value !== null) {
                         return Array.isArray(value) ? value : { ...value };
                     }
-                    if (key === "Free Sockets" && value.length) {
+                    if (key === "freeSockets" && value.length) {
                         ResponseHasFreeSocket = true;
                     }
                     if (key === "Cookie" || key === "set-cookie" || key === "Set-Cookie") {
@@ -337,7 +337,7 @@ async function request_with_retries(method, attempts = 10) {
                 if (key === "Cookie") {
                     return "[COOKIE REDACTED BY ST CODE]"
                 }
-                if (key === "Free Sockets" && value.length) {
+                if (key === "freeSockets" && value.length) {
                     ResponseHasFreeSocket = true;
                 }
                 return value;
