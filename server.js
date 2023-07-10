@@ -3725,13 +3725,23 @@ app.post('/viewsecrets', jsonParser, async (_, response) => {
 });
 
 app.post('/horde_samplers', jsonParser, async (_, response) => {
-    const samplers = Object.values(ai_horde.ModelGenerationInputStableSamplers);
-    response.send(samplers);
+    try {
+        const samplers = Object.values(ai_horde.ModelGenerationInputStableSamplers);
+        response.send(samplers);
+    } catch (error) {
+        console.error(error);
+        response.sendStatus(500);
+    }
 });
 
 app.post('/horde_models', jsonParser, async (_, response) => {
-    const models = await ai_horde.getModels();
-    response.send(models);
+    try {
+        const models = await ai_horde.getModels();
+        response.send(models);
+    } catch (error) {
+        console.error(error);
+        response.sendStatus(500);
+    }
 });
 
 app.post('/horde_userinfo', jsonParser, async (_, response) => {
