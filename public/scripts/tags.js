@@ -6,7 +6,8 @@ import {
     menu_type,
     updateVisibleDivs,
     getCharacters,
-    getSettings
+    getSettings,
+    updateCharacterCount,
 } from "../script.js";
 
 import { selected_group } from "./group-chats.js";
@@ -83,6 +84,7 @@ function applyFavFilter(characterSelector) {
         }
 
     });
+    updateCharacterCount(characterSelector);
     updateVisibleDivs('#rm_print_characters_block', true);
 }
 
@@ -95,6 +97,7 @@ function filterByGroups(characterSelector) {
     $(characterSelector).each((_, element) => {
         $(element).toggleClass('hiddenByGroup', displayGroupsOnly && !$(element).hasClass('group_select'));
     });
+    updateCharacterCount(characterSelector);
     updateVisibleDivs('#rm_print_characters_block', true);
 }
 
@@ -364,6 +367,7 @@ function onTagFilterClick(listElement, characterSelector) {
     const tagIds = [...($(listElement).find(".tag.selected:not(.actionable)").map((_, el) => $(el).attr("id")))];
     const excludedTagIds = [...($(listElement).find(".tag.excluded:not(.actionable)").map((_, el) => $(el).attr("id")))];
     $(characterSelector).each((_, element) => applyFilterToElement(tagIds, excludedTagIds, element));
+    updateCharacterCount(characterSelector);
     updateVisibleDivs('#rm_print_characters_block', true);
 }
 
