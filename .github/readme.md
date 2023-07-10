@@ -307,3 +307,4 @@ GNU Affero General Public License for more details.**
 * Linux startup script by AlpinDale
 * Thanks paniphons for providing a FAQ document
 * 10K Discord Users Celebratory Background by @kallmeflocc
+* Korean translation by @doloroushyeonse
