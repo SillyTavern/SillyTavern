@@ -55,7 +55,7 @@ fragment BotNavItem_viewer on Viewer {
 
 fragment BotSwitcherModalInner_viewer on Viewer {
   ...BotNavItem_viewer
-  availableBotsConnection(first: 11) {
+  availableBotsConnection(first: 99) {
     edges {
       node {
         id
