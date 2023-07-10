@@ -267,7 +267,9 @@ function generate_payload(query, variables) {
 
 async function request_with_retries(method, attempts = 10) {
     for (let i = 0; i < attempts; i++) {
+        var ResponseHasFreeSocket;
         try {
+
             const response = await method();
             if (response.status === 200) {
 
@@ -284,6 +286,9 @@ async function request_with_retries(method, attempts = 10) {
                     }
                     if (typeof value === 'object' && value !== null) {
                         return Array.isArray(value) ? value : { ...value };
+                    }
+                    if (key === "Free Sockets" && value.length) {
+                        ResponseHasFreeSocket = true;
                     }
                     if (key === "Cookie" || key === "set-cookie" || key === "Set-Cookie") {
                         return "[PB COOKIE DATA REDACTED BY ST CODE]"
@@ -332,11 +337,14 @@ async function request_with_retries(method, attempts = 10) {
                 if (key === "Cookie") {
                     return "[COOKIE REDACTED BY ST CODE]"
                 }
+                if (key === "Free Sockets" && value.length) {
+                    ResponseHasFreeSocket = true;
+                }
                 return value;
             }, 4);
             fs.writeFile('poe-error.log', errString, 'utf-8', (err) => {
                 if (err) throw err;
-                console.log('Error saved to poe-error.log');
+                console.log(`Error saved to poe-error.log Free socket?${ResponseHasFreeSocket}`);
             });
             await delay(100)
         }
