@@ -72,8 +72,8 @@ class VoskSttProvider {
         });
 
         if (!apiResult.ok) {
-            toastr.error(response.statusText, 'STT Generation Failed');
-            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+            toastr.error(apiResult.statusText, 'STT Generation Failed');
+            throw new Error(`HTTP ${apiResult.status}: ${await apiResult.text()}`);
         }
         
         const data = await apiResult.json();
