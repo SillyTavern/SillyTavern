@@ -267,9 +267,9 @@ function generate_payload(query, variables) {
 
 async function request_with_retries(method, attempts = 10) {
     for (let i = 0; i < attempts; i++) {
-        var ResponseHasFreeSocket = false;
-        try {
 
+        try {
+            var ResponseHasFreeSocket = false;
             const response = await method();
             if (response.status === 200) {
 
@@ -287,7 +287,8 @@ async function request_with_retries(method, attempts = 10) {
                     if (typeof value === 'object' && value !== null) {
                         return Array.isArray(value) ? value : { ...value };
                     }
-                    if (key === "freeSockets" && value.length) {
+
+                    if (key === "freeSockets" && key.length) {
                         ResponseHasFreeSocket = true;
                     }
                     if (key === "Cookie" || key === "set-cookie" || key === "Set-Cookie") {
@@ -324,6 +325,7 @@ async function request_with_retries(method, attempts = 10) {
             //this never actually gets seen as any non-200 response jumps to the catch code
             logger.warn(`Server returned a status code of ${response.status} while downloading. Retrying (${i + 1}/${attempts})...`);
         } catch (err) {
+            var ErrorHasFreeSocket = false;
             const circularReference = new Set();
             const errString = JSON.stringify(err, function (key, value) {
                 if (key === 'data' && Array.isArray(value)) {
@@ -334,17 +336,33 @@ async function request_with_retries(method, attempts = 10) {
                     }
                     circularReference.add(value);
                 }
-                if (key === "Cookie") {
-                    return "[COOKIE REDACTED BY ST CODE]"
+                if (key === "Cookie" || key === "set-cookie" || key === "Set-Cookie") {
+                    return "[PB COOKIE DATA REDACTED BY ST CODE]"
                 }
-                if (key === "freeSockets" && value.length) {
-                    ResponseHasFreeSocket = true;
+                if (typeof value === 'string' && value.includes('p-b=')) {
+                    const startIndex = value.indexOf('p-b=');
+                    const endIndex = value.indexOf(';', startIndex);
+                    if (endIndex === -1) {
+                        return value.substring(0, startIndex) + '[P-B COOKIE REDACTED BY ST]';
+                    }
+                    return value.substring(0, startIndex) + '[P-B COOKIE REDACTED BY ST]' + value.substring(endIndex);
+                }
+                if (typeof value === 'string' && value.includes('__cf_bm=')) {
+                    const startIndex = value.indexOf('__cf_bm=');
+                    const endIndex = value.indexOf(';', startIndex);
+                    if (endIndex === -1) {
+                        return value.substring(0, startIndex) + '[Cloudflare COOKIE REDACTED BY ST]';
+                    }
+                    return value.substring(0, startIndex) + '[CloudFlare COOKIE REDACTED BY ST]' + value.substring(endIndex);
+                }
+                if (key === "freeSockets" && key.length) {
+                    ErrorHasFreeSocket = true;
                 }
                 return value;
             }, 4);
             fs.writeFile('poe-error.log', errString, 'utf-8', (err) => {
                 if (err) throw err;
-                console.log(`Error saved to poe-error.log Free socket?${ResponseHasFreeSocket}`);
+                console.log(`Error saved to poe-error.log Free socket? ${ErrorHasFreeSocket}`);
             });
             await delay(100)
         }
