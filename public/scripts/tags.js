@@ -244,9 +244,9 @@ async function importTags(imported_char) {
     let selected_tags = "";
     const existingTagsString = existingTags.length ? (': ' + existingTags.join(', ')) : '';
     if (newTags.length === 0) {
-        await callPopup(`<h3>Importing Tags</h3><p>${existingTags.length} existing tags have been found${existingTagsString}.</p>`, 'text');
+        await callPopup(`<h3>Importing Tags For ${imported_char.name}</h3><p>${existingTags.length} existing tags have been found${existingTagsString}.</p>`, 'text');
     } else {
-        selected_tags = await callPopup(`<h3>Importing Tags</h3><p>${existingTags.length} existing tags have been found${existingTagsString}.</p><p>The following ${newTags.length} new tags will be imported.</p>`, 'input', newTags.join(', '));
+        selected_tags = await callPopup(`<h3>Importing Tags For ${imported_char.name}</h3><p>${existingTags.length} existing tags have been found${existingTagsString}.</p><p>The following ${newTags.length} new tags will be imported.</p>`, 'input', newTags.join(', '));
     }
     selected_tags = existingTags.concat(selected_tags.split(','));
     selected_tags = selected_tags.map(t => t.trim()).filter(t => t !== "");
