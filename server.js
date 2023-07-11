@@ -33,7 +33,10 @@ process.chdir(directory);
 const express = require('express');
 const compression = require('compression');
 const app = express();
-const responseTime = require('response-time')
+const responseTime = require('response-time');
+const simpleGit = require('simple-git');
+const git = simpleGit();
+
 app.use(compression());
 app.use(responseTime());
 
@@ -4364,7 +4367,6 @@ async function getImageBuffers(zipFilePath) {
 }
 
 
-const simpleGit = require('simple-git');
 
 /** 
  * This function extracts the extension information from the manifest file.
@@ -4399,12 +4401,8 @@ app.post('/get_extension', jsonParser, async (request, response) => {
 
     try {
         const url = request.body.url;
-        const git = simpleGit();
-
-        // get the name of the repo from the url and create the extensions folder path
         const extensionPath = path.join(directories.extensions, 'third-party', path.basename(url, '.git'));
 
-        // Check if a folder already exists at the specified location
         if (fs.existsSync(extensionPath)) {
             return response.status(409).send(`Directory already exists at ${extensionPath}`);
         }
@@ -4412,10 +4410,10 @@ app.post('/get_extension', jsonParser, async (request, response) => {
         await git.clone(url, extensionPath);
         console.log(`Extension has been cloned at ${extensionPath}`);
 
-        // Load the info from the manifest.json in the extension folder
+
         const { version, author, display_name } = await getManifest(extensionPath);
 
-        // Return the version, author, display_name, and the path to the extension folder
+
         return response.send({ version, author, display_name, extensionPath });
 
     } catch (error) {
