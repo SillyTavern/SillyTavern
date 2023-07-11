@@ -691,16 +691,19 @@ window.chromadb_interceptGeneration = async (chat, maxContext) => {
             let recalledMemories = queriedMessages.map(m => m.meta).filter(onlyUnique).map(JSON.parse).reverse();
             let tokenApprox = 0;
             let allMemoryBlob = "";
+            let seenMemories = new Set(); // Why are there even duplicates in chromadb anyway?
             for (const msg of recalledMemories) {
                 const memoryBlob = memoryMsg.replace('{{name}}', msg.name).replace('{{message}}', msg.mes);
                 const memoryTokens = (memoryBlob.length / CHARACTERS_PER_TOKEN_RATIO);
-                if (tokenApprox + memoryTokens <= chromaTokenLimit) {
+                if (!seenMemories.has(memoryBlob) && tokenApprox + memoryTokens <= chromaTokenLimit) {
                     allMemoryBlob += memoryBlob;
                     tokenApprox += memoryTokens;
+                    seenMemories.add(memoryBlob);
                 }
             }
 
-            const promptBlob = wrapperMsg.replace('{{memories}}', allMemoryBlob);
+            // No memories? No prompt.
+            const promptBlob = (tokenApprox == 0) ? "" : wrapperMsg.replace('{{memories}}', allMemoryBlob);
             console.debug("CHROMADB: prompt blob: %o", promptBlob);
             context.setExtensionPrompt(MODULE_NAME, promptBlob, extension_prompt_types.AFTER_SCENARIO);
         }

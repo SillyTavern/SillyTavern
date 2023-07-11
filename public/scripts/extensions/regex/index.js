@@ -11,7 +11,7 @@ async function saveRegexScript(regexScript, existingScriptIndex) {
             toastr.error(`Could not save regex script: The script name was undefined or empty!`);
             return;
         }
-    
+
         // Does the script name already exist?
         if (extension_settings.regex.find((e) => e.scriptName === regexScript.scriptName)) {
             toastr.error(`Could not save regex script: A script with name ${regexScript.scriptName} already exists.`);
@@ -144,7 +144,7 @@ async function onRegexEditorOpenClick(existingId) {
             .prop("checked", true);
     }
 
-    const popupResult = await callPopup(editorHtml, "confirm", undefined, "Save");
+    const popupResult = await callPopup(editorHtml, "confirm", undefined, { okButton: "Save" });
     if (popupResult) {
         const newRegexScript = {
             scriptName: editorHtml.find(".regex_script_name").val(),

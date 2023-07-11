@@ -10,7 +10,7 @@ async function doDiceRoll(customDiceFormula) {
     let value = typeof customDiceFormula === 'string' ? customDiceFormula.trim() : $(this).data('value');
 
     if (value == 'custom') {
-        value = await callPopup('Enter the dice formula:<br><i>(for example, <tt>2d6</tt>)</i>', 'input');x
+        value = await callPopup('Enter the dice formula:<br><i>(for example, <tt>2d6</tt>)</i>', 'input');
     }
 
     if (!value) {

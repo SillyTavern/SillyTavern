@@ -74,6 +74,7 @@ import {
     formatInstructModePrompt,
     persona_description_positions,
     loadMovingUIState,
+    getCustomStoppingStrings,
 } from "./scripts/power-user.js";
 
 import {
@@ -1624,6 +1625,11 @@ function getStoppingStrings(isImpersonate, addSpace) {
         }
     }
 
+    if (power_user.custom_stopping_strings) {
+        const customStoppingStrings = getCustomStoppingStrings();
+        result.push(...customStoppingStrings);
+    }
+
     return addSpace ? result.map(x => `${x} `) : result;
 }
 
@@ -2481,6 +2487,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     const name = is_pygmalion ? 'You' : name1;
                     const quietAppend = isInstruct ? formatInstructModeChat(name, quiet_prompt, false, true, false, name1, name2) : `\n${name}: ${quiet_prompt}`;
                     mesSendString += quietAppend;
+                    // Bail out early
+                    return mesSendString;
                 }
 
                 // Get instruct mode line
@@ -5529,7 +5537,7 @@ function onScenarioOverrideRemoveClick() {
     $(this).closest('.scenario_override').find('.chat_scenario').val('').trigger('input');
 }
 
-function callPopup(text, type, inputValue = '', okButton) {
+function callPopup(text, type, inputValue = '', { okButton, rows } = {}) {
     if (type) {
         popup_type = type;
     }
@@ -5557,6 +5565,7 @@ function callPopup(text, type, inputValue = '', okButton) {
     }
 
     $("#dialogue_popup_input").val(inputValue);
+    $("#dialogue_popup_input").attr("rows", rows ?? 1);
 
     if (popup_type == 'input') {
         $("#dialogue_popup_input").css("display", "block");
