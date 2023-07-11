@@ -2263,9 +2263,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
             chat2[i] = formatMessageHistoryItem(coreChat[j], isInstruct);
 
-            // Do not format the message for continuation
+            // Do not suffix the message for continuation
             if (i === 0 && type == 'continue') {
-                chat2[i] = coreChat[j].mes;
+                chat2[i] = chat2[i].slice(0, chat2[i].lastIndexOf(coreChat[j].mes) + coreChat[j].mes.length);
             }
         }
 
