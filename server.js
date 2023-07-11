@@ -3174,6 +3174,7 @@ async function sendClaudeRequest(request, response) {
             }),
             headers: {
                 "Content-Type": "application/json",
+                "anthropic-version": '2023-06-01',
                 "x-api-key": api_key_claude,
             },
             timeout: 0,

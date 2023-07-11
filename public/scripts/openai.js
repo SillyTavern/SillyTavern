@@ -805,6 +805,13 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
                 }
 
                 for (let event of eventList) {
+                    if (event.startsWith('event: completion')) {
+                        event = event.split("\n")[1];
+                    }
+
+                    if (typeof event !== 'string' || !event.length)
+                        continue;
+
                     if (!event.startsWith("data"))
                         continue;
                     if (event == "data: [DONE]") {
@@ -838,7 +845,7 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
 
 function getStreamingReply(getMessage, data) {
     if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
-        getMessage = data.completion || "";
+        getMessage += data?.completion || "";
     } else {
         getMessage += data.choices[0]?.delta?.content || data.choices[0]?.message?.content || data.choices[0]?.text || "";
     }
