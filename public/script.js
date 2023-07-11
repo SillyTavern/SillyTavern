@@ -2298,7 +2298,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         let zeroDepthAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, 0, ' ');
 
         // Pre-format the World Info into the story string
-        storyString = worldInfoBefore + storyString + worldInfoAfter;
+        if (main_api !== 'openai') {
+            storyString = worldInfoBefore + storyString + worldInfoAfter;
+        }
 
         // Format the instruction string
         if (isInstruct) {
