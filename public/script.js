@@ -3172,7 +3172,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
     var authorsNoteStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].authorsNoteString);
     var smartContextStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].smartContextString);
     var afterScenarioAnchorTokens = getTokenCount(itemizedPrompts[thisPromptSet].afterScenarioAnchor);
-    var zeroDepthAnchorTokens = getTokenCount(itemizedPrompts[thisPromptSet].afterScenarioAnchor);
+    var zeroDepthAnchorTokens = getTokenCount(itemizedPrompts[thisPromptSet].zeroDepthAnchor);
     var worldInfoStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].worldInfoString);
     var thisPrompt_max_context = itemizedPrompts[thisPromptSet].this_max_context;
     var thisPrompt_padding = itemizedPrompts[thisPromptSet].padding;
@@ -3186,7 +3186,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
 
         //var finalPromptTokens = itemizedPrompts[thisPromptSet].oaiTotalTokens;
         var oaiStartTokens = itemizedPrompts[thisPromptSet].oaiStartTokens;
-        var oaiPromptTokens = itemizedPrompts[thisPromptSet].oaiPromptTokens;
+        var oaiPromptTokens = itemizedPrompts[thisPromptSet].oaiPromptTokens - worldInfoStringTokens - afterScenarioAnchorTokens;
         var ActualChatHistoryTokens = itemizedPrompts[thisPromptSet].oaiConversationTokens;
         var examplesStringTokens = itemizedPrompts[thisPromptSet].oaiExamplesTokens;
         var oaiBiasTokens = itemizedPrompts[thisPromptSet].oaiBiasTokens;
@@ -3217,12 +3217,13 @@ function promptItemize(itemizedPrompts, requestedMesId) {
         var storyStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].storyString) - worldInfoStringTokens;
         var examplesStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].examplesString);
         var mesSendStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].mesSendString)
-        var ActualChatHistoryTokens = mesSendStringTokens - allAnchorsTokens + power_user.token_padding;
+        var ActualChatHistoryTokens = mesSendStringTokens - (allAnchorsTokens - afterScenarioAnchorTokens)  + power_user.token_padding;
         var instructionTokens = getTokenCount(itemizedPrompts[thisPromptSet].instruction);
 
         var totalTokensInPrompt =
             storyStringTokens +     //chardefs total
             worldInfoStringTokens +
+            examplesStringTokens + // example messages
             ActualChatHistoryTokens +  //chat history
             allAnchorsTokens +      // AN and/or legacy anchors
             //afterScenarioAnchorTokens +       //only counts if AN is set to 'after scenario'
@@ -3472,7 +3473,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
                 </div>
                     <!-- <div  class="flex1">finalPromt:</div><div  class=""> ${finalPromptTokens}</div> -->
                 <div class="flex-container wide100p">
-                    <div  class="flex1">Max Context:</div><div  class="">${thisPrompt_max_context}</div>
+                    <div  class="flex1">Max Context (Context Size - Response Length):</div><div  class="">${thisPrompt_max_context}</div>
                 </div>
                 <div class="flex-container wide100p">
                     <div  class="flex1">- Padding:</div><div  class=""> ${thisPrompt_padding}</div>
