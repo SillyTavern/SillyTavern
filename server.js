@@ -2963,10 +2963,14 @@ app.post("/openai_bias", jsonParser, async function (request, response) {
             continue;
         }
 
-        const tokens = tokenizer.encode(entry.text);
+        try {
+            const tokens = tokenizer.encode(entry.text);
 
-        for (const token of tokens) {
-            result[token] = entry.value;
+            for (const token of tokens) {
+                result[token] = entry.value;
+            }
+        } catch {
+            console.warn('Tokenizer failed to encode:', entry.text);
         }
     }
 
@@ -3348,12 +3352,16 @@ app.post("/tokenize_openai", jsonParser, function (request, response_tokenize_op
     const tokenizer = getTiktokenTokenizer(model);
 
     for (const msg of request.body) {
-        num_tokens += tokensPerMessage;
-        for (const [key, value] of Object.entries(msg)) {
-            num_tokens += tokenizer.encode(value).length;
-            if (key == "name") {
-                num_tokens += tokensPerName;
+        try {
+            num_tokens += tokensPerMessage;
+            for (const [key, value] of Object.entries(msg)) {
+                num_tokens += tokenizer.encode(value).length;
+                if (key == "name") {
+                    num_tokens += tokensPerName;
+                }
             }
+        } catch {
+            console.warn("Error tokenizing message:", msg);
         }
     }
     num_tokens += tokensPadding;
