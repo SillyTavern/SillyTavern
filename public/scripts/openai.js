@@ -1771,7 +1771,7 @@ async function onModelChange() {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
         }
-        else if (value.endsWith('100k')) {
+        else if (value.endsWith('100k') || value.startsWith('claude-2')) {
             $('#openai_max_context').attr('max', claude_100k_max);
         }
         else {
